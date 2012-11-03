@@ -1,0 +1,151 @@
+# The copyright in this software is being made available under the BSD
+# License, included below. This software may be subject to other third party
+# and contributor rights, including patent rights, and no such rights are
+# granted under this license.  
+#
+# Copyright (c) 2010-2012, ITU/ISO/IEC
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#  * Neither the name of the ITU/ISO/IEC nor the names of its contributors may
+#    be used to endorse or promote products derived from this software without
+#    specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+# THE POSSIBILITY OF SUCH DAMAGE.
+
+# This files contains shell code that is common to both encodeCommand.sh and targetBitrates.sh.
+
+# Run this function to validate a "-option value" pair of arguments
+function checkDollarTwo {
+  if [[ "" == $2 ]] ; then
+    printf "An argument must follow $1.\n" >&2
+    outputUsageAndExit
+  fi
+}
+
+# If the second argument is empty (not provided), output an error message and the usage, and then exit
+function verifyProvided {
+  if [[ "" == $2 ]] ; then
+    printf "The $1 parameter must be provided.\n" >&2
+    outputUsageAndExit
+  fi
+}
+
+function verifyNotDirectory {
+  if [[ `printf "$2\n" | grep '/$'` != "" ]] ; then
+    printf "The $1 parameter cannot be a directory.\n" >&2
+    outputUsageAndExit
+  fi
+}
+
+function verifyDirectory {
+  if [[ "" == `printf "$2\n" | grep '/$'` ]] ; then
+    printf "The $1 parameter must be a directory.\n" >&2
+    outputUsageAndExit
+  fi
+}
+
+function verifyConfigurationIdentifier {
+  case $configurationIdentifier in
+    ldLC) ;;
+    raLC) ;;
+    inLC) ;;
+    ldHE) ;;
+    raHE) ;;
+    inHE) ;;
+    *)
+      printf "The provided $CONFIGURATION_IDENTIFIER_STRING is invalid.  It must be \"ldLC\", \"raLC\", \"inLC\", \"ldHE\", \"raHE\", or \"inHE\".\n" >&2
+      outputUsageAndExit
+      ;;
+  esac
+}
+
+function verifyQ {
+  case $1 in
+    22)  ;;
+    27)  ;;
+    32)  ;;
+    37)  ;;
+    *)
+      printf "The provided $Q_STRING, \"$1\", is invalid.  It must be \"22\", \"27\", \"32\", or \"37\".\n" >&2
+      outputUsageAndExit
+    ;;
+  esac
+}
+
+Q_OPTION="-q"
+EXECUTABLE_OPTION="-e"
+CONFIGURATION_IDENTIFIER_OPTION="-ci"
+OUTPUT_DIRECTORY_OPTION="-o"
+EXTRA_ARGUMENTS_OPTION="-ea"
+CONFIGURATION_PATH_OPTION="-cp"
+CONFIGURATION_DIRECTORY_OPTION="-cd"
+
+Q_STRING="q ($Q_OPTION)"
+CONFIGURATION_IDENTIFIER_STRING="configuration identifier ($CONFIGURATION_IDENTIFIER_OPTION)"
+INPUT_NAME_STRING="input name"
+OUTPUT_DIRECTORY_STRING="output directory ($OUTPUT_DIRECTORY_OPTION)"
+
+USAGE_INDENT="  "
+INPUT_NAME_USAGE_STRING=inputName
+CONFIGURATION_IDENTIFIER_USAGE_STRING=configurationIdentifier
+Q_USAGE_STRING=q
+OUTPUT_DIRECTORY_USAGE_STRING=outputDirectory
+EXTRA_ARGUMENTS_USAGE_STRING=extraArguments
+
+function outputConfigurationIdentifierUsage {
+  echo "${USAGE_INDENT}$CONFIGURATION_IDENTIFIER_USAGE_STRING specifies the configuration (ldHE, ldLC, raHE, raLC, inHE, or inLC)." >&2
+}
+
+function outputQUsage {
+  echo "${USAGE_INDENT}$Q_USAGE_STRING is the QP value (22, 27, 32, or 37)." >&2
+}
+
+function outputOutputDirectoryUsage {
+  echo "${USAGE_INDENT}$OUTPUT_DIRECTORY_USAGE_STRING is the directory that will contain the output log, YUV, and bin." >&2
+}
+
+function outputInputNameUsage {
+  echo "${USAGE_INDENT}$INPUT_NAME_USAGE_STRING is the name of the input sequence.  Must be one of the following:" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}NebutaFestival_2560x1600_60_10bit_crop" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}SteamLocomotiveTrain_2560x1600_60_10bit_crop" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}Traffic_2560x1600_30_crop" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}PeopleOnStreet_2560x1600_30_crop" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}BQTerrace_1920x1080_60" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}BasketballDrive_1920x1080_50" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}Cactus_1920x1080_50" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}Kimono1_1920x1080_24" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}ParkScene_1920x1080_24" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}vidyo1_720p_60" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}vidyo3_720p_60" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}vidyo4_720p_60" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}RaceHorses_832x480_30" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}BQMall_832x480_60" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}PartyScene_832x480_50" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}BasketballDrill_832x480_50" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}RaceHorses_416x240_30" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}BQSquare_416x240_60" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}BlowingBubbles_416x240_50" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}BasketballPass_416x240_50" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}BasketballDrillText_832x480_50" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}Chinaspeed_1024x768_30" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}SlideEditing_1280x720_30" >&2
+  echo "${USAGE_INDENT}${USAGE_INDENT}SlideShow_1280x720_20" >&2
+}
