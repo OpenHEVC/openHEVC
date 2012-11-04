@@ -20,9 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "bit_depth_template.c"
 #include "libavutil/pixdesc.h"
-#include "hevc.h"
+#include "bit_depth_template.c"
 #include "hevcpred.h"
 
 #define POS(x, y) src[(x) + stride * (y)]
