@@ -4,7 +4,7 @@ openHEVC
 
 - openHEVC
 ----------
-Initial version from smarter (smarter.free.fr)
+Initial libav version from smarter (smarter.free.fr)
 
 - openHEVC/wrapper
 ----------
