@@ -28,8 +28,11 @@
 #include "golomb.h"
 #include "hevcdata.h"
 #include "hevc.h"
-#include "wrapper/wrapper.h"
 
+// #definde HM
+#ifdef HM
+    #include "wrapper/wrapper.h"
+#endif
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
  * specification (HLS stands for High Level Syntax).
@@ -1314,8 +1317,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     *data_size = 0;
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
-    //libDecoderDecode(avpkt->data, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
-
+#ifdef HM
+    libDecoderDecode(avpkt->data, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
+#endif
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
 
     if (hls_nal_unit(s) <= 0) {
@@ -1355,9 +1359,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
 
         ff_hevc_cabac_init(s);
+#ifndef HM
         if (hls_slice_data(s) < 0)
             return -1;
-
+#endif
         s->frame.pict_type = AV_PICTURE_TYPE_I;
         s->frame.key_frame = 1;
         *(AVFrame*)data = s->frame;
@@ -1376,7 +1381,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 {
     HEVCContext *s = avctx->priv_data;
 
+#ifdef HM
     libDecoderInit();
+#endif
     s->avctx = avctx;
     memset(s->sps_list, 0, sizeof(s->sps_list));
     memset(s->pps_list, 0, sizeof(s->pps_list));
@@ -1426,8 +1433,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     pic_arrays_free(s);
 
+#ifdef HM
     libDecoderClose();
-
+#endif
     return 0;
 }
 

@@ -168,39 +168,42 @@ Void xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId, unsigned char * Y, u
 
 
 
-int libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned char *U, unsigned char *V, int *got_picture)
+void libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned char *U, unsigned char *V, int *got_picture)
 {
-    bool dontRead=false;
     bool bNewPicture = false;
     vector<uint8_t> nalUnit;
     InputNALUnit nalu;
-    int i;
-
-    for (i=0; i < len ; i++){
-        nalUnit.push_back(buff[i]);
-    }
-    read(nalu, nalUnit);
-    //readNAL(nalu, nalUnit);
-    bNewPicture=myDecoder.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
-    if (bNewPicture){
-        myDecoder.executeDeblockAndAlf(uiPOC, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
-        dontRead=true;
-    }
-    if( pcListPic )
-    {
-        if ( bNewPicture &&
-            (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
-             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
-             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA ) )
-        {
-            xFlushOutput( pcListPic);
+    bool readAgain;
+    *got_picture=0;
+    do {    
+        int i;
+        readAgain=false;
+        for (i=0; i < len ; i++){
+            nalUnit.push_back(buff[i]);
         }
-    }
-    if (bNewPicture){
-        xWriteOutput( pcListPic, nalu.m_temporalId, Y, U, V );
-    }
+        read(nalu, nalUnit);
+        //readNAL(nalu, nalUnit);
+        bNewPicture=myDecoder.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
+        if (bNewPicture){
+            myDecoder.executeDeblockAndAlf(uiPOC, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
+            readAgain=true;
+            *got_picture=1;
+        }
+        if( pcListPic )
+        {
+            if ( bNewPicture &&
+                (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
+                 || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
+                 || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA ) )
+            {
+                xFlushOutput( pcListPic);
+            }
+        }
+        if (bNewPicture){
+            xWriteOutput( pcListPic, nalu.m_temporalId, Y, U, V );
+        }
+    } while (readAgain);
 
-    return dontRead;
 }
 
 void libDecoderClose( void )

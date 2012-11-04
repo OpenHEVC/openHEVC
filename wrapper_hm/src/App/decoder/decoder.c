@@ -62,13 +62,11 @@ int main(){
     libDecoderInit();
     for (;;){
         int nal_len;
-        if (!dontRead){
-            nal_len = get_next_nal(f, buf);
-            if (nal_len == - 1) exit(10);
-        }
-        dontRead=0;
-        dontRead=libDecoderDecode(buf, nal_len, Y, U, V, &gotpicture);
-        SDL_Display(80, 832, 480, Y, U, V);
+        nal_len = get_next_nal(f, buf);
+        if (nal_len == - 1) exit(10);
+        libDecoderDecode(buf, nal_len, Y, U, V, &gotpicture);
+        if (gotpicture = 1)
+            SDL_Display(80, 832, 480, Y, U, V);
     }
     libDecoderClose();
     return(0);
