@@ -550,7 +550,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
         uint8_t coeff_abs_level_greater1_flag[16] = {0};
         uint8_t coeff_abs_level_greater2_flag[16] = {0};
         uint8_t coeff_sign_flag[16] = {0};
-        int n_end;
 
         int first_elem;
 
@@ -599,7 +598,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
         last_nz_pos_in_cg = -1;
         num_sig_coeff = 0;
         first_greater1_coeff_idx = -1;
-        n_end = (i == num_last_subset) ? offset : 15;
         for (n = 15; n >= 0; n--) {
             if (significant_coeff_flag[n]) {
                 if (num_sig_coeff < 8) {
@@ -1305,7 +1303,7 @@ static int hls_nal_unit(HEVCContext *s)
 /**
  * Note: avpkt->data must contain exactly one NAL unit
  */
-int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                              AVPacket *avpkt)
 {
     HEVCContext *s = avctx->priv_data;
@@ -1316,7 +1314,7 @@ int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     *data_size = 0;
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
-    libDecoderDecode(avpkt->data, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
+    //libDecoderDecode(avpkt->data, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
 
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
 

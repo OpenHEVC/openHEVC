@@ -537,10 +537,6 @@ enum ScanType {
     SCAN_VERT
 };
 
-int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                             AVPacket *avpkt);
-
-
 int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx,
                                   ShortTermRPS **prps);
 int ff_hevc_decode_nal_vps(HEVCContext *s);
