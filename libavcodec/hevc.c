@@ -1316,8 +1316,8 @@ int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     *data_size = 0;
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
-//    libDecoderDecode(s->gb.buffer, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
-//
+    libDecoderDecode(avpkt->data, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
+
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
 
     if (hls_nal_unit(s) <= 0) {

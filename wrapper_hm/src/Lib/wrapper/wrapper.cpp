@@ -10,6 +10,8 @@ using namespace std;
 #include "TLibCommon/TComBitStream.h"
 
 
+
+
 TDecTop             myDecoder;
 bool                g_md5_mismatch= false;
 Int                 m_iPOCLastDisplay;                    ///< last POC in display order
@@ -166,26 +168,23 @@ Void xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId, unsigned char * Y, u
 
 
 
-int libDecoderDecode(char *buff, int len, unsigned char *Y, unsigned char *U, unsigned char *V, int *got_picture)
+int libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned char *U, unsigned char *V, int *got_picture)
 {
-    AnnexBStats stats = AnnexBStats();
     bool dontRead=false;
     bool bNewPicture = false;
     vector<uint8_t> nalUnit;
     InputNALUnit nalu;
-    std::istringstream bitstream;
+    int i;
 
-
-    bitstream.rdbuf()->pubsetbuf(
-                        reinterpret_cast<char*>(const_cast<char*>(buff)), len);
-    InputByteStream bytestream(bitstream);
-    byteStreamNALUnit(bytestream, nalUnit, stats);
+    for (i=0; i < len ; i++){
+        nalUnit.push_back(buff[i]);
+    }
     read(nalu, nalUnit);
+    //readNAL(nalu, nalUnit);
     bNewPicture=myDecoder.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
     if (bNewPicture){
         myDecoder.executeDeblockAndAlf(uiPOC, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
         dontRead=true;
-        printf("%d %d\n", nalu.m_Bitstream->getByteLocation(), stats.m_numBytesInNALUnit);
     }
     if( pcListPic )
     {

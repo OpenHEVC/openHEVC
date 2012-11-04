@@ -54,4 +54,6 @@ struct InputNALUnit : public NALUnit
 
 void read(InputNALUnit& nalu, std::vector<uint8_t>& nalUnitBuf);
 
+void readNAL(InputNALUnit& nalu, std::vector<uint8_t>& nalUnitBuf);
+
 //! \}

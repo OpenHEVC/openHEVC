@@ -133,4 +133,53 @@ void read(InputNALUnit& nalu, vector<uint8_t>& nalUnitBuf)
   }
 #endif
 }
+
+/**
+ * create a NALunit structure with given header values and storage for
+ * a bitstream
+ */
+void readNAL(InputNALUnit& nalu, vector<uint8_t>& nalUnitBuf)
+{
+    /* perform anti-emulation prevention */
+    TComInputBitstream *pcBitstream = new TComInputBitstream(NULL);
+    
+    nalu.m_Bitstream = new TComInputBitstream(&nalUnitBuf);
+    delete pcBitstream;
+#if NAL_UNIT_HEADER
+    readNalUnitHeader(nalu);
+#else
+    TComInputBitstream& bs = *nalu.m_Bitstream;
+    
+    bool forbidden_zero_bit = bs.read(1);
+    assert(forbidden_zero_bit == 0);
+#if !REMOVE_NAL_REF_FLAG
+    nalu.m_nalRefFlag  = (bs.read(1) != 0 );
+#endif
+    nalu.m_nalUnitType = (NalUnitType) bs.read(6);
+#if REMOVE_NAL_REF_FLAG
+    unsigned reserved_one_6bits = bs.read(6);
+    assert(reserved_one_6bits == 0);
+#endif
+#if TEMPORAL_ID_PLUS1
+    nalu.m_temporalId = bs.read(3) - 1;
+#if !REMOVE_NAL_REF_FLAG
+    unsigned reserved_one_5bits = bs.read(5);
+    assert(reserved_one_5bits == 0);
+#endif
+#else
+    nalu.m_temporalId = bs.read(3);
+    unsigned reserved_one_5bits = bs.read(5);
+    assert(reserved_one_5bits == 1);
+#endif
+    
+    if ( nalu.m_temporalId )
+    {
+        assert( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_CRA
+               && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_CRANT
+               && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_BLA
+               && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_BLANT
+               && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR );
+    }
+#endif
+}
 //! \}

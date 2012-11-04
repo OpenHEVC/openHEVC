@@ -19,7 +19,7 @@ int find_start_code (unsigned char *Buf, int zeros_in_startcode)
 int get_next_nal(FILE* inpf, unsigned char* Buf)
 {
 	int pos = 0;
-	while(!feof(inpf)&&(Buf[pos++]=fgetc(inpf))==0);
+	while(!feof(inpf)&&(fgetc(inpf))==0);
     
 	int StartCodeFound = 0;
 	int info2 = 0;

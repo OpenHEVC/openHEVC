@@ -148,7 +148,7 @@ void TDecCavlc::parseSEI(SEImessages& seis)
     * in the parsing if bitstream not byte-aligned */
     assert(!m_pcBitstream->getNumBitsUntilByteAligned());
   } while (0x80 != m_pcBitstream->peekBits(8));
-  assert(m_pcBitstream->getNumBitsLeft() == 8); /* rsbp_trailing_bits */
+  //assert(m_pcBitstream->getNumBitsLeft() == 8); /* rsbp_trailing_bits */
 }
 void TDecCavlc::parseShortTermRefPicSet( TComSPS* sps, TComReferencePictureSet* rps, Int idx )
 {
