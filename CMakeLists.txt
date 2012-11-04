@@ -4,8 +4,6 @@ project (libavHM)
 
 # Common packages required
 find_package(SDL REQUIRED)
-find_package(SDL_image REQUIRED)
-find_package(Threads REQUIRED)
 
 add_subdirectory(wrapper_hm)
 
