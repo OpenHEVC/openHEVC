@@ -167,7 +167,12 @@ int main(int argc, const char * argv[])
     
     /* register all the codecs */
     avcodec_register_all();
-    filename = "/Users/mraulet/Dropbox/test_sequences/HEVC/8.0/BQMall_832x480_60qp22.bin";
+    if(argc == 2) {
+    	filename = argv[1];
+    } else {
+        fprintf(stderr, "An input file must be specified\n");
+        exit(1);
+    }
     video_decode_example(filename);
 
     // insert code here...
