@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/internal.h"
 #include "golomb.h"
 #include "hevcdata.h"
 #include "hevc.h"
@@ -918,6 +919,39 @@ static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
         get_bits(gb, s->sps->pcm.bit_depth_chroma);
 
     s->num_pcm_block--;
+}
+
+static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
+{
+	int abs_mvd_greater0_flag[2];
+	int abs_mvd_greater1_flag[2];
+	int abs_mvd_minus2[2];
+	int mvd_sign_flag[2];
+	int mvd_x;
+	int mvd_y;
+	abs_mvd_greater0_flag[0] = ff_hevc_abs_mvd_greater0_flag_decode(s);
+	abs_mvd_greater0_flag[1] = ff_hevc_abs_mvd_greater0_flag_decode(s);
+	if ( abs_mvd_greater0_flag[0] == 1 ) {
+		abs_mvd_greater1_flag[0] = ff_hevc_abs_mvd_greater1_flag_decode(s);
+	}
+	if ( abs_mvd_greater0_flag[1] == 1 ) {
+		abs_mvd_greater1_flag[1] = ff_hevc_abs_mvd_greater1_flag_decode(s);
+	}
+	if ( abs_mvd_greater0_flag[0] == 1 ) {
+		if ( abs_mvd_greater1_flag[0] == 1 ) {
+			abs_mvd_minus2[0] = ff_hevc_abs_mvd_minus2_decode(s);
+		}
+		mvd_sign_flag[0] = ff_hevc_mvd_sign_flag_decode(s);
+	}
+	if ( abs_mvd_greater0_flag[1] == 1 ) {
+		if ( abs_mvd_greater1_flag[1] == 1 ) {
+			abs_mvd_minus2[1] = ff_hevc_abs_mvd_minus2_decode(s);
+		}
+		mvd_sign_flag[1] = ff_hevc_mvd_sign_flag_decode(s);
+	}
+	mvd_x = abs_mvd_greater0_flag_0 * ( abs_mvd_minus2_0 + 2 ) * ( 1 - (mvd_sign_flag_0 << 1) );
+	mvd_y = abs_mvd_greater0_flag_1 * ( abs_mvd_minus2_1 + 2 ) * ( 1 - (mvd_sign_flag_1 << 1) );
+	return;
 }
 
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)

@@ -558,6 +558,63 @@ int ff_hevc_intra_chroma_pred_mode_decode(HEVCContext *s)
     return ret;
 }
 
+int ff_hevc_abs_mvd_greater0_flag_decode(HEVCContext *s)
+{
+    HEVCCabacContext *cc = &s->cc;
+    const int8_t ctx_idx_inc[1] = { 0 };
+
+    cc->elem = ABS_MVD_GREATER0_FLAG;
+    cc->state = states + elem_offset[cc->elem];
+
+    cc->max_bin_idx_ctx = 0;
+    cc->ctx_idx_offset = 3 * cc->init_type;
+    cc->ctx_idx_inc = ctx_idx_inc;
+
+    return fl_binarization(s, 1);
+}
+
+int ff_hevc_abs_mvd_greater1_flag_decode(HEVCContext *s)
+{
+    HEVCCabacContext *cc = &s->cc;
+    const int8_t ctx_idx_inc[1] = { 0 };
+
+    cc->elem = ABS_MVD_GREATER1_FLAG;
+    cc->state = states + elem_offset[cc->elem];
+
+    cc->max_bin_idx_ctx = 0;
+    cc->ctx_idx_offset = 3 * cc->init_type;
+    cc->ctx_idx_inc = ctx_idx_inc;
+
+    return fl_binarization(s, 1);
+}
+
+int ff_hevc_abs_mvd_minus2_decode(HEVCContext *s)
+{
+    HEVCCabacContext *cc = &s->cc;
+    const int8_t ctx_idx_inc[1] = { 0 };
+
+    cc->elem = ABS_MVD_MINUS2;
+    cc->state = states + elem_offset[cc->elem];
+
+    cc->max_bin_idx_ctx = 0;
+    cc->ctx_idx_offset = 3 * cc->init_type;
+    cc->ctx_idx_inc = ctx_idx_inc;
+
+    return eg_binarization(s, 1);
+}
+
+int ff_hevc_mvd_sign_flag_decode(HEVCContext *s)
+{
+    HEVCCabacContext *cc = &s->cc;
+
+    cc->elem = MVD_SIGN_FLAG;
+
+    cc->ctx_idx_inc = -1;
+
+    return fl_binarization(s, 1);
+}
+
+
 int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size)
 {
     HEVCCabacContext *cc = &s->cc;
