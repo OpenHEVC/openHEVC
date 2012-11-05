@@ -23,8 +23,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/internal.h"
-#include "avcodec.h"
 #include "golomb.h"
 #include "hevcdata.h"
 #include "hevc.h"
