@@ -113,7 +113,6 @@ _byteStreamNALUnit(
     while (bs.eofBeforeNBytes(24/8) || bs.peekBytes(24/8) > 2)
     {
         nalUnit.push_back(bs.readByte());
-        printf("%d\n", bs.readByte());
     }
     
     /* 5. When the current position in the byte stream is:
