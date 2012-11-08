@@ -74,8 +74,8 @@
 #define strncpy strncpy_is_forbidden_due_to_security_issues_use_av_strlcpy
 #undef  exit
 #define exit exit_is_forbidden
-#undef  printf
-#define printf please_use_av_log_instead_of_printf
+//#undef  printf
+//#define printf please_use_av_log_instead_of_printf
 #undef  fprintf
 #define fprintf please_use_av_log_instead_of_fprintf
 #undef  puts

@@ -32,7 +32,18 @@
  * Enable to diverge from the spec when the reference encoder
  * does so.
  */
+
+#define header_printf printf
+#define cabac_printf printf
+//#define header_printf
+//#define cabac_printf
+
 #define REFERENCE_ENCODER_QUIRKS 1
+
+/**
+ * Value of the luma sample at position (x, y) in the 2D array tab.
+ */
+#define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->pic_width_in_luma_samples + (x)])
 
 /**
  * Table 7-3: NAL unit type codes
@@ -59,6 +70,10 @@ typedef struct ShortTermRPS {
     uint8_t inter_ref_pic_set_prediction_flag;
     int num_negative_pics;
     int num_positive_pics;
+    int num_delta_pocs;
+    uint8_t delta_rps_sign;
+    int abs_delta_rps;
+    int delta_poc;
 } ShortTermRPS;
 
 /**
@@ -161,6 +176,8 @@ typedef struct SPS {
 #if REFERENCE_ENCODER_QUIRKS
     uint8_t amvp_mode_flag[4];
 #endif
+
+    uint8_t sps_extension_flag;
 
     // Inferred parameters
     int log2_ctb_size; ///< Log2CtbSize
@@ -268,6 +285,12 @@ typedef struct SliceHeader {
 
     uint8_t slice_sample_adaptive_offset_flag[3];
 
+    uint8_t slice_temporal_mvp_enable_flag;
+    uint8_t num_ref_idx_active_override_flag;
+    int num_ref_idx_l0_active;
+    int num_ref_idx_l1_active;
+
+    uint8_t mvd_l1_zero_flag;
     uint8_t cabac_init_flag;
     int slice_qp_delta;
     int slice_cb_qp_offset;
@@ -372,6 +395,12 @@ enum PredMode {
     MODE_INTER = 0,
     MODE_INTRA,
     MODE_SKIP
+};
+
+enum InterPredIdc {
+	Pred_L0 = 0,
+	Pred_L1,
+	Pred_BI
 };
 
 typedef struct CodingTree {
@@ -537,8 +566,7 @@ enum ScanType {
     SCAN_VERT
 };
 
-int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx,
-                                  ShortTermRPS **prps);
+int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps);
 int ff_hevc_decode_nal_vps(HEVCContext *s);
 int ff_hevc_decode_nal_sps(HEVCContext *s);
 int ff_hevc_decode_nal_pps(HEVCContext *s);
@@ -553,6 +581,8 @@ int ff_hevc_sao_offset_sign_decode(HEVCContext *s);
 int ff_hevc_sao_eo_class_decode(HEVCContext *s);
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
+int ff_hevc_skip_flag_decode(HEVCContext *s, int x_cb, int y_cb);
+int ff_hevc_pred_mode_decode(HEVCContext *s);
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0);
 int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size);
 int ff_hevc_pcm_flag_decode(HEVCContext *s);
@@ -560,10 +590,15 @@ int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s);
 int ff_hevc_mpm_idx_decode(HEVCContext *s);
 int ff_hevc_rem_intra_luma_pred_mode_decode(HEVCContext *s);
 int ff_hevc_intra_chroma_pred_mode_decode(HEVCContext *s);
-int ff_hevc_mvd_sign_flag_decode(HEVCContext *s);
+int ff_hevc_merge_idx_decode(HEVCContext *s);
+int ff_hevc_merge_flag_decode(HEVCContext *s);
+int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int x0, int y0);
+int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int c_max);
+int ff_hevc_mvp_lx_flag_decode(HEVCContext *s);
 int ff_hevc_abs_mvd_greater0_flag_decode(HEVCContext *s);
 int ff_hevc_abs_mvd_greater1_flag_decode(HEVCContext *s);
 int ff_hevc_abs_mvd_minus2_decode(HEVCContext *s);
+int ff_hevc_mvd_sign_flag_decode(HEVCContext *s);
 int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size);
 int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth);
 int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth);
@@ -588,4 +623,52 @@ int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
 int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int n, int base_level);
 int ff_hevc_coeff_sign_flag(HEVCContext *s);
 
+static const char* SyntaxElementName[] = {
+    "SAO_MERGE",   // sao_merge_left_flag and sao_merge_up_flag
+    "SAO_TYPE_IDX",   // sao_type_idx
+    "SAO_EO", //"SAO_EO_CLASS",
+    "SAO_BAND_POSITION",
+    "SAO_OFFSET_ABS",
+    "SAO_OFFSET_SIGN",
+    "ALF_CU_FLAG",
+    "END_OF_SLICE_FLAG",
+    "SPLIT_CODING_UNIT_FLAG",
+    "CU_TRANSQUANT_BYPASS_FLAG",
+    "SKIP_FLAG",
+    "CU_QP_DELTA",
+    "PRED_MODE_FLAG",
+    "PART_SIZE", //"PART_MODE",
+    "PCM_FLAG",
+    "PREV_INTRA_LUMA_PRED_FLAG",
+    "MPM_IDX",
+    "REM_INTRA_LUMA_PRED_MODE",
+    "INTRA_CHROMA_PRED_MODE",
+    "MERGE_FLAG",
+    "MERGE_IDX",
+    "INTER_PRED_IDC",
+    "REF_IDX_L0",
+    "REF_IDX_L1",
+    "ABS_MVD_GREATER0_FLAG",
+    "ABS_MVD_GREATER1_FLAG",
+    "ABS_MVD_MINUS2",
+    "MVD_SIGN_FLAG",
+    "MVP_LX_FLAG", //"MVP_L0_FLAG",
+    "MVP_L1_FLAG",
+    "NO_RESIDUAL_SYNTAX_FLAG", //"NO_RESIDUAL_DATA_FLAG",
+    "SPLIT_TRANSFORM_FLAG",
+    "CBF_LUMA",
+    "CBF_CB_CR",
+    "TRANSFORM_SKIP_FLAG", //"TRANSFORM_SKIP_FLAG_0",
+    "TRANSFORM_SKIP_FLAG", //"TRANSFORM_SKIP_FLAG_1_2",
+    "LAST_SIGNIFICANT_COEFF_X_PREFIX",
+    "LAST_SIGNIFICANT_COEFF_Y_PREFIX",
+    "LAST_SIGNIFICANT_COEFF_XY_SUFFIX", //"LAST_SIGNIFICANT_COEFF_X_SUFFIX",
+    "LAST_SIGNIFICANT_COEFF_XY_SUFFIX", //"LAST_SIGNIFICANT_COEFF_Y_SUFFIX",
+    "CODED_SUB_BLOCK_FLAG", //"SIGNIFICANT_COEFF_GROUP_FLAG",
+    "SIGNIFICANT_COEFF_FLAG",
+    "COEFF_ABS_LEVEL_GREATER1_FLAG",
+    "COEFF_ABS_LEVEL_GREATER2_FLAG",
+    "COEFF_ABS_LEVEL", //"COEFF_ABS_LEVEL_REMAINING",
+    "COEFF_SIGN_FLAG"
+};
 #endif // AVCODEC_HEVC_H
