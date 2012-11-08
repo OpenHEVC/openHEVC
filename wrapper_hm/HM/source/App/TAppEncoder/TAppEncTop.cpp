@@ -77,6 +77,10 @@ Void TAppEncTop::xInitLibCfg()
     vps.setMaxDecPicBuffering             ( m_maxDecPicBuffering[i], i );
   }
   m_cTEncTop.setVPS(&vps);
+
+  m_cTEncTop.setProfile(m_profile);
+  m_cTEncTop.setLevel(m_levelTier, m_level);
+
   m_cTEncTop.setFrameRate                    ( m_iFrameRate );
   m_cTEncTop.setFrameSkip                    ( m_FrameSkip );
   m_cTEncTop.setSourceWidth                  ( m_iSourceWidth );
@@ -108,9 +112,6 @@ Void TAppEncTop::xInitLibCfg()
   m_cTEncTop.setPad                          ( m_aiPad );
     
   m_cTEncTop.setMaxTempLayer                 ( m_maxTempLayer );
-#if !REMOVE_NSQT
-  m_cTEncTop.setUseNSQT( m_enableNSQT );
-#endif
   m_cTEncTop.setUseAMP( m_enableAMP );
   
   //===== Slice ========
@@ -139,7 +140,7 @@ Void TAppEncTop::xInitLibCfg()
 #endif
 
   Int lowestQP;
-  lowestQP =  - ( (Int)(6*(g_uiBitDepth + g_uiBitIncrement - 8)) );
+  lowestQP =  - 6*(g_bitDepthY - 8); // XXX: check
 
   if ((m_iMaxDeltaQP == 0 ) && (m_iQP == lowestQP) && (m_useLossless == true))
   {
@@ -153,13 +154,13 @@ Void TAppEncTop::xInitLibCfg()
   m_cTEncTop.setDeltaQpRD                    ( m_uiDeltaQpRD  );
   m_cTEncTop.setUseASR                       ( m_bUseASR      );
   m_cTEncTop.setUseHADME                     ( m_bUseHADME    );
-#if !REMOVE_ALF
-  m_cTEncTop.setUseALF                       ( m_bUseALF      );
-#endif
   m_cTEncTop.setUseLossless                  ( m_useLossless );
   m_cTEncTop.setUseLComb                     ( m_bUseLComb    );
   m_cTEncTop.setdQPs                         ( m_aidQP        );
-  m_cTEncTop.setUseRDOQ                      ( m_bUseRDOQ     );
+  m_cTEncTop.setUseRDOQ                      ( m_useRDOQ     );
+#if RDOQ_TRANSFORMSKIP
+  m_cTEncTop.setUseRDOQTS                    ( m_useRDOQTS   );
+#endif
   m_cTEncTop.setQuadtreeTULog2MaxSize        ( m_uiQuadtreeTULog2MaxSize );
   m_cTEncTop.setQuadtreeTULog2MinSize        ( m_uiQuadtreeTULog2MinSize );
   m_cTEncTop.setQuadtreeTUMaxDepthInter      ( m_uiQuadtreeTUMaxDepthInter );
@@ -170,15 +171,14 @@ Void TAppEncTop::xInitLibCfg()
   m_cTEncTop.setUseCbfFastMode            ( m_bUseCbfFastMode  );
   m_cTEncTop.setUseEarlySkipDetection            ( m_useEarlySkipDetection );
 
-#if !REMOVE_LMCHROMA
-  m_cTEncTop.setUseLMChroma                  ( m_bUseLMChroma );
-#endif
-  m_cTEncTop.setUseTransformSkip             ( m_useTansformSkip      );
-  m_cTEncTop.setUseTransformSkipFast         ( m_useTansformSkipFast  );
+  m_cTEncTop.setUseTransformSkip             ( m_useTransformSkip      );
+  m_cTEncTop.setUseTransformSkipFast         ( m_useTransformSkipFast  );
   m_cTEncTop.setUseConstrainedIntraPred      ( m_bUseConstrainedIntraPred );
   m_cTEncTop.setPCMLog2MinSize          ( m_uiPCMLog2MinSize);
   m_cTEncTop.setUsePCM                       ( m_usePCM );
   m_cTEncTop.setPCMLog2MaxSize               ( m_pcmLog2MaxSize);
+  m_cTEncTop.setMaxNumMergeCand              ( m_maxNumMergeCand );
+  
 
   //====== Weighted Prediction ========
   m_cTEncTop.setUseWP                   ( m_bUseWeightPred      );
@@ -193,34 +193,23 @@ Void TAppEncTop::xInitLibCfg()
   //====== Dependent Slice ========
   m_cTEncTop.setDependentSliceMode        ( m_iDependentSliceMode         );
   m_cTEncTop.setDependentSliceArgument    ( m_iDependentSliceArgument     );
-#if DEPENDENT_SLICES
-  m_cTEncTop.setCabacIndependentFlag      ( m_bCabacIndependentFlag   );
+#if DEPENDENT_SLICES && !REMOVE_ENTROPY_SLICES
+  m_cTEncTop.setEntropySliceEnabledFlag   ( m_entropySliceEnabledFlag );
 #endif
-  int iNumPartInCU = 1<<(m_uiMaxCUDepth<<1);
+  Int iNumPartInCU = 1<<(m_uiMaxCUDepth<<1);
   if(m_iDependentSliceMode==SHARP_FIXED_NUMBER_OF_LCU_IN_DEPENDENT_SLICE)
   {
-#if REMOVE_FGS
     m_cTEncTop.setDependentSliceArgument ( m_iDependentSliceArgument * iNumPartInCU );
-#else
-    m_cTEncTop.setDependentSliceArgument ( m_iDependentSliceArgument * ( iNumPartInCU >> ( m_iSliceGranularity << 1 ) ) );
-#endif
   }
   if(m_iSliceMode==AD_HOC_SLICES_FIXED_NUMBER_OF_LCU_IN_SLICE)
   {
-#if REMOVE_FGS
     m_cTEncTop.setSliceArgument ( m_iSliceArgument * iNumPartInCU );
-#else
-    m_cTEncTop.setSliceArgument ( m_iSliceArgument * ( iNumPartInCU >> ( m_iSliceGranularity << 1 ) ) );
-#endif
   }
   if(m_iSliceMode==AD_HOC_SLICES_FIXED_NUMBER_OF_TILES_IN_SLICE)
   {
     m_cTEncTop.setSliceArgument ( m_iSliceArgument );
   }
   
-#if !REMOVE_FGS
-  m_cTEncTop.setSliceGranularity        ( m_iSliceGranularity         );
-#endif
   if(m_iSliceMode == 0 )
   {
     m_bLFCrossSliceBoundaryFlag = true;
@@ -229,15 +218,15 @@ Void TAppEncTop::xInitLibCfg()
   m_cTEncTop.setUseSAO ( m_bUseSAO );
   m_cTEncTop.setMaxNumOffsetsPerPic (m_maxNumOffsetsPerPic);
 
-#if SAO_LCU_BOUNDARY
   m_cTEncTop.setSaoLcuBoundary (m_saoLcuBoundary);
-#endif
   m_cTEncTop.setSaoLcuBasedOptimization (m_saoLcuBasedOptimization);
   m_cTEncTop.setPCMInputBitDepthFlag  ( m_bPCMInputBitDepthFlag); 
   m_cTEncTop.setPCMFilterDisableFlag  ( m_bPCMFilterDisableFlag); 
 
-  m_cTEncTop.setPictureDigestEnabled(m_pictureDigestEnabled);
-
+  m_cTEncTop.setDecodedPictureHashSEIEnabled(m_decodePictureHashSEIEnabled);
+  m_cTEncTop.setRecoveryPointSEIEnabled( m_recoveryPointSEIEnabled );
+  m_cTEncTop.setBufferingPeriodSEIEnabled( m_bufferingPeriodSEIEnabled );
+  m_cTEncTop.setPictureTimingSEIEnabled( m_pictureTimingSEIEnabled );
   m_cTEncTop.setUniformSpacingIdr          ( m_iUniformSpacingIdr );
   m_cTEncTop.setNumColumnsMinus1           ( m_iNumColumnsMinus1 );
   m_cTEncTop.setNumRowsMinus1              ( m_iNumRowsMinus1 );
@@ -259,27 +248,50 @@ Void TAppEncTop::xInitLibCfg()
   m_cTEncTop.setUseScalingListId           ( m_useScalingListId  );
   m_cTEncTop.setScalingListFile            ( m_scalingListFile   );
   m_cTEncTop.setSignHideFlag(m_signHideFlag);
-#if !REMOVE_ALF
-  m_cTEncTop.setALFLowLatencyEncoding( m_alfLowLatencyEncoding );
-#endif
   m_cTEncTop.setUseRateCtrl     ( m_enableRateCtrl);
   m_cTEncTop.setTargetBitrate   ( m_targetBitrate);
   m_cTEncTop.setNumLCUInUnit    ( m_numLCUInUnit);
   m_cTEncTop.setTransquantBypassEnableFlag(m_TransquantBypassEnableFlag);
   m_cTEncTop.setCUTransquantBypassFlagValue(m_CUTransquantBypassFlagValue);
-#if RECALCULATE_QP_ACCORDING_LAMBDA
   m_cTEncTop.setUseRecalculateQPAccordingToLambda( m_recalculateQPAccordingToLambda );
+#if STRONG_INTRA_SMOOTHING
+  m_cTEncTop.setUseStrongIntraSmoothing( m_useStrongIntraSmoothing );
 #endif
+  m_cTEncTop.setActiveParameterSetsSEIEnabled ( m_activeParameterSetsSEIEnabled ); 
+  m_cTEncTop.setVuiParametersPresentFlag( m_vuiParametersPresentFlag );
+  m_cTEncTop.setAspectRatioIdc( m_aspectRatioIdc );
+  m_cTEncTop.setSarWidth( m_sarWidth );
+  m_cTEncTop.setSarHeight( m_sarHeight );
+  m_cTEncTop.setOverscanInfoPresentFlag( m_overscanInfoPresentFlag );
+  m_cTEncTop.setOverscanAppropriateFlag( m_overscanAppropriateFlag );
+  m_cTEncTop.setVideoSignalTypePresentFlag( m_videoSignalTypePresentFlag );
+  m_cTEncTop.setVideoFormat( m_videoFormat );
+  m_cTEncTop.setVideoFullRangeFlag( m_videoFullRangeFlag );
+  m_cTEncTop.setColourDescriptionPresentFlag( m_colourDescriptionPresentFlag );
+  m_cTEncTop.setColourPrimaries( m_colourPrimaries );
+  m_cTEncTop.setTransferCharacteristics( m_transferCharacteristics );
+  m_cTEncTop.setMatrixCoefficients( m_matrixCoefficients );
+  m_cTEncTop.setChromaLocInfoPresentFlag( m_chromaLocInfoPresentFlag );
+  m_cTEncTop.setChromaSampleLocTypeTopField( m_chromaSampleLocTypeTopField );
+  m_cTEncTop.setChromaSampleLocTypeBottomField( m_chromaSampleLocTypeBottomField );
+  m_cTEncTop.setNeutralChromaIndicationFlag( m_neutralChromaIndicationFlag );
+  m_cTEncTop.setBitstreamRestrictionFlag( m_bitstreamRestrictionFlag );
+  m_cTEncTop.setTilesFixedStructureFlag( m_tilesFixedStructureFlag );
+  m_cTEncTop.setMotionVectorsOverPicBoundariesFlag( m_motionVectorsOverPicBoundariesFlag );
+  m_cTEncTop.setMaxBytesPerPicDenom( m_maxBytesPerPicDenom );
+  m_cTEncTop.setMaxBitsPerMinCuDenom( m_maxBitsPerMinCuDenom );
+  m_cTEncTop.setLog2MaxMvLengthHorizontal( m_log2MaxMvLengthHorizontal );
+  m_cTEncTop.setLog2MaxMvLengthVertical( m_log2MaxMvLengthVertical );
 }
 
 Void TAppEncTop::xCreateLib()
 {
   // Video I/O
-  m_cTVideoIOYuvInputFile.open( m_pchInputFile,     false, m_uiInputBitDepth, m_uiInternalBitDepth );  // read  mode
+  m_cTVideoIOYuvInputFile.open( m_pchInputFile,     false, m_inputBitDepthY, m_inputBitDepthC, m_internalBitDepthY, m_internalBitDepthC );  // read  mode
   m_cTVideoIOYuvInputFile.skipFrames(m_FrameSkip, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1]);
 
   if (m_pchReconFile)
-    m_cTVideoIOYuvReconFile.open(m_pchReconFile, true, m_uiOutputBitDepth, m_uiInternalBitDepth);  // write mode
+    m_cTVideoIOYuvReconFile.open(m_pchReconFile, true, m_outputBitDepthY, m_outputBitDepthC, m_internalBitDepthY, m_internalBitDepthC);  // write mode
   
   // Neo Decoder
   m_cTEncTop.create();
@@ -349,12 +361,20 @@ Void TAppEncTop::encode()
     // increase number of received frames
     m_iFrameRcvd++;
     
-    // check end of file
-    bEos = ( m_cTVideoIOYuvInputFile.isEof() == 1 ?   true : false  );
-    bEos = ( m_iFrameRcvd == m_iFrameToBeEncoded ?    true : bEos   );
-    
+    bEos = (m_iFrameRcvd == m_iFrameToBeEncoded);
+
+    Bool flush = 0;
+    // if end of file (which is only detected on a read failure) flush the encoder of any queued pictures
+    if (m_cTVideoIOYuvInputFile.isEof())
+    {
+      flush = true;
+      bEos = true;
+      m_iFrameRcvd--;
+      m_cTEncTop.setFrameToBeEncoded(m_iFrameRcvd);
+    }
+
     // call encoding function for one frame
-    m_cTEncTop.encode( bEos, pcPicYuvOrg, m_cListPicYuvRec, outputAccessUnits, iNumEncoded );
+    m_cTEncTop.encode( bEos, flush ? 0 : pcPicYuvOrg, m_cListPicYuvRec, outputAccessUnits, iNumEncoded );
     
     // write bistream to file if necessary
     if ( iNumEncoded > 0 )
@@ -363,6 +383,9 @@ Void TAppEncTop::encode()
       outputAccessUnits.clear();
     }
   }
+
+  m_cTEncTop.printSummary();
+
   // delete original YUV buffer
   pcPicYuvOrg->destroy();
   delete pcPicYuvOrg;
@@ -448,7 +471,7 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
     }
 
     const AccessUnit& au = *(iterBitstream++);
-    const vector<unsigned>& stats = writeAnnexB(bitstreamFile, au);
+    const vector<UInt>& stats = writeAnnexB(bitstreamFile, au);
     rateStatsAccum(au, stats);
   }
 }
@@ -456,23 +479,29 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
 /**
  *
  */
-void TAppEncTop::rateStatsAccum(const AccessUnit& au, const std::vector<unsigned>& annexBsizes)
+void TAppEncTop::rateStatsAccum(const AccessUnit& au, const std::vector<UInt>& annexBsizes)
 {
   AccessUnit::const_iterator it_au = au.begin();
-  vector<unsigned>::const_iterator it_stats = annexBsizes.begin();
+  vector<UInt>::const_iterator it_stats = annexBsizes.begin();
 
   for (; it_au != au.end(); it_au++, it_stats++)
   {
     switch ((*it_au)->m_nalUnitType)
     {
-    case NAL_UNIT_CODED_SLICE:
-    case NAL_UNIT_CODED_SLICE_TFD:
+    case NAL_UNIT_CODED_SLICE_TRAIL_R:
+    case NAL_UNIT_CODED_SLICE_TRAIL_N:
     case NAL_UNIT_CODED_SLICE_TLA:
-    case NAL_UNIT_CODED_SLICE_CRA:
-    case NAL_UNIT_CODED_SLICE_CRANT:
+    case NAL_UNIT_CODED_SLICE_TSA_N:
+    case NAL_UNIT_CODED_SLICE_STSA_R:
+    case NAL_UNIT_CODED_SLICE_STSA_N:
     case NAL_UNIT_CODED_SLICE_BLA:
     case NAL_UNIT_CODED_SLICE_BLANT:
+    case NAL_UNIT_CODED_SLICE_BLA_N_LP:
     case NAL_UNIT_CODED_SLICE_IDR:
+    case NAL_UNIT_CODED_SLICE_IDR_N_LP:
+    case NAL_UNIT_CODED_SLICE_CRA:
+    case NAL_UNIT_CODED_SLICE_DLP:
+    case NAL_UNIT_CODED_SLICE_TFD:
     case NAL_UNIT_VPS:
     case NAL_UNIT_SPS:
     case NAL_UNIT_PPS:
@@ -488,7 +517,7 @@ void TAppEncTop::rateStatsAccum(const AccessUnit& au, const std::vector<unsigned
 
 void TAppEncTop::printRateSummary()
 {
-  double time = (double) m_iFrameRcvd / m_iFrameRate;
+  Double time = (Double) m_iFrameRcvd / m_iFrameRate;
   printf("Bytes written to file: %u (%.3f kbps)\n", m_totalBytes, 0.008 * m_totalBytes / time);
 #if VERBOSE_RATE
   printf("Bytes for SPS/PPS/Slice (Incl. Annex B): %u (%.3f kbps)\n", m_essentialBytes, 0.008 * m_essentialBytes / time);

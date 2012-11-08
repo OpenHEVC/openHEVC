@@ -45,39 +45,39 @@ class TComOutputBitstream;
 struct NALUnit
 {
   NalUnitType m_nalUnitType; ///< nal_unit_type
-#if !REMOVE_NAL_REF_FLAG
-  Bool        m_nalRefFlag;  ///< nal_ref_flag
-#endif
-  unsigned    m_temporalId;  ///< temporal_id
+  UInt        m_temporalId;  ///< temporal_id
+  UInt        m_reservedZero6Bits; ///< reserved_zero_6bits
 
   /** construct an NALunit structure with given header values. */
   NALUnit(
     NalUnitType nalUnitType,
-#if !REMOVE_NAL_REF_FLAG
-    Bool        nalRefFlag,
-#endif
-    Int         temporalId = 0)
+    Int         temporalId = 0,
+    Int         reservedZero6Bits = 0)
     :m_nalUnitType (nalUnitType)
-#if !REMOVE_NAL_REF_FLAG
-    ,m_nalRefFlag  (nalRefFlag)
-#endif
     ,m_temporalId  (temporalId)
+    ,m_reservedZero6Bits(reservedZero6Bits)
   {}
 
   /** default constructor - no initialization; must be perfomed by user */
   NALUnit() {}
 
   /** returns true if the NALunit is a slice NALunit */
-  bool isSlice()
+  Bool isSlice()
   {
-    return m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRANT
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+    return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL_R
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL_N
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_TLA
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TFD
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE;
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_N
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_R
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_N
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_DLP
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TFD;
   }
 };
 

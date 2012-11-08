@@ -61,11 +61,7 @@
 
 Void         initROM();
 Void         destroyROM();
-#if !REMOVE_ZIGZAG_SCAN
-Void         initFrameScanXY( UInt* pBuff, UInt* pBuffX, UInt* pBuffY, Int iWidth, Int iHeight );
-#endif
 Void         initSigLastScan(UInt* pBuffZ, UInt* pBuffH, UInt* pBuffV, UInt* pBuffD, Int iWidth, Int iHeight, Int iDepth);
-Void         initNonSquareSigLastScan(UInt* pBuffZ, UInt uiWidth, UInt uiHeight);
 // ====================================================================================================================
 // Data structure related table & variable
 // ====================================================================================================================
@@ -73,12 +69,16 @@ Void         initNonSquareSigLastScan(UInt* pBuffZ, UInt uiWidth, UInt uiHeight)
 // flexible conversion from relative to absolute index
 extern       UInt   g_auiZscanToRaster[ MAX_NUM_SPU_W*MAX_NUM_SPU_W ];
 extern       UInt   g_auiRasterToZscan[ MAX_NUM_SPU_W*MAX_NUM_SPU_W ];
+#if !LINEBUF_CLEANUP
 extern       UInt   g_motionRefer[ MAX_NUM_SPU_W*MAX_NUM_SPU_W ];
+#endif
 
 Void         initZscanToRaster ( Int iMaxDepth, Int iDepth, UInt uiStartVal, UInt*& rpuiCurrIdx );
 Void         initRasterToZscan ( UInt uiMaxCUWidth, UInt uiMaxCUHeight, UInt uiMaxDepth         );
 
+#if !LINEBUF_CLEANUP
 Void          initMotionReferIdx ( UInt uiMaxCUWidth, UInt uiMaxCUHeight, UInt uiMaxDepth );
+#endif
 
 // conversion of partition index to picture pel position
 extern       UInt   g_auiRasterToPelX[ MAX_NUM_SPU_W*MAX_NUM_SPU_W ];
@@ -107,37 +107,22 @@ extern       UInt g_auiPUOffset[8];
 
 extern Int g_quantScales[6];             // Q(QP%6)  
 extern Int g_invQuantScales[6];          // IQ(QP%6)
-extern const short g_aiT4[4][4];
-extern const short g_aiT8[8][8];
-extern const short g_aiT16[16][16];
-extern const short g_aiT32[32][32];
+extern const Short g_aiT4[4][4];
+extern const Short g_aiT8[8][8];
+extern const Short g_aiT16[16][16];
+extern const Short g_aiT32[32][32];
 
 // ====================================================================================================================
 // Luma QP to Chroma QP mapping
 // ====================================================================================================================
 
-#if CHROMA_QP_EXTENSION
 extern const UChar  g_aucChromaScale      [58];
-#else
-extern const UChar  g_aucChromaScale      [52];
-#endif
 
 // ====================================================================================================================
 // Scanning order & context mapping table
 // ====================================================================================================================
 
-#if !REMOVE_ZIGZAG_SCAN
-extern       UInt*  g_auiFrameScanXY[ MAX_CU_DEPTH  ];    // raster index     from scanning index
-extern       UInt*  g_auiFrameScanX [ MAX_CU_DEPTH  ];    // raster index (x) from scanning index
-extern       UInt*  g_auiFrameScanY [ MAX_CU_DEPTH  ];    // raster index (y) from scanning index
-#endif
 extern       UInt*  g_auiSigLastScan[4][ MAX_CU_DEPTH ];  // raster index from scanning index (zigzag, hor, ver, diag)
-#if !REMOVE_NSQT
-extern UInt *g_sigScanNSQT[ 4 ]; // scan for non-square partitions
-extern UInt g_sigCGScanNSQT[ 4 ][ 16 ]; // coarse-grain scan for non-square partitions
-#endif
-
-extern       UInt*  g_auiNonSquareSigLastScan[ 4 ];      // raster index from scanning index (zigzag)
 
 extern const UInt   g_uiGroupIdx[ 32 ];
 extern const UInt   g_uiMinInGroup[ 10 ];
@@ -166,10 +151,8 @@ extern const UChar g_aucAngIntraModeOrder[NUM_INTRA_MODE];
 // Bit-depth
 // ====================================================================================================================
 
-extern       UInt g_uiBitDepth;
-extern       UInt g_uiBitIncrement;
-extern       UInt g_uiIBDI_MAX;
-extern       UInt g_uiBASE_MAX;
+extern        Int g_bitDepthY;
+extern        Int g_bitDepthC;
 extern       UInt g_uiPCMBitDepthLuma;
 extern       UInt g_uiPCMBitDepthChroma;
 
@@ -181,7 +164,7 @@ extern const UChar g_aucConvertTxtTypeToIdx[4];
 
 // ==========================================
 // Mode-Dependent DST Matrices
-extern const short g_as_DST_MAT_4 [4][4];
+extern const Short g_as_DST_MAT_4 [4][4];
 extern const UChar g_aucDCTDSTMode_Vert[NUM_INTRA_MODE];
 extern const UChar g_aucDCTDSTMode_Hor[NUM_INTRA_MODE];
 // ==========================================
@@ -192,7 +175,7 @@ extern const UChar g_aucDCTDSTMode_Hor[NUM_INTRA_MODE];
 
 extern       Char   g_aucConvertToBit  [ MAX_CU_SIZE+1 ];   // from width to log2(width)-2
 
-#define ENC_DEC_TRACE 1
+#define ENC_DEC_TRACE 0
 
 
 #if ENC_DEC_TRACE
@@ -200,6 +183,7 @@ extern FILE*  g_hTrace;
 extern Bool   g_bJustDoIt;
 extern const Bool g_bEncDecTraceEnable;
 extern const Bool g_bEncDecTraceDisable;
+extern Bool   g_HLSTraceEnable;
 extern UInt64 g_nSymbolCounter;
 
 #define COUNTER_START    1
@@ -233,13 +217,6 @@ extern UInt64 g_nSymbolCounter;
 #define MAX_MATRIX_COEF_NUM 64     ///< max coefficient number for quantization matrix
 #define MAX_MATRIX_SIZE_NUM 8      ///< max size number for quantization matrix
 #define SCALING_LIST_DC 16         ///< default DC value
-enum ScalingListDIR
-{
-  SCALING_LIST_SQT = 0,
-  SCALING_LIST_VER,
-  SCALING_LIST_HOR,
-  SCALING_LIST_DIR_NUM
-};
 enum ScalingListSize
 {
   SCALING_LIST_4x4 = 0,
@@ -248,7 +225,7 @@ enum ScalingListSize
   SCALING_LIST_32x32,
   SCALING_LIST_SIZE_NUM
 };
-static const char MatrixType[4][6][20] =
+static const Char MatrixType[4][6][20] =
 {
   {
   "INTRA4X4_LUMA",
@@ -279,7 +256,7 @@ static const char MatrixType[4][6][20] =
   "INTER32X32_LUMA",
   },
 };
-static const char MatrixType_DC[4][12][22] =
+static const Char MatrixType_DC[4][12][22] =
 {
   {
   },
@@ -298,17 +275,19 @@ static const char MatrixType_DC[4][12][22] =
   "INTER32X32_LUMA_DC",
   },
 };
+#if !FLAT_4x4_DSL
 extern Int g_quantIntraDefault4x4[16];
+#endif
 extern Int g_quantIntraDefault8x8[64];
 extern Int g_quantIntraDefault16x16[256];
 extern Int g_quantIntraDefault32x32[1024];
+#if !FLAT_4x4_DSL
 extern Int g_quantInterDefault4x4[16];
+#endif
 extern Int g_quantInterDefault8x8[64];
 extern Int g_quantInterDefault16x16[256];
 extern Int g_quantInterDefault32x32[1024];
-#if TS_FLAT_QUANTIZATION_MATRIX
 extern Int g_quantTSDefault4x4[16];
-#endif
 extern UInt g_scalingListSize [SCALING_LIST_SIZE_NUM];
 extern UInt g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
 extern UInt g_scalingListNum  [SCALING_LIST_SIZE_NUM];

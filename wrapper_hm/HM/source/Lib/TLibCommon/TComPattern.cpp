@@ -258,7 +258,7 @@ Void TComPattern::initPattern( TComDataCU* pcCU, UInt uiPartDepth, UInt uiAbsPar
   piRoiOrigin = pcCU->getPic()->getPicYuvRec()->getLumaAddr(pcCU->getAddr(), pcCU->getZorderIdxInCU()+uiZorderIdxInPart);
   piAdiTemp   = piAdiBuf;
 
-  fillReferenceSamples ( pcCU, piRoiOrigin, piAdiTemp, bNeighborFlags, iNumIntraNeighbor, iUnitSize, iNumUnitsInCu, iTotalUnits, uiCuWidth, uiCuHeight, uiWidth, uiHeight, iPicStride, bLMmode);
+  fillReferenceSamples (g_bitDepthY, pcCU, piRoiOrigin, piAdiTemp, bNeighborFlags, iNumIntraNeighbor, iUnitSize, iNumUnitsInCu, iTotalUnits, uiCuWidth, uiCuHeight, uiWidth, uiHeight, iPicStride, bLMmode);
   
   Int   i;
   // generate filtered intra prediction samples
@@ -285,6 +285,55 @@ Void TComPattern::initPattern( TComDataCU* pcCU, UInt uiPartDepth, UInt uiAbsPar
     piFilterBuf[l++] = piAdiTemp[1 + i];
   }
 
+#if STRONG_INTRA_SMOOTHING
+  if (pcCU->getSlice()->getSPS()->getUseStrongIntraSmoothing())
+  {
+    Int blkSize = 32;
+    Int bottomLeft = piFilterBuf[0];
+    Int topLeft = piFilterBuf[uiCuHeight2];
+    Int topRight = piFilterBuf[iBufSize-1];
+    Int threshold = 1 << (g_bitDepthY - 5);
+    Bool bilinearLeft = abs(bottomLeft+topLeft-2*piFilterBuf[uiCuHeight]) < threshold;
+    Bool bilinearAbove  = abs(topLeft+topRight-2*piFilterBuf[uiCuHeight2+uiCuHeight]) < threshold;
+  
+    if (uiCuWidth>=blkSize && (bilinearLeft && bilinearAbove))
+    {
+      Int shift = g_aucConvertToBit[uiCuWidth] + 3;  // log2(uiCuHeight2)
+      piFilterBufN[0] = piFilterBuf[0];
+      piFilterBufN[uiCuHeight2] = piFilterBuf[uiCuHeight2];
+      piFilterBufN[iBufSize - 1] = piFilterBuf[iBufSize - 1];
+      for (i = 1; i < uiCuHeight2; i++)
+      {
+        piFilterBufN[i] = ((uiCuHeight2-i)*bottomLeft + i*topLeft + uiCuHeight) >> shift;
+      }
+  
+      for (i = 1; i < uiCuWidth2; i++)
+      {
+        piFilterBufN[uiCuHeight2 + i] = ((uiCuWidth2-i)*topLeft + i*topRight + uiCuWidth) >> shift;
+      }
+    }
+    else 
+    {
+      // 1. filtering with [1 2 1]
+      piFilterBufN[0] = piFilterBuf[0];
+      piFilterBufN[iBufSize - 1] = piFilterBuf[iBufSize - 1];
+      for (i = 1; i < iBufSize - 1; i++)
+      {
+        piFilterBufN[i] = (piFilterBuf[i - 1] + 2 * piFilterBuf[i]+piFilterBuf[i + 1] + 2) >> 2;
+      }
+    }
+  }
+  else 
+  {
+    // 1. filtering with [1 2 1]
+    piFilterBufN[0] = piFilterBuf[0];
+    piFilterBufN[iBufSize - 1] = piFilterBuf[iBufSize - 1];
+    for (i = 1; i < iBufSize - 1; i++)
+    {
+      piFilterBufN[i] = (piFilterBuf[i - 1] + 2 * piFilterBuf[i]+piFilterBuf[i + 1] + 2) >> 2;
+    }
+  }
+#else
   // 1. filtering with [1 2 1]
   piFilterBufN[0] = piFilterBuf[0];
   piFilterBufN[iBufSize - 1] = piFilterBuf[iBufSize - 1];
@@ -292,6 +341,7 @@ Void TComPattern::initPattern( TComDataCU* pcCU, UInt uiPartDepth, UInt uiAbsPar
   {
     piFilterBufN[i] = (piFilterBuf[i - 1] + 2 * piFilterBuf[i]+piFilterBuf[i + 1] + 2) >> 2;
   }
+#endif
 
   // fill 1. filter buffer with filtered values
   l=0;
@@ -356,20 +406,20 @@ Void TComPattern::initAdiPatternChroma( TComDataCU* pcCU, UInt uiZorderIdxInPart
   piRoiOrigin = pcCU->getPic()->getPicYuvRec()->getCbAddr(pcCU->getAddr(), pcCU->getZorderIdxInCU()+uiZorderIdxInPart);
   piAdiTemp   = piAdiBuf;
 
-  fillReferenceSamples ( pcCU, piRoiOrigin, piAdiTemp, bNeighborFlags, iNumIntraNeighbor, iUnitSize, iNumUnitsInCu, iTotalUnits, uiCuWidth, uiCuHeight, uiWidth, uiHeight, iPicStride);
+  fillReferenceSamples (g_bitDepthC, pcCU, piRoiOrigin, piAdiTemp, bNeighborFlags, iNumIntraNeighbor, iUnitSize, iNumUnitsInCu, iTotalUnits, uiCuWidth, uiCuHeight, uiWidth, uiHeight, iPicStride);
   
   // get Cr pattern
   piRoiOrigin = pcCU->getPic()->getPicYuvRec()->getCrAddr(pcCU->getAddr(), pcCU->getZorderIdxInCU()+uiZorderIdxInPart);
   piAdiTemp   = piAdiBuf+uiWidth*uiHeight;
   
-  fillReferenceSamples ( pcCU, piRoiOrigin, piAdiTemp, bNeighborFlags, iNumIntraNeighbor, iUnitSize, iNumUnitsInCu, iTotalUnits, uiCuWidth, uiCuHeight, uiWidth, uiHeight, iPicStride);
+  fillReferenceSamples (g_bitDepthC, pcCU, piRoiOrigin, piAdiTemp, bNeighborFlags, iNumIntraNeighbor, iUnitSize, iNumUnitsInCu, iTotalUnits, uiCuWidth, uiCuHeight, uiWidth, uiHeight, iPicStride);
 }
 
-Void TComPattern::fillReferenceSamples( TComDataCU* pcCU, Pel* piRoiOrigin, Int* piAdiTemp, Bool* bNeighborFlags, Int iNumIntraNeighbor, Int iUnitSize, Int iNumUnitsInCu, Int iTotalUnits, UInt uiCuWidth, UInt uiCuHeight, UInt uiWidth, UInt uiHeight, Int iPicStride, Bool bLMmode )
+Void TComPattern::fillReferenceSamples(Int bitDepth, TComDataCU* pcCU, Pel* piRoiOrigin, Int* piAdiTemp, Bool* bNeighborFlags, Int iNumIntraNeighbor, Int iUnitSize, Int iNumUnitsInCu, Int iTotalUnits, UInt uiCuWidth, UInt uiCuHeight, UInt uiWidth, UInt uiHeight, Int iPicStride, Bool bLMmode )
 {
   Pel* piRoiTemp;
   Int  i, j;
-  Int  iDCValue = ( 1<<( g_uiBitDepth + g_uiBitIncrement - 1) );
+  Int  iDCValue = 1 << (bitDepth - 1);
 
   if (iNumIntraNeighbor == 0)
   {
@@ -580,11 +630,7 @@ Int* TComPattern::getPredictorPtr( UInt uiDirMode, UInt log2BlkSize, Int* piAdiB
   assert(log2BlkSize >= 2 && log2BlkSize < 7);
   Int diff = min<Int>(abs((Int) uiDirMode - HOR_IDX), abs((Int)uiDirMode - VER_IDX));
   UChar ucFiltIdx = diff > m_aucIntraFilter[log2BlkSize - 2] ? 1 : 0;
-#if REMOVE_LMCHROMA
   if (uiDirMode == DC_IDX)
-#else
-  if (uiDirMode == DC_IDX || uiDirMode == LM_CHROMA_IDX)
-#endif
   {
     ucFiltIdx = 0; //no smoothing for DC or LM chroma
   }

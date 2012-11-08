@@ -116,12 +116,12 @@ Void TComTrQuant::storeSliceQpNext(TComSlice* pcSlice)
   Double alpha = qpBase < 17 ? 0.5 : 1;
   
   Int cnt=0;
-  for(int u=1; u<=LEVEL_RANGE; u++)
+  for(Int u=1; u<=LEVEL_RANGE; u++)
   { 
     cnt += m_sliceNsamples[u] ;
   }
 
-  if( !m_bUseRDOQ )
+  if( !m_useRDOQ )
   {
     sliceQpused = qpBase;
     alpha = 0.5;
@@ -199,11 +199,7 @@ Void TComTrQuant::setQPforQuant( Int qpy, TextType eTxtType, Int qpBdOffset, Int
   }
   else
   {
-#if CHROMA_QP_EXTENSION
     qpScaled = Clip3( -qpBdOffset, 57, qpy + chromaQPOffset );
-#else
-    qpScaled = Clip3( -qpBdOffset, 51, qpy + chromaQPOffset );
-#endif
 
     if(qpScaled < 0)
     {
@@ -211,11 +207,7 @@ Void TComTrQuant::setQPforQuant( Int qpy, TextType eTxtType, Int qpBdOffset, Int
     }
     else
     {
-#if CHROMA_QP_EXTENSION
       qpScaled = g_aucChromaScale[ qpScaled ] + qpBdOffset;
-#else
-      qpScaled = g_aucChromaScale[ Clip3(0, 51, qpScaled) ] + qpBdOffset;
-#endif
     }
   }
   m_cQP.setQpParam( qpScaled );
@@ -229,11 +221,11 @@ Void TComTrQuant::setQPforQuant( Int qpy, TextType eTxtType, Int qpBdOffset, Int
  *  \param uiTrSize transform size (uiTrSize x uiTrSize)
  *  \param uiMode is Intra Prediction mode used in Mode-Dependent DCT/DST only
  */
-void xTr(Pel *block, Int *coeff, UInt uiStride, UInt uiTrSize, UInt uiMode)
+void xTr(Int bitDepth, Pel *block, Int *coeff, UInt uiStride, UInt uiTrSize, UInt uiMode)
 {
   Int i,j,k,iSum;
   Int tmp[32*32];
-  const short *iT;
+  const Short *iT;
   UInt uiLog2TrSize = g_aucConvertToBit[ uiTrSize ] + 2;
 
   if (uiTrSize==4)
@@ -257,15 +249,10 @@ void xTr(Pel *block, Int *coeff, UInt uiStride, UInt uiTrSize, UInt uiMode)
     assert(0);
   }
 
-#if FULL_NBIT
-  int shift_1st = uiLog2TrSize - 1 + g_uiBitDepth - 8; // log2(N) - 1 + g_uiBitDepth - 8
-#else
-  int shift_1st = uiLog2TrSize - 1 + g_uiBitIncrement; // log2(N) - 1 + g_uiBitIncrement
-#endif
-
-  int add_1st = 1<<(shift_1st-1);
-  int shift_2nd = uiLog2TrSize + 6;
-  int add_2nd = 1<<(shift_2nd-1);
+  Int shift_1st = uiLog2TrSize - 1 + bitDepth-8; // log2(N) - 1 + g_bitDepth-8
+  Int add_1st = 1<<(shift_1st-1);
+  Int shift_2nd = uiLog2TrSize + 6;
+  Int add_2nd = 1<<(shift_2nd-1);
 
   /* Horizontal transform */
 
@@ -324,9 +311,9 @@ void xTr(Pel *block, Int *coeff, UInt uiStride, UInt uiTrSize, UInt uiMode)
  */
 void xITr(Int *coeff, Pel *block, UInt uiStride, UInt uiTrSize, UInt uiMode)
 {
-  int i,j,k,iSum;
+  Int i,j,k,iSum;
   Int tmp[32*32];
-  const short *iT;
+  const Short *iT;
   
   if (uiTrSize==4)
   {
@@ -349,14 +336,10 @@ void xITr(Int *coeff, Pel *block, UInt uiStride, UInt uiTrSize, UInt uiMode)
     assert(0);
   }
   
-  int shift_1st = SHIFT_INV_1ST;
-  int add_1st = 1<<(shift_1st-1);  
-#if FULL_NBIT
-  int shift_2nd = SHIFT_INV_2ND - ((short)g_uiBitDepth - 8);
-#else
-  int shift_2nd = SHIFT_INV_2ND - g_uiBitIncrement;
-#endif
-  int add_2nd = 1<<(shift_2nd-1);
+  Int shift_1st = SHIFT_INV_1ST;
+  Int add_1st = 1<<(shift_1st-1);
+  Int shift_2nd = SHIFT_INV_2ND - g_bitDepth-8;
+  Int add_2nd = 1<<(shift_2nd-1);
   if (uiTrSize==4)
   {
     if (uiMode != REG_DCT && g_aucDCTDSTMode_Vert[uiMode] ) // Check for DCT or DST
@@ -414,11 +397,11 @@ void xITr(Int *coeff, Pel *block, UInt uiStride, UInt uiTrSize, UInt uiMode)
  *  \param shift specifies right shift after 1D transform
  */
 
-void partialButterfly4(short *src,short *dst,int shift, int line)
+void partialButterfly4(Short *src,Short *dst,Int shift, Int line)
 {
-  int j;  
-  int E[2],O[2];
-  int add = 1<<(shift-1);
+  Int j;
+  Int E[2],O[2];
+  Int add = 1<<(shift-1);
 
   for (j=0; j<line; j++)
   {    
@@ -440,10 +423,10 @@ void partialButterfly4(short *src,short *dst,int shift, int line)
 
 // Fast DST Algorithm. Full matrix multiplication for DST and Fast DST algorithm 
 // give identical results
-void fastForwardDst(short *block,short *coeff,int shift)  // input block, output coeff
+void fastForwardDst(Short *block,Short *coeff,Int shift)  // input block, output coeff
 {
-  int i, c[4];
-  int rnd_factor = 1<<(shift-1);
+  Int i, c[4];
+  Int rnd_factor = 1<<(shift-1);
   for (i=0; i<4; i++)
   {
     // Intermediate Variables
@@ -459,10 +442,10 @@ void fastForwardDst(short *block,short *coeff,int shift)  // input block, output
   }
 }
 
-void fastInverseDst(short *tmp,short *block,int shift)  // input tmp, output block
+void fastInverseDst(Short *tmp,Short *block,Int shift)  // input tmp, output block
 {
-  int i, c[4];
-  int rnd_factor = 1<<(shift-1);
+  Int i, c[4];
+  Int rnd_factor = 1<<(shift-1);
   for (i=0; i<4; i++)
   {  
     // Intermediate Variables
@@ -478,11 +461,11 @@ void fastInverseDst(short *tmp,short *block,int shift)  // input tmp, output blo
   }
 }
 
-void partialButterflyInverse4(short *src,short *dst,int shift, int line)
+void partialButterflyInverse4(Short *src,Short *dst,Int shift, Int line)
 {
-  int j;    
-  int E[2],O[2];
-  int add = 1<<(shift-1);
+  Int j;
+  Int E[2],O[2];
+  Int add = 1<<(shift-1);
 
   for (j=0; j<line; j++)
   {    
@@ -504,12 +487,12 @@ void partialButterflyInverse4(short *src,short *dst,int shift, int line)
 }
 
 
-void partialButterfly8(short *src,short *dst,int shift, int line)
+void partialButterfly8(Short *src,Short *dst,Int shift, Int line)
 {
-  int j,k;  
-  int E[4],O[4];
-  int EE[2],EO[2];
-  int add = 1<<(shift-1);
+  Int j,k;
+  Int E[4],O[4];
+  Int EE[2],EO[2];
+  Int add = 1<<(shift-1);
 
   for (j=0; j<line; j++)
   {  
@@ -541,12 +524,12 @@ void partialButterfly8(short *src,short *dst,int shift, int line)
 }
 
 
-void partialButterflyInverse8(short *src,short *dst,int shift, int line)
+void partialButterflyInverse8(Short *src,Short *dst,Int shift, Int line)
 {
-  int j,k;    
-  int E[4],O[4];
-  int EE[2],EO[2];
-  int add = 1<<(shift-1);
+  Int j,k;
+  Int E[4],O[4];
+  Int EE[2],EO[2];
+  Int add = 1<<(shift-1);
 
   for (j=0; j<line; j++) 
   {    
@@ -577,13 +560,13 @@ void partialButterflyInverse8(short *src,short *dst,int shift, int line)
 }
 
 
-void partialButterfly16(short *src,short *dst,int shift, int line)
+void partialButterfly16(Short *src,Short *dst,Int shift, Int line)
 {
-  int j,k;
-  int E[8],O[8];
-  int EE[4],EO[4];
-  int EEE[2],EEO[2];
-  int add = 1<<(shift-1);
+  Int j,k;
+  Int E[8],O[8];
+  Int EE[4],EO[4];
+  Int EEE[2],EEO[2];
+  Int add = 1<<(shift-1);
 
   for (j=0; j<line; j++) 
   {    
@@ -628,13 +611,13 @@ void partialButterfly16(short *src,short *dst,int shift, int line)
 }
 
 
-void partialButterflyInverse16(short *src,short *dst,int shift, int line)
+void partialButterflyInverse16(Short *src,Short *dst,Int shift, Int line)
 {
-  int j,k;  
-  int E[8],O[8];
-  int EE[4],EO[4];
-  int EEE[2],EEO[2];
-  int add = 1<<(shift-1);
+  Int j,k;
+  Int E[8],O[8];
+  Int EE[4],EO[4];
+  Int EEE[2],EEO[2];
+  Int add = 1<<(shift-1);
 
   for (j=0; j<line; j++)
   {    
@@ -675,14 +658,14 @@ void partialButterflyInverse16(short *src,short *dst,int shift, int line)
 }
 
 
-void partialButterfly32(short *src,short *dst,int shift, int line)
+void partialButterfly32(Short *src,Short *dst,Int shift, Int line)
 {
-  int j,k;
-  int E[16],O[16];
-  int EE[8],EO[8];
-  int EEE[4],EEO[4];
-  int EEEE[2],EEEO[2];
-  int add = 1<<(shift-1);
+  Int j,k;
+  Int E[16],O[16];
+  Int EE[8],EO[8];
+  Int EEE[4],EEO[4];
+  Int EEEE[2],EEEO[2];
+  Int add = 1<<(shift-1);
 
   for (j=0; j<line; j++)
   {    
@@ -736,14 +719,14 @@ void partialButterfly32(short *src,short *dst,int shift, int line)
 }
 
 
-void partialButterflyInverse32(short *src,short *dst,int shift, int line)
+void partialButterflyInverse32(Short *src,Short *dst,Int shift, Int line)
 {
-  int j,k;  
-  int E[16],O[16];
-  int EE[8],EO[8];
-  int EEE[4],EEO[4];
-  int EEEE[2],EEEO[2];
-  int add = 1<<(shift-1);
+  Int j,k;
+  Int E[16],O[16];
+  Int EE[8],EO[8];
+  Int EEE[4],EEO[4];
+  Int EEEE[2],EEEO[2];
+  Int add = 1<<(shift-1);
 
   for (j=0; j<line; j++)
   {    
@@ -800,43 +783,15 @@ void partialButterflyInverse32(short *src,short *dst,int shift, int line)
 *  \param iWidth input data (width of transform)
 *  \param iHeight input data (height of transform)
 */
-void xTrMxN(short *block,short *coeff, int iWidth, int iHeight, UInt uiMode)
+void xTrMxN(Int bitDepth, Short *block,Short *coeff, Int iWidth, Int iHeight, UInt uiMode)
 {
-#if FULL_NBIT
-  int shift_1st = g_aucConvertToBit[iWidth]  + 1 + g_uiBitDepth - 8; // log2(iWidth) - 1 + g_uiBitDepth - 8
-#else
-  int shift_1st = g_aucConvertToBit[iWidth]  + 1 + g_uiBitIncrement; // log2(iWidth) - 1 + g_uiBitIncrement
-#endif
-  int shift_2nd = g_aucConvertToBit[iHeight]  + 8;                   // log2(iHeight) + 6
+  Int shift_1st = g_aucConvertToBit[iWidth]  + 1 + bitDepth-8; // log2(iWidth) - 1 + g_bitDepth - 8
+  Int shift_2nd = g_aucConvertToBit[iHeight]  + 8;                   // log2(iHeight) + 6
 
-  short tmp[ 64 * 64 ];
+  Short tmp[ 64 * 64 ];
 
-#if !REMOVE_NSQT
-  if( iWidth == 16 && iHeight == 4)
-  {
-    partialButterfly16( block, tmp, shift_1st, iHeight );
-    partialButterfly4( tmp, coeff, shift_2nd, iWidth );
-  }
-  else if( iWidth == 32 && iHeight == 8 )
-  {
-    partialButterfly32( block, tmp, shift_1st, iHeight );
-    partialButterfly8( tmp, coeff, shift_2nd, iWidth );
-  }
-  else if( iWidth == 4 && iHeight == 16)
-  {
-    partialButterfly4( block, tmp, shift_1st, iHeight );
-    partialButterfly16( tmp, coeff, shift_2nd, iWidth );
-  }
-  else if( iWidth == 8 && iHeight == 32 )
-  {
-    partialButterfly8( block, tmp, shift_1st, iHeight );
-    partialButterfly32( tmp, coeff, shift_2nd, iWidth );
-  }
-  else
-#endif
   if( iWidth == 4 && iHeight == 4)
   {
-#if INTRA_TRANS_SIMP
     if (uiMode != REG_DCT)
     {
       fastForwardDst(block,tmp,shift_1st); // Forward DST BY FAST ALGORITHM, block input, tmp output
@@ -848,24 +803,6 @@ void xTrMxN(short *block,short *coeff, int iWidth, int iHeight, UInt uiMode)
       partialButterfly4(tmp, coeff, shift_2nd, iWidth);
     }
 
-#else
-    if (uiMode != REG_DCT && (!uiMode || (uiMode>=2 && uiMode <= 25)))    // Check for DCT or DST
-    {
-      fastForwardDst(block,tmp,shift_1st); // Forward DST BY FAST ALGORITHM, block input, tmp output
-    }
-    else  
-    {
-      partialButterfly4(block, tmp, shift_1st, iHeight);
-    }
-    if (uiMode != REG_DCT && (!uiMode || (uiMode>=11 && uiMode <= 34)))    // Check for DCT or DST
-    {
-      fastForwardDst(tmp,coeff,shift_2nd); // Forward DST BY FAST ALGORITHM, tmp input, coeff output
-    }
-    else  
-    {
-      partialButterfly4(tmp, coeff, shift_2nd, iWidth);
-    }
-#endif
   }
   else if( iWidth == 8 && iHeight == 8)
   {
@@ -889,42 +826,14 @@ void xTrMxN(short *block,short *coeff, int iWidth, int iHeight, UInt uiMode)
 *  \param iWidth input data (width of transform)
 *  \param iHeight input data (height of transform)
 */
-void xITrMxN(short *coeff,short *block, int iWidth, int iHeight, UInt uiMode)
+void xITrMxN(Int bitDepth, Short *coeff,Short *block, Int iWidth, Int iHeight, UInt uiMode)
 {
-  int shift_1st = SHIFT_INV_1ST;
-#if FULL_NBIT
-  int shift_2nd = SHIFT_INV_2ND - ((short)g_uiBitDepth - 8);
-#else
-  int shift_2nd = SHIFT_INV_2ND - g_uiBitIncrement;
-#endif
+  Int shift_1st = SHIFT_INV_1ST;
+  Int shift_2nd = SHIFT_INV_2ND - (bitDepth-8);
 
-  short tmp[ 64*64];
-#if !REMOVE_NSQT
-  if( iWidth == 16 && iHeight == 4)
-  {
-    partialButterflyInverse4(coeff,tmp,shift_1st,iWidth);
-    partialButterflyInverse16(tmp,block,shift_2nd,iHeight);
-  }
-  else if( iWidth == 32 && iHeight == 8)
-  {
-    partialButterflyInverse8(coeff,tmp,shift_1st,iWidth);
-    partialButterflyInverse32(tmp,block,shift_2nd,iHeight);
-  }
-  else if( iWidth == 4 && iHeight == 16)
-  {
-    partialButterflyInverse16(coeff,tmp,shift_1st,iWidth);
-    partialButterflyInverse4(tmp,block,shift_2nd,iHeight);
-  }
-  else if( iWidth == 8 && iHeight == 32)
-  {
-    partialButterflyInverse32(coeff,tmp,shift_1st,iWidth);
-    partialButterflyInverse8(tmp,block,shift_2nd,iHeight);
-  }
-  else
-#endif
+  Short tmp[ 64*64];
   if( iWidth == 4 && iHeight == 4)
   {
-#if INTRA_TRANS_SIMP
     if (uiMode != REG_DCT)
     {
       fastInverseDst(coeff,tmp,shift_1st);    // Inverse DST by FAST Algorithm, coeff input, tmp output
@@ -935,24 +844,6 @@ void xITrMxN(short *coeff,short *block, int iWidth, int iHeight, UInt uiMode)
       partialButterflyInverse4(coeff,tmp,shift_1st,iWidth);
       partialButterflyInverse4(tmp,block,shift_2nd,iHeight);
     }
-#else
-    if (uiMode != REG_DCT && (!uiMode || (uiMode>=11 && uiMode <= 34)))    // Check for DCT or DST
-    {
-      fastInverseDst(coeff,tmp,shift_1st);    // Inverse DST by FAST Algorithm, coeff input, tmp output
-    }
-    else
-    {
-      partialButterflyInverse4(coeff,tmp,shift_1st,iWidth);    
-    } 
-    if (uiMode != REG_DCT && (!uiMode || (uiMode>=2 && uiMode <= 25)))    // Check for DCT or DST
-    {
-      fastInverseDst(tmp,block,shift_2nd); // Inverse DST by FAST Algorithm, tmp input, coeff output
-    }
-    else
-    {
-      partialButterflyInverse4(tmp,block,shift_2nd,iHeight);
-    } 
-#endif
   }
   else if( iWidth == 8 && iHeight == 8)
   {
@@ -1118,8 +1009,13 @@ Void TComTrQuant::xQuant( TComDataCU* pcCU,
 #endif
   Int   iAdd = 0;
  
-  Bool useRDOQForTransformSkip = !(m_useTansformSkipFast && pcCU->getTransformSkip(uiAbsPartIdx,eTType));
-  if ( m_bUseRDOQ && (eTType == TEXT_LUMA || RDOQ_CHROMA) && useRDOQForTransformSkip)
+#if RDOQ_TRANSFORMSKIP
+  Bool useRDOQ = pcCU->getTransformSkip(uiAbsPartIdx,eTType) ? m_useRDOQTS:m_useRDOQ; 
+  if ( useRDOQ && (eTType == TEXT_LUMA || RDOQ_CHROMA))
+#else
+  Bool useRDOQForTransformSkip = !(m_useTransformSkipFast && pcCU->getTransformSkip(uiAbsPartIdx,eTType));
+  if ( m_useRDOQ && (eTType == TEXT_LUMA || RDOQ_CHROMA) && useRDOQForTransformSkip)
+#endif
   {
 #if ADAPTIVE_QP_SELECTION
     xRateDistOptQuant( pcCU, piCoef, pDes, pArlDes, iWidth, iHeight, uiAcSum, eTType, uiAbsPartIdx );
@@ -1137,24 +1033,7 @@ Void TComTrQuant::xQuant( TComDataCU* pcCU,
       scanIdx = SCAN_DIAG;
     }
 
-#if REMOVE_NSQT
     const UInt *scan = g_auiSigLastScan[ scanIdx ][ log2BlockSize - 1 ];
-#else
-    if (iWidth != iHeight)
-    {
-      scanIdx = SCAN_DIAG;
-    }
-    
-    const UInt * scan;
-    if (iWidth == iHeight)
-    {
-      scan = g_auiSigLastScan[ scanIdx ][ log2BlockSize - 1 ];
-    }
-    else
-    {
-      scan = g_sigScanNSQT[ log2BlockSize - 2 ];
-    }
-#endif
     
     Int deltaU[32*32] ;
 
@@ -1171,11 +1050,7 @@ Void TComTrQuant::xQuant( TComDataCU* pcCU,
     }
     else
     {
-#if CHROMA_QP_EXTENSION
       qpScaled = Clip3( -qpBDOffset, 57, iQpBase);
-#else
-      qpScaled = Clip3( -qpBDOffset, 51, iQpBase);
-#endif
 
       if(qpScaled < 0)
       {
@@ -1183,42 +1058,19 @@ Void TComTrQuant::xQuant( TComDataCU* pcCU,
       }
       else
       {
-#if CHROMA_QP_EXTENSION
         qpScaled = g_aucChromaScale[ qpScaled ] + qpBDOffset;
-#else
-        qpScaled = g_aucChromaScale[ Clip3(0, 51, qpScaled) ] + qpBDOffset;
-#endif
       }
     }
     cQpBase.setQpParam(qpScaled);
 #endif
 
-#if !REMOVE_NSQT
-    Bool bNonSqureFlag = ( iWidth != iHeight );
-#endif
-    UInt dir           = SCALING_LIST_SQT;
-#if !REMOVE_NSQT
-    if( bNonSqureFlag )
-    {
-      dir = ( iWidth < iHeight )?  SCALING_LIST_VER: SCALING_LIST_HOR;
-      UInt uiWidthBit  = g_aucConvertToBit[ iWidth ] + 2;
-      UInt uiHeightBit = g_aucConvertToBit[ iHeight ] + 2;
-      iWidth  = 1 << ( ( uiWidthBit + uiHeightBit) >> 1 );
-      iHeight = iWidth;
-    }    
-#endif
-    
     UInt uiLog2TrSize = g_aucConvertToBit[ iWidth ] + 2;
     Int scalingListType = (pcCU->isIntra(uiAbsPartIdx) ? 0 : 3) + g_eTTable[(Int)eTType];
     assert(scalingListType < 6);
     Int *piQuantCoeff = 0;
-    piQuantCoeff = getQuantCoeff(scalingListType,m_cQP.m_iRem,uiLog2TrSize-2, dir);
+    piQuantCoeff = getQuantCoeff(scalingListType,m_cQP.m_iRem,uiLog2TrSize-2);
 
-#if FULL_NBIT
-    UInt uiBitDepth = g_uiBitDepth;
-#else
-    UInt uiBitDepth = g_uiBitDepth + g_uiBitIncrement;
-#endif
+    UInt uiBitDepth = eTType == TEXT_LUMA ? g_bitDepthY : g_bitDepthC;
     Int iTransformShift = MAX_TR_DYNAMIC_RANGE - uiBitDepth - uiLog2TrSize;  // Represents scaling through forward transform
 
     Int iQBits = QUANT_SHIFT + m_cQP.m_iPer + iTransformShift;                // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
@@ -1269,22 +1121,11 @@ Void TComTrQuant::xQuant( TComDataCU* pcCU,
 
 }
 
-Void TComTrQuant::xDeQuant( const TCoeff* pSrc, Int* pDes, Int iWidth, Int iHeight, Int scalingListType )
+Void TComTrQuant::xDeQuant(Int bitDepth, const TCoeff* pSrc, Int* pDes, Int iWidth, Int iHeight, Int scalingListType )
 {
   
   const TCoeff* piQCoef   = pSrc;
   Int*   piCoef    = pDes;
-  UInt dir          = SCALING_LIST_SQT;
-#if !REMOVE_NSQT
-  if( iWidth != iHeight )
-  {
-    dir          = ( iWidth < iHeight )? SCALING_LIST_VER: SCALING_LIST_HOR;
-    UInt uiWidthBit  = g_aucConvertToBit[ iWidth ]  + 2;
-    UInt uiHeightBit = g_aucConvertToBit[ iHeight ] + 2;
-    iWidth  = 1 << ( ( uiWidthBit + uiHeightBit) >> 1 );
-    iHeight = iWidth;
-  }    
-#endif
   
   if ( iWidth > (Int)m_uiMaxTrSize )
   {
@@ -1295,17 +1136,12 @@ Void TComTrQuant::xDeQuant( const TCoeff* pSrc, Int* pDes, Int iWidth, Int iHeig
   Int iShift,iAdd,iCoeffQ;
   UInt uiLog2TrSize = g_aucConvertToBit[ iWidth ] + 2;
 
-#if FULL_NBIT
-  UInt uiBitDepth = g_uiBitDepth;
-#else
-  UInt uiBitDepth = g_uiBitDepth + g_uiBitIncrement;
-#endif
-  Int iTransformShift = MAX_TR_DYNAMIC_RANGE - uiBitDepth - uiLog2TrSize; 
+  Int iTransformShift = MAX_TR_DYNAMIC_RANGE - bitDepth - uiLog2TrSize;
 
   iShift = QUANT_IQUANT_SHIFT - QUANT_SHIFT - iTransformShift;
 
   TCoeff clipQCoef;
-  const Int bitRange = min( 15, ( Int )( 12 + uiLog2TrSize + uiBitDepth - m_cQP.m_iPer) );
+  const Int bitRange = min( 15, ( Int )( 12 + uiLog2TrSize + bitDepth - m_cQP.m_iPer) );
   const Int levelLimit = 1 << bitRange;
 
   if(getUseScalingList())
@@ -1319,7 +1155,7 @@ Void TComTrQuant::xDeQuant( const TCoeff* pSrc, Int* pDes, Int iWidth, Int iHeig
     {
       iAdd = 0;
     }
-    Int *piDequantCoef = getDequantCoeff(scalingListType,m_cQP.m_iRem,uiLog2TrSize-2,dir);
+    Int *piDequantCoef = getDequantCoeff(scalingListType,m_cQP.m_iRem,uiLog2TrSize-2);
 
     if(iShift > m_cQP.m_iPer)
     {
@@ -1355,7 +1191,11 @@ Void TComTrQuant::xDeQuant( const TCoeff* pSrc, Int* pDes, Int iWidth, Int iHeig
 }
 
 Void TComTrQuant::init( UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxTrSize, Int iSymbolMode, UInt *aTableLP4, UInt *aTableLP8, UInt *aTableLastPosVlcIndex,
-                       Bool bUseRDOQ,  Bool bEnc, Bool useTransformSkipFast
+                       Bool bUseRDOQ,  
+#if RDOQ_TRANSFORMSKIP
+                       Bool bUseRDOQTS,  
+#endif
+                       Bool bEnc, Bool useTransformSkipFast
 #if ADAPTIVE_QP_SELECTION
                        , Bool bUseAdaptQpSelect
 #endif
@@ -1363,11 +1203,14 @@ Void TComTrQuant::init( UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxTrSize, Int
 {
   m_uiMaxTrSize  = uiMaxTrSize;
   m_bEnc         = bEnc;
-  m_bUseRDOQ     = bUseRDOQ;
+  m_useRDOQ     = bUseRDOQ;
+#if RDOQ_TRANSFORMSKIP
+  m_useRDOQTS     = bUseRDOQTS;
+#endif
 #if ADAPTIVE_QP_SELECTION
   m_bUseAdaptQpSelect = bUseAdaptQpSelect;
 #endif
-  m_useTansformSkipFast = useTransformSkipFast;
+  m_useTransformSkipFast = useTransformSkipFast;
 }
 
 Void TComTrQuant::transformNxN( TComDataCU* pcCU, 
@@ -1410,13 +1253,14 @@ Void TComTrQuant::transformNxN( TComDataCU* pcCU,
   
   uiAbsSum = 0;
   assert( (pcCU->getSlice()->getSPS()->getMaxTrSize() >= uiWidth) );
+  Int bitDepth = eTType == TEXT_LUMA ? g_bitDepthY : g_bitDepthC;
   if(useTransformSkip)
   {
-    xTransformSkip( pcResidual, uiStride, m_plTempCoeff, uiWidth, uiHeight );
+    xTransformSkip(bitDepth, pcResidual, uiStride, m_plTempCoeff, uiWidth, uiHeight );
   }
   else
   {
-    xT( uiMode, pcResidual, uiStride, m_plTempCoeff, uiWidth, uiHeight );
+    xT(bitDepth, uiMode, pcResidual, uiStride, m_plTempCoeff, uiWidth, uiHeight );
   }
   xQuant( pcCU, m_plTempCoeff, rpcCoeff,
 #if ADAPTIVE_QP_SELECTION
@@ -1438,14 +1282,15 @@ Void TComTrQuant::invtransformNxN( Bool transQuantBypass, TextType eText, UInt u
     } 
     return;
   }
-  xDeQuant( pcCoeff, m_plTempCoeff, uiWidth, uiHeight, scalingListType);
+  Int bitDepth = eText == TEXT_LUMA ? g_bitDepthY : g_bitDepthC;
+  xDeQuant(bitDepth, pcCoeff, m_plTempCoeff, uiWidth, uiHeight, scalingListType);
   if(useTransformSkip == true)
   {
-    xITransformSkip( m_plTempCoeff, rpcResidual, uiStride, uiWidth, uiHeight );
+    xITransformSkip(bitDepth, m_plTempCoeff, rpcResidual, uiStride, uiWidth, uiHeight );
   }
   else
   {
-    xIT( uiMode, m_plTempCoeff, rpcResidual, uiStride, uiWidth, uiHeight );
+    xIT(bitDepth, uiMode, m_plTempCoeff, rpcResidual, uiStride, uiWidth, uiHeight );
   }
 }
 
@@ -1475,24 +1320,9 @@ Void TComTrQuant::invRecurTransformNxN( TComDataCU* pcCU, UInt uiAbsPartIdx, Tex
       uiHeight <<= 1;
     }
     Pel* pResi = rpcResidual + uiAddr;
-#if !REMOVE_NSQT
-    if( pcCU->useNonSquareTrans( uiTrMode, uiAbsPartIdx ) )
-    {
-      Int trWidth  = uiWidth;
-      Int trHeight = uiHeight;
-      pcCU->getNSQTSize( uiTrMode, uiAbsPartIdx, trWidth, trHeight );
-
-      uiWidth  = trWidth;
-      uiHeight = trHeight;
-    }
-#endif
     Int scalingListType = (pcCU->isIntra(uiAbsPartIdx) ? 0 : 3) + g_eTTable[(Int)eTxt];
     assert(scalingListType < 6);
-#if INTER_TRANSFORMSKIP
     invtransformNxN( pcCU->getCUTransquantBypass(uiAbsPartIdx), eTxt, REG_DCT, pResi, uiStride, rpcCoeff, uiWidth, uiHeight, scalingListType, pcCU->getTransformSkip(uiAbsPartIdx, eTxt) );
-#else
-    invtransformNxN( pcCU->getCUTransquantBypass(uiAbsPartIdx), eTxt, REG_DCT, pResi, uiStride, rpcCoeff, uiWidth, uiHeight, scalingListType );
-#endif
   }
   else
   {
@@ -1500,25 +1330,9 @@ Void TComTrQuant::invRecurTransformNxN( TComDataCU* pcCU, UInt uiAbsPartIdx, Tex
     uiWidth  >>= 1;
     uiHeight >>= 1;
     Int trWidth = uiWidth, trHeight = uiHeight;
-#if !REMOVE_NSQT
-    Int trLastWidth = uiWidth << 1, trLastHeight = uiHeight << 1;
-    pcCU->getNSQTSize ( uiTrMode, uiAbsPartIdx, trWidth, trHeight );
-    pcCU->getNSQTSize ( uiTrMode - 1, uiAbsPartIdx, trLastWidth, trLastHeight );
-#endif
     UInt uiAddrOffset = trHeight * uiStride;
     UInt uiCoefOffset = trWidth * trHeight;
     UInt uiPartOffset = pcCU->getTotalNumPart() >> ( uiTrMode << 1 );
-#if !REMOVE_NSQT
-    UInt uiInterTUSplitDirection = pcCU->getInterTUSplitDirection ( trWidth, trHeight, trLastWidth, trLastHeight );
-    if( uiInterTUSplitDirection != 2 )
-    {
-      invRecurTransformNxN( pcCU, uiAbsPartIdx, eTxt, rpcResidual, uiAddr                                                                                            , uiStride, uiWidth, uiHeight, uiMaxTrMode, uiTrMode, rpcCoeff ); rpcCoeff += uiCoefOffset; uiAbsPartIdx += uiPartOffset;
-      invRecurTransformNxN( pcCU, uiAbsPartIdx, eTxt, rpcResidual, uiAddr +     trWidth * uiInterTUSplitDirection +     uiAddrOffset * ( 1 - uiInterTUSplitDirection), uiStride, uiWidth, uiHeight, uiMaxTrMode, uiTrMode, rpcCoeff ); rpcCoeff += uiCoefOffset; uiAbsPartIdx += uiPartOffset;
-      invRecurTransformNxN( pcCU, uiAbsPartIdx, eTxt, rpcResidual, uiAddr + 2 * trWidth * uiInterTUSplitDirection + 2 * uiAddrOffset * ( 1 - uiInterTUSplitDirection), uiStride, uiWidth, uiHeight, uiMaxTrMode, uiTrMode, rpcCoeff ); rpcCoeff += uiCoefOffset; uiAbsPartIdx += uiPartOffset;
-      invRecurTransformNxN( pcCU, uiAbsPartIdx, eTxt, rpcResidual, uiAddr + 3 * trWidth * uiInterTUSplitDirection + 3 * uiAddrOffset * ( 1 - uiInterTUSplitDirection), uiStride, uiWidth, uiHeight, uiMaxTrMode, uiTrMode, rpcCoeff );
-    }
-    else
-#endif
     {
       invRecurTransformNxN( pcCU, uiAbsPartIdx, eTxt, rpcResidual, uiAddr                         , uiStride, uiWidth, uiHeight, uiMaxTrMode, uiTrMode, rpcCoeff ); rpcCoeff += uiCoefOffset; uiAbsPartIdx += uiPartOffset;
       invRecurTransformNxN( pcCU, uiAbsPartIdx, eTxt, rpcResidual, uiAddr + trWidth               , uiStride, uiWidth, uiHeight, uiMaxTrMode, uiTrMode, rpcCoeff ); rpcCoeff += uiCoefOffset; uiAbsPartIdx += uiPartOffset;
@@ -1539,30 +1353,23 @@ Void TComTrQuant::invRecurTransformNxN( TComDataCU* pcCU, UInt uiAbsPartIdx, Tex
  *  \param iSize transform size (iSize x iSize)
  *  \param uiMode is Intra Prediction mode used in Mode-Dependent DCT/DST only
  */
-Void TComTrQuant::xT( UInt uiMode, Pel* piBlkResi, UInt uiStride, Int* psCoeff, Int iWidth, Int iHeight )
+Void TComTrQuant::xT(Int bitDepth, UInt uiMode, Pel* piBlkResi, UInt uiStride, Int* psCoeff, Int iWidth, Int iHeight )
 {
 #if MATRIX_MULT  
   Int iSize = iWidth;
-#if !REMOVE_NSQT
-  if( iWidth != iHeight)
-  {
-    xTrMxN( piBlkResi, psCoeff, uiStride, (UInt)iWidth, (UInt)iHeight );
-    return;
-  }
-#endif
-  xTr(piBlkResi,psCoeff,uiStride,(UInt)iSize,uiMode);
+  xTr(bitDepth, piBlkResi,psCoeff,uiStride,(UInt)iSize,uiMode);
 #else
   Int j;
   {
-    short block[ 64 * 64 ];
-    short coeff[ 64 * 64 ];
+    Short block[ 64 * 64 ];
+    Short coeff[ 64 * 64 ];
     {
       for (j = 0; j < iHeight; j++)
       {    
-        memcpy( block + j * iWidth, piBlkResi + j * uiStride, iWidth * sizeof( short ) );      
+        memcpy( block + j * iWidth, piBlkResi + j * uiStride, iWidth * sizeof( Short ) );
       }
     }
-    xTrMxN( block, coeff, iWidth, iHeight, uiMode );
+    xTrMxN(bitDepth, block, coeff, iWidth, iHeight, uiMode );
     for ( j = 0; j < iHeight * iWidth; j++ )
     {    
       psCoeff[ j ] = coeff[ j ];
@@ -1580,32 +1387,25 @@ Void TComTrQuant::xT( UInt uiMode, Pel* piBlkResi, UInt uiStride, Int* psCoeff, 
  *  \param iSize transform size (iSize x iSize)
  *  \param uiMode is Intra Prediction mode used in Mode-Dependent DCT/DST only
  */
-Void TComTrQuant::xIT( UInt uiMode, Int* plCoef, Pel* pResidual, UInt uiStride, Int iWidth, Int iHeight )
+Void TComTrQuant::xIT(Int bitDepth, UInt uiMode, Int* plCoef, Pel* pResidual, UInt uiStride, Int iWidth, Int iHeight )
 {
 #if MATRIX_MULT  
   Int iSize = iWidth;
-#if !REMOVE_NSQT
-  if( iWidth != iHeight )
-  {
-    xITrMxN( plCoef, pResidual, uiStride, (UInt)iWidth, (UInt)iHeight );
-    return;
-  }
-#endif
-  xITr(plCoef,pResidual,uiStride,(UInt)iSize,uiMode);
+  xITr(bitDepth, plCoef,pResidual,uiStride,(UInt)iSize,uiMode);
 #else
   Int j;
   {
-    short block[ 64 * 64 ];
-    short coeff[ 64 * 64 ];
+    Short block[ 64 * 64 ];
+    Short coeff[ 64 * 64 ];
     for ( j = 0; j < iHeight * iWidth; j++ )
     {    
-      coeff[j] = (short)plCoef[j];
+      coeff[j] = (Short)plCoef[j];
     }
-    xITrMxN( coeff, block, iWidth, iHeight, uiMode );
+    xITrMxN(bitDepth, coeff, block, iWidth, iHeight, uiMode );
     {
       for ( j = 0; j < iHeight; j++ )
       {    
-        memcpy( pResidual + j * uiStride, block + j * iWidth, iWidth * sizeof(short) );      
+        memcpy( pResidual + j * uiStride, block + j * iWidth, iWidth * sizeof(Short) );
       }
     }
     return ;
@@ -1619,16 +1419,11 @@ Void TComTrQuant::xIT( UInt uiMode, Int* plCoef, Pel* pResidual, UInt uiStride, 
  *  \param uiStride stride of input residual data
  *  \param iSize transform size (iSize x iSize)
  */
-Void TComTrQuant::xTransformSkip( Pel* piBlkResi, UInt uiStride, Int* psCoeff, Int width, Int height )
+Void TComTrQuant::xTransformSkip(Int bitDepth, Pel* piBlkResi, UInt uiStride, Int* psCoeff, Int width, Int height )
 {
   assert( width == height );
   UInt uiLog2TrSize = g_aucConvertToBit[ width ] + 2;
-#if FULL_NBIT
-  UInt uiBitDepth = g_uiBitDepth;
-#else
-  UInt uiBitDepth = g_uiBitDepth + g_uiBitIncrement;
-#endif
-  Int  shift = MAX_TR_DYNAMIC_RANGE - uiBitDepth - uiLog2TrSize;
+  Int  shift = MAX_TR_DYNAMIC_RANGE - bitDepth - uiLog2TrSize;
   UInt transformSkipShift;
   Int  j,k;
   if(shift >= 0)
@@ -1664,16 +1459,11 @@ Void TComTrQuant::xTransformSkip( Pel* piBlkResi, UInt uiStride, Int* psCoeff, I
  *  \param uiStride stride of input residual data
  *  \param iSize transform size (iSize x iSize)
  */
-Void TComTrQuant::xITransformSkip( Int* plCoef, Pel* pResidual, UInt uiStride, Int width, Int height )
+Void TComTrQuant::xITransformSkip(Int bitDepth, Int* plCoef, Pel* pResidual, UInt uiStride, Int width, Int height )
 {
   assert( width == height );
   UInt uiLog2TrSize = g_aucConvertToBit[ width ] + 2;
-#if FULL_NBIT
-  UInt uiBitDepth = g_uiBitDepth;
-#else
-  UInt uiBitDepth = g_uiBitDepth + g_uiBitIncrement;
-#endif
-  Int  shift = MAX_TR_DYNAMIC_RANGE - uiBitDepth - uiLog2TrSize; 
+  Int  shift = MAX_TR_DYNAMIC_RANGE - bitDepth - uiLog2TrSize;
   UInt transformSkipShift; 
   Int  j,k;
   if(shift > 0)
@@ -1730,22 +1520,10 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
 {
   Int    iQBits      = m_cQP.m_iBits;
   Double dTemp       = 0;
-  UInt dir         = SCALING_LIST_SQT;
   UInt uiLog2TrSize = g_aucConvertToBit[ uiWidth ] + 2;
   Int uiQ = g_quantScales[m_cQP.rem()];
-#if !REMOVE_NSQT
-  if (uiWidth != uiHeight)
-  {
-    uiLog2TrSize += (uiWidth > uiHeight) ? -1 : 1;
-    dir            = ( uiWidth < uiHeight )?  SCALING_LIST_VER: SCALING_LIST_HOR;
-  }
-#endif
   
-#if FULL_NBIT
-  UInt uiBitDepth = g_uiBitDepth;
-#else
-  UInt uiBitDepth = g_uiBitDepth + g_uiBitIncrement;  
-#endif
+  UInt uiBitDepth = eTType == TEXT_LUMA ? g_bitDepthY : g_bitDepthC;
   Int iTransformShift = MAX_TR_DYNAMIC_RANGE - uiBitDepth - uiLog2TrSize;  // Represents scaling through forward transform
   UInt       uiGoRiceParam       = 0;
   Double     d64BlockUncodedCost = 0;
@@ -1755,11 +1533,11 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
   assert(scalingListType < 6);
   
   iQBits = QUANT_SHIFT + m_cQP.m_iPer + iTransformShift;                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
-  double dErrScale   = 0;
-  double *pdErrScaleOrg = getErrScaleCoeff(scalingListType,uiLog2TrSize-2,m_cQP.m_iRem,dir);
-  Int *piQCoefOrg = getQuantCoeff(scalingListType,m_cQP.m_iRem,uiLog2TrSize-2,dir);
+  Double dErrScale   = 0;
+  Double *pdErrScaleOrg = getErrScaleCoeff(scalingListType,uiLog2TrSize-2,m_cQP.m_iRem);
+  Int *piQCoefOrg = getQuantCoeff(scalingListType,m_cQP.m_iRem,uiLog2TrSize-2);
   Int *piQCoef = piQCoefOrg;
-  double *pdErrScale = pdErrScaleOrg;
+  Double *pdErrScale = pdErrScaleOrg;
 #if ADAPTIVE_QP_SELECTION
   Int iQBitsC = iQBits - ARL_C_PRECISION;
   Int iAddC =  1 << (iQBitsC-1);
@@ -1771,13 +1549,6 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
     uiScanIdx = SCAN_DIAG;
   }
   Int blockType = uiLog2BlkSize;
-#if !REMOVE_NSQT
-  if (uiWidth != uiHeight)
-  {
-    uiScanIdx = SCAN_DIAG;
-    blockType = 4;
-  }
-#endif
   
 #if ADAPTIVE_QP_SELECTION
   memset(piArlDstCoeff, 0, sizeof(Int) *  uiMaxNumCoeff);
@@ -1798,9 +1569,6 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
   ::memset( deltaU,       0, sizeof(Int) *  uiMaxNumCoeff );
   
   const UInt * scanCG;
-#if !REMOVE_NSQT
-  if (uiWidth == uiHeight)
-#endif
   {
     scanCG = g_auiSigLastScan[ uiScanIdx ][ uiLog2BlkSize > 3 ? uiLog2BlkSize-2-1 : 0  ];
     if( uiLog2BlkSize == 3 )
@@ -1812,12 +1580,6 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
       scanCG = g_sigLastScanCG32x32;
     }
   }
-#if !REMOVE_NSQT
-  else
-  {
-    scanCG = g_sigCGScanNSQT[ uiLog2BlkSize - 2 ];
-  }
-#endif
   const UInt uiCGSize = (1 << MLS_CG_SIZE);         // 16
   Double pdCostCoeffGroupSig[ MLS_GRP_NUM ];
   UInt uiSigCoeffGroupFlag[ MLS_GRP_NUM ];
@@ -1827,9 +1589,6 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
   UInt    uiCtxSet            = 0;
   Int     c1                  = 1;
   Int     c2                  = 0;
-#if !REMOVE_NUM_GREATER1
-  UInt    uiNumOne            = 0;
-#endif
   Double  d64BaseCost         = 0;
   Int     iLastScanPos        = -1;
   dTemp                       = dErrScale;
@@ -1838,19 +1597,7 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
   UInt    c2Idx     = 0;
   Int     baseLevel;
   
-#if REMOVE_NSQT
   const UInt *scan = g_auiSigLastScan[ uiScanIdx ][ uiLog2BlkSize - 1 ];
-#else
-  const UInt * scan;
-  if (uiWidth == uiHeight)
-  {
-    scan = g_auiSigLastScan[ uiScanIdx ][ uiLog2BlkSize - 1 ];    
-  }
-  else
-  {
-    scan = g_sigScanNSQT[ uiLog2BlkSize - 2 ];
-  }
-#endif
   
   ::memset( pdCostCoeffGroupSig,   0, sizeof(Double) * MLS_GRP_NUM );
   ::memset( uiSigCoeffGroupFlag,   0, sizeof(UInt) * MLS_GRP_NUM );
@@ -1864,13 +1611,6 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
     UInt uiCGBlkPos = scanCG[ iCGScanPos ];
     UInt uiCGPosY   = uiCGBlkPos / uiNumBlkSide;
     UInt uiCGPosX   = uiCGBlkPos - (uiCGPosY * uiNumBlkSide);
-#if !REMOVAL_8x2_2x8_CG
-    if( uiWidth == 8 && uiHeight == 8 && (uiScanIdx == SCAN_HOR || uiScanIdx == SCAN_VER) )
-    {
-      uiCGPosY = (uiScanIdx == SCAN_HOR ? uiCGBlkPos : 0);
-      uiCGPosX = (uiScanIdx == SCAN_VER ? uiCGBlkPos : 0);
-    }
-#endif
     ::memset( &rdStats, 0, sizeof (coeffGroupRDStats));
     
     const Int patternSigCtx = TComTrQuant::calcPatternSigCtx(uiSigCoeffGroupFlag, uiCGPosX, uiCGPosY, uiWidth, uiHeight);
@@ -1921,11 +1661,7 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
         {
           UInt   uiPosY        = uiBlkPos >> uiLog2BlkSize;
           UInt   uiPosX        = uiBlkPos - ( uiPosY << uiLog2BlkSize );
-#if REMOVAL_8x2_2x8_CG
           UShort uiCtxSig      = getSigCtxInc( patternSigCtx, uiScanIdx, uiPosX, uiPosY, blockType, uiWidth, uiHeight, eTType );
-#else
-          UShort uiCtxSig      = getSigCtxInc( patternSigCtx, uiPosX, uiPosY, blockType, uiWidth, uiHeight, eTType );
-#endif
           uiLevel              = xGetCodedLevel( pdCostCoeff[ iScanPos ], pdCostCoeff0[ iScanPos ], pdCostSig[ iScanPos ],
                                                 lLevelDouble, uiMaxAbsLevel, uiCtxSig, uiOneCtx, uiAbsCtx, uiGoRiceParam, 
                                                 c1Idx, c2Idx, iQBits, dTemp, 0 );
@@ -1964,9 +1700,6 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
         {
           c1 = 0; 
           c2 += (c2 < 2);
-#if !REMOVE_NUM_GREATER1
-          uiNumOne++;
-#endif
           c2Idx ++;
         }
         else if( (c1 < 3) && (c1 > 0) && uiLevel)
@@ -1977,28 +1710,17 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
         //===== context set update =====
         if( ( iScanPos % SCAN_SET_SIZE == 0 ) && ( iScanPos > 0 ) )
         {
-#if !REMOVE_NUM_GREATER1
-          c1                = 1;
-#endif
           c2                = 0;
           uiGoRiceParam     = 0;
           
           c1Idx   = 0;
           c2Idx   = 0; 
           uiCtxSet          = (iScanPos == SCAN_SET_SIZE || eTType!=TEXT_LUMA) ? 0 : 2;
-#if REMOVE_NUM_GREATER1
           if( c1 == 0 )
-#else
-          if( uiNumOne > 0 )
-#endif
           {
             uiCtxSet++;
           }
-#if REMOVE_NUM_GREATER1
           c1 = 1;
-#else
-          uiNumOne    >>= 1;
-#endif
         }
       }
       else
@@ -2177,7 +1899,10 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
   
   if( pcCU->getSlice()->getPPS()->getSignHideFlag() && uiAbsSum>=2)
   {
-    Int64 rdFactor = (Int64)((Double)(g_invQuantScales[m_cQP.rem()])*(Double)(g_invQuantScales[m_cQP.rem()])*(Double)(1<<(2*m_cQP.m_iPer))/m_dLambda/16/(Double)(1<<(2*g_uiBitIncrement)) + 0.5);
+    Int64 rdFactor = (Int64) (
+                     g_invQuantScales[m_cQP.rem()] * g_invQuantScales[m_cQP.rem()] * (1<<(2*m_cQP.m_iPer))
+                   / m_dLambda / 16 / (1<<DISTORTION_PRECISION_ADJUSTMENT(2*(uiBitDepth-8)))
+                   + 0.5);
     Int lastCG = -1;
     Int absSum = 0 ;
     Int n ;
@@ -2314,11 +2039,7 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
  */
 Int  TComTrQuant::calcPatternSigCtx( const UInt* sigCoeffGroupFlag, UInt posXCG, UInt posYCG, Int width, Int height )
 {
-#if REMOVAL_8x2_2x8_CG
   if( width == 4 && height == 4 ) return -1;
-#else
-  if( width == height && width <= 8 ) return -1;
-#endif
 
   UInt sigRight = 0;
   UInt sigLower = 0;
@@ -2348,9 +2069,7 @@ Int  TComTrQuant::calcPatternSigCtx( const UInt* sigCoeffGroupFlag, UInt posXCG,
  */
 Int TComTrQuant::getSigCtxInc    (
                                    Int                             patternSigCtx,
-#if REMOVAL_8x2_2x8_CG
                                    UInt                            scanIdx,
-#endif
                                    Int                             posX,
                                    Int                             posY,
                                    Int                             blockType,
@@ -2377,51 +2096,26 @@ Int TComTrQuant::getSigCtxInc    (
     return ctxIndMap[ 4 * posY + posX ];
   }
 
-#if !REMOVAL_8x2_2x8_CG
-  if ( blockType == 3 )
-  {
-    return 9 + ctxIndMap[ 4 * (posY >> 1) + (posX >> 1) ];
-  }
-
-  Int offset = 18;
-#else
   Int offset = blockType == 3 ? (scanIdx==SCAN_DIAG ? 9 : 15) : (textureType == TEXT_LUMA ? 21 : 12);
-#endif
 
   Int posXinSubset = posX-((posX>>2)<<2);
   Int posYinSubset = posY-((posY>>2)<<2);
   Int cnt = 0;
   if(patternSigCtx==0)
   {
-#if REMOVAL_8x2_2x8_CG
     cnt = posXinSubset+posYinSubset<=2 ? (posXinSubset+posYinSubset==0 ? 2 : 1) : 0;
-#else
-    cnt = posXinSubset+posYinSubset<=2 ? 1 : 0;
-#endif
   }
   else if(patternSigCtx==1)
   {
-#if REMOVAL_8x2_2x8_CG
     cnt = posYinSubset<=1 ? (posYinSubset==0 ? 2 : 1) : 0;
-#else
-    cnt = posYinSubset<=1 ? 1 : 0;
-#endif
   }
   else if(patternSigCtx==2)
   {
-#if REMOVAL_8x2_2x8_CG
     cnt = posXinSubset<=1 ? (posXinSubset==0 ? 2 : 1) : 0;
-#else
-    cnt = posXinSubset<=1 ? 1 : 0;
-#endif
   }
   else
   {
-#if REMOVAL_8x2_2x8_CG
     cnt = 2;
-#else
-    cnt = posXinSubset+posYinSubset<=4 ? 2 : 1;
-#endif
   }
 
   return (( textureType == TEXT_LUMA && ((posX>>2) + (posY>>2)) > 0 ) ? 3 : 0) + offset + cnt;
@@ -2520,11 +2214,7 @@ __inline Double TComTrQuant::xGetICRateCost  ( UInt                            u
   {    
     UInt symbol     = uiAbsLevel - baseLevel;
     UInt length;
-#if COEF_REMAIN_BIN_REDUCTION
     if (symbol < (COEF_REMAIN_BIN_REDUCTION << ui16AbsGoRice))
-#else
-    if (symbol < (8 << ui16AbsGoRice))
-#endif
     {
       length = symbol>>ui16AbsGoRice;
       iRate += (length+1+ui16AbsGoRice)<< 15;
@@ -2532,20 +2222,12 @@ __inline Double TComTrQuant::xGetICRateCost  ( UInt                            u
     else
     {
       length = ui16AbsGoRice;
-#if COEF_REMAIN_BIN_REDUCTION
-      symbol  = symbol - ( COEF_REMAIN_BIN_REDUCTION << ui16AbsGoRice); 
-#else
-      symbol  = symbol - ( 8 << ui16AbsGoRice);    
-#endif
+      symbol  = symbol - ( COEF_REMAIN_BIN_REDUCTION << ui16AbsGoRice);
       while (symbol >= (1<<length))
       {
         symbol -=  (1<<(length++));    
       }
-#if COEF_REMAIN_BIN_REDUCTION
       iRate += (COEF_REMAIN_BIN_REDUCTION+length+1-ui16AbsGoRice+length)<< 15;
-#else
-      iRate += (8+length+1-ui16AbsGoRice+length)<< 15;
-#endif
     }
     if (c1Idx < C1FLAG_NUMBER)
     {
@@ -2594,7 +2276,7 @@ __inline Int TComTrQuant::xGetICRate  ( UInt                            uiAbsLev
     if( bExpGolomb )
     {
       uiAbsLevel  = uiSymbol - uiMaxVlc;
-      int iEGS    = 1;  for( UInt uiMax = 2; uiAbsLevel >= uiMax; uiMax <<= 1, iEGS += 2 );
+      Int iEGS    = 1;  for( UInt uiMax = 2; uiAbsLevel >= uiMax; uiMax <<= 1, iEGS += 2 );
       iRate      += iEGS << 15;
       uiSymbol    = min<UInt>( uiSymbol, ( uiMaxVlc + 1 ) );
     }
@@ -2715,21 +2397,6 @@ UInt TComTrQuant::getSigCoeffGroupCtxInc  ( const UInt*               uiSigCoeff
 
   width >>= 2;
   height >>= 2;
-#if !REMOVAL_8x2_2x8_CG
-  if( width == 2 && height == 2 ) // 8x8
-  {
-    if( scanIdx == SCAN_HOR )  
-    {
-      width = 1;
-      height = 4;
-    }
-    else if( scanIdx == SCAN_VER )
-    {
-      width = 4;
-      height = 1;
-    }
-  }
-#endif
   if( uiCGPosX < width - 1 )
   {
     uiRight = (uiSigCoeffGroupFlag[ uiCGPosY * width + uiCGPosX + 1 ] != 0);
@@ -2757,12 +2424,7 @@ Void TComTrQuant::setScalingList(TComScalingList *scalingList)
       {
         xSetScalingListEnc(scalingList,list,size,qp);
         xSetScalingListDec(scalingList,list,size,qp);
-        setErrScaleCoeff(list,size,qp,SCALING_LIST_SQT);
-        if(size == SCALING_LIST_32x32 || size == SCALING_LIST_16x16)
-        {
-          setErrScaleCoeff(list,size-1,qp,SCALING_LIST_HOR);
-          setErrScaleCoeff(list,size-1,qp,SCALING_LIST_VER);
-        }
+        setErrScaleCoeff(list,size,qp);
       }
     }
   }
@@ -2791,29 +2453,24 @@ Void TComTrQuant::setScalingListDec(TComScalingList *scalingList)
  * \param uiSize Size
  * \param uiQP Quantization parameter
  */
-Void TComTrQuant::setErrScaleCoeff(UInt list,UInt size, UInt qp, UInt dir)
+Void TComTrQuant::setErrScaleCoeff(UInt list,UInt size, UInt qp)
 {
 
   UInt uiLog2TrSize = g_aucConvertToBit[ g_scalingListSizeX[size] ] + 2;
-#if FULL_NBIT
-  UInt uiBitDepth = g_uiBitDepth;
-#else
-  UInt uiBitDepth = g_uiBitDepth + g_uiBitIncrement;  
-#endif
-
-  Int iTransformShift = MAX_TR_DYNAMIC_RANGE - uiBitDepth - uiLog2TrSize;  // Represents scaling through forward transform
+  Int bitDepth = (size < SCALING_LIST_32x32 && list != 0 && list != 3) ? g_bitDepthC : g_bitDepthY;
+  Int iTransformShift = MAX_TR_DYNAMIC_RANGE - bitDepth - uiLog2TrSize;  // Represents scaling through forward transform
 
   UInt i,uiMaxNumCoeff = g_scalingListSize[size];
   Int *piQuantcoeff;
-  double *pdErrScale;
-  piQuantcoeff   = getQuantCoeff(list, qp,size,dir);
-  pdErrScale     = getErrScaleCoeff(list, size, qp,dir);
+  Double *pdErrScale;
+  piQuantcoeff   = getQuantCoeff(list, qp,size);
+  pdErrScale     = getErrScaleCoeff(list, size, qp);
 
-  double dErrScale = (double)(1<<SCALE_BITS);                              // Compensate for scaling of bitcount in Lagrange cost function
+  Double dErrScale = (Double)(1<<SCALE_BITS);                              // Compensate for scaling of bitcount in Lagrange cost function
   dErrScale = dErrScale*pow(2.0,-2.0*iTransformShift);                     // Compensate for scaling through forward transform
   for(i=0;i<uiMaxNumCoeff;i++)
   {
-    pdErrScale[i] =  dErrScale/(double)piQuantcoeff[i]/(double)piQuantcoeff[i]/(double)(1<<(2*g_uiBitIncrement));
+    pdErrScale[i] = dErrScale / piQuantcoeff[i] / piQuantcoeff[i] / (1<<DISTORTION_PRECISION_ADJUSTMENT(2*(bitDepth-8)));
   }
 }
 
@@ -2830,18 +2487,9 @@ Void TComTrQuant::xSetScalingListEnc(TComScalingList *scalingList, UInt listId, 
   UInt ratio = g_scalingListSizeX[sizeId]/min(MAX_MATRIX_SIZE_NUM,(Int)g_scalingListSizeX[sizeId]);
   Int *quantcoeff;
   Int *coeff = scalingList->getScalingListAddress(sizeId,listId);
-  quantcoeff   = getQuantCoeff(listId, qp, sizeId, SCALING_LIST_SQT);
+  quantcoeff   = getQuantCoeff(listId, qp, sizeId);
 
   processScalingListEnc(coeff,quantcoeff,g_quantScales[qp]<<4,height,width,ratio,min(MAX_MATRIX_SIZE_NUM,(Int)g_scalingListSizeX[sizeId]),scalingList->getScalingListDC(sizeId,listId));
-
-  if(sizeId == SCALING_LIST_32x32 || sizeId == SCALING_LIST_16x16) //for NSQT
-  {
-    quantcoeff   = getQuantCoeff(listId, qp, sizeId-1,SCALING_LIST_VER);
-    processScalingListEnc(coeff,quantcoeff,g_quantScales[qp]<<4,height,width>>2,ratio,min(MAX_MATRIX_SIZE_NUM,(Int)g_scalingListSizeX[sizeId]),scalingList->getScalingListDC(sizeId,listId));
-
-    quantcoeff   = getQuantCoeff(listId, qp, sizeId-1,SCALING_LIST_HOR);
-    processScalingListEnc(coeff,quantcoeff,g_quantScales[qp]<<4,height>>2,width,ratio,min(MAX_MATRIX_SIZE_NUM,(Int)g_scalingListSizeX[sizeId]),scalingList->getScalingListDC(sizeId,listId));
-  }
 }
 /** set quantized matrix coefficient for decode
  * \param scalingList quantaized matrix address
@@ -2857,18 +2505,8 @@ Void TComTrQuant::xSetScalingListDec(TComScalingList *scalingList, UInt listId, 
   Int *dequantcoeff;
   Int *coeff = scalingList->getScalingListAddress(sizeId,listId);
 
-  dequantcoeff = getDequantCoeff(listId, qp, sizeId,SCALING_LIST_SQT);
+  dequantcoeff = getDequantCoeff(listId, qp, sizeId);
   processScalingListDec(coeff,dequantcoeff,g_invQuantScales[qp],height,width,ratio,min(MAX_MATRIX_SIZE_NUM,(Int)g_scalingListSizeX[sizeId]),scalingList->getScalingListDC(sizeId,listId));
-
-  if(sizeId == SCALING_LIST_32x32 || sizeId == SCALING_LIST_16x16)
-  {
-    dequantcoeff   = getDequantCoeff(listId, qp, sizeId-1,SCALING_LIST_VER);
-    processScalingListDec(coeff,dequantcoeff,g_invQuantScales[qp],height,width>>2,ratio,min(MAX_MATRIX_SIZE_NUM,(Int)g_scalingListSizeX[sizeId]),scalingList->getScalingListDC(sizeId,listId));
-
-    dequantcoeff   = getDequantCoeff(listId, qp, sizeId-1,SCALING_LIST_HOR);
-
-    processScalingListDec(coeff,dequantcoeff,g_invQuantScales[qp],height>>2,width,ratio,min(MAX_MATRIX_SIZE_NUM,(Int)g_scalingListSizeX[sizeId]),scalingList->getScalingListDC(sizeId,listId));
-  }
 }
 
 /** set flat matrix value to quantized coefficient
@@ -2885,12 +2523,7 @@ Void TComTrQuant::setFlatScalingList()
       for(qp=0;qp<SCALING_LIST_REM_NUM;qp++)
       {
         xsetFlatScalingList(list,size,qp);
-        setErrScaleCoeff(list,size,qp,SCALING_LIST_SQT);
-        if(size == SCALING_LIST_32x32 || size == SCALING_LIST_16x16)
-        {
-          setErrScaleCoeff(list,size-1,qp,SCALING_LIST_HOR);
-          setErrScaleCoeff(list,size-1,qp,SCALING_LIST_VER);
-        }
+        setErrScaleCoeff(list,size,qp);
       }
     }
   }
@@ -2904,39 +2537,18 @@ Void TComTrQuant::setFlatScalingList()
 Void TComTrQuant::xsetFlatScalingList(UInt list, UInt size, UInt qp)
 {
   UInt i,num = g_scalingListSize[size];
-  UInt numDiv4 = num>>2;
   Int *quantcoeff;
   Int *dequantcoeff;
   Int quantScales = g_quantScales[qp];
   Int invQuantScales = g_invQuantScales[qp]<<4;
 
-  quantcoeff   = getQuantCoeff(list, qp, size,SCALING_LIST_SQT);
-  dequantcoeff = getDequantCoeff(list, qp, size,SCALING_LIST_SQT);
+  quantcoeff   = getQuantCoeff(list, qp, size);
+  dequantcoeff = getDequantCoeff(list, qp, size);
 
   for(i=0;i<num;i++)
   { 
     *quantcoeff++ = quantScales;
     *dequantcoeff++ = invQuantScales;
-  }
-
-  if(size == SCALING_LIST_32x32 || size == SCALING_LIST_16x16)
-  {
-    quantcoeff   = getQuantCoeff(list, qp, size-1, SCALING_LIST_HOR);
-    dequantcoeff = getDequantCoeff(list, qp, size-1, SCALING_LIST_HOR);
-
-    for(i=0;i<numDiv4;i++)
-    {
-      *quantcoeff++ = quantScales;
-      *dequantcoeff++ = invQuantScales;
-    }
-    quantcoeff   = getQuantCoeff(list, qp, size-1 ,SCALING_LIST_VER);
-    dequantcoeff = getDequantCoeff(list, qp, size-1 ,SCALING_LIST_VER);
-
-    for(i=0;i<numDiv4;i++)
-    {
-      *quantcoeff++ = quantScales;
-      *dequantcoeff++ = invQuantScales;
-    }
   }
 }
 
@@ -2978,19 +2590,11 @@ Void TComTrQuant::processScalingListEnc( Int *coeff, Int *quantcoeff, Int quantS
  */
 Void TComTrQuant::processScalingListDec( Int *coeff, Int *dequantcoeff, Int invQuantScales, UInt height, UInt width, UInt ratio, Int sizuNum, UInt dc)
 {
-#if !REMOVE_NSQT
-  Int nsqth = (height < width) ? 4: 1; //height ratio for NSQT
-  Int nsqtw = (width < height) ? 4: 1; //width ratio for NSQT
-#endif
   for(UInt j=0;j<height;j++)
   {
     for(UInt i=0;i<width;i++)
     {
-#if REMOVE_NSQT
       dequantcoeff[j*width + i] = invQuantScales * coeff[sizuNum * (j / ratio) + i / ratio];
-#else
-      dequantcoeff[j*width + i] = invQuantScales * coeff[sizuNum * (j * nsqth / ratio) + i * nsqtw /ratio];
-#endif
     }
   }
   if(ratio > 1)
@@ -3009,34 +2613,18 @@ Void TComTrQuant::initScalingList()
     {
       for(UInt qp = 0; qp < SCALING_LIST_REM_NUM; qp++)
       {
-        m_quantCoef   [sizeId][listId][qp][SCALING_LIST_SQT] = new Int [g_scalingListSize[sizeId]];
-        m_dequantCoef [sizeId][listId][qp][SCALING_LIST_SQT] = new Int [g_scalingListSize[sizeId]];
-        m_errScale    [sizeId][listId][qp][SCALING_LIST_SQT] = new double [g_scalingListSize[sizeId]];
-        
-        if(sizeId == SCALING_LIST_8x8 || (sizeId == SCALING_LIST_16x16 && listId < 2))
-        {
-          for(UInt dir = SCALING_LIST_VER; dir < SCALING_LIST_DIR_NUM; dir++)
-          {
-            m_quantCoef   [sizeId][listId][qp][dir] = new Int [g_scalingListSize[sizeId]];
-            m_dequantCoef [sizeId][listId][qp][dir] = new Int [g_scalingListSize[sizeId]];
-            m_errScale    [sizeId][listId][qp][dir] = new double [g_scalingListSize[sizeId]];
-          }
-        }
+        m_quantCoef   [sizeId][listId][qp] = new Int [g_scalingListSize[sizeId]];
+        m_dequantCoef [sizeId][listId][qp] = new Int [g_scalingListSize[sizeId]];
+        m_errScale    [sizeId][listId][qp] = new Double [g_scalingListSize[sizeId]];
       }
     }
   }
-  //copy for NSQT
+  // alias list [1] as [3].
   for(UInt qp = 0; qp < SCALING_LIST_REM_NUM; qp++)
   {
-    for(UInt dir = SCALING_LIST_VER; dir < SCALING_LIST_DIR_NUM; dir++)
-    {
-      m_quantCoef   [SCALING_LIST_16x16][3][qp][dir] = m_quantCoef   [SCALING_LIST_16x16][1][qp][dir];
-      m_dequantCoef [SCALING_LIST_16x16][3][qp][dir] = m_dequantCoef [SCALING_LIST_16x16][1][qp][dir];
-      m_errScale    [SCALING_LIST_16x16][3][qp][dir] = m_errScale    [SCALING_LIST_16x16][1][qp][dir];
-    }
-    m_quantCoef   [SCALING_LIST_32x32][3][qp][SCALING_LIST_SQT] = m_quantCoef   [SCALING_LIST_32x32][1][qp][SCALING_LIST_SQT];
-    m_dequantCoef [SCALING_LIST_32x32][3][qp][SCALING_LIST_SQT] = m_dequantCoef [SCALING_LIST_32x32][1][qp][SCALING_LIST_SQT];
-    m_errScale    [SCALING_LIST_32x32][3][qp][SCALING_LIST_SQT] = m_errScale    [SCALING_LIST_32x32][1][qp][SCALING_LIST_SQT];
+    m_quantCoef   [SCALING_LIST_32x32][3][qp] = m_quantCoef   [SCALING_LIST_32x32][1][qp];
+    m_dequantCoef [SCALING_LIST_32x32][3][qp] = m_dequantCoef [SCALING_LIST_32x32][1][qp];
+    m_errScale    [SCALING_LIST_32x32][3][qp] = m_errScale    [SCALING_LIST_32x32][1][qp];
   }
 }
 /** destroy quantization matrix array
@@ -3049,18 +2637,9 @@ Void TComTrQuant::destroyScalingList()
     {
       for(UInt qp = 0; qp < SCALING_LIST_REM_NUM; qp++)
       {
-        if(m_quantCoef   [sizeId][listId][qp][SCALING_LIST_SQT]) delete [] m_quantCoef   [sizeId][listId][qp][SCALING_LIST_SQT];
-        if(m_dequantCoef [sizeId][listId][qp][SCALING_LIST_SQT]) delete [] m_dequantCoef [sizeId][listId][qp][SCALING_LIST_SQT];
-        if(m_errScale    [sizeId][listId][qp][SCALING_LIST_SQT]) delete [] m_errScale    [sizeId][listId][qp][SCALING_LIST_SQT];
-        if(sizeId == SCALING_LIST_8x8 || (sizeId == SCALING_LIST_16x16 && listId < 2))
-        {
-          for(UInt dir = SCALING_LIST_VER; dir < SCALING_LIST_DIR_NUM; dir++)
-          {
-            if(m_quantCoef   [sizeId][listId][qp][dir]) delete [] m_quantCoef   [sizeId][listId][qp][dir];
-            if(m_dequantCoef [sizeId][listId][qp][dir]) delete [] m_dequantCoef [sizeId][listId][qp][dir];
-            if(m_errScale    [sizeId][listId][qp][dir]) delete [] m_errScale    [sizeId][listId][qp][dir];
-          }
-        }
+        if(m_quantCoef   [sizeId][listId][qp]) delete [] m_quantCoef   [sizeId][listId][qp];
+        if(m_dequantCoef [sizeId][listId][qp]) delete [] m_dequantCoef [sizeId][listId][qp];
+        if(m_errScale    [sizeId][listId][qp]) delete [] m_errScale    [sizeId][listId][qp];
       }
     }
   }

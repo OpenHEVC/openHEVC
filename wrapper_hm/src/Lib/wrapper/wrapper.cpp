@@ -19,9 +19,9 @@ Int                 m_iSkipFrame;
 UInt                m_outputBitDepth =0u;                     ///< bit depth used for writing output
 
 Int                 m_iMaxTemporalLayer = -1;                  ///< maximum temporal layer to be decoded
-Int                 m_pictureDigestEnabled = 0;               ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on SEI picture_digest
+Int                 m_decodedPictureHashSEIEnabled = 0;               ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on SEI picture_digest
 
-UInt                uiPOC;
+Int                poc;
 TComList<TComPic*>* pcListPic = NULL;
 
 
@@ -33,7 +33,7 @@ int libDecoderInit( void )
     m_iPOCLastDisplay  = -MAX_INT;
     m_iSkipFrame = 0;
     m_iPOCLastDisplay += m_iSkipFrame;      // set the last displayed POC correctly for skip forward.
-    myDecoder.setPictureDigestEnabled(m_pictureDigestEnabled);
+    myDecoder.setDecodedPictureHashSEIEnabled(m_decodedPictureHashSEIEnabled);
     return 0;
 }
 
@@ -173,7 +173,7 @@ void libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned c
     bool bNewPicture = false;
     vector<uint8_t> nalUnit;
     InputNALUnit nalu;
-    bool readAgain;
+    Bool readAgain;
     *got_picture=0;
     do {    
         int i;
@@ -185,7 +185,7 @@ void libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned c
         //readNAL(nalu, nalUnit);
         bNewPicture=myDecoder.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
         if (bNewPicture){
-            myDecoder.executeDeblockAndAlf(uiPOC, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
+            myDecoder.executeDeblockAndAlf(poc, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
             readAgain=true;
             *got_picture=1;
         }

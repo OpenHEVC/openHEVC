@@ -112,13 +112,6 @@ Void TComPrediction::initTempBuff()
       m_pLumaRecBuffer = new Pel[ m_iLumaRecStride * m_iLumaRecStride ];
     }
   }
-
-  Int shift = g_uiBitDepth + g_uiBitIncrement + 4;
-
-  for( Int i = 32; i < 64; i++ )
-  {
-    m_uiaShift[i-32] = ( ( 1 << shift ) + i/2 ) / i;
-  }
 }
 
 // ====================================================================================================================
@@ -187,7 +180,7 @@ Pel TComPrediction::predIntraGetPredValDC( Int* pSrc, Int iSrcStride, UInt iWidt
  * the predicted value for the pixel is linearly interpolated from the reference samples. All reference samples are taken
  * from the extended main reference.
  */
-Void TComPrediction::xPredIntraAng( Int* pSrc, Int srcStride, Pel*& rpDst, Int dstStride, UInt width, UInt height, UInt dirMode, Bool blkAboveAvailable, Bool blkLeftAvailable, Bool bFilter )
+Void TComPrediction::xPredIntraAng(Int bitDepth, Int* pSrc, Int srcStride, Pel*& rpDst, Int dstStride, UInt width, UInt height, UInt dirMode, Bool blkAboveAvailable, Bool blkLeftAvailable, Bool bFilter )
 {
   Int k,l;
   Int blkSize        = width;
@@ -281,7 +274,7 @@ Void TComPrediction::xPredIntraAng( Int* pSrc, Int srcStride, Pel*& rpDst, Int d
       {
         for (k=0;k<blkSize;k++)
         {
-          pDst[k*dstStride] = Clip ( pDst[k*dstStride] + (( refSide[k+1] - refSide[0] ) >> 1) );
+          pDst[k*dstStride] = Clip3(0, (1<<bitDepth)-1, pDst[k*dstStride] + (( refSide[k+1] - refSide[0] ) >> 1) );
         }
       }
     }
@@ -356,12 +349,23 @@ Void TComPrediction::predIntraLumaAng(TComPattern* pcTComPattern, UInt uiDirMode
   }
   else
   {
-    xPredIntraAng( ptrSrc+sw+1, sw, pDst, uiStride, iWidth, iHeight, uiDirMode, bAbove, bLeft, true );
-
-    if( (uiDirMode == DC_IDX ) && bAbove && bLeft )
+#if RESTRICT_INTRA_BOUNDARY_SMOOTHING
+    if ( (iWidth > 16) || (iHeight > 16) )
     {
-      xDCPredFiltering( ptrSrc+sw+1, sw, pDst, uiStride, iWidth, iHeight);
+      xPredIntraAng(g_bitDepthY, ptrSrc+sw+1, sw, pDst, uiStride, iWidth, iHeight, uiDirMode, bAbove, bLeft, false );
     }
+    else
+    {
+#endif
+      xPredIntraAng(g_bitDepthY, ptrSrc+sw+1, sw, pDst, uiStride, iWidth, iHeight, uiDirMode, bAbove, bLeft, true );
+
+      if( (uiDirMode == DC_IDX ) && bAbove && bLeft )
+      {
+        xDCPredFiltering( ptrSrc+sw+1, sw, pDst, uiStride, iWidth, iHeight);
+      }
+#if RESTRICT_INTRA_BOUNDARY_SMOOTHING
+    }
+#endif
   }
 }
 
@@ -381,7 +385,7 @@ Void TComPrediction::predIntraChromaAng( TComPattern* pcTComPattern, Int* piSrc,
   else
   {
     // Create the prediction
-    xPredIntraAng( ptrSrc+sw+1, sw, pDst, uiStride, iWidth, iHeight, uiDirMode, bAbove, bLeft, false );
+    xPredIntraAng(g_bitDepthC, ptrSrc+sw+1, sw, pDst, uiStride, iWidth, iHeight, uiDirMode, bAbove, bLeft, false );
   }
 }
 
@@ -459,7 +463,6 @@ Void TComPrediction::motionCompensation ( TComDataCU* pcCU, TComYuv* pcYuvPred, 
       {
         xPredInterUni (pcCU, uiPartAddr, iWidth, iHeight, eRefPicList, pcYuvPred, iPartIdx );
       }
-      xPredInterUni (pcCU, uiPartAddr, iWidth, iHeight, eRefPicList, pcYuvPred, iPartIdx );
       if ( pcCU->getSlice()->getPPS()->getUseWP() )
       {
         xWeightedPredictionUni( pcCU, pcYuvPred, uiPartAddr, iWidth, iHeight, eRefPicList, pcYuvPred, iPartIdx );
@@ -661,8 +664,7 @@ Void TComPrediction::xWeightedAverage( TComDataCU* pcCU, TComYuv* pcYuvSrc0, TCo
 Void TComPrediction::getMvPredAMVP( TComDataCU* pcCU, UInt uiPartIdx, UInt uiPartAddr, RefPicList eRefPicList, Int iRefIdx, TComMv& rcMvPred )
 {
   AMVPInfo* pcAMVPInfo = pcCU->getCUMvField(eRefPicList)->getAMVPInfo();
-
-  if( pcCU->getAMVPMode(uiPartAddr) == AM_NONE || (pcAMVPInfo->iN <= 1 && pcCU->getAMVPMode(uiPartAddr) == AM_EXPL) )
+  if( pcAMVPInfo->iN <= 1 )
   {
     rcMvPred = pcAMVPInfo->m_acMvCand[0];
 
@@ -728,273 +730,6 @@ Void TComPrediction::xPredIntraPlanar( Int* pSrc, Int srcStride, Pel* rpDst, Int
     }
   }
 }
-
-#if !REMOVE_LMCHROMA
-/** Function for deriving chroma LM intra prediction.
- * \param pcPattern pointer to neighbouring pixel access pattern
- * \param piSrc pointer to reconstructed chroma sample array
- * \param pPred pointer for the prediction sample array
- * \param uiPredStride the stride of the prediction sample array
- * \param uiCWidth the width of the chroma block
- * \param uiCHeight the height of the chroma block
- * \param uiChromaId boolean indication of chroma component
- *
- * This function derives the prediction samples for chroma LM mode (chroma intra coding)
- */
-Void TComPrediction::predLMIntraChroma( TComPattern* pcPattern, Int* piSrc, Pel* pPred, UInt uiPredStride, UInt uiCWidth, UInt uiCHeight, UInt uiChromaId )
-{
-  UInt uiWidth  = 2 * uiCWidth;
-
-  xGetLLSPrediction( pcPattern, piSrc+uiWidth+2, uiWidth+1, pPred, uiPredStride, uiCWidth, uiCHeight, 1 );  
-}
-
-/** Function for deriving downsampled luma sample of current chroma block and its above, left causal pixel
- * \param pcPattern pointer to neighbouring pixel access pattern
- * \param uiCWidth the width of the chroma block
- * \param uiCHeight the height of the chroma block
- *
- * This function derives downsampled luma sample of current chroma block and its above, left causal pixel
- */
-Void TComPrediction::getLumaRecPixels( TComPattern* pcPattern, UInt uiCWidth, UInt uiCHeight )
-{
-  UInt uiWidth  = 2 * uiCWidth;
-  UInt uiHeight = 2 * uiCHeight;  
-
-  Pel* pRecSrc = pcPattern->getROIY();
-  Pel* pDst0 = m_pLumaRecBuffer + m_iLumaRecStride + 1;
-
-  Int iRecSrcStride = pcPattern->getPatternLStride();
-  Int iRecSrcStride2 = iRecSrcStride << 1;
-  Int iDstStride = m_iLumaRecStride;
-  Int iSrcStride = ( max( uiWidth, uiHeight ) << 1 ) + 1;
-
-  Int* ptrSrc = pcPattern->getAdiOrgBuf( uiWidth, uiHeight, m_piYuvExt );
-
-  // initial pointers
-  Pel* pDst = pDst0 - 1 - iDstStride;  
-  Int* piSrc = ptrSrc;
-
-  // top left corner downsampled from ADI buffer
-  // don't need this point
-
-  // top row downsampled from ADI buffer
-  pDst++;     
-  piSrc ++;
-  for (Int i = 0; i < uiCWidth; i++)
-  {
-    pDst[i] = ((piSrc[2*i] * 2 ) + piSrc[2*i - 1] + piSrc[2*i + 1] + 2) >> 2;
-  }
-
-  // left column downsampled from ADI buffer
-  pDst = pDst0 - 1; 
-  piSrc = ptrSrc + iSrcStride;
-  for (Int j = 0; j < uiCHeight; j++)
-  {
-    pDst[0] = ( piSrc[0] + piSrc[iSrcStride] ) >> 1;
-    piSrc += iSrcStride << 1; 
-    pDst += iDstStride;    
-  }
-
-  // inner part from reconstructed picture buffer
-  for( Int j = 0; j < uiCHeight; j++ )
-  {
-    for (Int i = 0; i < uiCWidth; i++)
-    {
-      pDst0[i] = (pRecSrc[2*i] + pRecSrc[2*i + iRecSrcStride]) >> 1;
-    }
-
-    pDst0 += iDstStride;
-    pRecSrc += iRecSrcStride2;
-  }
-}
-
-/** Function for deriving the positon of first non-zero binary bit of a value
- * \param x input value
- *
- * This function derives the positon of first non-zero binary bit of a value
- */
-Int GetFloorLog2( UInt x )
-{
-  int bits = -1;
-  while( x > 0 )
-  {
-    bits ++;
-    x >>= 1;
-  }
-  return bits;
-}
-
-/** Function for deriving LM intra prediction.
- * \param pcPattern pointer to neighbouring pixel access pattern
- * \param pSrc0 pointer to reconstructed chroma sample array
- * \param iSrcStride the stride of reconstructed chroma sample array
- * \param pDst0 reference to pointer for the prediction sample array
- * \param iDstStride the stride of the prediction sample array
- * \param uiWidth the width of the chroma block
- * \param uiHeight the height of the chroma block
- * \param uiExt0 line number of neiggboirng pixels for calculating LM model parameter, default value is 1
- *
- * This function derives the prediction samples for chroma LM mode (chroma intra coding)
- */
-Void TComPrediction::xGetLLSPrediction( TComPattern* pcPattern, Int* pSrc0, Int iSrcStride, Pel* pDst0, Int iDstStride, UInt uiWidth, UInt uiHeight, UInt uiExt0 )
-{
-
-  Pel  *pDst, *pLuma;
-  Int  *pSrc;
-
-  Int  iLumaStride = m_iLumaRecStride;
-  Pel* pLuma0 = m_pLumaRecBuffer + uiExt0 * iLumaStride + uiExt0;
-
-  Int i, j, iCountShift = 0;
-  UInt uiInternalBitDepth = g_uiBitDepth + g_uiBitIncrement;
-
-  UInt uiExt = uiExt0;
-
-  // LLS parameters estimation -->
-
-  Int x = 0, y = 0, xx = 0, xy = 0;
-
-  pSrc  = pSrc0  - iSrcStride;
-  pLuma = pLuma0 - iLumaStride;
-
-  for( j = 0; j < uiWidth; j++ )
-  {
-    x += pLuma[j];
-    y += pSrc[j];
-    xx += pLuma[j] * pLuma[j];
-    xy += pLuma[j] * pSrc[j];
-  }
-
-  pSrc  = pSrc0 - uiExt;
-  pLuma = pLuma0 - uiExt;
-
-  for( i = 0; i < uiHeight; i++ )
-  {
-    x += pLuma[0];
-    y += pSrc[0];
-    xx += pLuma[0] * pLuma[0];
-    xy += pLuma[0] * pSrc[0];
-
-    pSrc  += iSrcStride;
-    pLuma += iLumaStride;
-  }
-  iCountShift = g_aucConvertToBit[ uiWidth ] + 3;
-
-  Int iTempShift = uiInternalBitDepth + iCountShift - 15;
-
-  if(iTempShift > 0)
-  {
-    x  = ( x +  ( 1 << ( iTempShift - 1 ) ) ) >> iTempShift;
-    y  = ( y +  ( 1 << ( iTempShift - 1 ) ) ) >> iTempShift;
-    xx = ( xx + ( 1 << ( iTempShift - 1 ) ) ) >> iTempShift;
-    xy = ( xy + ( 1 << ( iTempShift - 1 ) ) ) >> iTempShift;
-    iCountShift -= iTempShift;
-  }
-
-  Int avgLuma =  x   >> iCountShift;
-  Int avgSrc =  y  >> iCountShift;
-  Int RErrLuma = x & ( ( 1 << iCountShift ) - 1 );
-  Int RErrSrc =  y & ( ( 1 << iCountShift ) - 1 );
-
-  Int a, b, iShift = 13;
-
-  Int iB = 7;
-  iShift -= iB;
-
-  if( iCountShift == 0 )
-  {
-    a = 0;
-    b = 1 << (uiInternalBitDepth - 1);
-    iShift = 0;
-  }
-  else
-  {
-    Int a1 = xy - ( avgLuma*avgSrc << iCountShift ) - avgLuma*RErrSrc - avgSrc*RErrLuma;
-    Int a2 = xx - ( avgLuma*avgLuma << iCountShift ) - 2*avgLuma*RErrLuma;
-
-    const Int iShiftA1 = uiInternalBitDepth - 2;
-    const Int iShiftA2 = 5;
-    const Int iAccuracyShift = uiInternalBitDepth + 4;
-
-    Int iScaleShiftA2 = 0;
-    Int iScaleShiftA1 = 0;
-    Int a1s = a1;
-    Int a2s = a2;
-
-    iScaleShiftA1 = a1 == 0 ? 0 : GetFloorLog2( abs( a1 ) ) - iShiftA1;
-    iScaleShiftA2 = a2 == 0 ? 0 : GetFloorLog2( abs( a2 ) ) - iShiftA2;
-
-    if( iScaleShiftA1 < 0 )
-    {
-      iScaleShiftA1 = 0;
-    }
-    
-    if( iScaleShiftA2 < 0 )
-    {
-      iScaleShiftA2 = 0;
-    }
-
-    Int iScaleShiftA = iScaleShiftA2 + iAccuracyShift - iShift - iScaleShiftA1;
-
-    a2s = a2 >> iScaleShiftA2;
-
-    a1s = a1 >> iScaleShiftA1;
-
-    if (a2s >= 32)
-    {
-      UInt a2t = m_uiaShift[ a2s - 32 ] ;
-      a2t = Clip( a2t );
-      a = a1s * a2t;
-    }
-    else
-    {
-      a = 0;
-    }
-    
-    if( iScaleShiftA < 0 )
-    {
-      a = a << -iScaleShiftA;
-    }
-    else
-    {
-      a = a >> iScaleShiftA;
-    }
-    a = Clip3(-( 1 << (15-iB) ), ( 1 << (15-iB )) - 1, a);
-    a = a << iB;
-   
-    Short n = 0;
-    if (a != 0)
-    {
-      n = GetFloorLog2(abs( a ) + ( (a < 0 ? -1 : 1) - 1)/2 ) - 5;
-    }
-    
-    iShift =(iShift+iB)-n;
-    a = a>>n;
-
-    b =  avgSrc - ( (  a * avgLuma ) >> iShift );
-  }   
-
-  // <-- end of LLS parameters estimation
-
-  // get prediction -->
-  uiExt = uiExt0;
-  pLuma = pLuma0;
-  pDst = pDst0;
-
-  for( i = 0; i < uiHeight; i++ )
-  {
-    for( j = 0; j < uiWidth; j++ )
-    {
-      pDst[j] = Clip( ( ( a * pLuma[j] ) >> iShift ) + b );
-    }
-    
-    pDst  += iDstStride;
-    pLuma += iLumaStride;
-  }
-  // <-- end of get prediction
-
-}
-#endif
 
 /** Function for filtering intra DC predictor.
  * \param pSrc pointer to reconstructed sample array

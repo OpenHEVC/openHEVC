@@ -31,51 +31,67 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     TVideoIOYuv.h
-    \brief    YUV file I/O class (header)
+/** \file     SyntaxElementParser.h
+    \brief    Parsing functionality high level syntax
 */
 
-#ifndef __TVIDEOIOYUV__
-#define __TVIDEOIOYUV__
+#ifndef __SYNTAXELEMENTPARSER__
+#define __SYNTAXELEMENTPARSER__
 
-#include <stdio.h>
-#include <fstream>
-#include <iostream>
-#include "TLibCommon/CommonDef.h"
-#include "TLibCommon/TComPicYuv.h"
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
 
-using namespace std;
+#include "TLibCommon/TComRom.h"
+
+#if ENC_DEC_TRACE
+
+#define READ_CODE(length, code, name)     xReadCodeTr ( length, code, name )
+#define READ_UVLC(        code, name)     xReadUvlcTr (         code, name )
+#define READ_SVLC(        code, name)     xReadSvlcTr (         code, name )
+#define READ_FLAG(        code, name)     xReadFlagTr (         code, name )
+
+#else
+
+#define READ_CODE(length, code, name)     xReadCode ( length, code )
+#define READ_UVLC(        code, name)     xReadUvlc (         code )
+#define READ_SVLC(        code, name)     xReadSvlc (         code )
+#define READ_FLAG(        code, name)     xReadFlag (         code )
+
+#endif
+
+//! \ingroup TLibDecoder
+//! \{
 
 // ====================================================================================================================
 // Class definition
 // ====================================================================================================================
 
-/// YUV file I/O class
-class TVideoIOYuv
+class SyntaxElementParser
 {
-private:
-  fstream   m_cHandle;                                      ///< file handle
-  Int m_fileBitDepthY; ///< bitdepth of input/output video file luma component
-  Int m_fileBitDepthC; ///< bitdepth of input/output video file chroma component
-  Int m_bitDepthShiftY;  ///< number of bits to increase or decrease luma by before/after write/read
-  Int m_bitDepthShiftC;  ///< number of bits to increase or decrease chroma by before/after write/read
-  
-public:
-  TVideoIOYuv()           {}
-  virtual ~TVideoIOYuv()  {}
-  
-  Void  open  ( Char* pchFile, Bool bWriteMode, Int fileBitDepthY, Int fileBitDepthC, Int internalBitDepthY, Int internalBitDepthC ); ///< open or create file
-  Void  close ();                                           ///< close file
+protected:
+  TComInputBitstream*   m_pcBitstream;
 
-  void skipFrames(UInt numFrames, UInt width, UInt height);
-  
-  Bool  read  ( TComPicYuv*   pPicYuv, Int aiPad[2] );     ///< read  one YUV frame with padding parameter
-  Bool  write( TComPicYuv*    pPicYuv, Int cropLeft=0, Int cropRight=0, Int cropTop=0, Int cropBottom=0 );
-  
-  Bool  isEof ();                                           ///< check for end-of-file
-  Bool  isFail();                                           ///< check for failure
-  
+  SyntaxElementParser()
+  : m_pcBitstream (NULL)
+  {};
+  virtual ~SyntaxElementParser() {};
+
+  Void  xReadCode    ( UInt   length, UInt& val );
+  Void  xReadUvlc    ( UInt&  val );
+  Void  xReadSvlc    ( Int&   val );
+  Void  xReadFlag    ( UInt&  val );
+#if ENC_DEC_TRACE
+  Void  xReadCodeTr  (UInt  length, UInt& rValue, const Char *pSymbolName);
+  Void  xReadUvlcTr  (              UInt& rValue, const Char *pSymbolName);
+  Void  xReadSvlcTr  (               Int& rValue, const Char *pSymbolName);
+  Void  xReadFlagTr  (              UInt& rValue, const Char *pSymbolName);
+#endif
+public:
+  Void  setBitstream ( TComInputBitstream* p )   { m_pcBitstream = p; }
 };
 
-#endif // __TVIDEOIOYUV__
+//! \}
+
+#endif // !defined(__SYNTAXELEMENTPARSER__)
 

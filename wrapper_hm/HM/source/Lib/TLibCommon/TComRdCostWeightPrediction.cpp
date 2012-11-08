@@ -100,7 +100,7 @@ UInt TComRdCostWeightPrediction::xGetSADw( DistParam* pcDtParam )
   
   pcDtParam->uiComp = 255;  // reset for DEBUG (assert test)
 
-  return ( uiSum >> g_uiBitIncrement );
+  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(pcDtParam->bitDepth-8);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ UInt TComRdCostWeightPrediction::xGetSSEw( DistParam* pcDtParam )
         round   = wpCur->round;
  
   UInt uiSum = 0;
-  UInt uiShift = g_uiBitIncrement<<1;
+  UInt uiShift = DISTORTION_PRECISION_ADJUSTMENT((pcDtParam->bitDepth-8) << 1);
   
   Int iTemp;
   
@@ -447,7 +447,7 @@ UInt TComRdCostWeightPrediction::xGetHADs4w( DistParam* pcDtParam )
     piCur += iOffsetCur;
   }
   
-  return ( uiSum >> g_uiBitIncrement );
+  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(pcDtParam->bitDepth-8);
 }
 
 /** get weighted Hadamard cost
@@ -483,7 +483,7 @@ UInt TComRdCostWeightPrediction::xGetHADs8w( DistParam* pcDtParam )
     }
   }
   
-  return ( uiSum >> g_uiBitIncrement );
+  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(pcDtParam->bitDepth-8);
 }
 
 /** get weighted Hadamard cost
@@ -505,11 +505,8 @@ UInt TComRdCostWeightPrediction::xGetHADsw( DistParam* pcDtParam )
   UInt            uiComp    = pcDtParam->uiComp;
   assert(uiComp<3);
   wpScalingParam  *wpCur    = &(pcDtParam->wpCur[uiComp]);
-  Int   w0      = wpCur->w,
-        offset  = wpCur->offset,
-        shift   = wpCur->shift,
-        round   = wpCur->round; 
-  xSetWPscale(w0, 0, shift, offset, round);
+
+  xSetWPscale(wpCur->w, 0, wpCur->shift, wpCur->offset, wpCur->round);
 
   UInt uiSum = 0;
   
@@ -557,5 +554,5 @@ UInt TComRdCostWeightPrediction::xGetHADsw( DistParam* pcDtParam )
   
   m_xSetDone  = false;
 
-  return ( uiSum >> g_uiBitIncrement );
+  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(pcDtParam->bitDepth-8);
 }

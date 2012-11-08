@@ -54,7 +54,6 @@
 #define NUM_MERGE_FLAG_EXT_CTX        1       ///< number of context models for merge flag of merge extended
 #define NUM_MERGE_IDX_EXT_CTX         1       ///< number of context models for merge index of merge extended
 
-#define NUM_ALF_CTRL_FLAG_CTX         1       ///< number of context models for ALF control flag
 #define NUM_PART_SIZE_CTX             4       ///< number of context models for partition size
 #define NUM_CU_AMP_CTX                1       ///< number of context models for partition size (AMP)
 #define NUM_PRED_MODE_CTX             1       ///< number of context models for prediction mode
@@ -65,31 +64,17 @@
 #define NUM_INTER_DIR_CTX             5       ///< number of context models for inter prediction direction
 #define NUM_MV_RES_CTX                2       ///< number of context models for motion vector difference
 
-#if REF_IDX_BYPASS
 #define NUM_REF_NO_CTX                2       ///< number of context models for reference index
-#else
-#define NUM_REF_NO_CTX                4       ///< number of context models for reference index
-#endif
-#if TRANS_SPLIT_FLAG_CTX_REDUCTION
 #define NUM_TRANS_SUBDIV_FLAG_CTX     3       ///< number of context models for transform subdivision flags
-#else
-#define NUM_TRANS_SUBDIV_FLAG_CTX     10      ///< number of context models for transform subdivision flags
-#endif
 #define NUM_QT_CBF_CTX                5       ///< number of context models for QT CBF
 #define NUM_QT_ROOT_CBF_CTX           1       ///< number of context models for QT ROOT CBF
 #define NUM_DELTA_QP_CTX              3       ///< number of context models for dQP
 
 #define NUM_SIG_CG_FLAG_CTX           2       ///< number of context models for MULTI_LEVEL_SIGNIFICANCE
 
-#if REMOVAL_8x2_2x8_CG
 #define NUM_SIG_FLAG_CTX              42      ///< number of context models for sig flag
 #define NUM_SIG_FLAG_CTX_LUMA         27      ///< number of context models for luma sig flag
 #define NUM_SIG_FLAG_CTX_CHROMA       15      ///< number of context models for chroma sig flag
-#else
-#define NUM_SIG_FLAG_CTX              45      ///< number of context models for sig flag
-#define NUM_SIG_FLAG_CTX_LUMA         24      ///< number of context models for luma sig flag
-#define NUM_SIG_FLAG_CTX_CHROMA       21      ///< number of context models for chroma sig flag
-#endif
 
 #define NUM_CTX_LAST_FLAG_XY          15      ///< number of context models for last coefficient position
 
@@ -102,27 +87,8 @@
 
 #define NUM_MVP_IDX_CTX               2       ///< number of context models for MVP index
 
-#define NUM_ALF_FLAG_CTX              1       ///< number of context models for ALF flag
-#define NUM_ALF_UVLC_CTX              2       ///< number of context models for ALF UVLC (filter length)
-#define NUM_ALF_SVLC_CTX              3       ///< number of context models for ALF SVLC (filter coeff.)
-#if !SAO_ABS_BY_PASS
-#define NUM_SAO_UVLC_CTX              2       ///< number of context models for SAO UVLC
-#endif
-#if SAO_MERGE_ONE_CTX
 #define NUM_SAO_MERGE_FLAG_CTX        1       ///< number of context models for SAO merge flags
-#else
-#if SAO_SINGLE_MERGE
-#define NUM_SAO_MERGE_LEFT_FLAG_CTX   1       ///< number of context models for SAO Merge-Left flag
-#else
-#define NUM_SAO_MERGE_LEFT_FLAG_CTX   3       ///< number of context models for AO SVLC (filter coeff.)
-#endif
-#define NUM_SAO_MERGE_UP_FLAG_CTX     1       ///< number of context models for AO SVLC (filter coeff.)
-#endif
-#if SAO_TYPE_CODING
 #define NUM_SAO_TYPE_IDX_CTX          1       ///< number of context models for SAO type index
-#else
-#define NUM_SAO_TYPE_IDX_CTX          2       ///< number of context models for AO SVLC (filter coeff.)
-#endif
 
 #define NUM_TRANSFORMSKIP_FLAG_CTX    1       ///< number of context models for transform skipping 
 #define NUM_CU_TRANSQUANT_BYPASS_FLAG_CTX  1 
@@ -158,15 +124,7 @@ INIT_SKIP_FLAG[3][NUM_SKIP_FLAG_CTX] =
   { CNU,  CNU,  CNU, }, 
 };
 
-static const UChar 
-INIT_ALF_CTRL_FLAG[3][NUM_ALF_CTRL_FLAG_CTX] = 
-{
-  { 102, }, 
-  { 102, }, 
-  { 118, }, 
-};
-
-static const UChar 
+static const UChar
 INIT_MERGE_FLAG_EXT[3][NUM_MERGE_FLAG_EXT_CTX] = 
 {
   { 154, }, 
@@ -238,7 +196,6 @@ INIT_MVD[3][NUM_MV_RES_CTX] =
   { CNU,  CNU, }, 
 };
 
-#if REF_IDX_BYPASS
 static const UChar 
 INIT_REF_PIC[3][NUM_REF_NO_CTX] =  
 {
@@ -246,15 +203,6 @@ INIT_REF_PIC[3][NUM_REF_NO_CTX] =
   { 153,  153 }, 
   { CNU,  CNU }, 
 };
-#else
-static const UChar 
-INIT_REF_PIC[3][NUM_REF_NO_CTX] =  
-{
-  { 153,  153,  168,  CNU, }, 
-  { 153,  153,  139,  CNU, }, 
-  { CNU,  CNU,  CNU,  CNU, }, 
-};
-#endif
 
 static const UChar 
 INIT_DQP[3][NUM_DELTA_QP_CTX] = 
@@ -311,15 +259,9 @@ INIT_SIG_CG_FLAG[3][2 * NUM_SIG_CG_FLAG_CTX] =
 static const UChar 
 INIT_SIG_FLAG[3][NUM_SIG_FLAG_CTX] = 
 {
-#if REMOVAL_8x2_2x8_CG
   { 170,  154,  139,  153,  139,  123,  123,   63,  124,  166,  183,  140,  136,  153,  154,  166,  183,  140,  136,  153,  154,  166,  183,  140,  136,  153,  154,  170,  153,  138,  138,  122,  121,  122,  121,  167,  151,  183,  140,  151,  183,  140,  }, 
   { 155,  154,  139,  153,  139,  123,  123,   63,  153,  166,  183,  140,  136,  153,  154,  166,  183,  140,  136,  153,  154,  166,  183,  140,  136,  153,  154,  170,  153,  123,  123,  107,  121,  107,  121,  167,  151,  183,  140,  151,  183,  140,  }, 
   { 111,  111,  125,  110,  110,   94,  124,  108,  124,  107,  125,  141,  179,  153,  125,  107,  125,  141,  179,  153,  125,  107,  125,  141,  179,  153,  125,  140,  139,  182,  182,  152,  136,  152,  136,  153,  136,  139,  111,  136,  139,  111,  }, 
-#else
-  { 170,      154,  139,  153,  139,  123,  123,   63,  124,     153, 153, 152, 152, 152, 137, 152, 137, 137,      166,  183,  140,  136,  153,  154,      170,     153, 138, 138,  122, 121,   122, 121,   167,     153,  167,  136,  121,  122,  136,  121,  122,   91,      151,  183,  140,  }, 
-  { 155,      154,  139,  153,  139,  123,  123,   63,  153,     153, 153, 152, 152, 152, 137, 152, 137, 122,      166,  183,  140,  136,  153,  154,      170,     153, 123, 123,  107, 121,   107, 121,   167,     153,  167,  136,  149,  107,  136,  121,  122,   91,      151,  183,  140,  }, 
-  { 111,      111,  125,  110,  110,   94,  124,  108,  124,     139, 139, 139, 168, 124, 138, 124, 138, 107,      107,  125,  141,  179,  153,  125,      140,     139, 182, 182,  152, 136,   152, 136,   153,     182,  137,  149,  192,  152,  224,  136,   31,  136,      136,  139,  111,  }, 
-#endif
 };
 
 static const UChar 
@@ -347,84 +289,21 @@ INIT_MVP_IDX[3][NUM_MVP_IDX_CTX] =
 };
 
 static const UChar 
-INIT_ALF_FLAG[3][NUM_ALF_FLAG_CTX] = 
-{
-  { 153, }, 
-  { 153, }, 
-  { 153, }, 
-};
-
-static const UChar 
-INIT_ALF_UVLC[3][NUM_ALF_UVLC_CTX] = 
-{
-  { 154,  154, }, 
-  { 154,  154, }, 
-  { 140,  154, }, 
-};
-
-static const UChar 
-INIT_ALF_SVLC[3][NUM_ALF_SVLC_CTX] =  
-{
-  { 141,  154,  159, }, 
-  { 141,  154,  189, }, 
-  { 187,  154,  159, }, 
-};
-#if !SAO_ABS_BY_PASS
-static const UChar 
-INIT_SAO_UVLC[3][NUM_SAO_UVLC_CTX] =  
-{
-  { 200,  140, }, 
-  { 185,  140, }, 
-  { 143,  140, }, 
-};
-#endif
-#if SAO_MERGE_ONE_CTX
-static const UChar 
 INIT_SAO_MERGE_FLAG[3][NUM_SAO_MERGE_FLAG_CTX] = 
 {
   { 153,  }, 
   { 153,  }, 
   { 153,  }, 
 };
-#else
-static const UChar 
-INIT_SAO_MERGE_LEFT_FLAG[3][NUM_SAO_MERGE_LEFT_FLAG_CTX] = 
-{
-#if SAO_SINGLE_MERGE
-  { 153, }, 
-  { 153, }, 
-  { 153, }, 
-#else
-  { 153,  153,  153, }, 
-  { 153,  153,  153, }, 
-  { 153,  153,  153, }, 
-#endif
-};
-
-static const UChar 
-INIT_SAO_MERGE_UP_FLAG[3][NUM_SAO_MERGE_UP_FLAG_CTX] = 
-{
-  { 153, }, 
-  { 153, }, 
-  { 175, }, 
-};
-#endif
 
 static const UChar 
 INIT_SAO_TYPE_IDX[3][NUM_SAO_TYPE_IDX_CTX] = 
 {
-#if SAO_TYPE_CODING
   { 200, }, 
   { 185, }, 
   { 160, }, 
-#else
-  { 200,  140, }, 
-  { 185,  140, }, 
-  { 160,  140, }, 
-#endif
 };
 
-#if TRANS_SPLIT_FLAG_CTX_REDUCTION
 static const UChar
 INIT_TRANS_SUBDIV_FLAG[3][NUM_TRANS_SUBDIV_FLAG_CTX] =
 {
@@ -432,15 +311,6 @@ INIT_TRANS_SUBDIV_FLAG[3][NUM_TRANS_SUBDIV_FLAG_CTX] =
   { 124,  138,   94, },
   { 224,  167,  122, },
 };
-#else
-static const UChar 
-INIT_TRANS_SUBDIV_FLAG[3][NUM_TRANS_SUBDIV_FLAG_CTX] = 
-{
-{ CNU,  153,  138,  138,  CNU,  CNU,  CNU,  CNU,  CNU,  CNU, }, 
-{ CNU,  124,  138,   94,  CNU,  CNU,  CNU,  CNU,  CNU,  CNU, }, 
-{ CNU,  224,  167,  122,  CNU,  CNU,  CNU,  CNU,  CNU,  CNU, }, 
-};
-#endif
 
 static const UChar
 INIT_TRANSFORMSKIP_FLAG[3][2*NUM_TRANSFORMSKIP_FLAG_CTX] = 

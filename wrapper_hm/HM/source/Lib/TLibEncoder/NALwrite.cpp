@@ -44,52 +44,26 @@ using namespace std;
 //! \ingroup TLibEncoder
 //! \{
 
-static const char emulation_prevention_three_byte[] = {3};
+static const Char emulation_prevention_three_byte[] = {3};
 
-#if NAL_UNIT_HEADER
 Void writeNalUnitHeader(ostream& out, OutputNALUnit& nalu)       // nal_unit_header()
 {
 TComOutputBitstream bsNALUHeader;
 
   bsNALUHeader.write(0,1);                    // forbidden_zero_bit
   bsNALUHeader.write(nalu.m_nalUnitType, 6);  // nal_unit_type
-  bsNALUHeader.write(0, 6);                   // nuh_reserved_zero_6bits
+  bsNALUHeader.write(nalu.m_reservedZero6Bits, 6);                   // nuh_reserved_zero_6bits
   bsNALUHeader.write(nalu.m_temporalId+1, 3); // nuh_temporal_id_plus1
 
   out.write(bsNALUHeader.getByteStream(), bsNALUHeader.getByteStreamLength());
 }
-#endif
 /**
  * write nalu to bytestream out, performing RBSP anti startcode
  * emulation as required.  nalu.m_RBSPayload must be byte aligned.
  */
 void write(ostream& out, OutputNALUnit& nalu)
 {
-#if NAL_UNIT_HEADER
   writeNalUnitHeader(out, nalu);
-#else
-  TComOutputBitstream bsNALUHeader;
-
-  bsNALUHeader.write(0,1); // forbidden_zero_flag
-#if !REMOVE_NAL_REF_FLAG
-  bsNALUHeader.write(nalu.m_nalRefFlag? 1 : 0, 1); // nal_ref_flag
-#endif
-  bsNALUHeader.write(nalu.m_nalUnitType, 6);          // nal_unit_type
-#if REMOVE_NAL_REF_FLAG
-    bsNALUHeader.write(0, 6); // reserved_one_5bits
-#endif
-#if TEMPORAL_ID_PLUS1
-  bsNALUHeader.write(nalu.m_temporalId+1, 3); // temporal_id_plus1
-#if !REMOVE_NAL_REF_FLAG
-  bsNALUHeader.write(0, 5); // reserved_one_5bits
-#endif
-#else
-  bsNALUHeader.write(nalu.m_temporalId, 3); // temporal_id
-  bsNALUHeader.write(1, 5); // reserved_one_5bits
-#endif
-
-  out.write(bsNALUHeader.getByteStream(), bsNALUHeader.getByteStreamLength());
-#endif
   /* write out rsbp_byte's, inserting any required
    * emulation_prevention_three_byte's */
   /* 7.4.1 ...
@@ -139,7 +113,7 @@ void write(ostream& out, OutputNALUnit& nalu)
     }
   }
 
-  out.write((char*)&(*rbsp.begin()), rbsp.end() - rbsp.begin());
+  out.write((Char*)&(*rbsp.begin()), rbsp.end() - rbsp.begin());
 
   /* 7.4.1.1
    * ... when the last byte of the RBSP data is equal to 0x00 (which can
@@ -167,9 +141,7 @@ void writeRBSPTrailingBits(TComOutputBitstream& bs)
 void copyNaluData(OutputNALUnit& naluDest, const OutputNALUnit& naluSrc)
 {
   naluDest.m_nalUnitType = naluSrc.m_nalUnitType;
-#if !REMOVE_NAL_REF_FLAG
-  naluDest.m_nalRefFlag  = naluSrc.m_nalRefFlag;
-#endif
+  naluDest.m_reservedZero6Bits  = naluSrc.m_reservedZero6Bits;
   naluDest.m_temporalId  = naluSrc.m_temporalId;
   naluDest.m_Bitstream   = naluSrc.m_Bitstream;
 }

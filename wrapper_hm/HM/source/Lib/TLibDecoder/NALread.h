@@ -31,6 +31,11 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ \file     NALread.h
+ \brief    reading funtionality for NAL units
+ */
+
 #pragma once
 
 #include "TLibCommon/TypeDef.h"

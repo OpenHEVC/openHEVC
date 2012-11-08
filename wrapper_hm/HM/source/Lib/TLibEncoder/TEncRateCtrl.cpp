@@ -111,19 +111,11 @@ Int     PixelBaseURQQuadraticModel::getQP(Int qp, Int targetBits, Int numberOfPi
   
   if(xConvertQP2QStep(qp) >= HIGH_QSTEP_THRESHOLD)
   {
-#if J0260
     qStep = 1/( sqrt((bppPerMAD/m_paramHighX1)+((m_paramHighX2*m_paramHighX2)/(4*m_paramHighX1*m_paramHighX1))) - (m_paramHighX2/(2*m_paramHighX1)));
-#else
-    qStep = 1/( sqrt((bppPerMAD/m_paramHighX1)+((m_paramHighX2*m_paramHighX2)/(4*m_paramHighX1*m_paramHighX1*m_paramHighX1))) - (m_paramHighX2/(2*m_paramHighX1)));
-#endif
   }
   else
   {
-#if J0260
     qStep = 1/( sqrt((bppPerMAD/m_paramLowX1)+((m_paramLowX2*m_paramLowX2)/(4*m_paramLowX1*m_paramLowX1))) - (m_paramLowX2/(2*m_paramLowX1)));
-#else
-    qStep = 1/( sqrt((bppPerMAD/m_paramLowX1)+((m_paramLowX2*m_paramLowX2)/(4*m_paramLowX1*m_paramLowX1*m_paramLowX1))) - (m_paramLowX2/(2*m_paramLowX1)));
-#endif
   }
   
   return xConvertQStep2QP(qStep);
@@ -233,8 +225,8 @@ Void  TEncRateCtrl::create(Int sizeIntraPeriod, Int sizeGOP, Int frameRate, Int 
   m_sourceWidthInLCU         = (sourceWidth  / maxCUWidth  ) + (( sourceWidth  %  maxCUWidth ) ? 1 : 0);
   m_sourceHeightInLCU        = (sourceHeight / maxCUHeight) + (( sourceHeight %  maxCUHeight) ? 1 : 0);  
   m_isLowdelay               = (sizeIntraPeriod == -1) ? true : false;
-  m_prevBitrate              = targetKbps*1000;
-  m_currBitrate              = targetKbps*1000;
+  m_prevBitrate              = ( targetKbps << 10 );  // in units of 1,024 bps
+  m_currBitrate              = ( targetKbps << 10 );
   m_frameRate                = frameRate;
   m_refFrameNum              = m_isLowdelay ? (sizeGOP) : (sizeGOP>>1);
   m_nonRefFrameNum           = sizeGOP-m_refFrameNum;
@@ -607,7 +599,7 @@ Void  TEncRateCtrl::updateFrameData(UInt64 actualFrameBits)
 Void  TEncRateCtrl::updateLCUData(TComDataCU* pcCU, UInt64 actualLCUBits, Int qp)
 {
   Int     x, y;
-  double  costMAD = 0.0;
+  Double  costMAD = 0.0;
 
   Pel*  pOrg   = pcCU->getPic()->getPicYuvOrg()->getLumaAddr(pcCU->getAddr(), 0);
   Pel*  pRec   = pcCU->getPic()->getPicYuvRec()->getLumaAddr(pcCU->getAddr(), 0);

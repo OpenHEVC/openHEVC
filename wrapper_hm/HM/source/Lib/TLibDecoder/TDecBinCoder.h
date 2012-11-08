@@ -61,7 +61,9 @@ public:
   virtual Void  decodeBinTrm      ( UInt& ruiBin                           )  = 0;
   
   virtual Void  resetBac          ()                                          = 0;
+#if !REMOVE_BURST_IPCM
   virtual Void  decodeNumSubseqIPCM( Int& numSubseqIPCM )                  = 0;
+#endif
   virtual Void  decodePCMAlignBits()                                          = 0;
   virtual Void  xReadPCMCode      ( UInt uiLength, UInt& ruiCode)              = 0;
 

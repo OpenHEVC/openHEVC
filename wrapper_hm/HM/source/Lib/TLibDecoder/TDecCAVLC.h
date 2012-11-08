@@ -43,6 +43,7 @@
 #endif // _MSC_VER > 1000
 
 #include "TDecEntropy.h"
+#include "SyntaxElementParser.h"
 
 //! \ingroup TLibDecoder
 //! \{
@@ -54,26 +55,16 @@
 class SEImessages;
 
 /// CAVLC decoder class
-class TDecCavlc : public TDecEntropyIf
+class TDecCavlc : public SyntaxElementParser, public TDecEntropyIf
 {
 public:
   TDecCavlc();
   virtual ~TDecCavlc();
   
 protected:
-  Void  xReadCode             (UInt   uiLength, UInt& ruiCode);
-  Void  xReadUvlc             (UInt&  ruiVal);
-  Void  xReadSvlc             (Int&   riVal);
-  Void  xReadFlag             (UInt&  ruiCode);
   Void  xReadEpExGolomb       ( UInt& ruiSymbol, UInt uiCount );
   Void  xReadExGolombLevel    ( UInt& ruiSymbol );
   Void  xReadUnaryMaxSymbol   ( UInt& ruiSymbol, UInt uiMaxSymbol );
-#if ENC_DEC_TRACE
-  Void  xReadCodeTr           (UInt  length, UInt& rValue, const Char *pSymbolName);
-  Void  xReadUvlcTr           (              UInt& rValue, const Char *pSymbolName);
-  Void  xReadSvlcTr           (               Int& rValue, const Char *pSymbolName);
-  Void  xReadFlagTr           (              UInt& rValue, const Char *pSymbolName);
-#endif
   
   Void  xReadPCMAlignZero     ();
 
@@ -81,33 +72,22 @@ protected:
   
   void  parseShortTermRefPicSet            (TComSPS* pcSPS, TComReferencePictureSet* pcRPS, Int idx);
 private:
-  TComInputBitstream*   m_pcBitstream;
-#if !REMOVE_FGS
-  Int           m_iSliceGranularity; //!< slice granularity
-#endif
   
 public:
 
   /// rest entropy coder by intial QP and IDC in CABAC
   Void  resetEntropy        ( TComSlice* pcSlice  )     { assert(0); };
   Void  setBitstream        ( TComInputBitstream* p )   { m_pcBitstream = p; }
-#if !REMOVE_FGS
-  /// set slice granularity
-  Void setSliceGranularity(Int iSliceGranularity)  {m_iSliceGranularity = iSliceGranularity;}
-
-  /// get slice granularity
-  Int  getSliceGranularity()                       {return m_iSliceGranularity;             }
-#endif
   Void  parseTransformSubdivFlag( UInt& ruiSubdivFlag, UInt uiLog2TransformBlockSize );
   Void  parseQtCbf          ( TComDataCU* pcCU, UInt uiAbsPartIdx, TextType eType, UInt uiTrDepth, UInt uiDepth );
   Void  parseQtRootCbf      ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth, UInt& uiQtRootCbf );
   Void  parseVPS            ( TComVPS* pcVPS );
   Void  parseSPS            ( TComSPS* pcSPS );
   Void  parsePPS            ( TComPPS* pcPPS);
+  Void  parseVUI            ( TComVUI* pcVUI, TComSPS* pcSPS );
   Void  parseSEI(SEImessages&);
-#if !REMOVE_APS
-  Void  parseAPS            ( TComAPS* pAPS );
-#endif
+  Void  parsePTL            ( TComPTL *rpcPTL, Bool profilePresentFlag, Int maxNumSubLayersMinus1 );
+  Void  parseProfileTier    (ProfileTierLevel *ptl);
   Void  parseSliceHeader    ( TComSlice*& rpcSlice, ParameterSetManagerDecoder *parameterSetManager);
   Void  parseTerminatingBit ( UInt& ruiBit );
   
@@ -136,16 +116,11 @@ public:
   Void parseIPCMInfo        ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
 
   Void updateContextTables  ( SliceType eSliceType, Int iQp ) { return; }
-  Void decodeFlush() {};
 
   Void xParsePredWeightTable ( TComSlice* pcSlice );
   Void  parseScalingList               ( TComScalingList* scalingList );
   Void xDecodeScalingList    ( TComScalingList *scalingList, UInt sizeId, UInt listId);
 protected:
-#if !REMOVE_ALF
-  Void  xParseAlfParam       ( ALFParam* pAlfParam );
-  Int   xGolombDecode        ( Int k );
-#endif
   Bool  xMoreRbspData();
 };
 

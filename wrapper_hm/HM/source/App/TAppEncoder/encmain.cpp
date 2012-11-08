@@ -36,7 +36,12 @@
 */
 
 #include <time.h>
+#include <iostream>
 #include "TAppEncTop.h"
+#include "TAppCommon/program_options_lite.h"
+
+using namespace std;
+namespace po = df::program_options_lite;
 
 //! \ingroup TAppEncoder
 //! \{
@@ -61,9 +66,17 @@ int main(int argc, char* argv[])
   cTAppEncTop.create();
 
   // parse configuration
-  if(!cTAppEncTop.parseCfg( argc, argv ))
+  try
   {
-    cTAppEncTop.destroy();
+    if(!cTAppEncTop.parseCfg( argc, argv ))
+    {
+      cTAppEncTop.destroy();
+      return 1;
+    }
+  }
+  catch (po::ParseFailure& e)
+  {
+    cerr << "Error parsing option \""<< e.arg <<"\" with argument \""<< e.val <<"\"." << endl;
     return 1;
   }
 
