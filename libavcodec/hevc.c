@@ -107,19 +107,14 @@ static int hls_slice_header(HEVCContext *s)
 
     av_log(s->avctx, AV_LOG_INFO, "Decoding slice\n");
 
-    header_printf("=========== Slice ===========\n");
 
     // Coded parameters
 
     sh->first_slice_in_pic_flag = get_bits1(gb);
-    header_printf("          first_slice_in_pic_flag                  u(1) : %d\n", sh->first_slice_in_pic_flag);
-    if (s->nal_unit_type >= 4 && s->nal_unit_type <= 8) {
+    if (s->nal_unit_type >= 4 && s->nal_unit_type <= 8)
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
-    	header_printf("          no_output_of_prior_pics_flag             u(1) : %d\n", sh->no_output_of_prior_pics_flag);
-    }
 
     sh->pps_id = get_ue_golomb(gb);
-    header_printf("          pic_parameter_set_id                     u(v) : %d\n", sh->pps_id);
     if (sh->pps_id >= MAX_PPS_COUNT || !s->pps_list[sh->pps_id]) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
         return -1;
@@ -192,20 +187,15 @@ static int hls_slice_header(HEVCContext *s)
         slice_address_length = av_ceil_log2_c(s->sps->pic_width_in_ctbs *
                                               s->sps->pic_height_in_ctbs);
         sh->slice_address = get_bits(gb, slice_address_length);
-        header_printf("          slice_address                            u(v) : %d\n", sh->slice_address);
     }
 
     sh->slice_type = get_ue_golomb(gb);
-    header_printf("          slice_type                               u(v) : %d\n", sh->slice_type);
 
     sh->dependent_slice_flag = get_bits1(gb);
-    header_printf("          dependent_slice_flag                     u(1) : %d\n", sh->dependent_slice_flag);
 
     if (!sh->dependent_slice_flag) {
-        if (s->pps->output_flag_present_flag) {
+        if (s->pps->output_flag_present_flag)
             sh->pic_output_flag = get_bits1(gb);
-    	    header_printf("          pic_order_cnt_lsb                        u(8) : %d\n", sh->pic_output_flag);
-        }
 
         if (s->sps->separate_colour_plane_flag == 1)
             sh->colour_plane_id = get_bits(gb, 2);
@@ -213,20 +203,16 @@ static int hls_slice_header(HEVCContext *s)
         if (s->nal_unit_type != NAL_IDR_SLICE) {
             int short_term_ref_pic_set_sps_flag;
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
-    	    header_printf("          pic_order_cnt_lsb                        u(8) : %d\n", sh->pic_order_cnt_lsb);
             short_term_ref_pic_set_sps_flag = get_bits1(gb);
-    	    header_printf("          short_term_ref_pic_set_sps_flag          u(1) : %d\n", short_term_ref_pic_set_sps_flag);
             if (!short_term_ref_pic_set_sps_flag) {
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: !short_term_ref_pic_set_sps_flag\n");
                 return -1;
             } else {
 #if REFERENCE_ENCODER_QUIRKS
                 int short_term_ref_pic_set_idx = get_ue_golomb(gb);
-        		header_printf("          short_term_ref_pic_set_idx               u(v) : %d\n", short_term_ref_pic_set_idx);
 #else
                 int short_term_ref_pic_set_idx =
                 get_bits(gb, av_ceil_log2_c(s->sps->num_short_term_ref_pic_sets));
-        		header_printf("          short_term_ref_pic_set_idx               u(v) : %d\n", short_term_ref_pic_set_idx);
 #endif
             }
             if (s->sps->long_term_ref_pics_present_flag) {
@@ -241,85 +227,59 @@ static int hls_slice_header(HEVCContext *s)
 
         if (s->sps->sample_adaptive_offset_enabled_flag) {
             sh->slice_sample_adaptive_offset_flag[0] = get_bits1(gb);
-    	    header_printf("          slice_sample_adaptive_offset_flag        u(1) : %d\n", sh->slice_sample_adaptive_offset_flag[0]);
             sh->slice_sample_adaptive_offset_flag[2] =
             sh->slice_sample_adaptive_offset_flag[1] = get_bits1(gb);
-            header_printf("          sao_chroma_enable_flag                   u(1) : %d\n", sh->slice_sample_adaptive_offset_flag[1]);
         }
 
         sh->num_ref_idx_l0_active = s->pps->num_ref_idx_l0_default_active;
         sh->num_ref_idx_l1_active = s->pps->num_ref_idx_l1_default_active;
         if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
-        	if(s->sps->sps_temporal_mvp_enabled_flag) {
+        	if(s->sps->sps_temporal_mvp_enabled_flag)
         		sh->slice_temporal_mvp_enable_flag = get_bits1(gb);
-                header_printf("          temporal_mvp_enable_flag                 u(1) : %d\n", sh->slice_temporal_mvp_enable_flag);
-        	}
         	sh->num_ref_idx_active_override_flag = get_bits1(gb);
-            header_printf("          num_ref_idx_active_override_flag         u(1) : %d\n", sh->num_ref_idx_active_override_flag);
 
         	if (sh->num_ref_idx_active_override_flag) {
         		sh->num_ref_idx_l0_active = get_ue_golomb(gb) + 1;
-                header_printf("          num_ref_idx_l0_active_minus1             u(v) : %d\n", sh->num_ref_idx_l0_active - 1);
-        		if (sh->slice_type == B_SLICE) {
+        		if (sh->slice_type == B_SLICE)
         			sh->num_ref_idx_l1_active = get_ue_golomb(gb) + 1;
-                    header_printf("          num_ref_idx_l1_active_minus1             u(v) : %d\n", sh->num_ref_idx_l1_active - 1);
-        		}
         	}
         	if (s->sps->lists_modification_present_flag) {
         		av_log(s->avctx, AV_LOG_ERROR, "TODO: ref_pic_list_modification() \n");
         		return -1;
         	}
 
-        	if (sh->slice_type == B_SLICE) {
+        	if (sh->slice_type == B_SLICE)
         		sh->mvd_l1_zero_flag = get_bits1(gb);
-        		header_printf("          mvd_l1_zero_flag                         u(1) : %d\n", sh->mvd_l1_zero_flag);
-        	}
 
-        	if (s->pps->cabac_init_present_flag) {
+        	if (s->pps->cabac_init_present_flag)
         		sh->cabac_init_flag = get_bits1(gb);
-        		header_printf("          cabac_init_flag                          u(1) : %d\n", sh->cabac_init_flag);
-        	}
         }
         sh->slice_qp_delta = get_se_golomb(gb);
-    	header_printf("          slice_qp_delta                           s(v) : %d\n", sh->slice_qp_delta);
-
         if (s->pps->pic_slice_level_chroma_qp_offsets_present_flag) {
             sh->slice_cb_qp_offset = get_se_golomb(gb);
-        	header_printf("          slice_cb_qp_offset                       s(v) : %d\n", sh->slice_cb_qp_offset);
             sh->slice_cr_qp_offset = get_se_golomb(gb);
-        	header_printf("          slice_cr_qp_offset                       s(v) : %d\n", sh->slice_cr_qp_offset);
         }
         if (s->pps->deblocking_filter_control_present_flag) {
             int deblocking_filter_override_flag = 1;
-            if (s->pps->deblocking_filter_override_enabled_flag) {
+            if (s->pps->deblocking_filter_override_enabled_flag)
                 deblocking_filter_override_flag = get_bits1(gb);
-            	header_printf("          deblocking_filter_override_flag          u(1) : %d\n", deblocking_filter_override_flag);
-            }
             if (deblocking_filter_override_flag) {
                 sh->disable_deblocking_filter_flag = get_bits1(gb);
-            	header_printf("          slice_header_disable_deblocking_filter_flag u(1) : %d\n", sh->disable_deblocking_filter_flag);
                 if (!sh->disable_deblocking_filter_flag) {
                     sh->beta_offset = get_se_golomb(gb) * 2;
-                	header_printf("          beta_offset_div2                         s(v) : %d\n", sh->beta_offset/2);
                     sh->tc_offset = get_se_golomb(gb) * 2;
-                	header_printf("          tc_offset_div2                           s(v) : %d\n", sh->tc_offset/2);
                 }
             }
         }
 #if !REFERENCE_ENCODER_QUIRKS
-        if (sh->slice_type != I_SLICE) {
+        if (sh->slice_type != I_SLICE)
 #endif
             sh->max_num_merge_cand = 5 - get_ue_golomb(gb);
-        	header_printf("          5_minus_max_num_merge_cand               u(v) : %d\n", 5-sh->max_num_merge_cand);
-#if !REFERENCE_ENCODER_QUIRKS
-        }
-#endif
 
         if (s->pps->seq_loop_filter_across_slices_enabled_flag
             && (sh->slice_sample_adaptive_offset_flag ||
                 !sh->disable_deblocking_filter_flag)) {
             sh->slice_loop_filter_across_slices_enabled_flag = get_bits1(gb);
-            header_printf("          slice_loop_filter_across_slices_enabled_flag u(1) : %d\n",  sh->slice_loop_filter_across_slices_enabled_flag);
         } else {
             sh->slice_loop_filter_across_slices_enabled_flag =
             s->pps->seq_loop_filter_across_slices_enabled_flag;
@@ -470,27 +430,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
     int16_t coeffs[MAX_TB_SIZE * MAX_TB_SIZE] = { 0 };
     int size = 1 << log2_trafo_width;
 
-#if DEBUG_TRACE1
-  if (c_idx == 0) {
-    header_printf("read_ResidualCoding.start cbY(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_width, scan_idx, c_idx);
-  } else {
-    if (c_idx == 1) {
-    	header_printf("read_ResidualCoding.start cbU(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_width, scan_idx, c_idx);
-    } else {
-    	header_printf("read_ResidualCoding.start cbV(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_width, scan_idx, c_idx);
-    }
-  }
-#else
-  if (c_idx == 0) {
-	  header_printf("read_ResidualCoding.start cbY\n");
-  } else {
-    if (c_idx == 1) {
-    	header_printf("read_ResidualCoding.start cbU\n");
-    } else {
-    	header_printf("read_ResidualCoding.start cbV\n");
-    }
-  }
-#endif
     av_log(s->avctx, AV_LOG_DEBUG, "scan_idx: %d, c_idx: %d\n",
            scan_idx, c_idx);
 
@@ -794,7 +733,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
             hevcdsp->transform_add[log2_trafo_width-2](dst, coeffs, stride, bit_depth);
         }
     }
-    header_printf("read_ResidualCoding_end\n");
 }
 
 static void hls_transform_unit(HEVCContext *s, int x0L, int  y0L, int x0C, int y0C,
@@ -803,11 +741,7 @@ static void hls_transform_unit(HEVCContext *s, int x0L, int  y0L, int x0C, int y
     int log2_trafo_size = (log2_trafo_width + log2_trafo_height) >> 1;
     int scan_idx = SCAN_DIAG;
     int scan_idx_c = SCAN_DIAG;
-#if DEBUG_TRACE1
-    header_printf("read_TransformUnit.start(%d, %d, %d, %d, %d, %d, %d, %d)\n",x0L, y0L, x0C, y0C, log2_trafo_width, log2_trafo_height, trafo_depth, blk_idx);
-#else
-    header_printf("read_TransformUnit.start\n");
-#endif
+
     if (s->cu.pred_mode == MODE_INTRA) {
         s->hpc[0]->intra_pred(s, x0L, y0L, log2_trafo_width, 0);
         if (log2_trafo_size > 2) {
@@ -864,7 +798,6 @@ static void hls_transform_unit(HEVCContext *s, int x0L, int  y0L, int x0C, int y
                                     scan_idx_c, 2);
         }
     }
-    header_printf("read_TransformUnit_end\n");
 }
 
 static void hls_transform_tree(HEVCContext *s, int x0L, int y0L, int x0C, int y0C,
@@ -876,12 +809,6 @@ static void hls_transform_tree(HEVCContext *s, int x0L, int y0L, int x0C, int y0
     int trafo_width = 1 << log2_trafo_width;
     int x1L, y1L, x2L, y2L, x3L, y3L;
     int x1C, y1C, x2C, y2C, x3C, y3C;
-#if DEBUG_TRACE1
-    header_printf("read_TransformTree.start(%d, %d, %d, %d, %d, %d, %d, %d, %d)\n", x0L,  y0L,  x0C,  y0C,
-                                xBase,  yBase, log2_trafo_size,  trafo_depth,  blk_idx);
-#else
-    header_printf("read_TransformTree.start\n");
-#endif
 
     if (trafo_depth > 0 && log2_trafo_size == 2) {
         SAMPLE(s->tt.cbf_cb[trafo_depth], x0C, y0C) =
@@ -1225,11 +1152,6 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int y_cb = y0 >> log2_min_cb_size;
     int x, y;
 
-#if DEBUG_TRACE1
-    header_printf("read_CodingUnit.start (%d, %d, %d)\n", x0, y0, log2_cb_size);
-#else
-    header_printf("read_CodingUnit.start\n");
-#endif
     s->cu.x = x0;
     s->cu.y = y0;
     s->cu.no_residual_data_flag = 1;
@@ -1349,11 +1271,6 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
 static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int cb_depth)
 {
-#if DEBUG_TRACE1
-  header_printf("read_CodingTree.start (%d, %d, %d, %d)\n", x0, y0, (1<<log2_cb_size), cb_depth);
-#else
-  header_printf("read_CodingTree.start\n");
-#endif
     s->ct.depth = cb_depth;
     if ((x0 + (1 << log2_cb_size) <= s->sps->pic_width_in_luma_samples) &&
         (y0 + (1 << log2_cb_size) <= s->sps->pic_height_in_luma_samples) &&

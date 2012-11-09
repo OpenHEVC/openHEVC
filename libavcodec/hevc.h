@@ -32,12 +32,6 @@
  * Enable to diverge from the spec when the reference encoder
  * does so.
  */
-
-#define header_printf printf
-#define cabac_printf printf
-//#define header_printf
-//#define cabac_printf
-
 #define REFERENCE_ENCODER_QUIRKS 1
 
 /**
@@ -623,52 +617,4 @@ int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
 int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int n, int base_level);
 int ff_hevc_coeff_sign_flag(HEVCContext *s);
 
-static const char* SyntaxElementName[] = {
-    "SAO_MERGE",   // sao_merge_left_flag and sao_merge_up_flag
-    "SAO_TYPE_IDX",   // sao_type_idx
-    "SAO_EO", //"SAO_EO_CLASS",
-    "SAO_BAND_POSITION",
-    "SAO_OFFSET_ABS",
-    "SAO_OFFSET_SIGN",
-    "ALF_CU_FLAG",
-    "END_OF_SLICE_FLAG",
-    "SPLIT_CODING_UNIT_FLAG",
-    "CU_TRANSQUANT_BYPASS_FLAG",
-    "SKIP_FLAG",
-    "CU_QP_DELTA",
-    "PRED_MODE_FLAG",
-    "PART_SIZE", //"PART_MODE",
-    "PCM_FLAG",
-    "PREV_INTRA_LUMA_PRED_FLAG",
-    "MPM_IDX",
-    "REM_INTRA_LUMA_PRED_MODE",
-    "INTRA_CHROMA_PRED_MODE",
-    "MERGE_FLAG",
-    "MERGE_IDX",
-    "INTER_PRED_IDC",
-    "REF_IDX_L0",
-    "REF_IDX_L1",
-    "ABS_MVD_GREATER0_FLAG",
-    "ABS_MVD_GREATER1_FLAG",
-    "ABS_MVD_MINUS2",
-    "MVD_SIGN_FLAG",
-    "MVP_LX_FLAG", //"MVP_L0_FLAG",
-    "MVP_L1_FLAG",
-    "NO_RESIDUAL_SYNTAX_FLAG", //"NO_RESIDUAL_DATA_FLAG",
-    "SPLIT_TRANSFORM_FLAG",
-    "CBF_LUMA",
-    "CBF_CB_CR",
-    "TRANSFORM_SKIP_FLAG", //"TRANSFORM_SKIP_FLAG_0",
-    "TRANSFORM_SKIP_FLAG", //"TRANSFORM_SKIP_FLAG_1_2",
-    "LAST_SIGNIFICANT_COEFF_X_PREFIX",
-    "LAST_SIGNIFICANT_COEFF_Y_PREFIX",
-    "LAST_SIGNIFICANT_COEFF_XY_SUFFIX", //"LAST_SIGNIFICANT_COEFF_X_SUFFIX",
-    "LAST_SIGNIFICANT_COEFF_XY_SUFFIX", //"LAST_SIGNIFICANT_COEFF_Y_SUFFIX",
-    "CODED_SUB_BLOCK_FLAG", //"SIGNIFICANT_COEFF_GROUP_FLAG",
-    "SIGNIFICANT_COEFF_FLAG",
-    "COEFF_ABS_LEVEL_GREATER1_FLAG",
-    "COEFF_ABS_LEVEL_GREATER2_FLAG",
-    "COEFF_ABS_LEVEL", //"COEFF_ABS_LEVEL_REMAINING",
-    "COEFF_SIGN_FLAG"
-};
 #endif // AVCODEC_HEVC_H
