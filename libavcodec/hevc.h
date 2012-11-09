@@ -33,10 +33,10 @@
  * does so.
  */
 
-#define header_printf printf
-#define cabac_printf printf
-//#define header_printf
-//#define cabac_printf
+//#define header_printf printf
+//#define cabac_printf printf
+#define header_printf
+#define cabac_printf
 
 #define REFERENCE_ENCODER_QUIRKS 1
 
@@ -49,21 +49,15 @@
  * Table 7-3: NAL unit type codes
  */
 enum NALUnitType {
-    NAL_SLICE = 1,
-    NAL_TFD_SLICE = 2,
-    NAL_TLA_SLICE = 3,
-    NAL_CRA_SLICE = 4,
-    NAL_CRA_SLICE_NO_TFD = 5,
-    NAL_BLA_SLICE = 6,
-    NAL_BLA_SLICE_NO_TFD = 7,
-    NAL_IDR_SLICE = 8,
-    NAL_VPS = 25,
-    NAL_SPS = 26,
-    NAL_PPS = 27,
-    NAL_APS = 28,
-    NAL_AUD = 29,
-    NAL_FILLER_DATA = 30,
-    NAL_SEI = 31,
+    NAL_TRAIL_R   = 0,
+    NAL_TRAIL_N   = 1,
+    NAL_IDR_W_DLP = 19,
+    NAL_VPS = 32,
+    NAL_SPS = 33,
+    NAL_PPS = 34,
+    NAL_AUD = 35,
+    NAL_FILLER_DATA = 38,
+    NAL_SEI = 39,
 };
 
 typedef struct ShortTermRPS {
@@ -79,7 +73,7 @@ typedef struct ShortTermRPS {
 /**
  * 7.4.2.1
  */
-#define MAX_TEMPORAL_LAYERS 8
+#define MAX_SUB_LAYERS 7
 #define MAX_VPS_COUNT 16
 #define MAX_SPS_COUNT 32
 #define MAX_PPS_COUNT 256
@@ -90,26 +84,47 @@ typedef struct ShortTermRPS {
 
 #define MAX_TB_SIZE 32
 
+typedef struct PTL {
+    int general_profile_space;
+    uint8_t general_tier_flag;
+    int general_profile_idc;
+    int general_profile_compatibility_flag[32];
+    int general_level_idc;
+    
+    uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
+    uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
+    
+    int sub_layer_profile_space[MAX_SUB_LAYERS];
+    uint8_t sub_layer_tier_flag[MAX_SUB_LAYERS];
+    int sub_layer_profile_idc[MAX_SUB_LAYERS];
+    uint8_t sub_layer_profile_compatibility_flags[MAX_SUB_LAYERS][32];
+    int sub_layer_level_idc[MAX_SUB_LAYERS];
+} PTL;
+
 typedef struct VPS {
-    int vps_max_temporal_layers; ///< vps_max_temporal_layers_minus1 + 1
-    int vps_max_layers; ///< vps_max_layers_minus1 + 1
 
     uint8_t vps_temporal_id_nesting_flag;
-    int vps_max_dec_pic_buffering[MAX_TEMPORAL_LAYERS];
-    int vps_num_reorder_pics[MAX_TEMPORAL_LAYERS];
-    int vps_max_latency_increase[MAX_TEMPORAL_LAYERS];
+    int vps_max_sub_layers; ///< vps_max_temporal_layers_minus1 + 1
+    
+    PTL ptl;
+    
+    int vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
+    int vps_num_reorder_pics[MAX_SUB_LAYERS];
+    int vps_max_latency_increase[MAX_SUB_LAYERS];
+    
+    int vps_num_hrd_parameters;
 } VPS;
 
 typedef struct SPS {
-    uint8_t profile_space;
-    uint8_t profile_idc;
-    uint8_t level_idc;
 
     int vps_id;
+
+    int sps_max_sub_layers; ///< sps_max_sub_layers_minus1 + 1
+    
+    PTL ptl;
+    
     int chroma_format_idc;
     uint8_t separate_colour_plane_flag;
-
-    uint8_t max_temporal_layers; ///< max_temporal_layers_minus1 + 1
 
     int pic_width_in_luma_samples;
     int pic_height_in_luma_samples;
@@ -144,7 +159,7 @@ typedef struct SPS {
         int max_dec_pic_buffering;
         int num_reorder_pics;
         int max_latency_increase;
-    } temporal_layer[MAX_TEMPORAL_LAYERS];
+    } temporal_layer[MAX_SUB_LAYERS];
 
     uint8_t restricted_ref_pic_lists_flag;
     uint8_t lists_modification_present_flag;
@@ -173,10 +188,7 @@ typedef struct SPS {
     uint8_t long_term_ref_pics_present_flag;
     uint8_t sps_temporal_mvp_enabled_flag;
 
-#if REFERENCE_ENCODER_QUIRKS
-    uint8_t amvp_mode_flag[4];
-#endif
-
+    uint8_t vui_parameters_present_flag;
     uint8_t sps_extension_flag;
 
     // Inferred parameters
@@ -222,16 +234,15 @@ typedef struct PPS {
     uint8_t weighted_pred_flag;
     uint8_t weighted_bipred_flag;
     uint8_t output_flag_present_flag;
-    uint8_t dependant_slices_enabled_flag;
     uint8_t transquant_bypass_enable_flag;
 
-    uint8_t tiles_or_entropy_coding_sync_idc;
+    uint8_t dependent_slice_segments_enabled_flag;
+    uint8_t tiles_enabled_flag;
+    uint8_t entropy_coding_sync_enabled_flag;
     int num_tile_columns; ///< num_tile_columns_minus1 + 1
     int num_tile_rows; ///< num_tile_rows_minus1 + 1
     uint8_t uniform_spacing_flag;
     uint8_t loop_filter_across_tiles_enabled_flag;
-
-    uint8_t cabac_independant_flag;
 
     uint8_t seq_loop_filter_across_slices_enabled_flag;
 
@@ -274,7 +285,7 @@ typedef struct SliceHeader {
 
     enum SliceType slice_type;
 
-    uint8_t dependent_slice_flag;
+    uint8_t dependent_slice_segment_flag;
     int pps_id; ///< pic_parameter_set_id
     uint8_t pic_output_flag;
     uint8_t colour_plane_id;

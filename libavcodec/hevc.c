@@ -28,7 +28,7 @@
 #include "hevcdata.h"
 #include "hevc.h"
 
-// #definde HM
+//#define HM
 #ifdef HM
     #include "wrapper/wrapper.h"
 #endif
@@ -113,7 +113,7 @@ static int hls_slice_header(HEVCContext *s)
 
     sh->first_slice_in_pic_flag = get_bits1(gb);
     header_printf("          first_slice_in_pic_flag                  u(1) : %d\n", sh->first_slice_in_pic_flag);
-    if (s->nal_unit_type >= 4 && s->nal_unit_type <= 8) {
+    if (s->nal_unit_type >= 16 && s->nal_unit_type <= 23) {
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
     	header_printf("          no_output_of_prior_pics_flag             u(1) : %d\n", sh->no_output_of_prior_pics_flag);
     }
@@ -189,28 +189,28 @@ static int hls_slice_header(HEVCContext *s)
     }
 
     if (!sh->first_slice_in_pic_flag) {
+        if (s->pps->dependent_slice_segments_enabled_flag) {
+            sh->dependent_slice_segment_flag = get_bits1(gb);
+            header_printf("          dependent_slice_segment_flag                     u(1) : %d\n", sh->dependent_slice_segment_flag);
+        }
         slice_address_length = av_ceil_log2_c(s->sps->pic_width_in_ctbs *
                                               s->sps->pic_height_in_ctbs);
         sh->slice_address = get_bits(gb, slice_address_length);
         header_printf("          slice_address                            u(v) : %d\n", sh->slice_address);
     }
 
-    sh->slice_type = get_ue_golomb(gb);
-    header_printf("          slice_type                               u(v) : %d\n", sh->slice_type);
-
-    sh->dependent_slice_flag = get_bits1(gb);
-    header_printf("          dependent_slice_flag                     u(1) : %d\n", sh->dependent_slice_flag);
-
-    if (!sh->dependent_slice_flag) {
+    if (!s->pps->dependent_slice_segments_enabled_flag) {
         if (s->pps->output_flag_present_flag) {
             sh->pic_output_flag = get_bits1(gb);
     	    header_printf("          pic_order_cnt_lsb                        u(8) : %d\n", sh->pic_output_flag);
         }
 
+        sh->slice_type = get_ue_golomb(gb);
+        header_printf("          slice_type                               u(v) : %d\n", sh->slice_type);
         if (s->sps->separate_colour_plane_flag == 1)
             sh->colour_plane_id = get_bits(gb, 2);
 
-        if (s->nal_unit_type != NAL_IDR_SLICE) {
+        if (s->nal_unit_type != NAL_IDR_W_DLP) {
             int short_term_ref_pic_set_sps_flag;
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
     	    header_printf("          pic_order_cnt_lsb                        u(8) : %d\n", sh->pic_order_cnt_lsb);
@@ -249,11 +249,11 @@ static int hls_slice_header(HEVCContext *s)
 
         sh->num_ref_idx_l0_active = s->pps->num_ref_idx_l0_default_active;
         sh->num_ref_idx_l1_active = s->pps->num_ref_idx_l1_default_active;
+        if(s->sps->sps_temporal_mvp_enabled_flag && s->nal_unit_type != NAL_IDR_W_DLP) {
+            sh->slice_temporal_mvp_enable_flag = get_bits1(gb);
+            header_printf("          temporal_mvp_enable_flag                 u(1) : %d\n", sh->slice_temporal_mvp_enable_flag);
+        }
         if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
-        	if(s->sps->sps_temporal_mvp_enabled_flag) {
-        		sh->slice_temporal_mvp_enable_flag = get_bits1(gb);
-                header_printf("          temporal_mvp_enable_flag                 u(1) : %d\n", sh->slice_temporal_mvp_enable_flag);
-        	}
         	sh->num_ref_idx_active_override_flag = get_bits1(gb);
             header_printf("          num_ref_idx_active_override_flag         u(1) : %d\n", sh->num_ref_idx_active_override_flag);
 
@@ -1441,10 +1441,10 @@ static int hls_slice_data(HEVCContext *s)
         s->ctb_addr_ts++;
         s->ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[s->ctb_addr_ts];
 
-        if (more_data && ((s->pps->tiles_or_entropy_coding_sync_idc == 1) &&
+        if (more_data && (s->pps->tiles_enabled_flag &&
                           s->pps->tile_id[s->ctb_addr_ts] !=
                           s->pps->tile_id[s->ctb_addr_ts - 1]) ||
-            (s->pps->tiles_or_entropy_coding_sync_idc == 2 &&
+            (s->pps->tiles_enabled_flag &&
              ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0)))
             align_get_bits(&s->gb);
     }
@@ -1469,7 +1469,7 @@ static int hls_nal_unit(HEVCContext *s)
     s->temporal_id = get_bits(gb, 3) - 1;
     ret = (get_bits(gb, 6) != 0);
 
-    av_log(s->avctx, AV_LOG_DEBUG,
+    av_log(s->avctx, AV_LOG_ERROR,
            "nal_ref_flag: %d, nal_unit_type: %d, temporal_id: %d\n",
            s->nal_ref_flag, s->nal_unit_type, s->temporal_id);
 
@@ -1513,14 +1513,16 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     case NAL_SEI:
         ff_hevc_decode_nal_sei(s);
         break;
-    case NAL_SLICE: {
+    case NAL_TRAIL_R:
+            // fall-through
+    case NAL_TRAIL_N: {
         int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
         int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
         memset(s->pu.left_ipm, INTRA_DC, pic_height_in_min_pu);
         memset(s->pu.top_ipm, INTRA_DC, pic_width_in_min_pu);
         // fall-through
     }
-    case NAL_IDR_SLICE:
+    case NAL_IDR_W_DLP:
         if (hls_slice_header(s) < 0)
             return -1;
 

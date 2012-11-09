@@ -181,8 +181,8 @@ void libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned c
         for (i=0; i < len ; i++){
             nalUnit.push_back(buff[i]);
         }
-        read(nalu, nalUnit);
-        //readNAL(nalu, nalUnit);
+        //read(nalu, nalUnit);
+        readNAL(nalu, nalUnit);
         bNewPicture=myDecoder.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
         if (bNewPicture){
             myDecoder.executeDeblockAndAlf(poc, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
