@@ -279,6 +279,23 @@ static int hls_slice_header(HEVCContext *s)
         		sh->cabac_init_flag = get_bits1(gb);
         		header_printf("          cabac_init_flag                          u(1) : %d\n", sh->cabac_init_flag);
         	}
+            if (sh->slice_temporal_mvp_enable_flag) {
+                if (sh->slice_type == B_SLICE) {
+                    sh->collocated_from_l0_flag = get_bits1(gb);
+                    header_printf("          collocated_from_l0_flag                         u(1) : %d\n", sh->collocated_from_l0_flag);
+                }
+                if ( (sh->collocated_from_l0_flag &&
+                    sh->num_ref_idx_l0_active > 1) ||
+                    (!sh->collocated_from_l0_flag &&
+                     sh->num_ref_idx_l0_active > 1) ) {
+                        sh->collocated_ref_idx = get_ue_golomb(gb);
+                        header_printf("          collocated_ref_idx                         ue(v) : %d\n", sh->collocated_ref_idx);
+                }
+            }
+            
+            
+            sh->max_num_merge_cand = 5 - get_ue_golomb(gb);
+        	header_printf("          5_minus_max_num_merge_cand               u(v) : %d\n", 5-sh->max_num_merge_cand);
         }
         sh->slice_qp_delta = get_se_golomb(gb);
     	header_printf("          slice_qp_delta                           s(v) : %d\n", sh->slice_qp_delta);
@@ -306,14 +323,6 @@ static int hls_slice_header(HEVCContext *s)
                 }
             }
         }
-#if !REFERENCE_ENCODER_QUIRKS
-        if (sh->slice_type != I_SLICE) {
-#endif
-            sh->max_num_merge_cand = 5 - get_ue_golomb(gb);
-        	header_printf("          5_minus_max_num_merge_cand               u(v) : %d\n", 5-sh->max_num_merge_cand);
-#if !REFERENCE_ENCODER_QUIRKS
-        }
-#endif
 
         if (s->pps->seq_loop_filter_across_slices_enabled_flag
             && (sh->slice_sample_adaptive_offset_flag ||
