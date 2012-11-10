@@ -303,6 +303,8 @@ typedef struct SliceHeader {
 
     uint8_t mvd_l1_zero_flag;
     uint8_t cabac_init_flag;
+    uint8_t collocated_from_l0_flag;
+    int collocated_ref_idx;
     int slice_qp_delta;
     int slice_cb_qp_offset;
     int slice_cr_qp_offset;
