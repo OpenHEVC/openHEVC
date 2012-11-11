@@ -220,14 +220,8 @@ static int hls_slice_header(HEVCContext *s)
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: !short_term_ref_pic_set_sps_flag\n");
                 return -1;
             } else {
-#if REFERENCE_ENCODER_QUIRKS
                 int short_term_ref_pic_set_idx = get_ue_golomb(gb);
         		header_printf("          short_term_ref_pic_set_idx               u(v) : %d\n", short_term_ref_pic_set_idx);
-#else
-                int short_term_ref_pic_set_idx =
-                get_bits(gb, av_ceil_log2_c(s->sps->num_short_term_ref_pic_sets));
-        		header_printf("          short_term_ref_pic_set_idx               u(v) : %d\n", short_term_ref_pic_set_idx);
-#endif
             }
             if (s->sps->long_term_ref_pics_present_flag) {
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: long_term_ref_pics_present_flag\n");
