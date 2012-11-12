@@ -12,7 +12,7 @@ using namespace std;
 
 
 
-TDecTop             myDecoder;
+TDecTop             *myDecoder;
 bool                g_md5_mismatch= false;
 Int                 m_iPOCLastDisplay;                    ///< last POC in display order
 Int                 m_iSkipFrame;
@@ -28,12 +28,13 @@ TComList<TComPic*>* pcListPic = NULL;
 
 int libDecoderInit( void )
 {
-    myDecoder.create();
-    myDecoder.init();
+    myDecoder= new TDecTop;
+    myDecoder->create();
+    myDecoder->init();
     m_iPOCLastDisplay  = -MAX_INT;
     m_iSkipFrame = 0;
     m_iPOCLastDisplay += m_iSkipFrame;      // set the last displayed POC correctly for skip forward.
-    myDecoder.setPictureDigestEnabled(m_pictureDigestEnabled);
+    myDecoder->setPictureDigestEnabled(m_pictureDigestEnabled);
     return 0;
 }
 
@@ -183,9 +184,9 @@ void libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned c
         }
         read(nalu, nalUnit);
         //readNAL(nalu, nalUnit);
-        bNewPicture=myDecoder.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
+        bNewPicture=myDecoder->decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
         if (bNewPicture){
-            myDecoder.executeDeblockAndAlf(uiPOC, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
+            myDecoder->executeDeblockAndAlf(uiPOC, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
             readAgain=true;
             *got_picture=1;
         }
@@ -208,6 +209,6 @@ void libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned c
 
 void libDecoderClose( void )
 {
-    myDecoder.destroy();
+    myDecoder->destroy();
     return;
 }
