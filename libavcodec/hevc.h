@@ -309,13 +309,13 @@ typedef struct SliceHeader {
 } SliceHeader;
 
 enum SyntaxElement {
-    SAO_MERGE_LEFT_UP_FLAG = 0,
+    SAO_MERGE_LEFT_FLAG = 0,
+    SAO_MERGE_UP_FLAG,
     SAO_TYPE_IDX,
     SAO_EO_CLASS,
     SAO_BAND_POSITION,
     SAO_OFFSET_ABS,
     SAO_OFFSET_SIGN,
-    ALF_CU_FLAG,
     END_OF_SLICE_FLAG,
     SPLIT_CODING_UNIT_FLAG,
     CU_TRANSQUANT_BYPASS_FLAG,
@@ -337,14 +337,12 @@ enum SyntaxElement {
     ABS_MVD_GREATER1_FLAG,
     ABS_MVD_MINUS2,
     MVD_SIGN_FLAG,
-    MVP_L0_FLAG,
-    MVP_L1_FLAG,
+    MVP_LX_FLAG,
     NO_RESIDUAL_DATA_FLAG,
     SPLIT_TRANSFORM_FLAG,
     CBF_LUMA,
     CBF_CB_CR,
-    TRANSFORM_SKIP_FLAG_0,
-    TRANSFORM_SKIP_FLAG_1_2,
+    TRANSFORM_SKIP_FLAG,
     LAST_SIGNIFICANT_COEFF_X_PREFIX,
     LAST_SIGNIFICANT_COEFF_Y_PREFIX,
     LAST_SIGNIFICANT_COEFF_X_SUFFIX,
@@ -567,7 +565,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
 
 void ff_hevc_cabac_init(HEVCContext *s);
-int ff_hevc_sao_merge_left_up_flag_decode(HEVCContext *s);
+int ff_hevc_sao_merge_left_flag_decode(HEVCContext *s);
+int ff_hevc_sao_merge_up_flag_decode(HEVCContext *s);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s);
 int ff_hevc_sao_band_position_decode(HEVCContext *s);
 int ff_hevc_sao_offset_abs_decode(HEVCContext *s, int bit_depth);
