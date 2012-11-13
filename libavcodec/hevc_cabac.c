@@ -795,8 +795,8 @@ int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int c_max)
     cc->ctx_idx_offset = num_bins_in_se[cc->elem] * cc->init_type;
     cc->ctx_idx_inc = ctx_idx_inc;
 
-	for (i = 0; i < c_max && decode_bin(s, i); i++)
-		if(i > 1)
+	for (i = 0; i < c_max - 1 && decode_bin(s, i); i++)
+		if(i > 0)
 		    cc->ctx_idx_offset = -1;
     cabac_printf(" %s = %d\n", SyntaxElementName[cc->elem], i);
     return i;

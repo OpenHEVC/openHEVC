@@ -1004,14 +1004,14 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_size
 				inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, x0, y0);
 			}
 			if( inter_pred_idc != Pred_L1 ) {
-				if( s->sh.num_ref_idx_l0_active-1 > 0 ) {
+				if( s->sh.num_ref_idx_l0_active > 1 ) {
 					ref_idx_l0 = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l0_active);
 				}
 				hls_mvd_coding(s, x0, y0, 0 );
 				mvp_l0_flag = ff_hevc_mvp_lx_flag_decode(s);
 			}
 			if( inter_pred_idc != Pred_L0 ) {
-				if( s->sh.num_ref_idx_l1_active-1 > 0 ) {
+				if( s->sh.num_ref_idx_l1_active > 1 ) {
 					ref_idx_l1 = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l1_active);
 				}
 				if( s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == Pred_BI ) {
