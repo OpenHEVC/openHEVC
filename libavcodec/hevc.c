@@ -271,12 +271,10 @@ static int hls_slice_header(HEVCContext *s)
     	sh->collocated_from_l0_flag = 1;
     	if (sh->slice_type == B_SLICE) {
             sh->collocated_from_l0_flag = get_bits1(gb);
-        	header_printf("          collocated_from_l0_flag                  u(1) : %d\n", sh->collocated_from_l0_flag);
     	}
     	if ( ( sh->collocated_from_l0_flag && sh->num_ref_idx_l0_active > 1) ||
     		 (!sh->collocated_from_l0_flag && sh->num_ref_idx_l1_active > 1) ) {
             sh->collocated_ref_idx = get_ue_golomb(gb);
-        	header_printf("          collocated_ref_idx                       u(v) : %d\n", sh->collocated_ref_idx);
     	}
     }
 #if !REFERENCE_ENCODER_QUIRKS
@@ -1351,7 +1349,7 @@ static int hls_slice_data(HEVCContext *s)
     int x_ctb, y_ctb;
 
     int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;
-    s->cu.skip_flag = av_malloc(pic_size);
+    memset(s->cu.skip_flag, 0, pic_size);
 
     s->ctb_addr_rs = s->sh.slice_ctb_addr_rs;
     s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs];
