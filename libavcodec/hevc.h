@@ -294,6 +294,9 @@ typedef struct SliceHeader {
     int beta_offset; ///< beta_offset_div2 * 2
     int tc_offset; ///< tc_offset_div2 * 2
 
+    uint8_t collocated_from_l0_flag;
+    int collocated_ref_idx;
+
     int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
 
     uint8_t slice_loop_filter_across_slices_enabled_flag;
@@ -465,8 +468,7 @@ typedef struct PredictionUnit {
     uint8_t intra_pred_mode[4];
     uint8_t intra_pred_mode_c;
 
-    uint8_t *left_ipm;
-    uint8_t *top_ipm;
+    uint8_t *ipm_tab;
 } PredictionUnit;
 
 typedef struct TransformTree {

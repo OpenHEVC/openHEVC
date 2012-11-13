@@ -308,6 +308,9 @@ void ff_hevc_cabac_init(HEVCContext *s)
     HEVCCabacContext *cc = &s->cc;
     GetBitContext *gb = &s->gb;
 
+    skip_bits(gb, 1);
+    align_get_bits(gb);
+
     cc->range = 510;
     cc->offset = get_bits(gb, 9);
     av_log(s->avctx, AV_LOG_DEBUG, "cc->offset: %d\n", cc->offset);
@@ -688,8 +691,8 @@ int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int c_max)
     cc->ctx_idx_offset = num_bins_in_se[cc->elem] * cc->init_type;
     cc->ctx_idx_inc = ctx_idx_inc;
 
-	for (i = 0; i < c_max && decode_bin(s, i); i++)
-		if(i > 1)
+	for (i = 0; i < c_max-1 && decode_bin(s, i); i++)
+		if(i > 0)
 		    cc->ctx_idx_offset = -1;
     return i;
 }
