@@ -838,7 +838,7 @@ static void hls_transform_unit(HEVCContext *s, int x0L, int  y0L, int x0C, int y
     header_printf("read_TransformUnit_end\n");
 }
 
-static void hls_transform_tree(HEVCContext *s, int x0L, int y0L, int x0C, int y0C,
+static void hls_transform_tree(HEVCContext *s, int x0, int y0, int x0C, int y0C,
                                int xBase, int yBase, int log2_cb_size, int log2_trafo_width,
                                int log2_trafo_height, int trafo_depth, int blk_idx)
 {
@@ -848,7 +848,7 @@ static void hls_transform_tree(HEVCContext *s, int x0L, int y0L, int x0C, int y0
     int x1L, y1L, x2L, y2L, x3L, y3L;
     int x1C, y1C, x2C, y2C, x3C, y3C;
 #if DEBUG_TRACE1
-    header_printf("read_TransformTree.start(%d, %d, %d, %d, %d, %d, %d, %d, %d)\n", x0L,  y0L,  x0C,  y0C,
+    header_printf("read_TransformTree.start(%d, %d, %d, %d, %d, %d, %d, %d, %d)\n", x0,  y0,  x0C,  y0C,
                                 xBase,  yBase, log2_trafo_size,  trafo_depth,  blk_idx);
 #else
     header_printf("read_TransformTree.start\n");
@@ -884,10 +884,10 @@ static void hls_transform_tree(HEVCContext *s, int x0L, int y0L, int x0C, int y0
         log2_trafo_size > s->sps->log2_min_transform_block_size &&
         trafo_depth < s->cu.max_trafo_depth &&
         !(s->cu.intra_split_flag && trafo_depth == 0)) {
-        SAMPLE(s->tt.split_transform_flag[trafo_depth], x0L, y0L) =
+        SAMPLE(s->tt.split_transform_flag[trafo_depth], x0, y0) =
         ff_hevc_split_transform_flag_decode(s, log2_trafo_size);
     } else {
-        SAMPLE(s->tt.split_transform_flag[trafo_depth], x0L, y0L) =
+        SAMPLE(s->tt.split_transform_flag[trafo_depth], x0, y0) =
         (log2_trafo_size >
          s->sps->log2_min_transform_block_size +
          s->sps->log2_diff_max_min_coding_block_size ||
@@ -910,11 +910,15 @@ static void hls_transform_tree(HEVCContext *s, int x0L, int y0L, int x0C, int y0
         }
     }
 
-    if (SAMPLE(s->tt.split_transform_flag[trafo_depth], x0L, y0L)) {
-        x1L = x0L + (trafo_width >> 1);
-        y1L = y0L;
-        x2L = x0L;
-        y2L = y0L + (trafo_height >> 1);
+    if (SAMPLE(s->tt.split_transform_flag[trafo_depth], x0, y0)) {
+        int x1 = x0 + (( 1 << log2_trafo_size ) >> 1);
+        int y1 = y0 + (( 1 << log2_trafo_size ) >> 1);
+        
+		
+        x1L = x0 + (trafo_width >> 1);
+        y1L = y0;
+        x2L = x0;
+        y2L = y0 + (trafo_height >> 1);
         x3L = x1L;
         y3L = y2L;
 
@@ -934,13 +938,13 @@ static void hls_transform_tree(HEVCContext *s, int x0L, int y0L, int x0C, int y0
             y3C = y0C;
         }
 
-        hls_transform_tree(s, x0L, y0L, x0C, y0C, x0C, y0C, log2_cb_size,
+        hls_transform_tree(s, x0, y0, x0C, y0C, x0, y0, log2_cb_size,
                            log2_trafo_width - 1, log2_trafo_height - 1, trafo_depth + 1, 0);
-        hls_transform_tree(s, x1L, y1L, x1C, y1C, x0C, y0C, log2_cb_size,
+        hls_transform_tree(s, x1, y0, x1C, y1C, x0, y0, log2_cb_size,
                            log2_trafo_width - 1, log2_trafo_height - 1, trafo_depth + 1, 1);
-        hls_transform_tree(s, x2L, y2L, x2C, y2C, x0C, y0C, log2_cb_size,
+        hls_transform_tree(s, x0, y1, x2C, y2C, x0, y0, log2_cb_size,
                            log2_trafo_width - 1, log2_trafo_height - 1, trafo_depth + 1, 2);
-        hls_transform_tree(s, x3L, y3L, x3C, y3C, x0C, y0C, log2_cb_size,
+        hls_transform_tree(s, x1, y1, x3C, y3C, x0, y0, log2_cb_size,
                            log2_trafo_width - 1, log2_trafo_height - 1, trafo_depth + 1, 3);
     } else {
         if (s->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
@@ -948,7 +952,7 @@ static void hls_transform_tree(HEVCContext *s, int x0L, int y0L, int x0C, int y0
             SAMPLE(s->tt.cbf_cr[trafo_depth], x0C, y0C))
             s->tt.cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth);
 
-        hls_transform_unit(s, x0L, y0L, x0C,
+        hls_transform_unit(s, x0, y0, x0C,
                            y0C, log2_trafo_width, log2_trafo_height, trafo_depth, blk_idx);
     }
 
