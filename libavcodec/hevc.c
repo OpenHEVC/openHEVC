@@ -271,6 +271,18 @@ static int hls_slice_header(HEVCContext *s)
                 }
             }
         }
+        if (sh->slice_temporal_mvp_enable_flag) {
+    	sh->collocated_from_l0_flag = 1;
+    	if (sh->slice_type == B_SLICE) {
+            sh->collocated_from_l0_flag = get_bits1(gb);
+        	header_printf("          collocated_from_l0_flag                  u(1) : %d\n", sh->collocated_from_l0_flag);
+    	}
+    	if ( ( sh->collocated_from_l0_flag && sh->num_ref_idx_l0_active > 1) ||
+    		 (!sh->collocated_from_l0_flag && sh->num_ref_idx_l1_active > 1) ) {
+            sh->collocated_ref_idx = get_ue_golomb(gb);
+        	header_printf("          collocated_ref_idx                       u(v) : %d\n", sh->collocated_ref_idx);
+    	}
+    }
 #if !REFERENCE_ENCODER_QUIRKS
         if (sh->slice_type != I_SLICE)
 #endif
@@ -291,8 +303,6 @@ static int hls_slice_header(HEVCContext *s)
         for (i = 0; i < length; i++)
             skip_bits(gb, 8); // slice_header_extension_data_byte
     }
-
-    align_get_bits(gb);
 
     // Inferred parameters
     sh->slice_qp = 26 + s->pps->pic_init_qp_minus26 + sh->slice_qp_delta;
@@ -987,14 +997,14 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_size
 				inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, x0, y0);
 			}
 			if( inter_pred_idc != Pred_L1 ) {
-				if( s->sh.num_ref_idx_l0_active-1 > 0 ) {
+				if( s->sh.num_ref_idx_l0_active > 1 ) {
 					ref_idx_l0 = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l0_active);
 				}
 				hls_mvd_coding(s, x0, y0, 0 );
 				mvp_l0_flag = ff_hevc_mvp_lx_flag_decode(s);
 			}
 			if( inter_pred_idc != Pred_L0 ) {
-				if( s->sh.num_ref_idx_l1_active-1 > 0 ) {
+				if( s->sh.num_ref_idx_l1_active > 1 ) {
 					ref_idx_l1 = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l1_active);
 				}
 				if( s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == Pred_BI ) {
@@ -1338,6 +1348,9 @@ static int hls_slice_data(HEVCContext *s)
     int ctb_size = 1 << s->sps->log2_ctb_size;
     int more_data = 1;
     int x_ctb, y_ctb;
+
+    int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;
+    s->cu.skip_flag = av_malloc(pic_size);
 
     s->ctb_addr_rs = s->sh.slice_ctb_addr_rs;
     s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs];
