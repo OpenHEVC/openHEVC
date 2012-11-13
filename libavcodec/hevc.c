@@ -440,8 +440,7 @@ static av_always_inline int min_cb_addr_zs(HEVCContext *s, int x, int y)
     return s->pps->min_cb_addr_zs[y * s->sps->pic_width_in_min_cbs + x];
 }
 
-static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_width,
-                                int log2_trafo_height, enum ScanType scan_idx, int c_idx)
+static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_size, enum ScanType scan_idx, int c_idx)
 {
 #define GET_COORD(offset, n)                                    \
     do {                                                        \
@@ -458,7 +457,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
     int last_significant_coeff_x, last_significant_coeff_y;
     int num_coeff = 0;
     int num_last_subset;
-    int trafo_height, trafo_width;
     int x_cg_last_sig, y_cg_last_sig;
 
     const uint8_t *scan_x_cg, *scan_y_cg, *scan_x_off, *scan_y_off;
@@ -471,16 +469,16 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
     uint8_t *dst = &s->frame.data[c_idx][(y0 >> vshift) * stride + ((x0 >> hshift) << pixel_shift)];
 
     int16_t coeffs[MAX_TB_SIZE * MAX_TB_SIZE] = { 0 };
-    int size = 1 << log2_trafo_width;
+    int trafo_size = 1 << log2_trafo_size;
 
 #if DEBUG_TRACE1
   if (c_idx == 0) {
-    header_printf("read_ResidualCoding.start cbY(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_width, scan_idx, c_idx);
+    header_printf("read_ResidualCoding.start cbY(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_size, scan_idx, c_idx);
   } else {
     if (c_idx == 1) {
-    	header_printf("read_ResidualCoding.start cbU(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_width, scan_idx, c_idx);
+    	header_printf("read_ResidualCoding.start cbU(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_size, scan_idx, c_idx);
     } else {
-    	header_printf("read_ResidualCoding.start cbV(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_width, scan_idx, c_idx);
+    	header_printf("read_ResidualCoding.start cbV(%d, %d, %d, %d, %d)\n", x0, y0, log2_trafo_size, scan_idx, c_idx);
     }
   }
 #else
@@ -499,24 +497,21 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
 
     memset(s->rc.significant_coeff_group_flag, 0, 8*8);
 
-    if (log2_trafo_width == 1 || log2_trafo_height == 1) {
-        log2_trafo_width = 2;
-        log2_trafo_height = 2;
+    if (log2_trafo_size == 1) {
+        log2_trafo_size = 2;
     }
-    trafo_width = 1 << log2_trafo_width;
-    trafo_height = 1 << log2_trafo_height;
 
-    memset(coeffs, 0, trafo_width * trafo_height);
+    memset(coeffs, 0, trafo_size * trafo_size);
 
     if (s->pps->transform_skip_enabled_flag && !s->cu.cu_transquant_bypass_flag &&
-        (log2_trafo_width == 2) && (log2_trafo_height == 2)) {
+        (log2_trafo_size == 2)) {
         transform_skip_flag = ff_hevc_transform_skip_flag_decode(s, c_idx);
     }
 
     last_significant_coeff_x =
-    ff_hevc_last_significant_coeff_prefix_decode(s, c_idx, log2_trafo_width, 1);
+    ff_hevc_last_significant_coeff_prefix_decode(s, c_idx, log2_trafo_size, 1);
     last_significant_coeff_y =
-    ff_hevc_last_significant_coeff_prefix_decode(s, c_idx, log2_trafo_height, 0);
+    ff_hevc_last_significant_coeff_prefix_decode(s, c_idx, log2_trafo_size, 0);
 
 
     if (last_significant_coeff_x > 3) {
@@ -551,41 +546,21 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
         scan_x_off = diag_scan4x4_x;
         scan_y_off = diag_scan4x4_y;
         num_coeff = diag_scan4x4_inv[last_y_c][last_x_c];
-        if (trafo_width == trafo_height) {
-            if (trafo_width == 4) {
-                scan_x_cg = scan_1x1;
-                scan_y_cg = scan_1x1;
-            } else if (trafo_width == 8) {
-                num_coeff += diag_scan2x2_inv[y_cg_last_sig][x_cg_last_sig] << 4;
-                scan_x_cg = diag_scan2x2_x;
-                scan_y_cg = diag_scan2x2_y;
-            } else if (trafo_width == 16) {
-                num_coeff += diag_scan4x4_inv[y_cg_last_sig][x_cg_last_sig] << 4;
-                scan_x_cg = diag_scan4x4_x;
-                scan_y_cg = diag_scan4x4_y;
-            } else { // trafo_width == 32
-                num_coeff += diag_scan8x8_inv[y_cg_last_sig][x_cg_last_sig] << 4;
-                scan_x_cg = diag_scan8x8_x;
-                scan_y_cg = diag_scan8x8_y;
-            }
-        } else {
-            if (trafo_width == 4) { // 4x16
-                num_coeff += y_cg_last_sig << 4;
-                scan_x_cg = scan_1x1;
-                scan_y_cg = diag_scan1x4_y;
-            } else if (trafo_width == 8) { // 8x32
-                num_coeff += diag_scan2x8_inv[y_cg_last_sig][x_cg_last_sig] << 4;
-                scan_x_cg = diag_scan2x8_x;
-                scan_y_cg = diag_scan2x8_y;
-            } else if (trafo_width == 16) { // 16x4
-                num_coeff += x_cg_last_sig << 4;
-                scan_x_cg = diag_scan4x1_x;
-                scan_y_cg = scan_1x1;
-            } else { //32x8
-                num_coeff += diag_scan8x2_inv[y_cg_last_sig][x_cg_last_sig] << 4;
-                scan_x_cg = diag_scan8x2_x;
-                scan_y_cg = diag_scan8x2_y;
-            }
+        if (trafo_size == 4) {
+            scan_x_cg = scan_1x1;
+            scan_y_cg = scan_1x1;
+        } else if (trafo_size == 8) {
+            num_coeff += diag_scan2x2_inv[y_cg_last_sig][x_cg_last_sig] << 4;
+            scan_x_cg = diag_scan2x2_x;
+            scan_y_cg = diag_scan2x2_y;
+        } else if (trafo_size == 16) {
+            num_coeff += diag_scan4x4_inv[y_cg_last_sig][x_cg_last_sig] << 4;
+            scan_x_cg = diag_scan4x4_x;
+            scan_y_cg = diag_scan4x4_y;
+        } else { // trafo_size == 32
+            num_coeff += diag_scan8x8_inv[y_cg_last_sig][x_cg_last_sig] << 4;
+            scan_x_cg = diag_scan8x8_x;
+            scan_y_cg = diag_scan8x8_y;
         }
         break;
     }
@@ -634,8 +609,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
         if ((i < num_last_subset) && (i > 0)) {
             s->rc.significant_coeff_group_flag[x_cg][y_cg] =
             ff_hevc_significant_coeff_group_flag_decode(s, c_idx, x_cg, y_cg,
-                                                        log2_trafo_width,
-                                                        log2_trafo_height,
+                                                        log2_trafo_size,
                                                         scan_idx);
             implicit_non_zero_coeff = 1;
         } else {
@@ -653,8 +627,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
                 s->rc.significant_coeff_group_flag[x_cg][y_cg] &&
                 (n > 0 || implicit_non_zero_coeff == 0)) {
                 significant_coeff_flag[n] =
-                ff_hevc_significant_coeff_flag_decode(s, c_idx, x_c, y_c, log2_trafo_width,
-                                                      log2_trafo_height, scan_idx);
+                ff_hevc_significant_coeff_flag_decode(s, c_idx, x_c, y_c, log2_trafo_size, scan_idx);
                 if (significant_coeff_flag[n] == 1)
                     implicit_non_zero_coeff = 0;
             } else {
@@ -738,7 +711,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
                 av_log(s->avctx, AV_LOG_DEBUG, "trans_coeff_level: %d\n",
                        trans_coeff_level);
                 if (s->cu.cu_transquant_bypass_flag) {
-                    coeffs[y_c * size + x_c] = trans_coeff_level;
+                    coeffs[y_c * trafo_size + x_c] = trans_coeff_level;
 
                 } else {
                     int qp;
@@ -775,9 +748,9 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
                     
                         //TODO: scaling_list_enabled_flag support
                         int m = 16;
-                        int shift = bit_depth + log2_trafo_width - 5;
+                        int shift = bit_depth + log2_trafo_size - 5;
                         int scale = level_scale[qp % 6] << (qp / 6);
-                        coeffs[y_c * size + x_c] = av_clip_int16_c(((trans_coeff_level * m * scale) +
+                        coeffs[y_c * trafo_size + x_c] = av_clip_int16_c(((trans_coeff_level * m * scale) +
                                          (1 << (shift - 1))) >> shift);
                     }
                 }
@@ -787,14 +760,14 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_w
 
 
     if (s->cu.cu_transquant_bypass_flag) {
-        hevcdsp->transquant_bypass(dst, coeffs, stride, log2_trafo_width, bit_depth);
+        hevcdsp->transquant_bypass(dst, coeffs, stride, log2_trafo_size, bit_depth);
     } else {
         if (transform_skip_flag) {
-            hevcdsp->transform_skip(dst, coeffs, stride, log2_trafo_width, bit_depth);
-        } else if (s->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_width == 2) {
+            hevcdsp->transform_skip(dst, coeffs, stride, log2_trafo_size, bit_depth);
+        } else if (s->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
             hevcdsp->transform_4x4_luma_add(dst, coeffs, stride, bit_depth);
         } else {
-            hevcdsp->transform_add[log2_trafo_width-2](dst, coeffs, stride, bit_depth);
+            hevcdsp->transform_add[log2_trafo_size-2](dst, coeffs, stride, bit_depth);
         }
     }
     header_printf("read_ResidualCoding_end\n");
@@ -849,22 +822,17 @@ static void hls_transform_unit(HEVCContext *s, int x0L, int  y0L, int x0C, int y
         }
 
         if (s->tt.cbf_luma)
-            hls_residual_coding(s, x0L, y0L, log2_trafo_width, log2_trafo_height,
-                                scan_idx, 0);
+            hls_residual_coding(s, x0L, y0L, log2_trafo_size, scan_idx, 0);
         if (log2_trafo_size > 2) {
             if (SAMPLE(s->tt.cbf_cb[trafo_depth], x0C, y0C))
-                hls_residual_coding(s, x0C, y0C, log2_trafo_width - 1, log2_trafo_height - 1,
-                                    scan_idx_c, 1);
+                hls_residual_coding(s, x0C, y0C, log2_trafo_size - 1, scan_idx_c, 1);
             if (SAMPLE(s->tt.cbf_cr[trafo_depth], x0C, y0C))
-                hls_residual_coding(s, x0C, y0C, log2_trafo_width - 1, log2_trafo_height - 1,
-                                    scan_idx_c, 2);
+                hls_residual_coding(s, x0C, y0C, log2_trafo_size - 1, scan_idx_c, 2);
         } else if (blk_idx == 3) {
             if (SAMPLE(s->tt.cbf_cb[trafo_depth], x0C, y0C))
-                hls_residual_coding(s, x0C, y0C, log2_trafo_width, log2_trafo_height,
-                                    scan_idx_c, 1);
+                hls_residual_coding(s, x0C, y0C, log2_trafo_size, scan_idx_c, 1);
             if (SAMPLE(s->tt.cbf_cr[trafo_depth], x0C, y0C))
-                hls_residual_coding(s, x0C, y0C, log2_trafo_width, log2_trafo_height,
-                                    scan_idx_c, 2);
+                hls_residual_coding(s, x0C, y0C, log2_trafo_size, scan_idx_c, 2);
         }
     }
     header_printf("read_TransformUnit_end\n");
