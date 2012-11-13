@@ -58,15 +58,12 @@ static int pic_arrays_init(HEVCContext *s)
     s->cu.left_ct_depth = av_malloc(s->sps->pic_height_in_min_cbs);
     s->cu.top_ct_depth = av_malloc(s->sps->pic_width_in_min_cbs);
 
-    s->pu.left_ipm = av_malloc(pic_height_in_min_pu);
-    s->pu.top_ipm = av_malloc(pic_width_in_min_pu);
+    s->pu.ipm_tab = av_malloc(pic_width_in_min_pu*pic_height_in_min_pu);
 
-    if (!s->sao || !s->split_coding_unit_flag || !s->cu.skip_flag ||
-        !s->pu.left_ipm || !s->pu.top_ipm)
+    if (!s->sao || !s->split_coding_unit_flag || !s->cu.skip_flag || !s->pu.ipm_tab)
         return -1;
 
-    memset(s->pu.left_ipm, INTRA_DC, pic_height_in_min_pu);
-    memset(s->pu.top_ipm, INTRA_DC, pic_width_in_min_pu);
+    memset(s->pu.ipm_tab, INTRA_DC, pic_width_in_min_pu*pic_height_in_min_pu);
 
     for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
         s->tt.split_transform_flag[i] = av_malloc(pic_size);
@@ -88,8 +85,7 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->split_coding_unit_flag);
     av_freep(&s->cu.skip_flag);
 
-    av_freep(&s->pu.left_ipm);
-    av_freep(&s->pu.top_ipm);
+    av_freep(&s->pu.ipm_tab);
 
     for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
         av_freep(&s->tt.split_transform_flag[i]);
@@ -1033,7 +1029,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_size
 static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
                                 int prev_intra_luma_pred_flag)
 {
-    int i;
+    int i, j;
     int candidate[3];
     int intra_pred_mode;
 
@@ -1041,8 +1037,9 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int y_pu = y0 >> s->sps->log2_min_pu_size;
     int size_in_pus = pu_size >> s->sps->log2_min_pu_size;
 
-    int cand_up = s->pu.top_ipm[x_pu];
-    int cand_left = s->pu.left_ipm[y_pu];
+    int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
+    int cand_up   = y_pu>0 ? s->pu.ipm_tab[x_pu*pic_width_in_min_pu + y_pu-1] : INTRA_DC;
+    int cand_left = x_pu>0 ? s->pu.ipm_tab[(x_pu-1)*pic_width_in_min_pu + y_pu] : INTRA_DC;
 
     int y_ctb = (y0 >> (s->sps->log2_ctb_size)) << (s->sps->log2_ctb_size);
 
@@ -1094,9 +1091,11 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
         }
     }
 
-    memset(&s->pu.top_ipm[x_pu], intra_pred_mode, size_in_pus);
-    memset(&s->pu.left_ipm[y_pu], intra_pred_mode, size_in_pus);
-
+    for(i = 0 ; i < size_in_pus; i++) {
+        for(j = 0 ; j < size_in_pus; j++) {
+    	s->pu.ipm_tab[(x_pu+i)*pic_width_in_min_pu + y_pu+j] = intra_pred_mode;
+        }
+    }
     av_log(s->avctx, AV_LOG_DEBUG, "intra_pred_mode: %d\n",
            intra_pred_mode);
     return intra_pred_mode;
@@ -1183,7 +1182,9 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     s->cu.part_mode = PART_2Nx2N;
     s->cu.intra_split_flag = 0;
     SAMPLE(s->cu.skip_flag, x0, y0) = 0;
-
+    for(x = 0; x < 4; x++) {
+    	s->pu.intra_pred_mode[x] = 1;
+    }
     if (s->pps->transquant_bypass_enable_flag)
         s->cu.cu_transquant_bypass_flag = ff_hevc_cu_transquant_bypass_flag_decode(s);
 
@@ -1462,8 +1463,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     case NAL_TRAIL_N: {
         int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
         int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
-        memset(s->pu.left_ipm, INTRA_DC, pic_height_in_min_pu);
-        memset(s->pu.top_ipm, INTRA_DC, pic_width_in_min_pu);
+        memset(s->pu.ipm_tab, INTRA_DC, pic_width_in_min_pu*pic_height_in_min_pu);
         // fall-through
     }
     case NAL_IDR_W_DLP:
