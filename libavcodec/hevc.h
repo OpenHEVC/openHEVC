@@ -606,6 +606,7 @@ int ff_hevc_merge_flag_decode(HEVCContext *s);
 int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int x0, int y0);
 int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int c_max);
 int ff_hevc_mvp_lx_flag_decode(HEVCContext *s);
+int ff_hevc_no_residual_syntax_flag_decode(HEVCContext *s);
 int ff_hevc_abs_mvd_greater0_flag_decode(HEVCContext *s);
 int ff_hevc_abs_mvd_greater1_flag_decode(HEVCContext *s);
 int ff_hevc_abs_mvd_minus2_decode(HEVCContext *s);

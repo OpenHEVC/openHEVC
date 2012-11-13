@@ -1364,8 +1364,11 @@ static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int
 static int hls_slice_data(HEVCContext *s)
 {
     int ctb_size = 1 << s->sps->log2_ctb_size;
+    int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;;
     int more_data = 1;
     int x_ctb, y_ctb;
+
+    memset(s->cu.skip_flag, 0, pic_size);
 
     s->ctb_addr_rs = s->sh.slice_ctb_addr_rs;
     s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs];
@@ -1429,7 +1432,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     HEVCContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
+#ifdef HM
     int gotpicture;
+#endif
     
 
     *data_size = 0;
@@ -1463,7 +1468,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     case NAL_TRAIL_N: {
         int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
         int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
-        memset(s->pu.ipm_tab, INTRA_DC, pic_width_in_min_pu*pic_height_in_min_pu);
+        memset(s->pu.ipm_tab, INTRA_DC, pic_width_in_min_pu * pic_height_in_min_pu);
         // fall-through
     }
     case NAL_IDR_W_DLP:
