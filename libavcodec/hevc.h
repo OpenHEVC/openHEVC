@@ -34,9 +34,9 @@
  */
 #define DEBUG_TRACE1 1
 #define header_printf printf
-#define cabac_printf printf
+//#define cabac_printf printf
 //#define header_printf
-//#define cabac_printf
+#define cabac_printf
 
 #define REFERENCE_ENCODER_QUIRKS 1
 
@@ -621,11 +621,9 @@ int ff_hevc_last_significant_coeff_suffix_decode(HEVCContext *s,
                                                  int last_significant_coeff_prefix,
                                                  int is_x);
 int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int x_cg,
-                                                int y_cg, int log2_trafo_width,
-                                                int log2_trafo_height, int scan_idx);
+                                                int y_cg, int log2_trafo_size, int scan_idx);
 int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
-                                          int log2_trafo_width, int log2_trafo_height,
-                                          int scan_idx);
+                                          int log2_trafo_size, int scan_idx);
 int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx,
                                                  int i, int n,
                                                  int first_greater1_coeff_idx,
