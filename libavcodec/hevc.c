@@ -934,7 +934,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_size
 			}
 		} else {
 			if( s->sh.slice_type == B_SLICE ) {
-				inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, x0, y0);
+				inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, 1<<log2_cb_size);
 			}
 			if( inter_pred_idc != Pred_L1 ) {
 				if( s->sh.num_ref_idx_l0_active > 1 ) {

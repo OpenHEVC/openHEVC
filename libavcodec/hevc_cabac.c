@@ -656,13 +656,12 @@ int ff_hevc_merge_flag_decode(HEVCContext *s)
     return fl_binarization(s, 1);
 }
 
-int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int x0, int y0)
+int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int max)
 {
     HEVCCabacContext *cc = &s->cc;
     const int8_t ctx_idx_inc[2] = { s->ct.depth , 4 };
 
     int ret = 0;
-    int max = x0 > y0 ? x0 : y0;
     cc->elem = INTER_PRED_IDC;
     cc->state = states + elem_offset[cc->elem];
 
