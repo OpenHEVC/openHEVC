@@ -79,6 +79,7 @@ const Short TComInterpolationFilter::m_chromaFilter[8][NTAPS_CHROMA] =
 /**
  * \brief Apply unit FIR filter to a block of samples
  *
+ * \param bitDepth   bitDepth of samples
  * \param src        Pointer to source samples
  * \param srcStride  Stride of source samples
  * \param dst        Pointer to destination samples
@@ -88,7 +89,7 @@ const Short TComInterpolationFilter::m_chromaFilter[8][NTAPS_CHROMA] =
  * \param isFirst    Flag indicating whether it is the first filtering operation
  * \param isLast     Flag indicating whether it is the last filtering operation
  */
-Void TComInterpolationFilter::filterCopy(const Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isFirst, Bool isLast)
+Void TComInterpolationFilter::filterCopy(Int bitDepth, const Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isFirst, Bool isLast)
 {
   Int row, col;
   
@@ -107,7 +108,7 @@ Void TComInterpolationFilter::filterCopy(const Pel *src, Int srcStride, Short *d
   }
   else if ( isFirst )
   {
-    Int shift = IF_INTERNAL_PREC - ( g_uiBitDepth + g_uiBitIncrement );
+    Int shift = IF_INTERNAL_PREC - bitDepth;
     
     for (row = 0; row < height; row++)
     {
@@ -123,10 +124,10 @@ Void TComInterpolationFilter::filterCopy(const Pel *src, Int srcStride, Short *d
   }
   else
   {
-    Int shift = IF_INTERNAL_PREC - ( g_uiBitDepth + g_uiBitIncrement );
+    Int shift = IF_INTERNAL_PREC - bitDepth;
     Short offset = IF_INTERNAL_OFFS;
     offset += shift?(1 << (shift - 1)):0;
-    Short maxVal = g_uiIBDI_MAX;
+    Short maxVal = (1 << bitDepth) - 1;
     Short minVal = 0;
     for (row = 0; row < height; row++)
     {
@@ -152,6 +153,7 @@ Void TComInterpolationFilter::filterCopy(const Pel *src, Int srcStride, Short *d
  * \tparam isVertical Flag indicating filtering along vertical direction
  * \tparam isFirst    Flag indicating whether it is the first filtering operation
  * \tparam isLast     Flag indicating whether it is the last filtering operation
+ * \param  bitDepth   Bit depth of samples
  * \param  src        Pointer to source samples
  * \param  srcStride  Stride of source samples
  * \param  dst        Pointer to destination samples
@@ -160,8 +162,8 @@ Void TComInterpolationFilter::filterCopy(const Pel *src, Int srcStride, Short *d
  * \param  height     Height of block
  * \param  coeff      Pointer to filter taps
  */
-template<int N, bool isVertical, bool isFirst, bool isLast>
-Void TComInterpolationFilter::filter(Short const *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Short const *coeff)
+template<Int N, Bool isVertical, Bool isFirst, Bool isLast>
+Void TComInterpolationFilter::filter(Int bitDepth, Short const *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Short const *coeff)
 {
   Int row, col;
   
@@ -189,14 +191,14 @@ Void TComInterpolationFilter::filter(Short const *src, Int srcStride, Short *dst
 
   Int offset;
   Short maxVal;
-  Int headRoom = IF_INTERNAL_PREC - (g_uiBitDepth + g_uiBitIncrement);
+  Int headRoom = IF_INTERNAL_PREC - bitDepth;
   Int shift = IF_FILTER_PREC;
   if ( isLast )
   {
     shift += (isFirst) ? 0 : headRoom;
     offset = 1 << (shift - 1);
     offset += (isFirst) ? 0 : IF_INTERNAL_OFFS << IF_FILTER_PREC;
-    maxVal = g_uiIBDI_MAX;
+    maxVal = (1 << bitDepth) - 1;
   }
   else
   {
@@ -247,6 +249,7 @@ Void TComInterpolationFilter::filter(Short const *src, Int srcStride, Short *dst
  * \brief Filter a block of samples (horizontal)
  *
  * \tparam N          Number of taps
+ * \param  bitDepth   Bit depth of samples
  * \param  src        Pointer to source samples
  * \param  srcStride  Stride of source samples
  * \param  dst        Pointer to destination samples
@@ -256,16 +259,16 @@ Void TComInterpolationFilter::filter(Short const *src, Int srcStride, Short *dst
  * \param  isLast     Flag indicating whether it is the last filtering operation
  * \param  coeff      Pointer to filter taps
  */
-template<int N>
-Void TComInterpolationFilter::filterHor(Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isLast, Short const *coeff)
+template<Int N>
+Void TComInterpolationFilter::filterHor(Int bitDepth, Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isLast, Short const *coeff)
 {
   if ( isLast )
   {
-    filter<N, false, true, true>(src, srcStride, dst, dstStride, width, height, coeff);
+    filter<N, false, true, true>(bitDepth, src, srcStride, dst, dstStride, width, height, coeff);
   }
   else
   {
-    filter<N, false, true, false>(src, srcStride, dst, dstStride, width, height, coeff);
+    filter<N, false, true, false>(bitDepth, src, srcStride, dst, dstStride, width, height, coeff);
   }
 }
 
@@ -273,6 +276,7 @@ Void TComInterpolationFilter::filterHor(Pel *src, Int srcStride, Short *dst, Int
  * \brief Filter a block of samples (vertical)
  *
  * \tparam N          Number of taps
+ * \param  bitDpeth   Sample bit depth
  * \param  src        Pointer to source samples
  * \param  srcStride  Stride of source samples
  * \param  dst        Pointer to destination samples
@@ -283,24 +287,24 @@ Void TComInterpolationFilter::filterHor(Pel *src, Int srcStride, Short *dst, Int
  * \param  isLast     Flag indicating whether it is the last filtering operation
  * \param  coeff      Pointer to filter taps
  */
-template<int N>
-Void TComInterpolationFilter::filterVer(Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isFirst, Bool isLast, Short const *coeff)
+template<Int N>
+Void TComInterpolationFilter::filterVer(Int bitDepth, Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isFirst, Bool isLast, Short const *coeff)
 {
   if ( isFirst && isLast )
   {
-    filter<N, true, true, true>(src, srcStride, dst, dstStride, width, height, coeff);
+    filter<N, true, true, true>(bitDepth, src, srcStride, dst, dstStride, width, height, coeff);
   }
   else if ( isFirst && !isLast )
   {
-    filter<N, true, true, false>(src, srcStride, dst, dstStride, width, height, coeff);
+    filter<N, true, true, false>(bitDepth, src, srcStride, dst, dstStride, width, height, coeff);
   }
   else if ( !isFirst && isLast )
   {
-    filter<N, true, false, true>(src, srcStride, dst, dstStride, width, height, coeff);
+    filter<N, true, false, true>(bitDepth, src, srcStride, dst, dstStride, width, height, coeff);
   }
   else
   {
-    filter<N, true, false, false>(src, srcStride, dst, dstStride, width, height, coeff);    
+    filter<N, true, false, false>(bitDepth, src, srcStride, dst, dstStride, width, height, coeff);
   }      
 }
 
@@ -326,11 +330,11 @@ Void TComInterpolationFilter::filterHorLuma(Pel *src, Int srcStride, Short *dst,
   
   if ( frac == 0 )
   {
-    filterCopy( src, srcStride, dst, dstStride, width, height, true, isLast );
+    filterCopy(g_bitDepthY, src, srcStride, dst, dstStride, width, height, true, isLast );
   }
   else
   {
-    filterHor<NTAPS_LUMA>(src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac]);
+    filterHor<NTAPS_LUMA>(g_bitDepthY, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac]);
   }
 }
 
@@ -353,11 +357,11 @@ Void TComInterpolationFilter::filterVerLuma(Pel *src, Int srcStride, Short *dst,
   
   if ( frac == 0 )
   {
-    filterCopy( src, srcStride, dst, dstStride, width, height, isFirst, isLast );
+    filterCopy(g_bitDepthY, src, srcStride, dst, dstStride, width, height, isFirst, isLast );
   }
   else
   {
-    filterVer<NTAPS_LUMA>(src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac]);    
+    filterVer<NTAPS_LUMA>(g_bitDepthY, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac]);
   }
 }
 
@@ -379,11 +383,11 @@ Void TComInterpolationFilter::filterHorChroma(Pel *src, Int srcStride, Short *ds
   
   if ( frac == 0 )
   {
-    filterCopy( src, srcStride, dst, dstStride, width, height, true, isLast );
+    filterCopy(g_bitDepthC, src, srcStride, dst, dstStride, width, height, true, isLast );
   }
   else
   {
-    filterHor<NTAPS_CHROMA>(src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac]);
+    filterHor<NTAPS_CHROMA>(g_bitDepthC, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac]);
   }
 }
 
@@ -406,11 +410,11 @@ Void TComInterpolationFilter::filterVerChroma(Pel *src, Int srcStride, Short *ds
   
   if ( frac == 0 )
   {
-    filterCopy( src, srcStride, dst, dstStride, width, height, isFirst, isLast );
+    filterCopy(g_bitDepthC, src, srcStride, dst, dstStride, width, height, isFirst, isLast );
   }
   else
   {
-    filterVer<NTAPS_CHROMA>(src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac]);    
+    filterVer<NTAPS_CHROMA>(g_bitDepthC, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac]);
   }
 }
 

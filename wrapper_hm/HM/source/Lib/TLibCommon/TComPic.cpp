@@ -67,9 +67,6 @@ TComPic::TComPic()
 {
   m_apcPicYuv[0]      = NULL;
   m_apcPicYuv[1]      = NULL;
-#if DEPENDENT_SLICES
-  m_uiCurrDepSliceIdx = 0;
-#endif
 }
 
 TComPic::~TComPic()

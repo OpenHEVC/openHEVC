@@ -54,7 +54,7 @@
 class TComLoopFilter
 {
 private:
-  UInt      m_uiDisableDeblockingFilterIdc; ///< deblocking filter idc
+  Bool      m_disableDeblockingFilterFlag;
   Int       m_betaOffsetDiv2;
   Int       m_tcOffsetDiv2;
 
@@ -110,7 +110,7 @@ public:
   Void  destroy                   ();
   
   /// set configuration
-  Void setCfg( Bool DeblockingFilterControlPresent, UInt uiDisableDblkIdc, Int betaOffsetDiv2, Int tcOffsetDiv2, Bool bLFCrossTileBoundary);
+  Void setCfg( Bool deblockingFilterControlPresentFlag, Bool disableDeblockingFilterFlag, Int betaOffsetDiv2, Int tcOffsetDiv2, Bool bLFCrossTileBoundary );
   
   /// picture-level deblocking filter
   Void loopFilterPic( TComPic* pcPic );

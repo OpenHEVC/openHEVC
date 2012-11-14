@@ -53,39 +53,17 @@
 class TComWeightPrediction
 {
   wpScalingParam  m_wp0[3], m_wp1[3];
-  Int             m_ibdi;
 
 public:
   TComWeightPrediction();
 
-  Void  getWpScaling( TComDataCU* pcCU, Int iRefIdx0, Int iRefIdx1, wpScalingParam *&wp0 , wpScalingParam *&wp1 , Int ibdi=(g_uiBitDepth+g_uiBitIncrement));
+  Void  getWpScaling( TComDataCU* pcCU, Int iRefIdx0, Int iRefIdx1, wpScalingParam *&wp0 , wpScalingParam *&wp1);
 
   Void  addWeightBi( TComYuv* pcYuvSrc0, TComYuv* pcYuvSrc1, UInt iPartUnitIdx, UInt iWidth, UInt iHeight, wpScalingParam *wp0, wpScalingParam *wp1, TComYuv* rpcYuvDst, Bool bRound=true );
   Void  addWeightUni( TComYuv* pcYuvSrc0, UInt iPartUnitIdx, UInt iWidth, UInt iHeight, wpScalingParam *wp0, TComYuv* rpcYuvDst );
 
   Void  xWeightedPredictionUni( TComDataCU* pcCU, TComYuv* pcYuvSrc, UInt uiPartAddr, Int iWidth, Int iHeight, RefPicList eRefPicList, TComYuv*& rpcYuvPred, Int iPartIdx, Int iRefIdx=-1 );
   Void  xWeightedPredictionBi( TComDataCU* pcCU, TComYuv* pcYuvSrc0, TComYuv* pcYuvSrc1, Int iRefIdx0, Int iRefIdx1, UInt uiPartIdx, Int iWidth, Int iHeight, TComYuv* rpcYuvDst );
-
-  __inline  Pel   xClip  ( Int x );
-  __inline  Pel   weightBidir( Int w0, Pel P0, Int w1, Pel P1, Int round, Int shift, Int offset);
-  __inline  Pel   weightUnidir( Int w0, Pel P0, Int round, Int shift, Int offset);
-
 };
-
-inline  Pel TComWeightPrediction::xClip( Int x )
-{ 
-  Int max = (Int)g_uiIBDI_MAX;
-  Pel pel = (Pel)( (x < 0) ? 0 : (x > max) ? max : x );
-  return( pel );
-}
-
-inline  Pel TComWeightPrediction::weightBidir( Int w0, Pel P0, Int w1, Pel P1, Int round, Int shift, Int offset)
-{
-  return xClip( ( (w0*(P0 + IF_INTERNAL_OFFS) + w1*(P1 + IF_INTERNAL_OFFS) + round + (offset << (shift-1))) >> shift ) );
-}
-inline  Pel TComWeightPrediction::weightUnidir( Int w0, Pel P0, Int round, Int shift, Int offset) 
-{
-  return xClip( ( (w0*(P0 + IF_INTERNAL_OFFS) + round) >> shift ) + offset );
-}
 
 #endif 

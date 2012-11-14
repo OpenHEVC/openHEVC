@@ -36,9 +36,7 @@
 */
 
 #include "TComPicSym.h"
-#if REMOVE_APS
 #include "TComSampleAdaptiveOffset.h"
-#endif
 
 //! \ingroup TLibCommon
 //! \{
@@ -46,6 +44,31 @@
 // ====================================================================================================================
 // Constructor / destructor / create / destroy
 // ====================================================================================================================
+
+TComPicSym::TComPicSym()
+:m_uiWidthInCU(0)
+,m_uiHeightInCU(0)
+,m_uiMaxCUWidth(0)
+,m_uiMaxCUHeight(0)
+,m_uiMinCUWidth(0)
+,m_uiMinCUHeight(0)
+,m_uhTotalDepth(0)
+,m_uiNumPartitions(0)
+,m_uiNumPartInWidth(0)
+,m_uiNumPartInHeight(0)
+,m_uiNumCUsInFrame(0)
+,m_apcTComSlice(NULL)
+,m_uiNumAllocatedSlice (0)
+,m_apcTComDataCU (NULL)
+,m_iTileBoundaryIndependenceIdr (0)
+,m_iNumColumnsMinus1 (0)
+,m_iNumRowsMinus1(0)
+,m_apcTComTile(NULL)
+,m_puiCUOrderMap(0)
+,m_puiTileIdxMap(NULL)
+,m_puiInverseCUOrderMap(NULL)
+{};
+
 
 Void TComPicSym::create  ( Int iPicWidth, Int iPicHeight, UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxDepth )
 {
@@ -99,9 +122,7 @@ Void TComPicSym::create  ( Int iPicWidth, Int iPicHeight, UInt uiMaxWidth, UInt 
     m_puiCUOrderMap[i] = i;
     m_puiInverseCUOrderMap[i] = i;
   }
-#if REMOVE_APS
   m_saoParam = NULL;
-#endif
 }
 
 Void TComPicSym::destroy()
@@ -142,14 +163,12 @@ Void TComPicSym::destroy()
   delete [] m_puiInverseCUOrderMap;
   m_puiInverseCUOrderMap = NULL;
   
-#if REMOVE_APS
   if (m_saoParam)
   {
     TComSampleAdaptiveOffset::freeSaoParam(m_saoParam);
     delete m_saoParam;
     m_saoParam = NULL;
   }
-#endif
 }
 
 Void TComPicSym::allocateNewSlice()
@@ -159,7 +178,6 @@ Void TComPicSym::allocateNewSlice()
   {
     m_apcTComSlice[m_uiNumAllocatedSlice-1]->copySliceInfo( m_apcTComSlice[m_uiNumAllocatedSlice-2] );
     m_apcTComSlice[m_uiNumAllocatedSlice-1]->initSlice();
-    m_apcTComSlice[m_uiNumAllocatedSlice-1]->initTiles();
   }
 }
 
@@ -290,13 +308,11 @@ UInt TComPicSym::xCalculateNxtCUAddr( UInt uiCurrCUAddr )
   return uiNxtCUAddr;
 }
 
-#if REMOVE_APS
 Void TComPicSym::allocSaoParam(TComSampleAdaptiveOffset *sao)
 {
   m_saoParam = new SAOParam;
   sao->allocSaoParam(m_saoParam);
 }
-#endif
 
 TComTile::TComTile()
 {

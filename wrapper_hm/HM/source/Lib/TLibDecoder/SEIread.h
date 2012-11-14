@@ -31,14 +31,44 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ \file     SEIread.h
+ \brief    reading funtionality for SEI messages
+ */
+
+#ifndef __SEIREAD__
+#define __SEIREAD__
+
+#if _MSC_VER > 1000
 #pragma once
+#endif // _MSC_VER > 1000
 
 //! \ingroup TLibDecoder
 //! \{
 
+#include "TLibCommon/SEI.h"
 class TComInputBitstream;
 class SEImessages;
 
-void parseSEImessage(TComInputBitstream& bs, SEImessages& seis);
+
+class SEIReader: public SyntaxElementParser
+{
+public:
+  SEIReader() {};
+  virtual ~SEIReader() {};
+  Void parseSEImessage(TComInputBitstream* bs, SEImessages& seis);
+protected:
+  Void xReadSEImessage                (SEImessages& seis);
+  Void xParseSEIuserDataUnregistered  (SEIuserDataUnregistered &sei, UInt payloadSize);
+  Void xParseSEIActiveParameterSets   (SEIActiveParameterSets  &sei, UInt payloadSize);
+  Void xParseSEIDecodedPictureHash    (SEIDecodedPictureHash& sei, UInt payloadSize);
+  Void xParseSEIBufferingPeriod       (SEIBufferingPeriod& sei, UInt payloadSize);
+  Void xParseSEIPictureTiming         (SEIPictureTiming& sei, UInt payloadSize);
+  Void xParseSEIRecoveryPoint         (SEIRecoveryPoint& sei, UInt payloadSize);
+  Void xParseByteAlign();
+};
+
 
 //! \}
+
+#endif

@@ -63,7 +63,9 @@ public:
   Void  decodeBinTrm      ( UInt& ruiBin                           );
   
   Void  resetBac          ();
+#if !REMOVE_BURST_IPCM
   Void  decodeNumSubseqIPCM( Int& numSubseqIPCM ) ;
+#endif
   Void  decodePCMAlignBits();
   Void  xReadPCMCode      ( UInt uiLength, UInt& ruiCode );
   

@@ -31,53 +31,67 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     TEncBinCoder.h
-    \brief    binary entropy encoder interface
+/** \file     SyntaxElementWriter.h
+    \brief    CAVLC encoder class (header)
 */
 
-#ifndef __TENC_BIN_CODER__
-#define __TENC_BIN_CODER__
+#ifndef __SYNTAXELEMENTWRITER__
+#define __SYNTAXELEMENTWRITER__
 
-#include "TLibCommon/ContextModel.h"
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+#include "TLibCommon/CommonDef.h"
 #include "TLibCommon/TComBitStream.h"
+#include "TLibCommon/TComRom.h"
 
 //! \ingroup TLibEncoder
 //! \{
 
-class TEncBinCABAC;
+#if ENC_DEC_TRACE
 
-class TEncBinIf
-{
-public:
-  virtual Void  init              ( TComBitIf* pcTComBitIf )                  = 0;
-  virtual Void  uninit            ()                                          = 0;
+#define WRITE_CODE( value, length, name)    xWriteCodeTr ( value, length, name )
+#define WRITE_UVLC( value,         name)    xWriteUvlcTr ( value,         name )
+#define WRITE_SVLC( value,         name)    xWriteSvlcTr ( value,         name )
+#define WRITE_FLAG( value,         name)    xWriteFlagTr ( value,         name )
 
-  virtual Void  start             ()                                          = 0;
-  virtual Void  finish            ()                                          = 0;
-  virtual Void  copyState         ( TEncBinIf* pcTEncBinIf )                  = 0;
-  virtual Void  flush            ()                                           = 0;
+#else
 
-  virtual Void  resetBac          ()                                          = 0;
-#if !REMOVE_BURST_IPCM
-  virtual Void  encodeNumSubseqIPCM( Int numSubseqIPCM )                   = 0;
+#define WRITE_CODE( value, length, name)     xWriteCode ( value, length )
+#define WRITE_UVLC( value,         name)     xWriteUvlc ( value )
+#define WRITE_SVLC( value,         name)     xWriteSvlc ( value )
+#define WRITE_FLAG( value,         name)     xWriteFlag ( value )
+
 #endif
-  virtual Void  encodePCMAlignBits()                                          = 0;
-  virtual Void  xWritePCMCode     ( UInt uiCode, UInt uiLength )              = 0;
 
-  virtual Void  resetBits         ()                                          = 0;
-  virtual UInt  getNumWrittenBits ()                                          = 0;
+class SyntaxElementWriter
+{
+protected:
+  TComBitIf*    m_pcBitIf;
 
-  virtual Void  encodeBin         ( UInt  uiBin,  ContextModel& rcCtxModel )  = 0;
-  virtual Void  encodeBinEP       ( UInt  uiBin                            )  = 0;
-  virtual Void  encodeBinsEP      ( UInt  uiBins, Int numBins              )  = 0;
-  virtual Void  encodeBinTrm      ( UInt  uiBin                            )  = 0;
+  SyntaxElementWriter()
+  :m_pcBitIf(NULL)
+  {};
+  virtual ~SyntaxElementWriter() {};
 
-  virtual TEncBinCABAC*   getTEncBinCABAC   ()  { return 0; }
-  
-  virtual ~TEncBinIf() {}
+  Void  setBitstream          ( TComBitIf* p )  { m_pcBitIf = p;  }
+
+  Void  xWriteCode            ( UInt uiCode, UInt uiLength );
+  Void  xWriteUvlc            ( UInt uiCode );
+  Void  xWriteSvlc            ( Int  iCode   );
+  Void  xWriteFlag            ( UInt uiCode );
+#if ENC_DEC_TRACE
+  Void  xWriteCodeTr          ( UInt value, UInt  length, const Char *pSymbolName);
+  Void  xWriteUvlcTr          ( UInt value,               const Char *pSymbolName);
+  Void  xWriteSvlcTr          ( Int  value,               const Char *pSymbolName);
+  Void  xWriteFlagTr          ( UInt value,               const Char *pSymbolName);
+#endif
+
+  UInt  xConvertToUInt        ( Int iValue ) {  return ( iValue <= 0) ? -iValue<<1 : (iValue<<1)-1; }
 };
 
 //! \}
 
-#endif
+#endif // !defined(__SYNTAXELEMENTWRITER__)
 

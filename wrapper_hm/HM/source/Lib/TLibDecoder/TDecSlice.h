@@ -70,6 +70,9 @@ private:
   TDecBinCABAC*   m_pcBufferBinCABACs;
   TDecSbac*       m_pcBufferLowLatSbacDecoders;   ///< dependent tiles: line to store temporary contexts, one per column of tiles.
   TDecBinCABAC*   m_pcBufferLowLatBinCABACs;
+#if DEPENDENT_SLICES
+  std::vector<TDecSbac*> CTXMem;
+#endif
   
 public:
   TDecSlice();
@@ -80,6 +83,10 @@ public:
   Void  destroy           ();
   
   Void  decompressSlice   ( TComInputBitstream* pcBitstream, TComInputBitstream** ppcSubstreams,   TComPic*& rpcPic, TDecSbac* pcSbacDecoder, TDecSbac* pcSbacDecoders );
+#if DEPENDENT_SLICES
+  Void      initCtxMem(  UInt i );
+  Void      setCtxMem( TDecSbac* sb, Int b )   { CTXMem[b] = sb; }
+#endif
 };
 
 
@@ -94,19 +101,12 @@ public:
   TComSPS* getPrefetchedSPS  (Int spsId);
   Void     storePrefetchedPPS(TComPPS *pps)  { m_ppsBuffer.storePS( pps->getPPSId(), pps); };
   TComPPS* getPrefetchedPPS  (Int ppsId);
-#if !REMOVE_APS
-  Void     storePrefetchedAPS(TComAPS *aps)  { m_apsBuffer.storePS( aps->getAPSID(), aps); };
-  TComAPS* getPrefetchedAPS  (Int apsId);
-#endif
   Void     applyPrefetchedPS();
 
 private:
   ParameterSetMap<TComVPS> m_vpsBuffer;
   ParameterSetMap<TComSPS> m_spsBuffer; 
   ParameterSetMap<TComPPS> m_ppsBuffer;
-#if !REMOVE_APS
-  ParameterSetMap<TComAPS> m_apsBuffer;
-#endif
 };
 
 

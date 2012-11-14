@@ -92,31 +92,15 @@ public:
   Void  codeVPS                 ( TComVPS* pcVPS );
   Void  codeSPS                 ( TComSPS* pcSPS     );
   Void  codePPS                 ( TComPPS* pcPPS     );
-  void codeSEI(const SEI&);
   Void  codeSliceHeader         ( TComSlice* pcSlice );
   Void  codeTilesWPPEntryPoint( TComSlice* pSlice );
   Void  codeTerminatingBit      ( UInt uilsLast      );
   Void  codeSliceFinish         ();
-  Void  codeFlush               ();
   Void  encodeStart             ();
-#if !REMOVE_ALF
-  Void codeAlfParam(ALFParam* alfParam){printf("Not supported\n"); assert(0); exit(1);}
-  Void codeAlfCtrlFlag( Int compIdx, UInt code );
-#endif
-  Void  codeApsExtensionFlag () { assert (0); return; };
   Void  codeSaoMaxUvlc    ( UInt code, UInt maxSymbol );
-#if SAO_MERGE_ONE_CTX
   Void  codeSaoMerge  ( UInt  uiCode );
-#else
-  Void  codeSaoMergeLeft  ( UInt  uiCode, UInt uiCompIdx );
-  Void  codeSaoMergeUp    ( UInt  uiCode);
-#endif
   Void  codeSaoTypeIdx    ( UInt  uiCode);
-#if SAO_TYPE_CODING
   Void  codeSaoUflc       ( UInt uiLength, UInt  uiCode );
-#else
-  Void  codeSaoUflc       ( UInt  uiCode);
-#endif
   Void  codeSAOSign       ( UInt  uiCode);  //<! code SAO offset sign
   Void  codeScalingList      ( TComScalingList* scalingList     ){ assert (0);  return;};
 
@@ -130,10 +114,6 @@ private:
   Void  xCopyFrom            ( TEncSbac* pSrc );
   Void  xCopyContextsFrom    ( TEncSbac* pSrc );  
   
-#if !REMOVE_APS
-  Void codeAPSInitInfo(TComAPS* pcAPS) {printf("Not supported in codeAPSInitInfo()\n"); assert(0); exit(1);}
-#endif
-  Void codeFinish     (Bool bEnd)      { m_pcBinIf->encodeFlush(bEnd); }  //<! flush bits when CABAC termination
   Void codeDFFlag( UInt uiCode, const Char *pSymbolName )       {printf("Not supported in codeDFFlag()\n"); assert(0); exit(1);};
   Void codeDFSvlc( Int iCode, const Char *pSymbolName )         {printf("Not supported in codeDFSvlc()\n"); assert(0); exit(1);};
 
@@ -144,19 +124,9 @@ protected:
   //SBAC RD
   UInt          m_uiCoeffCost;
 
-#if !REMOVE_FGS
-  Int           m_iSliceGranularity; //!< slice granularity
-#endif
   //--Adaptive loop filter
   
 public:
-#if !REMOVE_FGS
-  /// set slice granularity
-  Void setSliceGranularity(Int iSliceGranularity)  {m_iSliceGranularity = iSliceGranularity;}
-
-  /// get slice granularity
-  Int  getSliceGranularity()                       {return m_iSliceGranularity;             }
-#endif
   Void codeCUTransquantBypassFlag( TComDataCU* pcCU, UInt uiAbsPartIdx );
   Void codeSkipFlag      ( TComDataCU* pcCU, UInt uiAbsPartIdx );
   Void codeMergeFlag     ( TComDataCU* pcCU, UInt uiAbsPartIdx );
@@ -166,14 +136,16 @@ public:
   
   Void codePartSize      ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
   Void codePredMode      ( TComDataCU* pcCU, UInt uiAbsPartIdx );
+#if !REMOVE_BURST_IPCM
   Void codeIPCMInfo      ( TComDataCU* pcCU, UInt uiAbsPartIdx, Int numIPCM, Bool firstIPCMFlag);
+#else
+  Void codeIPCMInfo      ( TComDataCU* pcCU, UInt uiAbsPartIdx );
+#endif
   Void codeTransformSubdivFlag ( UInt uiSymbol, UInt uiCtx );
   Void codeQtCbf               ( TComDataCU* pcCU, UInt uiAbsPartIdx, TextType eType, UInt uiTrDepth );
   Void codeQtRootCbf           ( TComDataCU* pcCU, UInt uiAbsPartIdx );
-#if TU_ZERO_CBF_RDO
   Void codeQtCbfZero           ( TComDataCU* pcCU, UInt uiAbsPartIdx, TextType eType, UInt uiTrDepth );
   Void codeQtRootCbfZero       ( TComDataCU* pcCU, UInt uiAbsPartIdx );
-#endif
   Void codeIntraDirLumaAng     ( TComDataCU* pcCU, UInt absPartIdx, Bool isMultiple);
   
   Void codeIntraDirChroma      ( TComDataCU* pcCU, UInt uiAbsPartIdx );
@@ -212,7 +184,6 @@ private:
   ContextModel3DBuffer m_cCUMergeIdxExtSCModel;
   ContextModel3DBuffer m_cCUPartSizeSCModel;
   ContextModel3DBuffer m_cCUPredModeSCModel;
-  ContextModel3DBuffer m_cCUAlfCtrlFlagSCModel;
   ContextModel3DBuffer m_cCUIntraPredSCModel;
   ContextModel3DBuffer m_cCUChromaPredSCModel;
   ContextModel3DBuffer m_cCUDeltaQpSCModel;
@@ -232,19 +203,8 @@ private:
   
   ContextModel3DBuffer m_cMVPIdxSCModel;
   
-  ContextModel3DBuffer m_cALFFlagSCModel;
-  ContextModel3DBuffer m_cALFUvlcSCModel;
-  ContextModel3DBuffer m_cALFSvlcSCModel;
   ContextModel3DBuffer m_cCUAMPSCModel;
-#if !SAO_ABS_BY_PASS
-  ContextModel3DBuffer m_cSaoUvlcSCModel;
-#endif
-#if SAO_MERGE_ONE_CTX
   ContextModel3DBuffer m_cSaoMergeSCModel;
-#else
-  ContextModel3DBuffer m_cSaoMergeLeftSCModel;
-  ContextModel3DBuffer m_cSaoMergeUpSCModel;
-#endif
   ContextModel3DBuffer m_cSaoTypeIdxSCModel;
   ContextModel3DBuffer m_cTransformSkipSCModel;
   ContextModel3DBuffer m_CUTransquantBypassFlagSCModel;

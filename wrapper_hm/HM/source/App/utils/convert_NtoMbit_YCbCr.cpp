@@ -75,8 +75,8 @@ int main(int argc, const char** argv)
   TVideoIOYuv input;
   TVideoIOYuv output;
 
-  input.open((char*)filename_in.c_str(), false, bitdepth_in, bitdepth_out);
-  output.open((char*)filename_out.c_str(), true, bitdepth_out, bitdepth_out);
+  input.open((char*)filename_in.c_str(), false, bitdepth_in, bitdepth_in, bitdepth_out, bitdepth_out);
+  output.open((char*)filename_out.c_str(), true, bitdepth_out, bitdepth_out, bitdepth_out, bitdepth_out);
 
   input.skipFrames(num_frames_skip, width, height);
 

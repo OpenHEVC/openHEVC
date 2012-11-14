@@ -58,15 +58,15 @@ class TComInterpolationFilter
   static const Short m_lumaFilter[4][NTAPS_LUMA];     ///< Luma filter taps
   static const Short m_chromaFilter[8][NTAPS_CHROMA]; ///< Chroma filter taps
   
-  static Void filterCopy(const Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isFirst, Bool isLast);
+  static Void filterCopy(Int bitDepth, const Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isFirst, Bool isLast);
   
-  template<int N, bool isVertical, bool isFirst, bool isLast>
-  static Void filter(Pel const *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Short const *coeff);
+  template<Int N, Bool isVertical, Bool isFirst, Bool isLast>
+  static Void filter(Int bitDepth, Pel const *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Short const *coeff);
 
-  template<int N>
-  static Void filterHor(Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height,               Bool isLast, Short const *coeff);
-  template<int N>
-  static Void filterVer(Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isFirst, Bool isLast, Short const *coeff);
+  template<Int N>
+  static Void filterHor(Int bitDepth, Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height,               Bool isLast, Short const *coeff);
+  template<Int N>
+  static Void filterVer(Int bitDepth, Pel *src, Int srcStride, Short *dst, Int dstStride, Int width, Int height, Bool isFirst, Bool isLast, Short const *coeff);
 
 public:
   TComInterpolationFilter() {}

@@ -82,8 +82,8 @@ class TComOutputBitstream : public TComBitIf
    */
   std::vector<uint8_t> *m_fifo;
 
-  unsigned int m_num_held_bits; /// number of bits not flushed to bytestream.
-  unsigned char m_held_bits; /// the bits held and not flushed to bytestream.
+  UInt m_num_held_bits; /// number of bits not flushed to bytestream.
+  UChar m_held_bits; /// the bits held and not flushed to bytestream.
                              /// this value is always msb-aligned, bigendian.
 
 public:
@@ -115,12 +115,12 @@ public:
    * NB, data is arranged such that subsequent bytes in the
    * bytestream are stored in ascending addresses.
    */
-  char* getByteStream() const;
+  Char* getByteStream() const;
 
   /**
    * Return the number of valid bytes available from  getByteStream()
    */
-  unsigned int getByteStreamLength();
+  UInt getByteStreamLength();
 
   /**
    * Reset all internal state.
@@ -136,9 +136,9 @@ public:
   /**
    * Return the number of bits that have been written since the last clear()
    */
-  unsigned getNumberOfWrittenBits() const { return unsigned(m_fifo->size()) * 8 + m_num_held_bits; }
+  UInt getNumberOfWrittenBits() const { return UInt(m_fifo->size()) * 8 + m_num_held_bits; }
 
-  void insertAt(const TComOutputBitstream& src, unsigned pos);
+  void insertAt(const TComOutputBitstream& src, UInt pos);
 
   /**
    * Return a reference to the internal fifo
@@ -152,9 +152,7 @@ public:
   std::vector<uint8_t>& getFIFO() const { return *m_fifo; }
 
   Void          addSubstream    ( TComOutputBitstream* pcSubstream );
-#if BYTE_ALIGNMENT
   Void writeByteAlignment();
-#endif
 };
 
 /**
@@ -166,10 +164,10 @@ class TComInputBitstream
   std::vector<uint8_t> *m_fifo; /// FIFO for storage of complete bytes
 
 protected:
-  unsigned int m_fifo_idx; /// Read index into m_fifo
+  UInt m_fifo_idx; /// Read index into m_fifo
 
-  unsigned int m_num_held_bits;
-  unsigned char m_held_bits;
+  UInt m_num_held_bits;
+  UChar m_held_bits;
   UInt  m_numBitsRead;
 
 public:
@@ -196,19 +194,17 @@ public:
   UInt  getByteLocation              ( )                     { return m_fifo_idx                    ; }
 
   // Peek at bits in word-storage. Used in determining if we have completed reading of current bitstream and therefore slice in LCEC.
-  UInt        peekBits (UInt uiBits) { unsigned tmp; pseudoRead(uiBits, tmp); return tmp; }
+  UInt        peekBits (UInt uiBits) { UInt tmp; pseudoRead(uiBits, tmp); return tmp; }
 
   // utility functions
-  unsigned read(unsigned numberOfBits) { UInt tmp; read(numberOfBits, tmp); return tmp; }
+  UInt read(UInt numberOfBits) { UInt tmp; read(numberOfBits, tmp); return tmp; }
   UInt     readByte() { UInt tmp; readByte( tmp ); return tmp; }
-  unsigned getNumBitsUntilByteAligned() { return m_num_held_bits & (0x7); }
-  unsigned getNumBitsLeft() { return 8*((unsigned)m_fifo->size() - m_fifo_idx) + m_num_held_bits; }
+  UInt getNumBitsUntilByteAligned() { return m_num_held_bits & (0x7); }
+  UInt getNumBitsLeft() { return 8*((UInt)m_fifo->size() - m_fifo_idx) + m_num_held_bits; }
   TComInputBitstream *extractSubstream( UInt uiNumBits ); // Read the nominated number of bits, and return as a bitstream.
   Void                deleteFifo(); // Delete internal fifo of bitstream.
   UInt  getNumBitsRead() { return m_numBitsRead; }
-#if BYTE_ALIGNMENT
   Void readByteAlignment();
-#endif
 };
 
 //! \}

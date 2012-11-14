@@ -25,6 +25,8 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
 	int info2 = 0;
 	int info3 = 0;
     
+    
+    
 	while (!StartCodeFound)
 	{
 		if (feof (inpf))
@@ -33,12 +35,13 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
 			return pos - 1;
 		}
 		Buf[pos++] = fgetc (inpf);
-		info3 = find_start_code(&Buf[pos-4], 3);
-		if(info3 != 1)
+		if(pos>4)
+            info3 = find_start_code(&Buf[pos-4], 3);
+		if(info3 != 1 && pos > 3)
 			info2 = find_start_code(&Buf[pos-3], 2);
 		StartCodeFound = (info2 == 1 || info3 == 1);
 	}
-	fseek (inpf, - 4 + info2, SEEK_CUR);
+	fseek (inpf, - 3, SEEK_CUR);
 	return pos - 4 + info2;
 }
 int dontRead=0;
@@ -50,7 +53,7 @@ int main(){
     unsigned char* buf = calloc ( 1000000, sizeof(char));
     FILE *f;
     int gotpicture=0;
-    filename = "/Users/mraulet/Dropbox/test_sequences/HEVC/8.0/BQMall_832x480_60qp22.bin";
+    filename = "/Users/mraulet/Dropbox/test_sequences/HEVC/9.0/BQSquare_416x240_60.bin";
     Init_SDL(80, 832, 480);
     
     f = fopen(filename, "rb");
@@ -66,7 +69,7 @@ int main(){
         if (nal_len == - 1) exit(10);
         libDecoderDecode(buf, nal_len, Y, U, V, &gotpicture);
         if (gotpicture = 1)
-            SDL_Display(80, 832, 480, Y, U, V);
+            SDL_Display(80, 416, 240, Y, U, V);
     }
     libDecoderClose();
     return(0);

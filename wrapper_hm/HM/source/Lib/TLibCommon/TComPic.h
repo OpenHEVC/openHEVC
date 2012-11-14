@@ -80,9 +80,6 @@ private:
   std::vector<std::vector<TComDataCU*> > m_vSliceCUDataLink;
 
   SEImessages* m_SEIs; ///< Any SEI messages that have been received.  If !NULL we own the object.
-#if DEPENDENT_SLICES
-  UInt m_uiCurrDepSliceIdx;
-#endif
 
 public:
   TComPic();
@@ -151,9 +148,6 @@ public:
   Void          destroyNonDBFilterInfo();
 
   Bool          getValidSlice                                  (Int sliceID)  {return m_pbValidSlice[sliceID];}
-#if !REMOVE_FGS
-  Int           getSliceGranularityForNDBFilter                ()             {return m_sliceGranularityForNDBFilter;}
-#endif
   Bool          getIndependentSliceBoundaryForNDBFilter        ()             {return m_bIndependentSliceBoundaryForNDBFilter;}
   Bool          getIndependentTileBoundaryForNDBFilter         ()             {return m_bIndependentTileBoundaryForNDBFilter; }
   TComPicYuv*   getYuvPicBufferForIndependentBoundaryProcessing()             {return m_pNDBFilterYuvTmp;}
@@ -171,10 +165,6 @@ public:
    * return the current list of SEI messages associated with this picture.
    * Pointer is valid until this->destroy() is called */
   const SEImessages* getSEIs() const { return m_SEIs; }
-#if DEPENDENT_SLICES
-  UInt          getCurrDepSliceIdx()              { return m_uiCurrDepSliceIdx; }
-  Void          setCurrDepSliceIdx( UInt i )      { m_uiCurrDepSliceIdx = i; }
-#endif
 
 };// END CLASS DEFINITION TComPic
 

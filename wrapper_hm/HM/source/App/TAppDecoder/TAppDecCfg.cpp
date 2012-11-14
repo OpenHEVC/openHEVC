@@ -60,9 +60,10 @@ namespace po = df::program_options_lite;
  */
 Bool TAppDecCfg::parseCfg( Int argc, Char* argv[] )
 {
-  bool do_help = false;
+  Bool do_help = false;
   string cfg_BitstreamFile;
   string cfg_ReconFile;
+  string cfg_TargetDecLayerIdSetFile;
 
   po::Options opts;
   opts.addOptions()
@@ -71,18 +72,20 @@ Bool TAppDecCfg::parseCfg( Int argc, Char* argv[] )
   ("ReconFile,o",     cfg_ReconFile,     string(""), "reconstructed YUV output file name\n"
                                                      "YUV writing is skipped if omitted")
   ("SkipFrames,s", m_iSkipFrame, 0, "number of frames to skip before random access")
-  ("OutputBitDepth,d", m_outputBitDepth, 0u, "bit depth of YUV output file (use 0 for native depth)")
+  ("OutputBitDepth,d", m_outputBitDepthY, 0, "bit depth of YUV output luma component (default: use 0 for native depth)")
+  ("OutputBitDepthC,d", m_outputBitDepthC, 0, "bit depth of YUV output chroma component (default: use 0 for native depth)")
   ("MaxTemporalLayer,t", m_iMaxTemporalLayer, -1, "Maximum Temporal Layer to be decoded. -1 to decode all layers")
-  ("SEIpictureDigest", m_pictureDigestEnabled, 1, "Control handling of picture_digest SEI messages\n"
+  ("SEIpictureDigest", m_decodedPictureHashSEIEnabled, 1, "Control handling of decoded picture hash SEI messages\n"
                                               "\t3: checksum\n"
                                               "\t2: CRC\n"
                                               "\t1: MD5\n"
                                               "\t0: ignore")
+  ("TarDecLayerIdSetFile,l", cfg_TargetDecLayerIdSetFile, string(""), "targetDecLayerIdSet file name. The file should include white space separated LayerId values to be decoded. Omitting the option or a value of -1 in the file decodes all layers.")
   ;
   po::setDefaults(opts);
-  const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv);
+  const list<const Char*>& argv_unhandled = po::scanArgv(opts, argc, (const Char**) argv);
 
-  for (list<const char*>::const_iterator it = argv_unhandled.begin(); it != argv_unhandled.end(); it++)
+  for (list<const Char*>::const_iterator it = argv_unhandled.begin(); it != argv_unhandled.end(); it++)
   {
     fprintf(stderr, "Unhandled argument ignored: `%s'\n", *it);
   }
@@ -101,6 +104,51 @@ Bool TAppDecCfg::parseCfg( Int argc, Char* argv[] )
   {
     fprintf(stderr, "No input file specifed, aborting\n");
     return false;
+  }
+
+  if ( !cfg_TargetDecLayerIdSetFile.empty() )
+  {
+    FILE* targetDecLayerIdSetFile = fopen ( cfg_TargetDecLayerIdSetFile.c_str(), "r" );
+    if ( targetDecLayerIdSetFile )
+    {
+      Bool isLayerIdZeroIncluded = false;
+      while ( !feof(targetDecLayerIdSetFile) )
+      {
+        Int layerIdParsed = 0;
+        if ( fscanf( targetDecLayerIdSetFile, "%d ", &layerIdParsed ) != 1 )
+        {
+          if ( m_targetDecLayerIdSet.size() == 0 )
+          {
+            fprintf(stderr, "No LayerId could be parsed in file %s. Decoding all LayerIds as default.\n", cfg_TargetDecLayerIdSetFile.c_str() );
+          }
+          break;
+        }
+        if ( layerIdParsed  == -1 ) // The file includes a -1, which means all LayerIds are to be decoded.
+        {
+          m_targetDecLayerIdSet.clear(); // Empty set means decoding all layers.
+          break;
+        }
+        if ( layerIdParsed < 0 || layerIdParsed >= MAX_NUM_LAYER_IDS )
+        {
+          fprintf(stderr, "Warning! Parsed LayerId %d is not withing allowed range [0,%d]. Ignoring this value.\n", layerIdParsed, MAX_NUM_LAYER_IDS-1 );
+        }
+        else
+        {
+          isLayerIdZeroIncluded = layerIdParsed == 0 ? true : isLayerIdZeroIncluded;
+          m_targetDecLayerIdSet.push_back ( layerIdParsed );
+        }
+      }
+      fclose (targetDecLayerIdSetFile);
+      if ( m_targetDecLayerIdSet.size() > 0 && !isLayerIdZeroIncluded )
+      {
+        fprintf(stderr, "TargetDecLayerIdSet must contain LayerId=0, aborting" );
+        return false;
+      }
+    }
+    else
+    {
+      fprintf(stderr, "File %s could not be opened. Using all LayerIds as default.\n", cfg_TargetDecLayerIdSetFile.c_str() );
+    }
   }
 
   return true;

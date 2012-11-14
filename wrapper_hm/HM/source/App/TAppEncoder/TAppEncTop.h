@@ -66,8 +66,8 @@ private:
   
   Int                        m_iFrameRcvd;                  ///< number of received frames
   
-  unsigned m_essentialBytes;
-  unsigned m_totalBytes;
+  UInt m_essentialBytes;
+  UInt m_totalBytes;
 protected:
   // initialization
   Void  xCreateLib        ();                               ///< create files & encoder class
@@ -83,7 +83,7 @@ protected:
   
   // file I/O
   Void xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, const std::list<AccessUnit>& accessUnits); ///< write bitstream to file
-  void rateStatsAccum(const AccessUnit& au, const std::vector<unsigned>& stats);
+  void rateStatsAccum(const AccessUnit& au, const std::vector<UInt>& stats);
   void printRateSummary();
   
 public:

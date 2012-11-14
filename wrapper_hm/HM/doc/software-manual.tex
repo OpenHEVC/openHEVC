@@ -103,7 +103,7 @@
 	David Flynn
 	\email{davidf@rd.bbc.co.uk}
 	\and
-	Karsten Sühring
+	Karsten S\"uhring
 	\email{Karsten.Suehring@hhi.fraunhofer.de}
 }
 
@@ -117,7 +117,7 @@
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of reference software
-for the HEVC project. It applies to version 8.0
+for the HEVC project. It applies to version 9.0
 of the software.
 \end{abstract}
 
@@ -207,6 +207,7 @@ TAppEncoder 	[-h] [-c config.cfg] [--parameter=value]
 Sample configuration files are provided in the cfg/ folder.
 
 \subsection{GOP structure table}
+\label{sec:gop-structure}
 Defines the cyclic GOP structure that will be used repeatedly
 throughout the sequence. The table should contain GOPSize lines,
 named Frame1, Frame2, etc. The frames are listed in decoding
@@ -247,9 +248,6 @@ not used, but is kept for possible use in future frames.
 \item[]\textbf{num_ref_pics_active}: Size of reference picture lists L0
 and L1, indicating how many reference pictures in each direction that
 are used during coding.
-
-\item[]\textbf{ref_pic}: A value of 1 indicates that this is a reference
-picture, 0 that it is a non-reference picture.
 
 \item[]\textbf{num_ref_pics}: The number of reference pictures kept for
 this frame.  This includes pictures that are used for reference for the
@@ -360,7 +358,6 @@ QPoffset            &   1  &    2   &      3   &       3 \\
 QPfactor            & 0.5  &  0.5   &    0.5   &     0.5 \\
 temporal_id         &   0  &    1   &      2   &       2 \\
 num_ref_pics_active &   1  &    1   &      1   &       1 \\
-ref_pic             &   1  &    1   &      0   &       0 \\
 num_ref_pics        &   1  &    2   &      3   &       2 \\
 reference_pictures  & $-$4 & $-$2 2 & $-$1 1 3 &  $-$1 1 \\
 predict             &   0  &    1   &      1   &       1 \\
@@ -380,10 +377,10 @@ line should contain information for one frame, so this
 configuration would be specified as:
 
 \begin{verbatim}
-Frame1: P 4 1 0.5 0 1 1 1 -4 0
-Frame2: B 2 2 0.5 1 1 1 2 -2 2 1 0 2 2 1 1
-Frame3: B 1 3 0.5 2 1 0 3 -1 1 3 1 0 1 3 1 1 1
-Frame4: B 3 3 0.5 2 1 0 2 -1 1 1 0 -2 4 0 1 1 0
+Frame1: P 4 1 0.5 0 1 1 -4 0
+Frame2: B 2 2 0.5 1 1 2 -2 2 1 0 2 2 1 1
+Frame3: B 1 3 0.5 2 1 3 -1 1 3 1 0 1 3 1 1 1
+Frame4: B 3 3 0.5 2 1 2 -1 1 1 0 -2 4 0 1 1 0
 \end{verbatim}
 
 The values of deltaRIdx$-1$, deltaRPS, num_ref_idcs and reference
@@ -503,6 +500,18 @@ Specifies the bit depth of the output locally reconstructed video file.
 Note: This option has no effect on the decoding process.
 \\
 
+\Option{InputBitDepthC}
+\Option{InternalBitDepthC}
+\Option{OutputBitDepthC} &
+\ShortOption{\None} &
+\Default{(InputBitDepth)}
+\Default{(InternalBitDepth)}
+\Default{(InternalBitDepthC)} &
+Specifies the various bit-depths for chroma components.  These only need
+to be specified if non-equal luma and chroma bit-depth processing is
+required.
+\\
+
 \Option{CroppingMode} &
 \ShortOption{\None} &
 \Default{0} &
@@ -557,6 +566,42 @@ Specifies a number of frames to skip at beginning of input video file.
 \ShortOption{-f} &
 \Default{0 \\ (all)} &
 Specifies the number of frames to be encoded.
+\\
+\end{OptionTable}
+
+%%
+%% profile, level and conformance options
+%%
+\begin{OptionTable}{Profile and level parameters}
+\Option{Profile} &
+\ShortOption{\None} &
+\Default{none} &
+Specifies the profile to which the encoded bitstream complies.
+Valid values are: none, main, main10, main-still-picture.
+
+Compatibility flags are automatically determined according to the profile.
+If --Profile=main, then main10 will always be signalled as compatible.
+If --Profile=main10, then main will be signalled as compatible if the bit-depth is 8-bit.
+
+NB: There is currently no validation that the encoder configuration complies with the profile and level constraints.
+\\
+
+\Option{Level} &
+\ShortOption{\None} &
+\Default{none} &
+Specifies the level to which the encoded bitstream complies.
+Valid values are: none, 1, 2, 2.1, 3, 3.1, 4, 4.1, 5, 5.1, 5.2, 6, 6.1, 6.2.
+
+NB: There is currently no validation that the encoder configuration complies with the profile and level constraints.
+\\
+
+\Option{Tier} &
+\ShortOption{\None} &
+\Default{main} &
+Specifies the level tier to which the encoded bitsream complies.
+Valid values are: main, high.
+
+NB: There is currently no validation that the encoder configuration complies with the profile and level constraints.
 \\
 \end{OptionTable}
 
@@ -807,6 +852,12 @@ MaxCuDQPDepth shall be greater than or equal to SliceGranularity.
 \ShortOption{\None} &
 \Default{true} &
 Enables or disables rate-distortion-optimized quantization.
+\\
+
+\Option{RDOQTS} &
+\ShortOption{\None} &
+\Default{true} &
+Enables or disables rate-distortion-optimized quantization for transform-skipped TUs.
 \\
 
 \Option{DeltaQpRD} &
@@ -1147,14 +1198,14 @@ Controls the temporal motion vector prediction mode.
 \end{tabular}
 \\
 
-\Option{TS} &
+\Option{TransformSkip} &
 \ShortOption{\None} &
 \Default{false} &
 Enables or disables transform-skipping mode decision for 4x4 TUs
 \footnote{Enables transform_skip_enabled and per 4x4 TU tests}.
 \\
 
-\Option{TSFast} &
+\Option{TransformSkipFast} &
 \ShortOption{\None} &
 \Default{false} &
 Enables or disables reduced testing of the transform-skipping mode
@@ -1162,17 +1213,156 @@ decision for chroma TUs.  When enabled, no RDO search is performed for
 chroma TUs, instead they are transform-skipped if the four corresponding
 luma TUs are also skipped.
 \par
-This option has no effect if TS is disabled.
+This option has no effect if TransformSkip is disabled.
 \\
 \end{OptionTable}
 
-
+%%
+%% VUI parameters
+%%
+\begin{OptionTable}{VUI parameters}
+\Option{VuiParametersPresent} &
+\ShortOption{-vui} &
+\Default{false} &
+Enable generation of vui_parameters().
+\\
+\Option{AspectRatioInfoPresent} &
+\ShortOption{} &
+\Default{false} &
+Signals whether aspect_ratio_idc is present.
+\\
+\Option{AspectRatioIdc} &
+\ShortOption{} &
+\Default{0} &
+aspect_ratio_idc
+\\
+\Option{SarWidth} &
+\ShortOption{} &
+\Default{0} &
+Specifies the horizontal size of the sample aspect ratio.
+\\
+\Option{SarHeight} &
+\ShortOption{} &
+\Default{0} &
+Specifies the vertical size of the sample aspect ratio.
+\\
+\Option{OverscanInfoPresent} &
+\ShortOption{} &
+\Default{false} &
+Signals whether overscan_info_present_flag is present.
+\\
+\Option{OverscanAppropriate} &
+\ShortOption{} &
+\Default{false} &
+Indicates whether cropped decoded pictures are suitable for display using overscan.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+  0 & Indicates that the decoded pictures should not be displayed using overscan. \\
+  1 & Indicates that the decoded pictures may be displayed using overscan. \\
+\end{tabular}
+\\
+\Option{VideoSignalTypePresent} &
+\ShortOption{} &
+\Default{false} &
+Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present.
+\\
+\Option{VideoFormat} &
+\ShortOption{} &
+\Default{5} &
+Indicates representation of pictures.
+\\
+\Option{VideoFullRange} &
+\ShortOption{} &
+\Default{false} &
+Indicates the black level and range of luma and chroma signals.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+  0 & Indicates that the luma and chroma signals are to be scaled prior to display. \\
+  1 & Indicates that the luma and chroma signals are not to be scaled prior to display. \\
+\end{tabular}
+\\
+\Option{ColourDescriptionPresent} &
+\ShortOption{} &
+\Default{false} &
+Signals whether colour_primaries, transfer_characteristics and matrix_coefficients are present.
+\\
+\Option{ColourPrimaries} &
+\ShortOption{} &
+\Default{2} &
+Indicates chromaticity coordinates of the source primaries.
+\\
+\Option{TransferCharateristics} &
+\ShortOption{} &
+\Default{2} &
+Indicates the opto-electronic transfer characteristics of the source.
+\\
+\Option{MatrixCoefficients} &
+\ShortOption{} &
+\Default{2} &
+Describes the matrix coefficients used in deriving luma and chroma from RGB primaries.
+\\
+\Option{ChromaLocInfoPresent} &
+\ShortOption{} &
+\Default{false} &
+Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present.
+\\
+\Option{ChromaSampleLocTypeTopField} &
+\ShortOption{} &
+\Default{0} &
+Specifies the location of chroma samples for top field.
+\\
+\Option{ChromaSampleLocTypeBottomField} &
+\ShortOption{} &
+\Default{0} &
+Specifies the location of chroma samples for bottom field.
+\\
+\Option{NeutralChromaIndication} &
+\ShortOption{} &
+\Default{false} &
+Indicates that the value of all decoded chroma samples is equal to 1<<(BitDepthCr-1).
+\\
+\Option{BitstreamRestriction} &
+\ShortOption{} &
+\Default{false} &
+Signals whether bitstream restriction parameters are present.
+\\
+\Option{TilesFixedStructure} &
+\ShortOption{} &
+\Default{false} &
+Indicates that each active picture parameter set has the same values of the syntax elements related to tiles.
+\\
+\Option{MotionVectorsOverPicBoundaries} &
+\ShortOption{} &
+\Default{false} &
+Indicates that no samples outside the picture boundaries are used for inter prediction.
+\\
+\Option{MaxBytesPerPicDenom} &
+\ShortOption{} &
+\Default{2} &
+Indicates a number of bytes not exceeded by the sum of the sizes of the VCL NAL units associated with any coded picture.
+\\
+\Option{MaxBitsPerMinCuDenom} &
+\ShortOption{} &
+\Default{1} &
+Indicates an upper bound for the number of bits of coding_unit() data.
+\\
+\Option{Log2MaxMvLengthHorizontal} &
+\ShortOption{} &
+\Default{15} &
+Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units.
+\\
+\Option{Log2MaxMvLengthVertical} &
+\ShortOption{} &
+\Default{15} &
+Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units.
+\\
+\end{OptionTable}
 
 %%
 %% Miscellaneous parameters
 %%
 \begin{OptionTable}{Miscellaneous parameters}
-\Option{SEIPictureDigest} &
+\Option{SEIpictureDigest} &
 \ShortOption{\None} &
 \Default{0} &
 Enables or disables the calculation and insertion of the picture_digest
@@ -1182,6 +1372,39 @@ SEI messages.
   0 & Disabled \\
   1 & Transmits MD5 in SEI message and writes the value to the encoder
       log \\
+\end{tabular}
+\\
+\Option{SEIRecoveryPoint} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the recovery_point
+SEI messages.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+  0 & Disabled \\
+  1 & Enabled \\
+\end{tabular}
+\\
+\Option{SEIBufferingPeriod} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the buffering_period
+SEI messages. This options has no effect if VuiParametersPresent is disabled.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+  0 & Disabled \\
+  1 & Enabled \\
+\end{tabular}
+\\
+\Option{SEIPictureTiming} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the picture_timing
+SEI messages. This options has no effect if VuiParametersPresent is disabled.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+  0 & Disabled \\
+  1 & Enabled \\
 \end{tabular}
 \\
 \end{OptionTable}
@@ -1264,11 +1487,6 @@ CLIP_TO_709_RANGE &
 off &
 \\
 
-IBDI_NOCLIP_RANGE &
-off &
-restrict maximum value after IBDI to skip clipping
-\\
-
 EARLY_SKIP_THRES &
 1.5 &
 early skip if RD < EARLY_SKIP_THRES*avg[BestSkipRD]
@@ -1315,11 +1533,18 @@ Defines reconstructed YUV file name.
 Defines the number of pictures in decoding order to skip.
 \\
 
-\Option{} &
+\Option{OutputBitDepth} &
 \ShortOption{-d} &
 \Default{0 \\ (Native)} &
-Defines the bit depth of the reconstructed YUV file (a value 0 indicates
-that the native bit depth is used)
+Specifies the luma bit-depth of the reconstructed YUV file (the value 0 indicates
+that the native bit-depth is used)
+\\
+
+\Option{OutputBitDepthC} &
+\ShortOption{\None} &
+\Default{0 \\ (Native)} &
+Defines the chroma bit-depth of the reconstructed YUV file (the value 0 indicates
+that the native bit-depth is used)
 \\
 
 \Option{SEIPictureDigest} &

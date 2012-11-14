@@ -2,7 +2,7 @@
 
 /**
  * \file mainpage.h
- * \brief HEVC referece documentation main page (no functional use)
+ * \brief HEVC reference documentation main page (no functional use)
  * \mainpage
  *
  * \section Introduction

@@ -48,7 +48,11 @@
 
 #define   EDGE_VER    0
 #define   EDGE_HOR    1
+#if USE_PIC_CHROMA_QP_OFFSETS_IN_DEBLOCKING
+#define   QpUV(iQpY)  ( ((iQpY) < 0) ? (iQpY) : (((iQpY) > 57) ? ((iQpY)-6) : g_aucChromaScale[(iQpY)]) )
+#else
 #define   QpUV(iQpY)  ( g_aucChromaScale[ max( min( (iQpY), MAX_QP ), MIN_QP ) ] )
+#endif
 
 #define DEFAULT_INTRA_TC_OFFSET 2 ///< Default intra TC offset
 
@@ -71,11 +75,12 @@ const UChar betatable_8x8[52] =
 // ====================================================================================================================
 
 TComLoopFilter::TComLoopFilter()
-: m_uiNumPartitions( 0 )
+: m_disableDeblockingFilterFlag(false)
+, m_betaOffsetDiv2(0)
+, m_tcOffsetDiv2(0)
+, m_uiNumPartitions(0)
+, m_bLFCrossTileBoundary(true)
 {
-  m_uiDisableDeblockingFilterIdc = 0;
-  m_bLFCrossTileBoundary = true;
- 
   for( UInt uiDir = 0; uiDir < 2; uiDir++ )
   {
     m_aapucBS       [uiDir] = NULL;
@@ -93,19 +98,19 @@ TComLoopFilter::~TComLoopFilter()
 // ====================================================================================================================
 // Public member functions
 // ====================================================================================================================
-Void TComLoopFilter::setCfg( Bool DeblockingFilterControlPresent, UInt uiDisableDblkIdc, Int iBetaOffset_div2, Int iTcOffset_div2, Bool bLFCrossTileBoundary)
+Void TComLoopFilter::setCfg( Bool deblockingFilterControlPresentFlag, Bool disableDeblockingFilterFlag, Int betaOffsetDiv2, Int tcOffsetDiv2, Bool bLFCrossTileBoundary )
 {
   m_bLFCrossTileBoundary = bLFCrossTileBoundary;
 
-  if (DeblockingFilterControlPresent)
+  if (deblockingFilterControlPresentFlag)
   {
-    m_uiDisableDeblockingFilterIdc  = uiDisableDblkIdc;
-    m_betaOffsetDiv2 = iBetaOffset_div2;
-    m_tcOffsetDiv2 = iTcOffset_div2;
+    m_disableDeblockingFilterFlag  = disableDeblockingFilterFlag;
+    m_betaOffsetDiv2 = betaOffsetDiv2;
+    m_tcOffsetDiv2 = tcOffsetDiv2;
   } 
   else // use default values
   {
-    m_uiDisableDeblockingFilterIdc = 0;
+    m_disableDeblockingFilterFlag = false;
     m_betaOffsetDiv2 = 0;
     m_tcOffsetDiv2 = 0;
   }
@@ -152,7 +157,7 @@ Void TComLoopFilter::destroy()
  */
 Void TComLoopFilter::loopFilterPic( TComPic* pcPic )
 {
-  if (m_uiDisableDeblockingFilterIdc == 1)
+  if ( m_disableDeblockingFilterFlag )
   {
     return;
   }
@@ -165,7 +170,7 @@ Void TComLoopFilter::loopFilterPic( TComPic* pcPic )
     ::memset( m_aapucBS       [EDGE_VER], 0, sizeof( UChar ) * m_uiNumPartitions );
     for( Int iPlane = 0; iPlane < 3; iPlane++ )
     {
-      ::memset( m_aapbEdgeFilter[EDGE_VER][iPlane], 0, sizeof( bool  ) * m_uiNumPartitions );
+      ::memset( m_aapbEdgeFilter[EDGE_VER][iPlane], 0, sizeof( Bool  ) * m_uiNumPartitions );
     }
 
     // CU-based deblocking
@@ -181,7 +186,7 @@ Void TComLoopFilter::loopFilterPic( TComPic* pcPic )
     
     for( Int iPlane = 0; iPlane < 3; iPlane++ )
     {
-      ::memset( m_aapbEdgeFilter[EDGE_HOR][iPlane], 0, sizeof( bool  ) * m_uiNumPartitions );
+      ::memset( m_aapbEdgeFilter[EDGE_HOR][iPlane], 0, sizeof( Bool  ) * m_uiNumPartitions );
     }
 
     // CU-based deblocking
@@ -295,17 +300,9 @@ Void TComLoopFilter::xSetEdgefilterTU( TComDataCU* pcCU, UInt absTUPartIdx, UInt
   {
     const UInt uiCurNumParts = pcCU->getPic()->getNumPartInCU() >> (uiDepth<<1);
     const UInt uiQNumParts   = uiCurNumParts>>2;
-#if !REMOVE_NSQT
-    const UInt uiLog2TrSize = g_aucConvertToBit[ pcCU->getSlice()->getSPS()->getMaxCUWidth() >> uiDepth ] + 2;
-#endif
     for ( UInt uiPartIdx = 0; uiPartIdx < 4; uiPartIdx++, uiAbsZorderIdx+=uiQNumParts )
     {
-#if REMOVE_NSQT
       UInt nsAddr = uiAbsZorderIdx;
-#else
-      UInt nsAddr = 0;
-      nsAddr = pcCU->getNSAbsPartIdx( uiLog2TrSize - 1, uiAbsZorderIdx, absTUPartIdx, uiPartIdx, uiDepth + 1 - pcCU->getDepth( uiAbsZorderIdx ) );
-#endif
       xSetEdgefilterTU( pcCU,nsAddr, uiAbsZorderIdx, uiDepth + 1 );
     }
     return;
@@ -313,9 +310,6 @@ Void TComLoopFilter::xSetEdgefilterTU( TComDataCU* pcCU, UInt absTUPartIdx, UInt
 
   Int trWidth  = pcCU->getWidth( uiAbsZorderIdx ) >> pcCU->getTransformIdx( uiAbsZorderIdx );
   Int trHeight = pcCU->getHeight( uiAbsZorderIdx ) >> pcCU->getTransformIdx( uiAbsZorderIdx );
-#if !REMOVE_NSQT
-  pcCU->getNSQTSize( uiDepth - pcCU->getDepth( uiAbsZorderIdx ), uiAbsZorderIdx, trWidth, trHeight );
-#endif
   
   UInt uiWidthInBaseUnits  = trWidth / (g_uiMaxCUWidth >> g_uiMaxCUDepth);
   UInt uiHeightInBaseUnits = trHeight / (g_uiMaxCUWidth >> g_uiMaxCUDepth);
@@ -395,9 +389,9 @@ Void TComLoopFilter::xSetLoopfilterParam( TComDataCU* pcCU, UInt uiAbsZorderIdx 
   TComDataCU* pcTempCU;
   UInt        uiTempPartIdx;
 
-  m_stLFCUParam.bInternalEdge = m_uiDisableDeblockingFilterIdc ? false : true ;
+  m_stLFCUParam.bInternalEdge = !m_disableDeblockingFilterFlag;
   
-  if ( (uiX == 0) || (m_uiDisableDeblockingFilterIdc == 1) )
+  if ( (uiX == 0) || m_disableDeblockingFilterFlag )
   {
     m_stLFCUParam.bLeftEdge = false;
   }
@@ -418,7 +412,7 @@ Void TComLoopFilter::xSetLoopfilterParam( TComDataCU* pcCU, UInt uiAbsZorderIdx 
     }
   }
   
-  if ( (uiY == 0 ) || (m_uiDisableDeblockingFilterIdc == 1) )
+  if ( (uiY == 0 ) || m_disableDeblockingFilterFlag )
   {
     m_stLFCUParam.bTopEdge = false;
   }
@@ -428,7 +422,12 @@ Void TComLoopFilter::xSetLoopfilterParam( TComDataCU* pcCU, UInt uiAbsZorderIdx 
   }
   if ( m_stLFCUParam.bTopEdge )
   {
+#if LINEBUF_CLEANUP
+    pcTempCU = pcCU->getPUAbove( uiTempPartIdx, uiAbsZorderIdx, !pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false , false, !m_bLFCrossTileBoundary);
+#else
     pcTempCU = pcCU->getPUAbove( uiTempPartIdx, uiAbsZorderIdx, !pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false , false, false, !m_bLFCrossTileBoundary);
+#endif
+
     if ( pcTempCU )
     {
       m_stLFCUParam.bTopEdge = true;
@@ -458,7 +457,11 @@ Void TComLoopFilter::xGetBoundaryStrengthSingle ( TComDataCU* pcCU, UInt uiAbsZo
   }
   else  // (iDir == EDGE_HOR)
   {
+#if LINEBUF_CLEANUP
+    pcCUP = pcCUQ->getPUAbove(uiPartP, uiPartQ, !pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false, false, !m_bLFCrossTileBoundary);
+#else
     pcCUP = pcCUQ->getPUAbove(uiPartP, uiPartQ, !pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false, false, false, !m_bLFCrossTileBoundary);
+#endif
   }
   
   //-- Set BS for Intra MB : BS = 4 or 3
@@ -472,16 +475,6 @@ Void TComLoopFilter::xGetBoundaryStrengthSingle ( TComDataCU* pcCU, UInt uiAbsZo
   {
     UInt nsPartQ = uiPartQ;
     UInt nsPartP = uiPartP;
-#if !REMOVE_NSQT
-    if(pcCUQ->getPredictionMode(uiPartQ) == MODE_INTER && pcCUQ->useNonSquarePU(uiPartQ))
-    {
-      nsPartQ = pcCUQ->getNSQTPartIdx( uiAbsPartIdx );
-    }
-    if(pcCUP->getPredictionMode(uiPartP) == MODE_INTER && pcCUP->useNonSquarePU(uiPartP))
-    {
-      nsPartP = pcCUP->getNSQTPartIdx( uiPartP );
-    }
-#endif
     
     if ( m_aapucBS[iDir][uiAbsPartIdx] && (pcCUQ->getCbf( nsPartQ, TEXT_LUMA, pcCUQ->getTransformIdx(nsPartQ)) != 0 || pcCUP->getCbf( nsPartP, TEXT_LUMA, pcCUP->getTransformIdx(nsPartP) ) != 0) )
     {
@@ -491,7 +484,11 @@ Void TComLoopFilter::xGetBoundaryStrengthSingle ( TComDataCU* pcCU, UInt uiAbsZo
     {
       if (iDir == EDGE_HOR)
       {
+#if LINEBUF_CLEANUP
+        pcCUP = pcCUQ->getPUAbove(uiPartP, uiPartQ, !pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false, false, !m_bLFCrossTileBoundary);
+#else
         pcCUP = pcCUQ->getPUAbove(uiPartP, uiPartQ, !pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false, true, false, !m_bLFCrossTileBoundary);
+#endif
       }
       if (pcSlice->isInterB())
       {
@@ -619,12 +616,16 @@ Void TComLoopFilter::xEdgeFilterLuma( TComDataCU* pcCU, UInt uiAbsZorderIdx, UIn
       }
       else  // (iDir == EDGE_HOR)
       {
+#if LINEBUF_CLEANUP
+        pcCUP = pcCUQ->getPUAbove(uiPartPIdx, uiPartQIdx,!pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false, false, !m_bLFCrossTileBoundary);
+#else
         pcCUP = pcCUQ->getPUAbove(uiPartPIdx, uiPartQIdx,!pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false, false, false, !m_bLFCrossTileBoundary);
+#endif
       }
 
       iQP_P = pcCUP->getQP(uiPartPIdx);
       iQP = (iQP_P + iQP_Q + 1) >> 1;
-      Int iBitdepthScale = (1<<(g_uiBitIncrement+g_uiBitDepth-8));
+      Int iBitdepthScale = 1 << (g_bitDepthY-8);
       
       Int iIndexTC = Clip3(0, MAX_QP+DEFAULT_INTRA_TC_OFFSET, Int(iQP + DEFAULT_INTRA_TC_OFFSET*(uiBs-1) + (m_tcOffsetDiv2 << 1)));
       Int iIndexB = Clip3(0, MAX_QP, iQP + (m_betaOffsetDiv2 << 1));
@@ -648,15 +649,17 @@ Void TComLoopFilter::xEdgeFilterLuma( TComDataCU* pcCU, UInt uiAbsZorderIdx, UIn
         Int dq = dq0 + dq3;
         Int d =  d0 + d3;
         
-        if (bPCMFilter)
+        if (bPCMFilter || pcCU->getSlice()->getPPS()->getTransquantBypassEnableFlag())
         {
-          // Check if each of PUs is I_PCM
-          bPartPNoFilter = (pcCUP->getIPCMFlag(uiPartPIdx));
-          bPartQNoFilter = (pcCUQ->getIPCMFlag(uiPartQIdx));
+          // Check if each of PUs is I_PCM with LF disabling
+          bPartPNoFilter = (bPCMFilter && pcCUP->getIPCMFlag(uiPartPIdx));
+          bPartQNoFilter = (bPCMFilter && pcCUQ->getIPCMFlag(uiPartQIdx));
+
+          // check if each of PUs is lossless coded
+          bPartPNoFilter = bPartPNoFilter || (pcCUP->isLosslessCoded(uiPartPIdx) );
+          bPartQNoFilter = bPartQNoFilter || (pcCUQ->isLosslessCoded(uiPartQIdx) );
         }
-        // check if each of PUs is lossless coded
-        bPartPNoFilter = bPartPNoFilter || (pcCUP->isLosslessCoded(uiPartPIdx) );
-        bPartQNoFilter = bPartQNoFilter || (pcCUQ->isLosslessCoded(uiPartQIdx) );
+
         if (d < iBeta)
         { 
           Bool bFilterP = (dp < iSideThreshold);
@@ -751,31 +754,57 @@ Void TComLoopFilter::xEdgeFilterChroma( TComDataCU* pcCU, UInt uiAbsZorderIdx, U
       }
       else  // (iDir == EDGE_HOR)
       {
+#if LINEBUF_CLEANUP
+        pcCUP = pcCUQ->getPUAbove(uiPartPIdx, uiPartQIdx,!pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false, false, !m_bLFCrossTileBoundary);
+#else
         pcCUP = pcCUQ->getPUAbove(uiPartPIdx, uiPartQIdx,!pcCU->getSlice()->getLFCrossSliceBoundaryFlag(), false, false, false, !m_bLFCrossTileBoundary);
+#endif
       }
 
       iQP_P = pcCUP->getQP(uiPartPIdx);
+#if !USE_PIC_CHROMA_QP_OFFSETS_IN_DEBLOCKING
       iQP = QpUV((iQP_P + iQP_Q + 1) >> 1);
-      Int iBitdepthScale = (1<<(g_uiBitIncrement+g_uiBitDepth-8));
+      Int iBitdepthScale = 1 << (g_bitDepth-8);
       
       Int iIndexTC = Clip3(0, MAX_QP+DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET*(ucBs - 1) + (m_tcOffsetDiv2 << 1));
       Int iTc =  tctable_8x8[iIndexTC]*iBitdepthScale;
+#endif
       
-      if(bPCMFilter)
+      if (bPCMFilter || pcCU->getSlice()->getPPS()->getTransquantBypassEnableFlag())
       {
-        // Check if each of PUs is IPCM
-        bPartPNoFilter = (pcCUP->getIPCMFlag(uiPartPIdx));
-        bPartQNoFilter = (pcCUQ->getIPCMFlag(uiPartQIdx));
+        // Check if each of PUs is I_PCM with LF disabling
+        bPartPNoFilter = (bPCMFilter && pcCUP->getIPCMFlag(uiPartPIdx));
+        bPartQNoFilter = (bPCMFilter && pcCUQ->getIPCMFlag(uiPartQIdx));
+
+        // check if each of PUs is lossless coded
+        bPartPNoFilter = bPartPNoFilter || (pcCUP->isLosslessCoded(uiPartPIdx));
+        bPartQNoFilter = bPartQNoFilter || (pcCUQ->isLosslessCoded(uiPartQIdx));
       }
       
-      // check if each of PUs is lossless coded
-      bPartPNoFilter = bPartPNoFilter || (pcCUP->isLosslessCoded(uiPartPIdx));
-      bPartQNoFilter = bPartQNoFilter || (pcCUQ->isLosslessCoded(uiPartQIdx));
+#if USE_PIC_CHROMA_QP_OFFSETS_IN_DEBLOCKING
+      for ( UInt chromaIdx = 0; chromaIdx < 2; chromaIdx++ )
+      {
+        Int chromaQPOffset  = (chromaIdx == 0) ? pcCU->getSlice()->getPPS()->getChromaCbQpOffset() : pcCU->getSlice()->getPPS()->getChromaCrQpOffset();
+        Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
+
+        iQP = QpUV( ((iQP_P + iQP_Q + 1) >> 1) + chromaQPOffset );
+        Int iBitdepthScale = 1 << (g_bitDepthC-8);
+
+        Int iIndexTC = Clip3(0, MAX_QP+DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET*(ucBs - 1) + (m_tcOffsetDiv2 << 1));
+        Int iTc =  tctable_8x8[iIndexTC]*iBitdepthScale;
+
+        for ( UInt uiStep = 0; uiStep < uiPelsInPartChroma; uiStep++ )
+        {
+          xPelFilterChroma( piTmpSrcChroma + iSrcStep*(uiStep+iIdx*uiPelsInPartChroma), iOffset, iTc , bPartPNoFilter, bPartQNoFilter);
+        }
+      }
+#else
       for ( UInt uiStep = 0; uiStep < uiPelsInPartChroma; uiStep++ )
       {
         xPelFilterChroma( piTmpSrcCb + iSrcStep*(uiStep+iIdx*uiPelsInPartChroma), iOffset, iTc , bPartPNoFilter, bPartQNoFilter);
         xPelFilterChroma( piTmpSrcCr + iSrcStep*(uiStep+iIdx*uiPelsInPartChroma), iOffset, iTc , bPartPNoFilter, bPartQNoFilter);
       }
+#endif
     }
   }
 }
@@ -825,19 +854,19 @@ __inline Void TComLoopFilter::xPelFilterLuma( Pel* piSrc, Int iOffset, Int d, In
     if ( abs(delta) < iThrCut )
     {
       delta = Clip3(-tc, tc, delta);        
-      piSrc[-iOffset] = Clip((m3+delta));
-      piSrc[0] = Clip((m4-delta));
+      piSrc[-iOffset] = ClipY((m3+delta));
+      piSrc[0] = ClipY((m4-delta));
 
       Int tc2 = tc>>1;
       if(bFilterSecondP)
       {
         Int delta1 = Clip3(-tc2, tc2, (( ((m1+m3+1)>>1)- m2+delta)>>1));
-        piSrc[-iOffset*2] = Clip((m2+delta1));
+        piSrc[-iOffset*2] = ClipY((m2+delta1));
       }
       if(bFilterSecondQ)
       {
         Int delta2 = Clip3(-tc2, tc2, (( ((m6+m4+1)>>1)- m5-delta)>>1));
-        piSrc[ iOffset] = Clip((m5+delta2));
+        piSrc[ iOffset] = ClipY((m5+delta2));
       }
     }
   }
@@ -867,7 +896,7 @@ __inline Void TComLoopFilter::xPelFilterLuma( Pel* piSrc, Int iOffset, Int d, In
  */
 __inline Void TComLoopFilter::xPelFilterChroma( Pel* piSrc, Int iOffset, Int tc, Bool bPartPNoFilter, Bool bPartQNoFilter)
 {
-  int delta;
+  Int delta;
   
   Pel m4  = piSrc[0];
   Pel m3  = piSrc[-iOffset];
@@ -875,8 +904,8 @@ __inline Void TComLoopFilter::xPelFilterChroma( Pel* piSrc, Int iOffset, Int tc,
   Pel m2  = piSrc[-iOffset*2];
   
   delta = Clip3(-tc,tc, (((( m4 - m3 ) << 2 ) + m2 - m5 + 4 ) >> 3) );
-  piSrc[-iOffset] = Clip(m3+delta);
-  piSrc[0] = Clip(m4-delta);
+  piSrc[-iOffset] = ClipC(m3+delta);
+  piSrc[0] = ClipC(m4-delta);
 
   if(bPartPNoFilter)
   {

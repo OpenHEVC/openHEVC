@@ -59,12 +59,12 @@ public:
   Void  flush            ();
 
   Void  resetBac          ();
+#if !REMOVE_BURST_IPCM
   Void  encodeNumSubseqIPCM( Int numSubseqIPCM );
+#endif
   Void  encodePCMAlignBits();
   Void  xWritePCMCode     ( UInt uiCode, UInt uiLength );
   
-  Void encodeFlush(Bool bEnd);  //!< flush bits when CABAC termination
-
   Void  resetBits         ();
   UInt  getNumWrittenBits ();
   
