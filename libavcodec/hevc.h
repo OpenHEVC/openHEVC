@@ -484,7 +484,8 @@ typedef struct PredictionUnit {
     uint8_t intra_pred_mode[4];
     uint8_t intra_pred_mode_c;
 
-    uint8_t *ipm_tab;
+    uint8_t *top_ipm;
+    uint8_t *left_ipm;
 } PredictionUnit;
 
 typedef struct TransformTree {
