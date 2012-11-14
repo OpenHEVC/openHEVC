@@ -33,9 +33,9 @@
  * does so.
  */
 #define DEBUG_TRACE1 1
-#define header_printf printf
+//#define header_printf printf
 //#define cabac_printf printf
-//#define header_printf
+#define header_printf
 #define cabac_printf
 
 #define REFERENCE_ENCODER_QUIRKS 1

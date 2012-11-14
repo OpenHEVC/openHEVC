@@ -967,15 +967,14 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth)
 
 int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
 {
-	int ret;
-	HEVCCabacContext *cc = &s->cc;
-    const int8_t ctx_idx_inc[1] = { 0 };
-
+    int ret;
+    HEVCCabacContext *cc = &s->cc;
+    const int8_t ctx_idx_inc[1] = { c_idx ? 1 : 0 };
     cc->elem = TRANSFORM_SKIP_FLAG;
     cc->state = states + elem_offset[cc->elem];
 
     cc->max_bin_idx_ctx = 0;
-    cc->ctx_idx_offset = num_bins_in_se[cc->elem] * cc->init_type + ((c_idx != 0) ? 3 : 0);
+    cc->ctx_idx_offset = num_bins_in_se[cc->elem] * cc->init_type;
     cc->ctx_idx_inc = ctx_idx_inc;
 
     ret = fl_binarization(s, 1);
