@@ -830,7 +830,6 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth)
 
 int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
 {
-    int ret;
     HEVCCabacContext *cc = &s->cc;
     const int8_t ctx_idx_inc[1] = { c_idx ? 1 : 0 };
     cc->elem = TRANSFORM_SKIP_FLAG;
