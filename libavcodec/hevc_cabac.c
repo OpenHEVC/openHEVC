@@ -29,8 +29,7 @@
  * number of bin by SyntaxElement.
  */
 static const int8_t num_bins_in_se[] = {
-     1,  // sao_merge_left_flag
-     1,  // sao_merge_up_flag
+     1,  // sao_merge_flag
      1,  // sao_type_idx
      0,  // sao_eo_class
      0,  // sao_band_position
@@ -85,8 +84,7 @@ static int elem_offset[sizeof(num_bins_in_se)];
  */
 #define CNU 154
 static const uint8_t init_values[] = {
-    153, 153, 153, // sao_merge_left_flag
-    175, 153, 153, // sao_merge_up_flag
+    153, 153, 153, // sao_merge_flag
     160, 185, 200, // sao_type_idx
     139, 141, 157, 107, 139, 126, 107, 139, 126, // split_coding_unit_flag
     154, 154, 154, // cu_transquant_bypass_flag
@@ -308,6 +306,9 @@ void ff_hevc_cabac_init(HEVCContext *s)
     HEVCCabacContext *cc = &s->cc;
     GetBitContext *gb = &s->gb;
 
+    skip_bits(gb, 1);
+    align_get_bits(gb);
+
     cc->range = 510;
     cc->offset = get_bits(gb, 9);
     av_log(s->avctx, AV_LOG_DEBUG, "cc->offset: %d\n", cc->offset);
@@ -328,21 +329,15 @@ void ff_hevc_cabac_init(HEVCContext *s)
                                       1, 126);
         states[i][0] = (pre_ctx_state <= 63) ? 0 : 1; //mps
         states[i][1] = states[i][0] ? (pre_ctx_state - 64) : (63 - pre_ctx_state); //stateIdx
-#if 0
-        int se = ABS_MVD_GREATER1_FLAG
-        if (i >= elem_offset[se] + num_bins_in_se[se] * cc->init_type) && i < elem_offset[se] + num_bins_in_se[se] *(cc->init_type + 1)) {
-			cabac_printf("initValue = %d slope = %d offset = %d state = %d mps = %d ucState = %d\n", init_value, m, n, pre_ctx_state, states[i][0], (states[i][1]<< 1) + states[i][0]);
-		}
-#endif
     }
 }
 
-int ff_hevc_sao_merge_left_flag_decode(HEVCContext *s)
+int ff_hevc_sao_merge_flag_decode(HEVCContext *s)
 {
     HEVCCabacContext *cc = &s->cc;
     const int8_t ctx_idx_inc[1] = { 0 };
 
-    cc->elem = SAO_MERGE_LEFT_FLAG;
+    cc->elem = SAO_MERGE_FLAG;
     cc->state = states + elem_offset[cc->elem];
 
     cc->max_bin_idx_ctx = 0;
@@ -350,21 +345,6 @@ int ff_hevc_sao_merge_left_flag_decode(HEVCContext *s)
     cc->ctx_idx_inc = ctx_idx_inc;
 
     return fl_binarization(s, 1);
-}
-int ff_hevc_sao_merge_up_flag_decode(HEVCContext *s)
-{
-    HEVCCabacContext *cc = &s->cc;
-    const int8_t ctx_idx_inc[1] = { 0 };
-
-    cc->elem = SAO_MERGE_LEFT_FLAG; //SAO_MERGE_UP_FLAG;
-    cc->state = states + elem_offset[cc->elem];
-
-    cc->max_bin_idx_ctx = 0;
-    cc->ctx_idx_offset = num_bins_in_se[cc->elem] * cc->init_type;
-    cc->ctx_idx_inc = ctx_idx_inc;
-
-    int ret = fl_binarization(s, 1);
-    return ret;
 }
 int ff_hevc_sao_type_idx_decode(HEVCContext *s)
 {
@@ -832,6 +812,7 @@ int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
 {
     HEVCCabacContext *cc = &s->cc;
     const int8_t ctx_idx_inc[1] = { c_idx ? 1 : 0 };
+
     cc->elem = TRANSFORM_SKIP_FLAG;
     cc->state = states + elem_offset[cc->elem];
 
@@ -944,9 +925,9 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
         int x_off = x_c - (x_cg << 2);
         int y_off = y_c - (y_cg << 2);
 
-        if (x_cg < ((1 << log2_trafo_size) - 1) >> 2)
+        if (x_cg < ((1 << log2_trafo_size) - 1)>>2)
             prev_sig += s->rc.significant_coeff_group_flag[x_cg + 1][y_cg];
-        if (y_cg < ((1 << log2_trafo_size) - 1) >> 2)
+        if (y_cg < ((1 << log2_trafo_size) - 1)>>2)
             prev_sig += (s->rc.significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
         av_log(s->avctx, AV_LOG_DEBUG, "prev_sig: %d\n", prev_sig);
 

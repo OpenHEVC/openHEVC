@@ -302,8 +302,6 @@ static int hls_slice_header(HEVCContext *s)
             skip_bits(gb, 8); // slice_header_extension_data_byte
     }
 
-    align_get_bits(gb);
-
     // Inferred parameters
     sh->slice_qp = 26 + s->pps->pic_init_qp_minus26 + sh->slice_qp_delta;
     sh->slice_ctb_addr_rs = sh->slice_address;
@@ -1300,7 +1298,7 @@ static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int
 static int hls_slice_data(HEVCContext *s)
 {
     int ctb_size = 1 << s->sps->log2_ctb_size;
-    int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;;
+    int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;
     int more_data = 1;
     int x_ctb, y_ctb;
 
