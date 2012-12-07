@@ -156,6 +156,8 @@ static void renormalization(HEVCContext *s)
     }
 }
 
+static int cnt = 0;
+
 static int decode_bin(HEVCContext *s, int bin_idx)
 {
     HEVCCabacContext *cc = &s->cc;

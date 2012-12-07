@@ -100,6 +100,21 @@ static void pic_arrays_free(HEVCContext *s)
         av_freep(&s->tt.cbf_cr[i]);
     }
 }
+static void compute_POC(HEVCContext *s, int iPOClsb)
+{
+	int iMaxPOClsb  = 1 << s->sps->log2_max_poc_lsb;
+	int iPrevPOClsb = s->poc % iMaxPOClsb;
+	int iPrevPOCmsb = s->poc - iPrevPOClsb;
+	int iPOCmsb;
+	if( (iPOClsb < iPrevPOClsb) && ( (iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2) ) ) {
+		iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+	} else if( (iPOClsb > iPrevPOClsb)  && ( (iPOClsb - iPrevPOClsb) > (iMaxPOClsb / 2) ) ) {
+	 	iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+	} else {
+		iPOCmsb = iPrevPOCmsb;
+	}
+	s->poc = iPOCmsb + iPOClsb;
+}
 
 static int hls_slice_header(HEVCContext *s)
 {
@@ -206,6 +221,7 @@ static int hls_slice_header(HEVCContext *s)
         if (s->nal_unit_type != NAL_IDR_W_DLP) {
             int short_term_ref_pic_set_sps_flag;
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
+    	    compute_POC(s, sh->pic_order_cnt_lsb);
             short_term_ref_pic_set_sps_flag = get_bits1(gb);
             if (!short_term_ref_pic_set_sps_flag) {
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: !short_term_ref_pic_set_sps_flag\n");
@@ -217,6 +233,8 @@ static int hls_slice_header(HEVCContext *s)
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: long_term_ref_pics_present_flag\n");
                 return -1;
             }
+        } else {
+        	s->poc = 0;
         }
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
@@ -350,49 +368,51 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry)
         if (up_ctb_in_slice && up_ctb_in_tile)
             sao_merge_up_flag = ff_hevc_sao_merge_flag_decode(s);
     }
-    for (c_idx = 0; c_idx < 3; c_idx++) {
-        int bit_depth = s->sps->bit_depth[c_idx];
-        int shift = bit_depth - FFMIN(bit_depth, 10);
-
-        if (!s->sh.slice_sample_adaptive_offset_flag[c_idx])
-            continue;
-
-        if (c_idx == 2) {
-            sao->type_idx[2] = sao->type_idx[1];
-            sao->eo_class[2] = sao->eo_class[1];
-        } else {
-            set_sao(type_idx[c_idx], ff_hevc_sao_type_idx_decode(s));
-        }
-        av_dlog(s->avctx, AV_LOG_DEBUG, "sao_type_idx: %d\n",
-               sao->type_idx[c_idx]);
-
-        if (sao->type_idx[c_idx] == SAO_NOT_APPLIED)
-            continue;
-
-        for (i = 0; i < 4; i++)
-            set_sao(offset_abs[c_idx][i], ff_hevc_sao_offset_abs_decode(s, bit_depth));
-
-        if (sao->type_idx[c_idx] == SAO_BAND) {
-            for (i = 0; i < 4; i++) {
-                if (sao->offset_abs[c_idx][i]) {
-                    set_sao(offset_sign[c_idx][i], ff_hevc_sao_offset_sign_decode(s));
-                } else {
-                    sao->offset_sign[c_idx][i] = 0;
-                }
+    if (sao_merge_up_flag == 0 && sao_merge_left_flag == 0) {
+        for (c_idx = 0; c_idx < 3; c_idx++) {
+            int bit_depth = s->sps->bit_depth[c_idx];
+            int shift = bit_depth - FFMIN(bit_depth, 10);
+            
+            if (!s->sh.slice_sample_adaptive_offset_flag[c_idx])
+                continue;
+            
+            if (c_idx == 2) {
+                sao->type_idx[2] = sao->type_idx[1];
+                sao->eo_class[2] = sao->eo_class[1];
+            } else {
+                set_sao(type_idx[c_idx], ff_hevc_sao_type_idx_decode(s));
             }
-            set_sao(band_position[c_idx], ff_hevc_sao_band_position_decode(s));
-        } else if (c_idx != 2) {
-            set_sao(eo_class[c_idx], ff_hevc_sao_eo_class_decode(s));
-        }
-
-        // Inferred parameters
-        for (i = 0; i < 4; i++) {
-            sao->offset_val[c_idx][i+1] = sao->offset_abs[c_idx][i] << shift;
-            if (sao->type_idx[c_idx] == SAO_EDGE) {
-                if (i > 1)
+            av_dlog(s->avctx, AV_LOG_DEBUG, "sao_type_idx: %d\n",
+                    sao->type_idx[c_idx]);
+            
+            if (sao->type_idx[c_idx] == SAO_NOT_APPLIED)
+                continue;
+            
+            for (i = 0; i < 4; i++)
+                set_sao(offset_abs[c_idx][i], ff_hevc_sao_offset_abs_decode(s, bit_depth));
+            
+            if (sao->type_idx[c_idx] == SAO_BAND) {
+                for (i = 0; i < 4; i++) {
+                    if (sao->offset_abs[c_idx][i]) {
+                        set_sao(offset_sign[c_idx][i], ff_hevc_sao_offset_sign_decode(s));
+                    } else {
+                        sao->offset_sign[c_idx][i] = 0;
+                    }
+                }
+                set_sao(band_position[c_idx], ff_hevc_sao_band_position_decode(s));
+            } else if (c_idx != 2) {
+                set_sao(eo_class[c_idx], ff_hevc_sao_eo_class_decode(s));
+            }
+            
+            // Inferred parameters
+            for (i = 0; i < 4; i++) {
+                sao->offset_val[c_idx][i+1] = sao->offset_abs[c_idx][i] << shift;
+                if (sao->type_idx[c_idx] == SAO_EDGE) {
+                    if (i > 1)
+                        sao->offset_val[c_idx][i+1] = -sao->offset_val[c_idx][i+1];
+                } else if (sao->offset_sign[c_idx][i+1]) {
                     sao->offset_val[c_idx][i+1] = -sao->offset_val[c_idx][i+1];
-            } else if (sao->offset_sign[c_idx][i+1]) {
-                sao->offset_val[c_idx][i+1] = -sao->offset_val[c_idx][i+1];
+                }
             }
         }
     }
@@ -767,17 +787,10 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
                                int trafo_depth, int blk_idx)
 {
 
-    if (trafo_depth > 0 && log2_trafo_size == 2) {
         SAMPLE(s->tt.cbf_cb[trafo_depth], x0, y0) =
         SAMPLE(s->tt.cbf_cb[trafo_depth - 1], xBase, yBase);
         SAMPLE(s->tt.cbf_cr[trafo_depth], x0, y0) =
         SAMPLE(s->tt.cbf_cr[trafo_depth - 1], xBase, yBase);
-    } else {
-        SAMPLE(s->tt.cbf_cb[trafo_depth], x0, y0) =
-        SAMPLE(s->tt.cbf_cb[trafo_depth - 1], xBase, yBase);
-        SAMPLE(s->tt.cbf_cr[trafo_depth], x0, y0) =
-        SAMPLE(s->tt.cbf_cr[trafo_depth - 1], xBase, yBase);
-    }
 
     if (s->cu.intra_split_flag) {
         if (trafo_depth == 1)
@@ -1310,7 +1323,7 @@ static int hls_slice_data(HEVCContext *s)
     s->ctb_addr_rs = s->sh.slice_ctb_addr_rs;
     s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs];
 
-    while (s->ctb_addr_ts < s->sps->pic_width_in_ctbs*s->sps->pic_height_in_ctbs) {
+    while (more_data) {
         x_ctb = INVERSE_RASTER_SCAN(s->ctb_addr_rs, ctb_size, ctb_size, s->sps->pic_width_in_luma_samples, 0);
         y_ctb = INVERSE_RASTER_SCAN(s->ctb_addr_rs, ctb_size, ctb_size, s->sps->pic_width_in_luma_samples, 1);
         s->num_pcm_block = 0;
