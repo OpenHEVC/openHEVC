@@ -306,7 +306,6 @@ void ff_hevc_cabac_init(HEVCContext *s)
     HEVCCabacContext *cc = &s->cc;
     GetBitContext *gb = &s->gb;
 
-    skip_bits(gb, 1);
     align_get_bits(gb);
 
     cc->range = 510;
