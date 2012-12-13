@@ -7,8 +7,6 @@ find_package(SDL REQUIRED)
 
 add_subdirectory(wrapper_hm)
 
-set(CMAKE_C_FLAGS -std=c99)
-
 set(filenames
 	main.c	sdl.c
 libavcodec/allcodecs.clibavcodec/avpacket.clibavcodec/cabac.clibavcodec/dsputil.clibavcodec/golomb.clibavcodec/hevc_cabac.clibavcodec/hevc_parser.clibavcodec/hevc_ps.clibavcodec/hevc.clibavcodec/hevcdsp.clibavcodec/hevcpred.clibavcodec/imgconvert.clibavcodec/options.clibavcodec/parser.clibavcodec/pthread.clibavcodec/simple_idct.clibavcodec/utils.c
