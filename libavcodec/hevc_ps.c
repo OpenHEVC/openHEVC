@@ -224,7 +224,9 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps->chroma_format_idc = get_ue_golomb(gb);
-    
+    if (sps->chroma_format_idc != 1) {
+    	av_log(s->avctx, AV_LOG_ERROR, " chroma_format_idc != 1 : error SEI\n");
+    }
     if (sps->chroma_format_idc == 3) {
         sps->separate_colour_plane_flag = get_bits1(gb);
     }

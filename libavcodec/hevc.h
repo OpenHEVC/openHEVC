@@ -38,6 +38,7 @@
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */
 #define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->pic_width_in_luma_samples + (x)])
+#define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
 
 /**
  * Table 7-3: NAL unit type codes
@@ -72,6 +73,7 @@ typedef struct ShortTermRPS {
 #define MAX_SPS_COUNT 32
 #define MAX_PPS_COUNT 256
 #define MAX_SHORT_TERM_RPS_COUNT 64
+#define MAX_CU_SIZE 128
 
 //TODO: check if this is really the maximum
 #define MAX_TRANSFORM_DEPTH 3
@@ -469,6 +471,21 @@ enum IntraPredMode {
     INTRA_ANGULAR_34
 };
 
+typedef struct Mv {
+    int16_t m_iHor;     ///< horizontal component of motion vector
+    int16_t m_iVer;     ///< vertical component of motion vector
+} Mv;
+
+typedef struct MvField {
+      Mv   acMv;
+      int  RefIdx;
+      int predFlag;
+      int isIntra;
+} MvField;
+
+// MERGE
+#define MRG_MAX_NUM_CANDS     5
+
 typedef struct PredictionUnit {
     uint8_t merge_flag;
 
@@ -480,10 +497,12 @@ typedef struct PredictionUnit {
 
     uint8_t *top_ipm;
     uint8_t *left_ipm;
+    uint8_t *tab_ipm;
+
+    MvField *tab_mvf;
 } PredictionUnit;
 
 typedef struct TransformTree {
-    uint8_t *split_transform_flag[MAX_TRANSFORM_DEPTH];
     uint8_t *cbf_cb[MAX_TRANSFORM_DEPTH];
     uint8_t *cbf_cr[MAX_TRANSFORM_DEPTH];
     uint8_t cbf_luma;
@@ -626,7 +645,7 @@ int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx,
 int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
                                                  int i, int n);
 int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int n, int base_level);
-int ff_hevc_coeff_sign_flag(HEVCContext *s);
+int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
 
 static const char* SyntaxElementName[] = {
 	"SAO_MERGE_FLAG",

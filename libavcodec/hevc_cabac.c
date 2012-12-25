@@ -1081,8 +1081,9 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int first_elem, int base_l
     return last_coeff_abs_level_remaining;
 }
 
-int ff_hevc_coeff_sign_flag(HEVCContext *s)
+int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb)
 {
+    int i, ret;
     HEVCCabacContext *cc = &s->cc;
 
     cc->elem = COEFF_SIGN_FLAG;
@@ -1090,5 +1091,7 @@ int ff_hevc_coeff_sign_flag(HEVCContext *s)
 
     cc->ctx_idx_offset = -1;
 
-    return fl_binarization(s, 1);
+    for (i = 0; i < nb; i++)
+    	ret = (ret << 1) | decode_bin(s, i);
+    return ret;
 }
