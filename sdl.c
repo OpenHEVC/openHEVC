@@ -71,7 +71,7 @@ int Init_SDL(int edge, int frame_width, int frame_height){
 		exit(1);
 	}
 	else {
-		printf("SDL: Set %dx%d @ %d bpp \n",screenwidth, screenheight, screen->format->BitsPerPixel);
+//		printf("SDL: Set %dx%d @ %d bpp \n",screenwidth, screenheight, screen->format->BitsPerPixel);
 	}
 
 	// since IYUV ordering is not supported by Xv accel on maddog's system
