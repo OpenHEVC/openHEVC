@@ -28,7 +28,7 @@
 #include "hevcdata.h"
 #include "hevc.h"
 
-//#define HM
+#define HM
 #ifdef HM
     #include "wrapper/wrapper.h"
 #endif
