@@ -865,13 +865,13 @@ Void TDecCavlc::parseSliceHeader (TComSlice*& rpcSlice, ParameterSetManagerDecod
                                         - iPOClsb + pocLsbLt;
             rps->setPOC     (j, pocLTCurr); 
             rps->setDeltaPOC(j, - rpcSlice->getPOC() + pocLTCurr);
-            rps->setCheckLTMSBPresent(j,true);  
+            rps->setCheckLTMSBPresent(j,true);
           }
           else
           {
             rps->setPOC     (j, pocLsbLt);
             rps->setDeltaPOC(j, - rpcSlice->getPOC() + pocLsbLt);
-            rps->setCheckLTMSBPresent(j,false);  
+            rps->setCheckLTMSBPresent(j,false);
           }
           prevLSB = pocLsbLt;
           prevDeltaMSB = deltaPocMSBCycleLT;
