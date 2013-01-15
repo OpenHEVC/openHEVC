@@ -405,7 +405,7 @@ Void TDecEntropy::xDecodeTransform( TComDataCU* pcCU, UInt offsetLuma, UInt offs
     UInt uiVCbf = 0;
     
     if(uiTrIdx>1 || pcCU->getPartitionSize( uiAbsPartIdx)!=SIZE_NxN) {
-        cout << "splitTransform 1\n";
+        cout << "splitTransform SIZE_NxN 1\n";
 	}
     for( Int i = 0; i < 4; i++ )
     {
@@ -480,7 +480,7 @@ Void TDecEntropy::xDecodeTransform( TComDataCU* pcCU, UInt offsetLuma, UInt offs
         }
       }
     }
-	cout << "splitTransform 0\n";
+	cout << "splitTransform cbfY 0\n";
     if( cbfY )
     {
       Int trWidth = width;
@@ -558,7 +558,7 @@ Void TDecEntropy::decodeCoeff( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth
     {
       pcCU->setCbfSubParts( 0, 0, 0, uiAbsPartIdx, uiDepth );
       pcCU->setTrIdxSubParts( 0 , uiAbsPartIdx, uiDepth );
-	  cout << "splitTransform 0\n";
+	  cout << "splitTransform uiQtRootCbf 0\n";
       return;
     }
     
