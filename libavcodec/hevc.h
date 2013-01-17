@@ -314,6 +314,8 @@ typedef struct SliceHeader {
 
     uint8_t slice_loop_filter_across_slices_enabled_flag;
 
+   	int* entry_point_offset;
+
 #if REFERENCE_ENCODER_QUIRKS
     uint8_t tile_marker_flag;
 #endif
@@ -604,6 +606,9 @@ int ff_hevc_decode_nal_sps(HEVCContext *s);
 int ff_hevc_decode_nal_pps(HEVCContext *s);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
 
+void save_states();
+void load_states();
+void ff_hevc_cabac_reinit(HEVCContext *s);
 void ff_hevc_cabac_init(HEVCContext *s);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s);
@@ -612,6 +617,7 @@ int ff_hevc_sao_offset_abs_decode(HEVCContext *s, int bit_depth);
 int ff_hevc_sao_offset_sign_decode(HEVCContext *s);
 int ff_hevc_sao_eo_class_decode(HEVCContext *s);
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
+int ff_hevc_end_of_sub_stream_one_bit_decode(HEVCContext *s);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x_cb, int y_cb);
 int ff_hevc_pred_mode_decode(HEVCContext *s);

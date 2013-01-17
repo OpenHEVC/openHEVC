@@ -148,6 +148,15 @@ static const uint8_t init_values[] = {
  * mps and pstate, indexed by ctx_idx
  */
 static uint8_t states[sizeof(init_values)][2];
+static uint8_t statesWPP[sizeof(init_values)][2];
+void save_states()
+{
+	memcpy(statesWPP,states, sizeof(states));
+}
+void load_states()
+{
+	memcpy(states,statesWPP, sizeof(states));
+}
 
 static int derive_ctx_idx(HEVCContext *s, int bin_idx)
 {
@@ -345,6 +354,19 @@ void ff_hevc_cabac_init(HEVCContext *s)
         states[i][1] = states[i][0] ? (pre_ctx_state - 64) : (63 - pre_ctx_state); //stateIdx
     }
 }
+void ff_hevc_cabac_reinit(HEVCContext *s)
+{
+    int i;
+    int n;
+    HEVCCabacContext *cc = &s->cc;
+    GetBitContext *gb = &s->gb;
+
+    n = -get_bits_count(gb) & 7;
+    if (n) skip_bits(gb, n);
+    cc->range = 510;
+    cc->offset = get_bits(gb, 9);
+    av_dlog(s->avctx, AV_LOG_DEBUG, "cc->offset: %d\n", cc->offset);
+}
 
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s)
 {
@@ -429,6 +451,11 @@ int ff_hevc_sao_eo_class_decode(HEVCContext *s)
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s)
 {
     return bypass_decode_bin(s);
+}
+int ff_hevc_end_of_sub_stream_one_bit_decode(HEVCContext *s)
+{
+    int ret = bypass_decode_bin(s);
+    return ret;
 }
 
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s)

@@ -101,6 +101,9 @@ static void pic_arrays_free(HEVCContext *s)
         av_freep(&s->tt.cbf_cb[i]);
         av_freep(&s->tt.cbf_cr[i]);
     }
+    if (s->sh.entry_point_offset) {
+    	av_freep(&s->sh.entry_point_offset);
+    }
 }
 static void compute_POC(HEVCContext *s, int iPOClsb)
 {
@@ -318,6 +321,19 @@ static int hls_slice_header(HEVCContext *s)
             sh->slice_loop_filter_across_slices_enabled_flag =
             s->pps->seq_loop_filter_across_slices_enabled_flag;
         }
+    }
+    if( s->pps->tiles_enabled_flag == 1 || s->pps->entropy_coding_sync_enabled_flag == 1) {
+    	int num_entry_point_offsets = get_ue_golomb(gb);
+    	if( num_entry_point_offsets > 0 ) {
+        	int offset_len = get_ue_golomb(gb)+1;
+        	if (sh->entry_point_offset) {
+        		av_freep(&sh->entry_point_offset);
+        	}
+            sh->entry_point_offset = av_malloc(num_entry_point_offsets);
+        	for( i = 0; i < num_entry_point_offsets; i++ ) {
+                sh->entry_point_offset[i] = get_bits(gb, offset_len);
+        	}
+    	}
     }
 
     if (s->pps->slice_header_extension_present_flag) {
@@ -979,7 +995,7 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr, int xN, int 
         minBlockAddrN = s->pps->min_tb_addr_zs[((xN >> s->sps->log2_min_transform_block_size)*s->sps->pic_width_in_min_tbs)+(yN >> s->sps->log2_min_transform_block_size)];
     }
     av_log(s->avctx, AV_LOG_ERROR, "TODO : check for different slices and tiles \n");
-    
+
     //TODO : check for different slices and tiles
     if ((minBlockAddrN < 0) || (minBlockAddrN > minBlockAddrCurr)) {
         availableN = 0;
@@ -1734,22 +1750,31 @@ static int hls_slice_data(HEVCContext *s)
         s->num_pcm_block = 0;
         s->ctb_addr_in_slice = s->ctb_addr_rs - s->sh.slice_address;
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
-            s->sh.slice_sample_adaptive_offset_flag[1])
-            hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
+        	s->sh.slice_sample_adaptive_offset_flag[1])
+        	hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
 
         more_data = hls_coding_tree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
         if (!more_data)
-            return 0;
+        	return 0;
 
         s->ctb_addr_ts++;
         s->ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[s->ctb_addr_ts];
 
-        if (more_data && (s->pps->tiles_enabled_flag &&
-                          s->pps->tile_id[s->ctb_addr_ts] !=
-                          s->pps->tile_id[s->ctb_addr_ts - 1]) ||
-            (s->pps->entropy_coding_sync_enabled_flag &&
-             ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0)))
-            align_get_bits(&s->gb);
+        if (more_data) {
+        	if ((s->pps->tiles_enabled_flag &&
+        		 s->pps->tile_id[s->ctb_addr_ts] !=
+        		 s->pps->tile_id[s->ctb_addr_ts - 1]) ||
+        		(s->pps->entropy_coding_sync_enabled_flag &&
+        		((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0))) {
+            	 //ff_hevc_end_of_sub_stream_one_bit_decode(s);
+        		ff_hevc_cabac_reinit(s);
+        		load_states();
+        	}
+        	if (s->pps->entropy_coding_sync_enabled_flag &&
+        			((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 2)) {
+        		save_states();
+        	}
+        }
     }
 
     return 0;
