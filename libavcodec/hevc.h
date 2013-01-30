@@ -24,6 +24,7 @@
 #define AVCODEC_HEVC_H
 
 #include "avcodec.h"
+#include "dsputil.h"
 #include "get_bits.h"
 #include "hevcpred.h"
 #include "hevcdsp.h"
@@ -90,6 +91,7 @@ typedef struct RefPicList {
 #define MAX_TRANSFORM_DEPTH 3
 
 #define MAX_TB_SIZE 32
+#define MAX_PB_SIZE 64
 #define MAX_CTB_SIZE 64
 
 typedef struct PTL {
@@ -115,6 +117,7 @@ typedef struct VPS {
 
     PTL ptl;
 
+    int vps_sub_layer_ordering_info_present_flag;
     int vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
     int vps_num_reorder_pics[MAX_SUB_LAYERS];
     int vps_max_latency_increase[MAX_SUB_LAYERS];
@@ -160,7 +163,7 @@ typedef struct SPS {
     } pcm;
 
     int log2_max_poc_lsb; ///< log2_max_pic_order_cnt_lsb_minus4 + 4
-
+    uint8_t sps_sub_layer_ordering_info_present_flag;
     struct {
         int max_dec_pic_buffering;
         int num_reorder_pics;
@@ -262,7 +265,9 @@ typedef struct PPS {
 
     int pps_scaling_list_data_present_flag;
 
+    uint8_t lists_modification_present_flag;
     int log2_parallel_merge_level; ///< log2_parallel_merge_level_minus2 + 2
+    int num_extra_slice_header_bits;
     uint8_t slice_header_extension_present_flag;
 
     uint8_t pps_extension_flag;
@@ -572,6 +577,7 @@ typedef struct HEVCContext {
 
     HEVCPredContext *hpc[3];
     HEVCDSPContext *hevcdsp[3];
+    DSPContext dsp;
 
     GetBitContext gb;
     HEVCCabacContext cc;
@@ -598,6 +604,8 @@ typedef struct HEVCContext {
     int ctb_addr_ts; ///< CtbAddrTS
 
     uint8_t *split_coding_unit_flag;
+
+    uint8_t *edge_emu_buffer;
 
     CodingTree ct;
     CodingUnit cu;
