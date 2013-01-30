@@ -62,8 +62,19 @@ typedef struct ShortTermRPS {
     int num_delta_pocs;
     uint8_t delta_rps_sign;
     int abs_delta_rps;
-    int delta_poc;
+    int delta_poc[32];
+    uint8_t used[32];
 } ShortTermRPS;
+
+#define ST_CURR_BEF  0
+#define ST_CURR_AFT  1
+#define ST_FOLL      2
+#define LT_CURR      3
+#define LT_FOLL      4
+typedef struct RefPicList {
+    int list[16];
+    int numPic;
+} RefPicList;
 
 /**
  * 7.4.2.1
@@ -178,7 +189,7 @@ typedef struct SPS {
     uint8_t temporal_id_nesting_flag;
 
     int num_short_term_ref_pic_sets;
-    ShortTermRPS short_term_rps_list[MAX_SHORT_TERM_RPS_COUNT];
+    ShortTermRPS short_term_rps_list[MAX_SHORT_TERM_RPS_COUNT+1];
 
     uint8_t long_term_ref_pics_present_flag;
     uint8_t sps_temporal_mvp_enabled_flag;
@@ -288,6 +299,9 @@ typedef struct SliceHeader {
     uint8_t colour_plane_id;
 
     int pic_order_cnt_lsb;
+    ShortTermRPS *short_term_rps;
+    RefPicList refPocList[5];
+    RefPicList refPicList[2];
 
     uint8_t no_output_of_prior_pics_flag;
 
