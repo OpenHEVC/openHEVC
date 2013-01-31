@@ -170,7 +170,6 @@ static void decode_profile_tier_level(HEVCContext *s, PTL *ptl,
 int ff_hevc_decode_nal_vps(HEVCContext *s)
 {
     int i;
-    uint8_t vps_extension_flag;
     GetBitContext *gb = &s->gb;
     int vps_id = 0;
     VPS *vps = av_mallocz(sizeof(*vps));
@@ -212,7 +211,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         av_free(vps);
         return AVERROR_PATCHWELCOME;
     }
-    vps_extension_flag = get_bits1(gb);
+    get_bits1(gb); /* vps_extension_flag */
     av_free(s->vps_list[vps_id]);
     s->vps_list[vps_id] = vps;
     return 0;

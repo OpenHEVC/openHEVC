@@ -356,7 +356,6 @@ void ff_hevc_cabac_init(HEVCContext *s)
 }
 void ff_hevc_cabac_reinit(HEVCContext *s)
 {
-    int i;
     int n;
     HEVCCabacContext *cc = &s->cc;
     GetBitContext *gb = &s->gb;
