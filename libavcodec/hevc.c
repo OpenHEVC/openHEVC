@@ -1496,13 +1496,13 @@ static void luma_mc(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
     int pic_height = s->sps->pic_height_in_luma_samples;
     int pixel = 1 + !!(s->sps->bit_depth[1] - 8); // sizeof(pixel)
 
-    int mx = mv->m_iHor & 3;
-    int my = mv->m_iVer & 3;
+    int mx = mv->x & 3;
+    int my = mv->y & 3;
     int extra_left = qpel_extra_before[mx];
     int extra_top = qpel_extra_before[my];
 
-    x_off += mv->m_iHor >> 2;
-    y_off += mv->m_iVer >> 2;
+    x_off += mv->x >> 2;
+    y_off += mv->y >> 2;
     src += y_off * srcstride + x_off * pixel;
 
     if (x_off < extra_left || x_off >= pic_width - block_w - qpel_extra_after[mx] ||
@@ -1542,11 +1542,11 @@ static void chroma_mc(HEVCContext *s, uint8_t *dst1, uint8_t *dst2, ptrdiff_t ds
     int pic_height = s->sps->pic_height_in_luma_samples >> 1;
     int pixel = 1 + !!(s->sps->bit_depth[1] - 8); // sizeof(pixel)
 
-    int mx = mv->m_iHor & 7;
-    int my = mv->m_iVer & 7;
+    int mx = mv->x & 7;
+    int my = mv->y & 7;
 
-    x_off += mv->m_iHor >> 3;
-    y_off += mv->m_iVer >> 3;
+    x_off += mv->x >> 3;
+    y_off += mv->y >> 3;
     src1 += y_off * srcstride + x_off * pixel;
     src2 += y_off * srcstride + x_off * pixel;
 
@@ -1652,13 +1652,14 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
 static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
                                 int prev_intra_luma_pred_flag)
 {
-    int i;
+    int i,j;
     int candidate[3];
     int intra_pred_mode;
 
     int x_pu = x0 >> s->sps->log2_min_pu_size;
     int y_pu = y0 >> s->sps->log2_min_pu_size;
     int size_in_pus = pu_size >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
 
     int cand_up   = y_pu > 0 ? s->pu.top_ipm[x_pu] : INTRA_DC ;
     int cand_left = x_pu > 0 ? s->pu.left_ipm[y_pu] : INTRA_DC ;

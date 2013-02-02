@@ -493,15 +493,15 @@ enum IntraPredMode {
 };
 
 typedef struct Mv {
-    int16_t m_iHor;     ///< horizontal component of motion vector
-    int16_t m_iVer;     ///< vertical component of motion vector
+    int16_t x;     ///< horizontal component of motion vector
+    int16_t y;     ///< vertical component of motion vector
 } Mv;
 
 typedef struct MvField {
-      Mv   acMv;
-      int  RefIdx;
-      int predFlag;
-      int isIntra;
+      Mv  mv;
+      int ref_idx;
+      int pred_flag;
+      int is_intra;
 } MvField;
 
 // MERGE
@@ -518,6 +518,9 @@ typedef struct PredictionUnit {
 
     uint8_t *top_ipm;
     uint8_t *left_ipm;
+
+    Mv mvd;
+    Mv mvp[MRG_MAX_NUM_CANDS];
 
     MvField *tab_mvf;
 } PredictionUnit;
