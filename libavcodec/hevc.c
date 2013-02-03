@@ -102,7 +102,7 @@ static void pic_arrays_free(HEVCContext *s)
         av_freep(&s->tt.cbf_cr[i]);
     }
     if (s->sh.entry_point_offset) {
-    	av_freep(&s->sh.entry_point_offset);
+        av_freep(&s->sh.entry_point_offset);
     }
 }
 
@@ -123,87 +123,87 @@ static void compute_POC(HEVCContext *s, int iPOClsb)
 }
 static void set_ref_pic_list(HEVCContext *s)
 {
-	SliceHeader *sh = &s->sh;
-	RefPicList  *refPocList = s->sh.refPocList;
-	RefPicList  *refPicList = s->sh.refPicList;
+    SliceHeader *sh = &s->sh;
+    RefPicList  *refPocList = s->sh.refPocList;
+    RefPicList  *refPicList = s->sh.refPicList;
 
-	uint8_t num_ref_idx_lx_act[2];
-	uint8_t cIdx;
-	uint8_t num_poc_total_curr;
-	uint8_t num_rps_curr_lx;
-	uint8_t first_list;
-	uint8_t sec_list;
-	uint8_t i, list_idx;
+    uint8_t num_ref_idx_lx_act[2];
+    uint8_t cIdx;
+    uint8_t num_poc_total_curr;
+    uint8_t num_rps_curr_lx;
+    uint8_t first_list;
+    uint8_t sec_list;
+    uint8_t i, list_idx;
 
-	num_ref_idx_lx_act[0] = sh->num_ref_idx_l0_active;
-	num_ref_idx_lx_act[1] = sh->num_ref_idx_l1_active;
-	for ( list_idx = 0; list_idx < 2; list_idx++) {
-		/* The order of the elements is
-		 * ST_CURR_BEF - ST_CURR_AFT - LT_CURR for the RefList0 and
-		 * ST_CURR_AFT - ST_CURR_BEF - LT_CURR for the RefList1
-		 */
-		first_list = list_idx == 0 ? ST_CURR_BEF : ST_CURR_AFT;
-		sec_list   = list_idx == 0 ? ST_CURR_AFT : ST_CURR_BEF;
+    num_ref_idx_lx_act[0] = sh->num_ref_idx_l0_active;
+    num_ref_idx_lx_act[1] = sh->num_ref_idx_l1_active;
+    for ( list_idx = 0; list_idx < 2; list_idx++) {
+        /* The order of the elements is
+         * ST_CURR_BEF - ST_CURR_AFT - LT_CURR for the RefList0 and
+         * ST_CURR_AFT - ST_CURR_BEF - LT_CURR for the RefList1
+         */
+        first_list = list_idx == 0 ? ST_CURR_BEF : ST_CURR_AFT;
+        sec_list   = list_idx == 0 ? ST_CURR_AFT : ST_CURR_BEF;
 
-		/* even if num_ref_idx_lx_act is inferior to num_poc_total_curr we fill in
-		 * all the element from the Rps because we might reorder the list. If
-		 * we reorder the list might need a reference picture located after
-		 * num_ref_idx_lx_act.
-		 */
-		num_poc_total_curr = refPocList[ST_CURR_BEF].numPic + refPocList[ST_CURR_AFT].numPic + refPocList[LT_CURR].numPic;
-		num_rps_curr_lx    = num_poc_total_curr<num_ref_idx_lx_act[list_idx] ? num_poc_total_curr : num_ref_idx_lx_act[list_idx];
-		cIdx = 0;
-		while(cIdx < num_rps_curr_lx) {
-			for(i = 0; i < refPocList[first_list].numPic; i++) {
-				refPicList[list_idx].list[cIdx] = refPocList[first_list].list[i];
-				cIdx++;
-			}
-			for(i = 0; i < refPicList[sec_list].numPic; i++) {
-				refPicList[list_idx].list[cIdx] = refPocList[sec_list].list[i];
-				cIdx++;
-			}
-			for(i = 0; i < refPocList[LT_CURR].numPic; i++) {
-				refPicList[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
-				cIdx++;
-			}
-		}
-		refPicList[list_idx].numPic = cIdx;
-	}
+        /* even if num_ref_idx_lx_act is inferior to num_poc_total_curr we fill in
+         * all the element from the Rps because we might reorder the list. If
+         * we reorder the list might need a reference picture located after
+         * num_ref_idx_lx_act.
+         */
+        num_poc_total_curr = refPocList[ST_CURR_BEF].numPic + refPocList[ST_CURR_AFT].numPic + refPocList[LT_CURR].numPic;
+        num_rps_curr_lx    = num_poc_total_curr<num_ref_idx_lx_act[list_idx] ? num_poc_total_curr : num_ref_idx_lx_act[list_idx];
+        cIdx = 0;
+        while(cIdx < num_rps_curr_lx) {
+            for(i = 0; i < refPocList[first_list].numPic; i++) {
+                refPicList[list_idx].list[cIdx] = refPocList[first_list].list[i];
+                cIdx++;
+            }
+            for(i = 0; i < refPicList[sec_list].numPic; i++) {
+                refPicList[list_idx].list[cIdx] = refPocList[sec_list].list[i];
+                cIdx++;
+            }
+            for(i = 0; i < refPocList[LT_CURR].numPic; i++) {
+                refPicList[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
+                cIdx++;
+            }
+        }
+        refPicList[list_idx].numPic = cIdx;
+    }
 }
 static void set_ref_poc_list(HEVCContext *s)
 {
-	int i;
-	int j = 0;
-	int k = 0;
-	ShortTermRPS *rps        = s->sh.short_term_rps;
-	RefPicList   *refPocList = s->sh.refPocList;
-	if (rps != NULL) {
-		for (i = 0; i < rps->num_negative_pics; i ++) {
-			if ( rps->used[i] == 1 ) {
-				refPocList[ST_CURR_BEF].list[j] = s->poc + rps->delta_poc[i];
-				j++;
-			} else {
-				refPocList[ST_FOLL].list[k] = s->poc + rps->delta_poc[i];
-				k++;
-			}
-		}
-		refPocList[ST_CURR_BEF].numPic = j;
-		j = 0;
-		for( i = rps->num_negative_pics; i < rps->num_delta_pocs; i ++ ) {
-			if (rps->used[i] ==1) {
-				refPocList[ST_CURR_AFT].list[j] = s->poc + rps->delta_poc[i];
-				j++;
-			} else {
-				refPocList[ST_FOLL].list[k] = s->poc + rps->delta_poc[i];
-				k++;
-			}
-		}
-		refPocList[ST_CURR_AFT].numPic = j;
-		refPocList[ST_FOLL].numPic = k;
-		refPocList[LT_CURR].numPic = 0;
-		refPocList[LT_FOLL].numPic = 0;
-		set_ref_pic_list(s);
-	}
+    int i;
+    int j = 0;
+    int k = 0;
+    ShortTermRPS *rps        = s->sh.short_term_rps;
+    RefPicList   *refPocList = s->sh.refPocList;
+    if (rps != NULL) {
+        for (i = 0; i < rps->num_negative_pics; i ++) {
+            if ( rps->used[i] == 1 ) {
+                refPocList[ST_CURR_BEF].list[j] = s->poc + rps->delta_poc[i];
+                j++;
+            } else {
+                refPocList[ST_FOLL].list[k] = s->poc + rps->delta_poc[i];
+                k++;
+            }
+        }
+        refPocList[ST_CURR_BEF].numPic = j;
+        j = 0;
+        for( i = rps->num_negative_pics; i < rps->num_delta_pocs; i ++ ) {
+            if (rps->used[i] ==1) {
+                refPocList[ST_CURR_AFT].list[j] = s->poc + rps->delta_poc[i];
+                j++;
+            } else {
+                refPocList[ST_FOLL].list[k] = s->poc + rps->delta_poc[i];
+                k++;
+            }
+        }
+        refPocList[ST_CURR_AFT].numPic = j;
+        refPocList[ST_FOLL].numPic = k;
+        refPocList[LT_CURR].numPic = 0;
+        refPocList[LT_FOLL].numPic = 0;
+        set_ref_pic_list(s);
+    }
 }
 static int hls_slice_header(HEVCContext *s)
 {
@@ -315,7 +315,7 @@ static int hls_slice_header(HEVCContext *s)
             compute_POC(s, sh->pic_order_cnt_lsb);
             short_term_ref_pic_set_sps_flag = get_bits1(gb);
             if (!short_term_ref_pic_set_sps_flag) {
-            	ff_hevc_decode_short_term_rps(s, MAX_SHORT_TERM_RPS_COUNT, s->sps);
+                ff_hevc_decode_short_term_rps(s, MAX_SHORT_TERM_RPS_COUNT, s->sps);
                 sh->short_term_rps = &s->sps->short_term_rps_list[MAX_SHORT_TERM_RPS_COUNT];
             } else {
                 int short_term_ref_pic_set_idx = get_ue_golomb(gb);
@@ -347,7 +347,7 @@ static int hls_slice_header(HEVCContext *s)
         if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
             sh->num_ref_idx_l0_active = s->pps->num_ref_idx_l0_default_active;
             if (sh->slice_type == B_SLICE)
-	            sh->num_ref_idx_l1_active = s->pps->num_ref_idx_l1_default_active;
+                sh->num_ref_idx_l1_active = s->pps->num_ref_idx_l1_default_active;
             sh->num_ref_idx_active_override_flag = get_bits1(gb);
 
             if (sh->num_ref_idx_active_override_flag) {
@@ -413,17 +413,17 @@ static int hls_slice_header(HEVCContext *s)
         }
     }
     if( s->pps->tiles_enabled_flag == 1 || s->pps->entropy_coding_sync_enabled_flag == 1) {
-    	int num_entry_point_offsets = get_ue_golomb(gb);
-    	if( num_entry_point_offsets > 0 ) {
-        	int offset_len = get_ue_golomb(gb)+1;
-        	if (sh->entry_point_offset) {
-        		av_freep(&sh->entry_point_offset);
-        	}
+        int num_entry_point_offsets = get_ue_golomb(gb);
+        if( num_entry_point_offsets > 0 ) {
+            int offset_len = get_ue_golomb(gb)+1;
+            if (sh->entry_point_offset) {
+                av_freep(&sh->entry_point_offset);
+            }
             sh->entry_point_offset = av_malloc(num_entry_point_offsets);
-        	for( i = 0; i < num_entry_point_offsets; i++ ) {
+            for( i = 0; i < num_entry_point_offsets; i++ ) {
                 sh->entry_point_offset[i] = get_bits(gb, offset_len);
-        	}
-    	}
+            }
+        }
     }
 
     if (s->pps->slice_header_extension_present_flag) {
@@ -755,15 +755,15 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
             if (s->rc.significant_coeff_group_flag[x_cg][y_cg] &&
                 (n > 0 || implicit_non_zero_coeff == 0)) {
                 if (ff_hevc_significant_coeff_flag_decode(s, c_idx, x_c, y_c, log2_trafo_size, scan_idx) == 1) {
-                	significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
-                	nb_significant_coeff_flag = nb_significant_coeff_flag + 1;
+                    significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
+                    nb_significant_coeff_flag = nb_significant_coeff_flag + 1;
                     implicit_non_zero_coeff = 0;
                 }
             } else {
                 int last_cg = (x_c == (x_cg << 2) && y_c == (y_cg << 2));
                 if (last_cg && implicit_non_zero_coeff && s->rc.significant_coeff_group_flag[x_cg][y_cg]) {
-                	significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
-                	nb_significant_coeff_flag = nb_significant_coeff_flag + 1;
+                    significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
+                    nb_significant_coeff_flag = nb_significant_coeff_flag + 1;
                 }
             }
             av_dlog(s->avctx, "significant_coeff_flag(%d, %d): %d\n",
@@ -778,7 +778,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         num_sig_coeff = 0;
         first_greater1_coeff_idx = -1;
         for (m = 0; m < n_end; m++) {
-        	n = significant_coeff_flag_idx[m];
+            n = significant_coeff_flag_idx[m];
                 if (num_sig_coeff < 8) {
                     coeff_abs_level_greater1_flag[n] =
                     ff_hevc_coeff_abs_level_greater1_flag_decode(s, c_idx, i, n,
@@ -805,9 +805,9 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
                    first_greater1_coeff_idx,
                    coeff_abs_level_greater2_flag[first_greater1_coeff_idx]);
         }
-		if (!s->pps->sign_data_hiding_flag || !sign_hidden ) {
+        if (!s->pps->sign_data_hiding_flag || !sign_hidden ) {
             coeff_sign_flag = ff_hevc_coeff_sign_flag(s, nb_significant_coeff_flag) << (16 - nb_significant_coeff_flag);
-		} else {
+        } else {
             coeff_sign_flag = ff_hevc_coeff_sign_flag(s, nb_significant_coeff_flag-1) << (16 - (nb_significant_coeff_flag - 1));
         }
 
@@ -815,7 +815,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         sum_abs = 0;
         first_elem = 1;
         for (m = 0; m < n_end; m++) {
-        	n = significant_coeff_flag_idx[m];
+            n = significant_coeff_flag_idx[m];
                 GET_COORD(offset, n);
                 trans_coeff_level = 1 + coeff_abs_level_greater1_flag[n] +
                                     coeff_abs_level_greater2_flag[n];
@@ -969,10 +969,10 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
         log2_trafo_size > s->sps->log2_min_transform_block_size &&
         trafo_depth < s->cu.max_trafo_depth &&
         !(s->cu.intra_split_flag && trafo_depth == 0)) {
-    	split_transform_flag =
+        split_transform_flag =
         ff_hevc_split_transform_flag_decode(s, log2_trafo_size);
     } else {
-    	split_transform_flag =
+        split_transform_flag =
         (log2_trafo_size >
          s->sps->log2_min_transform_block_size +
          s->sps->log2_diff_max_min_coding_block_size ||
@@ -1085,8 +1085,8 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr, int xN, int 
     } else {
         minBlockAddrN = s->pps->min_tb_addr_zs[((xN >> s->sps->log2_min_transform_block_size)*s->sps->pic_width_in_min_tbs)+(yN >> s->sps->log2_min_transform_block_size)];
     }
-	if (s->sh.slice_address != 0 || s->pps->tiles_enabled_flag != 0)
-	    av_log(s->avctx, AV_LOG_ERROR, "TODO : check for different slices and tiles \n");
+    if (s->sh.slice_address != 0 || s->pps->tiles_enabled_flag != 0)
+        av_log(s->avctx, AV_LOG_ERROR, "TODO : check for different slices and tiles \n");
 
     //TODO : check for different slices and tiles
     if ((minBlockAddrN < 0) || (minBlockAddrN > minBlockAddrCurr)) {
@@ -1392,7 +1392,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
             zerovector.is_intra = 0;
         }
         mergecandlist[numMergeCand] = zerovector;
-        s->pu.mvp[numMergeCand] = mergecandlist[numMergeCand].mv;
         numMergeCand++;
         zeroIdx++;
     }
@@ -1418,15 +1417,17 @@ static void luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPb
         nPbH = nCS;
     }
     derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size, singleMCLFlag, part_idx, mergecand_list);
-
     mv->mv.x = mergecand_list[merge_idx].mv.x;
     mv->mv.y = mergecand_list[merge_idx].mv.y;
 }
 
-static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx)
+static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag)
 {
     int isScaledFlag_L0 =0;
-    int availableFlagLX0 = 0;
+    int availableFlagLXA0 = 0;
+    int availableFlagLXB0 = 0;
+    int availableFlagLXCol = 0;
+    int numMVPCandLX  =0;
     int x_pu = x0 >> s->sps->log2_min_pu_size;
     int x_puW = nPbW >> s->sps->log2_min_pu_size;
     int y_pu = y0 >> s->sps->log2_min_pu_size;
@@ -1434,6 +1435,10 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
     int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
     int xA0, yA0;
     int xA1, yA1;
+    int xB0, yB0;
+    int xB1, yB1;
+    int xB2, yB2;
+    struct MvField mvpcand_list[2];
 
     // left bottom spatial candidate
     xA0 = x0 - 1;
@@ -1448,7 +1453,7 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
     }
 
 
-    //first left spatial merge candidate
+    //left spatial merge candidate
     xA1 = x0-1;
     yA1 = y0 + nPbH - 1;
     int isAvailableA1 =0;
@@ -1462,15 +1467,113 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
     if((isAvailableA0) || (isAvailableA1)) {
         isScaledFlag_L0 =1;
     }
-
-    if((isAvailableA1) && !(s->pu.tab_mvf[(x_pu - 1) * pic_width_in_min_pu + y_pu+1].is_intra) && availableFlagLX0) {
-
+    // XA0
+    if((isAvailableA0) && !(s->pu.tab_mvf[(x_pu - 1) * pic_width_in_min_pu + y_pu+1].is_intra) && (availableFlagLXA0 == 0)) {
+        if((s->pu.tab_mvf[(x_pu - 1) * pic_width_in_min_pu + y_pu+1].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+                // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+            availableFlagLXA0 =1;
+            mvpcand_list[0] = s->pu.tab_mvf[(x_pu - 1) * pic_width_in_min_pu + y_pu+1];
+            numMVPCandLX++;
+        }
     }
+    //XA1
+    if((isAvailableA1) && !(s->pu.tab_mvf[(x_pu - 1) * pic_width_in_min_pu + y_pu].is_intra) && (availableFlagLXA0==0)) {
+            if((s->pu.tab_mvf[(x_pu - 1) * pic_width_in_min_pu + y_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+                    // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+                availableFlagLXA0 =1;
+                mvpcand_list[0] = s->pu.tab_mvf[(x_pu - 1) * pic_width_in_min_pu + y_pu];
+            }
+     }
+     // TODO Step 7 in 8.5.3.1.6.
 
-    // TODO : checks for DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ] ) and
-    // LongTermRefPic( currPic, currPb, refIdxLX, RefPicListX) need to performed over here
-    // it can be done only after implementing refpiclist
+    // B candidates
+    // above right spatial merge candidate
+     xB0 = x0 + nPbW;
+     yB0 = y0 - 1;
+     int isAvailableB0 = 0;
+     int check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
 
+     if((y_pu > 0) && !(s->pu.tab_mvf[(x_pu+1) * pic_width_in_min_pu + y_pu - 1].is_intra) && check_B0) {
+            isAvailableB0 = 1;
+        } else {
+            isAvailableB0 = 0;
+        }
+
+     if((isAvailableB0 == 1) && (availableFlagLXB0 == 0)) {
+         if((s->pu.tab_mvf[(x_pu+1) * pic_width_in_min_pu + y_pu-1].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+             // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+             availableFlagLXB0 =1;
+             mvpcand_list[1] = s->pu.tab_mvf[(x_pu + 1) * pic_width_in_min_pu + y_pu-1];
+             numMVPCandLX++;
+         }
+     }
+
+         if(!availableFlagLXB0) {
+             // above spatial merge candidate
+             xB1 = x0 + nPbW - 1;
+             yB1 = y0 - 1;
+             int is_available_b1 = 0;
+             int check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
+
+             if((y_pu > 0) && !(s->pu.tab_mvf[(x_pu) * pic_width_in_min_pu + y_pu - 1].is_intra) && check_B1) {
+                 is_available_b1 = 1;
+             } else {
+                 is_available_b1 = 0;
+             }
+
+             if((is_available_b1 == 1) && (availableFlagLXB0 == 0)) {
+                 if((s->pu.tab_mvf[(x_pu) * pic_width_in_min_pu + y_pu-1].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+                     // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+                     availableFlagLXB0 =1;
+                     mvpcand_list[1] = s->pu.tab_mvf[(x_pu) * pic_width_in_min_pu + y_pu-1];
+                     numMVPCandLX++;
+                 }
+             }
+         }
+
+             if(!availableFlagLXB0) {
+                 // above left spatial merge candidate
+                 xB2 = x0 - 1;
+                 yB2 = y0 - 1;
+                 int isAvailableB2 = 0;
+                 int check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
+
+                 if((x_pu > 0) && (y_pu > 0) && !(s->pu.tab_mvf[(x_pu - 1) * pic_width_in_min_pu + y_pu - 1].is_intra) && check_B2) {
+                     isAvailableB2 = 1;
+                 } else {
+                     isAvailableB2 = 0;
+                 }
+
+                 if((isAvailableB2 == 1) && (availableFlagLXB0 == 0)) {
+                     if((s->pu.tab_mvf[(x_pu -1) * pic_width_in_min_pu + y_pu-1].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+                         // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+                         availableFlagLXB0 =1;
+                         mvpcand_list[1] = s->pu.tab_mvf[(x_pu -1) * pic_width_in_min_pu + y_pu-1];
+                         numMVPCandLX++;
+                     }
+                 }
+             }
+
+             if(isScaledFlag_L0 == 0) {
+                 mvpcand_list[0] = mvpcand_list[1];
+             }
+
+             // TODO Step 5 for B candidates  in 8.5.3.1.6.
+             if (availableFlagLXB0 && availableFlagLXB0 && ((mvpcand_list[0].mv.x != mvpcand_list[1].mv.x) || (mvpcand_list[0].mv.y != mvpcand_list[1].mv.y))) {
+                 availableFlagLXCol = 0 ;
+             } else {
+                 //TODO section 8.5.3.1.7 temporal motion vector prediction
+             }
+             if ((mvpcand_list[0].mv.x == mvpcand_list[1].mv.x) && (mvpcand_list[0].mv.y == mvpcand_list[1].mv.y)) {
+                 numMVPCandLX--;
+             }
+             while (numMVPCandLX < 2) { // insert zero motion vectors when the number of available candidates are less than 2
+                 mvpcand_list[numMVPCandLX].mv.x =0;
+                 mvpcand_list[numMVPCandLX].mv.y =0;
+                 numMVPCandLX++;
+             }
+             mv->mv.x  = mvpcand_list[mvp_lx_flag].mv.x;
+             mv->mv.y  = mvpcand_list[mvp_lx_flag].mv.y;
 }
 
 /**
@@ -1619,6 +1722,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                     ref_idx_l0 = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l0_active);
                 hls_mvd_coding(s, x0, y0, 0 );
                 mvp_l0_flag = ff_hevc_mvp_lx_flag_decode(s);
+                luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_l0_flag);
             }
             if (inter_pred_idc != PRED_L0) {
                 if (s->sh.num_ref_idx_l1_active > 1)
@@ -1630,10 +1734,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                     hls_mvd_coding(s, x0, y0, 1 );
                 }
                 mvp_l1_flag = ff_hevc_mvp_lx_flag_decode(s);
+                luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_l1_flag);
             }
-            s->pu.mvp[0].x += s->pu.mvd.x;
-            s->pu.mvp[0].y += s->pu.mvd.y;
-            current_mv.mv = s->pu.mvp[0];
+            current_mv.mv.x += s->pu.mvd.x;
+            current_mv.mv.y += s->pu.mvd.y;
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
             for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
@@ -1789,12 +1893,12 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
     int split = s->cu.part_mode == PART_NxN;
     int pb_size = (1 << log2_cb_size) >> split;
     int side = split + 1;
-	int size_in_pus = pb_size >> s->sps->log2_min_pu_size;
-	for (i = 0; i < side; i++) {
-       	int x_pu = (x0 + pb_size * i) >> s->sps->log2_min_pu_size;
-       	int y_pu = (y0 + pb_size * i) >> s->sps->log2_min_pu_size;
-       	memset(&s->pu.top_ipm[x_pu], INTRA_DC, size_in_pus);
-       	memset(&s->pu.left_ipm[y_pu], INTRA_DC, size_in_pus);
+    int size_in_pus = pb_size >> s->sps->log2_min_pu_size;
+    for (i = 0; i < side; i++) {
+        int x_pu = (x0 + pb_size * i) >> s->sps->log2_min_pu_size;
+        int y_pu = (y0 + pb_size * i) >> s->sps->log2_min_pu_size;
+        memset(&s->pu.top_ipm[x_pu], INTRA_DC, size_in_pus);
+        memset(&s->pu.left_ipm[y_pu], INTRA_DC, size_in_pus);
     }
 }
 
@@ -1836,7 +1940,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
     if (SAMPLE(s->cu.skip_flag, x0, y0)) {
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0);
-		intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
+        intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
     } else {
         if (s->sh.slice_type != I_SLICE) {
             s->cu.pred_mode = ff_hevc_pred_mode_decode(s);
@@ -2005,30 +2109,30 @@ static int hls_slice_data(HEVCContext *s)
         s->num_pcm_block = 0;
         s->ctb_addr_in_slice = s->ctb_addr_rs - s->sh.slice_address;
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
-        	s->sh.slice_sample_adaptive_offset_flag[1])
-        	hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
+            s->sh.slice_sample_adaptive_offset_flag[1])
+            hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
 
         more_data = hls_coding_tree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
         if (!more_data)
-        	return 0;
+            return 0;
 
         s->ctb_addr_ts++;
         s->ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[s->ctb_addr_ts];
 
         if (more_data) {
-        	if ((s->pps->tiles_enabled_flag &&
-        		 s->pps->tile_id[s->ctb_addr_ts] !=
-        		 s->pps->tile_id[s->ctb_addr_ts - 1]) ||
-        		(s->pps->entropy_coding_sync_enabled_flag &&
-        		((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0))) {
-            	 //ff_hevc_end_of_sub_stream_one_bit_decode(s);
-        		ff_hevc_cabac_reinit(s);
-        		load_states();
-        	}
-        	if (s->pps->entropy_coding_sync_enabled_flag &&
-        			((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 2)) {
-        		save_states();
-        	}
+            if ((s->pps->tiles_enabled_flag &&
+                 s->pps->tile_id[s->ctb_addr_ts] !=
+                 s->pps->tile_id[s->ctb_addr_ts - 1]) ||
+                (s->pps->entropy_coding_sync_enabled_flag &&
+                ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0))) {
+                 //ff_hevc_end_of_sub_stream_one_bit_decode(s);
+                ff_hevc_cabac_reinit(s);
+                load_states();
+            }
+            if (s->pps->entropy_coding_sync_enabled_flag &&
+                    ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 2)) {
+                save_states();
+            }
         }
     }
 

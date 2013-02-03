@@ -333,7 +333,7 @@ typedef struct SliceHeader {
 
     uint8_t slice_loop_filter_across_slices_enabled_flag;
 
-   	int* entry_point_offset;
+    int* entry_point_offset;
 
 #if REFERENCE_ENCODER_QUIRKS
     uint8_t tile_marker_flag;
@@ -520,8 +520,6 @@ typedef struct PredictionUnit {
     uint8_t *left_ipm;
 
     Mv mvd;
-    Mv mvp[MRG_MAX_NUM_CANDS];
-
     MvField *tab_mvf;
 } PredictionUnit;
 
