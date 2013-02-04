@@ -19,6 +19,7 @@
  * License along with Libav; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+#define DEBUG
 
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
@@ -31,7 +32,6 @@
 
 //#define HM
 //#define MV
-
 #ifdef HM
     #include "wrapper/wrapper.h"
 #endif
@@ -769,7 +769,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
                 }
             }
             av_dlog(s->avctx, "significant_coeff_flag(%d, %d): %d\n",
-                   x_c, y_c, significant_coeff_flag[n]);
+                   x_c, y_c, significant_coeff_flag_idx[n]);
 
         }
 
@@ -973,6 +973,8 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
         !(s->cu.intra_split_flag && trafo_depth == 0)) {
         split_transform_flag =
         ff_hevc_split_transform_flag_decode(s, log2_trafo_size);
+        av_dlog(s->avctx,
+                "split_transform_flag: %d\n", split_transform_flag);
     } else {
         split_transform_flag =
         (log2_trafo_size >
@@ -1012,8 +1014,11 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
     } else {
         if (s->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
             SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) ||
-            SAMPLE_CBF(s->tt.cbf_cr[trafo_depth], x0, y0))
+            SAMPLE_CBF(s->tt.cbf_cr[trafo_depth], x0, y0)) {
             s->tt.cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth);
+            av_dlog(s->avctx,
+                    "cbf_luma: %d\n", s->tt.cbf_luma);
+        }
 
         hls_transform_unit(s, x0, y0, xBase,
                            yBase, log2_trafo_size, trafo_depth, blk_idx);
@@ -1063,6 +1068,7 @@ static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
         mvd_sign_flag[0] = ff_hevc_mvd_sign_flag_decode(s);
     }
     if (abs_mvd_greater0_flag[1]) {
+        abs_mvd_minus2[1] = -1;
         if (abs_mvd_greater1_flag[1])
             abs_mvd_minus2[1] = ff_hevc_abs_mvd_minus2_decode(s);
         mvd_sign_flag[1] = ff_hevc_mvd_sign_flag_decode(s);
