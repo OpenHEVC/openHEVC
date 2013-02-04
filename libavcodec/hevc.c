@@ -493,7 +493,7 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry)
 
             if (sao->type_idx[c_idx] == SAO_NOT_APPLIED)
                 continue;
-
+            
             for (i = 0; i < 4; i++)
                 set_sao(offset_abs[c_idx][i], ff_hevc_sao_offset_abs_decode(s, bit_depth));
 
@@ -627,19 +627,19 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
     }
 
     last_significant_coeff_x =
-    ff_hevc_last_significant_coeff_prefix_decode(s, c_idx, log2_trafo_size, 1);
+    ff_hevc_last_significant_coeff_x_prefix_decode(s, c_idx, log2_trafo_size);
     last_significant_coeff_y =
-    ff_hevc_last_significant_coeff_prefix_decode(s, c_idx, log2_trafo_size, 0);
+    ff_hevc_last_significant_coeff_y_prefix_decode(s, c_idx, log2_trafo_size);
 
 
     if (last_significant_coeff_x > 3) {
-        int suffix = ff_hevc_last_significant_coeff_suffix_decode(s, last_significant_coeff_x, 1);
+        int suffix = ff_hevc_last_significant_coeff_suffix_decode(s, last_significant_coeff_x);
         last_significant_coeff_x = (1 << ((last_significant_coeff_x >> 1) - 1)) *
                                    (2 + (last_significant_coeff_x & 1)) +
                                    suffix;
     }
     if (last_significant_coeff_y > 3) {
-        int suffix = ff_hevc_last_significant_coeff_suffix_decode(s, last_significant_coeff_y, 0);
+        int suffix = ff_hevc_last_significant_coeff_suffix_decode(s, last_significant_coeff_y);
         last_significant_coeff_y = (1 << ((last_significant_coeff_y >> 1) - 1)) *
                                    (2 + (last_significant_coeff_y & 1)) +
                                    suffix;
@@ -728,8 +728,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         if ((i < num_last_subset) && (i > 0)) {
             s->rc.significant_coeff_group_flag[x_cg][y_cg] =
             ff_hevc_significant_coeff_group_flag_decode(s, c_idx, x_cg, y_cg,
-                                                        log2_trafo_size,
-                                                        scan_idx);
+                                                        log2_trafo_size);
             implicit_non_zero_coeff = 1;
         } else {
             s->rc.significant_coeff_group_flag[x_cg][y_cg] =
@@ -1061,7 +1060,6 @@ static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
         mvd_sign_flag[0] = ff_hevc_mvd_sign_flag_decode(s);
     }
     if (abs_mvd_greater0_flag[1]) {
-        abs_mvd_minus2[1] = -1;
         if (abs_mvd_greater1_flag[1])
             abs_mvd_minus2[1] = ff_hevc_abs_mvd_minus2_decode(s);
         mvd_sign_flag[1] = ff_hevc_mvd_sign_flag_decode(s);
@@ -1154,7 +1152,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int available_a0_flag=0;
     int available_b2_flag=0;
     struct MvField spatialCMVS[MRG_MAX_NUM_CANDS];
-
+    
     //first left spatial merge candidate
     int xA1 = x0-1;
     int yA1 = y0 + nPbH - 1;
@@ -1716,7 +1714,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             }
         } else {
             if (s->sh.slice_type == B_SLICE)
-                inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, 1<<log2_cb_size);
+                inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, nPbW, nPbH);
             if (inter_pred_idc != PRED_L1) {
                 if (s->sh.num_ref_idx_l0_active > 1)
                     ref_idx_l0 = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l0_active);
@@ -1756,7 +1754,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
 static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
                                 int prev_intra_luma_pred_flag)
 {
-    int i,j;
+    int i, j;
     int candidate[3];
     int intra_pred_mode;
 
