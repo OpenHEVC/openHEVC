@@ -5,11 +5,10 @@
 //  Created by Mickaël Raulet on 11/10/12.
 //
 //
-
+#include "SDL.h"
 #include <stdio.h>
 #include "avcodec.h"
 #include "libavcodec/hevc.h"
-
 
 int find_start_code (unsigned char *Buf, int zeros_in_startcode)
 {
@@ -161,8 +160,7 @@ static void video_decode_example(const char *filename)
 }
 
 
-int main(int argc, const char * argv[])
-{
+int main(int argc, char *argv[]) {
     const char *filename;
     
     /* register all the codecs */
