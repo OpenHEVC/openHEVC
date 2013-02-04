@@ -83,7 +83,6 @@ static int elem_offset[sizeof(num_bins_in_se)];
 /**
  * Indexed by init_type
  */
-
 const uint8_t init_values[3][HEVC_CONTEXTS] = {
     {
         // sao_merge_flag

@@ -496,7 +496,7 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry)
 
             if (sao->type_idx[c_idx] == SAO_NOT_APPLIED)
                 continue;
-            
+
             for (i = 0; i < 4; i++)
                 set_sao(offset_abs[c_idx][i], ff_hevc_sao_offset_abs_decode(s, bit_depth));
 
@@ -731,7 +731,8 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         if ((i < num_last_subset) && (i > 0)) {
             s->rc.significant_coeff_group_flag[x_cg][y_cg] =
             ff_hevc_significant_coeff_group_flag_decode(s, c_idx, x_cg, y_cg,
-                                                        log2_trafo_size);
+                                                        log2_trafo_size,
+                                                        scan_idx);
             implicit_non_zero_coeff = 1;
         } else {
             s->rc.significant_coeff_group_flag[x_cg][y_cg] =
@@ -1168,7 +1169,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int available_a0_flag=0;
     int available_b2_flag=0;
     struct MvField spatialCMVS[MRG_MAX_NUM_CANDS];
-    
+
     //first left spatial merge candidate
     int xA1 = x0-1;
     int yA1 = y0 + nPbH - 1;
