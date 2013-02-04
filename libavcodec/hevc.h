@@ -24,6 +24,7 @@
 #define AVCODEC_HEVC_H
 
 #include "avcodec.h"
+#include "cabac.h"
 #include "dsputil.h"
 #include "get_bits.h"
 #include "hevcpred.h"
@@ -94,6 +95,8 @@ typedef struct RefPicList {
 #define MAX_PB_SIZE 64
 #define MAX_CTB_SIZE 64
 
+#define HEVC_CONTEXTS 183
+
 typedef struct PTL {
     int general_profile_space;
     uint8_t general_tier_flag;
@@ -116,7 +119,6 @@ typedef struct VPS {
     int vps_max_sub_layers; ///< vps_max_temporal_layers_minus1 + 1
 
     PTL ptl;
-
     int vps_sub_layer_ordering_info_present_flag;
     int vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
     int vps_num_reorder_pics[MAX_SUB_LAYERS];
@@ -582,6 +584,10 @@ typedef struct HEVCContext {
 
     GetBitContext gb;
     HEVCCabacContext cc;
+
+    CABACContext c;
+    uint8_t cabac_state[HEVC_CONTEXTS];
+    uint8_t cabac_state_save[HEVC_CONTEXTS];
 
     int nal_ref_flag;
     enum NALUnitType nal_unit_type;

@@ -2125,13 +2125,13 @@ static int hls_slice_data(HEVCContext *s)
                  s->pps->tile_id[s->ctb_addr_ts - 1]) ||
                 (s->pps->entropy_coding_sync_enabled_flag &&
                 ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0))) {
-                 //ff_hevc_end_of_sub_stream_one_bit_decode(s);
+                //ff_hevc_end_of_sub_stream_one_bit_decode(s);
                 ff_hevc_cabac_reinit(s);
-                load_states();
+                load_states(s);
             }
             if (s->pps->entropy_coding_sync_enabled_flag &&
                     ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 2)) {
-                save_states();
+                save_states(s);
             }
         }
     }
