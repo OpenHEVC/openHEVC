@@ -46,7 +46,7 @@ static int hevc_parse_nal_unit(HEVCParserContext *hpc, uint8_t **poutbuf,
     int header = 0;
 
     // skip leading zeroes
-    if (!pc->frame_start_found) {
+    //if (!pc->frame_start_found) {
         for (i = 0; i < buf_size; i++) {
             pc->state = (pc->state << 8) | buf[i];
             if ((pc->state & mask) == START_CODE) {
@@ -58,7 +58,7 @@ static int hevc_parse_nal_unit(HEVCParserContext *hpc, uint8_t **poutbuf,
                 return AVERROR_INVALIDDATA;
             }
         }
-    }
+    //}
 
     buf      += header;
     buf_size -= header;
@@ -119,11 +119,11 @@ static int hevc_parse(AVCodecParserContext *s,
     // next is an offset in buf, but we want to combine frames from *poutbuf
     combine_next = (next != END_NOT_FOUND) ? *poutbuf_size : next;
 
-    if (ff_combine_frame(pc, combine_next, poutbuf, poutbuf_size) < 0) {
+   /* if (ff_combine_frame(pc, combine_next, poutbuf, poutbuf_size) < 0) {
         *poutbuf      = NULL;
         *poutbuf_size = 0;
         return buf_size;
-    }
+    }*/
 
     return next;
 }
