@@ -19,7 +19,7 @@
  * License along with Libav; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#define DEBUG
+// #define DEBUG
 
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
@@ -1803,15 +1803,21 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             if (s->sh.slice_type == B_SLICE)
                 inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, nPbW, nPbH);
             if (inter_pred_idc != PRED_L1) {
-                if (s->sh.num_ref_idx_l0_active > 1)
+                if (s->sh.num_ref_idx_l0_active > 1) {
                     ref_idx_l0 = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l0_active);
+                    av_dlog(s->avctx, "ref_idx_l0: %d\n",
+                            ref_idx_l0);
+                }
                 hls_mvd_coding(s, x0, y0, 0 );
                 mvp_l0_flag = ff_hevc_mvp_lx_flag_decode(s);
                 luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_l0_flag);
             }
             if (inter_pred_idc != PRED_L0) {
-                if (s->sh.num_ref_idx_l1_active > 1)
+                if (s->sh.num_ref_idx_l1_active > 1) {
                     ref_idx_l1 = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l1_active);
+                    av_dlog(s->avctx, "ref_idx_l0: %d\n",
+                            ref_idx_l0);
+                }
                 if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
                     //mvd_l1[ x0 ][ y0 ][ 0 ] = 0
                     //mvd_l1[ x0 ][ y0 ][ 1 ] = 0
@@ -1955,8 +1961,10 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_si
     int side = split + 1;
 
     for (i = 0; i < side; i++)
-        for (j = 0; j < side; j++)
+        for (j = 0; j < side; j++) {
             prev_intra_luma_pred_flag[2*i+j] = ff_hevc_prev_intra_luma_pred_flag_decode(s);
+            av_dlog(s->avctx, "prev_intra_luma_pred_flag: %d\n", prev_intra_luma_pred_flag[2*i+j]);
+        }
 
     for (i = 0; i < side; i++) {
         for (j = 0; j < side; j++) {
