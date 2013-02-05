@@ -292,12 +292,14 @@ void load_states(HEVCContext *s)
 
 void ff_hevc_cabac_reinit(HEVCContext *s)
 {
-    GetBitContext *gb = &s->gb;
-
-    ff_init_cabac_decoder(&s->cc,
+     int n;
+     GetBitContext *gb = &s->gb;
+     
+     n = -get_bits_count(gb) & 7;
+     if (n) skip_bits(gb, n);
+     ff_init_cabac_decoder(&s->cc,
                           gb->buffer + get_bits_count(gb) / 8,
                           (get_bits_left(&s->gb) + 7) / 8);
-    av_dlog(s->avctx, AV_LOG_DEBUG, "cc->offset: %d\n", cc->offset);
 }
 
 void ff_hevc_cabac_init(HEVCContext *s)
@@ -306,7 +308,6 @@ void ff_hevc_cabac_init(HEVCContext *s)
     int init_type;
     GetBitContext *gb = &s->gb;
 
-    skip_bits(gb, 1);
     align_get_bits(gb);
     ff_init_cabac_states(&s->cc);
     ff_init_cabac_decoder(&s->cc,
@@ -448,14 +449,14 @@ int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size)
     }
 
     if (GET_CABAC(elem_offset[PART_MODE] + 1)) { // 01X, 01XX
-        if (GET_CABAC(elem_offset[PART_MODE] + 3)) // 011
+        if (GET_CABAC(elem_offset[PART_MODE] + 2)) // 011
             return PART_2NxN;
         if (get_cabac_bypass(&s->cc)) // 0101
             return PART_2NxnD;
         return PART_2NxnU; // 0100
     }
 
-    if (GET_CABAC(elem_offset[PART_MODE] + 3)) // 001
+    if (GET_CABAC(elem_offset[PART_MODE] + 2)) // 001
         return PART_Nx2N;
     if (get_cabac_bypass(&s->cc)) // 0001
         return PART_nRx2N;
