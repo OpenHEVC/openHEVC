@@ -731,8 +731,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         if ((i < num_last_subset) && (i > 0)) {
             s->rc.significant_coeff_group_flag[x_cg][y_cg] =
             ff_hevc_significant_coeff_group_flag_decode(s, c_idx, x_cg, y_cg,
-                                                        log2_trafo_size,
-                                                        scan_idx);
+                                                        log2_trafo_size);
             implicit_non_zero_coeff = 1;
         } else {
             s->rc.significant_coeff_group_flag[x_cg][y_cg] =
@@ -1055,7 +1054,11 @@ static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
     uint16_t abs_mvd_minus2[2];
     uint8_t mvd_sign_flag[2];
     abs_mvd_greater0_flag[0] = ff_hevc_abs_mvd_greater0_flag_decode(s);
+    av_dlog(s->avctx, "abs_mvd_greater0_flag[0]: %d\n",
+            abs_mvd_greater0_flag[0]);
     abs_mvd_greater0_flag[1] = ff_hevc_abs_mvd_greater0_flag_decode(s);
+    av_dlog(s->avctx, "abs_mvd_greater0_flag[1]: %d\n",
+            abs_mvd_greater0_flag[1]);
     if (abs_mvd_greater0_flag[0])
         abs_mvd_greater1_flag[0] = ff_hevc_abs_mvd_greater1_flag_decode(s);
 
@@ -1761,6 +1764,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     if (SAMPLE(s->cu.skip_flag, x0, y0)) {
         if (s->sh.max_num_merge_cand > 1) {
             merge_idx = ff_hevc_merge_idx_decode(s);
+            av_dlog(s->avctx,
+                    "merge_idx: %d\n", merge_idx);
             luma_mv_merge_mode(s, x0, y0, 1 << log2_cb_size, 1 << log2_cb_size, log2_cb_size, partIdx, merge_idx, &current_mv);
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
@@ -1775,9 +1780,13 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         }
     } else {/* MODE_INTER */
         s->pu.merge_flag = ff_hevc_merge_flag_decode(s);
+        av_dlog(s->avctx,
+                "merge_flag: %d\n", s->pu.merge_flag);
         if (s->pu.merge_flag) {
             if (s->sh.max_num_merge_cand > 1) {
                 merge_idx = ff_hevc_merge_idx_decode(s);
+                av_dlog(s->avctx,
+                        "merge_idx: %d\n", merge_idx);
                 luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv);
                 x_pu = x0 >> s->sps->log2_min_pu_size;
                 y_pu = y0 >> s->sps->log2_min_pu_size;

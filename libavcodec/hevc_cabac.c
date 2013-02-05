@@ -503,8 +503,10 @@ int ff_hevc_merge_idx_decode(HEVCContext *s)
 {
     int i = GET_CABAC(elem_offset[MERGE_IDX]);
 
-    while (i < s->sh.max_num_merge_cand-2 && get_cabac_bypass(&s->cc))
-        i++;
+    if (i != 0) {
+        while (i < s->sh.max_num_merge_cand-2 && get_cabac_bypass(&s->cc))
+            i++;
+    }
     return i;
 }
 
