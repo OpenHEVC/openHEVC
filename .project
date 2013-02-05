@@ -1,11 +1,1312 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>openHEVC</name>
+	<name>libavHM-debug@openHEVC</name>
 	<comment></comment>
 	<projects>
 	</projects>
 	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.cdt.make.core.makeBuilder</name>
+			<triggers>clean,full,incremental,</triggers>
+			<arguments>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
+					<value>clean</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableCleanBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.append_environment</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.stopOnError</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enabledIncrementalBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.command</key>
+					<value>/usr/bin/make</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.contents</key>
+					<value>org.eclipse.cdt.make.core.activeConfigSettings</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.target.inc</key>
+					<value>all</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.arguments</key>
+					<value></value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.buildLocation</key>
+					<value>/home/vkotra/OPENHEVC/openHEVC</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.useDefaultBuildCmd</key>
+					<value>false</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.environment</key>
+					<value>VERBOSE=1|CMAKE_NO_VERBOSE=1|</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableFullBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.target.auto</key>
+					<value>all</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableAutoBuild</key>
+					<value>false</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.target.clean</key>
+					<value>clean</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.fullBuildTarget</key>
+					<value>all</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.buildArguments</key>
+					<value></value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.location</key>
+					<value>/home/vkotra/OPENHEVC/openHEVC</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.autoBuildTarget</key>
+					<value>all</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.core.errorOutputParser</key>
+					<value>org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser;</value>
+				</dictionary>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.cdt.make.core.ScannerConfigBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
 	</buildSpec>
 	<natures>
+		<nature>org.eclipse.cdt.core.ccnature</nature>
+		<nature>org.eclipse.cdt.make.core.makeNature</nature>
+		<nature>org.eclipse.cdt.make.core.ScannerConfigNature</nature>
+		<nature>org.eclipse.cdt.core.cnature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>[Subprojects]</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Subprojects]/HM-8.0-dec</name>
+			<type>2</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM</location>
+		</link>
+		<link>
+			<name>[Subprojects]/HM-wrapper</name>
+			<type>2</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm</location>
+		</link>
+		<link>
+			<name>[Targets]</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/main.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/main.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/sdl.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/sdl.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/allcodecs.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/allcodecs.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/avpacket.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/avpacket.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/cabac.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/cabac.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/dsputil.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/dsputil.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/golomb.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/golomb.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/hevc_cabac.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/hevc_cabac.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/hevc_parser.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/hevc_parser.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/hevc_ps.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/hevc_ps.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/hevc.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/hevc.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/hevcdsp.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/hevcdsp.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/hevcpred.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/hevcpred.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/imgconvert.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/imgconvert.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/options.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/options.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/parser.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/parser.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/pthread.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/pthread.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/simple_idct.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/simple_idct.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/utils.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavcodec/utils.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/audioconvert.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/audioconvert.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/avstring.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/avstring.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/dict.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/dict.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/eval.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/eval.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/imgutils.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/imgutils.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/log.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/log.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/mathematics.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/mathematics.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/mem.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/mem.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/opt.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/opt.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/pixdesc.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/pixdesc.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/rational.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/rational.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Source Files/samplefmt.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/libavutil/samplefmt.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] hevc/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] HevcDecoder</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] HevcDecoder/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] HevcDecoder/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] HevcDecoder/Source Files/decoder.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/src/App/decoder/decoder.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] HevcDecoder/Source Files/sdl.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/src/App/decoder/sdl.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] HevcDecoder/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] HevcDecoder/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] HevcDecoder/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] LibWrapper</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] LibWrapper/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] LibWrapper/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] LibWrapper/Source Files/wrapper.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/src/Lib/wrapper/wrapper.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] LibWrapper/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] LibWrapper/Header Files/wrapper.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/src/Lib/wrapper/wrapper.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] LibWrapper/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] LibWrapper/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TAppCommon</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TAppCommon/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TAppCommon/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TAppCommon/Source Files/program_options_lite.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TAppCommon/program_options_lite.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TAppCommon/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TAppCommon/Header Files/program_options_lite.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TAppCommon/program_options_lite.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TAppCommon/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TAppCommon/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/Source Files/TAppDecCfg.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppDecoder/TAppDecCfg.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/Source Files/TAppDecTop.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppDecoder/TAppDecTop.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/Source Files/decmain.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppDecoder/decmain.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/Header Files/TAppDecTop.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppDecoder/TAppDecTop.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/Header Files/TAppDecCfg.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppDecoder/TAppDecCfg.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppDecoder/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/Source Files/encmain.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppEncoder/encmain.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/Source Files/TAppEncCfg.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppEncoder/TAppEncCfg.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/Source Files/TAppEncTop.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppEncoder/TAppEncTop.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/Header Files/TAppEncTop.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppEncoder/TAppEncTop.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/Header Files/TAppEncCfg.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/App/TAppEncoder/TAppEncCfg.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] TAppEncoder/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComRdCost.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComRdCost.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComSampleAdaptiveOffset.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComSampleAdaptiveOffset.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/ContextModel.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/ContextModel.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComPic.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPic.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComYuv.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComYuv.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComCABACTables.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComCABACTables.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComBitStream.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComBitStream.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComWeightPrediction.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComWeightPrediction.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComRom.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComRom.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComPicYuvMD5.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPicYuvMD5.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComPicSym.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPicSym.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComMotionInfo.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComMotionInfo.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComPicYuv.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPicYuv.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComPrediction.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPrediction.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComLoopFilter.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComLoopFilter.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComRdCostWeightPrediction.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComRdCostWeightPrediction.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComInterpolationFilter.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComInterpolationFilter.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComSlice.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComSlice.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComDataCU.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComDataCU.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComTrQuant.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComTrQuant.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/ContextModel3DBuffer.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/ContextModel3DBuffer.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Source Files/TComPattern.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPattern.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComSlice.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComSlice.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TypeDef.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TypeDef.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComTrQuant.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComTrQuant.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/SEI.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/SEI.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComRdCostWeightPrediction.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComRdCostWeightPrediction.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComSampleAdaptiveOffset.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComSampleAdaptiveOffset.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComPattern.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPattern.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/CommonDef.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/CommonDef.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComInterpolationFilter.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComInterpolationFilter.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComBitCounter.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComBitCounter.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComBitStream.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComBitStream.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComLoopFilter.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComLoopFilter.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComList.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComList.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComRdCost.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComRdCost.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComCABACTables.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComCABACTables.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComPrediction.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPrediction.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComPicYuv.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPicYuv.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComPic.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPic.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/ContextTables.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/ContextTables.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComYuv.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComYuv.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/ContextModel.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/ContextModel.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComPicSym.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComPicSym.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/ContextModel3DBuffer.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/ContextModel3DBuffer.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComRom.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComRom.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComWeightPrediction.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComWeightPrediction.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/NAL.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/NAL.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComMotionInfo.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComMotionInfo.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComMv.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComMv.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/AccessUnit.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/AccessUnit.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Header Files/TComDataCU.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibCommon/TComDataCU.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibCommon/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/TDecCAVLC.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecCAVLC.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/NALread.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/NALread.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/SyntaxElementParser.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/SyntaxElementParser.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/AnnexBread.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/AnnexBread.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/TDecSbac.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecSbac.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/TDecEntropy.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecEntropy.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/TDecBinCoderCABAC.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecBinCoderCABAC.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/TDecCu.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecCu.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/TDecTop.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecTop.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/SEIread.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/SEIread.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/TDecGop.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecGop.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Source Files/TDecSlice.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecSlice.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecCAVLC.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecCAVLC.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/NALread.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/NALread.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecCu.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecCu.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecBinCoderCABAC.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecBinCoderCABAC.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecGop.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecGop.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecBinCoder.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecBinCoder.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecSlice.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecSlice.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/AnnexBread.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/AnnexBread.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/SEIread.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/SEIread.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecSbac.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecSbac.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecTop.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecTop.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/SyntaxElementParser.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/SyntaxElementParser.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Header Files/TDecEntropy.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibDecoder/TDecEntropy.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibDecoder/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncSlice.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncSlice.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncGOP.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncGOP.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncSampleAdaptiveOffset.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncSampleAdaptiveOffset.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/NALwrite.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/NALwrite.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncCavlc.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncCavlc.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncRateCtrl.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncRateCtrl.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncCu.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncCu.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncTop.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncTop.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncPic.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncPic.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/SEIwrite.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/SEIwrite.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncPreanalyzer.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncPreanalyzer.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/WeightPredAnalysis.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/WeightPredAnalysis.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncEntropy.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncEntropy.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncAnalyze.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncAnalyze.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncSbac.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncSbac.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncSearch.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncSearch.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncBinCoderCABACCounter.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncBinCoderCABACCounter.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/TEncBinCoderCABAC.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncBinCoderCABAC.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Source Files/SyntaxElementWriter.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/SyntaxElementWriter.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/WeightPredAnalysis.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/WeightPredAnalysis.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncPic.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncPic.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/NALwrite.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/NALwrite.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncGOP.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncGOP.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncCfg.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncCfg.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncCu.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncCu.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/SyntaxElementWriter.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/SyntaxElementWriter.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncCavlc.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncCavlc.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncSbac.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncSbac.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncBinCoderCABACCounter.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncBinCoderCABACCounter.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncAnalyze.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncAnalyze.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncPreanalyzer.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncPreanalyzer.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncEntropy.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncEntropy.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/SEIwrite.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/SEIwrite.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncRateCtrl.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncRateCtrl.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncSlice.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncSlice.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/AnnexBwrite.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/AnnexBwrite.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncSampleAdaptiveOffset.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncSampleAdaptiveOffset.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncBinCoder.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncBinCoder.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncSearch.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncSearch.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncTop.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncTop.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Header Files/TEncBinCoderCABAC.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibEncoder/TEncBinCoderCABAC.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibEncoder/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibVideoIO</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibVideoIO/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibVideoIO/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibVideoIO/Source Files/TVideoIOYuv.cpp</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibVideoIO/TVideoIOYuv.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibVideoIO/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibVideoIO/Header Files/TVideoIOYuv.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/TLibVideoIO/TVideoIOYuv.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibVideoIO/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] TLibVideoIO/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5/Source Files/libmd5.c</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/libmd5/libmd5.c</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5/Header Files/MD5.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/libmd5/MD5.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5/Header Files/libmd5.h</name>
+			<type>1</type>
+			<location>/home/vkotra/OPENHEVC/openHEVC/wrapper_hm/HM/source/Lib/libmd5/libmd5.h</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] libmd5/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
