@@ -31,7 +31,7 @@
 
 
 //#define HM
-//#define MV
+#define MV
 #ifdef HM
     #include "wrapper/wrapper.h"
 #endif
@@ -216,6 +216,7 @@ static int hls_slice_header(HEVCContext *s)
     int slice_address_length = 0;
 
     av_dlog(s->avctx, "Decoding slice\n");
+    printf("Decoding slice\n");
 
 
     // Coded parameters
@@ -1080,7 +1081,7 @@ static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
     s->pu.mvd.x = abs_mvd_greater0_flag[0] * (abs_mvd_minus2[0] + 2) * (1 - (mvd_sign_flag[0] << 1));
     s->pu.mvd.y = abs_mvd_greater0_flag[1] * (abs_mvd_minus2[1] + 2) * (1 - (mvd_sign_flag[1] << 1));
 #ifdef MV
-    printf("mvd_x %d, %d\n", s->pu.mvd.x, s->pu.mvd.y);
+    //printf("mvd_x %d, %d\n", s->pu.mvd.x, s->pu.mvd.y);
 #endif
     return;
 }
@@ -1212,7 +1213,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int numMergeCand, numOrigMergeCand, numInputMergeCand, sumcandidates;
 
 #ifdef MV
-    printf("nPbW %d nPbH %d\n", nPbW, nPbH);
+    //printf("nPbW %d nPbH %d\n", nPbW, nPbH);
 #endif
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
     int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
@@ -1264,7 +1265,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         is_available_b1 = 0;
     }
 
-    if (is_available_b1 && !(compareMVrefidx(s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu], spatialCMVS[0]))) {
+    if (is_available_b1 && !(compareMVrefidx(s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu], s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu] ))) {
         available_b1_flag = 1;
         spatialCMVS[1] = s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu];
     } else {
@@ -1283,11 +1284,11 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int yB0_pu = yB0 >> s->sps->log2_min_pu_size;
     isAvailableB0 = 0;
 #ifdef MV
-    printf("B0\n");
+    //printf("B0\n");
 #endif
     check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
 #ifdef MV
-    printf("check_B0=%d\n", check_B0);
+    //printf("check_B0=%d\n", check_B0);
 #endif
     if((yB0_pu >= 0) && !(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].is_intra) && check_B0) {
         isAvailableB0 = 1;
@@ -1299,10 +1300,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         isAvailableB0 = 0;
     }
 
-    if (isAvailableB0 && !(compareMVrefidx(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu], spatialCMVS[1]))) {
+    if (isAvailableB0 && !(compareMVrefidx(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu], s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu]))) {
 #ifdef MV
-        printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d \n", x_pu, y_pu, (xB0_pu) * pic_width_in_min_pu, yB0_pu);
-        printf("xB0=%d, yB0=%d, x0=%d, y0=%d  shift_xbx=%d, shift_xby=%d \n", xB0, yB0, x0, y0, xB0>>s->sps->log2_min_pu_size, yB0>>s->sps->log2_min_pu_size);
+     //   printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d \n", x_pu, y_pu, (xB0_pu) * pic_width_in_min_pu, yB0_pu);
+     //   printf("xB0=%d, yB0=%d, x0=%d, y0=%d  shift_xbx=%d, shift_xby=%d \n", xB0, yB0, x0, y0, xB0>>s->sps->log2_min_pu_size, yB0>>s->sps->log2_min_pu_size);
 #endif
         available_b0_flag = 1;
         spatialCMVS[2] = s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu];
@@ -1333,7 +1334,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         isAvailableA0 = 0;
     }
 
-    if (isAvailableA0 && !(compareMVrefidx(s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu], spatialCMVS[0]))) {
+    if (isAvailableA0 && !(compareMVrefidx(s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu], s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu]))) {
         available_a0_flag = 1;
         spatialCMVS[3] = s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu];
     } else {
@@ -1365,8 +1366,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
 
     sumcandidates = available_a1_flag + available_b1_flag + available_b0_flag + available_a0_flag;
 
-    if (isAvailableB2 && !(compareMVrefidx(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu], spatialCMVS[0])) &&
-        !(compareMVrefidx(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu], spatialCMVS[1])) && sumcandidates != 4) {
+    if (isAvailableB2 && !(compareMVrefidx(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu], s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu])) &&
+        !(compareMVrefidx(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu], s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu])) && sumcandidates != 4) {
         available_b2_flag =1;
         spatialCMVS[4] = s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu];
     } else {
@@ -1438,8 +1439,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         zeroIdx++;
     }
 #ifdef MV
-    for (i=0; i < 5; i++)
-            printf("mvPred[%d]=%d %d\n", i, mergecandlist[i].mv.x, mergecandlist[i].mv.y);
+//    for (i=0; i < 5; i++)
+//            printf("mvPred[%d]=%d %d\n", i, mergecandlist[i].mv.x, mergecandlist[i].mv.y);
 #endif
 }
 
@@ -1467,7 +1468,7 @@ static void luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPb
     mv->mv.y = mergecand_list[merge_idx].mv.y;
 
 #ifdef MV
-    printf("MV %d %d\n", mergecand_list[merge_idx].mv.x, mergecand_list[merge_idx].mv.y);
+    printf("mv = %d, %d \n", mergecand_list[merge_idx].mv.x, mergecand_list[merge_idx].mv.y);
 #endif
 }
 
@@ -1491,9 +1492,11 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
     struct MvField mvpcand_list[2];
     int i;
     int check_A0, check_A1, check_B0, check_B1, check_B2;
+    MvField mxA;
+    MvField mxB;
 
 #ifdef MV
-    printf("nPbW %d nPbH %d\n", nPbW, nPbH);
+//    printf("nPbW %d nPbH %d\n", nPbW, nPbH);
 #endif
     // left bottom spatial candidate
     xA0 = x0 - 1;
@@ -1517,7 +1520,7 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
     int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
     int isAvailableA1 =0;
     check_A1 = check_prediction_block_available (s,log2_cb_size, x0, y0, nPbW, nPbH, xA1, yA1, part_idx);
-    if((xA1_pu > 0) && !(s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu].is_intra) && check_A1) {
+    if((xA1_pu >= 0) && !(s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu].is_intra) && check_A1) {
         isAvailableA1 = 1;
     } else {
         isAvailableA1 = 0;
@@ -1531,8 +1534,8 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
         if((s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
                 // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
             availableFlagLXA0 =1;
-            mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu];
-            numMVPCandLX++;
+            mxA = s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu];
+           // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu];
         }
     }
     //XA1
@@ -1540,8 +1543,9 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
             if((s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
                     // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
                 availableFlagLXA0 =1;
-                mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu];
-                numMVPCandLX++;
+                mxA = s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu];
+               // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu];
+
             }
      }
      // TODO Step 7 in 8.5.3.1.6.
@@ -1555,7 +1559,7 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
      int isAvailableB0 = 0;
      check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
 
-     if((yB0_pu > 0) && !(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].is_intra) && check_B0) {
+     if((yB0_pu >= 0) && !(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].is_intra) && check_B0) {
             isAvailableB0 = 1;
         } else {
             isAvailableB0 = 0;
@@ -1565,8 +1569,8 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
          if((s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
              // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
              availableFlagLXB0 =1;
-             mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu];
-             numMVPCandLX++;
+             mxB = s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu];
+            // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu];
          }
      }
 
@@ -1578,19 +1582,23 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
          int yB1_pu = yB1 >> s->sps->log2_min_pu_size;
          int is_available_b1 = 0;
          check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
+       //  printf("check_B1 = %d, isIntra=%d  mv.x=%d \n ", check_B1, s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].is_intra, s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].mv.x );
 
-         if((yB1_pu > 0) && !(s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].is_intra) && check_B1) {
+         if((yB1_pu >= 0) && !(s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].is_intra) && check_B1) {
              is_available_b1 = 1;
          } else {
              is_available_b1 = 0;
          }
+        // printf("is_available_b1=%d availableFlagLXB0=%d pred_flag=%d \n", is_available_b1, availableFlagLXB0, s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].pred_flag);
 
          if((is_available_b1 == 1) && (availableFlagLXB0 == 0)) {
              if((s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
                  // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
                  availableFlagLXB0 =1;
-                 mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu];
-                 numMVPCandLX++;
+                // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu];
+                 mxB = s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu];
+          //       printf("mv.x=%d \n", mvpcand_list[numMVPCandLX].mv.x);
+
              }
          }
      }
@@ -1604,7 +1612,7 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
          int isAvailableB2 = 0;
          check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
 
-         if((xB2_pu > 0) && (yB2_pu > 0) && !(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu].is_intra) && check_B2) {
+         if((xB2_pu >= 0) && (yB2_pu >= 0) && !(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu].is_intra) && check_B2) {
              isAvailableB2 = 1;
          } else {
              isAvailableB2 = 0;
@@ -1614,15 +1622,31 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
              if((s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
                  // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
                  availableFlagLXB0 =1;
-                 mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu];
-                 numMVPCandLX++;
+                // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu];
+                 mxB = s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu];
+
              }
          }
      }
 
+     if(isScaledFlag_L0 == 0 && availableFlagLXB0) {
+         availableFlagLXA0 =1;
+         mxA = mxB;
+      }
      if(isScaledFlag_L0 == 0) {
-         mvpcand_list[0] = mvpcand_list[1];
+         availableFlagLXB0 =0;
      }
+     if(availableFlagLXA0) {
+         mvpcand_list[numMVPCandLX] = mxA;
+         numMVPCandLX++;
+     }
+     if(availableFlagLXB0) {
+         mvpcand_list[numMVPCandLX] = mxB;
+         numMVPCandLX++;
+     }
+
+
+     //printf("availableFlagLXA0 =%d, availableFlagLXB0=%d isScaledFlag_L0 =%d \n", availableFlagLXA0, availableFlagLXB0, isScaledFlag_L0);
 
      // TODO Step 5 for B candidates  in 8.5.3.1.6.
      if (availableFlagLXA0 && availableFlagLXB0 && ((mvpcand_list[0].mv.x != mvpcand_list[1].mv.x) || (mvpcand_list[0].mv.y != mvpcand_list[1].mv.y))) {
@@ -1631,6 +1655,7 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
          //TODO section 8.5.3.1.7 temporal motion vector prediction
      }
      if ((mvpcand_list[0].mv.x == mvpcand_list[1].mv.x) && (mvpcand_list[0].mv.y == mvpcand_list[1].mv.y)) {
+     //    printf("reducing candlits \n");
          numMVPCandLX--;
      }
      while (numMVPCandLX < 2) { // insert zero motion vectors when the number of available candidates are less than 2
@@ -1642,8 +1667,8 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
      mv->mv.y  = mvpcand_list[mvp_lx_flag].mv.y;
 
 #ifdef MV
-    for (i=0; i < 2; i++)
-         printf("mvPred[%d]=%d %d\n", i, mvpcand_list[i].mv.x, mvpcand_list[i].mv.y);
+//    for (i=0; i < 2; i++)
+//         printf("mvPred[%d]=%d %d\n", i, mvpcand_list[i].mv.x, mvpcand_list[i].mv.y);
 #endif
 }
 
@@ -1773,7 +1798,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
                     s->pu.tab_mvf[(x_pu + i) * pic_width_in_min_pu + y_pu + j] = current_mv;
 #ifdef MV
-                    printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
+                    //printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
 #endif
                 }
             }
@@ -1794,7 +1819,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                     for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
                         s->pu.tab_mvf[(x_pu + i) * pic_width_in_min_pu + y_pu + j] = current_mv;
 #ifdef MV
-                        printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
+//                        printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
 #endif
                     }
                 }
@@ -1830,7 +1855,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             current_mv.mv.x += s->pu.mvd.x;
             current_mv.mv.y += s->pu.mvd.y;
 #ifdef MV
-            printf("MV %d %d\n",current_mv.mv.x, current_mv.mv.y);
+            printf("mv = %d, %d\n",current_mv.mv.x, current_mv.mv.y);
 #endif
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
@@ -1838,7 +1863,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
                     s->pu.tab_mvf[(x_pu + i) * pic_width_in_min_pu + y_pu + j] = current_mv;
 #ifdef MV
-                    printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
+//                    printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
 #endif
                 }
             }
