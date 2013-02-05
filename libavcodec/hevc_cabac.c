@@ -504,7 +504,7 @@ int ff_hevc_merge_idx_decode(HEVCContext *s)
     int i = GET_CABAC(elem_offset[MERGE_IDX]);
 
     if (i != 0) {
-        while (i < s->sh.max_num_merge_cand-2 && get_cabac_bypass(&s->cc))
+        while (i < s->sh.max_num_merge_cand-1 && get_cabac_bypass(&s->cc))
             i++;
     }
     return i;
@@ -530,11 +530,13 @@ int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int num_ref_idx_lx)
     int i = 0;
     int max = num_ref_idx_lx - 1;
     int max_ctx = FFMIN(max, 2);
-
+    
     while (i < max_ctx && GET_CABAC(elem_offset[REF_IDX_L0] + i))
         i++;
-    while (i < max && get_cabac_bypass(&s->cc))
-        i++;
+    if (i==2) {
+        while (i < max && get_cabac_bypass(&s->cc))
+            i++;
+    }
     return i;
 }
 
