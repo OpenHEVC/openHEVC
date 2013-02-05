@@ -26,6 +26,31 @@
 /**
  * Section 7.3.3.1
  */
+
+void print_delta_POC(ShortTermRPS *rps)
+{
+    if (rps->num_delta_pocs != 0) {
+        printf("DeltaPOC = { ");
+        for (int i = 0;  i < rps->num_delta_pocs; i++) {
+            printf("%d", rps->delta_poc[i]);
+            if (rps->used[i] == 1)
+                printf("* ");
+            else
+                printf(" ");
+        }
+        if (rps->inter_ref_pic_set_prediction_flag == 1) {
+            printf("}, RefIdc = { ");
+            if (rps->num_ref_idc != 0)
+                for (int i = 0; i < rps->num_ref_idc; i++)
+                    printf("%d ", rps->ref_idc[i]);
+        }
+    }
+    if (rps->num_delta_pocs != 0)
+        printf("}\n");
+}
+
+
+
 int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
 {
     int delta_idx = 1;
@@ -36,8 +61,9 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
     int k0 = 0;
     int k1 = 0;
     int k  = 0;
-    int delta_poc_s0_minus1, delta_poc_s1_minus1;
-    int used_by_curr_pic_s0_flag, used_by_curr_pic_s1_flag;
+    uint8_t delta_rps_sign;
+    int abs_delta_rps;
+
     int i;
     GetBitContext *gb = &s->gb;
 
@@ -54,9 +80,9 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
             delta_idx = get_ue_golomb(gb) + 1;
         }
         rps_ridx = &sps->short_term_rps_list[idx - delta_idx];
-        rps->delta_rps_sign = get_bits1(gb);
-        rps->abs_delta_rps = get_ue_golomb(gb) + 1;
-        delta_rps = (1 - (rps->delta_rps_sign<<1)) * rps->abs_delta_rps;
+        delta_rps_sign = get_bits1(gb);
+        abs_delta_rps = get_ue_golomb(gb) + 1;
+        delta_rps = (1 - (delta_rps_sign<<1)) * abs_delta_rps;
         for (i = 0; i <= rps_ridx->num_delta_pocs; i++) {
             used_by_curr_pic_flag = get_bits1(gb);
             rps->used[k] = used_by_curr_pic_flag;
@@ -74,7 +100,9 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
                     k1++;
                 k++;
             }
+            rps->ref_idc[i] = used_by_curr_pic_flag + use_delta_flag * 2;
         }
+        rps->num_ref_idc = rps_ridx->num_delta_pocs + 1;
         rps->num_delta_pocs    = k;
         rps->num_negative_pics = k0;
         rps->num_positive_pics = k1;
@@ -126,12 +154,12 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
             for (i = 0; i < rps->num_positive_pics; i++) {
         		delta_poc = get_ue_golomb(gb) + 1;
         		prev -= delta_poc;
-    	    	rps->delta_poc[i] = prev;
-                rps->used[i] = get_bits1(gb);
+    	    	rps->delta_poc[rps->num_negative_pics + i] = prev;
+                rps->used[rps->num_negative_pics + i] = get_bits1(gb);
             }
         }
     }
-
+    print_delta_POC(rps);
     return 0;
 }
 

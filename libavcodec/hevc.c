@@ -205,7 +205,7 @@ static void set_ref_poc_list(HEVCContext *s)
         refPocList[ST_FOLL].numPic = k;
         refPocList[LT_CURR].numPic = 0;
         refPocList[LT_FOLL].numPic = 0;
-        set_ref_pic_list(s);
+        //set_ref_pic_list(s);
     }
 }
 static int hls_slice_header(HEVCContext *s)
