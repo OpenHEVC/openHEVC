@@ -59,12 +59,12 @@ enum NALUnitType {
 
 typedef struct ShortTermRPS {
     uint8_t inter_ref_pic_set_prediction_flag;
+    int num_ref_idc;
     int num_negative_pics;
     int num_positive_pics;
     int num_delta_pocs;
-    uint8_t delta_rps_sign;
-    int abs_delta_rps;
-    int delta_poc[32];
+    uint8_t ref_idc[32];
+    uint32_t delta_poc[32];
     uint8_t used[32];
 } ShortTermRPS;
 
