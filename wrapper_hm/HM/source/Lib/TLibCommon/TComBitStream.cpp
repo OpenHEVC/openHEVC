@@ -244,7 +244,7 @@ Void TComInputBitstream::read (UInt uiNumberOfBits, UInt& ruiBits)
    */
   UInt aligned_word = 0;
   UInt num_bytes_to_load = (uiNumberOfBits - 1) >> 3;
-  assert(m_fifo_idx + num_bytes_to_load < m_fifo->size());
+ // assert(m_fifo_idx + num_bytes_to_load < m_fifo->size());
 
   switch (num_bytes_to_load)
   {

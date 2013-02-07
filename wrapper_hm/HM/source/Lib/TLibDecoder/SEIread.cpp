@@ -114,7 +114,7 @@ void SEIReader::parseSEImessage(TComInputBitstream* bs, SEIMessages& seis, const
 
   UInt rbspTrailingBits;
   READ_CODE(8, rbspTrailingBits, "rbsp_trailing_bits");
-  assert(rbspTrailingBits == 0x80);
+//  assert(rbspTrailingBits == 0x80);
 }
 
 Void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType, TComSPS *sps)

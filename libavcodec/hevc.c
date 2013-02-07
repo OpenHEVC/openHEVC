@@ -30,6 +30,12 @@
 #include "hevcdata.h"
 #include "hevc.h"
 
+
+#define HM
+#define MV
+#ifdef HM
+    #include "wrapper/wrapper.h"
+#endif
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
  * specification (HLS stands for High Level Syntax).
@@ -2225,12 +2231,17 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     HEVCContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
+#ifdef HM
+    int gotpicture;
+#endif
 
 
     *data_size = 0;
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
-
+#ifdef HM
+    libDecoderDecode(avpkt->data, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
+#endif
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
 
     if (hls_nal_unit(s) <= 0) {
@@ -2277,6 +2288,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             s->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame.linesize[0]);
 
         ff_hevc_cabac_init(s);
+#ifndef HM
         if (hls_slice_data(s) < 0)
             return -1;
 
@@ -2292,9 +2304,15 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         } else {
             *(AVFrame*)data = s->frame;
         }
+#endif
 
         s->frame.pict_type = AV_PICTURE_TYPE_I;
         s->frame.key_frame = 1;
+#ifdef HM
+        *(AVFrame*)data = s->frame;
+#else
+        *(AVFrame*)data = s->sao_frame;
+#endif
         *data_size = sizeof(AVFrame);
         break;
     default:
@@ -2310,6 +2328,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 {
     HEVCContext *s = avctx->priv_data;
 
+#ifdef HM
+    libDecoderInit();
+#endif
     s->avctx = avctx;
     memset(s->sps_list, 0, sizeof(s->sps_list));
     memset(s->pps_list, 0, sizeof(s->pps_list));
@@ -2324,8 +2345,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     if (s->frame.data[0])
         s->avctx->release_buffer(s->avctx, &s->frame);
+#ifndef HM
     if (s->sao_frame.data[0])
         s->avctx->release_buffer(s->avctx, &s->sao_frame);
+#endif
 
     av_freep(&s->edge_emu_buffer);
 
@@ -2353,6 +2376,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     }
 
     pic_arrays_free(s);
+
+#ifdef HM
+    libDecoderClose();
+#endif
     return 0;
 }
 

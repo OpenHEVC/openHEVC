@@ -120,10 +120,10 @@ static void video_decode_example(const char *filename)
         if (got_picture) {
             printf("saving frame %3d\n", frame);
             fflush(stdout);
-            if (init == 1) Init_SDL((picture->linesize[0] - c->width)/2, c->width, c->height);
+            if (init == 1) Init_SDL(80, c->width, c->height);
             init=0;
 
-            SDL_Display((picture->linesize[0] - c->width)/2, c->width, c->height, picture->data[0], (picture->data[1]),
+            SDL_Display(80, c->width, c->height, picture->data[0], (picture->data[1]),
                         picture->data[2]);
             /* the picture is allocated by the decoder. no need to
             free it */
