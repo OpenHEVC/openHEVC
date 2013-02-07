@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "SDL.h"
 #include "wrapper/wrapper.h"
 
 int find_start_code (unsigned char *Buf, int zeros_in_startcode)
@@ -53,7 +54,7 @@ int main(){
     unsigned char* buf = calloc ( 1000000, sizeof(char));
     FILE *f;
     int gotpicture=0;
-    filename = "/Users/mraulet/Dropbox/test_sequences/HEVC/9.0/BQSquare_416x240_60.bin";
+    filename = "/Users/mraulet/Movies/HEVC/HM10.0/lp_main/BlowingBubbles_416x240_50_qp22.bin";
     Init_SDL(80, 832, 480);
     
     f = fopen(filename, "rb");

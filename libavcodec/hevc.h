@@ -123,7 +123,13 @@ typedef struct VPS {
     int vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
     int vps_num_reorder_pics[MAX_SUB_LAYERS];
     int vps_max_latency_increase[MAX_SUB_LAYERS];
-
+    int vps_max_nuh_reserved_zero_layer_id;
+    int vps_max_op_sets; ///< vps_max_op_sets_minus1 + 1
+    uint8_t vps_timing_info_present_flag;
+    uint32_t vps_num_units_in_tick;
+    uint32_t vps_time_scale;
+    uint8_t vps_poc_proportional_to_timing_flag;
+    int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
 } VPS;
 
@@ -147,20 +153,14 @@ typedef struct SPS {
         int top_offset;
         int bottom_offset;
     } pic_crop;
-
-    // bit_depth_luma_minus8 + 8
-    // bit_depth_chroma_minus8 + 8
-    // bit_depth_chroma_minus8 + 8
-    int bit_depth[3];
+    
+    int bit_depth; ///< bit_depth_luma_minus8 + 8
 
     int pcm_enabled_flag;
     struct {
-        uint8_t bit_depth_luma; ///< pcm_bit_depth_luma_minus1 + 1
-        uint8_t bit_depth_chroma; ///< pcm_bit_depth_chroma_minus1 + 1
-
-        int log2_min_pcm_coding_block_size; ///< log2_min_pcm_coding_block_size_minus3 + 3
-        int log2_diff_max_min_pcm_coding_block_size;
-
+        uint8_t bit_depth; ///< pcm_bit_depth_luma_minus1 + 1
+        int log2_min_pcm_cb_size; ///< log2_min_pcm_coding_block_size_minus3 + 3
+        int log2_max_pcm_cb_size;
         uint8_t loop_filter_disable_flag;
     } pcm;
 
@@ -173,7 +173,6 @@ typedef struct SPS {
     } temporal_layer[MAX_SUB_LAYERS];
 
     uint8_t restricted_ref_pic_lists_flag;
-    uint8_t lists_modification_present_flag;
 
     int log2_min_coding_block_size; ///< log2_min_coding_block_size_minus3 + 3
     int log2_diff_max_min_coding_block_size;
@@ -217,10 +216,9 @@ typedef struct SPS {
     int hshift[3];
     int vshift[3];
 
-    int pixel_shift[3];
+    int pixel_shift;
 
-    int qp_bd_offset_luma; ///< QpBdOffsetY
-    int qp_bd_offset_chroma; ///< QPBdOffsetC
+    int qp_bd_offset; ///< QpBdOffsetY
 } SPS;
 
 typedef struct PPS {
@@ -561,8 +559,8 @@ typedef struct HEVCContext {
     AVFrame frame;
     AVFrame sao_frame;
 
-    HEVCPredContext *hpc[3];
-    HEVCDSPContext *hevcdsp[3];
+    HEVCPredContext hpc;
+    HEVCDSPContext hevcdsp;
     DSPContext dsp;
 
     GetBitContext gb;
@@ -587,7 +585,6 @@ typedef struct HEVCContext {
     SAOParams *sao;
 
     int ctb_addr_in_slice; ///< CtbAddrInSlice
-    int num_pcm_block; ///< NumPCMBlock
 
     int ctb_addr_rs; ///< CtbAddrRS
     int ctb_addr_ts; ///< CtbAddrTS
@@ -624,7 +621,7 @@ void ff_hevc_cabac_init(HEVCContext *s);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s);
 int ff_hevc_sao_band_position_decode(HEVCContext *s);
-int ff_hevc_sao_offset_abs_decode(HEVCContext *s, int bit_depth);
+int ff_hevc_sao_offset_abs_decode(HEVCContext *s);
 int ff_hevc_sao_offset_sign_decode(HEVCContext *s);
 int ff_hevc_sao_eo_class_decode(HEVCContext *s);
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);

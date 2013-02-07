@@ -88,7 +88,7 @@ const uint8_t init_values[3][HEVC_CONTEXTS] = {
         // sao_merge_flag
         153,
         // sao_type_idx
-        160,
+        200,
         // split_coding_unit_flag
         139, 141, 157,
         // cu_transquant_bypass_flag
@@ -124,7 +124,7 @@ const uint8_t init_values[3][HEVC_CONTEXTS] = {
         // no_residual_data_flag
         CNU,
         // split_transform_flag
-        224, 167, 122,
+        153, 138, 138,
         // cbf_luma
         111, 141,
         // cbf_cb, cbf_cr
@@ -218,7 +218,7 @@ const uint8_t init_values[3][HEVC_CONTEXTS] = {
         // sao_merge_flag
         153,
         // sao_type_idx
-        200,
+        160,
         // split_coding_unit_flag
         107, 139, 126,
         // cu_transquant_bypass_flag
@@ -254,7 +254,7 @@ const uint8_t init_values[3][HEVC_CONTEXTS] = {
         // no_residual_data_flag
         79,
         // split_transform_flag
-        153, 138, 138,
+        224, 167, 122,
         // cbf_luma
         153, 111,
         // cbf_cb, cbf_cr
@@ -327,11 +327,12 @@ void ff_hevc_cabac_init(HEVCContext *s)
         int init_value = init_values[init_type][i];
         int m = (init_value >> 4)*5 - 45;
         int n = ((init_value & 15) << 3) - 16;
-        int pre_ctx_state = av_clip_c(((m * av_clip_c(s->sh.slice_qp, 0, 51)) >> 4) + n,
-                                      1, 126);
-        int mps = (pre_ctx_state <= 63) ? 0 : 1;
-        int state_idx = mps ? (pre_ctx_state - 64) : (63 - pre_ctx_state);
-        s->cabac_state[i] = (state_idx << 1) + mps;
+        int pre = 2 * (((m * av_clip_c(s->sh.slice_qp, 0, 51)) >> 4) + n) - 127;
+        pre ^= pre >> 31;
+        if (pre > 124)
+            pre = 124 + (pre & 1);
+
+        s->cabac_state[i] =  pre;
     }
 }
 
@@ -362,10 +363,10 @@ int ff_hevc_sao_band_position_decode(HEVCContext *s)
     return value;
 }
 
-int ff_hevc_sao_offset_abs_decode(HEVCContext *s, int bit_depth)
+int ff_hevc_sao_offset_abs_decode(HEVCContext *s)
 {
     int i = 0;
-    int length = (1 << (FFMIN(bit_depth, 10) - 5)) - 1;
+    int length = (1 << (FFMIN(s->sps->bit_depth, 10) - 5)) - 1;
 
     while (i < length && get_cabac_bypass(&s->cc))
         i++;

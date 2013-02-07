@@ -131,7 +131,7 @@ void read(InputNALUnit& nalu, vector<uint8_t>& nalUnitBuf)
 {
   /* perform anti-emulation prevention */
   TComInputBitstream *pcBitstream = new TComInputBitstream(NULL);
-  convertPayloadToRBSP(nalUnitBuf, (nalUnitBuf[0] & 64) == 0);
+//  convertPayloadToRBSP(nalUnitBuf, (nalUnitBuf[0] & 64) == 0);
   
   nalu.m_Bitstream = new TComInputBitstream(&nalUnitBuf);
   delete pcBitstream;
