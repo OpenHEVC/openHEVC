@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -449,7 +449,7 @@ UInt TComRdCost::calcHAD(Int bitDepth, Pel* pi0, Int iStride0, Pel* pi1, Int iSt
 }
 
 #if WEIGHTED_CHROMA_DISTORTION
-UInt TComRdCost::getDistPart(Int bitDepth, Pel* piCur, Int iCurStride,  Pel* piOrg, Int iOrgStride, UInt uiBlkWidth, UInt uiBlkHeight, Bool bWeighted, DFunc eDFunc )
+UInt TComRdCost::getDistPart(Int bitDepth, Pel* piCur, Int iCurStride,  Pel* piOrg, Int iOrgStride, UInt uiBlkWidth, UInt uiBlkHeight, TextType eText, DFunc eDFunc)
 #else
 UInt TComRdCost::getDistPart(Int bitDepth, Pel* piCur, Int iCurStride,  Pel* piOrg, Int iOrgStride, UInt uiBlkWidth, UInt uiBlkHeight, DFunc eDFunc )
 #endif
@@ -467,9 +467,13 @@ UInt TComRdCost::getDistPart(Int bitDepth, Pel* piCur, Int iCurStride,  Pel* piO
   cDtParam.bitDepth = bitDepth;
 
 #if WEIGHTED_CHROMA_DISTORTION
-  if (bWeighted)
+  if (eText == TEXT_CHROMA_U)
   {
-    return ((Int) (m_chromaDistortionWeight * cDtParam.DistFunc( &cDtParam )));
+   return ((Int) (m_cbDistortionWeight * cDtParam.DistFunc( &cDtParam )));
+  }
+  else if (eText == TEXT_CHROMA_V)
+  {
+   return ((Int) (m_crDistortionWeight * cDtParam.DistFunc( &cDtParam )));
   }
   else
   {
@@ -480,7 +484,23 @@ UInt TComRdCost::getDistPart(Int bitDepth, Pel* piCur, Int iCurStride,  Pel* piO
 #endif
 }
 
-
+#if RATE_CONTROL_LAMBDA_DOMAIN
+UInt TComRdCost::getSADPart ( Int bitDepth, Pel* pelCur, Int curStride,  Pel* pelOrg, Int orgStride, UInt width, UInt height )
+{
+  UInt SAD = 0;
+  Int shift = DISTORTION_PRECISION_ADJUSTMENT(bitDepth-8);
+  for ( Int i=0; i<height; i++ )
+  {
+    for( Int j=0; j<width; j++ )
+    {
+      SAD += abs((pelCur[j] - pelOrg[j])) >> shift;
+    }
+    pelCur = pelCur + curStride;
+    pelOrg = pelOrg + orgStride;
+  }
+  return SAD;
+}
+#endif
 
 // ====================================================================================================================
 // Distortion functions

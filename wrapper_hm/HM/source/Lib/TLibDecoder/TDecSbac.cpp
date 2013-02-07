@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -308,33 +308,15 @@ Void TDecSbac::xReadCoefRemainExGolomb ( UInt &rSymbol, UInt &rParam )
 Void TDecSbac::parseIPCMInfo ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth )
 {
   UInt uiSymbol;
-#if !REMOVE_BURST_IPCM
-  Int numSubseqIPCM = 0;
-#endif
   Bool readPCMSampleFlag = false;
 
-#if !REMOVE_BURST_IPCM
-  if(pcCU->getNumSucIPCM() > 0) 
-  {
-    readPCMSampleFlag = true;
-  }
-  else
-  {
-#endif
     m_pcTDecBinIf->decodeBinTrm(uiSymbol);
 
     if (uiSymbol)
     {
       readPCMSampleFlag = true;
-#if !REMOVE_BURST_IPCM
-      m_pcTDecBinIf->decodeNumSubseqIPCM(numSubseqIPCM);
-      pcCU->setNumSucIPCM(numSubseqIPCM + 1);
-#endif
       m_pcTDecBinIf->decodePCMAlignBits();
     }
-#if !REMOVE_BURST_IPCM
-  }
-#endif
 
   if (readPCMSampleFlag == true)
   {
@@ -403,15 +385,7 @@ Void TDecSbac::parseIPCMInfo ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth
       piPCMSample += uiWidth;
     }
 
-#if !REMOVE_BURST_IPCM
-    pcCU->setNumSucIPCM( pcCU->getNumSucIPCM() - 1);
-    if(pcCU->getNumSucIPCM() == 0)
-    {
-#endif
       m_pcTDecBinIf->resetBac();
-#if !REMOVE_BURST_IPCM
-    }
-#endif
   }
 }
 
@@ -479,7 +453,7 @@ Void TDecSbac::parseMergeFlag ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDept
   DTRACE_CABAC_T( "\n" );
 }
 
-Void TDecSbac::parseMergeIndex ( TComDataCU* pcCU, UInt& ruiMergeIndex, UInt uiAbsPartIdx, UInt uiDepth )
+Void TDecSbac::parseMergeIndex ( TComDataCU* pcCU, UInt& ruiMergeIndex )
 {
   UInt uiUnaryIdx = 0;
   UInt uiNumCand = pcCU->getSlice()->getMaxNumMergeCand();
@@ -713,7 +687,7 @@ Void TDecSbac::parseIntraDirChroma( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt ui
   return;
 }
 
-Void TDecSbac::parseInterDir( TComDataCU* pcCU, UInt& ruiInterDir, UInt uiAbsPartIdx, UInt uiDepth )
+Void TDecSbac::parseInterDir( TComDataCU* pcCU, UInt& ruiInterDir, UInt uiAbsPartIdx )
 {
   UInt uiSymbol;
   const UInt uiCtx = pcCU->getCtxInterDir( uiAbsPartIdx );
@@ -739,7 +713,7 @@ Void TDecSbac::parseInterDir( TComDataCU* pcCU, UInt& ruiInterDir, UInt uiAbsPar
   return;
 }
 
-Void TDecSbac::parseRefFrmIdx( TComDataCU* pcCU, Int& riRefFrmIdx, UInt uiAbsPartIdx, UInt uiDepth, RefPicList eRefList )
+Void TDecSbac::parseRefFrmIdx( TComDataCU* pcCU, Int& riRefFrmIdx, RefPicList eRefList )
 {
   UInt uiSymbol;
   {
@@ -851,7 +825,7 @@ Void TDecSbac::parseTransformSubdivFlag( UInt& ruiSubdivFlag, UInt uiLog2Transfo
   DTRACE_CABAC_T( "\n" )
 }
 
-Void TDecSbac::parseQtRootCbf( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth, UInt& uiQtRootCbf )
+Void TDecSbac::parseQtRootCbf( UInt uiAbsPartIdx, UInt& uiQtRootCbf )
 {
   UInt uiSymbol;
   const UInt uiCtx = 0;
@@ -909,7 +883,7 @@ Void TDecSbac::parseDeltaQP( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth )
 Void TDecSbac::parseQtCbf( TComDataCU* pcCU, UInt uiAbsPartIdx, TextType eType, UInt uiTrDepth, UInt uiDepth )
 {
   UInt uiSymbol;
-  const UInt uiCtx = pcCU->getCtxQtCbf( uiAbsPartIdx, eType, uiTrDepth );
+  const UInt uiCtx = pcCU->getCtxQtCbf( eType, uiTrDepth );
   m_pcTDecBinIf->decodeBin( uiSymbol , m_cCUQtCbfSCModel.get( 0, eType ? TEXT_CHROMA: eType, uiCtx ) );
   
   DTRACE_CABAC_VL( g_nSymbolCounter++ )
@@ -1076,12 +1050,6 @@ Void TDecSbac::parseCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartId
   const UInt  uiMaxNumCoeff     = uiWidth * uiHeight;
   const UInt  uiMaxNumCoeffM1   = uiMaxNumCoeff - 1;
   UInt uiScanIdx = pcCU->getCoefScanIdx(uiAbsPartIdx, uiWidth, eTType==TEXT_LUMA, pcCU->isIntra(uiAbsPartIdx));
-  Int blockType = uiLog2BlockSize;
-  if (uiWidth != uiHeight)
-  {
-    uiScanIdx = SCAN_DIAG;
-    blockType = 4;
-  }
   
   //===== decode last significant =====
   UInt uiPosLastX, uiPosLastY;
@@ -1090,13 +1058,8 @@ Void TDecSbac::parseCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartId
   pcCoef[ uiBlkPosLast ] = 1;
 
   //===== decode significance flags =====
-  UInt uiScanPosLast   = uiBlkPosLast;
-  if (uiScanIdx == SCAN_ZIGZAG)
-  {
-    // Map zigzag to diagonal scan
-    uiScanIdx = SCAN_DIAG;
-  }
-  const UInt *scan = g_auiSigLastScan[ uiScanIdx ][ uiLog2BlockSize-1 ];
+  UInt uiScanPosLast = uiBlkPosLast;
+  const UInt *scan   = g_auiSigLastScan[ uiScanIdx ][ uiLog2BlockSize-1 ];
   for( uiScanPosLast = 0; uiScanPosLast < uiMaxNumCoeffM1; uiScanPosLast++ )
   {
     UInt uiBlkPos = scan[ uiScanPosLast ];
@@ -1169,7 +1132,7 @@ Void TDecSbac::parseCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartId
     else
     {
       UInt uiSigCoeffGroup;
-      UInt uiCtxSig  = TComTrQuant::getSigCoeffGroupCtxInc( uiSigCoeffGroupFlag, iCGPosX, iCGPosY, uiScanIdx, uiWidth, uiHeight );
+      UInt uiCtxSig  = TComTrQuant::getSigCoeffGroupCtxInc( uiSigCoeffGroupFlag, iCGPosX, iCGPosY, uiWidth, uiHeight );
       m_pcTDecBinIf->decodeBin( uiSigCoeffGroup, baseCoeffGroupCtx[ uiCtxSig ] );
       uiSigCoeffGroupFlag[ iCGBlkPos ] = uiSigCoeffGroup;
     }
@@ -1188,7 +1151,7 @@ Void TDecSbac::parseCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartId
       {
         if( iScanPosSig > iSubPos || iSubSet == 0  || numNonZero )
         {
-          uiCtxSig  = TComTrQuant::getSigCtxInc( patternSigCtx, uiScanIdx, uiPosX, uiPosY, blockType, uiWidth, uiHeight, eTType );
+          uiCtxSig  = TComTrQuant::getSigCtxInc( patternSigCtx, uiScanIdx, uiPosX, uiPosY, uiLog2BlockSize, eTType );
           m_pcTDecBinIf->decodeBin( uiSig, baseCtx[ uiCtxSig ] );
         }
         else

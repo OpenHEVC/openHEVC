@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@ public:
   TComBitCounter()            {}
   virtual ~TComBitCounter()   {}
   
-  Void        write                 ( UInt uiBits, UInt uiNumberOfBits )  { m_uiBitCounter += uiNumberOfBits; }
+  Void        write                 ( UInt /*uiBits*/, UInt uiNumberOfBits )  { m_uiBitCounter += uiNumberOfBits; }
   Void        resetBits             ()                                    { m_uiBitCounter = 0;               }
   UInt getNumberOfWrittenBits() const { return m_uiBitCounter; }
 };

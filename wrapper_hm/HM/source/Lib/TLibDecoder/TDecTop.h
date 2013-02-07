@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,11 +64,8 @@ struct InputNALUnit;
 class TDecTop
 {
 private:
-  Int                     m_iGopSize;
-  Bool                    m_bGopSizeSet;
   Int                     m_iMaxRefPicNum;
   
-  Bool                    m_bRefreshPending;    ///< refresh pending flag
   Int                     m_pocCRA;            ///< POC number of the latest CRA picture
   Bool                    m_prevRAPisBLA;      ///< true if the previous RAP (CRA/CRANT/BLA/BLANT/IDR) picture is a BLA/BLANT picture
   Int                     m_pocRandomAccess;   ///< POC number of the random access point (the first IDR or CRA picture)
@@ -77,7 +74,7 @@ private:
   ParameterSetManagerDecoder m_parameterSetManagerDecoder;  // storage for parameter sets 
   TComSlice*              m_apcSlicePilot;
   
-  SEImessages *m_SEIs; ///< "all" SEI messages.  If not NULL, we own the object.
+  SEIMessages             m_SEIs; ///< List of SEI messages that have been received before the first slice and between slices
 
   // functional classes
   TComPrediction          m_cPrediction;
@@ -115,11 +112,10 @@ public:
   
   Void  deletePicBuffer();
 
-  Void executeDeblockAndAlf(Int& poc, TComList<TComPic*>*& rpcListPic, Int& iSkipFrame,  Int& iPOCLastDisplay);
+  Void executeLoopFilters(Int& poc, TComList<TComPic*>*& rpcListPic);
 
 protected:
   Void  xGetNewPicBuffer  (TComSlice* pcSlice, TComPic*& rpcPic);
-  Void  xUpdateGopSize    (TComSlice* pcSlice);
   Void  xCreateLostPicture (Int iLostPOC);
 
   Void      xActivateParameterSets();
@@ -127,7 +123,7 @@ protected:
   Void      xDecodeVPS();
   Void      xDecodeSPS();
   Void      xDecodePPS();
-  Void      xDecodeSEI( TComInputBitstream* bs );
+  Void      xDecodeSEI( TComInputBitstream* bs, const NalUnitType nalUnitType );
 
 };// END CLASS DEFINITION TDecTop
 

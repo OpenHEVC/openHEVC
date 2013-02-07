@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -249,39 +249,6 @@ Void TDecBinCABAC::resetBac()
   m_bitsNeeded = -8;
   m_uiValue    = m_pcTComBitstream->read( 16 );
 }
-
-#if !REMOVE_BURST_IPCM
-/** Decode subsequent_pcm_num.
- * \param numSubseqIPCM
- * \returns Void
- */
-Void TDecBinCABAC::decodeNumSubseqIPCM( Int& numSubseqIPCM )
-{
-  UInt bit = 0;
-
-  numSubseqIPCM = 0;
-
-  do
-  {
-    m_uiValue += m_uiValue;
-    if ( ++m_bitsNeeded >= 0 )
-    {
-      m_bitsNeeded = -8;
-      m_uiValue += m_pcTComBitstream->readByte();
-    }
-    bit = ((m_uiValue&128)>>7);
-    numSubseqIPCM++;
-  }
-  while( bit && (numSubseqIPCM < 3 ));
-
-  if( bit && (numSubseqIPCM == 3 ))
-  {
-    numSubseqIPCM++;
-  }
-
-  numSubseqIPCM --;
-}
-#endif
 
 /** Decode PCM alignment zero bits.
  * \returns Void

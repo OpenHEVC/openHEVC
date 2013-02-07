@@ -117,7 +117,7 @@
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of reference software
-for the HEVC project. It applies to version 9.0
+for the HEVC project. It applies to version 10.0
 of the software.
 \end{abstract}
 
@@ -240,6 +240,16 @@ optimization. Higher values mean lower quality and less bits. Typical
 range is between
 0.3 and 1.
 
+\item[]\textbf{tcOffsetDiv2}: In-loop deblocking filter parameter tcOffsetDiv2 
+is added to the base parameter LoopFilterTcOffset_div2 to set the final tc_offset_div2 
+parameter for this picture signalled in the slice segment header. The final 
+value of tc_offset_div2 shall be an integer number in the range $-6..6$.
+
+\item[]\textbf{betaOffsetDiv2}: In-loop deblocking filter parameter betaOffsetDiv2 
+is added to the base parameter LoopFilterBetaOffset_div2 to set the final beta_offset_div2 
+parameter for this picture signalled in the slice segment header. The final 
+value of beta_offset_div2 shall be an integer number in the range $-6..6$.
+
 \item[]\textbf{temporal_id}: Temporal layer of the frame. A frame cannot
 predict from a frame with a higher temporal id. If a frame with higher
 temporal IDs is listed among a frame's reference pictures, it is
@@ -356,6 +366,8 @@ Type                &   P  &    B   &      B   &       B \\
 POC                 &   4  &    2   &      1   &       3 \\
 QPoffset            &   1  &    2   &      3   &       3 \\
 QPfactor            & 0.5  &  0.5   &    0.5   &     0.5 \\
+tcOffsetDiv2        &   0  &    1   &      2   &       2 \\  
+betaOffsetDiv2      &   0  &    0   &      0   &       0 \\
 temporal_id         &   0  &    1   &      2   &       2 \\
 num_ref_pics_active &   1  &    1   &      1   &       1 \\
 num_ref_pics        &   1  &    2   &      3   &       2 \\
@@ -377,10 +389,10 @@ line should contain information for one frame, so this
 configuration would be specified as:
 
 \begin{verbatim}
-Frame1: P 4 1 0.5 0 1 1 -4 0
-Frame2: B 2 2 0.5 1 1 2 -2 2 1 0 2 2 1 1
-Frame3: B 1 3 0.5 2 1 3 -1 1 3 1 0 1 3 1 1 1
-Frame4: B 3 3 0.5 2 1 2 -1 1 1 0 -2 4 0 1 1 0
+Frame1: P 4 1 0.5 0 0 0 1 1 -4 0
+Frame2: B 2 2 0.5 1 0 1 1 2 -2 2 1 0 2 2 1 1
+Frame3: B 1 3 0.5 2 0 2 1 3 -1 1 3 1 0 1 3 1 1 1
+Frame4: B 3 3 0.5 2 0 2 1 2 -1 1 1 0 -2 4 0 1 1 0
 \end{verbatim}
 
 The values of deltaRIdx$-1$, deltaRPS, num_ref_idcs and reference
@@ -500,30 +512,29 @@ Specifies the bit depth of the output locally reconstructed video file.
 Note: This option has no effect on the decoding process.
 \\
 
-\Option{InputBitDepthC}
-\Option{InternalBitDepthC}
+\Option{InputBitDepthC}%
+\Option{InternalBitDepthC}%
 \Option{OutputBitDepthC} &
 \ShortOption{\None} &
-\Default{(InputBitDepth)}
-\Default{(InternalBitDepth)}
+\Default{(InputBitDepth)}%
+\Default{(InternalBitDepth)}%
 \Default{(InternalBitDepthC)} &
 Specifies the various bit-depths for chroma components.  These only need
 to be specified if non-equal luma and chroma bit-depth processing is
 required.
 \\
 
-\Option{CroppingMode} &
+\Option{ConformanceMode} &
 \ShortOption{\None} &
 \Default{0} &
-Specifies the cropping/padding parameters to be applied to the input
+Specifies the conformance mode (cropping/padding parameters) to be applied to the input
 video. The following modes are available:
 \par
 \begin{tabular}{cp{0.45\textwidth}}
 0 & No cropping / padding \\
 1 & Automatic padding to the next minimum CU size \\
 2 & Padding according to parameters HorizontalPadding and VerticalPadding \\
-3 & Cropping according to parameters CropLeft, CropRight, CropTop and
-    CropBottom \\
+3 & Cropping according to parameters ConfLeft, ConfRight, ConfTop and ConfBottom \\
 \end{tabular}
 \\
 
@@ -537,10 +548,10 @@ video in luma samples.  Must be a multiple of the chroma resolution
 (e.g. a multiple of two for 4:2:0).
 \\
 
-\Option{CropLeft}%
-\Option{CropRight}%
-\Option{CropTop}%
-\Option{CropBottom} &
+\Option{ConfLeft}%
+\Option{ConfRight}%
+\Option{ConfTop}%
+\Option{ConfBottom} &
 \ShortOption{\None} &
 \Default{0} &
 Specifies the horizontal and vertical cropping to be applied to the
@@ -603,6 +614,31 @@ Valid values are: main, high.
 
 NB: There is currently no validation that the encoder configuration complies with the profile and level constraints.
 \\
+
+\Option{ProgressiveSource} &
+\ShortOption{\None} &
+\Default{false} &
+Specifies the value of general_progressive_source_flag
+\\
+
+\Option{InterlacedSource} &
+\ShortOption{\None} &
+\Default{false} &
+Specifies the value of general_interlaced_source_flag 
+\\
+
+\Option{NonPackedSource} &
+\ShortOption{\None} &
+\Default{false} &
+Specifies the value of general_non_packed_constraint_flag
+\\
+
+\Option{FrameOnly} &
+\ShortOption{\None} &
+\Default{false} &
+Specifies the value of general_frame_only_constraint_flag
+\\
+
 \end{OptionTable}
 
 
@@ -817,6 +853,20 @@ mode.  When enabled, the RD cost for the merge mode of the current
 candidate is not evaluated if the merge skip mode was the best merge
 mode for one of the previous candidates.
 \\
+
+\Option{RDpenalty} &
+\ShortOption{\None} &
+\Default{0} &
+RD-penalty for 32x32 TU for intra in non-intra slices.
+Enabling this parameter can reduce the visibility of CU boundaries in the coded picture.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+ 0 & No RD-penalty \\
+ 1 & RD-penalty \\
+ 2 & Maximum RD-penalty (no 32x32 TU)\\
+\end{tabular}
+\\
+
 \end{OptionTable}
 
 %%
@@ -943,32 +993,38 @@ SliceArgument.
 \par
 \begin{tabular}{cp{0.45\textwidth}}
  0 & Single slice \\
- 1 & Maximum number of CUs (at a depth of SliceGranuarity) per slice \\
+ 1 & Maximum number of CTUs per slice \\
  2 & Maximum number of bytes per slice \\
+ 3 & Maximum number of tiles per slice \\
 \end{tabular}
 \\
 
 \Option{SliceArgument} &
 \ShortOption{\None} &
 \Default{\NotSet} &
-Specifies the maximum number of CUs or bytes in a slice depending on the
+Specifies the maximum number of CTUs, bytes or tiles in a slice depending on the
 SliceMode setting.
 \\
 
-\Option{EntropySliceMode} &
+\Option{SliceSegmentMode} &
 \ShortOption{\None} &
 \Default{0} &
-Enables entropy slice coding. When set to 1, the parameter SliceArgument
-will specify the maximum number of CUs in a slice. When set to 2, the
-parameter SliceArgument will specify the number of bytes (LCEC) or bins
-(CABAC) in a slice.
+Enables (dependent) slice segment coding in conjunction with 
+SliceSegmentArgument.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+ 0 & Single slice \\
+ 1 & Maximum number of CTUs per slice segment\\
+ 2 & Maximum number of bytes per slice segment\\
+ 3 & Maximum number of tiles per slice segment\\
+\end{tabular}
 \\
 
-\Option{EntropySliceArgument} &
+\Option{SliceSegmentArgument} &
 \ShortOption{\None} &
 \Default{\NotSet} &
-Defines the maximum number of CUs or bytes/bins in an entropy slice
-depending on the SliceMode setting.
+Defines the maximum number of CTUs, bytes or tiles a slice segment
+depending on the SliceSegmentMode setting.
 \\
 
 \Option{WaveFrontSynchro} &
@@ -1033,9 +1089,37 @@ boundaries.
 \ShortOption{\None}&
 \Default{false}&
 Enables or disables the presence of the deblocking filter control
-parameters in the picture parameter set and in the slice header.
+parameters in the picture parameter set and in the slice segment header.
 When disabled, the default deblocking filter parameters are used.
 \\
+
+\Option{LoopFilterOffsetInPPS}&
+\ShortOption{\None}&
+\Default{false}&
+If enabled, the in-loop deblocking filter control parameters are sent in PPS. 
+Otherwise, the in-loop deblocking filter control parameters are sent in the slice segment header.
+If deblocking filter parameters are sent in PPS, the same values of deblocking filter parameters 
+are used for all pictures in the sequence (i.e. deblocking parameter = base parameter value).  
+If deblocking filter parameters are sent in the slice segment header, varying deblocking filter 
+parameters can be specified by setting parameters tcOffsetDiv2 and betaOffsetDiv2 in the GOP structure table. 
+In this case, the final value of the deblocking filter parameter sent for a certain GOP picture is equal to 
+(base parameter + GOP parameter for this picture). Intra-pictures use the base parameters values.
+\\
+
+\Option{LoopFilterTcOffset_div2}&
+\ShortOption{\None}&
+\Default{0}&
+Specifies the base value for the in-loop deblocking filter parameter tc_offset_div2. The final value of tc_offset_div2 
+shall be an integer number in the range $-6..6$.
+\\
+
+\Option{LoopFilterBetaOffset_div2}&
+\ShortOption{\None}&
+\Default{0}&
+Specifies the base value for the in-loop deblocking filter parameter beta_offset_div2. The final value of beta_offset_div2 
+shall be an integer number in the range $-6..6$.
+\\
+
 \end{OptionTable}
 
 
@@ -1157,22 +1241,16 @@ reconstructed samples of PCM blocks is not skipped.
 % 0 = (loop-filtering is not skipped for PCM samples).
 \\
 
-\Option{weighted_pred_flag} &
+\Option{WeightedPredP} &
 \ShortOption{-wpP} &
 \Default{false} &
-Controls the use of weighted prediction in P slices.
+Enables the use of weighted prediction in P slices.
 \\
 
-\Option{weighted_bipred_idc} &
+\Option{WeightedPredB} &
 \ShortOption{-wpB} &
-\Default{0} &
-Controls the use of weighted prediction in B slices.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
-0 & Disabled \\
-1 & Explicit weighted prediction \\
-2 & Implicit weighted prediction \\
-\end{tabular}
+\Default{false} &
+Enables the use of weighted prediction in B slices.
 \\
 
 \Option{SignHideFlag} &
@@ -1184,6 +1262,16 @@ last nonzero coefficient along the scanning line exceeds 4, the sign bit
 of the first nonzero coefficient will not be directly transmitted in the
 bitstream, but may be inferred from the parity of the sum of all nonzero
 coefficients in the current coefficient group.
+\\
+
+\Option{StrongIntraSmoothing} &
+\ShortOption{-sis} &
+\Default{true} &
+If enabled specifies that for 32x32 intra prediction block, the intra smoothing
+when applied is either the 1:2:1 smoothing filter or a stronger bi-linear 
+interpolation filter.  Key reference sample values are tested and if the criteria 
+is satisfied, the stronger intra smoothing filter is applied.
+If disabled, the intra smoothing filter when applied is the 1:2:1 smoothing filter.
 \\
 
 \Option{TMVPMode} &
@@ -1214,6 +1302,57 @@ chroma TUs, instead they are transform-skipped if the four corresponding
 luma TUs are also skipped.
 \par
 This option has no effect if TransformSkip is disabled.
+\\
+\end{OptionTable}
+
+%%
+%% Rate control parameters
+%%
+\begin{OptionTable}{Rate control parameters}
+
+\Option{RateControl} &
+\ShortOption{\None} &
+\Default{false} &
+Rate control: enables rate control or not.
+\\
+
+\Option{TargetBitrate} &
+\ShortOption{\None} &
+\Default{0} &
+Rate control: target bitrate, in bps.
+\\
+
+\Option{KeepHierarchicalBit} &
+\ShortOption{\None} &
+\Default{false} &
+Rate control: keep hierarchical bit allocation in rate control algorithm.
+It is suggested to enable hierarchical bit allocation for hierarchical-B coding structure.
+\\
+
+\Option{LCULevelRateControl} &
+\ShortOption{\None} &
+\Default{true} &
+Rate control: true: LCU level RC; false: picture level RC.
+\\
+
+\Option{RCLCUSeparateModel} &
+\ShortOption{\None} &
+\Default{true} &
+Rate control: use LCU level separate R-lambda model or not.
+When LCULevelRateControl is equal to false, this parameter is meaningless.
+\\
+
+\Option{InitialQP} &
+\ShortOption{\None} &
+\Default{0} &
+Rate control: initial QP value for the first picture.
+0 to auto determine the initial QP value.
+\\
+
+\Option{RCForceIntraQP} &
+\ShortOption{\None} &
+\Default{false} &
+Rate control: force intra QP to be equal to initial QP or not.
 \\
 \end{OptionTable}
 
@@ -1321,6 +1460,29 @@ Specifies the location of chroma samples for bottom field.
 \Default{false} &
 Indicates that the value of all decoded chroma samples is equal to 1<<(BitDepthCr-1).
 \\
+
+\Option{DefaultDisplayWindowFlag} &
+\ShortOption{\None} &
+\Default{0} &
+Indicates the presence of the Default Window parameters.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+0 & Disabled \\
+1 & Enabled \\
+\end{tabular}
+\\
+
+\Option{DefDispWinLeftOffset}%
+\Option{DefDispWinRightOffset}%
+\Option{DefDispWinTopOffset}%
+\Option{DefDispWinBottomOffset} &
+\ShortOption{\None} &
+\Default{0} &
+Specifies the horizontal and vertical offset to be applied to the
+input video from the conformance window in luma samples.
+Must be a multiple of the chroma resolution (e.g. a multiple of two for 4:2:0).
+\\
+
 \Option{BitstreamRestriction} &
 \ShortOption{} &
 \Default{false} &
@@ -1359,53 +1521,134 @@ Indicate the maximum absolute value of a decoded vertical MV component in quarte
 \end{OptionTable}
 
 %%
-%% Miscellaneous parameters
+%% SEI messages
 %%
-\begin{OptionTable}{Miscellaneous parameters}
-\Option{SEIpictureDigest} &
+\begin{OptionTable}{SEI messages}
+\Option{SEIDecodedPictureHash} &
 \ShortOption{\None} &
 \Default{0} &
-Enables or disables the calculation and insertion of the picture_digest
+Enables or disables the calculation and insertion of the Decoded picture hash
 SEI messages.
 \par
 \begin{tabular}{cp{0.45\textwidth}}
   0 & Disabled \\
   1 & Transmits MD5 in SEI message and writes the value to the encoder
       log \\
+  2 & Transmits CRC in SEI message and writes the value to the encoder
+      log \\
+  3 & Transmits checksum in SEI message and writes the value to the encoder
+      log \\
 \end{tabular}
+\\
+\Option{SEIpictureDigest} &
+\ShortOption{\None} &
+\Default{0} &
+Deprecated alias for SEIDecodedPictureHash.
+Do not use anymore.
 \\
 \Option{SEIRecoveryPoint} &
 \ShortOption{\None} &
 \Default{0} &
-Enables or disables the insertion of the recovery_point
+Enables or disables the insertion of the Recovery point
 SEI messages.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
-  0 & Disabled \\
-  1 & Enabled \\
-\end{tabular}
+\\
+\Option{SEIActiveParameterSets} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the Active parameter sets
+SEI messages.
 \\
 \Option{SEIBufferingPeriod} &
 \ShortOption{\None} &
 \Default{0} &
-Enables or disables the insertion of the buffering_period
-SEI messages. This options has no effect if VuiParametersPresent is disabled.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
-  0 & Disabled \\
-  1 & Enabled \\
-\end{tabular}
+Enables or disables the insertion of the Buffering period
+SEI messages. This option has no effect if VuiParametersPresent is disabled.
+SEIBufferingPeriod requires SEIActiveParameterSets to be enabled.
 \\
 \Option{SEIPictureTiming} &
 \ShortOption{\None} &
 \Default{0} &
-Enables or disables the insertion of the picture_timing
-SEI messages. This options has no effect if VuiParametersPresent is disabled.
+Enables or disables the insertion of the Picture timing
+SEI messages. This option has no effect if VuiParametersPresent is disabled.
+\\
+\Option{SEIDecodingUnitInfo} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the Decoding unit information
+SEI messages. This option has no effect if VuiParametersPresent is disabled.
+\\
+\Option{SEIGradualDecodingRefreshInfo} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the Gradual decoding refresh information
+SEI messages.
+\\
+\Option{SEITemporalLevel0Index} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the Temporal level zero index
+SEI messages.
+\\
+\Option{SEIDisplayOrientation} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the Display orientation
+SEI messages.
+\par
+\begin{tabular}{cp{0.30\textwidth}}
+  0 & Disabled \\
+  N: $0 < N < (2^{16} - 1)$ & Enable display orientation SEI message with 
+  \mbox{anticlockwise_rotation = N} 
+  and \mbox{display_orientation_repetition_period = 1} \\
+\end{tabular}
+\\
+\Option{SEIFramePacking} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the insertion of the Frame packing arrangement SEI messages.
+\\
+\Option{SEIFramePackingType} &
+\ShortOption{\None} &
+\Default{0} &
+Indicates the arrangement type in the Frame packing arrangement SEI message.
+This option has no effect if SEIFramePacking is disabled.
 \par
 \begin{tabular}{cp{0.45\textwidth}}
-  0 & Disabled \\
-  1 & Enabled \\
+  0 & Checkerboard \\
+  1 & Line Alternate \\
+  2 & Column Alternate \\
+  3 & Side by Side \\
+  4 & Top Bottom \\
+  5 & Frame Alternate \\
+  6 & 2D Image \\
+  7 & Tile Format \\
 \end{tabular}
+\\
+\Option{SEIFramePackingInterpretation} &
+\ShortOption{\None} &
+\Default{0} &
+Indicates the constituent frames relationship in the Frame packing arrangement SEI message. 
+This option has no effect if SEIFramePacking is disabled.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+  0 & Unspecified \\
+  1 & Frame 0 is associated with the left view of a stereo pair \\
+  2 & Frame 0 is associated with the right view of a stereo pair \\
+\end{tabular}
+\\
+\Option{SEIFramePackingQuincunx} &
+\ShortOption{\None} &
+\Default{0} &
+Enables or disables the quincunx_sampling signalling in the
+Frame packing arrangement SEI messages. This option has no
+effect if SEIFramePacking is disabled.
+\\
+\Option{SEIFramePackingId} &
+\ShortOption{\None} &
+\Default{0} &
+Indicates the session number in the Frame packing arrangement
+SEI messages. This option has no effect if SEIFramePacking is
+disabled.
 \\
 \end{OptionTable}
 
@@ -1550,16 +1793,17 @@ that the native bit-depth is used)
 \Option{SEIPictureDigest} &
 \ShortOption{\None} &
 \Default{1} &
-Enable or disable verification of any picture_digest SEI messages. When
+Enable or disable verification of any Picture hash SEI messages. When
 this parameter is set to 0, the feature is disabled and all messages are
 ignored. When set to 1 (default), the feature is enabled and the decoder
 has the following behaviour:
 \begin{itemize}
 \item
-  For each decoded picture, the MD5 is calculated and written to the
-  log.  If the input bitstream has a picture_digest SEI message for the
-  corresponding decoded picture, the two MD5s are compared. Decoding
-  will continue even if there is a mismatch.
+  If Picture hash SEI messages are included in the bitstream, the same type
+  of hash is calculated for each decoded picture and written to the
+  log together with an indication whether the calculted value matches
+  the value in the SEI message. 
+  Decoding will continue even if there is a mismatch.
 
 \item
   After decoding is complete, if any MD5sum comparison failed, a warning
@@ -1576,6 +1820,18 @@ has the following behaviour:
   MD5. "[rxMD5:...]" is the signalled MD5 if different.
 \end{itemize}
 \\
+
+\Option{RespectDefDispWindow} &
+\ShortOption{-w} &
+\Default{0} &
+Video region to be output by the decoder.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+  0 & Output content inside the conformance window. \\
+  1 & Output content inside the default window. \\
+\end{tabular}
+\\
+
 \end{OptionTable}
 
 

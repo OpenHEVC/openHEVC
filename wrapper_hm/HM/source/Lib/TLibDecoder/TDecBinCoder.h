@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,9 +61,6 @@ public:
   virtual Void  decodeBinTrm      ( UInt& ruiBin                           )  = 0;
   
   virtual Void  resetBac          ()                                          = 0;
-#if !REMOVE_BURST_IPCM
-  virtual Void  decodeNumSubseqIPCM( Int& numSubseqIPCM )                  = 0;
-#endif
   virtual Void  decodePCMAlignBits()                                          = 0;
   virtual Void  xReadPCMCode      ( UInt uiLength, UInt& ruiCode)              = 0;
 

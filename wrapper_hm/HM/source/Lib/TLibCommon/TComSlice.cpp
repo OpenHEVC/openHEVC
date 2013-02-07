@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ TComSlice::TComSlice()
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR )
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
-, m_dependentSliceFlag            ( false )
+, m_dependentSliceSegmentFlag            ( false )
 #if ADAPTIVE_QP_SELECTION
 , m_iSliceQpBase                  ( 0 )
 #endif
@@ -81,19 +81,19 @@ TComSlice::TComSlice()
 , m_bNoBackPredFlag               ( false )
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
-, m_uiSliceMode                   ( 0 )
-, m_uiSliceArgument               ( 0 )
-, m_uiSliceCurStartCUAddr         ( 0 )
-, m_uiSliceCurEndCUAddr           ( 0 )
-, m_uiSliceIdx                    ( 0 )
-, m_uiDependentSliceMode            ( 0 )
-, m_uiDependentSliceArgument        ( 0 )
-, m_uiDependentSliceCurStartCUAddr  ( 0 )
-, m_uiDependentSliceCurEndCUAddr    ( 0 )
-, m_bNextSlice                    ( false )
-, m_bNextDependentSlice             ( false )
-, m_uiSliceBits                   ( 0 )
-, m_uiDependentSliceCounter         ( 0 )
+, m_sliceMode                   ( 0 )
+, m_sliceArgument               ( 0 )
+, m_sliceCurStartCUAddr         ( 0 )
+, m_sliceCurEndCUAddr           ( 0 )
+, m_sliceIdx                    ( 0 )
+, m_sliceSegmentMode            ( 0 )
+, m_sliceSegmentArgument        ( 0 )
+, m_sliceSegmentCurStartCUAddr  ( 0 )
+, m_sliceSegmentCurEndCUAddr    ( 0 )
+, m_nextSlice                    ( false )
+, m_nextSliceSegment             ( false )
+, m_sliceBits                   ( 0 )
+, m_sliceSegmentBits         ( 0 )
 , m_bFinalized                    ( false )
 , m_uiTileOffstForMultES          ( 0 )
 , m_puiSubstreamSizes             ( NULL )
@@ -123,7 +123,6 @@ TComSlice::TComSlice()
     m_aiRefPOCList  [0][iNumCount] = 0;
     m_aiRefPOCList  [1][iNumCount] = 0;
   }
-  m_bCombineWithReferenceFlag = 0;
   resetWpScaling(m_weightPredTable);
   initWpAcDcParam();
   m_saoEnabledFlag = false;
@@ -370,7 +369,6 @@ Void TComSlice::setRefPicList( TComList<TComPic*>& rcListPic )
     {
       pcRefPic = xGetRefPic(rcListPic, getPOC()+m_pcRPS->getDeltaPOC(i));
       pcRefPic->setIsLongTerm(0);
-      pcRefPic->setIsUsedAsLongTerm(0);
       pcRefPic->getPicYuvRec()->extendPicBorder();
       RefPicSetStCurr0[NumPocStCurr0] = pcRefPic;
       NumPocStCurr0++;
@@ -383,7 +381,6 @@ Void TComSlice::setRefPicList( TComList<TComPic*>& rcListPic )
     {
       pcRefPic = xGetRefPic(rcListPic, getPOC()+m_pcRPS->getDeltaPOC(i));
       pcRefPic->setIsLongTerm(0);
-      pcRefPic->setIsUsedAsLongTerm(0);
       pcRefPic->getPicYuvRec()->extendPicBorder();
       RefPicSetStCurr1[NumPocStCurr1] = pcRefPic;
       NumPocStCurr1++;
@@ -396,7 +393,6 @@ Void TComSlice::setRefPicList( TComList<TComPic*>& rcListPic )
     {
       pcRefPic = xGetLongTermRefPic(rcListPic, m_pcRPS->getPOC(i));
       pcRefPic->setIsLongTerm(1);
-      pcRefPic->setIsUsedAsLongTerm(1);
       pcRefPic->getPicYuvRec()->extendPicBorder();
       RefPicSetLtCurr[NumPocLtCurr] = pcRefPic;
       NumPocLtCurr++;
@@ -409,7 +405,6 @@ Void TComSlice::setRefPicList( TComList<TComPic*>& rcListPic )
   }
 
   // ref_pic_list_init
-#if RPL_INIT_FIX
   TComPic*  rpsCurrList0[MAX_NUM_REF+1];
   TComPic*  rpsCurrList1[MAX_NUM_REF+1];
   Int numPocTotalCurr = NumPocStCurr0 + NumPocStCurr1 + NumPocLtCurr;
@@ -447,9 +442,13 @@ Void TComSlice::setRefPicList( TComList<TComPic*>& rcListPic )
     }
   }
 
+  ::memset(m_bIsUsedAsLongTerm, 0, sizeof(m_bIsUsedAsLongTerm));
+
   for (Int rIdx = 0; rIdx <= (m_aiNumRefIdx[0]-1); rIdx ++)
   {
     m_apcRefPicList[0][rIdx] = m_RefPicListModification.getRefPicListModificationFlagL0() ? rpsCurrList0[ m_RefPicListModification.getRefPicSetIdxL0(rIdx) ] : rpsCurrList0[rIdx % numPocTotalCurr];
+    m_bIsUsedAsLongTerm[0][rIdx] = m_RefPicListModification.getRefPicListModificationFlagL0() ? (m_RefPicListModification.getRefPicSetIdxL0(rIdx) >= (NumPocStCurr0 + NumPocStCurr1))
+                                  : ((rIdx % numPocTotalCurr) >= (NumPocStCurr0 + NumPocStCurr1));
   }
   if ( m_eSliceType == P_SLICE )
   {
@@ -461,76 +460,10 @@ Void TComSlice::setRefPicList( TComList<TComPic*>& rcListPic )
     for (Int rIdx = 0; rIdx <= (m_aiNumRefIdx[1]-1); rIdx ++)
     {
       m_apcRefPicList[1][rIdx] = m_RefPicListModification.getRefPicListModificationFlagL1() ? rpsCurrList1[ m_RefPicListModification.getRefPicSetIdxL1(rIdx) ] : rpsCurrList1[rIdx % numPocTotalCurr];
+      m_bIsUsedAsLongTerm[1][rIdx] = m_RefPicListModification.getRefPicListModificationFlagL1() ?
+                                  (m_RefPicListModification.getRefPicSetIdxL1(rIdx) >= (NumPocStCurr0 + NumPocStCurr1)): ((rIdx % numPocTotalCurr) >= (NumPocStCurr0 + NumPocStCurr1));
     }
   }
-#else
-  UInt cIdx = 0;
-  UInt num_ref_idx_l0_active_minus1 = m_aiNumRefIdx[0] - 1;
-  UInt num_ref_idx_l1_active_minus1 = m_aiNumRefIdx[1] - 1;
-  TComPic*  refPicListTemp0[MAX_NUM_REF+1];
-  TComPic*  refPicListTemp1[MAX_NUM_REF+1];
-  Int  numRpsCurrTempList0, numRpsCurrTempList1;
-  
-  numRpsCurrTempList0 = numRpsCurrTempList1 = NumPocStCurr0 + NumPocStCurr1 + NumPocLtCurr;
-  if (numRpsCurrTempList0 <= num_ref_idx_l0_active_minus1)
-  {
-    numRpsCurrTempList0 = num_ref_idx_l0_active_minus1 + 1;
-  }
-  if (numRpsCurrTempList1 <= num_ref_idx_l1_active_minus1)
-  {
-    numRpsCurrTempList1 = num_ref_idx_l1_active_minus1 + 1;
-  }
-
-  cIdx = 0;
-  while (cIdx < numRpsCurrTempList0)
-  {
-    for ( i=0; i<NumPocStCurr0 && cIdx<numRpsCurrTempList0; cIdx++,i++)
-    {
-      refPicListTemp0[cIdx] = RefPicSetStCurr0[ i ];
-    }
-    for ( i=0; i<NumPocStCurr1 && cIdx<numRpsCurrTempList0; cIdx++,i++)
-    {
-      refPicListTemp0[cIdx] = RefPicSetStCurr1[ i ];
-    }
-    for ( i=0; i<NumPocLtCurr && cIdx<numRpsCurrTempList0; cIdx++,i++)
-    {
-      refPicListTemp0[cIdx] = RefPicSetLtCurr[ i ];
-    }
-  }
-  cIdx = 0;
-  while (cIdx<numRpsCurrTempList1 && m_eSliceType==B_SLICE)
-  {
-    for ( i=0; i<NumPocStCurr1 && cIdx<numRpsCurrTempList1; cIdx++,i++)
-    {
-      refPicListTemp1[cIdx] = RefPicSetStCurr1[ i ];
-    }
-    for ( i=0; i<NumPocStCurr0 && cIdx<numRpsCurrTempList1; cIdx++,i++)
-    {
-      refPicListTemp1[cIdx] = RefPicSetStCurr0[ i ];
-    }
-    for ( i=0; i<NumPocLtCurr && cIdx<numRpsCurrTempList1; cIdx++,i++)
-    {
-      refPicListTemp1[cIdx] = RefPicSetLtCurr[ i ];
-    }
-  }
-
-  for (cIdx = 0; cIdx <= num_ref_idx_l0_active_minus1; cIdx ++)
-  {
-    m_apcRefPicList[0][cIdx] = m_RefPicListModification.getRefPicListModificationFlagL0() ? refPicListTemp0[ m_RefPicListModification.getRefPicSetIdxL0(cIdx) ] : refPicListTemp0[cIdx];
-  }
-  if ( m_eSliceType == P_SLICE )
-  {
-    m_aiNumRefIdx[1] = 0;
-    ::memset( m_apcRefPicList[1], 0, sizeof(m_apcRefPicList[1]));
-  }
-  else
-  {
-    for (cIdx = 0; cIdx <= num_ref_idx_l1_active_minus1; cIdx ++)
-    {
-      m_apcRefPicList[1][cIdx] = m_RefPicListModification.getRefPicListModificationFlagL1() ? refPicListTemp1[ m_RefPicListModification.getRefPicSetIdxL1(cIdx) ] : refPicListTemp1[cIdx];
-    }
-  }
-#endif
 }
 
 Int TComSlice::getNumRpsCurrTempList()
@@ -591,7 +524,7 @@ Void TComSlice::checkColRefIdx(UInt curSliceIdx, TComPic* pic)
   }
 }
 
-Void TComSlice::checkCRA(TComReferencePictureSet *pReferencePictureSet, Int& pocCRA, Bool& prevRAPisBLA, TComList<TComPic*>& rcListPic)
+Void TComSlice::checkCRA(TComReferencePictureSet *pReferencePictureSet, Int& pocCRA, Bool& prevRAPisBLA)
 {
   for(Int i = 0; i < pReferencePictureSet->getNumberOfNegativePictures()+pReferencePictureSet->getNumberOfPositivePictures(); i++)
   {
@@ -609,6 +542,7 @@ Void TComSlice::checkCRA(TComReferencePictureSet *pReferencePictureSet, Int& poc
   }
   if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP ) // IDR picture found
   {
+    pocCRA = getPOC();
     prevRAPisBLA = false;
   }
   else if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ) // CRA picture found
@@ -741,7 +675,14 @@ Void TComSlice::copySliceInfo(TComSlice *pSrc)
       m_apcRefPicList[i][j]  = pSrc->m_apcRefPicList[i][j];
       m_aiRefPOCList[i][j]   = pSrc->m_aiRefPOCList[i][j];
     }
-  }  
+  }
+  for (i = 0; i < 2; i++)
+  {
+    for (j = 0; j < MAX_NUM_REF + 1; j++)
+    {
+      m_bIsUsedAsLongTerm[i][j] = pSrc->m_bIsUsedAsLongTerm[i][j];
+    }
+  }
   m_iDepth               = pSrc->m_iDepth;
 
   // referenced slice
@@ -778,17 +719,17 @@ Void TComSlice::copySliceInfo(TComSlice *pSrc)
   m_uiTLayer                      = pSrc->m_uiTLayer;
   m_bTLayerSwitchingFlag          = pSrc->m_bTLayerSwitchingFlag;
 
-  m_uiSliceMode                   = pSrc->m_uiSliceMode;
-  m_uiSliceArgument               = pSrc->m_uiSliceArgument;
-  m_uiSliceCurStartCUAddr         = pSrc->m_uiSliceCurStartCUAddr;
-  m_uiSliceCurEndCUAddr           = pSrc->m_uiSliceCurEndCUAddr;
-  m_uiSliceIdx                    = pSrc->m_uiSliceIdx;
-  m_uiDependentSliceMode            = pSrc->m_uiDependentSliceMode;
-  m_uiDependentSliceArgument        = pSrc->m_uiDependentSliceArgument; 
-  m_uiDependentSliceCurStartCUAddr  = pSrc->m_uiDependentSliceCurStartCUAddr;
-  m_uiDependentSliceCurEndCUAddr    = pSrc->m_uiDependentSliceCurEndCUAddr;
-  m_bNextSlice                    = pSrc->m_bNextSlice;
-  m_bNextDependentSlice             = pSrc->m_bNextDependentSlice;
+  m_sliceMode                   = pSrc->m_sliceMode;
+  m_sliceArgument               = pSrc->m_sliceArgument;
+  m_sliceCurStartCUAddr         = pSrc->m_sliceCurStartCUAddr;
+  m_sliceCurEndCUAddr           = pSrc->m_sliceCurEndCUAddr;
+  m_sliceIdx                    = pSrc->m_sliceIdx;
+  m_sliceSegmentMode            = pSrc->m_sliceSegmentMode;
+  m_sliceSegmentArgument        = pSrc->m_sliceSegmentArgument; 
+  m_sliceSegmentCurStartCUAddr  = pSrc->m_sliceSegmentCurStartCUAddr;
+  m_sliceSegmentCurEndCUAddr    = pSrc->m_sliceSegmentCurEndCUAddr;
+  m_nextSlice                    = pSrc->m_nextSlice;
+  m_nextSliceSegment             = pSrc->m_nextSliceSegment;
   for ( Int e=0 ; e<2 ; e++ )
   {
     for ( Int n=0 ; n<MAX_NUM_REF ; n++ )
@@ -804,6 +745,7 @@ Void TComSlice::copySliceInfo(TComSlice *pSrc)
   m_bLMvdL1Zero = pSrc->m_bLMvdL1Zero;
   m_LFCrossSliceBoundaryFlag = pSrc->m_LFCrossSliceBoundaryFlag;
   m_enableTMVPFlag                = pSrc->m_enableTMVPFlag;
+  m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
 }
 
 Int TComSlice::m_prevPOC = 0;
@@ -820,7 +762,7 @@ Void TComSlice::setTLayerInfo( UInt uiTLayer )
 
 /** Function for checking if this is a switching-point
 */
-Bool TComSlice::isTemporalLayerSwitchingPoint( TComList<TComPic*>& rcListPic, TComReferencePictureSet *pReferencePictureSet)
+Bool TComSlice::isTemporalLayerSwitchingPoint( TComList<TComPic*>& rcListPic )
 {
   TComPic* rpcPic;
   // loop through all pictures in the reference picture buffer
@@ -841,7 +783,7 @@ Bool TComSlice::isTemporalLayerSwitchingPoint( TComList<TComPic*>& rcListPic, TC
 
 /** Function for checking if this is a STSA candidate 
  */
-Bool TComSlice::isStepwiseTemporalLayerSwitchingPointCandidate( TComList<TComPic*>& rcListPic, TComReferencePictureSet *pReferencePictureSet)
+Bool TComSlice::isStepwiseTemporalLayerSwitchingPointCandidate( TComList<TComPic*>& rcListPic )
 {
     TComPic* rpcPic;
     
@@ -885,7 +827,6 @@ Void TComSlice::applyReferencePictureSet( TComList<TComPic*>& rcListPic, TComRef
         isReference = 1;
         rpcPic->setUsedByCurr(pReferencePictureSet->getUsed(i));
         rpcPic->setIsLongTerm(0);
-        rpcPic->setIsUsedAsLongTerm(0);
       }
     }
     for(;i<pReferencePictureSet->getNumberOfPictures();i++)
@@ -980,7 +921,6 @@ Int TComSlice::checkThatAllRefPicsAreAvailable( TComList<TComPic*>& rcListPic, T
         {
           isAvailable = 1;
           rpcPic->setIsLongTerm(1);
-          rpcPic->setIsUsedAsLongTerm(1);
           break;
         }
       }
@@ -1254,6 +1194,11 @@ TComVPS::TComVPS()
 , m_uiMaxTLayers              (  1)
 , m_uiMaxLayers               (  1)
 , m_bTemporalIdNestingFlag    (false)
+, m_numHrdParameters          (  0)
+, m_maxNuhReservedZeroLayerId (  0)
+, m_hrdParameters             (NULL)
+, m_hrdOpSetIdx               (NULL)
+, m_cprmsPresentFlag          (NULL)
 {
 
   for( Int i = 0; i < MAX_TLAYER; i++)
@@ -1266,8 +1211,9 @@ TComVPS::TComVPS()
 
 TComVPS::~TComVPS()
 {
-
-
+  if( m_hrdParameters    != NULL )     delete m_hrdParameters;
+  if( m_hrdOpSetIdx      != NULL )     delete m_hrdOpSetIdx;
+  if( m_cprmsPresentFlag != NULL )     delete m_cprmsPresentFlag;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1282,11 +1228,6 @@ TComSPS::TComSPS()
 // Structure
 , m_picWidthInLumaSamples     (352)
 , m_picHeightInLumaSamples    (288)
-, m_picCroppingFlag           (false)
-, m_picCropLeftOffset         (  0)
-, m_picCropRightOffset        (  0)
-, m_picCropTopOffset          (  0)
-, m_picCropBottomOffset       (  0) 
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
 , m_uiMaxCUDepth              (  3)
@@ -1302,8 +1243,6 @@ TComSPS::TComSPS()
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
 , m_bUseLComb                 (false)
-, m_restrictedRefPicListsFlag   (  1)
-, m_listsModificationPresentFlag(  0)
 , m_bitDepthY                 (  8)
 , m_bitDepthC                 (  8)
 , m_qpBDOffsetY               (  0)
@@ -1318,9 +1257,7 @@ TComSPS::TComSPS()
 , m_bUseSAO                   (false) 
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)
-#if STRONG_INTRA_SMOOTHING
-, m_useStrongIntraSmoothing   (false) 
-#endif
+, m_useStrongIntraSmoothing   (false)
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 {
@@ -1354,55 +1291,91 @@ Void TComSPS::setHrdParameters( UInt frameRate, UInt numDU, UInt bitRate, Bool r
   }
 
   TComVUI *vui = getVuiParameters();
+  TComHRD *hrd = vui->getHrdParameters();
 
-  vui->setTimingInfoPresentFlag( true );
+#if L0043_TIMING_INFO
+  TimingInfo *timingInfo = vui->getTimingInfo();
+  timingInfo->setTimingInfoPresentFlag( true );
   switch( frameRate )
   {
   case 24:
-    vui->setNumUnitsInTick( 1125000 );    vui->setTimeScale    ( 27000000 );
+    timingInfo->setNumUnitsInTick( 1125000 );    timingInfo->setTimeScale    ( 27000000 );
     break;
   case 25:
-    vui->setNumUnitsInTick( 1080000 );    vui->setTimeScale    ( 27000000 );
+    timingInfo->setNumUnitsInTick( 1080000 );    timingInfo->setTimeScale    ( 27000000 );
     break;
   case 30:
-    vui->setNumUnitsInTick( 900900 );     vui->setTimeScale    ( 27000000 );
+    timingInfo->setNumUnitsInTick( 900900 );     timingInfo->setTimeScale    ( 27000000 );
     break;
   case 50:
-    vui->setNumUnitsInTick( 540000 );     vui->setTimeScale    ( 27000000 );
+    timingInfo->setNumUnitsInTick( 540000 );     timingInfo->setTimeScale    ( 27000000 );
     break;
   case 60:
-    vui->setNumUnitsInTick( 450450 );     vui->setTimeScale    ( 27000000 );
+    timingInfo->setNumUnitsInTick( 450450 );     timingInfo->setTimeScale    ( 27000000 );
     break;
   default:
-    vui->setNumUnitsInTick( 1001 );       vui->setTimeScale    ( 60000 );
+    timingInfo->setNumUnitsInTick( 1001 );       timingInfo->setTimeScale    ( 60000 );
     break;
   }
+#else
+  hrd->setTimingInfoPresentFlag( true );
+  switch( frameRate )
+  {
+  case 24:
+    hrd->setNumUnitsInTick( 1125000 );    hrd->setTimeScale    ( 27000000 );
+    break;
+  case 25:
+    hrd->setNumUnitsInTick( 1080000 );    hrd->setTimeScale    ( 27000000 );
+    break;
+  case 30:
+    hrd->setNumUnitsInTick( 900900 );     hrd->setTimeScale    ( 27000000 );
+    break;
+  case 50:
+    hrd->setNumUnitsInTick( 540000 );     hrd->setTimeScale    ( 27000000 );
+    break;
+  case 60:
+    hrd->setNumUnitsInTick( 450450 );     hrd->setTimeScale    ( 27000000 );
+    break;
+  default:
+    hrd->setNumUnitsInTick( 1001 );       hrd->setTimeScale    ( 60000 );
+    break;
+  }
+#endif
 
   Bool rateCnt = ( bitRate > 0 );
-  vui->setNalHrdParametersPresentFlag( rateCnt );
-  vui->setVclHrdParametersPresentFlag( rateCnt );
+  hrd->setNalHrdParametersPresentFlag( rateCnt );
+  hrd->setVclHrdParametersPresentFlag( rateCnt );
 
-  vui->setSubPicCpbParamsPresentFlag( ( numDU > 1 ) );
+  hrd->setSubPicCpbParamsPresentFlag( ( numDU > 1 ) );
 
-  if( vui->getSubPicCpbParamsPresentFlag() )
+  if( hrd->getSubPicCpbParamsPresentFlag() )
   {
-    vui->setTickDivisorMinus2( 100 - 2 );                          // 
-    vui->setDuCpbRemovalDelayLengthMinus1( 7 );                    // 8-bit precision ( plus 1 for last DU in AU )
-  }
-
-  vui->setBitRateScale( 4 );                                       // in units of 2~( 6 + 4 ) = 1,024 bps
-  vui->setCpbSizeScale( 6 );                                       // in units of 2~( 4 + 4 ) = 1,024 bit
-
-  vui->setInitialCpbRemovalDelayLengthMinus1(15);                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
-  if( randomAccess )
-  {
-    vui->setCpbRemovalDelayLengthMinus1(5);                        // 32 = 2^5 (plus 1)
-    vui->setDpbOutputDelayLengthMinus1 (5);                        // 32 + 3 = 2^6
+    hrd->setTickDivisorMinus2( 100 - 2 );                          // 
+    hrd->setDuCpbRemovalDelayLengthMinus1( 7 );                    // 8-bit precision ( plus 1 for last DU in AU )
+    hrd->setSubPicCpbParamsInPicTimingSEIFlag( true );
+#if L0044_DU_DPB_OUTPUT_DELAY_HRD
+    hrd->setDpbOutputDelayDuLengthMinus1( 5 + 7 );                 // With sub-clock tick factor of 100, at least 7 bits to have the same value as AU dpb delay
+#endif
   }
   else
   {
-    vui->setCpbRemovalDelayLengthMinus1(9);                        // max. 2^10
-    vui->setDpbOutputDelayLengthMinus1 (9);                        // max. 2^10
+    hrd->setSubPicCpbParamsInPicTimingSEIFlag( false );  
+  }
+
+  hrd->setBitRateScale( 4 );                                       // in units of 2~( 6 + 4 ) = 1,024 bps
+  hrd->setCpbSizeScale( 6 );                                       // in units of 2~( 4 + 4 ) = 1,024 bit
+  hrd->setDuCpbSizeScale( 6 );                                       // in units of 2~( 4 + 4 ) = 1,024 bit
+  
+  hrd->setInitialCpbRemovalDelayLengthMinus1(15);                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
+  if( randomAccess )
+  {
+    hrd->setCpbRemovalDelayLengthMinus1(5);                        // 32 = 2^5 (plus 1)
+    hrd->setDpbOutputDelayLengthMinus1 (5);                        // 32 + 3 = 2^6
+  }
+  else
+  {
+    hrd->setCpbRemovalDelayLengthMinus1(9);                        // max. 2^10
+    hrd->setDpbOutputDelayLengthMinus1 (9);                        // max. 2^10
   }
 
 /*
@@ -1410,30 +1383,43 @@ Void TComSPS::setHrdParameters( UInt frameRate, UInt numDU, UInt bitRate, Bool r
 */
   Int i, j;
   UInt birateValue, cpbSizeValue;
+  UInt ducpbSizeValue;
+#if L0363_DU_BIT_RATE
+  UInt duBitRateValue = 0;
+#endif
 
   for( i = 0; i < MAX_TLAYER; i ++ )
   {
-    vui->setFixedPicRateFlag( i, 1 );
-    vui->setPicDurationInTcMinus1( i, 0 );
-    vui->setLowDelayHrdFlag( i, 0 );
-    vui->setCpbCntMinus1( i, 0 );
+    hrd->setFixedPicRateFlag( i, 1 );
+    hrd->setPicDurationInTcMinus1( i, 0 );
+    hrd->setLowDelayHrdFlag( i, 0 );
+    hrd->setCpbCntMinus1( i, 0 );
 
     birateValue  = bitRate;
     cpbSizeValue = bitRate;                                     // 1 second
-    for( j = 0; j < ( vui->getCpbCntMinus1( i ) + 1 ); j ++ )
+    ducpbSizeValue = bitRate/numDU;
+#if L0363_DU_BIT_RATE
+    duBitRateValue = bitRate;
+#endif
+    for( j = 0; j < ( hrd->getCpbCntMinus1( i ) + 1 ); j ++ )
     {
-      vui->setBitRateValueMinus1( i, j, 0, ( birateValue  - 1 ) );
-      vui->setCpbSizeValueMinus1( i, j, 0, ( cpbSizeValue - 1 ) );
-      vui->setCbrFlag( i, j, 0, ( j == 0 ) );
+      hrd->setBitRateValueMinus1( i, j, 0, ( birateValue  - 1 ) );
+      hrd->setCpbSizeValueMinus1( i, j, 0, ( cpbSizeValue - 1 ) );
+      hrd->setDuCpbSizeValueMinus1( i, j, 0, ( ducpbSizeValue - 1 ) );
+      hrd->setCbrFlag( i, j, 0, ( j == 0 ) );
 
-      vui->setBitRateValueMinus1( i, j, 1, ( birateValue  - 1) );
-      vui->setCpbSizeValueMinus1( i, j, 1, ( cpbSizeValue - 1 ) );
-      vui->setCbrFlag( i, j, 1, ( j == 0 ) );
+      hrd->setBitRateValueMinus1( i, j, 1, ( birateValue  - 1) );
+      hrd->setCpbSizeValueMinus1( i, j, 1, ( cpbSizeValue - 1 ) );
+      hrd->setDuCpbSizeValueMinus1( i, j, 1, ( ducpbSizeValue - 1 ) );
+#if L0363_DU_BIT_RATE
+      hrd->setDuBitRateValueMinus1( i, j, 1, ( duBitRateValue - 1 ) );
+#endif
+      hrd->setCbrFlag( i, j, 1, ( j == 0 ) );
     }
   }
 }
-const Int TComSPS::m_cropUnitX[]={1,2,2,1};
-const Int TComSPS::m_cropUnitY[]={1,2,1,1};
+const Int TComSPS::m_winUnitX[]={1,2,2,1};
+const Int TComSPS::m_winUnitY[]={1,2,1,1};
 
 TComPPS::TComPPS()
 : m_PPSId                       (0)
@@ -1451,12 +1437,9 @@ TComPPS::TComPPS()
 , m_numRefIdxL1DefaultActive    (1)
 , m_TransquantBypassEnableFlag  (false)
 , m_useTransformSkip             (false)
-, m_dependentSliceEnabledFlag    (false)
+, m_dependentSliceSegmentsEnabledFlag    (false)
 , m_tilesEnabledFlag               (false)
 , m_entropyCodingSyncEnabledFlag   (false)
-#if !REMOVE_ENTROPY_SLICES
-, m_entropySliceEnabledFlag        (false)
-#endif
 , m_loopFilterAcrossTilesEnabledFlag  (true)
 , m_uniformSpacingFlag           (0)
 , m_iNumColumnsMinus1            (0)
@@ -1469,6 +1452,8 @@ TComPPS::TComPPS()
 , m_encCABACTableIdx            (I_SLICE)
 , m_sliceHeaderExtensionPresentFlag    (false)
 , m_loopFilterAcrossSlicesEnabledFlag (false)
+, m_listsModificationPresentFlag(  0)
+, m_numExtraSliceHeaderBits(0)
 {
   m_scalingList = new TComScalingList;
 }
@@ -1853,18 +1838,7 @@ Int* TComScalingList::getScalingListDefaultAddress(UInt sizeId, UInt listId)
   switch(sizeId)
   {
     case SCALING_LIST_4x4:
-#if FLAT_4x4_DSL
       src = g_quantTSDefault4x4;
-#else
-      if( m_useTransformSkip )
-      {
-        src = g_quantTSDefault4x4;
-      }
-      else
-      {
-        src = (listId<3) ? g_quantIntraDefault4x4 : g_quantInterDefault4x4;
-      }
-#endif
       break;
     case SCALING_LIST_8x8:
       src = (listId<3) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
@@ -1912,6 +1886,9 @@ ParameterSetManager::ParameterSetManager()
 : m_vpsMap(MAX_NUM_VPS)
 , m_spsMap(MAX_NUM_SPS)
 , m_ppsMap(MAX_NUM_PPS)
+, m_activeVPSId(-1)
+, m_activeSPSId(-1)
+, m_activePPSId(-1)
 {
 }
 
@@ -1920,17 +1897,107 @@ ParameterSetManager::~ParameterSetManager()
 {
 }
 
+//! activate a SPS from a active parameter sets SEI message
+//! \returns true, if activation is successful
+Bool ParameterSetManager::activateSPSWithSEI(Int spsId)
+{
+  TComSPS *sps = m_spsMap.getPS(spsId);
+  if (sps)
+  {
+    Int vpsId = sps->getVPSId();
+    if (m_vpsMap.getPS(vpsId))
+    {
+      m_activeVPSId = vpsId;
+      m_activeSPSId = spsId;
+      return true;
+    }
+    else
+    {
+      printf("Warning: tried to activate SPS using an Active parameter sets SEI message. Referenced VPS does not exist.");
+    }
+  }
+  else
+  {
+    printf("Warning: tried to activate non-existing SPS using an Active parameter sets SEI message.");
+  }
+  return false;
+}
+
+//! activate a PPS and depending on isIDR parameter also SPS and VPS
+//! \returns true, if activation is successful
+Bool ParameterSetManager::activatePPS(Int ppsId, Bool isIDR)
+{
+  TComPPS *pps = m_ppsMap.getPS(ppsId);
+  if (pps)
+  {
+    Int spsId = pps->getSPSId();
+    if (!isIDR && (spsId != m_activeSPSId))
+    {
+      printf("Warning: tried to activate PPS referring to a inactive SPS at non-IDR.");
+      return false;
+    }
+    TComSPS *sps = m_spsMap.getPS(spsId);
+    if (sps)
+    {
+      Int vpsId = sps->getVPSId();
+      if (!isIDR && (vpsId != m_activeVPSId))
+      {
+        printf("Warning: tried to activate PPS referring to a inactive VPS at non-IDR.");
+        return false;
+      }
+      if (m_vpsMap.getPS(vpsId))
+      {
+        m_activePPSId = ppsId;
+        m_activeVPSId = vpsId;
+        m_activeSPSId = spsId;
+        return true;
+      }
+      else
+      {
+        printf("Warning: tried to activate PPS that refers to a non-existing VPS.");
+      }
+    }
+    else
+    {
+      printf("Warning: tried to activate a PPS that refers to a non-existing SPS.");
+    }
+  }
+  else
+  {
+    printf("Warning: tried to activate non-existing PPS.");
+  }
+  return false;
+}
+
 ProfileTierLevel::ProfileTierLevel()
   : m_profileSpace    (0)
   , m_tierFlag        (false)
   , m_profileIdc      (0)
   , m_levelIdc        (0)
+#if L0046_CONSTRAINT_FLAGS
+, m_progressiveSourceFlag  (false)
+, m_interlacedSourceFlag   (false)
+, m_nonPackedConstraintFlag(false)
+, m_frameOnlyConstraintFlag(false)
+#endif
 {
   ::memset(m_profileCompatibilityFlag, 0, sizeof(m_profileCompatibilityFlag));
 }
+
 TComPTL::TComPTL()
 {
   ::memset(m_subLayerProfilePresentFlag, 0, sizeof(m_subLayerProfilePresentFlag));
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
 }
+#if SIGNAL_BITRATE_PICRATE_IN_VPS
+TComBitRatePicRateInfo::TComBitRatePicRateInfo()
+{
+  ::memset(m_bitRateInfoPresentFlag, 0, sizeof(m_bitRateInfoPresentFlag));
+  ::memset(m_picRateInfoPresentFlag, 0, sizeof(m_picRateInfoPresentFlag));
+  ::memset(m_avgBitRate,             0, sizeof(m_avgBitRate));
+  ::memset(m_maxBitRate,             0, sizeof(m_maxBitRate));
+  ::memset(m_constantPicRateIdc,     0, sizeof(m_constantPicRateIdc));
+  ::memset(m_avgPicRate,             0, sizeof(m_avgPicRate));
+}
+#endif
 //! \}

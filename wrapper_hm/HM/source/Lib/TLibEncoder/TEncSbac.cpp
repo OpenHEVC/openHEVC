@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -277,11 +277,6 @@ Void TEncSbac::codeTerminatingBit( UInt uilsLast )
 Void TEncSbac::codeSliceFinish()
 {
   m_pcBinIf->finish();
-}
-
-Void TEncSbac::encodeStart()
-{
-  m_pcBinIf->start();
 }
 
 Void TEncSbac::xWriteUnarySymbol( UInt uiSymbol, ContextModel* pcSCModel, Int iOffset )
@@ -830,7 +825,7 @@ Void TEncSbac::codeDeltaQP( TComDataCU* pcCU, UInt uiAbsPartIdx )
 Void TEncSbac::codeQtCbf( TComDataCU* pcCU, UInt uiAbsPartIdx, TextType eType, UInt uiTrDepth )
 {
   UInt uiCbf = pcCU->getCbf     ( uiAbsPartIdx, eType, uiTrDepth );
-  UInt uiCtx = pcCU->getCtxQtCbf( uiAbsPartIdx, eType, uiTrDepth );
+  UInt uiCtx = pcCU->getCtxQtCbf( eType, uiTrDepth );
   m_pcBinIf->encodeBin( uiCbf , m_cCUQtCbfSCModel.get( 0, eType ? TEXT_CHROMA : eType, uiCtx ) );
   DTRACE_CABAC_VL( g_nSymbolCounter++ )
   DTRACE_CABAC_T( "\tparseQtCbf()" )
@@ -845,7 +840,7 @@ Void TEncSbac::codeQtCbf( TComDataCU* pcCU, UInt uiAbsPartIdx, TextType eType, U
   DTRACE_CABAC_T( "\n" )
 }
 
-void TEncSbac::codeTransformSkipFlags (TComDataCU* pcCU, UInt uiAbsPartIdx, UInt width, UInt height, UInt uiDepth, TextType eTType )
+void TEncSbac::codeTransformSkipFlags (TComDataCU* pcCU, UInt uiAbsPartIdx, UInt width, UInt height, TextType eTType )
 {
   if (pcCU->getCUTransquantBypass(uiAbsPartIdx))
   {
@@ -871,48 +866,22 @@ void TEncSbac::codeTransformSkipFlags (TComDataCU* pcCU, UInt uiAbsPartIdx, UInt
   DTRACE_CABAC_T( "\n" )
 }
 
-#if !REMOVE_BURST_IPCM
-/** Code I_PCM information. 
- * \param pcCU pointer to CU
- * \param uiAbsPartIdx CU index
- * \param numIPCM the number of succesive IPCM blocks with the same size 
- * \param firstIPCMFlag 
- * \returns Void
- */
-Void TEncSbac::codeIPCMInfo( TComDataCU* pcCU, UInt uiAbsPartIdx, Int numIPCM, Bool firstIPCMFlag)
-#else
-/** Code I_PCM information. 
+/** Code I_PCM information.
  * \param pcCU pointer to CU
  * \param uiAbsPartIdx CU index
  * \returns Void
  */
 Void TEncSbac::codeIPCMInfo( TComDataCU* pcCU, UInt uiAbsPartIdx )
-#endif
 {
   UInt uiIPCM = (pcCU->getIPCMFlag(uiAbsPartIdx) == true)? 1 : 0;
 
   Bool writePCMSampleFlag = pcCU->getIPCMFlag(uiAbsPartIdx);
 
-#if !REMOVE_BURST_IPCM
-  if( uiIPCM == 0 || firstIPCMFlag)
-  {
-    m_pcBinIf->encodeBinTrm (uiIPCM);
-
-    if ( firstIPCMFlag )
-    {
-      m_pcBinIf->encodeNumSubseqIPCM( numIPCM - 1 );
-      m_pcBinIf->encodePCMAlignBits();
-    }
-  }
-#else
   m_pcBinIf->encodeBinTrm (uiIPCM);
-#endif
 
   if (writePCMSampleFlag)
   {
-#if REMOVE_BURST_IPCM
     m_pcBinIf->encodePCMAlignBits();
-#endif
 
     UInt uiMinCoeffSize = pcCU->getPic()->getMinCUWidth()*pcCU->getPic()->getMinCUHeight();
     UInt uiLumaOffset   = uiMinCoeffSize*uiAbsPartIdx;
@@ -970,15 +939,7 @@ Void TEncSbac::codeIPCMInfo( TComDataCU* pcCU, UInt uiAbsPartIdx )
       }
       piPCMSample += uiWidth;
     }
-#if !REMOVE_BURST_IPCM
-    numIPCM--;
-    if(numIPCM == 0)
-    {
-      m_pcBinIf->resetBac();
-    }
-#else
     m_pcBinIf->resetBac();
-#endif
   }
 }
 
@@ -998,16 +959,16 @@ Void TEncSbac::codeQtRootCbf( TComDataCU* pcCU, UInt uiAbsPartIdx )
   DTRACE_CABAC_T( "\n" )
 }
 
-Void TEncSbac::codeQtCbfZero( TComDataCU* pcCU, UInt uiAbsPartIdx, TextType eType, UInt uiTrDepth )
+Void TEncSbac::codeQtCbfZero( TComDataCU* pcCU, TextType eType, UInt uiTrDepth )
 {
   // this function is only used to estimate the bits when cbf is 0
   // and will never be called when writing the bistream. do not need to write log
   UInt uiCbf = 0;
-  UInt uiCtx = pcCU->getCtxQtCbf( uiAbsPartIdx, eType, uiTrDepth );
+  UInt uiCtx = pcCU->getCtxQtCbf( eType, uiTrDepth );
   m_pcBinIf->encodeBin( uiCbf , m_cCUQtCbfSCModel.get( 0, eType ? TEXT_CHROMA : eType, uiCtx ) );
 }
 
-Void TEncSbac::codeQtRootCbfZero( TComDataCU* pcCU, UInt uiAbsPartIdx )
+Void TEncSbac::codeQtRootCbfZero( TComDataCU* pcCU )
 {
   // this function is only used to estimate the bits when cbf is 0
   // and will never be called when writing the bistream. do not need to write log
@@ -1126,25 +1087,13 @@ Void TEncSbac::codeCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartIdx
     return;
   if(pcCU->getSlice()->getPPS()->getUseTransformSkip())
   {
-    codeTransformSkipFlags( pcCU,uiAbsPartIdx, uiWidth, uiHeight, uiDepth, eTType );
+    codeTransformSkipFlags( pcCU,uiAbsPartIdx, uiWidth, uiHeight, eTType );
   }
   eTType = eTType == TEXT_LUMA ? TEXT_LUMA : ( eTType == TEXT_NONE ? TEXT_NONE : TEXT_CHROMA );
   
   //----- encode significance map -----
-  const UInt   uiLog2BlockSize   = g_aucConvertToBit[ uiWidth ] + 2;
+  const UInt   uiLog2BlockSize = g_aucConvertToBit[ uiWidth ] + 2;
   UInt uiScanIdx = pcCU->getCoefScanIdx(uiAbsPartIdx, uiWidth, eTType==TEXT_LUMA, pcCU->isIntra(uiAbsPartIdx));
-  if (uiScanIdx == SCAN_ZIGZAG)
-  {
-    // Map zigzag to diagonal scan
-    uiScanIdx = SCAN_DIAG;
-  }
-  Int blockType = uiLog2BlockSize;
-  if (uiWidth != uiHeight)
-  {
-    uiScanIdx = SCAN_DIAG;
-    blockType = 4;
-  }
-  
   const UInt *scan = g_auiSigLastScan[ uiScanIdx ][ uiLog2BlockSize - 1 ];
   
   Bool beValid;
@@ -1242,7 +1191,7 @@ Void TEncSbac::codeCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartIdx
       else
       {
           UInt uiSigCoeffGroup   = (uiSigCoeffGroupFlag[ iCGBlkPos ] != 0);
-          UInt uiCtxSig  = TComTrQuant::getSigCoeffGroupCtxInc( uiSigCoeffGroupFlag, iCGPosX, iCGPosY, uiScanIdx, uiWidth, uiHeight );
+          UInt uiCtxSig  = TComTrQuant::getSigCoeffGroupCtxInc( uiSigCoeffGroupFlag, iCGPosX, iCGPosY, uiWidth, uiHeight );
           m_pcBinIf->encodeBin( uiSigCoeffGroup, baseCoeffGroupCtx[ uiCtxSig ] );
       }
       
@@ -1259,7 +1208,7 @@ Void TEncSbac::codeCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartIdx
           uiSig     = (pcCoef[ uiBlkPos ] != 0);
           if( iScanPosSig > iSubPos || iSubSet == 0 || numNonZero )
           {
-            uiCtxSig  = TComTrQuant::getSigCtxInc( patternSigCtx, uiScanIdx, uiPosX, uiPosY, blockType, uiWidth, uiHeight, eTType );
+            uiCtxSig  = TComTrQuant::getSigCtxInc( patternSigCtx, uiScanIdx, uiPosX, uiPosY, uiLog2BlockSize, eTType );
             m_pcBinIf->encodeBin( uiSig, baseCtx[ uiCtxSig ] );
           }
           if( uiSig )
@@ -1443,15 +1392,15 @@ Void TEncSbac::codeSaoTypeIdx       ( UInt uiCode)
  */
 Void TEncSbac::estBit( estBitsSbacStruct* pcEstBitsSbac, Int width, Int height, TextType eTType )
 {
-  estCBFBit( pcEstBitsSbac, 0, eTType );
+  estCBFBit( pcEstBitsSbac );
 
-  estSignificantCoeffGroupMapBit( pcEstBitsSbac, 0, eTType );
+  estSignificantCoeffGroupMapBit( pcEstBitsSbac, eTType );
   
   // encode significance map
   estSignificantMapBit( pcEstBitsSbac, width, height, eTType );
   
   // encode significant coefficients
-  estSignificantCoefficientsBit( pcEstBitsSbac, 0, eTType );
+  estSignificantCoefficientsBit( pcEstBitsSbac, eTType );
 }
 
 /*!
@@ -1460,7 +1409,7 @@ Void TEncSbac::estBit( estBitsSbacStruct* pcEstBitsSbac, Int width, Int height, 
  *    estimate bit cost for each CBP bit
  ****************************************************************************
  */
-Void TEncSbac::estCBFBit( estBitsSbacStruct* pcEstBitsSbac, UInt uiCTXIdx, TextType eTType )
+Void TEncSbac::estCBFBit( estBitsSbacStruct* pcEstBitsSbac )
 {
   ContextModel *pCtx = m_cCUQtCbfSCModel.get( 0 );
 
@@ -1486,7 +1435,7 @@ Void TEncSbac::estCBFBit( estBitsSbacStruct* pcEstBitsSbac, UInt uiCTXIdx, TextT
  *    estimate SAMBAC bit cost for significant coefficient group map
  ****************************************************************************
  */
-Void TEncSbac::estSignificantCoeffGroupMapBit( estBitsSbacStruct* pcEstBitsSbac, UInt uiCTXIdx, TextType eTType )
+Void TEncSbac::estSignificantCoeffGroupMapBit( estBitsSbacStruct* pcEstBitsSbac, TextType eTType )
 {
   Int firstCtx = 0, numCtx = NUM_SIG_CG_FLAG_CTX;
 
@@ -1582,7 +1531,7 @@ Void TEncSbac::estSignificantMapBit( estBitsSbacStruct* pcEstBitsSbac, Int width
  *    estimate bit cost of significant coefficient
  ****************************************************************************
  */
-Void TEncSbac::estSignificantCoefficientsBit( estBitsSbacStruct* pcEstBitsSbac, UInt uiCTXIdx, TextType eTType )
+Void TEncSbac::estSignificantCoefficientsBit( estBitsSbacStruct* pcEstBitsSbac, TextType eTType )
 {
   if (eTType==TEXT_LUMA)
   {

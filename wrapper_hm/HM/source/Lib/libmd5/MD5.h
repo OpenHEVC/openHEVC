@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,7 @@ private:
  * Returns: a statically allocated null-terminated string.  DO NOT FREE.
  */
 inline const char*
-digestToString(unsigned char digest[3][16], int numChar)
+digestToString(const unsigned char digest[3][16], int numChar)
 {
   const char* hex = "0123456789abcdef";
   static char string[99];

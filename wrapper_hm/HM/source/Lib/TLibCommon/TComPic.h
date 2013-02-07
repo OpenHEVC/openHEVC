@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,11 +43,10 @@
 #include "TComPicSym.h"
 #include "TComPicYuv.h"
 #include "TComBitStream.h"
+#include "SEI.h"
 
 //! \ingroup TLibCommon
 //! \{
-
-class SEImessages;
 
 // ====================================================================================================================
 // Class definition
@@ -77,15 +76,22 @@ private:
   Bool                  m_bIndependentTileBoundaryForNDBFilter;
   TComPicYuv*           m_pNDBFilterYuvTmp;    //!< temporary picture buffer when non-cross slice/tile boundary in-loop filtering is enabled
   Bool                  m_bCheckLTMSB;
+  
+  Int                   m_numReorderPics[MAX_TLAYER];
+  Window                m_conformanceWindow;
+  Window                m_defaultDisplayWindow;
+
   std::vector<std::vector<TComDataCU*> > m_vSliceCUDataLink;
 
-  SEImessages* m_SEIs; ///< Any SEI messages that have been received.  If !NULL we own the object.
+  SEIMessages  m_SEIs; ///< Any SEI messages that have been received.  If !NULL we own the object.
 
 public:
   TComPic();
   virtual ~TComPic();
   
-  Void          create( Int iWidth, Int iHeight, UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxDepth, Bool bIsVirtual = false );
+  Void          create( Int iWidth, Int iHeight, UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxDepth, Window &conformanceWindow, Window &defaultDisplayWindow, 
+                        Int *numReorderPics, Bool bIsVirtual = false );
+                        
   virtual Void  destroy();
   
   UInt          getTLayer()                { return m_uiTLayer;   }
@@ -95,8 +101,6 @@ public:
   Void          setUsedByCurr( Bool bUsed ) { m_bUsedByCurr = bUsed; }
   Bool          getIsLongTerm()             { return m_bIsLongTerm; }
   Void          setIsLongTerm( Bool lt ) { m_bIsLongTerm = lt; }
-  Bool          getIsUsedAsLongTerm()          { return m_bIsUsedAsLongTerm; }
-  Void          setIsUsedAsLongTerm( Bool lt ) { m_bIsUsedAsLongTerm = lt; }
   Void          setCheckLTMSBPresent     (Bool b ) {m_bCheckLTMSB=b;}
   Bool          getCheckLTMSBPresent     () { return m_bCheckLTMSB;}
 
@@ -133,12 +137,18 @@ public:
   Void          setOutputMark (Bool b) { m_bNeededForOutput = b;     }
   Bool          getOutputMark ()       { return m_bNeededForOutput;  }
  
+  Void          setNumReorderPics(Int i, UInt tlayer) { m_numReorderPics[tlayer] = i;    }
+  Int           getNumReorderPics(UInt tlayer)        { return m_numReorderPics[tlayer]; }
+
   Void          compressMotion(); 
   UInt          getCurrSliceIdx()            { return m_uiCurrSliceIdx;                }
   Void          setCurrSliceIdx(UInt i)      { m_uiCurrSliceIdx = i;                   }
   UInt          getNumAllocatedSlice()       {return m_apcPicSym->getNumAllocatedSlice();}
   Void          allocateNewSlice()           {m_apcPicSym->allocateNewSlice();         }
   Void          clearSliceBuffer()           {m_apcPicSym->clearSliceBuffer();         }
+
+  Window&       getConformanceWindow()  { return m_conformanceWindow; }
+  Window&       getDefDisplayWindow()   { return m_defaultDisplayWindow; }
 
   Void          createNonDBFilterInfo   (std::vector<Int> sliceStartAddress, Int sliceGranularityDepth
                                         ,std::vector<Bool>* LFCrossSliceBoundary
@@ -154,17 +164,17 @@ public:
   std::vector<TComDataCU*>& getOneSliceCUDataForNDBFilter      (Int sliceID) { return m_vSliceCUDataLink[sliceID];}
 
   /** transfer ownership of seis to this picture */
-  void setSEIs(SEImessages* seis) { m_SEIs = seis; }
+  void setSEIs(SEIMessages& seis) { m_SEIs = seis; }
 
   /**
    * return the current list of SEI messages associated with this picture.
    * Pointer is valid until this->destroy() is called */
-  SEImessages* getSEIs() { return m_SEIs; }
+  SEIMessages& getSEIs() { return m_SEIs; }
 
   /**
    * return the current list of SEI messages associated with this picture.
    * Pointer is valid until this->destroy() is called */
-  const SEImessages* getSEIs() const { return m_SEIs; }
+  const SEIMessages& getSEIs() const { return m_SEIs; }
 
 };// END CLASS DEFINITION TComPic
 

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -419,12 +419,12 @@ Bool TVideoIOYuv::read ( TComPicYuv*  pPicYuv, Int aiPad[2] )
  * @param aiPad       source padding size, aiPad[0] = horizontal, aiPad[1] = vertical
  * @return true for success, false in case of error
  */
-Bool TVideoIOYuv::write( TComPicYuv* pPicYuv, Int cropLeft, Int cropRight, Int cropTop, Int cropBottom )
+Bool TVideoIOYuv::write( TComPicYuv* pPicYuv, Int confLeft, Int confRight, Int confTop, Int confBottom )
 {
   // compute actual YUV frame size excluding padding size
   Int   iStride = pPicYuv->getStride();
-  UInt  width  = pPicYuv->getWidth()  - cropLeft - cropRight;
-  UInt  height = pPicYuv->getHeight() - cropTop  - cropBottom;
+  UInt  width  = pPicYuv->getWidth()  - confLeft - confRight;
+  UInt  height = pPicYuv->getHeight() - confTop  - confBottom;
   Bool is16bit = m_fileBitDepthY > 8 || m_fileBitDepthC > 8;
   TComPicYuv *dstPicYuv = NULL;
   Bool retval = true;
@@ -462,7 +462,7 @@ Bool TVideoIOYuv::write( TComPicYuv* pPicYuv, Int cropLeft, Int cropRight, Int c
     dstPicYuv = pPicYuv;
   }
   // location of upper left pel in a plane
-  Int planeOffset = 0; //cropLeft + cropTop * iStride;
+  Int planeOffset = confLeft + confTop * iStride;
   
   if (! writePlane(m_cHandle, dstPicYuv->getLumaAddr() + planeOffset, is16bit, iStride, width, height))
   {
@@ -473,10 +473,12 @@ Bool TVideoIOYuv::write( TComPicYuv* pPicYuv, Int cropLeft, Int cropRight, Int c
   width >>= 1;
   height >>= 1;
   iStride >>= 1;
-  cropLeft >>= 1;
-  cropRight >>= 1;
+  confLeft >>= 1;
+  confRight >>= 1;
+  confTop >>= 1;
+  confBottom >>= 1;
 
-  planeOffset = 0; // cropLeft + cropTop * iStride;
+  planeOffset = confLeft + confTop * iStride;
 
   if (! writePlane(m_cHandle, dstPicYuv->getCbAddr() + planeOffset, is16bit, iStride, width, height))
   {

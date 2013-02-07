@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,8 +68,7 @@ Void initROM()
     g_auiSigLastScan[0][i] = new UInt[ c*c ];
     g_auiSigLastScan[1][i] = new UInt[ c*c ];
     g_auiSigLastScan[2][i] = new UInt[ c*c ];
-    g_auiSigLastScan[3][i] = new UInt[ c*c ];
-    initSigLastScan( g_auiSigLastScan[0][i], g_auiSigLastScan[1][i], g_auiSigLastScan[2][i], g_auiSigLastScan[3][i], c, c, i);
+    initSigLastScan( g_auiSigLastScan[0][i], g_auiSigLastScan[1][i], g_auiSigLastScan[2][i], c, c);
 
     c <<= 1;
   }  
@@ -84,7 +83,6 @@ Void destroyROM()
     delete[] g_auiSigLastScan[0][i];
     delete[] g_auiSigLastScan[1][i];
     delete[] g_auiSigLastScan[2][i];
-    delete[] g_auiSigLastScan[3][i];
   }
 }
 
@@ -100,9 +98,6 @@ UInt g_auiZscanToRaster [ MAX_NUM_SPU_W*MAX_NUM_SPU_W ] = { 0, };
 UInt g_auiRasterToZscan [ MAX_NUM_SPU_W*MAX_NUM_SPU_W ] = { 0, };
 UInt g_auiRasterToPelX  [ MAX_NUM_SPU_W*MAX_NUM_SPU_W ] = { 0, };
 UInt g_auiRasterToPelY  [ MAX_NUM_SPU_W*MAX_NUM_SPU_W ] = { 0, };
-#if !LINEBUF_CLEANUP
-UInt g_motionRefer   [ MAX_NUM_SPU_W*MAX_NUM_SPU_W ] = { 0, }; 
-#endif
 
 UInt g_auiPUOffset[8] = { 0, 8, 4, 4, 2, 10, 1, 5};
 
@@ -138,55 +133,6 @@ Void initRasterToZscan ( UInt uiMaxCUWidth, UInt uiMaxCUHeight, UInt uiMaxDepth 
     g_auiRasterToZscan[ g_auiZscanToRaster[i] ] = i;
   }
 }
-
-#if !LINEBUF_CLEANUP
-/** generate motion data compression mapping table
-* \param uiMaxCUWidth, width of LCU
-* \param uiMaxCUHeight, hight of LCU
-* \param uiMaxDepth, max depth of LCU
-* \returns Void
-*/
-Void initMotionReferIdx ( UInt uiMaxCUWidth, UInt uiMaxCUHeight, UInt uiMaxDepth )
-{
-  Int  minSUWidth  = (Int)uiMaxCUWidth  >> ( (Int)uiMaxDepth - 1 );
-  Int  minSUHeight = (Int)uiMaxCUHeight >> ( (Int)uiMaxDepth - 1 );
-
-  Int  numPartInWidth  = (Int)uiMaxCUWidth  / (Int)minSUWidth;
-  Int  numPartInHeight = (Int)uiMaxCUHeight / (Int)minSUHeight;
-
-  for ( Int i = 0; i < numPartInWidth*numPartInHeight; i++ )
-  {
-    g_motionRefer[i] = i;
-  }
-
-  UInt maxCUDepth = g_uiMaxCUDepth - ( g_uiAddCUDepth - 1);
-  Int  minCUWidth  = (Int)uiMaxCUWidth  >> ( (Int)maxCUDepth - 1);
-
-  if(!(minCUWidth == 8 && minSUWidth == 4)) //check if Minimum PU width == 4
-  {
-    return;
-  }
-  
-  Int compressionNum = 2;
-
-  for ( Int i = numPartInWidth*(numPartInHeight-1); i < numPartInWidth*numPartInHeight; i += compressionNum*2)
-  {
-    for ( Int j = 1; j < compressionNum; j++ )
-    {
-      g_motionRefer[g_auiRasterToZscan[i+j]] = g_auiRasterToZscan[i];
-    }
-  }
-
-  for ( Int i = numPartInWidth*(numPartInHeight-1)+compressionNum*2-1; i < numPartInWidth*numPartInHeight; i += compressionNum*2)
-  {
-    for ( Int j = 1; j < compressionNum; j++ )
-    {
-      g_motionRefer[g_auiRasterToZscan[i-j]] = g_auiRasterToZscan[i];
-    }
-  }
-}
-
-#endif
 
 Void initRasterToPelXY ( UInt uiMaxCUWidth, UInt uiMaxCUHeight, UInt uiMaxDepth )
 {
@@ -386,13 +332,12 @@ UInt64 g_nSymbolCounter = 0;
 // ====================================================================================================================
 
 // scanning order table
-UInt* g_auiSigLastScan[4][ MAX_CU_DEPTH ];
+UInt* g_auiSigLastScan[ 3 ][ MAX_CU_DEPTH ];
 
-const UInt g_sigLastScan8x8[ 4 ][ 4 ] =
+const UInt g_sigLastScan8x8[ 3 ][ 4 ] =
 {
-  {0, 1, 2, 3},
-  {0, 1, 2, 3},
   {0, 2, 1, 3},
+  {0, 1, 2, 3},
   {0, 2, 1, 3}
 };
 UInt g_sigLastScanCG32x32[ 64 ];
@@ -411,7 +356,7 @@ const UInt g_auiGoRicePrefixLen[5] =
   8, 7, 6, 5, 4
 };
 
-Void initSigLastScan(UInt* pBuffZ, UInt* pBuffH, UInt* pBuffV, UInt* pBuffD, Int iWidth, Int iHeight, Int iDepth)
+Void initSigLastScan(UInt* pBuffD, UInt* pBuffH, UInt* pBuffV, Int iWidth, Int iHeight)
 {
   const UInt  uiNumScanPos  = UInt( iWidth * iWidth );
   UInt        uiNextScanPos = 0;
@@ -539,22 +484,6 @@ Void initSigLastScan(UInt* pBuffZ, UInt* pBuffH, UInt* pBuffV, UInt* pBuffD, Int
   }
 }
 
-#if !FLAT_4x4_DSL
-Int g_quantIntraDefault4x4[16] =
-{
-  16,16,17,21,
-  16,17,20,25,
-  17,20,30,41,
-  21,25,41,70
-};
-Int g_quantInterDefault4x4[16] =
-{
-  16,16,17,21,
-  16,17,21,24,
-  17,21,24,36,
-  21,24,36,57
-};
-#endif
 Int g_quantTSDefault4x4[16] =
 {
   16,16,16,16,

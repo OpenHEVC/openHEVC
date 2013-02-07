@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,9 +53,9 @@
 // ====================================================================================================================
 
 TAppDecTop::TAppDecTop()
+: m_iPOCLastDisplay(-MAX_INT)
 {
   ::memset (m_abDecFlag, 0, sizeof (m_abDecFlag));
-  m_iPOCLastDisplay  = -MAX_INT;
 }
 
 Void TAppDecTop::create()
@@ -168,7 +168,7 @@ Void TAppDecTop::decode()
     }
     if (bNewPicture || !bitstreamFile)
     {
-      m_cTDecTop.executeDeblockAndAlf(poc, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
+      m_cTDecTop.executeLoopFilters(poc, pcListPic);
     }
 
     if( pcListPic )
@@ -256,15 +256,20 @@ Void TAppDecTop::xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId )
   while (iterPic != pcListPic->end())
   {
     TComPic* pcPic = *(iterPic);
-    TComSPS *sps = pcPic->getSlice(0)->getSPS();
     
-    if ( pcPic->getOutputMark() && (not_displayed >  pcPic->getSlice(0)->getSPS()->getNumReorderPics(tId) && pcPic->getPOC() > m_iPOCLastDisplay))
+    if ( pcPic->getOutputMark() && (not_displayed >  pcPic->getNumReorderPics(tId) && pcPic->getPOC() > m_iPOCLastDisplay))
     {
       // write to file
        not_displayed--;
       if ( m_pchReconFile )
       {
-        m_cTVideoIOYuvReconFile.write( pcPic->getPicYuvRec(), sps->getPicCropLeftOffset(), sps->getPicCropRightOffset(), sps->getPicCropTopOffset(), sps->getPicCropBottomOffset() );
+        const Window &conf = pcPic->getConformanceWindow();
+        const Window &defDisp = m_respectDefDispWindow ? pcPic->getDefDisplayWindow() : Window();
+        m_cTVideoIOYuvReconFile.write( pcPic->getPicYuvRec(),
+                                       conf.getWindowLeftOffset() + defDisp.getWindowLeftOffset(),
+                                       conf.getWindowRightOffset() + defDisp.getWindowRightOffset(),
+                                       conf.getWindowTopOffset() + defDisp.getWindowTopOffset(),
+                                       conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset() );
       }
       
       // update POC of display order
@@ -309,14 +314,19 @@ Void TAppDecTop::xFlushOutput( TComList<TComPic*>* pcListPic )
   while (iterPic != pcListPic->end())
   {
     TComPic* pcPic = *(iterPic);
-    TComSPS *sps = pcPic->getSlice(0)->getSPS();
 
     if ( pcPic->getOutputMark() )
     {
       // write to file
       if ( m_pchReconFile )
       {
-        m_cTVideoIOYuvReconFile.write( pcPic->getPicYuvRec(), sps->getPicCropLeftOffset(), sps->getPicCropRightOffset(), sps->getPicCropTopOffset(), sps->getPicCropBottomOffset() );
+        const Window &conf = pcPic->getConformanceWindow();
+        const Window &defDisp = m_respectDefDispWindow ? pcPic->getDefDisplayWindow() : Window();
+        m_cTVideoIOYuvReconFile.write( pcPic->getPicYuvRec(),
+                                       conf.getWindowLeftOffset() + defDisp.getWindowLeftOffset(),
+                                       conf.getWindowRightOffset() + defDisp.getWindowRightOffset(),
+                                       conf.getWindowTopOffset() + defDisp.getWindowTopOffset(),
+                                       conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset() );
       }
       
       // update POC of display order

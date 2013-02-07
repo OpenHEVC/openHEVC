@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@
 
 Void         initROM();
 Void         destroyROM();
-Void         initSigLastScan(UInt* pBuffZ, UInt* pBuffH, UInt* pBuffV, UInt* pBuffD, Int iWidth, Int iHeight, Int iDepth);
+Void         initSigLastScan(UInt* pBuffD, UInt* pBuffH, UInt* pBuffV, Int iWidth, Int iHeight);
 // ====================================================================================================================
 // Data structure related table & variable
 // ====================================================================================================================
@@ -69,16 +69,9 @@ Void         initSigLastScan(UInt* pBuffZ, UInt* pBuffH, UInt* pBuffV, UInt* pBu
 // flexible conversion from relative to absolute index
 extern       UInt   g_auiZscanToRaster[ MAX_NUM_SPU_W*MAX_NUM_SPU_W ];
 extern       UInt   g_auiRasterToZscan[ MAX_NUM_SPU_W*MAX_NUM_SPU_W ];
-#if !LINEBUF_CLEANUP
-extern       UInt   g_motionRefer[ MAX_NUM_SPU_W*MAX_NUM_SPU_W ];
-#endif
 
 Void         initZscanToRaster ( Int iMaxDepth, Int iDepth, UInt uiStartVal, UInt*& rpuiCurrIdx );
 Void         initRasterToZscan ( UInt uiMaxCUWidth, UInt uiMaxCUHeight, UInt uiMaxDepth         );
-
-#if !LINEBUF_CLEANUP
-Void          initMotionReferIdx ( UInt uiMaxCUWidth, UInt uiMaxCUHeight, UInt uiMaxDepth );
-#endif
 
 // conversion of partition index to picture pel position
 extern       UInt   g_auiRasterToPelX[ MAX_NUM_SPU_W*MAX_NUM_SPU_W ];
@@ -122,7 +115,7 @@ extern const UChar  g_aucChromaScale      [58];
 // Scanning order & context mapping table
 // ====================================================================================================================
 
-extern       UInt*  g_auiSigLastScan[4][ MAX_CU_DEPTH ];  // raster index from scanning index (zigzag, hor, ver, diag)
+extern       UInt*  g_auiSigLastScan[ 3 ][ MAX_CU_DEPTH ];  // raster index from scanning index (diag, hor, ver)
 
 extern const UInt   g_uiGroupIdx[ 32 ];
 extern const UInt   g_uiMinInGroup[ 10 ];
@@ -130,7 +123,7 @@ extern const UInt   g_uiMinInGroup[ 10 ];
 extern const UInt   g_auiGoRiceRange[5];                  //!< maximum value coded with Rice codes
 extern const UInt   g_auiGoRicePrefixLen[5];              //!< prefix length for each maximum value
   
-extern const UInt   g_sigLastScan8x8[ 4 ][ 4 ];           //!< coefficient group scan order for 8x8 TUs
+extern const UInt   g_sigLastScan8x8[ 3 ][ 4 ];           //!< coefficient group scan order for 8x8 TUs
 extern       UInt   g_sigLastScanCG32x32[ 64 ];
 
 // ====================================================================================================================
@@ -138,14 +131,6 @@ extern       UInt   g_sigLastScanCG32x32[ 64 ];
 // ====================================================================================================================
 
 extern const UChar  g_aucIntraModeNumFast[7];
-
-// ====================================================================================================================
-// Angular Intra table
-// ====================================================================================================================
-
-extern const UChar g_aucIntraModeNumAng[7];
-extern const UChar g_aucIntraModeBitsAng[7];
-extern const UChar g_aucAngIntraModeOrder[NUM_INTRA_MODE];
 
 // ====================================================================================================================
 // Bit-depth
@@ -175,8 +160,9 @@ extern const UChar g_aucDCTDSTMode_Hor[NUM_INTRA_MODE];
 
 extern       Char   g_aucConvertToBit  [ MAX_CU_SIZE+1 ];   // from width to log2(width)-2
 
-#define ENC_DEC_TRACE 0
-
+#ifndef ENC_DEC_TRACE
+# define ENC_DEC_TRACE 0
+#endif
 
 #if ENC_DEC_TRACE
 extern FILE*  g_hTrace;
@@ -275,15 +261,9 @@ static const Char MatrixType_DC[4][12][22] =
   "INTER32X32_LUMA_DC",
   },
 };
-#if !FLAT_4x4_DSL
-extern Int g_quantIntraDefault4x4[16];
-#endif
 extern Int g_quantIntraDefault8x8[64];
 extern Int g_quantIntraDefault16x16[256];
 extern Int g_quantIntraDefault32x32[1024];
-#if !FLAT_4x4_DSL
-extern Int g_quantInterDefault4x4[16];
-#endif
 extern Int g_quantInterDefault8x8[64];
 extern Int g_quantInterDefault16x16[256];
 extern Int g_quantInterDefault32x32[1024];

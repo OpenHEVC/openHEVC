@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -78,7 +78,6 @@ TComSampleAdaptiveOffset::TComSampleAdaptiveOffset()
   m_pTmpU2 = NULL;
   m_pTmpL1 = NULL;
   m_pTmpL2 = NULL;
-  m_iLcuPartIdx = NULL;
 }
 
 TComSampleAdaptiveOffset::~TComSampleAdaptiveOffset()
@@ -152,7 +151,7 @@ Int  TComSampleAdaptiveOffset::convertLevelRowCol2Idx(Int level, Int row, Int co
 /** create SampleAdaptiveOffset memory.
  * \param 
  */
-Void TComSampleAdaptiveOffset::create( UInt uiSourceWidth, UInt uiSourceHeight, UInt uiMaxCUWidth, UInt uiMaxCUHeight, UInt uiMaxCUDepth)
+Void TComSampleAdaptiveOffset::create( UInt uiSourceWidth, UInt uiSourceHeight, UInt uiMaxCUWidth, UInt uiMaxCUHeight )
 {
   m_iPicWidth  = uiSourceWidth;
   m_iPicHeight = uiSourceHeight;
@@ -252,7 +251,6 @@ Void TComSampleAdaptiveOffset::create( UInt uiSourceWidth, UInt uiSourceHeight, 
 
   m_pChromaClipTable = &(m_pChromaClipTableBase[iCRangeExtC]);
 
-  m_iLcuPartIdx = new Int [m_iNumCuInHeight*m_iNumCuInWidth];
   m_pTmpL1 = new Pel [m_uiMaxCUHeight+1];
   m_pTmpL2 = new Pel [m_uiMaxCUHeight+1];
   m_pTmpU1 = new Pel [m_iPicWidth];
@@ -320,10 +318,6 @@ Void TComSampleAdaptiveOffset::destroy()
   if (m_pTmpU2)
   {
     delete [] m_pTmpU2; m_pTmpU2 = NULL;
-  }
-  if(m_iLcuPartIdx)
-  {
-    delete []m_iLcuPartIdx; m_iLcuPartIdx = NULL;
   }
 }
 
@@ -521,13 +515,10 @@ inline Int xSign(Int x)
 
 /** initialize variables for SAO process
  * \param  pcPic picture data pointer
- * \param  numSlicesInPic number of slices in picture
  */
-Void TComSampleAdaptiveOffset::createPicSaoInfo(TComPic* pcPic, Int numSlicesInPic)
+Void TComSampleAdaptiveOffset::createPicSaoInfo(TComPic* pcPic)
 {
   m_pcPic   = pcPic;
-  m_uiNumSlicesInPic = numSlicesInPic;
-  m_iSGDepth = 0;
   m_bUseNIF = ( pcPic->getIndependentSliceBoundaryForNDBFilter() || pcPic->getIndependentTileBoundaryForNDBFilter() );
   if(m_bUseNIF)
   {
@@ -573,7 +564,7 @@ Void TComSampleAdaptiveOffset::processSaoCu(Int iAddr, Int iSaoType, Int iYCbCr)
 
       posOffset = (yPos* stride) + xPos;
 
-      processSaoBlock(pPicDec+ posOffset, pPicRest+ posOffset, stride, iSaoType, xPos, yPos, width, height, pbBorderAvail, iYCbCr);
+      processSaoBlock(pPicDec+ posOffset, pPicRest+ posOffset, stride, iSaoType, width, height, pbBorderAvail, iYCbCr);
     }
   }
 }
@@ -589,7 +580,7 @@ Void TComSampleAdaptiveOffset::processSaoCu(Int iAddr, Int iSaoType, Int iYCbCr)
  * \param  height block height
  * \param  pbBorderAvail availabilities of block border pixels
  */
-Void TComSampleAdaptiveOffset::processSaoBlock(Pel* pDec, Pel* pRest, Int stride, Int saoType, UInt xPos, UInt yPos, UInt width, UInt height, Bool* pbBorderAvail, Int iYCbCr)
+Void TComSampleAdaptiveOffset::processSaoBlock(Pel* pDec, Pel* pRest, Int stride, Int saoType, UInt width, UInt height, Bool* pbBorderAvail, Int iYCbCr)
 {
   //variables
   Int startX, startY, endX, endY, x, y;
@@ -1040,9 +1031,8 @@ Void TComSampleAdaptiveOffset::processSaoCuOrg(Int iAddr, Int iSaoType, Int iYCb
 /** Sample adaptive offset process
  * \param pcPic, pcSaoParam  
  */
-Void TComSampleAdaptiveOffset::SAOProcess(TComPic* pcPic, SAOParam* pcSaoParam)
+Void TComSampleAdaptiveOffset::SAOProcess(SAOParam* pcSaoParam)
 {
-  if (pcSaoParam->bSaoFlag[0] || pcSaoParam->bSaoFlag[1])
   {
     m_uiSaoBitIncreaseY = max(g_bitDepthY - 10, 0);
     m_uiSaoBitIncreaseC = max(g_bitDepthC - 10, 0);
@@ -1058,11 +1048,9 @@ Void TComSampleAdaptiveOffset::SAOProcess(TComPic* pcPic, SAOParam* pcSaoParam)
       pcSaoParam->oneUnitFlag[2] = 0;  
     }
     Int iY  = 0;
-    if (pcSaoParam->bSaoFlag[0])
     {
       processSaoUnitAll( pcSaoParam->saoLcuParam[iY], pcSaoParam->oneUnitFlag[iY], iY);
     }
-    if(pcSaoParam->bSaoFlag[1])
     {
        processSaoUnitAll( pcSaoParam->saoLcuParam[1], pcSaoParam->oneUnitFlag[1], 1);//Cb
        processSaoUnitAll( pcSaoParam->saoLcuParam[2], pcSaoParam->oneUnitFlag[2], 2);//Cr

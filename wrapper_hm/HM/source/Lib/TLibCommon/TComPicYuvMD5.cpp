@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -85,7 +85,6 @@ static void md5_plane(MD5& md5, const Pel* plane, UInt width, UInt height, UInt 
 
 static void compCRC(Int bitdepth, const Pel* plane, UInt width, UInt height, UInt stride, UChar digest[16])
 {
-  UInt dataMsbIdx = bitdepth - 1;
   UInt crcMsb;
   UInt bitVal;
   UInt crcVal = 0xffff;
@@ -93,12 +92,23 @@ static void compCRC(Int bitdepth, const Pel* plane, UInt width, UInt height, UIn
   for (UInt y = 0; y < height; y++)
   {
     for (UInt x = 0; x < width; x++)
-    {     
-      for(bitIdx=0; bitIdx<bitdepth; bitIdx++)
+    {
+      // take CRC of first pictureData byte
+      for(bitIdx=0; bitIdx<8; bitIdx++)
       {
         crcMsb = (crcVal >> 15) & 1;
-        bitVal = (plane[y*stride+x]>> (dataMsbIdx - (bitIdx&dataMsbIdx))) & 1;
+        bitVal = (plane[y*stride+x] >> (7 - bitIdx)) & 1;
         crcVal = (((crcVal << 1) + bitVal) & 0xffff) ^ (crcMsb * 0x1021);
+      }
+      // take CRC of second pictureData byte if bit depth is greater than 8-bits
+      if(bitdepth > 8)
+      {
+        for(bitIdx=0; bitIdx<8; bitIdx++)
+        {
+          crcMsb = (crcVal >> 15) & 1;
+          bitVal = (plane[y*stride+x] >> (15 - bitIdx)) & 1;
+          crcVal = (((crcVal << 1) + bitVal) & 0xffff) ^ (crcMsb * 0x1021);
+        }
       }
     }
   }

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,19 +63,25 @@ protected:
   UInt      m_FrameSkip;                                      ///< number of skipped frames from the beginning
   Int       m_iSourceWidth;                                   ///< source width in pixel
   Int       m_iSourceHeight;                                  ///< source height in pixel
-  Int       m_croppingMode;
-  Int       m_cropLeft;
-  Int       m_cropRight;
-  Int       m_cropTop;
-  Int       m_cropBottom;
-  Int       m_iFrameToBeEncoded;                              ///< number of encoded frames
+  Int       m_conformanceMode;
+  Int       m_confLeft;
+  Int       m_confRight;
+  Int       m_confTop;
+  Int       m_confBottom;
+  Int       m_framesToBeEncoded;                              ///< number of encoded frames
   Int       m_aiPad[2];                                       ///< number of padded pixels for width and height
   
   // profile/level
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
-
+#if L0046_CONSTRAINT_FLAGS
+  Bool m_progressiveSourceFlag;
+  Bool m_interlacedSourceFlag;
+  Bool m_nonPackedConstraintFlag;
+  Bool m_frameOnlyConstraintFlag;
+#endif
+  
   // coding structure
   Int       m_iIntraPeriod;                                   ///< period of I-slice (random access period)
   Int       m_iDecodingRefreshType;                           ///< random access type
@@ -156,8 +162,9 @@ protected:
   Bool      m_bUseASR;                                        ///< flag for using adaptive motion search range
   Bool      m_bUseHADME;                                      ///< flag for using HAD in sub-pel ME
   Bool      m_useRDOQ;                                       ///< flag for using RD optimized quantization
-#if RDOQ_TRANSFORMSKIP
   Bool      m_useRDOQTS;                                     ///< flag for using RD optimized quantization for transform skip
+#if L0232_RD_PENALTY
+  Int      m_rdPenalty;                                      ///< RD-penalty for 32x32 TU for intra in non-intra slices (0: no RD-penalty, 1: RD-penalty, 2: maximum RD-penalty) 
 #endif
   Int       m_iFastSearch;                                    ///< ME mode, 0 = full, 1 = diamond, 2 = PMVFAST
   Int       m_iSearchRange;                                   ///< ME search range
@@ -167,42 +174,62 @@ protected:
   Bool      m_useFastDecisionForMerge;                        ///< flag for using Fast Decision Merge RD-Cost 
   Bool      m_bUseCbfFastMode;                              ///< flag for using Cbf Fast PU Mode Decision
   Bool      m_useEarlySkipDetection;                         ///< flag for using Early SKIP Detection
-  Int       m_iSliceMode;           ///< 0: Disable all Recon slice limits, 1 : Maximum number of largest coding units per slice, 2: Maximum number of bytes in a slice
-  Int       m_iSliceArgument;       ///< If m_iSliceMode==1, m_iSliceArgument=max. # of largest coding units. If m_iSliceMode==2, m_iSliceArgument=max. # of bytes.
-  Int       m_iDependentSliceMode;    ///< 0: Disable all dependent slice limits, 1 : Maximum number of largest coding units per slice, 2: Constraint based dependent slice
-  Int       m_iDependentSliceArgument;///< If m_iDependentSliceMode==1, m_iEDependentSliceArgument=max. # of largest coding units. If m_iDependnetSliceMode==2, m_iDependnetSliceArgument=max. # of bins.
-#if DEPENDENT_SLICES && !REMOVE_ENTROPY_SLICES
-  Bool      m_entropySliceEnabledFlag;
-#endif
+  Int       m_sliceMode;                                     ///< 0: no slice limits, 1 : max number of CTBs per slice, 2: max number of bytes per slice, 
+                                                             ///< 3: max number of tiles per slice
+  Int       m_sliceArgument;                                 ///< argument according to selected slice mode
+  Int       m_sliceSegmentMode;                              ///< 0: no slice segment limits, 1 : max number of CTBs per slice segment, 2: max number of bytes per slice segment, 
+                                                             ///< 3: max number of tiles per slice segment
+  Int       m_sliceSegmentArgument;                          ///< argument according to selected slice segment mode
 
-  Bool      m_bLFCrossSliceBoundaryFlag;  ///< 0: Cross-slice-boundary in-loop filtering 1: non-cross-slice-boundary in-loop filtering
-  Bool      m_bLFCrossTileBoundaryFlag;  //!< 1: Cross-tile-boundary in-loop filtering 0: non-cross-tile-boundary in-loop filtering
+  Bool      m_bLFCrossSliceBoundaryFlag;  ///< 1: filter across slice boundaries 0: do not filter across slice boundaries
+  Bool      m_bLFCrossTileBoundaryFlag;   ///< 1: filter across tile boundaries  0: do not filter across tile boundaries
   Int       m_iUniformSpacingIdr;
   Int       m_iNumColumnsMinus1;
   Char*     m_pchColumnWidth;
   Int       m_iNumRowsMinus1;
   Char*     m_pchRowHeight;
+  UInt*     m_pColumnWidth;
+  UInt*     m_pRowHeight;
   Int       m_iWaveFrontSynchro; //< 0: no WPP. >= 1: WPP is enabled, the "Top right" from which inheritance occurs is this LCU offset in the line above the current.
   Int       m_iWaveFrontSubstreams; //< If iWaveFrontSynchro, this is the number of substreams per frame (dependent tiles) or per tile (independent tiles).
 
   Bool      m_bUseConstrainedIntraPred;                       ///< flag for using constrained intra prediction
   
-  Int       m_decodePictureHashSEIEnabled;                    ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
+  Int       m_decodedPictureHashSEIEnabled;                    ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
   Int       m_recoveryPointSEIEnabled;
   Int       m_bufferingPeriodSEIEnabled;
   Int       m_pictureTimingSEIEnabled;
+  Int       m_framePackingSEIEnabled;
+  Int       m_framePackingSEIType;
+  Int       m_framePackingSEIId;
+  Int       m_framePackingSEIQuincunx;
+  Int       m_framePackingSEIInterpretation;
+  Int       m_displayOrientationSEIAngle;
+  Int       m_temporalLevel0IndexSEIEnabled;
+  Int       m_gradualDecodingRefreshInfoEnabled;
+  Int       m_decodingUnitInfoSEIEnabled;
   // weighted prediction
-  Bool      m_bUseWeightPred;                                 ///< Use of explicit Weighting Prediction for P_SLICE
-  Bool      m_useWeightedBiPred;                                    ///< Use of Bi-Directional Weighting Prediction (B_SLICE)
+  Bool      m_useWeightedPred;                    ///< Use of weighted prediction in P slices
+  Bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices
   
   UInt      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   UInt      m_maxNumMergeCand;                                ///< Max number of merge candidates
 
   Int       m_TMVPModeId;
   Int       m_signHideFlag;
+#if RATE_CONTROL_LAMBDA_DOMAIN
+  Bool      m_RCEnableRateControl;                ///< enable rate control or not
+  Int       m_RCTargetBitrate;                    ///< target bitrate when rate control is enabled
+  Bool      m_RCKeepHierarchicalBit;              ///< whether keeping hierarchical bit allocation structure or not
+  Bool      m_RCLCULevelRC;                       ///< true: LCU level rate control; false: picture level rate control
+  Bool      m_RCUseLCUSeparateModel;              ///< use separate R-lambda model at LCU level
+  Int       m_RCInitialQP;                        ///< inital QP for rate control
+  Bool      m_RCForceIntraQP;                     ///< force all intra picture to use initial QP or not
+#else
   Bool      m_enableRateCtrl;                                   ///< Flag for using rate control algorithm
   Int       m_targetBitrate;                                 ///< target bitrate
   Int       m_numLCUInUnit;                                  ///< Total number of LCUs in a frame should be completely divided by the NumLCUInUnit
+#endif
   Int       m_useScalingListId;                               ///< using quantization matrix
   Char*     m_scalingListFile;                                ///< quantization matrix file name
 
@@ -210,9 +237,7 @@ protected:
   Bool      m_CUTransquantBypassFlagValue;                    ///< if transquant_bypass_enable_flag, the fixed value to use for the per-CU cu_transquant_bypass_flag.
 
   Bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
-#if STRONG_INTRA_SMOOTHING
   Bool      m_useStrongIntraSmoothing;                        ///< enable strong intra smoothing for 32x32 blocks where the reference samples are flat
-#endif
   Int       m_activeParameterSetsSEIEnabled;
 
   Bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
@@ -221,7 +246,7 @@ protected:
   Int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
   Int       m_sarHeight;                                      ///< vertical size of the sample aspect ratio
   Bool      m_overscanInfoPresentFlag;                        ///< Signals whether overscan_appropriate_flag is present
-  Bool      m_overscanAppropriateFlag;                        ///< Indicates whether cropped decoded pictures are suitable for display using overscan
+  Bool      m_overscanAppropriateFlag;                        ///< Indicates whether conformant decoded pictures are suitable for display using overscan
   Bool      m_videoSignalTypePresentFlag;                     ///< Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present
   Int       m_videoFormat;                                    ///< Indicates representation of pictures
   Bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
@@ -233,9 +258,18 @@ protected:
   Int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
   Int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
   Bool      m_neutralChromaIndicationFlag;                    ///< Indicates that the value of all decoded chroma samples is equal to 1<<(BitDepthCr-1)
+  Bool      m_defaultDisplayWindowFlag;                       ///< Indicates the presence of the default window parameters
+  Int       m_defDispWinLeftOffset;                           ///< Specifies the left offset from the conformance window of the default window
+  Int       m_defDispWinRightOffset;                          ///< Specifies the right offset from the conformance window of the default window
+  Int       m_defDispWinTopOffset;                            ///< Specifies the top offset from the conformance window of the default window
+  Int       m_defDispWinBottomOffset;                         ///< Specifies the bottom offset from the conformance window of the default window
+  Bool      m_frameFieldInfoPresentFlag;                      ///< Indicates that pic_struct values are present in picture timing SEI messages
+  Bool      m_pocProportionalToTimingFlag;                    ///< Indicates that the POC value is proportional to the output time w.r.t. first picture in CVS
+  Int       m_numTicksPocDiffOneMinus1;                       ///< Number of ticks minus 1 that for a POC difference of one
   Bool      m_bitstreamRestrictionFlag;                       ///< Signals whether bitstream restriction parameters are present
   Bool      m_tilesFixedStructureFlag;                        ///< Indicates that each active picture parameter set has the same values of the syntax elements related to tiles
   Bool      m_motionVectorsOverPicBoundariesFlag;             ///< Indicates that no samples outside the picture boundaries are used for inter prediction
+  Int       m_minSpatialSegmentationIdc;                      ///< Indicates the maximum size of the spatial segments in the pictures in the coded video sequence
   Int       m_maxBytesPerPicDenom;                            ///< Indicates a number of bytes not exceeded by the sum of the sizes of the VCL NAL units associated with any coded picture
   Int       m_maxBitsPerMinCuDenom;                           ///< Indicates an upper bound for the number of bits of coding_unit() data
   Int       m_log2MaxMvLengthHorizontal;                      ///< Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units
@@ -246,7 +280,16 @@ protected:
   Void  xCheckParameter ();                                   ///< check validity of configuration values
   Void  xPrintParameter ();                                   ///< print configuration values
   Void  xPrintUsage     ();                                   ///< print usage
-  
+#if SIGNAL_BITRATE_PICRATE_IN_VPS
+  Int       m_bitRatePicRateMaxTLayers;                       ///< Indicates max. number of sub-layers for which bit rate is signalled.
+  Bool*     m_bitRateInfoPresentFlag;                         ///< Indicates whether bit rate information is signalled
+  Bool*     m_picRateInfoPresentFlag;                         ///< Indicates whether pic rate information is signalled
+  Int*      m_avgBitRate;                                     ///< Indicates avg. bit rate information for various sub-layers
+  Int*      m_maxBitRate;                                     ///< Indicates max. bit rate information for various sub-layers
+  Int*      m_avgPicRate;                                     ///< Indicates avg. picture rate information for various sub-layers
+  Int*      m_constantPicRateIdc;                                ///< Indicates constant picture rate idc for various sub-layers
+#endif
+  #
 public:
   TAppEncCfg();
   virtual ~TAppEncCfg();

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,8 +67,6 @@ typedef struct
 
   Int blockCbpBits[3*NUM_QT_CBF_CTX][2];
   Int blockRootCbpBits[4][2];
-  Int scanZigzag[2];            ///< flag for zigzag scan
-  Int scanNonZigzag[2];         ///< flag for non zigzag scan
 } estBitsSbacStruct;
 
 // ====================================================================================================================
@@ -120,10 +118,8 @@ public:
   ~TComTrQuant();
   
   // initialize class
-  Void init                 ( UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxTrSize, Int iSymbolMode = 0, UInt *aTable4 = NULL, UInt *aTable8 = NULL, UInt *aTableLastPosVlcIndex=NULL, Bool useRDOQ = false,  
-#if RDOQ_TRANSFORMSKIP
-    Bool useRDOQTS = false,  
-#endif
+  Void init                 ( UInt uiMaxTrSize, Bool useRDOQ = false,  
+    Bool useRDOQTS = false,
     Bool bEnc = false, Bool useTransformSkipFast = false
 #if ADAPTIVE_QP_SELECTION
     , Bool bUseAdaptQpSelect = false
@@ -169,15 +165,12 @@ public:
                                      UInt                            scanIdx,
                                      Int                             posX,
                                      Int                             posY,
-                                     Int                             blockType,
-                                     Int                             width
-                                    ,Int                             height
-                                    ,TextType                        textureType
+                                     Int                             log2BlkSize,
+                                     TextType                        textureType
                                     );
   static UInt getSigCoeffGroupCtxInc  ( const UInt*                   uiSigCoeffGroupFlag,
                                        const UInt                       uiCGPosX,
                                        const UInt                       uiCGPosY,
-                                       const UInt                     scanIdx,
                                        Int width, Int height);
   Void initScalingList                      ();
   Void destroyScalingList                   ();
@@ -221,9 +214,7 @@ protected:
   UInt     m_uiMaxTrSize;
   Bool     m_bEnc;
   Bool     m_useRDOQ;
-#if RDOQ_TRANSFORMSKIP
   Bool     m_useRDOQTS;
-#endif
 #if ADAPTIVE_QP_SELECTION
   Bool     m_bUseAdaptQpSelect;
 #endif
@@ -239,7 +230,7 @@ private:
   // skipping Transform
   Void xTransformSkip (Int bitDepth, Pel* piBlkResi, UInt uiStride, Int* psCoeff, Int width, Int height );
 
-  Void signBitHidingHDQ( TComDataCU* pcCU, TCoeff* pQCoef, TCoeff* pCoef, UInt const *scan, Int* deltaU, Int width, Int height );
+  Void signBitHidingHDQ( TCoeff* pQCoef, TCoeff* pCoef, UInt const *scan, Int* deltaU, Int width, Int height );
 
   // quantization
   Void xQuant( TComDataCU* pcCU, 
@@ -296,8 +287,7 @@ __inline Int xGetICRate  ( UInt                            uiAbsLevel,
                            UInt                            c2Idx
                          ) const;
   __inline Double xGetRateLast     ( const UInt                      uiPosX,
-                                     const UInt                      uiPosY,
-                                     const UInt                      uiBlkWdth     ) const;
+                                     const UInt                      uiPosY ) const;
   __inline Double xGetRateSigCoeffGroup (  UShort                    uiSignificanceCoeffGroup,
                                      UShort                          ui16CtxNumSig ) const;
   __inline Double xGetRateSigCoef (  UShort                          uiSignificance,

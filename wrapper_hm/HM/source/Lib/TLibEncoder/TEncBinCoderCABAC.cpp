@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -122,43 +122,13 @@ Void TEncBinCABAC::resetBac()
   start();
 }
 
-#if !REMOVE_BURST_IPCM
-/** Encode # of subsequent IPCM blocks.
- * \param numSubseqIPCM 
- * \returns Void
- */
-Void TEncBinCABAC::encodeNumSubseqIPCM( Int numSubseqIPCM )
-{
-  finish();
-  m_pcTComBitIf->write( 1, 1 ); // stop bit
-
-  m_pcTComBitIf->write( numSubseqIPCM ? 1 : 0, 1);
-
-  if ( numSubseqIPCM > 0)
-  {
-    Bool bCodeLast = ( 3 > numSubseqIPCM );
-
-    while( --numSubseqIPCM )
-    {
-      m_pcTComBitIf->write( 1, 1 );
-    }
-    if( bCodeLast )
-    {
-      m_pcTComBitIf->write( 0, 1 );
-    }
-  }
-}
-#endif
-
 /** Encode PCM alignment zero bits.
  * \returns Void
  */
 Void TEncBinCABAC::encodePCMAlignBits()
 {
-#if REMOVE_BURST_IPCM
   finish();
   m_pcTComBitIf->write(1, 1);
-#endif
   m_pcTComBitIf->writeAlignZero(); // pcm align zero
 }
 

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,6 @@ TComPic::TComPic()
 , m_bIndependentTileBoundaryForNDBFilter  (false)
 , m_pNDBFilterYuvTmp                      (NULL)
 , m_bCheckLTMSB                           (false)
-, m_SEIs                                  (NULL)
 {
   m_apcPicYuv[0]      = NULL;
   m_apcPicYuv[1]      = NULL;
@@ -73,7 +72,9 @@ TComPic::~TComPic()
 {
 }
 
-Void TComPic::create( Int iWidth, Int iHeight, UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxDepth, Bool bIsVirtual )
+Void TComPic::create( Int iWidth, Int iHeight, UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxDepth, Window &conformanceWindow, Window &defaultDisplayWindow,
+                      Int *numReorderPics, Bool bIsVirtual)
+
 {
   m_apcPicSym     = new TComPicSym;  m_apcPicSym   ->create( iWidth, iHeight, uiMaxWidth, uiMaxHeight, uiMaxDepth );
   if (!bIsVirtual)
@@ -82,9 +83,22 @@ Void TComPic::create( Int iWidth, Int iHeight, UInt uiMaxWidth, UInt uiMaxHeight
   }
   m_apcPicYuv[1]  = new TComPicYuv;  m_apcPicYuv[1]->create( iWidth, iHeight, uiMaxWidth, uiMaxHeight, uiMaxDepth );
   
-  /* there are no SEI messages associated with this picture initially */
-  m_SEIs = NULL;
+  // there are no SEI messages associated with this picture initially
+  if (m_SEIs.size() > 0)
+  {
+    deleteSEIs (m_SEIs);
+  }
   m_bUsedByCurr = false;
+
+  /* store conformance window parameters with picture */
+  m_conformanceWindow = conformanceWindow;
+  
+  /* store display window parameters with picture */
+  m_defaultDisplayWindow = defaultDisplayWindow;
+
+  /* store number of reorder pics with picture */
+  memcpy(m_numReorderPics, numReorderPics, MAX_TLAYER*sizeof(Int));
+
   return;
 }
 
@@ -111,7 +125,7 @@ Void TComPic::destroy()
     m_apcPicYuv[1]  = NULL;
   }
   
-  delete m_SEIs;
+  deleteSEIs(m_SEIs);
 }
 
 Void TComPic::compressMotion()

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,31 +40,40 @@
 
 //! \ingroup TLibCommon
 //! \{
-#define SAVE_BITS_REFPICLIST_MOD_FLAG               1  ///< K0224 Proposal#1: Send ref_pic_list_modification_flag_lX only when NumPocTotalCurr is greater than 1.
+#define L0363_DU_BIT_RATE             1 ///< L0363: add bit_rate_du_value_minus1 to HRD parameters
+#define L0328_SPLICING                1 ///< L0328: splicing support in HRD
+#define L0044_DU_DPB_OUTPUT_DELAY_HRD 1 ///< L0044: Include dpb_output_delay_du_length_minus1 in hrd_parameters(), dpb_output_du_delay in
+                                        ///<        picture timing SEI and DU information SEI
+#define L0045_PERSISTENCE_FLAGS  1      ///< L0045: Replace "repetition_period" syntax elements in SEI with "persistence_flag"
+#define L0045_NON_NESTED_SEI_RESTRICTIONS 1 ///< L0045; Include restriction on the order of APS and non-nested BP, PT and DU info SEI messages
+#define L0044_CPB_DPB_DELAY_OFFSET 1  ///< L0044: Include syntax elements cpb_delay_offset and dpb_delay_offset in the BP SEI message
+#define L0047_APS_FLAGS            1  ///< L0047: Include full_random_access_flag and no_param_set_update_flag in the active parameter set SEI message
+#define L0043_TIMING_INFO          1  ///< L0043: Timing information is signalled in VUI outside hrd_parameters()
+#define L0046_RENAME_PROG_SRC_IDC  1  ///< L0046: Rename progressive_source_idc to source_scan_type
+#define L0045_CONDITION_SIGNALLING 1  ///< L0045: Condition the signaling of some syntax elements in picture timing SEI message
+#define L0043_MSS_IDC 1
+#define L0116_ENTRY_POINT 1
+#define L0363_MORE_BITS 1
+#define L0363_MVP_POC 1
+#define L0363_BYTE_ALIGN 1
+#define L0363_SEI_ALLOW_SUFFIX 1
+#define L0323_LIMIT_DEFAULT_LIST_SIZE 1
+#define L0046_CONSTRAINT_FLAGS 1
+#define L0255_MOVE_PPS_FLAGS       1  ///< move some flags to earlier positions in the PPS
+#define L0444_FPA_TYPE             1  ///< allow only FPA types 3, 4 and 5
+#define L0372 1
+#define SIGNAL_BITRATE_PICRATE_IN_VPS               0  ///< K0125: Signal bit_rate and pic_rate in VPS
+#define L0232_RD_PENALTY           1  ///< L0232: RD-penalty for 32x32 TU for intra in non-intra slices
 
-#define USE_PIC_CHROMA_QP_OFFSETS_IN_DEBLOCKING     1  ///< K0220: Use picture-based chroma QP offsets in deblocking filter.
+#define MAX_VPS_NUM_HRD_PARAMETERS                1
+#define MAX_VPS_OP_SETS_PLUS1                     1024
+#define MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1  1
 
-#define REMOVE_BURST_IPCM                1  /// Ticket763
-#define REMOVE_ENTROPY_SLICES 1
-
-#define DEPENDENT_SLICE_SEGMENT_FLAGS   1   ///< K0184: Move dependent_slice_enabled_flag after seq_parameter_set_id in PPS.
-                                            ///< Move dependent_slice_flag between pic_parameter_set_id and slice_address.
-#define SPS_INTER_REF_SET_PRED      1   ///< K0136: Not send inter_ref_pic_set_prediction_flag for index 0
-#define HM9_NALU_TYPES 1
-
-#define STRONG_INTRA_SMOOTHING           1  ///< Enables Bilinear interploation of reference samples instead of 121 filter in intra prediction when reference samples are flat.
-
-#define RESTRICT_INTRA_BOUNDARY_SMOOTHING    1  ///< K0380, K0186 
-#define LINEBUF_CLEANUP               1 ///< K0101
-#define MERGE_CLEANUP_AND_K0197     1  //<Code cleanup and K0197: removal of indirect use of A1 and B1 in merging candidate list construction.
-#define RPL_INIT_FIX 1 ///< K0255 2nd part (editorial)
+#define RATE_CONTROL_LAMBDA_DOMAIN                  1  ///< JCTVC-K0103, rate control by R-lambda model
+#define L0033_RC_BUGFIX                             1  ///< JCTVC-L0033, bug fix for R-lambda model based rate control
 
 #define MAX_CPB_CNT                     32  ///< Upper bound of (cpb_cnt_minus1 + 1)
 #define MAX_NUM_LAYER_IDS                64
-
-#define FLAT_4x4_DSL 1 ///< Use flat 4x4 default scaling list (see notes on K0203)
-
-#define RDOQ_TRANSFORMSKIP          1   // Enable RDOQ for transform skip (see noted on K0245)
 
 #define COEF_REMAIN_BIN_REDUCTION        3 ///< indicates the level at which the VLC 
                                            ///< transitions from Golomb-Rice to TU+EG(k)
@@ -83,15 +92,14 @@
 
 #define REMOVE_SAO_LCU_ENC_CONSTRAINTS_3 1  ///< disable the encoder constraint that conditionally disable SAO for chroma for entire slice in interleaved mode
 
-#define SAO_SKIP_RIGHT                   1  ///< H1101: disallow using unavailable pixel during RDO
+#define REMOVE_SINGLE_SEI_EXTENSION_FLAGS 1 ///< remove display orientation SEI extension flag (there is a generic SEI extension mechanism now) 
 
 #define SAO_ENCODING_CHOICE              1  ///< I0184: picture early termination
 #if SAO_ENCODING_CHOICE
 #define SAO_ENCODING_RATE                0.75
-#define SAO_ENCODING_CHOICE_CHROMA       1 ///< J0044: picture early termination Luma and Chroma are handled separatenly
+#define SAO_ENCODING_CHOICE_CHROMA       1 ///< J0044: picture early termination Luma and Chroma are handled separately
 #if SAO_ENCODING_CHOICE_CHROMA
 #define SAO_ENCODING_RATE_CHROMA         0.5
-#define SAO_ENCODING_CHOICE_CHROMA_BF    1 ///  K0156: Bug fix for SAO selection consistency
 #endif
 #endif
 
@@ -119,8 +127,6 @@
 #endif
 
 #define NS_HAD                               0
-
-#define K0251                             1           ///< explicitly signal slice_temporal_mvp_enable_flag in non-IDR I Slices
 
 #define HHI_RQT_INTRA_SPEEDUP             1           ///< tests one best mode with full rqt
 #define HHI_RQT_INTRA_SPEEDUP_MOD         0           ///< tests two best modes with full rqt
@@ -173,19 +179,6 @@
 # define DISTORTION_PRECISION_ADJUSTMENT(x) (x)
 #endif
 
-
-#define AD_HOC_SLICES_FIXED_NUMBER_OF_LCU_IN_SLICE      1          ///< OPTION IDENTIFIER. mode==1 -> Limit maximum number of largest coding tree blocks in a slice
-#define AD_HOC_SLICES_FIXED_NUMBER_OF_BYTES_IN_SLICE    2          ///< OPTION IDENTIFIER. mode==2 -> Limit maximum number of bins/bits in a slice
-#define AD_HOC_SLICES_FIXED_NUMBER_OF_TILES_IN_SLICE    3
-
-#define DEPENDENT_SLICES       1 ///< JCTVC-I0229
-// Dependent slice options
-#define SHARP_FIXED_NUMBER_OF_LCU_IN_DEPENDENT_SLICE            1          ///< OPTION IDENTIFIER. Limit maximum number of largest coding tree blocks in an dependent slice
-#define SHARP_MULTIPLE_CONSTRAINT_BASED_DEPENDENT_SLICE         2          ///< OPTION IDENTIFIER. Limit maximum number of bins/bits in an dependent slice
-#if DEPENDENT_SLICES
-#define FIXED_NUMBER_OF_TILES_IN_DEPENDENT_SLICE          3 // JCTVC-I0229
-#endif
-
 #define LOG2_MAX_NUM_COLUMNS_MINUS1        7
 #define LOG2_MAX_NUM_ROWS_MINUS1           7
 #define LOG2_MAX_COLUMN_WIDTH              13
@@ -204,11 +197,6 @@
 #define SCALING_LIST_OUTPUT_RESULT    0 //JCTVC-G880/JCTVC-G1016 quantization matrices
 
 #define CABAC_INIT_PRESENT_FLAG     1
-
-// ====================================================================================================================
-// VPS constants
-// ====================================================================================================================
-#define MAX_LAYER_NUM                     10
 
 // ====================================================================================================================
 // Basic type redefinition
@@ -256,6 +244,15 @@ typedef       Int             TCoeff;     ///< transform coefficient
 
 /// parameters for adaptive loop filter
 class TComPicSym;
+
+// Slice / Slice segment encoding modes
+enum SliceConstraint
+{
+  NO_SLICES              = 0,          ///< don't use slices / slice segments
+  FIXED_NUMBER_OF_LCU    = 1,          ///< Limit maximum number of largest coding tree blocks in a slice / slice segments
+  FIXED_NUMBER_OF_BYTES  = 2,          ///< Limit maximum number of bytes in a slice / slice segment
+  FIXED_NUMBER_OF_TILES  = 3,          ///< slices / slice segments span an integer number of tiles
+};
 
 #define NUM_DOWN_PART 4
 
@@ -476,10 +473,9 @@ enum MVP_DIR
 /// coefficient scanning type used in ACS
 enum COEFF_SCAN_TYPE
 {
-  SCAN_ZIGZAG = 0,      ///< typical zigzag scan
-  SCAN_HOR,             ///< horizontal first scan
-  SCAN_VER,              ///< vertical first scan
-  SCAN_DIAG              ///< up-right diagonal scan
+  SCAN_DIAG = 0,         ///< up-right diagonal scan
+  SCAN_HOR,              ///< horizontal first scan
+  SCAN_VER               ///< vertical first scan
 };
 
 namespace Profile

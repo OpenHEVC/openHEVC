@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.  
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,9 +56,7 @@ class TComPatternParam
 {
 private:
   Int   m_iOffsetLeft;
-  Int   m_iOffsetRight;
   Int   m_iOffsetAbove;
-  Int   m_iOffsetBottom;
   Pel*  m_piPatternOrigin;
   
 public:
@@ -81,9 +79,7 @@ public:
                            Int         iRoiHeight,
                            Int         iStride,
                            Int         iOffsetLeft,
-                           Int         iOffsetRight,
-                           Int         iOffsetAbove,
-                           Int         iOffsetBottom );
+                           Int         iOffsetAbove );
   
   /// set parameters of one color component from CU data for accessing neighbouring pixels
   Void setPatternParamCU  ( TComDataCU* pcCU,
@@ -91,10 +87,7 @@ public:
                            UChar       iRoiWidth,
                            UChar       iRoiHeight,
                            Int         iOffsetLeft,
-                           Int         iOffsetRight,
                            Int         iOffsetAbove,
-                           Int         iOffsetBottom,
-                           UInt        uiPartDepth,
                            UInt        uiAbsZorderIdx );
 };
 
@@ -134,9 +127,7 @@ public:
                                Int         iRoiHeight,
                                Int         iStride,
                                Int         iOffsetLeft,
-                               Int         iOffsetRight,
-                               Int         iOffsetAbove,
-                               Int         iOffsetBottom );
+                               Int         iOffsetAbove );
   
   /// set parameters from CU data for accessing neighbouring pixels
   Void  initPattern           ( TComDataCU* pcCU,
@@ -168,7 +159,7 @@ public:
 private:
 
   /// padding of unavailable reference samples for intra prediction
-  Void  fillReferenceSamples        (Int bitDepth, TComDataCU* pcCU, Pel* piRoiOrigin, Int* piAdiTemp, Bool* bNeighborFlags, Int iNumIntraNeighbor, Int iUnitSize, Int iNumUnitsInCu, Int iTotalUnits, UInt uiCuWidth, UInt uiCuHeight, UInt uiWidth, UInt uiHeight, Int iPicStride, Bool bLMmode = false);
+  Void  fillReferenceSamples        (Int bitDepth, Pel* piRoiOrigin, Int* piAdiTemp, Bool* bNeighborFlags, Int iNumIntraNeighbor, Int iUnitSize, Int iNumUnitsInCu, Int iTotalUnits, UInt uiCuWidth, UInt uiCuHeight, UInt uiWidth, UInt uiHeight, Int iPicStride, Bool bLMmode = false);
   
 
   /// constrained intra prediction

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2012, ITU/ISO/IEC
+ * Copyright (c) 2010-2013, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -76,9 +76,23 @@ struct NALUnit
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_DLP
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_TFD;
   }
+#if L0045_NON_NESTED_SEI_RESTRICTIONS
+  Bool isSei()
+  {
+    return m_nalUnitType == NAL_UNIT_SEI 
+        || m_nalUnitType == NAL_UNIT_SEI_SUFFIX;
+  }
+
+  Bool isVcl()
+  {
+    return ( (UInt)m_nalUnitType < 32 );
+  }
+#endif
 };
 
 struct OutputNALUnit;
