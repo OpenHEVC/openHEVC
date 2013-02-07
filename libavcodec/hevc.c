@@ -30,7 +30,7 @@
 #include "hevc.h"
 
 
-//#define HM
+#define HM
 #define MV
 #ifdef HM
     #include "wrapper/wrapper.h"

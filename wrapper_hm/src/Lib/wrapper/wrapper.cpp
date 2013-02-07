@@ -186,7 +186,7 @@ void libDecoderDecode(unsigned char *buff, int len, unsigned char *Y, unsigned c
         //readNAL(nalu, nalUnit);
         bNewPicture=myDecoder->decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
         if (bNewPicture){
-            myDecoder->executeDeblockAndAlf(poc, pcListPic, m_iSkipFrame, m_iPOCLastDisplay);
+            myDecoder->executeLoopFilters(poc, pcListPic);
             readAgain=true;
             *got_picture=1;
         }
