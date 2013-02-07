@@ -327,7 +327,7 @@ static int hls_slice_header(HEVCContext *s)
                 return -1;
             }
             if (s->sps->sps_temporal_mvp_enabled_flag) {
-                uint8_t slice_temporal_mvp_enabled_flag = get_bits1(gb);
+                sh->slice_temporal_mvp_enable_flag = get_bits1(gb);
             }
         } else {
             s->poc = 0;
