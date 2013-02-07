@@ -386,7 +386,11 @@ int ff_hevc_sao_eo_class_decode(HEVCContext *s)
 
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s)
 {
-    return get_cabac_terminate(&s->cc);
+    int ret = get_cabac_terminate(&s->cc);
+    if (ret!=0) {
+        printf("end_of_slice\n");
+    }
+    return ret;
 }
 
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s)

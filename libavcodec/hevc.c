@@ -31,7 +31,7 @@
 #include "hevc.h"
 
 
-#define HM
+//#define HM
 #define MV
 #ifdef HM
     #include "wrapper/wrapper.h"
@@ -128,6 +128,7 @@ static void compute_POC(HEVCContext *s, int iPOClsb)
         iPOCmsb = iPrevPOCmsb;
     }
     s->poc = iPOCmsb + iPOClsb;
+    printf("POC %d\n", s->poc);
 }
 static void set_ref_pic_list(HEVCContext *s)
 {
@@ -325,6 +326,9 @@ static int hls_slice_header(HEVCContext *s)
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: long_term_ref_pics_present_flag\n");
                 return -1;
             }
+            if (s->sps->sps_temporal_mvp_enabled_flag) {
+                uint8_t slice_temporal_mvp_enabled_flag = get_bits1(gb);
+            }
         } else {
             s->poc = 0;
         }
@@ -341,9 +345,6 @@ static int hls_slice_header(HEVCContext *s)
 
         sh->num_ref_idx_l0_active = 0;
         sh->num_ref_idx_l1_active = 0;
-        if (s->sps->sps_temporal_mvp_enabled_flag && s->nal_unit_type != NAL_IDR_W_DLP) {
-            sh->slice_temporal_mvp_enable_flag = get_bits1(gb);
-        }
         if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
             sh->num_ref_idx_l0_active = s->pps->num_ref_idx_l0_default_active;
             if (sh->slice_type == B_SLICE)
