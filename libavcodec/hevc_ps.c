@@ -27,30 +27,6 @@
  * Section 7.3.3.1
  */
 
-void print_delta_POC(ShortTermRPS *rps)
-{
-    if (rps->num_delta_pocs != 0) {
-        printf("DeltaPOC = { ");
-        for (int i = 0;  i < rps->num_delta_pocs; i++) {
-            printf("%d", rps->delta_poc[i]);
-            if (rps->used[i] == 1)
-                printf("* ");
-            else
-                printf(" ");
-        }
-        if (rps->inter_ref_pic_set_prediction_flag == 1) {
-            printf("}, RefIdc = { ");
-            if (rps->num_ref_idc != 0)
-                for (int i = 0; i < rps->num_ref_idc; i++)
-                    printf("%d ", rps->ref_idc[i]);
-        }
-    }
-    if (rps->num_delta_pocs != 0)
-        printf("}\n");
-}
-
-
-
 int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
 {
     int delta_idx = 1;
@@ -159,7 +135,6 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
             }
         }
     }
-    print_delta_POC(rps);
     return 0;
 }
 

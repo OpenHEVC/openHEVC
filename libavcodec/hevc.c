@@ -25,16 +25,11 @@
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/internal.h"
+#include "cabac_functions.h"
 #include "golomb.h"
 #include "hevcdata.h"
 #include "hevc.h"
 
-
-#define HM
-#define MV
-#ifdef HM
-    #include "wrapper/wrapper.h"
-#endif
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
  * specification (HLS stands for High Level Syntax).
@@ -74,7 +69,8 @@ static int pic_arrays_init(HEVCContext *s)
     }
 
     if (!s->sao || !s->split_coding_unit_flag || !s->cu.skip_flag ||
-        !s->pu.left_ipm || !s->pu.top_ipm)
+        !s->cu.left_ct_depth || !s->cu.top_ct_depth ||
+        !s->pu.left_ipm || !s->pu.top_ipm || !s->pu.tab_mvf)
         return -1;
 
     for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
@@ -95,6 +91,9 @@ static void pic_arrays_free(HEVCContext *s)
 
     av_freep(&s->split_coding_unit_flag);
     av_freep(&s->cu.skip_flag);
+
+    av_freep(&s->cu.left_ct_depth);
+    av_freep(&s->cu.top_ct_depth);
 
     av_freep(&s->pu.left_ipm);
     av_freep(&s->pu.top_ipm);
@@ -216,7 +215,6 @@ static int hls_slice_header(HEVCContext *s)
     int slice_address_length = 0;
 
     av_dlog(s->avctx, "Decoding slice\n");
-    printf("Decoding slice\n");
 
 
     // Coded parameters
@@ -250,14 +248,8 @@ static int hls_slice_header(HEVCContext *s)
             return -1;
         }
 
-        if (s->sps->bit_depth[0] != s->sps->bit_depth[1]) {
-            av_log_missing_feature(s->avctx,
-                                   "different bit_depth for luma and chroma is", 0);
-            return AVERROR_PATCHWELCOME;
-        }
-
         if (s->sps->chroma_format_idc == 1) {
-            switch (s->sps->bit_depth[0]) {
+            switch (s->sps->bit_depth) {
             case 8:
                 s->avctx->pix_fmt = PIX_FMT_YUV420P;
                 break;
@@ -267,12 +259,6 @@ static int hls_slice_header(HEVCContext *s)
             case 10:
                 s->avctx->pix_fmt = PIX_FMT_YUV420P10;
                 break;
-            case 16:
-                s->avctx->pix_fmt = PIX_FMT_YUV420P16;
-                break;
-            default:
-                av_log(s->avctx, AV_LOG_ERROR, "unsupported bit depth: %d\n", s->sps->bit_depth[0]);
-                return AVERROR_PATCHWELCOME;
             }
         } else {
             av_log(s->avctx, AV_LOG_ERROR, "non-4:2:0 support is currently unspecified.\n");
@@ -284,14 +270,10 @@ static int hls_slice_header(HEVCContext *s)
         s->sps->vshift[2] =
         s->sps->vshift[1] = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
 
-        s->sps->pixel_shift[0] = s->sps->bit_depth[0] > 8;
-        s->sps->pixel_shift[2] =
-        s->sps->pixel_shift[1] = s->sps->bit_depth[1] > 8;
+        s->sps->pixel_shift = s->sps->bit_depth > 8;
 
-        ff_hevc_pred_init(s->hpc[0], s->sps->bit_depth[0]);
-        ff_hevc_pred_init(s->hpc[1], s->sps->bit_depth[1]);
-        ff_hevc_dsp_init(s->hevcdsp[0], s->sps->bit_depth[0]);
-        ff_hevc_dsp_init(s->hevcdsp[1], s->sps->bit_depth[1]);
+        ff_hevc_pred_init(&s->hpc, s->sps->bit_depth);
+        ff_hevc_dsp_init(&s->hevcdsp, s->sps->bit_depth);
 
         ff_dsputil_init(&s->dsp, s->avctx);
     }
@@ -306,10 +288,12 @@ static int hls_slice_header(HEVCContext *s)
     }
 
     if (!s->pps->dependent_slice_segments_enabled_flag) {
+        for(i = 0; i < s->pps->num_extra_slice_header_bits; i++)
+            skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
+        sh->slice_type = get_ue_golomb(gb);
         if (s->pps->output_flag_present_flag)
             sh->pic_output_flag = get_bits1(gb);
 
-        sh->slice_type = get_ue_golomb(gb);
         if (s->sps->separate_colour_plane_flag == 1)
             sh->colour_plane_id = get_bits(gb, 2);
 
@@ -322,8 +306,14 @@ static int hls_slice_header(HEVCContext *s)
                 ff_hevc_decode_short_term_rps(s, MAX_SHORT_TERM_RPS_COUNT, s->sps);
                 sh->short_term_rps = &s->sps->short_term_rps_list[MAX_SHORT_TERM_RPS_COUNT];
             } else {
-                int short_term_ref_pic_set_idx = get_ue_golomb(gb);
-                sh->short_term_rps = &s->sps->short_term_rps_list[short_term_ref_pic_set_idx];
+                int numbits = 0;
+                int short_term_ref_pic_set_idx;
+                while ((1 << numbits) < s->sps->num_short_term_ref_pic_sets)
+                    numbits++;
+                if (numbits > 0)
+                    short_term_ref_pic_set_idx = get_bits(gb, numbits);
+                else
+                    short_term_ref_pic_set_idx = 0;
             }
             if (s->sps->long_term_ref_pics_present_flag) {
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: long_term_ref_pics_present_flag\n");
@@ -359,7 +349,7 @@ static int hls_slice_header(HEVCContext *s)
                 if (sh->slice_type == B_SLICE)
                     sh->num_ref_idx_l1_active = get_ue_golomb(gb) + 1;
             }
-            if (s->sps->lists_modification_present_flag) {
+            if (s->pps->lists_modification_present_flag) {
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: ref_pic_list_modification() \n");
                 return -1;
             }
@@ -463,6 +453,7 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry)
     int c_idx, i;
     int sao_merge_left_flag = 0;
     int sao_merge_up_flag = 0;
+    int shift = s->sps->bit_depth - FFMIN(s->sps->bit_depth, 10);
 
     SAOParams *sao = &CTB(s->sao, rx, ry);
 
@@ -478,51 +469,47 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry)
         if (up_ctb_in_slice && up_ctb_in_tile)
             sao_merge_up_flag = ff_hevc_sao_merge_flag_decode(s);
     }
-    if (sao_merge_up_flag == 0 && sao_merge_left_flag == 0) {
-        for (c_idx = 0; c_idx < 3; c_idx++) {
-            int bit_depth = s->sps->bit_depth[c_idx];
-            int shift = bit_depth - FFMIN(bit_depth, 10);
-            
-            if (!s->sh.slice_sample_adaptive_offset_flag[c_idx])
-                continue;
+    for (c_idx = 0; c_idx < 3; c_idx++) {
 
-            if (c_idx == 2) {
-                sao->type_idx[2] = sao->type_idx[1];
-                sao->eo_class[2] = sao->eo_class[1];
-            } else {
-                set_sao(type_idx[c_idx], ff_hevc_sao_type_idx_decode(s));
-            }
-            av_dlog(s->avctx, "sao_type_idx: %d\n",
-                    sao->type_idx[c_idx]);
+        if (!s->sh.slice_sample_adaptive_offset_flag[c_idx])
+            continue;
 
-            if (sao->type_idx[c_idx] == SAO_NOT_APPLIED)
-                continue;
+        if (c_idx == 2) {
+            sao->type_idx[2] = sao->type_idx[1];
+            sao->eo_class[2] = sao->eo_class[1];
+        } else {
+            set_sao(type_idx[c_idx], ff_hevc_sao_type_idx_decode(s));
+        }
+        av_log(s->avctx, AV_LOG_DEBUG, "sao_type_idx: %d\n",
+               sao->type_idx[c_idx]);
 
-            for (i = 0; i < 4; i++)
-                set_sao(offset_abs[c_idx][i], ff_hevc_sao_offset_abs_decode(s, bit_depth));
+        if (sao->type_idx[c_idx] == SAO_NOT_APPLIED)
+            continue;
 
-            if (sao->type_idx[c_idx] == SAO_BAND) {
-                for (i = 0; i < 4; i++) {
-                    if (sao->offset_abs[c_idx][i]) {
-                        set_sao(offset_sign[c_idx][i], ff_hevc_sao_offset_sign_decode(s));
-                    } else {
-                        sao->offset_sign[c_idx][i] = 0;
-                    }
-                }
-                set_sao(band_position[c_idx], ff_hevc_sao_band_position_decode(s));
-            } else if (c_idx != 2) {
-                set_sao(eo_class[c_idx], ff_hevc_sao_eo_class_decode(s));
-            }
+        for (i = 0; i < 4; i++)
+            set_sao(offset_abs[c_idx][i], ff_hevc_sao_offset_abs_decode(s));
 
-            // Inferred parameters
+        if (sao->type_idx[c_idx] == SAO_BAND) {
             for (i = 0; i < 4; i++) {
-                sao->offset_val[c_idx][i+1] = sao->offset_abs[c_idx][i] << shift;
-                if (sao->type_idx[c_idx] == SAO_EDGE) {
-                    if (i > 1)
-                        sao->offset_val[c_idx][i+1] = -sao->offset_val[c_idx][i+1];
-                } else if (sao->offset_sign[c_idx][i+1]) {
-                    sao->offset_val[c_idx][i+1] = -sao->offset_val[c_idx][i+1];
+                if (sao->offset_abs[c_idx][i]) {
+                    set_sao(offset_sign[c_idx][i], ff_hevc_sao_offset_sign_decode(s));
+                } else {
+                    sao->offset_sign[c_idx][i] = 0;
                 }
+            }
+            set_sao(band_position[c_idx], ff_hevc_sao_band_position_decode(s));
+        } else if (c_idx != 2) {
+            set_sao(eo_class[c_idx], ff_hevc_sao_eo_class_decode(s));
+        }
+
+        // Inferred parameters
+        for (i = 0; i < 4; i++) {
+            sao->offset_val[c_idx][i+1] = sao->offset_abs[c_idx][i] << shift;
+            if (sao->type_idx[c_idx] == SAO_EDGE) {
+                if (i > 1)
+                    sao->offset_val[c_idx][i+1] = -sao->offset_val[c_idx][i+1];
+            } else if (sao->offset_sign[c_idx][i]) {
+                sao->offset_val[c_idx][i+1] = -sao->offset_val[c_idx][i+1];
             }
         }
     }
@@ -552,21 +539,17 @@ static void sao_filter(HEVCContext *s)
                 uint8_t *dst = &s->sao_frame.data[c_idx][y * stride + x];
                 switch (sao->type_idx[c_idx]) {
                 case SAO_BAND:
-                    s->hevcdsp[c_idx]
-                        ->sao_band_filter(dst, src, stride, sao->offset_val[c_idx],
-                                          sao->band_position[c_idx], width, height,
-                                          s->sps->bit_depth[c_idx]);
+                    s->hevcdsp.sao_band_filter(dst, src, stride, sao->offset_val[c_idx],
+                                               sao->band_position[c_idx], width, height);
                     break;
                 case SAO_EDGE: {
                     int top    = y_ctb == 0;
                     int bottom = y_ctb == (s->sps->pic_height_in_ctbs - 1);
                     int left   = x_ctb == 0;
                     int right  = x_ctb == (s->sps->pic_width_in_ctbs - 1);
-                    s->hevcdsp[c_idx]
-                        ->sao_edge_filter(dst, src, stride, sao->offset_val[c_idx],
-                                          sao->eo_class[c_idx],
-                                          top, bottom, left, right,
-                                          width, height, s->sps->bit_depth[c_idx]);
+                    s->hevcdsp.sao_edge_filter(dst, src, stride, sao->offset_val[c_idx],
+                                               sao->eo_class[c_idx],
+                                               top, bottom, left, right, width, height);
                     break;
                 }
                 }
@@ -593,8 +576,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
 
     int i;
 
-    HEVCDSPContext *hevcdsp = s->hevcdsp[c_idx];
-
     int transform_skip_flag = 0;
 
     int last_significant_coeff_x, last_significant_coeff_y;
@@ -609,9 +590,8 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
     ptrdiff_t stride = s->frame.linesize[c_idx];
     int hshift = s->sps->hshift[c_idx];
     int vshift = s->sps->vshift[c_idx];
-    int bit_depth = s->sps->bit_depth[c_idx];
-    int pixel_shift = s->sps->pixel_shift[c_idx];
-    uint8_t *dst = &s->frame.data[c_idx][(y0 >> vshift) * stride + ((x0 >> hshift) << pixel_shift)];
+    uint8_t *dst = &s->frame.data[c_idx][(y0 >> vshift) * stride +
+                                         ((x0 >> hshift) << s->sps->pixel_shift)];
 
     int16_t coeffs[MAX_TB_SIZE * MAX_TB_SIZE] = { 0 };
     int trafo_size = 1 << log2_trafo_size;
@@ -844,16 +824,16 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         }
 
     if (s->cu.cu_transquant_bypass_flag) {
-        hevcdsp->transquant_bypass(dst, coeffs, stride, log2_trafo_size, bit_depth);
+        s->hevcdsp.transquant_bypass(dst, coeffs, stride, log2_trafo_size);
     } else {
         int qp;
         //TODO: handle non-constant QP
         int qp_y_pred = s->sh.slice_qp;
-        int qp_y = ((qp_y_pred + s->tu.cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset_luma) %
-                    (52 + s->sps->qp_bd_offset_luma)) - s->sps->qp_bd_offset_luma;
+        int qp_y = ((qp_y_pred + s->tu.cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
+                    (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
         static int qp_c[] = { 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37 };
         if (c_idx == 0) {
-            qp = qp_y + s->sps->qp_bd_offset_luma;
+            qp = qp_y + s->sps->qp_bd_offset;
         } else {
             int qp_i, offset;
 
@@ -862,7 +842,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
             } else {
                 offset = s->pps->cr_qp_offset + s->sh.slice_cr_qp_offset;
             }
-            qp_i = av_clip_c(qp_y + offset, - s->sps->qp_bd_offset_luma, 57);
+            qp_i = av_clip_c(qp_y + offset, - s->sps->qp_bd_offset, 57);
             if (qp_i < 30) {
                 qp = qp_i;
             } else if (qp_i > 43) {
@@ -871,17 +851,17 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
                 qp = qp_c[qp_i - 30];
             }
 
-            qp += s->sps->qp_bd_offset_chroma;
+            qp += s->sps->qp_bd_offset;
 
         }
 
-        hevcdsp->dequant(coeffs, log2_trafo_size, qp, bit_depth);
+        s->hevcdsp.dequant(coeffs, log2_trafo_size, qp);
         if (transform_skip_flag) {
-            hevcdsp->transform_skip(dst, coeffs, stride, log2_trafo_size, bit_depth);
+            s->hevcdsp.transform_skip(dst, coeffs, stride);
         } else if (s->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
-            hevcdsp->transform_4x4_luma_add(dst, coeffs, stride, bit_depth);
+            s->hevcdsp.transform_4x4_luma_add(dst, coeffs, stride);
         } else {
-            hevcdsp->transform_add[log2_trafo_size-2](dst, coeffs, stride, bit_depth);
+            s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
         }
     }
 }
@@ -891,13 +871,13 @@ static void hls_transform_unit(HEVCContext *s, int x0, int  y0, int xBase, int y
     int scan_idx = SCAN_DIAG;
     int scan_idx_c = SCAN_DIAG;
     if (s->cu.pred_mode == MODE_INTRA) {
-        s->hpc[0]->intra_pred(s, x0, y0, log2_trafo_size, 0);
+        s->hpc.intra_pred(s, x0, y0, log2_trafo_size, 0);
         if (log2_trafo_size > 2) {
-            s->hpc[1]->intra_pred(s, x0, y0, log2_trafo_size - 1, 1);
-            s->hpc[2]->intra_pred(s, x0, y0, log2_trafo_size - 1, 2);
+            s->hpc.intra_pred(s, x0, y0, log2_trafo_size - 1, 1);
+            s->hpc.intra_pred(s, x0, y0, log2_trafo_size - 1, 2);
         } else if (blk_idx == 3) {
-            s->hpc[1]->intra_pred(s, xBase, yBase, log2_trafo_size, 1);
-            s->hpc[2]->intra_pred(s, xBase, yBase, log2_trafo_size, 2);
+            s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 1);
+            s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 2);
         }
     }
 
@@ -905,7 +885,7 @@ static void hls_transform_unit(HEVCContext *s, int x0, int  y0, int xBase, int y
         SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) ||
         SAMPLE_CBF(s->tt.cbf_cr[trafo_depth], x0, y0)) {
         if (s->pps->cu_qp_delta_enabled_flag && !s->tu.is_cu_qp_delta_coded) {
-            av_dlog(s->avctx, AV_LOG_ERROR, "TODO: cu_qp_delta_enabled_flag\n");
+            av_log(s->avctx, AV_LOG_ERROR, "TODO: cu_qp_delta_enabled_flag\n");
             s->tu.is_cu_qp_delta_coded = 1;
         }
 
@@ -1029,22 +1009,25 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
 
 static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
 {
-    int i, j;
-    GetBitContext *gb = &s->gb;
+    //TODO: non-4:2:0 support
+
+    GetBitContext gb;
     int cb_size = 1 << log2_cb_size;
+    int stride0 = s->frame.linesize[0];
+    uint8_t *dst0 = &s->frame.data[0][y0 * stride0 + x0];
+    int stride1 = s->frame.linesize[1];
+    uint8_t *dst1 = &s->frame.data[1][(y0 >> s->sps->vshift[1]) * stride1 + (x0 >> s->sps->hshift[1])];
+    int stride2 = s->frame.linesize[2];
+    uint8_t *dst2 = &s->frame.data[2][(y0 >> s->sps->vshift[2]) * stride2 + (x0 >> s->sps->hshift[2])];
 
-    // Directly fill the current frame (section 8.4)
-    for (j = 0; j < cb_size; j++)
-        for (i = 0; i < cb_size; i++)
-            s->frame.data[0][(y0 + j) * s->frame.linesize[0] + (x0 + i)]
-                = get_bits(gb, s->sps->pcm.bit_depth_luma) <<
-                (s->sps->bit_depth[0] - s->sps->pcm.bit_depth_luma);
+    int length = cb_size * cb_size * 3 / 2 * s->sps->pcm.bit_depth;
+    uint8_t *pcm = skip_bytes(&s->cc, length / 8);
 
-    //TODO: put the samples at the correct place in the frame
-    for (i = 0; i < (1 << (log2_cb_size << 1)) >> 1; i++)
-        get_bits(gb, s->sps->pcm.bit_depth_chroma);
+    init_get_bits(&gb, pcm, length);
 
-    s->num_pcm_block--;
+    s->hevcdsp.put_pcm(dst0, stride0, cb_size, &gb, s->sps->pcm.bit_depth);
+    s->hevcdsp.put_pcm(dst1, stride1, cb_size/2, &gb, s->sps->pcm.bit_depth);
+    s->hevcdsp.put_pcm(dst2, stride2, cb_size/2, &gb, s->sps->pcm.bit_depth);
 }
 
 static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
@@ -1080,9 +1063,6 @@ static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
     }
     s->pu.mvd.x = abs_mvd_greater0_flag[0] * (abs_mvd_minus2[0] + 2) * (1 - (mvd_sign_flag[0] << 1));
     s->pu.mvd.y = abs_mvd_greater0_flag[1] * (abs_mvd_minus2[1] + 2) * (1 - (mvd_sign_flag[1] << 1));
-#ifdef MV
-    //printf("mvd_x %d, %d\n", s->pu.mvd.x, s->pu.mvd.y);
-#endif
     return;
 }
 
@@ -1166,71 +1146,71 @@ static int compareMVrefidx(struct MvField A, struct MvField B)
  */
 static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int singleMCLFlag, int part_idx,  struct MvField mergecandlist[])
 {
-
+    
     int available_a1_flag=0;
     int available_b1_flag=0;
     int available_b0_flag=0;
     int available_a0_flag=0;
     int available_b2_flag=0;
     struct MvField spatialCMVS[MRG_MAX_NUM_CANDS];
-
+    
     //first left spatial merge candidate
     int xA1 = x0-1;
     int yA1 = y0 + nPbH - 1;
     int isAvailableA1 =0;
     int check_A1 = check_prediction_block_available (s,log2_cb_size, x0, y0, nPbW, nPbH, xA1, yA1, part_idx);
-    int x_pu = x0 >> s->sps->log2_min_pu_size;
-    int x_puW = nPbW >> s->sps->log2_min_pu_size;
-    int y_pu = y0 >> s->sps->log2_min_pu_size;
-    int y_puH = nPbH >> s->sps->log2_min_pu_size;
     int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
-
+    
     int check_B1;
     int xB1, yB1;
     int is_available_b1;
-
+    int xB1_pu;
+    int yB1_pu;
+    
     int check_B0;
     int xB0, yB0;
     int isAvailableB0;
-
+    int xB0_pu;
+    int yB0_pu;
+    
     int check_A0;
     int xA0, yA0;
     int isAvailableA0;
-
+    int xA0_pu;
+    int yA0_pu;
+    
     int check_B2;
     int xB2, yB2;
     int isAvailableB2;
-
+    int xB2_pu;
+    int yB2_pu;
+    
     int  availableFlagCol = 0;
     struct MvField temporal_cand;
     int mergearray_index = 0;
-
+    
     struct MvField zerovector;
     int numRefIdx;
     int zeroIdx = 0;
-    int i=0;
-
+    
     int numMergeCand, numOrigMergeCand, numInputMergeCand, sumcandidates;
-
-#ifdef MV
-    //printf("nPbW %d nPbH %d\n", nPbW, nPbH);
-#endif
+    
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
     int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
-
+    
     // struct MvField A1 = s->pu.tab_mvf[(x_pu-1)*pic_width_in_min_pu + y_pu]
     if((xA1_pu >= 0) && !(s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu].is_intra) && check_A1) {
         isAvailableA1 = 1;
     } else {
         isAvailableA1 = 0;
     }
-
+    
     if((singleMCLFlag == 0) &&  (part_idx == 1) &&
        ((s->cu.part_mode == PART_Nx2N) || (s->cu.part_mode == PART_nLx2N) || (s->cu.part_mode == PART_nRx2N))
        || isDiffMER(s, xA1, yA1, x0, y0) ) {
         isAvailableA1 = 0;
     }
-
+    
     if (isAvailableA1) {
         available_a1_flag = 1;
         spatialCMVS[0] = s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu];
@@ -1242,29 +1222,29 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         spatialCMVS[0].pred_flag = 0;
         spatialCMVS[0].is_intra = 0;
     }
-
+    
     // above spatial merge candidate
-
+    
     xB1 = x0 + nPbW - 1;
     yB1 = y0 - 1;
-    int xB1_pu = xB1 >> s->sps->log2_min_pu_size;
-    int yB1_pu = yB1 >> s->sps->log2_min_pu_size;
-
+    xB1_pu = xB1 >> s->sps->log2_min_pu_size;
+    yB1_pu = yB1 >> s->sps->log2_min_pu_size;
+    
     is_available_b1 = 0;
     check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
-
+    
     if((yB1_pu >= 0) && !(s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].is_intra) && check_B1) {
         is_available_b1 = 1;
     } else {
         is_available_b1 = 0;
     }
-
+    
     if((singleMCLFlag == 0) && (part_idx == 1) &&
        ((s->cu.part_mode == PART_2NxN) || (s->cu.part_mode == PART_2NxnU) || (s->cu.part_mode == PART_2NxnD))
        || isDiffMER(s, xB1, yB1, x0, y0)) {
         is_available_b1 = 0;
     }
-
+    
     if (is_available_b1 && !(compareMVrefidx(s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu], s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu] ))) {
         available_b1_flag = 1;
         spatialCMVS[1] = s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu];
@@ -1276,35 +1256,25 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         spatialCMVS[1].pred_flag = 0;
         spatialCMVS[1].is_intra = 0;
     }
-
+    
     // above right spatial merge candidate
     xB0 = x0 + nPbW;
     yB0 = y0 - 1;
-    int xB0_pu = xB0 >> s->sps->log2_min_pu_size;
-    int yB0_pu = yB0 >> s->sps->log2_min_pu_size;
+    xB0_pu = xB0 >> s->sps->log2_min_pu_size;
+    yB0_pu = yB0 >> s->sps->log2_min_pu_size;
     isAvailableB0 = 0;
-#ifdef MV
-    //printf("B0\n");
-#endif
     check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
-#ifdef MV
-    //printf("check_B0=%d\n", check_B0);
-#endif
     if((yB0_pu >= 0) && !(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].is_intra) && check_B0) {
         isAvailableB0 = 1;
     } else {
         isAvailableB0 = 0;
     }
-
+    
     if((isDiffMER(s, xB0, yB0, x0, y0))) {
         isAvailableB0 = 0;
     }
-
+    
     if (isAvailableB0 && !(compareMVrefidx(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu], s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu]))) {
-#ifdef MV
-     //   printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d \n", x_pu, y_pu, (xB0_pu) * pic_width_in_min_pu, yB0_pu);
-     //   printf("xB0=%d, yB0=%d, x0=%d, y0=%d  shift_xbx=%d, shift_xby=%d \n", xB0, yB0, x0, y0, xB0>>s->sps->log2_min_pu_size, yB0>>s->sps->log2_min_pu_size);
-#endif
         available_b0_flag = 1;
         spatialCMVS[2] = s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu];
     } else {
@@ -1315,25 +1285,25 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         spatialCMVS[2].pred_flag = 0;
         spatialCMVS[2].is_intra = 0;
     }
-
+    
     // left bottom spatial merge candidate
     xA0 = x0 - 1;
     yA0 = y0 + nPbH;
-    int xA0_pu = xA0 >> s->sps->log2_min_pu_size;
-    int yA0_pu = yA0 >> s->sps->log2_min_pu_size;
+    xA0_pu = xA0 >> s->sps->log2_min_pu_size;
+    yA0_pu = yA0 >> s->sps->log2_min_pu_size;
     isAvailableA0 = 0;
     check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xA0, yA0, part_idx);
-
+    
     if((xA0_pu >= 0) && !(s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu].is_intra) && check_A0) {
         isAvailableA0 = 1;
     } else {
         isAvailableA0 = 0;
     }
-
+    
     if((isDiffMER(s, xA0, yA0, x0, y0))) {
         isAvailableA0 = 0;
     }
-
+    
     if (isAvailableA0 && !(compareMVrefidx(s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu], s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu]))) {
         available_a0_flag = 1;
         spatialCMVS[3] = s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu];
@@ -1345,27 +1315,27 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         spatialCMVS[3].pred_flag = 0;
         spatialCMVS[3].is_intra = 0;
     }
-
+    
     // above left spatial merge candidate
     xB2 = x0 - 1;
     yB2 = y0 - 1;
-    int xB2_pu = xB2 >> s->sps->log2_min_pu_size;
-    int yB2_pu = yB2 >> s->sps->log2_min_pu_size;
+    xB2_pu = xB2 >> s->sps->log2_min_pu_size;
+    yB2_pu = yB2 >> s->sps->log2_min_pu_size;
     isAvailableB2 = 0;
     check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
-
+    
     if((xB2_pu >= 0) && (yB2_pu >= 0) && !(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu].is_intra) && check_B2) {
         isAvailableB2 = 1;
     } else {
         isAvailableB2 = 0;
     }
-
+    
     if((isDiffMER(s, xB2, yB2, x0, y0))) {
         isAvailableB2 = 0;
     }
-
+    
     sumcandidates = available_a1_flag + available_b1_flag + available_b0_flag + available_a0_flag;
-
+    
     if (isAvailableB2 && !(compareMVrefidx(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu], s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu])) &&
         !(compareMVrefidx(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu], s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu])) && sumcandidates != 4) {
         available_b2_flag =1;
@@ -1378,7 +1348,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         spatialCMVS[4].pred_flag = 0;
         spatialCMVS[4].is_intra = 0;
     }
-
+    
     //TODO : temporal motion vector candidate
     if (available_a1_flag) {
         mergecandlist[mergearray_index] = spatialCMVS[0];
@@ -1406,11 +1376,11 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     }
     numMergeCand = mergearray_index;
     numOrigMergeCand = mergearray_index;
-
+    
     // TODO: derive combined bi-predictive merge candidates  (applies for B slices)
-
-
-
+    
+    
+    
     /*
      * append Zero motion vector candidates
      */
@@ -1438,10 +1408,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         numMergeCand++;
         zeroIdx++;
     }
-#ifdef MV
-//    for (i=0; i < 5; i++)
-//            printf("mvPred[%d]=%d %d\n", i, mergecandlist[i].mv.x, mergecandlist[i].mv.y);
-#endif
 }
 
 /*
@@ -1452,11 +1418,11 @@ static void luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPb
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
     struct MvField mergecand_list[MRG_MAX_NUM_CANDS];
-
+    
     if ((s->pps->log2_parallel_merge_level -2 > 0) && (nCS == 8)) {
         singleMCLFlag = 1;
     }
-
+    
     if (singleMCLFlag == 1) {
         x0 = s->cu.x;
         y0 = s->cu.y;
@@ -1466,10 +1432,7 @@ static void luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPb
     derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size, singleMCLFlag, part_idx, mergecand_list);
     mv->mv.x = mergecand_list[merge_idx].mv.x;
     mv->mv.y = mergecand_list[merge_idx].mv.y;
-
-#ifdef MV
-    printf("mv = %d, %d \n", mergecand_list[merge_idx].mv.x, mergecand_list[merge_idx].mv.y);
-#endif
+    
 }
 
 static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag)
@@ -1479,197 +1442,194 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
     int availableFlagLXB0 = 0;
     int availableFlagLXCol = 0;
     int numMVPCandLX  =0;
-    int x_pu = x0 >> s->sps->log2_min_pu_size;
-    int x_puW = nPbW >> s->sps->log2_min_pu_size;
-    int y_pu = y0 >> s->sps->log2_min_pu_size;
-    int y_puH = nPbH >> s->sps->log2_min_pu_size;
     int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
     int xA0, yA0;
+    int xA0_pu, yA0_pu;
+    int isAvailableA0;
+    
     int xA1, yA1;
+    int xA1_pu, yA1_pu;
+    int isAvailableA1;
+    
     int xB0, yB0;
+    int xB0_pu, yB0_pu;
+    int isAvailableB0;
+    
     int xB1, yB1;
+    int xB1_pu, yB1_pu;
+    int is_available_b1;
+    
     int xB2, yB2;
+    int xB2_pu, yB2_pu;
+    int isAvailableB2;
     struct MvField mvpcand_list[2];
-    int i;
     int check_A0, check_A1, check_B0, check_B1, check_B2;
     MvField mxA;
     MvField mxB;
-
-#ifdef MV
-//    printf("nPbW %d nPbH %d\n", nPbW, nPbH);
-#endif
+    
     // left bottom spatial candidate
     xA0 = x0 - 1;
     yA0 = y0 + nPbH;
-    int xA0_pu = xA0 >> s->sps->log2_min_pu_size;
-    int yA0_pu = yA0 >> s->sps->log2_min_pu_size;
-    int isAvailableA0 = 0;
+    xA0_pu = xA0 >> s->sps->log2_min_pu_size;
+    yA0_pu = yA0 >> s->sps->log2_min_pu_size;
+    isAvailableA0 = 0;
     check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xA0, yA0, part_idx);
-
+    
     if((xA0_pu >= 0) && !(s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu].is_intra) && check_A0) {
         isAvailableA0 = 1;
     } else {
         isAvailableA0 = 0;
     }
-
-
+    
+    
     //left spatial merge candidate
     xA1 = x0-1;
     yA1 = y0 + nPbH - 1;
-    int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
-    int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
-    int isAvailableA1 =0;
+    xA1_pu = xA1 >> s->sps->log2_min_pu_size;
+    yA1_pu = yA1 >> s->sps->log2_min_pu_size;
+    isAvailableA1 =0;
     check_A1 = check_prediction_block_available (s,log2_cb_size, x0, y0, nPbW, nPbH, xA1, yA1, part_idx);
     if((xA1_pu >= 0) && !(s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu].is_intra) && check_A1) {
         isAvailableA1 = 1;
     } else {
         isAvailableA1 = 0;
     }
-
+    
     if((isAvailableA0) || (isAvailableA1)) {
         isScaledFlag_L0 =1;
     }
     // XA0
     if((isAvailableA0) && !(s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu].is_intra) && (availableFlagLXA0 == 0)) {
         if((s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
-                // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+            // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
             availableFlagLXA0 =1;
             mxA = s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu];
-           // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu];
+            // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xA0_pu) * pic_width_in_min_pu + yA0_pu];
         }
     }
     //XA1
     if((isAvailableA1) && !(s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu].is_intra) && (availableFlagLXA0==0)) {
-            if((s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
-                    // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
-                availableFlagLXA0 =1;
-                mxA = s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu];
-               // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu];
-
-            }
-     }
-     // TODO Step 7 in 8.5.3.1.6.
-
+        if((s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+            // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+            availableFlagLXA0 =1;
+            mxA = s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu];
+            // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xA1_pu) * pic_width_in_min_pu + yA1_pu];
+            
+        }
+    }
+    // TODO Step 7 in 8.5.3.1.6.
+    
     // B candidates
     // above right spatial merge candidate
-     xB0 = x0 + nPbW;
-     yB0 = y0 - 1;
-     int xB0_pu = xB0 >> s->sps->log2_min_pu_size;
-     int yB0_pu = yB0 >> s->sps->log2_min_pu_size;
-     int isAvailableB0 = 0;
-     check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
-
-     if((yB0_pu >= 0) && !(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].is_intra) && check_B0) {
-            isAvailableB0 = 1;
-        } else {
-            isAvailableB0 = 0;
-        }
-
-     if((isAvailableB0 == 1) && (availableFlagLXB0 == 0)) {
-         if((s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
-             // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
-             availableFlagLXB0 =1;
-             mxB = s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu];
+    xB0 = x0 + nPbW;
+    yB0 = y0 - 1;
+    xB0_pu = xB0 >> s->sps->log2_min_pu_size;
+    yB0_pu = yB0 >> s->sps->log2_min_pu_size;
+    isAvailableB0 = 0;
+    check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
+    
+    if((yB0_pu >= 0) && !(s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].is_intra) && check_B0) {
+        isAvailableB0 = 1;
+    } else {
+        isAvailableB0 = 0;
+    }
+    
+    if((isAvailableB0 == 1) && (availableFlagLXB0 == 0)) {
+        if((s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+            // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+            availableFlagLXB0 =1;
+            mxB = s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu];
             // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB0_pu) * pic_width_in_min_pu + yB0_pu];
-         }
-     }
-
-     if(!availableFlagLXB0) {
-         // above spatial merge candidate
-         xB1 = x0 + nPbW - 1;
-         yB1 = y0 - 1;
-         int xB1_pu = xB1 >> s->sps->log2_min_pu_size;
-         int yB1_pu = yB1 >> s->sps->log2_min_pu_size;
-         int is_available_b1 = 0;
-         check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
-       //  printf("check_B1 = %d, isIntra=%d  mv.x=%d \n ", check_B1, s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].is_intra, s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].mv.x );
-
-         if((yB1_pu >= 0) && !(s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].is_intra) && check_B1) {
-             is_available_b1 = 1;
-         } else {
-             is_available_b1 = 0;
-         }
-        // printf("is_available_b1=%d availableFlagLXB0=%d pred_flag=%d \n", is_available_b1, availableFlagLXB0, s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].pred_flag);
-
-         if((is_available_b1 == 1) && (availableFlagLXB0 == 0)) {
-             if((s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
-                 // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
-                 availableFlagLXB0 =1;
+        }
+    }
+    
+    if(!availableFlagLXB0) {
+        // above spatial merge candidate
+        xB1 = x0 + nPbW - 1;
+        yB1 = y0 - 1;
+        xB1_pu = xB1 >> s->sps->log2_min_pu_size;
+        yB1_pu = yB1 >> s->sps->log2_min_pu_size;
+        is_available_b1 = 0;
+        check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
+        
+        if((yB1_pu >= 0) && !(s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].is_intra) && check_B1) {
+            is_available_b1 = 1;
+        } else {
+            is_available_b1 = 0;
+        }
+        
+        if((is_available_b1 == 1) && (availableFlagLXB0 == 0)) {
+            if((s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+                // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+                availableFlagLXB0 =1;
                 // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu];
-                 mxB = s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu];
-          //       printf("mv.x=%d \n", mvpcand_list[numMVPCandLX].mv.x);
-
-             }
-         }
-     }
-
-     if(!availableFlagLXB0) {
-         // above left spatial merge candidate
-         xB2 = x0 - 1;
-         yB2 = y0 - 1;
-         int xB2_pu = xB2 >> s->sps->log2_min_pu_size;
-         int yB2_pu = yB2 >> s->sps->log2_min_pu_size;
-         int isAvailableB2 = 0;
-         check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
-
-         if((xB2_pu >= 0) && (yB2_pu >= 0) && !(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu].is_intra) && check_B2) {
-             isAvailableB2 = 1;
-         } else {
-             isAvailableB2 = 0;
-         }
-
-         if((isAvailableB2 == 1) && (availableFlagLXB0 == 0)) {
-             if((s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
-                 // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
-                 availableFlagLXB0 =1;
+                mxB = s->pu.tab_mvf[(xB1_pu) * pic_width_in_min_pu + yB1_pu];
+                
+            }
+        }
+    }
+    
+    if(!availableFlagLXB0) {
+        // above left spatial merge candidate
+        xB2 = x0 - 1;
+        yB2 = y0 - 1;
+        xB2_pu = xB2 >> s->sps->log2_min_pu_size;
+        yB2_pu = yB2 >> s->sps->log2_min_pu_size;
+        isAvailableB2 = 0;
+        check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
+        
+        if((xB2_pu >= 0) && (yB2_pu >= 0) && !(s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu].is_intra) && check_B2) {
+            isAvailableB2 = 1;
+        } else {
+            isAvailableB2 = 0;
+        }
+        
+        if((isAvailableB2 == 1) && (availableFlagLXB0 == 0)) {
+            if((s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu].pred_flag == 1) && 1 ) { // 1 is used in the if because For first P frame
+                // DiffPicOrderCnt( RefPicListX[ RefIdxLX[ xAk ][ yAk ] ], RefPicListX[ refIdxLX ]// iS considered to be equal to 0)
+                availableFlagLXB0 =1;
                 // mvpcand_list[numMVPCandLX] = s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu];
-                 mxB = s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu];
-
-             }
-         }
-     }
-
-     if(isScaledFlag_L0 == 0 && availableFlagLXB0) {
-         availableFlagLXA0 =1;
-         mxA = mxB;
-      }
-     if(isScaledFlag_L0 == 0) {
-         availableFlagLXB0 =0;
-     }
-     if(availableFlagLXA0) {
-         mvpcand_list[numMVPCandLX] = mxA;
-         numMVPCandLX++;
-     }
-     if(availableFlagLXB0) {
-         mvpcand_list[numMVPCandLX] = mxB;
-         numMVPCandLX++;
-     }
-
-
-     //printf("availableFlagLXA0 =%d, availableFlagLXB0=%d isScaledFlag_L0 =%d \n", availableFlagLXA0, availableFlagLXB0, isScaledFlag_L0);
-
-     // TODO Step 5 for B candidates  in 8.5.3.1.6.
-     if (availableFlagLXA0 && availableFlagLXB0 && ((mvpcand_list[0].mv.x != mvpcand_list[1].mv.x) || (mvpcand_list[0].mv.y != mvpcand_list[1].mv.y))) {
-         availableFlagLXCol = 0 ;
-     } else {
-         //TODO section 8.5.3.1.7 temporal motion vector prediction
-     }
-     if ((mvpcand_list[0].mv.x == mvpcand_list[1].mv.x) && (mvpcand_list[0].mv.y == mvpcand_list[1].mv.y)) {
-     //    printf("reducing candlits \n");
-         numMVPCandLX--;
-     }
-     while (numMVPCandLX < 2) { // insert zero motion vectors when the number of available candidates are less than 2
-         mvpcand_list[numMVPCandLX].mv.x =0;
-         mvpcand_list[numMVPCandLX].mv.y =0;
-         numMVPCandLX++;
-     }
-     mv->mv.x  = mvpcand_list[mvp_lx_flag].mv.x;
-     mv->mv.y  = mvpcand_list[mvp_lx_flag].mv.y;
-
-#ifdef MV
-//    for (i=0; i < 2; i++)
-//         printf("mvPred[%d]=%d %d\n", i, mvpcand_list[i].mv.x, mvpcand_list[i].mv.y);
-#endif
+                mxB = s->pu.tab_mvf[(xB2_pu) * pic_width_in_min_pu + yB2_pu];
+                
+            }
+        }
+    }
+    
+    if(isScaledFlag_L0 == 0 && availableFlagLXB0) {
+        availableFlagLXA0 =1;
+        mxA = mxB;
+    }
+    if(isScaledFlag_L0 == 0) {
+        availableFlagLXB0 =0;
+    }
+    if(availableFlagLXA0) {
+        mvpcand_list[numMVPCandLX] = mxA;
+        numMVPCandLX++;
+    }
+    if(availableFlagLXB0) {
+        mvpcand_list[numMVPCandLX] = mxB;
+        numMVPCandLX++;
+    }
+    
+    
+    
+    // TODO Step 5 for B candidates  in 8.5.3.1.6.
+    if (availableFlagLXA0 && availableFlagLXB0 && ((mvpcand_list[0].mv.x != mvpcand_list[1].mv.x) || (mvpcand_list[0].mv.y != mvpcand_list[1].mv.y))) {
+        availableFlagLXCol = 0 ;
+    } else {
+        //TODO section 8.5.3.1.7 temporal motion vector prediction
+    }
+    if ((mvpcand_list[0].mv.x == mvpcand_list[1].mv.x) && (mvpcand_list[0].mv.y == mvpcand_list[1].mv.y)) {
+        numMVPCandLX--;
+    }
+    while (numMVPCandLX < 2) { // insert zero motion vectors when the number of available candidates are less than 2
+        mvpcand_list[numMVPCandLX].mv.x =0;
+        mvpcand_list[numMVPCandLX].mv.y =0;
+        numMVPCandLX++;
+    }
+    mv->mv.x  = mvpcand_list[mvp_lx_flag].mv.x;
+    mv->mv.y  = mvpcand_list[mvp_lx_flag].mv.y;
+    
 }
 
 /**
@@ -1687,13 +1647,10 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
 static void luma_mc(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
                     const Mv *mv, int x_off, int y_off, int block_w, int block_h)
 {
-    HEVCDSPContext *hevcdsp = s->hevcdsp[0];
-
     uint8_t *src = s->frame.data[0];
     ptrdiff_t srcstride = s->frame.linesize[0];
     int pic_width = s->sps->pic_width_in_luma_samples;
     int pic_height = s->sps->pic_height_in_luma_samples;
-    int pixel = 1 + !!(s->sps->bit_depth[1] - 8); // sizeof(pixel)
 
     int mx = mv->x & 3;
     int my = mv->y & 3;
@@ -1702,18 +1659,18 @@ static void luma_mc(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
 
     x_off += mv->x >> 2;
     y_off += mv->y >> 2;
-    src += y_off * srcstride + x_off * pixel;
+    src += y_off * srcstride + (x_off << s->sps->pixel_shift);
 
     if (x_off < extra_left || x_off >= pic_width - block_w - qpel_extra_after[mx] ||
         y_off < extra_top || y_off >= pic_height - block_h - qpel_extra_after[my]) {
-        int offset = extra_top * srcstride + extra_left * pixel;
+        int offset = extra_top * srcstride + (extra_left << s->sps->pixel_shift);
         s->dsp.emulated_edge_mc(s->edge_emu_buffer, src - offset, srcstride,
                                 block_w + qpel_extra[mx], block_h + qpel_extra[my],
                                 x_off - extra_left, y_off - extra_top,
                                 pic_width, pic_height);
         src = s->edge_emu_buffer + offset;
     }
-    hevcdsp->put_hevc_qpel[my][mx](dst, dststride, src, srcstride, block_w, block_h);
+    s->hevcdsp.put_hevc_qpel[my][mx](dst, dststride, src, srcstride, block_w, block_h);
 }
 
 /**
@@ -1732,42 +1689,39 @@ static void luma_mc(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
 static void chroma_mc(HEVCContext *s, uint8_t *dst1, uint8_t *dst2, ptrdiff_t dststride,
                       const Mv *mv, int x_off, int y_off, int block_w, int block_h)
 {
-    HEVCDSPContext *hevcdsp = s->hevcdsp[1];
-
     uint8_t *src1 = s->frame.data[1];
     uint8_t *src2 = s->frame.data[2];
     ptrdiff_t srcstride = s->frame.linesize[1];
     int pic_width = s->sps->pic_width_in_luma_samples >> 1;
     int pic_height = s->sps->pic_height_in_luma_samples >> 1;
-    int pixel = 1 + !!(s->sps->bit_depth[1] - 8); // sizeof(pixel)
 
     int mx = mv->x & 7;
     int my = mv->y & 7;
 
     x_off += mv->x >> 3;
     y_off += mv->y >> 3;
-    src1 += y_off * srcstride + x_off * pixel;
-    src2 += y_off * srcstride + x_off * pixel;
+    src1 += y_off * srcstride + (x_off << s->sps->pixel_shift);
+    src2 += y_off * srcstride + (x_off << s->sps->pixel_shift);
 
     if (x_off < epel_extra_before || x_off >= pic_width - block_w - epel_extra_after ||
         y_off < epel_extra_after || y_off >= pic_height - block_h - epel_extra_after) {
-        int offset = epel_extra_before * (srcstride + 1 * pixel);
+        int offset = epel_extra_before * (srcstride + (1 << s->sps->pixel_shift));
         s->dsp.emulated_edge_mc(s->edge_emu_buffer, src1 - offset, srcstride,
                                 block_w + epel_extra, block_h + epel_extra,
                                 x_off - epel_extra_before, y_off - epel_extra_before,
                                 pic_width, pic_height);
         src1 = s->edge_emu_buffer + offset;
-        hevcdsp->put_hevc_epel[!!my][!!mx](dst1, dststride, src1, srcstride, block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, srcstride, block_w, block_h, mx, my);
 
         s->dsp.emulated_edge_mc(s->edge_emu_buffer, src2 - offset, srcstride,
                                 block_w + epel_extra, block_h + epel_extra,
                                 x_off - epel_extra_before, y_off - epel_extra_before,
                                 pic_width, pic_height);
         src2 = s->edge_emu_buffer + offset;
-        hevcdsp->put_hevc_epel[!!my][!!mx](dst2, dststride, src2, srcstride, block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, srcstride, block_w, block_h, mx, my);
     } else {
-        hevcdsp->put_hevc_epel[!!my][!!mx](dst1, dststride, src1, srcstride, block_w, block_h, mx, my);
-        hevcdsp->put_hevc_epel[!!my][!!mx](dst2, dststride, src2, srcstride, block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, srcstride, block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, srcstride, block_w, block_h, mx, my);
     }
 }
 
@@ -1780,11 +1734,11 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     int mvp_l0_flag;
     int mvp_l1_flag;
     struct MvField current_mv = {{0, 0}};
-    current_mv.pred_flag=1;
     int i, j;
     int x_pu, y_pu;
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
-    int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
+
+    current_mv.pred_flag=1;
 
     if (SAMPLE(s->cu.skip_flag, x0, y0)) {
         if (s->sh.max_num_merge_cand > 1) {
@@ -1797,9 +1751,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
                 for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
                     s->pu.tab_mvf[(x_pu + i) * pic_width_in_min_pu + y_pu + j] = current_mv;
-#ifdef MV
-                    //printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
-#endif
                 }
             }
         }
@@ -1817,11 +1768,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 y_pu = y0 >> s->sps->log2_min_pu_size;
                 for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
                     for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
-                        s->pu.tab_mvf[(x_pu + i) * pic_width_in_min_pu + y_pu + j] = current_mv;
-#ifdef MV
-//                        printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
-#endif
-                    }
+                        s->pu.tab_mvf[(x_pu + i) * pic_width_in_min_pu + y_pu + j] = current_mv;                    }
                 }
             }
         } else {
@@ -1854,30 +1801,16 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             }
             current_mv.mv.x += s->pu.mvd.x;
             current_mv.mv.y += s->pu.mvd.y;
-#ifdef MV
-            printf("mv = %d, %d\n",current_mv.mv.x, current_mv.mv.y);
-#endif
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
             for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
                 for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
                     s->pu.tab_mvf[(x_pu + i) * pic_width_in_min_pu + y_pu + j] = current_mv;
-#ifdef MV
-//                    printf("x_pu=%d y_pu=%d n_x_pu = %d , n_y_pu =%d x=%d y=%d \n", x_pu, y_pu, (x_pu+i) * pic_width_in_min_pu, y_pu + j, current_mv.mv.x, current_mv.mv.y);
-#endif
                 }
             }
 
         }
     }
-   /* for(i = 0; i < pic_width_in_min_pu ; i++) {
-        for(j = 0; j < pic_height_in_min_pu; j++) {
-            printf(" %d, %d  ", s->pu.tab_mvf[ (i * pic_width_in_min_pu) + j].mv.x, s->pu.tab_mvf[ (i * pic_width_in_min_pu) + j].mv.y);
-
-        }
-        if(j==pic_height_in_min_pu)
-            printf("\n");
-    }*/
     return;
 }
 
@@ -2048,7 +1981,6 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     s->cu.x = x0;
     s->cu.y = y0;
     s->cu.no_residual_data_flag = 1;
-    s->cu.pcm_flag = 0;
 
     s->cu.pred_mode = MODE_INTRA;
     s->cu.part_mode = PART_2Nx2N;
@@ -2088,17 +2020,12 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
         if (s->cu.pred_mode == MODE_INTRA) {
             if (s->cu.part_mode == PART_2Nx2N && s->sps->pcm_enabled_flag &&
-                log2_cb_size >= s->sps->pcm.log2_min_pcm_coding_block_size &&
-                log2_cb_size <= s->sps->pcm.log2_min_pcm_coding_block_size + s->sps->pcm.log2_diff_max_min_pcm_coding_block_size) {
+                log2_cb_size >= s->sps->pcm.log2_min_pcm_cb_size &&
+                log2_cb_size <= s->sps->pcm.log2_max_pcm_cb_size) {
                 s->cu.pcm_flag = ff_hevc_pcm_flag_decode(s);
-                av_dlog(s->avctx, AV_LOG_ERROR, "pcm_flag: %d\n", s->cu.pcm_flag);
-            }
+                av_dlog(s->avctx, "pcm_flag: %d\n", s->cu.pcm_flag);
+           }
             if (s->cu.pcm_flag) {
-                s->num_pcm_block = 1;
-                while (s->num_pcm_block < 4 && get_bits1(&s->gb))
-                    s->num_pcm_block++;
-
-                align_get_bits(&s->gb);
                 hls_pcm_sample(s, x0, y0, log2_cb_size);
                 intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
             } else {
@@ -2167,7 +2094,7 @@ static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int
         (y0 + (1 << log2_cb_size) <= s->sps->pic_height_in_luma_samples) &&
         min_cb_addr_zs(s, x0 >> s->sps->log2_min_coding_block_size,
                        y0 >> s->sps->log2_min_coding_block_size) >= s->sh.slice_cb_addr_zs &&
-        log2_cb_size > s->sps->log2_min_coding_block_size && s->num_pcm_block == 0) {
+        log2_cb_size > s->sps->log2_min_coding_block_size) {
         SAMPLE(s->split_coding_unit_flag, x0, y0) =
         ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
     } else {
@@ -2196,11 +2123,7 @@ static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int
         return ((x1 + cb_size) < s->sps->pic_width_in_luma_samples ||
                 (y1 + cb_size) < s->sps->pic_height_in_luma_samples);
     } else {
-        if (s->num_pcm_block == 0) {
-            hls_coding_unit(s, x0, y0, log2_cb_size);
-        } else {
-            hls_pcm_sample(s, x0, y0, log2_cb_size);
-        }
+        hls_coding_unit(s, x0, y0, log2_cb_size);
 
         av_dlog(s->avctx, "x0: %d, y0: %d, cb: %d, %d\n",
                x0, y0, (1 << log2_cb_size), (1 << (s->sps->log2_ctb_size)));
@@ -2209,8 +2132,7 @@ static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int
              (x0 + (1 << log2_cb_size) >= s->sps->pic_width_in_luma_samples)) &&
             (!((y0 + (1 << log2_cb_size)) %
                (1 << (s->sps->log2_ctb_size))) ||
-             (y0 + (1 << log2_cb_size) >= s->sps->pic_height_in_luma_samples)) &&
-            s->num_pcm_block == 0) {
+             (y0 + (1 << log2_cb_size) >= s->sps->pic_height_in_luma_samples))) {
             int end_of_slice_flag = ff_hevc_end_of_slice_flag_decode(s);
             return !end_of_slice_flag;
         } else {
@@ -2239,7 +2161,6 @@ static int hls_slice_data(HEVCContext *s)
     while (more_data) {
         x_ctb = INVERSE_RASTER_SCAN(s->ctb_addr_rs, ctb_size, ctb_size, s->sps->pic_width_in_luma_samples, 0);
         y_ctb = INVERSE_RASTER_SCAN(s->ctb_addr_rs, ctb_size, ctb_size, s->sps->pic_width_in_luma_samples, 1);
-        s->num_pcm_block = 0;
         s->ctb_addr_in_slice = s->ctb_addr_rs - s->sh.slice_address;
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
             s->sh.slice_sample_adaptive_offset_flag[1])
@@ -2304,17 +2225,12 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     HEVCContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
-#ifdef HM
-    int gotpicture;
-#endif
 
 
     *data_size = 0;
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
-#ifdef HM
-    libDecoderDecode(avpkt->data, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
-#endif
+
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
 
     if (hls_nal_unit(s) <= 0) {
@@ -2349,6 +2265,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (hls_slice_header(s) < 0)
             return -1;
 
+        if (s->sao_frame.data[0])
+            s->avctx->release_buffer(s->avctx, &s->sao_frame);
         if (s->frame.data[0])
             s->avctx->release_buffer(s->avctx, &s->frame);
         if (s->avctx->get_buffer(s->avctx, &s->frame) < 0) {
@@ -2359,30 +2277,24 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             s->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame.linesize[0]);
 
         ff_hevc_cabac_init(s);
-#ifndef HM
         if (hls_slice_data(s) < 0)
             return -1;
 
-        if (s->sao_frame.data[0])
-            s->avctx->release_buffer(s->avctx, &s->sao_frame);
-        if (s->avctx->get_buffer(s->avctx, &s->sao_frame) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
-        }
-        av_picture_copy((AVPicture*)&s->sao_frame, (AVPicture*)&s->frame,
-                        s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
-
-        if (s->sps->sample_adaptive_offset_enabled_flag)
+        if (s->sps->sample_adaptive_offset_enabled_flag) {
+            if (s->avctx->get_buffer(s->avctx, &s->sao_frame) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                return -1;
+            }
+            av_picture_copy((AVPicture*)&s->sao_frame, (AVPicture*)&s->frame,
+                            s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
             sao_filter(s);
-#endif
+            *(AVFrame*)data = s->sao_frame;
+        } else {
+            *(AVFrame*)data = s->frame;
+        }
 
         s->frame.pict_type = AV_PICTURE_TYPE_I;
         s->frame.key_frame = 1;
-#ifdef HM
-        *(AVFrame*)data = s->frame;
-#else
-        *(AVFrame*)data = s->sao_frame;
-#endif
         *data_size = sizeof(AVFrame);
         break;
     default:
@@ -2398,22 +2310,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 {
     HEVCContext *s = avctx->priv_data;
 
-#ifdef HM
-    libDecoderInit();
-#endif
     s->avctx = avctx;
     memset(s->sps_list, 0, sizeof(s->sps_list));
     memset(s->pps_list, 0, sizeof(s->pps_list));
 
-    s->hevcdsp[0] = av_malloc(sizeof(*s->hevcdsp[0]));
-    s->hevcdsp[2] =
-    s->hevcdsp[1] = av_malloc(sizeof(*s->hevcdsp[0]));
-    s->hpc[0] = av_malloc(sizeof(*s->hpc[0]));
-    s->hpc[2] =
-    s->hpc[1] = av_malloc(sizeof(*s->hpc[1]));
-
-    if (!s->hevcdsp[0] || !s->hevcdsp[1] || !s->hpc[0] || !s->hpc[1])
-        return -1;
     return 0;
 }
 
@@ -2424,12 +2324,14 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     if (s->frame.data[0])
         s->avctx->release_buffer(s->avctx, &s->frame);
-#ifndef HM
     if (s->sao_frame.data[0])
         s->avctx->release_buffer(s->avctx, &s->sao_frame);
-#endif
 
     av_freep(&s->edge_emu_buffer);
+
+    for (i = 0; i < MAX_VPS_COUNT; i++) {
+        av_freep(&s->vps_list[i]);
+    }
 
     for (i = 0; i < MAX_SPS_COUNT; i++) {
         av_freep(&s->sps_list[i]);
@@ -2451,10 +2353,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     }
 
     pic_arrays_free(s);
-
-#ifdef HM
-    libDecoderClose();
-#endif
     return 0;
 }
 
