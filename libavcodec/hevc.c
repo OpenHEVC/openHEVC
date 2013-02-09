@@ -327,7 +327,7 @@ static int hls_slice_header(HEVCContext *s)
                 return -1;
             }
             if (s->sps->sps_temporal_mvp_enabled_flag) {
-                sh->slice_temporal_mvp_enable_flag = get_bits1(gb);
+                sh->slice_temporal_mvp_enabled_flag = get_bits1(gb);
             }
         } else {
             s->poc = 0;
@@ -367,7 +367,7 @@ static int hls_slice_header(HEVCContext *s)
             if (s->pps->cabac_init_present_flag) {
                 sh->cabac_init_flag = get_bits1(gb);
             }
-            if (sh->slice_temporal_mvp_enable_flag) {
+            if (sh->slice_temporal_mvp_enabled_flag) {
                 if (sh->slice_type == B_SLICE) {
                     sh->collocated_from_l0_flag = get_bits1(gb);
                 }

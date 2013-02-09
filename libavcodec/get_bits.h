@@ -369,9 +369,7 @@ static inline void init_get_bits(GetBitContext *s, const uint8_t *buffer,
 
 static inline void align_get_bits(GetBitContext *s)
 {
-    int n;
-    skip_bits(s, 1);
-    n = -get_bits_count(s) & 7;
+    int n = -get_bits_count(s) & 7;
     if (n) skip_bits(s, n);
 }
 
