@@ -2232,16 +2232,22 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     HEVCContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
+    AVFrame *picture = (AVFrame*) data;
+    
 #ifdef HM
     int gotpicture;
 #endif
-
+    int temporal_id;
 
     *data_size = 0;
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
 #ifdef HM
-    libDecoderDecode(avpkt->data, avpkt->size,  s->frame.data[0], s->frame.data[1], s->frame.data[2], &gotpicture);
+    gotpicture = libDecoderDecode(avpkt->data, avpkt->size,  &temporal_id);
+    if (gotpicture) {
+        libDecoderGetOuptut(0, s->frame.data[0], s->frame.data[1], s->frame.data[2], 1);
+    }
+
 #endif
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
 
@@ -2311,6 +2317,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         s->frame.key_frame = 1;
 #ifdef HM
         *(AVFrame*)data = s->frame;
+        picture->linesize[0] = s->frame.width;
 #else
         *(AVFrame*)data = s->sao_frame;
 #endif

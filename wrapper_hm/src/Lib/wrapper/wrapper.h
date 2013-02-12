@@ -3,8 +3,12 @@ extern "C"
 {
 #endif
     int libDecoderInit( void );
-    void libDecoderDecode( unsigned char *pnalu, int nal_len, unsigned char *Y, unsigned char *U, unsigned char *V, int *gotpicture);
+	int libDecoderDecode(unsigned char *buff, int len, unsigned int *temporal_id);
+	void libDecoderGetPictureSize(unsigned int *width, unsigned int *height);
+	int libDecoderGetOuptut(unsigned int temporal_id, unsigned char *Y, unsigned char *U, unsigned char *V, int force_flush);
     void libDecoderClose( void );
+	void libDecoderSetFilterOn(int set_on);
+	const char *libDecoderVersion();
 #ifdef __cplusplus
 }
 #endif
