@@ -196,35 +196,30 @@ int libDecoderDecode(unsigned char *buff, int len, unsigned int *temporal_id)
     vector<uint8_t> nalUnit;
     InputNALUnit nalu;
 	int got_picture = 0;
-    Bool readAgain;
-    
-    do {
-        int i;
-        readAgain=false;
-        for (i=0; i < len ; i++){
-            nalUnit.push_back(buff[i]);
+
+    int i;
+    for (i=0; i < len ; i++){
+        nalUnit.push_back(buff[i]);
+    }
+    read(nalu, nalUnit);
+    //readNAL(nalu, nalUnit);
+    bNewPicture=myDecoder->decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
+    if (bNewPicture){
+		myDecoder->executeLoopFilters(poc, pcListPic);
+        got_picture=1;
+    }
+    if( pcListPic )
+    {
+        if ( bNewPicture &&
+            (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
+				|| nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
+				|| nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
+				|| nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
+				|| nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA )
+		) {
+            xFlushOutput( pcListPic);
         }
-        read(nalu, nalUnit);
-        //readNAL(nalu, nalUnit);
-        bNewPicture=myDecoder->decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
-        if (bNewPicture){
-            myDecoder->executeLoopFilters(poc, pcListPic);
-            readAgain=true;
-            got_picture=1;
-        }
-        if( pcListPic )
-        {
-            if ( bNewPicture &&
-                (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
-                 || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-                 || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-                 || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
-                 || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA )
-                ) {
-                xFlushOutput( pcListPic);
-            }
-        }
-    } while (readAgain);
+    }
 	
 	*temporal_id = nalu.m_temporalId;
 	return got_picture;
