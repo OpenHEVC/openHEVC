@@ -7,7 +7,6 @@ extern "C"
 	void libDecoderGetPictureSize(unsigned int *width, unsigned int *height);
 	int libDecoderGetOuptut(unsigned int temporal_id, unsigned char *Y, unsigned char *U, unsigned char *V, int force_flush);
     void libDecoderClose( void );
-	void libDecoderSetFilterOn(int set_on);
 	const char *libDecoderVersion();
 #ifdef __cplusplus
 }

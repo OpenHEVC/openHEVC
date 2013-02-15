@@ -9,6 +9,7 @@ using namespace std;
 #include "TLibCommon/NAL.h"
 #include "TLibCommon/TComBitStream.h"
 
+
 #ifdef WIN32
 #pragma comment (linker, "/export:_libDecoderInit")
 #pragma comment (linker, "/export:_libDecoderDecode")
@@ -17,6 +18,7 @@ using namespace std;
 #pragma comment (linker, "/export:_libDecoderGetOuptut")
 #pragma comment (linker, "/export:_libDecoderVersion")
 #endif
+
 
 TDecTop             *myDecoder;
 bool                g_md5_mismatch= false;
@@ -31,7 +33,8 @@ Int                poc;
 TComList<TComPic*>* pcListPic = NULL;
 
 
-int libDecoderInit()
+
+int libDecoderInit( void )
 {
     myDecoder= new TDecTop;
     myDecoder->create();
@@ -43,16 +46,16 @@ int libDecoderInit()
     return 0;
 }
 
-static bool saveComponent(unsigned char *buf, Pel* src, UInt src_stride, UInt width, UInt height)
+static bool saveComponent(unsigned char *buf, Pel* src, UInt stride, UInt width, UInt height)
 {
     for (int y = 0; y < height; y++)
     {
         for (int x = 0; x < width; x++)
         {
-            buf[x] = ((unsigned short) src[x] ) & 0xff;
+            buf[x] = src[x] & 0xff;
         }
         
-        src += src_stride;
+        src += stride;
         buf += width;
     }
     return true;
@@ -115,7 +118,7 @@ Void xFlushOutput( TComList<TComPic*>* pcListPic)
 /** \param pcListPic list of pictures to be written to file
  \todo            DYN_REF_FREE should be revised
  */
-Int xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId, unsigned char * Y, unsigned char *U, unsigned char *V, int force_flush)
+int xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId, unsigned char * Y, unsigned char *U, unsigned char *V, Bool force_flush)
 {
     TComList<TComPic*>::iterator iterPic   = pcListPic->begin();
     Int not_displayed = 0;
@@ -136,32 +139,32 @@ Int xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId, unsigned char * Y, un
     {
         TComPic* pcPic = *(iterPic);
         
-        if ( pcPic->getOutputMark() 
-			&& (force_flush || (not_displayed >  pcPic->getSlice(0)->getSPS()->getNumReorderPics(tId) )
+        if ( pcPic->getOutputMark()
+			&& (force_flush || (not_displayed >  pcPic->getSlice(0)->getSPS()->getNumReorderPics(tId))
 			&& pcPic->getPOC() > m_iPOCLastDisplay))
         {
-			Int cropLeft, cropRight, cropTop, cropBottom;
             // write to file
             not_displayed--;            
 
-	        Window &crop = pcPic->getDefDisplayWindow();
-			cropLeft = crop.getWindowLeftOffset();
-			cropRight = crop.getWindowRightOffset();
-			cropTop = crop.getWindowTopOffset();
-			cropBottom = crop.getWindowBottomOffset();
 
-			UInt yStride = pcPic->getPicYuvRec()->getStride();
-			UInt uvStride = pcPic->getPicYuvRec()->getCStride();
-            UInt picWidth = pcPic->getPicYuvRec()->getWidth() - cropLeft - cropRight;
-            UInt picHeight = pcPic->getPicYuvRec()->getHeight() - cropTop  - cropBottom;
+			Int m_respectDefDispWindow = 1;
+
+			const Window &conf = pcPic->getConformanceWindow();
+			const Window &defDisp = m_respectDefDispWindow ? pcPic->getDefDisplayWindow() : Window();
+			Int confLeft = conf.getWindowLeftOffset() + defDisp.getWindowLeftOffset();
+			Int confRight = conf.getWindowRightOffset() + defDisp.getWindowRightOffset();
+			Int confTop = conf.getWindowTopOffset() + defDisp.getWindowTopOffset();
+			Int confBottom = conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset();
+
+            UInt picWidth = pcPic->getPicYuvRec()->getWidth();
+            UInt picHeight = pcPic->getPicYuvRec()->getHeight();
+			UInt picStride = pcPic->getPicYuvRec()->getStride();
             
-            saveComponent(Y, pcPic->getPicYuvRec()->getLumaAddr(), yStride, picWidth, picHeight);
-			saveComponent(U, pcPic->getPicYuvRec()->getCbAddr(), uvStride, picWidth/2, picHeight/2);
-            saveComponent(V, pcPic->getPicYuvRec()->getCrAddr(), uvStride, picWidth/2, picHeight/2);
-
+            saveComponent(Y, pcPic->getPicYuvRec()->getLumaAddr(), pcPic->getPicYuvRec()->getStride(), picWidth, picHeight);
+            saveComponent(U, pcPic->getPicYuvRec()->getCbAddr(), pcPic->getPicYuvRec()->getCStride(), picWidth/2, picHeight/2);
+            saveComponent(V, pcPic->getPicYuvRec()->getCrAddr(), pcPic->getPicYuvRec()->getCStride(), picWidth/2, picHeight/2);
 			written ++;
-
-			// update POC of display order
+            // update POC of display order
             m_iPOCLastDisplay = pcPic->getPOC();
             
             // erase non-referenced picture in the reference picture list after display
@@ -195,13 +198,14 @@ int libDecoderDecode(unsigned char *buff, int len, unsigned int *temporal_id)
     bool bNewPicture = false;
     vector<uint8_t> nalUnit;
     InputNALUnit nalu;
-	int got_picture = 0;
-
-    int i;
-    for (i=0; i < len ; i++){
+    int got_picture=0;
+#if 1
+	int i;
+    for (i=0; i < len ; i++) {
         nalUnit.push_back(buff[i]);
     }
-    read(nalu, nalUnit);
+#endif
+	read(nalu, nalUnit);
     //readNAL(nalu, nalUnit);
     bNewPicture=myDecoder->decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
     if (bNewPicture){
@@ -212,15 +216,12 @@ int libDecoderDecode(unsigned char *buff, int len, unsigned int *temporal_id)
     {
         if ( bNewPicture &&
             (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
-				|| nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-				|| nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-				|| nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
-				|| nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA )
-		) {
+             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
+             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA ) )
+        {
             xFlushOutput( pcListPic);
         }
     }
-	
 	*temporal_id = nalu.m_temporalId;
 	return got_picture;
 }
@@ -252,3 +253,4 @@ const char *libDecoderVersion()
 {
 	return "HEVC HM v"NV_VERSION;
 }
+
