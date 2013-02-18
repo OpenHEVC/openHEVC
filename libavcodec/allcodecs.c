@@ -27,24 +27,42 @@
 #include "avcodec.h"
 #include "config.h"
 
-#define REGISTER_HWACCEL(X,x) { \
-          extern AVHWAccel ff_##x##_hwaccel; \
-          if(CONFIG_##X##_HWACCEL) av_register_hwaccel(&ff_##x##_hwaccel); }
+#define REGISTER_HWACCEL(X, x)                                          \
+    {                                                                   \
+        extern AVHWAccel ff_##x##_hwaccel;                              \
+        if (CONFIG_##X##_HWACCEL)                                       \
+            av_register_hwaccel(&ff_##x##_hwaccel);                     \
+    }
 
-#define REGISTER_ENCODER(X,x) { \
-          extern AVCodec ff_##x##_encoder; \
-          if(CONFIG_##X##_ENCODER)  avcodec_register(&ff_##x##_encoder); }
-#define REGISTER_DECODER(X,x) { \
-          extern AVCodec ff_##x##_decoder; \
-          if(CONFIG_##X##_DECODER)  avcodec_register(&ff_##x##_decoder); }
-#define REGISTER_ENCDEC(X,x)  REGISTER_ENCODER(X,x); REGISTER_DECODER(X,x)
+#define REGISTER_ENCODER(X, x)                                          \
+    {                                                                   \
+        extern AVCodec ff_##x##_encoder;                                \
+        if (CONFIG_##X##_ENCODER)                                       \
+            avcodec_register(&ff_##x##_encoder);                        \
+    }
 
-#define REGISTER_PARSER(X,x) { \
-          extern AVCodecParser ff_##x##_parser; \
-          if(CONFIG_##X##_PARSER)  av_register_codec_parser(&ff_##x##_parser); }
-#define REGISTER_BSF(X,x) { \
-          extern AVBitStreamFilter ff_##x##_bsf; \
-          if(CONFIG_##X##_BSF)     av_register_bitstream_filter(&ff_##x##_bsf); }
+#define REGISTER_DECODER(X, x)                                          \
+    {                                                                   \
+        extern AVCodec ff_##x##_decoder;                                \
+        if (CONFIG_##X##_DECODER)                                       \
+            avcodec_register(&ff_##x##_decoder);                        \
+    }
+
+#define REGISTER_ENCDEC(X, x) REGISTER_ENCODER(X, x); REGISTER_DECODER(X, x)
+
+#define REGISTER_PARSER(X, x)                                           \
+    {                                                                   \
+        extern AVCodecParser ff_##x##_parser;                           \
+        if (CONFIG_##X##_PARSER)                                        \
+            av_register_codec_parser(&ff_##x##_parser);                 \
+    }
+
+#define REGISTER_BSF(X, x)                                              \
+    {                                                                   \
+        extern AVBitStreamFilter ff_##x##_bsf;                          \
+        if (CONFIG_##X##_BSF)                                           \
+            av_register_bitstream_filter(&ff_##x##_bsf);                \
+    }
 
 void avcodec_register_all(void)
 {
@@ -58,5 +76,4 @@ void avcodec_register_all(void)
  
 
     REGISTER_PARSER  (HEVC, hevc);
-
 }

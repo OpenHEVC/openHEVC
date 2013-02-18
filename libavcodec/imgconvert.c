@@ -33,26 +33,16 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "internal.h"
-#include "imgconvert.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 
-#if HAVE_MMX && HAVE_YASM
+#if HAVE_MMX_EXTERNAL
 #include "x86/dsputil_mmx.h"
 #endif
 
-#define FF_COLOR_RGB      0 /**< RGB color space */
-#define FF_COLOR_GRAY     1 /**< gray color space */
-#define FF_COLOR_YUV      2 /**< YUV color space. 16 <= Y <= 235, 16 <= U, V <= 240 */
-#define FF_COLOR_YUV_JPEG 3 /**< YUV color space. 0 <= Y <= 255, 0 <= U, V <= 255 */
-
-#define FF_PIXEL_PLANAR   0 /**< each channel has one component in AVPicture */
-#define FF_PIXEL_PACKED   1 /**< only one components containing all the channels */
-#define FF_PIXEL_PALETTE  2  /**< one components containing indexes for a palette */
-
-#if HAVE_MMX && HAVE_YASM
+#if HAVE_MMX_EXTERNAL
 #define deinterlace_line_inplace ff_deinterlace_line_inplace_mmx
 #define deinterlace_line         ff_deinterlace_line_mmx
 #else
@@ -60,559 +50,82 @@
 #define deinterlace_line         deinterlace_line_c
 #endif
 
-typedef struct PixFmtInfo {
-    uint8_t nb_channels;     /**< number of channels (including alpha) */
-    uint8_t color_type;      /**< color type (see FF_COLOR_xxx constants) */
-    uint8_t pixel_type;      /**< pixel storage type (see FF_PIXEL_xxx constants) */
-    uint8_t is_alpha : 1;    /**< true if alpha can be specified */
-    uint8_t depth;           /**< bit depth of the color components */
-} PixFmtInfo;
-
-/* this table gives more information about formats */
-static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
-    /* YUV formats */
-    [PIX_FMT_YUV420P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUV422P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUV444P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUYV422] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_UYVY422] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_YUV410P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUV411P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUV440P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUV420P16LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 16,
-    },
-    [PIX_FMT_YUV422P16LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 16,
-    },
-    [PIX_FMT_YUV444P16LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 16,
-    },
-    [PIX_FMT_YUV420P16BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 16,
-    },
-    [PIX_FMT_YUV422P16BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 16,
-    },
-    [PIX_FMT_YUV444P16BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 16,
-    },
-
-
-    /* YUV formats with alpha plane */
-    [PIX_FMT_YUVA420P] = {
-        .nb_channels = 4,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-
-    /* JPEG YUV */
-    [PIX_FMT_YUVJ420P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV_JPEG,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUVJ422P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV_JPEG,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUVJ444P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV_JPEG,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_YUVJ440P] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_YUV_JPEG,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-
-    /* RGB formats */
-    [PIX_FMT_RGB24] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_BGR24] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_ARGB] = {
-        .nb_channels = 4, .is_alpha = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_RGB48BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 16,
-    },
-    [PIX_FMT_RGB48LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 16,
-    },
-    [PIX_FMT_RGB565BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 5,
-    },
-    [PIX_FMT_RGB565LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 5,
-    },
-    [PIX_FMT_RGB555BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 5,
-    },
-    [PIX_FMT_RGB555LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 5,
-    },
-    [PIX_FMT_RGB444BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 4,
-    },
-    [PIX_FMT_RGB444LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 4,
-    },
-
-    /* gray / mono formats */
-    [PIX_FMT_GRAY16BE] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_GRAY,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 16,
-    },
-    [PIX_FMT_GRAY16LE] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_GRAY,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 16,
-    },
-    [PIX_FMT_GRAY8] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_GRAY,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_MONOWHITE] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_GRAY,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 1,
-    },
-    [PIX_FMT_MONOBLACK] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_GRAY,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 1,
-    },
-
-    /* paletted formats */
-    [PIX_FMT_PAL8] = {
-        .nb_channels = 4, .is_alpha = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PALETTE,
-        .depth = 8,
-    },
-    [PIX_FMT_UYYVYY411] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_ABGR] = {
-        .nb_channels = 4, .is_alpha = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_BGR565BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 5,
-    },
-    [PIX_FMT_BGR565LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 5,
-    },
-    [PIX_FMT_BGR555BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 5,
-    },
-    [PIX_FMT_BGR555LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 5,
-    },
-    [PIX_FMT_BGR444BE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 4,
-    },
-    [PIX_FMT_BGR444LE] = {
-        .nb_channels = 3,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 4,
-    },
-    [PIX_FMT_RGB8] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_RGB4] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 4,
-    },
-    [PIX_FMT_RGB4_BYTE] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_BGR8] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_BGR4] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 4,
-    },
-    [PIX_FMT_BGR4_BYTE] = {
-        .nb_channels = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_NV12] = {
-        .nb_channels = 2,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-    [PIX_FMT_NV21] = {
-        .nb_channels = 2,
-        .color_type = FF_COLOR_YUV,
-        .pixel_type = FF_PIXEL_PLANAR,
-        .depth = 8,
-    },
-
-    [PIX_FMT_BGRA] = {
-        .nb_channels = 4, .is_alpha = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-    [PIX_FMT_RGBA] = {
-        .nb_channels = 4, .is_alpha = 1,
-        .color_type = FF_COLOR_RGB,
-        .pixel_type = FF_PIXEL_PACKED,
-        .depth = 8,
-    },
-};
-
-void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *v_shift)
+void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
 {
-    *h_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_w;
-    *v_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_h;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    *h_shift = desc->log2_chroma_w;
+    *v_shift = desc->log2_chroma_h;
 }
 
-int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt)
+static int is_gray(const AVPixFmtDescriptor *desc)
 {
-    return av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL;
+    return desc->nb_components - (desc->flags & PIX_FMT_ALPHA) == 1;
 }
 
-int avpicture_fill(AVPicture *picture, uint8_t *ptr,
-                   enum PixelFormat pix_fmt, int width, int height)
-{
-    int ret;
-
-    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
-        return ret;
-
-    if ((ret = av_image_fill_linesizes(picture->linesize, pix_fmt, width)) < 0)
-        return ret;
-
-    return av_image_fill_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
-}
-
-int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, int height,
-                     unsigned char *dest, int dest_size)
-{
-    int i, j, nb_planes = 0, linesizes[4];
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
-    int size = avpicture_get_size(pix_fmt, width, height);
-
-    if (size > dest_size || size < 0)
-        return AVERROR(EINVAL);
-
-    for (i = 0; i < desc->nb_components; i++)
-        nb_planes = FFMAX(desc->comp[i].plane, nb_planes);
-    nb_planes++;
-
-    av_image_fill_linesizes(linesizes, pix_fmt, width);
-    for (i = 0; i < nb_planes; i++) {
-        int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
-        const unsigned char *s = src->data[i];
-        h = (height + (1 << shift) - 1) >> shift;
-
-        for (j = 0; j < h; j++) {
-            memcpy(dest, s, linesizes[i]);
-            dest += linesizes[i];
-            s += src->linesize[i];
-        }
-    }
-
-    if (desc->flags & PIX_FMT_PAL)
-        memcpy((unsigned char *)(((size_t)dest + 3) & ~3), src->data[1], 256 * 4);
-
-    return size;
-}
-
-int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height)
-{
-    AVPicture dummy_pict;
-    if(av_image_check_size(width, height, 0, NULL))
-        return -1;
-    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PSEUDOPAL)
-        // do not include palette for these pseudo-paletted formats
-        return width * height;
-    return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);
-}
-
-int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_pix_fmt,
+int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
+                             enum AVPixelFormat src_pix_fmt,
                              int has_alpha)
 {
-    const PixFmtInfo *pf, *ps;
-    const AVPixFmtDescriptor *src_desc = &av_pix_fmt_descriptors[src_pix_fmt];
-    const AVPixFmtDescriptor *dst_desc = &av_pix_fmt_descriptors[dst_pix_fmt];
-    int loss;
-
-    ps = &pix_fmt_info[src_pix_fmt];
+    const AVPixFmtDescriptor *src_desc = av_pix_fmt_desc_get(src_pix_fmt);
+    const AVPixFmtDescriptor *dst_desc = av_pix_fmt_desc_get(dst_pix_fmt);
+    int loss, i, nb_components = FFMIN(src_desc->nb_components,
+                                       dst_desc->nb_components);
 
     /* compute loss */
     loss = 0;
-    pf = &pix_fmt_info[dst_pix_fmt];
-    if (pf->depth < ps->depth ||
-        ((dst_pix_fmt == PIX_FMT_RGB555BE || dst_pix_fmt == PIX_FMT_RGB555LE ||
-          dst_pix_fmt == PIX_FMT_BGR555BE || dst_pix_fmt == PIX_FMT_BGR555LE) &&
-         (src_pix_fmt == PIX_FMT_RGB565BE || src_pix_fmt == PIX_FMT_RGB565LE ||
-          src_pix_fmt == PIX_FMT_BGR565BE || src_pix_fmt == PIX_FMT_BGR565LE)))
-        loss |= FF_LOSS_DEPTH;
+
+    if (dst_pix_fmt == src_pix_fmt)
+        return 0;
+
+    for (i = 0; i < nb_components; i++)
+        if (src_desc->comp[i].depth_minus1 > dst_desc->comp[i].depth_minus1)
+            loss |= FF_LOSS_DEPTH;
+
     if (dst_desc->log2_chroma_w > src_desc->log2_chroma_w ||
         dst_desc->log2_chroma_h > src_desc->log2_chroma_h)
         loss |= FF_LOSS_RESOLUTION;
-    switch(pf->color_type) {
-    case FF_COLOR_RGB:
-        if (ps->color_type != FF_COLOR_RGB &&
-            ps->color_type != FF_COLOR_GRAY)
-            loss |= FF_LOSS_COLORSPACE;
-        break;
-    case FF_COLOR_GRAY:
-        if (ps->color_type != FF_COLOR_GRAY)
-            loss |= FF_LOSS_COLORSPACE;
-        break;
-    case FF_COLOR_YUV:
-        if (ps->color_type != FF_COLOR_YUV)
-            loss |= FF_LOSS_COLORSPACE;
-        break;
-    case FF_COLOR_YUV_JPEG:
-        if (ps->color_type != FF_COLOR_YUV_JPEG &&
-            ps->color_type != FF_COLOR_YUV &&
-            ps->color_type != FF_COLOR_GRAY)
-            loss |= FF_LOSS_COLORSPACE;
-        break;
-    default:
-        /* fail safe test */
-        if (ps->color_type != pf->color_type)
-            loss |= FF_LOSS_COLORSPACE;
-        break;
-    }
-    if (pf->color_type == FF_COLOR_GRAY &&
-        ps->color_type != FF_COLOR_GRAY)
-        loss |= FF_LOSS_CHROMA;
-    if (!pf->is_alpha && (ps->is_alpha && has_alpha))
+
+    if ((src_desc->flags & PIX_FMT_RGB) != (dst_desc->flags & PIX_FMT_RGB))
+        loss |= FF_LOSS_COLORSPACE;
+
+    if (has_alpha && !(dst_desc->flags & PIX_FMT_ALPHA) &&
+         (dst_desc->flags & PIX_FMT_ALPHA))
         loss |= FF_LOSS_ALPHA;
-    if (pf->pixel_type == FF_PIXEL_PALETTE &&
-        (ps->pixel_type != FF_PIXEL_PALETTE && ps->color_type != FF_COLOR_GRAY))
-        loss |= FF_LOSS_COLORQUANT;
+
+    if (dst_pix_fmt == AV_PIX_FMT_PAL8 && !is_gray(src_desc))
+        return loss | FF_LOSS_COLORQUANT;
+
+    if (src_desc->nb_components > dst_desc->nb_components)
+        if (is_gray(dst_desc))
+            loss |= FF_LOSS_CHROMA;
+
     return loss;
 }
 
-static int avg_bits_per_pixel(enum PixelFormat pix_fmt)
-{
-    int bits;
-    const PixFmtInfo *pf;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
-
-    pf = &pix_fmt_info[pix_fmt];
-    switch(pf->pixel_type) {
-    case FF_PIXEL_PACKED:
-        switch(pix_fmt) {
-        case PIX_FMT_YUYV422:
-        case PIX_FMT_UYVY422:
-        case PIX_FMT_RGB565BE:
-        case PIX_FMT_RGB565LE:
-        case PIX_FMT_RGB555BE:
-        case PIX_FMT_RGB555LE:
-        case PIX_FMT_RGB444BE:
-        case PIX_FMT_RGB444LE:
-        case PIX_FMT_BGR565BE:
-        case PIX_FMT_BGR565LE:
-        case PIX_FMT_BGR555BE:
-        case PIX_FMT_BGR555LE:
-        case PIX_FMT_BGR444BE:
-        case PIX_FMT_BGR444LE:
-            bits = 16;
-            break;
-        case PIX_FMT_UYYVYY411:
-            bits = 12;
-            break;
-        default:
-            bits = pf->depth * pf->nb_channels;
-            break;
-        }
-        break;
-    case FF_PIXEL_PLANAR:
-        if (desc->log2_chroma_w == 0 && desc->log2_chroma_h == 0) {
-            bits = pf->depth * pf->nb_channels;
-        } else {
-            bits = pf->depth + ((2 * pf->depth) >>
-                                (desc->log2_chroma_w + desc->log2_chroma_h));
-        }
-        break;
-    case FF_PIXEL_PALETTE:
-        bits = 8;
-        break;
-    default:
-        bits = -1;
-        break;
-    }
-    return bits;
-}
-
-static enum PixelFormat avcodec_find_best_pix_fmt1(enum PixelFormat *pix_fmt_list,
-                                      enum PixelFormat src_pix_fmt,
+static enum AVPixelFormat avcodec_find_best_pix_fmt1(enum AVPixelFormat *pix_fmt_list,
+                                      enum AVPixelFormat src_pix_fmt,
                                       int has_alpha,
                                       int loss_mask)
 {
     int dist, i, loss, min_dist;
-    enum PixelFormat dst_pix_fmt;
+    enum AVPixelFormat dst_pix_fmt;
 
     /* find exact color match with smallest size */
-    dst_pix_fmt = PIX_FMT_NONE;
+    dst_pix_fmt = AV_PIX_FMT_NONE;
     min_dist = 0x7fffffff;
     i = 0;
-    while (pix_fmt_list[i] != PIX_FMT_NONE) {
-        enum PixelFormat pix_fmt = pix_fmt_list[i];
+    while (pix_fmt_list[i] != AV_PIX_FMT_NONE) {
+        enum AVPixelFormat pix_fmt = pix_fmt_list[i];
 
-        if (i > PIX_FMT_NB) {
+        if (i > AV_PIX_FMT_NB) {
             av_log(NULL, AV_LOG_ERROR, "Pixel format list longer than expected, "
                    "it is either not properly terminated or contains duplicates\n");
-            return PIX_FMT_NONE;
+            return AV_PIX_FMT_NONE;
         }
 
         loss = avcodec_get_pix_fmt_loss(pix_fmt, src_pix_fmt, has_alpha) & loss_mask;
         if (loss == 0) {
-            dist = avg_bits_per_pixel(pix_fmt);
+            dist = av_get_bits_per_pixel(av_pix_fmt_desc_get(pix_fmt));
             if (dist < min_dist) {
                 min_dist = dist;
                 dst_pix_fmt = pix_fmt;
@@ -624,10 +137,10 @@ static enum PixelFormat avcodec_find_best_pix_fmt1(enum PixelFormat *pix_fmt_lis
 }
 
 #if FF_API_FIND_BEST_PIX_FMT
-enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
+enum AVPixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum AVPixelFormat src_pix_fmt,
                               int has_alpha, int *loss_ptr)
 {
-    enum PixelFormat list[64];
+    enum AVPixelFormat list[64];
     int i, j = 0;
 
     // test only the first 64 pixel formats to avoid undefined behaviour
@@ -635,17 +148,17 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
         if (pix_fmt_mask & (1ULL << i))
             list[j++] = i;
     }
-    list[j] = PIX_FMT_NONE;
+    list[j] = AV_PIX_FMT_NONE;
 
     return avcodec_find_best_pix_fmt2(list, src_pix_fmt, has_alpha, loss_ptr);
 }
 #endif /* FF_API_FIND_BEST_PIX_FMT */
 
-enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat *pix_fmt_list,
-                                            enum PixelFormat src_pix_fmt,
+enum AVPixelFormat avcodec_find_best_pix_fmt2(enum AVPixelFormat *pix_fmt_list,
+                                            enum AVPixelFormat src_pix_fmt,
                                             int has_alpha, int *loss_ptr)
 {
-    enum PixelFormat dst_pix_fmt;
+    enum AVPixelFormat dst_pix_fmt;
     int loss_mask, i;
     static const int loss_mask_order[] = {
         ~0, /* no loss first */
@@ -668,18 +181,11 @@ enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat *pix_fmt_list,
         if (loss_mask == 0)
             break;
     }
-    return PIX_FMT_NONE;
+    return AV_PIX_FMT_NONE;
  found:
     if (loss_ptr)
         *loss_ptr = avcodec_get_pix_fmt_loss(dst_pix_fmt, src_pix_fmt, has_alpha);
     return dst_pix_fmt;
-}
-
-void av_picture_copy(AVPicture *dst, const AVPicture *src,
-                     enum PixelFormat pix_fmt, int width, int height)
-{
-    av_image_copy(dst->data, dst->linesize, src->data,
-                  src->linesize, pix_fmt, width, height);
 }
 
 /* 2x2 -> 1x1 */
@@ -768,44 +274,25 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
     }
 }
 
-
-int avpicture_alloc(AVPicture *picture,
-                    enum PixelFormat pix_fmt, int width, int height)
-{
-    int ret;
-
-    if ((ret = av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 1)) < 0) {
-        memset(picture, 0, sizeof(AVPicture));
-        return ret;
-    }
-
-    return 0;
-}
-
-void avpicture_free(AVPicture *picture)
-{
-    av_free(picture->data[0]);
-}
-
 /* return true if yuv planar */
-static inline int is_yuv_planar(const PixFmtInfo *ps)
+static inline int is_yuv_planar(const AVPixFmtDescriptor *desc)
 {
-    return (ps->color_type == FF_COLOR_YUV ||
-            ps->color_type == FF_COLOR_YUV_JPEG) &&
-        ps->pixel_type == FF_PIXEL_PLANAR;
+    return (!(desc->flags & PIX_FMT_RGB) &&
+             (desc->flags & PIX_FMT_PLANAR));
 }
 
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
-                    enum PixelFormat pix_fmt, int top_band, int left_band)
+                    enum AVPixelFormat pix_fmt, int top_band, int left_band)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int y_shift;
     int x_shift;
 
-    if (pix_fmt < 0 || pix_fmt >= PIX_FMT_NB || !is_yuv_planar(&pix_fmt_info[pix_fmt]))
+    if (pix_fmt < 0 || pix_fmt >= AV_PIX_FMT_NB || !is_yuv_planar(desc))
         return -1;
 
-    y_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_h;
-    x_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_w;
+    y_shift = desc->log2_chroma_h;
+    x_shift = desc->log2_chroma_w;
 
     dst->data[0] = src->data[0] + (top_band * src->linesize[0]) + left_band;
     dst->data[1] = src->data[1] + ((top_band >> y_shift) * src->linesize[1]) + (left_band >> x_shift);
@@ -818,21 +305,22 @@ int av_picture_crop(AVPicture *dst, const AVPicture *src,
 }
 
 int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
-                   enum PixelFormat pix_fmt, int padtop, int padbottom, int padleft, int padright,
+                   enum AVPixelFormat pix_fmt, int padtop, int padbottom, int padleft, int padright,
             int *color)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     uint8_t *optr;
     int y_shift;
     int x_shift;
     int yheight;
     int i, y;
 
-    if (pix_fmt < 0 || pix_fmt >= PIX_FMT_NB ||
-        !is_yuv_planar(&pix_fmt_info[pix_fmt])) return -1;
+    if (pix_fmt < 0 || pix_fmt >= AV_PIX_FMT_NB ||
+        !is_yuv_planar(desc)) return -1;
 
     for (i = 0; i < 3; i++) {
-        x_shift = i ? av_pix_fmt_descriptors[pix_fmt].log2_chroma_w : 0;
-        y_shift = i ? av_pix_fmt_descriptors[pix_fmt].log2_chroma_h : 0;
+        x_shift = i ? desc->log2_chroma_w : 0;
+        y_shift = i ? desc->log2_chroma_h : 0;
 
         if (padtop || padleft) {
             memset(dst->data[i], color[i],
@@ -877,7 +365,7 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     return 0;
 }
 
-#if !(HAVE_MMX && HAVE_YASM)
+#if !HAVE_MMX_EXTERNAL
 /* filter parameters: [-1 4 2 4 -1] // 8 */
 static void deinterlace_line_c(uint8_t *dst,
                              const uint8_t *lum_m4, const uint8_t *lum_m3,
@@ -926,7 +414,7 @@ static void deinterlace_line_inplace_c(uint8_t *lum_m4, uint8_t *lum_m3,
         lum++;
     }
 }
-#endif
+#endif /* !HAVE_MMX_EXTERNAL */
 
 /* deinterlacing : 2 temporal taps, 3 spatial taps linear filter. The
    top field is copied as is, but the bottom field is deinterlaced
@@ -986,17 +474,17 @@ static void deinterlace_bottom_field_inplace(uint8_t *src1, int src_wrap,
 }
 
 int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
-                          enum PixelFormat pix_fmt, int width, int height)
+                          enum AVPixelFormat pix_fmt, int width, int height)
 {
     int i;
 
-    if (pix_fmt != PIX_FMT_YUV420P &&
-        pix_fmt != PIX_FMT_YUVJ420P &&
-        pix_fmt != PIX_FMT_YUV422P &&
-        pix_fmt != PIX_FMT_YUVJ422P &&
-        pix_fmt != PIX_FMT_YUV444P &&
-        pix_fmt != PIX_FMT_YUV411P &&
-        pix_fmt != PIX_FMT_GRAY8)
+    if (pix_fmt != AV_PIX_FMT_YUV420P &&
+        pix_fmt != AV_PIX_FMT_YUVJ420P &&
+        pix_fmt != AV_PIX_FMT_YUV422P &&
+        pix_fmt != AV_PIX_FMT_YUVJ422P &&
+        pix_fmt != AV_PIX_FMT_YUV444P &&
+        pix_fmt != AV_PIX_FMT_YUV411P &&
+        pix_fmt != AV_PIX_FMT_GRAY8)
         return -1;
     if ((width & 3) != 0 || (height & 3) != 0)
         return -1;
@@ -1004,22 +492,22 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
     for(i=0;i<3;i++) {
         if (i == 1) {
             switch(pix_fmt) {
-            case PIX_FMT_YUVJ420P:
-            case PIX_FMT_YUV420P:
+            case AV_PIX_FMT_YUVJ420P:
+            case AV_PIX_FMT_YUV420P:
                 width >>= 1;
                 height >>= 1;
                 break;
-            case PIX_FMT_YUV422P:
-            case PIX_FMT_YUVJ422P:
+            case AV_PIX_FMT_YUV422P:
+            case AV_PIX_FMT_YUVJ422P:
                 width >>= 1;
                 break;
-            case PIX_FMT_YUV411P:
+            case AV_PIX_FMT_YUV411P:
                 width >>= 2;
                 break;
             default:
                 break;
             }
-            if (pix_fmt == PIX_FMT_GRAY8) {
+            if (pix_fmt == AV_PIX_FMT_GRAY8) {
                 break;
             }
         }

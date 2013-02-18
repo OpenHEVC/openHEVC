@@ -147,18 +147,9 @@ int xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId, unsigned char * Y, un
             not_displayed--;            
 
 
-			Int m_respectDefDispWindow = 1;
-
-			const Window &conf = pcPic->getConformanceWindow();
-			const Window &defDisp = m_respectDefDispWindow ? pcPic->getDefDisplayWindow() : Window();
-			Int confLeft = conf.getWindowLeftOffset() + defDisp.getWindowLeftOffset();
-			Int confRight = conf.getWindowRightOffset() + defDisp.getWindowRightOffset();
-			Int confTop = conf.getWindowTopOffset() + defDisp.getWindowTopOffset();
-			Int confBottom = conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset();
 
             UInt picWidth = pcPic->getPicYuvRec()->getWidth();
             UInt picHeight = pcPic->getPicYuvRec()->getHeight();
-			UInt picStride = pcPic->getPicYuvRec()->getStride();
             
             saveComponent(Y, pcPic->getPicYuvRec()->getLumaAddr(), pcPic->getPicYuvRec()->getStride(), picWidth, picHeight);
             saveComponent(U, pcPic->getPicYuvRec()->getCbAddr(), pcPic->getPicYuvRec()->getCStride(), picWidth/2, picHeight/2);

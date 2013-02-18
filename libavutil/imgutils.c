@@ -45,12 +45,15 @@ void av_image_fill_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
     }
 }
 
-int av_image_get_linesize(enum PixelFormat pix_fmt, int width, int plane)
+int av_image_get_linesize(enum AVPixelFormat pix_fmt, int width, int plane)
 {
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int max_step     [4];       /* max pixel step for each plane */
     int max_step_comp[4];       /* the component for each plane which has the max pixel step */
     int s;
+
+    if (!desc)
+        return AVERROR(EINVAL);
 
     if (desc->flags & PIX_FMT_BITSTREAM)
         return (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
@@ -60,16 +63,16 @@ int av_image_get_linesize(enum PixelFormat pix_fmt, int width, int plane)
     return max_step[plane] * (((width + (1 << s) - 1)) >> s);
 }
 
-int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int width)
+int av_image_fill_linesizes(int linesizes[4], enum AVPixelFormat pix_fmt, int width)
 {
     int i;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int max_step     [4];       /* max pixel step for each plane */
     int max_step_comp[4];       /* the component for each plane which has the max pixel step */
 
     memset(linesizes, 0, 4*sizeof(linesizes[0]));
 
-    if ((unsigned)pix_fmt >= PIX_FMT_NB || desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & PIX_FMT_HWACCEL)
         return AVERROR(EINVAL);
 
     if (desc->flags & PIX_FMT_BITSTREAM) {
@@ -91,15 +94,15 @@ int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
     return 0;
 }
 
-int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
+int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int height,
                            uint8_t *ptr, const int linesizes[4])
 {
     int i, total_size, size[4] = { 0 }, has_plane[4] = { 0 };
 
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     memset(data     , 0, sizeof(data[0])*4);
 
-    if ((unsigned)pix_fmt >= PIX_FMT_NB || desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & PIX_FMT_HWACCEL)
         return AVERROR(EINVAL);
 
     data[0] = ptr;
@@ -133,7 +136,7 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
     return total_size;
 }
 
-int ff_set_systematic_pal2(uint32_t pal[256], enum PixelFormat pix_fmt)
+int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt)
 {
     int i;
 
@@ -141,27 +144,27 @@ int ff_set_systematic_pal2(uint32_t pal[256], enum PixelFormat pix_fmt)
         int r, g, b;
 
         switch (pix_fmt) {
-        case PIX_FMT_RGB8:
+        case AV_PIX_FMT_RGB8:
             r = (i>>5    )*36;
             g = ((i>>2)&7)*36;
             b = (i&3     )*85;
             break;
-        case PIX_FMT_BGR8:
+        case AV_PIX_FMT_BGR8:
             b = (i>>6    )*85;
             g = ((i>>3)&7)*36;
             r = (i&7     )*36;
             break;
-        case PIX_FMT_RGB4_BYTE:
+        case AV_PIX_FMT_RGB4_BYTE:
             r = (i>>3    )*255;
             g = ((i>>1)&3)*85;
             b = (i&1     )*255;
             break;
-        case PIX_FMT_BGR4_BYTE:
+        case AV_PIX_FMT_BGR4_BYTE:
             b = (i>>3    )*255;
             g = ((i>>1)&3)*85;
             r = (i&1     )*255;
             break;
-        case PIX_FMT_GRAY8:
+        case AV_PIX_FMT_GRAY8:
             r = b = g = i;
             break;
         default:
@@ -174,10 +177,14 @@ int ff_set_systematic_pal2(uint32_t pal[256], enum PixelFormat pix_fmt)
 }
 
 int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
-                   int w, int h, enum PixelFormat pix_fmt, int align)
+                   int w, int h, enum AVPixelFormat pix_fmt, int align)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int i, ret;
     uint8_t *buf;
+
+    if (!desc)
+        return AVERROR(EINVAL);
 
     if ((ret = av_image_check_size(w, h, 0, NULL)) < 0)
         return ret;
@@ -196,9 +203,8 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
         av_free(buf);
         return ret;
     }
-    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PAL ||
-        av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PSEUDOPAL)
-        ff_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
+    if (desc->flags & PIX_FMT_PAL || desc->flags & PIX_FMT_PSEUDOPAL)
+        avpriv_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
 
     return ret;
 }
@@ -237,11 +243,11 @@ void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
 
 void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                    const uint8_t *src_data[4], const int src_linesizes[4],
-                   enum PixelFormat pix_fmt, int width, int height)
+                   enum AVPixelFormat pix_fmt, int width, int height)
 {
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
-    if (desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & PIX_FMT_HWACCEL)
         return;
 
     if (desc->flags & PIX_FMT_PAL ||
