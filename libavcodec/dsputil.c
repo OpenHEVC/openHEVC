@@ -2505,16 +2505,7 @@ static void ff_wmv2_idct_add_c(uint8_t *dest, int line_size, DCTELEM *block)
     ff_wmv2_idct_c(block);
     add_pixels_clamped_c(block, dest, line_size);
 }
-static void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_j_rev_dct (block);
-    put_pixels_clamped_c(block, dest, line_size);
-}
-static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_j_rev_dct (block);
-    add_pixels_clamped_c(block, dest, line_size);
-}
+
 
 /* init static data */
 av_cold void ff_dsputil_static_init(void)

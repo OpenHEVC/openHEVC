@@ -2170,6 +2170,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             }
             current_mv.mv.x += s->pu.mvd.x;
             current_mv.mv.y += s->pu.mvd.y;
+#ifdef MV
+            printf("mv = %d, %d\n",current_mv.mv.x, current_mv.mv.y);
+#endif
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
             for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
