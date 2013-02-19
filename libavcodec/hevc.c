@@ -31,7 +31,7 @@
 #include "hevc.h"
 
 
-#define HM
+//#define HM
 #define MV
 #ifdef HM
     #include "wrapper/wrapper.h"
@@ -222,7 +222,7 @@ static void set_ref_poc_list(HEVCContext *s)
         refPocList[ST_FOLL].numPic = k;
         refPocList[LT_CURR].numPic = 0;
         refPocList[LT_FOLL].numPic = 0;
-        //set_ref_pic_list(s);
+        set_ref_pic_list(s);
     }
 }
 static int hls_slice_header(HEVCContext *s)
@@ -1592,11 +1592,11 @@ static void luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH,
     
     int xB1, yB1;
     int xB1_pu, yB1_pu;
-    int is_available_b1;
+    int is_available_b1=0;
     
     int xB2, yB2;
     int xB2_pu, yB2_pu;
-    int isAvailableB2;
+    int isAvailableB2=0;
     struct MvField mvpcand_list[2] = { 0 };
     int check_A0, check_A1, check_B0, check_B1, check_B2;
     MvField mxA;
