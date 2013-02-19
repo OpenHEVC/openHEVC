@@ -335,6 +335,7 @@ static int hls_slice_header(HEVCContext *s)
                     short_term_ref_pic_set_idx = get_bits(gb, numbits);
                 else
                     short_term_ref_pic_set_idx = 0;
+                sh->short_term_rps = &s->sps->short_term_rps_list[short_term_ref_pic_set_idx];
             }
             if (s->sps->long_term_ref_pics_present_flag) {
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: long_term_ref_pics_present_flag\n");
