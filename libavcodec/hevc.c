@@ -178,7 +178,7 @@ static void set_ref_pic_list(HEVCContext *s)
                 refPicList[list_idx].list[cIdx] = refPocList[first_list].list[i];
                 cIdx++;
             }
-            for(i = 0; i < refPicList[sec_list].numPic; i++) {
+            for(i = 0; i < refPocList[sec_list].numPic; i++) {
                 refPicList[list_idx].list[cIdx] = refPocList[sec_list].list[i];
                 cIdx++;
             }
