@@ -31,7 +31,7 @@
 #include "hevc.h"
 
 
-#define HM
+//#define HM
 //#define MV
 #ifdef HM
     #include "wrapper/wrapper.h"
@@ -2619,14 +2619,14 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 #ifdef HM
     gotpicture = libDecoderDecode(avpkt->data, avpkt->size,  &temporal_id);
     if (gotpicture) {
+        libDecoderGetOuptut(0, s->frame->data[0], s->frame->data[1], s->frame->data[2], 1);
+    }
+    if (gotpicture) {
         temporal_id = temp_id;
         
         libDecoderDecode(avpkt->data, avpkt->size, &temp_id);
     }
 
-    if (gotpicture) {
-        libDecoderGetOuptut(0, s->frame->data[0], s->frame->data[1], s->frame->data[2], 1);
-    }
 
 #endif
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
