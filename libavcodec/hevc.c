@@ -31,8 +31,8 @@
 #include "hevc.h"
 
 
-//#define HM
-#define MV
+#define HM
+//#define MV
 #ifdef HM
     #include "wrapper/wrapper.h"
 #endif
@@ -2660,6 +2660,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         memset(s->pu.top_ipm, INTRA_DC, pic_width_in_min_pu);
         // fall-through
     }
+    case NAL_BLA_W_LP:
+    case NAL_BLA_W_RADL:
+    case NAL_BLA_N_LP:
     case NAL_IDR_W_DLP:
         if (hls_slice_header(s) < 0)
             return -1;
@@ -2704,8 +2707,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 #endif
         *data_size = sizeof(AVFrame);
         break;
+    case NAL_AUD:
+        return avpkt->size;
     default:
-        av_log(s->avctx, AV_LOG_INFO, "Skipping NAL unit\n");
+        av_log(s->avctx, AV_LOG_INFO, "Skipping NAL unit %d\n", s->nal_unit_type);
         return avpkt->size;
     }
 

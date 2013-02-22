@@ -39,7 +39,7 @@
 #include "TComMotionInfo.h"
 #include "assert.h"
 #include <stdlib.h>
-#define MV
+//#define MV
 #ifdef MV
 #include <stdio.h>
 #endif

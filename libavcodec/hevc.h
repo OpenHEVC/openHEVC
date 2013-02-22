@@ -48,6 +48,9 @@
 enum NALUnitType {
     NAL_TRAIL_R   = 0,
     NAL_TRAIL_N   = 1,
+    NAL_BLA_W_LP = 16,
+    NAL_BLA_W_RADL = 17,
+    NAL_BLA_N_LP = 18,
     NAL_IDR_W_DLP = 19,
     NAL_VPS = 32,
     NAL_SPS = 33,
