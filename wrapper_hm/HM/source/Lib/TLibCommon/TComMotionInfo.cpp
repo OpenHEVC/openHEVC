@@ -39,10 +39,7 @@
 #include "TComMotionInfo.h"
 #include "assert.h"
 #include <stdlib.h>
-//#define MV
-#ifdef MV
-#include <stdio.h>
-#endif
+
 //! \ingroup TLibCommon
 //! \{
 
@@ -307,10 +304,7 @@ Void TComCUMvField::setAll( T *p, T const & val, PartSize eCUMode, Int iPartAddr
 
 Void TComCUMvField::setAllMv( TComMv const & mv, PartSize eCUMode, Int iPartAddr, UInt uiDepth, Int iPartIdx )
 {
-#ifdef MV
-  printf("mv = %d, %d\n",mv.getHor(), mv.getVer());
-#endif
-  setAll(m_pcMv, mv, eCUMode, iPartAddr, uiDepth, iPartIdx);
+ setAll(m_pcMv, mv, eCUMode, iPartAddr, uiDepth, iPartIdx);
 }
 
 Void TComCUMvField::setAllMvd( TComMv const & mvd, PartSize eCUMode, Int iPartAddr, UInt uiDepth, Int iPartIdx )
