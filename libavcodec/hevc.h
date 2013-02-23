@@ -573,8 +573,10 @@ typedef struct Mv {
 } Mv;
 
 typedef struct MvField {
-      Mv  mv;
-      int ref_idx;
+      Mv  mv_l0;
+      Mv  mv_l1;
+      int ref_idx_l0;
+      int ref_idx_l1;
       int pred_flag_l0;
       int pred_flag_l1;
       int is_intra;
