@@ -1041,8 +1041,8 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
         split_transform_flag =
         (log2_trafo_size >
          s->sps->log2_min_transform_block_size +
-         s->sps->log2_diff_max_min_coding_block_size ||
-         (s->cu.intra_split_flag && trafo_depth == 0) ||
+         s->sps->log2_diff_max_min_transform_block_size ||
+         (s->cu.intra_split_flag && (trafo_depth == 0)) ||
          s->tt.inter_split_flag);
     }
 
