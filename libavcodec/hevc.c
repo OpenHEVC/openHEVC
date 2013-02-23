@@ -1010,6 +1010,7 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
 {
 
     uint8_t split_transform_flag;
+    
     SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) =
     SAMPLE_CBF(s->tt.cbf_cb[trafo_depth - 1], xBase, yBase);
     SAMPLE_CBF(s->tt.cbf_cr[trafo_depth], x0, y0) =
@@ -1029,7 +1030,7 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
                               s->cu.part_mode != PART_2Nx2N && trafo_depth == 0);
 
     if (log2_trafo_size <= s->sps->log2_min_transform_block_size +
-        s->sps->log2_diff_max_min_coding_block_size &&
+        s->sps->log2_diff_max_min_transform_block_size &&
         log2_trafo_size > s->sps->log2_min_transform_block_size &&
         trafo_depth < s->cu.max_trafo_depth &&
         !(s->cu.intra_split_flag && trafo_depth == 0)) {
@@ -1046,7 +1047,7 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
          s->tt.inter_split_flag);
     }
 
-    if (trafo_depth == 0 || log2_trafo_size > 2) {
+    if (log2_trafo_size > 2) {
         if (trafo_depth == 0 || SAMPLE_CBF(s->tt.cbf_cb[trafo_depth - 1], xBase, yBase)) {
             SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) =
             ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
