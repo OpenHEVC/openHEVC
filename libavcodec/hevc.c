@@ -1533,7 +1533,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     // combined bi-predictive merge candidates  (applies for B slices)
     if (s->sh.slice_type == B_SLICE) {
     	if((numOrigMergeCand > 1) && (numOrigMergeCand < MRG_MAX_NUM_CANDS)) {
-    		//printf("Bi prreditctive merge \n");
+
     		numInputMergeCand = numMergeCand;
     		combIdx           = 0;
     		combStop          = 0;
@@ -1555,11 +1555,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     				combCand.mv_l1.x = l1Cand.mv_l1.x;
     				combCand.mv_l1.y = l1Cand.mv_l1.y;
     				combCand.is_intra = 0;
+    				mergecandlist[numMergeCand] = combCand;
+    				numMergeCand++;
     			}
-    			mergecandlist[numMergeCand] = combCand;
-    			numMergeCand++;
     			combIdx++;
-
     			if((combIdx == numOrigMergeCand * (numOrigMergeCand-1)) || (numMergeCand == MRG_MAX_NUM_CANDS)) {
     				combStop = 1;
     				break;
@@ -1605,9 +1604,9 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         zeroIdx++;
     }
 #ifdef MV
-   /* for (i=0; i < 5; i++) {
-            printf("mvPred[%d]=%d %d\n", i, mergecandlist[i].mv_l0.x, mergecandlist[i].mv_l0.y);
-            printf("mvPred[%d]=%d %d\n", i, mergecandlist[i].mv_l1.x, mergecandlist[i].mv_l1.y);
+   /*for (i=0; i < 5; i++) {
+            printf("mvPred[%d]=%d %d %d \n", i, mergecandlist[i].mv_l0.x, mergecandlist[i].mv_l0.y, mergecandlist[i].pred_flag_l0);
+            printf("mvPred[%d]=%d %d %d \n", i, mergecandlist[i].mv_l1.x, mergecandlist[i].mv_l1.y, mergecandlist[i].pred_flag_l1);
 
     }*/
 #endif
@@ -1618,7 +1617,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
  */
 static void luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv)
 {
-    int singleMCLFlag = 0;
+   // printf("coming to merge mode \n");
+	int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
     struct MvField mergecand_list[MRG_MAX_NUM_CANDS] = {0};
     
@@ -2208,10 +2208,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     int x_pu, y_pu;
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
 
-    current_mv.pred_flag_l0 = 1;
-    current_mv.ref_idx_l0 = 0;
-    current_mv.ref_idx_l1 = 0;
-    current_mv.pred_flag_l1 = 0;
 
 
     if (SAMPLE(s->cu.skip_flag, x0, y0)) {
