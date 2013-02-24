@@ -121,6 +121,8 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
         refill2(c);
+//    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
+//            c->range, c->low>>17, bit  );
     return bit;
 }
 #endif
