@@ -93,7 +93,7 @@ typedef struct RefPicList {
 #define MAX_CU_SIZE 128
 
 //TODO: check if this is really the maximum
-#define MAX_TRANSFORM_DEPTH 3
+#define MAX_TRANSFORM_DEPTH 5
 
 #define MAX_TB_SIZE 32
 #define MAX_PB_SIZE 64

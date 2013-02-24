@@ -1013,11 +1013,15 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
 {
 
     uint8_t split_transform_flag;
-    
-    SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) =
-    SAMPLE_CBF(s->tt.cbf_cb[trafo_depth - 1], xBase, yBase);
-    SAMPLE_CBF(s->tt.cbf_cr[trafo_depth], x0, y0) =
-    SAMPLE_CBF(s->tt.cbf_cr[trafo_depth - 1], xBase, yBase);
+    if (trafo_depth > 0 && log2_trafo_size == 2) {
+        SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) =
+        SAMPLE_CBF(s->tt.cbf_cb[trafo_depth - 1], xBase, yBase);
+        SAMPLE_CBF(s->tt.cbf_cr[trafo_depth], x0, y0) =
+        SAMPLE_CBF(s->tt.cbf_cr[trafo_depth - 1], xBase, yBase);
+    } else {
+        SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) =
+        SAMPLE_CBF(s->tt.cbf_cr[trafo_depth], x0, y0) = 0;
+    }
 
     if (s->cu.intra_split_flag) {
         if (trafo_depth == 1)
