@@ -1264,7 +1264,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
        || isDiffMER(s, xB1, yB1, x0, y0)) {
         is_available_b1 = 0;
     }
-    if (isAvailableA1) {
+    if (isAvailableA1 && is_available_b1) {
         check_MER = !(compareMVrefidx(s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu], s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
     }
     
