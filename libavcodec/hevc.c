@@ -32,7 +32,7 @@
 
 
 //#define HM
-#define MV
+//#define MV
 #ifdef HM
     #include "wrapper/wrapper.h"
 #endif
@@ -66,18 +66,6 @@ static int pic_arrays_init(HEVCContext *s)
     s->pu.left_ipm = av_malloc(pic_height_in_min_pu);
     s->pu.top_ipm = av_malloc(pic_width_in_min_pu);
     s->pu.tab_mvf = av_malloc(pic_width_in_min_pu*pic_height_in_min_pu*sizeof(MvField));
-
-    for( i =0; i < pic_width_in_min_pu * pic_height_in_min_pu ; i++ ) {
-        s->pu.tab_mvf[i].ref_idx_l0 =  -1;
-        s->pu.tab_mvf[i].ref_idx_l1 =  -1;
-        s->pu.tab_mvf[i].mv_l0.x = 0 ;
-        s->pu.tab_mvf[i].mv_l0.y = 0 ;
-        s->pu.tab_mvf[i].mv_l1.x = 0 ;
-        s->pu.tab_mvf[i].mv_l1.y = 0 ;
-        s->pu.tab_mvf[i].pred_flag_l0 =0;
-        s->pu.tab_mvf[i].pred_flag_l1 =0;
-        s->pu.tab_mvf[i].is_intra =0;
-    }
 
     s->horizontal_bs = (uint8_t*)av_malloc(2 * s->bs_width * s->bs_height);
     s->vertical_bs = (uint8_t*)av_malloc(s->bs_width * 2 * s->bs_height);
@@ -1990,7 +1978,7 @@ static void luma_mv_mvp_mode_l0(HEVCContext *s, int x0, int y0, int nPbW, int nP
 
 static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX)
 {
-    int isScaledFlag_L0 =0;
+	int isScaledFlag_L0 =0;
     int availableFlagLXA0 = 0;
     int availableFlagLXB0 = 0;
     int availableFlagLXCol = 0;
@@ -2550,6 +2538,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);
 
+
     if (SAMPLE(s->cu.skip_flag, x0, y0)) {
         if (s->sh.max_num_merge_cand > 1) {
             merge_idx = ff_hevc_merge_idx_decode(s);
@@ -2620,7 +2609,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                         s->pu.tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].mv_l0.y  = current_mv.mv_l0.y;
                         s->pu.tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].pred_flag_l0 = current_mv.pred_flag_l0;
                         s->pu.tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].ref_idx_l0  = current_mv.ref_idx_l0;
-
                     }
                 }
             }
@@ -2745,9 +2733,17 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     memset(&s->pu.left_ipm[y_pu], intra_pred_mode, size_in_pus);
     /* write the intra prediction units into the mv array */
     for(i = 0; i <size_in_pus; i++) {
-        for(j = 0; j <size_in_pus; j++) {
-            s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].is_intra = 1;
-        }
+    	for(j = 0; j <size_in_pus; j++) {
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].is_intra = 1;
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].pred_flag_l0 = 0;
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].pred_flag_l1 = 0;
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].ref_idx_l0 = 0;
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].ref_idx_l1 = 0;
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].mv_l0.x = 0;
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].mv_l0.y = 0;
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].mv_l1.x = 0;
+    		s->pu.tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].mv_l1.y = 0;
+    	}
     }
 
     av_dlog(s->avctx, "intra_pred_mode: %d\n",
@@ -3084,6 +3080,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     HEVCContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
+    int i=0;
 
     int ret;
     
@@ -3139,6 +3136,18 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         memset(s->pu.left_ipm, INTRA_DC, pic_height_in_min_pu);
         memset(s->pu.top_ipm, INTRA_DC, pic_width_in_min_pu);
+
+        for( i =0; i < pic_width_in_min_pu * pic_height_in_min_pu ; i++ ) {
+        	s->pu.tab_mvf[i].ref_idx_l0 =  -1;
+        	s->pu.tab_mvf[i].ref_idx_l1 =  -1;
+        	s->pu.tab_mvf[i].mv_l0.x = 0 ;
+        	s->pu.tab_mvf[i].mv_l0.y = 0 ;
+        	s->pu.tab_mvf[i].mv_l1.x = 0 ;
+        	s->pu.tab_mvf[i].mv_l1.y = 0 ;
+        	s->pu.tab_mvf[i].pred_flag_l0 = 0;
+        	s->pu.tab_mvf[i].pred_flag_l1 = 0;
+        	s->pu.tab_mvf[i].is_intra =0;
+        }
         // fall-through
     }
     case NAL_BLA_W_LP:
