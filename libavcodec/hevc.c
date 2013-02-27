@@ -2614,6 +2614,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 luma_mv_mvp_mode_l0(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_l0_flag, 0);
                 current_mv.mv_l0.x += s->pu.mvd.x;
                 current_mv.mv_l0.y += s->pu.mvd.y;
+#ifdef MV
+                printf("mv = %d, %d\n",current_mv.mv_l0.x, current_mv.mv_l0.y);
+#endif
                 x_pu = x0 >> s->sps->log2_min_pu_size;
                 y_pu = y0 >> s->sps->log2_min_pu_size;
                 for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
