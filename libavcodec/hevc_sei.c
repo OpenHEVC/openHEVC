@@ -58,7 +58,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
             }
 //            print_md5(picture_md5);
 //            print_md5(s->md5[cIdx]);
-            if (!compare_md5(picture_md5, s->md5[cIdx]) && (cIdx == 1))
+            if (!compare_md5(picture_md5, s->md5[cIdx]) && (cIdx == 0))
                 printf("nok");
         } else if( hash_type == 1 ) {
             picture_crc = get_bits(gb, 16);

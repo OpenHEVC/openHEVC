@@ -30,6 +30,7 @@
 #include "hevcdata.h"
 #include "hevc.h"
 #include "libavutil/opt.h"
+#include "libavutil/md5.h"
 
 //#define HM
 //#define MV
@@ -3141,6 +3142,7 @@ static int calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int heigh
         src += stride;
     }
     av_md5_sum(md5, buf, width * height);
+    av_free(buf);
 }
 
 /**
