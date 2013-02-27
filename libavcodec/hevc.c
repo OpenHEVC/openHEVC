@@ -3127,18 +3127,10 @@ static int hls_nal_unit(HEVCContext *s)
     return ret;
 }
 
-static void print_md5(uint8_t *md5)
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        printf("%02x", md5[i]);
-    printf("\n");
-}
-
-static int calc_md5(uint8_t* src, int stride, int width, int height) {
+static int calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
     uint8_t *buf;
     buf = av_malloc(width * height);
-    uint8_t md5val[16];
+
     for (int y = 0; y < height; y++)
     {
         for (int x = 0; x < width; x++)
@@ -3148,7 +3140,7 @@ static int calc_md5(uint8_t* src, int stride, int width, int height) {
 
         src += stride;
     }
-    av_md5_sum(md5val, buf, width * height); print_md5(md5val);
+    av_md5_sum(md5, buf, width * height);
 }
 
 /**
@@ -3272,9 +3264,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             if ((ret = av_frame_ref(data, s->frame)) < 0)
                 return ret;
         }
-        calc_md5(s->frame->data[0], s->frame->linesize[0], s->frame->width, s->frame->height);
-        calc_md5(s->frame->data[1], s->frame->linesize[1], s->frame->width/2, s->frame->height/2);
-        calc_md5(s->frame->data[2], s->frame->linesize[2], s->frame->width/2, s->frame->height/2);
+        calc_md5(s->md5[0], s->frame->data[0], s->frame->linesize[0], s->frame->width, s->frame->height);
+        calc_md5(s->md5[1], s->frame->data[1], s->frame->linesize[1], s->frame->width/2, s->frame->height/2);
+        calc_md5(s->md5[2], s->frame->data[2], s->frame->linesize[2], s->frame->width/2, s->frame->height/2);
         av_frame_unref(s->frame);
 #endif
 

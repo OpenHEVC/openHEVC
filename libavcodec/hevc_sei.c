@@ -31,22 +31,35 @@ static void print_md5(uint8_t *md5)
     printf("\n");
 }
 
+static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (md5_in1[i] != md5_in2[i])
+            return 0;
+    return 1;
+}
+
 static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size)
 {
     int cIdx, i;
     uint8_t hash_type;
-    uint8_t picture_md5[16];
     uint16_t picture_crc;
     uint32_t picture_checksum;
     GetBitContext *gb = &s->gb;
     hash_type = get_bits(gb, 8);
+    uint8_t picture_md5[16];
+    
 
     for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
         if ( hash_type == 0 ) {
             for( i = 0; i < 16; i++) {
                 picture_md5[i] = get_bits(gb, 8);
             }
-            print_md5(picture_md5);
+//            print_md5(picture_md5);
+//            print_md5(s->md5[cIdx]);
+            if (!compare_md5(picture_md5, s->md5[cIdx]) && (cIdx == 1))
+                printf("nok");
         } else if( hash_type == 1 ) {
             picture_crc = get_bits(gb, 16);
         } else if( hash_type == 2 ) {
