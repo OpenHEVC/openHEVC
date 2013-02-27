@@ -23,22 +23,30 @@
 
 #include "hevc.h"
 #include "golomb.h"
+static void print_md5(uint8_t *md5)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        printf("%02x", md5[i]);
+    printf("\n");
+}
 
 static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size)
 {
     int cIdx, i;
-    int hash_type;
-    int picture_md5;
-    int picture_crc;
-    int picture_checksum;
+    uint8_t hash_type;
+    uint8_t picture_md5[16];
+    uint16_t picture_crc;
+    uint32_t picture_checksum;
     GetBitContext *gb = &s->gb;
     hash_type = get_bits(gb, 8);
 
     for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
         if ( hash_type == 0 ) {
             for( i = 0; i < 16; i++) {
-                picture_md5 = get_bits(gb, 8);
+                picture_md5[i] = get_bits(gb, 8);
             }
+            print_md5(picture_md5);
         } else if( hash_type == 1 ) {
             picture_crc = get_bits(gb, 16);
         } else if( hash_type == 2 ) {
@@ -92,7 +100,7 @@ static int decode_nal_sei_message(HEVCContext *s)
         payload_size += byte;
     }
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
-        if (payload_type == 256 && s->decode_checksum_sei)
+        if (payload_type == 256 /*&& s->decode_checksum_sei*/)
             decode_nal_sei_decoded_picture_hash(s, payload_size);
         else if (payload_type == 45)
             decode_nal_sei_frame_packing_arrangement(s);
@@ -101,7 +109,7 @@ static int decode_nal_sei_message(HEVCContext *s)
             skip_bits(gb, 8*payload_size);
         }
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
-        if (payload_type == 132 && s->decode_checksum_sei)
+        if (payload_type == 132 /* && s->decode_checksum_sei */)
             decode_nal_sei_decoded_picture_hash(s, payload_size);
         else {
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
