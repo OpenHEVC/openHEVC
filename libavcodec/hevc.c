@@ -3130,10 +3130,11 @@ static int hls_nal_unit(HEVCContext *s)
 static int calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
     uint8_t *buf;
     buf = av_malloc(width * height);
+    int y,x;
 
-    for (int y = 0; y < height; y++)
+    for (y = 0; y < height; y++)
     {
-        for (int x = 0; x < width; x++)
+        for (x = 0; x < width; x++)
         {
             buf[y * width + x] = src[x] & 0xff;
         }
