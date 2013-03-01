@@ -3398,16 +3398,19 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             sao_filter(s);
             if ((ret = av_frame_ref(data, s->sao_frame)) < 0)
                 return ret;
+            calc_md5(s->md5[0], s->sao_frame->data[0], s->sao_frame->linesize[0], s->sao_frame->width, s->sao_frame->height);
+            calc_md5(s->md5[1], s->sao_frame->data[1], s->sao_frame->linesize[1], s->sao_frame->width/2, s->sao_frame->height/2);
+            calc_md5(s->md5[2], s->sao_frame->data[2], s->sao_frame->linesize[2], s->sao_frame->width/2, s->sao_frame->height/2);
             ff_hevc_add_ref(s, s->sao_frame, s->poc);
             av_frame_unref(s->sao_frame);
         } else {
+            calc_md5(s->md5[0], s->frame->data[0], s->frame->linesize[0], s->frame->width, s->frame->height);
+            calc_md5(s->md5[1], s->frame->data[1], s->frame->linesize[1], s->frame->width/2, s->frame->height/2);
+            calc_md5(s->md5[2], s->frame->data[2], s->frame->linesize[2], s->frame->width/2, s->frame->height/2);
             ff_hevc_add_ref(s, s->frame, s->poc);
             if ((ret = av_frame_ref(data, s->frame)) < 0)
                 return ret;
         }
-        calc_md5(s->md5[0], s->frame->data[0], s->frame->linesize[0], s->frame->width, s->frame->height);
-        calc_md5(s->md5[1], s->frame->data[1], s->frame->linesize[1], s->frame->width/2, s->frame->height/2);
-        calc_md5(s->md5[2], s->frame->data[2], s->frame->linesize[2], s->frame->width/2, s->frame->height/2);
         av_frame_unref(s->frame);
 #endif
 
