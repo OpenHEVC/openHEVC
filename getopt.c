@@ -45,6 +45,14 @@ int	opterr = 1,		/* if error message should be printed */
 	optreset;		/* reset getopt */
 char *optarg;		/* argument associated with option */
 
+static const char *usage = "%s: -i <file> [-n]\n";
+static char *program;
+
+void print_usage() {
+	printf(usage, program);
+	printf("     -n : no display\n");
+}
+
 /*
  * getopt --
  *	Parse argc/argv argument vector.
@@ -52,6 +60,9 @@ char *optarg;		/* argument associated with option */
 int getopt(int nargc, char * const *nargv, const char *ostr) {
 	static char *place = EMSG;		/* option letter processing */
 	char *oli;				/* option letter list index */
+
+	if (nargc == 1)
+		return BADARG;
 
 	if (optreset || !*place) {		/* update scanning pointer */
 		optreset = 0;
@@ -111,19 +122,13 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
 	// every command line option must be followed by ':' if it takes an
 	// argument, and '::' if this argument is optional
-	const char *ostr = "i:n";
+	const char *ostr = "i:nh";
 	int c;
 	display_flags = DISPLAY_ENABLE;
-
+	program = argv[0];
 	c = getopt(argc, argv, ostr);
 	while (c != -1) {
 		switch (c) {
-		case '?': // BADCH
-			fprintf(stderr, "unknown argument\n");
-			exit(1);
-		case ':': // BADARG
-			fprintf(stderr, "missing argument\n");
-			exit(1);
 		case 'i':
 			input_file = strdup(optarg);
 			break;
@@ -131,7 +136,8 @@ void init_main(int argc, char *argv[]) {
 			display_flags = DISPLAY_DISABLE;
 			break;
 		default:
-			fprintf(stderr, "skipping option -%c\n", c);
+			print_usage();
+			exit(1);
 			break;
 		}
 
