@@ -619,8 +619,10 @@ static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
     int offset = 0;
     #endif
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
+        for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
+//            printf("%d\n", dst[x]);
+        }
         dst += dststride;
         src += srcstride;
     }
@@ -641,8 +643,10 @@ static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
     int offset = 0;
 #endif
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
+        for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
+//            printf("%d\n", dst[x]);
+        }
         dst += dststride;
         src1 += srcstride;
         src2 += srcstride;

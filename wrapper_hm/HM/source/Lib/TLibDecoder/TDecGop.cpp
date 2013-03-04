@@ -177,7 +177,7 @@ Void TDecGop::filterPicture(TComPic*& rpcPic)
   // deblocking filter
   Bool bLFCrossTileBoundary = pcSlice->getPPS()->getLoopFilterAcrossTilesEnabledFlag();
   m_pcLoopFilter->setCfg(bLFCrossTileBoundary);
-  m_pcLoopFilter->loopFilterPic( rpcPic );
+  //m_pcLoopFilter->loopFilterPic( rpcPic );
 
   if(pcSlice->getSPS()->getUseSAO())
   {
