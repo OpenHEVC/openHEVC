@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include "avcodec.h"
 #include "libavcodec/hevc.h"
+#include "getopt.h"
+
+
 
 int find_start_code (unsigned char *Buf, int zeros_in_startcode)
 {
@@ -63,9 +66,7 @@ static void video_decode_example(const char *filename)
 	unsigned char* buf; 
     
     av_init_packet(&avpkt);
-    
-    printf("Video decoding\n");
-    
+
     codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
@@ -117,16 +118,14 @@ static void video_decode_example(const char *filename)
             fprintf(stderr, "Error while decoding frame %d\n", frame);
             exit(1);
         }
-        if (got_picture) {
-            printf("saving frame %3d\n", frame);
+        if (got_picture && display_flags == DISPLAY_ENABLE) {
             fflush(stdout);
-            if (init == 1) {
+            if (init == 1 ) {
                 Init_SDL((picture->linesize[0] - c->width)/2, c->width, c->height);
             }
             init=0;
-
             SDL_Display((picture->linesize[0] - c->width)/2, c->width, c->height, picture->data[0], (picture->data[1]),
-                        picture->data[2]);
+            			picture->data[2]);
             /* the picture is allocated by the decoder. no need to
             free it */
             //snprintf(buf, sizeof(buf), outfilename, frame);
@@ -143,7 +142,6 @@ static void video_decode_example(const char *filename)
     avpkt.size = 0;
     len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
     if (got_picture) {
-        printf("saving last frame %3d\n", frame);
         fflush(stdout);
         /* the picture is allocated by the decoder. no need to
          free it */
@@ -164,16 +162,11 @@ static void video_decode_example(const char *filename)
 
 int main(int argc, char *argv[]) {
     const char *filename;
-    
+    init_main(argc, argv);
     /* register all the codecs */
     avcodec_register_all();
-    if(argc == 2) {
-    	filename = argv[1];
-    } else {
-        fprintf(stderr, "An input file must be specified\n");
-        exit(1);
-    }
-    video_decode_example(filename);
+
+    video_decode_example(input_file);
 
     // insert code here...
     printf("Hello, World!\n");
