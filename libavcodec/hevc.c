@@ -1660,16 +1660,6 @@ static void luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPb
     mv->pred_flag_l0 = mergecand_list[merge_idx].pred_flag_l0;
     mv->pred_flag_l1 = mergecand_list[merge_idx].pred_flag_l1;
     
-#ifdef MV
-    if(mv->pred_flag_l0 && mv->pred_flag_l1) {
-        printf("mv = %d, %d\n", mergecand_list[merge_idx].mv_l0.x, mergecand_list[merge_idx].mv_l0.y);
-        printf("mv = %d, %d\n", mergecand_list[merge_idx].mv_l1.x, mergecand_list[merge_idx].mv_l1.y);
-    } else if(mv->pred_flag_l0) {
-        printf("mv = %d, %d\n", mergecand_list[merge_idx].mv_l0.x, mergecand_list[merge_idx].mv_l0.y);
-    } else if(mv->pred_flag_l1) {
-        printf("mv = %d, %d\n", mergecand_list[merge_idx].mv_l1.x, mergecand_list[merge_idx].mv_l1.y);
-    }
-#endif
 }
 
 static void luma_mv_mvp_mode_l0(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX)
@@ -2673,6 +2663,10 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2, ptrdiff_t ds
     }
 }
 
+static int identical_mvs(MvField *mv) {
+    return (mv->ref_idx_l0 == mv->ref_idx_l1 && mv->mv_l0.x == mv->mv_l1.x && mv->mv_l0.y == mv->mv_l1.y);
+}
+
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int partIdx)
 {
 #define POS(c_idx, x, y)                                                              \
@@ -2744,9 +2738,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 luma_mv_mvp_mode_l0(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_l0_flag, 0);
                 current_mv.mv_l0.x += s->pu.mvd.x;
                 current_mv.mv_l0.y += s->pu.mvd.y;
-#ifdef MV
-                printf("mv = %d, %d\n",current_mv.mv_l0.x, current_mv.mv_l0.y);
-#endif
                 x_pu = x0 >> s->sps->log2_min_pu_size;
                 y_pu = y0 >> s->sps->log2_min_pu_size;
                 for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
@@ -2779,9 +2770,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 luma_mv_mvp_mode_l1(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_l1_flag, 1);
                 current_mv.mv_l1.x += s->pu.mvd.x;
                 current_mv.mv_l1.y += s->pu.mvd.y;
-#ifdef MV
-                printf("mv = %d, %d\n",current_mv.mv_l1.x, current_mv.mv_l1.y);
-#endif
                 x_pu = x0 >> s->sps->log2_min_pu_size;
                 y_pu = y0 >> s->sps->log2_min_pu_size;
                 for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
@@ -2796,9 +2784,12 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             }
         }
     }
-    if (current_mv.pred_flag_l0 && !current_mv.pred_flag_l1) {
+    if (current_mv.pred_flag_l0 && !current_mv.pred_flag_l1 || identical_mvs(&current_mv)) {
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
+#ifdef MV
+        printf("mv_l0 = %d, %d\n",current_mv.mv_l0.x, current_mv.mv_l0.y);
+#endif
         luma_mc(s, tmp, tmpstride,
                 s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx_l0]].frame,
                 &current_mv.mv_l0, x0, y0, nPbW, nPbH);
@@ -2806,11 +2797,14 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         chroma_mc(s, tmp, tmp2, tmpstride,
                   s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx_l0]].frame,
                   &current_mv.mv_l0, x0/2, y0/2, nPbW/2, nPbH/2);
-                    s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
-                    s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
     } else if (!current_mv.pred_flag_l0 && current_mv.pred_flag_l1) {
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
+#ifdef MV
+        printf("mv_l1 = %d, %d\n",current_mv.mv_l1.x, current_mv.mv_l1.y);
+#endif
         luma_mc(s, tmp, tmpstride,
                 s->short_refs[s->sh.refPicList[1].idx[current_mv.ref_idx_l1]].frame,
                 &current_mv.mv_l1, x0, y0, nPbW, nPbH);
@@ -2818,13 +2812,17 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         chroma_mc(s, tmp, tmp2, tmpstride,
                   s->short_refs[s->sh.refPicList[1].idx[current_mv.ref_idx_l1]].frame,
                   &current_mv.mv_l1, x0/2, y0/2, nPbW/2, nPbH/2);
-                    s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
-                    s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
-    } else {
+        s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
+    } else if (current_mv.pred_flag_l0 && current_mv.pred_flag_l1) {
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp3[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp4[MAX_PB_SIZE*MAX_PB_SIZE];
+#ifdef MV
+        printf("mv_bi_l0 = %d, %d\n",current_mv.mv_l0.x, current_mv.mv_l0.y);
+        printf("mv_bi_l1 = %d, %d\n",current_mv.mv_l1.x, current_mv.mv_l1.y);
+#endif
         luma_mc(s, tmp, tmpstride,
                 s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx_l0]].frame,
                 &current_mv.mv_l0, x0, y0, nPbW, nPbH);
@@ -2838,8 +2836,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         chroma_mc(s, tmp3, tmp4, tmpstride,
                   s->short_refs[s->sh.refPicList[1].idx[current_mv.ref_idx_l1]].frame,
                   &current_mv.mv_l1, x0/2, y0/2, nPbW/2, nPbH/2);
-                    s->hevcdsp.put_weighted_pred_avg(dst1, s->frame->linesize[1], tmp, tmp3, tmpstride, nPbW/2, nPbH/2);
-                    s->hevcdsp.put_weighted_pred_avg(dst2, s->frame->linesize[2], tmp2, tmp4, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_weighted_pred_avg(dst1, s->frame->linesize[1], tmp, tmp3, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_weighted_pred_avg(dst2, s->frame->linesize[2], tmp2, tmp4, tmpstride, nPbW/2, nPbH/2);
     }
     return;
 }
