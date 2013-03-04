@@ -239,6 +239,7 @@ static int hls_slice_header(HEVCContext *s)
         } else {
             s->poc = 0;
         }
+        av_log(s->avctx, AV_LOG_ERROR, "POC %d\n", s->poc);
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
             return -1;

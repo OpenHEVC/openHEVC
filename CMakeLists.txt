@@ -8,7 +8,9 @@ find_package(SDL REQUIRED)
 add_subdirectory(wrapper_hm)
 
 set(filenames
-	main.c	sdl.c
+    getopt.c
+    main.c
+	sdl.c
 libavcodec/allcodecs.clibavcodec/avpacket.c
 libavcodec/avpicture.clibavcodec/cabac.clibavcodec/dsputil.clibavcodec/golomb.clibavcodec/hevc_cabac.clibavcodec/hevc_parser.clibavcodec/hevc_ps.clibavcodec/hevc_refs.c
 libavcodec/hevc_sei.c
