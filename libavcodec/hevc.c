@@ -68,6 +68,13 @@ static int pic_arrays_init(HEVCContext *s)
     s->pu.top_ipm = av_malloc(pic_width_in_min_pu);
     s->pu.tab_mvf = av_malloc(pic_width_in_min_pu*pic_height_in_min_pu*sizeof(MvField));
 
+    for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
+    	s->short_refs[i].tab_mvf = av_malloc(pic_width_in_min_pu*pic_height_in_min_pu*sizeof(MvField));
+    	if (!s->short_refs[i].tab_mvf)
+    		return AVERROR(ENOMEM);
+    	memset(s->short_refs[i].tab_mvf, 0, sizeof(s->short_refs[i].tab_mvf));
+    }
+
     s->horizontal_bs = (uint8_t*)av_malloc(2 * s->bs_width * s->bs_height);
     s->vertical_bs = (uint8_t*)av_malloc(s->bs_width * 2 * s->bs_height);
 
@@ -115,6 +122,10 @@ static void pic_arrays_free(HEVCContext *s)
     if (s->sh.entry_point_offset) {
         av_freep(&s->sh.entry_point_offset);
     }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
+    	av_freep(&s->short_refs[i].tab_mvf);
+    }
+
 }
 
 static int hls_slice_header(HEVCContext *s)
@@ -1270,7 +1281,68 @@ static int DiffPicOrderCnt(int A, int B)
 {
     return A-B;
 }
+/*
+ * 8.5.3.1.7  temporal luma motion vector prediction
+ */
+static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int refIdxLx, Mv* mvLXCol)
+{
+	MvField *coloc_tab_mvf = NULL;
+	MvField temp_col;
+	Mv mvCol;
+	int refIdxCol;
+	int listCol;
+	int xPRb, yPRb;
+	int xPRb_pu;
+	int yPRb_pu;
+	int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
+	int availableFlagLXCol = 0;
+	if((s->sh.slice_type == B_SLICE) && (s->sh.collocated_from_l0_flag == 0)) {
+		coloc_tab_mvf = s->short_refs[s->sh.refPicList[1].idx[s->sh.collocated_ref_idx]].tab_mvf;
+	}
+	else if(((s->sh.slice_type == B_SLICE) && (s->sh.collocated_from_l0_flag == 1))
+			|| (s->sh.slice_type == P_SLICE)) {
+		coloc_tab_mvf = s->short_refs[s->sh.refPicList[0].idx[s->sh.collocated_ref_idx]].tab_mvf;
+	}
+	//bottom right collocated motion vector
+	xPRb = x0 + nPbW;
+	yPRb = y0 + nPbH;
+	if (((y0 >> s->sps->log2_ctb_size) == (yPRb >> s->sps->log2_ctb_size))
+			&& (yPRb < s->sps->pic_height_in_luma_samples) && (xPRb < s->sps->pic_width_in_luma_samples)) {
+		xPRb = ((xPRb >> 4) << 4);
+		yPRb = ((yPRb >> 4) << 4);
+		// derive the motion vectors section 8.5.3.1.8
+		xPRb_pu = xPRb >> s->sps->log2_min_pu_size;
+		yPRb_pu = yPRb >> s->sps->log2_min_pu_size;
+		temp_col = coloc_tab_mvf[(yPRb_pu) * pic_width_in_min_pu + xPRb_pu];
+		if(temp_col.is_intra) {
+			mvLXCol->x = 0;
+			mvLXCol->y = 0;
+			availableFlagLXCol = 0;
+		} else {
+			if(temp_col.pred_flag_l0 == 0) {
+				mvCol = temp_col.mv_l1;
+				refIdxCol = temp_col.ref_idx_l1;
+				listCol = L1;
+			} else if((temp_col.pred_flag_l0 ==1) && (temp_col.pred_flag_l1==0)) {
+				mvCol = temp_col.mv_l0;
+				refIdxCol = temp_col.ref_idx_l0;
+				listCol = L0;
+			} else if((temp_col.pred_flag_l0 ==1) && (temp_col.pred_flag_l1==1)) {
+				//TODO ;
+			}
 
+		}
+
+
+
+	} else {
+		mvLXCol->x = 0;
+		mvLXCol->y = 0;
+		availableFlagLXCol = 0;
+	}
+	return availableFlagLXCol;
+
+}
 /*
  * 8.5.3.1.2  Derivation process for spatial merging candidates
  */
@@ -1286,6 +1358,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     struct MvField l0Cand = {0};
     struct MvField l1Cand = {0};
     struct MvField combCand = {0};
+    struct Mv  mvLXCol = {0};
     
     //first left spatial merge candidate
     int xA1 = x0 - 1;
@@ -1336,6 +1409,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int combStop = 0;
     int l0CandIdx = 0;
     int l1CandIdx = 0;
+
+    int refIdxLXCol = 0;
+    int availableFlagLXCol = 0;
+
 
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
     int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
@@ -1530,7 +1607,15 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         spatialCMVS[4].is_intra = 0;
     }
     
-    //TODO : temporal motion vector candidate
+    // temporal motion vector candidate
+    if(s->sh.slice_temporal_mvp_enabled_flag == 0) {
+    	availableFlagLXCol = 0;
+    } else {
+    	availableFlagLXCol = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, refIdxLXCol, &mvLXCol);
+    }
+
+
+
     if (available_a1_flag) {
         mergecandlist[mergearray_index] = spatialCMVS[0];
         mergearray_index++;

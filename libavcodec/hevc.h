@@ -116,6 +116,9 @@ typedef struct RefPicList {
 
 #define HEVC_CONTEXTS 183
 
+#define L0 0
+#define L1 1
+
 typedef struct HEVCWindow {
     int left_offset;
     int right_offset;
@@ -397,6 +400,7 @@ enum SliceType {
     I_SLICE = 2
 };
 
+
 typedef struct SliceHeader {
     uint8_t first_slice_in_pic_flag;
     int slice_address;
@@ -667,6 +671,7 @@ typedef struct SAOParams {
 typedef struct HEVCFrame {
     AVFrame *frame;
     int poc;
+    MvField *tab_mvf;
 } HEVCFrame;
 
 typedef struct HEVCContext {

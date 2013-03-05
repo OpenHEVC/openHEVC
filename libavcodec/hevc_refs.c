@@ -66,12 +66,16 @@ int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc)
 {
     int i;
     update_refs(s);
+    int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
+    int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         HEVCFrame *ref = &s->short_refs[i];
         if (!ref->frame->buf[0]) {
             ref->poc = poc;
             av_frame_ref(ref->frame, frame);
+            // copy MV structure
+            memcpy(ref->tab_mvf, s->pu.tab_mvf,(pic_width_in_min_pu*pic_height_in_min_pu*sizeof(MvField)));
             return 0;
         }
     }
