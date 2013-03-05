@@ -37,7 +37,7 @@
 
 #include <memory.h>
 #include "TComPrediction.h"
-//#define MV
+#define MV
 #ifdef MV
 #include <stdio.h>
 #endif
@@ -456,7 +456,7 @@ Void TComPrediction::motionCompensation ( TComDataCU* pcCU, TComYuv* pcYuvPred, 
     {
       if( pcCU->getSlice()->getPPS()->getUseWP())
       {
-        xPredInterUni (pcCU, uiPartAddr, iWidth, iHeight, eRefPicList, pcYuvPred, true );
+        xPredInterUniNoMotion (pcCU, uiPartAddr, iWidth, iHeight, eRefPicList, pcYuvPred, true );
       }
       else
       {
@@ -471,7 +471,7 @@ Void TComPrediction::motionCompensation ( TComDataCU* pcCU, TComYuv* pcYuvPred, 
     {
       if ( xCheckIdenticalMotion( pcCU, uiPartAddr ) )
       {
-        xPredInterUni (pcCU, uiPartAddr, iWidth, iHeight, REF_PIC_LIST_0, pcYuvPred );
+        xPredInterUniNoMotion (pcCU, uiPartAddr, iWidth, iHeight, REF_PIC_LIST_0, pcYuvPred );
       }
       else
       {
@@ -487,12 +487,22 @@ Void TComPrediction::xPredInterUni ( TComDataCU* pcCU, UInt uiPartAddr, Int iWid
   Int         iRefIdx     = pcCU->getCUMvField( eRefPicList )->getRefIdx( uiPartAddr );           assert (iRefIdx >= 0);
   TComMv      cMv         = pcCU->getCUMvField( eRefPicList )->getMv( uiPartAddr );
   pcCU->clipMv(cMv);
-#ifdef MV
-  printf("mv = %d, %d\n",cMv.getHor(), cMv.getVer());
-#endif
   xPredInterLumaBlk  ( pcCU, pcCU->getSlice()->getRefPic( eRefPicList, iRefIdx )->getPicYuvRec(), uiPartAddr, &cMv, iWidth, iHeight, rpcYuvPred, bi );
   xPredInterChromaBlk( pcCU, pcCU->getSlice()->getRefPic( eRefPicList, iRefIdx )->getPicYuvRec(), uiPartAddr, &cMv, iWidth, iHeight, rpcYuvPred, bi );
 }
+
+Void TComPrediction::xPredInterUniNoMotion ( TComDataCU* pcCU, UInt uiPartAddr, Int iWidth, Int iHeight, RefPicList eRefPicList, TComYuv*& rpcYuvPred, Bool bi )
+{
+    Int         iRefIdx     = pcCU->getCUMvField( eRefPicList )->getRefIdx( uiPartAddr );           assert (iRefIdx >= 0);
+    TComMv      cMv         = pcCU->getCUMvField( eRefPicList )->getMv( uiPartAddr );
+    pcCU->clipMv(cMv);
+#ifdef MV
+    printf("mv_l0 = %d, %d\n",cMv.getHor(), cMv.getVer());
+#endif
+    xPredInterLumaBlk  ( pcCU, pcCU->getSlice()->getRefPic( eRefPicList, iRefIdx )->getPicYuvRec(), uiPartAddr, &cMv, iWidth, iHeight, rpcYuvPred, bi );
+    xPredInterChromaBlk( pcCU, pcCU->getSlice()->getRefPic( eRefPicList, iRefIdx )->getPicYuvRec(), uiPartAddr, &cMv, iWidth, iHeight, rpcYuvPred, bi );
+}
+
 
 Void TComPrediction::xPredInterBi ( TComDataCU* pcCU, UInt uiPartAddr, Int iWidth, Int iHeight, TComYuv*& rpcYuvPred )
 {
@@ -540,7 +550,7 @@ Void TComPrediction::xPredInterBi ( TComDataCU* pcCU, UInt uiPartAddr, Int iWidt
   }
   else
   {
-    xWeightedAverage( &m_acYuvPred[0], &m_acYuvPred[1], iRefIdx[0], iRefIdx[1], uiPartAddr, iWidth, iHeight, rpcYuvPred );
+    xWeightedAverage( pcCU, &m_acYuvPred[0], &m_acYuvPred[1], iRefIdx[0], iRefIdx[1], uiPartAddr, iWidth, iHeight, rpcYuvPred );
   }
 }
 
@@ -571,11 +581,18 @@ Void TComPrediction::xPredInterLumaBlk( TComDataCU *cu, TComPicYuv *refPic, UInt
   if ( yFrac == 0 )
   {
     m_if.filterHorLuma( ref, refStride, dst, dstStride, width, height, xFrac,       !bi );
-  }
+/*      for (int j = 0; j < height; j++)
+          for (int i = 0; i < width; i++)
+              printf("%d\n", dst[j * dstStride + i]);
+          
+*/  }
   else if ( xFrac == 0 )
   {
     m_if.filterVerLuma( ref, refStride, dst, dstStride, width, height, yFrac, true, !bi );
-  }
+/*      for (int j = 0; j < height; j++)
+          for (int i = 0; i < width; i++)
+              printf("%d\n", dst[j * dstStride + i]);
+*/  }
   else
   {
     Int tmpStride = m_filteredBlockTmp[0].getStride();
@@ -586,8 +603,55 @@ Void TComPrediction::xPredInterLumaBlk( TComDataCU *cu, TComPicYuv *refPic, UInt
 
     m_if.filterHorLuma(ref - (halfFilterSize-1)*refStride, refStride, tmp, tmpStride, width, height+filterSize-1, xFrac, false     );
     m_if.filterVerLuma(tmp + (halfFilterSize-1)*tmpStride, tmpStride, dst, dstStride, width, height,              yFrac, false, !bi);    
-  }
+/*      for (int j = 0; j < height; j++)
+          for (int i = 0; i < width; i++)
+              printf("%d\n", dst[j * dstStride + i]);
+*/  }
 }
+
+Void TComPrediction::xPredInterLumaBlkTrace( TComDataCU *cu, TComPicYuv *refPic, UInt partAddr, TComMv *mv, Int width, Int height, TComYuv *&dstPic, Bool bi )
+{
+    Int refStride = refPic->getStride();
+    Int refOffset = ( mv->getHor() >> 2 ) + ( mv->getVer() >> 2 ) * refStride;
+    Pel *ref      = refPic->getLumaAddr( cu->getAddr(), cu->getZorderIdxInCU() + partAddr ) + refOffset;
+
+    Int dstStride = dstPic->getStride();
+    Pel *dst      = dstPic->getLumaAddr( partAddr );
+
+    Int xFrac = mv->getHor() & 0x3;
+    Int yFrac = mv->getVer() & 0x3;
+
+    if ( yFrac == 0 )
+    {
+        m_if.filterHorLuma( ref, refStride, dst, dstStride, width, height, xFrac,       !bi );
+        /*      for (int j = 0; j < height; j++)
+         for (int i = 0; i < width; i++)
+         printf("%d\n", dst[j * dstStride + i]);
+
+         */  }
+    else if ( xFrac == 0 )
+    {
+        m_if.filterVerLuma( ref, refStride, dst, dstStride, width, height, yFrac, true, !bi );
+        /*      for (int j = 0; j < height; j++)
+         for (int i = 0; i < width; i++)
+         printf("%d\n", dst[j * dstStride + i]);
+         */  }
+    else
+    {
+        Int tmpStride = m_filteredBlockTmp[0].getStride();
+        Short *tmp    = m_filteredBlockTmp[0].getLumaAddr();
+
+        Int filterSize = NTAPS_LUMA;
+        Int halfFilterSize = ( filterSize >> 1 );
+
+        m_if.filterHorLuma(ref - (halfFilterSize-1)*refStride, refStride, tmp, tmpStride, width, height+filterSize-1, xFrac, false     );
+        m_if.filterVerLuma(tmp + (halfFilterSize-1)*tmpStride, tmpStride, dst, dstStride, width, height,              yFrac, false, !bi);
+        /*      for (int j = 0; j < height; j++)
+         for (int i = 0; i < width; i++)
+         printf("%d\n", dst[j * dstStride + i]);
+         */  }
+}
+
 
 /**
  * \brief Generate motion-compensated chroma block
@@ -646,18 +710,36 @@ Void TComPrediction::xPredInterChromaBlk( TComDataCU *cu, TComPicYuv *refPic, UI
   }
 }
 
-Void TComPrediction::xWeightedAverage( TComYuv* pcYuvSrc0, TComYuv* pcYuvSrc1, Int iRefIdx0, Int iRefIdx1, UInt uiPartIdx, Int iWidth, Int iHeight, TComYuv*& rpcYuvDst )
+Void TComPrediction::xWeightedAverage( TComDataCU *cu, TComYuv* pcYuvSrc0, TComYuv* pcYuvSrc1, Int iRefIdx0, Int iRefIdx1, UInt uiPartIdx, Int iWidth, Int iHeight, TComYuv*& rpcYuvDst )
 {
   if( iRefIdx0 >= 0 && iRefIdx1 >= 0 )
   {
+#ifdef MV
+      TComMv      cMv_l0         = cu->getCUMvField( REF_PIC_LIST_0 )->getMv( uiPartIdx );
+      cu->clipMv(cMv_l0);
+      printf("mv_bi_l0 = %d, %d\n",cMv_l0.getHor(), cMv_l0.getVer());
+      TComMv      cMv_l1         = cu->getCUMvField( REF_PIC_LIST_1 )->getMv( uiPartIdx );
+      cu->clipMv(cMv_l1);
+      printf("mv_bi_l1 = %d, %d\n",cMv_l1.getHor(), cMv_l1.getVer());
+#endif
     rpcYuvDst->addAvg( pcYuvSrc0, pcYuvSrc1, uiPartIdx, iWidth, iHeight );
   }
   else if ( iRefIdx0 >= 0 && iRefIdx1 <  0 )
   {
+#ifdef MV
+      TComMv      cMv_l0         = cu->getCUMvField( REF_PIC_LIST_0 )->getMv( uiPartIdx );
+      cu->clipMv(cMv_l0);
+      printf("mv_l0 = %d, %d\n",cMv_l0.getHor(), cMv_l0.getVer());
+#endif
     pcYuvSrc0->copyPartToPartYuv( rpcYuvDst, uiPartIdx, iWidth, iHeight );
   }
   else if ( iRefIdx0 <  0 && iRefIdx1 >= 0 )
   {
+#ifdef MV
+      TComMv      cMv_l1         = cu->getCUMvField( REF_PIC_LIST_1 )->getMv( uiPartIdx );
+      cu->clipMv(cMv_l1);
+      printf("mv_l1 = %d, %d\n",cMv_l1.getHor(), cMv_l1.getVer());
+#endif
     pcYuvSrc1->copyPartToPartYuv( rpcYuvDst, uiPartIdx, iWidth, iHeight );
   }
 }
