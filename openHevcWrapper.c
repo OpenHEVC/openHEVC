@@ -70,14 +70,14 @@ int libOpenHevcGetOuptut(int got_picture, unsigned char **Y, unsigned char **U, 
 	return 1;
 }
 
-void libDecoderClose()
+void libOpenHevcDecoderClose()
 {
 	avcodec_close(openHevcContext.c);
 	av_free(openHevcContext.c);
 	av_free(openHevcContext.picture);
 }
 
-const char *libDecoderVersion()
+const char *libOpenHevcDecoderVersion()
 {
 	return "OpenHEVC v"NV_VERSION;
 }

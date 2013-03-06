@@ -80,7 +80,7 @@ static void video_decode_example(const char *filename)
         }
      }
     fclose(f);
-    libDecoderClose();
+    libOpenHevcDecoderClose();
     printf("\n");
 }
 
