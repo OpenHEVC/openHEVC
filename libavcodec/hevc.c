@@ -1281,28 +1281,110 @@ static int DiffPicOrderCnt(int A, int B)
 {
     return A-B;
 }
+
+// derive the motion vectors section 8.5.3.1.8
+static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col, int refIdxLx, Mv* mvLXCol, int X, int colPic)
+{
+    int availableFlagLXCol = 0;
+    Mv mvCol;
+    int listCol;
+    int refidxCol;
+
+    if(temp_col.is_intra) {
+        mvLXCol->x = 0;
+        mvLXCol->y = 0;
+        availableFlagLXCol = 0;
+    } else {
+        if(temp_col.pred_flag_l0 == 0) {
+            mvCol = temp_col.mv_l1;
+            refidxCol = temp_col.ref_idx_l1;
+            listCol = L1;
+        } else if((temp_col.pred_flag_l0 ==1) && (temp_col.pred_flag_l1==0)) {
+            mvCol = temp_col.mv_l0;
+            refidxCol = temp_col.ref_idx_l0;
+            listCol = L0;
+        } else if((temp_col.pred_flag_l0 == 1) && (temp_col.pred_flag_l1==1)) {
+            int check_diffpicount = 0;
+            int i = 0;
+            for (i = 0; i < s->sh.refPicList[0].numPic; i++) {
+                if(DiffPicOrderCnt(s->sh.refPicList[0].list[i], s->poc)>0)
+                    check_diffpicount++;
+            }
+            for (i = 0; i < s->sh.refPicList[1].numPic; i++) {
+                if(DiffPicOrderCnt(s->sh.refPicList[1].list[i], s->poc)>0)
+                    check_diffpicount++;
+            }
+            if ((check_diffpicount == 0) && (X == 0)) {
+                mvCol = temp_col.mv_l0;
+                refidxCol = temp_col.ref_idx_l0;
+                listCol = L0;
+            } else if ((check_diffpicount == 0) && (X == 1)) {
+                mvCol = temp_col.mv_l1;
+                refidxCol = temp_col.ref_idx_l1;
+                listCol = L1;
+            } else {
+                if((s->sh.collocated_from_l0_flag == 1)) {
+                    mvCol = temp_col.mv_l0;
+                    refidxCol = temp_col.ref_idx_l0;
+                    listCol = L0;
+                } else {
+                    mvCol = temp_col.mv_l1;
+                    refidxCol = temp_col.ref_idx_l1;
+                    listCol = L1;
+                }
+            }
+        }
+    }
+    // Assuming no long term pictures in version 1 of the decoder
+    availableFlagLXCol = 1;
+    int colPocDiff = DiffPicOrderCnt(colPic, s->sh.refPicList[listCol].list[refidxCol]);
+    int curPocDiff = DiffPicOrderCnt(s->poc, s->sh.refPicList[X].list[refIdxLx]);
+    if (colPocDiff == curPocDiff) {
+        mvLXCol->x = mvCol.x;
+        mvLXCol->y = mvCol.y;
+    } else {
+        int td = av_clip_c(colPocDiff, -128, 127);
+        int tb = av_clip_c(curPocDiff, -128, 127);
+        int tx = 0;
+        if (td > 0)
+        tx = (0x4000 + abs(td/2)) / td;
+        int distScaleFactor = av_clip_c((tb * tx + 32) >> 6,
+                -4096, 4095);
+        mvLXCol->x = av_clip_c((distScaleFactor * mvCol.x + 127 + (distScaleFactor * mvCol.x < 0)) >> 8,
+                -32768, 32767);
+        mvLXCol->y = av_clip_c((distScaleFactor * mvCol.y + 127 + (distScaleFactor * mvCol.y < 0)) >> 8,
+                -32768, 32767);
+    }
+    return availableFlagLXCol;
+
+}
 /*
  * 8.5.3.1.7  temporal luma motion vector prediction
  */
-static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int refIdxLx, Mv* mvLXCol)
+static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int refIdxLx, Mv* mvLXCol, int X)
 {
 	MvField *coloc_tab_mvf = NULL;
 	MvField temp_col;
-	Mv mvCol;
-	int refIdxCol;
-	int listCol;
 	int xPRb, yPRb;
 	int xPRb_pu;
 	int yPRb_pu;
+	int xPCtr, yPCtr;
+	int xPCtr_pu;
+	int yPCtr_pu;
 	int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
+
 	int availableFlagLXCol = 0;
+	int colPic;
 	if((s->sh.slice_type == B_SLICE) && (s->sh.collocated_from_l0_flag == 0)) {
 		coloc_tab_mvf = s->short_refs[s->sh.refPicList[1].idx[s->sh.collocated_ref_idx]].tab_mvf;
+		colPic = s->sh.refPicList[1].idx[s->sh.collocated_ref_idx];
 	}
 	else if(((s->sh.slice_type == B_SLICE) && (s->sh.collocated_from_l0_flag == 1))
 			|| (s->sh.slice_type == P_SLICE)) {
 		coloc_tab_mvf = s->short_refs[s->sh.refPicList[0].idx[s->sh.collocated_ref_idx]].tab_mvf;
+		colPic = s->sh.refPicList[0].idx[s->sh.collocated_ref_idx];
 	}
+
 	//bottom right collocated motion vector
 	xPRb = x0 + nPbW;
 	yPRb = y0 + nPbH;
@@ -1310,38 +1392,28 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW,
 			&& (yPRb < s->sps->pic_height_in_luma_samples) && (xPRb < s->sps->pic_width_in_luma_samples)) {
 		xPRb = ((xPRb >> 4) << 4);
 		yPRb = ((yPRb >> 4) << 4);
-		// derive the motion vectors section 8.5.3.1.8
 		xPRb_pu = xPRb >> s->sps->log2_min_pu_size;
 		yPRb_pu = yPRb >> s->sps->log2_min_pu_size;
 		temp_col = coloc_tab_mvf[(yPRb_pu) * pic_width_in_min_pu + xPRb_pu];
-		if(temp_col.is_intra) {
-			mvLXCol->x = 0;
-			mvLXCol->y = 0;
-			availableFlagLXCol = 0;
-		} else {
-			if(temp_col.pred_flag_l0 == 0) {
-				mvCol = temp_col.mv_l1;
-				refIdxCol = temp_col.ref_idx_l1;
-				listCol = L1;
-			} else if((temp_col.pred_flag_l0 ==1) && (temp_col.pred_flag_l1==0)) {
-				mvCol = temp_col.mv_l0;
-				refIdxCol = temp_col.ref_idx_l0;
-				listCol = L0;
-			} else if((temp_col.pred_flag_l0 ==1) && (temp_col.pred_flag_l1==1)) {
-				//TODO ;
-			}
-
-		}
-
-
+		availableFlagLXCol = derive_temporal_colocated_mvs(s, temp_col, refIdxLx, mvLXCol, X, colPic);
 
 	} else {
 		mvLXCol->x = 0;
 		mvLXCol->y = 0;
 		availableFlagLXCol = 0;
 	}
+	// derive center collocated motion vector
+	if (availableFlagLXCol == 0) {
+	    xPCtr = x0 + (nPbW >> 1);
+	    yPCtr = y0 + (nPbH >> 1);
+	    xPCtr = ((xPCtr >> 4) << 4);
+	    yPCtr = ((yPCtr >> 4) << 4);
+	    xPCtr_pu = xPRb >> s->sps->log2_min_pu_size;
+	    yPCtr_pu = yPRb >> s->sps->log2_min_pu_size;
+	    temp_col = coloc_tab_mvf[(yPCtr_pu) * pic_width_in_min_pu + xPCtr_pu];
+	    availableFlagLXCol = derive_temporal_colocated_mvs(s, temp_col, refIdxLx, mvLXCol, X, colPic);
+	}
 	return availableFlagLXCol;
-
 }
 /*
  * 8.5.3.1.2  Derivation process for spatial merging candidates
@@ -1358,7 +1430,9 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     struct MvField l0Cand = {0};
     struct MvField l1Cand = {0};
     struct MvField combCand = {0};
-    struct Mv  mvLXCol = {0};
+    struct MvField TMVPCand = {0};
+    struct Mv  mvL0Col = {0};
+    struct Mv  mvL1Col = {0};
     
     //first left spatial merge candidate
     int xA1 = x0 - 1;
@@ -1392,9 +1466,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int isAvailableB2;
     int xB2_pu;
     int yB2_pu;
-    
-    int  availableFlagCol = 0;
-    struct MvField temporal_cand;
     int mergearray_index = 0;
     
     struct MvField zerovector;
@@ -1410,7 +1481,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int l0CandIdx = 0;
     int l1CandIdx = 0;
 
-    int refIdxLXCol = 0;
+    int refIdxL0Col = 0;
+    int refIdxL1Col = 0;
     int availableFlagLXCol = 0;
 
 
@@ -1608,13 +1680,29 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     }
     
     // temporal motion vector candidate
+    // one optimization is that do temporal checking only if the number of
+    // available candidates < MRG_MAX_NUM_CANDS
     if(s->sh.slice_temporal_mvp_enabled_flag == 0) {
     	availableFlagLXCol = 0;
     } else {
-    	availableFlagLXCol = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, refIdxLXCol, &mvLXCol);
+    	int availableFlagL0Col = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, refIdxL0Col, &mvL0Col, 0);
+    	// one optimization is that l1 check can be done only when the current slice type is B_SLICE
+    	int availableFlagL1Col = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, refIdxL1Col, &mvL1Col, 1);
+    	availableFlagLXCol = availableFlagL0Col || availableFlagL1Col;
+    	if(availableFlagLXCol) {
+    		TMVPCand.is_intra = 0;
+    		TMVPCand.pred_flag_l0 = availableFlagL0Col;
+    		TMVPCand.pred_flag_l1 = availableFlagL1Col;
+    		if (TMVPCand.pred_flag_l0) {
+    			TMVPCand.mv_l0 = mvL0Col;
+    			TMVPCand.ref_idx_l0  = refIdxL0Col;
+    		}
+    		if (TMVPCand.pred_flag_l1) {
+    			TMVPCand.mv_l1 = mvL1Col;
+    			TMVPCand.ref_idx_l1  = refIdxL1Col;
+    		}
+    	}
     }
-
-
 
     if (available_a1_flag) {
         mergecandlist[mergearray_index] = spatialCMVS[0];
@@ -1636,8 +1724,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         mergecandlist[mergearray_index] = spatialCMVS[4];
         mergearray_index++;
     }
-    if (availableFlagCol) {
-        mergecandlist[mergearray_index] = temporal_cand;
+    if (availableFlagLXCol && (mergearray_index < MRG_MAX_NUM_CANDS)) {
+        mergecandlist[mergearray_index] = TMVPCand;
         mergearray_index++;
     }
     numMergeCand = mergearray_index;
@@ -1785,6 +1873,7 @@ static void luma_mv_mvp_mode_l0(HEVCContext *s, int x0, int y0, int nPbW, int nP
     int check_A0, check_A1, check_B0, check_B1, check_B2;
     Mv mxA = {0};
     Mv mxB = {0};
+    Mv mvLXCol = {0};
     int td, tb, tx, distScaleFactor;
     int ref_idx_curr = 0;
     int ref_idx = 0;
@@ -2179,16 +2268,23 @@ static void luma_mv_mvp_mode_l0(HEVCContext *s, int x0, int y0, int nPbW, int nP
          numMVPCandLX++;
      }
 
-     // TODO Step 5 for B candidates  in 8.5.3.1.6.
+     if ((mvpcand_list[0].x == mvpcand_list[1].x) && (mvpcand_list[0].y == mvpcand_list[1].y)) {
+         numMVPCandLX--;
+     }
 
      if (availableFlagLXA0 && availableFlagLXB0 && ((mvpcand_list[0].x != mvpcand_list[1].x) || (mvpcand_list[0].y != mvpcand_list[1].y))) {
          availableFlagLXCol = 0 ;
      } else {
-         //TODO section 8.5.3.1.7 temporal motion vector prediction
+         //temporal motion vector prediction candidate
+         if(s->sh.slice_temporal_mvp_enabled_flag == 0) {
+             availableFlagLXCol = 0;
+         } else {
+         availableFlagLXCol = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, ref_idx, &mvLXCol, LX);
+         }
      }
-
-     if ((mvpcand_list[0].x == mvpcand_list[1].x) && (mvpcand_list[0].y == mvpcand_list[1].y)) {
-         numMVPCandLX--;
+     if(availableFlagLXCol) {
+         mvpcand_list[numMVPCandLX] = mvLXCol;
+         numMVPCandLX++;
      }
 
      while (numMVPCandLX < 2) { // insert zero motion vectors when the number of available candidates are less than 2
@@ -2238,6 +2334,7 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
     int check_A0, check_A1, check_B0, check_B1, check_B2;
     Mv mxA = {0};
     Mv mxB = {0};
+    Mv mvLXCol = {0};
     int td, tb, tx, distScaleFactor;
     int ref_idx_curr = 0;
     int ref_idx = 0;
@@ -2627,17 +2724,25 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
          numMVPCandLX++;
      }
 
-     // TODO Step 5 for B candidates  in 8.5.3.1.6.
+     if ((mvpcand_list[0].x == mvpcand_list[1].x) && (mvpcand_list[0].y == mvpcand_list[1].y)) {
+         numMVPCandLX--;
+     }
 
      if (availableFlagLXA0 && availableFlagLXB0 && ((mvpcand_list[0].x != mvpcand_list[1].x) || (mvpcand_list[0].y != mvpcand_list[1].y))) {
          availableFlagLXCol = 0 ;
      } else {
-         //TODO section 8.5.3.1.7 temporal motion vector prediction
+         //temporal motion vector prediction candidate
+         if(s->sh.slice_temporal_mvp_enabled_flag == 0) {
+             availableFlagLXCol = 0;
+         } else {
+             availableFlagLXCol = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, ref_idx, &mvLXCol, LX);
+         }
+     }
+     if(availableFlagLXCol) {
+         mvpcand_list[numMVPCandLX] = mvLXCol;
+         numMVPCandLX++;
      }
 
-     if ((mvpcand_list[0].x == mvpcand_list[1].x) && (mvpcand_list[0].y == mvpcand_list[1].y)) {
-         numMVPCandLX--;
-     }
      while (numMVPCandLX < 2) { // insert zero motion vectors when the number of available candidates are less than 2
          mvpcand_list[numMVPCandLX].x =0;
          mvpcand_list[numMVPCandLX].y =0;
