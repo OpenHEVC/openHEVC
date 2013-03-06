@@ -330,6 +330,8 @@ Void TComYuv::copyPartToPartChroma( TComYuv* pcYuvDst, UInt uiPartIdx, UInt iWid
   {
     ::memcpy( pDstU, pSrcU, iWidth * sizeof(Pel) );
     ::memcpy( pDstV, pSrcV, iWidth * sizeof(Pel) );
+//    for (int x=0; x < iWidth; x++)
+//        printf("%d\n", pDstV[x]);
     pSrcU += iSrcStride;
     pSrcV += iSrcStride;
     pDstU += iDstStride;
@@ -575,9 +577,14 @@ Void TComYuv::addAvg( TComYuv* pcYuvSrc0, TComYuv* pcYuvSrc1, UInt iPartUnitIdx,
     {
       // note: chroma min width is 2
       pDstU[x] = ClipC((pSrcU0[x] + pSrcU1[x] + offset) >> shiftNum);
-      pDstV[x] = ClipC((pSrcV0[x] + pSrcV1[x] + offset) >> shiftNum); x--;
+      pDstV[x] = ClipC((pSrcV0[x] + pSrcV1[x] + offset) >> shiftNum);
+        //printf("%d\n", pDstV[ x]);
+        x--;
+      
       pDstU[x] = ClipC((pSrcU0[x] + pSrcU1[x] + offset) >> shiftNum);
-      pDstV[x] = ClipC((pSrcV0[x] + pSrcV1[x] + offset) >> shiftNum); x--;
+      pDstV[x] = ClipC((pSrcV0[x] + pSrcV1[x] + offset) >> shiftNum);
+        //printf("%d\n", pDstV[ x]);
+        x--;
     }
     
     pSrcU0 += iSrc0Stride;

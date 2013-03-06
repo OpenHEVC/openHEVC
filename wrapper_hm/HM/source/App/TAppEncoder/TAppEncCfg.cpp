@@ -399,7 +399,7 @@ Bool TAppEncCfg::parseCfg( Int argc, Char* argv[] )
   ("MaxNumMergeCand",             m_maxNumMergeCand,             5u,         "Maximum number of merge candidates")
 
   /* Misc. */
-  ("SEIDecodedPictureHash",       m_decodedPictureHashSEIEnabled, 0, "Control generation of decode picture hash SEI messages\n"
+  ("SEIDecodedPictureHash",       m_decodedPictureHashSEIEnabled, 1, "Control generation of decode picture hash SEI messages\n"
                                                                     "\t3: checksum\n"
                                                                     "\t2: CRC\n"
                                                                     "\t1: use MD5\n"

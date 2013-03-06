@@ -37,7 +37,7 @@
 
 #include <memory.h>
 #include "TComPrediction.h"
-#define MV
+//#define MV
 #ifdef MV
 #include <stdio.h>
 #endif

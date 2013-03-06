@@ -177,7 +177,7 @@ Void TDecGop::filterPicture(TComPic*& rpcPic)
   // deblocking filter
   Bool bLFCrossTileBoundary = pcSlice->getPPS()->getLoopFilterAcrossTilesEnabledFlag();
   m_pcLoopFilter->setCfg(bLFCrossTileBoundary);
-  //m_pcLoopFilter->loopFilterPic( rpcPic );
+  m_pcLoopFilter->loopFilterPic( rpcPic );
 
   if(pcSlice->getSPS()->getUseSAO())
   {
@@ -314,12 +314,12 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
     }
   }
 
-  printf("[%s:%s,%s] ", hashType, digestToString(recon_digest, numChar), ok);
+  printf("[%s:\n%s\n%s\n] ", hashType, digestToString(recon_digest, numChar), ok);
 
   if (mismatch)
   {
     g_md5_mismatch = true;
-    printf("[rx%s:%s] ", hashType, digestToString(pictureHashSEI->digest, numChar));
+//    printf("[rx%s:%s] ", hashType, digestToString(pictureHashSEI->digest, numChar));
   }
 }
 //! \}

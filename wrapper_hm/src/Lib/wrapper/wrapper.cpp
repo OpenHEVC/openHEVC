@@ -27,7 +27,7 @@ Int                 m_iSkipFrame;
 UInt                m_outputBitDepth =0u;                     ///< bit depth used for writing output
 
 Int                 m_iMaxTemporalLayer = -1;                  ///< maximum temporal layer to be decoded
-Int                 m_decodedPictureHashSEIEnabled = 0;               ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on SEI picture_digest
+Int                 m_decodedPictureHashSEIEnabled = 1;               ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on SEI picture_digest
 
 Int                poc;
 TComList<TComPic*>* pcListPic = NULL;
