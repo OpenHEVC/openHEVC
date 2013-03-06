@@ -6,9 +6,7 @@
 //
 //
 #include "SDL.h"
-#include <stdio.h>
-#include "avcodec.h"
-#include "libavcodec/hevc.h"
+#include "openHevcWrapper.h"
 #include "getopt.h"
 
 
@@ -56,118 +54,40 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
 int init=1;
 static void video_decode_example(const char *filename)
 {
-    AVCodec *codec;
-    AVCodecContext *c= NULL;
-    int frame, got_picture, len;
     FILE *f;
-    AVFrame *picture;
-    AVPacket avpkt;
     int nal_len = 0;
-	unsigned char* buf; 
+	unsigned int width, height, stride;
+	unsigned char * buf, *Y, *U, *V;
     
-    av_init_packet(&avpkt);
-
-    codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-    AVCodecParserContext *parser = av_parser_init( codec->id );
-    
-    c = avcodec_alloc_context3(codec);
-    picture= avcodec_alloc_frame();
-    
-    
-    if(codec->capabilities&CODEC_CAP_TRUNCATED)
-        c->flags|= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
-    
-    /* For some codecs, such as msmpeg4 and mpeg4, width and height
-     MUST be initialized there because this information is not
-     available in the bitstream. */
-    
-    /* open it */
-    if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "could not open codec\n");
-        exit(1);
-    }
-    
-    /* the codec gives us the frame size, in samples */
-    
+	libOpenHevcInit();
     f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
         exit(1);
     }
     buf = calloc ( 1000000, sizeof(char));
-    
-    frame = 0;
-    for(;;) {
-        uint8_t *poutbuf;
-        avpkt.size = nal_len = get_next_nal(f, buf);
-        if (nal_len == - 1) exit(10);
-        
-        av_parser_parse2(parser,
-                         c,
-                         &poutbuf, &nal_len,
-                         buf, avpkt.size,
-                         0, 0,
-                         0);
-        avpkt.data = poutbuf;
-        len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
-        if (len < 0) {
-            fprintf(stderr, "Error while decoding frame %d\n", frame);
-            exit(1);
-        }
+    while(1) {
+        int got_picture = libOpenHevcDecode(buf, get_next_nal(f, buf));
+        libOpenHevcGetOuptut(got_picture, &Y, &U, &V);
         if (got_picture && display_flags == DISPLAY_ENABLE) {
             fflush(stdout);
             if (init == 1 ) {
-                Init_SDL((picture->linesize[0] - c->width)/2, c->width, c->height);
+            	libOpenHevcGetPictureSize(&width, &height, &stride);
+                Init_SDL((stride - width)/2, width, height);
             }
             init=0;
-            SDL_Display((picture->linesize[0] - c->width)/2, c->width, c->height, picture->data[0], (picture->data[1]),
-            			picture->data[2]);
-            /* the picture is allocated by the decoder. no need to
-            free it */
-            //snprintf(buf, sizeof(buf), outfilename, frame);
-            /*pgm_save(picture->data[0], picture->linesize[0],
-                         c->width, c->height, buf);*/
-            frame++;
+            SDL_Display((stride - width)/2, width, height, Y, U, V);
         }
      }
-    
-    /* some codecs, such as MPEG, transmit the I and P frame with a
-     latency of one frame. You must do the following to have a
-     chance to get the last frame of the video */
-    avpkt.data = NULL;
-    avpkt.size = 0;
-    len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
-    if (got_picture) {
-        fflush(stdout);
-        /* the picture is allocated by the decoder. no need to
-         free it */
-        //snprintf(buf, sizeof(buf), outfilename, frame);
-        /*pgm_save(picture->data[0], picture->linesize[0],
-                 c->width, c->height, buf);*/
-        frame++;
-    }
-    
     fclose(f);
-    
-    avcodec_close(c);
-    av_free(c);
-    av_free(picture);
+    libDecoderClose();
     printf("\n");
 }
 
 
 int main(int argc, char *argv[]) {
-    const char *filename;
     init_main(argc, argv);
-    /* register all the codecs */
-    avcodec_register_all();
-
     video_decode_example(input_file);
-
     // insert code here...
     printf("Hello, World!\n");
     return 0;
