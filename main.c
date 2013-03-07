@@ -28,38 +28,38 @@ int find_start_code (unsigned char *Buf, int zeros_in_startcode)
 
 int get_next_nal(FILE* inpf, unsigned char* Buf)
 {
-	int pos = 0;
-	int StartCodeFound = 0;
-	int info2 = 0;
-	int info3 = 0;
-	while(!feof(inpf)&&(/*Buf[pos++]=*/fgetc(inpf))==0);
+    int pos = 0;
+    int StartCodeFound = 0;
+    int info2 = 0;
+    int info3 = 0;
+    while(!feof(inpf)&&(/*Buf[pos++]=*/fgetc(inpf))==0);
 
-	while (pos < 2) Buf[pos++] = fgetc (inpf);
-	while (!StartCodeFound)
-	{
-		if (feof (inpf))
-		{
-            //			return -1;
-			return pos-1;
-		}
-		Buf[pos++] = fgetc (inpf);
-		info3 = find_start_code(&Buf[pos-4], 3);
-		if(info3 != 1)
-			info2 = find_start_code(&Buf[pos-3], 2);
-		StartCodeFound = (info2 == 1 || info3 == 1);
-	}
-	fseek (inpf, - 4 + info2, SEEK_CUR);
-	return pos - 4 + info2;
+    while (pos < 3) Buf[pos++] = fgetc (inpf);
+    while (!StartCodeFound)
+    {
+        if (feof (inpf))
+        {
+            //            return -1;
+            return pos-1;
+        }
+        Buf[pos++] = fgetc (inpf);
+        info3 = find_start_code(&Buf[pos-4], 3);
+        if(info3 != 1)
+            info2 = find_start_code(&Buf[pos-3], 2);
+        StartCodeFound = (info2 == 1 || info3 == 1);
+    }
+    fseek (inpf, - 4 + info2, SEEK_CUR);
+    return pos - 4 + info2;
 }
 int init=1;
 static void video_decode_example(const char *filename)
 {
     FILE *f;
     int nal_len = 0;
-	unsigned int width, height, stride;
-	unsigned char * buf, *Y, *U, *V;
+    unsigned int width, height, stride;
+    unsigned char * buf, *Y, *U, *V;
     
-	libOpenHevcInit();
+    libOpenHevcInit();
     f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
@@ -72,7 +72,7 @@ static void video_decode_example(const char *filename)
         if (got_picture && display_flags == DISPLAY_ENABLE) {
             fflush(stdout);
             if (init == 1 ) {
-            	libOpenHevcGetPictureSize(&width, &height, &stride);
+                libOpenHevcGetPictureSize(&width, &height, &stride);
                 Init_SDL((stride - width)/2, width, height);
             }
             init=0;

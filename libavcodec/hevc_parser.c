@@ -54,31 +54,31 @@ static int hevc_parse_nal_unit(HEVCParserContext *hpc, uint8_t **poutbuf,
 
 	// Remove emulation bytes and find the frame end
 	for (i = 0; i < buf_size; i++) {
-		pc->state = (pc->state << 8) | buf[i];
-		switch (pc->state & mask) {
-		case START_CODE:
-			pc->frame_start_found = 0;
-			pc->state = -1;
-			// The start code is three bytes long
-			*poutbuf_size = i - 2 - skipped;
-			return header + i - 2;
-		case EMULATION_CODE:
-			skipped++;
+	    pc->state = (pc->state << 8) | buf[i];
+	    switch (pc->state & mask) {
+	    case START_CODE:
+	        pc->frame_start_found = 0;
+	        pc->state = -1;
+	        // The start code is three bytes long
+	        *poutbuf_size = i - 2 - skipped;
+	        return header + i - 2;
+	    case EMULATION_CODE:
+	        skipped++;
 
-			if (*poutbuf != hpc->nal_buffer) {
-				hpc->nal_buffer = av_fast_realloc(hpc->nal_buffer,
-						&hpc->nal_buffer_size,
-						buf_size - skipped);
-				if (!hpc->nal_buffer)
-					return END_NOT_FOUND;
-				*poutbuf = hpc->nal_buffer;
-				memcpy(*poutbuf, buf, i - skipped + 1);
-			}
-			break;
-		default:
-			if (*poutbuf == hpc->nal_buffer)
-				(*poutbuf)[i-skipped] = buf[i];
-		}
+	        if (*poutbuf != hpc->nal_buffer) {
+	            hpc->nal_buffer = av_fast_realloc(hpc->nal_buffer,
+	                    &hpc->nal_buffer_size,
+	                    buf_size - skipped);
+	            if (!hpc->nal_buffer)
+	                return END_NOT_FOUND;
+	            *poutbuf = hpc->nal_buffer;
+	            memcpy(*poutbuf, buf, i - skipped + 1);
+	        }
+	        break;
+	    default:
+	        if (*poutbuf == hpc->nal_buffer)
+	            (*poutbuf)[i-skipped] = buf[i];
+	    }
 	}
 
 	*poutbuf_size = buf_size - skipped;
