@@ -32,11 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/md5.h"
 
-//#define HM
 //#define MV
-#ifdef HM
-    #include "wrapper/wrapper.h"
-#endif
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
  * specification (HLS stands for High Level Syntax).
@@ -1839,7 +1835,6 @@ static void luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPb
     mv->ref_idx_l1 = mergecand_list[merge_idx].ref_idx_l1;
     mv->pred_flag_l0 = mergecand_list[merge_idx].pred_flag_l0;
     mv->pred_flag_l1 = mergecand_list[merge_idx].pred_flag_l1;
-    
 }
 
 static void luma_mv_mvp_mode_l0(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX)
@@ -2884,6 +2879,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);
+
     if (SAMPLE(s->cu.skip_flag, x0, y0)) {
         if (s->sh.max_num_merge_cand > 1) {
             merge_idx = ff_hevc_merge_idx_decode(s);
@@ -3451,17 +3447,14 @@ static int hls_nal_unit(HEVCContext *s)
     return ret;
 }
 
-static int calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
+static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
     uint8_t *buf;
-    buf = av_malloc(width * height);
     int y,x;
+    buf = av_malloc(width * height);
 
-    for (y = 0; y < height; y++)
-    {
+    for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
-        {
-            buf[y * width + x] = src[x] & 0xff;
-        }
+            buf[y * width + x] = src[x];
 
         src += stride;
     }
@@ -3469,9 +3462,7 @@ static int calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int heigh
     av_free(buf);
 }
 
-/**
- * Note: avpkt->data must contain exactly one NAL unit
- */
+
 static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                              AVPacket *avpkt)
 {
@@ -3480,30 +3471,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     int ret;
     int i;
-    
-#ifdef HM
-    AVFrame *picture = (AVFrame*) data;
-    int gotpicture;
-    int temporal_id, temp_id;
-#endif
-    
+        
 
     *data_size = 0;
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
-#ifdef HM
-    gotpicture = libDecoderDecode(avpkt->data, avpkt->size,  &temporal_id);
-    if (gotpicture) {
-        libDecoderGetOuptut(0, s->frame->data[0], s->frame->data[1], s->frame->data[2], 1);
-    }
-    if (gotpicture) {
-        temporal_id = temp_id;
-        
-        libDecoderDecode(avpkt->data, avpkt->size, &temp_id);
-    }
-
-
-#endif
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
 
     if (hls_nal_unit(s) <= 0) {
@@ -3567,7 +3539,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             return -1;
 
         ff_hevc_cabac_init(s);
-#ifndef HM
+
         if (hls_slice_data(s) < 0)
             return -1;
 
@@ -3606,16 +3578,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             if ((ret = av_frame_ref(data, s->frame)) < 0)
                 return ret;
         }
-        av_frame_unref(s->frame);
-#endif
 
+        av_frame_unref(s->frame);
         s->frame->pict_type = AV_PICTURE_TYPE_I;
         s->frame->key_frame = 1;
-#ifdef HM
-        if ((ret = av_frame_ref(data, s->frame)) < 0)
-            return ret;
-        picture->linesize[0] = s->frame->width;
-#endif
         *data_size = sizeof(AVFrame);
         break;
     case NAL_AUD:
@@ -3634,9 +3600,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     int i;
     HEVCContext *s = avctx->priv_data;
 
-#ifdef HM
-    libDecoderInit();
-#endif
     s->avctx = avctx;
     s->frame = av_frame_alloc();
     s->sao_frame = av_frame_alloc();
@@ -3693,9 +3656,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     pic_arrays_free(s);
 
-#ifdef HM
-    libDecoderClose();
-#endif
     return 0;
 }
 
