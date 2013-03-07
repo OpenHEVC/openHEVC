@@ -1,6 +1,16 @@
 #include "openHevcWrapper.h"
+#include "avcodec.h"
+
+typedef struct OpenHevcWrapperContext {
+	AVCodec *codec;
+	AVCodecContext *c;
+	AVFrame *picture;
+	AVPacket avpkt;
+	AVCodecParserContext *parser;
+} OpenHevcWrapperContext;
 
 OpenHevcWrapperContext openHevcContext;
+
 
 int libOpenHevcInit()
 {
@@ -69,15 +79,40 @@ int libOpenHevcGetOuptut(int got_picture, unsigned char **Y, unsigned char **U, 
 	}
 	return 1;
 }
+int libOpenHevcGetOuptutCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V)
+{
+	int x, y;
+	int y_offset, y_offset2;
+	if( got_picture ) {
+		y_offset = y_offset2 = 0;
+		for(y = 0; y < openHevcContext.c->height; y++) {
+			for(x = 0; x < openHevcContext.c->width; x++) {
+				Y[y_offset2 + x] = openHevcContext.picture->data[0][y_offset + x];
+			}
+			y_offset  += openHevcContext.picture->linesize[0];
+			y_offset2 += openHevcContext.c->width;
+		}
+		y_offset = y_offset2 = 0;
+		for(y = 0; y < openHevcContext.c->height/2; y++) {
+			for(x = 0; x < openHevcContext.c->width/2; x++) {
+				U[y_offset2 + x] = openHevcContext.picture->data[1][y_offset + x];
+				V[y_offset2 + x] = openHevcContext.picture->data[2][y_offset + x];
+			}
+			y_offset  += openHevcContext.picture->linesize[1];
+			y_offset2 += openHevcContext.c->width / 2;
+		}
+	}
+	return 1;
+}
 
-void libOpenHevcDecoderClose()
+void libOpenHevcClose()
 {
 	avcodec_close(openHevcContext.c);
 	av_free(openHevcContext.c);
 	av_free(openHevcContext.picture);
 }
 
-const char *libOpenHevcDecoderVersion()
+const char *libOpenHevcVersion()
 {
 	return "OpenHEVC v"NV_VERSION;
 }
