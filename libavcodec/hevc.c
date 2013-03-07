@@ -2270,6 +2270,8 @@ static void luma_mv_mvp_mode_l0(HEVCContext *s, int x0, int y0, int nPbW, int nP
 
 static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX)
 {
+#define TAB_MVF(x, y)                                                              \
+    s->pu.tab_mvf[(y) * pic_width_in_min_pu + x]
     int isScaledFlag_L0 =0;
     int availableFlagLXA0 = 0;
     int availableFlagLXB0 = 0;
@@ -2320,7 +2322,7 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
     isAvailableA0 = 0;
     check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xA0, yA0, part_idx);
 
-    if((xA0_pu >= 0) && !(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra) && check_A0) {
+    if((xA0_pu >= 0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && check_A0) {
         isAvailableA0 = 1;
     } else {
         isAvailableA0 = 0;
@@ -2334,7 +2336,7 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
     yA1_pu = yA1 >> s->sps->log2_min_pu_size;
     isAvailableA1 = 0;
     check_A1 = check_prediction_block_available (s,log2_cb_size, x0, y0, nPbW, nPbH, xA1, yA1, part_idx);
-    if((xA1_pu >= 0) && !(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra) && check_A1) {
+    if((xA1_pu >= 0) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && check_A1) {
         isAvailableA1 = 1;
     } else {
         isAvailableA1 = 0;
@@ -2345,50 +2347,50 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
     }
 
     // XA0 and L1
-    if((isAvailableA0) && !(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra) && (availableFlagLXA0 == 0)) {
-        if((s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].pred_flag_l1 == 1) &&
-                (DiffPicOrderCnt(s->sh.refPicList[1].list[(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+    if((isAvailableA0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && (availableFlagLXA0 == 0)) {
+        if((TAB_MVF(xA0_pu, yA0_pu).pred_flag_l1 == 1) &&
+                (DiffPicOrderCnt(s->sh.refPicList[1].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
             availableFlagLXA0 = 1;
-            mxA = s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].mv_l1;
+            mxA = TAB_MVF(xA0_pu, yA0_pu).mv_l1;
         }
     }
 
     // XA0 and L0
-    if((isAvailableA0) && !(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra) && (availableFlagLXA0 == 0)) {
-        if((s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].pred_flag_l0 == 1) &&
-                (DiffPicOrderCnt(s->sh.refPicList[0].list[(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+    if((isAvailableA0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && (availableFlagLXA0 == 0)) {
+        if((TAB_MVF(xA0_pu, yA0_pu).pred_flag_l0 == 1) &&
+                (DiffPicOrderCnt(s->sh.refPicList[0].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
             availableFlagLXA0 =1;
-            mxA = s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].mv_l0;
+            mxA = TAB_MVF(xA0_pu, yA0_pu).mv_l0;
         }
     }
 
 
     //XA1 and L1
-    if((isAvailableA1) && !(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra) && (availableFlagLXA0==0)) {
-        if((s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].pred_flag_l1 == 1) &&
-                (DiffPicOrderCnt(s->sh.refPicList[1].list[(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+    if((isAvailableA1) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && (availableFlagLXA0 == 0)) {
+        if((TAB_MVF(xA1_pu, yA1_pu).pred_flag_l1 == 1) &&
+                (DiffPicOrderCnt(s->sh.refPicList[1].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
             availableFlagLXA0 =1;
-            mxA = s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].mv_l1;
+            mxA = TAB_MVF(xA1_pu, yA1_pu).mv_l1;
         }
     }
 
     //XA1 and L0
-    if((isAvailableA1) && !(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra) && (availableFlagLXA0==0)) {
-        if((s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].pred_flag_l0 == 1) &&
-                (DiffPicOrderCnt(s->sh.refPicList[0].list[(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+    if((isAvailableA1) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && (availableFlagLXA0==0)) {
+        if((TAB_MVF(xA1_pu, yA1_pu).pred_flag_l0 == 1) &&
+                (DiffPicOrderCnt(s->sh.refPicList[0].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
             availableFlagLXA0 =1;
-            mxA = s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].mv_l0;
+            mxA = TAB_MVF(xA1_pu, yA1_pu).mv_l0;
         }
     }
 
     // XA0 and L1
-    if((isAvailableA0) && !(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra) && (availableFlagLXA0 == 0)) {
-        if((s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].pred_flag_l1 == 1)) {
+    if((isAvailableA0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && (availableFlagLXA0 == 0)) {
+        if(TAB_MVF(xA0_pu, yA0_pu).pred_flag_l1 == 1) {
             availableFlagLXA0 =1;
-            mxA = s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].mv_l1;
-            if((DiffPicOrderCnt(s->sh.refPicList[1].list[(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))!=0) {
+            mxA = TAB_MVF(xA0_pu, yA0_pu).mv_l1;
+            if((DiffPicOrderCnt(s->sh.refPicList[1].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))!=0) {
                 // *** Assuming there are no long term pictures in version 1 of the decoder and the pictures are short term pictures ***
-                td = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[1].list[(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].ref_idx_l1)])));
+                td = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[1].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx_l1)])));
                 tb = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[ref_idx_curr].list[ref_idx])));
                 tx = (0x4000 + abs(td/2)) / td;
                 distScaleFactor = av_clip_c((tb * tx + 32) >> 6, -4096, 4095);
@@ -2398,14 +2400,14 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
         }
     }
     // XA0 and L0
-    if((isAvailableA0) && !(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra) && (availableFlagLXA0 == 0)) {
+    if((isAvailableA0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && (availableFlagLXA0 == 0)) {
         // *** Assuming there are no long term pictures in version 1 of the decoder and the pictures are short term pictures ***
-        if((s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].pred_flag_l0 == 1)) {
+        if(TAB_MVF(xA0_pu, yA0_pu).pred_flag_l0 == 1) {
             availableFlagLXA0 =1;
-            mxA = s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].mv_l0;
-            if((DiffPicOrderCnt(s->sh.refPicList[0].list[(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))!=0) {
+            mxA = TAB_MVF(xA0_pu, yA0_pu).mv_l0;
+            if((DiffPicOrderCnt(s->sh.refPicList[0].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))!=0) {
 
-                td = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[0].list[(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].ref_idx_l0)])));
+                td = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[0].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx_l0)])));
                 tb = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[ref_idx_curr].list[ref_idx])));
                 tx = (0x4000 + abs(td/2)) / td;
                 distScaleFactor = av_clip_c((tb * tx + 32) >> 6, -4096, 4095);
@@ -2416,13 +2418,13 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
     }
 
     //XA1 and L1
-    if((isAvailableA1) && !(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra) && (availableFlagLXA0==0)) {
-        if((s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].pred_flag_l1 == 1)) {
+    if((isAvailableA1) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && (availableFlagLXA0==0)) {
+        if(TAB_MVF(xA1_pu, yA1_pu).pred_flag_l1 == 1) {
             availableFlagLXA0 =1;
-            mxA = s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].mv_l1;
-            if((DiffPicOrderCnt(s->sh.refPicList[1].list[(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))!=0) {
+            mxA = TAB_MVF(xA1_pu, yA1_pu).mv_l1;
+            if((DiffPicOrderCnt(s->sh.refPicList[1].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))!=0) {
                 // *** Assuming there are no long term pictures in version 1 of the decoder and the pictures are short term pictures ***
-                td = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[1].list[(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].ref_idx_l1)])));
+                td = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[1].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx_l1)])));
                 tb = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[ref_idx_curr].list[ref_idx])));
                 tx = (0x4000 + abs(td/2)) / td;
                 distScaleFactor = av_clip_c((tb * tx + 32) >> 6, -4096, 4095);
@@ -2433,13 +2435,13 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
     }
 
     //XA1 and L0
-    if((isAvailableA1) && !(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra) && (availableFlagLXA0==0)) {
-        if((s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].pred_flag_l0 == 1)) {
+    if ((isAvailableA1) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && (availableFlagLXA0==0)) {
+        if (TAB_MVF(xA1_pu, yA1_pu).pred_flag_l0 == 1) {
             availableFlagLXA0 =1;
-            mxA = s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].mv_l0;
-            if((DiffPicOrderCnt(s->sh.refPicList[0].list[(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))!=0) {
+            mxA = TAB_MVF(xA1_pu, yA1_pu).mv_l0;
+            if((DiffPicOrderCnt(s->sh.refPicList[0].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))!=0) {
                 // *** Assuming there are no long term pictures in version 1 of the decoder and the pictures are short term pictures ***
-                td = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[0].list[(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].ref_idx_l0)])));
+                td = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[0].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx_l0)])));
                 tb = av_clip_int8_c((DiffPicOrderCnt(s->poc,s->sh.refPicList[ref_idx_curr].list[ref_idx])));
                 tx = (0x4000 + abs(td/2)) / td;
                 distScaleFactor = av_clip_c((tb * tx + 32) >> 6,-4096, 4095);
@@ -2467,20 +2469,20 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
         }
 
      // XB0 and L1
-     if((isAvailableB0) && !(s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].is_intra) && (availableFlagLXB0 == 0)) {
+     if((isAvailableB0) && !(TAB_MVF(xB0_pu, yB0_pu).is_intra) && (availableFlagLXB0 == 0)) {
          if((s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].pred_flag_l1 == 1) &&
-                 (DiffPicOrderCnt(s->sh.refPicList[1].list[(s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+                 (DiffPicOrderCnt(s->sh.refPicList[1].list[TAB_MVF(xB0_pu, yB0_pu).ref_idx_l1], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
              availableFlagLXB0 =1;
              mxB = s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].mv_l1;
          }
      }
 
      // XB0 and L0
-     if((isAvailableB0) && !(s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].is_intra) && (availableFlagLXB0 == 0)) {
-         if((s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].pred_flag_l0 == 1) &&
-                 (DiffPicOrderCnt(s->sh.refPicList[0].list[(s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+     if ((isAvailableB0) && !(TAB_MVF(xB0_pu, yB0_pu).is_intra) && (availableFlagLXB0 == 0)) {
+         if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag_l0 == 1) &&
+                 (DiffPicOrderCnt(s->sh.refPicList[0].list[(TAB_MVF(xB0_pu, yB0_pu).ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
              availableFlagLXB0 =1;
-             mxB = s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].mv_l0;
+             mxB = TAB_MVF(xB0_pu, yB0_pu).mv_l0;
          }
      }
 
@@ -2492,26 +2494,26 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
          yB1_pu = yB1 >> s->sps->log2_min_pu_size;
          is_available_b1 = 0;
          check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
-         if((yB1_pu >= 0) && !(s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].is_intra) && check_B1) {
+         if((yB1_pu >= 0) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && check_B1) {
              is_available_b1 = 1;
          } else {
              is_available_b1 = 0;
          }
 
          // XB1 and L1
-         if((is_available_b1) && !(s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].is_intra) && (availableFlagLXB0 == 0)) {
+         if((is_available_b1) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && (availableFlagLXB0 == 0)) {
              if((s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].pred_flag_l1 == 1) &&
-                     (DiffPicOrderCnt(s->sh.refPicList[1].list[(s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+                     (DiffPicOrderCnt(s->sh.refPicList[1].list[(TAB_MVF(xB1_pu, yB1_pu).ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
                  availableFlagLXB0 =1;
-                 mxB = s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].mv_l1;
+                 mxB = TAB_MVF(xB1_pu, yB1_pu).mv_l1;
              }
          }
          // XB1 and L0
-         if((is_available_b1) && !(s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].is_intra) && (availableFlagLXB0 == 0)) {
-             if((s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].pred_flag_l0 == 1) &&
-                     (DiffPicOrderCnt(s->sh.refPicList[0].list[(s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+         if((is_available_b1) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && (availableFlagLXB0 == 0)) {
+             if((TAB_MVF(xB1_pu, yB1_pu).pred_flag_l0 == 1) &&
+                     (DiffPicOrderCnt(s->sh.refPicList[0].list[(TAB_MVF(xB1_pu, yB1_pu).ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
                  availableFlagLXB0 =1;
-                 mxB = s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].mv_l0;
+                 mxB = TAB_MVF(xB1_pu, yB1_pu).mv_l0;
              }
          }
      }
@@ -2524,27 +2526,27 @@ static void luma_mv_mvp_mode_l1(HEVCContext *s, int x0, int y0, int nPbW, int nP
          isAvailableB2 = 0;
          check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
 
-         if((xB2_pu >= 0) && (yB2_pu >= 0) && !(s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra) && check_B2) {
+         if((xB2_pu >= 0) && (yB2_pu >= 0) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && check_B2) {
              isAvailableB2 = 1;
          } else {
              isAvailableB2 = 0;
          }
 
          // XB2 and L1
-         if((isAvailableB2) && !(s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra) && (availableFlagLXB0 == 0)) {
-             if((s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].pred_flag_l1 == 1) &&
-                     (DiffPicOrderCnt(s->sh.refPicList[1].list[(s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+         if ((isAvailableB2) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && (availableFlagLXB0 == 0)) {
+             if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag_l1 == 1) &&
+                     (DiffPicOrderCnt(s->sh.refPicList[1].list[(TAB_MVF(xB2_pu, yB2_pu).ref_idx_l1)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
                  availableFlagLXB0 =1;
                  mxB = s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].mv_l1;
              }
          }
 
          // XB2 and L0
-         if((isAvailableB2) && !(s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra) && (availableFlagLXB0 == 0)) {
+         if((isAvailableB2) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && (availableFlagLXB0 == 0)) {
              if((s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].pred_flag_l0 == 1) &&
-                     (DiffPicOrderCnt(s->sh.refPicList[0].list[(s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
+                     (DiffPicOrderCnt(s->sh.refPicList[0].list[(TAB_MVF(xB2_pu, yB2_pu).ref_idx_l0)], s->sh.refPicList[ref_idx_curr].list[ref_idx]))==0) {
                  availableFlagLXB0 =1;
-                 mxB = s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].mv_l0;
+                 mxB = TAB_MVF(xB2_pu, yB2_pu).mv_l0;
              }
          }
      }
