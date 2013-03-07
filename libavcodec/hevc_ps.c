@@ -100,7 +100,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
             }
         }
         if ( (rps->num_negative_pics>>1) != 0 ) {
-            int used, tmp;
+            int used;
             k = rps->num_negative_pics - 1;
             // flip the negative values to largest first
             for( i = 0; i < rps->num_negative_pics>>1; i++) {
