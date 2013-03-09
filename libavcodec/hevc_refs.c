@@ -76,6 +76,14 @@ int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc)
             av_frame_ref(ref->frame, frame);
             // copy MV structure
             memcpy(ref->tab_mvf, s->pu.tab_mvf,(pic_width_in_min_pu*pic_height_in_min_pu*sizeof(MvField)));
+            ref->refPicList[0].numPic = s->sh.refPicList[0].numPic;
+            ref->refPicList[1].numPic = s->sh.refPicList[1].numPic;
+            for (i = 0; i < 16; i++) {
+                ref->refPicList[0].idx[i] = s->sh.refPicList[0].idx[i];
+                ref->refPicList[0].list[i] = s->sh.refPicList[0].list[i];
+                ref->refPicList[1].idx[i] = s->sh.refPicList[1].idx[i];
+                ref->refPicList[1].list[i] = s->sh.refPicList[1].list[i];
+            }
             return 0;
         }
     }
