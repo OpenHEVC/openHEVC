@@ -1283,7 +1283,7 @@ static int DiffPicOrderCnt(int A, int B)
 }
 
 // derive the motion vectors section 8.5.3.1.8
-static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col, int refIdxLx, Mv* mvLXCol, int X, int colPic, RefPicList refPicList_col[], int x0, int y0)
+static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col, int refIdxLx, Mv* mvLXCol, int X, int colPic, RefPicList refPicList_col[])
 {
     int availableFlagLXCol = 0;
     Mv mvCol;
@@ -1404,7 +1404,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW,
         xPRb_pu = xPRb >> s->sps->log2_min_pu_size;
         yPRb_pu = yPRb >> s->sps->log2_min_pu_size;
         temp_col = coloc_tab_mvf[(yPRb_pu) * pic_width_in_min_pu + xPRb_pu];
-        availableFlagLXCol = derive_temporal_colocated_mvs(s, temp_col, refIdxLx, mvLXCol, X, colPic, s->short_refs[short_ref_idx].refPicList, x0, y0);
+        availableFlagLXCol = derive_temporal_colocated_mvs(s, temp_col, refIdxLx, mvLXCol, X, colPic, s->short_refs[short_ref_idx].refPicList);
     } else {
         mvLXCol->x = 0;
         mvLXCol->y = 0;
@@ -1420,7 +1420,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW,
         xPCtr_pu = xPCtr >> s->sps->log2_min_pu_size;
         yPCtr_pu = yPCtr >> s->sps->log2_min_pu_size;
         temp_col = coloc_tab_mvf[(yPCtr_pu) * pic_width_in_min_pu + xPCtr_pu];
-        availableFlagLXCol = derive_temporal_colocated_mvs(s, temp_col, refIdxLx, mvLXCol, X, colPic, s->short_refs[short_ref_idx].refPicList, x0, y0);
+        availableFlagLXCol = derive_temporal_colocated_mvs(s, temp_col, refIdxLx, mvLXCol, X, colPic, s->short_refs[short_ref_idx].refPicList);
     }
     return availableFlagLXCol;
 }
@@ -2999,7 +2999,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
 #ifdef MV
-        printf("mv = %d, %d\n",current_mv.mv_l0.x, current_mv.mv_l0.y);
+        printf("mv_l0 = %d, %d\n",current_mv.mv_l0.x, current_mv.mv_l0.y);
 #endif
         luma_mc(s, tmp, tmpstride,
                 s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx_l0]].frame,
