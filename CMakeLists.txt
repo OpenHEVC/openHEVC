@@ -23,6 +23,7 @@ libavcodec/cabac.c
 libavcodec/dsputil.c
 libavcodec/golomb.c
 libavcodec/hevc_cabac.c
+libavcodec/hevc_mvs.c
 libavcodec/hevc_parser.c
 libavcodec/hevc_ps.c
 libavcodec/hevc_refs.c
