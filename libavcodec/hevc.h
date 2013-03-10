@@ -672,6 +672,7 @@ typedef struct HEVCFrame {
     AVFrame *frame;
     int poc;
     MvField *tab_mvf;
+    RefPicList refPicList[2];
 } HEVCFrame;
 
 typedef struct HEVCContext {
