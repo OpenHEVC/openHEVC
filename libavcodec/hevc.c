@@ -1360,12 +1360,12 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col, int r
         mvLXCol->y = 0;
         availableFlagLXCol = 0;
     } else {
-        if((temp_col.pred_flag_l0 == 0) && (X==1)) {
+        if((temp_col.pred_flag_l0 == 0)) {
             mvCol = temp_col.mv_l1;
             refidxCol = temp_col.ref_idx_l1;
             listCol = L1;
             check_mvset =1;
-        } else if((temp_col.pred_flag_l0 == 1) && (temp_col.pred_flag_l1 == 0) && (X==0)) {
+        } else if((temp_col.pred_flag_l0 == 1) && (temp_col.pred_flag_l1 == 0)) {
             mvCol = temp_col.mv_l0;
             refidxCol = temp_col.ref_idx_l0;
             listCol = L0;
@@ -1474,6 +1474,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW,
         mvLXCol->y = 0;
         availableFlagLXCol = 0;
     }
+
     // derive center collocated motion vector
     if (availableFlagLXCol == 0) {
         xPCtr = x0 + (nPbW >> 1);
@@ -1754,12 +1755,16 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     // temporal motion vector candidate
     // one optimization is that do temporal checking only if the number of
     // available candidates < MRG_MAX_NUM_CANDS
+    int availableFlagL0Col=0;
+    int availableFlagL1Col=0;
     if(s->sh.slice_temporal_mvp_enabled_flag == 0) {
         availableFlagLXCol = 0;
     } else {
-        int availableFlagL0Col = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, refIdxL0Col, &mvL0Col, 0);
+        availableFlagL0Col = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, refIdxL0Col, &mvL0Col, 0);
         // one optimization is that l1 check can be done only when the current slice type is B_SLICE
-        int availableFlagL1Col = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, refIdxL1Col, &mvL1Col, 1);
+        if(s->sh.slice_type == B_SLICE) {
+        availableFlagL1Col = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH, refIdxL1Col, &mvL1Col, 1);
+        }
         availableFlagLXCol = availableFlagL0Col || availableFlagL1Col;
         if(availableFlagLXCol) {
             TMVPCand.is_intra = 0;
