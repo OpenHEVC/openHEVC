@@ -590,12 +590,9 @@ typedef struct Mv {
 } Mv;
 
 typedef struct MvField {
-      Mv  mv_l0;
-      Mv  mv_l1;
-      int ref_idx_l0;
-      int ref_idx_l1;
-      int pred_flag_l0;
-      int pred_flag_l1;
+      Mv  mv[2];
+      int ref_idx[2];
+      int pred_flag[2];
       int is_intra;
       int cbf_luma; // cbf_luma of colocated TU
       int is_pcm;
