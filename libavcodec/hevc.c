@@ -1482,7 +1482,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
 #ifdef MV
-        printf("mv[0] = %d, %d\n",current_mv.mv[0].x, current_mv.mv[0].y);
+        printf("mv_l0 = %d, %d\n",current_mv.mv[0].x, current_mv.mv[0].y);
 #endif
         luma_mc(s, tmp, tmpstride,
                 s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx[0]]].frame,
@@ -1497,7 +1497,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
 #ifdef MV
-        printf("mv[1] = %d, %d\n",current_mv.mv[1].x, current_mv.mv[1].y);
+        printf("mv_l1 = %d, %d\n",current_mv.mv[1].x, current_mv.mv[1].y);
 #endif
         luma_mc(s, tmp, tmpstride,
                 s->short_refs[s->sh.refPicList[1].idx[current_mv.ref_idx[1]]].frame,
