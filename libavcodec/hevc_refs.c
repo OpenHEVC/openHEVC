@@ -62,6 +62,22 @@ void ff_hevc_clear_refs(HEVCContext *s)
     }
 }
 
+int ff_hevc_find_next_ref(HEVCContext *s, AVFrame *frame, int poc)
+{
+    int i;
+    update_refs(s);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
+        HEVCFrame *ref = &s->short_refs[i];
+        if (!ref->frame->buf[0]) {
+            return i;
+        }
+    }
+    av_log(s->avctx, AV_LOG_ERROR,
+           "could not free room for POC %d\n", poc);
+    return -1;
+}
+
 int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc)
 {
     int i;
@@ -76,14 +92,6 @@ int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc)
             av_frame_ref(ref->frame, frame);
             // copy MV structure
             memcpy(ref->tab_mvf, s->pu.tab_mvf,(pic_width_in_min_pu*pic_height_in_min_pu*sizeof(MvField)));
-            ref->refPicList[0].numPic = s->sh.refPicList[0].numPic;
-            ref->refPicList[1].numPic = s->sh.refPicList[1].numPic;
-            for (i = 0; i < 16; i++) {
-                ref->refPicList[0].idx[i] = s->sh.refPicList[0].idx[i];
-                ref->refPicList[0].list[i] = s->sh.refPicList[0].list[i];
-                ref->refPicList[1].idx[i] = s->sh.refPicList[1].idx[i];
-                ref->refPicList[1].list[i] = s->sh.refPicList[1].list[i];
-            }
             return 0;
         }
     }
@@ -112,7 +120,7 @@ static void set_ref_pic_list(HEVCContext *s)
 {
     SliceHeader *sh = &s->sh;
     RefPicList  *refPocList = s->sh.refPocList;
-    RefPicList  *refPicList = s->sh.refPicList;
+    RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
 
     uint8_t num_ref_idx_lx_act[2];
     uint8_t cIdx;
@@ -140,30 +148,30 @@ static void set_ref_pic_list(HEVCContext *s)
         num_poc_total_curr = refPocList[ST_CURR_BEF].numPic + refPocList[ST_CURR_AFT].numPic + refPocList[LT_CURR].numPic;
         num_rps_curr_lx    = num_poc_total_curr<num_ref_idx_lx_act[list_idx] ? num_poc_total_curr : num_ref_idx_lx_act[list_idx];
         cIdx = 0;
-//        printf("L%d = [", list_idx);
+        printf("L%d = [", list_idx);
         while(cIdx < num_rps_curr_lx) {
             for(i = 0; i < refPocList[first_list].numPic && cIdx < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[cIdx] = refPocList[first_list].list[i];
-//                printf("%d, ", refPicList[list_idx].list[cIdx]);
+                printf("%d, ", refPicList[list_idx].list[cIdx]);
                 refPicList[list_idx].idx[cIdx]  = refPocList[first_list].idx[i];
                 
                 cIdx++;
             }
             for(i = 0; i < refPocList[sec_list].numPic && cIdx < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[cIdx] = refPocList[sec_list].list[i];
-//                printf("%d, ", refPicList[list_idx].list[cIdx]);
+                printf("%d, ", refPicList[list_idx].list[cIdx]);
                 refPicList[list_idx].idx[cIdx]  = refPocList[sec_list].idx[i];
                 cIdx++;
             }
             for(i = 0; i < refPocList[LT_CURR].numPic && cIdx < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
-//                printf("%d, ", refPicList[list_idx].list[cIdx]);
+                printf("%d, ", refPicList[list_idx].list[cIdx]);
                 refPicList[list_idx].idx[cIdx]  = refPocList[LT_CURR].idx[i];
                 cIdx++;
             }
         }
         refPicList[list_idx].numPic = cIdx;
-//        printf("]\n");
+        printf("]\n");
     }
 }
 
