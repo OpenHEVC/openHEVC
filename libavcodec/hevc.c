@@ -1429,7 +1429,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 current_mv.pred_flag[0] = 1;
                 hls_mvd_coding(s, x0, y0, 0 );
                 mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
-                ff_hevc_luma_mv_mvp_mode_l0(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_flag[0], 0);
+                ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_flag[0], 0);
                 current_mv.mv[0].x += s->pu.mvd.x;
                 current_mv.mv[0].y += s->pu.mvd.y;
                 x_pu = x0 >> s->sps->log2_min_pu_size;
@@ -1461,7 +1461,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 }
                 current_mv.pred_flag[1] = 1;
                 mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
-                ff_hevc_luma_mv_mvp_mode_l1(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_flag[1], 1);
+                ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_flag[1], 1);
                 current_mv.mv[1].x += s->pu.mvd.x;
                 current_mv.mv[1].y += s->pu.mvd.y;
                 x_pu = x0 >> s->sps->log2_min_pu_size;
