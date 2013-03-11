@@ -155,7 +155,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col, int r
                 refidxCol = temp_col.ref_idx[1];
                 listCol = L1;
             } else {
-                if(s->sh.collocated_from_l0_flag == 1) {
+                if(s->sh.collocated_from_l0_flag == 0) {
                     mvCol = temp_col.mv[0];
                     refidxCol = temp_col.ref_idx[0];
                     listCol = L0;
@@ -178,9 +178,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col, int r
             } else {
                 int td = av_clip_c(colPocDiff, -128, 127);
                 int tb = av_clip_c(curPocDiff, -128, 127);
-                int tx = 0;
-                if (td > 0)
-                    tx = (0x4000 + abs(td/2)) / td;
+                int tx = (0x4000 + abs(td/2)) / td;
                 int distScaleFactor = av_clip_c((tb * tx + 32) >> 6,
                                                 -4096, 4095);
                 mvLXCol->x = av_clip_c((distScaleFactor * mvCol.x + 127 + (distScaleFactor * mvCol.x < 0)) >> 8,
@@ -322,12 +320,13 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int refIdxL0Col = 0;
     int refIdxL1Col = 0;
     int availableFlagLXCol = 0;
+    MvField *tab_mvf = s->pu.tab_mvf;
 
 
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
     int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
 
-    if((xA1_pu >= 0) && !(s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra) && check_A1) {
+    if((xA1_pu >= 0) && !(tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra) && check_A1) {
         isAvailableA1 = 1;
     } else {
         isAvailableA1 = 0;
@@ -341,7 +340,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
 
     if (isAvailableA1) {
         available_a1_flag = 1;
-        spatialCMVS[0] = s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu];
+        spatialCMVS[0] = tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu];
     } else {
         available_a1_flag = 0;
         spatialCMVS[0].ref_idx[0] = -1;
@@ -365,7 +364,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     is_available_b1 = 0;
     check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
 
-    if((yB1_pu >= 0) && !(s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].is_intra) && check_B1) {
+    if((yB1_pu >= 0) && !(tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].is_intra) && check_B1) {
         is_available_b1 = 1;
     } else {
         is_available_b1 = 0;
@@ -377,12 +376,12 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         is_available_b1 = 0;
     }
     if (isAvailableA1 && is_available_b1) {
-        check_MER = !(compareMVrefidx(s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu], s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
+        check_MER = !(compareMVrefidx(tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu], tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
     }
 
     if (is_available_b1 && check_MER) {
         available_b1_flag = 1;
-        spatialCMVS[1] = s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu];
+        spatialCMVS[1] = tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu];
     } else {
         available_b1_flag = 0;
         spatialCMVS[1].ref_idx[0] = -1;
@@ -404,7 +403,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     yB0_pu = yB0 >> s->sps->log2_min_pu_size;
     isAvailableB0 = 0;
     check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
-    if((yB0_pu >= 0) && !(s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].is_intra) && check_B0) {
+    if((yB0_pu >= 0) && !(tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].is_intra) && check_B0) {
         isAvailableB0 = 1;
     } else {
         isAvailableB0 = 0;
@@ -415,12 +414,12 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     }
 
     if (is_available_b1 && isAvailableB0) {
-        check_MER = !(compareMVrefidx(s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu], s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu]));
+        check_MER = !(compareMVrefidx(tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu], tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu]));
     }
 
     if (isAvailableB0 && check_MER) {
         available_b0_flag = 1;
-        spatialCMVS[2] = s->pu.tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu];
+        spatialCMVS[2] = tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu];
     } else {
         available_b0_flag = 0;
         spatialCMVS[2].ref_idx[0] = -1;
@@ -443,7 +442,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     isAvailableA0 = 0;
     check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xA0, yA0, part_idx);
 
-    if((xA0_pu >= 0) && !(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra) && check_A0) {
+    if((xA0_pu >= 0) && !(tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra) && check_A0) {
         isAvailableA0 = 1;
     } else {
         isAvailableA0 = 0;
@@ -453,13 +452,13 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         isAvailableA0 = 0;
     }
     if (isAvailableA1 && isAvailableA0) {
-        check_MER = !(compareMVrefidx(s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu], s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
+        check_MER = !(compareMVrefidx(tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu], tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
     }
 
 
     if (isAvailableA0 && check_MER) {
         available_a0_flag = 1;
-        spatialCMVS[3] = s->pu.tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu];
+        spatialCMVS[3] = tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu];
     } else {
         available_a0_flag = 0;
         spatialCMVS[3].ref_idx[0] = -1;
@@ -482,7 +481,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     isAvailableB2 = 0;
     check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
 
-    if((xB2_pu >= 0) && (yB2_pu >= 0) && !(s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra) && check_B2) {
+    if((xB2_pu >= 0) && (yB2_pu >= 0) && !(tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra) && check_B2) {
         isAvailableB2 = 1;
     } else {
         isAvailableB2 = 0;
@@ -492,10 +491,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         isAvailableB2 = 0;
     }
     if (isAvailableA1 && isAvailableB2) {
-        check_MER = !(compareMVrefidx(s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu], s->pu.tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
+        check_MER = !(compareMVrefidx(tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu], tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
     }
     if (is_available_b1 && isAvailableB2) {
-        check_MER_1 = !(compareMVrefidx(s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu], s->pu.tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu]));
+        check_MER_1 = !(compareMVrefidx(tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu], tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu]));
     }
 
     sumcandidates = available_a1_flag + available_b1_flag + available_b0_flag + available_a0_flag;
@@ -503,7 +502,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
 
     if (isAvailableB2 && check_MER && check_MER_1 && sumcandidates != 4) {
         available_b2_flag =1;
-        spatialCMVS[4] = s->pu.tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu];
+        spatialCMVS[4] = tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu];
     } else {
         available_b2_flag = 0;
         spatialCMVS[4].ref_idx[0] = -1;
@@ -686,10 +685,11 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nP
 }
 
 #define TAB_MVF(x, y)                                                              \
-    s->pu.tab_mvf[(y) * pic_width_in_min_pu + x]
+    tab_mvf[(y) * pic_width_in_min_pu + x]
 
 static av_always_inline void dist_scale(HEVCContext *s, Mv * mv, int pic_width_in_min_pu, int x_pu, int y_pu, int elist, int ref_idx_curr, int ref_idx) {
     RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
+    MvField *tab_mvf = s->pu.tab_mvf;
     if((DiffPicOrderCnt(refPicList[elist].list[TAB_MVF(x_pu, y_pu).ref_idx[elist]], refPicList[ref_idx_curr].list[ref_idx]))!=0) {
         // *** Assuming there are no long term pictures in version 1 of the decoder and the pictures are short term pictures ***
         int td = av_clip_int8_c((DiffPicOrderCnt(s->poc,refPicList[elist].list[(TAB_MVF(x_pu, y_pu).ref_idx[elist])])));
@@ -704,6 +704,7 @@ static av_always_inline void dist_scale(HEVCContext *s, Mv * mv, int pic_width_i
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX)
 {
     RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
+    MvField *tab_mvf = s->pu.tab_mvf;
     int isScaledFlag_L0 = 0;
     int availableFlagLXA0 = 0;
     int availableFlagLXB0 = 0;
