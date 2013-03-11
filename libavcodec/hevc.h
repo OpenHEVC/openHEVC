@@ -415,7 +415,6 @@ typedef struct SliceHeader {
     int pic_order_cnt_lsb;
     ShortTermRPS *short_term_rps;
     RefPicList refPocList[5];
-    RefPicList refPicList[2];
 
     uint8_t no_output_of_prior_pics_flag;
 

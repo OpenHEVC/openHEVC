@@ -1481,30 +1481,33 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     if (current_mv.pred_flag[0] && !current_mv.pred_flag[1] || identical_mvs(&current_mv)) {
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
+        RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
+
 #ifdef MV
         printf("mv_l0 = %d, %d\n",current_mv.mv[0].x, current_mv.mv[0].y);
 #endif
         luma_mc(s, tmp, tmpstride,
-                s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx[0]]].frame,
+                s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH);
         s->hevcdsp.put_unweighted_pred(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
         chroma_mc(s, tmp, tmp2, tmpstride,
-                  s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx[0]]].frame,
+                  s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                   &current_mv.mv[0], x0/2, y0/2, nPbW/2, nPbH/2);
         s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
         s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
     } else if (!current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
+        RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
 #ifdef MV
         printf("mv_l1 = %d, %d\n",current_mv.mv[1].x, current_mv.mv[1].y);
 #endif
         luma_mc(s, tmp, tmpstride,
-                s->short_refs[s->sh.refPicList[1].idx[current_mv.ref_idx[1]]].frame,
+                s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH);
         s->hevcdsp.put_unweighted_pred(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
         chroma_mc(s, tmp, tmp2, tmpstride,
-                  s->short_refs[s->sh.refPicList[1].idx[current_mv.ref_idx[1]]].frame,
+                  s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                   &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
         s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
         s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
@@ -1513,22 +1516,23 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp3[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp4[MAX_PB_SIZE*MAX_PB_SIZE];
+        RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
 #ifdef MV
         printf("mv_bi_l0 = %d, %d\n",current_mv.mv[0].x, current_mv.mv[0].y);
         printf("mv_bi_l1 = %d, %d\n",current_mv.mv[1].x, current_mv.mv[1].y);
 #endif
         luma_mc(s, tmp, tmpstride,
-                s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx[0]]].frame,
+                s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH);
         luma_mc(s, tmp2, tmpstride,
-                s->short_refs[s->sh.refPicList[1].idx[current_mv.ref_idx[1]]].frame,
+                s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH);
         s->hevcdsp.put_weighted_pred_avg(dst0, s->frame->linesize[0], tmp, tmp2, tmpstride, nPbW, nPbH);
         chroma_mc(s, tmp, tmp2, tmpstride,
-                  s->short_refs[s->sh.refPicList[0].idx[current_mv.ref_idx[0]]].frame,
+                  s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                   &current_mv.mv[0], x0/2, y0/2, nPbW/2, nPbH/2);
         chroma_mc(s, tmp3, tmp4, tmpstride,
-                  s->short_refs[s->sh.refPicList[1].idx[current_mv.ref_idx[1]]].frame,
+                  s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                   &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
         s->hevcdsp.put_weighted_pred_avg(dst1, s->frame->linesize[1], tmp, tmp3, tmpstride, nPbW/2, nPbH/2);
         s->hevcdsp.put_weighted_pred_avg(dst2, s->frame->linesize[2], tmp2, tmp4, tmpstride, nPbW/2, nPbH/2);
