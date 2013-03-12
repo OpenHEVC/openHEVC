@@ -61,13 +61,11 @@ static int pic_arrays_init(HEVCContext *s)
 
     s->pu.left_ipm = av_malloc(pic_height_in_min_pu);
     s->pu.top_ipm = av_malloc(pic_width_in_min_pu);
-    s->pu.tab_mvf = av_malloc(pic_width_in_min_pu*pic_height_in_min_pu*sizeof(MvField));
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         s->short_refs[i].tab_mvf = av_malloc(pic_width_in_min_pu*pic_height_in_min_pu*sizeof(MvField));
         if (!s->short_refs[i].tab_mvf)
             return AVERROR(ENOMEM);
-        memset(s->short_refs[i].tab_mvf, 0, sizeof(s->short_refs[i].tab_mvf));
     }
 
     s->horizontal_bs = (uint8_t*)av_malloc(2 * s->bs_width * s->bs_height);
@@ -75,7 +73,7 @@ static int pic_arrays_init(HEVCContext *s)
 
     if (!s->sao || !s->split_coding_unit_flag || !s->cu.skip_flag ||
         !s->cu.left_ct_depth || !s->cu.top_ct_depth ||
-        !s->pu.left_ipm || !s->pu.top_ipm || !s->pu.tab_mvf ||
+        !s->pu.left_ipm || !s->pu.top_ipm ||
         !s->horizontal_bs || !s->vertical_bs)
         return -1;
 
@@ -106,7 +104,6 @@ static void pic_arrays_free(HEVCContext *s)
 
     av_freep(&s->pu.left_ipm);
     av_freep(&s->pu.top_ipm);
-    av_freep(&s->pu.tab_mvf);
     av_freep(&s->horizontal_bs);
     av_freep(&s->vertical_bs);
 
@@ -484,7 +481,7 @@ static void deblocking_filter(HEVCContext *s)
     const int beta = betatable[idxb];
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
     int min_pu_size = 1 << (s->sps->log2_min_pu_size - 1);
-    MvField *tab_mvf = s->pu.tab_mvf;
+    MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
 
     // vertical filtering
     for (y = 0; y < s->sps->pic_height_in_luma_samples; y += 4) {
@@ -1036,7 +1033,7 @@ static void deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int lo
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
     int i, j;
     int bs;
-    MvField *tab_mvf = s->pu.tab_mvf;
+    MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
     if (y0 % 8 == 0)
         for (i = 0; i < (1<<log2_trafo_size); i+=4) {
             int x_pu = (x0 + i) / min_pu_size;
@@ -1094,6 +1091,7 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
                                int trafo_depth, int blk_idx)
 {
 
+    MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
     uint8_t split_transform_flag;
     if (trafo_depth > 0 && log2_trafo_size == 2) {
         SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) =
@@ -1184,7 +1182,6 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
                 for (j = 0; j < (1<<log2_trafo_size); j += min_pu_size) {
                     int x_pu = (x0 + j) / min_pu_size;
                     int y_pu = (y0 + i) / min_pu_size;
-                    MvField *tab_mvf = s->pu.tab_mvf;
                     tab_mvf[y_pu * pic_width_in_min_pu + x_pu].cbf_luma = 1;
                 }
         deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
@@ -1206,7 +1203,7 @@ static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     uint8_t *dst1 = &s->frame->data[1][(y0 >> s->sps->vshift[1]) * stride1 + (x0 >> s->sps->hshift[1])];
     int stride2 = s->frame->linesize[2];
     uint8_t *dst2 = &s->frame->data[2][(y0 >> s->sps->vshift[2]) * stride2 + (x0 >> s->sps->hshift[2])];
-    MvField *tab_mvf = s->pu.tab_mvf;
+    MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
 
     int length = cb_size * cb_size * 3 / 2 * s->sps->pcm.bit_depth;
     uint8_t *pcm = skip_bytes(&s->cc, length / 8);
@@ -1383,7 +1380,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     int i, j;
     int x_pu, y_pu;
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
-    MvField *tab_mvf = s->pu.tab_mvf;
+    MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
 
     int tmpstride = MAX_PB_SIZE;
 
@@ -1567,6 +1564,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int cand_left = x_pu > 0 ? s->pu.left_ipm[y_pu] : INTRA_DC ;
 
     int y_ctb = (y0 >> (s->sps->log2_ctb_size)) << (s->sps->log2_ctb_size);
+    MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
 
     // intra_pred_mode prediction does not cross vertical CTB boundaries
     if ((y0 - 1) < y_ctb)
@@ -1621,7 +1619,6 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     /* write the intra prediction units into the mv array */
     for(i = 0; i <size_in_pus; i++) {
         for(j = 0; j <size_in_pus; j++) {
-            MvField *tab_mvf = s->pu.tab_mvf;
             tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].is_intra = 1;
             tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].pred_flag[0] = 0;
             tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].pred_flag[1] = 0;
@@ -2022,19 +2019,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         memset(s->pu.left_ipm, INTRA_DC, pic_height_in_min_pu);
         memset(s->pu.top_ipm, INTRA_DC, pic_width_in_min_pu);
 
-        for( i =0; i < pic_width_in_min_pu * pic_height_in_min_pu ; i++ ) {
-            MvField *tab_mvf = s->pu.tab_mvf;
-            tab_mvf[i].ref_idx[0] =  -1;
-            tab_mvf[i].ref_idx[1] =  -1;
-            tab_mvf[i].mv[0].x = 0 ;
-            tab_mvf[i].mv[0].y = 0 ;
-            tab_mvf[i].mv[1].x = 0 ;
-            tab_mvf[i].mv[1].y = 0 ;
-            tab_mvf[i].pred_flag[0] = 0;
-            tab_mvf[i].pred_flag[1] = 0;
-            tab_mvf[i].is_intra =0;
-        }
-        // fall-through
     }
     case NAL_BLA_W_LP:
     case NAL_BLA_W_RADL:
@@ -2061,6 +2045,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             return -1;
 
         if(!s->sh.disable_deblocking_filter_flag) {
+            MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
             int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
             int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
             int i;
@@ -2068,7 +2053,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             memset(s->horizontal_bs, 0, 2 * s->bs_width * s->bs_height);
             memset(s->vertical_bs, 0, s->bs_width * 2 * s->bs_height);
             for(i = 0; i < pic_width_in_min_pu * pic_height_in_min_pu ; i++) {
-                MvField *tab_mvf = s->pu.tab_mvf;
                 //tab_mvf[i].is_intra = 0; //  Is this really required over here ????
                 tab_mvf[i].cbf_luma = 0;
                 tab_mvf[i].is_pcm = 0;

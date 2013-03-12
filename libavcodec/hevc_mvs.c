@@ -257,6 +257,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
 {
 
     RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
+    MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
     int available_a1_flag=0;
     int available_b1_flag=0;
     int available_b0_flag=0;
@@ -320,7 +321,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int refIdxL0Col = 0;
     int refIdxL1Col = 0;
     int availableFlagLXCol = 0;
-    MvField *tab_mvf = s->pu.tab_mvf;
 
 
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
@@ -688,8 +688,9 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nP
     tab_mvf[(y) * pic_width_in_min_pu + x]
 
 static av_always_inline void dist_scale(HEVCContext *s, Mv * mv, int pic_width_in_min_pu, int x_pu, int y_pu, int elist, int ref_idx_curr, int ref_idx) {
-    RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
-    MvField *tab_mvf = s->pu.tab_mvf;
+    int poc_idx = ff_hevc_find_next_ref(s, s->frame, s->poc);
+    RefPicList  *refPicList =  s->short_refs[poc_idx].refPicList;
+    MvField *tab_mvf = s->short_refs[poc_idx].tab_mvf;
     if((DiffPicOrderCnt(refPicList[elist].list[TAB_MVF(x_pu, y_pu).ref_idx[elist]], refPicList[ref_idx_curr].list[ref_idx]))!=0) {
         // *** Assuming there are no long term pictures in version 1 of the decoder and the pictures are short term pictures ***
         int td = av_clip_int8_c((DiffPicOrderCnt(s->poc,refPicList[elist].list[(TAB_MVF(x_pu, y_pu).ref_idx[elist])])));
@@ -704,7 +705,7 @@ static av_always_inline void dist_scale(HEVCContext *s, Mv * mv, int pic_width_i
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX)
 {
     RefPicList  *refPicList =  s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].refPicList;
-    MvField *tab_mvf = s->pu.tab_mvf;
+    MvField *tab_mvf = s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)].tab_mvf;
     int isScaledFlag_L0 = 0;
     int availableFlagLXA0 = 0;
     int availableFlagLXB0 = 0;

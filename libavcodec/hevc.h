@@ -613,7 +613,6 @@ typedef struct PredictionUnit {
     uint8_t *left_ipm;
 
     Mv mvd;
-    MvField *tab_mvf;
 } PredictionUnit;
 
 typedef struct TransformTree {
