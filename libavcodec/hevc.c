@@ -1445,6 +1445,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                         tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].mv[0].x  = current_mv.mv[0].x;
                         tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].mv[0].y  = current_mv.mv[0].y;
                         tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].pred_flag[0] = current_mv.pred_flag[0];
+                        tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].pred_flag[1] = 0;
                         tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].ref_idx[0]  = current_mv.ref_idx[0];
                     }
                 }
@@ -1478,6 +1479,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                         tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].mv[1].y  = current_mv.mv[1].y;
                         tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].pred_flag[1] = current_mv.pred_flag[1];
                         tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].ref_idx[1] = current_mv.ref_idx[1];
+                        if(!s->sh.slice_type == B_SLICE) {
+                        	tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i].pred_flag[0] = 0;
+                        }
                     }
                 }
             }
