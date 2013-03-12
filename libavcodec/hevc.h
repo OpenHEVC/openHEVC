@@ -722,6 +722,7 @@ typedef struct HEVCContext {
     TransformUnit tu;
     ResidualCoding rc;
     int poc;
+    int poc_idx;
 
     HEVCFrame short_refs[16];
     int decode_checksum_sei;
