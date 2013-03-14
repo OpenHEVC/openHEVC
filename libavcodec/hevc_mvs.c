@@ -84,10 +84,11 @@ static int check_prediction_block_available(HEVCContext *s, int log2_cb_size, in
 static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->pps->log2_parallel_merge_level;
-    if (((xN >> plevel) == (xP >> plevel)) && ((yN >> plevel) == (yP >> plevel))) {
-        return 1;
-    }
-    return 0;
+    if ((xN >> plevel) != (xP >> plevel))
+        return 0;
+    if ((yN >> plevel) != (yP >> plevel))
+        return 0;
+    return 1;
 }
 
 // check if the mv's and refidx are the same between A and B
@@ -274,13 +275,11 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     //first left spatial merge candidate
     int xA1 = x0 - 1;
     int yA1 = y0 + nPbH - 1;
-    int isAvailableA1 =0;
-    int check_A1 = check_prediction_block_available (s,log2_cb_size, x0, y0, nPbW, nPbH, xA1, yA1, part_idx);
+    int isAvailableA1 = x0 > 1;
     int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
     int check_MER = 1;
     int check_MER_1 =1;
 
-    int check_B1;
     int xB1, yB1;
     int is_available_b1;
     int xB1_pu;
@@ -298,7 +297,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int xA0_pu;
     int yA0_pu;
 
-    int check_B2;
     int xB2, yB2;
     int isAvailableB2;
     int xB2_pu;
@@ -326,7 +324,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
     int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
 
-    if((xA1_pu >= 0) && !(tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra) && check_A1) {
+    if(isAvailableA1 && !(tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra)) {
         isAvailableA1 = 1;
     } else {
         isAvailableA1 = 0;
@@ -362,9 +360,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     yB1_pu = yB1 >> s->sps->log2_min_pu_size;
 
     is_available_b1 = 0;
-    check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
 
-    if((yB1_pu >= 0) && !(tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].is_intra) && check_B1) {
+    if((yB1_pu >= 0) && !(tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu].is_intra)) {
         is_available_b1 = 1;
     } else {
         is_available_b1 = 0;
@@ -479,9 +476,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     xB2_pu = xB2 >> s->sps->log2_min_pu_size;
     yB2_pu = yB2 >> s->sps->log2_min_pu_size;
     isAvailableB2 = 0;
-    check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
-
-    if((xB2_pu >= 0) && (yB2_pu >= 0) && !(tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra) && check_B2) {
+    if((xB2_pu >= 0) && (yB2_pu >= 0) && !(tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra)) {
         isAvailableB2 = 1;
     } else {
         isAvailableB2 = 0;
@@ -565,7 +560,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         mergecandlist[mergearray_index] = spatialCMVS[4];
         mergearray_index++;
     }
-    if (availableFlagLXCol && (mergearray_index < MRG_MAX_NUM_CANDS)) {
+    if (availableFlagLXCol && (mergearray_index < s->sh.max_num_merge_cand)) {
         mergecandlist[mergearray_index] = TMVPCand;
         mergearray_index++;
     }
@@ -574,7 +569,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
 
     // combined bi-predictive merge candidates  (applies for B slices)
     if (s->sh.slice_type == B_SLICE) {
-        if((numOrigMergeCand > 1) && (numOrigMergeCand < MRG_MAX_NUM_CANDS)) {
+        if((numOrigMergeCand > 1) && (numOrigMergeCand < s->sh.max_num_merge_cand)) {
 
             numInputMergeCand = numMergeCand;
             combIdx           = 0;
@@ -602,7 +597,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
                         numMergeCand++;
                     }
                 combIdx++;
-                if((combIdx == numOrigMergeCand * (numOrigMergeCand-1)) || (numMergeCand == MRG_MAX_NUM_CANDS)) {
+                if((combIdx == numOrigMergeCand * (numOrigMergeCand-1)) || (numMergeCand == s->sh.max_num_merge_cand)) {
                     combStop = 1;
                     break;
                 }
@@ -620,7 +615,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
         numRefIdx = s->sh.num_ref_idx_l0_active > s->sh.num_ref_idx_l1_active ? s->sh.num_ref_idx_l1_active : s->sh.num_ref_idx_l0_active;
     }
     numInputMergeCand = numMergeCand;
-    while(numMergeCand < MRG_MAX_NUM_CANDS) {
+    while(numMergeCand < s->sh.max_num_merge_cand) {
         if(s->sh.slice_type == P_SLICE) {
             zerovector.ref_idx[0] = (zeroIdx < numRefIdx) ? zeroIdx : 0;
             zerovector.ref_idx[1] = -1;
@@ -731,7 +726,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
     int xB2_pu, yB2_pu;
     int isAvailableB2 = 0;
     Mv mvpcand_list[2] = { {0} };
-    int check_A0, check_A1, check_B0, check_B1, check_B2;
+    int check_A0, check_B0;
     Mv mxA = {0};
     Mv mxB = {0};
     Mv mvLXCol = {0};
@@ -762,22 +757,21 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
 
     isAvailableA0 = ((xA0_pu >= 0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && check_A0);
 
+
     //left spatial merge candidate
     xA1 = x0 - 1;
     yA1 = y0 + nPbH - 1;
     xA1_pu = xA1 >> s->sps->log2_min_pu_size;
     yA1_pu = yA1 >> s->sps->log2_min_pu_size;
     isAvailableA1 = 0;
-    check_A1 = check_prediction_block_available (s,log2_cb_size, x0, y0, nPbW, nPbH, xA1, yA1, part_idx);
 
-    isAvailableA1 = ((xA1_pu >= 0) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && check_A1);
-
+    isAvailableA1 = (xA1_pu >= 0) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra);
     if ((isAvailableA0) || (isAvailableA1)) {
         isScaledFlag_L0 = 1;
     }
 
     // XA0 and L1
-    if ((isAvailableA0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && (availableFlagLXA0 == 0)) {
+    if ((isAvailableA0) && (availableFlagLXA0 == 0)) {
         if ((TAB_MVF(xA0_pu, yA0_pu).pred_flag[pi_L0] == 1) &&
             (DiffPicOrderCnt(refPicList[pi_L0].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pi_L0])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXA0 = 1;
@@ -786,7 +780,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
     }
 
     // XA0 and L0
-    if ((isAvailableA0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && (availableFlagLXA0 == 0)) {
+    if ((isAvailableA0) && (availableFlagLXA0 == 0)) {
         if ((TAB_MVF(xA0_pu, yA0_pu).pred_flag[pi_L1] == 1) &&
             (DiffPicOrderCnt(refPicList[pi_L1].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pi_L1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXA0 = 1;
@@ -795,7 +789,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
     }
 
     //XA1 and L1
-    if ((isAvailableA1) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && (availableFlagLXA0 == 0)) {
+    if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
         if ((TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L0] == 1) &&
             (DiffPicOrderCnt(refPicList[pi_L0].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pi_L0])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXA0 = 1;
@@ -804,7 +798,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
     }
 
     //XA1 and L0
-    if ((isAvailableA1) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && (availableFlagLXA0 == 0)) {
+    if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
         if ((TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L1] == 1) &&
             (DiffPicOrderCnt(refPicList[pi_L1].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pi_L1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXA0 =1;
@@ -812,7 +806,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
         }
     }
 
-    if ((isAvailableA0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && (availableFlagLXA0 == 0)) {
+    if ((isAvailableA0) && (availableFlagLXA0 == 0)) {
         // XA0 and L1
         if (TAB_MVF(xA0_pu, yA0_pu).pred_flag[pi_L0] == 1) {
             availableFlagLXA0 = 1;
@@ -821,7 +815,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
         }
     }
 
-    if ((isAvailableA0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && (availableFlagLXA0 == 0)) {
+    if ((isAvailableA0) && (availableFlagLXA0 == 0)) {
         // XA0 and L0
         if (TAB_MVF(xA0_pu, yA0_pu).pred_flag[pi_L1] == 1) {
             availableFlagLXA0 = 1;
@@ -830,7 +824,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
         }
     }
 
-    if ((isAvailableA1) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && (availableFlagLXA0 == 0)) {
+    if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
         //XA1 and L1
         if (TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L0] == 1) {
             availableFlagLXA0 = 1;
@@ -839,7 +833,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
         }
     }
 
-    if ((isAvailableA1) && !(TAB_MVF(xA1_pu, yA1_pu).is_intra) && (availableFlagLXA0 == 0)) {
+    if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
         //XA1 and L0
         if (TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L1] == 1) {
             availableFlagLXA0 = 1;
@@ -857,7 +851,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
     isAvailableB0 = 0;
     check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
 
-    isAvailableB0 = ((yB0_pu >= 0) && !(TAB_MVF(xB0_pu, yB0_pu).is_intra) && check_B0);
+    isAvailableB0 = ((yB0_pu >= 0) && check_B0);
 
     // XB0 and L1
     if ((isAvailableB0) && !(TAB_MVF(xB0_pu, yB0_pu).is_intra) && (availableFlagLXB0 == 0)) {
@@ -883,9 +877,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
         yB1 = y0 - 1;
         xB1_pu = xB1 >> s->sps->log2_min_pu_size;
         yB1_pu = yB1 >> s->sps->log2_min_pu_size;
-        is_available_b1 = 0;
-        check_B1 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB1, yB1, part_idx);
-        is_available_b1 = ((yB1_pu >= 0) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && check_B1);
+
+        is_available_b1 = (yB1_pu >= 0);
 
         // XB1 and L1
         if ((is_available_b1) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && (availableFlagLXB0 == 0)) {
@@ -912,10 +905,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
         yB2 = y0 - 1;
         xB2_pu = xB2 >> s->sps->log2_min_pu_size;
         yB2_pu = yB2 >> s->sps->log2_min_pu_size;
-        isAvailableB2 = 0;
-        check_B2 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB2, yB2, part_idx);
-
-        isAvailableB2 = ((xB2_pu >= 0) && (yB2_pu >= 0) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && check_B2);
+        isAvailableB2 = ((xB2_pu >= 0) && (yB2_pu >= 0));
 
         // XB2 and L1
         if ((isAvailableB2) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && (availableFlagLXB0 == 0)) {
