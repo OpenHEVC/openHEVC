@@ -38,7 +38,6 @@ static char *rcsid = "$Id: getopt.c,v 1.2 1998/01/21 22:27:05 billm Exp $";
 
 #include "getopt.h"
 
-
 int	opterr = 1,		/* if error message should be printed */
 	optind = 1,		/* index into parent argv vector */
 	optopt,			/* character checked for validity */
@@ -50,7 +49,8 @@ static char *program;
 
 void print_usage() {
 	printf(usage, program);
-	printf("     -n : no display\n");
+    printf("     -n : no display\n");
+    printf("     -c : no check md5\n");
 }
 
 /*
@@ -122,9 +122,10 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
 	// every command line option must be followed by ':' if it takes an
 	// argument, and '::' if this argument is optional
-	const char *ostr = "i:nh";
+	const char *ostr = "i:nch";
 	int c;
-	display_flags = DISPLAY_ENABLE;
+	display_flags   = DISPLAY_ENABLE;
+    check_md5_flags = MD5_ENABLE;
 	program = argv[0];
 	c = getopt(argc, argv, ostr);
 	while (c != -1) {
@@ -135,6 +136,9 @@ void init_main(int argc, char *argv[]) {
 		case 'n':
 			display_flags = DISPLAY_DISABLE;
 			break;
+        case 'c':
+            check_md5_flags = MD5_DISABLE;
+            break;
 		default:
 			print_usage();
 			exit(1);

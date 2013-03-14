@@ -41,12 +41,15 @@
 #define DISPLAY_DISABLE 0
 #define DISPLAY_ENABLE  1
 
+#define MD5_DISABLE 0
+#define MD5_ENABLE  1
+
 // input file
 char *input_file;
 
 // deactivate display
 char display_flags;
-
+int check_md5_flags;
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);

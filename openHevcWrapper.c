@@ -1,5 +1,7 @@
+#include <stdio.h>
 #include "openHevcWrapper.h"
 #include "avcodec.h"
+#include "libavcodec/hevc.h"
 
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
@@ -105,6 +107,12 @@ int libOpenHevcGetOuptutCpy(int got_picture, unsigned char *Y, unsigned char *U,
     return 1;
 }
 
+void libOpenHevcSetCheckMD5(int val)
+{
+    HEVCContext *s;
+    s = openHevcContext.c->priv_data;
+    s->decode_checksum_sei = val;
+}
 void libOpenHevcClose()
 {
     avcodec_close(openHevcContext.c);

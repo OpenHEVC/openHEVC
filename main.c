@@ -60,6 +60,7 @@ static void video_decode_example(const char *filename)
     unsigned char * buf, *Y, *U, *V;
     
     libOpenHevcInit();
+    libOpenHevcSetCheckMD5(check_md5_flags);
     f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
