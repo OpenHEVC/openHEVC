@@ -13,17 +13,11 @@
 
 int find_start_code (unsigned char *Buf, int zeros_in_startcode)
 {
-    int info;
     int i;
-    
-    info = 1;
     for (i = 0; i < zeros_in_startcode; i++)
         if(Buf[i] != 0)
-            info = 0;
-    
-    if(Buf[i] != 1)
-        info = 0;
-    return info;
+            return 0;
+    return Buf[i];
 }
 
 int get_next_nal(FILE* inpf, unsigned char* Buf)
