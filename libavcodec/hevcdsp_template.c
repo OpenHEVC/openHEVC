@@ -95,25 +95,6 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stri
     int size = 4;
     int shift = 13 - BIT_DEPTH;
     int offset = 1 << (shift - 1);
-#ifdef OPTIMIZATION_ENABLE
-    int y;
-    int y_size = 0;
-    for (y = 0; y < size; y++) {
-#if BIT_DEPTH <= 13
-        dst[0] = av_clip_pixel(dst[0] + ((coeffs[y_size + 0] + offset) >> shift));
-        dst[1] = av_clip_pixel(dst[1] + ((coeffs[y_size + 1] + offset) >> shift));
-        dst[2] = av_clip_pixel(dst[2] + ((coeffs[y_size + 2] + offset) >> shift));
-        dst[3] = av_clip_pixel(dst[3] + ((coeffs[y_size + 3] + offset) >> shift));
-#else
-        dst[0] = av_clip_pixel(dst[0] + (coeffs[y_size + 0] << (-shift)));
-        dst[1] = av_clip_pixel(dst[1] + (coeffs[y_size + 1] << (-shift)));
-        dst[2] = av_clip_pixel(dst[2] + (coeffs[y_size + 2] << (-shift)));
-        dst[3] = av_clip_pixel(dst[3] + (coeffs[y_size + 3] << (-shift)));
-#endif
-        y_size += size;
-        dst += stride;
-    }
-#else
     int x, y;
     for (y = 0; y < size; y++) {
         for (x = 0; x < size; x++)
@@ -124,7 +105,6 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stri
 #endif
         dst += stride;
     }
-#endif
 }
 
 #define SET(dst, x) (dst) = (x)
@@ -552,161 +532,6 @@ static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
     }
 }
 
-#ifdef OPTIMIZATION_ENABLE
-
-#define QPEL_FILTER_H1(minus3, minus2, minus1, zero, plus1, plus2, plus3, plus4)  \
-        (-minus3 + 4*minus2 - 10*minus1 + 58*zero + 17*plus1 - 5*plus2 + plus3)
-#define QPEL_FILTER_H2(minus3, minus2, minus1, zero, plus1, plus2, plus3, plus4)  \
-        (-minus3 + 4*(minus2 + plus3) - 11*(minus1 + plus2) + 40*(zero + plus1) - plus4)
-#define QPEL_FILTER_H3(minus3, minus2, minus1, zero, plus1, plus2, plus3, plus4)  \
-        (minus2 - 5*minus1 + 17*zero + 58*plus1 - 10*plus2 + 4*plus3 - plus4)
-#define QPEL_FILTER_V1(src, stride, stride_2, stride_3, stride_4)          \
-    (-src[x2-stride_3] + 4*src[x2-stride_2] - 10*src[x2-stride] + 58*src[x2] + \
-     17*src[x2+stride] - 5*src[x2+stride_2] + 1*src[x2+stride_3])
-#define QPEL_FILTER_V2(src, stride, stride_2, stride_3, stride_4)          \
-    (-src[x2-stride_3] + 4*(src[x2-stride_2]+src[x2+stride_3]) - 11*(src[x2-stride]+src[x2+stride_2]) \
-     + 40*(src[x2]+src[x2+stride]) - src[x2+stride_4])
-#define QPEL_FILTER_V3(src, stride, stride_2, stride_3, stride_4)          \
-    (src[x2-stride_2] - 5*src[x2-stride] + 17*src[x2] + 58*src[x2+stride]          \
-     - 10*src[x2+stride_2] + 4*src[x2+stride_3] - src[x2+stride_4])
-
-#define PUT_HEVC_QPEL_H(H)                                                      \
-static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
-                                          uint8_t *_src, ptrdiff_t _srcstride,  \
-                                          int width, int height)                \
-{                                                                               \
-    int x, y;                                                                   \
-    pixel *src = (pixel*)_src;                                                  \
-    ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
-                                                                                \
-    for (y = 0; y < height; y++) {                                              \
-        int src_minus3 = src[-3];                                               \
-        int src_minus2 = src[-2];                                               \
-        int src_minus1 = src[-1];                                               \
-        int src_0      = src[0];                                                \
-        int src_plus1  = src[1];                                                \
-        int src_plus2  = src[2];                                                \
-        int src_plus3  = src[3];                                                \
-        int src_plus4;                                                          \
-        int src_plus5;                                                          \
-        int src_plus6;                                                          \
-        int src_plus7;                                                          \
-        for (x = 0; x < width; x+=4)  {                                         \
-            src_plus4  = src[x+4];                                              \
-            src_plus5  = src[x+5];                                              \
-            src_plus6  = src[x+6];                                              \
-            src_plus7  = src[x+7];                                              \
-            dst[x  ]   = QPEL_FILTER_H ## H (src_minus3, src_minus2, src_minus1, src_0    , src_plus1, src_plus2, src_plus3, src_plus4) >> (BIT_DEPTH - 8); \
-            dst[x+1]   = QPEL_FILTER_H ## H (src_minus2, src_minus1, src_0     , src_plus1, src_plus2, src_plus3, src_plus4, src_plus5) >> (BIT_DEPTH - 8); \
-            dst[x+2]   = QPEL_FILTER_H ## H (src_minus1, src_0     , src_plus1 , src_plus2, src_plus3, src_plus4, src_plus5, src_plus6) >> (BIT_DEPTH - 8); \
-            dst[x+3]   = QPEL_FILTER_H ## H (src_0     , src_plus1 , src_plus2 , src_plus3, src_plus4, src_plus5, src_plus6, src_plus7) >> (BIT_DEPTH - 8); \
-            src_minus3 = src_plus1;                                             \
-            src_minus2 = src_plus2;                                             \
-            src_minus1 = src_plus3;                                             \
-            src_0      = src_plus4;                                             \
-            src_plus1  = src_plus5;                                             \
-            src_plus2  = src_plus6;                                             \
-            src_plus3  = src_plus7;                                             \
-        }                                                                       \
-        src += srcstride;                                                       \
-        dst += dststride;                                                       \
-    }                                                                           \
-}
-#define PUT_HEVC_QPEL_V(V)                                                      \
-static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst, ptrdiff_t dststride,       \
-                                          uint8_t *_src, ptrdiff_t _srcstride,  \
-                                          int width, int height)                \
-{                                                                               \
-    int x, x2, y;                                                               \
-    pixel *src = (pixel*)_src;                                                  \
-    ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
-    int srcstride_2 = srcstride << 1;                                           \
-    int srcstride_3 = srcstride_2 + srcstride;                                  \
-    int srcstride_4 = srcstride << 2;                                           \
-    for (y = 0; y < height; y++)  {                                             \
-        for (x = 0; x < width; x+=4) {                                          \
-            x2      = x;                                                        \
-            dst[x2] = QPEL_FILTER_V ## V (src, srcstride, srcstride_2, srcstride_3, srcstride_4) >> (BIT_DEPTH - 8); \
-            x2++;                                                               \
-            dst[x2] = QPEL_FILTER_V ## V (src, srcstride, srcstride_2, srcstride_3, srcstride_4) >> (BIT_DEPTH - 8); \
-            x2++;                                                               \
-            dst[x2] = QPEL_FILTER_V ## V (src, srcstride, srcstride_2, srcstride_3, srcstride_4) >> (BIT_DEPTH - 8); \
-            x2++;                                                               \
-            dst[x2] = QPEL_FILTER_V ## V (src, srcstride, srcstride_2, srcstride_3, srcstride_4) >> (BIT_DEPTH - 8); \
-        }                                                                       \
-        src += srcstride;                                                       \
-        dst += dststride;                                                       \
-    }                                                                           \
-}
-#define PUT_HEVC_QPEL_HV(H, V)                                                  \
-static void FUNC(put_hevc_qpel_h ## H ## v ## V )(int16_t *dst, ptrdiff_t dststride,   \
-                                                  uint8_t *_src, ptrdiff_t _srcstride, \
-                                                  int width, int height)        \
-{                                                                               \
-    int x, x2, y;                                                               \
-    pixel *src = (pixel*)_src;                                                  \
-    ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
-                                                                                \
-    int tmpstride = MAX_PB_SIZE;                                                \
-    int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];                             \
-    int16_t *tmp = tmp_array;                                                   \
-    int tmpstride_2 = tmpstride << 1;                                           \
-    int tmpstride_3 = tmpstride_2 + tmpstride;                                  \
-    int tmpstride_4 = tmpstride << 2;                                           \
-                                                                                \
-    src -= qpel_extra_before[V] * srcstride;                                    \
-                                                                                \
-    for (y = 0; y < height + qpel_extra[V]; y++) {                              \
-        int src_minus3 = src[-3];                                               \
-        int src_minus2 = src[-2];                                               \
-        int src_minus1 = src[-1];                                               \
-        int src_0      = src[0];                                                \
-        int src_plus1  = src[1];                                                \
-        int src_plus2  = src[2];                                                \
-        int src_plus3  = src[3];                                                \
-        int src_plus4;                                                          \
-        int src_plus5;                                                          \
-        int src_plus6;                                                          \
-        int src_plus7;                                                          \
-        for (x = 0; x < width; x+=4)  {                                         \
-            src_plus4  = src[x+4];                                              \
-            src_plus5  = src[x+5];                                              \
-            src_plus6  = src[x+6];                                              \
-            src_plus7  = src[x+7];                                              \
-            tmp[x  ]   = QPEL_FILTER_H ## H (src_minus3, src_minus2, src_minus1, src_0    , src_plus1, src_plus2, src_plus3, src_plus4) >> (BIT_DEPTH - 8); \
-            tmp[x+1]   = QPEL_FILTER_H ## H (src_minus2, src_minus1, src_0     , src_plus1, src_plus2, src_plus3, src_plus4, src_plus5) >> (BIT_DEPTH - 8); \
-            tmp[x+2]   = QPEL_FILTER_H ## H (src_minus1, src_0     , src_plus1 , src_plus2, src_plus3, src_plus4, src_plus5, src_plus6) >> (BIT_DEPTH - 8); \
-            tmp[x+3]   = QPEL_FILTER_H ## H (src_0     , src_plus1 , src_plus2 , src_plus3, src_plus4, src_plus5, src_plus6, src_plus7) >> (BIT_DEPTH - 8); \
-            src_minus3 = src_plus1;                                             \
-            src_minus2 = src_plus2;                                             \
-            src_minus1 = src_plus3;                                             \
-            src_0      = src_plus4;                                             \
-            src_plus1  = src_plus5;                                             \
-            src_plus2  = src_plus6;                                             \
-            src_plus3  = src_plus7;                                             \
-        }                                                                       \
-        src += srcstride;                                                       \
-        tmp += tmpstride;                                                       \
-    }                                                                           \
-                                                                                \
-    tmp = tmp_array + qpel_extra_before[V] * tmpstride;                         \
-    for (y = 0; y < height; y++)  {                                             \
-        for (x = 0; x < width; x+=4) {                                          \
-            x2      = x;                                                        \
-            dst[x2] = QPEL_FILTER_V ## V (tmp, tmpstride, tmpstride_2, tmpstride_3, tmpstride_4) >> 6; \
-            x2++;                                                               \
-            dst[x2] = QPEL_FILTER_V ## V (tmp, tmpstride, tmpstride_2, tmpstride_3, tmpstride_4) >> 6; \
-            x2++;                                                               \
-            dst[x2] = QPEL_FILTER_V ## V (tmp, tmpstride, tmpstride_2, tmpstride_3, tmpstride_4) >> 6; \
-            x2++;                                                               \
-            dst[x2] = QPEL_FILTER_V ## V (tmp, tmpstride, tmpstride_2, tmpstride_3, tmpstride_4) >> 6; \
-        }                                                                       \
-        tmp += tmpstride;                                                       \
-        dst += dststride;                                                       \
-    }                                                                           \
-}
-#else
-
 #define QPEL_FILTER_1(src, stride)                                              \
     (-src[x-3*stride] + 4*src[x-2*stride] - 10*src[x-stride] + 58*src[x] +      \
      17*src[x+stride] - 5*src[x+2*stride] + 1*src[x+3*stride])
@@ -780,7 +605,6 @@ static void FUNC(put_hevc_qpel_h ## H ## v ## V )(int16_t *dst, ptrdiff_t dststr
         dst += dststride;                                                                 \
     }                                                                                     \
 }
-#endif
 
 PUT_HEVC_QPEL_H(1)
 PUT_HEVC_QPEL_H(2)
@@ -1048,24 +872,10 @@ static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
     int offset = 0;
 #endif
     for (y = 0; y < height; y++) {
-#ifdef OPTIMIZATION_ENABLE
-        int x2;
-        for (x = 0; x < width; x+=4) {
-            x2      = x;
-            dst[x2] = av_clip_pixel((src1[x2] + src2[x2] + offset) >> shift);
-            x2++;
-            dst[x2] = av_clip_pixel((src1[x2] + src2[x2] + offset) >> shift);
-            x2++;
-            dst[x2] = av_clip_pixel((src1[x2] + src2[x2] + offset) >> shift);
-            x2++;
-            dst[x2] = av_clip_pixel((src1[x2] + src2[x2] + offset) >> shift);
-        }
-#else
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
 //            printf("%d\n", dst[x]);
         }
-#endif
         dst  += dststride;
         src1 += srcstride;
         src2 += srcstride;
