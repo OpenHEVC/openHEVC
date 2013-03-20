@@ -928,39 +928,11 @@ static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
     #else
     int offset = 0;
     #endif
-    switch (width){
-        case 32:
-            for (y = 0; y < height; y++) {
-                for (x = 0; x < 32; x++)
-                    dst[x] = av_clip_pixel((src[x] + offset) >> shift);
-                dst += dststride;
-                src += srcstride;
-            }
-            break;
-        case 16:
-            for (y = 0; y < height; y++) {
-                for (x = 0; x < 16; x++)
-                    dst[x] = av_clip_pixel((src[x] + offset) >> shift);
-                dst += dststride;
-                src += srcstride;
-            }
-            break;
-        case 8:
-            for (y = 0; y < height; y++) {
-                for (x = 0; x < 8; x++)
-                    dst[x] = av_clip_pixel((src[x] + offset) >> shift);
-                dst += dststride;
-                src += srcstride;
-            }
-            break;
-        case 4:
-            for (y = 0; y < height; y++) {
-                for (x = 0; x < 4; x++)
-                    dst[x] = av_clip_pixel((src[x] + offset) >> shift);
-                dst += dststride;
-                src += srcstride;
-            }
-            break;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++)
+            dst[x] = av_clip_pixel((src[x] + offset) >> shift);
+        dst += dststride;
+        src += srcstride;
     }
 }
 
@@ -978,43 +950,12 @@ static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
 #else
     int offset = 0;
 #endif
-    switch (width){
-        case 32:
-            for (y = 0; y < height; y++) {
-                for (x = 0; x < 32; x++)
-                    dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-                dst  += dststride;
-                src1 += srcstride;
-                src2 += srcstride;
-            }
-            break;
-        case 16:
-            for (y = 0; y < height; y++) {
-                for (x = 0; x < 16; x++)
-                    dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-                dst  += dststride;
-                src1 += srcstride;
-                src2 += srcstride;
-            }
-            break;
-        case 8:
-            for (y = 0; y < height; y++) {
-                for (x = 0; x < 8; x++)
-                    dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-                dst  += dststride;
-                src1 += srcstride;
-                src2 += srcstride;
-            }
-            break;
-        case 4:
-            for (y = 0; y < height; y++) {
-                for (x = 0; x < 4; x++)
-                    dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-                dst  += dststride;
-                src1 += srcstride;
-                src2 += srcstride;
-            }
-            break;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++)
+            dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
+        dst  += dststride;
+        src1 += srcstride;
+        src2 += srcstride;
     }
 }
 
