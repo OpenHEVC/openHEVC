@@ -1112,8 +1112,6 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
                                int xBase, int yBase, int log2_cb_size, int log2_trafo_size,
                                int trafo_depth, int blk_idx)
 {
-
-    MvField *tab_mvf = s->ref->tab_mvf;
     uint8_t split_transform_flag;
     if (trafo_depth > 0 && log2_trafo_size == 2) {
         SAMPLE_CBF(s->tt.cbf_cb[trafo_depth], x0, y0) =
@@ -1225,7 +1223,6 @@ static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     uint8_t *dst1 = &s->frame->data[1][(y0 >> s->sps->vshift[1]) * stride1 + (x0 >> s->sps->hshift[1])];
     int stride2 = s->frame->linesize[2];
     uint8_t *dst2 = &s->frame->data[2][(y0 >> s->sps->vshift[2]) * stride2 + (x0 >> s->sps->hshift[2])];
-    MvField *tab_mvf = s->ref->tab_mvf;
 
     int length = cb_size * cb_size * 3 / 2 * s->sps->pcm.bit_depth;
     uint8_t *pcm = skip_bytes(&s->cc, length / 8);

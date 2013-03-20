@@ -105,7 +105,6 @@ typedef int x86_reg;
 #    define LOCAL_MANGLE(a) #a
 #endif
 
-//#define MANGLE(a) EXTERN_PREFIX LOCAL_MANGLE(a)
-#define MANGLE(a) LOCAL_MANGLE(a)
+#define MANGLE(a) EXTERN_PREFIX LOCAL_MANGLE(a)
 
 #endif /* AVUTIL_X86_ASM_H */
