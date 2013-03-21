@@ -27,7 +27,7 @@
 #include "hevcdata.h"
 #include "hevcdsp.h"
 
-//#define OPTIMIZATION_ENABLE
+#define OPTIMIZATION_ENABLE
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
                           GetBitContext *gb, int pcm_bit_depth)
@@ -52,42 +52,51 @@ static void FUNC(dequant)(int16_t *coeffs, int log2_size, int qp)
 
     //TODO: scaling_list_enabled_flag support
 
-    int m = 16;
     int shift  = BIT_DEPTH + log2_size - 5;
     int scale  = level_scale[qp % 6] << (qp / 6);
     int offset = 1 << (shift - 1);
     int scale2 = scale << 4;
-    int y_size = 0;
+#define FILTER()                                                                   \
+        coeffs[y+x] = av_clip_int16_c(((coeffs[y+x] * scale2) + offset) >> shift); \
+        x++;                                                                       \
+        coeffs[y+x] = av_clip_int16_c(((coeffs[y+x] * scale2) + offset) >> shift); \
+        x++;                                                                       \
+        coeffs[y+x] = av_clip_int16_c(((coeffs[y+x] * scale2) + offset) >> shift); \
+        x++;                                                                       \
+        coeffs[y+x] = av_clip_int16_c(((coeffs[y+x] * scale2) + offset) >> shift)
+
     switch (size){
         case 32:
-            for (y = 0; y < 32; y++) {
-                for (x = 0; x < 32; x++)
-                    coeffs[y_size+x] = av_clip_int16_c(((coeffs[y_size+x] * scale2) + offset) >> shift);
-                y_size += 32;
+            for (y = 0; y < 32*32; y+=32) {
+                for (x = 0; x < 32; x++) {
+                    FILTER();
+                }
             }
             break;
         case 16:
-            for (y = 0; y < 16; y++) {
-                for (x = 0; x < 16; x++)
-                    coeffs[y_size+x] = av_clip_int16_c(((coeffs[y_size+x] * scale2) + offset) >> shift);
-                y_size += 16;
+            for (y = 0; y < 16*16; y+=16) {
+                for (x = 0; x < 16; x++) {
+                    FILTER();
+                }
             }
             break;
         case 8:
-            for (y = 0; y < 8; y++) {
-                for (x = 0; x < 8; x++)
-                    coeffs[y_size+x] = av_clip_int16_c(((coeffs[y_size+x] * scale2) + offset) >> shift);
-                y_size += 8;
+            for (y = 0; y < 8*8; y+=8) {
+                for (x = 0; x < 8; x++) {
+                    FILTER();
+                }
             }
             break;
         case 4:
-            for (y = 0; y < 4; y++) {
-                for (x = 0; x < 4; x++)
-                    coeffs[y_size+x] = av_clip_int16_c(((coeffs[y_size+x] * scale2) + offset) >> shift);
-                y_size += 4;
+            for (y = 0; y < 4*4; y+=4) {
+                coeffs[y+0] = av_clip_int16_c(((coeffs[y+0] * scale2) + offset) >> shift);
+                coeffs[y+1] = av_clip_int16_c(((coeffs[y+1] * scale2) + offset) >> shift);
+                coeffs[y+2] = av_clip_int16_c(((coeffs[y+2] * scale2) + offset) >> shift);
+                coeffs[y+3] = av_clip_int16_c(((coeffs[y+3] * scale2) + offset) >> shift);
             }
             break;
     }
+#undef FILTER
 }
 
 static void FUNC(transquant_bypass)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int log2_size)
@@ -144,55 +153,47 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stri
     ptrdiff_t stride = _stride / sizeof(pixel);
     int size = 4;
     int shift = 13 - BIT_DEPTH;
+#if BIT_DEPTH <= 13
     int offset = 1 << (shift - 1);
+#else
+    int offset = 0;
+#endif
     int x, y;
     switch (size){
         case 32:
-            for (y = 0; y < 32; y++) {
-                for (x = 0; x < 32; x++)
-#if BIT_DEPTH <= 13
-                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y * 32 + x] + offset) >> shift));
-#else
-                dst[x] = av_clip_pixel(dst[x] + (coeffs[y * 32 + x] << (-shift)));
-#endif
+            for (y = 0; y < 32*32; y+=32) {
+                for (x = 0; x < 32; x++) {
+                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
+                }
                 dst += stride;
             }
             break;
         case 16:
-            for (y = 0; y < 16; y++) {
-                for (x = 0; x < 16; x++)
-#if BIT_DEPTH <= 13
-                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y * 16 + x] + offset) >> shift));
-#else
-                dst[x] = av_clip_pixel(dst[x] + (coeffs[y * 16 + x] << (-shift)));
-#endif
+            for (y = 0; y < 16*16; y+=16) {
+                for (x = 0; x < 16; x++) {
+                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
+                }
                 dst += stride;
             }
             break;
         case 8:
-            for (y = 0; y < 8; y++) {
-                for (x = 0; x < 8; x++)
-#if BIT_DEPTH <= 13
-                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y * 8 + x] + offset) >> shift));
-#else
-                dst[x] = av_clip_pixel(dst[x] + (coeffs[y * 8 + x] << (-shift)));
-#endif
+            for (y = 0; y < 8*8; y+=8) {
+                for (x = 0; x < 8; x++) {
+                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
+                }
                 dst += stride;
             }
             break;
         case 4:
-            for (y = 0; y < 4; y++) {
-                for (x = 0; x < 4; x++)
-#if BIT_DEPTH <= 13
-                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y * 4 + x] + offset) >> shift));
-#else
-                dst[x] = av_clip_pixel(dst[x] + (coeffs[y * 4 + x] << (-shift)));
-#endif
+            for (y = 0; y < 4*4; y+=4) {
+                for (x = 0; x < 4; x++) {
+                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
+                }
                 dst += stride;
             }
             break;
     }
-
+#undef FILTER
 }
 
 #define SET(dst, x) (dst) = (x)
@@ -448,6 +449,7 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _strid
     int init_x = 0, init_y = 0;
     int border_edge_idx = 0;
 
+#ifndef OPTIMIZATION_ENABLE
 #define DST(x, y) dst[(x) + stride * (y)]
 #define SRC(x, y) src[(x) + stride * (y)]
 
@@ -456,42 +458,97 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _strid
 
 #define DIFF(x, y, k) CMP(SRC(x, y), SRC((x) + pos[sao_eo_class][(k)][0],       \
                                          (y) + pos[sao_eo_class][(k)][1]))
+#endif
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
 
     if (sao_eo_class != SAO_EO_VERT) {
         if (at_left_border) {
+#ifdef OPTIMIZATION_ENABLE
+            int offset_val = sao_offset_val[0];
+            int y_stride   = 0;
             for (y = 0; y < height; y++) {
-                FILTER(0, y, border_edge_idx);
+                dst[y_stride] = av_clip_pixel(src[y_stride] + offset_val);
+                y_stride += stride;
             }
+#else
+            for (y = 0; y < height; y++)
+                FILTER(0, y, border_edge_idx);
+#endif
             init_x = 1;
         }
         if (at_right_border) {
+#ifdef OPTIMIZATION_ENABLE
+            int offset_val = sao_offset_val[0];
+            int x_stride   = width - 1;
+            for (x = 0; x < height; x++) {
+                dst[x_stride] = av_clip_pixel(src[x_stride] + offset_val);
+                x_stride += stride;
+            }
+#else
             for (x = 0; x < height; x++)
                 FILTER(width - 1, x, border_edge_idx);
+#endif
             width--;
         }
     }
     if (sao_eo_class != SAO_EO_HORIZ) {
         if (at_top_border) {
+#ifdef OPTIMIZATION_ENABLE
+            int offset_val = sao_offset_val[0];
+            for (x = init_x; x < width; x++) {
+                dst[x] = av_clip_pixel(src[x] + offset_val);
+            }
+#else
             for (x = init_x; x < width; x++)
                 FILTER(x, 0, border_edge_idx);
+#endif
             init_y = 1;
         }
         if (at_bottom_border) {
+#ifdef OPTIMIZATION_ENABLE
+            int offset_val = sao_offset_val[0];
+            int y_stride   = stride * (height - 1);
+            for (x = init_x; x < width; x++) {
+                dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + offset_val);
+            }
+#else
             for (x = init_x; x < width; x++)
                 FILTER(x, height - 1, border_edge_idx);
+#endif
             height--;
         }
     }
     for (y = init_y; y < height; y++) {
-        for (x = init_x; x < width; x++) {
-            FILTER(x, y, edge_idx[2 + DIFF(x, y, 0) + DIFF(x, y, 1)]);
+#ifdef OPTIMIZATION_ENABLE
+        int y_stride     = init_y * stride;
+        int pos_0_0      = pos[sao_eo_class][0][0];
+        int pos_0_1      = pos[sao_eo_class][0][1];
+        int pos_1_0      = pos[sao_eo_class][1][0];
+        int pos_1_1      = pos[sao_eo_class][1][1];
+        int y_stride_0_1 = (init_y + pos_0_1) * stride;
+        int y_stride_1_1 = (init_y + pos_1_1) * stride;
+        for (y = init_y; y < height; y++) {
+            for (x = init_x; x < width; x++) {
+                int diff0         = CMP(src[x + y_stride], src[x + pos_0_0 + y_stride_0_1]);
+                int diff1         = CMP(src[x + y_stride], src[x + pos_1_0 + y_stride_1_1]);
+                int offset_val    = edge_idx[2 + diff0 + diff1];
+                dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + sao_offset_val[offset_val]);
+            }
+            y_stride     += stride;
+            y_stride_0_1 += stride;
+            y_stride_1_1 += stride;
         }
+#else
+        for (x = init_x; x < width; x++)
+            FILTER(x, y, edge_idx[2 + DIFF(x, y, 0) + DIFF(x, y, 1)]);
+#endif
     }
+#ifndef OPTIMIZATION_ENABLE
 #undef DST
 #undef SRC
 #undef FILTER
 #undef DIFF
+#endif
 #undef CMP
 }
 
@@ -554,14 +611,14 @@ static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       
     ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
                                                                                 \
     for (y = 0; y < height; y++) {                                              \
-        for (x = 0; x < width; x++) {                                            \
+        for (x = 0; x < width; x++) {                                           \
             dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
-            x++;                                                                \
-            dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
-            x++;                                                                \
-            dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
-            x++;                                                                \
-            dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
+            /*x++;                                                           */ \
+            /*dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);        */ \
+            /*x++;                                                           */ \
+            /*dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);        */ \
+            /*x++;                                                           */ \
+            /*dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);        */ \
         }                                                                       \
         src += srcstride;                                                       \
         dst += dststride;                                                       \
@@ -577,14 +634,14 @@ static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst, ptrdiff_t dststride,       
     ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
                                                                                 \
     for (y = 0; y < height; y++)  {                                             \
-        for (x = 0; x < width; x++) {                                            \
+        for (x = 0; x < width; x++) {                                           \
             dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
-            x++;                                                                \
-            dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
-            x++;                                                                \
-            dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
-            x++;                                                                \
-            dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
+            /*x++;                                                           */ \
+            /*dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);*/ \
+            /*x++;                                                           */ \
+            /*dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);*/ \
+            /*x++;                                                           */ \
+            /*dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);*/ \
         }                                                                       \
         src += srcstride;                                                       \
         dst += dststride;                                                       \
@@ -599,39 +656,38 @@ static void FUNC(put_hevc_qpel_h ## H ## v ## V )(int16_t *dst, ptrdiff_t dststr
     pixel *src = (pixel*)_src;                                                            \
     ptrdiff_t srcstride = _srcstride/sizeof(pixel);                                       \
                                                                                           \
-    int tmpstride = MAX_PB_SIZE;                                                          \
     int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];                                       \
     int16_t *tmp = tmp_array;                                                             \
                                                                                           \
     src -= qpel_extra_before[V] * srcstride;                                              \
                                                                                           \
     for (y = 0; y < height + qpel_extra[V]; y++) {                                        \
-        for (x = 0; x < width; x++) {                                                      \
+        for (x = 0; x < width; x++) {                                                     \
             tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
-            x++;                                                                          \
-            tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
-            x++;                                                                          \
-            tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
-            x++;                                                                          \
-            tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
+            /*x++;                                                                     */ \
+            /*tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                  */ \
+            /*x++;                                                                     */ \
+            /*tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                  */ \
+            /*x++;                                                                     */ \
+            /*tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                  */ \
         }                                                                                 \
         src += srcstride;                                                                 \
-        tmp += tmpstride;                                                                 \
+        tmp += MAX_PB_SIZE;                                                               \
     }                                                                                     \
                                                                                           \
-    tmp = tmp_array + qpel_extra_before[V] * tmpstride;                                   \
+    tmp = tmp_array + qpel_extra_before[V] * MAX_PB_SIZE;                                 \
                                                                                           \
     for (y = 0; y < height; y++) {                                                        \
-        for (x = 0; x < width; x++) {                                                      \
-            dst[x] = QPEL_FILTER_ ## V (tmp, tmpstride) >> 6;                             \
-            x++;                                                                          \
-            dst[x] = QPEL_FILTER_ ## V (tmp, tmpstride) >> 6;                             \
-            x++;                                                                          \
-            dst[x] = QPEL_FILTER_ ## V (tmp, tmpstride) >> 6;                             \
-            x++;                                                                          \
-            dst[x] = QPEL_FILTER_ ## V (tmp, tmpstride) >> 6;                             \
+        for (x = 0; x < width; x++) {                                                     \
+            dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                           \
+            /*x++;                                                                     */ \
+            /*dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                      */ \
+            /*x++;                                                                     */ \
+            /*dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                      */ \
+            /*x++;                                                                     */ \
+            /*dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                      */ \
         }                                                                                 \
-        tmp += tmpstride;                                                                 \
+        tmp += MAX_PB_SIZE;                                                               \
         dst += dststride;                                                                 \
     }                                                                                     \
 }
@@ -671,8 +727,13 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
     }
 }
 
+#ifdef OPTIMIZATION_ENABLE
+#define EPEL_FILTER(src, stride) \
+    (filter_0*src[x-stride] + filter_1*src[x] + filter_2*src[x+stride] + filter_3*src[x+2*stride])
+#else
 #define EPEL_FILTER(src, stride, F) \
     (F[0]*src[x-stride] + F[1]*src[x] + F[2]*src[x+stride] + F[3]*src[x+2*stride])
+#endif
 
 static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
@@ -682,11 +743,21 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
     pixel *src = (pixel*)_src;
     ptrdiff_t srcstride = _srcstride/sizeof(pixel);
     const int8_t *filter = epel_filters[mx-1];
+#ifdef OPTIMIZATION_ENABLE
+    int8_t filter_0 = filter[0];
+    int8_t filter_1 = filter[1];
+    int8_t filter_2 = filter[2];
+    int8_t filter_3 = filter[3];
+#endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
+#ifdef OPTIMIZATION_ENABLE
+            dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
+#else
             dst[x] = EPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
             x++;
             dst[x] = EPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+#endif
         }
         src += srcstride;
         dst += dststride;
@@ -700,13 +771,22 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     pixel *src = (pixel*)_src;
     ptrdiff_t srcstride = _srcstride/sizeof(pixel);
-
     const int8_t *filter = epel_filters[my-1];
+#ifdef OPTIMIZATION_ENABLE
+    int8_t filter_0 = filter[0];
+    int8_t filter_1 = filter[1];
+    int8_t filter_2 = filter[2];
+    int8_t filter_3 = filter[3];
+#endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
+#ifdef OPTIMIZATION_ENABLE
+            dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
+#else
             dst[x] = EPEL_FILTER(src, srcstride, filter) >> (BIT_DEPTH - 8);
             x++;
             dst[x] = EPEL_FILTER(src, srcstride, filter) >> (BIT_DEPTH - 8);
+#endif
         }
         src += srcstride;
         dst += dststride;
@@ -720,11 +800,14 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     pixel *src = (pixel*)_src;
     ptrdiff_t srcstride = _srcstride/sizeof(pixel);
-
     const int8_t *filter_h = epel_filters[mx-1];
     const int8_t *filter_v = epel_filters[my-1];
-
-    int tmpstride = MAX_PB_SIZE;
+#ifdef OPTIMIZATION_ENABLE
+    int8_t filter_0 = filter_h[0];
+    int8_t filter_1 = filter_h[1];
+    int8_t filter_2 = filter_h[2];
+    int8_t filter_3 = filter_h[3];
+#endif
     int16_t tmp_array[(MAX_PB_SIZE+3)*MAX_PB_SIZE];
     int16_t *tmp = tmp_array;
 
@@ -732,22 +815,36 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 
     for (y = 0; y < height + epel_extra; y++) {
         for (x = 0; x < width; x++) {
+#ifdef OPTIMIZATION_ENABLE
+            tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
+#else
             tmp[x] = EPEL_FILTER(src, 1, filter_h) >> (BIT_DEPTH - 8);
             x++;
             tmp[x] = EPEL_FILTER(src, 1, filter_h) >> (BIT_DEPTH - 8);
+#endif
         }
         src += srcstride;
-        tmp += tmpstride;
+        tmp += MAX_PB_SIZE;
     }
 
-    tmp = tmp_array + epel_extra_before * tmpstride;
+    tmp = tmp_array + epel_extra_before * MAX_PB_SIZE;
+#ifdef OPTIMIZATION_ENABLE
+    filter_0 = filter_v[0];
+    filter_1 = filter_v[1];
+    filter_2 = filter_v[2];
+    filter_3 = filter_v[3];
+#endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = EPEL_FILTER(tmp, tmpstride, filter_v) >> 6;
+#ifdef OPTIMIZATION_ENABLE
+            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
+#else
+            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE, filter_v) >> 6;
             x++;
-            dst[x] = EPEL_FILTER(tmp, tmpstride, filter_v) >> 6;
+            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE, filter_v) >> 6;
+#endif
         }
-        tmp += tmpstride;
+        tmp += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -761,11 +858,11 @@ static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
     ptrdiff_t dststride = _dststride/sizeof(pixel);
 
     int shift = 14 - BIT_DEPTH;
-    #if BIT_DEPTH < 14
+#if BIT_DEPTH < 14
     int offset = 1 << (shift - 1);
-    #else
+#else
     int offset = 0;
-    #endif
+#endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
@@ -794,8 +891,10 @@ static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
+#ifndef OPTIMIZATION_ENABLE
             x++;
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
+#endif
         }
         dst  += dststride;
         src1 += srcstride;
