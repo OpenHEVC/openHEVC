@@ -71,3 +71,10 @@ add_executable(hevc getopt.c main.c sdl.c)
 
 target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} LibWrapper TLibDecoder TLibVideoIO TLibCommon libmd5)
 
+INSTALL(FILES "openHevcWrapper.h" DESTINATION include)
+
+INSTALL(TARGETS LibOpenHevcWrapper DESTINATION lib PERMISSIONS
+OWNER_READ OWNER_WRITE OWNER_EXECUTE
+GROUP_READ GROUP_EXECUTE
+WORLD_READ WORLD_EXECUTE)
+
