@@ -1,7 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-
 project (libavHM)
-
 if(APPLE)
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DEXTERN_PREFIX=_ -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -DPIC -fPIC"  )
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DEXTERN_PREFIX=_ -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -DPIC -fPIC"  )
@@ -16,13 +14,13 @@ SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fPIC"  )
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fPIC"  )
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
-# Common packages required
 find_package(SDL REQUIRED)
-
-add_subdirectory(wrapper_hm)
+if(MINGW)
+set(CMAKE_C_FLAGS "-march=i486 -mwindows")
+endif(MINGW)
 
 set(libfilenames
-    openHevcWrapper.c
+openHevcWrapper.c
 libavcodec/allcodecs.c
 libavcodec/avpacket.c
 libavcodec/avpicture.c
@@ -64,10 +62,8 @@ libavutil/samplefmt.c
 )
 
 include_directories(. ${SDL_INCLUDE_DIR} wrapper_hm/src/Lib)
-
 add_library (LibOpenHevcWrapper STATIC ${libfilenames})
-
 add_executable(hevc getopt.c main.c sdl.c)
+target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} -lwinmm)
 
-target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} LibWrapper TLibDecoder TLibVideoIO TLibCommon libmd5)
 
