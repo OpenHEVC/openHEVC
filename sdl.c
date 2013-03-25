@@ -64,7 +64,7 @@ int Init_SDL(int edge, int frame_width, int frame_height){
 	screenheight = frame_height;
 
 	
-	screen = SDL_SetVideoMode(screenwidth, screenheight, 24, SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL);
+	screen = SDL_SetVideoMode(screenwidth, screenheight, 24, SDL_HWSURFACE);
 
 	if ( screen == NULL ) {
 		printf("SDL: Couldn't set %dx%d: %s", screenwidth, screenheight, SDL_GetError());
@@ -113,7 +113,7 @@ void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, 
 	if (frame_width != screen -> w || frame_height != screen -> h){
 		screen -> clip_rect . w = screen -> w = frame_width;
 		screen -> clip_rect . h = screen -> h = frame_height;
-		screen = SDL_SetVideoMode(frame_width, frame_height, 24, SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL);
+		screen = SDL_SetVideoMode(frame_width, frame_height, 24, SDL_HWSURFACE);
 		yuv_overlay -> w = rect . w = frame_width + 2 * edge;
 		yuv_overlay -> h = rect . h = frame_height;
         yuv_overlay = SDL_CreateYUVOverlay(frame_width + 2 * edge, frame_height, SDL_YV12_OVERLAY, screen);
