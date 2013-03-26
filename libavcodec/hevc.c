@@ -493,7 +493,6 @@ static void deblocking_filter(HEVCContext *s)
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
     int min_pu_size = 1 << (s->sps->log2_min_pu_size - 1);
     int log2_min_pu_size = s->sps->log2_min_pu_size - 1;
-    MvField *tab_mvf = s->ref->tab_mvf;
 
     // vertical filtering
     for (y = 0; y < s->sps->pic_height_in_luma_samples; y += 4) {

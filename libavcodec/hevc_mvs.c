@@ -170,9 +170,9 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col, int r
         }
         // Assuming no long term pictures in version 1 of the decoder
         if(check_mvset == 1) {
-            availableFlagLXCol = 1;
             int colPocDiff = DiffPicOrderCnt(colPic, refPicList_col[listCol].list[refidxCol]);
             int curPocDiff = DiffPicOrderCnt(s->poc, refPicList[X].list[refIdxLx]);
+            availableFlagLXCol = 1;
             if (colPocDiff == curPocDiff) {
                 mvLXCol->x = mvCol.x;
                 mvLXCol->y = mvCol.y;
@@ -208,7 +208,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW,
     int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
     int short_ref_idx = 0;
     int availableFlagLXCol = 0;
-    int colPic;
+    int colPic = 0;
 
     if((s->sh.slice_type == B_SLICE) && (s->sh.collocated_from_l0_flag == 0)) {
         short_ref_idx = refPicList[1].idx[s->sh.collocated_ref_idx];
@@ -304,12 +304,11 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int mergearray_index = 0;
 
     struct MvField zerovector;
-    int numRefIdx;
+    int numRefIdx = 0;
     int zeroIdx = 0;
 
     int numMergeCand =0;
     int numOrigMergeCand = 0;
-    int numInputMergeCand = 0;
     int sumcandidates = 0;
     int combIdx  = 0;
     int combStop = 0;
@@ -323,6 +322,9 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
 
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
     int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
+
+    int availableFlagL0Col=0;
+    int availableFlagL1Col=0;
 
     if(isAvailableA1 && !(tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra)) {
         isAvailableA1 = 1;
@@ -514,8 +516,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     // temporal motion vector candidate
     // one optimization is that do temporal checking only if the number of
     // available candidates < MRG_MAX_NUM_CANDS
-    int availableFlagL0Col=0;
-    int availableFlagL1Col=0;
     if(s->sh.slice_temporal_mvp_enabled_flag == 0) {
         availableFlagLXCol = 0;
     } else {
@@ -571,7 +571,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     if (s->sh.slice_type == B_SLICE) {
         if((numOrigMergeCand > 1) && (numOrigMergeCand < s->sh.max_num_merge_cand)) {
 
-            numInputMergeCand = numMergeCand;
             combIdx           = 0;
             combStop          = 0;
             while (combStop != 1)
@@ -614,7 +613,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     } else if(s->sh.slice_type == B_SLICE) {
         numRefIdx = s->sh.num_ref_idx_l0_active > s->sh.num_ref_idx_l1_active ? s->sh.num_ref_idx_l1_active : s->sh.num_ref_idx_l0_active;
     }
-    numInputMergeCand = numMergeCand;
     while(numMergeCand < s->sh.max_num_merge_cand) {
         if(s->sh.slice_type == P_SLICE) {
             zerovector.ref_idx[0] = (zeroIdx < numRefIdx) ? zeroIdx : 0;

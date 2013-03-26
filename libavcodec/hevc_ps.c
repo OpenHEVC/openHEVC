@@ -32,7 +32,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
     int delta_idx = 1;
     int delta_rps;
     uint8_t used_by_curr_pic_flag;
-    uint8_t use_delta_flag;
+    uint8_t use_delta_flag = 0;
     int delta_poc;
     int k0 = 0;
     int k1 = 0;
@@ -283,7 +283,6 @@ static void decode_vui(HEVCContext *s)
 int ff_hevc_decode_nal_vps(HEVCContext *s)
 {
     int i,j;
-    uint8_t vps_temporal_id_nesting_flag, vps_extension_flag;
     GetBitContext *gb = &s->gb;
     int vps_id = 0;
     VPS *vps = av_mallocz(sizeof(*vps));

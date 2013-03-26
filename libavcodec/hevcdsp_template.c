@@ -447,9 +447,9 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _strid
     const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
 
     int init_x = 0, init_y = 0;
-    int border_edge_idx = 0;
 
 #ifndef OPTIMIZATION_ENABLE
+    int border_edge_idx = 0;
 #define DST(x, y) dst[(x) + stride * (y)]
 #define SRC(x, y) src[(x) + stride * (y)]
 
