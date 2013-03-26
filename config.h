@@ -8,10 +8,12 @@
 #define restrict restrict
 #ifdef __APPLE_CC__
 #define EXTERN_PREFIX "_"
-#elif __MINGW__
-#define EXTERN_PREFIX "_"
 #else
-#define EXTERN_PREFIX ""
+	#ifdef __MINGW32__
+	#define EXTERN_PREFIX "_"
+	#else
+	#define EXTERN_PREFIX ""
+	#endif
 #endif
 #define EXTERN_ASM _
 #define SLIBSUF ".dylib"
@@ -34,7 +36,7 @@
 #define ARCH_SPARC64 0
 #define ARCH_TOMI 0
 #define ARCH_X86 1
-#ifdef __MINGW__
+#ifdef __MINGW32__
 #define ARCH_X86_32 1
 #define ARCH_X86_64 0
 #else
@@ -66,7 +68,7 @@
 #define HAVE_MMX_INLINE 1
 #define HAVE_BIGENDIAN 0
 #define HAVE_FAST_UNALIGNED 1
-#ifdef __MINGW__
+#ifdef __MINGW32__
 #define HAVE_PTHREADS 0
 #define HAVE_W32THREADS 1
 #else
@@ -194,7 +196,7 @@
 #define HAVE_USLEEP 1
 #define HAVE_VFP_ARGS 0
 #define HAVE_VIRTUALALLOC 0
-#ifdef __MINGW__
+#ifdef __MINGW32__
 #define HAVE_WINDOWS_H 1
 #else
 #define HAVE_WINDOWS_H 0
