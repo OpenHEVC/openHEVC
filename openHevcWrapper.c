@@ -71,6 +71,12 @@ void libOpenHevcGetPictureSize(unsigned int *width, unsigned int *height, unsign
     *height = openHevcContext.c->height;
     *stride = openHevcContext.c->width;
 }
+void libOpenHevcGetPictureSize2(unsigned int *width, unsigned int *height, unsigned int *stride)
+{
+    *width  = openHevcContext.c->width;
+    *height = openHevcContext.c->height;
+    *stride = openHevcContext.picture->linesize[0];
+}
 
 int libOpenHevcGetOuptut(int got_picture, unsigned char **Y, unsigned char **U, unsigned char **V)
 {

@@ -67,7 +67,7 @@ static void video_decode_example(const char *filename)
         if (got_picture && display_flags == DISPLAY_ENABLE) {
             fflush(stdout);
             if (init == 1 ) {
-                libOpenHevcGetPictureSize(&width, &height, &stride);
+                libOpenHevcGetPictureSize2(&width, &height, &stride);
                 Init_SDL((stride - width)/2, width, height);
             }
             init=0;
