@@ -601,6 +601,70 @@ static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
     (src[x-2*stride] - 5*src[x-stride] + 17*src[x] + 58*src[x+stride]           \
      - 10*src[x+2*stride] + 4*src[x+3*stride] - src[x+4*stride])
 
+#ifdef OPTIMIZATION_ENABLE
+#define PUT_HEVC_QPEL_H(H)                                                      \
+static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
+                                          uint8_t *_src, ptrdiff_t _srcstride,  \
+                                          int width, int height)                \
+{                                                                               \
+    int x, y;                                                                   \
+    pixel *src = (pixel*)_src;                                                  \
+    ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
+                                                                                \
+    for (y = 0; y < height; y++) {                                              \
+        for (x = 0; x < width; x++)                                             \
+            dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
+        src += srcstride;                                                       \
+        dst += dststride;                                                       \
+    }                                                                           \
+}
+#define PUT_HEVC_QPEL_V(V)                                                      \
+static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst, ptrdiff_t dststride,       \
+                                          uint8_t *_src, ptrdiff_t _srcstride,  \
+                                          int width, int height)                \
+{                                                                               \
+    int x, y;                                                                   \
+    pixel *src = (pixel*)_src;                                                  \
+    ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
+                                                                                \
+    for (y = 0; y < height; y++)  {                                             \
+        for (x = 0; x < width; x++)                                             \
+            dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
+        src += srcstride;                                                       \
+        dst += dststride;                                                       \
+    }                                                                           \
+}
+#define PUT_HEVC_QPEL_HV(H, V)                                                            \
+static void FUNC(put_hevc_qpel_h ## H ## v ## V )(int16_t *dst, ptrdiff_t dststride,      \
+                                                  uint8_t *_src, ptrdiff_t _srcstride,    \
+                                                  int width, int height)                  \
+{                                                                                         \
+    int x, y;                                                                             \
+    pixel *src = (pixel*)_src;                                                            \
+    ptrdiff_t srcstride = _srcstride/sizeof(pixel);                                       \
+                                                                                          \
+    int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];                                       \
+    int16_t *tmp = tmp_array;                                                             \
+                                                                                          \
+    src -= qpel_extra_before[V] * srcstride;                                              \
+                                                                                          \
+    for (y = 0; y < height + qpel_extra[V]; y++) {                                        \
+        for (x = 0; x < width; x++)                                                       \
+            tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
+        src += srcstride;                                                                 \
+        tmp += MAX_PB_SIZE;                                                               \
+    }                                                                                     \
+                                                                                          \
+    tmp = tmp_array + qpel_extra_before[V] * MAX_PB_SIZE;                                 \
+                                                                                          \
+    for (y = 0; y < height; y++) {                                                        \
+        for (x = 0; x < width; x++)                                                       \
+            dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                           \
+        tmp += MAX_PB_SIZE;                                                               \
+        dst += dststride;                                                                 \
+    }                                                                                     \
+}
+#else
 #define PUT_HEVC_QPEL_H(H)                                                      \
 static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
                                           uint8_t *_src, ptrdiff_t _srcstride,  \
@@ -613,12 +677,12 @@ static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       
     for (y = 0; y < height; y++) {                                              \
         for (x = 0; x < width; x++) {                                           \
             dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
-            /*x++;                                                           */ \
-            /*dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);        */ \
-            /*x++;                                                           */ \
-            /*dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);        */ \
-            /*x++;                                                           */ \
-            /*dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);        */ \
+            x++;                                                                \
+            dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
+            x++;                                                                \
+            dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
+            x++;                                                                \
+            dst[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);             \
         }                                                                       \
         src += srcstride;                                                       \
         dst += dststride;                                                       \
@@ -636,12 +700,12 @@ static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst, ptrdiff_t dststride,       
     for (y = 0; y < height; y++)  {                                             \
         for (x = 0; x < width; x++) {                                           \
             dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
-            /*x++;                                                           */ \
-            /*dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);*/ \
-            /*x++;                                                           */ \
-            /*dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);*/ \
-            /*x++;                                                           */ \
-            /*dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);*/ \
+            x++;                                                                \
+            dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
+            x++;                                                                \
+            dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
+            x++;                                                                \
+            dst[x] = QPEL_FILTER_ ## V (src, srcstride) >> (BIT_DEPTH - 8);     \
         }                                                                       \
         src += srcstride;                                                       \
         dst += dststride;                                                       \
@@ -664,12 +728,12 @@ static void FUNC(put_hevc_qpel_h ## H ## v ## V )(int16_t *dst, ptrdiff_t dststr
     for (y = 0; y < height + qpel_extra[V]; y++) {                                        \
         for (x = 0; x < width; x++) {                                                     \
             tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
-            /*x++;                                                                     */ \
-            /*tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                  */ \
-            /*x++;                                                                     */ \
-            /*tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                  */ \
-            /*x++;                                                                     */ \
-            /*tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                  */ \
+            x++;                                                                          \
+            tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
+            x++;                                                                          \
+            tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
+            x++;                                                                          \
+            tmp[x] = QPEL_FILTER_ ## H (src, 1) >> (BIT_DEPTH - 8);                       \
         }                                                                                 \
         src += srcstride;                                                                 \
         tmp += MAX_PB_SIZE;                                                               \
@@ -680,17 +744,18 @@ static void FUNC(put_hevc_qpel_h ## H ## v ## V )(int16_t *dst, ptrdiff_t dststr
     for (y = 0; y < height; y++) {                                                        \
         for (x = 0; x < width; x++) {                                                     \
             dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                           \
-            /*x++;                                                                     */ \
-            /*dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                      */ \
-            /*x++;                                                                     */ \
-            /*dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                      */ \
-            /*x++;                                                                     */ \
-            /*dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                      */ \
+            x++;                                                                          \
+            dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                           \
+            x++;                                                                          \
+            dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                           \
+            x++;                                                                          \
+            dst[x] = QPEL_FILTER_ ## V (tmp, MAX_PB_SIZE) >> 6;                           \
         }                                                                                 \
         tmp += MAX_PB_SIZE;                                                               \
         dst += dststride;                                                                 \
     }                                                                                     \
 }
+#endif
 
 PUT_HEVC_QPEL_H(1)
 PUT_HEVC_QPEL_H(2)
@@ -792,7 +857,9 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
+#ifdef OPTIMIZATION_ENABLE
+int16_t tmp_array[(MAX_PB_SIZE+3)*MAX_PB_SIZE];
+#endif
 static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
                                    int width, int height, int mx, int my)
@@ -808,7 +875,9 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
     int8_t filter_2 = filter_h[2];
     int8_t filter_3 = filter_h[3];
 #endif
+#ifndef OPTIMIZATION_ENABLE
     int16_t tmp_array[(MAX_PB_SIZE+3)*MAX_PB_SIZE];
+#endif
     int16_t *tmp = tmp_array;
 
     src -= epel_extra_before * srcstride;
@@ -818,9 +887,9 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 #ifdef OPTIMIZATION_ENABLE
             tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
 #else
-            tmp[x] = EPEL_FILTER(src, 1, filter_h) >> (BIT_DEPTH - 8);
+            tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
             x++;
-            tmp[x] = EPEL_FILTER(src, 1, filter_h) >> (BIT_DEPTH - 8);
+            tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
 #endif
         }
         src += srcstride;
@@ -839,9 +908,9 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 #ifdef OPTIMIZATION_ENABLE
             dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
 #else
-            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE, filter_v) >> 6;
+            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
             x++;
-            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE, filter_v) >> 6;
+            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
 #endif
         }
         tmp += MAX_PB_SIZE;
