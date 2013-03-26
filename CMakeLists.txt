@@ -8,10 +8,8 @@ SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_ISOC99_SOURCE -D_FILE_OFFSET_
 endif(APPLE)
 
 IF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC"  )
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC"  )
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fPIC"  )
-SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fPIC"  )
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -Wl,-Bsymbolic"  )
+SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -DPIC -Wl,-Bsymbolic"  )
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
 find_package(SDL REQUIRED)
@@ -62,13 +60,14 @@ libavutil/samplefmt.c
 )
 
 include_directories(. ${SDL_INCLUDE_DIR} wrapper_hm/src/Lib)
-add_library (LibOpenHevcWrapper STATIC ${libfilenames})
+add_library (LibOpenHevcWrapper SHARED ${libfilenames})
 add_executable(hevc getopt.c main.c sdl.c)
 if(MINGW)
 target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} -lwinmm)
 else(MINGW)
 target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY})
 endif(MINGW)
+
 INSTALL(FILES "openHevcWrapper.h" DESTINATION include)
 
 INSTALL(TARGETS LibOpenHevcWrapper DESTINATION lib PERMISSIONS
