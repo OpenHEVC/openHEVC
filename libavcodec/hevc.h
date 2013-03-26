@@ -666,6 +666,7 @@ typedef struct HEVCFrame {
     int poc;
     MvField *tab_mvf;
     RefPicList refPicList[2];
+    uint8_t flags;
 } HEVCFrame;
 
 typedef struct HEVCContext {
@@ -674,6 +675,7 @@ typedef struct HEVCContext {
     AVCodecContext *avctx;
     AVFrame *frame;
     AVFrame *sao_frame;
+    AVFrame *tmp_frame;
 
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
@@ -720,12 +722,13 @@ typedef struct HEVCContext {
     TransformUnit tu;
     ResidualCoding rc;
     int poc;
+    int poc_display;
 
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;
 
     HEVCFrame *ref;
-    HEVCFrame short_refs[16];
+    HEVCFrame short_refs[32];
     int decode_checksum_sei;
     uint8_t md5[3][16];
 } HEVCContext;

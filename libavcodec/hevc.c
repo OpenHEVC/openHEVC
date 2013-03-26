@@ -2051,16 +2051,22 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             memset(s->cbf_luma, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
             memset(s->is_pcm, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
         }
-        if ((ret = ff_reget_buffer(s->avctx, s->frame)) < 0)
-            return -1;
 
+        ff_hevc_cabac_init(s);
+        if (s->sps->sample_adaptive_offset_enabled_flag) {
+            if ((ret = ff_reget_buffer(s->avctx, s->tmp_frame)) < 0)
+                return ret;
+            s->frame     = s->tmp_frame;
+            if ((ret = ff_hevc_set_new_ref(s, &s->sao_frame, s->poc))< 0)
+                return ret;
+        } else {
+            if ((ret = ff_hevc_set_new_ref(s, &s->frame, s->poc))< 0)
+                return ret;
+        }
         if (!s->edge_emu_buffer)
             s->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
         if (!s->edge_emu_buffer)
             return -1;
-
-        ff_hevc_cabac_init(s);
-        s->ref = &s->short_refs[ff_hevc_find_next_ref(s, s->frame, s->poc)];
         if (hls_slice_data(s) < 0)
             return -1;
 
@@ -2069,35 +2075,30 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
 
         if (s->sps->sample_adaptive_offset_enabled_flag) {
-            if ((ret = ff_reget_buffer(s->avctx, s->sao_frame)) < 0)
-                return ret;
             av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->frame,
                             s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
             sao_filter(s);
-            if ((ret = av_frame_ref(data, s->sao_frame)) < 0)
-                return ret;
             if (s->decode_checksum_sei == 1) {
                 calc_md5(s->md5[0], s->sao_frame->data[0], s->sao_frame->linesize[0], s->sao_frame->width, s->sao_frame->height);
                 calc_md5(s->md5[1], s->sao_frame->data[1], s->sao_frame->linesize[1], s->sao_frame->width/2, s->sao_frame->height/2);
                 calc_md5(s->md5[2], s->sao_frame->data[2], s->sao_frame->linesize[2], s->sao_frame->width/2, s->sao_frame->height/2);
             }
-            ff_hevc_add_ref(s, s->sao_frame, s->poc);
-            av_frame_unref(s->sao_frame);
+            if ((ret = ff_hevc_find_display(s, data)) < 0)
+                return ret;
+            av_frame_unref(s->tmp_frame);
         } else {
             if (s->decode_checksum_sei == 1) {
                 calc_md5(s->md5[0], s->frame->data[0], s->frame->linesize[0], s->frame->width, s->frame->height);
                 calc_md5(s->md5[1], s->frame->data[1], s->frame->linesize[1], s->frame->width/2, s->frame->height/2);
                 calc_md5(s->md5[2], s->frame->data[2], s->frame->linesize[2], s->frame->width/2, s->frame->height/2);
             }
-            ff_hevc_add_ref(s, s->frame, s->poc);
-            if ((ret = av_frame_ref(data, s->frame)) < 0)
+            if ((ret = ff_hevc_find_display(s, data)) < 0)
                 return ret;
         }
 
-        av_frame_unref(s->frame);
         s->frame->pict_type = AV_PICTURE_TYPE_I;
         s->frame->key_frame = 1;
-        *data_size = sizeof(AVFrame);
+        *data_size = ret;
         break;
     case NAL_AUD:
         return avpkt->size;
@@ -2116,9 +2117,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     HEVCContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    s->frame = av_frame_alloc();
-    s->sao_frame = av_frame_alloc();
-    if (!s->frame || !s->sao_frame)
+    s->tmp_frame = av_frame_alloc();
+    s->poc_display = 0;
+    if (!s->tmp_frame)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
@@ -2138,8 +2139,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
     HEVCContext *s = avctx->priv_data;
 
-    av_frame_free(&s->frame);
-    av_frame_free(&s->sao_frame);
+    av_frame_free(&s->tmp_frame);
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         av_frame_free(&s->short_refs[i].frame);
     }
