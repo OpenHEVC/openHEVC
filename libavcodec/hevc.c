@@ -2086,7 +2086,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
             calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
         }
-        if ((ret = ff_hevc_find_display2(s, data)) < 0)
+        if ((ret = ff_hevc_find_display(s, data)) < 0)
             return ret;
         s->frame->pict_type = AV_PICTURE_TYPE_I;
         s->frame->key_frame = 1;
