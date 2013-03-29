@@ -28,14 +28,16 @@
 #ifdef WIN32
 #include <SDL.h>
 #else
-#include "SDL.h"
+#include <SDL.h>
 #endif
 
 
 /* SDL variables */
-SDL_Surface *screen;
-SDL_Overlay *yuv_overlay;
-SDL_Rect rect;
+SDL_Window        *pWindow1;
+SDL_Renderer      *pRenderer1;
+SDL_Texture       *bmpTex1;
+uint8_t           *pixels1;
+int               pitch1, size1;
 
 
 int Init_SDL(int edge, int frame_width, int frame_height){
@@ -52,49 +54,19 @@ int Init_SDL(int edge, int frame_width, int frame_height){
 		printf("Video initialization failed: %s\n", SDL_GetError( ) );
 	}
 
-	// set window title 
-	SDL_WM_SetCaption(window_title, NULL);
-
-	// yuv params
-	yuv[0] = malloc((frame_width + 2 * edge) * frame_height * sizeof(unsigned char));
-	yuv[1] = malloc((frame_width + edge) * frame_height / 4 * sizeof(unsigned char));
-	yuv[2] = malloc((frame_width + edge) * frame_height / 4 * sizeof(unsigned char));
-
+    // allocate window, renderer, texture
+    pWindow1    = SDL_CreateWindow( "YUV", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                   (frame_width + 2 * edge), frame_height, SDL_WINDOW_OPENGL);
+    pRenderer1  = SDL_CreateRenderer(pWindow1, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    bmpTex1     = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12,
+                                    SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);
+    if(pWindow1==NULL | pRenderer1==NULL | bmpTex1==NULL) {
+        fprintf(stderr, "Could not open window1\n");
+        return -1;
+    }
 	screenwidth = frame_width;
 	screenheight = frame_height;
 
-	
-	screen = SDL_SetVideoMode(screenwidth, screenheight, 24, SDL_HWSURFACE);
-
-	if ( screen == NULL ) {
-		printf("SDL: Couldn't set %dx%d: %s", screenwidth, screenheight, SDL_GetError());
-		exit(1);
-	}
-	else {
-//		printf("SDL: Set %dx%d @ %d bpp \n",screenwidth, screenheight, screen->format->BitsPerPixel);
-	}
-
-	// since IYUV ordering is not supported by Xv accel on maddog's system
-	//  (Matrox G400 --- although, the alias I420 is, but this is not
-	//  recognized by SDL), we use YV12 instead, which is identical,
-	//  except for ordering of Cb and Cr planes...
-	// we swap those when we copy the data to the display buffer...
-
-	yuv_overlay = SDL_CreateYUVOverlay(frame_width + 2 * edge, frame_height, SDL_YV12_OVERLAY, screen);
-
-	if ( yuv_overlay == NULL ) {
-		printf("SDL: Couldn't create SDL_yuv_overlay: %s",SDL_GetError());
-		exit(1);
-	}
-
-
-	rect.x = 0;
-	rect.y = 0;
-	rect.w = screenwidth + 2 * edge;
-	rect.h = screenheight;
-	SDL_UnlockYUVOverlay(yuv_overlay);
-
-	SDL_DisplayYUVOverlay(yuv_overlay, &rect);
 #endif
 	return 0;
 }
@@ -103,63 +75,24 @@ int Init_SDL(int edge, int frame_width, int frame_height){
 void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
 
 #ifndef SDL_NO_DISPLAY	
+    size1 = (frame_width + 2 * edge) * frame_height;
 
-	// Lock SDL_yuv_overlay 
-	if ( SDL_MUSTLOCK(screen) ) {
-		if ( SDL_LockSurface(screen) < 0 ) return;
-	}
-	if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
-
-	if (frame_width != screen -> w || frame_height != screen -> h){
-		screen -> clip_rect . w = screen -> w = frame_width;
-		screen -> clip_rect . h = screen -> h = frame_height;
-		screen = SDL_SetVideoMode(frame_width, frame_height, 24, SDL_HWSURFACE);
-		yuv_overlay -> w = rect . w = frame_width + 2 * edge;
-		yuv_overlay -> h = rect . h = frame_height;
-        yuv_overlay = SDL_CreateYUVOverlay(frame_width + 2 * edge, frame_height, SDL_YV12_OVERLAY, screen);
-        
-	}
-		
-	if ( screen == NULL ) {
-		printf("SDL: Couldn't set %dx%d: %s", frame_width, frame_height, SDL_GetError());
-		exit(1);
-	}
-
-	// let's draw the data (*yuv[3]) on a SDL screen (*screen) 
-	memcpy(yuv_overlay->pixels[0], Y, (frame_width + 2 * edge) * frame_height);
-	memcpy(yuv_overlay->pixels[1], V, (frame_width + 2 * edge) * frame_height / 4);
-	memcpy(yuv_overlay->pixels[2], U, (frame_width + 2 * edge) * frame_height / 4);
-
-	// Unlock SDL_yuv_overlay 
-	if ( SDL_MUSTLOCK(screen) ) {
-		SDL_UnlockSurface(screen);
-	}
-	SDL_UnlockYUVOverlay(yuv_overlay);
-
-	// Show, baby, show!
-	SDL_DisplayYUVOverlay(yuv_overlay, &rect);
-
+    SDL_LockTexture(bmpTex1, NULL, (void **)&pixels1, &pitch1);
+    memcpy(pixels1,             Y, size1  );
+    memcpy(pixels1 + size1,     V, size1/4);
+    memcpy(pixels1 + size1*5/4, U, size1/4);
+    SDL_UnlockTexture(bmpTex1);
+    SDL_UpdateTexture(bmpTex1, NULL, pixels1, pitch1);
+    // refresh screen
+    SDL_RenderClear(pRenderer1);
+    SDL_RenderCopy(pRenderer1, bmpTex1, NULL, NULL);
+    SDL_RenderPresent(pRenderer1);
+    
 #endif
 }
 
 void CloseSDLDisplay(){
 #ifndef SDL_NO_DISPLAY	
-	SDL_FreeYUVOverlay(yuv_overlay);
 	SDL_Quit();
 #endif
-}
-
-
-
-/**
-IETR Stuffs
-*/
-void SDL_Display_preesm(int edge, unsigned char *display_image)
-{
-	int XDIM = ((unsigned int *) display_image)[0];
-	int YDIM = ((unsigned int *) display_image)[1];
-	unsigned char *Y = display_image + 8;
-	unsigned char *U = Y + (XDIM + 32) * YDIM;
-	unsigned char *V = U + (XDIM + 32) * YDIM/4 ;
-	SDL_Display(edge, XDIM, YDIM, Y, U, V);
 }

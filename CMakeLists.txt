@@ -1,5 +1,7 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8)
 project (libavHM)
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
+
 if(APPLE)
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -DPIC -fPIC"  )
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -DPIC -fPIC"  )
@@ -12,7 +14,7 @@ SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -Wl,-Bsymbolic"  )
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -DPIC -Wl,-Bsymbolic"  )
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
-find_package(SDL REQUIRED)
+find_package(SDL2 REQUIRED)
 if(MINGW)
 set(CMAKE_C_FLAGS "-march=i486 -mwindows")
 endif(MINGW)
@@ -59,13 +61,13 @@ libavutil/rational.c
 libavutil/samplefmt.c
 )
 
-include_directories(. ${SDL_INCLUDE_DIR} wrapper_hm/src/Lib)
+include_directories(. ${SDL2_INCLUDE_DIR} wrapper_hm/src/Lib)
 add_library (LibOpenHevcWrapper SHARED ${libfilenames})
 add_executable(hevc getopt.c main.c sdl.c)
 if(MINGW)
-target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} -lwinmm)
+target_link_libraries(hevc LibOpenHevcWrapper ${SDL2_LIBRARY} -lwinmm)
 else(MINGW)
-target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY})
+target_link_libraries(hevc LibOpenHevcWrapper ${SDL2_LIBRARY})
 endif(MINGW)
 
 INSTALL(FILES "openHevcWrapper.h" DESTINATION include)
