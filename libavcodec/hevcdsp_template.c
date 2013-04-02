@@ -601,7 +601,7 @@ static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
     (src[x-2*stride] - 5*src[x-stride] + 17*src[x] + 58*src[x+stride]           \
      - 10*src[x+2*stride] + 4*src[x+3*stride] - src[x+4*stride])
 
-#ifdef OPTIMIZATION_ENABLE
+#ifdef OPTIMIZATION_ENABLE2
 #define PUT_HEVC_QPEL_H(H)                                                      \
 static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
                                           uint8_t *_src, ptrdiff_t _srcstride,  \
@@ -816,12 +816,12 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
 #endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-#ifdef OPTIMIZATION_ENABLE
+#ifdef OPTIMIZATION_ENABLE2
             dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
 #else
-            dst[x] = EPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+            dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
             x++;
-            dst[x] = EPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+            dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
 #endif
         }
         src += srcstride;
@@ -845,12 +845,12 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
 #endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-#ifdef OPTIMIZATION_ENABLE
+#ifdef OPTIMIZATION_ENABLE2
             dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
 #else
-            dst[x] = EPEL_FILTER(src, srcstride, filter) >> (BIT_DEPTH - 8);
+            dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
             x++;
-            dst[x] = EPEL_FILTER(src, srcstride, filter) >> (BIT_DEPTH - 8);
+            dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
 #endif
         }
         src += srcstride;
@@ -884,7 +884,7 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 
     for (y = 0; y < height + epel_extra; y++) {
         for (x = 0; x < width; x++) {
-#ifdef OPTIMIZATION_ENABLE
+#ifdef OPTIMIZATION_ENABLE2
             tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
 #else
             tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
@@ -905,7 +905,7 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 #endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-#ifdef OPTIMIZATION_ENABLE
+#ifdef OPTIMIZATION_ENABLE2
             dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
 #else
             dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
@@ -934,6 +934,10 @@ static void FUNC(put_unweighted_pred_luma)(uint8_t *_dst, ptrdiff_t _dststride,
 #endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
+            dst[x] = av_clip_pixel((src[x] + offset) >> shift);
+            x++;
+            dst[x] = av_clip_pixel((src[x] + offset) >> shift);
+            x++;
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
             x++;
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
@@ -985,7 +989,11 @@ static void FUNC(put_weighted_pred_avg_luma)(uint8_t *_dst, ptrdiff_t _dststride
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-#ifndef OPTIMIZATION_ENABLE
+#ifndef OPTIMIZATION_ENABLE2
+            x++;
+            dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
+            x++;
+            dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
             x++;
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
 #endif

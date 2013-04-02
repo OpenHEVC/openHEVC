@@ -1,5 +1,7 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8)
 project (libavHM)
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
+
 if(APPLE)
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -DPIC -fPIC"  )
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -DPIC -fPIC"  )
@@ -13,6 +15,9 @@ SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -DPIC -Wl,-Bsymbolic"  )
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
 find_package(SDL REQUIRED)
+find_package(SDL2)
+find_package(CSFML 2.0 COMPONENTS graphics)
+
 if(MINGW)
 #set(CMAKE_C_FLAGS "-march=i486 -mwindows")
 endif(MINGW)
@@ -67,6 +72,27 @@ target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} -lwinmm)
 else(MINGW)
 target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY})
 endif(MINGW)
+
+if(SDL2_FOUND)
+include_directories(. ${SDL2_INCLUDE_DIR} wrapper_hm/src/Lib)
+add_executable(hevc_sdl2 getopt.c main.c sdl2.c)
+if(MINGW)
+target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY} -lwinmm)
+else(MINGW)
+target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY})
+endif(MINGW)
+endif()
+
+if(CSFML_FOUND)
+include_directories(. ${CSFML_INCLUDE_DIR} wrapper_hm/src/Lib)
+add_executable(hevc_csfml getopt.c main.c csfml.c)
+if(MINGW)
+target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} -lwinmm)
+else(MINGW)
+target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE})
+endif(MINGW)
+endif()
+
 
 INSTALL(FILES "openHevcWrapper.h" DESTINATION include)
 
