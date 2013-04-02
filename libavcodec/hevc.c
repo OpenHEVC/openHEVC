@@ -253,7 +253,6 @@ static int hls_slice_header(HEVCContext *s)
         } else {
             s->sh.short_term_rps = NULL;
             s->poc = 0;
-            s->sh.short_term_rps = NULL;
         }
 //        av_log(s->avctx, AV_LOG_ERROR, "POC %d\n", s->poc);
         if (!s->pps) {

@@ -14,7 +14,7 @@ ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
 find_package(SDL REQUIRED)
 if(MINGW)
-set(CMAKE_C_FLAGS "-march=i486 -mwindows")
+#set(CMAKE_C_FLAGS "-march=i486 -mwindows")
 endif(MINGW)
 
 set(libfilenames
@@ -59,7 +59,7 @@ libavutil/rational.c
 libavutil/samplefmt.c
 )
 
-include_directories(. ${SDL_INCLUDE_DIR} wrapper_hm/src/Lib)
+include_directories(. ${SDL_INCLUDE_DIR} )
 add_library (LibOpenHevcWrapper SHARED ${libfilenames})
 add_executable(hevc getopt.c main.c sdl.c)
 if(MINGW)

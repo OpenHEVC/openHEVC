@@ -9,8 +9,12 @@
 #ifdef __APPLE_CC__
 #define EXTERN_PREFIX "_"
 #else
-	#ifdef __MINGW32__
-	#define EXTERN_PREFIX "_"
+    #ifdef __MINGW32__
+        #ifdef __MINGW64__
+        #define EXTERN_PREFIX ""
+        #else
+        #define EXTERN_PREFIX "_"
+        #endif
 	#else
 	#define EXTERN_PREFIX ""
 	#endif
