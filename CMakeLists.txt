@@ -64,8 +64,9 @@ libavutil/rational.c
 libavutil/samplefmt.c
 )
 
-include_directories(. ${SDL_INCLUDE_DIR} )
 add_library (LibOpenHevcWrapper SHARED ${libfilenames})
+include_directories(.)
+set_source_files_properties(sdl.c PROPERTIES COMPILE_FLAGS -I"${SDL_INCLUDE_DIR}")
 add_executable(hevc getopt.c main.c sdl.c)
 if(MINGW)
 target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} -lwinmm)
@@ -74,7 +75,7 @@ target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY})
 endif(MINGW)
 
 if(SDL2_FOUND)
-include_directories(. ${SDL2_INCLUDE_DIR} wrapper_hm/src/Lib)
+set_source_files_properties(sdl2.c PROPERTIES COMPILE_FLAGS -I"${SDL2_INCLUDE_DIR}")
 add_executable(hevc_sdl2 getopt.c main.c sdl2.c)
 if(MINGW)
 target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY} -lwinmm)
@@ -84,7 +85,7 @@ endif(MINGW)
 endif()
 
 if(CSFML_FOUND)
-include_directories(. ${CSFML_INCLUDE_DIR} wrapper_hm/src/Lib)
+set_source_files_properties(csfml.c PROPERTIES COMPILE_FLAGS -I"${CSFML_INCLUDE_DIR}")
 add_executable(hevc_csfml getopt.c main.c csfml.c)
 if(MINGW)
 target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} -lwinmm)
