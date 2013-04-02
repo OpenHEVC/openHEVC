@@ -5,7 +5,6 @@
 //  Created by Mickaël Raulet on 11/10/12.
 //
 //
-#include "SDL.h"
 #include "openHevcWrapper.h"
 #include "getopt.h"
 
