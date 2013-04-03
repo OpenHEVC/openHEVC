@@ -44,11 +44,12 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
     fseek (inpf, - 4 + info2, SEEK_CUR);
     return pos - 4 + info2;
 }
-int init=1;
 static void video_decode_example(const char *filename)
 {
     FILE *f;
     int nal_len = 0;
+    int init    = 1;
+    int nbFrame = 0;
     unsigned int width, height, stride;
     unsigned char * buf, *Y, *U, *V;
     
@@ -60,21 +61,39 @@ static void video_decode_example(const char *filename)
         exit(1);
     }
     buf = calloc ( 1000000, sizeof(char));
-    while(!feof(f)) {
-        int got_picture = libOpenHevcDecode(buf, get_next_nal(f, buf));
-        libOpenHevcGetOuptut(got_picture, &Y, &U, &V);
-        if (got_picture && display_flags == DISPLAY_ENABLE) {
-            fflush(stdout);
-            if (init == 1 ) {
-                libOpenHevcGetPictureSize2(&width, &height, &stride);
-                Init_SDL((stride - width)/2, width, height);
+    if (display_flags == DISPLAY_ENABLE) {
+        while(!feof(f)) {
+            int got_picture = libOpenHevcDecode(buf, get_next_nal(f, buf));
+            libOpenHevcGetOuptut(got_picture, &Y, &U, &V);
+            if (got_picture != 0) {
+                fflush(stdout);
+                if (init == 1 ) {
+                    libOpenHevcGetPictureSize2(&width, &height, &stride);
+                    Init_SDL((stride - width)/2, width, height);
+                    Init_Time();
+                    init = 0;
+                }
+                SDL_Display((stride - width)/2, width, height, Y, U, V);
+                nbFrame++;
             }
-            init=0;
-            SDL_Display((stride - width)/2, width, height, Y, U, V);
+        }
+    } else {
+        while(!feof(f)) {
+            int got_picture = libOpenHevcDecode(buf, get_next_nal(f, buf));
+            libOpenHevcGetOuptut(got_picture, &Y, &U, &V);
+            if (got_picture != 0) {
+                if (init == 1 ) {
+                    Init_Time();
+                    init = 0;
+                }
+                nbFrame++;
+            }
         }
      }
+    CloseSDLDisplay();
     fclose(f);
     libOpenHevcClose();
+    printf("nbFrame : %d\n", nbFrame);
 }
 
 

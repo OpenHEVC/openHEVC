@@ -1,10 +1,18 @@
 #include <SFML/Graphics.h>
-
+#include <SFML/System/Clock.h>
+#include <stdio.h>
+#include <stdlib.h>
 sfVideoMode     mode;
 sfRenderWindow *window;
 sfTexture      *im_video;
 sfSprite       *sp_video;
 unsigned char  *Data;
+sfClock        *sf_clock;
+
+void Init_Time() {
+    sf_clock = sfClock_create ();
+    sfClock_restart(sf_clock);
+}
 
 int Init_SDL(int edge, int frame_width, int frame_height){
     mode.width        = frame_width + 2 * edge;
@@ -19,10 +27,9 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     /* Load a sprite to display */
     im_video = sfTexture_create(mode.width, mode.height);
     if (!im_video)
-            return -1;
+        return -1;
     sp_video = sfSprite_create();
-
-	return 0;
+    return 0;
 }
 
 
@@ -30,8 +37,7 @@ void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, 
 
 #ifndef SDL_NO_DISPLAY
     int i;
-    for(i = 0 ; i < (frame_width + 2 *edge) * frame_height ; i++)
-    {
+    for(i = 0 ; i < (frame_width + 2 *edge) * frame_height ; i++) {
         Data[4*i]   = Y[i];
         Data[4*i+1] = Y[i];
         Data[4*i+2] = Y[i];
@@ -48,7 +54,8 @@ void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, 
 }
 
 void CloseSDLDisplay(){
-#ifndef SDL_NO_DISPLAY	
+#ifndef SDL_NO_DISPLAY
+    printf("time : %d ms\n", (int)(sfClock_getElapsedTime(sf_clock).microseconds/1000));
     sfSprite_destroy(sp_video);
     sfRenderWindow_destroy(window);
 #endif
