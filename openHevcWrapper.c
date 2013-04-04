@@ -16,6 +16,7 @@ OpenHevcWrapperContext openHevcContext;
 
 int libOpenHevcInit()
 {
+    HEVCContext *s;
     /* register all the codecs */
     avcodec_register_all();
     av_init_packet(&openHevcContext.avpkt);
@@ -40,6 +41,8 @@ int libOpenHevcInit()
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
+    s = openHevcContext.c->priv_data;
+    s->decode_checksum_sei = 0;
     return 0;
 }
 

@@ -252,6 +252,7 @@ static int hls_slice_header(HEVCContext *s)
             else
                 sh->slice_temporal_mvp_enabled_flag = 0;
         } else {
+            s->sh.short_term_rps = NULL;
             s->poc = 0;
         }
 //        av_log(s->avctx, AV_LOG_ERROR, "POC %d\n", s->poc);
@@ -1511,12 +1512,12 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         luma_mc(s, tmp, tmpstride,
                 s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH);
-        s->hevcdsp.put_unweighted_pred(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
+        s->hevcdsp.put_unweighted_pred_luma(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
         chroma_mc(s, tmp, tmp2, tmpstride,
                   s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                   &current_mv.mv[0], x0/2, y0/2, nPbW/2, nPbH/2);
-        s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
-        s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_unweighted_pred_chroma(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_unweighted_pred_chroma(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
     } else if (!current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
@@ -1526,12 +1527,12 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         luma_mc(s, tmp, tmpstride,
                 s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH);
-        s->hevcdsp.put_unweighted_pred(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
+        s->hevcdsp.put_unweighted_pred_luma(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
         chroma_mc(s, tmp, tmp2, tmpstride,
                   s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                   &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
-        s->hevcdsp.put_unweighted_pred(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
-        s->hevcdsp.put_unweighted_pred(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_unweighted_pred_chroma(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_unweighted_pred_chroma(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
     } else if (current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
@@ -1547,15 +1548,15 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         luma_mc(s, tmp2, tmpstride,
                 s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH);
-        s->hevcdsp.put_weighted_pred_avg(dst0, s->frame->linesize[0], tmp, tmp2, tmpstride, nPbW, nPbH);
+        s->hevcdsp.put_weighted_pred_avg_luma(dst0, s->frame->linesize[0], tmp, tmp2, tmpstride, nPbW, nPbH);
         chroma_mc(s, tmp, tmp2, tmpstride,
                   s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                   &current_mv.mv[0], x0/2, y0/2, nPbW/2, nPbH/2);
         chroma_mc(s, tmp3, tmp4, tmpstride,
                   s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                   &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
-        s->hevcdsp.put_weighted_pred_avg(dst1, s->frame->linesize[1], tmp, tmp3, tmpstride, nPbW/2, nPbH/2);
-        s->hevcdsp.put_weighted_pred_avg(dst2, s->frame->linesize[2], tmp2, tmp4, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_weighted_pred_avg_chroma(dst1, s->frame->linesize[1], tmp, tmp3, tmpstride, nPbW/2, nPbH/2);
+        s->hevcdsp.put_weighted_pred_avg_chroma(dst2, s->frame->linesize[2], tmp2, tmp4, tmpstride, nPbW/2, nPbH/2);
     }
     return;
 }
@@ -2078,24 +2079,15 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->frame,
                             s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
             sao_filter(s);
-            if (s->decode_checksum_sei == 1) {
-                calc_md5(s->md5[0], s->sao_frame->data[0], s->sao_frame->linesize[0], s->sao_frame->width, s->sao_frame->height);
-                calc_md5(s->md5[1], s->sao_frame->data[1], s->sao_frame->linesize[1], s->sao_frame->width/2, s->sao_frame->height/2);
-                calc_md5(s->md5[2], s->sao_frame->data[2], s->sao_frame->linesize[2], s->sao_frame->width/2, s->sao_frame->height/2);
-            }
-            if ((ret = ff_hevc_find_display(s, data)) < 0)
-                return ret;
             av_frame_unref(s->tmp_frame);
-        } else {
-            if (s->decode_checksum_sei == 1) {
-                calc_md5(s->md5[0], s->frame->data[0], s->frame->linesize[0], s->frame->width, s->frame->height);
-                calc_md5(s->md5[1], s->frame->data[1], s->frame->linesize[1], s->frame->width/2, s->frame->height/2);
-                calc_md5(s->md5[2], s->frame->data[2], s->frame->linesize[2], s->frame->width/2, s->frame->height/2);
-            }
-            if ((ret = ff_hevc_find_display(s, data)) < 0)
-                return ret;
         }
-
+        if (s->decode_checksum_sei == 1) {
+            calc_md5(s->md5[0], s->ref->frame->data[0], s->ref->frame->linesize[0], s->ref->frame->width  , s->ref->frame->height  );
+            calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
+            calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
+        }
+        if ((ret = ff_hevc_find_display(s, data)) < 0)
+            return ret;
         s->frame->pict_type = AV_PICTURE_TYPE_I;
         s->frame->key_frame = 1;
         *data_size = ret;
