@@ -2,7 +2,7 @@ include ../../config.mak
 
 vpath %.c $(SRC_PATH)/modules/openhevc_dec
 
-CFLAGS=$(OPTFLAGS) -I"$(SRC_PATH)/include" $(OSVC_CFLAGS)
+CFLAGS=$(OPTFLAGS) $(OHEVC_CFLAGS) -I"$(SRC_PATH)/include"
 
 ifeq ($(DEBUGBUILD), yes)
 CFLAGS+=-g
@@ -14,7 +14,7 @@ CFLAGS+=-pg
 LDFLAGS+=-pg
 endif
 
-EXTRALIBS+=-L../../bin/gcc -L. -lgpac -lLibOpenHevcWrapper -lTLibVideoIO -lLibWrapper -lTLibDecoder -lTLibCommon -llibmd5 -lpthread $(OSVC_LDFLAGS)
+EXTRALIBS+= -L../../bin/gcc -lgpac $(OHEVC_LDFLAGS)
 
 #common obj
 OBJS= openhevc_dec.o
@@ -28,7 +28,7 @@ all: $(LIB)
 
 
 $(LIB): $(OBJS)
-	$(CXX) $(SHFLAGS) $(LDFLAGS) -o ../../bin/gcc/$@ $(OBJS) $(EXTRALIBS)
+	$(CC) $(SHFLAGS) $(LDFLAGS) -o ../../bin/gcc/$@ $(OBJS) $(EXTRALIBS)
 
 clean: 
 	rm -f $(OBJS) ../../bin/gcc/$(LIB)
@@ -37,7 +37,7 @@ dep: depend
 
 depend:
 	rm -f .depend	
-	$(CXX) -MM $(CFLAGS) $(SRCS) 1>.depend
+	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 distclean: clean
 	rm -f Makefile.bak .depend
