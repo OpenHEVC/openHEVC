@@ -10,13 +10,13 @@ SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_ISOC99_SOURCE -D_FILE_OFFSET_
 endif(APPLE)
 
 IF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -Wl,-Bsymbolic"  )
-SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -DPIC -Wl,-Bsymbolic"  )
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -Wl,-Bsymbolic -fno-tree-vectorize")
+SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -DPIC -Wl,-Bsymbolic -fno-tree-vectorize")
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
 find_package(SDL)
 find_package(SDL2)
-find_package(CSFML 2.0 COMPONENTS graphics)
+find_package(CSFML 2.0 COMPONENTS graphics system)
 
 if(MINGW)
 #set(CMAKE_C_FLAGS "-march=i486 -mwindows")
@@ -91,9 +91,9 @@ if(CSFML_FOUND)
 set_source_files_properties(csfml.c PROPERTIES COMPILE_FLAGS -I"${CSFML_INCLUDE_DIR}")
 add_executable(hevc_csfml getopt.c main.c csfml.c)
 if(MINGW)
-target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} -lwinmm)
+target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} ${CSFML_SYSTEM_LIBRARY_RELEASE} -lwinmm)
 else(MINGW)
-target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE})
+target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} ${CSFML_SYSTEM_LIBRARY_RELEASE})
 endif(MINGW)
 endif()
 

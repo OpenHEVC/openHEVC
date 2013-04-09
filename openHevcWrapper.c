@@ -81,7 +81,7 @@ void libOpenHevcGetPictureSize2(unsigned int *width, unsigned int *height, unsig
     *stride = openHevcContext.picture->linesize[0];
 }
 
-int libOpenHevcGetOuptut(int got_picture, unsigned char **Y, unsigned char **U, unsigned char **V)
+int libOpenHevcGetOutput(int got_picture, unsigned char **Y, unsigned char **U, unsigned char **V)
 {
     if( got_picture ) {
         *Y = openHevcContext.picture->data[0];
@@ -90,25 +90,21 @@ int libOpenHevcGetOuptut(int got_picture, unsigned char **Y, unsigned char **U, 
     }
     return 1;
 }
-int libOpenHevcGetOuptutCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V)
+int libOpenHevcGetOutputCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V)
 {
     int x, y;
     int y_offset, y_offset2;
     if( got_picture ) {
         y_offset = y_offset2 = 0;
         for(y = 0; y < openHevcContext.c->height; y++) {
-            for(x = 0; x < openHevcContext.c->width; x++) {
-                Y[y_offset2 + x] = openHevcContext.picture->data[0][y_offset + x];
-            }
+            memcpy(&Y[y_offset2], &openHevcContext.picture->data[0][y_offset], openHevcContext.c->width);
             y_offset  += openHevcContext.picture->linesize[0];
             y_offset2 += openHevcContext.c->width;
         }
         y_offset = y_offset2 = 0;
         for(y = 0; y < openHevcContext.c->height/2; y++) {
-            for(x = 0; x < openHevcContext.c->width/2; x++) {
-                U[y_offset2 + x] = openHevcContext.picture->data[1][y_offset + x];
-                V[y_offset2 + x] = openHevcContext.picture->data[2][y_offset + x];
-            }
+            memcpy(&U[y_offset2], &openHevcContext.picture->data[1][y_offset], openHevcContext.c->width/2);
+            memcpy(&V[y_offset2], &openHevcContext.picture->data[2][y_offset], openHevcContext.c->width/2);
             y_offset  += openHevcContext.picture->linesize[1];
             y_offset2 += openHevcContext.c->width / 2;
         }
