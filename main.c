@@ -64,7 +64,7 @@ static void video_decode_example(const char *filename)
     if (display_flags == DISPLAY_ENABLE) {
         while(!feof(f)) {
             int got_picture = libOpenHevcDecode(buf, get_next_nal(f, buf));
-            libOpenHevcGetOuptut(got_picture, &Y, &U, &V);
+            libOpenHevcGetOutput(got_picture, &Y, &U, &V);
             if (got_picture != 0) {
                 fflush(stdout);
                 if (init == 1 ) {
@@ -80,7 +80,7 @@ static void video_decode_example(const char *filename)
     } else {
         while(!feof(f)) {
             int got_picture = libOpenHevcDecode(buf, get_next_nal(f, buf));
-            libOpenHevcGetOuptut(got_picture, &Y, &U, &V);
+            libOpenHevcGetOutput(got_picture, &Y, &U, &V);
             if (got_picture != 0) {
                 if (init == 1 ) {
                     Init_Time();

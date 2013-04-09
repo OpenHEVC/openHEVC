@@ -81,7 +81,7 @@ void libOpenHevcGetPictureSize2(unsigned int *width, unsigned int *height, unsig
     *stride = openHevcContext.picture->linesize[0];
 }
 
-int libOpenHevcGetOuptut(int got_picture, unsigned char **Y, unsigned char **U, unsigned char **V)
+int libOpenHevcGetOutput(int got_picture, unsigned char **Y, unsigned char **U, unsigned char **V)
 {
     if( got_picture ) {
         *Y = openHevcContext.picture->data[0];
@@ -90,7 +90,7 @@ int libOpenHevcGetOuptut(int got_picture, unsigned char **Y, unsigned char **U, 
     }
     return 1;
 }
-int libOpenHevcGetOuptutCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V)
+int libOpenHevcGetOutputCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V)
 {
     int x, y;
     int y_offset, y_offset2;

@@ -223,10 +223,10 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 			pU = outBuffer + ctx->stride * ctx->height;
 			pV = outBuffer + 5*ctx->stride * ctx->height/4;
 
-			flushed = libOpenHevcGetOuptutCpy(1, pY, pU, pV);
+			flushed = libOpenHevcGetOutputCpy(1, pY, pU, pV);
+            *outBufferLength = ctx->out_size;
 
 			if (flushed) {
-				*outBufferLength = ctx->out_size;
 				*outBufferLength = 0;
 			}
 		}
@@ -330,7 +330,7 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 	pU = outBuffer + ctx->stride * ctx->height;
 	pV = outBuffer + 5*ctx->stride * ctx->height/4;
 
-	if (libOpenHevcGetOuptutCpy(1, pY, pU, pV)) {
+	if (libOpenHevcGetOutputCpy(1, pY, pU, pV)) {
 		*outBufferLength = ctx->out_size;
 	}
 
