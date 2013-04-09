@@ -14,7 +14,7 @@ SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -Wl,-Bsymbolic"  )
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -DPIC -Wl,-Bsymbolic"  )
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
-find_package(SDL REQUIRED)
+find_package(SDL)
 find_package(SDL2)
 find_package(CSFML 2.0 COMPONENTS graphics)
 
@@ -66,6 +66,8 @@ libavutil/samplefmt.c
 
 add_library (LibOpenHevcWrapper SHARED ${libfilenames})
 include_directories(.)
+
+if(SDL_FOUND)
 set_source_files_properties(sdl.c PROPERTIES COMPILE_FLAGS -I"${SDL_INCLUDE_DIR}")
 add_executable(hevc getopt.c main.c sdl.c)
 if(MINGW)
@@ -73,6 +75,7 @@ target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} -lwinmm)
 else(MINGW)
 target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY})
 endif(MINGW)
+endif()
 
 if(SDL2_FOUND)
 set_source_files_properties(sdl2.c PROPERTIES COMPILE_FLAGS -I"${SDL2_INCLUDE_DIR}")
