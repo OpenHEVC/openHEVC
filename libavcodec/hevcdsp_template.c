@@ -27,7 +27,14 @@
 #include "hevcdata.h"
 #include "hevcdsp.h"
 
+#if __GNUC__
+#define GCC_OPTIMIZATION_ENABLE
+#endif
 #define OPTIMIZATION_ENABLE
+
+#define SET(dst, x) (dst) = (x)
+#define SCALE(dst, x) (dst) = av_clip_int16(((x) + add) >> shift)
+#define ADD_AND_SCALE(dst, x) (dst) = av_clip_pixel((dst) + av_clip_int16(((x) + add) >> shift))
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
                           GetBitContext *gb, int pcm_bit_depth)
@@ -54,17 +61,16 @@ static void FUNC(dequant)(int16_t *coeffs, int log2_size, int qp)
 
     int shift  = BIT_DEPTH + log2_size - 5;
     int scale  = level_scale[qp % 6] << (qp / 6);
-    int offset = 1 << (shift - 1);
+    int add    = 1 << (shift - 1);
     int scale2 = scale << 4;
-#define FILTER()                                                                   \
-        coeffs[y+x] = av_clip_int16_c(((coeffs[y+x] * scale2) + offset) >> shift); \
-        x++;                                                                       \
-        coeffs[y+x] = av_clip_int16_c(((coeffs[y+x] * scale2) + offset) >> shift); \
-        x++;                                                                       \
-        coeffs[y+x] = av_clip_int16_c(((coeffs[y+x] * scale2) + offset) >> shift); \
-        x++;                                                                       \
-        coeffs[y+x] = av_clip_int16_c(((coeffs[y+x] * scale2) + offset) >> shift)
-
+#define FILTER()                                    \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2))
     switch (size){
         case 32:
             for (y = 0; y < 32*32; y+=32) {
@@ -89,10 +95,10 @@ static void FUNC(dequant)(int16_t *coeffs, int log2_size, int qp)
             break;
         case 4:
             for (y = 0; y < 4*4; y+=4) {
-                coeffs[y+0] = av_clip_int16_c(((coeffs[y+0] * scale2) + offset) >> shift);
-                coeffs[y+1] = av_clip_int16_c(((coeffs[y+1] * scale2) + offset) >> shift);
-                coeffs[y+2] = av_clip_int16_c(((coeffs[y+2] * scale2) + offset) >> shift);
-                coeffs[y+3] = av_clip_int16_c(((coeffs[y+3] * scale2) + offset) >> shift);
+                SCALE(coeffs[y+0], (coeffs[y+0] * scale2));
+                SCALE(coeffs[y+1], (coeffs[y+1] * scale2));
+                SCALE(coeffs[y+2], (coeffs[y+2] * scale2));
+                SCALE(coeffs[y+3], (coeffs[y+3] * scale2));
             }
             break;
     }
@@ -196,10 +202,6 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stri
 #undef FILTER
 }
 
-#define SET(dst, x) (dst) = (x)
-#define SCALE(dst, x) (dst) = av_clip_int16_c(((x) + add) >> shift)
-#define ADD_AND_SCALE(dst, x) (dst) = av_clip_pixel((dst) + av_clip_int16_c(((x) + add) >> shift))
-
 static void FUNC(transform_4x4_luma_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
 {
 #define TR_4x4_LUMA(dst, src, step, assign)                                     \
@@ -295,7 +297,6 @@ static void FUNC(transform_4x4_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _s
             assign(dst[(7-i)*dstep], e_8[i] - o_8[i]);      \
         }                                                   \
     } while (0)
-
 #define TR_16(dst, src, dstep, sstep, assign)                   \
     do {                                                        \
         int i, j;                                               \
@@ -311,7 +312,6 @@ static void FUNC(transform_4x4_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _s
             assign(dst[(15-i)*dstep], e_16[i] - o_16[i]);       \
         }                                                       \
     } while (0)
-
 #define TR_32(dst, src, dstep, sstep, assign)               \
     do {                                                    \
         int i, j;                                           \
@@ -320,7 +320,7 @@ static void FUNC(transform_4x4_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _s
         for (i = 0; i < 16; i++)                            \
             for (j = 1; j < 32; j += 2)                     \
                 o_32[i] += transform[j][i] * src[j*sstep];  \
-        TR_16(e_32, src, 1, 2*sstep, SET);                  \
+        TR_16(e_32, src, 1, 2*sstep, SET);                \
                                                             \
         for (i = 0; i < 16; i++) {                          \
             assign(dst[i*dstep], e_32[i] + o_32[i]);        \
@@ -384,7 +384,16 @@ static void FUNC(transform_16x16_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t 
 
 static void FUNC(transform_32x32_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
 {
-    int i;
+#define IT32x32_even(i,w) ( src[ 0*w] * transform[ 0][i] ) + ( src[16*w] * transform[16][i] )
+#define IT32x32_odd(i,w)  ( src[ 8*w] * transform[ 8][i] ) + ( src[24*w] * transform[24][i] )
+#define IT16x16(i,w)      ( src[ 4*w] * transform[ 4][i] ) + ( src[12*w] * transform[12][i] ) + ( src[20*w] * transform[20][i] ) + ( src[28*w] * transform[28][i] )
+#define IT8x8(i,w)        ( src[ 2*w] * transform[ 2][i] ) + ( src[ 6*w] * transform[ 6][i] ) + ( src[10*w] * transform[10][i] ) + ( src[14*w] * transform[14][i] ) + \
+                          ( src[18*w] * transform[18][i] ) + ( src[22*w] * transform[22][i] ) + ( src[26*w] * transform[26][i] ) + ( src[30*w] * transform[30][i] )
+#define IT4x4(i,w)        ( src[ 1*w] * transform[ 1][i] ) + ( src[ 3*w] * transform[ 3][i] ) + ( src[ 5*w] * transform[ 5][i] ) + ( src[ 7*w] * transform[ 7][i] ) + \
+                          ( src[ 9*w] * transform[ 9][i] ) + ( src[11*w] * transform[11][i] ) + ( src[13*w] * transform[13][i] ) + ( src[15*w] * transform[15][i] ) + \
+                          ( src[17*w] * transform[17][i] ) + ( src[19*w] * transform[19][i] ) + ( src[21*w] * transform[21][i] ) + ( src[23*w] * transform[23][i] ) + \
+                          ( src[25*w] * transform[25][i] ) + ( src[27*w] * transform[27][i] ) + ( src[29*w] * transform[29][i] ) + ( src[31*w] * transform[31][i] )
+    int i,j;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t stride = _stride / sizeof(pixel);
     int shift = 7;
@@ -392,17 +401,86 @@ static void FUNC(transform_32x32_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t 
     int16_t *src = coeffs;
 
     for (i = 0; i < 32; i++) {
+#ifndef OPTIMIZATION_ENABLE
         TR_32_1(src, src);
+#else
+        int e_32[16];
+        int o_32[16];
+        int e_16[8];
+        int e_8[4];
+        int odd;
+        const int e0 = IT32x32_even(0,32);
+        const int e1 = IT32x32_even(1,32);
+        const int o0 = IT32x32_odd(0,32);
+        const int o1 = IT32x32_odd(1,32);
+        e_8[0] = e0 + o0;
+        e_8[1] = e1 + o1;
+        e_8[2] = e1 - o1;
+        e_8[3] = e0 - o0;
+        for (j = 0; j < 4; j++) {
+            odd       = IT16x16(j,32);
+            e_16[  j] = e_8[j] + odd;
+            e_16[7-j] = e_8[j] - odd;
+        }
+        for (j = 0; j < 8; j++) {
+            odd        = IT8x8(j,32);
+            e_32[   j] = e_16[j] + odd;
+            e_32[15-j] = e_16[j] - odd;
+        }
+        for (j = 0; j < 16; j++)
+            o_32[j] = IT4x4(j,32);
+        for (j = 0; j < 16; j++) {
+            odd        = o_32[j];
+            SCALE(src[(   j)*32], (e_32[j] + odd));
+            SCALE(src[(31-j)*32], (e_32[j] - odd));
+        }
+#endif
         src++;
     }
-
+    src   = coeffs;
     shift = 20 - BIT_DEPTH;
-    add = 1 << (shift - 1);
+    add   = 1 << (shift - 1);
     for (i = 0; i < 32; i++) {
+#ifndef OPTIMIZATION_ENABLE
         TR_32_2(dst, coeffs);
         coeffs += 32;
+#else
+        int e_32[16];
+        int e_16[8];
+        int e_8[4];
+        int odd;
+        const int e0 = IT32x32_even(0,1);
+        const int e1 = IT32x32_even(1,1);
+        const int o0 = IT32x32_odd(0,1);
+        const int o1 = IT32x32_odd(1,1);
+        e_8[0] = e0 + o0;
+        e_8[1] = e1 + o1;
+        e_8[2] = e1 - o1;
+        e_8[3] = e0 - o0;
+        for (j = 0; j < 4; j++) {
+            odd       = IT16x16(j,1);
+            e_16[  j] = e_8[j] + odd;
+            e_16[7-j] = e_8[j] - odd;
+        }
+        for (j = 0; j < 8; j++) {
+            odd        = IT8x8(j,1);
+            e_32[   j] = e_16[j] + odd;
+            e_32[15-j] = e_16[j] - odd;
+        }
+        for (j = 0; j < 16; j++) {
+            odd       = IT4x4(j,1);
+            ADD_AND_SCALE(dst[   j], e_32[j] + odd);
+            ADD_AND_SCALE(dst[31-j], e_32[j] - odd);
+        }
+        src += 32;
+#endif
         dst += stride;
     }
+#undef IT32x32_even
+#undef IT32x32_odd
+#undef IT16x16
+#undef IT8x8
+#undef IT4x4
 }
 
 static void FUNC(sao_band_filter)(uint8_t * _dst, uint8_t *_src, ptrdiff_t _stride, int *sao_offset_val,
@@ -420,8 +498,10 @@ static void FUNC(sao_band_filter)(uint8_t * _dst, uint8_t *_src, ptrdiff_t _stri
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
+#ifndef GCC_OPTIMIZATION_ENABLE
             x++;
             dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
+#endif
         }
         dst += stride;
         src += stride;
@@ -579,12 +659,14 @@ static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = src[x] << (14 - BIT_DEPTH);
+#ifndef GCC_OPTIMIZATION_ENABLE
             x++;
             dst[x] = src[x] << (14 - BIT_DEPTH);
             x++;
             dst[x] = src[x] << (14 - BIT_DEPTH);
             x++;
             dst[x] = src[x] << (14 - BIT_DEPTH);
+#endif
         }
         src += srcstride;
         dst += dststride;
@@ -601,7 +683,7 @@ static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
     (src[x-2*stride] - 5*src[x-stride] + 17*src[x] + 58*src[x+stride]           \
      - 10*src[x+2*stride] + 4*src[x+3*stride] - src[x+4*stride])
 
-#ifdef OPTIMIZATION_ENABLE2
+#ifdef GCC_OPTIMIZATION_ENABLE
 #define PUT_HEVC_QPEL_H(H)                                                      \
 static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
                                           uint8_t *_src, ptrdiff_t _srcstride,  \
@@ -784,8 +866,10 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = src[x] << (14 - BIT_DEPTH);
+#ifndef GCC_OPTIMIZATION_ENABLE
             x++;
             dst[x] = src[x] << (14 - BIT_DEPTH);
+#endif
         }
         src += srcstride;
         dst += dststride;
@@ -816,7 +900,7 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
 #endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-#ifdef OPTIMIZATION_ENABLE2
+#ifdef GCC_OPTIMIZATION_ENABLE
             dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
 #else
             dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
@@ -845,7 +929,7 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
 #endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-#ifdef OPTIMIZATION_ENABLE2
+#ifdef GCC_OPTIMIZATION_ENABLE
             dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
 #else
             dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
@@ -884,7 +968,7 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 
     for (y = 0; y < height + epel_extra; y++) {
         for (x = 0; x < width; x++) {
-#ifdef OPTIMIZATION_ENABLE2
+#ifdef GCC_OPTIMIZATION_ENABLE
             tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
 #else
             tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
@@ -905,7 +989,7 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 #endif
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-#ifdef OPTIMIZATION_ENABLE2
+#ifdef GCC_OPTIMIZATION_ENABLE
             dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
 #else
             dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
@@ -935,12 +1019,14 @@ static void FUNC(put_unweighted_pred_luma)(uint8_t *_dst, ptrdiff_t _dststride,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
+#ifndef GCC_OPTIMIZATION_ENABLE
             x++;
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
             x++;
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
             x++;
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
+#endif
         }
         dst += dststride;
         src += srcstride;
@@ -964,8 +1050,10 @@ static void FUNC(put_unweighted_pred_chroma)(uint8_t *_dst, ptrdiff_t _dststride
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
+#ifndef GCC_OPTIMIZATION_ENABLE
             x++;
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
+#endif
         }
         dst += dststride;
         src += srcstride;
@@ -989,7 +1077,7 @@ static void FUNC(put_weighted_pred_avg_luma)(uint8_t *_dst, ptrdiff_t _dststride
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-#ifndef OPTIMIZATION_ENABLE2
+#ifndef GCC_OPTIMIZATION_ENABLE
             x++;
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
             x++;
@@ -1021,7 +1109,7 @@ static void FUNC(put_weighted_pred_avg_chroma)(uint8_t *_dst, ptrdiff_t _dststri
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-#ifndef OPTIMIZATION_ENABLE
+#ifndef GCC_OPTIMIZATION_ENABLE
             x++;
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
 #endif
