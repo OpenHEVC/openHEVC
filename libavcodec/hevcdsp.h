@@ -60,7 +60,14 @@ typedef struct HEVCDSPContext {
                                   ptrdiff_t srcstride, int width, int height);
     void (*put_weighted_pred_avg_chroma)(uint8_t *dst, ptrdiff_t dststride, int16_t *src1, int16_t *src2,
                                   ptrdiff_t srcstride, int width, int height);
-
+    void (*weighted_pred_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *dst, ptrdiff_t dststride, int16_t *src,
+                                  ptrdiff_t srcstride, int width, int height, int8_t predFlagL0, int8_t predFlagL1 );
+    void (*weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *dst, ptrdiff_t dststride, int16_t *src1, int16_t *src2,
+                                  ptrdiff_t srcstride, int width, int height);
+    void (*weighted_pred_chroma)(uint8_t denom, uint8_t *wl0Flag, uint8_t *wl1Flag, int *ol0Flag, int *ol1Flag ,uint8_t *dst, ptrdiff_t dststride, int16_t *src,
+                                  ptrdiff_t srcstride, int width, int height, int8_t predFlagL0, int8_t predFlagL1, uint8_t cIdx);
+    void (*weighted_pred_avg_chroma)(uint8_t denom, uint8_t *wl0Flag, uint8_t *wl1Flag, int *ol0Flag, int *ol1Flag,uint8_t *dst, ptrdiff_t dststride, int16_t *src1, int16_t *src2,
+                                  ptrdiff_t srcstride, int width, int height, uint8_t cIdx);
     void (*hevc_loop_filter_luma)(uint8_t *_pix, ptrdiff_t _xstride, ptrdiff_t _ystride, int no_p, int no_q, int _beta, int _tc);
     void (*hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride, ptrdiff_t _ystride, int no_p, int no_q, int _tc);
 } HEVCDSPContext;

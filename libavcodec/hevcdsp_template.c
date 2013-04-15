@@ -26,6 +26,7 @@
 #include "bit_depth_template.c"
 #include "hevcdata.h"
 #include "hevcdsp.h"
+#include "hevc.h"
 
 #define OPTIMIZATION_ENABLE
 
@@ -1031,6 +1032,161 @@ static void FUNC(put_weighted_pred_avg_chroma)(uint8_t *_dst, ptrdiff_t _dststri
         src2 += srcstride;
     }
 }
+
+static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t *wl0Flag, uint8_t *wl1Flag, int *ol0Flag, int *ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
+                                        int16_t *src, ptrdiff_t srcstride,
+                                        int width, int height, int8_t predFlagL0, int8_t predFlagL1)
+{
+    int shift;
+    int log2Wd;
+    int w0;
+    int w1;
+    int o0;
+    int o1;
+    int x , y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t dststride = _dststride/sizeof(pixel);
+
+    shift = 14 - BIT_DEPTH;
+    log2Wd = denom + shift;
+    w0 = wl0Flag[ 0 ];
+    w1 = wl1Flag[ 1 ];
+    o0 = (ol0Flag[ 0 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+    o1 = (ol1Flag[ 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            if ((predFlagL0) && ( !predFlagL1 )) {
+                if (log2Wd >= 1) {
+                    dst[x] = av_clip_pixel((((src[x] * w0 + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + o0);
+                } else {
+                    dst[x] = av_clip_pixel(src[x] * w0 + o0);
+                }
+            } else {
+                if (( !predFlagL0 ) && (predFlagL1)) {
+                    if (log2Wd >= 1) {
+                        dst[x] = av_clip_pixel((((src[x] * w1 + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + o1);
+                    } else {
+                        dst[x] = av_clip_pixel(src[x] * w1 + o1);
+                    }
+                }
+            }
+        dst  += dststride;
+        src += srcstride;
+        }
+    }
+}
+
+static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
+                                        int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
+                                        int width, int height)
+{
+    int shift;
+    int log2Wd;
+    int w0;
+    int w1;
+    int o0;
+    int o1;
+    int x , y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t dststride = _dststride/sizeof(pixel);
+
+    shift = 14 - BIT_DEPTH;
+    log2Wd = denom + shift;
+    w0 = wl0Flag;
+    w1 = wl0Flag;
+    o0 = (wl0Flag) * ( 1 << ( BIT_DEPTH - 8 ) );
+    o1 = (wl0Flag) * ( 1 << ( BIT_DEPTH - 8 ) );
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+                dst[x] = av_clip_pixel((src1[x] * w0 + src2[x] * w1 + ((o0 + o1 + 1) << log2Wd)) >> (log2Wd + 1));
+        }
+        dst  += dststride;
+        src1 += srcstride;
+        src2 += srcstride;
+    }
+}
+
+
+static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t **wl0Flag, uint8_t **wl1Flag, int **ol0Flag, int **ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
+                                        int16_t *src, ptrdiff_t srcstride,
+                                        int width, int height, int8_t predFlagL0, int8_t predFlagL1, uint8_t cIdx)
+{
+    int shift;
+    int log2Wd;
+    int w0;
+    int w1;
+    int o0;
+    int o1;
+    int x , y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t dststride = _dststride/sizeof(pixel);
+
+    shift = 14 - BIT_DEPTH;
+
+    log2Wd = denom + shift;
+    w0 = wl0Flag[ REF_IDX_L0 ][ cIdx - 1 ];
+    w1 = wl1Flag[ REF_IDX_L1 ][ cIdx - 1 ];
+    o0 = (ol0Flag[ REF_IDX_L0 ][ cIdx - 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+    o1 = (ol1Flag[ REF_IDX_L1 ][ cIdx - 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            if ( predFlagL0 &&  !predFlagL1 ) {
+                if (log2Wd >= 1) {
+                    dst[x] = av_clip_pixel((((src[x] * w0 + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + o0);
+                } else {
+                    dst[x] = av_clip_pixel(src[x] * w0 + o0);
+                }
+            } else {
+                if (( !predFlagL0 ) && (predFlagL1)) {
+                    if (log2Wd >= 1) {
+                        dst[x] = av_clip_pixel((((src[x] * w1 + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + o1);
+                    } else {
+                        dst[x] = av_clip_pixel(src[x] * w1 + o1);
+                    }
+                }
+            }
+         }
+        dst  += dststride;
+        src += srcstride;
+    }
+}
+
+static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, uint8_t **wl0Flag, uint8_t **wl1Flag, int **ol0Flag, int **ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
+                                        int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
+                                        int width, int height, uint8_t cIdx)
+{
+    int shift;
+    int log2Wd;
+    int w0;
+    int w1;
+    int o0;
+    int o1;
+    int x , y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t dststride = _dststride/sizeof(pixel);
+
+    shift = 14 - BIT_DEPTH;
+
+    log2Wd = denom + shift;
+    w0 = wl0Flag[ REF_IDX_L0 ][ cIdx - 1 ];
+    w1 = wl1Flag[ REF_IDX_L1 ][ cIdx - 1 ];
+    o0 = (ol0Flag[ REF_IDX_L0 ][ cIdx - 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+    o1 = (ol1Flag[ REF_IDX_L1 ][ cIdx - 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+                dst[x] = av_clip_pixel((src1[x] * w0 + src2[x] * w1 + ((o0 + o1 + 1) << log2Wd)) >> (log2Wd + 1));
+            }
+        dst  += dststride;
+        src1 += srcstride;
+        src2 += srcstride;
+    }
+
+}
+
 
 // line zero
 #define P3 pix[-4*xstride]
