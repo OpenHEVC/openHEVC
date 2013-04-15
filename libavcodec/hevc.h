@@ -116,6 +116,10 @@ typedef struct RefPicList {
 
 #define HEVC_CONTEXTS 183
 
+
+
+#define MAX_ENTRIES 24
+
 #define L0 0
 #define L1 1
 
@@ -442,6 +446,7 @@ typedef struct SliceHeader {
     uint8_t slice_loop_filter_across_slices_enabled_flag;
 
     int* entry_point_offset;
+    int num_entry_point_offsets; 
 
 #if REFERENCE_ENCODER_QUIRKS
     uint8_t tile_marker_flag;
@@ -681,11 +686,11 @@ typedef struct HEVCContext {
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
 
-    GetBitContext gb;
-    CABACContext cc;
-
-    uint8_t cabac_state[HEVC_CONTEXTS];
-    uint8_t cabac_state_save[HEVC_CONTEXTS];
+    GetBitContext *gb[MAX_ENTRIES ]; //
+    CABACContext *cc[MAX_ENTRIES]; //
+    uint8_t *cabac_state[MAX_ENTRIES+1]; //
+    
+    
 
     int nal_ref_flag;
     enum NALUnitType nal_unit_type;
@@ -731,6 +736,7 @@ typedef struct HEVCContext {
     HEVCFrame short_refs[32];
     int decode_checksum_sei;
     uint8_t md5[3][16];
+    int16_t * cbt_entry_count;
 } HEVCContext;
 
 enum ScanType {
@@ -750,59 +756,59 @@ int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
 void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
 
-void save_states(HEVCContext *s);
-void load_states(HEVCContext *s);
-void ff_hevc_cabac_reinit(HEVCContext *s);
-void ff_hevc_cabac_init(HEVCContext *s);
-int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
-int ff_hevc_sao_type_idx_decode(HEVCContext *s);
-int ff_hevc_sao_band_position_decode(HEVCContext *s);
-int ff_hevc_sao_offset_abs_decode(HEVCContext *s);
-int ff_hevc_sao_offset_sign_decode(HEVCContext *s);
-int ff_hevc_sao_eo_class_decode(HEVCContext *s);
-int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
-int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
-int ff_hevc_skip_flag_decode(HEVCContext *s, int x_cb, int y_cb);
-int ff_hevc_pred_mode_decode(HEVCContext *s);
-int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0);
-int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size);
-int ff_hevc_pcm_flag_decode(HEVCContext *s);
-int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s);
-int ff_hevc_mpm_idx_decode(HEVCContext *s);
-int ff_hevc_rem_intra_luma_pred_mode_decode(HEVCContext *s);
-int ff_hevc_intra_chroma_pred_mode_decode(HEVCContext *s);
-int ff_hevc_merge_idx_decode(HEVCContext *s);
-int ff_hevc_merge_flag_decode(HEVCContext *s);
-int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH);
-int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int num_ref_idx_lx);
-int ff_hevc_mvp_lx_flag_decode(HEVCContext *s);
-int ff_hevc_no_residual_syntax_flag_decode(HEVCContext *s);
-int ff_hevc_abs_mvd_greater0_flag_decode(HEVCContext *s);
-int ff_hevc_abs_mvd_greater1_flag_decode(HEVCContext *s);
-int ff_hevc_abs_mvd_minus2_decode(HEVCContext *s);
-int ff_hevc_mvd_sign_flag_decode(HEVCContext *s);
-int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size);
-int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth);
-int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth);
-int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx);
+void save_states(HEVCContext *s, int entry);
+void load_states(HEVCContext *s, int entry);
+void ff_hevc_cabac_reinit(HEVCContext *s, int entry);
+void ff_hevc_cabac_init(HEVCContext *s, int entry);
+int ff_hevc_sao_merge_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_sao_type_idx_decode(HEVCContext *s, int entry);
+int ff_hevc_sao_band_position_decode(HEVCContext *s, int entry);
+int ff_hevc_sao_offset_abs_decode(HEVCContext *s, int entry);
+int ff_hevc_sao_offset_sign_decode(HEVCContext *s, int entry);
+int ff_hevc_sao_eo_class_decode(HEVCContext *s, int entry);
+int ff_hevc_end_of_slice_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_skip_flag_decode(HEVCContext *s, int x_cb, int y_cb, int entry);
+int ff_hevc_pred_mode_decode(HEVCContext *s, int entry);
+int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0, int entry);
+int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size, int entry);
+int ff_hevc_pcm_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_mpm_idx_decode(HEVCContext *s, int entry);
+int ff_hevc_rem_intra_luma_pred_mode_decode(HEVCContext *s, int entry);
+int ff_hevc_intra_chroma_pred_mode_decode(HEVCContext *s, int entry);
+int ff_hevc_merge_idx_decode(HEVCContext *s, int entry);
+int ff_hevc_merge_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH, int entry);
+int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int num_ref_idx_lx, int entry);
+int ff_hevc_mvp_lx_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_no_residual_syntax_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_abs_mvd_greater0_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_abs_mvd_greater1_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_abs_mvd_minus2_decode(HEVCContext *s, int entry);
+int ff_hevc_mvd_sign_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size, int entry);
+int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth, int entry);
+int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth, int entry);
+int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx, int entry);
 int ff_hevc_last_significant_coeff_x_prefix_decode(HEVCContext *s, int c_idx,
-                                                   int log2_size);
+                                                   int log2_size, int entry);
 int ff_hevc_last_significant_coeff_y_prefix_decode(HEVCContext *s, int c_idx,
-                                                   int log2_size);
+                                                   int log2_size, int entry);
 int ff_hevc_last_significant_coeff_suffix_decode(HEVCContext *s,
-                                                 int last_significant_coeff_prefix);
+                                                 int last_significant_coeff_prefix, int entry);
 int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int x_cg,
-                                                int y_cg, int log2_trafo_size);
+                                                int y_cg, int log2_trafo_size, int entry);
 int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
-                                          int log2_trafo_size, int scan_idx);
+                                          int log2_trafo_size, int scan_idx, int entry);
 int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx,
                                                  int i, int n,
                                                  int first_greater1_coeff_idx,
-                                                 int first_subset);
+                                                 int first_subset, int entry);
 int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
-                                                 int i, int n);
-int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int n, int base_level);
-int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
+                                                 int i, int n, int entry);
+int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int n, int base_level, int entry);
+int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb, int entry);
 
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX);

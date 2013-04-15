@@ -28,7 +28,8 @@ int libOpenHevcInit()
     openHevcContext.parser  = av_parser_init( openHevcContext.codec->id );
     openHevcContext.c       = avcodec_alloc_context3(openHevcContext.codec);
     openHevcContext.picture = avcodec_alloc_frame();
-
+    
+    
     if(openHevcContext.codec->capabilities&CODEC_CAP_TRUNCATED)
         openHevcContext.c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
@@ -37,6 +38,8 @@ int libOpenHevcInit()
          available in the bitstream. */
 
     /* open it */
+    openHevcContext.c->thread_type = FF_THREAD_SLICE;
+    openHevcContext.c->thread_count = 1;
     if (avcodec_open2(openHevcContext.c, openHevcContext.codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);

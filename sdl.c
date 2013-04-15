@@ -47,7 +47,7 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     const SDL_VideoInfo* info;
     Uint8 bpp;
     Uint32 vflags;
-
+    
     /* First, initialize SDL's video subsystem. */
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         /* Failed, exit. */
@@ -55,12 +55,14 @@ int Init_SDL(int edge, int frame_width, int frame_height){
         SDL_Quit();
         exit(0);
     }
+    
     info = SDL_GetVideoInfo();
     if( !info ) {
         printf("SDL ERROR Video query failed: %s\n", SDL_GetError() );
         SDL_Quit();
         exit(0);
     }
+    
     bpp = info->vfmt->BitsPerPixel;
     if(info->hw_available)
         vflags = SDL_HWSURFACE;
@@ -72,8 +74,9 @@ int Init_SDL(int edge, int frame_width, int frame_height){
 
     screenwidth  = frame_width;
     screenheight = frame_height;
-
+    //fprintf(stderr, "Error -----  \n");
     screen = SDL_SetVideoMode(screenwidth, screenheight, bpp, vflags);
+    fprintf(stderr, "Error -----  \n");
     if ( screen == NULL ) {
         printf("SDL: Couldn't set %dx%d: %s", screenwidth, screenheight, SDL_GetError());
         SDL_Quit();
@@ -90,8 +93,10 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     rect.y = 0;
     rect.w = screenwidth + 2 * edge;
     rect.h = screenheight;
+    fprintf(stderr, "Error -----  \n");
     SDL_DisplayYUVOverlay(yuv_overlay, &rect);
 #endif
+    fprintf(stderr, "Error -----  \n");
     return 0;
 }
 
