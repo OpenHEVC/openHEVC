@@ -396,10 +396,11 @@ void pred_weight_table(HEVCContext *s, GetBitContext *gb) {
     int delta_luma_weight_l1[16];
     int delta_chroma_weight_l1[16][2];
     int delta_chroma_offset_l1[16][2];
+
     s->sh.luma_log2_weight_denom = get_ue_golomb(gb);
     if (s->sps->chroma_format_idc != 0){
          delta_chroma_log2_weight_denom = get_se_golomb(gb);
-         s->sh.chroma_log2_weight_denom = s->sh.luma_log2_weight_denom + delta_chroma_log2_weight_denom;
+         s->sh.chroma_log2_weight_denom = av_clip_c(s->sh.luma_log2_weight_denom + delta_chroma_log2_weight_denom ,0 ,7);
     }
     for ( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++){
         luma_weight_l0_flag[i] = get_bits1(gb);
@@ -1639,27 +1640,21 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             luma_mc(s, tmp, tmpstride,
                     s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                     &current_mv.mv[0], x0, y0, nPbW, nPbH);
-         /*    s->hevcdsp.weighted_pred_luma(s->sh.luma_log2_weight_denom,
-                                          s->sh.luma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]],
-                                          s->sh.luma_weight_l1[refPicList[1].idx[current_mv.ref_idx[1]]],
-                                          s->sh.luma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]],
-                                          s->sh.luma_offset_l1[refPicList[1].idx[current_mv.ref_idx[1]]],
-                                          dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH,1 ,0);
-           */  chroma_mc(s, tmp, tmp2, tmpstride,
+            s->hevcdsp.weighted_pred_luma(s->sh.luma_log2_weight_denom,
+                                          s->sh.luma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]],                                          
+                                          s->sh.luma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]],                                          
+                                          dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
+            chroma_mc(s, tmp, tmp2, tmpstride,
                       s->short_refs[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                       &current_mv.mv[0], x0/2, y0/2, nPbW/2, nPbH/2);
             s->hevcdsp.weighted_pred_chroma(s->sh.chroma_log2_weight_denom ,
-                                            s->sh.chroma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]][0],
-                                            s->sh.chroma_weight_l1[refPicList[1].idx[current_mv.ref_idx[1]]][0],
-                                            s->sh.chroma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]][0],
-                                            s->sh.chroma_offset_l1[refPicList[1].idx[current_mv.ref_idx[1]]][0],
-                                            dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2,1 ,0);
+                                            s->sh.chroma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]][0],                                            
+                                            s->sh.chroma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]][0],                                            
+                                            dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
             s->hevcdsp.weighted_pred_chroma(s->sh.chroma_log2_weight_denom ,
-                                            s->sh.chroma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]][1],
-                                            s->sh.chroma_weight_l1[refPicList[1].idx[current_mv.ref_idx[1]]][1],
-                                            s->sh.chroma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]][1],
-                                            s->sh.chroma_offset_l1[refPicList[1].idx[current_mv.ref_idx[1]]][1],
-                                            dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2,1 ,0);
+                                            s->sh.chroma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]][1],                                           
+                                            s->sh.chroma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]][1],                                           
+                                            dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
                    }
 
     } else if (!current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
@@ -1682,28 +1677,22 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             luma_mc(s, tmp, tmpstride,
                     s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                     &current_mv.mv[1], x0, y0, nPbW, nPbH);
-  /*          s->hevcdsp.weighted_pred_luma(s->sh.luma_log2_weight_denom,
-                                          s->sh.luma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]],
+            s->hevcdsp.weighted_pred_luma(s->sh.luma_log2_weight_denom,                                          
                                           s->sh.luma_weight_l1[refPicList[1].idx[current_mv.ref_idx[1]]],
-                                          s->sh.luma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]],
                                           s->sh.luma_offset_l1[refPicList[1].idx[current_mv.ref_idx[1]]],
-                                          dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH,0 ,1);
-          */  chroma_mc(s, tmp, tmp2, tmpstride,
+                                          dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
+            chroma_mc(s, tmp, tmp2, tmpstride,
                      s->short_refs[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                       &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
 
-            s->hevcdsp.weighted_pred_chroma(s->sh.chroma_log2_weight_denom ,
-                                            s->sh.chroma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]][0],
-                                            s->sh.chroma_weight_l1[refPicList[1].idx[current_mv.ref_idx[1]]][0],
-                                            s->sh.chroma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]][0],
+            s->hevcdsp.weighted_pred_chroma(s->sh.chroma_log2_weight_denom ,                                            
+                                            s->sh.chroma_weight_l1[refPicList[1].idx[current_mv.ref_idx[1]]][0],                                            
                                             s->sh.chroma_offset_l1[refPicList[1].idx[current_mv.ref_idx[1]]][0],
-                                            dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2,0 ,1);
-            s->hevcdsp.weighted_pred_chroma(s->sh.chroma_log2_weight_denom ,
-                                            s->sh.chroma_weight_l0[refPicList[0].idx[current_mv.ref_idx[0]]][1],
-                                            s->sh.chroma_weight_l1[refPicList[1].idx[current_mv.ref_idx[1]]][1],
-                                            s->sh.chroma_offset_l0[refPicList[0].idx[current_mv.ref_idx[0]]][1],
+                                            dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
+            s->hevcdsp.weighted_pred_chroma(s->sh.chroma_log2_weight_denom ,                                           
+                                            s->sh.chroma_weight_l1[refPicList[1].idx[current_mv.ref_idx[1]]][1],                                            
                                             s->sh.chroma_offset_l1[refPicList[1].idx[current_mv.ref_idx[1]]][1],
-                                            dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2,0 ,1);
+                                            dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
         }
 
     } else if (current_mv.pred_flag[0] && current_mv.pred_flag[1]) {

@@ -1121,43 +1121,29 @@ static void FUNC(put_weighted_pred_avg_chroma)(uint8_t *_dst, ptrdiff_t _dststri
     }
 }
 
-static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t wlxFlag, int olxFlag,uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src, ptrdiff_t srcstride,
-                                        int width, int height, int8_t predFlagL0, int8_t predFlagL1)
+                                        int width, int height)
 {
     int shift;
     int log2Wd;
-    int w0;
-    int w1;
-    int o0;
-    int o1;
+    int wx;
+    int ox;
     int x , y;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t dststride = _dststride/sizeof(pixel);
 
     shift = 14 - BIT_DEPTH;
     log2Wd = denom + shift;
-    w0 = wl0Flag;
-    w1 = wl1Flag;
-    o0 = ol0Flag * ( 1 << ( BIT_DEPTH - 8 ) );
-    o1 = ol1Flag * ( 1 << ( BIT_DEPTH - 8 ) );
+    wx = wlxFlag;
+    ox = olxFlag * ( 1 << ( BIT_DEPTH - 8 ) );
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            if ((predFlagL0) && ( !predFlagL1 )) {
-                if (log2Wd >= 1) {
-                    dst[x] = av_clip_pixel((((src[x] * w0 + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + o0);
-                } else {
-                    dst[x] = av_clip_pixel(src[x] * w0 + o0);
-                }
+            if (log2Wd >= 1) {
+                dst[x] = av_clip_pixel((((src[x] * wx + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + ox);
             } else {
-                if (( !predFlagL0 ) && (predFlagL1)) {
-                    if (log2Wd >= 1) {
-                        dst[x] = av_clip_pixel((((src[x] * w1 + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + o1);
-                    } else {
-                        dst[x] = av_clip_pixel(src[x] * w1 + o1);
-                    }
-                }
+                dst[x] = av_clip_pixel(src[x] * wx + ox);
             }
         dst  += dststride;
         src  += srcstride;
@@ -1197,16 +1183,14 @@ static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t
 }
 
 
-static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wlxFlag, int olxFlag, uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src, ptrdiff_t srcstride,
                                         int width, int height, int8_t predFlagL0, int8_t predFlagL1)
 {
     int shift;
     int log2Wd;
-    int w0;
-    int w1;
-    int o0;
-    int o1;
+    int wx;
+    int ox;
     int x , y;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t dststride = _dststride/sizeof(pixel);
@@ -1214,31 +1198,19 @@ static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wl0Flag, uint8_t w
     shift = 14 - BIT_DEPTH;
 
     log2Wd = denom + shift;
-    w0 = wl0Flag;
-    w1 = wl1Flag;
-    o0 = ol0Flag * ( 1 << ( BIT_DEPTH - 8 ) );
-    o1 = ol1Flag * ( 1 << ( BIT_DEPTH - 8 ) );
+    wx = wlxFlag;
+    ox = olxFlag * ( 1 << ( BIT_DEPTH - 8 ) );
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            if ( predFlagL0 &&  !predFlagL1 ) {
-                if (log2Wd >= 1) {
-                    dst[x] = av_clip_pixel((((src[x] * w0 + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + o0);
-                } else {
-                    dst[x] = av_clip_pixel(src[x] * w0 + o0);
-                }
+            if (log2Wd >= 1) {
+                dst[x] = av_clip_pixel((((src[x] * wx + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + ox);
             } else {
-                if (( !predFlagL0 ) && (predFlagL1)) {
-                    if (log2Wd >= 1) {
-                        dst[x] = av_clip_pixel((((src[x] * w1 + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + o1);
-                    } else {
-                        dst[x] = av_clip_pixel(src[x] * w1 + o1);
-                    }
-                }
+                dst[x] = av_clip_pixel(src[x] * wx + ox);
             }
          }
-        dst  += dststride;
-        src  += srcstride;
+         dst  += dststride;
+         src  += srcstride;
     }
 }
 
