@@ -1121,7 +1121,7 @@ static void FUNC(put_weighted_pred_avg_chroma)(uint8_t *_dst, ptrdiff_t _dststri
     }
 }
 
-static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t wlxFlag, int olxFlag,
+static void FUNC(weighted_pred_luma)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
                                      uint8_t *_dst, ptrdiff_t _dststride,
                                      int16_t *src, ptrdiff_t srcstride,
                                      int width, int height)
@@ -1154,7 +1154,7 @@ static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t wlxFlag, int olxFlag
     }
 }
 
-static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_avg_luma)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int ol0Flag, int ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
                                         int width, int height)
 {
@@ -1186,7 +1186,7 @@ static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t
 }
 
 
-static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wlxFlag, int olxFlag, uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_chroma)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag, uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src, ptrdiff_t srcstride,
                                         int width, int height, int8_t predFlagL0, int8_t predFlagL1)
 {
@@ -1218,7 +1218,7 @@ static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wlxFlag, int olxFl
     }
 }
 
-static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
                                         int width, int height)
 {

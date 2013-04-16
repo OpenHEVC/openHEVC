@@ -155,7 +155,7 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb) {
     s->sh.luma_log2_weight_denom = get_ue_golomb(gb);
     if (s->sps->chroma_format_idc != 0){
         delta_chroma_log2_weight_denom = get_se_golomb(gb);
-        s->sh.chroma_log2_weight_denom = av_clip_c(s->sh.luma_log2_weight_denom + delta_chroma_log2_weight_denom ,0 ,7);
+        s->sh.chroma_log2_weight_denom = av_clip_c(s->sh.luma_log2_weight_denom + delta_chroma_log2_weight_denom, 0, 7);
     }
     for ( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++){
         luma_weight_l0_flag[i] = get_bits1(gb);
