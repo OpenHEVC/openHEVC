@@ -140,6 +140,118 @@ static void pic_arrays_free(HEVCContext *s)
 
 }
 
+static void pred_weight_table(HEVCContext *s, GetBitContext *gb) {
+    int i = 0;
+    int j = 0;
+    int delta_chroma_log2_weight_denom;
+    /*
+     *todo
+     uint8_t luma_weight_l0_flag[s->sh.num_ref_idx_l0_active];
+     int delta_luma_weight_l0[s->sh.num_ref_idx_l0_active];
+     uint8_t chroma_weight_l0_flag[s->sh.num_ref_idx_l0_active];
+     int delta_chroma_weight_l0[s->sh.num_ref_idx_l0_active][2];
+     int delta_chroma_offset_l0[s->sh.num_ref_idx_l0_active][2];
+     uint8_t luma_weight_l1_flag[s->sh.num_ref_idx_l1_active];
+     uint8_t chroma_weight_l1_flag[s->sh.num_ref_idx_l1_active];
+     int delta_luma_weight_l1[s->sh.num_ref_idx_l1_active];
+     int delta_chroma_weight_l1[s->sh.num_ref_idx_l1_active][2];
+     int delta_chroma_offset_l1[s->sh.num_ref_idx_l1_active][2];
+     */
+    uint8_t luma_weight_l0_flag[16];
+    int delta_luma_weight_l0[16];
+    uint8_t chroma_weight_l0_flag[16];
+    int delta_chroma_weight_l0[16][2];
+    int delta_chroma_offset_l0[16][2];
+    uint8_t luma_weight_l1_flag[16];
+    uint8_t chroma_weight_l1_flag[16];
+    int delta_luma_weight_l1[16];
+    int delta_chroma_weight_l1[16][2];
+    int delta_chroma_offset_l1[16][2];
+
+    s->sh.luma_log2_weight_denom = get_ue_golomb(gb);
+    if (s->sps->chroma_format_idc != 0){
+        delta_chroma_log2_weight_denom = get_se_golomb(gb);
+        s->sh.chroma_log2_weight_denom = av_clip_c(s->sh.luma_log2_weight_denom + delta_chroma_log2_weight_denom ,0 ,7);
+    }
+    for ( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++){
+        luma_weight_l0_flag[i] = get_bits1(gb);
+        if(!luma_weight_l0_flag[i]){
+            s->sh.luma_weight_l0[i] = 1 << s->sh.luma_log2_weight_denom;
+            s->sh.luma_offset_l0[i] = 0;
+        }
+    }
+    if( s->sps->chroma_format_idc != 0 ){ //fix me ! invert "if" and "for"
+        for( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++ ){
+            chroma_weight_l0_flag[i] = get_bits1(gb);
+        }
+    } else {
+        for( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++ ){
+            chroma_weight_l0_flag[i] = 0;
+        }
+    }
+    for( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++ ) {
+        if(luma_weight_l0_flag[i]) {
+            delta_luma_weight_l0[i] = get_se_golomb(gb);
+            s->sh.luma_weight_l0[i] = (1 << s->sh.luma_log2_weight_denom) + delta_luma_weight_l0[i];
+            s->sh.luma_offset_l0[i] = get_se_golomb(gb);
+        }
+        if(chroma_weight_l0_flag[i]){
+            for( j = 0; j < 2; j++ ) {
+                delta_chroma_weight_l0[i][j] = get_se_golomb(gb);
+                delta_chroma_offset_l0[i][j] = get_se_golomb(gb);
+                s->sh.chroma_weight_l0[i][j] = (1 << s->sh.chroma_log2_weight_denom) + delta_chroma_weight_l0[i][j];
+                s->sh.chroma_offset_l0[i][j] = av_clip_c((delta_chroma_offset_l0[i][j] - ((128 * s->sh.chroma_weight_l0[i][j]) >>  s->sh.chroma_log2_weight_denom) + 128)
+                                                         , -128, 127);
+            }
+        } else {
+            s->sh.chroma_weight_l0[i][0] = 1 << s->sh.chroma_log2_weight_denom;
+            s->sh.chroma_offset_l0[i][0] = 0;
+            s->sh.chroma_weight_l0[i][1] = 1 << s->sh.chroma_log2_weight_denom;
+            s->sh.chroma_offset_l0[i][1] = 0;
+        }
+
+    }
+    if (s->sh.slice_type == B_SLICE){
+        for( i = 0 ; i < s->sh.num_ref_idx_l1_active ; i++ ){
+            luma_weight_l1_flag[i] = get_bits1(gb);
+            if(!luma_weight_l1_flag[i]){
+                s->sh.luma_weight_l1[i] = 1 << s->sh.luma_log2_weight_denom;
+                s->sh.luma_offset_l1[i] = 0;
+            }
+        }
+        if( s->sps->chroma_format_idc != 0 ){
+            for( i = 0 ; i < s->sh.num_ref_idx_l1_active ; i++ ){
+                chroma_weight_l1_flag[i] = get_bits1(gb);
+            }
+        } else {
+            for( i = 0 ; i < s->sh.num_ref_idx_l1_active ; i++ ){
+                chroma_weight_l1_flag[i] = 0;
+            }
+        }
+        for( i = 0; i < s->sh.num_ref_idx_l1_active; i++ ) {
+            if(luma_weight_l1_flag[i] ) {
+                delta_luma_weight_l1[i] = get_se_golomb(gb);
+                s->sh.luma_weight_l1[i] = (1 << s->sh.luma_log2_weight_denom) + delta_luma_weight_l1[i];
+                s->sh.luma_offset_l1[i] = get_se_golomb(gb);
+            }
+            if(chroma_weight_l1_flag[i]){
+                for( j = 0; j < 2; j++ ) {
+                    delta_chroma_weight_l1[i][j] = get_se_golomb(gb);
+                    delta_chroma_offset_l1[i][j] = get_se_golomb(gb);
+                    s->sh.chroma_weight_l1[i][j] = (1 << s->sh.chroma_log2_weight_denom) + delta_chroma_weight_l1[i][j];
+                    s->sh.chroma_offset_l1[i][j] = av_clip_c((delta_chroma_offset_l1[i][j] - ((128 * s->sh.chroma_weight_l1[i][j]) >>  s->sh.chroma_log2_weight_denom) + 128)
+                                                             , -128, 127);
+                }
+            } else {
+                s->sh.chroma_weight_l1[i][j] = 1 << s->sh.chroma_log2_weight_denom;
+                s->sh.chroma_offset_l1[i][j] = 0;
+            }
+            
+        }
+    }
+}
+
+
 static int hls_slice_header(HEVCContext *s)
 {
     int i;
@@ -377,114 +489,6 @@ static int hls_slice_header(HEVCContext *s)
     return 0;
 }
 
-void pred_weight_table(HEVCContext *s, GetBitContext *gb) {
-    int i = 0;
-    int j = 0;
-    int delta_chroma_log2_weight_denom;
-    /*
-     *todo
-    uint8_t luma_weight_l0_flag[s->sh.num_ref_idx_l0_active];
-    int delta_luma_weight_l0[s->sh.num_ref_idx_l0_active];
-    uint8_t chroma_weight_l0_flag[s->sh.num_ref_idx_l0_active];
-    int delta_chroma_weight_l0[s->sh.num_ref_idx_l0_active][2];
-    int delta_chroma_offset_l0[s->sh.num_ref_idx_l0_active][2];
-    uint8_t luma_weight_l1_flag[s->sh.num_ref_idx_l1_active];
-    uint8_t chroma_weight_l1_flag[s->sh.num_ref_idx_l1_active];
-    int delta_luma_weight_l1[s->sh.num_ref_idx_l1_active];
-    int delta_chroma_weight_l1[s->sh.num_ref_idx_l1_active][2];
-    int delta_chroma_offset_l1[s->sh.num_ref_idx_l1_active][2];
-*/
-    uint8_t luma_weight_l0_flag[16];
-    int delta_luma_weight_l0[16];
-    uint8_t chroma_weight_l0_flag[16];
-    int delta_chroma_weight_l0[16][2];
-    int delta_chroma_offset_l0[16][2];
-    uint8_t luma_weight_l1_flag[16];
-    uint8_t chroma_weight_l1_flag[16];
-    int delta_luma_weight_l1[16];
-    int delta_chroma_weight_l1[16][2];
-    int delta_chroma_offset_l1[16][2];
-
-    s->sh.luma_log2_weight_denom = get_ue_golomb(gb);
-    if (s->sps->chroma_format_idc != 0){
-         delta_chroma_log2_weight_denom = get_se_golomb(gb);
-         s->sh.chroma_log2_weight_denom = av_clip_c(s->sh.luma_log2_weight_denom + delta_chroma_log2_weight_denom ,0 ,7);
-    }
-    for ( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++){
-        luma_weight_l0_flag[i] = get_bits1(gb);
-        if(!luma_weight_l0_flag[i]){
-            s->sh.luma_weight_l0[i] = 1 << s->sh.luma_log2_weight_denom;
-            s->sh.luma_offset_l0[i] = 0;
-        }
-    }
-    if( s->sps->chroma_format_idc != 0 ){ //fix me ! invert "if" and "for"
-        for( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++ ){
-           chroma_weight_l0_flag[i] = get_bits1(gb);
-        }
-    } else {
-        for( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++ ){
-            chroma_weight_l0_flag[i] = 0;
-        }
-    }
-    for( i = 0 ; i < s->sh.num_ref_idx_l0_active ; i++ ) {
-        if(luma_weight_l0_flag[i]) {
-            delta_luma_weight_l0[i] = get_se_golomb(gb);
-            s->sh.luma_weight_l0[i] = (1 << s->sh.luma_log2_weight_denom) + delta_luma_weight_l0[i];
-            s->sh.luma_offset_l0[i] = get_se_golomb(gb);
-        }
-        if(chroma_weight_l0_flag[i]){
-            for( j = 0; j < 2; j++ ) {
-                delta_chroma_weight_l0[i][j] = get_se_golomb(gb);
-                delta_chroma_offset_l0[i][j] = get_se_golomb(gb);
-                s->sh.chroma_weight_l0[i][j] = (1 << s->sh.chroma_log2_weight_denom) + delta_chroma_weight_l0[i][j];
-                s->sh.chroma_offset_l0[i][j] = av_clip_c((delta_chroma_offset_l0[i][j] - ((128 * s->sh.chroma_weight_l0[i][j]) >>  s->sh.chroma_log2_weight_denom) + 128)
-                           , -128, 127);
-            }
-        } else {
-            s->sh.chroma_weight_l0[i][j] = 1 << s->sh.chroma_log2_weight_denom;
-            s->sh.chroma_offset_l0[i][j] = 0;
-        }
-
-    }
-    if (s->sh.slice_type == B_SLICE){
-        for( i = 0 ; i < s->sh.num_ref_idx_l1_active ; i++ ){
-            luma_weight_l1_flag[i] = get_bits1(gb);
-            if(!luma_weight_l1_flag[i]){
-                s->sh.luma_weight_l1[i] = 1 << s->sh.luma_log2_weight_denom;
-                s->sh.luma_offset_l1[i] = 0;
-            }
-        }
-        if( s->sps->chroma_format_idc != 0 ){
-            for( i = 0 ; i < s->sh.num_ref_idx_l1_active ; i++ ){
-               chroma_weight_l1_flag[i] = get_bits1(gb);
-            }
-        } else {
-            for( i = 0 ; i < s->sh.num_ref_idx_l1_active ; i++ ){
-                chroma_weight_l1_flag[i] = 0;
-            }
-        }
-        for( i = 0; i < s->sh.num_ref_idx_l1_active; i++ ) {
-            if(luma_weight_l1_flag[i] ) {
-                delta_luma_weight_l1[i] = get_se_golomb(gb);
-                s->sh.luma_weight_l1[i] = (1 << s->sh.luma_log2_weight_denom) + delta_luma_weight_l1[i];
-                s->sh.luma_offset_l1[i] = get_se_golomb(gb);
-            }
-            if(chroma_weight_l1_flag[i]){
-                for( j = 0; j < 2; j++ ) {
-                    delta_chroma_weight_l1[i][j] = get_se_golomb(gb);
-                    delta_chroma_offset_l1[i][j] = get_se_golomb(gb);
-                    s->sh.chroma_weight_l1[i][j] = (1 << s->sh.chroma_log2_weight_denom) + delta_chroma_weight_l1[i][j];
-                    s->sh.chroma_offset_l1[i][j] = av_clip_c((delta_chroma_offset_l1[i][j] - ((128 * s->sh.chroma_weight_l1[i][j]) >>  s->sh.chroma_log2_weight_denom) + 128)
-                               , -128, 127);
-                }
-            } else {
-                s->sh.chroma_weight_l1[i][j] = 1 << s->sh.chroma_log2_weight_denom;
-                s->sh.chroma_offset_l1[i][j] = 0;
-            }
-
-        }
-    }
-}
 
 
 #define CTB(tab, x, y) ((tab)[(y) * s->sps->pic_width_in_ctbs + (x)])
