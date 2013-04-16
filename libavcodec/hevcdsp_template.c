@@ -1121,7 +1121,7 @@ static void FUNC(put_weighted_pred_avg_chroma)(uint8_t *_dst, ptrdiff_t _dststri
     }
 }
 
-static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t *wl0Flag, uint8_t *wl1Flag, int *ol0Flag, int *ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src, ptrdiff_t srcstride,
                                         int width, int height, int8_t predFlagL0, int8_t predFlagL1)
 {
@@ -1137,10 +1137,10 @@ static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t *wl0Flag, uint8_t *w
 
     shift = 14 - BIT_DEPTH;
     log2Wd = denom + shift;
-    w0 = wl0Flag[ 0 ];
-    w1 = wl1Flag[ 1 ];
-    o0 = (ol0Flag[ 0 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
-    o1 = (ol1Flag[ 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+    w0 = wl0Flag;
+    w1 = wl1Flag;
+    o0 = ol0Flag * ( 1 << ( BIT_DEPTH - 8 ) );
+    o1 = ol1Flag * ( 1 << ( BIT_DEPTH - 8 ) );
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -1160,7 +1160,7 @@ static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t *wl0Flag, uint8_t *w
                 }
             }
         dst  += dststride;
-        src += srcstride;
+        src  += srcstride;
         }
     }
 }
@@ -1182,9 +1182,9 @@ static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t
     shift = 14 - BIT_DEPTH;
     log2Wd = denom + shift;
     w0 = wl0Flag;
-    w1 = wl0Flag;
-    o0 = (wl0Flag) * ( 1 << ( BIT_DEPTH - 8 ) );
-    o1 = (wl0Flag) * ( 1 << ( BIT_DEPTH - 8 ) );
+    w1 = wl1Flag;
+    o0 = (ol0Flag) * ( 1 << ( BIT_DEPTH - 8 ) );
+    o1 = (ol1Flag) * ( 1 << ( BIT_DEPTH - 8 ) );
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -1197,9 +1197,9 @@ static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t
 }
 
 
-static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t **wl0Flag, uint8_t **wl1Flag, int **ol0Flag, int **ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src, ptrdiff_t srcstride,
-                                        int width, int height, int8_t predFlagL0, int8_t predFlagL1, uint8_t cIdx)
+                                        int width, int height, int8_t predFlagL0, int8_t predFlagL1)
 {
     int shift;
     int log2Wd;
@@ -1214,10 +1214,10 @@ static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t **wl0Flag, uint8_t
     shift = 14 - BIT_DEPTH;
 
     log2Wd = denom + shift;
-    w0 = wl0Flag[ REF_IDX_L0 ][ cIdx - 1 ];
-    w1 = wl1Flag[ REF_IDX_L1 ][ cIdx - 1 ];
-    o0 = (ol0Flag[ REF_IDX_L0 ][ cIdx - 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
-    o1 = (ol1Flag[ REF_IDX_L1 ][ cIdx - 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+    w0 = wl0Flag;
+    w1 = wl1Flag;
+    o0 = ol0Flag * ( 1 << ( BIT_DEPTH - 8 ) );
+    o1 = ol1Flag * ( 1 << ( BIT_DEPTH - 8 ) );
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -1238,13 +1238,13 @@ static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t **wl0Flag, uint8_t
             }
          }
         dst  += dststride;
-        src += srcstride;
+        src  += srcstride;
     }
 }
 
-static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, uint8_t **wl0Flag, uint8_t **wl1Flag, int **ol0Flag, int **ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
-                                        int width, int height, uint8_t cIdx)
+                                        int width, int height)
 {
     int shift;
     int log2Wd;
@@ -1259,10 +1259,10 @@ static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, uint8_t **wl0Flag, uin
     shift = 14 - BIT_DEPTH;
 
     log2Wd = denom + shift;
-    w0 = wl0Flag[ REF_IDX_L0 ][ cIdx - 1 ];
-    w1 = wl1Flag[ REF_IDX_L1 ][ cIdx - 1 ];
-    o0 = (ol0Flag[ REF_IDX_L0 ][ cIdx - 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
-    o1 = (ol1Flag[ REF_IDX_L1 ][ cIdx - 1 ]) * ( 1 << ( BIT_DEPTH - 8 ) );
+    w0 = wl0Flag;
+    w1 = wl1Flag;
+    o0 = ol0Flag * ( 1 << ( BIT_DEPTH - 8 ) );
+    o1 = ol1Flag * ( 1 << ( BIT_DEPTH - 8 ) );
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
