@@ -29,7 +29,7 @@
 #include "hevc.h"
 
 #if __GNUC__
-#define GCC_OPTIMIZATION_ENABLE
+//#define GCC_OPTIMIZATION_ENABLE
 #endif
 #define OPTIMIZATION_ENABLE
 
@@ -1121,37 +1121,40 @@ static void FUNC(put_weighted_pred_avg_chroma)(uint8_t *_dst, ptrdiff_t _dststri
     }
 }
 
-static void FUNC(weighted_pred_luma)(uint8_t denom, uint8_t wlxFlag, int olxFlag,uint8_t *_dst, ptrdiff_t _dststride,
-                                        int16_t *src, ptrdiff_t srcstride,
-                                        int width, int height)
+static void FUNC(weighted_pred_luma)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
+                                     uint8_t *_dst, ptrdiff_t _dststride,
+                                     int16_t *src, ptrdiff_t srcstride,
+                                     int width, int height)
 {
     int shift;
     int log2Wd;
     int wx;
     int ox;
     int x , y;
+    int offset;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t dststride = _dststride/sizeof(pixel);
 
     shift = 14 - BIT_DEPTH;
     log2Wd = denom + shift;
+    offset = 1 << (log2Wd - 1);
     wx = wlxFlag;
     ox = olxFlag * ( 1 << ( BIT_DEPTH - 8 ) );
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             if (log2Wd >= 1) {
-                dst[x] = av_clip_pixel((((src[x] * wx + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + ox);
+                dst[x] = av_clip_pixel(((src[x] * wx + offset) >> log2Wd) + ox);
             } else {
                 dst[x] = av_clip_pixel(src[x] * wx + ox);
             }
+        }
         dst  += dststride;
         src  += srcstride;
-        }
     }
 }
 
-static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_avg_luma)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int ol0Flag, int ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
                                         int width, int height)
 {
@@ -1174,7 +1177,7 @@ static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-                dst[x] = av_clip_pixel((src1[x] * w0 + src2[x] * w1 + ((o0 + o1 + 1) << log2Wd)) >> (log2Wd + 1));
+            dst[x] = av_clip_pixel((src1[x] * w0 + src2[x] * w1 + ((o0 + o1 + 1) << log2Wd)) >> (log2Wd + 1));
         }
         dst  += dststride;
         src1 += srcstride;
@@ -1183,7 +1186,7 @@ static void FUNC(weighted_pred_avg_luma)(uint8_t denom, uint8_t wl0Flag, uint8_t
 }
 
 
-static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wlxFlag, int olxFlag, uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_chroma)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag, uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src, ptrdiff_t srcstride,
                                         int width, int height, int8_t predFlagL0, int8_t predFlagL1)
 {
@@ -1192,19 +1195,20 @@ static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wlxFlag, int olxFl
     int wx;
     int ox;
     int x , y;
+    int offset;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t dststride = _dststride/sizeof(pixel);
 
     shift = 14 - BIT_DEPTH;
-
     log2Wd = denom + shift;
+    offset = 1 << (log2Wd - 1);
     wx = wlxFlag;
     ox = olxFlag * ( 1 << ( BIT_DEPTH - 8 ) );
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             if (log2Wd >= 1) {
-                dst[x] = av_clip_pixel((((src[x] * wx + (1 << (log2Wd - 1))) >> log2Wd ) >> shift) + ox);
+                dst[x] = av_clip_pixel(((src[x] * wx + offset) >> log2Wd) + ox);
             } else {
                 dst[x] = av_clip_pixel(src[x] * wx + ox);
             }
@@ -1214,7 +1218,7 @@ static void FUNC(weighted_pred_chroma)(uint8_t denom, uint8_t wlxFlag, int olxFl
     }
 }
 
-static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, uint8_t wl0Flag, uint8_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
                                         int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
                                         int width, int height)
 {
@@ -1238,8 +1242,8 @@ static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, uint8_t wl0Flag, uint8
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-                dst[x] = av_clip_pixel((src1[x] * w0 + src2[x] * w1 + ((o0 + o1 + 1) << log2Wd)) >> (log2Wd + 1));
-            }
+            dst[x] = av_clip_pixel((src1[x] * w0 + src2[x] * w1 + ((o0 + o1 + 1) << log2Wd)) >> (log2Wd + 1));
+        }
         dst  += dststride;
         src1 += srcstride;
         src2 += srcstride;

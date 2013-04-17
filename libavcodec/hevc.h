@@ -444,7 +444,7 @@ typedef struct SliceHeader {
     int* entry_point_offset;
 
     uint8_t luma_log2_weight_denom;
-    int chroma_log2_weight_denom;
+    int16_t chroma_log2_weight_denom;
 /////////////////////////////////////////
    /*
     *todo
@@ -462,14 +462,14 @@ typedef struct SliceHeader {
     int chroma_offset_l1[num_ref_idx_l0_active][2]; */
 /////////////////////////////////////////////////
 
-    uint8_t luma_weight_l0[16];
-    uint8_t chroma_weight_l0[16][2];
-    uint8_t chroma_weight_l1[16][2];
-    uint8_t luma_weight_l1[16];
+    int16_t luma_weight_l0[16];
+    int16_t chroma_weight_l0[16][2];
+    int16_t chroma_weight_l1[16][2];
+    int16_t luma_weight_l1[16];
 
 
-    int luma_offset_l0[16];
-    int chroma_offset_l0[16][2];
+    int16_t luma_offset_l0[16];
+    int16_t chroma_offset_l0[16][2];
 
     int luma_offset_l1[16];
     int chroma_offset_l1[16][2];
