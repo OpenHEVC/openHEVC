@@ -71,7 +71,12 @@ libavutil/samplefmt.c
 
 add_subdirectory(wrapper_hm)
 
+OPTION(ENABLE_STATIC "enabled static library instead of shared" OFF)
+if (ENABLE_STATIC)
+add_library (LibOpenHevcWrapper STATIC ${libfilenames})
+else(ENABLE_STATIC)
 add_library (LibOpenHevcWrapper SHARED ${libfilenames})
+endif(ENABLE_STATIC)
 include_directories(.)
 
 if(SDL_FOUND)
