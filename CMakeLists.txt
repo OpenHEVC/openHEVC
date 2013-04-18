@@ -99,17 +99,6 @@ target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY})
 endif(MINGW)
 endif()
 
-if(CSFML_FOUND)
-set_source_files_properties(csfml.c PROPERTIES COMPILE_FLAGS -I"${CSFML_INCLUDE_DIR}")
-add_executable(hevc_csfml getopt.c main.c csfml.c)
-if(MINGW)
-#target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} ${CSFML_SYSTEM_LIBRARY_RELEASE} -lwinmm)
-else(MINGW)
-target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} ${CSFML_SYSTEM_LIBRARY_RELEASE})
-endif(MINGW)
-endif()
-
-
 INSTALL(FILES "openHevcWrapper.h" DESTINATION include)
 
 INSTALL(TARGETS LibOpenHevcWrapper DESTINATION lib PERMISSIONS
