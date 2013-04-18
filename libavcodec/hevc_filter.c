@@ -214,7 +214,11 @@ void ff_hevc_sao_filter(HEVCContext *s)
                                   (s->sps->pic_width_in_luma_samples >> s->sps->hshift[c_idx]) - x);
                 int height = FFMIN(ctb_size,
                                    (s->sps->pic_height_in_luma_samples >> s->sps->vshift[c_idx]) - y);
+#ifdef DEBLOCKING_IN_LOOP
+                uint8_t *src = &s->dbf_frame->data[c_idx][y * stride + x];
+#else
                 uint8_t *src = &s->frame->data[c_idx][y * stride + x];
+#endif
                 uint8_t *dst = &s->sao_frame->data[c_idx][y * stride + x];
                 switch (sao->type_idx[c_idx]) {
                 case SAO_BAND:

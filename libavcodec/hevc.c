@@ -1966,21 +1966,32 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (hls_slice_data(s) < 0)
             return -1;
 
-        if(!s->sh.disable_deblocking_filter_flag) {
 #ifndef DEBLOCKING_IN_LOOP
+        if(!s->sh.disable_deblocking_filter_flag) {
             ff_hevc_deblocking_filter(s);
-#else
-            av_picture_copy((AVPicture*)s->frame, (AVPicture*)s->dbf_frame,
-                    s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
-            av_frame_unref(s->dbf_frame);
-#endif
         }
+#endif
         if (s->sps->sample_adaptive_offset_enabled_flag) {
+#ifdef DEBLOCKING_IN_LOOP
+                av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->dbf_frame,
+                        s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
+#else
                 av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->frame,
                         s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
+#endif
             ff_hevc_sao_filter(s);
             av_frame_unref(s->tmp_frame);
+#ifdef DEBLOCKING_IN_LOOP
+        } else if(!s->sh.disable_deblocking_filter_flag) {
+            av_picture_copy((AVPicture*)s->frame, (AVPicture*)s->dbf_frame,
+                    s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
+#endif
         }
+#ifdef DEBLOCKING_IN_LOOP
+        if(!s->sh.disable_deblocking_filter_flag) {
+            av_frame_unref(s->dbf_frame);
+        }
+#endif
         if (s->decode_checksum_sei == 1) {
             calc_md5(s->md5[0], s->ref->frame->data[0], s->ref->frame->linesize[0], s->ref->frame->width  , s->ref->frame->height  );
             calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
