@@ -69,6 +69,8 @@ libavutil/rational.c
 libavutil/samplefmt.c
 )
 
+add_subdirectory(wrapper_hm)
+
 add_library (LibOpenHevcWrapper SHARED ${libfilenames})
 include_directories(.)
 
