@@ -41,6 +41,7 @@ libavcodec/hevc_parser.c
 libavcodec/hevc_ps.c
 libavcodec/hevc_refs.c
 libavcodec/hevc_sei.c
+libavcodec/hevc_filter.c
 libavcodec/hevc.c
 libavcodec/hevcdsp.c
 libavcodec/hevcpred.c

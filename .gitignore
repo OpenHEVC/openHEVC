@@ -3,3 +3,5 @@
 .DS_Store
 .project
 .cproject
+/build_w32
+/build_w64
