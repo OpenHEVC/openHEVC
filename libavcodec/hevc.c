@@ -1810,8 +1810,9 @@ static int hls_slice_data(HEVCContext *s)
 
         more_data = hls_coding_tree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
 #ifdef DEBLOCKING_IN_LOOP
-        if(!s->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_filter(s, x_ctb, y_ctb, s->sps->log2_ctb_size);
+        if (y_ctb > 1<< s->sps->log2_ctb_size) {
+            if(!s->sh.disable_deblocking_filter_flag)
+                ff_hevc_deblocking_filter(s, x_ctb, y_ctb - (2<< s->sps->log2_ctb_size), s->sps->log2_ctb_size);
         }
 #endif
         if (!more_data)
@@ -1940,10 +1941,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             memset(s->vertical_bs, 0, s->bs_width * 2 * s->bs_height);
             memset(s->cbf_luma, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
             memset(s->is_pcm, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
-#ifdef DEBLOCKING_IN_LOOP
-            if ((ret = ff_reget_buffer(s->avctx, s->dbf_frame)) < 0)
-                return ret;
-#endif
         }
         s->qp_y = ((s->sh.slice_qp + 52 + 2 * s->sps->qp_bd_offset) %
                         (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
@@ -1966,18 +1963,22 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (hls_slice_data(s) < 0)
             return -1;
 
-        if(!s->sh.disable_deblocking_filter_flag) {
 #ifndef DEBLOCKING_IN_LOOP
+        if(!s->sh.disable_deblocking_filter_flag) {
             ff_hevc_deblocking_filter(s);
-#else
-            av_picture_copy((AVPicture*)s->frame, (AVPicture*)s->dbf_frame,
-                    s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
-            av_frame_unref(s->dbf_frame);
-#endif
         }
+#else
+        int x_ctb;
+        int y_ctb;
+        for( y_ctb = s->sps->pic_height_in_ctbs-2; y_ctb < s->sps->pic_height_in_ctbs; y_ctb++)
+            for( x_ctb = 0; x_ctb < s->sps->pic_width_in_ctbs; x_ctb++) {
+                if(!s->sh.disable_deblocking_filter_flag)
+                    ff_hevc_deblocking_filter(s, x_ctb<<s->sps->log2_ctb_size, y_ctb<<s->sps->log2_ctb_size, s->sps->log2_ctb_size);
+           }
+#endif
         if (s->sps->sample_adaptive_offset_enabled_flag) {
-                av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->frame,
-                        s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
+            av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->frame,
+                    s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
             ff_hevc_sao_filter(s);
             av_frame_unref(s->tmp_frame);
         }
@@ -2010,14 +2011,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     s->tmp_frame = av_frame_alloc();
-    s->poc_display = 0;
     if (!s->tmp_frame)
         return AVERROR(ENOMEM);
-#ifdef DEBLOCKING_IN_LOOP
-    s->dbf_frame = av_frame_alloc();
-    if (!s->dbf_frame)
-            return AVERROR(ENOMEM);
-#endif
+    s->poc_display = 0;
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         s->short_refs[i].frame = av_frame_alloc();
         if (!s->short_refs[i].frame)
