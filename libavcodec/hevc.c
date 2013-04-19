@@ -1964,7 +1964,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if(!s->sh.disable_deblocking_filter_flag) {
             ff_hevc_deblocking_filter(s);
         }
-<<<<<<< HEAD
 #else
         int x_ctb;
         int y_ctb;
@@ -1973,35 +1972,13 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 if(!s->sh.disable_deblocking_filter_flag)
                     ff_hevc_deblocking_filter(s, x_ctb<<s->sps->log2_ctb_size, y_ctb<<s->sps->log2_ctb_size, s->sps->log2_ctb_size);
            }
-=======
->>>>>>> branch 'hm10.0' of https://github.com/OpenHEVC/openHEVC.git
 #endif
         if (s->sps->sample_adaptive_offset_enabled_flag) {
-<<<<<<< HEAD
             av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->frame,
                     s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
-=======
-#ifdef DEBLOCKING_IN_LOOP
-                av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->dbf_frame,
-                        s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
-#else
-                av_picture_copy((AVPicture*)s->sao_frame, (AVPicture*)s->frame,
-                        s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
-#endif
->>>>>>> branch 'hm10.0' of https://github.com/OpenHEVC/openHEVC.git
             ff_hevc_sao_filter(s);
             av_frame_unref(s->tmp_frame);
-#ifdef DEBLOCKING_IN_LOOP
-        } else if(!s->sh.disable_deblocking_filter_flag) {
-            av_picture_copy((AVPicture*)s->frame, (AVPicture*)s->dbf_frame,
-                    s->avctx->pix_fmt, s->avctx->width, s->avctx->height);
-#endif
         }
-#ifdef DEBLOCKING_IN_LOOP
-        if(!s->sh.disable_deblocking_filter_flag) {
-            av_frame_unref(s->dbf_frame);
-        }
-#endif
         if (s->decode_checksum_sei == 1) {
             calc_md5(s->md5[0], s->ref->frame->data[0], s->ref->frame->linesize[0], s->ref->frame->width  , s->ref->frame->height  );
             calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
