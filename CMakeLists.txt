@@ -70,7 +70,14 @@ libavutil/rational.c
 libavutil/samplefmt.c
 )
 
+add_subdirectory(wrapper_hm)
+
+OPTION(ENABLE_STATIC "enabled static library instead of shared" OFF)
+if (ENABLE_STATIC)
+add_library (LibOpenHevcWrapper STATIC ${libfilenames})
+else(ENABLE_STATIC)
 add_library (LibOpenHevcWrapper SHARED ${libfilenames})
+endif(ENABLE_STATIC)
 include_directories(.)
 
 if(SDL_FOUND)
@@ -92,17 +99,6 @@ else(MINGW)
 target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY})
 endif(MINGW)
 endif()
-
-if(CSFML_FOUND)
-set_source_files_properties(csfml.c PROPERTIES COMPILE_FLAGS -I"${CSFML_INCLUDE_DIR}")
-add_executable(hevc_csfml getopt.c main.c csfml.c)
-if(MINGW)
-#target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} ${CSFML_SYSTEM_LIBRARY_RELEASE} -lwinmm)
-else(MINGW)
-target_link_libraries(hevc_csfml LibOpenHevcWrapper ${CSFML_GRAPHICS_LIBRARY_RELEASE} ${CSFML_SYSTEM_LIBRARY_RELEASE})
-endif(MINGW)
-endif()
-
 
 INSTALL(FILES "openHevcWrapper.h" DESTINATION include)
 

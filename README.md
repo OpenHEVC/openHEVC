@@ -8,8 +8,8 @@ Initial libav version from smarter (smarter.free.fr)
 
 - openHEVC/wrapper
 ----------
-Initial C wrapper from HM8.0 C++ reference SW (HEVC reference sw)
+Initial C wrapper from HM10.0 C++ reference SW (HEVC reference sw)
 
 - openHEVC/wrapper/HM
 ----------
-HM8.0 reference SW
+HM10.0 reference SW
