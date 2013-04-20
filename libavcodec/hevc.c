@@ -41,7 +41,6 @@
 /**
  * Section 5.7
  */
-#define INVERSE_RASTER_SCAN(a, b, c, d, e) ((e) ? ((a) / (ROUNDED_DIV(d, b)))*(c) : ((a)%(ROUNDED_DIV(d, b)))*(b))
 
 static int pic_arrays_init(HEVCContext *s)
 {
@@ -1798,8 +1797,8 @@ static int hls_slice_data(HEVCContext *s)
     s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs];
 
     while (more_data) {
-        x_ctb = INVERSE_RASTER_SCAN(s->ctb_addr_rs, ctb_size, ctb_size, s->sps->pic_width_in_luma_samples, 0);
-        y_ctb = INVERSE_RASTER_SCAN(s->ctb_addr_rs, ctb_size, ctb_size, s->sps->pic_width_in_luma_samples, 1);
+        x_ctb = (s->ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
+        y_ctb = (s->ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
         s->ctb_addr_in_slice = s->ctb_addr_rs - s->sh.slice_address;
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
             s->sh.slice_sample_adaptive_offset_flag[1])
@@ -1859,6 +1858,13 @@ static int hls_nal_unit(HEVCContext *s)
            s->nal_ref_flag, s->nal_unit_type, s->temporal_id);
 
     return ret;
+}
+
+static void print_md5(uint8_t *md5)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        printf("%02x", md5[i]);
 }
 
 static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
@@ -1989,11 +1995,18 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             av_frame_unref(s->dbf_frame);
         }
 #endif
-        if (s->decode_checksum_sei == 1) {
+        //if (s->decode_checksum_sei == 1) {
             calc_md5(s->md5[0], s->ref->frame->data[0], s->ref->frame->linesize[0], s->ref->frame->width  , s->ref->frame->height  );
             calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
             calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
-        }
+        //}
+            printf("Y ");
+            print_md5(s->md5[0]);
+            printf("U ");
+            print_md5(s->md5[1]);
+            printf("V ");
+            print_md5(s->md5[2]);
+            printf("\n");
         if ((ret = ff_hevc_find_display(s, data)) < 0)
             return ret;
         s->frame->pict_type = AV_PICTURE_TYPE_I;

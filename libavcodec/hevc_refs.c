@@ -107,7 +107,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame)
         HEVCFrame *ref = &s->short_refs[i];
         if ((ref->flags & 1) == 1 ) {
             nbReadyDisplay ++;
-            if (ref->poc > s->poc_display && ref->poc < minPoc) {
+            if (ref->poc >= s->poc_display && ref->poc < minPoc) {
                 minPoc = ref->poc;
             }
         }
@@ -116,8 +116,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame)
         minPoc = 0;
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         HEVCFrame *ref = &s->short_refs[i];
-        int numPic     = ref->refPicList[0].numPic + ref->refPicList[1].numPic;
-        if (nbReadyDisplay >= numPic) {
+        if (nbReadyDisplay > s->sps->temporal_layer[0].num_reorder_pics) {
             if (ref->poc == minPoc ) {
                 ref->flags &= 2;
                 if (av_frame_ref(frame, ref->frame) < 0)

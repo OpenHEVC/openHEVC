@@ -472,8 +472,8 @@ typedef struct SliceHeader {
     int16_t luma_offset_l0[16];
     int16_t chroma_offset_l0[16][2];
 
-    int luma_offset_l1[16];
-    int chroma_offset_l1[16][2];
+    int16_t luma_offset_l1[16];
+    int16_t chroma_offset_l1[16][2];
 
 #if REFERENCE_ENCODER_QUIRKS
     uint8_t tile_marker_flag;

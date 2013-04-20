@@ -1154,9 +1154,10 @@ static void FUNC(weighted_pred_luma)(uint8_t denom, int16_t wlxFlag, int16_t olx
     }
 }
 
-static void FUNC(weighted_pred_avg_luma)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int ol0Flag, int ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
-                                        int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
-                                        int width, int height)
+static void FUNC(weighted_pred_avg_luma)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,
+                                         int16_t ol0Flag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,
+                                         int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
+                                         int width, int height)
 {
     int shift;
     int log2Wd;
@@ -1186,9 +1187,10 @@ static void FUNC(weighted_pred_avg_luma)(uint8_t denom, int16_t wl0Flag, int16_t
 }
 
 
-static void FUNC(weighted_pred_chroma)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag, uint8_t *_dst, ptrdiff_t _dststride,
-                                        int16_t *src, ptrdiff_t srcstride,
-                                        int width, int height, int8_t predFlagL0, int8_t predFlagL1)
+static void FUNC(weighted_pred_chroma)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
+                                       uint8_t *_dst, ptrdiff_t _dststride,
+                                       int16_t *src, ptrdiff_t srcstride,
+                                       int width, int height, int8_t predFlagL0, int8_t predFlagL1)
 {
     int shift;
     int log2Wd;
@@ -1218,9 +1220,10 @@ static void FUNC(weighted_pred_chroma)(uint8_t denom, int16_t wlxFlag, int16_t o
     }
 }
 
-static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int ol0Flag, int ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
-                                        int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
-                                        int width, int height)
+static void FUNC(weighted_pred_avg_chroma)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,
+                                           int16_t ol0Flag, int16_t ol1Flag,uint8_t *_dst, ptrdiff_t _dststride,
+                                           int16_t *src1, int16_t *src2, ptrdiff_t srcstride,
+                                           int width, int height)
 {
     int shift;
     int log2Wd;
