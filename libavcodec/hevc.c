@@ -353,7 +353,7 @@ static int hls_slice_header(HEVCContext *s)
             s->sh.short_term_rps = NULL;
             s->poc = 0;
         }
-//        av_log(s->avctx, AV_LOG_ERROR, "POC %d\n", s->poc);
+        av_log(s->avctx, AV_LOG_ERROR, "POC %d\n", s->poc);
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
             return -1;
@@ -2012,19 +2012,19 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 printf("luma_sao(%d, %d) = %d\n", x, y, s->sao_frame->data[0][y * s->sao_frame->linesize[0] + x]);
         exit(0);
 #endif
-        //if (s->decode_checksum_sei == 1) {
+        if (s->decode_checksum_sei == 1) {
             calc_md5(s->md5[0], s->ref->frame->data[0], s->ref->frame->linesize[0], s->ref->frame->width  , s->ref->frame->height  );
             calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
             calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
-        //}
-            printf("Y ");
+        }
+/*            printf("Y ");
             print_md5(s->md5[0]);
             printf("U ");
             print_md5(s->md5[1]);
             printf("V ");
             print_md5(s->md5[2]);
             printf("\n");
-        if ((ret = ff_hevc_find_display(s, data)) < 0)
+*/        if ((ret = ff_hevc_find_display(s, data)) < 0)
             return ret;
         s->frame->pict_type = AV_PICTURE_TYPE_I;
         s->frame->key_frame = 1;
