@@ -92,7 +92,7 @@ int libOpenHevcGetOutput(int got_picture, unsigned char **Y, unsigned char **U, 
 }
 int libOpenHevcGetOutputCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V)
 {
-    int x, y;
+    int y;
     int y_offset, y_offset2;
     if( got_picture ) {
         y_offset = y_offset2 = 0;
