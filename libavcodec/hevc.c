@@ -842,6 +842,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
             qp += s->sps->qp_bd_offset;
 
         }
+//        printf("x0 %d, y0 %d\n", x0, y0);
 
         s->hevcdsp.dequant(coeffs, log2_trafo_size, qp);
         if (transform_skip_flag) {
@@ -1722,7 +1723,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
 static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int cb_depth)
 {
-    s->isFristQPgroup += x0 == 0 && (y0&((1<<s->sps->log2_ctb_size)-1)) == 0 ? s->pps->entropy_coding_sync_enabled_flag : 0;
+    s->isFirstQPgroup += x0 == 0 && (y0&((1<<s->sps->log2_ctb_size)-1)) == 0 ? s->pps->entropy_coding_sync_enabled_flag : 0;
     s->ct.depth = cb_depth;
     if ((x0 + (1 << log2_cb_size) <= s->sps->pic_width_in_luma_samples) &&
         (y0 + (1 << log2_cb_size) <= s->sps->pic_height_in_luma_samples) &&
@@ -1934,9 +1935,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     case NAL_BLA_W_RADL:
     case NAL_BLA_N_LP:
     case NAL_IDR_W_DLP:
+    case NAL_IDR_N_LP:
     case NAL_CRA_NUT:
+    case NAL_RASL_N:
     case NAL_RASL_R:
-        s->isFristQPgroup = 1;
+        s->isFirstQPgroup = 1;
         if (s->nal_unit_type == NAL_IDR_W_DLP)
             ff_hevc_clear_refs(s);
         if (hls_slice_header(s) < 0)
@@ -2024,7 +2027,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             printf("V ");
             print_md5(s->md5[2]);
             printf("\n");
-*/        if ((ret = ff_hevc_find_display(s, data)) < 0)
+*/
+        if ((ret = ff_hevc_find_display(s, data)) < 0)
             return ret;
         s->frame->pict_type = AV_PICTURE_TYPE_I;
         s->frame->key_frame = 1;
