@@ -83,13 +83,36 @@ void libOpenHevcGetPictureSize2(unsigned int *width, unsigned int *height, unsig
 
 int libOpenHevcGetOutput(int got_picture, unsigned char **Y, unsigned char **U, unsigned char **V)
 {
-    if( got_picture ) {
+    if (got_picture) {
         *Y = openHevcContext.picture->data[0];
         *U = openHevcContext.picture->data[1];
         *V = openHevcContext.picture->data[2];
     }
     return 1;
 }
+
+int libOpenFlushDpb(int *got_picture, unsigned char **Y, unsigned char **U, unsigned char **V)
+{
+    HEVCContext *s;
+    s = openHevcContext.c->priv_data;
+    *got_picture = 0;
+    if(s->flush) {
+        openHevcContext.avpkt.size = 0;
+        *got_picture = openHevcContext.codec->decode(openHevcContext.c, openHevcContext.picture, got_picture,
+                                                     &openHevcContext.avpkt);
+        *Y = openHevcContext.picture->data[0];
+        *U = openHevcContext.picture->data[1];
+        *V = openHevcContext.picture->data[2];
+        s->flush--;
+        if (s->flush == 0) {
+            ff_hevc_clean_refs(s);
+            s->poc_display = 0;
+        }
+        return 1;
+    }
+    return 0;
+}
+
 int libOpenHevcGetOutputCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V)
 {
     int y;
