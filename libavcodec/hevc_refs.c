@@ -28,7 +28,7 @@ static int find_ref_idx(HEVCContext *s, int poc)
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         HEVCFrame *ref = &s->short_refs[i];
-        if (ref->frame->buf[0] && !ref->is_flushed && ref->poc == poc)
+        if (ref->frame->buf[0] && (s->dpb == ref->dpb) && ref->poc == poc)
             return i;
     }
     av_log(s->avctx, AV_LOG_ERROR,
@@ -72,9 +72,10 @@ void ff_hevc_clear_refs(HEVCContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         HEVCFrame *ref = &s->short_refs[i];
         if (ref->frame->buf[0]) {
-            ref->is_flushed = 1;
-            ref->flags = 0;
-            s->flush++;
+            if(!ref->flags && ref->dpb == s->dpb ) {
+                av_frame_unref(ref->frame);
+                ref->flags = 0;
+            }
         }
     }
 }
@@ -104,6 +105,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             s->ref     = ref;
             ref->poc   = poc;
             ref->flags = 3;
+            ref->dpb   = s->dpb;
             return ff_reget_buffer(s->avctx, *frame);
         }
     }
@@ -119,55 +121,39 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame)
     int minPoc         = 0xFFFF;
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         HEVCFrame *ref = &s->short_refs[i];
-        if (!ref->is_flushed && (ref->flags & 1) == 1 ) {
+        if ((ref->flags & 1) == 1 ) {
             nbReadyDisplay ++;
-            if (ref->poc >= s->poc_display && ref->poc < minPoc) {
+            if (s->renderer == ref->dpb && ref->poc >= s->poc_display && ref->poc < minPoc) {
                 minPoc = ref->poc;
+            } 
+        }
+    }
+    if (minPoc == 0xFFFF) {
+        s->renderer++;
+        s->poc_display = 0;
+        for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
+            HEVCFrame *ref = &s->short_refs[i];
+            if ((ref->flags & 1) == 1 ) {
+                nbReadyDisplay ++;
+                if (s->renderer == ref->dpb && ref->poc >= s->poc_display && ref->poc < minPoc) {
+                    minPoc = ref->poc;
+                }
             }
         }
     }
     if (minPoc == 0xFFFF)
-        minPoc = 0;
+        minPoc=0;
+    
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         HEVCFrame *ref = &s->short_refs[i];
         if (nbReadyDisplay > s->sps->temporal_layer[0].num_reorder_pics) {
-            if (!ref->is_flushed && ref->poc == minPoc ) {
+            if ((s->renderer == ref->dpb) && ref->poc == minPoc ) {
                 ref->flags &= 2;
                 if (av_frame_ref(frame, ref->frame) < 0)
                    return -1;
                 s->poc_display = ref->poc;
                 return sizeof(AVFrame);
             }
-        }
-    }
-    return 0;
-}
-
-int ff_hevc_find_flush_display(HEVCContext *s, AVFrame *frame)
-{
-    int i;
-    int nbReadyDisplay = 0;
-    int minPoc         = 0xFFFF;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
-        HEVCFrame *ref = &s->short_refs[i];
-        if (ref->is_flushed == 1 ) {
-            nbReadyDisplay ++;
-            if (ref->poc >= s->poc_display && ref->poc < minPoc) {
-                minPoc = ref->poc;
-            }
-        }
-    }
-    if (minPoc == 0xFFFF)
-        minPoc = 0;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
-        HEVCFrame *ref = &s->short_refs[i];
-        if (ref->is_flushed && ref->poc == minPoc ) {
-            ref->flags = 0;
-            ref->is_flushed = 0;
-            if (av_frame_ref(frame, ref->frame) < 0)
-                return -1;
-            s->poc_display = ref->poc;
-            return sizeof(AVFrame);
         }
     }
     return 0;

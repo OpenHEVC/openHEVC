@@ -707,7 +707,7 @@ typedef struct HEVCFrame {
     MvField *tab_mvf;
     RefPicList refPicList[2];
     uint8_t flags;
-    uint8_t is_flushed;
+    uint8_t dpb;
 } HEVCFrame;
 
 typedef struct HEVCContext {
@@ -774,8 +774,9 @@ typedef struct HEVCContext {
     HEVCFrame short_refs[32];
     int decode_checksum_sei;
     uint8_t md5[3][16];
-    uint8_t flush;
     int16_t * cbt_entry_count;
+    uint8_t dpb;
+    uint8_t renderer;
 } HEVCContext;
 
 enum ScanType {

@@ -1,15 +1,13 @@
 #ifndef OPEN_HEVC_WRAPPER_H
 #define OPEN_HEVC_WRAPPER_H
 
-#define NV_VERSION  "1.0" ///< Current software version
+#define NV_VERSION  "1.1" ///< Current software version
 
 int  libOpenHevcInit();
 int  libOpenHevcDecode(unsigned char *buff, int nal_len);
 void libOpenHevcGetPictureSize(unsigned int *width, unsigned int *height, unsigned int *stride);
 void libOpenHevcGetPictureSize2(unsigned int *width, unsigned int *height, unsigned int *stride);
 int  libOpenHevcGetOutput(int got_picture, unsigned char **Y, unsigned char **U, unsigned char **V);
-int libOpenFlushDpb(unsigned char **Y, unsigned char **U, unsigned char **V);
-int libOpenFlushDpbCpy(unsigned char *Y, unsigned char *U, unsigned char *V);
 int  libOpenHevcGetOutputCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V);
 void libOpenHevcSetCheckMD5(int val);
 void libOpenHevcClose();
