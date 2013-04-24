@@ -28,7 +28,8 @@ int libOpenHevcInit()
     openHevcContext.parser  = av_parser_init( openHevcContext.codec->id );
     openHevcContext.c       = avcodec_alloc_context3(openHevcContext.codec);
     openHevcContext.picture = avcodec_alloc_frame();
-
+    
+    
     if(openHevcContext.codec->capabilities&CODEC_CAP_TRUNCATED)
         openHevcContext.c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
@@ -37,6 +38,8 @@ int libOpenHevcInit()
          available in the bitstream. */
 
     /* open it */
+    openHevcContext.c->thread_type = FF_THREAD_SLICE;
+    openHevcContext.c->thread_count = 1;
     if (avcodec_open2(openHevcContext.c, openHevcContext.codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
@@ -91,18 +94,54 @@ int libOpenHevcGetOutput(int got_picture, unsigned char **Y, unsigned char **U, 
     return 1;
 }
 
-int libOpenFlushDpb(int *got_picture, unsigned char **Y, unsigned char **U, unsigned char **V)
+int libOpenFlushDpb(unsigned char **Y, unsigned char **U, unsigned char **V)
 {
     HEVCContext *s;
+    int got_picture = 0;
     s = openHevcContext.c->priv_data;
-    *got_picture = 0;
     if(s->flush) {
         openHevcContext.avpkt.size = 0;
-        *got_picture = openHevcContext.codec->decode(openHevcContext.c, openHevcContext.picture, got_picture,
+        got_picture = openHevcContext.codec->decode(openHevcContext.c, openHevcContext.picture, got_picture,
                                                      &openHevcContext.avpkt);
         *Y = openHevcContext.picture->data[0];
         *U = openHevcContext.picture->data[1];
         *V = openHevcContext.picture->data[2];
+        s->flush--;
+        if (s->flush == 0) {
+            ff_hevc_clean_refs(s);
+            s->poc_display = 0;
+        }
+        return 1;
+    }
+    return 0;
+}
+
+int libOpenFlushDpbCpy(unsigned char **Y, unsigned char **U, unsigned char **V)
+{
+    HEVCContext *s;
+    int got_picture = 0;
+    s = openHevcContext.c->priv_data;
+    if(s->flush) {
+        int y;
+        int y_offset, y_offset2;
+        openHevcContext.avpkt.size = 0;
+        got_picture = openHevcContext.codec->decode(openHevcContext.c, openHevcContext.picture, got_picture,
+                                                     &openHevcContext.avpkt);
+        if( got_picture ) {
+            y_offset = y_offset2 = 0;
+            for(y = 0; y < openHevcContext.c->height; y++) {
+                memcpy(&Y[y_offset2], &openHevcContext.picture->data[0][y_offset], openHevcContext.c->width);
+                y_offset  += openHevcContext.picture->linesize[0];
+                y_offset2 += openHevcContext.c->width;
+            }
+            y_offset = y_offset2 = 0;
+            for(y = 0; y < openHevcContext.c->height/2; y++) {
+                memcpy(&U[y_offset2], &openHevcContext.picture->data[1][y_offset], openHevcContext.c->width/2);
+                memcpy(&V[y_offset2], &openHevcContext.picture->data[2][y_offset], openHevcContext.c->width/2);
+                y_offset  += openHevcContext.picture->linesize[1];
+                y_offset2 += openHevcContext.c->width / 2;
+            }
+        }
         s->flush--;
         if (s->flush == 0) {
             ff_hevc_clean_refs(s);

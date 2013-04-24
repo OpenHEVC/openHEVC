@@ -41,7 +41,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
     int abs_delta_rps;
 
     int i;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *gb = s->gb[0];
 
     ShortTermRPS *rps = &sps->short_term_rps_list[idx];
     ShortTermRPS *rps_ridx;
@@ -142,7 +142,7 @@ static int decode_profile_tier_level(HEVCContext *s, PTL *ptl,
                                       int profile_present_flag, int max_num_sub_layers)
 {
     int i, j;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *gb = s->gb[0];
 
     if (profile_present_flag) {
         ptl->general_profile_space = get_bits(gb, 2);
@@ -189,7 +189,7 @@ static void decode_bit_rate_pic_rate(HEVCContext *s, int tempLevelLow, int tempL
 {
     int i;
     int bit_rate_info_present_flag, pic_rate_info_present_flag;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *gb = s->gb[0];
 
     for (i = tempLevelLow; i <= tempLevelHigh; i++) {
         bit_rate_info_present_flag = get_bits1(gb);
@@ -213,7 +213,7 @@ static void decode_hrd(HEVCContext *s)
 static void decode_vui(HEVCContext *s)
 {
     VUI *vui = &s->sps->vui;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *gb = s->gb[0];
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VUI\n");
 
@@ -288,7 +288,7 @@ static void decode_vui(HEVCContext *s)
 int ff_hevc_decode_nal_vps(HEVCContext *s)
 {
     int i,j;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *gb = s->gb[0];
     int vps_id = 0;
     VPS *vps = av_mallocz(sizeof(*vps));
 
@@ -370,12 +370,11 @@ err:
     av_free(vps);
     return -1;
 }
-
 int ff_hevc_decode_nal_sps(HEVCContext *s)
 {
     int i;
     int bit_depth_chroma, start;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *gb = s->gb[0];
 
     int sps_id = 0;
     SPS *sps = av_mallocz(sizeof(*sps));
@@ -552,7 +551,7 @@ err:
 int ff_hevc_decode_nal_pps(HEVCContext *s)
 {
     int i, j, x, y, ctb_addr_rs, tile_id;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *gb = s->gb[0];
 
     SPS *sps = 0;
     int pps_id = 0;
@@ -637,6 +636,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
         pps->loop_filter_across_tiles_enabled_flag = get_bits1(gb);
     }
+    
+    
 
     pps->seq_loop_filter_across_slices_enabled_flag = get_bits1(gb);
 

@@ -205,6 +205,7 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 		char *outBuffer, u32 *outBufferLength,
 		u8 PaddingBits, u32 mmlevel)
 {
+    int flushed;
 	unsigned int got_pic, a_w, a_h, a_stride;
 	HEVCDec *ctx = (HEVCDec*) ifcg->privateStack;
 	u8 *pY, *pU, *pV;
@@ -216,22 +217,8 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 			*outBufferLength = 0;
 			libOpenHevcClose();
 			return HEVC_ConfigureStream(ctx, ctx->esd);
-		} else {
-			int flushed;
-		
-			pY = outBuffer;
-			pU = outBuffer + ctx->stride * ctx->height;
-			pV = outBuffer + 5*ctx->stride * ctx->height/4;
-
-			flushed = libOpenHevcGetOutputCpy(1, pY, pU, pV);
-            *outBufferLength = ctx->out_size;
-
-			if (flushed) {
-				*outBufferLength = 0;
-			}
 		}
-		return GF_OK;
-	}
+    }
 
 	if (!ES_ID || (ES_ID!=ctx->ES_ID) ) {
 		*outBufferLength = 0;
@@ -241,6 +228,24 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 		*outBufferLength = ctx->out_size;
 		return GF_BUFFER_TOO_SMALL;
 	}
+
+
+    pY = outBuffer;
+    pU = outBuffer + ctx->stride * ctx->height;
+    pV = outBuffer + 5*ctx->stride * ctx->height/4;
+
+    flushed = libOpenFlushDpbCpy(1, pY, pU, pV);
+    *outBufferLength = ctx->out_size;
+
+    if (flushed) {
+        if (! inBuffer) {
+            *outBufferLength = 0;
+            return GF_OK;
+        }
+        //otherwise this is a flush of the decoder but we do have input data to decode
+        //use packed frame signaling to be clled again with the same input buffer
+        return GF_PACKED_FRAME;
+    }
 
 	got_pic = 0;
 	if (ctx->had_pic) {
