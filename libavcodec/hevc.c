@@ -356,7 +356,6 @@ static int hls_slice_header(HEVCContext *s)
             s->sh.short_term_rps = NULL;
             s->poc = 0;
         }
-      //  av_log(s->avctx, AV_LOG_ERROR, "POC %d\n", s->poc);
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
             return -1;
@@ -1987,13 +1986,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int offset = 0;
     int ret;
     int i;
-    if (avpkt->size == 0) {
-        if ((ret = ff_hevc_find_flush_display(s, data)) < 0)
-            return ret;
-        s->frame->pict_type = AV_PICTURE_TYPE_I;
-        s->frame->key_frame = 1;
-        return 0;
-    }
 
     *data_size = 0;
 
@@ -2038,8 +2030,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     case NAL_RASL_N:
     case NAL_RASL_R:
         s->isFirstQPgroup = 1;
-        if (s->nal_unit_type == NAL_IDR_W_DLP)
+        if (s->nal_unit_type == NAL_IDR_W_DLP) {
             ff_hevc_clear_refs(s);
+            s->dpb++;
+        }
         if (hls_slice_header(s) < 0)
             return -1;
         if(!s->sh.disable_deblocking_filter_flag) {
@@ -2158,6 +2152,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     if (!s->tmp_frame)
         return AVERROR(ENOMEM);
     s->poc_display = 0;
+    s->dpb = 0;
+    s->renderer = 1;
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         s->short_refs[i].frame = av_frame_alloc();
         if (!s->short_refs[i].frame)
