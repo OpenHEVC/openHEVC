@@ -1963,7 +1963,15 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     
     int offset = 0;
     int ret;
-    int i; 
+    int i;
+    if (avpkt->size == 0) {
+        if ((ret = ff_hevc_find_flush_display(s, data)) < 0)
+            return ret;
+        s->frame->pict_type = AV_PICTURE_TYPE_I;
+        s->frame->key_frame = 1;
+        return 0;
+    }
+
     *data_size = 0;
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);

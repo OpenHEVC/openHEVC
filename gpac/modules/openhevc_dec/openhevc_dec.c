@@ -244,7 +244,7 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
         }
         //otherwise this is a flush of the decoder but we do have input data to decode
         //use packed frame signaling to be clled again with the same input buffer
-        return GF_PACKED_FRAME;
+        return GF_PACKED_FRAMES;
     }
 
 	got_pic = 0;

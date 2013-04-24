@@ -116,7 +116,7 @@ int libOpenFlushDpb(unsigned char **Y, unsigned char **U, unsigned char **V)
     return 0;
 }
 
-int libOpenFlushDpbCpy(unsigned char **Y, unsigned char **U, unsigned char **V)
+int libOpenFlushDpbCpy(unsigned char *Y, unsigned char *U, unsigned char *V)
 {
     HEVCContext *s;
     int got_picture = 0;

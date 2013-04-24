@@ -9,7 +9,7 @@ void libOpenHevcGetPictureSize(unsigned int *width, unsigned int *height, unsign
 void libOpenHevcGetPictureSize2(unsigned int *width, unsigned int *height, unsigned int *stride);
 int  libOpenHevcGetOutput(int got_picture, unsigned char **Y, unsigned char **U, unsigned char **V);
 int libOpenFlushDpb(unsigned char **Y, unsigned char **U, unsigned char **V);
-int libOpenFlushDpbCbpy(unsigned char **Y, unsigned char **U, unsigned char **V);
+int libOpenFlushDpbCpy(unsigned char *Y, unsigned char *U, unsigned char *V);
 int  libOpenHevcGetOutputCpy(int got_picture, unsigned char *Y, unsigned char *U, unsigned char *V);
 void libOpenHevcSetCheckMD5(int val);
 void libOpenHevcClose();
