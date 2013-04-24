@@ -46,6 +46,7 @@ int libOpenHevcInit()
     }
     s = openHevcContext.c->priv_data;
     s->decode_checksum_sei = 0;
+    s->enable_multithreads = openHevcContext.c->thread_count>1; 
     return 0;
 }
 

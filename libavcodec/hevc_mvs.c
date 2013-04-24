@@ -57,12 +57,12 @@ s->pps->min_tb_addr_zs[(y) * s->sps->pic_width_in_min_tbs + (x)]
 /*
  * 6.4.2 Derivation process for prediction block availability
  */
-static int check_prediction_block_available(HEVCContext *s, int log2_cb_size, int x0, int y0, int nPbW, int nPbH, int xA1, int yA1, int partIdx)
+static int check_prediction_block_available(HEVCContext *s, int log2_cb_size, int x0, int y0, int nPbW, int nPbH, int xA1, int yA1, int partIdx, int entry)
 {
     int sameCb = 0;
     int availableN = 0;
 
-    if ((s->cu.x < xA1) && (s->cu.y < yA1) && ((s->cu.x + (1 << log2_cb_size))> xA1) && ((s->cu.y + (1 << log2_cb_size))> yA1)) {
+    if ((s->cu.x[entry] < xA1) && (s->cu.y[entry] < yA1) && ((s->cu.x[entry] + (1 << log2_cb_size))> xA1) && ((s->cu.y[entry] + (1 << log2_cb_size))> yA1)) {
         sameCb = 1;
     } else {
         sameCb = 0;
@@ -71,7 +71,7 @@ static int check_prediction_block_available(HEVCContext *s, int log2_cb_size, in
     if (sameCb == 0) {
         availableN = ff_hevc_z_scan_block_avail(s, x0, y0, xA1, yA1);
     } else {
-        if ((nPbW << 1 == (1 << log2_cb_size)) && ((nPbH << 1) == (1 << log2_cb_size)) && (partIdx ==1) && ((s->cu.x + nPbW) > xA1) && ((s->cu.y + nPbH) <= yA1)) {
+        if ((nPbW << 1 == (1 << log2_cb_size)) && ((nPbH << 1) == (1 << log2_cb_size)) && (partIdx ==1) && ((s->cu.x[entry] + nPbW) > xA1) && ((s->cu.y[entry] + nPbH) <= yA1)) {
             availableN = 0;
         } else {
             availableN = 1;
@@ -254,7 +254,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW,
 /*
  * 8.5.3.1.2  Derivation process for spatial merging candidates
  */
-static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int singleMCLFlag, int part_idx,  struct MvField mergecandlist[])
+static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int singleMCLFlag, int part_idx,  struct MvField mergecandlist[], int entry)
 {
 
     RefPicList  *refPicList =  s->ref->refPicList;
@@ -333,7 +333,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     }
 
     if((singleMCLFlag == 0) &&  (part_idx == 1) &&
-       ((s->cu.part_mode == PART_Nx2N) || (s->cu.part_mode == PART_nLx2N) || (s->cu.part_mode == PART_nRx2N))
+       ((s->cu.part_mode[entry] == PART_Nx2N) || (s->cu.part_mode[entry] == PART_nLx2N) || (s->cu.part_mode[entry] == PART_nRx2N))
        || isDiffMER(s, xA1, yA1, x0, y0) ) {
         isAvailableA1 = 0;
     }
@@ -370,7 +370,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     }
 
     if((singleMCLFlag == 0) && (part_idx == 1) &&
-       ((s->cu.part_mode == PART_2NxN) || (s->cu.part_mode == PART_2NxnU) || (s->cu.part_mode == PART_2NxnD))
+       ((s->cu.part_mode[entry] == PART_2NxN) || (s->cu.part_mode[entry] == PART_2NxnU) || (s->cu.part_mode[entry] == PART_2NxnD))
        || isDiffMER(s, xB1, yB1, x0, y0)) {
         is_available_b1 = 0;
     }
@@ -401,7 +401,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     xB0_pu = xB0 >> s->sps->log2_min_pu_size;
     yB0_pu = yB0 >> s->sps->log2_min_pu_size;
     isAvailableB0 = 0;
-    check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
+    check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx, entry);
     if((yB0_pu >= 0) && !(tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].is_intra) && check_B0) {
         isAvailableB0 = 1;
     } else {
@@ -439,7 +439,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     xA0_pu = xA0 >> s->sps->log2_min_pu_size;
     yA0_pu = yA0 >> s->sps->log2_min_pu_size;
     isAvailableA0 = 0;
-    check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xA0, yA0, part_idx);
+    check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xA0, yA0, part_idx, entry);
 
     if((xA0_pu >= 0) && !(tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra) && check_A0) {
         isAvailableA0 = 1;
@@ -644,7 +644,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
 /*
  * 8.5.3.1.1 Derivation process of luma Mvs for merge mode
  */
-void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv)
+void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv, int entry)
 {
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
@@ -655,12 +655,12 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nP
     }
 
     if (singleMCLFlag == 1) {
-        x0 = s->cu.x;
-        y0 = s->cu.y;
+        x0 = s->cu.x[entry];
+        y0 = s->cu.y[entry];
         nPbW = nCS;
         nPbH = nCS;
     }
-    derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size, singleMCLFlag, part_idx, mergecand_list);
+    derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size, singleMCLFlag, part_idx, mergecand_list, entry);
     if ((mergecand_list[merge_idx].pred_flag[0] == 1) &&
         (mergecand_list[merge_idx].pred_flag[1] == 1) &&
         ((nPbW + nPbH) == 12)) {
@@ -694,7 +694,7 @@ static av_always_inline void dist_scale(HEVCContext *s, Mv * mv, int pic_width_i
     }
 }
 
-void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX)
+void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX, int entry)
 {
     RefPicList  *refPicList =  s->ref->refPicList;
     MvField *tab_mvf = s->ref->tab_mvf;
@@ -751,7 +751,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
     xA0_pu = xA0 >> s->sps->log2_min_pu_size;
     yA0_pu = yA0 >> s->sps->log2_min_pu_size;
     isAvailableA0 = 0;
-    check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xA0, yA0, part_idx);
+    check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xA0, yA0, part_idx, entry);
 
     isAvailableA0 = ((xA0_pu >= 0) && !(TAB_MVF(xA0_pu, yA0_pu).is_intra) && check_A0);
 
@@ -847,7 +847,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
     xB0_pu = xB0 >> s->sps->log2_min_pu_size;
     yB0_pu = yB0 >> s->sps->log2_min_pu_size;
     isAvailableB0 = 0;
-    check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx);
+    check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx, entry);
 
     isAvailableB0 = ((yB0_pu >= 0) && check_B0);
 

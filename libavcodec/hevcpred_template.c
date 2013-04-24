@@ -26,7 +26,7 @@
 
 #define POS(x, y) src[(x) + stride * (y)]
 
-static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int c_idx)
+static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int c_idx, int entry)
 {
 #define MIN_TB_ADDR_ZS(x, y)                                            \
     s->pps->min_tb_addr_zs[(y) * s->sps->pic_width_in_min_tbs + (x)]
@@ -55,8 +55,8 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(pixel);
     pixel *src = (pixel*)s->frame->data[c_idx] + x + y * stride;
 
-    enum IntraPredMode mode = c_idx ? s->pu.intra_pred_mode_c :
-                              s->tu.cur_intra_pred_mode;
+    enum IntraPredMode mode = c_idx ? s->pu.intra_pred_mode_c[entry] :
+                              s->tu[entry].cur_intra_pred_mode;
 
     pixel left_array[2*MAX_TB_SIZE+1], filtered_left_array[2*MAX_TB_SIZE+1];
     pixel top_array[2*MAX_TB_SIZE+1], filtered_top_array[2*MAX_TB_SIZE+1];
