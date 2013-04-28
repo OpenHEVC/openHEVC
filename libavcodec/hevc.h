@@ -122,7 +122,7 @@ typedef struct RefPicList {
 
 
 
-#define MAX_ENTRIES 24
+#define MAX_ENTRIES 36
 
 #define L0 0
 #define L1 1

@@ -51,6 +51,7 @@ void print_usage() {
 	printf(usage, program);
     printf("     -n : no display\n");
     printf("     -c : no check md5\n");
+    printf("     -p <number of threads> \n");
 }
 
 /*
