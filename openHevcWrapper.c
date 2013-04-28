@@ -14,7 +14,7 @@ typedef struct OpenHevcWrapperContext {
 OpenHevcWrapperContext openHevcContext;
 
 
-int libOpenHevcInit()
+int libOpenHevcInit(int nb_pthreads)
 {
     HEVCContext *s;
     /* register all the codecs */
@@ -38,16 +38,19 @@ int libOpenHevcInit()
          available in the bitstream. */
 
     /* open it */
+
     openHevcContext.c->thread_type = FF_THREAD_SLICE;
-    openHevcContext.c->thread_count = 1;
+    openHevcContext.c->thread_count = nb_pthreads;
     if (avcodec_open2(openHevcContext.c, openHevcContext.codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
+    
+
     s = openHevcContext.c->priv_data;
     s->decode_checksum_sei = 0;
-    s->enable_multithreads = openHevcContext.c->thread_count>1; 
-    return 0;
+    s->enable_multithreads = openHevcContext.c->thread_count>1;
+        return 0;
 }
 
 int libOpenHevcDecode(unsigned char *buff, int nal_len)

@@ -113,7 +113,7 @@ static void video_decode_example(const char *filename)
     unsigned int width, height, stride;
     unsigned char * buf, *Y, *U, *V;
     
-    libOpenHevcInit();
+    libOpenHevcInit(nb_pthreads);
     libOpenHevcSetCheckMD5(check_md5_flags);
     f = fopen(filename, "rb");
     if (!f) {

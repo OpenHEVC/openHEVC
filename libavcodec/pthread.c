@@ -292,16 +292,16 @@ static int thread_init(AVCodecContext *avctx)
     int i;
     ThreadContext *c;
     int thread_count = avctx->thread_count;
-
-    if (!thread_count) {
+  
+   // if (!thread_count) {
         int nb_cpus = get_logical_cpus(avctx);
         // use number of cores + 1 as thread count if there is more than one
-        if (nb_cpus > 1)
-            thread_count = avctx->thread_count = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);
+        if (thread_count> 1 && nb_cpus > 1 )
+            thread_count = avctx->thread_count = FFMIN3(thread_count, nb_cpus , MAX_AUTO_THREADS);
         else
             thread_count = avctx->thread_count = 1;
-    }
-
+    //}
+  
     if (thread_count <= 1) {
         avctx->active_thread_type = 0;
         return 0;
@@ -1050,7 +1050,6 @@ int ff_thread_init(AVCodecContext *avctx)
 
     if (avctx->codec) {
         validate_thread_parameters(avctx);
-
         if (avctx->active_thread_type&FF_THREAD_SLICE)
             return thread_init(avctx);
         else if (avctx->active_thread_type&FF_THREAD_FRAME)
