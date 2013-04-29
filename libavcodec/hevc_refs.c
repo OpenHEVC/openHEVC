@@ -50,7 +50,7 @@ void ff_hevc_clean_refs(HEVCContext *s)
 static void update_refs(HEVCContext *s)
 {
     int i, j;
-    
+
     int used[FF_ARRAY_ELEMS(s->short_refs)] = { 0 };
     for (i = 0; i < 5; i++) {
         RefPicList *rpl = &s->sh.refPocList[i];
@@ -125,7 +125,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame)
             nbReadyDisplay ++;
             if (s->renderer == ref->dpb && ref->poc >= s->poc_display && ref->poc < minPoc) {
                 minPoc = ref->poc;
-            } 
+            }
         }
     }
     if (minPoc == 0xFFFF) {
@@ -143,7 +143,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame)
     }
     if (minPoc == 0xFFFF)
         minPoc=0;
-    
+
     for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
         HEVCFrame *ref = &s->short_refs[i];
         if (nbReadyDisplay > s->sps->temporal_layer[0].num_reorder_pics) {
