@@ -96,7 +96,7 @@ static int pic_arrays_init(HEVCContext *s)
     s->cu.top_ct_depth  = av_malloc(s->sps->pic_width_in_min_cbs);
 
     s->pu.left_ipm = av_malloc(pic_height_in_min_pu);
-    s->pu.top_ipm  = av_malloc(pic_width_in_min_pu);
+    s->pu.top_ipm = av_malloc(pic_width_in_min_pu<<s->sps->log2_ctb_size);
 
     s->cbf_luma = av_malloc(pic_width_in_min_pu * pic_height_in_min_pu);
     s->is_pcm   = av_malloc(pic_width_in_min_pu * pic_height_in_min_pu);
