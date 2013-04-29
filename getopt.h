@@ -50,6 +50,8 @@ char *input_file;
 // deactivate display
 char display_flags;
 int check_md5_flags;
+// Activate multi-threading if possible
+int nb_pthreads;
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);

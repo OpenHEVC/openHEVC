@@ -3,7 +3,7 @@
 
 #define NV_VERSION  "1.1" ///< Current software version
 
-int  libOpenHevcInit();
+int  libOpenHevcInit(int nb_pthreads);
 int  libOpenHevcDecode(unsigned char *buff, int nal_len);
 void libOpenHevcGetPictureSize(unsigned int *width, unsigned int *height, unsigned int *stride);
 void libOpenHevcGetPictureSize2(unsigned int *width, unsigned int *height, unsigned int *stride);

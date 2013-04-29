@@ -122,7 +122,7 @@ typedef struct RefPicList {
 
 
 
-#define MAX_ENTRIES 24
+#define MAX_ENTRIES 36
 
 #define L0 0
 #define L1 1
@@ -747,8 +747,8 @@ typedef struct HEVCContext {
 
     int ctb_addr_rs; ///< CtbAddrRS
     int ctb_addr_ts; ///< CtbAddrTS
-    uint8_t isFirstQPgroup;
-    int8_t qp_y;
+    uint8_t isFirstQPgroup[MAX_ENTRIES];
+    int8_t qp_y[MAX_ENTRIES];
     int8_t *qp_y_tab;
 
     uint8_t *split_coding_unit_flag;
