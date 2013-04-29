@@ -41,6 +41,42 @@
  * Section 5.7
  */
 
+static void pic_arrays_free(HEVCContext *s)
+{
+    int i, j;
+
+    av_freep(&s->sao);
+
+    av_freep(&s->split_coding_unit_flag);
+    av_freep(&s->cu.skip_flag);
+
+    av_freep(&s->cu.left_ct_depth);
+    av_freep(&s->cu.top_ct_depth);
+
+    av_freep(&s->pu.left_ipm);
+    av_freep(&s->pu.top_ipm);
+    av_freep(&s->horizontal_bs);
+    av_freep(&s->vertical_bs);
+
+    av_freep(&s->cbf_luma);
+    av_freep(&s->is_pcm);
+
+    av_freep(&s->qp_y_tab);
+
+    for (j = 0; j < MAX_ENTRIES && (s->enable_multithreads || !j); j++){
+        for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
+            av_freep(&s->tt[j].cbf_cb[i]);
+            av_freep(&s->tt[j].cbf_cr[i]);
+        }
+    }
+    if (s->sh.entry_point_offset) {
+        av_freep(&s->sh.entry_point_offset);
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
+        av_freep(&s->short_refs[i].tab_mvf);
+    }
+}
+
 static int pic_arrays_init(HEVCContext *s)
 {
     int i, j;
@@ -101,41 +137,6 @@ static int pic_arrays_init(HEVCContext *s)
     }
     
     return 0;
-}
-
-static void pic_arrays_free(HEVCContext *s)
-{
-    int i, j;
-    
-    av_freep(&s->sao);
-
-    av_freep(&s->split_coding_unit_flag);
-    av_freep(&s->cu.skip_flag);
-
-    av_freep(&s->cu.left_ct_depth);
-    av_freep(&s->cu.top_ct_depth);
-
-    av_freep(&s->pu.left_ipm);
-    av_freep(&s->pu.top_ipm);
-    av_freep(&s->horizontal_bs);
-    av_freep(&s->vertical_bs);
-
-    av_freep(&s->cbf_luma);
-    av_freep(&s->is_pcm);
-
-    av_freep(&s->qp_y_tab);
-    for (j = 0; j < MAX_ENTRIES && (s->enable_multithreads || !j); j++){
-        for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
-            av_freep(&s->tt[j].cbf_cb[i]);
-            av_freep(&s->tt[j].cbf_cr[i]);
-        }
-    }
-    
-    
-    for (i = 0; i < FF_ARRAY_ELEMS(s->short_refs); i++) {
-        av_freep(&s->short_refs[i].tab_mvf);
-    }
-
 }
 
 static void pred_weight_table(HEVCContext *s, GetBitContext *gb) {
