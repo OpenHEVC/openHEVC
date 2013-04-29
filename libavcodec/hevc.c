@@ -85,16 +85,18 @@ static int pic_arrays_init(HEVCContext *s)
         !s->cu.left_ct_depth || !s->cu.top_ct_depth ||
         !s->pu.left_ipm || !s->pu.top_ipm ||
         !s->horizontal_bs || !s->vertical_bs)
-        return -1;
+        return AVERROR(ENOMEM);
+
     memset(s->horizontal_bs, 0, 2 * s->bs_width * s->bs_height);
     memset(s->vertical_bs, 0, s->bs_width * 2 * s->bs_height);
+
     for (j = 0; j < MAX_ENTRIES && (s->enable_multithreads || !j); j++){
         for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
             s->tt[j].cbf_cb[i] = av_malloc(MAX_CU_SIZE*MAX_CU_SIZE);
             s->tt[j].cbf_cr[i] = av_malloc(MAX_CU_SIZE*MAX_CU_SIZE);
             if (!s->tt[j].cbf_cb[i] ||
                 !s->tt[j].cbf_cr[i])
-                return -1;
+                return AVERROR(ENOMEM);
         }
     }
     
@@ -233,7 +235,7 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb) {
 
 static int hls_slice_header(HEVCContext *s)
 {
-    int i;
+    int i, ret;
     GetBitContext *gb = s->gb[0];
     SliceHeader *sh = &s->sh;
     int slice_address_length = 0;
@@ -254,7 +256,7 @@ static int hls_slice_header(HEVCContext *s)
     sh->pps_id = get_ue_golomb(gb);
     if (sh->pps_id >= MAX_PPS_COUNT || !s->pps_list[sh->pps_id]) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->pps = s->pps_list[sh->pps_id];
     if (s->sps != s->sps_list[s->pps->sps_id]) {
@@ -262,9 +264,10 @@ static int hls_slice_header(HEVCContext *s)
         s->vps = s->vps_list[s->sps->vps_id];
         //TODO: Handle switching between different SPS better
         pic_arrays_free(s);
-        if (pic_arrays_init(s) < 0) {
+        ret = pic_arrays_init(s);
+        if (ret < 0) {
             pic_arrays_free(s);
-            return -1;
+            return AVERROR(ENOMEM);
         }
 
         s->avctx->width = s->sps->pic_width_in_luma_samples;
@@ -273,7 +276,7 @@ static int hls_slice_header(HEVCContext *s)
             av_log(s->avctx, AV_LOG_ERROR,
                    "TODO: s->sps->chroma_format_idc == 0 || "
                    "s->sps->separate_colour_plane_flag\n");
-            return -1;
+            return AVERROR_PATCHWELCOME;
         }
 
         if (s->sps->chroma_format_idc == 1) {
@@ -290,7 +293,7 @@ static int hls_slice_header(HEVCContext *s)
             }
         } else {
             av_log(s->avctx, AV_LOG_ERROR, "non-4:2:0 support is currently unspecified.\n");
-            return -1;
+            return AVERROR_PATCHWELCOME;
         }
         s->sps->hshift[0] = s->sps->vshift[0] = 0;
         s->sps->hshift[2] =
@@ -346,7 +349,7 @@ static int hls_slice_header(HEVCContext *s)
             }
             if (s->sps->long_term_ref_pics_present_flag) {
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: long_term_ref_pics_present_flag\n");
-                return -1;
+                return AVERROR_PATCHWELCOME;
             }
             if (s->sps->sps_temporal_mvp_enabled_flag)
                 sh->slice_temporal_mvp_enabled_flag = get_bits1(gb);
@@ -358,7 +361,7 @@ static int hls_slice_header(HEVCContext *s)
         }
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         if (s->sps->sample_adaptive_offset_enabled_flag) {
@@ -382,7 +385,7 @@ static int hls_slice_header(HEVCContext *s)
             }
             if (s->pps->lists_modification_present_flag) {
                 av_log(s->avctx, AV_LOG_ERROR, "TODO: ref_pic_list_modification() \n");
-                return -1;
+                return AVERROR_PATCHWELCOME;
             }
 
             if (sh->slice_type == B_SLICE)
@@ -2042,8 +2045,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             ff_hevc_clear_refs(s);
             s->dpb++;
         }
-        if (hls_slice_header(s) < 0)
-            return -1;
+
+        ret = hls_slice_header(s);
+        if (ret < 0)
+            return ret;
+
         if(!s->sh.disable_deblocking_filter_flag) {
             int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
             int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
@@ -2068,50 +2074,49 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             if ((ret = ff_hevc_set_new_ref(s, &s->frame, s->poc))< 0)
                 return ret;
         }
-            if (!s->edge_emu_buffer[0])
-                s->edge_emu_buffer[0] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
-            if (!s->edge_emu_buffer[0])
-                return -1;
+        if (!s->edge_emu_buffer[0])
+            s->edge_emu_buffer[0] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
+        if (!s->edge_emu_buffer[0])
+            return -1;
             
-            if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads) {
-                int i;
-                offset += (s->gb[0]->index>>3);
-                if(!s->cbt_entry_count) {
-                    s->cbt_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int16_t));
-                    for(i=1; i< MAX_ENTRIES-1; i++) {
-                        s->gb[i] = av_malloc(sizeof(GetBitContext));
-                        s->cc[i] = av_malloc(sizeof(CABACContext));
-                        s->cabac_state [i+1] = av_malloc(HEVC_CONTEXTS);
-                        s->edge_emu_buffer[i] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
-                    }
-                        s->edge_emu_buffer[MAX_ENTRIES-1] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
-                        s->gb[MAX_ENTRIES-1] = av_malloc(sizeof(GetBitContext));
-                        s->cc[MAX_ENTRIES-1] = av_malloc(sizeof(CABACContext));
+        if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads) {
+            int i;
+            offset += (s->gb[0]->index>>3);
+            if(!s->cbt_entry_count) {
+                s->cbt_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int16_t));
+                for(i=1; i< MAX_ENTRIES-1; i++) {
+                    s->gb[i] = av_malloc(sizeof(GetBitContext));
+                    s->cc[i] = av_malloc(sizeof(CABACContext));
+                    s->cabac_state [i+1] = av_malloc(HEVC_CONTEXTS);
+                    s->edge_emu_buffer[i] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
                 }
-                for(i=1; i< MAX_ENTRIES; i++) {
-                    s->qp_y[i] = s->qp_y[0];
-                    s->isFirstQPgroup[i] = 1;
-                }
-                memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int16_t));
-                for(i=1; i< s->sh.num_entry_point_offsets; i++) {
-                    offset += s->sh.entry_point_offset[i-1];
-                    init_get_bits(s->gb[i], avpkt->data+offset, s->sh.entry_point_offset[i]*8);
-                    ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]);
-                }
-                offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets-1];
-                init_get_bits(s->gb[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset)*8);
-                ff_init_cabac_decoder(s->cc[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset));
+                s->edge_emu_buffer[MAX_ENTRIES-1] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
+                s->gb[MAX_ENTRIES-1] = av_malloc(sizeof(GetBitContext));
+                s->cc[MAX_ENTRIES-1] = av_malloc(sizeof(CABACContext));
             }
-            if(s->pps->entropy_coding_sync_enabled_flag  && s->enable_multithreads ){
-                if(hls_slice_data_wpp(s) < 0)
-                    return -1;
-            } else {
-                if (hls_slice_data(s) < 0)
-                    return -1;
+            for(i=1; i< MAX_ENTRIES; i++) {
+                s->qp_y[i] = s->qp_y[0];
+                s->isFirstQPgroup[i] = 1;
             }
+            memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int16_t));
+            for(i=1; i< s->sh.num_entry_point_offsets; i++) {
+                offset += s->sh.entry_point_offset[i-1];
+                init_get_bits(s->gb[i], avpkt->data+offset, s->sh.entry_point_offset[i]*8);
+                ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]);
+            }
+            offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets-1];
+            init_get_bits(s->gb[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset)*8);
+            ff_init_cabac_decoder(s->cc[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset));
+        }
+        if(s->pps->entropy_coding_sync_enabled_flag  && s->enable_multithreads ){
+            if(hls_slice_data_wpp(s) < 0)
+                return -1;
+        } else {
+            if (hls_slice_data(s) < 0)
+                return -1;
+        }
             
         if(!s->sh.disable_deblocking_filter_flag && (!s->pps->entropy_coding_sync_enabled_flag || !s->enable_multithreads) ) {
-           
             ff_hevc_deblocking_filter(s);
         }
         if (s->sps->sample_adaptive_offset_enabled_flag && (!s->pps->entropy_coding_sync_enabled_flag || !s->enable_multithreads)) {
