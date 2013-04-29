@@ -11,21 +11,18 @@ endif(APPLE)
 
 IF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 #SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic -fno-tree-vectorize")
-#SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}  -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic -fno-tree-vectorize")
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -arch x86_64 -m64 -DPIC -Wl,-Bsymbolic")
-SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -arch x86_64 -m64 -DPIC -Wl,-Bsymbolic")
+#SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic -fno-tree-vectorize")
+if(MINGW)
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic")
+SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic")
+else(MINGW)
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -Wl,-Bsymbolic")
+SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -DPIC -Wl,-Bsymbolic")
+endif(MINGW)
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
 find_package(SDL)
 find_package(SDL2)
-if(MINGW)
-else(MINGW)
-find_package(CSFML 2.0 COMPONENTS graphics system)
-endif(MINGW)
-
-if(MINGW)
-#set(CMAKE_C_FLAGS "-march=i486 -mwindows")
-endif(MINGW)
 
 set(libfilenames
 openHevcWrapper.c

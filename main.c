@@ -57,7 +57,9 @@ static int YUV2RGB  (   unsigned char   *picture,
                         unsigned int    height  )	// convert YUV_888 to RGB_888
 {
     unsigned char clipping[1024];
-    for(int n=-512; n<512; n++)
+    unsigned char* clip;
+    int n, y;
+    for(n=-512; n<512; n++)
     {
         if(n<=0)
         {
@@ -72,8 +74,8 @@ static int YUV2RGB  (   unsigned char   *picture,
             clipping[512+n]=n;
         }
     }
-    unsigned char* clip = clipping+512;
-    for(int y=0; y<height; y++)
+    clip = clipping+512;
+    for(y=0; y<height; y++)
     {
         int ycr = y/2;
 
@@ -82,7 +84,8 @@ static int YUV2RGB  (   unsigned char   *picture,
         unsigned char *pos_v=picture_v + ycr * (width>>1);
 
         unsigned char *pos_rgb= picture_RGB + y*width*3;
-        for(int x=0; x<width; x+=2)
+        int x;
+        for(x=0; x<width; x+=2)
         {
             int c = *pos_y-16;
             int d = *pos_u-128;
