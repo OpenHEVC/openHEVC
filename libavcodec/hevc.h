@@ -868,8 +868,6 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int n, int base_level, int
 int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb, int entry);
 
 
-void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv);
-void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX);
 int ff_hevc_find_next_ref(HEVCContext *s, int poc);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush);
