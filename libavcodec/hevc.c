@@ -1356,7 +1356,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             s->hevcdsp.put_unweighted_pred_luma(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
             chroma_mc(s, tmp, tmp2, tmpstride,
                       s->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
-                      &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
+                      &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2, entry);
             s->hevcdsp.put_unweighted_pred_chroma(dst1, s->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
             s->hevcdsp.put_unweighted_pred_chroma(dst2, s->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
         } else {
@@ -1393,10 +1393,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         if (! s->pps->weighted_bipred_flag){
             luma_mc(s, tmp, tmpstride,
                     s->DPB[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
-                    &current_mv.mv[0], x0, y0, nPbW, nPbH);
+                    &current_mv.mv[0], x0, y0, nPbW, nPbH, entry);
             luma_mc(s, tmp2, tmpstride,
                     s->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
-                    &current_mv.mv[1], x0, y0, nPbW, nPbH);
+                    &current_mv.mv[1], x0, y0, nPbW, nPbH, entry);
             s->hevcdsp.put_weighted_pred_avg_luma(dst0, s->frame->linesize[0], tmp, tmp2, tmpstride, nPbW, nPbH);
             chroma_mc(s, tmp, tmp2, tmpstride,
                       s->DPB[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
@@ -2042,7 +2042,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         s->isFirstQPgroup[0] = 1;
         if (s->nal_unit_type == NAL_IDR_W_DLP) {
             ff_hevc_clear_refs(s);
-            s->dpb++;
+            s->seq_decode = (s->seq_decode + 1) & 0xff;
         }
 
         ret = hls_slice_header(s);
@@ -2172,8 +2172,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     if (!s->tmp_frame)
         return AVERROR(ENOMEM);
     s->poc_display = 0;
-    s->dpb = 0;
-    s->renderer = 1;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         s->DPB[i].frame = av_frame_alloc();
         if (!s->DPB[i].frame)
