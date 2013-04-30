@@ -875,7 +875,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush);
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv, int entry);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX, int entry);
 int ff_hevc_z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr, int xN, int yN);
-void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int entry);
+void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int trafo_size, int entry);
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s, int entry);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s, int entry);
@@ -883,4 +883,7 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0);
 void ff_hevc_sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_idx_max);
 void ff_hevc_deblocking_filter(HEVCContext *s);
 void ff_hevc_sao_filter(HEVCContext *s);
+void hls_filter(HEVCContext *s, int x, int y);
+void hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
+
 #endif // AVCODEC_HEVC_H
