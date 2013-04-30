@@ -21,6 +21,7 @@
  */
 
 #include "hevc.h"
+#include "internal.h"
 
 static int find_ref_idx(HEVCContext *s, int poc)
 {
@@ -36,6 +37,7 @@ static int find_ref_idx(HEVCContext *s, int poc)
            "Could not find short ref with POC %d\n", poc);
     return -1;
 }
+
 
 static void update_refs(HEVCContext *s)
 {
@@ -194,30 +196,24 @@ static void set_ref_pic_list(HEVCContext *s)
         num_poc_total_curr = refPocList[ST_CURR_BEF].numPic + refPocList[ST_CURR_AFT].numPic + refPocList[LT_CURR].numPic;
         num_rps_curr_lx    = num_poc_total_curr<num_ref_idx_lx_act[list_idx] ? num_poc_total_curr : num_ref_idx_lx_act[list_idx];
         cIdx = 0;
-//        printf("L%d = [", list_idx);
         while(cIdx < num_rps_curr_lx) {
             for(i = 0; i < refPocList[first_list].numPic && cIdx < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[cIdx] = refPocList[first_list].list[i];
-//                printf("%d, ", refPicList[list_idx].list[cIdx]);
                 refPicList[list_idx].idx[cIdx]  = refPocList[first_list].idx[i];
-                
                 cIdx++;
             }
             for(i = 0; i < refPocList[sec_list].numPic && cIdx < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[cIdx] = refPocList[sec_list].list[i];
-//                printf("%d, ", refPicList[list_idx].list[cIdx]);
                 refPicList[list_idx].idx[cIdx]  = refPocList[sec_list].idx[i];
                 cIdx++;
             }
             for(i = 0; i < refPocList[LT_CURR].numPic && cIdx < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
-//                printf("%d, ", refPicList[list_idx].list[cIdx]);
                 refPicList[list_idx].idx[cIdx]  = refPocList[LT_CURR].idx[i];
                 cIdx++;
             }
         }
         refPicList[list_idx].numPic = cIdx;
-//        printf("]\n");
     }
 }
 

@@ -559,7 +559,6 @@ static void FUNC(sao_edge_filter_wpp)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _s
     const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
     
     int init_x = 0, init_y = 0, width = _width, height = _height;
-    int offset = 0;
     
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
     
