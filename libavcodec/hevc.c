@@ -1968,7 +1968,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     
     int offset = 0;
     int ret;
-    int i;
 
     if (!avpkt->size) {
         ret = ff_hevc_find_display(s, data, 1);
@@ -2251,8 +2250,7 @@ AVCodec ff_hevc_decoder = {
     .init           = hevc_decode_init,
     .close          = hevc_decode_free,
     .decode         = hevc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS, // Add by wassim to support multi-threading
     .flush          = hevc_decode_flush,
     .long_name      = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
-    .capabilities = CODEC_CAP_SLICE_THREADS, // Add by wassim to support multi-threading 
 };
