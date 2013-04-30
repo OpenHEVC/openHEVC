@@ -580,9 +580,9 @@ int ff_hevc_abs_mvd_greater1_flag_decode(HEVCContext *s, int entry)
     return GET_CABAC(entry, elem_offset[ABS_MVD_GREATER1_FLAG] + 1);
 }
 
-int ff_hevc_abs_mvd_minus2_decode(HEVCContext *s, int entry)
+int ff_hevc_mvd_decode(HEVCContext *s, int entry)
 {
-    int ret = 0;
+    int ret = 2;
     int k = 1;
 
     while (get_cabac_bypass(s->cc[entry])) {
@@ -592,7 +592,7 @@ int ff_hevc_abs_mvd_minus2_decode(HEVCContext *s, int entry)
     while (k--)
         ret += get_cabac_bypass(s->cc[entry]) << k;
 
-    return ret;
+    return get_cabac_bypass_sign(s->cc[entry], -ret);
 }
 
 int ff_hevc_mvd_sign_flag_decode(HEVCContext *s, int entry)
