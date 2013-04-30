@@ -2177,7 +2177,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_frame_free(&s->DPB[i].frame);
     }
 
-   // av_freep(&s->edge_emu_buffer);
 
     for (i = 0; i < MAX_VPS_COUNT; i++) {
         av_freep(&s->vps_list[i]);
