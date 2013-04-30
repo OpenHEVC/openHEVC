@@ -883,4 +883,7 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0);
 void ff_hevc_sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_idx_max);
 void ff_hevc_deblocking_filter(HEVCContext *s);
 void ff_hevc_sao_filter(HEVCContext *s);
+void hls_filter(HEVCContext *s, int x, int y);
+void hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
+
 #endif // AVCODEC_HEVC_H
