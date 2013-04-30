@@ -106,7 +106,7 @@ static int pic_arrays_init(HEVCContext *s)
     if (!s->cbf_luma ||!s->is_pcm)
         goto fail;
 
-    s->qp_y_tab = av_malloc(s->sps->pic_width_in_min_tbs * s->sps->pic_height_in_min_tbs);
+    s->qp_y_tab = av_malloc(pic_size/*/16*/*sizeof(int8_t));
     if (!s->qp_y_tab)
         goto fail;
 
@@ -886,7 +886,7 @@ static void hls_transform_unit(HEVCContext *s, int x0, int  y0, int xBase, int y
                 if (ff_hevc_cu_qp_delta_sign_flag(s, entry) == 1)
                     s->tu[entry].cu_qp_delta = -s->tu[entry].cu_qp_delta;
             s->tu[entry].is_cu_qp_delta_coded = 1;
-            ff_hevc_set_qPy(s, x0, y0, entry);
+            ff_hevc_set_qPy(s, x0, y0, 1<<log2_trafo_size, entry);
         }
 
         if (s->cu.pred_mode[entry] == MODE_INTRA && log2_trafo_size < 4) {
@@ -2068,7 +2068,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
         s->qp_y[0] = ((s->sh.slice_qp + 52 + 2 * s->sps->qp_bd_offset) %
                         (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
-        memset(s->qp_y_tab, s->qp_y[0] , s->sps->pic_width_in_min_tbs * s->sps->pic_height_in_min_tbs);            
+        memset(s->qp_y_tab, s->qp_y[0] , s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples/*/16*/);
+//        printf("set dp_slice = %d\n",s->qp_y[0]);
         ff_hevc_cabac_init(s, 0);
          
         

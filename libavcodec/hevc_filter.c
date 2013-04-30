@@ -47,8 +47,9 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int entry)
     int Log2MinCuQpDeltaSize = Log2CtbSizeY - s->pps->diff_cu_qp_delta_depth;
     int xQg                  = xC - ( xC & ( ( 1 << Log2MinCuQpDeltaSize) - 1 ) );
     int yQg                  = yC - ( yC & ( ( 1 << Log2MinCuQpDeltaSize) - 1 ) );
-    int x                    = xC >> Log2MinCuQpDeltaSize;
-    int y                    = yC >> Log2MinCuQpDeltaSize;
+    int pic_width = s->sps->pic_width_in_luma_samples >> 2;
+    int x         = xC >> 2;
+    int y         = yC >> 2;
     int qPy_pred;
     int qPy_a;
     int qPy_b;
@@ -81,37 +82,61 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int entry)
     if ( (availableA == 0) || (ctbAddrA != s->ctb_addr_ts) ) {
         qPy_a = qPy_pred;
     } else {
-        qPy_a = s->qp_y_tab[(x-1) + y * s->sps->pic_width_in_min_tbs];
+        qPy_a = s->qp_y_tab[(x-1) + y * pic_width];
     }
     // qPy_b
     if ( (availableB == 0) || (ctbAddrB != s->ctb_addr_ts) ) {
         qPy_b = qPy_pred;
     } else {
-        qPy_b = s->qp_y_tab[x + (y-1) * s->sps->pic_width_in_min_tbs];
+        qPy_b = s->qp_y_tab[x + (y-1) * pic_width];
     }
     return (qPy_a + qPy_b + 1) >> 1;
 }
-void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int entry)
+void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int trafo_size, int entry)
 {
-    int Log2CtbSizeY         = s->sps->log2_ctb_size;
-    int Log2MinCuQpDeltaSize = Log2CtbSizeY - s->pps->diff_cu_qp_delta_depth;
-    int x                    = xC >> Log2MinCuQpDeltaSize;
-    int y                    = yC >> Log2MinCuQpDeltaSize;
+    int pic_width = s->sps->pic_width_in_luma_samples >> 2;
+    int x         = xC >> 2;
+    int y         = yC >> 2;
+    int x_idx, x_end;
+    int y_idx, y_end;
+    x_end = x + (trafo_size >> 2);
+    y_end = y + (trafo_size >> 2);
+    if ((x&15) == 0 && (y&15) == 0) {
+//        x_end = x + 16;
+//        y_end = y + 16;
+    } else if ((x&7) == 0 && (y&7) == 0) {
+//        x_end = x + 8;
+//        y_end = y + 8;
+    } else if ((x&3) == 0 && (y&3) == 0) {
+//        x_end = x + 4;
+//        y_end = y + 4;
+    } else if ((x&1) == 0 && (y&1) == 0) {
+//        x_end = x + 2;
+//        y_end = y + 2;
+    } else {
+//        x_end = x + 1;
+//        y_end = y + 1;
+    }
+
+//    printf("set %d ========== %d : (%d, %d) --> (%d, %d)\n", (x_end-x), trafo_size, x<<2, y<<2, x_end<<2, y_end<<2);
     if (s->tu[entry].cu_qp_delta != 0) {
         s->qp_y[entry] = ((get_qPy_pred(s, xC, yC, entry) + s->tu[entry].cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
                 (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
     } else {
         s->qp_y[entry] = get_qPy_pred(s, xC, yC, entry);
     }
-    s->qp_y_tab[x + y * s->sps->pic_width_in_min_tbs] = s->qp_y[entry];
+    for (y_idx = y ; y_idx < y_end; y_idx++)
+        for (x_idx = x ; x_idx < x_end; x_idx++) {
+//            printf("set_qPy[%d,%d] = %d\n",x_idx&15 , y_idx&15, s->qp_y[entry]);
+            s->qp_y_tab[x_idx + y_idx * pic_width] = s->qp_y[entry];
+        }
 }
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
-    int Log2CtbSizeY         = s->sps->log2_ctb_size;
-    int Log2MinCuQpDeltaSize = Log2CtbSizeY - s->pps->diff_cu_qp_delta_depth;
-    int x                    = xC >> Log2MinCuQpDeltaSize;
-    int y                    = yC >> Log2MinCuQpDeltaSize;
-    return s->qp_y_tab[x + y * s->sps->pic_width_in_min_tbs];
+    int pic_width = s->sps->pic_width_in_luma_samples >> 2;
+    int x         = xC >> 2;
+    int y         = yC >> 2;
+    return s->qp_y_tab[x + y * pic_width];
 }
 
 
@@ -337,6 +362,7 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
             int bs = s->vertical_bs[(x >> 3) + (y >> 2) * s->bs_width];
             if (bs) {
                 int qp = (get_qPy(s, x - 1, y) + get_qPy(s, x, y) + 1) >> 1;
+//                printf("get_qPy[%d, %d] = (%d + %d + 1) >> 1 = %d\n", x, y, get_qPy(s, x, y), get_qPy(s, x-1, y), qp);
                 const int idxb = av_clip_c(qp + ((s->sh.beta_offset >> 1) << 1), 0, MAX_QP);
                 const int beta = betatable[idxb];
                 int no_p = 0;
