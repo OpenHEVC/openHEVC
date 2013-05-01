@@ -787,6 +787,7 @@ typedef struct HEVCContext {
     int decode_checksum_sei;
     uint8_t md5[3][16];
     int16_t * cbt_entry_count;
+    volatile int coding_tree_count;
 
     /**
      * Sequence counters for decoded and output frames, so that old
