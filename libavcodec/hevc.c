@@ -343,23 +343,29 @@ static int hls_slice_header(HEVCContext *s)
                     short_term_ref_pic_set_idx = 0;
                 sh->short_term_rps = &s->sps->short_term_rps_list[short_term_ref_pic_set_idx];
             }
+            sh->long_term_rps.num_long_term_sps = 0;
+            sh->long_term_rps.num_long_term_pics = 0;
             if (s->sps->long_term_ref_pics_present_flag) {
-                uint8_t num_long_term_sps = 0;
-                int num_long_term_pics;
                 if( s->sps->num_long_term_ref_pics_sps > 0 )
-                    num_long_term_sps = get_ue_golomb(gb);
-                num_long_term_pics = get_ue_golomb(gb);
-                for( i = 0; i < num_long_term_sps + num_long_term_pics; i++ ) {
-                    if( i < num_long_term_sps ) {
+                    sh->long_term_rps.num_long_term_sps = get_ue_golomb(gb);
+                sh->long_term_rps.num_long_term_pics = get_ue_golomb(gb);
+                for( i = 0; i < sh->long_term_rps.num_long_term_sps + sh->long_term_rps.num_long_term_pics; i++ ) {
+                    if( i < sh->long_term_rps.num_long_term_sps ) {
+                        uint8_t lt_idx_sps = 0;
                         if( s->sps->num_long_term_ref_pics_sps > 1 )
-                            sh->long_term_rps.lt_idx_sps[ i ] = get_bits(gb, log2(s->sps->num_long_term_ref_pics_sps));
+                            lt_idx_sps = get_bits(gb, log2(s->sps->num_long_term_ref_pics_sps));
+                        sh->long_term_rps.PocLsbLt[ i ] = s->sps->lt_ref_pic_poc_lsb_sps[ lt_idx_sps ];
+                        sh->long_term_rps.UsedByCurrPicLt[ i ] = s->sps->used_by_curr_pic_lt_sps_flag[ lt_idx_sps ];
                     } else {
-                        sh->long_term_rps.poc_lsb_lt[ i ] = get_bits(gb, log2(s->sps->log2_max_poc_lsb));
-                        sh->long_term_rps.used_by_curr_pic_lt_flag[ i ] = get_bits1(gb);
+                        sh->long_term_rps.PocLsbLt[ i ] = get_bits(gb, log2(s->sps->log2_max_poc_lsb));
+                        sh->long_term_rps.UsedByCurrPicLt[ i ] = get_bits1(gb);
                         sh->long_term_rps.delta_poc_msb_present_flag[ i ] = get_bits1(gb);
                     }
-                if( sh->long_term_rps.delta_poc_msb_present_flag[ i ] )
-                    sh->long_term_rps.delta_poc_msb_cycle_lt[ i ] = get_ue_golomb(gb);
+                    if( sh->long_term_rps.delta_poc_msb_present_flag[ i ] == 1)
+                        if( i == 0 || i == sh->long_term_rps.num_long_term_sps )
+                            sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb);
+                        else
+                            sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb) + sh->long_term_rps.DeltaPocMsbCycleLt[ i - 1 ];
                 }
             }
             if (s->sps->sps_temporal_mvp_enabled_flag)
@@ -370,7 +376,7 @@ static int hls_slice_header(HEVCContext *s)
             s->sh.short_term_rps = NULL;
             s->poc = 0;
         }
-        av_log(s->avctx, AV_LOG_ERROR, "POC %d NAL %d\n", s->poc, s->nal_unit_type);
+//        av_log(s->avctx, AV_LOG_ERROR, "POC %d NAL %d\n", s->poc, s->nal_unit_type);
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
             return AVERROR_INVALIDDATA;
