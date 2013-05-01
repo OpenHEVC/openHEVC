@@ -210,9 +210,9 @@ static void decode_hrd(HEVCContext *s)
     av_log(s->avctx, AV_LOG_ERROR, "HRD parsing not yet implemented\n");
 }
 
-static void decode_vui(HEVCContext *s)
+static void decode_vui(HEVCContext *s, SPS *sps)
 {
-    VUI *vui = &s->sps->vui;
+    VUI *vui = &sps->vui;
     GetBitContext *gb = s->gb[0];
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VUI\n");
@@ -513,11 +513,19 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps->long_term_ref_pics_present_flag = get_bits1(gb);
+    if( sps->long_term_ref_pics_present_flag ) {
+        sps->num_long_term_ref_pics_sps = get_ue_golomb(gb);
+        for( i = 0; i < sps->num_long_term_ref_pics_sps; i++ ) {
+            sps->lt_ref_pic_poc_lsb_sps[ i ] = get_bits(gb, sps->log2_max_poc_lsb);
+            sps->used_by_curr_pic_lt_sps_flag[ i ] = get_bits1(gb);
+        }
+    }
+
     sps->sps_temporal_mvp_enabled_flag   = get_bits1(gb);
     sps->sps_strong_intra_smoothing_enable_flag = get_bits1(gb);
     sps->vui_parameters_present_flag = get_bits1(gb);
     if (sps->vui_parameters_present_flag)
-        decode_vui(s);
+        decode_vui(s, sps);
     sps->sps_extension_flag = get_bits1(gb);
 
     // Inferred parameters

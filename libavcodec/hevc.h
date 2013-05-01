@@ -87,6 +87,14 @@ typedef struct ShortTermRPS {
     int32_t delta_poc[32];
     uint8_t used[32];
 } ShortTermRPS;
+typedef struct LongTermRPS {
+    uint8_t num_long_term_sps;
+    uint8_t num_long_term_pics;
+    uint8_t PocLsbLt[32];
+    uint8_t UsedByCurrPicLt[32];
+    uint8_t delta_poc_msb_present_flag[32];
+    uint8_t DeltaPocMsbCycleLt[32];
+} LongTermRPS;
 
 #define ST_CURR_BEF  0
 #define ST_CURR_AFT  1
@@ -96,6 +104,8 @@ typedef struct ShortTermRPS {
 typedef struct RefPicList {
     int list[16];
     int idx[16];
+    uint8_t CurrDeltaPocMsbPresentFlag[16];
+    uint8_t FollDeltaPocMsbPresentFlag[16];
     int numPic;
 } RefPicList;
 
@@ -310,6 +320,9 @@ typedef struct SPS {
     ShortTermRPS short_term_rps_list[MAX_SHORT_TERM_RPS_COUNT+1];
 
     uint8_t long_term_ref_pics_present_flag;
+    uint8_t num_long_term_ref_pics_sps;
+    uint16_t lt_ref_pic_poc_lsb_sps[32];
+    uint8_t used_by_curr_pic_lt_sps_flag[32];
     uint8_t sps_temporal_mvp_enabled_flag;
     uint8_t sps_strong_intra_smoothing_enable_flag;
 
@@ -423,6 +436,7 @@ typedef struct SliceHeader {
     int pic_order_cnt_lsb;
     ShortTermRPS *short_term_rps;
     RefPicList refPocList[5];
+    LongTermRPS long_term_rps;
 
     uint8_t no_output_of_prior_pics_flag;
 
