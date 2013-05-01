@@ -777,7 +777,7 @@ typedef struct HEVCContext {
     TransformUnit tu[MAX_ENTRIES ];
     ResidualCoding rc[MAX_ENTRIES ];
     int poc;
-    int poc_display;
+    int max_ra;
 
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;
