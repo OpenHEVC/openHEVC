@@ -789,6 +789,8 @@ typedef struct HEVCContext {
     int16_t * cbt_entry_count;
     volatile int coding_tree_count;
 
+    int is_decoded;
+
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset

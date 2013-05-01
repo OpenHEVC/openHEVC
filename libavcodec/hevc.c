@@ -2011,15 +2011,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         ff_hevc_decode_nal_sei(s);
         break;
     case NAL_TRAIL_R:
-        // fall-through
-    case NAL_TRAIL_N: {
-        int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
-        int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
-
-        memset(s->pu.left_ipm, INTRA_DC, pic_height_in_min_pu);
-        memset(s->pu.top_ipm, INTRA_DC, pic_width_in_min_pu<<s->sps->log2_ctb_size);
-
-    }
+    case NAL_TRAIL_N:
     case NAL_BLA_W_LP:
     case NAL_BLA_W_RADL:
     case NAL_BLA_N_LP:
@@ -2052,6 +2044,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
 
         if (s->nal_unit_type == NAL_RASL_R && s->poc <= s->max_ra) {
+            s->is_decoded = 0;
             break;
         } else {
             if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
@@ -2131,6 +2124,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             calc_md5(s->md5[0], s->ref->frame->data[0], s->ref->frame->linesize[0], s->ref->frame->width  , s->ref->frame->height  );
             calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
             calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
+            s->is_decoded = 1;
         }
 /*            printf("Y ");
             print_md5(s->md5[0]);
