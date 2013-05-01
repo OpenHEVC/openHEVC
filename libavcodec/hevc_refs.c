@@ -34,7 +34,7 @@ static int find_ref_idx(HEVCContext *s, int poc)
             return i;
     }
     av_log(s->avctx, AV_LOG_ERROR,
-           "Could not find short ref with POC %d\n", poc);
+           "Could not find ref with POC %d\n", poc);
     return -1;
 }
 
@@ -233,7 +233,9 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
     int j = 0;
     int k = 0;
     ShortTermRPS *rps        = s->sh.short_term_rps;
+    LongTermRPS *long_rps    = &s->sh.long_term_rps;
     RefPicList   *refPocList = s->sh.refPocList;
+    int MaxPicOrderCntLsb = 1 << s->sps->log2_max_poc_lsb;
     if (rps != NULL) {
         for (i = 0; i < rps->num_negative_pics; i ++) {
             if ( rps->used[i] == 1 ) {
@@ -261,8 +263,20 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
         }
         refPocList[ST_CURR_AFT].numPic = j;
         refPocList[ST_FOLL].numPic = k;
-        refPocList[LT_CURR].numPic = 0;
-        refPocList[LT_FOLL].numPic = 0;
+        for( i = 0, j= 0, k = 0; i < long_rps->num_long_term_sps + long_rps->num_long_term_pics; i++ ) {
+            int pocLt = long_rps->PocLsbLt[ i ];
+            if( long_rps->delta_poc_msb_present_flag[ i ] )
+                pocLt += s->poc - long_rps->DeltaPocMsbCycleLt[ i ] * MaxPicOrderCntLsb - s->sh.pic_order_cnt_lsb;
+            if( long_rps->UsedByCurrPicLt[ i ] ) {
+                refPocList[LT_CURR].list[j] = pocLt;
+                refPocList[LT_CURR].CurrDeltaPocMsbPresentFlag[j++] = long_rps->delta_poc_msb_present_flag[ i ];
+            } else {
+                refPocList[LT_FOLL].list[k] = pocLt;
+                refPocList[LT_FOLL].FollDeltaPocMsbPresentFlag[k++] = long_rps->delta_poc_msb_present_flag[ i ];
+            }
+        }
+        refPocList[LT_CURR].numPic = j;
+        refPocList[LT_FOLL].numPic = k;
         set_ref_pic_list(s);
     }
 }

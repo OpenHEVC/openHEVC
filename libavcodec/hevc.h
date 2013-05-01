@@ -88,11 +88,12 @@ typedef struct ShortTermRPS {
     uint8_t used[32];
 } ShortTermRPS;
 typedef struct LongTermRPS {
-    uint8_t lt_idx_sps[32];
-    uint8_t poc_lsb_lt[32];
-    uint8_t used_by_curr_pic_lt_flag[32];
+    uint8_t num_long_term_sps;
+    uint8_t num_long_term_pics;
+    uint8_t PocLsbLt[32];
+    uint8_t UsedByCurrPicLt[32];
     uint8_t delta_poc_msb_present_flag[32];
-    uint8_t delta_poc_msb_cycle_lt[32];
+    uint8_t DeltaPocMsbCycleLt[32];
 } LongTermRPS;
 
 #define ST_CURR_BEF  0
@@ -103,6 +104,8 @@ typedef struct LongTermRPS {
 typedef struct RefPicList {
     int list[16];
     int idx[16];
+    uint8_t CurrDeltaPocMsbPresentFlag[16];
+    uint8_t FollDeltaPocMsbPresentFlag[16];
     int numPic;
 } RefPicList;
 

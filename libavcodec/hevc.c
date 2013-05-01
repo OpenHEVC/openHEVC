@@ -106,7 +106,7 @@ static int pic_arrays_init(HEVCContext *s)
     if (!s->cbf_luma ||!s->is_pcm)
         goto fail;
 
-    s->qp_y_tab = av_malloc(pic_size/*/16*/*sizeof(int8_t));
+    s->qp_y_tab = av_malloc(pic_size/s->sps->log2_min_coding_block_size*sizeof(int8_t));
     if (!s->qp_y_tab)
         goto fail;
 
@@ -324,7 +324,7 @@ static int hls_slice_header(HEVCContext *s)
         if (s->sps->separate_colour_plane_flag == 1)
             sh->colour_plane_id = get_bits(gb, 2);
 
-        if (s->nal_unit_type != NAL_IDR_W_DLP) {
+        if (s->nal_unit_type != NAL_IDR_W_DLP && s->nal_unit_type != NAL_IDR_N_LP) {
             int short_term_ref_pic_set_sps_flag;
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
@@ -343,23 +343,29 @@ static int hls_slice_header(HEVCContext *s)
                     short_term_ref_pic_set_idx = 0;
                 sh->short_term_rps = &s->sps->short_term_rps_list[short_term_ref_pic_set_idx];
             }
+            sh->long_term_rps.num_long_term_sps = 0;
+            sh->long_term_rps.num_long_term_pics = 0;
             if (s->sps->long_term_ref_pics_present_flag) {
-                uint8_t num_long_term_sps = 0;
-                int num_long_term_pics;
                 if( s->sps->num_long_term_ref_pics_sps > 0 )
-                    num_long_term_sps = get_ue_golomb(gb);
-                num_long_term_pics = get_ue_golomb(gb);
-                for( i = 0; i < num_long_term_sps + num_long_term_pics; i++ ) {
-                    if( i < num_long_term_sps ) {
+                    sh->long_term_rps.num_long_term_sps = get_ue_golomb(gb);
+                sh->long_term_rps.num_long_term_pics = get_ue_golomb(gb);
+                for( i = 0; i < sh->long_term_rps.num_long_term_sps + sh->long_term_rps.num_long_term_pics; i++ ) {
+                    if( i < sh->long_term_rps.num_long_term_sps ) {
+                        uint8_t lt_idx_sps = 0;
                         if( s->sps->num_long_term_ref_pics_sps > 1 )
-                            sh->long_term_rps.lt_idx_sps[ i ] = get_bits(gb, log2(s->sps->num_long_term_ref_pics_sps));
+                            lt_idx_sps = get_bits(gb, log2(s->sps->num_long_term_ref_pics_sps));
+                        sh->long_term_rps.PocLsbLt[ i ] = s->sps->lt_ref_pic_poc_lsb_sps[ lt_idx_sps ];
+                        sh->long_term_rps.UsedByCurrPicLt[ i ] = s->sps->used_by_curr_pic_lt_sps_flag[ lt_idx_sps ];
                     } else {
-                        sh->long_term_rps.poc_lsb_lt[ i ] = get_bits(gb, log2(s->sps->log2_max_poc_lsb));
-                        sh->long_term_rps.used_by_curr_pic_lt_flag[ i ] = get_bits1(gb);
+                        sh->long_term_rps.PocLsbLt[ i ] = get_bits(gb, log2(s->sps->log2_max_poc_lsb));
+                        sh->long_term_rps.UsedByCurrPicLt[ i ] = get_bits1(gb);
                         sh->long_term_rps.delta_poc_msb_present_flag[ i ] = get_bits1(gb);
                     }
-                if( sh->long_term_rps.delta_poc_msb_present_flag[ i ] )
-                    sh->long_term_rps.delta_poc_msb_cycle_lt[ i ] = get_ue_golomb(gb);
+                    if( sh->long_term_rps.delta_poc_msb_present_flag[ i ] == 1)
+                        if( i == 0 || i == sh->long_term_rps.num_long_term_sps )
+                            sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb);
+                        else
+                            sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb) + sh->long_term_rps.DeltaPocMsbCycleLt[ i - 1 ];
                 }
             }
             if (s->sps->sps_temporal_mvp_enabled_flag)
@@ -1621,6 +1627,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
     int length = cb_size >> log2_min_cb_size;
     int x_cb = x0 >> log2_min_cb_size;
     int y_cb = y0 >> log2_min_cb_size;
+    int pic_width = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
     int x, y;
 
     s->cu.x[entry] = x0;
@@ -1727,11 +1734,18 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
                                         s->sps->max_transform_hierarchy_depth_inter;
                 hls_transform_tree(s, x0, y0, x0, y0, log2_cb_size,
                                    log2_cb_size, 0, 0, entry);
-            } else
+            } else {
                 ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+            }
         }
     }
-
+    for (x = x_cb; x < x_cb+length; x++) {
+        int idx = x + y_cb * pic_width;
+        for (y = 0; y < length; y++) {
+            s->qp_y_tab[idx] = s->qp_y[entry];
+            idx += pic_width;
+        }
+    }
     set_ct_depth(s, x0, y0, log2_cb_size, s->ct.depth[entry]);
 }
 
@@ -1776,7 +1790,6 @@ static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int
                 (y1 + cb_size) < s->sps->pic_height_in_luma_samples);
     } else {
         hls_coding_unit(s, x0, y0, log2_cb_size,  entry);
-
         av_dlog(s->avctx, "x0: %d, y0: %d, cb: %d, %d\n",
                x0, y0, (1 << log2_cb_size), (1 << (s->sps->log2_ctb_size)));
         if ((!((x0 + (1 << log2_cb_size)) %
@@ -2076,8 +2089,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
         s->qp_y[0] = ((s->sh.slice_qp + 52 + 2 * s->sps->qp_bd_offset) %
                         (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
-        memset(s->qp_y_tab, s->qp_y[0] , s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples/*/16*/);
-//        printf("set dp_slice = %d\n",s->qp_y[0]);
         ff_hevc_cabac_init(s, 0);
          
         
@@ -2141,16 +2152,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
             s->is_decoded = 1;
         }
-/*            printf("Y ");
-            print_md5(s->md5[0]);
-            printf("U ");
-            print_md5(s->md5[1]);
-            printf("V ");
-            print_md5(s->md5[2]);
-            printf("\n");
-*/
-            
-         
+
         if ((ret = ff_hevc_find_display(s, data, 0)) < 0)
             return ret;
         s->frame->pict_type = AV_PICTURE_TYPE_I;
