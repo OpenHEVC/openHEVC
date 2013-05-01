@@ -11,10 +11,14 @@ SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fPIC"  )
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fPIC"  )
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
-find_package(SDL REQUIRED)
+find_package(SDL)
 add_subdirectory(HM)
 
-include_directories(HM/source/Lib src/Lib ${SDL_INCLUDE_DIR})
+include_directories(HM/source/Lib src/Lib)
+
+if(SDL_FOUND)
+include_directories(${SDL_INCLUDE_DIR})
+endif()
 
 
 file ( GLOB LibWrapper_sources_files src/Lib/wrapper/*.cpp src/Lib/wrapper/*.h)
