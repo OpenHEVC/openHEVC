@@ -788,7 +788,7 @@ typedef struct HEVCContext {
     TransformUnit tu[MAX_ENTRIES ];
     ResidualCoding rc[MAX_ENTRIES ];
     int poc;
-    int poc_display;
+    int max_ra;
 
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;
@@ -799,6 +799,8 @@ typedef struct HEVCContext {
     uint8_t md5[3][16];
     int16_t * cbt_entry_count;
     volatile int coding_tree_count;
+
+    int is_decoded;
 
     /**
      * Sequence counters for decoded and output frames, so that old
@@ -821,6 +823,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
 
 void ff_hevc_clear_refs(HEVCContext *s);
+void ff_hevc_clean_refs(HEVCContext *s);
 int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
 void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);

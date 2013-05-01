@@ -133,6 +133,11 @@ void libOpenHevcClose()
     av_free(openHevcContext.picture);
 }
 
+void libOpenHevcFlush()
+{
+    openHevcContext.codec->flush(openHevcContext.c);
+}
+
 const char *libOpenHevcVersion()
 {
     return "OpenHEVC v"NV_VERSION;

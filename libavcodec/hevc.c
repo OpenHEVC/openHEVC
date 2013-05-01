@@ -370,6 +370,7 @@ static int hls_slice_header(HEVCContext *s)
             s->sh.short_term_rps = NULL;
             s->poc = 0;
         }
+        av_log(s->avctx, AV_LOG_ERROR, "POC %d NAL %d\n", s->poc, s->nal_unit_type);
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
             return AVERROR_INVALIDDATA;
@@ -2025,15 +2026,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         ff_hevc_decode_nal_sei(s);
         break;
     case NAL_TRAIL_R:
-        // fall-through
-    case NAL_TRAIL_N: {
-        int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
-        int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
-
-        memset(s->pu.left_ipm, INTRA_DC, pic_height_in_min_pu);
-        memset(s->pu.top_ipm, INTRA_DC, pic_width_in_min_pu<<s->sps->log2_ctb_size);
-
-    }
+    case NAL_TRAIL_N:
     case NAL_BLA_W_LP:
     case NAL_BLA_W_RADL:
     case NAL_BLA_N_LP:
@@ -2053,6 +2046,25 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         ret = hls_slice_header(s);
         if (ret < 0)
             return ret;
+        if (s->max_ra == INT_MAX) {
+            if (s->nal_unit_type == NAL_CRA_NUT ||
+                s->nal_unit_type == NAL_BLA_W_LP ||
+                s->nal_unit_type == NAL_BLA_N_LP ||
+                s->nal_unit_type == NAL_BLA_N_LP) {
+                s->max_ra = s->poc;
+            } else {
+                if (s->nal_unit_type == NAL_IDR_W_DLP)
+                    s->max_ra = INT_MIN;
+            }
+        }
+
+        if (s->nal_unit_type == NAL_RASL_R && s->poc <= s->max_ra) {
+            s->is_decoded = 0;
+            break;
+        } else {
+            if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
+                s->max_ra = INT_MIN;
+        }
 
         if(!s->sh.disable_deblocking_filter_flag) {
             int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
@@ -2127,6 +2139,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             calc_md5(s->md5[0], s->ref->frame->data[0], s->ref->frame->linesize[0], s->ref->frame->width  , s->ref->frame->height  );
             calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
             calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
+            s->is_decoded = 1;
         }
 /*            printf("Y ");
             print_md5(s->md5[0]);
@@ -2166,10 +2179,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->cc[0] = av_malloc(sizeof(CABACContext));
     s->cabac_state[0] = av_malloc(HEVC_CONTEXTS);
     s->cabac_state[1] = av_malloc(HEVC_CONTEXTS);
-    s->poc_display = 0;
     if (!s->tmp_frame)
         return AVERROR(ENOMEM);
-    s->poc_display = 0;
+    s->max_ra = INT_MAX;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         s->DPB[i].frame = av_frame_alloc();
         if (!s->DPB[i].frame)
@@ -2245,6 +2257,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
 static void hevc_decode_flush(AVCodecContext *avctx)
 {
+    HEVCContext *s = avctx->priv_data;
+    ff_hevc_clean_refs(s);
+    s->max_ra = INT_MAX;
 }
 
 #define OFFSET(x) offsetof(HEVCContext, x)

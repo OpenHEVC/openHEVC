@@ -50,7 +50,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
                 picture_md5[i] = get_bits(gb, 8);
             }
             if (s->decode_checksum_sei == 1) {
-                if (!compare_md5(picture_md5, s->md5[cIdx]))
+                if (!compare_md5(picture_md5, s->md5[cIdx]) && s->is_decoded)
                     av_log(s->avctx, AV_LOG_ERROR, "md5 not ok %d\n", cIdx);
             }
         } else if( hash_type == 1 ) {
