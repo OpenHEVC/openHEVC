@@ -70,6 +70,16 @@ void ff_hevc_clear_refs(HEVCContext *s)
     }
 }
 
+void ff_hevc_clean_refs(HEVCContext *s)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        HEVCFrame *ref = &s->DPB[i];
+            av_frame_unref(ref->frame);
+            ref->flags = 0;
+    }
+}
+
 int ff_hevc_find_next_ref(HEVCContext *s, int poc)
 {
     int i;

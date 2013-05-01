@@ -2017,16 +2017,24 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         ret = hls_slice_header(s);
         if (ret < 0)
             return ret;
-        if (s->max_ra == INT_MAX)
+        if (s->max_ra == INT_MAX) {
             if (s->nal_unit_type == NAL_CRA_NUT ||
                 s->nal_unit_type == NAL_BLA_W_LP ||
                 s->nal_unit_type == NAL_BLA_N_LP ||
-                s->nal_unit_type == NAL_BLA_N_LP)
+                s->nal_unit_type == NAL_BLA_N_LP) {
                 s->max_ra = s->poc;
-            else if (s->nal_unit_type == NAL_IDR_W_DLP)
-                s->max_ra = INT_MIN;
-        if (s->nal_unit_type == NAL_RASL_R && s->poc < s->max_ra)
+            } else {
+                if (s->nal_unit_type == NAL_IDR_W_DLP)
+                    s->max_ra = INT_MIN;
+            }
+        }
+
+        if (s->nal_unit_type == NAL_RASL_R && s->poc <= s->max_ra) {
             break;
+        } else {
+            if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
+                s->max_ra = INT_MIN;
+        }
 
         if(!s->sh.disable_deblocking_filter_flag) {
             int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
@@ -2218,6 +2226,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
 static void hevc_decode_flush(AVCodecContext *avctx)
 {
+    HEVCContext *s = avctx->priv_data;
+    ff_hevc_clean_refs(s);
+    s->max_ra = INT_MAX;
 }
 
 #define OFFSET(x) offsetof(HEVCContext, x)

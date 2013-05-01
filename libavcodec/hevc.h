@@ -809,6 +809,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
 
 void ff_hevc_clear_refs(HEVCContext *s);
+void ff_hevc_clean_refs(HEVCContext *s);
 int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
 void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
