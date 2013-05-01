@@ -47,7 +47,7 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int entry)
     int Log2MinCuQpDeltaSize = Log2CtbSizeY - s->pps->diff_cu_qp_delta_depth;
     int xQg                  = xC - ( xC & ( ( 1 << Log2MinCuQpDeltaSize) - 1 ) );
     int yQg                  = yC - ( yC & ( ( 1 << Log2MinCuQpDeltaSize) - 1 ) );
-    int pic_width = s->sps->pic_width_in_luma_samples >> 2;
+    int pic_width = s->sps->pic_width_in_luma_samples;
     int x         = xC >> 2;
     int y         = yC >> 2;
     int qPy_pred;
@@ -94,49 +94,17 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int entry)
 }
 void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int trafo_size, int entry)
 {
-    int pic_width = s->sps->pic_width_in_luma_samples >> 2;
-    int x         = xC >> 2;
-    int y         = yC >> 2;
-    int x_idx, x_end;
-    int y_idx, y_end;
-    x_end = x + (trafo_size >> 2);
-    y_end = y + (trafo_size >> 2);
-    if ((x&15) == 0 && (y&15) == 0) {
-//        x_end = x + 16;
-//        y_end = y + 16;
-    } else if ((x&7) == 0 && (y&7) == 0) {
-//        x_end = x + 8;
-//        y_end = y + 8;
-    } else if ((x&3) == 0 && (y&3) == 0) {
-//        x_end = x + 4;
-//        y_end = y + 4;
-    } else if ((x&1) == 0 && (y&1) == 0) {
-//        x_end = x + 2;
-//        y_end = y + 2;
-    } else {
-//        x_end = x + 1;
-//        y_end = y + 1;
-    }
-
-//    printf("set %d ========== %d : (%d, %d) --> (%d, %d)\n", (x_end-x), trafo_size, x<<2, y<<2, x_end<<2, y_end<<2);
     if (s->tu[entry].cu_qp_delta != 0) {
         s->qp_y[entry] = ((get_qPy_pred(s, xC, yC, entry) + s->tu[entry].cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
                 (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
     } else {
         s->qp_y[entry] = get_qPy_pred(s, xC, yC, entry);
     }
-    for (y_idx = y ; y_idx < y_end; y_idx++)
-        for (x_idx = x ; x_idx < x_end; x_idx++) {
-//            printf("set_qPy[%d,%d] = %d\n",x_idx&15 , y_idx&15, s->qp_y[entry]);
-            s->qp_y_tab[x_idx + y_idx * pic_width] = s->qp_y[entry];
-        }
 }
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
-    int pic_width = s->sps->pic_width_in_luma_samples >> 2;
-    int x         = xC >> 2;
-    int y         = yC >> 2;
-    return s->qp_y_tab[x + y * pic_width];
+    int pic_width = s->sps->pic_width_in_luma_samples;
+    return s->qp_y_tab[xC + yC * pic_width];
 }
 
 

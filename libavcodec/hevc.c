@@ -1712,11 +1712,20 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
                                         s->sps->max_transform_hierarchy_depth_inter;
                 hls_transform_tree(s, x0, y0, x0, y0, log2_cb_size,
                                    log2_cb_size, 0, 0, entry);
-            } else
+            } else {
                 ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+            }
         }
     }
+    {
 
+    int i, j;
+        printf("qp %d\n",s->qp_y[entry]);
+    for (j = 0; j < 1 << log2_cb_size; j++)
+        for (i = 0; i < 1 << log2_cb_size; i++)
+            s->qp_y_tab[x0 + i + (y0 + j) * s->sps->pic_width_in_luma_samples]= s->qp_y[entry];
+    }
+    
     set_ct_depth(s, x0, y0, log2_cb_size, s->ct.depth[entry]);
 }
 
@@ -1760,8 +1769,9 @@ static int hls_coding_tree(HEVCContext *s, int x0, int y0, int log2_cb_size, int
         return ((x1 + cb_size) < s->sps->pic_width_in_luma_samples ||
                 (y1 + cb_size) < s->sps->pic_height_in_luma_samples);
     } else {
+        printf("x0: %d, y0: %d, cb: %d, %d\n",
+               x0, y0, (1 << log2_cb_size), (1 << (s->sps->log2_ctb_size)));
         hls_coding_unit(s, x0, y0, log2_cb_size,  entry);
-
         av_dlog(s->avctx, "x0: %d, y0: %d, cb: %d, %d\n",
                x0, y0, (1 << log2_cb_size), (1 << (s->sps->log2_ctb_size)));
         if ((!((x0 + (1 << log2_cb_size)) %
@@ -2061,8 +2071,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
         s->qp_y[0] = ((s->sh.slice_qp + 52 + 2 * s->sps->qp_bd_offset) %
                         (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
-        memset(s->qp_y_tab, s->qp_y[0] , s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples/*/16*/);
-//        printf("set dp_slice = %d\n",s->qp_y[0]);
         ff_hevc_cabac_init(s, 0);
          
         
@@ -2126,14 +2134,14 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
             s->is_decoded = 1;
         }
-/*            printf("Y ");
+            printf("Y ");
             print_md5(s->md5[0]);
             printf("U ");
             print_md5(s->md5[1]);
             printf("V ");
             print_md5(s->md5[2]);
             printf("\n");
-*/
+
             
          
         if ((ret = ff_hevc_find_display(s, data, 0)) < 0)
