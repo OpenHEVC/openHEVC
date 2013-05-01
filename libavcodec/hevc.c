@@ -344,8 +344,23 @@ static int hls_slice_header(HEVCContext *s)
                 sh->short_term_rps = &s->sps->short_term_rps_list[short_term_ref_pic_set_idx];
             }
             if (s->sps->long_term_ref_pics_present_flag) {
-                av_log(s->avctx, AV_LOG_ERROR, "TODO: long_term_ref_pics_present_flag\n");
-                return AVERROR_PATCHWELCOME;
+                uint8_t num_long_term_sps = 0;
+                int num_long_term_pics;
+                if( s->sps->num_long_term_ref_pics_sps > 0 )
+                    num_long_term_sps = get_ue_golomb(gb);
+                num_long_term_pics = get_ue_golomb(gb);
+                for( i = 0; i < num_long_term_sps + num_long_term_pics; i++ ) {
+                    if( i < num_long_term_sps ) {
+                        if( s->sps->num_long_term_ref_pics_sps > 1 )
+                            sh->long_term_rps.lt_idx_sps[ i ] = get_bits(gb, log2(s->sps->num_long_term_ref_pics_sps));
+                    } else {
+                        sh->long_term_rps.poc_lsb_lt[ i ] = get_bits(gb, log2(s->sps->log2_max_poc_lsb));
+                        sh->long_term_rps.used_by_curr_pic_lt_flag[ i ] = get_bits1(gb);
+                        sh->long_term_rps.delta_poc_msb_present_flag[ i ] = get_bits1(gb);
+                    }
+                if( sh->long_term_rps.delta_poc_msb_present_flag[ i ] )
+                    sh->long_term_rps.delta_poc_msb_cycle_lt[ i ] = get_ue_golomb(gb);
+                }
             }
             if (s->sps->sps_temporal_mvp_enabled_flag)
                 sh->slice_temporal_mvp_enabled_flag = get_bits1(gb);
