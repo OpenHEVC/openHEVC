@@ -29,7 +29,7 @@
 #include "hevc.h"
 
 #if __GNUC__
-//#define GCC_OPTIMIZATION_ENABLE
+#define GCC_OPTIMIZATION_ENABLE
 #endif
 #define OPTIMIZATION_ENABLE
 

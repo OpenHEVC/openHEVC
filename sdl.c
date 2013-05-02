@@ -76,7 +76,6 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     screenheight = frame_height;
     //fprintf(stderr, "Error -----  \n");
     screen = SDL_SetVideoMode(screenwidth, screenheight, bpp, vflags);
-    fprintf(stderr, "Error -----  \n");
     if ( screen == NULL ) {
         printf("SDL: Couldn't set %dx%d: %s", screenwidth, screenheight, SDL_GetError());
         SDL_Quit();
@@ -93,10 +92,8 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     rect.y = 0;
     rect.w = screenwidth + 2 * edge;
     rect.h = screenheight;
-    fprintf(stderr, "Error -----  \n");
     SDL_DisplayYUVOverlay(yuv_overlay, &rect);
 #endif
-    fprintf(stderr, "Error -----  \n");
     return 0;
 }
 

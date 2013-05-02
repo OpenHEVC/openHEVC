@@ -5,10 +5,11 @@
 #define LIBAV_LICENSE "LGPL version 2.1 or later"
 #define AVCONV_DATADIR "/usr/local/share/avconv"
 #define CC_IDENT "llvm-gcc 4.2.1 (LLVM build 2336.11.00)"
-#define restrict restrict
+
 #ifdef __APPLE_CC__
 #define EXTERN_PREFIX "_"
 #else
+	#define restrict restrict
     #ifdef __MINGW32__
         #ifdef __MINGW64__
         #define EXTERN_PREFIX ""
