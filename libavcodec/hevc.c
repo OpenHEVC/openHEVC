@@ -97,7 +97,7 @@ static int pic_arrays_init(HEVCContext *s)
         goto fail;
 
     s->pu.left_ipm = av_malloc(pic_height_in_min_pu);
-    s->pu.top_ipm  = av_malloc(pic_width_in_min_pu<<s->sps->log2_ctb_size);
+    s->pu.top_ipm  = av_malloc(pic_width_in_min_pu);
     if (!s->pu.left_ipm || !s->pu.top_ipm)
         goto fail;
 
@@ -376,7 +376,7 @@ static int hls_slice_header(HEVCContext *s)
             s->sh.short_term_rps = NULL;
             s->poc = 0;
         }
-        av_log(s->avctx, AV_LOG_ERROR, "POC %d NAL %d\n", s->poc, s->nal_unit_type);
+//        av_log(s->avctx, AV_LOG_ERROR, "POC %d NAL %d\n", s->poc, s->nal_unit_type);
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
             return AVERROR_INVALIDDATA;
@@ -1464,11 +1464,8 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int y_pu = y0 >> s->sps->log2_min_pu_size;
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs << 2;
     int size_in_pus = pu_size >> s->sps->log2_min_pu_size;
-    
-    int offset = pic_width_in_min_pu*(x0>>s->sps->log2_ctb_size);
-    
 
-    int cand_up   = y_pu > 0 ? s->pu.top_ipm[offset+x_pu] : INTRA_DC ;
+    int cand_up   = y_pu > 0 ? s->pu.top_ipm[x_pu] : INTRA_DC ;
     int cand_left = x_pu > 0 ? s->pu.left_ipm[y_pu] : INTRA_DC ;
     
     int y_ctb = (y0 >> (s->sps->log2_ctb_size)) << (s->sps->log2_ctb_size);
@@ -1521,7 +1518,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
                 intra_pred_mode++;
         }
     }
-    memset(&s->pu.top_ipm[offset+x_pu], intra_pred_mode, size_in_pus);
+    memset(&s->pu.top_ipm[x_pu], intra_pred_mode, size_in_pus);
     memset(&s->pu.left_ipm[y_pu], intra_pred_mode, size_in_pus);
     
     /* write the intra prediction units into the mv array */
@@ -1614,7 +1611,7 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
     for (i = 0; i < side; i++) {
         int x_pu = (x0 + pb_size * i) >> s->sps->log2_min_pu_size;
         int y_pu = (y0 + pb_size * i) >> s->sps->log2_min_pu_size;
-        memset(&s->pu.top_ipm[offset+x_pu], INTRA_DC, size_in_pus);
+        memset(&s->pu.top_ipm[x_pu], INTRA_DC, size_in_pus);
         memset(&s->pu.left_ipm[y_pu], INTRA_DC, size_in_pus);
     }
 }
@@ -1894,7 +1891,6 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     int *ctb_row = input_ctb_row;
     int x_ctb = 0;
     int y_ctb = (*ctb_row)<< s->sps->log2_ctb_size;;
-
     while(more_data) {
         while(*ctb_row && (s->cbt_entry_count[(*ctb_row)-1]-s->cbt_entry_count[*ctb_row])<SHIFT_CTB_WPP); // thread white
         
