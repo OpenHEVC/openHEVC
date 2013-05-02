@@ -30,9 +30,7 @@
 #include <gpac/internal/media_dev.h>
 
 #include "openHevcWrapper.h"
-#include <SDL.h>
-int          ticksSDL = 0;
-int          cptInit = 0;
+
 
 #if defined(WIN32) && !defined(_WIN32_WCE) && !defined(__GNUC__)
 #  pragma comment(lib, "libLibOpenHevcWrapper")
@@ -59,18 +57,11 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
 	ctx->ES_ID = esd->ESID;
 	ctx->width = ctx->height = ctx->out_size = 0;
 	ctx->state_found = 0;
-
-    if (cptInit != 0) {
-        printf("init time : %d ms\n", SDL_GetTicks() - ticksSDL);
-        exit(10);
-    }
-    libOpenHevcInit();
-    cptInit++;
-
+	
+	libOpenHevcInit(3);
 	ctx->is_init = 1;
 
 	if (esd->decoderConfig->decoderSpecificInfo && esd->decoderConfig->decoderSpecificInfo->data) {
-
 		u32 i, j;
 		GF_HEVCConfig *cfg = gf_odf_hevc_cfg_read(esd->decoderConfig->decoderSpecificInfo->data, esd->decoderConfig->decoderSpecificInfo->dataLength);
 		if (!cfg) return GF_NON_COMPLIANT_BITSTREAM;
@@ -97,7 +88,6 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
 	}
 	ctx->stride = ctx->width;
 	ctx->out_size = ctx->stride * ctx->height * 3 / 2;
-    ticksSDL = SDL_GetTicks();
 	return GF_OK;
 }
 
@@ -168,7 +158,7 @@ static GF_Err HEVC_GetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability *cap
 		capability->cap.valueInt = 1;
 		break;
 	case GF_CODEC_BUFFER_MAX:
-		capability->cap.valueInt = 2;
+		capability->cap.valueInt = 3;
 		break;
 	case GF_CODEC_PADDING_BYTES:
 		capability->cap.valueInt = 32;
@@ -187,6 +177,9 @@ static GF_Err HEVC_GetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability *cap
 static GF_Err HEVC_SetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability capability)
 {
 	switch (capability.CapCode) {
+    case GF_CODEC_WAIT_RAP:
+            libOpenHevcFlush();
+        return GF_OK;
 	case GF_CODEC_MEDIA_SWITCH_QUALITY:
 		/*todo - update temporal filtering*/
 		if (capability.cap.valueInt) {
@@ -205,7 +198,6 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 		char *outBuffer, u32 *outBufferLength,
 		u8 PaddingBits, u32 mmlevel)
 {
-    int flushed;
 	unsigned int got_pic, a_w, a_h, a_stride;
 	HEVCDec *ctx = (HEVCDec*) ifcg->privateStack;
 	u8 *pY, *pU, *pV;
@@ -217,8 +209,23 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 			*outBufferLength = 0;
 			libOpenHevcClose();
 			return HEVC_ConfigureStream(ctx, ctx->esd);
+		} else {
+			int flushed;
+		
+			pY = outBuffer;
+			pU = outBuffer + ctx->stride * ctx->height;
+			pV = outBuffer + 5*ctx->stride * ctx->height/4;
+
+			flushed = libOpenHevcGetOutputCpy(1, pY, pU, pV);
+
+
+			if (flushed) {
+				*outBufferLength = ctx->out_size;
+				*outBufferLength = 0;
+			}
 		}
-    }
+		return GF_OK;
+	}
 
 	if (!ES_ID || (ES_ID!=ctx->ES_ID) ) {
 		*outBufferLength = 0;
@@ -228,24 +235,6 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 		*outBufferLength = ctx->out_size;
 		return GF_BUFFER_TOO_SMALL;
 	}
-
-
-    pY = outBuffer;
-    pU = outBuffer + ctx->stride * ctx->height;
-    pV = outBuffer + 5*ctx->stride * ctx->height/4;
-
-    flushed = libOpenFlushDpbCpy(1, pY, pU, pV);
-    *outBufferLength = ctx->out_size;
-
-    if (flushed) {
-        if (! inBuffer) {
-            *outBufferLength = 0;
-            return GF_OK;
-        }
-        //otherwise this is a flush of the decoder but we do have input data to decode
-        //use packed frame signaling to be clled again with the same input buffer
-        return GF_PACKED_FRAMES;
-    }
 
 	got_pic = 0;
 	if (ctx->had_pic) {
@@ -289,14 +278,9 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 			if (ctx->state_found) {
 				if (!got_pic) {
 					got_pic = libOpenHevcDecode(ptr, nalu_size);
-
-					/*the HM is a weird beast:
-						"... design fault in the decoder, whereby
-				 * the process of reading a new slice that is the first slice of a new frame
-				 * requires the TDecTop::decode() method to be called again with the same
-				 * nal unit. "
-
-					*/
+				} else {
+//					libOpenHevcDecode(ptr, nalu_size);
+//					printf("%d bytes left over from frame - nal type %d\n", nalu_size, (ptr[0] & 0x7E) >> 1 );
 				}
 			}
 
