@@ -161,8 +161,8 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
 void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
 {
     int iMaxPOClsb  = 1 << s->sps->log2_max_poc_lsb;
-    int iPrevPOClsb = s->poc % iMaxPOClsb;
-    int iPrevPOCmsb = s->poc - iPrevPOClsb;
+    int iPrevPOClsb = s->pocTid0 % iMaxPOClsb;
+    int iPrevPOCmsb = s->pocTid0 - iPrevPOClsb;
     int iPOCmsb;
     if ((poc_lsb < iPrevPOClsb) && ((iPrevPOClsb - poc_lsb) >= (iMaxPOClsb / 2))) {
         iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
