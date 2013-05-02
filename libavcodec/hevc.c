@@ -106,7 +106,7 @@ static int pic_arrays_init(HEVCContext *s)
     if (!s->cbf_luma ||!s->is_pcm)
         goto fail;
 
-    s->qp_y_tab = av_malloc(pic_size/s->sps->log2_min_coding_block_size*sizeof(int8_t));
+    s->qp_y_tab = av_malloc((pic_size>>(s->sps->log2_min_coding_block_size<<1))*sizeof(int8_t));
     if (!s->qp_y_tab)
         goto fail;
 
