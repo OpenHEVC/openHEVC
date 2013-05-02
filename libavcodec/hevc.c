@@ -2038,6 +2038,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         break;
     case NAL_TRAIL_R:
     case NAL_TRAIL_N:
+    case NAL_TSA_N:
+    case NAL_TSA_R:
+    case NAL_STSA_N:
+    case NAL_STSA_R:
     case NAL_BLA_W_LP:
     case NAL_BLA_W_RADL:
     case NAL_BLA_N_LP:
