@@ -547,7 +547,7 @@ static void FUNC(sao_edge_filter_wpp)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _s
     ptrdiff_t stride = _stride;
     int chroma = c_idx!=0;
     //struct SAOParams *sao;
-    int *sao_offset_val = sao->offset_val[c_idx];;
+    int *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class = sao->eo_class[c_idx];
     
     const int8_t pos[4][2][2] = {

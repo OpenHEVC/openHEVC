@@ -1213,14 +1213,14 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2, ptrdiff_t ds
         s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride, block_w, block_h, mx, my);
     }
 }
-
+/*
 static int identical_mvs(MvField *mv, RefPicList *refPicList) {
     if (mv->pred_flag[0] + mv->pred_flag[1] == 2)
         return (refPicList[0].list[mv->ref_idx[0]] == refPicList[1].list[mv->ref_idx[1]] && mv->mv[0].x == mv->mv[1].x && mv->mv[0].y == mv->mv[1].y);
     else
         return 0;
 }
-
+*/
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int partIdx, int entry)
 {
 #define POS(c_idx, x, y)                                                              \
@@ -1607,8 +1607,6 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
     int pb_size = (1 << log2_cb_size) >> split;
     int side = split + 1;
     int size_in_pus = pb_size >> s->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs << 2;
-    int offset = pic_width_in_min_pu*(x0>>s->sps->log2_ctb_size);
     
     for (i = 0; i < side; i++) {
         int x_pu = (x0 + pb_size * i) >> s->sps->log2_min_pu_size;
@@ -1851,6 +1849,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         int ctb_addr_ts = s->sh.slice_ctb_addr_rs;
         int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
         int filters_count = 0;
+        x_ctb = y_ctb = 0;
         while((s->coding_tree_count&1) == 0 || (s->coding_tree_count>>1) != (filters_count>>1)) {
             x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
             y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
@@ -1930,8 +1929,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
 static int hls_slice_data_wpp(HEVCContext *s)
 {
     int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;
-    int ret[s->sh.num_entry_point_offsets+1];
-    int arg[s->sh.num_entry_point_offsets+1];
+    int *ret = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
+    int *arg = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
     int i;
     memset(s->cu.skip_flag, 0, pic_size);
     
@@ -1940,7 +1939,8 @@ static int hls_slice_data_wpp(HEVCContext *s)
     for(i=0; i<=s->sh.num_entry_point_offsets; i++)
         arg[i] = i;
     s->avctx->execute(s->avctx, hls_decode_entry_wpp, arg, ret ,s->sh.num_entry_point_offsets+1, sizeof(int));
-    
+    av_free(ret);
+    av_free(arg);
     return 0;
 }
 
@@ -1970,14 +1970,14 @@ static int hls_nal_unit(HEVCContext *s)
 
     return (nuh_layer_id == 0);
 }
-
+/*
 static void print_md5(uint8_t *md5)
 {
     int i;
     for (i = 0; i < 16; i++)
         printf("%02x", md5[i]);
 }
-
+*/
 static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
     uint8_t *buf;
     int y,x;

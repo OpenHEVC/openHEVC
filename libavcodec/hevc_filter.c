@@ -448,12 +448,6 @@ void hls_filter(HEVCContext *s, int x, int y)
 }
 void hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
 {
-    int c_idx_min = s->sh.slice_sample_adaptive_offset_flag[0] != 0 ? 0 : 1;
-    int c_idx_max = s->sh.slice_sample_adaptive_offset_flag[1] != 0 ? 3 : 1;
-
-    uint8_t enable_sao = s->sps->sample_adaptive_offset_enabled_flag;
-    uint8_t enable_dbf = !s->sh.disable_deblocking_filter_flag;
-
     if(y_ctb && x_ctb) {
         hls_filter(s, x_ctb-ctb_size, y_ctb-ctb_size);
         if(x_ctb >= (s->sps->pic_width_in_luma_samples - ctb_size))

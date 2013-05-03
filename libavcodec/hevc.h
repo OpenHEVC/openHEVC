@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "cabac.h"
+#include "internal.h"
 #include "videodsp.h"
 #include "get_bits.h"
 #include "hevcpred.h"

@@ -119,7 +119,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
     int nb_output = 0;
     int min_poc   = 0xFFFF;
     int i, min_idx, ret;
-
+    min_idx = 0;
     while (s->seq_output <= s->seq_decode) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
