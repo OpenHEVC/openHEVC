@@ -2018,7 +2018,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     ret = hls_nal_unit(s);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit, skipping.\n");
-        return ret;
+        return avpkt->size;
     } else if (!ret)
         return avpkt->size;
 
