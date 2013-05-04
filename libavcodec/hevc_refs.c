@@ -35,7 +35,7 @@ static int find_ref_idx(HEVCContext *s, int poc)
     }
     av_log(s->avctx, AV_LOG_ERROR,
            "Could not find ref with POC %d\n", poc);
-    return -1;
+    return 0;
 }
 
 
