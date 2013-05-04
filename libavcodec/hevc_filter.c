@@ -40,7 +40,7 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx)
     idxt = av_clip_c(qp + DEFAULT_INTRA_TC_OFFSET + s->sh.tc_offset, 0, 53);
     return tctable[idxt];
 }
-static int get_qPy_pred(HEVCContext *s, int xC, int yC, int entry)
+static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, int entry)
 {
     int Log2CtbSizeY         = s->sps->log2_ctb_size;
     int Log2MinTrafoSize     = s->sps->log2_min_transform_block_size;
@@ -54,54 +54,33 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int entry)
     int qPy_pred;
     int qPy_a;
     int qPy_b;
-    int availableA           = ff_hevc_z_scan_block_avail(s, xC, yC, xQg-1, yQg  );
-    int availableB           = ff_hevc_z_scan_block_avail(s, xC, yC, xQg  , yQg-1);
-    int ctbAddrA = 0;
-    int ctbAddrB = 0;
-    if (availableA != 0) {
-        int tmpX   = (xQg-1) >> Log2CtbSizeY;
-        int tmpY   =  yQg    >> Log2CtbSizeY;
-        ctbAddrA   = tmpX + tmpY * s->sps->pic_width_in_ctbs;
-    }
-    if (availableB != 0) {
-         int tmpX   =  xQg     >> Log2CtbSizeY;
-         int tmpY   = (yQg-1)  >> Log2CtbSizeY;
-         ctbAddrB   = tmpX + tmpY * s->sps->pic_width_in_ctbs;
-    }
+    int availableA           = (xQg & ((1<<Log2CtbSizeY)-1)) != 0 && xC == xBase;
+    int availableB           = (yQg & ((1<<Log2CtbSizeY)-1)) != 0 && yC == yBase;
     // qPy_pred
     if (s->isFirstQPgroup[entry] != 0) {
         s->isFirstQPgroup[entry] = 0;
         qPy_pred = s->sh.slice_qp;
-    } else {
+    } else
         qPy_pred = s->qp_y[entry];
-    }
     // qPy_a
-    if ( (availableA == 0) || (ctbAddrA != s->ctb_addr_ts) ) {
+    if (availableA == 0)
         qPy_a = qPy_pred;
-//        printf("lastA %d\n",qPy_a);
-    } else {
+   	else
         qPy_a = s->qp_y_tab[(x-1) + y * pic_width];
-//        printf("availableA %d\n", qPy_a);
-    }
     // qPy_b
-    if ( (availableB == 0) || (ctbAddrB != s->ctb_addr_ts) ) {
+    if (availableB == 0)
         qPy_b = qPy_pred;
-//        printf("lastB %d\n",qPy_b);
-    } else {
+	else
         qPy_b = s->qp_y_tab[x + (y-1) * pic_width];
-//        printf("availableB %d\n", qPy_b);
-    }
     return (qPy_a + qPy_b + 1) >> 1;
 }
-void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int entry)
+void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int entry)
 {
-    if (s->tu[entry].cu_qp_delta != 0) {
-        s->qp_y[entry] = ((get_qPy_pred(s, xC, yC, entry) + s->tu[entry].cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
+    if (s->tu[entry].cu_qp_delta != 0)
+        s->qp_y[entry] = ((get_qPy_pred(s, xC, yC, xBase, yBase, entry) + s->tu[entry].cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
                 (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
-    } else {
-        s->qp_y[entry] = get_qPy_pred(s, xC, yC, entry);
-    }
-//    printf("setQpY (%d) = %d\n", s->tu[entry].cu_qp_delta, s->qp_y[entry]);
+    else
+        s->qp_y[entry] = get_qPy_pred(s, xC, yC,  xBase, yBase, entry);
 }
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {

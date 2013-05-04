@@ -27,7 +27,7 @@
 /*
  * 6.4.1 Derivation process for z-scan order block availability
  */
-int ff_hevc_z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr, int xN, int yN)
+static int ff_hevc_z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr, int xN, int yN)
 {
 
 #define MIN_TB_ADDR_ZS(x, y)                                            \
