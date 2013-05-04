@@ -908,7 +908,7 @@ static void hls_transform_unit(HEVCContext *s, int x0, int  y0, int xBase, int y
                 if (ff_hevc_cu_qp_delta_sign_flag(s, entry) == 1)
                     s->tu[entry].cu_qp_delta = -s->tu[entry].cu_qp_delta;
             s->tu[entry].is_cu_qp_delta_coded = 1;
-            ff_hevc_set_qPy(s, x0, y0, 1<<log2_trafo_size, entry);
+            ff_hevc_set_qPy(s, x0, y0, entry);
         }
 
         if (s->cu.pred_mode[entry] == MODE_INTRA && log2_trafo_size < 4) {
@@ -1626,6 +1626,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
     int y_cb = y0 >> log2_min_cb_size;
     int pic_width = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
     int x, y;
+//    printf("====== hls_coding_unit(%d,%d)\n",x0, y0);
 
     s->cu.x[entry] = x0;
     s->cu.y[entry] = y0;
@@ -1736,6 +1737,12 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
             }
         }
     }
+
+    if( s->pps->cu_qp_delta_enabled_flag && log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth ) {
+         if (s->tu[entry].is_cu_qp_delta_coded == 0) {
+             ff_hevc_set_qPy(s, x0, y0, entry);
+         }
+     }
     for (x = x_cb; x < x_cb+length; x++) {
         int idx = x + y_cb * pic_width;
         for (y = 0; y < length; y++) {
@@ -1743,6 +1750,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
             idx += pic_width;
         }
     }
+//    printf("qp_y[(%d, %d) --> (%d, %d)] = %d\n",x0, y0, x0+cb_size, y0+cb_size,s->qp_y[entry]);
     set_ct_depth(s, x0, y0, log2_cb_size, s->ct.depth[entry]);
 }
 
@@ -1891,7 +1899,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     int more_data = 1;
     int *ctb_row = input_ctb_row;
     int x_ctb = 0;
-    int y_ctb = (*ctb_row)<< s->sps->log2_ctb_size;;
+    int y_ctb = (*ctb_row)<< s->sps->log2_ctb_size;
     while(more_data) {
         while(*ctb_row && (s->cbt_entry_count[(*ctb_row)-1]-s->cbt_entry_count[*ctb_row])<SHIFT_CTB_WPP); // thread white
         

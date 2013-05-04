@@ -56,21 +56,17 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int entry)
     int qPy_b;
     int availableA           = ff_hevc_z_scan_block_avail(s, xC, yC, xQg-1, yQg  );
     int availableB           = ff_hevc_z_scan_block_avail(s, xC, yC, xQg  , yQg-1);
-    int minTbAddrA;
-    int minTbAddrB;
     int ctbAddrA = 0;
     int ctbAddrB = 0;
     if (availableA != 0) {
-        int tmpX   = (xQg-1) >> Log2MinTrafoSize;
-        int tmpY   =  yQg    >> Log2MinTrafoSize;
-        minTbAddrA = s->pps->min_tb_addr_zs[ tmpX + tmpY * s->sps->pic_width_in_min_tbs];
-        ctbAddrA   = ( minTbAddrA >> 2 ) * (Log2CtbSizeY - Log2MinTrafoSize);
+        int tmpX   = (xQg-1) >> Log2CtbSizeY;
+        int tmpY   =  yQg    >> Log2CtbSizeY;
+        ctbAddrA   = tmpX + tmpY * s->sps->pic_width_in_ctbs;
     }
     if (availableB != 0) {
-        int tmpX   =  xQg    >> Log2MinTrafoSize;
-        int tmpY   = (yQg-1) >> Log2MinTrafoSize;
-        minTbAddrB = s->pps->min_tb_addr_zs[ tmpX + tmpY * s->sps->pic_width_in_min_tbs];
-        ctbAddrB   = ( minTbAddrB >> 2 ) * (Log2CtbSizeY - Log2MinTrafoSize);
+         int tmpX   =  xQg     >> Log2CtbSizeY;
+         int tmpY   = (yQg-1)  >> Log2CtbSizeY;
+         ctbAddrB   = tmpX + tmpY * s->sps->pic_width_in_ctbs;
     }
     // qPy_pred
     if (s->isFirstQPgroup[entry] != 0) {
@@ -82,18 +78,22 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int entry)
     // qPy_a
     if ( (availableA == 0) || (ctbAddrA != s->ctb_addr_ts) ) {
         qPy_a = qPy_pred;
+//        printf("lastA %d\n",qPy_a);
     } else {
         qPy_a = s->qp_y_tab[(x-1) + y * pic_width];
+//        printf("availableA %d\n", qPy_a);
     }
     // qPy_b
     if ( (availableB == 0) || (ctbAddrB != s->ctb_addr_ts) ) {
         qPy_b = qPy_pred;
+//        printf("lastB %d\n",qPy_b);
     } else {
         qPy_b = s->qp_y_tab[x + (y-1) * pic_width];
+//        printf("availableB %d\n", qPy_b);
     }
     return (qPy_a + qPy_b + 1) >> 1;
 }
-void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int trafo_size, int entry)
+void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int entry)
 {
     if (s->tu[entry].cu_qp_delta != 0) {
         s->qp_y[entry] = ((get_qPy_pred(s, xC, yC, entry) + s->tu[entry].cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
@@ -101,6 +101,7 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int trafo_size, int entry)
     } else {
         s->qp_y[entry] = get_qPy_pred(s, xC, yC, entry);
     }
+//    printf("setQpY (%d) = %d\n", s->tu[entry].cu_qp_delta, s->qp_y[entry]);
 }
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
