@@ -79,18 +79,18 @@ static int pic_arrays_init(HEVCContext *s)
 {
     int i, j;
     int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;
+    int pic_size_in_ctb = pic_size>>(s->sps->log2_min_coding_block_size<<1);
     int ctb_count = s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs;
     int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
     int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
     s->bs_width = s->sps->pic_width_in_luma_samples >> 3;
     s->bs_height = s->sps->pic_height_in_luma_samples >> 3;
-
     s->sao = av_mallocz(ctb_count * sizeof(*s->sao));
     s->split_coding_unit_flag = av_malloc(pic_size);
     if (!s->sao || !s->split_coding_unit_flag)
         goto fail;
 
-    s->cu.skip_flag     = av_malloc(pic_size);
+    s->cu.skip_flag     = av_malloc(pic_size_in_ctb);
     s->cu.left_ct_depth = av_malloc(s->sps->pic_height_in_min_cbs);
     s->cu.top_ct_depth  = av_malloc(s->sps->pic_width_in_min_cbs);
     if (!s->cu.skip_flag || !s->cu.left_ct_depth || !s->cu.top_ct_depth)
@@ -106,7 +106,7 @@ static int pic_arrays_init(HEVCContext *s)
     if (!s->cbf_luma ||!s->is_pcm)
         goto fail;
 
-    s->qp_y_tab = av_malloc((pic_size>>(s->sps->log2_min_coding_block_size<<1))*sizeof(int8_t));
+    s->qp_y_tab = av_malloc(pic_size_in_ctb*sizeof(int8_t));
     if (!s->qp_y_tab)
         goto fail;
 
@@ -1242,8 +1242,12 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);
+    int log2_min_cb_size = s->sps->log2_min_coding_block_size;
+    int pic_width_in_ctb = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
+    int x_cb             = x0 >> log2_min_cb_size;
+    int y_cb             = y0 >> log2_min_cb_size;
 
-    if (SAMPLE(s->cu.skip_flag, x0, y0)) {
+    if (SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb)) {
         if (s->sh.max_num_merge_cand > 1) {
             merge_idx = ff_hevc_merge_idx_decode(s, entry);
             av_dlog(s->avctx,
@@ -1618,13 +1622,12 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
 
 static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, int entry)
 {
-    int cb_size = 1 << log2_cb_size;
-
+    int cb_size          = 1 << log2_cb_size;
     int log2_min_cb_size = s->sps->log2_min_coding_block_size;
-    int length = cb_size >> log2_min_cb_size;
-    int x_cb = x0 >> log2_min_cb_size;
-    int y_cb = y0 >> log2_min_cb_size;
-    int pic_width = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
+    int length           = cb_size >> log2_min_cb_size;
+    int pic_width_in_ctb = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
+    int x_cb             = x0 >> log2_min_cb_size;
+    int y_cb             = y0 >> log2_min_cb_size;
     int x, y;
 
     s->cu.x[entry] = x0;
@@ -1635,7 +1638,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
     s->cu.part_mode[entry] = PART_2Nx2N;
     s->cu.intra_split_flag[entry] = 0;
     s->cu.pcm_flag[entry] = 0;
-    SAMPLE(s->cu.skip_flag, x0, y0) = 0;
+    SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb) = 0;
     for (x = 0; x < 4; x++) {
         s->pu.intra_pred_mode[entry][x] = 1;
     }
@@ -1643,17 +1646,17 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
         s->cu.cu_transquant_bypass_flag[entry] = ff_hevc_cu_transquant_bypass_flag_decode(s, entry);
 
     if (s->sh.slice_type != I_SLICE) {
+        uint8_t skip_flag = ff_hevc_skip_flag_decode(s, x_cb, y_cb, entry);
         s->cu.pred_mode[entry] = MODE_SKIP;
-        SAMPLE(s->cu.skip_flag, x0, y0) = ff_hevc_skip_flag_decode(s, x_cb, y_cb, entry);
-        for (x = 0; x < length; x++) {
-            for (y = 0; y < length; y++) {
-                SAMPLE(s->cu.skip_flag, x_cb+x, y_cb+y) = SAMPLE(s->cu.skip_flag, x0, y0);
-            }
+        x = y_cb * pic_width_in_ctb + x_cb;
+        for (y = 0; y < length; y++) {
+            memset(&s->cu.skip_flag[x], skip_flag, length);
+            x += pic_width_in_ctb;
         }
-        s->cu.pred_mode[entry] = s->cu.skip_flag ? MODE_SKIP : MODE_INTER;
+        s->cu.pred_mode[entry] = skip_flag ? MODE_SKIP : MODE_INTER;
     }
 
-    if (SAMPLE(s->cu.skip_flag, x0, y0)) {
+    if (SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb)) {
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0, entry);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size, entry);
         ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
@@ -1742,12 +1745,10 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
              ff_hevc_set_qPy(s, x0, y0, x0, y0, entry);
          }
      }
-    for (x = x_cb; x < x_cb+length; x++) {
-        int idx = x + y_cb * pic_width;
-        for (y = 0; y < length; y++) {
-            s->qp_y_tab[idx] = s->qp_y[entry];
-            idx += pic_width;
-        }
+    x = y_cb * pic_width_in_ctb + x_cb;
+    for (y = 0; y < length; y++) {
+        memset(&s->qp_y_tab[x], s->qp_y[entry], length);
+        x += pic_width_in_ctb;
     }
     set_ct_depth(s, x0, y0, log2_cb_size, s->ct.depth[entry]);
 }
@@ -1872,13 +1873,13 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
 static int hls_slice_data(HEVCContext *s)
 {
-    int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;
+    int pic_size_in_ctb = (s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples)>>(s->sps->log2_min_coding_block_size<<1);
     int arg[2];
     int ret[2];
     arg[0] = 0;
     arg[1] = 1;
 
-    memset(s->cu.skip_flag, 0, pic_size);
+    memset(s->cu.skip_flag, 0, pic_size_in_ctb);
 
     s->coding_tree_count = 0;
 
@@ -1933,11 +1934,11 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
 
 static int hls_slice_data_wpp(HEVCContext *s)
 {
-    int pic_size = s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples;
+    int pic_size_in_ctb = (s->sps->pic_width_in_luma_samples * s->sps->pic_height_in_luma_samples)>>(s->sps->log2_min_coding_block_size<<1);
     int *ret = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
     int *arg = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
     int i;
-    memset(s->cu.skip_flag, 0, pic_size);
+    memset(s->cu.skip_flag, 0, pic_size_in_ctb);
     
     for(i=0; i<=s->sh.num_entry_point_offsets; i++)
         arg[i] = i;

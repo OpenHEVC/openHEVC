@@ -390,12 +390,13 @@ int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry)
 
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x_cb, int y_cb, int entry)
 {
+    int pic_width_in_ctb = s->sps->pic_width_in_luma_samples>>s->sps->log2_min_coding_block_size;
     int inc = 0;
 
     if (x_cb > 0)
-        inc = SAMPLE(s->cu.skip_flag, x_cb-1, y_cb);
+        inc = SAMPLE_CTB(s->cu.skip_flag, x_cb-1, y_cb);
     if (y_cb > 0)
-        inc += SAMPLE(s->cu.skip_flag, x_cb, y_cb-1);
+        inc += SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb-1);
 
     return GET_CABAC(entry, elem_offset[SKIP_FLAG] + inc);
 }
