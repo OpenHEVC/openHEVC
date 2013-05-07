@@ -239,7 +239,6 @@ static int hls_slice_header(HEVCContext *s)
     SliceHeader *sh = &s->sh;
     int slice_address_length = 0;
 
-    av_dlog(s->avctx, "Decoding slice\n");
 
     // initial values
     sh->beta_offset = 0;
@@ -544,8 +543,6 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry, int left_ctb_in_slice, 
         } else {
             set_sao(type_idx[c_idx], ff_hevc_sao_type_idx_decode(s, entry));
         }
-        av_log(s->avctx, AV_LOG_DEBUG, "sao_type_idx: %d\n",
-               sao->type_idx[c_idx]);
 
         if (sao->type_idx[c_idx] == SAO_NOT_APPLIED)
             continue;
@@ -618,8 +615,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
     int16_t coeffs[MAX_TB_SIZE * MAX_TB_SIZE] = { 0 };
     int trafo_size = 1 << log2_trafo_size;
 
-    av_dlog(s->avctx, "scan_idx: %d, c_idx: %d\n",
-           scan_idx, c_idx);
     memset(s->rc[entry].significant_coeff_group_flag, 0, 8*8);
 
     if (log2_trafo_size == 1) {
@@ -653,11 +648,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
 
     if (scan_idx == SCAN_VERT)
         FFSWAP(int, last_significant_coeff_x, last_significant_coeff_y);
-
-    av_dlog(s->avctx, "last_significant_coeff_x: %d\n",
-           last_significant_coeff_x);
-    av_dlog(s->avctx, "last_significant_coeff_y: %d\n",
-           last_significant_coeff_y);
 
     x_cg_last_sig = last_significant_coeff_x >> 2;
     y_cg_last_sig = last_significant_coeff_y >> 2;
@@ -704,8 +694,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         break;
     }
     num_coeff++;
-    av_dlog(s->avctx, "num_coeff: %d\n",
-           num_coeff);
 
     num_last_subset = (num_coeff - 1) >> 4;
 
@@ -741,8 +729,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
             ((x_cg == x_cg_last_sig && y_cg == y_cg_last_sig) ||
              (x_cg == 0 && y_cg == 0));
         }
-        av_dlog(s->avctx, "significant_coeff_group_flag[%d][%d]: %d\n",
-               x_cg, y_cg, s->rc[entry].significant_coeff_group_flag[x_cg][y_cg]);
 
         last_scan_pos = num_coeff - offset - 1;
 
@@ -771,8 +757,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
                     nb_significant_coeff_flag = nb_significant_coeff_flag + 1;
                 }
             }
-            av_dlog(s->avctx, "significant_coeff_flag(%d, %d): %d\n",
-                   x_c, y_c, significant_coeff_flag_idx[n]);
 
         }
 
@@ -797,8 +781,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
                 if (last_nz_pos_in_cg == -1)
                     last_nz_pos_in_cg = n;
                 first_nz_pos_in_cg = n;
-                av_dlog(s->avctx, "coeff_abs_level_greater1_flag[%d]: %d\n",
-                       n, coeff_abs_level_greater1_flag[n]);
             }
 
         sign_hidden = (last_nz_pos_in_cg - first_nz_pos_in_cg >= 4 &&
@@ -806,9 +788,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         if (first_greater1_coeff_idx != -1) {
             coeff_abs_level_greater2_flag[first_greater1_coeff_idx] =
             ff_hevc_coeff_abs_level_greater2_flag_decode(s, c_idx, i, first_greater1_coeff_idx, entry);
-            av_dlog(s->avctx, "coeff_abs_level_greater2_flag[%d]: %d\n",
-                   first_greater1_coeff_idx,
-                   coeff_abs_level_greater2_flag[first_greater1_coeff_idx]);
         }
         if (!s->pps->sign_data_hiding_flag || !sign_hidden ) {
             coeff_sign_flag = ff_hevc_coeff_sign_flag(s, nb_significant_coeff_flag, entry) << (16 - nb_significant_coeff_flag);
@@ -838,8 +817,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
                     trans_coeff_level = -trans_coeff_level;
             coeff_sign_flag <<= 1;
                 num_sig_coeff++;
-                av_dlog(s->avctx, "trans_coeff_level: %d\n",
-                       trans_coeff_level);
                 coeffs[y_c * trafo_size + x_c] = trans_coeff_level;
 
             }
@@ -979,8 +956,6 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
         !(s->cu.intra_split_flag[entry] && trafo_depth == 0)) {
         split_transform_flag =
         ff_hevc_split_transform_flag_decode(s, log2_trafo_size, entry);
-        av_dlog(s->avctx,
-                "split_transform_flag: %d\n", split_transform_flag);
     } else {
         split_transform_flag =
         (log2_trafo_size > s->sps->log2_max_trafo_size ||
@@ -992,14 +967,10 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
         if (trafo_depth == 0 || SAMPLE_CBF(s->tt[entry].cbf_cb[trafo_depth - 1], xBase, yBase)) {
             SAMPLE_CBF(s->tt[entry].cbf_cb[trafo_depth], x0, y0) =
             ff_hevc_cbf_cb_cr_decode(s, trafo_depth, entry);
-            av_dlog(s->avctx,
-                   "cbf_cb: %d\n", SAMPLE_CBF(s->tt[entry].cbf_cb[trafo_depth], x0, y0));
         }
         if (trafo_depth == 0 || SAMPLE_CBF(s->tt[entry].cbf_cr[trafo_depth - 1], xBase, yBase)) {
             SAMPLE_CBF(s->tt[entry].cbf_cr[trafo_depth], x0, y0) =
             ff_hevc_cbf_cb_cr_decode(s, trafo_depth, entry);
-            av_dlog(s->avctx,
-                   "cbf_cr: %d\n", SAMPLE_CBF(s->tt[entry].cbf_cr[trafo_depth], x0, y0));
         }
     }
 
@@ -1024,8 +995,6 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
             SAMPLE_CBF(s->tt[entry].cbf_cb[trafo_depth], x0, y0) ||
             SAMPLE_CBF(s->tt[entry].cbf_cr[trafo_depth], x0, y0)) {
             s->tt[entry].cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth, entry);
-            av_dlog(s->avctx,
-                    "cbf_luma: %d\n", s->tt[entry].cbf_luma);
         }
 
         hls_transform_unit(s, x0, y0, xBase,
@@ -1247,8 +1216,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     if (SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb)) {
         if (s->sh.max_num_merge_cand > 1) {
             merge_idx = ff_hevc_merge_idx_decode(s, entry);
-            av_dlog(s->avctx,
-                    "merge_idx: %d\n", merge_idx);
             ff_hevc_luma_mv_merge_mode(s, x0, y0, 1 << log2_cb_size, 1 << log2_cb_size, log2_cb_size, partIdx, merge_idx, &current_mv, entry);
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
@@ -1260,13 +1227,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         }
     } else {/* MODE_INTER */
         s->pu.merge_flag[entry] = ff_hevc_merge_flag_decode(s, entry);
-        av_dlog(s->avctx,
-                "merge_flag: %d\n", s->pu.merge_flag[entry]);
         if (s->pu.merge_flag[entry]) {
             if (s->sh.max_num_merge_cand > 1) {
                 merge_idx = ff_hevc_merge_idx_decode(s, entry);
-                av_dlog(s->avctx,
-                        "merge_idx: %d\n", merge_idx);
                 ff_hevc_luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, entry);
                 x_pu = x0 >> s->sps->log2_min_pu_size;
                 y_pu = y0 >> s->sps->log2_min_pu_size;
@@ -1284,8 +1247,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 if (s->sh.num_ref_idx_l0_active > 1) {
                     ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l0_active, entry);
                     current_mv.ref_idx[0] = ref_idx[0];
-                    av_dlog(s->avctx, "ref_idx[0]: %d\n",
-                            ref_idx[0]);
                 }
                 current_mv.pred_flag[0] = 1;
                 hls_mvd_coding(s, x0, y0, 0 , entry);
@@ -1298,8 +1259,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 if (s->sh.num_ref_idx_l1_active > 1) {
                     ref_idx[1] = ff_hevc_ref_idx_lx_decode(s, s->sh.num_ref_idx_l1_active, entry);
                     current_mv.ref_idx[1] = ref_idx[1];
-                    av_dlog(s->avctx, "ref_idx[1]: %d\n",
-                            ref_idx[1]);
                 }
                 if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
                     s->pu.mvd[entry].x = 0;
@@ -1478,8 +1437,6 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     if ((y0 - 1) < y_ctb)
         cand_up = INTRA_DC;
 
-    av_dlog(s->avctx, "cand_left: %d, cand_up: %d\n",
-           cand_left, cand_up);
 
     if (cand_left == cand_up) {
         if (cand_left < 2) {
@@ -1515,8 +1472,6 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
 
         intra_pred_mode = s->pu.rem_intra_luma_pred_mode[entry];
         for (i = 0; i < 3; i++) {
-            av_dlog(s->avctx, "candidate[%d] = %d\n",
-                   i, candidate[i]);
             if (intra_pred_mode >= candidate[i])
                 intra_pred_mode++;
         }
@@ -1539,8 +1494,6 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
         }
     }
 
-    av_dlog(s->avctx, "intra_pred_mode: %d\n",
-           intra_pred_mode);
     return intra_pred_mode;
 }
 
@@ -1569,17 +1522,14 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_si
     for (i = 0; i < side; i++)
         for (j = 0; j < side; j++) {
             prev_intra_luma_pred_flag[2*i+j] = ff_hevc_prev_intra_luma_pred_flag_decode(s, entry);
-            av_dlog(s->avctx, "prev_intra_luma_pred_flag: %d\n", prev_intra_luma_pred_flag[2*i+j]);
         }
 
     for (i = 0; i < side; i++) {
         for (j = 0; j < side; j++) {
             if (prev_intra_luma_pred_flag[2*i+j]) {
                 s->pu.mpm_idx[entry] = ff_hevc_mpm_idx_decode(s, entry);
-                av_dlog(s->avctx, "mpm_idx: %d\n", s->pu.mpm_idx[entry]);
             } else {
                 s->pu.rem_intra_luma_pred_mode[entry] = ff_hevc_rem_intra_luma_pred_mode_decode(s, entry);
-                av_dlog(s->avctx, "rem_intra_luma_pred_mode: %d\n", s->pu.rem_intra_luma_pred_mode[entry]);
             }
             s->pu.intra_pred_mode[entry][2*i+j] =
             luma_intra_pred_mode(s, x0 + pb_size * j, y0 + pb_size * i, pb_size,
@@ -1598,8 +1548,6 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_si
         s->pu.intra_pred_mode_c[entry] = s->pu.intra_pred_mode[entry][0];
     }
 
-    av_dlog(s->avctx, "intra_pred_mode_c: %d\n",
-           s->pu.intra_pred_mode_c[entry]);
 }
 static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, int log2_cb_size, int entry)
 {
@@ -1664,7 +1612,6 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
         if (s->cu.pred_mode[entry] != MODE_INTRA ||
             log2_cb_size == s->sps->log2_min_coding_block_size) {
             s->cu.part_mode[entry] = ff_hevc_part_mode_decode(s, log2_cb_size, entry);
-            av_dlog(s->avctx, "part_mode: %d\n", s->cu.part_mode[entry]);
             s->cu.intra_split_flag[entry] = s->cu.part_mode[entry] == PART_NxN &&
                                      s->cu.pred_mode[entry] == MODE_INTRA;
         }
@@ -1674,7 +1621,6 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
                 log2_cb_size >= s->sps->pcm.log2_min_pcm_cb_size &&
                 log2_cb_size <= s->sps->pcm.log2_max_pcm_cb_size) {
                 s->cu.pcm_flag[entry] = ff_hevc_pcm_flag_decode(s, entry);
-                av_dlog(s->avctx, "pcm_flag: %d\n", s->cu.pcm_flag[entry]);
            }
             if (s->cu.pcm_flag[entry]) {
                 hls_pcm_sample(s, x0, y0, log2_cb_size, entry);
@@ -1763,8 +1709,6 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0, int log2_cb_size,
         SAMPLE(s->split_cu_flag, x0, y0) =
         (log2_cb_size > s->sps->log2_min_coding_block_size);
     }
-    av_dlog(s->avctx, "split_cu_flag: %d\n",
-           SAMPLE(s->split_cu_flag, x0, y0));
     if( s->pps->cu_qp_delta_enabled_flag
        && log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth ) {
         s->tu[entry].is_cu_qp_delta_coded = 0;
@@ -1790,8 +1734,6 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0, int log2_cb_size,
                 (y1 + cb_size) < s->sps->pic_height_in_luma_samples);
     } else {
         hls_coding_unit(s, x0, y0, log2_cb_size,  entry);
-        av_dlog(s->avctx, "x0: %d, y0: %d, cb: %d, %d\n",
-               x0, y0, (1 << log2_cb_size), (1 << (s->sps->log2_ctb_size)));
         if ((!((x0 + (1 << log2_cb_size)) %
                (1 << (s->sps->log2_ctb_size))) ||
              (x0 + (1 << log2_cb_size) >= s->sps->pic_width_in_luma_samples)) &&
