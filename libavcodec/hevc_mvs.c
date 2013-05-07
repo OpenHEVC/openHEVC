@@ -27,7 +27,7 @@
 /*
  * 6.4.1 Derivation process for z-scan order block availability
  */
-static int ff_hevc_z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr, int xN, int yN)
+static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr, int xN, int yN)
 {
 
 #define MIN_TB_ADDR_ZS(x, y)                                            \
@@ -69,7 +69,7 @@ static int check_prediction_block_available(HEVCContext *s, int log2_cb_size, in
     }
 
     if (sameCb == 0) {
-        availableN = ff_hevc_z_scan_block_avail(s, x0, y0, xA1, yA1);
+        availableN = z_scan_block_avail(s, x0, y0, xA1, yA1);
     } else {
         if ((nPbW << 1 == (1 << log2_cb_size)) && ((nPbH << 1) == (1 << log2_cb_size)) && (partIdx ==1) && ((s->cu.x[entry] + nPbW) > xA1) && ((s->cu.y[entry] + nPbH) <= yA1)) {
             availableN = 0;
