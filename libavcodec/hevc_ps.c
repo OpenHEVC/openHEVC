@@ -466,8 +466,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     log2_diff_max_min_transform_block_size      = get_ue_golomb(gb);
     sps->log2_max_trafo_size                    = log2_diff_max_min_transform_block_size + sps->log2_min_transform_block_size;
 
-    sps->max_transform_hierarchy_depth_inter = get_ue_golomb(gb) + 1;
-    sps->max_transform_hierarchy_depth_intra = get_ue_golomb(gb) + 1;
+    sps->max_transform_hierarchy_depth_inter = get_ue_golomb(gb);
+    sps->max_transform_hierarchy_depth_intra = get_ue_golomb(gb);
 
     sps->scaling_list_enable_flag = get_bits1(gb);
     if (sps->scaling_list_enable_flag) {
