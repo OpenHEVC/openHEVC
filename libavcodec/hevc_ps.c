@@ -375,6 +375,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     int i;
     int bit_depth_chroma, start;
     GetBitContext *gb = s->gb[0];
+    int log2_diff_max_min_transform_block_size;
 
     int sps_id = 0;
     SPS *sps = av_mallocz(sizeof(*sps));
@@ -462,10 +463,11 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->log2_min_coding_block_size             = get_ue_golomb(gb) + 3;
     sps->log2_diff_max_min_coding_block_size    = get_ue_golomb(gb);
     sps->log2_min_transform_block_size          = get_ue_golomb(gb) + 2;
-    sps->log2_diff_max_min_transform_block_size = get_ue_golomb(gb);
+    log2_diff_max_min_transform_block_size      = get_ue_golomb(gb);
+    sps->log2_max_trafo_size                    = log2_diff_max_min_transform_block_size + sps->log2_min_transform_block_size;
 
-    sps->max_transform_hierarchy_depth_inter = get_ue_golomb(gb);
-    sps->max_transform_hierarchy_depth_intra = get_ue_golomb(gb);
+    sps->max_transform_hierarchy_depth_inter = get_ue_golomb(gb) + 1;
+    sps->max_transform_hierarchy_depth_intra = get_ue_golomb(gb) + 1;
 
     sps->scaling_list_enable_flag = get_bits1(gb);
     if (sps->scaling_list_enable_flag) {
@@ -532,8 +534,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->log2_ctb_size = sps->log2_min_coding_block_size
                          + sps->log2_diff_max_min_coding_block_size;
-    sps->pic_width_in_ctbs  = ( sps->pic_width_in_luma_samples  + (1 << sps->log2_ctb_size)-1 ) >> sps->log2_ctb_size;
-    sps->pic_height_in_ctbs = ( sps->pic_height_in_luma_samples + (1 << sps->log2_ctb_size)-1 ) >> sps->log2_ctb_size;
+    sps->pic_width_in_ctbs  = (sps->pic_width_in_luma_samples  + (1 << sps->log2_ctb_size) - 1) >> sps->log2_ctb_size;
+    sps->pic_height_in_ctbs = (sps->pic_height_in_luma_samples + (1 << sps->log2_ctb_size) - 1) >> sps->log2_ctb_size;
     sps->pic_width_in_min_cbs = sps->pic_width_in_luma_samples >>
                                 sps->log2_min_coding_block_size;
     sps->pic_height_in_min_cbs = sps->pic_height_in_luma_samples >>

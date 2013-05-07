@@ -43,7 +43,6 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx)
 static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, int entry)
 {
     int Log2CtbSizeY         = s->sps->log2_ctb_size;
-    int Log2MinTrafoSize     = s->sps->log2_min_transform_block_size;
     int Log2MinCuQpDeltaSize = Log2CtbSizeY - s->pps->diff_cu_qp_delta_depth;
     int xQg                  = xC - ( xC & ( ( 1 << Log2MinCuQpDeltaSize) - 1 ) );
     int yQg                  = yC - ( yC & ( ( 1 << Log2MinCuQpDeltaSize) - 1 ) );

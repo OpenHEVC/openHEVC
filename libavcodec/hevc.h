@@ -302,7 +302,7 @@ typedef struct SPS {
     int log2_min_coding_block_size; ///< log2_min_coding_block_size_minus3 + 3
     int log2_diff_max_min_coding_block_size;
     int log2_min_transform_block_size; ///< log2_min_transform_block_size_minus2 + 2
-    int log2_diff_max_min_transform_block_size;
+    int log2_max_trafo_size;
 
 
     int max_transform_hierarchy_depth_inter;
@@ -773,7 +773,7 @@ typedef struct HEVCContext {
     int8_t qp_y[MAX_ENTRIES];
     int8_t *qp_y_tab;
 
-    uint8_t *split_coding_unit_flag;
+    uint8_t *split_cu_flag;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
     int bs_width;
