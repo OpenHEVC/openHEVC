@@ -24,6 +24,7 @@
 
 #define SDL_NO_DISPLAY_
 
+#ifndef SDL_NO_DISPLAY
 #include <SDL.h>
 #include <stdio.h>
 
@@ -34,7 +35,7 @@ SDL_Texture       *bmpTex1;
 uint8_t           *pixels1;
 int               pitch1, size1;
 int               ticksSDL;
-
+#endif
 void Init_Time() {
 #ifndef SDL_NO_DISPLAY
     ticksSDL = SDL_GetTicks();
