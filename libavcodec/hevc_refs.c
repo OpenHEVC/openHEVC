@@ -142,6 +142,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
             HEVCFrame *frame = &s->DPB[min_idx];
 
             frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
+            printf("%d\n", frame->poc);
 
             ret = av_frame_ref(out, frame->frame);
             if (ret < 0)

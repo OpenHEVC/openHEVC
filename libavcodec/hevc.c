@@ -617,10 +617,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
 
     memset(s->rc[entry].significant_coeff_group_flag, 0, 8*8);
 
-    if (log2_trafo_size == 1) {
-        log2_trafo_size = 2;
-    }
-
 
     if (s->pps->transform_skip_enabled_flag && !s->cu.cu_transquant_bypass_flag[entry] &&
         log2_trafo_size == 2) {
@@ -1570,7 +1566,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
     int cb_size          = 1 << log2_cb_size;
     int log2_min_cb_size = s->sps->log2_min_coding_block_size;
     int length           = cb_size >> log2_min_cb_size;
-    int pic_width_in_ctb = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
+    int pic_width_in_ctb = s->sps->pic_width_in_luma_samples >> log2_min_cb_size;
     int x_cb             = x0 >> log2_min_cb_size;
     int y_cb             = y0 >> log2_min_cb_size;
     int x, y;
@@ -1835,8 +1831,6 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     int *ctb_row = input_ctb_row;
     int x_ctb = 0;
     int y_ctb = (*ctb_row)<< s->sps->log2_ctb_size;
-    int ctb_addr_rs = s->sh.slice_ctb_addr_rs;
-    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     while(more_data) {
         while(*ctb_row && (s->cbt_entry_count[(*ctb_row)-1]-s->cbt_entry_count[*ctb_row])<SHIFT_CTB_WPP); // thread white
 
@@ -1857,8 +1851,6 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
             hls_filter(s, x_ctb, y_ctb);
             return 0;
         }
-        ctb_addr_ts ++;
-        ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
         x_ctb+=ctb_size;
         
         if(x_ctb >= s->sps->pic_width_in_luma_samples) {
@@ -2098,7 +2090,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
 
 
-/*
+
             printf("\n");
              print_md5(s->md5[0]);
              printf("\n");
@@ -2106,7 +2098,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
              printf("\n");
              print_md5(s->md5[2]);
              printf("\n");
-*/             
+             
 
         if ((ret = ff_hevc_find_display(s, data, 0)) < 0)
             return ret;

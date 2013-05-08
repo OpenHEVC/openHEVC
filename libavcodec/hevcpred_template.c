@@ -110,17 +110,14 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     if (!bottom_left_available) {
         if (left_available) {
             EXTEND_DOWN(&left[size-1], size);
-            bottom_left_available = 1;
         } else if (top_left_available) {
             EXTEND_DOWN(&left[-1], 2*size);
             left_available = 1;
-            bottom_left_available = 1;
         } else if (top_available) {
             left[-1] = top[0];
             EXTEND_DOWN(&left[-1], 2*size);
             top_left_available = 1;
             left_available = 1;
-            bottom_left_available = 1;
         } else if (top_right_available) {
             EXTEND_LEFT(&top[size], size);
             left[-1] = top[0];
@@ -128,7 +125,6 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
             top_available = 1;
             top_left_available = 1;
             left_available = 1;
-            bottom_left_available = 1;
         } else { // No samples available
             top[0] = left[-1] = (1 << (BIT_DEPTH - 1));
             EXTEND_RIGHT(&top[0], 2*size-1);
@@ -137,16 +133,13 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     }
     if (!left_available) {
         EXTEND_UP(&left[size], size);
-        left_available = 1;
     }
     if (!top_left_available) {
         left[-1] = left[0];
-        top_left_available = 1;
     }
     if (!top_available) {
         top[0] = left[-1];
         EXTEND_RIGHT(&top[0], size-1);
-        top_available = 1;
     }
     if (!top_right_available)
         EXTEND_RIGHT(&top[size-1], size);

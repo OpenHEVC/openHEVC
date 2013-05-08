@@ -58,7 +58,7 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
 	ctx->width = ctx->height = ctx->out_size = 0;
 	ctx->state_found = 0;
 	
-	libOpenHevcInit(3);
+	libOpenHevcInit(2);
 	ctx->is_init = 1;
 
 	if (esd->decoderConfig->decoderSpecificInfo && esd->decoderConfig->decoderSpecificInfo->data) {
