@@ -467,7 +467,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->log2_max_trafo_size                    = log2_diff_max_min_transform_block_size + sps->log2_min_transform_block_size;
 
     sps->max_transform_hierarchy_depth_inter = get_ue_golomb(gb);
-    sps->max_transform_hierarchy_depth_intra = get_ue_golomb(gb) + 1;
+    sps->max_transform_hierarchy_depth_intra = get_ue_golomb(gb);
 
     sps->scaling_list_enable_flag = get_bits1(gb);
     if (sps->scaling_list_enable_flag) {
@@ -795,17 +795,16 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     if (s->pps_list[pps_id] != NULL) {
         PPS *pps_f = s->pps_list[pps_id];
-
-    av_free(pps_f->column_width);
-    av_free(pps_f->row_height);
-    av_free(pps_f->col_bd);
-    av_free(pps_f->row_bd);
-    av_free(pps_f->ctb_addr_rs_to_ts);
-    av_free(pps_f->ctb_addr_ts_to_rs);
-    av_free(pps_f->tile_id);
-    av_free(pps_f->min_cb_addr_zs);
-    av_free(pps_f->min_tb_addr_zs);
-    av_free(pps_f);
+        av_free(pps_f->column_width);
+        av_free(pps_f->row_height);
+        av_free(pps_f->col_bd);
+        av_free(pps_f->row_bd);
+        av_free(pps_f->ctb_addr_rs_to_ts);
+        av_free(pps_f->ctb_addr_ts_to_rs);
+        av_free(pps_f->tile_id);
+        av_free(pps_f->min_cb_addr_zs);
+        av_free(pps_f->min_tb_addr_zs);
+        av_free(pps_f);
     }
 
     s->pps_list[pps_id] = pps;
