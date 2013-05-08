@@ -795,7 +795,6 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     if (s->pps_list[pps_id] != NULL) {
         PPS *pps_f = s->pps_list[pps_id];
-
         av_free(pps_f->column_width);
         av_free(pps_f->row_height);
         av_free(pps_f->col_bd);
