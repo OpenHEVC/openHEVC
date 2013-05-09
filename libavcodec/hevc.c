@@ -1765,9 +1765,9 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
             if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
                 hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, (ctb_addr_in_slice > 0), 0);
             more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, 0);
-            s->coding_tree_count += 2;
+            av_atomic_int_add_and_fetch(&s->coding_tree_count, 2);
             if (!more_data) {
-                s->coding_tree_count += 1;
+                av_atomic_int_add_and_fetch(&s->coding_tree_count, 1);
                 return 0;
             }
 
@@ -1791,10 +1791,11 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     } else {
         int filters_count = 0;
         x_ctb = y_ctb = 0;
-        while((s->coding_tree_count&1) == 0 || (s->coding_tree_count>>1) != (filters_count>>1)) {
+
+        while((av_atomic_int_get(&s->coding_tree_count)&1) == 0 || (av_atomic_int_get(&s->coding_tree_count)>>1) != (filters_count>>1)) {
             x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
             y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
-            while((s->coding_tree_count>>1) <= (filters_count>>1)); // thread white
+            while((av_atomic_int_get(&s->coding_tree_count)>>1) <= (filters_count>>1)); // thread white
             hls_filters(s, x_ctb, y_ctb, ctb_size);
             filters_count += 2;
             ctb_addr_ts++;
@@ -1814,8 +1815,7 @@ static int hls_slice_data(HEVCContext *s)
     arg[1] = 1;
 
     memset(s->cu.skip_flag, 0, pic_size_in_ctb);
-
-    s->coding_tree_count = 0;
+    av_atomic_int_set(&s->coding_tree_count, 0);
 
     s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 2, sizeof(int));
 
@@ -1832,7 +1832,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     int x_ctb = 0;
     int y_ctb = (*ctb_row)<< s->sps->log2_ctb_size;
     while(more_data) {
-        while(*ctb_row && (s->cbt_entry_count[(*ctb_row)-1]-s->cbt_entry_count[*ctb_row])<SHIFT_CTB_WPP); // thread white
+        while(*ctb_row && (av_atomic_int_get(&s->cbt_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->cbt_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
 
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
             s->sh.slice_sample_adaptive_offset_flag[1])
@@ -1845,19 +1845,18 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
             ((s->sps->pic_height_in_luma_samples-y_ctb)>ctb_size) ) {
             save_states(s, *ctb_row);
         }
-        s->cbt_entry_count[*ctb_row] ++;
+        av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],1);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
         if (!more_data) {
             hls_filter(s, x_ctb, y_ctb);
             return 0;
         }
         x_ctb+=ctb_size;
-        
         if(x_ctb >= s->sps->pic_width_in_luma_samples) {
             break;
         }
     }
-    s->cbt_entry_count[*ctb_row] +=SHIFT_CTB_WPP;
+    av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],SHIFT_CTB_WPP);
     return more_data;
 }
 
@@ -2047,7 +2046,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             int i;
             offset += (s->gb[0]->index>>3);
             if(!s->cbt_entry_count) {
-                s->cbt_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int16_t));
+                s->cbt_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
                 for(i=1; i< MAX_ENTRIES-1; i++) {
                     s->gb[i] = av_malloc(sizeof(GetBitContext));
                     s->cc[i] = av_malloc(sizeof(CABACContext));
@@ -2062,7 +2061,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 s->qp_y[i] = s->qp_y[0];
                 s->isFirstQPgroup[i] = 1;
             }
-            memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int16_t));
+            memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
             for(i=1; i< s->sh.num_entry_point_offsets; i++) {
                 offset += s->sh.entry_point_offset[i-1];
                 init_get_bits(s->gb[i], avpkt->data+offset, s->sh.entry_point_offset[i]*8);
