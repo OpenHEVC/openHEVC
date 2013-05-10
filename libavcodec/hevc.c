@@ -1547,18 +1547,25 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0, int log2_cb_si
 }
 static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, int log2_cb_size, int entry)
 {
-    int i;
+    int i, j, k;
     int split = s->cu.part_mode[entry] == PART_NxN;
     int pb_size = (1 << log2_cb_size) >> split;
     int side = split + 1;
     int size_in_pus = pb_size >> s->sps->log2_min_pu_size;
-    
+    int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
+    MvField *tab_mvf = s->ref->tab_mvf;
     for (i = 0; i < side; i++) {
         int x_pu = (x0 + pb_size * i) >> s->sps->log2_min_pu_size;
         int y_pu = (y0 + pb_size * i) >> s->sps->log2_min_pu_size;
         memset(&s->pu.top_ipm[x_pu], INTRA_DC, size_in_pus);
         memset(&s->pu.left_ipm[y_pu], INTRA_DC, size_in_pus);
+        for(j = 0; j <size_in_pus; j++) {
+            for(k = 0; k <size_in_pus; k++) {
+                tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+k].is_intra = s->cu.pred_mode[entry] == MODE_INTRA;
+            }
+        }
     }
+
 }
 
 static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, int entry)

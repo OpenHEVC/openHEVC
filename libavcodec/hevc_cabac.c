@@ -381,7 +381,7 @@ int ff_hevc_sao_eo_class_decode(HEVCContext *s, int entry)
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s, int entry)
 {
     return get_cabac_terminate(s->cc[entry]);
- }
+}
 
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry)
 {

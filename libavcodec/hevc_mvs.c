@@ -84,11 +84,9 @@ static int check_prediction_block_available(HEVCContext *s, int log2_cb_size, in
 static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->pps->log2_parallel_merge_level;
-    if ((xN >> plevel) != (xP >> plevel))
-        return 0;
-    if ((yN >> plevel) != (yP >> plevel))
-        return 0;
-    return 1;
+    if (((xN >> plevel) == (xP >> plevel)) && ((yN >> plevel) == (yP >> plevel)))
+        return 1;
+    return 0;
 }
 
 // check if the mv's and refidx are the same between A and B
@@ -645,15 +643,13 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nP
     int nCS = 1 << log2_cb_size;
     struct MvField mergecand_list[MRG_MAX_NUM_CANDS] = {{{{ 0 }}}};
 
-    if ((s->pps->log2_parallel_merge_level -2 > 0) && (nCS == 8)) {
+    if ((s->pps->log2_parallel_merge_level > 2) && (nCS == 8)) {
         singleMCLFlag = 1;
-    }
-
-    if (singleMCLFlag == 1) {
         x0 = s->cu.x[entry];
         y0 = s->cu.y[entry];
         nPbW = nCS;
         nPbH = nCS;
+        part_idx = 0;
     }
     derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size, singleMCLFlag, part_idx, mergecand_list, entry);
     if ((mergecand_list[merge_idx].pred_flag[0] == 1) &&
