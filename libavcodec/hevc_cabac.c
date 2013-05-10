@@ -60,7 +60,7 @@ static const int8_t num_bins_in_se[] = {
      1,  // no_residual_data_flag
      3,  // split_transform_flag
      2,  // cbf_luma
-     3,  // cbf_cb, cbf_cr
+     4,  // cbf_cb, cbf_cr
      2,  // transform_skip_flag[][]
     18,  // last_significant_coeff_x_prefix
     18,  // last_significant_coeff_y_prefix
@@ -128,7 +128,7 @@ const uint8_t init_values[3][HEVC_CONTEXTS] = {
         // cbf_luma
         111, 141,
         // cbf_cb, cbf_cr
-        94, 138, 182,
+        94, 138, 182, 154,
         // transform_skip_flag
         139, 139,
         // last_significant_coeff_x_prefix
@@ -193,7 +193,7 @@ const uint8_t init_values[3][HEVC_CONTEXTS] = {
         // cbf_luma
         153, 111,
         // cbf_cb, cbf_cr
-        149, 107, 167,
+        149, 107, 167, 154,
         // transform_skip_flag
         139, 139,
         // last_significant_coeff_x_prefix
@@ -258,7 +258,7 @@ const uint8_t init_values[3][HEVC_CONTEXTS] = {
         // cbf_luma
         153, 111,
         // cbf_cb, cbf_cr
-        149, 92, 167,
+        149, 92, 167, 154,
         // transform_skip_flag
         139, 139,
         // last_significant_coeff_x_prefix
@@ -381,7 +381,7 @@ int ff_hevc_sao_eo_class_decode(HEVCContext *s, int entry)
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s, int entry)
 {
     return get_cabac_terminate(s->cc[entry]);
-}
+ }
 
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry)
 {
