@@ -1210,29 +1210,34 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     int y_cb             = y0 >> log2_min_cb_size;
 
     if (SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb)) {
-        if (s->sh.max_num_merge_cand > 1) {
+        if (s->sh.max_num_merge_cand > 1)
             merge_idx = ff_hevc_merge_idx_decode(s, entry);
-            ff_hevc_luma_mv_merge_mode(s, x0, y0, 1 << log2_cb_size, 1 << log2_cb_size, log2_cb_size, partIdx, merge_idx, &current_mv, entry);
+        else
+            merge_idx = 0;
+            
+        ff_hevc_luma_mv_merge_mode(s, x0, y0, 1 << log2_cb_size, 1 << log2_cb_size, log2_cb_size, partIdx, merge_idx, &current_mv, entry);
+        x_pu = x0 >> s->sps->log2_min_pu_size;
+        y_pu = y0 >> s->sps->log2_min_pu_size;
+        for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
+            for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
+                tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i] = current_mv;
+            }
+        }
+
+    } else {/* MODE_INTER */
+        s->pu.merge_flag[entry] = ff_hevc_merge_flag_decode(s, entry);
+        if (s->pu.merge_flag[entry]) {
+            if (s->sh.max_num_merge_cand > 1)
+                merge_idx = ff_hevc_merge_idx_decode(s, entry);
+            else
+                merge_idx = 0;
+
+            ff_hevc_luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, entry);
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
             for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
                 for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
                     tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i] = current_mv;
-                }
-            }
-        }
-    } else {/* MODE_INTER */
-        s->pu.merge_flag[entry] = ff_hevc_merge_flag_decode(s, entry);
-        if (s->pu.merge_flag[entry]) {
-            if (s->sh.max_num_merge_cand > 1) {
-                merge_idx = ff_hevc_merge_idx_decode(s, entry);
-                ff_hevc_luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, entry);
-                x_pu = x0 >> s->sps->log2_min_pu_size;
-                y_pu = y0 >> s->sps->log2_min_pu_size;
-                for(i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++) {
-                    for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++) {
-                        tab_mvf[(y_pu + j) * pic_width_in_min_pu + x_pu + i] = current_mv;
-                    }
                 }
             }
         } else {
@@ -1284,6 +1289,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
 
         if (! s->pps->weighted_pred_flag){
+#ifdef MV
+            printf("mv_l0 = %d, %d\n",current_mv.mv[0].x, current_mv.mv[0].y);
+#endif
             luma_mc(s, tmp, tmpstride,
                     s->DPB[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                     &current_mv.mv[0], x0, y0, nPbW, nPbH, entry);
@@ -1318,6 +1326,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
         if (! s->pps->weighted_pred_flag){
+#ifdef MV
+            printf("mv_l1 = %d, %d\n",current_mv.mv[1].x, current_mv.mv[1].y);
+#endif
             luma_mc(s, tmp, tmpstride,
                     s->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                     &current_mv.mv[1], x0, y0, nPbW, nPbH, entry);
@@ -1355,6 +1366,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp3[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp4[MAX_PB_SIZE*MAX_PB_SIZE];
         if (! s->pps->weighted_bipred_flag){
+#ifdef MV
+            printf("mv_bi_l0 = %d, %d\n",current_mv.mv[0].x, current_mv.mv[0].y);
+            printf("mv_bi_l1 = %d, %d\n",current_mv.mv[1].x, current_mv.mv[1].y);
+#endif
             luma_mc(s, tmp, tmpstride,
                     s->DPB[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                     &current_mv.mv[0], x0, y0, nPbW, nPbH, entry);
@@ -1736,6 +1751,8 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0, int log2_cb_size,
         return ((x1 + cb_size) < s->sps->pic_width_in_luma_samples ||
                 (y1 + cb_size) < s->sps->pic_height_in_luma_samples);
     } else {
+//        printf("x0: %d, y0: %d, cb: %d, %d\n",
+//               x0, y0, (1 << log2_cb_size), (1 << (s->sps->log2_ctb_size)));
         hls_coding_unit(s, x0, y0, log2_cb_size,  entry);
         if ((!((x0 + (1 << log2_cb_size)) %
                (1 << (s->sps->log2_ctb_size))) ||
