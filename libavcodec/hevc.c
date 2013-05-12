@@ -31,7 +31,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/md5.h"
 
-//#define MV
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
  * specification (HLS stands for High Level Syntax).
@@ -1289,9 +1288,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
 
         if (! s->pps->weighted_pred_flag){
-#ifdef MV
-            printf("mv_l0 = %d, %d\n",current_mv.mv[0].x, current_mv.mv[0].y);
-#endif
             luma_mc(s, tmp, tmpstride,
                     s->DPB[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                     &current_mv.mv[0], x0, y0, nPbW, nPbH, entry);
@@ -1326,9 +1322,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
         if (! s->pps->weighted_pred_flag){
-#ifdef MV
-            printf("mv_l1 = %d, %d\n",current_mv.mv[1].x, current_mv.mv[1].y);
-#endif
             luma_mc(s, tmp, tmpstride,
                     s->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                     &current_mv.mv[1], x0, y0, nPbW, nPbH, entry);
@@ -1366,10 +1359,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         int16_t tmp3[MAX_PB_SIZE*MAX_PB_SIZE];
         int16_t tmp4[MAX_PB_SIZE*MAX_PB_SIZE];
         if (! s->pps->weighted_bipred_flag){
-#ifdef MV
-            printf("mv_bi_l0 = %d, %d\n",current_mv.mv[0].x, current_mv.mv[0].y);
-            printf("mv_bi_l1 = %d, %d\n",current_mv.mv[1].x, current_mv.mv[1].y);
-#endif
             luma_mc(s, tmp, tmpstride,
                     s->DPB[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                     &current_mv.mv[0], x0, y0, nPbW, nPbH, entry);
@@ -1927,13 +1916,6 @@ static int hls_nal_unit(HEVCContext *s)
     return (nuh_layer_id == 0);
 }
 
-static void print_md5(uint8_t *md5)
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        printf("%02x", md5[i]);
-}
-
 static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
     uint8_t *buf;
     int y,x;
@@ -2112,15 +2094,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             s->is_decoded = 1;
         }
 
-/*
-        printf("\n");
-        print_md5(s->md5[0]);
-        printf("\n");
-        print_md5(s->md5[1]);
-        printf("\n");
-        print_md5(s->md5[2]);
-        printf("\n");
-*/
         if ((ret = ff_hevc_find_display(s, data, 0)) < 0)
             return ret;
         s->frame->pict_type = AV_PICTURE_TYPE_I;

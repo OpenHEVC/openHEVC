@@ -437,9 +437,6 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, 
     if (y0 > 0)
         depth_top = s->cu.top_ct_depth[x0 >> s->sps->log2_min_coding_block_size];
 
-    av_dlog(s->avctx, "depth cur: %d, left: %d, top: %d\n",
-           ct_depth, depth_left, depth_top);
-
     inc += (depth_left > ct_depth);
     inc += (depth_top > ct_depth);
 
@@ -700,7 +697,6 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
             prev_sig += s->rc[entry].significant_coeff_group_flag[x_cg + 1][y_cg];
         if (y_cg < ((1 << log2_trafo_size) - 1) >> 2)
             prev_sig += (s->rc[entry].significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
-        av_dlog(s->avctx, "prev_sig: %d\n", prev_sig);
 
         switch (prev_sig) {
         case 0: {
@@ -796,8 +792,6 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int first_elem, int base_l
     if (first_elem) {
         c_rice_param[entry] = 0;
         last_coeff_abs_level_remaining[entry] = 0;
-        av_dlog(s->avctx,
-               "c_rice_param reset to 0\n");
     }
 
     while (get_cabac_bypass(s->cc[entry]))
@@ -814,22 +808,9 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int first_elem, int base_l
                                           << c_rice_param[entry]) + suffix;
     }
 
-    av_dlog(s->avctx,
-           "coeff_abs_level_remaining c_rice_param: %d\n", c_rice_param[entry]);
-    av_dlog(s->avctx,
-           "coeff_abs_level_remaining base_level: %d, prefix: %d, suffix: %d\n",
-           base_level, prefix, suffix);
-    av_dlog(s->avctx,
-           "coeff_abs_level_remaining: %d\n",
-           last_coeff_abs_level_remaining[entry]);
-
-    av_dlog(s->avctx, "last_coeff_(%d) > %d\n", base_level + last_coeff_abs_level_remaining[entry], 3*(1<<(c_rice_param)));
-
     c_rice_param[entry] = FFMIN(c_rice_param[entry] +
                          ((base_level + last_coeff_abs_level_remaining[entry]) >
                           (3 * (1 << c_rice_param[entry]))), 4);
-    av_dlog(s->avctx,
-           "new c_rice_param: %d\n", c_rice_param[entry]);
 
     return last_coeff_abs_level_remaining[entry];
 }
