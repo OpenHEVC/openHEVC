@@ -642,6 +642,8 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nP
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
     struct MvField mergecand_list[MRG_MAX_NUM_CANDS] = {{{{ 0 }}}};
+    int nPbW2 = nPbW;
+    int nPbH2 = nPbH;
 
     if ((s->pps->log2_parallel_merge_level > 2) && (nCS == 8)) {
         singleMCLFlag = 1;
@@ -654,7 +656,7 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nP
     derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size, singleMCLFlag, part_idx, mergecand_list, entry);
     if ((mergecand_list[merge_idx].pred_flag[0] == 1) &&
         (mergecand_list[merge_idx].pred_flag[1] == 1) &&
-        ((nPbW + nPbH) == 12)) {
+        ((nPbW2 + nPbH2) == 12)) {
         mergecand_list[merge_idx].ref_idx[1] = -1;
         mergecand_list[merge_idx].pred_flag[1] = 0;
     }
