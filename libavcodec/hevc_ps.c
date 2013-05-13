@@ -759,7 +759,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     for (j = 0, tile_id = 0; j < pps->num_tile_rows; j++)
         for (i = 0; i < pps->num_tile_columns; i++, tile_id++)
             for (y = pps->row_bd[j]; y < pps->row_bd[j+1]; y++)
-                for (x = pps->col_bd[j]; x < pps->col_bd[j+1]; x++)
+                for (x = pps->col_bd[i]; x < pps->col_bd[i+1]; x++)
                     pps->tile_id[pps->ctb_addr_rs_to_ts[y * sps->pic_width_in_ctbs + x]] = tile_id;
 
     for (y = 0; y < sps->pic_height_in_min_cbs; y++) {
