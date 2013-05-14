@@ -772,6 +772,7 @@ typedef struct HEVCContext {
 
     uint8_t isFirstQPgroup[MAX_ENTRIES];
     int8_t qp_y[MAX_ENTRIES];
+    int8_t curr_qp_y[MAX_ENTRIES];
     int8_t *qp_y_tab;
 
     uint8_t *split_cu_flag;
