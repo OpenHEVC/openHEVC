@@ -22,7 +22,10 @@
 
 #include "hevc.h"
 #include "internal.h"
-
+//#define TEST_DPB
+#ifdef TEST_DPB
+static int state = 0;
+#endif
 static int find_ref_idx(HEVCContext *s, int poc)
 {
     int i;
@@ -53,8 +56,14 @@ static void update_refs(HEVCContext *s)
         HEVCFrame *ref = &s->DPB[i];
         if (ref->frame->buf[0] && !used[i])
             ref->flags &= ~HEVC_FRAME_FLAG_SHORT_REF;
-        if (ref->frame->buf[0] && !ref->flags)
+        if (ref->frame->buf[0] && !ref->flags) {
+#ifdef TEST_DPB
+            if (state==0) printf("\t\t\t\t");
+            printf("\t\t%d\t%d\n",i, ref->poc);
+            state = 0;
+#endif
             av_frame_unref(ref->frame);
+        }
     }
 }
 
@@ -64,6 +73,11 @@ void ff_hevc_clear_refs(HEVCContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
         if (!(ref->flags & HEVC_FRAME_FLAG_OUTPUT)) {
+#ifdef TEST_DPB
+            if (state==0) printf("\t\t\t\t");
+            printf("\t\t%d\t%d\n",i, ref->poc);
+            state = 0;
+#endif
             av_frame_unref(ref->frame);
             ref->flags = 0;
         }
@@ -75,8 +89,13 @@ void ff_hevc_clean_refs(HEVCContext *s)
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
-            av_frame_unref(ref->frame);
-            ref->flags = 0;
+#ifdef TEST_DPB
+        if (state==0) printf("\t\t\t\t");
+        printf("\t\t%d\t%d\n",i, ref->poc);
+        state = 0;
+#endif
+        av_frame_unref(ref->frame);
+        ref->flags = 0;
     }
 }
 
@@ -106,6 +125,13 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             ref->poc   = poc;
             ref->flags = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
             ref->sequence = s->seq_decode;
+#ifdef TEST_DPB
+            if (state == 2) {
+                printf("\n");
+            }
+            printf("%d\t%d\n",i, poc);
+            state = 1;
+#endif
             return ff_reget_buffer(s->avctx, *frame);
         }
     }
@@ -120,7 +146,8 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
     int min_poc   = 0xFFFF;
     int i, min_idx, ret;
     min_idx = 0;
-    while (s->seq_output <= s->seq_decode) {
+    uint8_t run = 1;
+    while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
             if (frame->flags & HEVC_FRAME_FLAG_OUTPUT &&
@@ -139,6 +166,10 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
             return 0;
 
         if (nb_output) {
+#ifdef TEST_DPB
+            printf("\t\t\t%d\t%d", min_idx, min_poc);
+            state = 2;
+#endif
             HEVCFrame *frame = &s->DPB[min_idx];
 
             frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
@@ -152,7 +183,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
         if (s->seq_output != s->seq_decode)
             s->seq_output = (s->seq_output + 1) & 0xff;
         else
-            break;
+            run = 0;
     }
 
     return 0;
