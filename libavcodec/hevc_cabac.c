@@ -421,9 +421,9 @@ int ff_hevc_skip_flag_decode(HEVCContext *s, int x_cb, int y_cb, int entry)
     int pic_width_in_ctb = s->sps->pic_width_in_luma_samples>>s->sps->log2_min_coding_block_size;
     int inc = 0;
 
-    if (x_cb > 0)
+    if (x_cb > (s->xtiles_0 >> s->sps->log2_min_coding_block_size))
         inc = SAMPLE_CTB(s->cu.skip_flag, x_cb-1, y_cb);
-    if (y_cb > 0)
+    if (y_cb > (s->ytiles_0 >> s->sps->log2_min_coding_block_size))
         inc += SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb-1);
 
     return GET_CABAC(entry, elem_offset[SKIP_FLAG] + inc);
