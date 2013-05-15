@@ -804,6 +804,12 @@ typedef struct HEVCContext {
 
     int is_decoded;
 
+    int ctb_addr_ts;
+    int ctb_addr_rs;
+    int ctb_addr_in_slice;
+
+    int xtiles_0;
+    int ytiles_0;
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset
