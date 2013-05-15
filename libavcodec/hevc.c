@@ -880,14 +880,7 @@ static void hls_transform_unit(HEVCContext *s, int x0, int  y0, int xBase, int y
                 if (ff_hevc_cu_qp_delta_sign_flag(s, entry) == 1)
                     s->tu[entry].cu_qp_delta = -s->tu[entry].cu_qp_delta;
             s->tu[entry].is_cu_qp_delta_coded = 1;
-            if ( log2_trafo_size >= s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth ) {
-                ff_hevc_set_qPy(s, x0, y0, xBase, yBase, entry);
-            } else {
-                int trafo_size = 1<<log2_trafo_size;
-                int x_tmp     = (x0&trafo_size)==0?x0:x0-trafo_size;
-                int y_tmp     = (y0&trafo_size)==0?y0:y0-trafo_size;
-                ff_hevc_set_qPy(s, x_tmp, y_tmp, x_tmp, y_tmp, entry);
-            }
+            ff_hevc_set_qPy(s, x0, y0, xBase, yBase, log2_trafo_size, entry);
         }
 
         if (s->cu.pred_mode[entry] == MODE_INTRA && log2_trafo_size < 4) {
@@ -1696,26 +1689,17 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
             }
         }
     }
-    qp_y      = s->qp_y[entry];
-    if( s->pps->cu_qp_delta_enabled_flag ) {
-        if ( log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth ) {
-            if (s->tu[entry].is_cu_qp_delta_coded == 0) {
-                ff_hevc_set_qPy(s, x0, y0, x0, y0, entry);
-                qp_y = s->qp_y[entry];
-            }
-        } else {
-            if (s->tu[entry].is_cu_qp_delta_coded == 0) {
-                int x_tmp     = (x0&cb_size)==0?x0:x0-cb_size;
-                int y_tmp     = (y0&cb_size)==0?y0:y0-cb_size;
-                int curr_qp_y = s->qp_y[entry];
-                ff_hevc_set_qPy(s, x_tmp, y_tmp, x_tmp, y_tmp, entry);
-                qp_y = s->qp_y[entry];
-                if ((x0&cb_size)==0 && (y0&cb_size)==0)
-                    s->curr_qp_y[entry] = qp_y;
-                s->qp_y[entry] = curr_qp_y;
-                if ((x0&cb_size)!=0 && (y0&cb_size)!=0)
-                    s->qp_y[entry] = s->curr_qp_y[entry];
-            }
+    qp_y = s->qp_y[entry];
+    if( s->pps->cu_qp_delta_enabled_flag && s->tu[entry].is_cu_qp_delta_coded == 0) {
+        int curr_qp_y = s->qp_y[entry];
+        ff_hevc_set_qPy(s, x0, y0, x0, y0, log2_cb_size, entry);
+        qp_y = s->qp_y[entry];
+        if ( log2_cb_size < s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth ) {
+            if ((x0&cb_size)==0 && (y0&cb_size)==0)
+                s->curr_qp_y[entry] = qp_y;
+            s->qp_y[entry] = curr_qp_y;
+            if ((x0&cb_size)!=0 && (y0&cb_size)!=0)
+                s->qp_y[entry] = s->curr_qp_y[entry];
         }
     }
     x = y_cb * pic_width_in_ctb + x_cb;

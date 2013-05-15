@@ -73,13 +73,24 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
         qPy_b = s->qp_y_tab[x + (y-1) * pic_width];
     return (qPy_a + qPy_b + 1) >> 1;
 }
-void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int entry)
+void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_size, int entry)
 {
+    int x_tmp     = xC;
+    int y_tmp     = yC;
+    int xBase_tmp = xBase;
+    int yBase_tmp = yBase;
+    if ( log2_size < s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth ) {
+        int size  = 1<<log2_size;
+        x_tmp     = (xC&size)==0?xC:xC-size;
+        y_tmp     = (yC&size)==0?yC:yC-size;
+        xBase_tmp = x_tmp;
+        yBase_tmp = y_tmp;
+    }
     if (s->tu[entry].cu_qp_delta != 0)
-        s->qp_y[entry] = ((get_qPy_pred(s, xC, yC, xBase, yBase, entry) + s->tu[entry].cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
+        s->qp_y[entry] = ((get_qPy_pred(s, x_tmp, y_tmp, xBase_tmp, yBase_tmp, entry) + s->tu[entry].cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
                 (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
     else
-        s->qp_y[entry] = get_qPy_pred(s, xC, yC,  xBase, yBase, entry);
+        s->qp_y[entry] = get_qPy_pred(s, x_tmp, y_tmp, xBase_tmp, yBase_tmp, entry);
 }
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
