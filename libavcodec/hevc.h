@@ -439,6 +439,7 @@ typedef struct SliceHeader {
     ShortTermRPS *short_term_rps;
     RefPicList refPocList[5];
     LongTermRPS long_term_rps;
+    int list_entry_lx[2][16];
 
     uint8_t no_output_of_prior_pics_flag;
 

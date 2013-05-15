@@ -402,8 +402,17 @@ static int hls_slice_header(HEVCContext *s)
                     sh->num_ref_idx_l1_active = get_ue_golomb(gb) + 1;
             }
             if (s->pps->lists_modification_present_flag) {
-                av_log(s->avctx, AV_LOG_ERROR, "TODO: ref_pic_list_modification() \n");
-                return AVERROR_PATCHWELCOME;
+                int NumPocTotalCurr = ff_hevc_get_NumPocTotalCurr(s);
+                int ref_pic_list_modification_flag_l0 = get_bits1(gb);
+                if( ref_pic_list_modification_flag_l0 )
+                    for( i = 0; i < sh->num_ref_idx_l0_active; i++ )
+                        sh->list_entry_lx[0][ i ] = get_bits(gb, log2(NumPocTotalCurr));
+                if( sh->slice_type == B_SLICE ) {
+                    int ref_pic_list_modification_flag_l1 = get_bits1(gb);
+                    if( ref_pic_list_modification_flag_l1 )
+                        for( i = 0; i < sh->num_ref_idx_l1_active; i++ )
+                            sh->list_entry_lx[1][ i ] = get_bits(gb, log2(NumPocTotalCurr));
+                }
             }
 
             if (sh->slice_type == B_SLICE)
@@ -1923,6 +1932,13 @@ static int hls_nal_unit(HEVCContext *s)
     return (nuh_layer_id == 0);
 }
 
+static void print_md5(uint8_t *md5)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        printf("%02x", md5[i]);
+}
+
 static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
     uint8_t *buf;
     int y,x;
@@ -2101,6 +2117,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             s->is_decoded = 1;
         }
 
+/*
+        printf("POC %4d [MD5:", s->poc);
+        print_md5(s->md5[0]);
+        printf("]\n");
+*/
         if ((ret = ff_hevc_find_display(s, data, 0)) < 0)
             return ret;
         s->frame->pict_type = AV_PICTURE_TYPE_I;
