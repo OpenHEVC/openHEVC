@@ -294,7 +294,11 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
     }
   }
 
-  /* compare digest against received version */
+    hashType = "MD5";
+    calcMD5(pic, recon_digest);
+    numChar = 16;
+
+    /* compare digest against received version */
   const Char* ok = "(unk)";
   Bool mismatch = false;
 

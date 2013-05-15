@@ -932,7 +932,7 @@ Void TDecCavlc::parseSliceHeader (TComSlice*& rpcSlice, ParameterSetManagerDecod
         iPOCmsb = 0;
       }
       rpcSlice->setPOC              (iPOCmsb+iPOClsb);
-
+    printf("iPOCmsb+iPOClsb %d\n", iPOCmsb+iPOClsb);
       TComReferencePictureSet* rps;
       READ_FLAG( uiCode, "short_term_ref_pic_set_sps_flag" );
       if(uiCode == 0) // use short-term reference picture set explicitly signalled in slice header

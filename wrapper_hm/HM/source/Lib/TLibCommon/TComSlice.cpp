@@ -530,7 +530,7 @@ Void TComSlice::checkCRA(TComReferencePictureSet *pReferencePictureSet, Int& poc
   {
     if(pocCRA < MAX_UINT && getPOC() > pocCRA)
     {
-      assert(getPOC()+pReferencePictureSet->getDeltaPOC(i) >= pocCRA);
+//      assert(getPOC()+pReferencePictureSet->getDeltaPOC(i) >= pocCRA);
     }
   }
   for(Int i = pReferencePictureSet->getNumberOfNegativePictures()+pReferencePictureSet->getNumberOfPositivePictures(); i < pReferencePictureSet->getNumberOfPictures(); i++)

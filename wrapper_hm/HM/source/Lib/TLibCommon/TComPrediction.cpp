@@ -37,7 +37,7 @@
 
 #include <memory.h>
 #include "TComPrediction.h"
-//#define MV
+#define MV
 #ifdef MV
 #include <stdio.h>
 #endif
@@ -497,6 +497,8 @@ Void TComPrediction::xPredInterUniNoMotion ( TComDataCU* pcCU, UInt uiPartAddr, 
     TComMv      cMv         = pcCU->getCUMvField( eRefPicList )->getMv( uiPartAddr );
     pcCU->clipMv(cMv);
 #ifdef MV
+    if (cMv.getHor() == 92 && cMv.getVer() == -7)
+        printf("");
     printf("mv_l0 = %d, %d\n",cMv.getHor(), cMv.getVer());
 #endif
     xPredInterLumaBlk  ( pcCU, pcCU->getSlice()->getRefPic( eRefPicList, iRefIdx )->getPicYuvRec(), uiPartAddr, &cMv, iWidth, iHeight, rpcYuvPred, bi );

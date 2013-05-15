@@ -258,7 +258,7 @@ Void TDecTop::xActivateParameterSets()
   if (false == m_parameterSetManagerDecoder.activatePPS(m_apcSlicePilot->getPPSId(),m_apcSlicePilot->getIdrPicFlag()))
   {
     printf ("Parameter set activation failed!");
-    assert (0);
+//    assert (0);
   }
 
   m_apcSlicePilot->setPPS(pps);

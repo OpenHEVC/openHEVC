@@ -67,6 +67,7 @@ public:
   Void  xReadPCMCode      ( UInt uiLength, UInt& ruiCode );
   
   Void  copyState         ( TDecBinIf* pcTDecBinIf );
+    Void  printStatus (Int Val);
   TDecBinCABAC* getTDecBinCABAC()  { return this; }
 
 private:

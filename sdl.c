@@ -22,7 +22,7 @@
 #include "config.h"
 #endif
 
-#define SDL_NO_DISPLAY_
+#define SDL_NO_DISPLAY
 
 #include <SDL.h>
 

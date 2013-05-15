@@ -185,7 +185,9 @@ Void TDecSbac::updateContextTables( SliceType eSliceType, Int iQp )
 
 Void TDecSbac::parseTerminatingBit( UInt& ruiBit )
 {
-  m_pcTDecBinIf->decodeBinTrm( ruiBit );
+    m_pcTDecBinIf->decodeBinTrm( ruiBit );
+    printf("end_of_slice\n");
+    m_pcTDecBinIf->printStatus(ruiBit);
 }
 
 
@@ -232,6 +234,7 @@ Void TDecSbac::xReadEpExGolomb( UInt& ruiSymbol, UInt uiCount )
     m_pcTDecBinIf->decodeBinEP( uiBit );
     uiSymbol += uiBit << uiCount++;
   }
+//    m_pcTDecBinIf->printStatus(0);
   
   if ( --uiCount )
   {
@@ -239,6 +242,8 @@ Void TDecSbac::xReadEpExGolomb( UInt& ruiSymbol, UInt uiCount )
     m_pcTDecBinIf->decodeBinsEP( bins, uiCount );
     uiSymbol += bins;
   }
+//    m_pcTDecBinIf->printStatus(uiSymbol);
+
   
   ruiSymbol = uiSymbol;
 }
@@ -441,6 +446,8 @@ Void TDecSbac::parseMergeFlag ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDept
 {
   UInt uiSymbol;
   m_pcTDecBinIf->decodeBin( uiSymbol, *m_cCUMergeFlagExtSCModel.get( 0 ) );
+//    printf("merge_flag\n");
+//    m_pcTDecBinIf->printStatus(uiSymbol);
   pcCU->setMergeFlagSubParts( uiSymbol ? true : false, uiAbsPartIdx, uiPUIdx, uiDepth );
 
   DTRACE_CABAC_VL( g_nSymbolCounter++ );
@@ -489,6 +496,7 @@ Void TDecSbac::parseMVPIdx      ( Int& riMVPIdx )
 {
   UInt uiSymbol;
   xReadUnaryMaxSymbol(uiSymbol, m_cMVPIdxSCModel.get(0), 1, AMVP_MAX_NUM_CANDS-1);
+
   riMVPIdx = uiSymbol;
 }
 
@@ -501,7 +509,10 @@ Void TDecSbac::parseSplitFlag     ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt ui
   }
   
   UInt uiSymbol;
+    printf("split_cu_flag\n");
+    m_pcTDecBinIf->printStatus(0);
   m_pcTDecBinIf->decodeBin( uiSymbol, m_cCUSplitFlagSCModel.get( 0, 0, pcCU->getCtxSplitFlag( uiAbsPartIdx, uiDepth ) ) );
+    m_pcTDecBinIf->printStatus(uiSymbol);
   DTRACE_CABAC_VL( g_nSymbolCounter++ )
   DTRACE_CABAC_T( "\tSplitFlag\n" )
   pcCU->setDepthSubParts( uiDepth + uiSymbol, uiAbsPartIdx );
@@ -692,6 +703,8 @@ Void TDecSbac::parseInterDir( TComDataCU* pcCU, UInt& ruiInterDir, UInt uiAbsPar
   UInt uiSymbol;
   const UInt uiCtx = pcCU->getCtxInterDir( uiAbsPartIdx );
   ContextModel *pCtx = m_cCUInterDirSCModel.get( 0 );
+//    printf("inter_pred_idc\n");
+//    m_pcTDecBinIf->printStatus(0);
   uiSymbol = 0;
   if (pcCU->getPartitionSize(uiAbsPartIdx) == SIZE_2Nx2N || pcCU->getHeight(uiAbsPartIdx) != 8 )
   {
@@ -707,6 +720,8 @@ Void TDecSbac::parseInterDir( TComDataCU* pcCU, UInt& ruiInterDir, UInt uiAbsPar
     m_pcTDecBinIf->decodeBin( uiSymbol, *( pCtx + 4 ) );
     assert(uiSymbol == 0 || uiSymbol == 1);
   }
+//    printf("inter_pred_idc\n");
+//    m_pcTDecBinIf->printStatus(uiSymbol);
 
   uiSymbol++;
   ruiInterDir = uiSymbol;
@@ -743,6 +758,8 @@ Void TDecSbac::parseRefFrmIdx( TComDataCU* pcCU, Int& riRefFrmIdx, RefPicList eR
       uiSymbol = ui + 1;
     }
     riRefFrmIdx = uiSymbol;
+      printf("ref_idx_l0\n");
+//      m_pcTDecBinIf->printStatus(uiSymbol);
   }
 
   return;
@@ -764,8 +781,16 @@ Void TDecSbac::parseMvd( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UI
   }
   else
   {
+//      printf("abs_mvd_greater0_flag\n");
+//      m_pcTDecBinIf->printStatus(0);
     m_pcTDecBinIf->decodeBin( uiHorAbs, *pCtx );
+//      printf("abs_mvd_greater0_flag\n");
+//      m_pcTDecBinIf->printStatus(uiHorAbs);
+//      printf("abs_mvd_greater0_flag\n");
+//      m_pcTDecBinIf->printStatus(0);
     m_pcTDecBinIf->decodeBin( uiVerAbs, *pCtx );
+//      printf("abs_mvd_greater0_flag\n");
+//      m_pcTDecBinIf->printStatus(uiVerAbs);
 
     const Bool bHorAbsGr0 = uiHorAbs != 0;
     const Bool bVerAbsGr0 = uiVerAbs != 0;
@@ -787,11 +812,18 @@ Void TDecSbac::parseMvd( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UI
     {
       if( 2 == uiHorAbs )
       {
+//          printf("mvd\n");
+//          m_pcTDecBinIf->printStatus(0);
         xReadEpExGolomb( uiSymbol, 1 );
         uiHorAbs += uiSymbol;
+//          printf("mvd\n");
+//          m_pcTDecBinIf->printStatus(uiSymbol + 2);
+
       }
 
       m_pcTDecBinIf->decodeBinEP( uiHorSign );
+//        printf("mvd\n");
+//        m_pcTDecBinIf->printStatus(uiHorSign);
     }
 
     if( bVerAbsGr0 )
@@ -799,6 +831,9 @@ Void TDecSbac::parseMvd( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UI
       if( 2 == uiVerAbs )
       {
         xReadEpExGolomb( uiSymbol, 1 );
+//          printf("mvd\n");
+//          m_pcTDecBinIf->printStatus(uiSymbol + 2);
+
         uiVerAbs += uiSymbol;
       }
 
@@ -816,6 +851,8 @@ Void TDecSbac::parseMvd( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UI
 Void TDecSbac::parseTransformSubdivFlag( UInt& ruiSubdivFlag, UInt uiLog2TransformBlockSize )
 {
   m_pcTDecBinIf->decodeBin( ruiSubdivFlag, m_cCUTransSubdivFlagSCModel.get( 0, 0, uiLog2TransformBlockSize ) );
+//    printf("transform_split_flag\n");
+//    m_pcTDecBinIf->printStatus(ruiSubdivFlag);
   DTRACE_CABAC_VL( g_nSymbolCounter++ )
   DTRACE_CABAC_T( "\tparseTransformSubdivFlag()" )
   DTRACE_CABAC_T( "\tsymbol=" )
@@ -884,9 +921,16 @@ Void TDecSbac::parseQtCbf( TComDataCU* pcCU, UInt uiAbsPartIdx, TextType eType, 
 {
   UInt uiSymbol;
   const UInt uiCtx = pcCU->getCtxQtCbf( eType, uiTrDepth );
+    if (eType == TEXT_CHROMA_U || eType == TEXT_CHROMA_V) {
+//        printf("cbf_cb_cr %d\n", uiTrDepth);
+//        m_pcTDecBinIf->printStatus(0);
+    }
   m_pcTDecBinIf->decodeBin( uiSymbol , m_cCUQtCbfSCModel.get( 0, eType ? TEXT_CHROMA: eType, uiCtx ) );
-  
-  DTRACE_CABAC_VL( g_nSymbolCounter++ )
+    if (eType == TEXT_CHROMA_U || eType == TEXT_CHROMA_V) {
+//        printf("cbf_cb_cr %d\n", uiTrDepth);
+//        m_pcTDecBinIf->printStatus(uiSymbol);
+    }
+DTRACE_CABAC_VL( g_nSymbolCounter++ )
   DTRACE_CABAC_T( "\tparseQtCbf()" )
   DTRACE_CABAC_T( "\tsymbol=" )
   DTRACE_CABAC_V( uiSymbol )
@@ -1325,12 +1369,16 @@ Void TDecSbac::parseSaoUflc (UInt uiLength, UInt&  riVal)
 Void TDecSbac::parseSaoMerge (UInt&  ruiVal)
 {
   UInt uiCode;
+    printf("sao_merge_flag\n");
   m_pcTDecBinIf->decodeBin( uiCode, m_cSaoMergeSCModel.get( 0, 0, 0 ) );
+    m_pcTDecBinIf->printStatus(uiCode);
   ruiVal = (Int)uiCode;
 }
 Void TDecSbac::parseSaoTypeIdx (UInt&  ruiVal)
 {
   UInt uiCode;
+    printf("sao_type_idx\n");
+    m_pcTDecBinIf->printStatus(0);
   m_pcTDecBinIf->decodeBin( uiCode, m_cSaoTypeIdxSCModel.get( 0, 0, 0 ) );
   if (uiCode == 0) 
   {
@@ -1348,6 +1396,8 @@ Void TDecSbac::parseSaoTypeIdx (UInt&  ruiVal)
       ruiVal = 1;
     }
   }
+    m_pcTDecBinIf->printStatus(ruiVal);
+
 }
 
 inline Void copySaoOneLcuParam(SaoLcuParam* psDst,  SaoLcuParam* psSrc)

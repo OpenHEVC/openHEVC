@@ -2421,10 +2421,12 @@ Void TComDataCU::getInterMergeCandidates( UInt uiAbsPartIdx, UInt uiPUIdx, TComM
     puhInterDirNeighbours[iCount] = pcCULeft->getInterDir( uiLeftPartIdx );
     // get Mv from Left
     pcCULeft->getMvField( pcCULeft, uiLeftPartIdx, REF_PIC_LIST_0, pcMvFieldNeighbours[iCount<<1] );
+//      printf("P %d, %d\n", pcMvFieldNeighbours[(iCount<<1)].getHor(), pcMvFieldNeighbours[(iCount<<1)].getVer());
     if ( getSlice()->isInterB() )
     {
       pcCULeft->getMvField( pcCULeft, uiLeftPartIdx, REF_PIC_LIST_1, pcMvFieldNeighbours[(iCount<<1)+1] );
     }
+//      printf("B %d, %d\n", (pcMvFieldNeighbours[(iCount<<1)+1]).getHor(), pcMvFieldNeighbours[(iCount<<1)+1].getVer());
     if ( mrgCandIdx == iCount )
     {
       return;
