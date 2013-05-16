@@ -439,7 +439,8 @@ typedef struct SliceHeader {
     ShortTermRPS *short_term_rps;
     RefPicList refPocList[5];
     LongTermRPS long_term_rps;
-    int list_entry_lx[2][16];
+    uint8_t ref_pic_list_modification_flag_lx[2];
+    int list_entry_lx[2][32];
 
     uint8_t no_output_of_prior_pics_flag;
 
@@ -792,6 +793,7 @@ typedef struct HEVCContext {
     ResidualCoding rc[MAX_ENTRIES ];
     int poc;
     int pocTid0;
+    int last_poc_display;
     int max_ra;
 
     uint8_t *cbf_luma; // cbf_luma of colocated TU

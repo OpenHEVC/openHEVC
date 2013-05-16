@@ -401,17 +401,19 @@ static int hls_slice_header(HEVCContext *s)
                 if (sh->slice_type == B_SLICE)
                     sh->num_ref_idx_l1_active = get_ue_golomb(gb) + 1;
             }
-            if (s->pps->lists_modification_present_flag) {
-                int NumPocTotalCurr = ff_hevc_get_NumPocTotalCurr(s);
-                int ref_pic_list_modification_flag_l0 = get_bits1(gb);
-                if( ref_pic_list_modification_flag_l0 )
+            sh->ref_pic_list_modification_flag_lx[0] = 0;
+            sh->ref_pic_list_modification_flag_lx[1] = 0;
+            int NumPocTotalCurr = ff_hevc_get_NumPocTotalCurr(s);
+            if (s->pps->lists_modification_present_flag && NumPocTotalCurr > 1 ) {
+                sh->ref_pic_list_modification_flag_lx[0] = get_bits1(gb);
+                if( sh->ref_pic_list_modification_flag_lx[0] == 1 )
                     for( i = 0; i < sh->num_ref_idx_l0_active; i++ )
-                        sh->list_entry_lx[0][ i ] = get_bits(gb, log2(NumPocTotalCurr));
+                        sh->list_entry_lx[0][ i ] = get_bits(gb, av_ceil_log2_c(NumPocTotalCurr));
                 if( sh->slice_type == B_SLICE ) {
-                    int ref_pic_list_modification_flag_l1 = get_bits1(gb);
-                    if( ref_pic_list_modification_flag_l1 )
+                    sh->ref_pic_list_modification_flag_lx[1] = get_bits1(gb);
+                    if( sh->ref_pic_list_modification_flag_lx[1] == 1 )
                         for( i = 0; i < sh->num_ref_idx_l1_active; i++ )
-                            sh->list_entry_lx[1][ i ] = get_bits(gb, log2(NumPocTotalCurr));
+                            sh->list_entry_lx[1][ i ] = get_bits(gb, av_ceil_log2_c(NumPocTotalCurr));
                 }
             }
 
@@ -2118,7 +2120,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
 
 /*
-        printf("POC %4d [MD5:", s->poc);
+        printf("POC %4d [MD5: ", s->poc);
         print_md5(s->md5[0]);
         printf("]\n");
 */
@@ -2150,6 +2152,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->cc[0] = av_malloc(sizeof(CABACContext));
     s->cabac_state[0] = av_malloc(HEVC_CONTEXTS);
     s->cabac_state[1] = av_malloc(HEVC_CONTEXTS);
+    s->last_poc_display = -1;
     if (!s->tmp_frame)
         return AVERROR(ENOMEM);
     s->max_ra = INT_MAX;

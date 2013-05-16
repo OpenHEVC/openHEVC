@@ -142,10 +142,12 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
 int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
 {
-    int nb_output = 0;
-    int min_poc   = 0xFFFF;
-    int i, min_idx, ret;
-    min_idx = 0;
+    int nb_output    = 0;
+    int min_poc      = 0xFFFF;
+    int last_min_poc = 0xFFFF;
+    int min_idx      = 0;
+    int last_min_idx = 0;
+    int i, ret;
     uint8_t run = 1;
     while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
@@ -157,7 +159,15 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
                     min_poc = frame->poc;
                     min_idx = i;
                 }
+                if (frame->poc < last_min_poc && frame->poc > s->last_poc_display) {
+                    last_min_poc = frame->poc;
+                    last_min_idx = i;
+                }
             }
+        }
+        if(last_min_poc != 0xFFFF) {
+            min_poc = last_min_poc;
+            min_idx = last_min_idx;
         }
 
         /* wait for more frames before output */
@@ -171,9 +181,8 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
             state = 2;
 #endif
             HEVCFrame *frame = &s->DPB[min_idx];
-
+            s->last_poc_display = frame->poc;
             frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
-
             ret = av_frame_ref(out, frame->frame);
             if (ret < 0)
                 return ret;
@@ -256,7 +265,7 @@ static void set_ref_pic_list(HEVCContext *s)
             }
         }
         refPicList[list_idx].numPic = cIdx;
-        if (s->pps->lists_modification_present_flag == 1) {
+        if (s->sh.ref_pic_list_modification_flag_lx[list_idx] == 1) {
             for(i = 0; i < cIdx; i++) {
                 refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[sh->list_entry_lx[list_idx][ i ]];
                 refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[sh->list_entry_lx[list_idx][ i ]];
@@ -312,9 +321,11 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
                 pocLt += s->poc - long_rps->DeltaPocMsbCycleLt[ i ] * MaxPicOrderCntLsb - s->sh.pic_order_cnt_lsb;
             if( long_rps->UsedByCurrPicLt[ i ] ) {
                 refPocList[LT_CURR].list[j] = pocLt;
+                refPocList[LT_CURR].idx[j] = find_ref_idx(s, refPocList[LT_CURR].list[j]);
                 refPocList[LT_CURR].CurrDeltaPocMsbPresentFlag[j++] = long_rps->delta_poc_msb_present_flag[ i ];
             } else {
                 refPocList[LT_FOLL].list[k] = pocLt;
+                refPocList[LT_FOLL].idx[k] = find_ref_idx(s, refPocList[LT_FOLL].list[k]);
                 refPocList[LT_FOLL].FollDeltaPocMsbPresentFlag[k++] = long_rps->delta_poc_msb_present_flag[ i ];
             }
         }
