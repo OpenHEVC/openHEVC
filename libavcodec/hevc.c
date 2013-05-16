@@ -391,6 +391,7 @@ static int hls_slice_header(HEVCContext *s)
         sh->num_ref_idx_l0_active = 0;
         sh->num_ref_idx_l1_active = 0;
         if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
+            int NumPocTotalCurr;
             sh->num_ref_idx_l0_active = s->pps->num_ref_idx_l0_default_active;
             if (sh->slice_type == B_SLICE)
                 sh->num_ref_idx_l1_active = s->pps->num_ref_idx_l1_default_active;
@@ -403,17 +404,17 @@ static int hls_slice_header(HEVCContext *s)
             }
             sh->ref_pic_list_modification_flag_lx[0] = 0;
             sh->ref_pic_list_modification_flag_lx[1] = 0;
-            int NumPocTotalCurr = ff_hevc_get_NumPocTotalCurr(s);
-            if (s->pps->lists_modification_present_flag && NumPocTotalCurr > 1 ) {
+            NumPocTotalCurr = ff_hevc_get_NumPocTotalCurr(s);
+            if (s->pps->lists_modification_present_flag && NumPocTotalCurr > 1) {
                 sh->ref_pic_list_modification_flag_lx[0] = get_bits1(gb);
                 if( sh->ref_pic_list_modification_flag_lx[0] == 1 )
-                    for( i = 0; i < sh->num_ref_idx_l0_active; i++ )
-                        sh->list_entry_lx[0][ i ] = get_bits(gb, av_ceil_log2_c(NumPocTotalCurr));
-                if( sh->slice_type == B_SLICE ) {
+                    for (i = 0; i < sh->num_ref_idx_l0_active; i++)
+                        sh->list_entry_lx[0][i] = get_bits(gb, av_ceil_log2_c(NumPocTotalCurr));
+                if (sh->slice_type == B_SLICE) {
                     sh->ref_pic_list_modification_flag_lx[1] = get_bits1(gb);
-                    if( sh->ref_pic_list_modification_flag_lx[1] == 1 )
-                        for( i = 0; i < sh->num_ref_idx_l1_active; i++ )
-                            sh->list_entry_lx[1][ i ] = get_bits(gb, av_ceil_log2_c(NumPocTotalCurr));
+                    if (sh->ref_pic_list_modification_flag_lx[1] == 1)
+                        for (i = 0; i < sh->num_ref_idx_l1_active; i++)
+                            sh->list_entry_lx[1][i] = get_bits(gb, av_ceil_log2_c(NumPocTotalCurr));
                 }
             }
 
@@ -2031,14 +2032,14 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 s->nal_unit_type == NAL_BLA_N_LP) {
                 s->max_ra = s->poc;
             } else {
-                if (s->nal_unit_type == NAL_IDR_W_DLP)
+                if (s->nal_unit_type == NAL_IDR_W_DLP || s->nal_unit_type == NAL_IDR_N_LP)
                     s->max_ra = INT_MIN;
             }
         }
 
         if (s->nal_unit_type == NAL_RASL_R && s->poc <= s->max_ra) {
             s->is_decoded = 0;
-            printf("not decoded %d\n", s->poc);
+            printf("not decoded %d %d\n", s->poc, s->max_ra);
             break;
         } else {
             if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
