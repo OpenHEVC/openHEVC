@@ -479,6 +479,9 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, 
 
 int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size, int entry)
 {
+    printf("part_mode\n");
+    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
+           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
     if (GET_CABAC(entry, elem_offset[PART_MODE])) // 1
         return PART_2Nx2N;
     if (log2_cb_size == s->sps->log2_min_coding_block_size) {
@@ -521,7 +524,12 @@ int ff_hevc_pcm_flag_decode(HEVCContext *s, int entry)
 
 int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s, int entry)
 {
-    return GET_CABAC(entry, elem_offset[PREV_INTRA_LUMA_PRED_FLAG]);
+    int ret;
+    printf("prev_intra_luma_pred_flag\n");
+    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
+           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
+    ret = GET_CABAC(entry, elem_offset[PREV_INTRA_LUMA_PRED_FLAG]);
+    return ret;
 }
 
 int ff_hevc_mpm_idx_decode(HEVCContext *s, int entry)
@@ -634,7 +642,12 @@ int ff_hevc_mvd_sign_flag_decode(HEVCContext *s, int entry)
 
 int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size, int entry)
 {
-    return GET_CABAC(entry, elem_offset[SPLIT_TRANSFORM_FLAG] + 5 - log2_trafo_size);
+    int ret;
+    printf("transform_split_flag\n");
+    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
+           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
+    ret = GET_CABAC(entry, elem_offset[SPLIT_TRANSFORM_FLAG] + 5 - log2_trafo_size);
+    return ret;
 }
 
 int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth, int entry)
@@ -649,7 +662,12 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth, int entry)
 
 int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx, int entry)
 {
-    return GET_CABAC(entry, elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
+    int ret;
+    printf("transform_skip_flag\n");
+    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
+           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
+    ret = GET_CABAC(entry, elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
+    return ret;
 }
 
 #define LAST_SIG_COEFF(entry, elem)                                                    \
@@ -720,6 +738,9 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
     int sig_ctx;
     int inc;
 
+    printf("significant_coeff_flag %d %d\n", x_c, y_c  );
+    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
+           s->cc[entry]->range, s->cc[entry]->low>>17, 0);
     if (x_c + y_c == 0) {
         sig_ctx = 0;
     } else if (log2_trafo_size == 2) {

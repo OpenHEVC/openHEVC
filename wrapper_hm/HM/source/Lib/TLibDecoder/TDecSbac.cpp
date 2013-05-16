@@ -536,7 +536,9 @@ Void TDecSbac::parsePartSize( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth 
     uiSymbol = 1;
     if( uiDepth == g_uiMaxCUDepth - g_uiAddCUDepth )
     {
-      m_pcTDecBinIf->decodeBin( uiSymbol, m_cCUPartSizeSCModel.get( 0, 0, 0) );
+        printf("part_mode\n");
+        m_pcTDecBinIf->printStatus(0);
+        m_pcTDecBinIf->decodeBin( uiSymbol, m_cCUPartSizeSCModel.get( 0, 0, 0) );
     }
     eMode = uiSymbol ? SIZE_2Nx2N : SIZE_NxN;
     UInt uiTrLevel = 0;    
@@ -629,7 +631,10 @@ Void TDecSbac::parseIntraDirLumaAng  ( TComDataCU* pcCU, UInt absPartIdx, UInt d
   }
   for (j=0;j<partNum;j++)
   {
-    m_pcTDecBinIf->decodeBin( symbol, m_cCUIntraPredSCModel.get( 0, 0, 0) );
+      printf("prev_intra_luma_pred_flag\n");
+
+      m_pcTDecBinIf->printStatus(0);
+      m_pcTDecBinIf->decodeBin( symbol, m_cCUIntraPredSCModel.get( 0, 0, 0) );
     mpmPred[j] = symbol;
   }
   for (j=0;j<partNum;j++)
@@ -850,6 +855,8 @@ Void TDecSbac::parseMvd( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UI
 
 Void TDecSbac::parseTransformSubdivFlag( UInt& ruiSubdivFlag, UInt uiLog2TransformBlockSize )
 {
+    printf("transform_split_flag\n");
+    m_pcTDecBinIf->printStatus(0);
   m_pcTDecBinIf->decodeBin( ruiSubdivFlag, m_cCUTransSubdivFlagSCModel.get( 0, 0, uiLog2TransformBlockSize ) );
 //    printf("transform_split_flag\n");
 //    m_pcTDecBinIf->printStatus(ruiSubdivFlag);
@@ -957,6 +964,8 @@ void TDecSbac::parseTransformSkipFlags (TComDataCU* pcCU, UInt uiAbsPartIdx, UIn
   }
   
   UInt useTransformSkip;
+    printf("transform_skip_flag\n");
+    m_pcTDecBinIf->printStatus(0);
   m_pcTDecBinIf->decodeBin( useTransformSkip , m_cTransformSkipSCModel.get( 0, eTType? TEXT_CHROMA: TEXT_LUMA, 0 ) );
   if(eTType!= TEXT_LUMA)
   {
@@ -1196,7 +1205,9 @@ Void TDecSbac::parseCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartId
         if( iScanPosSig > iSubPos || iSubSet == 0  || numNonZero )
         {
           uiCtxSig  = TComTrQuant::getSigCtxInc( patternSigCtx, uiScanIdx, uiPosX, uiPosY, uiLog2BlockSize, eTType );
-          m_pcTDecBinIf->decodeBin( uiSig, baseCtx[ uiCtxSig ] );
+            printf("significant_coeff_flag %d %d\n", uiPosX, uiPosY);
+            m_pcTDecBinIf->printStatus(0);
+            m_pcTDecBinIf->decodeBin( uiSig, baseCtx[ uiCtxSig ] );
         }
         else
         {
