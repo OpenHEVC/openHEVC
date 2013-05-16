@@ -315,18 +315,20 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
         }
         refPocList[ST_CURR_AFT].numPic = j;
         refPocList[ST_FOLL].numPic = k;
-        for( i = 0, j= 0, k = 0; i < long_rps->num_long_term_sps + long_rps->num_long_term_pics; i++ ) {
-            int pocLt = long_rps->PocLsbLt[ i ];
-            if( long_rps->delta_poc_msb_present_flag[ i ] )
-                pocLt += s->poc - long_rps->DeltaPocMsbCycleLt[ i ] * MaxPicOrderCntLsb - s->sh.pic_order_cnt_lsb;
-            if( long_rps->UsedByCurrPicLt[ i ] ) {
+        for( i = 0, j= 0, k = 0; i < long_rps->num_long_term_sps + long_rps->num_long_term_pics; i++) {
+            int pocLt = long_rps->PocLsbLt[i];
+            if (long_rps->delta_poc_msb_present_flag[i])
+                pocLt += s->poc - long_rps->DeltaPocMsbCycleLt[i] * MaxPicOrderCntLsb - s->sh.pic_order_cnt_lsb;
+            if (long_rps->UsedByCurrPicLt[i]) {
                 refPocList[LT_CURR].list[j] = pocLt;
                 refPocList[LT_CURR].idx[j] = find_ref_idx(s, refPocList[LT_CURR].list[j]);
-                refPocList[LT_CURR].CurrDeltaPocMsbPresentFlag[j++] = long_rps->delta_poc_msb_present_flag[ i ];
+                refPocList[LT_CURR].CurrDeltaPocMsbPresentFlag[j] = long_rps->delta_poc_msb_present_flag[i];
+                j++;
             } else {
                 refPocList[LT_FOLL].list[k] = pocLt;
                 refPocList[LT_FOLL].idx[k] = find_ref_idx(s, refPocList[LT_FOLL].list[k]);
-                refPocList[LT_FOLL].FollDeltaPocMsbPresentFlag[k++] = long_rps->delta_poc_msb_present_flag[ i ];
+                refPocList[LT_FOLL].FollDeltaPocMsbPresentFlag[k] = long_rps->delta_poc_msb_present_flag[i];
+                k++;
             }
         }
         refPocList[LT_CURR].numPic = j;
