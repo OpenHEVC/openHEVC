@@ -2019,9 +2019,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         s->isFirstQPgroup[0] = 1;
         if (s->nal_unit_type == NAL_IDR_W_DLP) {
             ff_hevc_clear_refs(s);
+        }
+        if (s->nal_unit_type == NAL_IDR_W_DLP || s->nal_unit_type == NAL_IDR_N_LP) {
             s->seq_decode = (s->seq_decode + 1) & 0xff;
         }
-
         ret = hls_slice_header(s);
         if (ret < 0)
             return ret;
