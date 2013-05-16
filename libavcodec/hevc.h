@@ -721,6 +721,7 @@ typedef struct SAOParams {
 
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
+#define HEVC_FRAME_FLAG_LT (1 << 2)
 
 typedef struct HEVCFrame {
     AVFrame *frame;
@@ -793,7 +794,6 @@ typedef struct HEVCContext {
     ResidualCoding rc[MAX_ENTRIES ];
     int poc;
     int pocTid0;
-    int last_poc_display;
     int max_ra;
 
     uint8_t *cbf_luma; // cbf_luma of colocated TU

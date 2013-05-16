@@ -142,12 +142,10 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
 int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
 {
-    int nb_output    = 0;
-    int min_poc      = 0xFFFF;
-    int last_min_poc = 0xFFFF;
-    int min_idx      = 0;
-    int last_min_idx = 0;
-    int i, ret;
+    int nb_output = 0;
+    int min_poc   = 0xFFFF;
+    int i, min_idx, ret;
+    min_idx = 0;
     uint8_t run = 1;
     while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
@@ -159,15 +157,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
                     min_poc = frame->poc;
                     min_idx = i;
                 }
-                if (frame->poc < last_min_poc && frame->poc > s->last_poc_display) {
-                    last_min_poc = frame->poc;
-                    last_min_idx = i;
-                }
             }
-        }
-        if(last_min_poc != 0xFFFF) {
-            min_poc = last_min_poc;
-            min_idx = last_min_idx;
         }
 
         /* wait for more frames before output */
@@ -181,8 +171,9 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
             state = 2;
 #endif
             HEVCFrame *frame = &s->DPB[min_idx];
-            s->last_poc_display = frame->poc;
+
             frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
+
             ret = av_frame_ref(out, frame->frame);
             if (ret < 0)
                 return ret;
@@ -194,7 +185,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
         else
             run = 0;
     }
-
+    
     return 0;
 }
 
