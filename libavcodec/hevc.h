@@ -807,6 +807,8 @@ typedef struct HEVCContext {
     int coding_tree_count;
 
     int is_decoded;
+    int skipped_bytes;
+    int *skipped_bytes_pos;
 
     /**
      * Sequence counters for decoded and output frames, so that old

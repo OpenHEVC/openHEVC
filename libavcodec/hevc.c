@@ -2086,7 +2086,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             return -1;
             
         if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads) {
-            int i;
+            int i, startheader, j, cmpt;
             offset += (s->gb[0]->index>>3);
             if(!s->cbt_entry_count) {
                 s->cbt_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
@@ -2104,13 +2104,26 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 s->qp_y[i] = s->qp_y[0];
                 s->isFirstQPgroup[i] = 1;
             }
-            memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
-            for(i=1; i< s->sh.num_entry_point_offsets; i++) {
-                offset += s->sh.entry_point_offset[i-1];
-                init_get_bits(s->gb[i], avpkt->data+offset, s->sh.entry_point_offset[i]*8);
-                ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]);
+            
+            for(j=0, cmpt = 0,startheader=offset+s->sh.entry_point_offset[0]; j< s->skipped_bytes && s->skipped_bytes_pos[j] >= offset&& s->skipped_bytes_pos[j] < startheader; j++){
+                startheader--;
+                cmpt ++;
             }
-            offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets-1];
+            
+            
+            memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
+            
+            for(i=1; i< s->sh.num_entry_point_offsets; i++) {
+                offset += (s->sh.entry_point_offset[i-1]-cmpt);
+            for(j=0, cmpt=0, startheader=offset+s->sh.entry_point_offset[i]; j< s->skipped_bytes && s->skipped_bytes_pos[j] >= offset&& s->skipped_bytes_pos[j] < startheader; j++){
+                    startheader--;
+                    cmpt++;
+            }
+               
+                init_get_bits(s->gb[i], avpkt->data+offset, (s->sh.entry_point_offset[i]-cmpt)*8);
+                ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]-cmpt);
+            }
+            offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets-1]-cmpt;
             init_get_bits(s->gb[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset)*8);
             ff_init_cabac_decoder(s->cc[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset));
         }
@@ -2183,7 +2196,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 {
     int i;
     HEVCContext *s = avctx->priv_data;
-
+    av_free(s->skipped_bytes_pos);
     av_frame_free(&s->tmp_frame);
     av_free(s->gb[0]);
     av_free(s->cc[0]);
