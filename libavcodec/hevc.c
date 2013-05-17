@@ -233,7 +233,7 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb)
 
 static int hls_slice_header(HEVCContext *s)
 {
-    int i, ret;
+    int i, ret, j;
     GetBitContext *gb = s->gb[0];
     SliceHeader *sh = &s->sh;
     int slice_address_length = 0;
@@ -484,10 +484,21 @@ static int hls_slice_header(HEVCContext *s)
         }
         if( sh->num_entry_point_offsets > 0 ) {
             int offset_len = get_ue_golomb(gb)+1;
+            int segments = offset_len >> 4;
+            int rest = (offset_len & 15);
             av_freep(&sh->entry_point_offset);
             sh->entry_point_offset = av_malloc(sh->num_entry_point_offsets*sizeof(int));
             for( i = 0; i < sh->num_entry_point_offsets; i++ ) {
-                sh->entry_point_offset[i] = get_bits(gb, offset_len)+1; // +1 to get the size
+                int val = 0;
+                for(j = 0;  j < segments; j++){
+                    val <<= 16;
+                    val += get_bits(gb, 16);
+                }
+                if(rest) {
+                    val <<= rest;
+                    val += get_bits(gb, rest);
+                }
+                sh->entry_point_offset[i] = val + 1; // +1; // +1 to get the size
             }
         }
     }
