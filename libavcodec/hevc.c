@@ -2109,17 +2109,16 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 startheader--;
                 cmpt ++;
             }
-            
-            cmpt = 0;
             memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
             
             for(i=1; i< s->sh.num_entry_point_offsets; i++) {
                 offset += (s->sh.entry_point_offset[i-1]-cmpt);
+            
             for(j=0, cmpt=0, startheader=offset+s->sh.entry_point_offset[i]; j< s->skipped_bytes && s->skipped_bytes_pos[j] >= offset&& s->skipped_bytes_pos[j] < startheader; j++){
                     startheader--;
                     cmpt++;
+                
             }
-                cmpt = 0;
                 init_get_bits(s->gb[i], avpkt->data+offset, (s->sh.entry_point_offset[i]-cmpt)*8);
                 ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]-cmpt);
             }
@@ -2145,7 +2144,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
 
 /*
-        printf("POC %4d [MD5:", s->poc);
+        printf("POC %4d [MD5: \n", s->poc);
         print_md5(s->md5[0]);
         printf("]\n");
 */
