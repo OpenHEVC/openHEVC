@@ -39,7 +39,7 @@
 /**
  * Section 5.7
  */
-
+#define WPP1
 static void pic_arrays_free(HEVCContext *s)
 {
     int i, j;
@@ -1769,8 +1769,6 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0, int log2_cb_size,
         return ((x1 + cb_size) < s->sps->pic_width_in_luma_samples ||
                 (y1 + cb_size) < s->sps->pic_height_in_luma_samples);
     } else {
-//        printf("x0: %d, y0: %d, cb: %d, %d\n",
-//               x0, y0, (1 << log2_cb_size), (1 << (s->sps->log2_ctb_size)));
         hls_coding_unit(s, x0, y0, log2_cb_size,  entry);
         if ((!((x0 + (1 << log2_cb_size)) %
                (1 << (s->sps->log2_ctb_size))) ||
@@ -2086,7 +2084,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             return -1;
             
         if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads) {
-            int i, startheader, j, cmpt;
+            int i, startheader, j, cmpt = 0;
             offset += (s->gb[0]->index>>3);
             if(!s->cbt_entry_count) {
                 s->cbt_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
@@ -2104,21 +2102,26 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 s->qp_y[i] = s->qp_y[0];
                 s->isFirstQPgroup[i] = 1;
             }
-            
+
+#ifdef WPP1
             for(j=0, cmpt = 0,startheader=offset+s->sh.entry_point_offset[0]; j< s->skipped_bytes && s->skipped_bytes_pos[j] >= offset&& s->skipped_bytes_pos[j] < startheader; j++){
                 startheader--;
                 cmpt ++;
             }
+#endif
             memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
             
             for(i=1; i< s->sh.num_entry_point_offsets; i++) {
+              
+                //cmpt = 0;
                 offset += (s->sh.entry_point_offset[i-1]-cmpt);
-            
+#ifdef WPP1
             for(j=0, cmpt=0, startheader=offset+s->sh.entry_point_offset[i]; j< s->skipped_bytes && s->skipped_bytes_pos[j] >= offset&& s->skipped_bytes_pos[j] < startheader; j++){
                     startheader--;
                     cmpt++;
                 
             }
+#endif
                 init_get_bits(s->gb[i], avpkt->data+offset, (s->sh.entry_point_offset[i]-cmpt)*8);
                 ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]-cmpt);
             }
