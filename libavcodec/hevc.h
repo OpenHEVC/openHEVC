@@ -895,7 +895,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv, int entry);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX, int entry);
-void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_size, int entry);
+void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int entry);
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s, int entry);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s, int entry);
