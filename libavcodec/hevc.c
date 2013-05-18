@@ -1719,7 +1719,8 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
         if ( log2_cb_size < s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth ) {
             if ((x0&cb_size)==0 && (y0&cb_size)==0)
                 s->curr_qp_y[entry] = qp_y;
-            s->qp_y[entry] = curr_qp_y;
+            if ( (x0&((1<<s->sps->log2_ctb_size)-1))!=0 || (y0&((1<<s->sps->log2_ctb_size)-1))!=0 )
+           		s->qp_y[entry] = curr_qp_y;
             if ((x0&cb_size)!=0 && (y0&cb_size)!=0)
                 s->qp_y[entry] = s->curr_qp_y[entry];
         }
