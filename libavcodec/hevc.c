@@ -2105,9 +2105,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             }
 
 #ifdef WPP1
-            for(j=0, cmpt = 0,startheader=offset+s->sh.entry_point_offset[0]; j< s->skipped_bytes && s->skipped_bytes_pos[j] >= offset&& s->skipped_bytes_pos[j] < startheader; j++){
-                startheader--;
-                cmpt ++;
+            for(j=0, cmpt = 0,startheader=offset+s->sh.entry_point_offset[0]; j< s->skipped_bytes; j++){
+                if(s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader){
+                    startheader--;
+                    cmpt++;
+                }
             }
 #endif
             memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
@@ -2117,11 +2119,12 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 //cmpt = 0;
                 offset += (s->sh.entry_point_offset[i-1]-cmpt);
 #ifdef WPP1
-            for(j=0, cmpt=0, startheader=offset+s->sh.entry_point_offset[i]; j< s->skipped_bytes && s->skipped_bytes_pos[j] >= offset&& s->skipped_bytes_pos[j] < startheader; j++){
-                    startheader--;
-                    cmpt++;
-                
-            }
+                for(j=0, cmpt=0, startheader=offset+s->sh.entry_point_offset[i]; j< s->skipped_bytes; j++){
+                    if(s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader){
+                        startheader--;
+                        cmpt++;
+                    }
+                }
 #endif
                 init_get_bits(s->gb[i], avpkt->data+offset, (s->sh.entry_point_offset[i]-cmpt)*8);
                 ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]-cmpt);
