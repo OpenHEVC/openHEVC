@@ -65,13 +65,16 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     pixel *filtered_left = filtered_left_array + 1;
     pixel *filtered_top = filtered_top_array + 1;
 
+    int x_tb_tiles = s->xtiles_0 >> s->sps->log2_min_transform_block_size;
+    int y_tb_tiles = s->ytiles_0 >> s->sps->log2_min_transform_block_size;
 
-    int bottom_left_available = x_tb > 0 && (y_tb + size_in_tbs) < s->sps->pic_height_in_min_tbs &&
+
+    int bottom_left_available = x_tb > x_tb_tiles && (y_tb + size_in_tbs) < s->sps->pic_height_in_min_tbs &&
                                 cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs);
-    int left_available = x0 > 0;
-    int top_left_available = x0 > 0 && y0 > 0;
-    int top_available = y0 > 0;
-    int top_right_available = y_tb > 0 && (x_tb + size_in_tbs) < s->sps->pic_width_in_min_tbs &&
+    int left_available = x0 > s->xtiles_0;
+    int top_left_available = x0 > s->xtiles_0 && y0 > s->ytiles_0;
+    int top_available = y0 > s->ytiles_0;
+    int top_right_available = y_tb > y_tb_tiles && (x_tb + size_in_tbs) < s->sps->pic_width_in_min_tbs &&
                               cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs, y_tb - 1);
 
     int bottom_left_size = (FFMIN(y0 + 2*size_in_luma, s->sps->pic_height_in_luma_samples) -
