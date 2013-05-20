@@ -42,7 +42,7 @@ s->pps->min_tb_addr_zs[(y) * s->sps->pic_width_in_min_tbs + (x)]
     } else {
         minBlockAddrN = MIN_TB_ADDR_ZS((xN >> s->sps->log2_min_transform_block_size), (yN >> s->sps->log2_min_transform_block_size));
     }
-    if (s->sh.slice_address != 0 || s->pps->tiles_enabled_flag != 0)
+    if (s->sh.slice_address != 0)
         av_log(s->avctx, AV_LOG_ERROR, "TODO : check for different slices and tiles \n");
 
     //TODO : check for different slices and tiles
