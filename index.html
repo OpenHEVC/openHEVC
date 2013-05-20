@@ -32,7 +32,7 @@
 
 <h2>- openHEVC</h2>
 
-<p>Initial libav version from smarter (smarter.free.fr)</p>
+<p>Fork from smarter's libav git (smarter.free.fr) with required files from libav</p>
 
 <h2>- openHEVC/wrapper</h2>
 
@@ -41,6 +41,29 @@
 <h2>- openHEVC/wrapper/HM</h2>
 
 <p>HM10.0 reference SW</p>
+
+<h2>- How to compile openHEVC on linux from source code</h2>
+
+<ul>
+<li>git clone git://github.com/OpenHEVC/openHEVC.git</li>
+<li>git checkout hm10.0</li>
+<li>go into OpenHEVC source folder</li>
+<li>mkdir build</li>
+<li>cd build</li>
+<li>cmake -DCMAKE_BUILD_TYPE=RELEASE ..</li>
+<li>make</li>
+<li><p>sudo make install</p></li>
+</ul><h2>- How to compile gpac with openHEVC on linux</h2>
+
+<ul>
+<li>Prerequisites (see <a href="http://gpac.wp.mines-telecom.fr/2011/04/20/compiling-gpac-on-ubuntu/">http://gpac.wp.mines-telecom.fr/2011/04/20/compiling-gpac-on-ubuntu/</a>)</li>
+<li>svn checkout -rev 4566 <a href="https://gpac.svn.sourceforge.net/svnroot/gpac/trunk">https://gpac.svn.sourceforge.net/svnroot/gpac/trunk</a>
+</li>
+<li>go into gpac source folder</li>
+<li>./configure</li>
+<li>make</li>
+<li>sudo make install</li>
+</ul>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/OpenHEVC">OpenHEVC</a></p>
