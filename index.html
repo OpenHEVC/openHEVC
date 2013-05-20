@@ -35,15 +35,14 @@
 
 <h2>- openHEVC</h2>
 
-<p>Fork from smarter's libav git (smarter.free.fr) with required files from libav</p>
+<p>openHEVC is a fork from smarter's libav git (smarter.free.fr) with only required files from libav to decode HEVC content.
+openHEVC in combination with GPAC is used into 3 research projects:</p>
 
-<h2>- openHEVC/wrapper</h2>
-
-<p>Initial C wrapper from HM10.0 C++ reference SW (HEVC reference sw)</p>
-
-<h2>- openHEVC/wrapper/HM</h2>
-
-<p>HM10.0 reference SW</p>
+<ul>
+<li>4EVER</li>
+<li>H2B2VS</li>
+<li>AUSTRAL</li>
+</ul><p>openHEVC is an open source compliant HEVC video decoder created as a fork of Libav for research purposes</p>
 
 <h2>- How to compile openHEVC on linux from source code</h2>
 
@@ -56,6 +55,13 @@
 <li>cmake -DCMAKE_BUILD_TYPE=RELEASE ..</li>
 <li>make</li>
 <li><p>sudo make install</p></li>
+</ul><h2>- How to test openHEVC on linux from source code</h2>
+
+<ul>
+<li>Prerequisites: SDL or SDL2</li>
+<li>go into source folder of openHEVC</li>
+<li>with SDL cd build; ./hevc -i name_of_annexB_bitstream.(bit,bin,265)</li>
+<li><p>with SDL2 cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)</p></li>
 </ul><h2>- How to compile gpac with openHEVC on linux</h2>
 
 <ul>
@@ -63,9 +69,45 @@
 <li>svn checkout -rev 4566 <a href="https://gpac.svn.sourceforge.net/svnroot/gpac/trunk">https://gpac.svn.sourceforge.net/svnroot/gpac/trunk</a>
 </li>
 <li>go into gpac source folder</li>
-<li>./configure</li>
+<li>./configure </li>
 <li>make</li>
-<li>sudo make install</li>
+<li><p>sudo make install</p></li>
+</ul><h2>- How to embed HEVC into MP4 file format</h2>
+
+<ul>
+<li>use i_main, lp_main, ld_main or ra_main bitstreams from <a href="http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/">http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/</a>
+</li>
+<li>MP4Box -add name_of_annexB_bitstream.(bit,bin,265) -fps 50 -new output.mp4</li>
+<li>where fps specifies the framerate (in the case of BQMall_832x480_60_qp22.bin the framerate is 60)</li>
+<li><p>MP4Client output.mp4 // to play HEVC mp4 content</p></li>
+</ul><h2>- How to embed HEVC into TS</h2>
+
+<ul>
+<li>use i_main, lp_main, ld_main or ra_main bitstreams from <a href="http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/">http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/</a>
+</li>
+<li>go into gpac source folder</li>
+<li>cd bin/gcc</li>
+<li>./mp42ts -prog=hevc.mp4 -dst-file=test.ts</li>
+<li><p>MP4Client test.ts // to play HEVC transport streams</p></li>
+</ul><h2>- openHEVC contributors</h2>
+
+<ul>
+<li>Active contributors</li>
+<li>Guillaume Martres (alias smarter - google summer of code / EPFL)</li>
+<li>Mickaël Raulet (IETR/INSA Rennes)</li>
+<li>Gildas Cocherel (IETR/INSA Rennes)</li>
+<li>Wassim Hamidouche (IETR/INSA Rennes)</li>
+<li>Seppo Tomperi (VTT)</li>
+<li>Pierre Edouard Lepere (IETR/INSA Rennes)</li>
+<li>Fernando Pescador Del Oso (UPM)</li>
+<li><p>Jesus Caño Velasco</p></li>
+<li><p>Former contributors</p></li>
+<li><p>Anand Meher Kotra (IETR/INSA Rennes)</p></li>
+</ul><h2>- gpac contributors</h2>
+
+<ul>
+<li>see <a href="http://gpac.wp.mines-telecom.fr/about/">http://gpac.wp.mines-telecom.fr/about/</a>
+</li>
 </ul>
         </section>
 
