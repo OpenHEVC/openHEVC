@@ -1,9 +1,6 @@
 openHEVC
 ========
 
-
-- openHEVC
-----------
 openHEVC is a fork from smarter's libav git (smarter.free.fr) with only required files from libav to decode HEVC content.
 openHEVC in combination with GPAC is used into 3 research projects:
 * 4EVER
@@ -43,7 +40,7 @@ openHEVC is an open source compliant HEVC video decoder created as a fork of Lib
 -----------
 * use i_main, lp_main, ld_main or ra_main bitstreams from http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/
 * MP4Box -add name_of_annexB_bitstream.(bit,bin,265) -fps 50 -new output.mp4
-+ where fps specifies the framerate (in the case of BQMall_832x480_60_qp22.bin the framerate is 60)
+  + where fps specifies the framerate (in the case of BQMall_832x480_60_qp22.bin the framerate is 60)
 * MP4Client output.mp4 // to play HEVC mp4 content
 
 - How to embed HEVC into TS
@@ -57,17 +54,17 @@ openHEVC is an open source compliant HEVC video decoder created as a fork of Lib
 - openHEVC contributors
 -----------
 * Active contributors
-+ Guillaume Martres (alias smarter - google summer of code / EPFL)
-+ Mickaël Raulet (IETR/INSA Rennes)
-+ Gildas Cocherel (IETR/INSA Rennes)
-+ Wassim Hamidouche (IETR/INSA Rennes)
-+ Seppo Tomperi (VTT)
-+ Pierre Edouard Lepere (IETR/INSA Rennes)
-+ Fernando Pescador Del Oso (UPM)
-+ Jesus Caño Velasco
+  + Guillaume Martres (alias smarter - google summer of code / EPFL)
+  + Mickaël Raulet (IETR/INSA Rennes)
+  + Gildas Cocherel (IETR/INSA Rennes)
+  + Wassim Hamidouche (IETR/INSA Rennes)
+  + Seppo Tomperi (VTT)
+  + Pierre Edouard Lepere (IETR/INSA Rennes)
+  + Fernando Pescador Del Oso (UPM)
+  + Jesus Caño Velasco
 
 * Former contributors
-+ Anand Meher Kotra (IETR/INSA Rennes)
+  + Anand Meher Kotra (IETR/INSA Rennes)
 
 - gpac contributors
 -----------
