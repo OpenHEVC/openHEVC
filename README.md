@@ -4,7 +4,13 @@ openHEVC
 
 - openHEVC
 ----------
-openHEVC is a fork from smarter's libav git (smarter.free.fr) with required files from libav. 
+openHEVC is a fork from smarter's libav git (smarter.free.fr) with only required files from libav to decode HEVC content.
+openHEVC in combination with GPAC is used into 3 research projects:
+* 4EVER
+* H2B2VS
+* AUSTRAL
+
+openHEVC is an open source compliant HEVC video decoder created as a fork of Libav for research purposes
 
 - How to compile openHEVC on linux from source code
 ----------
