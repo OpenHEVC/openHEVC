@@ -9,6 +9,16 @@ openHEVC in combination with GPAC is used into 3 research projects:
 
 openHEVC is an open source compliant HEVC video decoder created as a fork of Libav for research purposes
 
+- Where is the source code of openHEVC?
+--------
+* openHEVC is located at https://github.com/OpenHEVC/openHEVC.
+* openHEVC is under LGPL license
+
+- Where is the source code of openHEVC?
+--------
+- gpac is located at http://gpac.wp.mines-telecom.fr.
+- gpac is under LGPL license
+
 - How to compile openHEVC on linux from source code
 ----------
 * git clone git://github.com/OpenHEVC/openHEVC.git
@@ -61,7 +71,7 @@ openHEVC is an open source compliant HEVC video decoder created as a fork of Lib
   + Seppo Tomperi (VTT)
   + Pierre Edouard Lepere (IETR/INSA Rennes)
   + Fernando Pescador Del Oso (UPM)
-  + Jesus Caño Velasco
+  + Jesus Caño Velasco (UPM)
 
 * Former contributors
   + Anand Meher Kotra (IETR/INSA Rennes)
