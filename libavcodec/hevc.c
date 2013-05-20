@@ -1427,8 +1427,8 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs << 2;
     int size_in_pus = pu_size >> s->sps->log2_min_pu_size;
 
-    int cand_up   = y_pu > 0 ? s->pu.top_ipm[x_pu] : INTRA_DC ;
-    int cand_left = x_pu > 0 ? s->pu.left_ipm[y_pu] : INTRA_DC ;
+    int cand_up   = y_pu > (s->ytiles_0 >> s->sps->log2_min_pu_size) ? s->pu.top_ipm[x_pu] : INTRA_DC ;
+    int cand_left = x_pu > (s->xtiles_0 >> s->sps->log2_min_pu_size) ? s->pu.left_ipm[y_pu] : INTRA_DC ;
     
     int y_ctb = (y0 >> (s->sps->log2_ctb_size)) << (s->sps->log2_ctb_size);
     MvField *tab_mvf = s->ref->tab_mvf;
