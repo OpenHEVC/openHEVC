@@ -271,7 +271,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     //first left spatial merge candidate
     int xA1 = x0 - 1;
     int yA1 = y0 + nPbH - 1;
-    int isAvailableA1 = x0 > 1;
+    int isAvailableA1;
     int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
     int check_MER = 1;
     int check_MER_1 =1;
@@ -323,6 +323,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int availableFlagL1Col=0;
     int x_pu_tiles_0 = s->xtiles_0 >> s->sps->log2_min_pu_size;
     int y_pu_tiles_0 = s->ytiles_0 >> s->sps->log2_min_pu_size;
+    isAvailableA1 = xA1_pu > x_pu_tiles_0;
 
     if(isAvailableA1 && !(tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra)) {
         isAvailableA1 = 1;
