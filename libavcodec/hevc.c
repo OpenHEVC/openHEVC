@@ -1740,8 +1740,6 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0, int log2_cb_size,
         return ((x1 + cb_size) < s->sps->pic_width_in_luma_samples ||
                 (y1 + cb_size) < s->sps->pic_height_in_luma_samples);
     } else {
-//        printf("x0: %d, y0: %d, cb: %d, %d\n",
-//               x0, y0, (1 << log2_cb_size), (1 << (s->sps->log2_ctb_size)));
         hls_coding_unit(s, x0, y0, log2_cb_size,  entry);
         if ((!((x0 + (1 << log2_cb_size)) %
                (1 << (s->sps->log2_ctb_size))) ||
@@ -1778,9 +1776,6 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
             s->ctb_addr_in_slice = s->ctb_addr_rs - s->sh.slice_address;
             x_ctb = (s->ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
             y_ctb = (s->ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
-            printf("x_ctb %d, y_ctb %d \n", x_ctb, y_ctb);
-            if (x_ctb == 384 && y_ctb == 0)
-                printf("");
             if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
                 hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, (s->ctb_addr_in_slice > 0), 0);
             more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, 0);

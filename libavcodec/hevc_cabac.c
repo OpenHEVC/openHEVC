@@ -334,41 +334,20 @@ void ff_hevc_cabac_init(HEVCContext *s, int entry)
 
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s, int entry)
 {
-    int ret;
-    printf("sao_merge_flag\n");
-    ret = GET_CABAC(entry, elem_offset[SAO_MERGE_FLAG]);
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, ret  );
-
-
-    return ret;
+    return GET_CABAC(entry, elem_offset[SAO_MERGE_FLAG]);
 }
 
 int ff_hevc_sao_type_idx_decode(HEVCContext *s, int entry)
 {
-    int ret;
-    printf("sao_type_idx\n");
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
-
     if (!GET_CABAC(entry, elem_offset[SAO_TYPE_IDX])) {
-        ret = 0;
-        printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-               s->cc[entry]->range, s->cc[entry]->low>>17, ret  );
-        return ret;
+        return 0;
     }
 
     if (!get_cabac_bypass(s->cc[entry])) {
-        ret = SAO_BAND;
-        printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-               s->cc[entry]->range, s->cc[entry]->low>>17, ret  );
-        return ret;
+        return SAO_BAND;
     }
 
-    ret = SAO_EDGE;
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, ret  );
-    return ret;
+    return SAO_EDGE;
 }
 
 int ff_hevc_sao_band_position_decode(HEVCContext *s, int entry)
@@ -404,11 +383,7 @@ int ff_hevc_sao_eo_class_decode(HEVCContext *s, int entry)
 
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s, int entry)
 {
-    int ret = get_cabac_terminate(s->cc[entry]);
-    printf("end_of_slice\n");
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-                s->cc[entry]->range, s->cc[entry]->low>>17, ret  );
-    return ret;
+    return get_cabac_terminate(s->cc[entry]);
 }
 
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry)
@@ -458,7 +433,6 @@ int ff_hevc_pred_mode_decode(HEVCContext *s, int entry)
 }
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0, int entry)
 {
-    int ret;
     int inc = 0, depth_left = 0, depth_top = 0;
     if (x0 > s->xtiles_0)
         depth_left = s->cu.left_ct_depth[y0 >> s->sps->log2_min_coding_block_size];
@@ -467,21 +441,11 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, 
 
     inc += (depth_left > ct_depth);
     inc += (depth_top > ct_depth);
-    printf("split_cu_flag\n");
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
-    ret = GET_CABAC(entry, elem_offset[SPLIT_CODING_UNIT_FLAG] + inc);
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, ret  );
-
-    return ret;
+    return GET_CABAC(entry, elem_offset[SPLIT_CODING_UNIT_FLAG] + inc);
 }
 
 int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size, int entry)
 {
-    printf("part_mode\n");
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
     if (GET_CABAC(entry, elem_offset[PART_MODE])) // 1
         return PART_2Nx2N;
     if (log2_cb_size == s->sps->log2_min_coding_block_size) {
@@ -524,12 +488,7 @@ int ff_hevc_pcm_flag_decode(HEVCContext *s, int entry)
 
 int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s, int entry)
 {
-    int ret;
-    printf("prev_intra_luma_pred_flag\n");
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
-    ret = GET_CABAC(entry, elem_offset[PREV_INTRA_LUMA_PRED_FLAG]);
-    return ret;
+    return GET_CABAC(entry, elem_offset[PREV_INTRA_LUMA_PRED_FLAG]);
 }
 
 int ff_hevc_mpm_idx_decode(HEVCContext *s, int entry)
@@ -642,12 +601,7 @@ int ff_hevc_mvd_sign_flag_decode(HEVCContext *s, int entry)
 
 int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size, int entry)
 {
-    int ret;
-    printf("transform_split_flag\n");
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
-    ret = GET_CABAC(entry, elem_offset[SPLIT_TRANSFORM_FLAG] + 5 - log2_trafo_size);
-    return ret;
+    return GET_CABAC(entry, elem_offset[SPLIT_TRANSFORM_FLAG] + 5 - log2_trafo_size);
 }
 
 int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth, int entry)
@@ -662,12 +616,7 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth, int entry)
 
 int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx, int entry)
 {
-    int ret;
-    printf("transform_skip_flag\n");
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, 0  );
-    ret = GET_CABAC(entry, elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
-    return ret;
+    return GET_CABAC(entry, elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }
 
 #define LAST_SIG_COEFF(entry, elem)                                                    \
@@ -738,9 +687,6 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
     int sig_ctx;
     int inc;
 
-    printf("significant_coeff_flag %d %d\n", x_c, y_c  );
-    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-           s->cc[entry]->range, s->cc[entry]->low>>17, 0);
     if (x_c + y_c == 0) {
         sig_ctx = 0;
     } else if (log2_trafo_size == 2) {
