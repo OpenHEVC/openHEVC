@@ -64,7 +64,7 @@ openHEVC is an open source compliant HEVC video decoder created as a fork of Lib
 - openHEVC contributors
 -----------
 * Active contributors
-  + Guillaume Martres (alias smarter - google summer of code / EPFL)
+  + Guillaume Martres (alias smarter - google summer of code / EPFL) - student
   + Mickaël Raulet (IETR/INSA Rennes)
   + Gildas Cocherel (IETR/INSA Rennes)
   + Wassim Hamidouche (IETR/INSA Rennes)
