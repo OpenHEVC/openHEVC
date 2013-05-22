@@ -1864,6 +1864,7 @@ static int hls_slice_data(HEVCContext *s)
 }
 
 #define SHIFT_CTB_WPP 2
+static int ERROR;
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
 {
     HEVCContext *s = avctxt->priv_data;
@@ -1874,13 +1875,16 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     int y_ctb = (*ctb_row)<< s->sps->log2_ctb_size;
     while(more_data) {
         while(*ctb_row && (av_atomic_int_get(&s->cbt_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->cbt_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
-
+        if (ERROR){
+        	av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],SHIFT_CTB_WPP);
+        	return 0;
+        }
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
             s->sh.slice_sample_adaptive_offset_flag[1])
             hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, (x_ctb>0 || y_ctb>0) , *ctb_row);
         
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, *ctb_row);
-        
+
         if (s->pps->entropy_coding_sync_enabled_flag &&
             ((((x_ctb>>s->sps->log2_ctb_size)+1) % s->sps->pic_width_in_ctbs) == SHIFT_CTB_WPP) &&
             ((s->sps->pic_height_in_luma_samples-y_ctb)>ctb_size) ) {
@@ -1888,11 +1892,19 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         }
         av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],1);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
+
+        if (!more_data && (x_ctb+ctb_size) < s->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) < s->sps->pic_height_in_luma_samples) {
+        	ERROR = 1;
+            av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],SHIFT_CTB_WPP);
+            return 0;
+        }
+
         if (!more_data) {
             hls_filter(s, x_ctb, y_ctb);
             return 0;
         }
         x_ctb+=ctb_size;
+
         if(x_ctb >= s->sps->pic_width_in_luma_samples) {
             break;
         }
@@ -1908,7 +1920,7 @@ static int hls_slice_data_wpp(HEVCContext *s)
     int *arg = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
     int i;
     memset(s->cu.skip_flag, 0, pic_size_in_ctb);
-    
+    ERROR = 0;
     for(i=0; i<=s->sh.num_entry_point_offsets; i++)
         arg[i] = i;
     s->avctx->execute(s->avctx, hls_decode_entry_wpp, arg, ret ,s->sh.num_entry_point_offsets+1, sizeof(int));

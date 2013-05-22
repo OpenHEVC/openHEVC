@@ -251,7 +251,7 @@ DECLARE_ALIGNED( 16, static const int16_t, transform4x4[4][8] ) = {
     { 36, -83, 36, -83, 36, -83, 36, -83 }
 };
 
-DECLARE_ALIGNED(16, static const int16_t, transform8x8_luma[12][8] )=
+DECLARE_ALIGNED(16, static const int16_t, transform8x8[12][8] )=
 {
     {  89,  75,  89,  75, 89,  75, 89,  75 },
     {  50,  18,  50,  18, 50,  18, 50,  18 },
