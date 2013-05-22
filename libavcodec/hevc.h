@@ -806,7 +806,7 @@ typedef struct HEVCContext {
     HEVCFrame DPB[32];
     int decode_checksum_sei;
     uint8_t md5[3][16];
-    int * cbt_entry_count;
+    int * ctb_entry_count;
     int coding_tree_count;
 
     int is_decoded;

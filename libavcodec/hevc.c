@@ -1874,9 +1874,9 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     int x_ctb = 0;
     int y_ctb = (*ctb_row)<< s->sps->log2_ctb_size;
     while(more_data) {
-        while(*ctb_row && (av_atomic_int_get(&s->cbt_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->cbt_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
-        if (ERROR){
-        	av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],SHIFT_CTB_WPP);
+        while(*ctb_row && (av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
+        if (av_atomic_int_get(&ERROR)){
+        	av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
         	return 0;
         }
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
@@ -1890,17 +1890,18 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
             ((s->sps->pic_height_in_luma_samples-y_ctb)>ctb_size) ) {
             save_states(s, *ctb_row);
         }
-        av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],1);
+        av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],1);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
 
         if (!more_data && (x_ctb+ctb_size) < s->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) < s->sps->pic_height_in_luma_samples) {
-        	ERROR = 1;
-            av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],SHIFT_CTB_WPP);
+        	av_atomic_int_set(&ERROR,  1);
+            av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
             return 0;
         }
 
         if (!more_data) {
             hls_filter(s, x_ctb, y_ctb);
+            av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
             return 0;
         }
         x_ctb+=ctb_size;
@@ -1909,7 +1910,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
             break;
         }
     }
-    av_atomic_int_add_and_fetch(&s->cbt_entry_count[*ctb_row],SHIFT_CTB_WPP);
+    av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
     return more_data;
 }
 
@@ -1920,7 +1921,7 @@ static int hls_slice_data_wpp(HEVCContext *s)
     int *arg = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
     int i;
     memset(s->cu.skip_flag, 0, pic_size_in_ctb);
-    ERROR = 0;
+    av_atomic_int_set(&ERROR,  0);
     for(i=0; i<=s->sh.num_entry_point_offsets; i++)
         arg[i] = i;
     s->avctx->execute(s->avctx, hls_decode_entry_wpp, arg, ret ,s->sh.num_entry_point_offsets+1, sizeof(int));
@@ -2099,8 +2100,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads) {
             int i, startheader, j, cmpt = 0;
             offset += (s->gb[0]->index>>3);
-            if(!s->cbt_entry_count) {
-                s->cbt_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
+            if(!s->ctb_entry_count) {
+                s->ctb_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
                 for(i=1; i< MAX_ENTRIES-1; i++) {
                     s->gb[i] = av_malloc(sizeof(GetBitContext));
                     s->cc[i] = av_malloc(sizeof(CABACContext));
@@ -2124,7 +2125,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 }
             }
 #endif
-            memset(s->cbt_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
+            memset(s->ctb_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
             
             for(i=1; i< s->sh.num_entry_point_offsets; i++) {
               
@@ -2206,7 +2207,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 
     memset(s->sps_list, 0, sizeof(s->sps_list));
     memset(s->pps_list, 0, sizeof(s->pps_list));
-    s->cbt_entry_count = NULL;
+    s->ctb_entry_count = NULL;
     return 0;
 }
 
@@ -2221,7 +2222,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_free(s->cabac_state[0]);
     av_free(s->cabac_state[1]);
     av_free(s->edge_emu_buffer[0]);
-    if(s->cbt_entry_count) {
+    if(s->ctb_entry_count) {
         av_freep(&s->sh.entry_point_offset);
         for (i = 1; i < MAX_ENTRIES-1; i++) {
             av_free(s->gb[i]);
@@ -2232,7 +2233,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_free(s->gb[MAX_ENTRIES-1]);
         av_free(s->cc[MAX_ENTRIES-1]);
         av_free(s->edge_emu_buffer[MAX_ENTRIES-1]);
-        av_free(s->cbt_entry_count);
+        av_free(s->ctb_entry_count);
     }
     
   
