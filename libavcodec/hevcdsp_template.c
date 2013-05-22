@@ -27,7 +27,10 @@
 #include "hevcdata.h"
 #include "hevcdsp.h"
 #include "hevc.h"
+//#define USE_SSE
+#ifdef USE_SSE
 #include <emmintrin.h>
+#endif
 #define shift_1st 7
 #define add_1st (1 << (shift_1st - 1))
 #define shift_2nd (20 - BIT_DEPTH)
@@ -39,12 +42,13 @@
 #define OPTIMIZATION_ENABLE
 
 /*      SSE Optimizations     */
-//#define USE_SSE_4x4_Transform_LUMA
-//#define USE_SSE_4x4_Transform
-//#define USE_SSE_8x8_Transform
-//#define USE_SSE_16x16_Transform
-//#define USE_SSE_32x32_Transform
-
+#ifdef USE_SSE
+#define USE_SSE_4x4_Transform_LUMA
+#define USE_SSE_4x4_Transform
+#define USE_SSE_8x8_Transform
+#define USE_SSE_16x16_Transform
+#define USE_SSE_32x32_Transform
+#endif
 
 
 #define SET(dst, x) (dst) = (x)
