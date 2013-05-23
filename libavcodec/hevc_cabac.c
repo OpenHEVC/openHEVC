@@ -25,6 +25,7 @@
 #include "cabac_functions.h"
 #include "hevc.h"
 
+#define CABAC_MAX_BIN 100
 /**
  * number of bin by SyntaxElement.
  */
@@ -411,7 +412,7 @@ int ff_hevc_cu_qp_delta_abs(HEVCContext *s, int entry)
     }
     if (prefixVal >= 5) {
         int k = 0;
-        while (get_cabac_bypass(s->cc[entry])) {
+        while (k < CABAC_MAX_BIN && get_cabac_bypass(s->cc[entry])) {
             suffixVal += 1 << k;
             k++;
         }
@@ -583,7 +584,7 @@ int ff_hevc_mvd_decode(HEVCContext *s, int entry)
     int ret = 2;
     int k = 1;
 
-    while (get_cabac_bypass(s->cc[entry])) {
+    while (k < CABAC_MAX_BIN && get_cabac_bypass(s->cc[entry])) {
         ret += 1 << k;
         k++;
     }
@@ -794,7 +795,7 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int first_elem, int base_l
         last_coeff_abs_level_remaining[entry] = 0;
     }
 
-    while (get_cabac_bypass(s->cc[entry]))
+    while (prefix < CABAC_MAX_BIN && get_cabac_bypass(s->cc[entry]))
         prefix++;
 
     if (prefix < 3) {
