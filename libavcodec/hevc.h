@@ -31,6 +31,8 @@
 #include "hevcpred.h"
 #include "hevcdsp.h"
 
+#define MAX_DPB_SIZE 16 // A.4.1
+
 //#define DEBLOCKING_IN_LOOP
 #ifdef DEBLOCKING_IN_LOOP
 #define SAO_IN_LOOP
@@ -247,15 +249,16 @@ typedef struct PTL {
 
 typedef struct VPS {
     uint8_t vps_temporal_id_nesting_flag;
+    int vps_max_layers;
     int vps_max_sub_layers; ///< vps_max_temporal_layers_minus1 + 1
 
     PTL ptl;
     int vps_sub_layer_ordering_info_present_flag;
-    int vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
-    int vps_num_reorder_pics[MAX_SUB_LAYERS];
-    int vps_max_latency_increase[MAX_SUB_LAYERS];
-    int vps_max_nuh_reserved_zero_layer_id;
-    int vps_max_op_sets; ///< vps_max_op_sets_minus1 + 1
+    unsigned int vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
+    unsigned int vps_num_reorder_pics[MAX_SUB_LAYERS];
+    unsigned int vps_max_latency_increase[MAX_SUB_LAYERS];
+    int vps_max_layer_id;
+    int vps_num_layer_sets; ///< vps_num_layer_sets_minus1 + 1
     uint8_t vps_timing_info_present_flag;
     uint32_t vps_num_units_in_tick;
     uint32_t vps_time_scale;
@@ -439,7 +442,8 @@ typedef struct SliceHeader {
     ShortTermRPS *short_term_rps;
     RefPicList refPocList[5];
     LongTermRPS long_term_rps;
-    int list_entry_lx[2][16];
+    uint8_t ref_pic_list_modification_flag_lx[2];
+    int list_entry_lx[2][32];
 
     uint8_t no_output_of_prior_pics_flag;
 
@@ -720,6 +724,7 @@ typedef struct SAOParams {
 
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
+#define HEVC_FRAME_FLAG_LT (1 << 2)
 
 typedef struct HEVCFrame {
     AVFrame *frame;
@@ -801,10 +806,12 @@ typedef struct HEVCContext {
     HEVCFrame DPB[32];
     int decode_checksum_sei;
     uint8_t md5[3][16];
-    int * cbt_entry_count;
+    int * ctb_entry_count;
     int coding_tree_count;
 
     int is_decoded;
+    int skipped_bytes;
+    int *skipped_bytes_pos;
 
     /**
      * Sequence counters for decoded and output frames, so that old
@@ -893,7 +900,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv, int entry);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX, int entry);
-void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_size, int entry);
+void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int entry);
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s, int entry);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s, int entry);
