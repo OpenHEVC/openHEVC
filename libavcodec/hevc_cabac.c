@@ -416,6 +416,9 @@ int ff_hevc_cu_qp_delta_abs(HEVCContext *s, int entry)
             suffixVal += 1 << k;
             k++;
         }
+        if (k == CABAC_MAX_BIN)
+            av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", k);
+
         while (k--)
             suffixVal += get_cabac_bypass(s->cc[entry]) << k;
     }
@@ -588,6 +591,8 @@ int ff_hevc_mvd_decode(HEVCContext *s, int entry)
         ret += 1 << k;
         k++;
     }
+    if (k == CABAC_MAX_BIN)
+        av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", k);
     while (k--)
         ret += get_cabac_bypass(s->cc[entry]) << k;
 
@@ -797,7 +802,8 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int first_elem, int base_l
 
     while (prefix < CABAC_MAX_BIN && get_cabac_bypass(s->cc[entry]))
         prefix++;
-
+    if (prefix == CABAC_MAX_BIN)
+        av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", prefix);
     if (prefix < 3) {
         for (i = 0; i < c_rice_param[entry]; i++)
             suffix = (suffix << 1) | get_cabac_bypass(s->cc[entry]);
