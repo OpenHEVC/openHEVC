@@ -310,9 +310,10 @@ static int hls_slice_header(HEVCContext *s)
         slice_address_length = av_ceil_log2_c(s->sps->pic_width_in_ctbs *
                                               s->sps->pic_height_in_ctbs);
         sh->slice_address = get_bits(gb, slice_address_length);
+        av_log(s->avctx, AV_LOG_ERROR, "sh->adress not equal to zero %d\n", sh->slice_address);
     }
 
-    if (!s->pps->dependent_slice_segments_enabled_flag) {
+    if (!sh->dependent_slice_segment_flag) {
         for(i = 0; i < s->pps->num_extra_slice_header_bits; i++)
             skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
         sh->slice_type = get_ue_golomb(gb);
@@ -322,7 +323,7 @@ static int hls_slice_header(HEVCContext *s)
         if (s->sps->separate_colour_plane_flag == 1)
             sh->colour_plane_id = get_bits(gb, 2);
 
-        if (s->nal_unit_type != NAL_IDR_W_DLP && s->nal_unit_type != NAL_IDR_N_LP) {
+        if (s->nal_unit_type != NAL_IDR_W_RADL && s->nal_unit_type != NAL_IDR_N_LP) {
             int short_term_ref_pic_set_sps_flag;
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
@@ -376,7 +377,7 @@ static int hls_slice_header(HEVCContext *s)
         }
         if (s->temporal_id == 0)
             s->pocTid0 = s->poc;
-//        av_log(s->avctx, AV_LOG_ERROR, "POC %d NAL %d\n", s->poc, s->nal_unit_type);
+        av_log(s->avctx, AV_LOG_ERROR, "POC %d NAL %d\n", s->poc, s->nal_unit_type);
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
             return AVERROR_INVALIDDATA;
@@ -1986,7 +1987,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     case NAL_BLA_W_LP:
     case NAL_BLA_W_RADL:
     case NAL_BLA_N_LP:
-    case NAL_IDR_W_DLP:
+    case NAL_IDR_W_RADL:
     case NAL_IDR_N_LP:
     case NAL_CRA_NUT:
     case NAL_RADL_N:
@@ -1994,7 +1995,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     case NAL_RASL_N:
     case NAL_RASL_R:
         s->isFirstQPgroup[0] = 1;
-        if (s->nal_unit_type == NAL_IDR_W_DLP) {
+        if (s->nal_unit_type == NAL_IDR_W_RADL) {
             ff_hevc_clear_refs(s);
             s->seq_decode = (s->seq_decode + 1) & 0xff;
         }
@@ -2009,7 +2010,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 s->nal_unit_type == NAL_BLA_N_LP) {
                 s->max_ra = s->poc;
             } else {
-                if (s->nal_unit_type == NAL_IDR_W_DLP)
+                if (s->nal_unit_type == NAL_IDR_W_RADL)
                     s->max_ra = INT_MIN;
             }
         }
