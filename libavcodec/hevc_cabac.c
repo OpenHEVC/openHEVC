@@ -340,14 +340,11 @@ int ff_hevc_sao_merge_flag_decode(HEVCContext *s, int entry)
 
 int ff_hevc_sao_type_idx_decode(HEVCContext *s, int entry)
 {
-    if (!GET_CABAC(entry, elem_offset[SAO_TYPE_IDX])) {
+    if (!GET_CABAC(entry, elem_offset[SAO_TYPE_IDX]))
         return 0;
-    }
 
-    if (!get_cabac_bypass(s->cc[entry])) {
+    if (!get_cabac_bypass(s->cc[entry]))
         return SAO_BAND;
-    }
-
     return SAO_EDGE;
 }
 
@@ -445,6 +442,7 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, 
 
     inc += (depth_left > ct_depth);
     inc += (depth_top > ct_depth);
+
     return GET_CABAC(entry, elem_offset[SPLIT_CODING_UNIT_FLAG] + inc);
 }
 

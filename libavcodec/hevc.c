@@ -366,7 +366,6 @@ static int hls_slice_header(HEVCContext *s)
                             sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb);
                         else
                             sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb) + sh->long_term_rps.DeltaPocMsbCycleLt[ i - 1 ];
-                    }
                 }
             }
             if (s->sps->sps_temporal_mvp_enabled_flag)
@@ -2053,7 +2052,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         if (s->nal_unit_type == NAL_IDR_W_RADL) {
             ff_hevc_clear_refs(s);
         }
-        if (s->nal_unit_type == NAL_IDR_W_DLP || s->nal_unit_type == NAL_IDR_N_LP) {
+        if (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP) {
             s->seq_decode = (s->seq_decode + 1) & 0xff;
         }
         ret = hls_slice_header(s);
@@ -2066,7 +2065,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 s->nal_unit_type == NAL_BLA_N_LP) {
                 s->max_ra = s->poc;
             } else {
-                if (s->nal_unit_type == NAL_IDR_W_DLP || s->nal_unit_type == NAL_IDR_N_LP)
+                if (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP)
                     s->max_ra = INT_MIN;
             }
         }
