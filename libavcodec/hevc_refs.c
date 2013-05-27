@@ -22,7 +22,10 @@
 
 #include "hevc.h"
 #include "internal.h"
-
+//#define TEST_DPB
+#ifdef TEST_DPB
+static int state = 0;
+#endif
 static int find_ref_idx(HEVCContext *s, int poc)
 {
     int i;
@@ -53,8 +56,14 @@ static void update_refs(HEVCContext *s)
         HEVCFrame *ref = &s->DPB[i];
         if (ref->frame->buf[0] && !used[i])
             ref->flags &= ~HEVC_FRAME_FLAG_SHORT_REF;
-        if (ref->frame->buf[0] && !ref->flags)
+        if (ref->frame->buf[0] && !ref->flags) {
+#ifdef TEST_DPB
+            if (state==0) printf("\t\t\t\t");
+            printf("\t\t%d\t%d\n",i, ref->poc);
+            state = 0;
+#endif
             av_frame_unref(ref->frame);
+        }
     }
 }
 
@@ -64,6 +73,11 @@ void ff_hevc_clear_refs(HEVCContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
         if (!(ref->flags & HEVC_FRAME_FLAG_OUTPUT)) {
+#ifdef TEST_DPB
+            if (state==0) printf("\t\t\t\t");
+            printf("\t\t%d\t%d\n",i, ref->poc);
+            state = 0;
+#endif
             av_frame_unref(ref->frame);
             ref->flags = 0;
         }
@@ -75,8 +89,13 @@ void ff_hevc_clean_refs(HEVCContext *s)
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
-            av_frame_unref(ref->frame);
-            ref->flags = 0;
+#ifdef TEST_DPB
+        if (state==0) printf("\t\t\t\t");
+        printf("\t\t%d\t%d\n",i, ref->poc);
+        state = 0;
+#endif
+        av_frame_unref(ref->frame);
+        ref->flags = 0;
     }
 }
 
@@ -106,6 +125,13 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             ref->poc   = poc;
             ref->flags = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
             ref->sequence = s->seq_decode;
+#ifdef TEST_DPB
+            if (state == 2) {
+                printf("\n");
+            }
+            printf("%d\t%d\n",i, poc);
+            state = 1;
+#endif
             return ff_reget_buffer(s->avctx, *frame);
         }
     }
@@ -120,7 +146,8 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
     int min_poc   = 0xFFFF;
     int i, min_idx, ret;
     min_idx = 0;
-    while (s->seq_output <= s->seq_decode) {
+    uint8_t run = 1;
+    while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
             if (frame->flags & HEVC_FRAME_FLAG_OUTPUT &&
@@ -139,6 +166,10 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
             return 0;
 
         if (nb_output) {
+#ifdef TEST_DPB
+            printf("\t\t\t%d\t%d", min_idx, min_poc);
+            state = 2;
+#endif
             HEVCFrame *frame = &s->DPB[min_idx];
 
             frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
@@ -152,9 +183,9 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
         if (s->seq_output != s->seq_decode)
             s->seq_output = (s->seq_output + 1) & 0xff;
         else
-            break;
+            run = 0;
     }
-
+    
     return 0;
 }
 
@@ -179,6 +210,7 @@ static void set_ref_pic_list(HEVCContext *s)
     SliceHeader *sh = &s->sh;
     RefPicList  *refPocList = s->sh.refPocList;
     RefPicList  *refPicList = s->DPB[ff_hevc_find_next_ref(s, s->poc)].refPicList;
+    RefPicList  refPicListTmp[2];
 
     uint8_t num_ref_idx_lx_act[2];
     uint8_t cIdx;
@@ -208,22 +240,33 @@ static void set_ref_pic_list(HEVCContext *s)
         cIdx = 0;
         while(cIdx < num_rps_curr_lx) {
             for(i = 0; i < refPocList[first_list].numPic && cIdx < num_rps_curr_lx; i++) {
-                refPicList[list_idx].list[cIdx] = refPocList[first_list].list[i];
-                refPicList[list_idx].idx[cIdx]  = refPocList[first_list].idx[i];
+                refPicListTmp[list_idx].list[cIdx] = refPocList[first_list].list[i];
+                refPicListTmp[list_idx].idx[cIdx]  = refPocList[first_list].idx[i];
                 cIdx++;
             }
             for(i = 0; i < refPocList[sec_list].numPic && cIdx < num_rps_curr_lx; i++) {
-                refPicList[list_idx].list[cIdx] = refPocList[sec_list].list[i];
-                refPicList[list_idx].idx[cIdx]  = refPocList[sec_list].idx[i];
+                refPicListTmp[list_idx].list[cIdx] = refPocList[sec_list].list[i];
+                refPicListTmp[list_idx].idx[cIdx]  = refPocList[sec_list].idx[i];
                 cIdx++;
             }
             for(i = 0; i < refPocList[LT_CURR].numPic && cIdx < num_rps_curr_lx; i++) {
-                refPicList[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
-                refPicList[list_idx].idx[cIdx]  = refPocList[LT_CURR].idx[i];
+                refPicListTmp[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
+                refPicListTmp[list_idx].idx[cIdx]  = refPocList[LT_CURR].idx[i];
                 cIdx++;
             }
         }
         refPicList[list_idx].numPic = cIdx;
+        if (s->sh.ref_pic_list_modification_flag_lx[list_idx] == 1) {
+            for(i = 0; i < cIdx; i++) {
+                refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[sh->list_entry_lx[list_idx][ i ]];
+                refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[sh->list_entry_lx[list_idx][ i ]];
+            }
+        } else {
+            for(i = 0; i < cIdx; i++) {
+                refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[i];
+                refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[i];
+            }
+        }
     }
 }
 
@@ -263,20 +306,43 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
         }
         refPocList[ST_CURR_AFT].numPic = j;
         refPocList[ST_FOLL].numPic = k;
-        for( i = 0, j= 0, k = 0; i < long_rps->num_long_term_sps + long_rps->num_long_term_pics; i++ ) {
-            int pocLt = long_rps->PocLsbLt[ i ];
-            if( long_rps->delta_poc_msb_present_flag[ i ] )
-                pocLt += s->poc - long_rps->DeltaPocMsbCycleLt[ i ] * MaxPicOrderCntLsb - s->sh.pic_order_cnt_lsb;
-            if( long_rps->UsedByCurrPicLt[ i ] ) {
+        for( i = 0, j= 0, k = 0; i < long_rps->num_long_term_sps + long_rps->num_long_term_pics; i++) {
+            int pocLt = long_rps->PocLsbLt[i];
+            if (long_rps->delta_poc_msb_present_flag[i])
+                pocLt += s->poc - long_rps->DeltaPocMsbCycleLt[i] * MaxPicOrderCntLsb - s->sh.pic_order_cnt_lsb;
+            if (long_rps->UsedByCurrPicLt[i]) {
                 refPocList[LT_CURR].list[j] = pocLt;
-                refPocList[LT_CURR].CurrDeltaPocMsbPresentFlag[j++] = long_rps->delta_poc_msb_present_flag[ i ];
+                refPocList[LT_CURR].idx[j] = find_ref_idx(s, refPocList[LT_CURR].list[j]);
+                refPocList[LT_CURR].CurrDeltaPocMsbPresentFlag[j] = long_rps->delta_poc_msb_present_flag[i];
+                j++;
             } else {
                 refPocList[LT_FOLL].list[k] = pocLt;
-                refPocList[LT_FOLL].FollDeltaPocMsbPresentFlag[k++] = long_rps->delta_poc_msb_present_flag[ i ];
+                refPocList[LT_FOLL].idx[k] = find_ref_idx(s, refPocList[LT_FOLL].list[k]);
+                refPocList[LT_FOLL].FollDeltaPocMsbPresentFlag[k] = long_rps->delta_poc_msb_present_flag[i];
+                k++;
             }
         }
         refPocList[LT_CURR].numPic = j;
         refPocList[LT_FOLL].numPic = k;
         set_ref_pic_list(s);
     }
+}
+
+int ff_hevc_get_NumPocTotalCurr(HEVCContext *s) {
+    int NumPocTotalCurr = 0;
+    int i;
+    ShortTermRPS *rps     = s->sh.short_term_rps;
+    LongTermRPS *long_rps = &s->sh.long_term_rps;
+    if (rps != NULL) {
+        for( i = 0; i < rps->num_negative_pics; i++ )
+            if( rps->used[i] == 1 )
+                NumPocTotalCurr++;
+        for (i = rps->num_negative_pics; i < rps->num_delta_pocs; i ++)
+            if( rps->used[i] == 1 )
+                NumPocTotalCurr++;
+        for( i = 0; i < long_rps->num_long_term_sps + long_rps->num_long_term_pics; i++ )
+            if( long_rps->UsedByCurrPicLt[ i ] == 1 )
+                NumPocTotalCurr++;
+    }
+    return NumPocTotalCurr;
 }

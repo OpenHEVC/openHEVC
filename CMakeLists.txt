@@ -77,6 +77,9 @@ add_library (LibOpenHevcWrapper SHARED ${libfilenames})
 endif(ENABLE_STATIC)
 include_directories(.)
 
+OPTION(ENABLE_EXECUTABLE "Generate the test application" ON)
+
+if (ENABLE_EXECUTABLE)
 if(SDL_FOUND)
 set_source_files_properties(sdl.c PROPERTIES COMPILE_FLAGS -I"${SDL_INCLUDE_DIR}")
 add_executable(hevc getopt.c main.c sdl.c)
@@ -96,6 +99,7 @@ else(MINGW)
 target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY})
 endif(MINGW)
 endif()
+endif(ENABLE_EXECUTABLE)
 
 INSTALL(FILES "openHevcWrapper.h" DESTINATION include)
 

@@ -43,18 +43,20 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx)
 static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, int entry)
 {
     int Log2CtbSizeY         = s->sps->log2_ctb_size;
-    int Log2MinCuQpDeltaSize = Log2CtbSizeY - s->pps->diff_cu_qp_delta_depth;
-    int xQg                  = xC - ( xC & ( ( 1 << Log2MinCuQpDeltaSize) - 1 ) );
-    int yQg                  = yC - ( yC & ( ( 1 << Log2MinCuQpDeltaSize) - 1 ) );
+    int MinCuQpDeltaSizeMask     = (1 << (Log2CtbSizeY - s->pps->diff_cu_qp_delta_depth)) - 1;
+    int xQg                  = xC    - ( xC    & MinCuQpDeltaSizeMask );
+    int yQg                  = yC    - ( yC    & MinCuQpDeltaSizeMask );
+    int xQgBase              = xBase - ( xBase & MinCuQpDeltaSizeMask );
+    int yQgBase              = yBase - ( yBase & MinCuQpDeltaSizeMask );
     int log2_min_cb_size     = s->sps->log2_min_coding_block_size;
     int pic_width            = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
-    int x                    = xC >> log2_min_cb_size;
-    int y                    = yC >> log2_min_cb_size;
+    int x                    = xQg >> log2_min_cb_size;
+    int y                    = yQg >> log2_min_cb_size;
     int qPy_pred;
     int qPy_a;
     int qPy_b;
-    int availableA           = (xQg & ((1<<Log2CtbSizeY)-1)) != 0 && xC == xBase;
-    int availableB           = (yQg & ((1<<Log2CtbSizeY)-1)) != 0 && yC == yBase;
+    int availableA           = (xQg & ((1<<Log2CtbSizeY)-1)) != 0 && xQg == xQgBase;
+    int availableB           = (yQg & ((1<<Log2CtbSizeY)-1)) != 0 && yQg == yQgBase;
     // qPy_pred
     if (s->isFirstQPgroup[entry] != 0) {
         s->isFirstQPgroup[entry] = 0;
@@ -64,12 +66,13 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
     // qPy_a
     if (availableA == 0)
         qPy_a = qPy_pred;
-   	else
+    else
         qPy_a = s->qp_y_tab[(x-1) + y * pic_width];
+
     // qPy_b
     if (availableB == 0)
         qPy_b = qPy_pred;
-	else
+    else
         qPy_b = s->qp_y_tab[x + (y-1) * pic_width];
     return (qPy_a + qPy_b + 1) >> 1;
 }
@@ -79,7 +82,7 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int e
         s->qp_y[entry] = ((get_qPy_pred(s, xC, yC, xBase, yBase, entry) + s->tu[entry].cu_qp_delta + 52 + 2 * s->sps->qp_bd_offset) %
                 (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
     else
-        s->qp_y[entry] = get_qPy_pred(s, xC, yC,  xBase, yBase, entry);
+        s->qp_y[entry] = get_qPy_pred(s, xC, yC, xBase, yBase, entry);
 }
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
