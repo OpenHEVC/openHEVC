@@ -807,6 +807,8 @@ typedef struct HEVCContext {
     int ctb_addr_ts;
     int ctb_addr_rs;
     int ctb_addr_in_slice;
+    uint8_t ctb_left_flag;
+    uint8_t ctb_up_flag;
 
     int xtiles_0;
     int ytiles_0;

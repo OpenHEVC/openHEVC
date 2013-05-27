@@ -637,16 +637,30 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
         pps->uniform_spacing_flag = get_bits1(gb);
         if (!pps->uniform_spacing_flag) {
+            int sum = 0;
             for (i = 0; i < pps->num_tile_columns - 1; i++) {
-                pps->column_width[i] = get_ue_golomb(gb);
+                pps->column_width[i] = get_ue_golomb(gb) + 1;
+                sum += pps->column_width[i];
             }
+            if (sum >= sps->pic_width_in_ctbs) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid tile widths.\n");
+                goto err;
+            }
+            pps->column_width[pps->num_tile_columns - 1] = sps->pic_width_in_ctbs - sum;
+
+            sum = 0;
             for (i = 0; i < pps->num_tile_rows - 1; i++) {
-                pps->row_height[i] = get_ue_golomb(gb);
+                pps->row_height[i] = get_ue_golomb(gb) + 1;
+                sum += pps->row_height[i];
             }
+            if (sum >= sps->pic_height_in_ctbs) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid tile heights.\n");
+                goto err;
+            }
+            pps->row_height[pps->num_tile_rows - 1] = sps->pic_height_in_ctbs - sum;
         }
         pps->loop_filter_across_tiles_enabled_flag = get_bits1(gb);
     }
-    
     
 
     pps->seq_loop_filter_across_slices_enabled_flag = get_bits1(gb);

@@ -30,6 +30,7 @@
 #include "hevc.h"
 #include "libavutil/opt.h"
 #include "libavutil/md5.h"
+#include "libavutil/atomic.h"
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -360,11 +361,12 @@ static int hls_slice_header(HEVCContext *s)
                         sh->long_term_rps.UsedByCurrPicLt[ i ] = get_bits1(gb);
                         sh->long_term_rps.delta_poc_msb_present_flag[ i ] = get_bits1(gb);
                     }
-                    if( sh->long_term_rps.delta_poc_msb_present_flag[ i ] == 1)
+                    if( sh->long_term_rps.delta_poc_msb_present_flag[ i ] == 1) {
                         if( i == 0 || i == sh->long_term_rps.num_long_term_sps )
                             sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb);
                         else
                             sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb) + sh->long_term_rps.DeltaPocMsbCycleLt[ i - 1 ];
+                    }
                 }
             }
             if (s->sps->sps_temporal_mvp_enabled_flag)
@@ -1430,7 +1432,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
 
     int cand_up   = y_pu > (s->ytiles_0 >> s->sps->log2_min_pu_size) ? s->pu.top_ipm[x_pu] : INTRA_DC ;
     int cand_left = x_pu > (s->xtiles_0 >> s->sps->log2_min_pu_size) ? s->pu.left_ipm[y_pu] : INTRA_DC ;
-    
+
     int y_ctb = (y0 >> (s->sps->log2_ctb_size)) << (s->sps->log2_ctb_size);
     MvField *tab_mvf = s->ref->tab_mvf;
 
@@ -1777,6 +1779,9 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
             s->ctb_addr_in_slice = s->ctb_addr_rs - s->sh.slice_address;
             x_ctb = (s->ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
             y_ctb = (s->ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))/ctb_size)) * ctb_size;
+            s->ctb_left_flag = (s->ctb_addr_in_slice > 0);
+            s->ctb_up_flag = ((y_ctb > 0)  && (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs - s->sps->pic_width_in_ctbs]]));
+
             if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
                 hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, (s->ctb_addr_in_slice > 0), 0);
             more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, 0);
