@@ -108,8 +108,7 @@ typedef struct LongTermRPS {
 typedef struct RefPicList {
     int list[16];
     int idx[16];
-    uint8_t CurrDeltaPocMsbPresentFlag[16];
-    uint8_t FollDeltaPocMsbPresentFlag[16];
+    int isLongTerm[16];
     int numPic;
 } RefPicList;
 
@@ -724,7 +723,6 @@ typedef struct SAOParams {
 
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
-#define HEVC_FRAME_FLAG_LT (1 << 2)
 
 typedef struct HEVCFrame {
     AVFrame *frame;
