@@ -45,13 +45,13 @@
 #define MD5_ENABLE  1
 
 // input file
-static char *input_file;
+char *input_file;
 
 // deactivate display
-static char display_flags;
-static int check_md5_flags;
+char display_flags;
+int check_md5_flags;
 // Activate multi-threading if possible
-static int nb_pthreads;
+int nb_pthreads;
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);
