@@ -545,15 +545,11 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry, int left_ctb_in_slice, 
     SAOParams *sao = &CTB(s->sao, rx, ry);
 
     if (rx > 0) {
-        //int left_ctb_in_slice = s->ctb_addr_in_slice > 0;
-        int left_ctb_in_tile = s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs - 1]];
-        if (left_ctb_in_slice && left_ctb_in_tile)
+        if (s->ctb_left_flag)
             sao_merge_left_flag = ff_hevc_sao_merge_flag_decode(s, entry);
     }
     if (ry > 0 && !sao_merge_left_flag) {
-        int up_ctb_in_slice = (s->ctb_addr_ts - s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs - s->sps->pic_width_in_ctbs]) <= s->ctb_addr_in_slice;
-        int up_ctb_in_tile = (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[s->ctb_addr_rs - s->sps->pic_width_in_ctbs]]);
-        if (up_ctb_in_slice && up_ctb_in_tile)
+        if (s->ctb_up_flag)
             sao_merge_up_flag = ff_hevc_sao_merge_flag_decode(s, entry);
     }
     for (c_idx = 0; c_idx < 3; c_idx++) {
