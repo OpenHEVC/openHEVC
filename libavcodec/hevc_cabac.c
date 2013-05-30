@@ -389,14 +389,15 @@ int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry)
     return GET_CABAC(entry, elem_offset[CU_TRANSQUANT_BYPASS_FLAG]);
 }
 
-int ff_hevc_skip_flag_decode(HEVCContext *s, int x_cb, int y_cb, int entry)
+int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb, int entry)
 {
     int pic_width_in_ctb = s->sps->pic_width_in_luma_samples>>s->sps->log2_min_coding_block_size;
     int inc = 0;
-
-    if (x_cb > (s->xtiles_0 >> s->sps->log2_min_coding_block_size))
+    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
+    if (s->ctb_left_flag || x0b)
         inc = SAMPLE_CTB(s->cu.skip_flag, x_cb-1, y_cb);
-    if (y_cb > (s->ytiles_0 >> s->sps->log2_min_coding_block_size))
+    if (s->ctb_up_flag || y0b)
         inc += SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb-1);
 
     return GET_CABAC(entry, elem_offset[SKIP_FLAG] + inc);
@@ -435,9 +436,11 @@ int ff_hevc_pred_mode_decode(HEVCContext *s, int entry)
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0, int entry)
 {
     int inc = 0, depth_left = 0, depth_top = 0;
-    if (x0 > s->xtiles_0)
+    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
+    if (s->ctb_left_flag || x0b)
         depth_left = s->cu.left_ct_depth[y0 >> s->sps->log2_min_coding_block_size];
-    if (y0 > s->ytiles_0)
+    if (s->ctb_up_flag || y0b)
         depth_top = s->cu.top_ct_depth[x0 >> s->sps->log2_min_coding_block_size];
 
     inc += (depth_left > ct_depth);
