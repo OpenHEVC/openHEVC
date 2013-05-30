@@ -30,6 +30,7 @@
 #include "hevc.h"
 #include "libavutil/opt.h"
 #include "libavutil/md5.h"
+#include "libavutil/atomic.h"
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -322,7 +323,7 @@ static int hls_slice_header(HEVCContext *s)
         if (s->sps->separate_colour_plane_flag == 1)
             sh->colour_plane_id = get_bits(gb, 2);
 
-        if (s->nal_unit_type != NAL_IDR_W_DLP && s->nal_unit_type != NAL_IDR_N_LP) {
+        if (s->nal_unit_type != NAL_IDR_W_RADL && s->nal_unit_type != NAL_IDR_N_LP) {
             int short_term_ref_pic_set_sps_flag;
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
@@ -2031,7 +2032,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     case NAL_BLA_W_LP:
     case NAL_BLA_W_RADL:
     case NAL_BLA_N_LP:
-    case NAL_IDR_W_DLP:
+    case NAL_IDR_W_RADL:
     case NAL_IDR_N_LP:
     case NAL_CRA_NUT:
     case NAL_RADL_N:
@@ -2039,10 +2040,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     case NAL_RASL_N:
     case NAL_RASL_R:
         s->isFirstQPgroup[0] = 1;
-        if (s->nal_unit_type == NAL_IDR_W_DLP) {
+        if (s->nal_unit_type == NAL_IDR_W_RADL) {
             ff_hevc_clear_refs(s);
         }
-        if (s->nal_unit_type == NAL_IDR_W_DLP || s->nal_unit_type == NAL_IDR_N_LP) {
+        if (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP) {
             s->seq_decode = (s->seq_decode + 1) & 0xff;
         }
         ret = hls_slice_header(s);
@@ -2055,7 +2056,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 s->nal_unit_type == NAL_BLA_N_LP) {
                 s->max_ra = s->poc;
             } else {
-                if (s->nal_unit_type == NAL_IDR_W_DLP || s->nal_unit_type == NAL_IDR_N_LP)
+                if (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP)
                     s->max_ra = INT_MIN;
             }
         }
