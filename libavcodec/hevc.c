@@ -478,11 +478,11 @@ static int hls_slice_header(HEVCContext *s)
     
     sh->num_entry_point_offsets = 0;
     if( s->pps->tiles_enabled_flag == 1 || s->pps->entropy_coding_sync_enabled_flag == 1) {
-        int active = 0;
+     //   int active = 0;
         sh->num_entry_point_offsets = get_ue_golomb(gb);
         if(sh->num_entry_point_offsets >= MAX_ENTRIES) {
             av_log(s->avctx, AV_LOG_ERROR, "The number of entry points : %d is higher than the maximum number of entry points : %d \n", sh->num_entry_point_offsets, MAX_ENTRIES);
-            active = 1;
+        //    active = 1;
         }
         if( sh->num_entry_point_offsets > 0 ) {
             int offset_len = get_ue_golomb(gb)+1;
@@ -502,10 +502,10 @@ static int hls_slice_header(HEVCContext *s)
                 }
                 sh->entry_point_offset[i] = val + 1; // +1; // +1 to get the size
             }
-            if(active)
-                s->enable_multithreads = 0; // Do not run the multi-threading TO DO: test this configuration
-            else
-                s->enable_multithreads = 1;
+          //  if(active)
+         //       s->enable_multithreads = 0; // Do not run the multi-threading TO DO: test this configuration
+        //    else
+          //      s->enable_multithreads = 1;
         }
     }
 
