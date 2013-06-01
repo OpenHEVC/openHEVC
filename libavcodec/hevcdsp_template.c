@@ -3573,7 +3573,7 @@ tmp += MAX_PB_SIZE;                                                 \
 dst += dststride;                                                   \
 }                                                                       \
 }
-#elif  ifdef GCC_OPTIMIZATION_ENABLE
+#elif GCC_OPTIMIZATION_ENABLE
 #define PUT_HEVC_QPEL_H(H)                                                      \
 static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
 uint8_t *_src, ptrdiff_t _srcstride,  \
