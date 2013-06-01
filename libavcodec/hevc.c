@@ -319,6 +319,8 @@ static int hls_slice_header(HEVCContext *s)
                                               s->sps->pic_height_in_ctbs);
         sh->slice_address = get_bits(gb, slice_address_length);
         av_log(s->avctx, AV_LOG_ERROR, "sh->adress not equal to zero %d\n", sh->slice_address);
+    } else {
+        sh->slice_address = 0;
     }
 
     if (!sh->dependent_slice_segment_flag) {
@@ -1815,7 +1817,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
                                 (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->ctb_addr_ts-1]));
             s->ctb_up_flag = ((s->y_ctb > ytiles_0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
                               (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]]));
-//            printf("left %d up %d, x_ctb %d y_ctb %d\n",s->ctb_left_flag, s->ctb_up_flag, x_ctb, y_ctb);
+            printf("left %d up %d, ctb %d\n",s->ctb_left_flag, s->ctb_up_flag, s->ctb_addr_ts);
             if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
                 hls_sao_param(s, s->x_ctb >> s->sps->log2_ctb_size, s->y_ctb >> s->sps->log2_ctb_size, (ctb_addr_in_slice > 0), 0);
             more_data = hls_coding_quadtree(s, s->x_ctb, s->y_ctb, s->sps->log2_ctb_size, 0, 0);
@@ -2168,8 +2170,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             if (hls_slice_data(s) < 0)
                 return -1;
         }
-        if ((s->x_ctb >= ((s->sps->pic_width_in_ctbs) * (1 << s->sps->log2_ctb_size))) &&
-            (s->y_ctb >= ((s->sps->pic_height_in_ctbs) * (1 << s->sps->log2_ctb_size)))) {
+        if (s->ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
             if (s->sps->sample_adaptive_offset_enabled_flag)
                 av_frame_unref(s->tmp_frame);
             if (s->decode_checksum_sei == 1) {

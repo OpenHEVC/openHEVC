@@ -96,7 +96,8 @@ void ff_hevc_clean_refs(HEVCContext *s)
 int ff_hevc_find_next_ref(HEVCContext *s, int poc)
 {
     int i;
-    update_refs(s);
+    if (s->sh.first_slice_in_pic_flag)
+        update_refs(s);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
