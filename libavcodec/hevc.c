@@ -1823,6 +1823,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
                                 (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->ctb_addr_ts-1]));
             s->ctb_up_flag = ((s->y_ctb > ytiles_0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
                               (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]]));
+            //FIXME : add s->ctb_up_right_flag can be needed when cand_up is not available
+
             printf("left %d up %d, ctb %d\n",s->ctb_left_flag, s->ctb_up_flag, s->ctb_addr_ts);
             if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
                 hls_sao_param(s, s->x_ctb >> s->sps->log2_ctb_size, s->y_ctb >> s->sps->log2_ctb_size, (ctb_addr_in_slice > 0), 0);

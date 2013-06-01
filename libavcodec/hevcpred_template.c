@@ -77,6 +77,7 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     int left_available = cand_left;
     int top_left_available = cand_left && cand_up;
     int top_available = cand_up;
+    //FIXME : top_right_available can be available even if cand_up is not 
     int top_right_available = cand_up && (x_tb + size_in_tbs) < s->sps->pic_width_in_min_tbs &&
                               cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs, y_tb - 1);
 
