@@ -49,10 +49,14 @@ static void video_decode_example(const char *filename)
     int init    = 1;
     int nbFrame = 0;
     unsigned int width, height, stride;
-    unsigned char * buf, *Y, *U, *V;
-    
-    libOpenHevcInit(nb_pthreads);
-    libOpenHevcSetCheckMD5(check_md5_flags);
+    unsigned char * buf;
+    OpenHevc_Frame openHevcFrame;
+    OpenHevc_Handle openHevcHandle = libOpenHevcInit(nb_pthreads);
+    if (openHevcHandle == NULL) {
+        fprintf(stderr, "could not open OpenHevc\n");
+        exit(1);
+    }
+    libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
@@ -60,26 +64,32 @@ static void video_decode_example(const char *filename)
     }
     buf = calloc ( 1000000, sizeof(char));
     if (display_flags == DISPLAY_ENABLE) {
+        int nbSkipNal = 0;
+        while(nbSkipNal > 0 && !feof(f)) {
+            get_next_nal(f, buf);
+            nbSkipNal--;
+        }
         while(!feof(f)) {
             int got_picture;
-            got_picture = libOpenHevcDecode(buf, get_next_nal(f, buf));
-            libOpenHevcGetOutput(got_picture, &Y, &U, &V);
+            got_picture = libOpenHevcDecode(openHevcHandle, buf, get_next_nal(f, buf), 0);
+            libOpenHevcGetOutput(openHevcHandle, got_picture, &openHevcFrame);
             if (got_picture != 0) {
+                libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
                 fflush(stdout);
                 if (init == 1 ) {
-                    libOpenHevcGetPictureSize2(&width, &height, &stride);
-                    Init_SDL((stride - width)/2, width, height);
+                    Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
                     Init_Time();
                     init = 0;
                 }
-                SDL_Display((stride - width)/2, width, height, Y, U, V);
+                SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
+                        openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
                 nbFrame++;
             }
         }
     } else {
         while(!feof(f)) {
-            int got_picture = libOpenHevcDecode(buf, get_next_nal(f, buf));
-            libOpenHevcGetOutput(got_picture, &Y, &U, &V);
+            int got_picture = libOpenHevcDecode(openHevcHandle, buf, get_next_nal(f, buf), 0);
+            libOpenHevcGetOutput(openHevcHandle, got_picture, &openHevcFrame);
             if (got_picture != 0) {
                 if (init == 1 ) {
                     Init_Time();
@@ -91,7 +101,7 @@ static void video_decode_example(const char *filename)
      }
     CloseSDLDisplay();
     fclose(f);
-    libOpenHevcClose();
+    libOpenHevcClose(openHevcHandle);
     printf("nbFrame : %d\n", nbFrame);
 }
 

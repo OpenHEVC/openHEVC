@@ -130,7 +130,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     return -1;
 }
 
-int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
+int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush, int* poc_display)
 {
     int nb_output = 0;
     int min_poc   = 0xFFFF;
@@ -163,7 +163,8 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
             HEVCFrame *frame = &s->DPB[min_idx];
 
             frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
-
+            *poc_display = frame->poc;
+            frame->frame->display_picture_number = frame->poc;
             ret = av_frame_ref(out, frame->frame);
             if (ret < 0)
                 return ret;

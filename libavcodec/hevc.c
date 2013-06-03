@@ -40,6 +40,7 @@
 /**
  * Section 5.7
  */
+//#define POC_DISPLAY_MD5
 #define WPP1
 static void pic_arrays_free(HEVCContext *s)
 {
@@ -377,7 +378,7 @@ static int hls_slice_header(HEVCContext *s)
         }
         if (s->temporal_id == 0)
             s->pocTid0 = s->poc;
-//        av_log(s->avctx, AV_LOG_ERROR, "POC %d NAL %d\n", s->poc, s->nal_unit_type);
+//        av_log(s->avctx, AV_LOG_INFO, "Decode  : POC %d NAL %d\n", s->poc, s->nal_unit_type);
         if (!s->pps) {
             av_log(s->avctx, AV_LOG_ERROR, "No PPS active while decoding slice\n");
             return AVERROR_INVALIDDATA;
@@ -1958,11 +1959,30 @@ static int hls_nal_unit(HEVCContext *s)
     return (nuh_layer_id == 0);
 }
 
-static void print_md5(uint8_t *md5)
+static void printf_ref_pic_list(HEVCContext *s)
 {
+    RefPicList  *refPicList = s->ref->refPicList;
+    uint8_t i, list_idx;
+    for ( list_idx = 0; list_idx < 2; list_idx++) {
+        printf("[L%d ",list_idx);
+        for(i = 0; i < refPicList[list_idx].numPic; i++) {
+            int currIsLongTerm = refPicList[list_idx].isLongTerm[i];
+            if (currIsLongTerm)
+                printf("%d* ",refPicList[list_idx].list[i]);
+            else
+                printf("%d ",refPicList[list_idx].list[i]);
+        }
+        printf("] ");
+    }
+}
+
+static void print_md5(int poc, uint8_t *md5) {
     int i;
+    printf("POC %4d [MD5: ", poc);
     for (i = 0; i < 16; i++)
         printf("%02x", md5[i]);
+    printf("]\n");
+
 }
 
 static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height) {
@@ -1986,13 +2006,13 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 {
     HEVCContext *s = avctx->priv_data;
     GetBitContext *gb = s->gb[0];
+    int poc_display;
     
     int offset = 0;
     int ret;
 
     if (!avpkt->size) {
-        ret = ff_hevc_find_display(s, data, 1);
-        if (ret < 0)
+        if ((ret = ff_hevc_find_display(s, data, 1, &poc_display)) < 0)
             return ret;
 
         *got_output = ret;
@@ -2048,7 +2068,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
         ret = hls_slice_header(s);
         if (ret < 0)
-            return ret;
+            if (ret == AVERROR_INVALIDDATA)
+                return avpkt->size;
+            else
+	            return ret;
         if (s->max_ra == INT_MAX) {
             if (s->nal_unit_type == NAL_CRA_NUT ||
                 s->nal_unit_type == NAL_BLA_W_LP ||
@@ -2089,9 +2112,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             s->frame     = s->tmp_frame;
             if ((ret = ff_hevc_set_new_ref(s, &s->sao_frame, s->poc))< 0)
                 return ret;
+            s->sao_frame->pts = avpkt->pts;
         } else {
             if ((ret = ff_hevc_set_new_ref(s, &s->frame, s->poc))< 0)
                 return ret;
+            s->frame->pts = avpkt->pts;
         }
         if (!s->edge_emu_buffer[0])
             s->edge_emu_buffer[0] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
@@ -2157,25 +2182,29 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             
         if (s->sps->sample_adaptive_offset_enabled_flag)
             av_frame_unref(s->tmp_frame);
-        if (s->decode_checksum_sei == 1) {
-            calc_md5(s->md5[0], s->ref->frame->data[0], s->ref->frame->linesize[0], s->ref->frame->width  , s->ref->frame->height  );
-            calc_md5(s->md5[1], s->ref->frame->data[1], s->ref->frame->linesize[1], s->ref->frame->width/2, s->ref->frame->height/2);
-            calc_md5(s->md5[2], s->ref->frame->data[2], s->ref->frame->linesize[2], s->ref->frame->width/2, s->ref->frame->height/2);
-            s->is_decoded = 1;
-        }
-
-/*
-        printf("POC %4d [MD5: \n", s->poc);
-        print_md5(s->md5[0]);
-        printf("]\n");
-*/
-        if ((ret = ff_hevc_find_display(s, data, 0)) < 0)
+        if ((ret = ff_hevc_find_display(s, data, 0, &poc_display)) < 0)
             return ret;
+        if (s->decode_checksum_sei == 1) {
+#ifdef POC_DISPLAY_MD5
+            AVFrame *frame = (AVFrame *) data;
+            int poc        = poc_display;
+#else
+            AVFrame *frame = s->ref->frame;
+            int poc        = s->poc;
+#endif
+            calc_md5(s->md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  );
+            calc_md5(s->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
+            calc_md5(s->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
+            s->is_decoded = 1;
+            printf_ref_pic_list(s);
+            print_md5(poc, s->md5[0]);
+        }
         s->frame->pict_type = AV_PICTURE_TYPE_I;
         s->frame->key_frame = 1;
         *got_output = ret;
         break;
     case NAL_AUD:
+    case NAL_EOS_NUT:
         return avpkt->size;
     default:
         av_log(s->avctx, AV_LOG_INFO, "Skipping NAL unit %d\n", s->nal_unit_type);
