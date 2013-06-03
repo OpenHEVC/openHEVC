@@ -37,7 +37,6 @@ typedef struct HEVCParserContext {
 /**
  * Annex B.1: Byte stream NAL unit syntax and semantics
  */
-static int skipped_buf_size=0;
 static int hevc_parse_nal_unit(HEVCParserContext *hpc, HEVCContext *cct, uint8_t **poutbuf,
 		int *poutbuf_size, const uint8_t *buf,
 		int buf_size)
@@ -67,12 +66,12 @@ static int hevc_parse_nal_unit(HEVCParserContext *hpc, HEVCContext *cct, uint8_t
 	        return header + i - 2;
 	    case EMULATION_CODE:
 	        skipped++;
-            if(skipped > skipped_buf_size)  {
+            if(skipped > cct->skipped_buf_size)  {
                 int *temp = cct->skipped_bytes_pos;
-                cct->skipped_bytes_pos = av_malloc((MAX_SKIPPED_BUFFER_SIZE+skipped_buf_size)*sizeof(int));
-                memcpy(cct->skipped_bytes_pos, temp, skipped_buf_size*sizeof(int));
+                cct->skipped_bytes_pos = av_malloc((MAX_SKIPPED_BUFFER_SIZE+cct->skipped_buf_size)*sizeof(int));
+                memcpy(cct->skipped_bytes_pos, temp, cct->skipped_buf_size*sizeof(int));
                 av_free(temp);
-                skipped_buf_size += MAX_SKIPPED_BUFFER_SIZE;
+                cct->skipped_buf_size += MAX_SKIPPED_BUFFER_SIZE;
             }
             cct->skipped_bytes_pos[skipped-1] = i-skipped;
 	        if (*poutbuf != hpc->nal_buffer) {

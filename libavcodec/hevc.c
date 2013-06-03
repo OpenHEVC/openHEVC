@@ -2237,7 +2237,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 
     memset(s->sps_list, 0, sizeof(s->sps_list));
     memset(s->pps_list, 0, sizeof(s->pps_list));
-    s->ctb_entry_count = NULL;
+    s->ctb_entry_count  = NULL;
+    s->skipped_buf_size = 0;
     return 0;
 }
 
