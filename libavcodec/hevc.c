@@ -2112,11 +2112,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             s->frame     = s->tmp_frame;
             if ((ret = ff_hevc_set_new_ref(s, &s->sao_frame, s->poc))< 0)
                 return ret;
-            s->sao_frame->pts = avpkt->pts;
         } else {
             if ((ret = ff_hevc_set_new_ref(s, &s->frame, s->poc))< 0)
                 return ret;
-            s->frame->pts = avpkt->pts;
         }
         if (!s->edge_emu_buffer[0])
             s->edge_emu_buffer[0] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);

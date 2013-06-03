@@ -812,6 +812,7 @@ typedef struct HEVCContext {
     int *skipped_bytes_pos;
     int skipped_buf_size;
 
+    int64_t pts;
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset

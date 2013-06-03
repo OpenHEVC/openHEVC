@@ -55,14 +55,15 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     uint8_t *poutbuf;
     int got_picture, len;
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    HEVCContext *s = openHevcContext->c->priv_data;
     openHevcContext->avpkt.size = nal_len;
     if (nal_len == - 1) return -1;
-
+    s->pts = pts;
     av_parser_parse2(openHevcContext->parser,
             openHevcContext->c,
             &poutbuf, &nal_len,
             buff, openHevcContext->avpkt.size,
-            pts, 0,
+            0, 0,
             0);
     openHevcContext->avpkt.data = poutbuf;
     len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture, &openHevcContext->avpkt);

@@ -64,14 +64,10 @@ static void video_decode_example(const char *filename)
     }
     buf = calloc ( 1000000, sizeof(char));
     if (display_flags == DISPLAY_ENABLE) {
-        int nbSkipNal = 0;
-        while(nbSkipNal > 0 && !feof(f)) {
-            get_next_nal(f, buf);
-            nbSkipNal--;
-        }
+        int pts = 0;
         while(!feof(f)) {
             int got_picture;
-            got_picture = libOpenHevcDecode(openHevcHandle, buf, get_next_nal(f, buf), 0);
+            got_picture = libOpenHevcDecode(openHevcHandle, buf, get_next_nal(f, buf), pts++);
             libOpenHevcGetOutput(openHevcHandle, got_picture, &openHevcFrame);
             if (got_picture != 0) {
                 libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);

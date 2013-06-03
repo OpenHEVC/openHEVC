@@ -117,6 +117,8 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             *frame     = ref->frame;
             s->ref     = ref;
             ref->poc   = poc;
+            ref->frame->pts = s->pts;
+
             ref->flags = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
             ref->sequence = s->seq_decode;
 #ifdef TEST_DPB
