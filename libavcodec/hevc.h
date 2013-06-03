@@ -135,7 +135,7 @@ typedef struct RefPicList {
 
 
 
-#define MAX_ENTRIES 36
+#define MAX_ENTRIES 100
 
 #define L0 0
 #define L1 1
@@ -894,7 +894,7 @@ int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb, int entry);
 
 int ff_hevc_find_next_ref(HEVCContext *s, int poc);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
-int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush);
+int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush, int* poc_display);
 
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv, int entry);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX, int entry);
