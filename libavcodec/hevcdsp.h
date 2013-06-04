@@ -27,9 +27,9 @@ typedef struct HEVCDSPContext {
     void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
                     GetBitContext *gb, int pcm_bit_depth);
 
-    void (*dequant)(int16_t *coeffs, int log2_size, int qp);
+    void (*dequant[4])(int16_t *coeffs, int qp);
 
-    void (*transquant_bypass)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int log2_size);
+    void (*transquant_bypass[4])(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
     void (*transform_skip)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
@@ -45,7 +45,7 @@ typedef struct HEVCDSPContext {
                             int at_left_border, int at_right_border,
                             int width, int height);
     void (*sao_band_filter_wpp)( uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx, int class_index);
-    
+
     void (*sao_edge_filter_wpp)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, int class_index);
 
 
