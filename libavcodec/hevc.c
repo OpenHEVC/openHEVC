@@ -473,9 +473,9 @@ static int hls_slice_header(HEVCContext *s)
             s->pps->seq_loop_filter_across_slices_enabled_flag;
         }
     }
-    
+
     ///
-    
+
     sh->num_entry_point_offsets = 0;
     if( s->pps->tiles_enabled_flag == 1 || s->pps->entropy_coding_sync_enabled_flag == 1) {
      //   int active = 0;
@@ -848,7 +848,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         }
 
     if (s->cu.cu_transquant_bypass_flag[entry]) {
-        s->hevcdsp.transquant_bypass(dst, coeffs, stride, log2_trafo_size);
+        s->hevcdsp.transquant_bypass[log2_trafo_size-2](dst, coeffs, stride);
     } else {
         int qp;
         int qp_y = s->qp_y[entry];
@@ -875,7 +875,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
             qp += s->sps->qp_bd_offset;
 
         }
-        s->hevcdsp.dequant(coeffs, log2_trafo_size, qp);
+        s->hevcdsp.dequant[log2_trafo_size-2](coeffs, qp);
         if (transform_skip_flag) {
             s->hevcdsp.transform_skip(dst, coeffs, stride);
         } else if (s->cu.pred_mode[entry] == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
@@ -1242,7 +1242,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             merge_idx = ff_hevc_merge_idx_decode(s, entry);
         else
             merge_idx = 0;
-            
+
         ff_hevc_luma_mv_merge_mode(s, x0, y0, 1 << log2_cb_size, 1 << log2_cb_size, log2_cb_size, partIdx, merge_idx, &current_mv, entry);
         x_pu = x0 >> s->sps->log2_min_pu_size;
         y_pu = y0 >> s->sps->log2_min_pu_size;
@@ -1458,7 +1458,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
 
     int cand_up   = y_pu > 0 ? s->pu.top_ipm[x_pu] : INTRA_DC ;
     int cand_left = x_pu > 0 ? s->pu.left_ipm[y_pu] : INTRA_DC ;
-    
+
     int y_ctb = (y0 >> (s->sps->log2_ctb_size)) << (s->sps->log2_ctb_size);
     MvField *tab_mvf = s->ref->tab_mvf;
 
@@ -1507,7 +1507,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     }
     memset(&s->pu.top_ipm[x_pu], intra_pred_mode, size_in_pus);
     memset(&s->pu.left_ipm[y_pu], intra_pred_mode, size_in_pus);
-    
+
     /* write the intra prediction units into the mv array */
     for(i = 0; i <size_in_pus; i++) {
         for(j = 0; j <size_in_pus; j++) {
@@ -1889,7 +1889,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
             s->sh.slice_sample_adaptive_offset_flag[1])
             hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, (x_ctb>0 || y_ctb>0) , *ctb_row);
-        
+
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, *ctb_row);
 
         if (s->pps->entropy_coding_sync_enabled_flag &&
@@ -1992,7 +1992,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 {
     HEVCContext *s = avctx->priv_data;
     GetBitContext *gb = s->gb[0];
-    
+
     int offset = 0;
     int ret;
 
@@ -2087,8 +2087,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         s->qp_y[0] = ((s->sh.slice_qp + 52 + 2 * s->sps->qp_bd_offset) %
                         (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
         ff_hevc_cabac_init(s, 0);
-         
-        
+
+
         if (s->sps->sample_adaptive_offset_enabled_flag) {
             if ((ret = ff_reget_buffer(s->avctx, s->tmp_frame)) < 0)
                 return ret;
@@ -2103,7 +2103,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             s->edge_emu_buffer[0] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
         if (!s->edge_emu_buffer[0])
             return -1;
-            
+
         if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads) {
             int i, startheader, j, cmpt = 0;
             offset += (s->gb[0]->index>>3);
@@ -2133,9 +2133,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             }
 #endif
             memset(s->ctb_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
-            
+
             for(i=1; i< s->sh.num_entry_point_offsets; i++) {
-              
+
                 //cmpt = 0;
                 offset += (s->sh.entry_point_offset[i-1]-cmpt);
 #ifdef WPP1
@@ -2160,7 +2160,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             if (hls_slice_data(s) < 0)
                 return -1;
         }
-            
+
         if (s->sps->sample_adaptive_offset_enabled_flag)
             av_frame_unref(s->tmp_frame);
         if (s->decode_checksum_sei == 1) {
@@ -2242,10 +2242,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_free(s->edge_emu_buffer[MAX_ENTRIES-1]);
         av_free(s->ctb_entry_count);
     }
-    
-  
-    
-    
+
+
+
+
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         av_frame_free(&s->DPB[i].frame);
     }

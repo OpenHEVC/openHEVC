@@ -46,6 +46,8 @@
 
 /*      SSE Optimizations     */
 #ifdef USE_SSE
+//#define SSE_TRANS_BYPASS
+#define SSE_DEQUANT
 #define SSE_MC
 #define SSE_EPEL
 #define USE_SSE_4x4_Transform_LUMA
@@ -73,17 +75,383 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
         dst += stride;
     }
 }
+#ifdef SSE_DEQUANT
+static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
+{
+    __m128i c0,c1,x0,x1,x2,x3,f0,f1;
+    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
 
-static void FUNC(dequant)(int16_t *coeffs, int log2_size, int qp)
+    //TODO: scaling_list_enabled_flag support
+
+    int scale2  = level_scale[qp % 6] << ((qp / 6) + 4);
+    int add    = 1 << (BIT_DEPTH - 4);
+
+    int shift  = BIT_DEPTH - 3;
+     //4x4 = 16 coeffs.
+    f0= _mm_set1_epi16(scale2);
+    f1= _mm_set1_epi32(add);
+    c0= _mm_loadu_si128((__m128i*)&coeffs[0]); //loads 8 first values
+    c1= _mm_loadu_si128((__m128i*)&coeffs[8]); //loads 8 last values
+    x0= _mm_unpacklo_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+    x2= _mm_unpacklo_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+    x1= _mm_unpackhi_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+    x3= _mm_unpackhi_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+
+    x0= _mm_add_epi32(x0,f1);
+    x1= _mm_add_epi32(x1,f1);
+    x2= _mm_add_epi32(x2,f1);
+    x3= _mm_add_epi32(x3,f1);
+
+    x0= _mm_srai_epi32(x0,shift);
+    x1= _mm_srai_epi32(x1,shift);
+    x2= _mm_srai_epi32(x2,shift);
+    x3= _mm_srai_epi32(x3,shift);
+
+    x0= _mm_packs_epi32(x0,x1);
+    x2= _mm_packs_epi32(x2,x3);
+
+    _mm_storeu_si128(&coeffs[0], x0);
+    _mm_storeu_si128(&coeffs[8], x2);
+
+}
+
+static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
+{
+    __m128i c0,c1,c2,c3,x0,x1,x2,x3,x4,x5,x6,x7,f0,f1;
+    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
+
+    //TODO: scaling_list_enabled_flag support
+   int scale2  = level_scale[qp % 6] << ((qp / 6) + 4);
+    int add    = 1 << (BIT_DEPTH - 3);
+
+    int shift  = BIT_DEPTH - 2;
+    //8x8= 64 coeffs.
+   f0= _mm_set1_epi16(scale2);
+    f1= _mm_set1_epi32(add);
+    c0= _mm_loadu_si128((__m128i*)&coeffs[0]); //loads 8 first values
+    c1= _mm_loadu_si128((__m128i*)&coeffs[8]);
+    c2= _mm_loadu_si128((__m128i*)&coeffs[16]);
+    c3= _mm_loadu_si128((__m128i*)&coeffs[24]);
+    x0= _mm_unpacklo_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+    x2= _mm_unpacklo_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+    x0= _mm_add_epi32(x0,f1);
+    x4= _mm_unpacklo_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+    x0= _mm_srai_epi32(x0,shift);
+    x2= _mm_add_epi32(x2,f1);
+    x6= _mm_unpacklo_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+    x2= _mm_srai_epi32(x2,shift);
+    x4= _mm_add_epi32(x4,f1);
+    x1= _mm_unpackhi_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+    x4= _mm_srai_epi32(x4,shift);
+    x6= _mm_add_epi32(x6,f1);
+    x3= _mm_unpackhi_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+    x6= _mm_srai_epi32(x6,shift);
+    x1= _mm_add_epi32(x1,f1);
+    x5= _mm_unpackhi_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+    x1= _mm_srai_epi32(x1,shift);
+    x3= _mm_add_epi32(x3,f1);
+    x7= _mm_unpackhi_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+    x5= _mm_add_epi32(x5,f1);
+    x3= _mm_srai_epi32(x3,shift);
+    x7= _mm_add_epi32(x7,f1);
+    x5= _mm_srai_epi32(x5,shift);
+    x7= _mm_srai_epi32(x7,shift);
+
+
+    x0= _mm_packs_epi32(x0,x1);
+    x2= _mm_packs_epi32(x2,x3);
+    x4= _mm_packs_epi32(x4,x5);
+    x6= _mm_packs_epi32(x6,x7);
+
+    _mm_storeu_si128(&coeffs[0], x0);
+    _mm_storeu_si128(&coeffs[8], x2);
+    _mm_storeu_si128(&coeffs[16], x4);
+    _mm_storeu_si128(&coeffs[24], x6);
+
+    c0= _mm_loadu_si128((__m128i*)&coeffs[32]);
+    c1= _mm_loadu_si128((__m128i*)&coeffs[40]);
+    c2= _mm_loadu_si128((__m128i*)&coeffs[48]);
+    c3= _mm_loadu_si128((__m128i*)&coeffs[56]);
+    x0= _mm_unpacklo_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+    x2= _mm_unpacklo_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+    x4= _mm_unpacklo_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+    x6= _mm_unpacklo_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+    x1= _mm_unpackhi_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+    x3= _mm_unpackhi_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+    x5= _mm_unpackhi_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+    x7= _mm_unpackhi_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+    x0= _mm_add_epi32(x0,f1);
+    x1= _mm_add_epi32(x1,f1);
+    x2= _mm_add_epi32(x2,f1);
+    x3= _mm_add_epi32(x3,f1);
+    x4= _mm_add_epi32(x4,f1);
+    x5= _mm_add_epi32(x5,f1);
+    x6= _mm_add_epi32(x6,f1);
+    x7= _mm_add_epi32(x7,f1);
+
+    x0= _mm_srai_epi32(x0,shift);
+    x1= _mm_srai_epi32(x1,shift);
+    x2= _mm_srai_epi32(x2,shift);
+    x3= _mm_srai_epi32(x3,shift);
+    x4= _mm_srai_epi32(x4,shift);
+    x5= _mm_srai_epi32(x5,shift);
+    x6= _mm_srai_epi32(x6,shift);
+    x7= _mm_srai_epi32(x7,shift);
+
+    x0= _mm_packs_epi32(x0,x1);
+    x2= _mm_packs_epi32(x2,x3);
+    x4= _mm_packs_epi32(x4,x5);
+    x6= _mm_packs_epi32(x6,x7);
+
+    _mm_storeu_si128(&coeffs[32], x0);
+    _mm_storeu_si128(&coeffs[40], x2);
+    _mm_storeu_si128(&coeffs[48], x4);
+    _mm_storeu_si128(&coeffs[56], x6);
+}
+
+static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
 {
     int x, y;
-    int size = 1 << log2_size;
+    int size = 16;
+    __m128i c0,c1,c2,c3,x0,x1,x2,x3,x4,x5,x6,x7,f0,f1;
 
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift  = BIT_DEPTH + log2_size - 5;
+    int shift  = BIT_DEPTH -1;
+    int scale2  = level_scale[qp % 6] << ((qp / 6) + 4);
+    int add    = 1 << (BIT_DEPTH - 2);
+    for(x= 0; x< 16*16 ; x+=64)
+    {
+        f0= _mm_set1_epi16(scale2);
+         f1= _mm_set1_epi32(add);
+         c0= _mm_loadu_si128((__m128i*)&coeffs[0+x]); //loads 8 first values
+         c1= _mm_loadu_si128((__m128i*)&coeffs[8+x]);
+         c2= _mm_loadu_si128((__m128i*)&coeffs[16+x]);
+         c3= _mm_loadu_si128((__m128i*)&coeffs[24+x]);
+         x0= _mm_unpacklo_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+         x2= _mm_unpacklo_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+         x4= _mm_unpacklo_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+         x6= _mm_unpacklo_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+         x1= _mm_unpackhi_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+         x3= _mm_unpackhi_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+         x5= _mm_unpackhi_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+         x7= _mm_unpackhi_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+         x0= _mm_add_epi32(x0,f1);
+         x1= _mm_add_epi32(x1,f1);
+         x2= _mm_add_epi32(x2,f1);
+         x3= _mm_add_epi32(x3,f1);
+         x4= _mm_add_epi32(x4,f1);
+         x5= _mm_add_epi32(x5,f1);
+         x6= _mm_add_epi32(x6,f1);
+         x7= _mm_add_epi32(x7,f1);
+
+         x0= _mm_srai_epi32(x0,shift);
+         x1= _mm_srai_epi32(x1,shift);
+         x2= _mm_srai_epi32(x2,shift);
+         x3= _mm_srai_epi32(x3,shift);
+         x4= _mm_srai_epi32(x4,shift);
+         x5= _mm_srai_epi32(x5,shift);
+         x6= _mm_srai_epi32(x6,shift);
+         x7= _mm_srai_epi32(x7,shift);
+
+         x0= _mm_packs_epi32(x0,x1);
+         x2= _mm_packs_epi32(x2,x3);
+         x4= _mm_packs_epi32(x4,x5);
+         x6= _mm_packs_epi32(x6,x7);
+
+         _mm_storeu_si128(&coeffs[0+x], x0);
+         _mm_storeu_si128(&coeffs[8+x], x2);
+         _mm_storeu_si128(&coeffs[16+x], x4);
+         _mm_storeu_si128(&coeffs[24+x], x6);
+
+         c0= _mm_loadu_si128((__m128i*)&coeffs[32+x]);
+         c1= _mm_loadu_si128((__m128i*)&coeffs[40+x]);
+         c2= _mm_loadu_si128((__m128i*)&coeffs[48+x]);
+         c3= _mm_loadu_si128((__m128i*)&coeffs[56+x]);
+         x0= _mm_unpacklo_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+         x2= _mm_unpacklo_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+         x4= _mm_unpacklo_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+         x6= _mm_unpacklo_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+         x1= _mm_unpackhi_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+         x3= _mm_unpackhi_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+         x5= _mm_unpackhi_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+         x7= _mm_unpackhi_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+         x0= _mm_add_epi32(x0,f1);
+         x1= _mm_add_epi32(x1,f1);
+         x2= _mm_add_epi32(x2,f1);
+         x3= _mm_add_epi32(x3,f1);
+         x4= _mm_add_epi32(x4,f1);
+         x5= _mm_add_epi32(x5,f1);
+         x6= _mm_add_epi32(x6,f1);
+         x7= _mm_add_epi32(x7,f1);
+
+         x0= _mm_srai_epi32(x0,shift);
+         x1= _mm_srai_epi32(x1,shift);
+         x2= _mm_srai_epi32(x2,shift);
+         x3= _mm_srai_epi32(x3,shift);
+         x4= _mm_srai_epi32(x4,shift);
+         x5= _mm_srai_epi32(x5,shift);
+         x6= _mm_srai_epi32(x6,shift);
+         x7= _mm_srai_epi32(x7,shift);
+
+         x0= _mm_packs_epi32(x0,x1);
+         x2= _mm_packs_epi32(x2,x3);
+         x4= _mm_packs_epi32(x4,x5);
+         x6= _mm_packs_epi32(x6,x7);
+
+         _mm_storeu_si128(&coeffs[32+x], x0);
+         _mm_storeu_si128(&coeffs[40+x], x2);
+         _mm_storeu_si128(&coeffs[48+x], x4);
+         _mm_storeu_si128(&coeffs[56+x], x6);
+
+    }
+
+
+}
+
+static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
+{
+    int x, y;
+    int size = 32;
+    __m128i c0,c1,c2,c3,x0,x1,x2,x3,x4,x5,x6,x7,f0,f1;
+
+    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
+
+    //TODO: scaling_list_enabled_flag support
+
+    int shift  = BIT_DEPTH;
+    int scale2  = level_scale[qp % 6] << ((qp / 6) + 4);
+    int add    = 1 << (BIT_DEPTH - 1);
+    for(x= 0; x< 32*32 ; x+=64)
+    {
+        f0= _mm_set1_epi16(scale2);
+         f1= _mm_set1_epi32(add);
+         c0= _mm_loadu_si128((__m128i*)&coeffs[0+x]); //loads 8 first values
+         c1= _mm_loadu_si128((__m128i*)&coeffs[8+x]);
+         c2= _mm_loadu_si128((__m128i*)&coeffs[16+x]);
+         c3= _mm_loadu_si128((__m128i*)&coeffs[24+x]);
+         x0= _mm_unpacklo_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+         x2= _mm_unpacklo_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+         x4= _mm_unpacklo_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+         x6= _mm_unpacklo_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+         x1= _mm_unpackhi_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+         x3= _mm_unpackhi_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+         x5= _mm_unpackhi_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+         x7= _mm_unpackhi_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+         x0= _mm_add_epi32(x0,f1);
+         x1= _mm_add_epi32(x1,f1);
+         x2= _mm_add_epi32(x2,f1);
+         x3= _mm_add_epi32(x3,f1);
+         x4= _mm_add_epi32(x4,f1);
+         x5= _mm_add_epi32(x5,f1);
+         x6= _mm_add_epi32(x6,f1);
+         x7= _mm_add_epi32(x7,f1);
+
+         x0= _mm_srai_epi32(x0,shift);
+         x1= _mm_srai_epi32(x1,shift);
+         x2= _mm_srai_epi32(x2,shift);
+         x3= _mm_srai_epi32(x3,shift);
+         x4= _mm_srai_epi32(x4,shift);
+         x5= _mm_srai_epi32(x5,shift);
+         x6= _mm_srai_epi32(x6,shift);
+         x7= _mm_srai_epi32(x7,shift);
+
+         x0= _mm_packs_epi32(x0,x1);
+         x2= _mm_packs_epi32(x2,x3);
+         x4= _mm_packs_epi32(x4,x5);
+         x6= _mm_packs_epi32(x6,x7);
+
+         _mm_storeu_si128(&coeffs[0+x], x0);
+         _mm_storeu_si128(&coeffs[8+x], x2);
+         _mm_storeu_si128(&coeffs[16+x], x4);
+         _mm_storeu_si128(&coeffs[24+x], x6);
+
+         c0= _mm_loadu_si128((__m128i*)&coeffs[32+x]);
+         c1= _mm_loadu_si128((__m128i*)&coeffs[40+x]);
+         c2= _mm_loadu_si128((__m128i*)&coeffs[48+x]);
+         c3= _mm_loadu_si128((__m128i*)&coeffs[56+x]);
+         x0= _mm_unpacklo_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+         x2= _mm_unpacklo_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+         x4= _mm_unpacklo_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+         x6= _mm_unpacklo_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+         x1= _mm_unpackhi_epi16(_mm_mullo_epi16(c0,f0),_mm_mulhi_epi16(c0,f0));
+         x3= _mm_unpackhi_epi16(_mm_mullo_epi16(c1,f0),_mm_mulhi_epi16(c1,f0));
+         x5= _mm_unpackhi_epi16(_mm_mullo_epi16(c2,f0),_mm_mulhi_epi16(c2,f0));
+         x7= _mm_unpackhi_epi16(_mm_mullo_epi16(c3,f0),_mm_mulhi_epi16(c3,f0));
+
+         x0= _mm_add_epi32(x0,f1);
+         x1= _mm_add_epi32(x1,f1);
+         x2= _mm_add_epi32(x2,f1);
+         x3= _mm_add_epi32(x3,f1);
+         x4= _mm_add_epi32(x4,f1);
+         x5= _mm_add_epi32(x5,f1);
+         x6= _mm_add_epi32(x6,f1);
+         x7= _mm_add_epi32(x7,f1);
+
+         x0= _mm_srai_epi32(x0,shift);
+         x1= _mm_srai_epi32(x1,shift);
+         x2= _mm_srai_epi32(x2,shift);
+         x3= _mm_srai_epi32(x3,shift);
+         x4= _mm_srai_epi32(x4,shift);
+         x5= _mm_srai_epi32(x5,shift);
+         x6= _mm_srai_epi32(x6,shift);
+         x7= _mm_srai_epi32(x7,shift);
+
+         x0= _mm_packs_epi32(x0,x1);
+         x2= _mm_packs_epi32(x2,x3);
+         x4= _mm_packs_epi32(x4,x5);
+         x6= _mm_packs_epi32(x6,x7);
+
+         _mm_storeu_si128(&coeffs[32+x], x0);
+         _mm_storeu_si128(&coeffs[40+x], x2);
+         _mm_storeu_si128(&coeffs[48+x], x4);
+         _mm_storeu_si128(&coeffs[56+x], x6);
+
+    }
+}
+#else
+static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
+{
+    int x, y;
+    int size = 4;
+
+    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
+
+    //TODO: scaling_list_enabled_flag support
+
+    int shift  = BIT_DEPTH -3;
+    int scale  = level_scale[qp % 6] << (qp / 6);
+    int add    = 1 << (shift - 1);
+    int scale2 = scale << 4;
+            for (y = 0; y < 4*4; y+=4) {
+                SCALE(coeffs[y+0], (coeffs[y+0] * scale2));
+                SCALE(coeffs[y+1], (coeffs[y+1] * scale2));
+                SCALE(coeffs[y+2], (coeffs[y+2] * scale2));
+                SCALE(coeffs[y+3], (coeffs[y+3] * scale2));
+            }
+
+}
+static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
+{
+    int x, y;
+    int size = 8;
+
+    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
+
+    //TODO: scaling_list_enabled_flag support
+
+    int shift  = BIT_DEPTH - 2;
     int scale  = level_scale[qp % 6] << (qp / 6);
     int add    = 1 << (shift - 1);
     int scale2 = scale << 4;
@@ -95,67 +463,127 @@ static void FUNC(dequant)(int16_t *coeffs, int log2_size, int qp)
         SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
         x++;                                        \
         SCALE(coeffs[y+x], (coeffs[y+x] * scale2))
-    switch (size){
-        case 32:
-            for (y = 0; y < 32*32; y+=32) {
-                for (x = 0; x < 32; x++) {
-                    FILTER();
-                }
-            }
-            break;
-        case 16:
-            for (y = 0; y < 16*16; y+=16) {
-                for (x = 0; x < 16; x++) {
-                    FILTER();
-                }
-            }
-            break;
-        case 8:
+
             for (y = 0; y < 8*8; y+=8) {
                 for (x = 0; x < 8; x++) {
                     FILTER();
                 }
             }
-            break;
-        case 4:
-            for (y = 0; y < 4*4; y+=4) {
-                SCALE(coeffs[y+0], (coeffs[y+0] * scale2));
-                SCALE(coeffs[y+1], (coeffs[y+1] * scale2));
-                SCALE(coeffs[y+2], (coeffs[y+2] * scale2));
-                SCALE(coeffs[y+3], (coeffs[y+3] * scale2));
-            }
-            break;
-    }
 #undef FILTER
 }
 
-static void FUNC(transquant_bypass)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int log2_size)
+static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
+{
+    int x, y;
+    int size = 16;
+
+    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
+
+    //TODO: scaling_list_enabled_flag support
+
+    int shift  = BIT_DEPTH -1;
+    int scale  = level_scale[qp % 6] << (qp / 6);
+    int add    = 1 << (shift - 1);
+    int scale2 = scale << 4;
+#define FILTER()                                    \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2))
+            for (y = 0; y < 16*16; y+=16) {
+                for (x = 0; x < 16; x++) {
+                    FILTER();
+                }
+            }
+#undef FILTER
+}
+
+static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
+{
+    int x, y;
+    int size = 32;
+
+    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
+
+    //TODO: scaling_list_enabled_flag support
+
+    int shift  = BIT_DEPTH;
+    int scale  = level_scale[qp % 6] << (qp / 6);
+    int add    = 1 << (shift - 1);
+    int scale2 = scale << 4;
+#define FILTER()                                    \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); \
+        x++;                                        \
+        SCALE(coeffs[y+x], (coeffs[y+x] * scale2))
+            for (y = 0; y < 32*32; y+=32) {
+                for (x = 0; x < 32; x++) {
+                    FILTER();
+                }
+            }
+
+#undef FILTER
+}
+#endif
+
+#ifdef SSE_TRANS_BYPASS
+static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
+{
+    uint8_t x, y;
+    __m128i d0,d1,d2,d3,c0,c1,x2,x3,x4, bshuffle1;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t stride = _stride / sizeof(pixel);
+    printf("stride = %d \n",stride);
+    bshuffle1=_mm_set_epi8(15,13,11,9,7,5,3,1,14,12,10,8,6,4,2,0);
+    d0= _mm_loadu_si128((__m128i*)&dst[0]);
+    d1= _mm_loadu_si128((__m128i*)&dst[stride]);
+    d2= _mm_loadu_si128((__m128i*)&dst[2*stride]);
+    d3= _mm_loadu_si128((__m128i*)&dst[3*stride]);
+    c0= _mm_loadu_si128((__m128i*)&coeffs[0]);
+    c1= _mm_loadu_si128((__m128i*)&coeffs[8]);
+
+    x2= _mm_unpacklo_epi64(d0,d2);
+    x3= _mm_unpacklo_epi64(d1,d3);
+    x4= _mm_unpacklo_epi32(x2,x3);
+
+
+    c0= _mm_unpacklo_epi8(c0,c1);
+    c0= _mm_shuffle_epi8(c0,bshuffle1);
+    d0= _mm_adds_epi8(c0,x4);
+    y=0;
+
+        dst[0]= _mm_extract_epi8(d0,0);
+        dst[1]= _mm_extract_epi8(d0,1);
+        dst[2]= _mm_extract_epi8(d0,2);
+        dst[3]= _mm_extract_epi8(d0,3);
+        dst[stride]= _mm_extract_epi8(d0,4);
+        dst[1+stride]= _mm_extract_epi8(d0,5);
+        dst[2+stride]= _mm_extract_epi8(d0,6);
+        dst[3+stride]= _mm_extract_epi8(d0,7);
+        dst[2*stride]= _mm_extract_epi8(d0,8);
+        dst[1+2*stride]= _mm_extract_epi8(d0,9);
+        dst[2+2*stride]= _mm_extract_epi8(d0,10);
+        dst[3+2*stride]= _mm_extract_epi8(d0,11);
+        dst[0+3*stride]= _mm_extract_epi8(d0,12);
+        dst[1+3*stride]= _mm_extract_epi8(d0,13);
+        dst[2+3*stride]= _mm_extract_epi8(d0,14);
+        dst[3+3*stride]= _mm_extract_epi8(d0,15);
+    }
+
+
+
+static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
 {
     int x, y;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t stride = _stride / sizeof(pixel);
-    int size = 1 << log2_size;
-
-    switch (size){
-        case 32:
-            for (y = 0; y < 32; y++) {
-                for (x = 0; x < 32; x++) {
-                    dst[x] += *coeffs;
-                    coeffs++;
-                }
-                dst += stride;
-            }
-            break;
-        case 16:
-            for (y = 0; y < 16; y++) {
-                for (x = 0; x < 16; x++) {
-                    dst[x] += *coeffs;
-                    coeffs++;
-                }
-                dst += stride;
-            }
-            break;
-        case 8:
+    int size = 1 << 3;
             for (y = 0; y < 8; y++) {
                 for (x = 0; x < 8; x++) {
                     dst[x] += *coeffs;
@@ -163,8 +591,47 @@ static void FUNC(transquant_bypass)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _s
                 }
                 dst += stride;
             }
-            break;
-        case 4:
+}
+
+static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
+{
+    int x, y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t stride = _stride / sizeof(pixel);
+    int size = 1 << 4;
+            for (y = 0; y < 16; y++) {
+                for (x = 0; x < 16; x++) {
+                    dst[x] += *coeffs;
+                    coeffs++;
+                }
+                dst += stride;
+            }
+
+}
+
+static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
+{
+    int x, y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t stride = _stride / sizeof(pixel);
+    int size = 1 << 5;
+            for (y = 0; y < 32; y++) {
+                for (x = 0; x < 32; x++) {
+                    dst[x] += *coeffs;
+                    coeffs++;
+                }
+                dst += stride;
+            }
+
+}
+#else
+static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
+{
+    int x, y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t stride = _stride / sizeof(pixel);
+    int size = 1 << 2;
+
             for (y = 0; y < 4; y++) {
                 for (x = 0; x < 4; x++) {
                     dst[x] += *coeffs;
@@ -172,10 +639,60 @@ static void FUNC(transquant_bypass)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _s
                 }
                 dst += stride;
             }
-            break;
-    }
 
 }
+
+static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
+{
+    int x, y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t stride = _stride / sizeof(pixel);
+    int size = 1 << 3;
+
+            for (y = 0; y < 8; y++) {
+                for (x = 0; x < 8; x++) {
+                    dst[x] += *coeffs;
+                    coeffs++;
+                }
+                dst += stride;
+            }
+}
+
+static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
+{
+    int x, y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t stride = _stride / sizeof(pixel);
+    int size = 1 << 4;
+
+            for (y = 0; y < 16; y++) {
+                for (x = 0; x < 16; x++) {
+                    dst[x] += *coeffs;
+                    coeffs++;
+                }
+                dst += stride;
+            }
+
+}
+
+static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
+{
+    int x, y;
+    pixel *dst = (pixel*)_dst;
+    ptrdiff_t stride = _stride / sizeof(pixel);
+    int size = 1 << 5;
+
+            for (y = 0; y < 32; y++) {
+                for (x = 0; x < 32; x++) {
+                    dst[x] += *coeffs;
+                    coeffs++;
+                }
+                dst += stride;
+            }
+
+}
+
+#endif
 
 static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
 {
@@ -3295,10 +3812,10 @@ dst[3]= _mm_extract_epi16(x2,3);                                        \
 src += srcstride;                                                       \
 dst += dststride;                                                       \
 }                                                                           \
-}else                                                                           \
-for (y = 0; y < height; y++) {                                          \
-for (x = 0; x < width; x+=8)  {                                     \
-/* load data in register     */                               \
+}else                                                                       \
+for (y = 0; y < height; y++) {                                              \
+for (x = 0; x < width; x+=8)  {                                             \
+/* load data in register     */                                             \
 x1= _mm_loadu_si128((__m128i*)&src[x-3]);                                   \
 x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));                            \
 x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));          \
@@ -3314,7 +3831,7 @@ x2= _mm_hadd_epi16(x2,x3);                                                  \
 x4= _mm_hadd_epi16(x4,x5);                                                  \
 x2= _mm_hadd_epi16(x2,x4);                                                  \
 /* give results back            */                            \
-_mm_store_si128(&dst[x], _mm_srli_si128(x2,BIT_DEPTH -8));                  \
+_mm_storeu_si128(&dst[x], _mm_srli_si128(x2,BIT_DEPTH -8));                  \
 }                                                                   \
 src += srcstride;                                                   \
 dst += dststride;                                                   \
@@ -3326,23 +3843,25 @@ dst += dststride;                                                   \
  of each row.
  
  */
-
 #define PUT_HEVC_QPEL_V(V)                                                      \
 static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst, ptrdiff_t dststride,       \
 uint8_t *_src, ptrdiff_t _srcstride,  \
 int width, int height)                \
-{                                                                               \
+{                                                                            \
 int x, y;                                                                   \
 pixel *src = (pixel*)_src;                                                  \
 ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
-__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;                \
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, r0, r1;                \
 __m128i t1,t2,t3,t4,t5,t6,t7,t8;                                            \
 r1= QPEL2_FILTER_## V;                                                      \
 /* case width = 4 */                                                         \
 if(width == 4){                                                             \
 for (y = 0; y < height; y++)  {                                             \
-r0= _mm_set1_epi16(0);                                              \
+r0= _mm_set1_epi16(0);                                                      \
 /* load data in register  */                                                \
+    if(V == 3)                                                              \
+x1= _mm_set1_epi8(0);                                                       \
+else                                                                        \
 x1= _mm_loadu_si128((__m128i*)&src[-3*srcstride]);                          \
 x2= _mm_loadu_si128((__m128i*)&src[-2*srcstride]);                          \
 x3= _mm_loadu_si128((__m128i*)&src[-srcstride]);                            \
@@ -3351,7 +3870,6 @@ x5= _mm_loadu_si128((__m128i*)&src[srcstride]);                             \
 x6= _mm_loadu_si128((__m128i*)&src[2*srcstride]);                           \
 x7= _mm_loadu_si128((__m128i*)&src[3*srcstride]);                           \
 x8= _mm_loadu_si128((__m128i*)&src[4*srcstride]);                           \
-\
 x1 = _mm_unpacklo_epi8(x1,_mm_set1_epi8(0));                                \
 x2 = _mm_unpacklo_epi8(x2,_mm_set1_epi8(0));                                \
 x3 = _mm_unpacklo_epi8(x3,_mm_set1_epi8(0));                                \
@@ -3397,12 +3915,16 @@ for (y = 0; y < height; y++)  {                                             \
 for (x = 0; x < width; x+=8)  {                                         \
 /* check if memory needs to be reloaded */                              \
 if(x%16 == 0){                                                      \
-x1= _mm_loadu_si128((__m128i*)&src[x-3*srcstride]);                         \
-x2= _mm_loadu_si128((__m128i*)&src[x-2*srcstride]);                         \
+    /*   TODO CHECK LOAD X-3*SRCSTRIDE : WHY FAIL ON 4K ???    */      \
+    if(V == 3)                                                              \
+x1= _mm_set1_epi8(0);                                                       \
+else                                                                        \
+x1= _mm_loadu_si128((__m128i*)&src[x-3*srcstride]);                        \
+x2= _mm_loadu_si128((__m128i*)&src[x-2*srcstride]);                        \
 x3= _mm_loadu_si128((__m128i*)&src[x-srcstride]);                           \
 x4= _mm_loadu_si128((__m128i*)&src[x]);                                     \
-x5= _mm_loadu_si128((__m128i*)&src[x+srcstride]);                           \
-x6= _mm_loadu_si128((__m128i*)&src[x+2*srcstride]);                         \
+x5= _mm_loadu_si128((__m128i*)&src[x+srcstride]);                            \
+x6= _mm_loadu_si128((__m128i*)&src[x+2*srcstride]);                        \
 x7= _mm_loadu_si128((__m128i*)&src[x+3*srcstride]);                         \
 x8= _mm_loadu_si128((__m128i*)&src[x+4*srcstride]);                         \
 \
@@ -3414,7 +3936,7 @@ t5 = _mm_unpacklo_epi8(x5,_mm_set1_epi8(0));                                \
 t6 = _mm_unpacklo_epi8(x6,_mm_set1_epi8(0));                                \
 t7 = _mm_unpacklo_epi8(x7,_mm_set1_epi8(0));                                \
 t8 = _mm_unpacklo_epi8(x8,_mm_set1_epi8(0));                                \
-}else{                                                              \
+}else{                                                                      \
 t1 = _mm_unpackhi_epi8(x1,_mm_set1_epi8(0));                                \
 t2 = _mm_unpackhi_epi8(x2,_mm_set1_epi8(0));                                \
 t3 = _mm_unpackhi_epi8(x3,_mm_set1_epi8(0));                                \
@@ -3441,13 +3963,12 @@ r0= _mm_adds_epi16(r0, _mm_mullo_epi16(t7,_mm_set1_epi16(_mm_extract_epi16(r1,6)
 \
 r0= _mm_adds_epi16(r0, _mm_mullo_epi16(t8,_mm_set1_epi16(_mm_extract_epi16(r1,7)))) ;     \
 /* give results back            */                                          \
-_mm_store_si128(&dst[x], _mm_srli_epi16(r0,BIT_DEPTH -8));      \
+_mm_storeu_si128(&dst[x], _mm_srli_epi16(r0,BIT_DEPTH -8));      \
 }                                                                       \
 src += srcstride;                                                       \
 dst += dststride;                                                       \
 }                                                                           \
 }
-
 #define PUT_HEVC_QPEL_HV(H, V)                                                            \
 static void FUNC(put_hevc_qpel_h ## H ## v ## V )(int16_t *dst, ptrdiff_t dststride,      \
 uint8_t *_src, ptrdiff_t _srcstride,    \
@@ -3506,7 +4027,7 @@ x2= _mm_hadd_epi16(x2,x3);                                                  \
 x4= _mm_hadd_epi16(x4,x5);                                                  \
 x2= _mm_hadd_epi16(x2,x4);                                                  \
 /* give results back            */                                \
-_mm_store_si128(&tmp[x], _mm_srli_si128(x2,BIT_DEPTH -8));                  \
+_mm_storeu_si128(&tmp[x], _mm_srli_si128(x2,BIT_DEPTH -8));                  \
 }                                                                       \
 src += srcstride;                                                       \
 tmp += MAX_PB_SIZE;                                                     \
@@ -3573,6 +4094,7 @@ tmp += MAX_PB_SIZE;                                                 \
 dst += dststride;                                                   \
 }                                                                       \
 }
+
 #elif  ifdef GCC_OPTIMIZATION_ENABLE
 #define PUT_HEVC_QPEL_H(H)                                                      \
 static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
@@ -3993,7 +4515,7 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
                 r0= _mm_adds_epi16(r0, _mm_mullo_epi16(t3,f3)) ;
                 r0= _mm_srli_epi16(r0,BIT_DEPTH - 8);
                 /* give results back            */
-                _mm_store_si128(&dst[x], r0);
+                _mm_storeu_si128(&dst[x], r0);
             }
             src += srcstride;
             dst += dststride;

@@ -42,8 +42,14 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 
 #define HEVC_DSP(depth)                                                     \
     hevcdsp->put_pcm = FUNC(put_pcm, depth);                                \
-    hevcdsp->dequant = FUNC(dequant, depth);                                \
-    hevcdsp->transquant_bypass = FUNC(transquant_bypass, depth);            \
+    hevcdsp->dequant[0] = FUNC(dequant4x4, depth);                          \
+    hevcdsp->dequant[1] = FUNC(dequant8x8, depth);                          \
+    hevcdsp->dequant[2] = FUNC(dequant16x16, depth);                        \
+    hevcdsp->dequant[3] = FUNC(dequant32x32, depth);                        \
+    hevcdsp->transquant_bypass[0] = FUNC(transquant_bypass4x4, depth);            \
+    hevcdsp->transquant_bypass[1] = FUNC(transquant_bypass8x8, depth);            \
+    hevcdsp->transquant_bypass[2] = FUNC(transquant_bypass16x16, depth);            \
+    hevcdsp->transquant_bypass[3] = FUNC(transquant_bypass32x32, depth);            \
     hevcdsp->transform_skip = FUNC(transform_skip, depth);                  \
     hevcdsp->transform_4x4_luma_add = FUNC(transform_4x4_luma_add, depth);  \
     hevcdsp->transform_add[0] = FUNC(transform_4x4_add, depth);             \
@@ -77,6 +83,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->put_hevc_epel[0][1] = FUNC(put_hevc_epel_h, depth);            \
     hevcdsp->put_hevc_epel[1][0] = FUNC(put_hevc_epel_v, depth);            \
     hevcdsp->put_hevc_epel[1][1] = FUNC(put_hevc_epel_hv, depth);           \
+                                                                            \
                                                                             \
     hevcdsp->put_unweighted_pred_luma = FUNC(put_unweighted_pred_luma, depth);        \
     hevcdsp->put_unweighted_pred_chroma = FUNC(put_unweighted_pred_chroma, depth);        \
