@@ -89,7 +89,8 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
 
     openHevcFrameInfo->sample_aspect_ratio.num = picture->sample_aspect_ratio.num;
     openHevcFrameInfo->sample_aspect_ratio.den = picture->sample_aspect_ratio.den;
-    openHevcFrameInfo->frameRate  = 0;
+    openHevcFrameInfo->frameRate.num  = 0;
+    openHevcFrameInfo->frameRate.den  = 0;
     openHevcFrameInfo->display_picture_number = picture->display_picture_number;
     openHevcFrameInfo->flag       = 0; //progressive, interlaced, interlaced top field first, interlaced bottom field first.
     openHevcFrameInfo->nTimeStamp = picture->pts;

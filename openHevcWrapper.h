@@ -25,7 +25,7 @@ typedef struct OpenHevc_FrameInfo
    int         nWidth;
    int         nHeight;
    OpenHevc_Rational  sample_aspect_ratio;
-   int         frameRate;
+   OpenHevc_Rational  frameRate;
    int         display_picture_number;
    int         flag; //progressive, interlaced, interlaced top field first, interlaced bottom field first.
    int64_t     nTimeStamp;
