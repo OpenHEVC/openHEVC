@@ -827,6 +827,7 @@ typedef struct HEVCContext {
      */
     uint16_t seq_decode;
     uint16_t seq_output;
+    int ERROR;
 } HEVCContext;
 
 enum ScanType {
