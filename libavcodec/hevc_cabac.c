@@ -78,13 +78,55 @@ static const int8_t num_bins_in_se[] = {
 /**
  * Offset to ctxIdx 0 in init_values and states, indexed by SyntaxElement.
  */
-static int elem_offset[sizeof(num_bins_in_se)];
+static const int elem_offset[sizeof(num_bins_in_se)] ={ 0,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    5,
+    6,
+    9,
+    12,
+    13,
+    17,
+    17,
+    18,
+    18,
+    18,
+    20,
+    21,
+    22,
+    27,
+    29,
+    31,
+    33,
+    35,
+    35,
+    35,
+    36,
+    37,
+    40,
+    42,
+    46,
+    48,
+    66,
+    84,
+    84,
+    84,
+    88,
+    130,
+    154,
+    160,
+    160,};
 
 #define CNU 154
 /**
  * Indexed by init_type
  */
-const uint8_t init_values[3][HEVC_CONTEXTS] = {
+static const uint8_t init_values[3][HEVC_CONTEXTS] = {
     {
         // sao_merge_flag
         153,
@@ -313,10 +355,12 @@ void ff_hevc_cabac_init(HEVCContext *s, int entry)
     if (s->sh.cabac_init_flag && s->sh.slice_type != I_SLICE)
         init_type ^= 3;
 
-    elem_offset[0] = 0;
-    for (i = 1; i < sizeof(num_bins_in_se); i++) {
-        elem_offset[i] = elem_offset[i-1] + num_bins_in_se[i-1];
-    }
+   // elem_offset[0] = 0;
+   // printf("%d %d \n", 0, elem_offset[0]);
+  //  for (i = 1; i < sizeof(num_bins_in_se); i++) {
+   //     elem_offset[i] = elem_offset[i-1] + num_bins_in_se[i-1];
+    //    printf("%d %d \n", i, elem_offset[i]);
+   // }
 
     for (i = 0; i < HEVC_CONTEXTS; i++) {
         int init_value = init_values[init_type][i];
@@ -740,40 +784,38 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
     return GET_CABAC(entry, elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
 }
 
-static int ctx_set[MAX_ENTRIES] = {0};
+
 
 int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx,
                                                  int i, int n,
                                                  int first_elem,
                                                  int first_subset, int entry)
 {
-    static int greater1_ctx[MAX_ENTRIES] = {0};
-    static int last_coeff_abs_level_greater1_flag[MAX_ENTRIES] = {0};
-
+    
     int inc;
 
     if (first_elem) {
-        ctx_set[entry] = (i > 0 && c_idx == 0) ? 2 : 0;
+        s->ctx_set[entry] = (i > 0 && c_idx == 0) ? 2 : 0;
 
-        if (!first_subset && greater1_ctx[entry] == 0)
-            ctx_set[entry]++;
-        greater1_ctx[entry] = 1;
+        if (!first_subset && s->greater1_ctx[entry] == 0)
+            s->ctx_set[entry]++;
+        s->greater1_ctx[entry] = 1;
     }
 
-    inc = (ctx_set[entry] << 2) + greater1_ctx[entry];
+    inc = (s->ctx_set[entry] << 2) + s->greater1_ctx[entry];
     if (c_idx > 0)
         inc += 16;
 
-    last_coeff_abs_level_greater1_flag[entry] =
+    s->last_coeff_abs_level_greater1_flag[entry] =
         GET_CABAC(entry, elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc);
 
-    if (last_coeff_abs_level_greater1_flag[entry]) {
-        greater1_ctx[entry] = 0;
-    } else if (greater1_ctx[entry] > 0 && greater1_ctx[entry] < 3) {
-        greater1_ctx[entry]++;
+    if (s->last_coeff_abs_level_greater1_flag[entry]) {
+        s->greater1_ctx[entry] = 0;
+    } else if (s->greater1_ctx[entry] > 0 && s->greater1_ctx[entry] < 3) {
+        s->greater1_ctx[entry]++;
     }
 
-    return last_coeff_abs_level_greater1_flag[entry];
+    return s->last_coeff_abs_level_greater1_flag[entry];
 }
 
 int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
@@ -781,7 +823,7 @@ int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
 {
     int inc;
 
-    inc = ctx_set[entry];
+    inc = s->ctx_set[entry];
     if (c_idx > 0)
         inc += 4;
 
@@ -791,13 +833,13 @@ int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
 int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int first_elem, int base_level, int entry)
 {
     int i;
-    static int c_rice_param[MAX_ENTRIES], last_coeff_abs_level_remaining[MAX_ENTRIES];
+    
     int prefix = 0;
     int suffix = 0;
 
     if (first_elem) {
-        c_rice_param[entry] = 0;
-        last_coeff_abs_level_remaining[entry] = 0;
+        s->c_rice_param[entry] = 0;
+        s->last_coeff_abs_level_remaining[entry] = 0;
     }
 
     while (prefix < CABAC_MAX_BIN && get_cabac_bypass(s->cc[entry]))
@@ -805,21 +847,21 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int first_elem, int base_l
     if (prefix == CABAC_MAX_BIN)
         av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", prefix);
     if (prefix < 3) {
-        for (i = 0; i < c_rice_param[entry]; i++)
+        for (i = 0; i < s->c_rice_param[entry]; i++)
             suffix = (suffix << 1) | get_cabac_bypass(s->cc[entry]);
-        last_coeff_abs_level_remaining[entry] = (prefix << c_rice_param[entry]) + suffix;
+        s->last_coeff_abs_level_remaining[entry] = (prefix << s->c_rice_param[entry]) + suffix;
     } else {
-        for (i = 0; i < prefix - 3 + c_rice_param[entry]; i++)
+        for (i = 0; i < prefix - 3 + s->c_rice_param[entry]; i++)
             suffix = (suffix << 1) | get_cabac_bypass(s->cc[entry]);
-        last_coeff_abs_level_remaining[entry] = (((1 << (prefix - 3)) + 3 - 1)
-                                          << c_rice_param[entry]) + suffix;
+        s->last_coeff_abs_level_remaining[entry] = (((1 << (prefix - 3)) + 3 - 1)
+                                          << s->c_rice_param[entry]) + suffix;
     }
 
-    c_rice_param[entry] = FFMIN(c_rice_param[entry] +
-                         ((base_level + last_coeff_abs_level_remaining[entry]) >
-                          (3 * (1 << c_rice_param[entry]))), 4);
+    s->c_rice_param[entry] = FFMIN(s->c_rice_param[entry] +
+                         ((base_level + s->last_coeff_abs_level_remaining[entry]) >
+                          (3 * (1 << s->c_rice_param[entry]))), 4);
 
-    return last_coeff_abs_level_remaining[entry];
+    return s->last_coeff_abs_level_remaining[entry];
 }
 
 int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb, int entry)

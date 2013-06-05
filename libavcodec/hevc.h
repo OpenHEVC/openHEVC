@@ -744,6 +744,14 @@ typedef struct HEVCFrame {
 typedef struct HEVCContext {
     AVClass *c;  // needed by private avoptions
     
+    
+    // CABAC variables
+    int ctx_set[MAX_ENTRIES];
+    int greater1_ctx[MAX_ENTRIES];
+    int last_coeff_abs_level_greater1_flag[MAX_ENTRIES];
+    int c_rice_param[MAX_ENTRIES];
+    int last_coeff_abs_level_remaining[MAX_ENTRIES];
+    
     uint8_t enable_multithreads; 
     AVCodecContext *avctx;
     AVFrame *frame;

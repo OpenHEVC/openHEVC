@@ -2224,6 +2224,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->cc[0] = av_malloc(sizeof(CABACContext));
     s->cabac_state[0] = av_malloc(HEVC_CONTEXTS);
     s->cabac_state[1] = av_malloc(HEVC_CONTEXTS);
+    memset(&s->ctx_set[0], 0, MAX_ENTRIES*sizeof(int));
+    memset(&s->greater1_ctx[0], 0, MAX_ENTRIES*sizeof(int));
+    memset(&s->last_coeff_abs_level_greater1_flag[0], 0, MAX_ENTRIES*sizeof(int));
+
     if (!s->tmp_frame)
         return AVERROR(ENOMEM);
     s->max_ra = INT_MAX;
