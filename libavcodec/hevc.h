@@ -812,8 +812,7 @@ typedef struct HEVCContext {
     int *skipped_bytes_pos;
 
     int ctb_addr_ts;
-    int ctb_addr_rs;
-    int ctb_addr_in_slice;
+    int SliceAddrRs;
     int x_ctb;
     int y_ctb;
 
@@ -851,6 +850,7 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s);
 void save_states(HEVCContext *s, int entry);
 void load_states(HEVCContext *s, int entry);
 void ff_hevc_cabac_reinit(HEVCContext *s, int entry);
+void ff_hevc_cabac_init_decoder(HEVCContext *s, int entry);
 void ff_hevc_cabac_init(HEVCContext *s, int entry);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s, int entry);

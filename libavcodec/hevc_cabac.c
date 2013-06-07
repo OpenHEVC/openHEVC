@@ -295,19 +295,22 @@ void ff_hevc_cabac_reinit(HEVCContext *s, int entry)
 {
     skip_bytes(s->cc[entry],0);
 }
+void ff_hevc_cabac_init_decoder(HEVCContext *s, int entry)
+{
+    GetBitContext *gb = s->gb[entry];
+    skip_bits(gb, 1);
+    align_get_bits(gb);
+    ff_init_cabac_decoder(s->cc[entry],
+                          gb->buffer + get_bits_count(gb) / 8,
+                          (get_bits_left(s->gb[entry]) + 7) / 8);
+}
 
 void ff_hevc_cabac_init(HEVCContext *s, int entry)
 {
     int i;
     int init_type;
-    GetBitContext *gb = s->gb[entry];
-
-    skip_bits(gb, 1);
-    align_get_bits(gb);
     ff_init_cabac_states(s->cc[entry]);
-    ff_init_cabac_decoder(s->cc[entry],
-                          gb->buffer + get_bits_count(gb) / 8,
-                          (get_bits_left(s->gb[entry]) + 7) / 8);
+    ff_hevc_cabac_init_decoder(s, entry);
 
     init_type = 2 - s->sh.slice_type;
     if (s->sh.cabac_init_flag && s->sh.slice_type != I_SLICE)
@@ -402,6 +405,7 @@ int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb,
 
     return GET_CABAC(entry, elem_offset[SKIP_FLAG] + inc);
 }
+
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s, int entry)
 {
     int prefixVal = 0;

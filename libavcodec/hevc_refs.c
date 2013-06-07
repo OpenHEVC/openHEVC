@@ -22,7 +22,7 @@
 
 #include "hevc.h"
 #include "internal.h"
-#define TEST_DPB
+//#define TEST_DPB
 static int find_ref_idx(HEVCContext *s, int poc)
 {
     int i;

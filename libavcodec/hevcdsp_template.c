@@ -27,7 +27,7 @@
 #include "hevcdata.h"
 #include "hevcdsp.h"
 #include "hevc.h"
-#define USE_SSE
+// #define USE_SSE
 #ifdef USE_SSE
 #include <emmintrin.h>
 #include <x86intrin.h>
@@ -3573,7 +3573,7 @@ tmp += MAX_PB_SIZE;                                                 \
 dst += dststride;                                                   \
 }                                                                       \
 }
-#elif GCC_OPTIMIZATION_ENABLE
+#elif ifdef GCC_OPTIMIZATION_ENABLE
 #define PUT_HEVC_QPEL_H(H)                                                      \
 static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
 uint8_t *_src, ptrdiff_t _srcstride,  \
