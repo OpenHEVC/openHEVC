@@ -1811,9 +1811,9 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     int ctb_addr_rs = s->sh.slice_ctb_addr_rs;
     int xtiles_0 = 0;
     int ytiles_0 = 0;
-    s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     if (*(int*)isFilterThread == 0) {
         int more_data  = 1;
+        s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
         while (more_data) {
             int ctb_addr_in_slice = ctb_addr_rs - s->SliceAddrRs;
             s->x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
@@ -1901,6 +1901,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     int *ctb_row = input_ctb_row;
     int x_ctb = 0;
     int y_ctb = (*ctb_row)<< s->sps->log2_ctb_size;
+    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     while(more_data) {
 		int ctb_addr_in_slice = ctb_addr_rs - s->SliceAddrRs;
         while(*ctb_row && (av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
@@ -1908,11 +1909,9 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         	av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
         	return 0;
         }
-        s->x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-        s->y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-        s->ctb_left_flag = ((s->x_ctb > 0) && (ctb_addr_in_slice > 0) &&
+        s->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) &&
                             (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->ctb_addr_ts-1]));
-        s->ctb_up_flag = ((s->y_ctb > 0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
+        s->ctb_up_flag = ((y_ctb > 0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
                           (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]]));
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
             s->sh.slice_sample_adaptive_offset_flag[1])
