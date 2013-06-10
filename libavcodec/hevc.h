@@ -813,14 +813,10 @@ typedef struct HEVCContext {
 
     int ctb_addr_ts;
     int SliceAddrRs;
-    int x_ctb;
-    int y_ctb;
 
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
 
-    int xtiles_0;
-    int ytiles_0;
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset
