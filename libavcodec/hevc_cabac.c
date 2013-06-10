@@ -78,13 +78,55 @@ static const int8_t num_bins_in_se[] = {
 /**
  * Offset to ctxIdx 0 in init_values and states, indexed by SyntaxElement.
  */
-static int elem_offset[sizeof(num_bins_in_se)];
+static const int elem_offset[sizeof(num_bins_in_se)] ={ 0,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    5,
+    6,
+    9,
+    12,
+    13,
+    17,
+    17,
+    18,
+    18,
+    18,
+    20,
+    21,
+    22,
+    27,
+    29,
+    31,
+    33,
+    35,
+    35,
+    35,
+    36,
+    37,
+    40,
+    42,
+    46,
+    48,
+    66,
+    84,
+    84,
+    84,
+    88,
+    130,
+    154,
+    160,
+    160,};
 
 #define CNU 154
 /**
  * Indexed by init_type
  */
-const uint8_t init_values[3][HEVC_CONTEXTS] = {
+static const uint8_t init_values[3][HEVC_CONTEXTS] = {
     {
         // sao_merge_flag
         153,
@@ -304,22 +346,13 @@ void ff_hevc_cabac_init_decoder(HEVCContext *s, int entry)
                           gb->buffer + get_bits_count(gb) / 8,
                           (get_bits_left(s->gb[entry]) + 7) / 8);
 }
-
-void ff_hevc_cabac_init(HEVCContext *s, int entry)
+void ff_hevc_cabac_init_state(HEVCContext *s, int entry)
 {
     int i;
-    int init_type;
+    int init_type = 2 - s->sh.slice_type;
     ff_init_cabac_states(s->cc[entry]);
-    ff_hevc_cabac_init_decoder(s, entry);
-
-    init_type = 2 - s->sh.slice_type;
     if (s->sh.cabac_init_flag && s->sh.slice_type != I_SLICE)
         init_type ^= 3;
-
-    elem_offset[0] = 0;
-    for (i = 1; i < sizeof(num_bins_in_se); i++) {
-        elem_offset[i] = elem_offset[i-1] + num_bins_in_se[i-1];
-    }
 
     for (i = 0; i < HEVC_CONTEXTS; i++) {
         int init_value = init_values[init_type][i];
@@ -329,9 +362,14 @@ void ff_hevc_cabac_init(HEVCContext *s, int entry)
         pre ^= pre >> 31;
         if (pre > 124)
             pre = 124 + (pre & 1);
-
         s->cabac_state[entry][i] =  pre;
     }
+}
+
+void ff_hevc_cabac_init(HEVCContext *s, int entry)
+{
+    ff_hevc_cabac_init_decoder(s, entry);
+    ff_hevc_cabac_init_state(s,entry);
 }
 
 #define GET_CABAC(entry, ctx) get_cabac(s->cc[entry], &s->cabac_state[entry][ctx])

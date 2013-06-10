@@ -847,6 +847,7 @@ void save_states(HEVCContext *s, int entry);
 void load_states(HEVCContext *s, int entry);
 void ff_hevc_cabac_reinit(HEVCContext *s, int entry);
 void ff_hevc_cabac_init_decoder(HEVCContext *s, int entry);
+void ff_hevc_cabac_init_state(HEVCContext *s, int entry);
 void ff_hevc_cabac_init(HEVCContext *s, int entry);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s, int entry);

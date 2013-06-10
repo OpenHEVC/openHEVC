@@ -1818,6 +1818,11 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     int more_data   = 1;
     while (more_data) {
         int ctb_addr_in_slice = ctb_addr_rs - s->SliceAddrRs;
+        if (s->ctb_addr_ts && s->pps->tiles_enabled_flag && (s->pps->tile_id[s->ctb_addr_ts] != s->pps->tile_id[s->ctb_addr_ts-1])) {
+            if (s->sh.first_slice_in_pic_flag)
+                ff_hevc_cabac_reinit(s, 0);
+            ff_hevc_cabac_init_state(s, 0);
+        }
         x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         s->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) &&
@@ -2087,8 +2092,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
         if (s->sh.dependent_slice_segment_flag == 0)
             ff_hevc_cabac_init(s, 0);
-        else if (s->pps->tiles_enabled_flag && (s->pps->tile_id[s->ctb_addr_ts] != s->pps->tile_id[s->ctb_addr_ts-1]))
-            ff_hevc_cabac_init(s, 0);
         else
             ff_hevc_cabac_init_decoder(s, 0);
 
@@ -2164,7 +2167,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             if (hls_slice_data(s) < 0)
                 return -1;
         }
-        if (s->ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)-1) {
+        if (s->ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
             if (s->sps->sample_adaptive_offset_enabled_flag)
                 av_frame_unref(s->tmp_frame);
             if (s->decode_checksum_sei == 1) {
