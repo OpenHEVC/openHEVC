@@ -174,6 +174,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col, int r
             } else {
                 int colPocDiff = DiffPicOrderCnt(colPic, refPicList_col[listCol].list[refidxCol]);
                 int curPocDiff = DiffPicOrderCnt(s->poc, refPicList[X].list[refIdxLx]);
+                colPocDiff = colPocDiff == 0 ? 1 : colPocDiff; //error resilience
                 availableFlagLXCol = 1;
                 if (currIsLongTerm || colPocDiff == curPocDiff) {
                     mvLXCol->x = mvCol.x;
