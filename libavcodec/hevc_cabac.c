@@ -362,14 +362,50 @@ void ff_hevc_cabac_init_state(HEVCContext *s, int entry)
         pre ^= pre >> 31;
         if (pre > 124)
             pre = 124 + (pre & 1);
+
         s->cabac_state[entry][i] =  pre;
     }
 }
 
 void ff_hevc_cabac_init(HEVCContext *s, int entry)
 {
-    ff_hevc_cabac_init_decoder(s, entry);
-    ff_hevc_cabac_init_state(s,entry);
+    if (s->ctb_addr_ts == s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]) {
+        if ((s->sh.dependent_slice_segment_flag == 0) ||
+            (s->pps->tiles_enabled_flag && (s->pps->tile_id[s->ctb_addr_ts] != s->pps->tile_id[s->ctb_addr_ts-1]))) {
+            ff_hevc_cabac_init_decoder(s, entry);
+            ff_hevc_cabac_init_state(s,entry);
+        } else
+            ff_hevc_cabac_init_decoder(s, entry);
+        if (!s->sh.first_slice_in_pic_flag && s->pps->entropy_coding_sync_enabled_flag && !s->enable_multithreads) {
+            if ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 2 || (s->sps->pic_width_in_ctbs == 2 && (s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0)) {
+                save_states(s, entry);
+            }
+            if ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0) {
+                if (s->sps->pic_width_in_ctbs == 1)
+                    ff_hevc_cabac_init_state(s, entry);
+                else if (s->sh.dependent_slice_segment_flag == 1)
+                    load_states(s, entry+1);
+            }
+        }
+    } else {
+        if (s->pps->tiles_enabled_flag && (s->pps->tile_id[s->ctb_addr_ts] != s->pps->tile_id[s->ctb_addr_ts-1])) {
+            ff_hevc_cabac_reinit(s, entry);
+            ff_hevc_cabac_init_state(s, entry);
+        }
+        if (s->pps->entropy_coding_sync_enabled_flag && !s->enable_multithreads) {
+            if ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 2 || (s->sps->pic_width_in_ctbs == 2 && (s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0)) {
+                save_states(s, entry);
+            }
+            if ((s->ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0) {
+                //ff_hevc_end_of_sub_stream_one_bit_decode(s);
+                ff_hevc_cabac_reinit(s, entry);
+                if (s->sps->pic_width_in_ctbs == 1)
+                    ff_hevc_cabac_init_state(s, entry);
+                else
+                    load_states(s, entry+1);
+            }
+        }
+    }
 }
 
 #define GET_CABAC(entry, ctx) get_cabac(s->cc[entry], &s->cabac_state[entry][ctx])
