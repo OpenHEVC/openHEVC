@@ -681,7 +681,7 @@ int ff_hevc_mvd_decode(HEVCContext *s, int entry)
 
 int ff_hevc_mvd_sign_flag_decode(HEVCContext *s, int entry)
 {
-    return get_cabac_bypass(s->cc[entry]);
+    return get_cabac_bypass_sign(s->cc[entry], -1);
 }
 
 int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size, int entry)
