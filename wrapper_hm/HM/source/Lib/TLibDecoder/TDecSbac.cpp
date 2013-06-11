@@ -183,18 +183,38 @@ Void TDecSbac::updateContextTables( SliceType eSliceType, Int iQp )
   m_pcTDecBinIf->start();
 }
 
+#define printLevel 1
+#if printLevel == 1
 #define print_cabac(string, val) \
-       /* printf("%s\n", string); */ \
-       /* m_pcTDecBinIf->printStatus(val) */
+        printf("%s\n", string);  \
+        m_pcTDecBinIf->printStatus(val)
+#else
+#define print_cabac(string, val)
+#endif
+#if printLevel <= 2
 #define print_cabac2(string, val) \
-       /* printf("%s\n", string); */ \
-       /* m_pcTDecBinIf->printStatus(val) */
+        printf("%s\n", string);  \
+        m_pcTDecBinIf->printStatus(val)
+#else
+#define print_cabac2(string, val)
+#endif
+#if printLevel <= 3
+#define print_cabac3(string, val) \
+        printf("%s\n", string);  \
+        m_pcTDecBinIf->printStatus(val)
+#else
+#define print_cabac3(string, val)
+#endif
+
 
 Void TDecSbac::parseTerminatingBit( UInt& ruiBit )
 {
     print_cabac2("end_of_slice_flag", 0);
     m_pcTDecBinIf->decodeBinTrm( ruiBit );
     print_cabac2("end_of_slice_flag", ruiBit);
+    if (ruiBit != 0) {
+        print_cabac3("end_of_slice_flag", ruiBit);
+    }
 }
 
 
@@ -322,6 +342,7 @@ Void TDecSbac::parseIPCMInfo ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth
   UInt uiSymbol;
   Bool readPCMSampleFlag = false;
 
+      print_cabac("pcm_flag", 0);
     m_pcTDecBinIf->decodeBinTrm(uiSymbol);
 
     if (uiSymbol)
@@ -497,10 +518,10 @@ Void TDecSbac::parseSplitFlag     ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt ui
   }
   
   UInt uiSymbol;
-  print_cabac("split_coding_unit_flag", 0);
+  print_cabac("split_coding_unit_flag", m_cCUSplitFlagSCModel.get( 0, 0, pcCU->getCtxSplitFlag( uiAbsPartIdx, uiDepth ) ).getState()*2+m_cCUSplitFlagSCModel.get( 0, 0, pcCU->getCtxSplitFlag( uiAbsPartIdx, uiDepth ) ).getMps());
   m_pcTDecBinIf->decodeBin( uiSymbol, m_cCUSplitFlagSCModel.get( 0, 0, pcCU->getCtxSplitFlag( uiAbsPartIdx, uiDepth ) ) );
   pcCU->setDepthSubParts( uiDepth + uiSymbol, uiAbsPartIdx );
-  
+
   return;
 }
 
@@ -1294,14 +1315,15 @@ Void TDecSbac::parseSaoUflc (UInt uiLength, UInt&  riVal)
 Void TDecSbac::parseSaoMerge (UInt&  ruiVal)
 {
   UInt uiCode;
-  print_cabac2("sao_merge_flag", 0);
+  print_cabac2("sao_merge_flag", m_cSaoMergeSCModel.get( 0, 0, 0 ).getState()*2+m_cSaoMergeSCModel.get( 0, 0, 0 ).getMps());
   m_pcTDecBinIf->decodeBin( uiCode, m_cSaoMergeSCModel.get( 0, 0, 0 ) );
+  print_cabac("sao_merge_flag", uiCode);
   ruiVal = (Int)uiCode;
 }
 Void TDecSbac::parseSaoTypeIdx (UInt&  ruiVal)
 {
   UInt uiCode;
-  print_cabac2("sao_type_idx", 0);
+  print_cabac2("sao_type_idx", m_cSaoTypeIdxSCModel.get( 0, 0, 0 ).getState()*2+m_cSaoTypeIdxSCModel.get( 0, 0, 0 ).getMps());
   m_pcTDecBinIf->decodeBin( uiCode, m_cSaoTypeIdxSCModel.get( 0, 0, 0 ) );
   if (uiCode == 0) 
   {
