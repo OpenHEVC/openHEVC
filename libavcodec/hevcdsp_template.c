@@ -27,7 +27,7 @@
 #include "hevcdata.h"
 #include "hevcdsp.h"
 #include "hevc.h"
-// #define USE_SSE
+#define USE_SSE
 #ifdef USE_SSE
 #include <emmintrin.h>
 #include <x86intrin.h>
@@ -40,7 +40,7 @@
 #define add_2nd (1 << (shift_2nd - 1))
 
 #if __GNUC__
-#define GCC_OPTIMIZATION_ENABLE
+//#define GCC_OPTIMIZATION_ENABLE
 #endif
 #define OPTIMIZATION_ENABLE
 
