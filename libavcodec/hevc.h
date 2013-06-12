@@ -764,6 +764,7 @@ typedef struct HEVCContext {
     GetBitContext *gb[MAX_ENTRIES ]; //
     CABACContext *cc[MAX_ENTRIES]; //
     uint8_t *cabac_state[MAX_ENTRIES+1]; //
+    uint8_t last_save_state; //
     
     
 
@@ -855,10 +856,6 @@ void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
 
 void save_states(HEVCContext *s, int entry);
-void load_states(HEVCContext *s, int entry);
-void ff_hevc_cabac_reinit(HEVCContext *s, int entry);
-void ff_hevc_cabac_init_decoder(HEVCContext *s, int entry);
-void ff_hevc_cabac_init_state(HEVCContext *s, int entry);
 void ff_hevc_cabac_init(HEVCContext *s, int entry);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s, int entry);
