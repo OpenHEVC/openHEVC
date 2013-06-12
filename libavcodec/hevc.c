@@ -1825,9 +1825,9 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, 0);
         s->ctb_addr_ts++;
         save_states(s, 0);
-//        hls_filters(s, x_ctb, y_ctb, ctb_size);
+        hls_filters(s, x_ctb, y_ctb, ctb_size);
     }
-//    hls_filter(s, x_ctb, y_ctb);
+    hls_filter(s, x_ctb, y_ctb);
     return 0;
 }
 
@@ -1879,7 +1879,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         s->ctb_addr_ts++;
         save_states(s, *ctb_row);
         av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],1);
-//        hls_filters(s, x_ctb, y_ctb, ctb_size);
+        hls_filters(s, x_ctb, y_ctb, ctb_size);
 
         if (!more_data && (x_ctb+ctb_size) < s->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) < s->sps->pic_height_in_luma_samples) {
         	av_atomic_int_set(&s->ERROR,  1);
@@ -1888,7 +1888,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         }
 
         if (!more_data) {
-//            hls_filter(s, x_ctb, y_ctb);
+            hls_filter(s, x_ctb, y_ctb);
             av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
             return 0;
         }
@@ -2089,13 +2089,13 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
 
         if (s->sh.first_slice_in_pic_flag) {
-			/*if (s->sps->sample_adaptive_offset_enabled_flag) {
+			if (s->sps->sample_adaptive_offset_enabled_flag) {
                 if ((ret = ff_reget_buffer(s->avctx, s->tmp_frame)) < 0)
                     return ret;
                 s->frame = s->tmp_frame;
                 if ((ret = ff_hevc_set_new_ref(s, &s->sao_frame, s->poc))< 0)
                     return ret;
-            } else */{
+            } else {
                 if ((ret = ff_hevc_set_new_ref(s, &s->frame, s->poc))< 0)
                     return ret;
             }

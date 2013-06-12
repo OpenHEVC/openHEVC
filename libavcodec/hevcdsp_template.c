@@ -27,7 +27,7 @@
 #include "hevcdata.h"
 #include "hevcdsp.h"
 #include "hevc.h"
-#define USE_SSE
+//#define USE_SSE
 #ifdef USE_SSE
 #include <emmintrin.h>
 #include <x86intrin.h>
