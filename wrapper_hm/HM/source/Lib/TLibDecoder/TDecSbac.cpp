@@ -183,7 +183,7 @@ Void TDecSbac::updateContextTables( SliceType eSliceType, Int iQp )
   m_pcTDecBinIf->start();
 }
 
-#define printLevel 1
+#define printLevel 4
 #if printLevel == 1
 #define print_cabac(string, val) \
         printf("%s\n", string);  \

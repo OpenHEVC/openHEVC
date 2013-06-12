@@ -135,7 +135,7 @@ typedef struct RefPicList {
 
 
 
-#define MAX_ENTRIES 36
+#define MAX_ENTRIES 100
 
 #define L0 0
 #define L1 1
@@ -744,6 +744,14 @@ typedef struct HEVCFrame {
 typedef struct HEVCContext {
     AVClass *c;  // needed by private avoptions
     
+    
+    // CABAC variables
+    int ctx_set[MAX_ENTRIES];
+    int greater1_ctx[MAX_ENTRIES];
+    int last_coeff_abs_level_greater1_flag[MAX_ENTRIES];
+    int c_rice_param[MAX_ENTRIES];
+    int last_coeff_abs_level_remaining[MAX_ENTRIES];
+    
     uint8_t enable_multithreads; 
     AVCodecContext *avctx;
     AVFrame *frame;
@@ -810,6 +818,7 @@ typedef struct HEVCContext {
     int is_decoded;
     int skipped_bytes;
     int *skipped_bytes_pos;
+    int skipped_buf_size;
 
     int ctb_addr_ts;
     int SliceAddrRs;
@@ -817,12 +826,14 @@ typedef struct HEVCContext {
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
 
+    int64_t pts;
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset
      */
     uint16_t seq_decode;
     uint16_t seq_output;
+    int ERROR;
 } HEVCContext;
 
 enum ScanType {
@@ -902,7 +913,7 @@ int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb, int entry);
 
 int ff_hevc_find_next_ref(HEVCContext *s, int poc);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
-int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush);
+int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush, int* poc_display);
 
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv, int entry);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX, int entry);

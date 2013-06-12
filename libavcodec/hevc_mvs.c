@@ -228,7 +228,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW,
     //bottom right collocated motion vector
     xPRb = x0 + nPbW;
     yPRb = y0 + nPbH;
-    if (((y0 >> s->sps->log2_ctb_size) == (yPRb >> s->sps->log2_ctb_size))
+    if (coloc_tab_mvf && ((y0 >> s->sps->log2_ctb_size) == (yPRb >> s->sps->log2_ctb_size))
         && (yPRb < s->sps->pic_height_in_luma_samples) && (xPRb < s->sps->pic_width_in_luma_samples)) {
         xPRb = ((xPRb >> 4) << 4);
         yPRb = ((yPRb >> 4) << 4);
@@ -243,7 +243,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0, int nPbW,
     }
 
     // derive center collocated motion vector
-    if (availableFlagLXCol == 0) {
+    if (coloc_tab_mvf && availableFlagLXCol == 0) {
         xPCtr = x0 + (nPbW >> 1);
         yPCtr = y0 + (nPbH >> 1);
         xPCtr = ((xPCtr >> 4) << 4);
