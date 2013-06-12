@@ -204,7 +204,7 @@ static void set_ref_pic_list(HEVCContext *s)
     SliceHeader *sh = &s->sh;
     RefPicList  *refPocList = s->sh.refPocList;
     RefPicList  *refPicList = s->DPB[ff_hevc_find_next_ref(s, s->poc)].refPicList;
-    RefPicList  refPicListTmp[2];
+    RefPicList  refPicListTmp[2]= {{{0}}};
 
     uint8_t num_ref_idx_lx_act[2];
     uint8_t cIdx;
