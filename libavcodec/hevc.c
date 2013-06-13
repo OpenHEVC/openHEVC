@@ -1805,30 +1805,31 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0, int log2_cb_size,
  */
 static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 {
-    HEVCContext *s = avctxt->priv_data;
-    int ctb_size   = 1 << s->sps->log2_ctb_size;
-    int more_data  = 1;
-    int x_ctb      = 0;
-    int y_ctb      = 0;
+    HEVCContext *s  = avctxt->priv_data;
+    int ctb_size    = 1 << s->sps->log2_ctb_size;
+    int more_data   = 1;
+    int x_ctb       = 0;
+    int y_ctb       = 0;
+    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
     while (more_data) {
-        int ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[s->ctb_addr_ts];
+        int ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
         int ctb_addr_in_slice = ctb_addr_rs - s->SliceAddrRs;
         x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         s->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) &&
-                            (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
+                            (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
         s->ctb_up_flag   = ((y_ctb > 0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
-                            (s->pps->tile_id[s->ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]]));
-        ff_hevc_cabac_init(s, 0);
+                            (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]]));
+        ff_hevc_cabac_init(s, ctb_addr_ts, 0);
         if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
             hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, 0);
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, 0);
-        s->ctb_addr_ts++;
-        save_states(s, 0);
+        ctb_addr_ts++;
+        save_states(s, ctb_addr_ts, 0);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
     }
     hls_filter(s, x_ctb, y_ctb);
-    return 0;
+    return ctb_addr_ts;
 }
 
 static int hls_slice_data(HEVCContext *s)
@@ -1842,42 +1843,42 @@ static int hls_slice_data(HEVCContext *s)
     } else {
         s->SliceAddrRs = (s->sh.dependent_slice_segment_flag == 0 ? s->sh.slice_address : s->SliceAddrRs);
     }
-    s->ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
     av_atomic_int_set(&s->coding_tree_count, 0);
     s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
-
-    return 0;
+    return ret[0];
 }
 
 #define SHIFT_CTB_WPP 2
 
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
 {
-    HEVCContext *s = avctxt->priv_data;
-    int ctb_size = 1<< s->sps->log2_ctb_size;
-    int more_data = 1;
-    int *ctb_row = input_ctb_row;
+    HEVCContext *s  = avctxt->priv_data;
+    int ctb_size    = 1<< s->sps->log2_ctb_size;
+    int more_data   = 1;
+    int *ctb_row    = input_ctb_row;
+    int ctb_addr_rs = s->sh.slice_ctb_addr_rs + (*ctb_row) * ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size);
+    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     while(more_data) {
-        while(*ctb_row && (av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
-        if (av_atomic_int_get(&s->ERROR)){
-        	av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
-        	return 0;
-        }
-        int ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[s->ctb_addr_ts];
         int ctb_addr_in_slice = ctb_addr_rs - s->SliceAddrRs;
         int x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         s->ctb_left_flag = (x_ctb > 0) && (ctb_addr_in_slice > 0);
         s->ctb_up_flag   = (y_ctb > 0) && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs);
-        ff_hevc_cabac_init(s, *ctb_row);
+        while(*ctb_row && (av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
+        if (av_atomic_int_get(&s->ERROR)){
+        	av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+        	return 0;
+        }
+        ff_hevc_cabac_init(s, ctb_addr_ts, *ctb_row);
         if (s->sh.slice_sample_adaptive_offset_flag[0] ||
             s->sh.slice_sample_adaptive_offset_flag[1])
             hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, *ctb_row);
         
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, *ctb_row);
 
-        s->ctb_addr_ts++;
-        save_states(s, *ctb_row);
+        ctb_addr_ts++;
+        ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+        save_states(s, ctb_addr_ts, *ctb_row);
         av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],1);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
 
@@ -1890,7 +1891,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         if (!more_data) {
             hls_filter(s, x_ctb, y_ctb);
             av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
-            return 0;
+            return ctb_addr_ts;
         }
         x_ctb+=ctb_size;
 
@@ -1899,27 +1900,30 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         }
     }
     av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
-    return more_data;
+    return 0;
 }
 
 static int hls_slice_data_wpp(HEVCContext *s)
 {
     int *ret = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
     int *arg = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
-    int i;
+    int i, res = 0;
     if (s->sh.first_slice_in_pic_flag == 1) {
         s->SliceAddrRs = s->sh.slice_address;
     } else {
         s->SliceAddrRs = (s->sh.dependent_slice_segment_flag == 0 ? s->sh.slice_address : s->SliceAddrRs);
     }
-    s->ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
     av_atomic_int_set(&s->ERROR,  0);
-    for(i=0; i<=s->sh.num_entry_point_offsets; i++)
+    for(i=0; i<=s->sh.num_entry_point_offsets; i++) {
         arg[i] = i;
+        ret[i] = 0;
+    }
     s->avctx->execute(s->avctx, hls_decode_entry_wpp, arg, ret ,s->sh.num_entry_point_offsets+1, sizeof(int));
+    for(i=0; i<=s->sh.num_entry_point_offsets; i++)
+        res += ret[i];
     av_free(ret);
     av_free(arg);
-    return 0;
+    return res;
 }
 
 
@@ -1999,6 +2003,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     int poc_display;
     
     int offset = 0;
+    int ctb_addr_ts;
     int ret;
 
     if (!avpkt->size) {
@@ -2155,13 +2160,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             }
         }
         if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads && s->sh.num_entry_point_offsets > 0){
-            if(hls_slice_data_wpp(s) < 0)
-                return -1;
+            ctb_addr_ts = hls_slice_data_wpp(s);
         } else {
-            if (hls_slice_data(s) < 0)
-                return -1;
+            ctb_addr_ts = hls_slice_data(s);
         }
-        if (s->ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
+        if (ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
             if (s->sps->sample_adaptive_offset_enabled_flag)
                 av_frame_unref(s->tmp_frame);
             if ((ret = ff_hevc_find_display(s, data, 0, &poc_display)) < 0)
