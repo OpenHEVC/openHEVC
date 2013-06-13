@@ -436,6 +436,7 @@ static int hls_slice_header(HEVCContext *s)
                 sh->cabac_init_flag = get_bits1(gb);
             }
             if (sh->slice_temporal_mvp_enabled_flag) {
+                sh->collocated_from_l0_flag = 1;
                 if (sh->slice_type == B_SLICE) {
                     sh->collocated_from_l0_flag = get_bits1(gb);
                 }
