@@ -324,8 +324,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int cand_up   = (s->ctb_up_flag || y0b);
-    int cand_left   = (s->ctb_left_flag || x0b);
+    int cand_up   = (s->ctb_up_flag[entry] || y0b);
+    int cand_left   = (s->ctb_left_flag[entry] || x0b);
 
 
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
@@ -739,8 +739,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int cand_up   = (s->ctb_up_flag || y0b);
-    int cand_left   = (s->ctb_left_flag || x0b);
+    int cand_up   = (s->ctb_up_flag[entry] || y0b);
+    int cand_left   = (s->ctb_left_flag[entry] || x0b);
 
     int currIsLongTerm = 0;
     if(LX == 0) {

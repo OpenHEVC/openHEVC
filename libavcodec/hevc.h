@@ -748,6 +748,7 @@ typedef struct HEVCContext {
     GetBitContext *gb[MAX_ENTRIES ]; //
     CABACContext *cc[MAX_ENTRIES]; //
     uint8_t *cabac_state[MAX_ENTRIES+1]; //
+    uint8_t last_save_state; //
     
     
 
@@ -804,11 +805,10 @@ typedef struct HEVCContext {
     int *skipped_bytes_pos;
     int skipped_buf_size;
 
-    int ctb_addr_ts;
     int SliceAddrRs;
 
-    uint8_t ctb_left_flag;
-    uint8_t ctb_up_flag;
+    uint8_t ctb_left_flag[MAX_ENTRIES ];
+    uint8_t ctb_up_flag[MAX_ENTRIES ];
 
     int64_t pts;
     /**
@@ -838,12 +838,8 @@ int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
 void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
 
-void save_states(HEVCContext *s, int entry);
-void load_states(HEVCContext *s, int entry);
-void ff_hevc_cabac_reinit(HEVCContext *s, int entry);
-void ff_hevc_cabac_init_decoder(HEVCContext *s, int entry);
-void ff_hevc_cabac_init_state(HEVCContext *s, int entry);
-void ff_hevc_cabac_init(HEVCContext *s, int entry);
+void save_states(HEVCContext *s, int ctb_addr_ts, int entry);
+void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts, int entry);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_band_position_decode(HEVCContext *s, int entry);
