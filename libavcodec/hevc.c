@@ -240,7 +240,6 @@ static int hls_slice_header(HEVCContext *s)
     SliceHeader *sh = &s->sh;
     int slice_address_length = 0;
 
-
     // initial values
     sh->beta_offset = 0;
     sh->tc_offset = 0;
@@ -440,10 +439,8 @@ static int hls_slice_header(HEVCContext *s)
                 if (sh->slice_type == B_SLICE) {
                     sh->collocated_from_l0_flag = get_bits1(gb);
                 }
-                if ((sh->collocated_from_l0_flag &&
-                     sh->num_ref_idx_l0_active > 1) ||
-                    (!sh->collocated_from_l0_flag &&
-                     sh->num_ref_idx_l0_active > 1)) {
+                if (( sh->collocated_from_l0_flag && sh->num_ref_idx_l0_active > 1) ||
+                    (!sh->collocated_from_l0_flag && sh->num_ref_idx_l1_active > 1)) {
                     sh->collocated_ref_idx = get_ue_golomb(gb);
                 }
             }
