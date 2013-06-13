@@ -823,8 +823,8 @@ typedef struct HEVCContext {
 
     int SliceAddrRs;
 
-    uint8_t ctb_left_flag;
-    uint8_t ctb_up_flag;
+    uint8_t ctb_left_flag[MAX_ENTRIES ];
+    uint8_t ctb_up_flag[MAX_ENTRIES ];
 
     int64_t pts;
     /**

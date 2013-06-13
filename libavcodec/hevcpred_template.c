@@ -69,8 +69,8 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int cand_up   = (s->ctb_up_flag || y0b);
-    int cand_left   = (s->ctb_left_flag || x0b);
+    int cand_up   = (s->ctb_up_flag[entry] || y0b);
+    int cand_left   = (s->ctb_left_flag[entry] || x0b);
     
     int bottom_left_available = cand_left && (y_tb + size_in_tbs) < s->sps->pic_height_in_min_tbs &&
                                 cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs);

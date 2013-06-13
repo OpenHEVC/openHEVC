@@ -555,11 +555,11 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry, int entry)
     SAOParams *sao = &CTB(s->sao, rx, ry);
 
     if (rx > 0) {
-        if (s->ctb_left_flag)
+        if (s->ctb_left_flag[entry])
             sao_merge_left_flag = ff_hevc_sao_merge_flag_decode(s, entry);
     }
     if (ry > 0 && !sao_merge_left_flag) {
-        if (s->ctb_up_flag)
+        if (s->ctb_up_flag[entry])
             sao_merge_up_flag = ff_hevc_sao_merge_flag_decode(s, entry);
     }
     for (c_idx = 0; c_idx < 3; c_idx++) {
@@ -1459,8 +1459,8 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int cand_up   = (s->ctb_up_flag || y0b) ? s->pu.top_ipm[x_pu] : INTRA_DC ;
-    int cand_left = (s->ctb_left_flag || x0b) ? s->pu.left_ipm[y_pu] : INTRA_DC ;
+    int cand_up   = (s->ctb_up_flag[entry] || y0b) ? s->pu.top_ipm[x_pu] : INTRA_DC ;
+    int cand_left = (s->ctb_left_flag[entry] || x0b) ? s->pu.left_ipm[y_pu] : INTRA_DC ;
 
     int y_ctb = (y0 >> (s->sps->log2_ctb_size)) << (s->sps->log2_ctb_size);
     MvField *tab_mvf = s->ref->tab_mvf;
@@ -1816,9 +1816,9 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         int ctb_addr_in_slice = ctb_addr_rs - s->SliceAddrRs;
         x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-        s->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) &&
+        s->ctb_left_flag[0] = ((x_ctb > 0) && (ctb_addr_in_slice > 0) &&
                             (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
-        s->ctb_up_flag   = ((y_ctb > 0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
+        s->ctb_up_flag[0]   = ((y_ctb > 0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
                             (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]]));
         ff_hevc_cabac_init(s, ctb_addr_ts, 0);
         if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
@@ -1862,8 +1862,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         int ctb_addr_in_slice = ctb_addr_rs - s->SliceAddrRs;
         int x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-        s->ctb_left_flag = (x_ctb > 0) && (ctb_addr_in_slice > 0);
-        s->ctb_up_flag   = (y_ctb > 0) && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs);
+        s->ctb_left_flag[*ctb_row] = (x_ctb > 0) && (ctb_addr_in_slice > 0);
+        s->ctb_up_flag[*ctb_row]   = (y_ctb > 0) && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs);
         while(*ctb_row && (av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
         if (av_atomic_int_get(&s->ERROR)){
         	av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
