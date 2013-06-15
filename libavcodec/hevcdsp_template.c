@@ -52,8 +52,7 @@
 #define SSE_EPEL
 #define SSE_unweight_pred
 #define SSE_put_weight_pred
-#define SSE_weight_pred_luma
-//#define SSE_weight_pred_chroma no test video available
+#define SSE_weight_pred
 #define USE_SSE_4x4_Transform_LUMA
 #define USE_SSE_4x4_Transform
 #define USE_SSE_8x8_Transform
@@ -97,8 +96,8 @@ static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
     f0= _mm_set1_epi32(scale2);
 
     f1= _mm_set1_epi32(add);
-    c0= _mm_loadu_si128((__m128i*)&coeffs[0]); //loads 8 first values
-    c2= _mm_loadu_si128((__m128i*)&coeffs[8]); //loads 8 last values
+    c0= _mm_load_si128((__m128i*)&coeffs[0]); //loads 8 first values
+    c2= _mm_load_si128((__m128i*)&coeffs[8]); //loads 8 last values
 
     c1= _mm_unpackhi_epi16(_mm_setzero_si128(),c0);
     c3= _mm_unpackhi_epi16(_mm_setzero_si128(),c2);
@@ -131,8 +130,8 @@ static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
     c0= _mm_packs_epi32(c0,c1);
     c2= _mm_packs_epi32(c2,c3);
 
-    _mm_storeu_si128(&coeffs[0], c0);
-    _mm_storeu_si128(&coeffs[8], c2);
+    _mm_store_si128(&coeffs[0], c0);
+    _mm_store_si128(&coeffs[8], c2);
 
 
 }
@@ -151,10 +150,10 @@ static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
     //8x8= 64 coeffs.
    f0= _mm_set1_epi32(scale2);
     f1= _mm_set1_epi32(add);
-    c0= _mm_loadu_si128((__m128i*)&coeffs[0]); //loads 8 first values
-    c2= _mm_loadu_si128((__m128i*)&coeffs[8]);
-    c4= _mm_loadu_si128((__m128i*)&coeffs[16]);
-    c6= _mm_loadu_si128((__m128i*)&coeffs[24]);
+    c0= _mm_load_si128((__m128i*)&coeffs[0]); //loads 8 first values
+    c2= _mm_load_si128((__m128i*)&coeffs[8]);
+    c4= _mm_load_si128((__m128i*)&coeffs[16]);
+    c6= _mm_load_si128((__m128i*)&coeffs[24]);
 
     c1= _mm_unpackhi_epi16(_mm_setzero_si128(),c0);
     c3= _mm_unpackhi_epi16(_mm_setzero_si128(),c2);
@@ -207,15 +206,15 @@ static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
     c4= _mm_packs_epi32(c4,c5);
     c6= _mm_packs_epi32(c6,c7);
 
-    _mm_storeu_si128(&coeffs[0], c0);
-    _mm_storeu_si128(&coeffs[8], c2);
-    _mm_storeu_si128(&coeffs[16], c4);
-    _mm_storeu_si128(&coeffs[24], c6);
+    _mm_store_si128(&coeffs[0], c0);
+    _mm_store_si128(&coeffs[8], c2);
+    _mm_store_si128(&coeffs[16], c4);
+    _mm_store_si128(&coeffs[24], c6);
 
-    c0= _mm_loadu_si128((__m128i*)&coeffs[32]);
-    c2= _mm_loadu_si128((__m128i*)&coeffs[40]);
-    c4= _mm_loadu_si128((__m128i*)&coeffs[48]);
-    c6= _mm_loadu_si128((__m128i*)&coeffs[56]);
+    c0= _mm_load_si128((__m128i*)&coeffs[32]);
+    c2= _mm_load_si128((__m128i*)&coeffs[40]);
+    c4= _mm_load_si128((__m128i*)&coeffs[48]);
+    c6= _mm_load_si128((__m128i*)&coeffs[56]);
 
     c1= _mm_unpackhi_epi16(_mm_setzero_si128(),c0);
     c3= _mm_unpackhi_epi16(_mm_setzero_si128(),c2);
@@ -268,10 +267,10 @@ static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
     c4= _mm_packs_epi32(c4,c5);
     c6= _mm_packs_epi32(c6,c7);
 
-    _mm_storeu_si128(&coeffs[32], c0);
-    _mm_storeu_si128(&coeffs[40], c2);
-    _mm_storeu_si128(&coeffs[48], c4);
-    _mm_storeu_si128(&coeffs[56], c6);
+    _mm_store_si128(&coeffs[32], c0);
+    _mm_store_si128(&coeffs[40], c2);
+    _mm_store_si128(&coeffs[48], c4);
+    _mm_store_si128(&coeffs[56], c6);
 }
 
 static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
@@ -291,10 +290,10 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
      f1= _mm_set1_epi32(add);
     for(x= 0; x< 16*16 ; x+=64)
     {
-        c0= _mm_loadu_si128((__m128i*)&coeffs[0+x]); //loads 8 first values
-        c2= _mm_loadu_si128((__m128i*)&coeffs[8+x]);
-        c4= _mm_loadu_si128((__m128i*)&coeffs[16+x]);
-        c6= _mm_loadu_si128((__m128i*)&coeffs[24+x]);
+        c0= _mm_load_si128((__m128i*)&coeffs[0+x]); //loads 8 first values
+        c2= _mm_load_si128((__m128i*)&coeffs[8+x]);
+        c4= _mm_load_si128((__m128i*)&coeffs[16+x]);
+        c6= _mm_load_si128((__m128i*)&coeffs[24+x]);
 
         c1= _mm_unpackhi_epi16(_mm_setzero_si128(),c0);
         c3= _mm_unpackhi_epi16(_mm_setzero_si128(),c2);
@@ -347,15 +346,15 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
         c4= _mm_packs_epi32(c4,c5);
         c6= _mm_packs_epi32(c6,c7);
 
-        _mm_storeu_si128(&coeffs[0+x], c0);
-        _mm_storeu_si128(&coeffs[8+x], c2);
-        _mm_storeu_si128(&coeffs[16+x], c4);
-        _mm_storeu_si128(&coeffs[24+x], c6);
+        _mm_store_si128(&coeffs[0+x], c0);
+        _mm_store_si128(&coeffs[8+x], c2);
+        _mm_store_si128(&coeffs[16+x], c4);
+        _mm_store_si128(&coeffs[24+x], c6);
 
-        c0= _mm_loadu_si128((__m128i*)&coeffs[32+x]);
-        c2= _mm_loadu_si128((__m128i*)&coeffs[40+x]);
-        c4= _mm_loadu_si128((__m128i*)&coeffs[48+x]);
-        c6= _mm_loadu_si128((__m128i*)&coeffs[56+x]);
+        c0= _mm_load_si128((__m128i*)&coeffs[32+x]);
+        c2= _mm_load_si128((__m128i*)&coeffs[40+x]);
+        c4= _mm_load_si128((__m128i*)&coeffs[48+x]);
+        c6= _mm_load_si128((__m128i*)&coeffs[56+x]);
 
         c1= _mm_unpackhi_epi16(_mm_setzero_si128(),c0);
         c3= _mm_unpackhi_epi16(_mm_setzero_si128(),c2);
@@ -407,10 +406,10 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
         c4= _mm_packs_epi32(c4,c5);
         c6= _mm_packs_epi32(c6,c7);
 
-        _mm_storeu_si128(&coeffs[32+x], c0);
-        _mm_storeu_si128(&coeffs[40+x], c2);
-        _mm_storeu_si128(&coeffs[48+x], c4);
-        _mm_storeu_si128(&coeffs[56+x], c6);
+        _mm_store_si128(&coeffs[32+x], c0);
+        _mm_store_si128(&coeffs[40+x], c2);
+        _mm_store_si128(&coeffs[48+x], c4);
+        _mm_store_si128(&coeffs[56+x], c6);
 
     }
 
@@ -435,10 +434,10 @@ static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
     for(x= 0; x< 32*32 ; x+=64)
     {
 
-         c0= _mm_loadu_si128((__m128i*)&coeffs[0+x]); //loads 8 first values
-         c2= _mm_loadu_si128((__m128i*)&coeffs[8+x]);
-         c4= _mm_loadu_si128((__m128i*)&coeffs[16+x]);
-         c6= _mm_loadu_si128((__m128i*)&coeffs[24+x]);
+         c0= _mm_load_si128((__m128i*)&coeffs[0+x]); //loads 8 first values
+         c2= _mm_load_si128((__m128i*)&coeffs[8+x]);
+         c4= _mm_load_si128((__m128i*)&coeffs[16+x]);
+         c6= _mm_load_si128((__m128i*)&coeffs[24+x]);
 
          c1= _mm_unpackhi_epi16(_mm_setzero_si128(),c0);
          c3= _mm_unpackhi_epi16(_mm_setzero_si128(),c2);
@@ -491,15 +490,15 @@ static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
          c4= _mm_packs_epi32(c4,c5);
          c6= _mm_packs_epi32(c6,c7);
 
-         _mm_storeu_si128(&coeffs[0+x], c0);
-         _mm_storeu_si128(&coeffs[8+x], c2);
-         _mm_storeu_si128(&coeffs[16+x], c4);
-         _mm_storeu_si128(&coeffs[24+x], c6);
+         _mm_store_si128(&coeffs[0+x], c0);
+         _mm_store_si128(&coeffs[8+x], c2);
+         _mm_store_si128(&coeffs[16+x], c4);
+         _mm_store_si128(&coeffs[24+x], c6);
 
-         c0= _mm_loadu_si128((__m128i*)&coeffs[32+x]);
-         c2= _mm_loadu_si128((__m128i*)&coeffs[40+x]);
-         c4= _mm_loadu_si128((__m128i*)&coeffs[48+x]);
-         c6= _mm_loadu_si128((__m128i*)&coeffs[56+x]);
+         c0= _mm_load_si128((__m128i*)&coeffs[32+x]);
+         c2= _mm_load_si128((__m128i*)&coeffs[40+x]);
+         c4= _mm_load_si128((__m128i*)&coeffs[48+x]);
+         c6= _mm_load_si128((__m128i*)&coeffs[56+x]);
 
          c1= _mm_unpackhi_epi16(_mm_setzero_si128(),c0);
          c3= _mm_unpackhi_epi16(_mm_setzero_si128(),c2);
@@ -551,10 +550,10 @@ static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
          c4= _mm_packs_epi32(c4,c5);
          c6= _mm_packs_epi32(c6,c7);
 
-         _mm_storeu_si128(&coeffs[32+x], c0);
-         _mm_storeu_si128(&coeffs[40+x], c2);
-         _mm_storeu_si128(&coeffs[48+x], c4);
-         _mm_storeu_si128(&coeffs[56+x], c6);
+         _mm_store_si128(&coeffs[32+x], c0);
+         _mm_store_si128(&coeffs[40+x], c2);
+         _mm_store_si128(&coeffs[48+x], c4);
+         _mm_store_si128(&coeffs[56+x], c6);
     }
 }
 
@@ -3835,10 +3834,11 @@ static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
             x1= _mm_loadu_si128((__m128i*)&src[0]);
             x2 = _mm_unpacklo_epi8(x1,_mm_set1_epi8(0));
             x2= _mm_slli_epi16(x2,14 - BIT_DEPTH);
-            dst[0]= _mm_extract_epi16(x2,0);
+            _mm_storeu_si128(&dst[0], x2);
+         /*   dst[0]= _mm_extract_epi16(x2,0);
             dst[1]= _mm_extract_epi16(x2,1);
             dst[2]= _mm_extract_epi16(x2,2);
-            dst[3]= _mm_extract_epi16(x2,3);
+            dst[3]= _mm_extract_epi16(x2,3);*/
 
             src += srcstride;
             dst += dststride;
@@ -4212,15 +4212,17 @@ for (y = 0; y < height + qpel_extra[V]; y+=2) {                              \
     x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);                                         \
         t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);                                      \
 /* give results back            */                         \
-tmp[0]= _mm_extract_epi16(x2,0);                           \
+    _mm_store_si128(&tmp[0], x2);\
+/*tmp[0]= _mm_extract_epi16(x2,0);                           \
 tmp[1]= _mm_extract_epi16(x2,1);                           \
 tmp[2]= _mm_extract_epi16(x2,2);                           \
-tmp[3]= _mm_extract_epi16(x2,3);                           \
+tmp[3]= _mm_extract_epi16(x2,3);          */                 \
     tmp += MAX_PB_SIZE;                                    \
-tmp[0]= _mm_extract_epi16(t2,0);                           \
+    _mm_store_si128(&tmp[0], t2);\
+/*tmp[0]= _mm_extract_epi16(t2,0);                           \
 tmp[1]= _mm_extract_epi16(t2,1);                           \
 tmp[2]= _mm_extract_epi16(t2,2);                           \
-tmp[3]= _mm_extract_epi16(t2,3);                           \
+tmp[3]= _mm_extract_epi16(t2,3);       */                    \
 src += srcstride;                                                           \
 tmp += MAX_PB_SIZE;                                                         \
 }                                                                           \
@@ -4558,28 +4560,28 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
             x1= _mm_loadu_si128((__m128i*)&src[0]);
             x2 = _mm_unpacklo_epi8(x1,_mm_set1_epi8(0));
             x2= _mm_slli_epi16(x2,14 - BIT_DEPTH);
-            dst[0]= _mm_extract_epi16(x2,0);
+           /* dst[0]= _mm_extract_epi16(x2,0);
             dst[1]= _mm_extract_epi16(x2,1);
             dst[2]= _mm_extract_epi16(x2,2);
-            dst[3]= _mm_extract_epi16(x2,3);
-            
+            dst[3]= _mm_extract_epi16(x2,3);*/
+            _mm_store_si128(&dst[0],x2);
             src += srcstride;
             dst += dststride;
         }
     }
     else
         for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x+=8) {
-                if(x %16 == 0)
-                {
+            for (x = 0; x < width; x+=16) {
+
                     x1= _mm_loadu_si128((__m128i*)&src[x]);
                     x2 = _mm_unpacklo_epi8(x1,_mm_set1_epi8(0));
-                }
-                else{
-                    x2 = _mm_unpackhi_epi8(x1,_mm_set1_epi8(0));
-                }
+
+                    x1 = _mm_unpackhi_epi8(x1,_mm_set1_epi8(0));
+
                 x2= _mm_slli_epi16(x2,14 - BIT_DEPTH);
-                _mm_storeu_si128(&dst[x], x2);
+                x1= _mm_slli_epi16(x1,14 - BIT_DEPTH);
+                _mm_store_si128(&dst[x], x2);
+                _mm_store_si128(&dst[x+8], x1);
                 
             }
             src += srcstride;
@@ -4625,10 +4627,11 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
             x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
             x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
             /* give results back            */
-            dst[0]= _mm_extract_epi16(x2,0);
+            _mm_store_si128(&dst[0],x2);
+       /*     dst[0]= _mm_extract_epi16(x2,0);
             dst[1]= _mm_extract_epi16(x2,1);
             dst[2]= _mm_extract_epi16(x2,2);
-            dst[3]= _mm_extract_epi16(x2,3);
+            dst[3]= _mm_extract_epi16(x2,3);*/
             src += srcstride;
             dst += dststride;
         }
@@ -4726,10 +4729,11 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
             r0= _mm_adds_epi16(r0, _mm_mullo_epi16(t3,f3)) ;
             r0= _mm_srli_epi16(r0,BIT_DEPTH - 8);
             /* give results back            */
-            dst[0]= _mm_extract_epi16(r0,0);
+            _mm_store_si128(&dst[0], r0);\
+           /* dst[0]= _mm_extract_epi16(r0,0);
             dst[1]= _mm_extract_epi16(r0,1);
             dst[2]= _mm_extract_epi16(r0,2);
-            dst[3]= _mm_extract_epi16(r0,3);
+            dst[3]= _mm_extract_epi16(r0,3);*/
             
             src += srcstride;
             dst += dststride;
@@ -4737,7 +4741,7 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
     
     else
         for (y = 0; y < height; y++)  {
-            for (x = 0; x < width; x+=8)  {
+            for (x = 0; x < width; x+=16)  {
                 /* check if memory needs to be reloaded */
 
                     x0= _mm_loadu_si128((__m128i*)&src[x-srcstride]);
@@ -4769,7 +4773,7 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
                 r1= _mm_srli_epi16(r1,BIT_DEPTH - 8);
                 /* give results back            */
                 _mm_store_si128(&dst[x], r0);
-                //_mm_storeu_si128(&dst[x+8], r1);
+                _mm_storeu_si128(&dst[x+8], r1);
             }
             src += srcstride;
             dst += dststride;
@@ -4910,15 +4914,17 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
             x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
             x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
             /* give results back            */
-            tmp[0]= _mm_extract_epi16(x1,0);
+            _mm_store_si128(&tmp[0], x1);
+/*            tmp[0]= _mm_extract_epi16(x1,0);
             tmp[1]= _mm_extract_epi16(x1,1);
             tmp[2]= _mm_extract_epi16(x1,2);
-            tmp[3]= _mm_extract_epi16(x1,3);
+            tmp[3]= _mm_extract_epi16(x1,3);*/
             tmp += MAX_PB_SIZE;
-            tmp[0]= _mm_extract_epi16(x2,0);
+            _mm_store_si128(&tmp[0], x2);
+            /*tmp[0]= _mm_extract_epi16(x2,0);
             tmp[1]= _mm_extract_epi16(x2,1);
             tmp[2]= _mm_extract_epi16(x2,2);
-            tmp[3]= _mm_extract_epi16(x2,3);
+            tmp[3]= _mm_extract_epi16(x2,3);*/
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
@@ -5017,9 +5023,9 @@ static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x+=16) {
-            r0= _mm_loadu_si128(&src[x]);
+            r0= _mm_load_si128(&src[x]);
 
-            r1= _mm_loadu_si128(&src[x+8]);
+            r1= _mm_load_si128(&src[x+8]);
             r0= _mm_adds_epi16(r0,f0);
 
             r1= _mm_adds_epi16(r1,f0);
@@ -5089,10 +5095,10 @@ static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
     for (y = 0; y < height; y++) {
 
             for (x = 0; x < width; x+=16) {
-            r0= _mm_loadu_si128(&src1[x]);
-            r1= _mm_loadu_si128(&src1[x+8]);
-            r2=_mm_loadu_si128(&src2[x]);
-            r3= _mm_loadu_si128(&src2[x+8]);
+            r0= _mm_load_si128(&src1[x]);
+            r1= _mm_load_si128(&src1[x+8]);
+            r2=_mm_load_si128(&src2[x]);
+            r3= _mm_load_si128(&src2[x+8]);
 
             r0= _mm_adds_epi16(r0,f0);
             r1= _mm_adds_epi16(r1,f0);
@@ -5145,7 +5151,7 @@ static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
 
 #endif
 
-#ifdef SSE_weight_pred_luma
+#ifdef SSE_weight_pred
 static void FUNC(weighted_pred)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
                                      uint8_t *_dst, ptrdiff_t _dststride,
                                      int16_t *src, ptrdiff_t srcstride,
@@ -5171,8 +5177,8 @@ static void FUNC(weighted_pred)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
     if (log2Wd >= 1)
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x+=16) {
-            x0= _mm_loadu_si128(&src[x]);
-            x2= _mm_loadu_si128(&src[x+8]);
+            x0= _mm_load_si128(&src[x]);
+            x2= _mm_load_si128(&src[x+8]);
             x1= _mm_unpackhi_epi16(_mm_mullo_epi16(x0,c0),_mm_mulhi_epi16(x0,c0));
             x3= _mm_unpackhi_epi16(_mm_mullo_epi16(x2,c0),_mm_mulhi_epi16(x2,c0));
             x0= _mm_unpacklo_epi16(_mm_mullo_epi16(x0,c0),_mm_mulhi_epi16(x0,c0));
@@ -5202,8 +5208,8 @@ static void FUNC(weighted_pred)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x+=16) {
 
-            x0= _mm_loadu_si128(&src[x]);
-            x2= _mm_loadu_si128(&src[x+8]);
+            x0= _mm_load_si128(&src[x]);
+            x2= _mm_load_si128(&src[x+8]);
             x1= _mm_unpackhi_epi16(_mm_mullo_epi16(x0,c0),_mm_mulhi_epi16(x0,c0));
             x3= _mm_unpackhi_epi16(_mm_mullo_epi16(x2,c0),_mm_mulhi_epi16(x2,c0));
             x0= _mm_unpacklo_epi16(_mm_mullo_epi16(x0,c0),_mm_mulhi_epi16(x0,c0));
@@ -5256,10 +5262,10 @@ static void FUNC(weighted_pred_avg)(uint8_t denom, int16_t wl0Flag, int16_t wl1F
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x+=16) {
-            x0= _mm_loadu_si128(&src1[x]);
-            x1= _mm_loadu_si128(&src1[x+8]);
-            x2= _mm_loadu_si128(&src2[x]);
-            x3= _mm_loadu_si128(&src2[x+8]);
+            x0= _mm_load_si128(&src1[x]);
+            x1= _mm_load_si128(&src1[x+8]);
+            x2= _mm_load_si128(&src2[x]);
+            x3= _mm_load_si128(&src2[x+8]);
             r0= _mm_unpacklo_epi16(_mm_mullo_epi16(x0,c0),_mm_mulhi_epi16(x0,c0));
             r1= _mm_unpacklo_epi16(_mm_mullo_epi16(x1,c0),_mm_mulhi_epi16(x1,c0));
             r2= _mm_unpacklo_epi16(_mm_mullo_epi16(x2,c1),_mm_mulhi_epi16(x2,c1));

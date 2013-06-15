@@ -1315,8 +1315,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     if (current_mv.pred_flag[0] && !current_mv.pred_flag[1]) {
        // int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
        // int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
-        DECLARE_ALIGNED( 16, int16_t, tmp[MAX_PB_SIZE*MAX_PB_SIZE] )= { 0 };
-        DECLARE_ALIGNED( 16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE] )= { 0 };
+        DECLARE_ALIGNED( 16, int16_t, tmp[MAX_PB_SIZE*MAX_PB_SIZE] );
+        DECLARE_ALIGNED( 16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE] );
 
         if (! s->pps->weighted_pred_flag){
             luma_mc(s, tmp, tmpstride,
@@ -1352,8 +1352,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     } else if (!current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
        //int16_t tmp[MAX_PB_SIZE*MAX_PB_SIZE];
       //  int16_t tmp2[MAX_PB_SIZE*MAX_PB_SIZE];
-        DECLARE_ALIGNED( 16, int16_t, tmp[MAX_PB_SIZE*MAX_PB_SIZE] )= { 0 };
-        DECLARE_ALIGNED( 16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE] )= { 0 };
+        DECLARE_ALIGNED( 16, int16_t, tmp[MAX_PB_SIZE*MAX_PB_SIZE] );
+        DECLARE_ALIGNED( 16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE] );
         if (! s->pps->weighted_pred_flag){
             luma_mc(s, tmp, tmpstride,
                     s->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
