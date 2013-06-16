@@ -303,8 +303,6 @@ Void TComYuv::copyPartToPartLuma  ( TComYuv* pcYuvDst, UInt uiPartIdx, UInt iWid
   for ( UInt y = iHeight; y != 0; y-- )
   {
     ::memcpy( pDst, pSrc, iWidth * sizeof(Pel) );
-//      for (int x=0; x < iWidth; x++)
-//          printf("%d\n", pDst[x]);
     pSrc += iSrcStride;
     pDst += iDstStride;
   }
@@ -330,8 +328,6 @@ Void TComYuv::copyPartToPartChroma( TComYuv* pcYuvDst, UInt uiPartIdx, UInt iWid
   {
     ::memcpy( pDstU, pSrcU, iWidth * sizeof(Pel) );
     ::memcpy( pDstV, pSrcV, iWidth * sizeof(Pel) );
-//    for (int x=0; x < iWidth; x++)
-//        printf("%d\n", pDstV[x]);
     pSrcU += iSrcStride;
     pSrcV += iSrcStride;
     pDstU += iDstStride;
@@ -548,13 +544,9 @@ Void TComYuv::addAvg( TComYuv* pcYuvSrc0, TComYuv* pcYuvSrc1, UInt iPartUnitIdx,
     for ( x = 0; x < iWidth; x += 4 )
     {
       pDstY[ x + 0 ] = ClipY( ( pSrcY0[ x + 0 ] + pSrcY1[ x + 0 ] + offset ) >> shiftNum );
-//        printf("%d\n", pDstY[ x + 0 ]);
       pDstY[ x + 1 ] = ClipY( ( pSrcY0[ x + 1 ] + pSrcY1[ x + 1 ] + offset ) >> shiftNum );
-//        printf("%d\n", pDstY[ x + 1 ]);
       pDstY[ x + 2 ] = ClipY( ( pSrcY0[ x + 2 ] + pSrcY1[ x + 2 ] + offset ) >> shiftNum );
-//        printf("%d\n", pDstY[ x + 2 ]);
       pDstY[ x + 3 ] = ClipY( ( pSrcY0[ x + 3 ] + pSrcY1[ x + 3 ] + offset ) >> shiftNum );
-//        printf("%d\n", pDstY[ x + 3 ]);
     }
     pSrcY0 += iSrc0Stride;
     pSrcY1 += iSrc1Stride;
@@ -577,14 +569,9 @@ Void TComYuv::addAvg( TComYuv* pcYuvSrc0, TComYuv* pcYuvSrc1, UInt iPartUnitIdx,
     {
       // note: chroma min width is 2
       pDstU[x] = ClipC((pSrcU0[x] + pSrcU1[x] + offset) >> shiftNum);
-      pDstV[x] = ClipC((pSrcV0[x] + pSrcV1[x] + offset) >> shiftNum);
-        //printf("%d\n", pDstV[ x]);
-        x--;
-      
+      pDstV[x] = ClipC((pSrcV0[x] + pSrcV1[x] + offset) >> shiftNum); x--;
       pDstU[x] = ClipC((pSrcU0[x] + pSrcU1[x] + offset) >> shiftNum);
-      pDstV[x] = ClipC((pSrcV0[x] + pSrcV1[x] + offset) >> shiftNum);
-        //printf("%d\n", pDstV[ x]);
-        x--;
+      pDstV[x] = ClipC((pSrcV0[x] + pSrcV1[x] + offset) >> shiftNum); x--;
     }
     
     pSrcU0 += iSrc0Stride;

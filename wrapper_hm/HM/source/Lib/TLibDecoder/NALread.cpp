@@ -49,16 +49,20 @@ using namespace std;
 
 //! \ingroup TLibDecoder
 //! \{
-static void convertPayloadToRBSP(vector<uint8_t>& nalUnitBuf, Bool isVclNalUnit)
+static void convertPayloadToRBSP(vector<uint8_t>& nalUnitBuf, TComInputBitstream *bitstream, Bool isVclNalUnit)
 {
   UInt zeroCount = 0;
   vector<uint8_t>::iterator it_read, it_write;
 
-  for (it_read = it_write = nalUnitBuf.begin(); it_read != nalUnitBuf.end(); it_read++, it_write++)
+  UInt pos = 0;
+  bitstream->clearEmulationPreventionByteLocation();
+  for (it_read = it_write = nalUnitBuf.begin(); it_read != nalUnitBuf.end(); it_read++, it_write++, pos++)
   {
     assert(zeroCount < 2 || *it_read >= 0x03);
     if (zeroCount == 2 && *it_read == 0x03)
     {
+      bitstream->pushEmulationPreventionByteLocation( pos );
+      pos++;
       it_read++;
       zeroCount = 0;
       if (it_read == nalUnitBuf.end())
@@ -104,10 +108,10 @@ Void readNalUnitHeader(InputNALUnit& nalu)
 
   if ( nalu.m_temporalId )
   {
-    assert( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_BLA
-         && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_BLANT
+    assert( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_BLA_W_LP
+         && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_BLA_W_RADL
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_BLA_N_LP
-         && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR
+         && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_W_RADL
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_N_LP
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_CRA
          && nalu.m_nalUnitType != NAL_UNIT_VPS
@@ -117,7 +121,7 @@ Void readNalUnitHeader(InputNALUnit& nalu)
   }
   else
   {
-    assert( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_TLA
+    assert( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_TLA_R
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_TSA_N
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_STSA_R
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_STSA_N );
@@ -131,9 +135,10 @@ void read(InputNALUnit& nalu, vector<uint8_t>& nalUnitBuf)
 {
   /* perform anti-emulation prevention */
   TComInputBitstream *pcBitstream = new TComInputBitstream(NULL);
-  convertPayloadToRBSP(nalUnitBuf, (nalUnitBuf[0] & 64) == 0);
+  convertPayloadToRBSP(nalUnitBuf, pcBitstream, (nalUnitBuf[0] & 64) == 0);
   
   nalu.m_Bitstream = new TComInputBitstream(&nalUnitBuf);
+  nalu.m_Bitstream->setEmulationPreventionByteLocation(pcBitstream->getEmulationPreventionByteLocation());
   delete pcBitstream;
   readNalUnitHeader(nalu);
 }

@@ -40,37 +40,24 @@
 
 //! \ingroup TLibCommon
 //! \{
-#define L0363_DU_BIT_RATE             1 ///< L0363: add bit_rate_du_value_minus1 to HRD parameters
-#define L0328_SPLICING                1 ///< L0328: splicing support in HRD
-#define L0044_DU_DPB_OUTPUT_DELAY_HRD 1 ///< L0044: Include dpb_output_delay_du_length_minus1 in hrd_parameters(), dpb_output_du_delay in
-                                        ///<        picture timing SEI and DU information SEI
-#define L0045_PERSISTENCE_FLAGS  1      ///< L0045: Replace "repetition_period" syntax elements in SEI with "persistence_flag"
-#define L0045_NON_NESTED_SEI_RESTRICTIONS 1 ///< L0045; Include restriction on the order of APS and non-nested BP, PT and DU info SEI messages
-#define L0044_CPB_DPB_DELAY_OFFSET 1  ///< L0044: Include syntax elements cpb_delay_offset and dpb_delay_offset in the BP SEI message
-#define L0047_APS_FLAGS            1  ///< L0047: Include full_random_access_flag and no_param_set_update_flag in the active parameter set SEI message
-#define L0043_TIMING_INFO          1  ///< L0043: Timing information is signalled in VUI outside hrd_parameters()
-#define L0046_RENAME_PROG_SRC_IDC  1  ///< L0046: Rename progressive_source_idc to source_scan_type
-#define L0045_CONDITION_SIGNALLING 1  ///< L0045: Condition the signaling of some syntax elements in picture timing SEI message
-#define L0043_MSS_IDC 1
-#define L0116_ENTRY_POINT 1
-#define L0363_MORE_BITS 1
-#define L0363_MVP_POC 1
-#define L0363_BYTE_ALIGN 1
-#define L0363_SEI_ALLOW_SUFFIX 1
-#define L0323_LIMIT_DEFAULT_LIST_SIZE 1
-#define L0046_CONSTRAINT_FLAGS 1
-#define L0255_MOVE_PPS_FLAGS       1  ///< move some flags to earlier positions in the PPS
-#define L0444_FPA_TYPE             1  ///< allow only FPA types 3, 4 and 5
-#define L0372 1
-#define SIGNAL_BITRATE_PICRATE_IN_VPS               0  ///< K0125: Signal bit_rate and pic_rate in VPS
-#define L0232_RD_PENALTY           1  ///< L0232: RD-penalty for 32x32 TU for intra in non-intra slices
+
+#define FIX1071 1 ///< fix for issue #1071
+
+#define MAX_NUM_PICS_IN_SOP           1024
+
+#define MAX_NESTING_NUM_OPS         1024
+#define MAX_NESTING_NUM_LAYER       64
 
 #define MAX_VPS_NUM_HRD_PARAMETERS                1
 #define MAX_VPS_OP_SETS_PLUS1                     1024
 #define MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1  1
 
 #define RATE_CONTROL_LAMBDA_DOMAIN                  1  ///< JCTVC-K0103, rate control by R-lambda model
-#define L0033_RC_BUGFIX                             1  ///< JCTVC-L0033, bug fix for R-lambda model based rate control
+#define M0036_RC_IMPROVEMENT                        1  ///< JCTVC-M0036, improvement for R-lambda model based rate control
+#define TICKET_1090_FIX                             1
+
+#define RC_FIX                                      1  /// suggested fix for M0036
+#define RATE_CONTROL_INTRA                          1  ///< JCTVC-M0257, rate control for intra 
 
 #define MAX_CPB_CNT                     32  ///< Upper bound of (cpb_cnt_minus1 + 1)
 #define MAX_NUM_LAYER_IDS                64
@@ -91,8 +78,6 @@
 #define C2FLAG_NUMBER               1 // maximum number of largerThan2 flag coded in one chunk:  16 in HM5 
 
 #define REMOVE_SAO_LCU_ENC_CONSTRAINTS_3 1  ///< disable the encoder constraint that conditionally disable SAO for chroma for entire slice in interleaved mode
-
-#define REMOVE_SINGLE_SEI_EXTENSION_FLAGS 1 ///< remove display orientation SEI extension flag (there is a generic SEI extension mechanism now) 
 
 #define SAO_ENCODING_CHOICE              1  ///< I0184: picture early termination
 #if SAO_ENCODING_CHOICE
@@ -393,7 +378,6 @@ enum RefPicList
 {
   REF_PIC_LIST_0 = 0,   ///< reference list 0
   REF_PIC_LIST_1 = 1,   ///< reference list 1
-  REF_PIC_LIST_C = 2,   ///< combined reference list for uni-prediction in B-Slices
   REF_PIC_LIST_X = 100  ///< special mark
 };
 

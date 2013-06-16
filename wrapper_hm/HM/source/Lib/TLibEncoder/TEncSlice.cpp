@@ -387,6 +387,13 @@ Void TEncSlice::initEncSlice( TComPic* pcPic, Int pocLast, Int pocCurr, Int iNum
   rpcSlice->setNumRefIdx(REF_PIC_LIST_0,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);
   rpcSlice->setNumRefIdx(REF_PIC_LIST_1,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);
   
+  if ( m_pcCfg->getDeblockingFilterMetric() )
+  {
+    rpcSlice->setDeblockingFilterOverrideFlag(true);
+    rpcSlice->setDeblockingFilterDisable(false);
+    rpcSlice->setDeblockingFilterBetaOffsetDiv2( 0 );
+    rpcSlice->setDeblockingFilterTcOffsetDiv2( 0 );
+  } else
   if (rpcSlice->getPPS()->getDeblockingFilterControlPresentFlag())
   {
     rpcSlice->getPPS()->setDeblockingFilterOverrideEnabledFlag( !m_pcCfg->getLoopFilterOffsetInPPS() );
@@ -448,9 +455,7 @@ Void TEncSlice::resetQP( TComPic* pic, Int sliceQP, Double lambda )
 
   // store lambda
   slice->setSliceQp( sliceQP );
-#if L0033_RC_BUGFIX
   slice->setSliceQpBase ( sliceQP );
-#endif
   m_pcRdCost ->setLambda( lambda );
 #if WEIGHTED_CHROMA_DISTORTION
   // for RDO
@@ -757,6 +762,42 @@ Void TEncSlice::precompressSlice( TComPic*& rpcPic )
 
 /** \param rpcPic   picture class
  */
+#if RATE_CONTROL_INTRA
+Void TEncSlice::calCostSliceI(TComPic*& rpcPic)
+{
+  UInt    uiCUAddr;
+  UInt    uiStartCUAddr;
+  UInt    uiBoundingCUAddr;
+  Int     iSumHad, shift = g_bitDepthY-8, offset = (shift>0)?(1<<(shift-1)):0;;
+  Double  iSumHadSlice = 0;
+
+  rpcPic->getSlice(getSliceIdx())->setSliceSegmentBits(0);
+  TComSlice* pcSlice            = rpcPic->getSlice(getSliceIdx());
+  xDetermineStartAndBoundingCUAddr ( uiStartCUAddr, uiBoundingCUAddr, rpcPic, false );
+
+  UInt uiEncCUOrder;
+  uiCUAddr = rpcPic->getPicSym()->getCUOrderMap( uiStartCUAddr /rpcPic->getNumPartInCU()); 
+  for( uiEncCUOrder = uiStartCUAddr/rpcPic->getNumPartInCU();
+       uiEncCUOrder < (uiBoundingCUAddr+(rpcPic->getNumPartInCU()-1))/rpcPic->getNumPartInCU();
+       uiCUAddr = rpcPic->getPicSym()->getCUOrderMap(++uiEncCUOrder) )
+  {
+    // initialize CU encoder
+    TComDataCU*& pcCU = rpcPic->getCU( uiCUAddr );
+    pcCU->initCU( rpcPic, uiCUAddr );
+
+    Int height  = min( pcSlice->getSPS()->getMaxCUHeight(),pcSlice->getSPS()->getPicHeightInLumaSamples() - uiCUAddr / rpcPic->getFrameWidthInCU() * pcSlice->getSPS()->getMaxCUHeight() );
+    Int width   = min( pcSlice->getSPS()->getMaxCUWidth(),pcSlice->getSPS()->getPicWidthInLumaSamples() - uiCUAddr % rpcPic->getFrameWidthInCU() * pcSlice->getSPS()->getMaxCUWidth() );
+
+    iSumHad = m_pcCuEncoder->updateLCUDataISlice(pcCU, uiCUAddr, width, height);
+
+    (m_pcRateCtrl->getRCPic()->getLCU(uiCUAddr)).m_costIntra=(iSumHad+offset)>>shift;
+    iSumHadSlice += (m_pcRateCtrl->getRCPic()->getLCU(uiCUAddr)).m_costIntra;
+
+  }
+  m_pcRateCtrl->getRCPic()->setTotalIntraCost(iSumHadSlice);
+}
+#endif
+
 Void TEncSlice::compressSlice( TComPic*& rpcPic )
 {
   UInt  uiCUAddr;
@@ -1015,39 +1056,67 @@ Void TEncSlice::compressSlice( TComPic*& rpcPic )
         Double estLambda = -1.0;
         Double bpp       = -1.0;
 
+#if M0036_RC_IMPROVEMENT
+        if ( ( rpcPic->getSlice( 0 )->getSliceType() == I_SLICE && m_pcCfg->getForceIntraQP() ) || !m_pcCfg->getLCULevelRC() )
+#else
         if ( rpcPic->getSlice( 0 )->getSliceType() == I_SLICE || !m_pcCfg->getLCULevelRC() )
+#endif
         {
           estQP = pcSlice->getSliceQp();
         }
         else
         {
+#if RATE_CONTROL_INTRA
+          bpp = m_pcRateCtrl->getRCPic()->getLCUTargetBpp(pcSlice->getSliceType());
+          if ( rpcPic->getSlice( 0 )->getSliceType() == I_SLICE)
+          {
+            estLambda = m_pcRateCtrl->getRCPic()->getLCUEstLambdaAndQP(bpp, pcSlice->getSliceQp(), &estQP);
+          }
+          else
+          {
+            estLambda = m_pcRateCtrl->getRCPic()->getLCUEstLambda( bpp );
+            estQP     = m_pcRateCtrl->getRCPic()->getLCUEstQP    ( estLambda, pcSlice->getSliceQp() );
+          }
+#else
           bpp       = m_pcRateCtrl->getRCPic()->getLCUTargetBpp();
           estLambda = m_pcRateCtrl->getRCPic()->getLCUEstLambda( bpp );
           estQP     = m_pcRateCtrl->getRCPic()->getLCUEstQP    ( estLambda, pcSlice->getSliceQp() );
+#endif
+
           estQP     = Clip3( -pcSlice->getSPS()->getQpBDOffsetY(), MAX_QP, estQP );
 
           m_pcRdCost->setLambda(estLambda);
+#if M0036_RC_IMPROVEMENT
+#if RDOQ_CHROMA_LAMBDA
+          // set lambda for RDOQ
+          Double weight=m_pcRdCost->getChromaWeight();
+          m_pcTrQuant->setLambda( estLambda, estLambda / weight );
+#else
+          m_pcTrQuant->setLambda( estLambda );
+#endif
+#endif
         }
 
         m_pcRateCtrl->setRCQP( estQP );
-#if L0033_RC_BUGFIX
         pcCU->getSlice()->setSliceQpBase( estQP );
-#endif
       }
 #endif
 
       // run CU encoder
       m_pcCuEncoder->compressCU( pcCU );
 
+#if !TICKET_1090_FIX
 #if RATE_CONTROL_LAMBDA_DOMAIN
       if ( m_pcCfg->getUseRateCtrl() )
       {
+#if !M0036_RC_IMPROVEMENT
         UInt SAD    = m_pcCuEncoder->getLCUPredictionSAD();
         Int height  = min( pcSlice->getSPS()->getMaxCUHeight(),pcSlice->getSPS()->getPicHeightInLumaSamples() - uiCUAddr / rpcPic->getFrameWidthInCU() * pcSlice->getSPS()->getMaxCUHeight() );
         Int width   = min( pcSlice->getSPS()->getMaxCUWidth(),pcSlice->getSPS()->getPicWidthInLumaSamples() - uiCUAddr % rpcPic->getFrameWidthInCU() * pcSlice->getSPS()->getMaxCUWidth() );
         Double MAD = (Double)SAD / (Double)(height * width);
         MAD = MAD * MAD;
         ( m_pcRateCtrl->getRCPic()->getLCU(uiCUAddr) ).m_MAD = MAD;
+#endif
 
         Int actualQP        = g_RCInvalidQPValue;
         Double actualLambda = m_pcRdCost->getLambda();
@@ -1071,9 +1140,14 @@ Void TEncSlice::compressSlice( TComPic*& rpcPic )
           actualQP = pcCU->getQP( 0 );
         }
         m_pcRdCost->setLambda(oldLambda);
-
+#if RATE_CONTROL_INTRA
+        m_pcRateCtrl->getRCPic()->updateAfterLCU( m_pcRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda, 
+          pcCU->getSlice()->getSliceType() == I_SLICE ? 0 : m_pcCfg->getLCULevelRC() );
+#else
         m_pcRateCtrl->getRCPic()->updateAfterLCU( m_pcRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda, m_pcCfg->getLCULevelRC() );
+#endif
       }
+#endif
 #endif
       
       // restore entropy coder to an initial stage
@@ -1107,6 +1181,52 @@ Void TEncSlice::compressSlice( TComPic*& rpcPic )
           m_pcBufferSbacCoders[uiTileCol].loadContexts(ppppcRDSbacCoders[uiSubStrm][0][CI_CURR_BEST]);
         }
       }
+
+#if TICKET_1090_FIX
+#if RATE_CONTROL_LAMBDA_DOMAIN
+      if ( m_pcCfg->getUseRateCtrl() )
+      {
+#if !M0036_RC_IMPROVEMENT
+        UInt SAD    = m_pcCuEncoder->getLCUPredictionSAD();
+        Int height  = min( pcSlice->getSPS()->getMaxCUHeight(),pcSlice->getSPS()->getPicHeightInLumaSamples() - uiCUAddr / rpcPic->getFrameWidthInCU() * pcSlice->getSPS()->getMaxCUHeight() );
+        Int width   = min( pcSlice->getSPS()->getMaxCUWidth(),pcSlice->getSPS()->getPicWidthInLumaSamples() - uiCUAddr % rpcPic->getFrameWidthInCU() * pcSlice->getSPS()->getMaxCUWidth() );
+        Double MAD = (Double)SAD / (Double)(height * width);
+        MAD = MAD * MAD;
+        ( m_pcRateCtrl->getRCPic()->getLCU(uiCUAddr) ).m_MAD = MAD;
+#endif
+
+        Int actualQP        = g_RCInvalidQPValue;
+        Double actualLambda = m_pcRdCost->getLambda();
+        Int actualBits      = pcCU->getTotalBits();
+        Int numberOfEffectivePixels    = 0;
+        for ( Int idx = 0; idx < rpcPic->getNumPartInCU(); idx++ )
+        {
+          if ( pcCU->getPredictionMode( idx ) != MODE_NONE && ( !pcCU->isSkipped( idx ) ) )
+          {
+            numberOfEffectivePixels = numberOfEffectivePixels + 16;
+            break;
+          }
+        }
+
+        if ( numberOfEffectivePixels == 0 )
+        {
+          actualQP = g_RCInvalidQPValue;
+        }
+        else
+        {
+          actualQP = pcCU->getQP( 0 );
+        }
+        m_pcRdCost->setLambda(oldLambda);
+
+#if RATE_CONTROL_INTRA
+        m_pcRateCtrl->getRCPic()->updateAfterLCU( m_pcRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda, 
+          pcCU->getSlice()->getSliceType() == I_SLICE ? 0 : m_pcCfg->getLCULevelRC() );
+#else
+        m_pcRateCtrl->getRCPic()->updateAfterLCU( m_pcRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda, m_pcCfg->getLCULevelRC() );
+#endif
+      }
+#endif
+#endif
     }
     // other case: encodeCU is not called
     else
@@ -1161,7 +1281,7 @@ Void TEncSlice::compressSlice( TComPic*& rpcPic )
  \param  rpcPic        picture class
  \retval rpcBitstream  bitstream class
  */
-Void TEncSlice::encodeSlice   ( TComPic*& rpcPic, TComOutputBitstream* pcBitstream, TComOutputBitstream* pcSubstreams )
+Void TEncSlice::encodeSlice   ( TComPic*& rpcPic, TComOutputBitstream* pcSubstreams )
 {
   UInt       uiCUAddr;
   UInt       uiStartCUAddr;
@@ -1341,39 +1461,7 @@ Void TEncSlice::encodeSlice   ( TComPic*& rpcPic, TComOutputBitstream* pcBitstre
         }
       }
       {
-          UInt uiCounter = 0;
-          vector<uint8_t>& rbsp   = pcSubstreams[uiSubStrm].getFIFO();
-          for (vector<uint8_t>::iterator it = rbsp.begin(); it != rbsp.end();)
-          {
-            /* 1) find the next emulated 00 00 {00,01,02,03}
-             * 2a) if not found, write all remaining bytes out, stop.
-             * 2b) otherwise, write all non-emulated bytes out
-             * 3) insert emulation_prevention_three_byte
-             */
-            vector<uint8_t>::iterator found = it;
-            do
-            {
-              /* NB, end()-1, prevents finding a trailing two byte sequence */
-              found = search_n(found, rbsp.end()-1, 2, 0);
-              found++;
-              /* if not found, found == end, otherwise found = second zero byte */
-              if (found == rbsp.end())
-              {
-                break;
-              }
-              if (*(++found) <= 3)
-              {
-                break;
-              }
-            } while (true);
-            it = found;
-            if (found != rbsp.end())
-            {
-              it++;
-              uiCounter++;
-            }
-          }
-        
+        UInt numStartCodeEmulations = pcSubstreams[uiSubStrm].countStartCodeEmulations();
         UInt uiAccumulatedSubstreamLength = 0;
         for (Int iSubstrmIdx=0; iSubstrmIdx < iNumSubstreams; iSubstrmIdx++)
         {
@@ -1381,7 +1469,7 @@ Void TEncSlice::encodeSlice   ( TComPic*& rpcPic, TComOutputBitstream* pcBitstre
         }
         // add bits coded in previous dependent slices + bits coded so far
         // add number of emulation prevention byte count in the tile
-        pcSlice->addTileLocation( ((pcSlice->getTileOffstForMultES() + uiAccumulatedSubstreamLength - uiBitsOriginallyInSubstreams) >> 3) + uiCounter );
+        pcSlice->addTileLocation( ((pcSlice->getTileOffstForMultES() + uiAccumulatedSubstreamLength - uiBitsOriginallyInSubstreams) >> 3) + numStartCodeEmulations );
       }
     }
 

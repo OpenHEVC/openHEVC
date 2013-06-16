@@ -87,7 +87,7 @@ digestToString(const unsigned char digest[3][16], int numChar)
       string[cnt++] = hex[digest[yuvIdx][i] >> 4];
       string[cnt++] = hex[digest[yuvIdx][i] & 0xf];
     }
-    string[cnt++] = '\n';
+    string[cnt++] = ',';
   }
 
   string[cnt-1] = '\0';

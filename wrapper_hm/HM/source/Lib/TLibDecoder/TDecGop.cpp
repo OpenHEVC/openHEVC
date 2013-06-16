@@ -294,11 +294,7 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
     }
   }
 
-    hashType = "MD5";
-    calcMD5(pic, recon_digest);
-    numChar = 16;
-
-    /* compare digest against received version */
+  /* compare digest against received version */
   const Char* ok = "(unk)";
   Bool mismatch = false;
 
@@ -318,12 +314,12 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
     }
   }
 
-  printf("[%s:\n%s\n%s\n] ", hashType, digestToString(recon_digest, numChar), ok);
+  printf("[%s:%s,%s] ", hashType, digestToString(recon_digest, numChar), ok);
 
   if (mismatch)
   {
     g_md5_mismatch = true;
-//    printf("[rx%s:%s] ", hashType, digestToString(pictureHashSEI->digest, numChar));
+    printf("[rx%s:%s] ", hashType, digestToString(pictureHashSEI->digest, numChar));
   }
 }
 //! \}

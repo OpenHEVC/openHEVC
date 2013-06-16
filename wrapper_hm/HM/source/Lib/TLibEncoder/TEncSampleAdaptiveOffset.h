@@ -56,9 +56,6 @@
 class TEncSampleAdaptiveOffset : public TComSampleAdaptiveOffset
 {
 private:
-  Double            m_dLambdaLuma;
-  Double            m_dLambdaChroma;
-
   TEncEntropy*      m_pcEntropyCoder;
   TEncSbac***       m_pppcRDSbacCoder;              ///< for CABAC
   TEncSbac*         m_pcRDGoOnSbacCoder;

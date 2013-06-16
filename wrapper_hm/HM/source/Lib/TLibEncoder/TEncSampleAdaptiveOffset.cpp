@@ -298,7 +298,9 @@ Void TEncSampleAdaptiveOffset::rdoSaoOnePart(SAOQTPart *psQTPart, Int iPartIdx, 
         m_dCostPartBest[iPartIdx] = (Double) m_iDistOrg[iPartIdx] + m_pcEntropyCoder->getNumberOfWrittenBits()*dLambda ; 
         m_iTypePartBest[iPartIdx] = -1;
         if( m_bUseSBACRD )
+        {
           m_pcRDGoOnSbacCoder->store( m_pppcRDSbacCoder[pOnePart->PartLevel][CI_TEMP_BEST] );
+        }
       }
     }
   }
@@ -1676,14 +1678,6 @@ Void TEncSampleAdaptiveOffset::SAOProcess(SAOParam *pcSaoParam, Double dLambdaLu
 Void TEncSampleAdaptiveOffset::SAOProcess(SAOParam *pcSaoParam, Double dLambda)
 #endif
 {
-#if SAO_CHROMA_LAMBDA 
-  m_dLambdaLuma    = dLambdaLuma;
-  m_dLambdaChroma  = dLambdaChroma;
-#else
-  m_dLambdaLuma    = dLambda;
-  m_dLambdaChroma  = dLambda;
-#endif
-
   if(m_bUseNIF)
   {
     m_pcPic->getPicYuvRec()->copyToPic(m_pcYuvTmp);

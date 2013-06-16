@@ -1173,11 +1173,11 @@ Void TComSampleAdaptiveOffset::processSaoUnitAll(SaoLcuParam* saoLcuParam, Bool 
         typeIdx = saoLcuParam[addr].typeIdx;
         mergeLeftFlag = saoLcuParam[addr].mergeLeftFlag;
       }
-//      printf("mergeLeftFlag = %d\n", mergeLeftFlag);
       if (typeIdx>=0)
       {
         if (!mergeLeftFlag)
         {
+
           if (typeIdx == SAO_BO)
           {
             for (i=0; i<SAO_MAX_BO_CLASSES+1;i++)
@@ -1188,6 +1188,7 @@ Void TComSampleAdaptiveOffset::processSaoUnitAll(SaoLcuParam* saoLcuParam, Bool 
             {
               offset[ (saoLcuParam[addr].subTypeIdx +i)%SAO_MAX_BO_CLASSES  +1] = saoLcuParam[addr].offset[i] << saoBitIncrease;
             }
+
             ppLumaTable = (yCbCr==0)?m_lumaTableBo:m_chromaTableBo;
             pClipTable = (yCbCr==0)?m_pClipTable:m_pChromaClipTable;
 

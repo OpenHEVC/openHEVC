@@ -68,11 +68,6 @@ protected:
   TComSlice*    m_pcSlice;
   UInt          m_uiCoeffCost;
 
-  Void  xWritePCMAlignZero    ();
-  Void  xWriteEpExGolomb      ( UInt uiSymbol, UInt uiCount );
-  Void  xWriteExGolombLevel    ( UInt uiSymbol );
-  Void  xWriteUnaryMaxSymbol  ( UInt uiSymbol, UInt uiMaxSymbol );
-
   Void codeShortTermRefPicSet              ( TComSPS* pcSPS, TComReferencePictureSet* pcRPS, Bool calledFromSliceHeader, Int idx );
   Bool findMatchingLTRP ( TComSlice* pcSlice, UInt *ltrpsIndex, Int ltrpPOC, Bool usedFlag );
   
@@ -94,9 +89,6 @@ public:
   Void  codeSliceHeader         ( TComSlice* pcSlice );
   Void  codePTL                 ( TComPTL* pcPTL, Bool profilePresentFlag, Int maxNumSubLayersMinus1);
   Void  codeProfileTier         ( ProfileTierLevel* ptl );
-#if SIGNAL_BITRATE_PICRATE_IN_VPS
-  Void codeBitratePicRateInfo(TComBitRatePicRateInfo *info, Int tempLevelLow, Int tempLevelHigh);
-#endif
   Void  codeHrdParameters       ( TComHRD *hrd, Bool commonInfPresentFlag, UInt maxNumSubLayersMinus1 );
   Void  codeTilesWPPEntryPoint( TComSlice* pSlice );
   Void  codeTerminatingBit      ( UInt uilsLast );
