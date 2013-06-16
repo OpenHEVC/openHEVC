@@ -318,7 +318,6 @@ static int hls_slice_header(HEVCContext *s)
         slice_address_length = av_ceil_log2_c(s->sps->pic_width_in_ctbs *
                                               s->sps->pic_height_in_ctbs);
         sh->slice_address = get_bits(gb, slice_address_length);
-        av_log(s->avctx, AV_LOG_ERROR, "sh->adress not equal to zero %d\n", sh->slice_address);
     } else {
         sh->slice_address = 0;
     }
@@ -1955,6 +1954,13 @@ static void printf_ref_pic_list(HEVCContext *s)
 {
     RefPicList  *refPicList = s->ref->refPicList;
     uint8_t i, list_idx;
+    if (s->sh.slice_type == I_SLICE)
+        printf("\nPOC %4d TId: %1d ( I-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->qp_y[0]);
+    else if (s->sh.slice_type == B_SLICE)
+        printf("\nPOC %4d TId: %1d ( B-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->qp_y[0]);
+    else
+        printf("\nPOC %4d TId: %1d ( P-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->qp_y[0]);
+
     for ( list_idx = 0; list_idx < 2; list_idx++) {
         printf("[L%d ",list_idx);
         for(i = 0; i < refPicList[list_idx].numPic; i++) {
@@ -1968,12 +1974,15 @@ static void printf_ref_pic_list(HEVCContext *s)
     }
 }
 
-static void print_md5(int poc, uint8_t *md5) {
-    int i;
-    printf("POC %4d [MD5: ", poc);
-    for (i = 0; i < 16; i++)
-        printf("%02x", md5[i]);
-    printf("]\n");
+static void print_md5(int poc, uint8_t md5[3][16]) {
+    int i, j;
+    printf("\n[MD5:");
+    for (j = 0; j < 3; j++) {
+        printf("\n");
+        for (i = 0; i < 16; i++)
+            printf("%02x", md5[j][i]);
+    }
+    printf("\n] ");
 
 }
 
@@ -2179,8 +2188,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 calc_md5(s->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
                 calc_md5(s->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
                 s->is_decoded = 1;
-//                printf_ref_pic_list(s);
-//                print_md5(poc, s->md5[0]);
+                printf_ref_pic_list(s);
+                print_md5(poc, s->md5);
             }
             s->frame->pict_type = AV_PICTURE_TYPE_I;
             s->frame->key_frame = 1;

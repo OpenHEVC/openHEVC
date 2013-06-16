@@ -215,7 +215,7 @@ Void TDecGop::filterPicture(TComPic*& rpcPic)
                                                     pcSlice->getSliceQp() );
 
   m_dDecTime += (Double)(clock()-iBeforeTime) / CLOCKS_PER_SEC;
-  printf ("[DT %6.3f] ", m_dDecTime );
+//  printf ("[DT %6.3f] ", m_dDecTime );
   m_dDecTime  = 0;
 
   for (Int iRefList = 0; iRefList < 2; iRefList++)
@@ -295,7 +295,10 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
   }
 
   /* compare digest against received version */
-  const Char* ok = "(unk)";
+    hashType = "MD5";
+    calcMD5(pic, recon_digest);
+    numChar = 16;
+  const Char* ok = "";
   Bool mismatch = false;
 
   if (pictureHashSEI)
@@ -314,12 +317,12 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
     }
   }
 
-  printf("[%s:%s,%s] ", hashType, digestToString(recon_digest, numChar), ok);
+  printf("\n[%s:\n%s\n%s] ", hashType, digestToString(recon_digest, numChar), ok);
 
-  if (mismatch)
+/*  if (mismatch)
   {
     g_md5_mismatch = true;
     printf("[rx%s:%s] ", hashType, digestToString(pictureHashSEI->digest, numChar));
-  }
+  }*/
 }
 //! \}
