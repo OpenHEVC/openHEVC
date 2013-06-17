@@ -142,6 +142,10 @@ TDecBinCABAC::decodeBin( UInt& ruiBin, ContextModel &rcCtxModel )
   }
 }
 
+void TDecBinCABAC::printStatus(Int Val) {
+        printf("codIRange := %d codIOffset := %d binVal := %d\n", m_uiRange, m_uiValue>>7, Val);
+}
+
 Void
 TDecBinCABAC::decodeBinEP( UInt& ruiBin )
 {
