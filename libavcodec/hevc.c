@@ -2110,6 +2110,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
         if (s->sh.first_slice_in_pic_flag) {
 			if (s->sps->sample_adaptive_offset_enabled_flag) {
+			    av_frame_unref(s->tmp_frame);
                 if ((ret = ff_reget_buffer(s->avctx, s->tmp_frame)) < 0)
                     return ret;
                 s->frame = s->tmp_frame;
@@ -2179,11 +2180,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         } else {
             ctb_addr_ts = hls_slice_data(s);
         }
-        if (ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
-            if (s->sps->sample_adaptive_offset_enabled_flag)
-                av_frame_unref(s->tmp_frame);
+        if (s->sh.first_slice_in_pic_flag)
             if ((ret = ff_hevc_find_display(s, data, 0, &poc_display)) < 0)
                 return ret;
+        if (ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
             if (s->decode_checksum_sei == 1) {
 #ifdef POC_DISPLAY_MD5
                 AVFrame *frame = (AVFrame *) data;
