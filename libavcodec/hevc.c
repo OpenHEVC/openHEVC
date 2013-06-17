@@ -1908,11 +1908,60 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     return 0;
 }
 
-static int hls_slice_data_wpp(HEVCContext *s)
+static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 {
     int *ret = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
     int *arg = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
     int i, res = 0;
+    int startheader, j, cmpt = 0;
+    int offset = (s->gb[0]->index>>3);
+    if(!s->ctb_entry_count) {
+        s->ctb_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
+        for(i=1; i< MAX_ENTRIES-1; i++) {
+            s->gb[i] = av_malloc(sizeof(GetBitContext));
+            s->cc[i] = av_malloc(sizeof(CABACContext));
+            s->cabac_state [i+1] = av_malloc(HEVC_CONTEXTS);
+            s->edge_emu_buffer[i] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
+        }
+        s->edge_emu_buffer[MAX_ENTRIES-1] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
+        s->gb[MAX_ENTRIES-1] = av_malloc(sizeof(GetBitContext));
+        s->cc[MAX_ENTRIES-1] = av_malloc(sizeof(CABACContext));
+    }
+    for(i=1; i< MAX_ENTRIES; i++) {
+        s->qp_y[i] = s->qp_y[0];
+        s->isFirstQPgroup[i] = 1;
+    }
+
+#ifdef WPP1
+    for(j=0, cmpt = 0,startheader=offset+s->sh.entry_point_offset[0]; j< s->skipped_bytes; j++){
+        if(s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader){
+            startheader--;
+            cmpt++;
+        }
+    }
+#endif
+    memset(s->ctb_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
+    for(i=1; i< s->sh.num_entry_point_offsets; i++) {
+
+        //cmpt = 0;
+        offset += (s->sh.entry_point_offset[i-1]-cmpt);
+#ifdef WPP1
+        for(j=0, cmpt=0, startheader=offset+s->sh.entry_point_offset[i]; j< s->skipped_bytes; j++){
+            if(s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader){
+                startheader--;
+                cmpt++;
+            }
+        }
+#endif
+        init_get_bits(s->gb[i], avpkt->data+offset, (s->sh.entry_point_offset[i]-cmpt)*8);
+        ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]-cmpt);
+    }
+    if(s->sh.num_entry_point_offsets!= 0) {
+        offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets-1]-cmpt;
+        init_get_bits(s->gb[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset)*8);
+        ff_init_cabac_decoder(s->cc[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset));
+    }
+
     if (s->sh.first_slice_in_pic_flag == 1) {
         s->SliceAddrRs = s->sh.slice_address;
     } else {
@@ -2017,7 +2066,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     GetBitContext *gb = s->gb[0];
     int poc_display;
     
-    int offset = 0;
     int ctb_addr_ts;
     int ret;
 
@@ -2126,57 +2174,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         if (!s->edge_emu_buffer[0])
             return -1;
         if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads && s->sh.num_entry_point_offsets > 0 ) {
-            int i, startheader, j, cmpt = 0;
-            offset += (s->gb[0]->index>>3);
-            if(!s->ctb_entry_count) {
-                s->ctb_entry_count = av_malloc((s->sh.num_entry_point_offsets+1)*sizeof(int));
-                for(i=1; i< MAX_ENTRIES-1; i++) {
-                    s->gb[i] = av_malloc(sizeof(GetBitContext));
-                    s->cc[i] = av_malloc(sizeof(CABACContext));
-                    s->cabac_state [i+1] = av_malloc(HEVC_CONTEXTS);
-                    s->edge_emu_buffer[i] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
-                }
-                s->edge_emu_buffer[MAX_ENTRIES-1] = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
-                s->gb[MAX_ENTRIES-1] = av_malloc(sizeof(GetBitContext));
-                s->cc[MAX_ENTRIES-1] = av_malloc(sizeof(CABACContext));
-            }
-            for(i=1; i< MAX_ENTRIES; i++) {
-                s->qp_y[i] = s->qp_y[0];
-                s->isFirstQPgroup[i] = 1;
-            }
-
-#ifdef WPP1
-            for(j=0, cmpt = 0,startheader=offset+s->sh.entry_point_offset[0]; j< s->skipped_bytes; j++){
-                if(s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader){
-                    startheader--;
-                    cmpt++;
-                }
-            }
-#endif
-            memset(s->ctb_entry_count, 0, (s->sh.num_entry_point_offsets+1)*sizeof(int));
-            for(i=1; i< s->sh.num_entry_point_offsets; i++) {
-
-                //cmpt = 0;
-                offset += (s->sh.entry_point_offset[i-1]-cmpt);
-#ifdef WPP1
-                for(j=0, cmpt=0, startheader=offset+s->sh.entry_point_offset[i]; j< s->skipped_bytes; j++){
-                    if(s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader){
-                        startheader--;
-                        cmpt++;
-                    }
-                }
-#endif
-                init_get_bits(s->gb[i], avpkt->data+offset, (s->sh.entry_point_offset[i]-cmpt)*8);
-                ff_init_cabac_decoder(s->cc[i], avpkt->data+offset, s->sh.entry_point_offset[i]-cmpt);
-            }
-            if(s->sh.num_entry_point_offsets!= 0) {
-                offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets-1]-cmpt;
-                init_get_bits(s->gb[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset)*8);
-                ff_init_cabac_decoder(s->cc[s->sh.num_entry_point_offsets], avpkt->data+offset, (avpkt->size-offset));
-            }
-        }
-        if(s->pps->entropy_coding_sync_enabled_flag && s->enable_multithreads && s->sh.num_entry_point_offsets > 0){
-            ctb_addr_ts = hls_slice_data_wpp(s);
+            ctb_addr_ts = hls_slice_data_wpp(s, avpkt);
         } else {
             ctb_addr_ts = hls_slice_data(s);
         }
