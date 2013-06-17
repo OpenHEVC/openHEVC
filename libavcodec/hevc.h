@@ -135,7 +135,7 @@ typedef struct RefPicList {
 
 
 
-#define MAX_ENTRIES 80
+#define MAX_ENTRIES 100
 
 #define L0 0
 #define L1 1
@@ -474,22 +474,6 @@ typedef struct SliceHeader {
 
     uint8_t luma_log2_weight_denom;
     int16_t chroma_log2_weight_denom;
-/////////////////////////////////////////
-   /*
-    *todo
-    uint8_t luma_weight_l0[num_ref_idx_l0_active];
-    uint8_t chroma_weight_l0[num_ref_idx_l0_active][2];
-    uint8_t chroma_weight_l1[num_ref_idx_l0_active][2];
-
-    uint8_t luma_weight_l1[num_ref_idx_l1_active];
-    uint8_t chroma_weight_l1_flag[num_ref_idx_l1_active];
-
-    int luma_offset_l0[num_ref_idx_l0_active];
-    int chroma_offset_l0[num_ref_idx_l0_active][2];
-
-    int luma_offset_l1[num_ref_idx_l1_active];
-    int chroma_offset_l1[num_ref_idx_l0_active][2]; */
-/////////////////////////////////////////////////
 
     int16_t luma_weight_l0[16];
     int16_t chroma_weight_l0[16][2];
@@ -744,6 +728,14 @@ typedef struct HEVCFrame {
 typedef struct HEVCContext {
     AVClass *c;  // needed by private avoptions
     
+    
+    // CABAC variables
+    int ctx_set[MAX_ENTRIES];
+    int greater1_ctx[MAX_ENTRIES];
+    int last_coeff_abs_level_greater1_flag[MAX_ENTRIES];
+    int c_rice_param[MAX_ENTRIES];
+    int last_coeff_abs_level_remaining[MAX_ENTRIES];
+    
     uint8_t enable_multithreads; 
     AVCodecContext *avctx;
     AVFrame *frame;
@@ -756,6 +748,7 @@ typedef struct HEVCContext {
     GetBitContext *gb[MAX_ENTRIES ]; //
     CABACContext *cc[MAX_ENTRIES]; //
     uint8_t *cabac_state[MAX_ENTRIES+1]; //
+    uint8_t last_save_state; //
     
     
 
@@ -810,13 +803,21 @@ typedef struct HEVCContext {
     int is_decoded;
     int skipped_bytes;
     int *skipped_bytes_pos;
+    int skipped_buf_size;
 
+    int SliceAddrRs;
+
+    uint8_t ctb_left_flag[MAX_ENTRIES ];
+    uint8_t ctb_up_flag[MAX_ENTRIES ];
+
+    int64_t pts;
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset
      */
     uint16_t seq_decode;
     uint16_t seq_output;
+    int ERROR;
 } HEVCContext;
 
 enum ScanType {
@@ -837,10 +838,8 @@ int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
 void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
 
-void save_states(HEVCContext *s, int entry);
-void load_states(HEVCContext *s, int entry);
-void ff_hevc_cabac_reinit(HEVCContext *s, int entry);
-void ff_hevc_cabac_init(HEVCContext *s, int entry);
+void save_states(HEVCContext *s, int ctb_addr_ts, int entry);
+void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts, int entry);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_band_position_decode(HEVCContext *s, int entry);
@@ -849,7 +848,7 @@ int ff_hevc_sao_offset_sign_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_eo_class_decode(HEVCContext *s, int entry);
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s, int entry);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry);
-int ff_hevc_skip_flag_decode(HEVCContext *s, int x_cb, int y_cb, int entry);
+int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb, int entry);
 int ff_hevc_pred_mode_decode(HEVCContext *s, int entry);
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0, int entry);
 int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size, int entry);
@@ -894,7 +893,7 @@ int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb, int entry);
 
 int ff_hevc_find_next_ref(HEVCContext *s, int poc);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
-int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush);
+int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush, int* poc_display);
 
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv, int entry);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX, int entry);

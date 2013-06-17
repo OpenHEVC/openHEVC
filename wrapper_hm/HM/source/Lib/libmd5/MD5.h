@@ -80,7 +80,7 @@ digestToString(const unsigned char digest[3][16], int numChar)
   const char* hex = "0123456789abcdef";
   static char string[99];
   int cnt=0;
-  for(int yuvIdx=0; yuvIdx<1; yuvIdx++)
+  for(int yuvIdx=0; yuvIdx<3; yuvIdx++)
   {
     for (int i = 0; i < numChar; i++)
     {

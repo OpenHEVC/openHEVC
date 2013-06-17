@@ -220,11 +220,11 @@ int libDecoderGetOuptut(unsigned int temporal_id, unsigned char *Y, unsigned cha
 {
     if( pcListPic )
     {
-        if ((   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR
+        if ((   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
              || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
              || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLANT
-             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA ) )
+             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
+             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP ) )
         {
             xFlushOutput( pcListPic, Y, U, V );
         }

@@ -1173,25 +1173,22 @@ Void TComSampleAdaptiveOffset::processSaoUnitAll(SaoLcuParam* saoLcuParam, Bool 
         typeIdx = saoLcuParam[addr].typeIdx;
         mergeLeftFlag = saoLcuParam[addr].mergeLeftFlag;
       }
-//      printf("mergeLeftFlag = %d\n", mergeLeftFlag);
       if (typeIdx>=0)
       {
         if (!mergeLeftFlag)
         {
-            printf("typeIdx = %d\n", typeIdx==4 ? 1: typeIdx);
+
           if (typeIdx == SAO_BO)
           {
             for (i=0; i<SAO_MAX_BO_CLASSES+1;i++)
             {
               offset[i] = 0;
             }
-            printf("offset = [");
             for (i=0; i<saoLcuParam[addr].length; i++)
             {
               offset[ (saoLcuParam[addr].subTypeIdx +i)%SAO_MAX_BO_CLASSES  +1] = saoLcuParam[addr].offset[i] << saoBitIncrease;
-              printf("%d, ",saoLcuParam[addr].offset[i]);
             }
-            printf("]\n");
+
             ppLumaTable = (yCbCr==0)?m_lumaTableBo:m_chromaTableBo;
             pClipTable = (yCbCr==0)?m_pClipTable:m_pChromaClipTable;
 
@@ -1204,13 +1201,10 @@ Void TComSampleAdaptiveOffset::processSaoUnitAll(SaoLcuParam* saoLcuParam, Bool 
           }
           if (typeIdx == SAO_EO_0 || typeIdx == SAO_EO_1 || typeIdx == SAO_EO_2 || typeIdx == SAO_EO_3)
           {
-              printf("offset = [");
             for (i=0;i<saoLcuParam[addr].length;i++)
             {
               offset[i+1] = saoLcuParam[addr].offset[i] << saoBitIncrease;
-              printf("%d, ",saoLcuParam[addr].offset[i]);
             }
-            printf("]\n");
             for (edgeType=0;edgeType<6;edgeType++)
             {
               m_iOffsetEo[edgeType]= offset[m_auiEoTable[edgeType]];

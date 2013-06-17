@@ -56,12 +56,12 @@
 // Tables
 // ====================================================================================================================
 
-const UChar tctable_8x8[54] =
+const UChar TComLoopFilter::sm_tcTable[54] =
 {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,5,5,6,6,7,8,9,10,11,13,14,16,18,20,22,24
 };
 
-const UChar betatable_8x8[52] =
+const UChar TComLoopFilter::sm_betaTable[52] =
 {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,7,8,9,10,11,12,13,14,15,16,17,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64
 };
@@ -460,7 +460,6 @@ Void TComLoopFilter::xGetBoundaryStrengthSingle ( TComDataCU* pcCU, Int iDir, UI
 
         if ( ((piRefP0==piRefQ0)&&(piRefP1==piRefQ1)) || ((piRefP0==piRefQ1)&&(piRefP1==piRefQ0)) )
         {
-          uiBs = 0;
           if ( piRefP0 != piRefP1 )   // Different L0 & L1
           {
             if ( piRefP0 == piRefQ0 )
@@ -584,8 +583,8 @@ Void TComLoopFilter::xEdgeFilterLuma( TComDataCU* pcCU, UInt uiAbsZorderIdx, UIn
       Int iIndexTC = Clip3(0, MAX_QP+DEFAULT_INTRA_TC_OFFSET, Int(iQP + DEFAULT_INTRA_TC_OFFSET*(uiBs-1) + (tcOffsetDiv2 << 1)));
       Int iIndexB = Clip3(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
       
-      Int iTc =  tctable_8x8[iIndexTC]*iBitdepthScale;
-      Int iBeta = betatable_8x8[iIndexB]*iBitdepthScale;
+      Int iTc =  sm_tcTable[iIndexTC]*iBitdepthScale;
+      Int iBeta = sm_betaTable[iIndexB]*iBitdepthScale;
       Int iSideThreshold = (iBeta+(iBeta>>1))>>3;
       Int iThrCut = iTc*10;
 
@@ -693,8 +692,6 @@ Void TComLoopFilter::xEdgeFilterChroma( TComDataCU* pcCU, UInt uiAbsZorderIdx, U
   
   for ( UInt iIdx = 0; iIdx < uiNumParts; iIdx++ )
   {
-    ucBs = 0;
-    
     uiBsAbsIdx = xCalcBsIdx( pcCU, uiAbsZorderIdx, iDir, iEdge, iIdx);
     ucBs = m_aapucBS[iDir][uiBsAbsIdx];
     
@@ -734,7 +731,7 @@ Void TComLoopFilter::xEdgeFilterChroma( TComDataCU* pcCU, UInt uiAbsZorderIdx, U
         Int iBitdepthScale = 1 << (g_bitDepthC-8);
 
         Int iIndexTC = Clip3(0, MAX_QP+DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET*(ucBs - 1) + (tcOffsetDiv2 << 1));
-        Int iTc =  tctable_8x8[iIndexTC]*iBitdepthScale;
+        Int iTc =  sm_tcTable[iIndexTC]*iBitdepthScale;
 
         for ( UInt uiStep = 0; uiStep < uiPelsInPartChroma; uiStep++ )
         {

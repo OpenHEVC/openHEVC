@@ -96,6 +96,9 @@ void ff_hevc_clean_refs(HEVCContext *s)
 int ff_hevc_find_next_ref(HEVCContext *s, int poc)
 {
     int i;
+    if (!s->sh.first_slice_in_pic_flag)
+        return find_ref_idx(s, poc);
+
     update_refs(s);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
@@ -117,6 +120,8 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             *frame     = ref->frame;
             s->ref     = ref;
             ref->poc   = poc;
+            ref->frame->pts = s->pts;
+
             ref->flags = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
             ref->sequence = s->seq_decode;
 #ifdef TEST_DPB
@@ -130,7 +135,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     return -1;
 }
 
-int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
+int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush, int* poc_display)
 {
     int nb_output = 0;
     int min_poc   = 0xFFFF;
@@ -163,7 +168,8 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush)
             HEVCFrame *frame = &s->DPB[min_idx];
 
             frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
-
+            *poc_display = frame->poc;
+            frame->frame->display_picture_number = frame->poc;
             ret = av_frame_ref(out, frame->frame);
             if (ret < 0)
                 return ret;
@@ -200,7 +206,7 @@ static void set_ref_pic_list(HEVCContext *s)
     SliceHeader *sh = &s->sh;
     RefPicList  *refPocList = s->sh.refPocList;
     RefPicList  *refPicList = s->DPB[ff_hevc_find_next_ref(s, s->poc)].refPicList;
-    RefPicList  refPicListTmp[2];
+    RefPicList  refPicListTmp[2]= {{{0}}};
 
     uint8_t num_ref_idx_lx_act[2];
     uint8_t cIdx;
@@ -228,35 +234,33 @@ static void set_ref_pic_list(HEVCContext *s)
         num_poc_total_curr = refPocList[ST_CURR_BEF].numPic + refPocList[ST_CURR_AFT].numPic + refPocList[LT_CURR].numPic;
         num_rps_curr_lx    = num_poc_total_curr<num_ref_idx_lx_act[list_idx] ? num_poc_total_curr : num_ref_idx_lx_act[list_idx];
         cIdx = 0;
-        while(cIdx < num_rps_curr_lx) {
-            for(i = 0; i < refPocList[first_list].numPic && cIdx < num_rps_curr_lx; i++) {
-                refPicListTmp[list_idx].list[cIdx] = refPocList[first_list].list[i];
-                refPicListTmp[list_idx].idx[cIdx]  = refPocList[first_list].idx[i];
-                refPicListTmp[list_idx].isLongTerm[cIdx]  = 0;
-                cIdx++;
-            }
-            for(i = 0; i < refPocList[sec_list].numPic && cIdx < num_rps_curr_lx; i++) {
-                refPicListTmp[list_idx].list[cIdx] = refPocList[sec_list].list[i];
-                refPicListTmp[list_idx].idx[cIdx]  = refPocList[sec_list].idx[i];
-                refPicListTmp[list_idx].isLongTerm[cIdx]  = 0;
-                cIdx++;
-            }
-            for(i = 0; i < refPocList[LT_CURR].numPic && cIdx < num_rps_curr_lx; i++) {
-                refPicListTmp[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
-                refPicListTmp[list_idx].idx[cIdx]  = refPocList[LT_CURR].idx[i];
-                refPicListTmp[list_idx].isLongTerm[cIdx]  = 1;
-                cIdx++;
-            }
+        for(i = 0; i < refPocList[first_list].numPic; i++) {
+            refPicListTmp[list_idx].list[cIdx] = refPocList[first_list].list[i];
+            refPicListTmp[list_idx].idx[cIdx]  = refPocList[first_list].idx[i];
+            refPicListTmp[list_idx].isLongTerm[cIdx]  = 0;
+            cIdx++;
         }
-        refPicList[list_idx].numPic = cIdx;
+        for(i = 0; i < refPocList[sec_list].numPic; i++) {
+            refPicListTmp[list_idx].list[cIdx] = refPocList[sec_list].list[i];
+            refPicListTmp[list_idx].idx[cIdx]  = refPocList[sec_list].idx[i];
+            refPicListTmp[list_idx].isLongTerm[cIdx]  = 0;
+            cIdx++;
+        }
+        for(i = 0; i < refPocList[LT_CURR].numPic; i++) {
+            refPicListTmp[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
+            refPicListTmp[list_idx].idx[cIdx]  = refPocList[LT_CURR].idx[i];
+            refPicListTmp[list_idx].isLongTerm[cIdx]  = 1;
+            cIdx++;
+        }
+        refPicList[list_idx].numPic = num_rps_curr_lx;
         if (s->sh.ref_pic_list_modification_flag_lx[list_idx] == 1) {
-            for(i = 0; i < cIdx; i++) {
+            for(i = 0; i < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[sh->list_entry_lx[list_idx][ i ]];
                 refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[sh->list_entry_lx[list_idx][ i ]];
                 refPicList[list_idx].isLongTerm[i]  = refPicListTmp[list_idx].isLongTerm[sh->list_entry_lx[list_idx][ i ]];
             }
         } else {
-            for(i = 0; i < cIdx; i++) {
+            for(i = 0; i < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[i];
                 refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[i];
                 refPicList[list_idx].isLongTerm[i]  = refPicListTmp[list_idx].isLongTerm[i];

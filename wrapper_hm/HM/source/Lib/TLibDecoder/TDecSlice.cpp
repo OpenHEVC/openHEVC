@@ -367,6 +367,16 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic*& rp
 #endif
     pcSbacDecoders[uiSubStrm].load(pcSbacDecoder);
 
+    if ( uiCol == rpcPic->getPicSym()->getTComTile(rpcPic->getPicSym()->getTileIdxMap(iCUAddr))->getRightEdgePosInCU()
+        && pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag()
+        && !uiIsLast )
+    {
+      // Parse end_of_substream_one_bit for WPP case
+      UInt binVal;
+      pcSbacDecoder->parseTerminatingBit( binVal );
+      assert( binVal );
+    }
+
     //Store probabilities of second LCU in line into buffer
     if ( (uiCol == uiTileLCUX+1)&& (depSliceSegmentsEnabled || (pcSlice->getPPS()->getNumSubstreams() > 1)) && (pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag()) )
     {
@@ -375,9 +385,9 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic*& rp
     if( uiIsLast && depSliceSegmentsEnabled )
     {
       if (pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag())
-       {
-         CTXMem[1]->loadContexts( &m_pcBufferSbacDecoders[uiTileCol] );//ctx 2.LCU
-       }
+      {
+        CTXMem[1]->loadContexts( &m_pcBufferSbacDecoders[uiTileCol] );//ctx 2.LCU
+      }
       CTXMem[0]->loadContexts( pcSbacDecoder );//ctx end of dep.slice
       return;
     }

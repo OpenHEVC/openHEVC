@@ -48,6 +48,7 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     int size_in_tbs = size_in_luma >> s->sps->log2_min_transform_block_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
+
     int x_tb = x0 >> s->sps->log2_min_transform_block_size;
     int y_tb = y0 >> s->sps->log2_min_transform_block_size;
     int cur_tb_addr = MIN_TB_ADDR_ZS(x_tb, y_tb);
@@ -65,13 +66,19 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     pixel *filtered_left = filtered_left_array + 1;
     pixel *filtered_top = filtered_top_array + 1;
 
+    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int bottom_left_available = x_tb > 0 && (y_tb + size_in_tbs) < s->sps->pic_height_in_min_tbs &&
+    int cand_up   = (s->ctb_up_flag[entry] || y0b);
+    int cand_left   = (s->ctb_left_flag[entry] || x0b);
+    
+    int bottom_left_available = cand_left && (y_tb + size_in_tbs) < s->sps->pic_height_in_min_tbs &&
                                 cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs);
-    int left_available = x0 > 0;
-    int top_left_available = x0 > 0 && y0 > 0;
-    int top_available = y0 > 0;
-    int top_right_available = y_tb > 0 && (x_tb + size_in_tbs) < s->sps->pic_width_in_min_tbs &&
+    int left_available = cand_left;
+    int top_left_available = cand_left && cand_up;
+    int top_available = cand_up;
+    //FIXME : top_right_available can be available even if cand_up is not 
+    int top_right_available = cand_up && (x_tb + size_in_tbs) < s->sps->pic_width_in_min_tbs &&
                               cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs, y_tb - 1);
 
     int bottom_left_size = (FFMIN(y0 + 2*size_in_luma, s->sps->pic_height_in_luma_samples) -
