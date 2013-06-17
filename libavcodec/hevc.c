@@ -1963,11 +1963,11 @@ static void printf_ref_pic_list(HEVCContext *s)
     RefPicList  *refPicList = s->ref->refPicList;
     uint8_t i, list_idx;
     if (s->sh.slice_type == I_SLICE)
-        printf("\nPOC %4d TId: %1d ( I-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->qp_y[0]);
+        printf("\nPOC %4d TId: %1d ( I-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->sh.slice_qp);
     else if (s->sh.slice_type == B_SLICE)
-        printf("\nPOC %4d TId: %1d ( B-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->qp_y[0]);
+        printf("\nPOC %4d TId: %1d ( B-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->sh.slice_qp);
     else
-        printf("\nPOC %4d TId: %1d ( P-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->qp_y[0]);
+        printf("\nPOC %4d TId: %1d ( P-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->sh.slice_qp);
 
     for ( list_idx = 0; list_idx < 2; list_idx++) {
         printf("[L%d ",list_idx);
