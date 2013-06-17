@@ -212,10 +212,18 @@ Void TDecSbac::parseTerminatingBit( UInt& ruiBit )
 {
   print_cabac2("end_of_slice_flag", 0);
   m_pcTDecBinIf->decodeBinTrm( ruiBit );
-  print_cabac2("end_of_slice_flag", ruiBit);
   if (ruiBit != 0) {
     print_cabac3("end_of_slice_flag", ruiBit);
   }
+  if ( ruiBit )
+  {
+    m_pcTDecBinIf->finish();
+  }
+}
+Void TDecSbac::parseTerminatingBit2( UInt& ruiBit )
+{
+  print_cabac3("end_of_substream_one_bit", 0);
+  m_pcTDecBinIf->decodeBinTrm( ruiBit );
   if ( ruiBit )
   {
     m_pcTDecBinIf->finish();

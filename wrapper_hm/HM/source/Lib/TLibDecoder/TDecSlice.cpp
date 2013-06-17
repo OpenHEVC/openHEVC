@@ -373,7 +373,7 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic*& rp
     {
       // Parse end_of_substream_one_bit for WPP case
       UInt binVal;
-      pcSbacDecoder->parseTerminatingBit( binVal );
+      pcSbacDecoder->parseTerminatingBit2( binVal );
       assert( binVal );
     }
 

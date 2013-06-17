@@ -847,6 +847,7 @@ int ff_hevc_sao_offset_abs_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_offset_sign_decode(HEVCContext *s, int entry);
 int ff_hevc_sao_eo_class_decode(HEVCContext *s, int entry);
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s, int entry);
+int ff_hevc_end_of_sub_stream_one_bit_decode(HEVCContext *s, int entry);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry);
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb, int entry);
 int ff_hevc_pred_mode_decode(HEVCContext *s, int entry);

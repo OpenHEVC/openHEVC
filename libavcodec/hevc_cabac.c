@@ -432,7 +432,7 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts, int entry)
         if (s->pps->entropy_coding_sync_enabled_flag) {
             if ((ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0) {
                 printTitle("entropy_coding_sync_enabled_flag = %d , ts = %d , pic_width_in_ctbs = %d\n", s->pps->entropy_coding_sync_enabled_flag, ctb_addr_ts, s->sps->pic_width_in_ctbs);
-                //ff_hevc_end_of_sub_stream_one_bit_decode(s);
+                ff_hevc_end_of_sub_stream_one_bit_decode(s, entry);
                 if (!s->enable_multithreads)
                     ff_hevc_cabac_reinit(s, entry);
                 else
@@ -508,14 +508,17 @@ int ff_hevc_end_of_slice_flag_decode(HEVCContext *s, int entry)
 {
     print_cabac2("end_of_slice_flag", 0);
     int ret = get_cabac_terminate(s->cc[entry]);
-    print_cabac2("end_of_slice_flag", ret!=0);
     if (ret != 0) {
         print_cabac3("end_of_slice_flag", ret!=0);
     }
     return ret;
     return get_cabac_terminate(s->cc[entry]);
 }
-
+int ff_hevc_end_of_sub_stream_one_bit_decode(HEVCContext *s, int entry)
+{
+    print_cabac3("end_of_substream_one_bit", 0);
+    return get_cabac_terminate(s->cc[entry]);
+}
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s, int entry)
 {
     print_cabac("cu_transquant_bypass_flag", 0);
