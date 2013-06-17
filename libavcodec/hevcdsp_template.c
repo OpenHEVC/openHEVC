@@ -40,7 +40,7 @@
 #define add_2nd (1 << (shift_2nd - 1))
 
 #if __GNUC__
-#define GCC_OPTIMIZATION_ENABLE
+//#define GCC_OPTIMIZATION_ENABLE
 #endif
 #define OPTIMIZATION_ENABLE
 
@@ -4352,7 +4352,7 @@ dst += dststride;                                                       \
 }                                                                       \
 }
 
-#elif  ifdef GCC_OPTIMIZATION_ENABLE
+#elif  defined GCC_OPTIMIZATION_ENABLE
 #define PUT_HEVC_QPEL_H(H)                                                      \
 static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst, ptrdiff_t dststride,       \
 uint8_t *_src, ptrdiff_t _srcstride,  \
