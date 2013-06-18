@@ -53,6 +53,9 @@ int check_md5_flags;
 // Activate multi-threading if possible
 int nb_pthreads;
 
+// output file
+char *output_file;
+
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);
 

@@ -123,11 +123,12 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
 	// every command line option must be followed by ':' if it takes an
 	// argument, and '::' if this argument is optional
-	const char *ostr = "i:nchp:";
+	const char *ostr = "i:nchp:o:";
 	int c;
 	display_flags   = DISPLAY_ENABLE;
     check_md5_flags = MD5_ENABLE;
     nb_pthreads = 0;
+    output_file = NULL;
 	program = argv[0];
     
 	c = getopt(argc, argv, ostr);
@@ -137,6 +138,9 @@ void init_main(int argc, char *argv[]) {
 		case 'i':
 			input_file = strdup(optarg);
 			break;
+        case 'o':
+            output_file = strdup(optarg);
+            break;
 		case 'n':
 			display_flags = DISPLAY_DISABLE;
 			break;

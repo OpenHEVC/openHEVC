@@ -154,10 +154,9 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
                 }
             }
         }
-
         /* wait for more frames before output */
         if (!flush && s->seq_output == s->seq_decode &&
-            nb_output <= s->sps->temporal_layer[0].num_reorder_pics)
+            nb_output <= s->sps->temporal_layer[0].num_reorder_pics+1)
             return 0;
 
         if (nb_output) {
