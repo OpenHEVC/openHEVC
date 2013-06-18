@@ -2202,8 +2202,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 calc_md5(s->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
                 calc_md5(s->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
                 s->is_decoded = 1;
-                printf_ref_pic_list(s);
-                print_md5(poc, s->md5);
+                //printf_ref_pic_list(s);
+                //print_md5(poc, s->md5);
             }
             s->frame->pict_type = AV_PICTURE_TYPE_I;
             s->frame->key_frame = 1;
