@@ -99,6 +99,7 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
 void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    libOpenHevcGetPictureInfo(openHevcHandle, openHevcFrameInfo);
     openHevcFrameInfo->nYPitch = openHevcContext->picture->linesize[0];
     openHevcFrameInfo->nUPitch = openHevcContext->picture->linesize[1];
     openHevcFrameInfo->nVPitch = openHevcContext->picture->linesize[2];
