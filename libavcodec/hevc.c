@@ -1821,6 +1821,10 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         int ctb_addr_in_slice = ctb_addr_rs - s->SliceAddrRs;
         x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        s->end_of_tiles_x[0] = s->sps->pic_width_in_luma_samples;
+        if ((x_ctb + ctb_size < s->sps->pic_width_in_luma_samples) &&
+            (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1]]))
+            s->end_of_tiles_x[0] = x_ctb + ctb_size;
         s->ctb_left_flag[0] = ((x_ctb > 0) && (ctb_addr_in_slice > 0) &&
                             (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
         s->ctb_up_flag[0]   = ((y_ctb > 0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
@@ -1869,6 +1873,10 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         int y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         s->ctb_left_flag[*ctb_row] = (x_ctb > 0) && (ctb_addr_in_slice > 0);
         s->ctb_up_flag[*ctb_row]   = (y_ctb > 0) && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs);
+        s->end_of_tiles_x[*ctb_row] = s->sps->pic_width_in_luma_samples;
+        if ((x_ctb + ctb_size < s->sps->pic_width_in_luma_samples) &&
+            (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1]]))
+            s->end_of_tiles_x[*ctb_row] = x_ctb + ctb_size;
         while(*ctb_row && (av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&s->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
         if (av_atomic_int_get(&s->ERROR)){
         	av_atomic_int_add_and_fetch(&s->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);

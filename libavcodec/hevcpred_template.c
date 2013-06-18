@@ -78,7 +78,7 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     int top_left_available = cand_left && cand_up;
     int top_available = cand_up;
     //FIXME : top_right_available can be available even if cand_up is not 
-    int top_right_available = cand_up && (x_tb + size_in_tbs) < s->sps->pic_width_in_min_tbs &&
+    int top_right_available = cand_up && (x_tb + size_in_tbs) < (s->end_of_tiles_x[entry]>>s->sps->log2_min_transform_block_size) &&
                               cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs, y_tb - 1);
 
     int bottom_left_size = (FFMIN(y0 + 2*size_in_luma, s->sps->pic_height_in_luma_samples) -
@@ -102,7 +102,8 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     if (top_left_available)
         left[-1] = POS(-1, -1);
     if (top_available && top_right_available && top_right_size == size) {
-        top = &POS(0, -1);
+        memcpy(&top[0], &POS(0, -1), size * sizeof(pixel));
+        memcpy(&top[size], &POS(size, -1), top_right_size * sizeof(pixel));
     } else {
         if (top_available)
             memcpy(&top[0], &POS(0, -1), size * sizeof(pixel));
@@ -112,7 +113,6 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
                 top[size + i] = POS(size + top_right_size - 1, -1);
         }
     }
-
     // Infer the unavailable samples
     if (!bottom_left_available) {
         if (left_available) {
@@ -138,6 +138,7 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
             EXTEND_DOWN(&left[-1], 2*size);
         }
     }
+
     if (!left_available) {
         EXTEND_UP(&left[size], size);
     }
@@ -206,6 +207,7 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
                             mode);
         break;
     }
+
 }
 
 static void FUNCC(pred_planar)(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
