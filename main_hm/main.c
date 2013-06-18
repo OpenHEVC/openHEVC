@@ -45,7 +45,8 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
 
 static void video_decode_example(const char *filename)
 {
-    FILE *f, *fout;
+    FILE *f = NULL;
+    FILE *fout = NULL;
     int init    = 1;
     int nbFrame = 0;
     int pts     = 0;
