@@ -47,6 +47,7 @@ static void pic_arrays_free(HEVCContext *s)
     int i, j;
 
     av_freep(&s->sao);
+    av_freep(&s->deblock);
 
     av_freep(&s->split_cu_flag);
     av_freep(&s->cu.skip_flag);
@@ -87,8 +88,9 @@ static int pic_arrays_init(HEVCContext *s)
     s->bs_width = s->sps->pic_width_in_luma_samples >> 3;
     s->bs_height = s->sps->pic_height_in_luma_samples >> 3;
     s->sao = av_mallocz(ctb_count * sizeof(*s->sao));
+    s->deblock = av_mallocz(ctb_count * sizeof(DBParams));
     s->split_cu_flag = av_malloc(pic_size);
-    if (!s->sao || !s->split_cu_flag)
+    if (!s->sao || !s->deblock || !s->split_cu_flag)
         goto fail;
 
     s->cu.skip_flag     = av_malloc(pic_size_in_ctb);
@@ -1834,6 +1836,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         ff_hevc_cabac_init(s, ctb_addr_ts, 0);
         if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
             hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, 0);
+        s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
+        s->deblock[ctb_addr_rs].tc_offset = s->sh.tc_offset;
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, 0);
         ctb_addr_ts++;
         save_states(s, ctb_addr_ts, 0);
