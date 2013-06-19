@@ -324,8 +324,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int cand_up   = (s->ctb_up_flag[entry] || y0b);
-    int cand_left   = (s->ctb_left_flag[entry] || x0b);
+    int cand_up       = (s->ctb_up_flag[entry] || y0b);
+    int cand_left     = (s->ctb_left_flag[entry] || x0b);
+    int cand_up_left  = (!x0b && !y0b) ? s->ctb_up_left_flag[entry] : cand_left && cand_up;
+    int cand_up_right = ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)) ? s->ctb_up_right_flag[entry] && !y0b: cand_up;
 
 
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
@@ -408,7 +410,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     xB0_pu = xB0 >> s->sps->log2_min_pu_size;
     yB0_pu = yB0 >> s->sps->log2_min_pu_size;
     check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW, nPbH, xB0, yB0, part_idx, entry);
-    if(cand_up && !(tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].is_intra) && check_B0) {
+    if(cand_up_right && !(tab_mvf[(yB0_pu) * pic_width_in_min_pu + xB0_pu].is_intra) && check_B0) {
         isAvailableB0 = 1;
     } else {
         isAvailableB0 = 0;
@@ -482,7 +484,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     check_MER = 1;
     xB2_pu = xB2 >> s->sps->log2_min_pu_size;
     yB2_pu = yB2 >> s->sps->log2_min_pu_size;
-    if(cand_left && cand_up && !(tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra)) {
+    if(cand_up_left && !(tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu].is_intra)) {
         isAvailableB2 = 1;
     } else {
         isAvailableB2 = 0;
@@ -741,6 +743,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
 
     int cand_up   = (s->ctb_up_flag[entry] || y0b);
     int cand_left   = (s->ctb_left_flag[entry] || x0b);
+    int cand_up_left  = (!x0b && !y0b) ? s->ctb_up_left_flag[entry] : cand_left && cand_up;
+    int cand_up_right = ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)) ? s->ctb_up_right_flag[entry] && !y0b: cand_up;
 
     int currIsLongTerm = 0;
     if(LX == 0) {
@@ -919,7 +923,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
         yB2 = y0 - 1;
         xB2_pu = xB2 >> s->sps->log2_min_pu_size;
         yB2_pu = yB2 >> s->sps->log2_min_pu_size;
-        isAvailableB2 = cand_left && cand_up;
+        isAvailableB2 = cand_up_left;
 
         // XB2 and L1
         if ((isAvailableB2) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && (availableFlagLXB0 == 0)) {
