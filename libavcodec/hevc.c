@@ -2166,7 +2166,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
         if (s->sh.first_slice_in_pic_flag) {
 			if (s->sps->sample_adaptive_offset_enabled_flag) {
-			    av_frame_unref(s->tmp_frame);
+                av_frame_unref(s->tmp_frame);
                 if ((ret = ff_reget_buffer(s->avctx, s->tmp_frame)) < 0)
                     return ret;
                 s->frame = s->tmp_frame;
@@ -2186,30 +2186,29 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         } else {
             ctb_addr_ts = hls_slice_data(s);
         }
-        if (s->sh.first_slice_in_pic_flag)
+        if (s->decode_checksum_sei && ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
+#ifdef POC_DISPLAY_MD5
+            AVFrame *frame = (AVFrame *) data;
+            int poc        = poc_display;
+#else
+            AVFrame *frame = s->ref->frame;
+            int poc        = s->poc;
+#endif
+            calc_md5(s->md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  );
+            calc_md5(s->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
+            calc_md5(s->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
+            s->is_decoded = 1;
+            printf_ref_pic_list(s);
+            print_md5(poc, s->md5);
+        }
+        if (s->sh.first_slice_in_pic_flag) {
             if ((ret = ff_hevc_find_display(s, data, 0, &poc_display)) < 0)
                 return ret;
-        if (ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
-            if (s->decode_checksum_sei == 1) {
-#ifdef POC_DISPLAY_MD5
-                AVFrame *frame = (AVFrame *) data;
-                int poc        = poc_display;
-#else
-                AVFrame *frame = s->ref->frame;
-                int poc        = s->poc;
-#endif
-                calc_md5(s->md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  );
-                calc_md5(s->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
-                calc_md5(s->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
-                s->is_decoded = 1;
-                printf_ref_pic_list(s);
-                print_md5(poc, s->md5);
-            }
             s->frame->pict_type = AV_PICTURE_TYPE_I;
             s->frame->key_frame = 1;
             *got_output = ret;
         } else {
-            return 0;
+            *got_output = 0;
         }
         break;
     case NAL_AUD:
