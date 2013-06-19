@@ -1829,6 +1829,10 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
                             (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
         s->ctb_up_flag[0]   = ((y_ctb > 0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
                             (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]]));
+        s->ctb_up_right_flag[0] = ((y_ctb > 0)  && (ctb_addr_in_slice+1 >= s->sps->pic_width_in_ctbs) &&
+                            (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - s->sps->pic_width_in_ctbs]]));
+        s->ctb_up_left_flag[0] = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->sps->pic_width_in_ctbs) &&
+                            (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->sps->pic_width_in_ctbs]]));
         ff_hevc_cabac_init(s, ctb_addr_ts, 0);
         if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
             hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, 0);
@@ -1873,7 +1877,9 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
         int y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         s->ctb_left_flag[*ctb_row] = (x_ctb > 0) && (ctb_addr_in_slice > 0);
         s->ctb_up_flag[*ctb_row]   = (y_ctb > 0) && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs);
-        s->end_of_tiles_x[*ctb_row] = s->sps->pic_width_in_luma_samples;
+        s->ctb_up_right_flag[*ctb_row] = (y_ctb > 0)  && (ctb_addr_in_slice+1 >= s->sps->pic_width_in_ctbs);
+        s->ctb_up_left_flag[*ctb_row]  = (x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->sps->pic_width_in_ctbs);
+        s->end_of_tiles_x[*ctb_row]    = s->sps->pic_width_in_luma_samples;
         if ((x_ctb + ctb_size < s->sps->pic_width_in_luma_samples) &&
             (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1]]))
             s->end_of_tiles_x[*ctb_row] = x_ctb + ctb_size;

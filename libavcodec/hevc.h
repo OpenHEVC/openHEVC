@@ -809,6 +809,8 @@ typedef struct HEVCContext {
 
     uint8_t ctb_left_flag[MAX_ENTRIES ];
     uint8_t ctb_up_flag[MAX_ENTRIES ];
+    uint8_t ctb_up_right_flag[MAX_ENTRIES ];
+    uint8_t ctb_up_left_flag[MAX_ENTRIES ];
     int     end_of_tiles_x[MAX_ENTRIES ];
 
     int64_t pts;
