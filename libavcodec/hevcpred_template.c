@@ -48,7 +48,6 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     int size_in_tbs = size_in_luma >> s->sps->log2_min_transform_block_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
-
     int x_tb = x0 >> s->sps->log2_min_transform_block_size;
     int y_tb = y0 >> s->sps->log2_min_transform_block_size;
     int cur_tb_addr = MIN_TB_ADDR_ZS(x_tb, y_tb);
@@ -85,7 +84,28 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
                             (y0 + size_in_luma)) >> vshift;
     int top_right_size = (FFMIN(x0 + 2*size_in_luma, s->sps->pic_width_in_luma_samples) -
                           (x0 + size_in_luma)) >> hshift;
-
+    if (s->pps->constrained_intra_pred_flag == 1) {
+        int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
+        int size_pu     =  1 << s->sps->log2_min_pu_size;
+        int x_pu        = x0 >> s->sps->log2_min_pu_size;
+        int y_pu        = y0 >> s->sps->log2_min_pu_size;
+        int x0_pu       = x0 & (size_pu - 1);
+        int y0_pu       = y0 & (size_pu - 1);
+        int x_left_pu   = x0_pu == 0 ? x_pu - 1 : x_pu;
+        int x_right_pu  = x0_pu >= size_pu ? x_pu + 1 : x_pu;
+        int y_top_pu    = y0_pu == 0 ? y_pu - 1 : y_pu;
+        int y_bottom_pu = y0_pu >= size_pu ? y_pu + 1 : y_pu;
+        if (bottom_left_available == 1)
+            bottom_left_available = s->ref->tab_mvf[x_left_pu + y_bottom_pu * pic_width_in_min_pu].is_intra;
+        if (left_available == 1)
+            left_available = s->ref->tab_mvf[x_left_pu + y_pu * pic_width_in_min_pu].is_intra;
+        if (top_left_available == 1)
+            top_left_available = s->ref->tab_mvf[x_left_pu + y_top_pu * pic_width_in_min_pu].is_intra;
+        if (top_available == 1)
+            top_available = s->ref->tab_mvf[x_pu + y_top_pu * pic_width_in_min_pu].is_intra;
+        if (top_right_available == 1)
+            top_right_available = s->ref->tab_mvf[x_right_pu + y_top_pu * pic_width_in_min_pu].is_intra;
+    }
     // Fill left and top with the available samples
     if (bottom_left_available) {
         for (i = 0; i < bottom_left_size; i++) {
