@@ -1055,12 +1055,14 @@ static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size, int
     for (j = y0 >> log2_min_pu_size; j < ((y0 + cb_size) >> log2_min_pu_size); j++)
         for (i = x0 >> log2_min_pu_size; i < ((x0 + cb_size) >> log2_min_pu_size); i++)
             s->is_pcm[i + j * pic_width_in_min_pu] = 1;
-    if((y0 & 7) == 0)
-        for(i = 0; i < cb_size; i+=4)
-            s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = 2;
-    if((x0 & 7) == 0)
-        for(i = 0; i < cb_size; i+=4)
-            s->vertical_bs[(x0 >> 3) + ((y0 + i) * s->bs_width) >> 2] = 2;
+    if (s->sh.disable_deblocking_filter_flag == 0) {
+        if((y0 & 7) == 0)
+            for(i = 0; i < cb_size; i+=4)
+                s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = 2;
+        if((x0 & 7) == 0)
+            for(i = 0; i < cb_size; i+=4)
+                s->vertical_bs[(x0 >> 3) + ((y0 + i) * s->bs_width) >> 2] = 2;
+    }
 
     init_get_bits(&gb, pcm, length);
 
@@ -2154,7 +2156,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                 s->max_ra = INT_MIN;
         }
 
-        if(!s->sh.disable_deblocking_filter_flag && s->sh.first_slice_in_pic_flag) {
+        if(s->sh.first_slice_in_pic_flag) {
             int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
             int pic_height_in_min_pu = s->sps->pic_height_in_min_cbs * 4;
             memset(s->horizontal_bs, 0, 2 * s->bs_width * s->bs_height);

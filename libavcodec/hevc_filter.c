@@ -365,6 +365,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, 1);
             if (s->sh.slice_loop_filter_across_slices_enabled_flag == 0 && (y0 % (1 << s->sps->log2_ctb_size)) == 0 && !s->ctb_up_flag[0])
                 bs = 0;
+            if (s->sh.disable_deblocking_filter_flag == 1)
+                bs = 0;
             if (bs)
                 s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
         }
@@ -381,6 +383,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 uint8_t top_cbf_luma = s->cbf_luma[yp_pu * pic_width_in_min_pu + x_pu];
                 uint8_t curr_cbf_luma = s->cbf_luma[yq_pu * pic_width_in_min_pu + x_pu];
                 bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, 0);
+                if (s->sh.disable_deblocking_filter_flag == 1)
+                    bs = 0;
                 if (bs)
                     s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
             }
@@ -398,6 +402,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             bs = boundary_strength(s, curr, curr_cbf_luma, left, left_cbf_luma, 1);
             if (s->sh.slice_loop_filter_across_slices_enabled_flag == 0 && (x0 % (1 << s->sps->log2_ctb_size)) == 0 && !s->ctb_left_flag[0])
                 bs = 0;
+            if (s->sh.disable_deblocking_filter_flag == 1)
+                bs = 0;
             if (bs)
                 s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs;
         }
@@ -414,6 +420,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 uint8_t left_cbf_luma = s->cbf_luma[y_pu * pic_width_in_min_pu + xp_pu];
                 uint8_t curr_cbf_luma = s->cbf_luma[y_pu * pic_width_in_min_pu + xq_pu];
                 bs = boundary_strength(s, curr, curr_cbf_luma, left, left_cbf_luma, 0);
+                if (s->sh.disable_deblocking_filter_flag == 1)
+                    bs = 0;
                 if (bs)
                     s->vertical_bs[((x0 + i) >> 3) + ((y0 + j) >> 2) * s->bs_width] = bs;
             }
@@ -427,8 +435,9 @@ void hls_filter(HEVCContext *s, int x, int y)
 {
     int c_idx_min = s->sh.slice_sample_adaptive_offset_flag[0] != 0 ? 0 : 1;
     int c_idx_max = s->sh.slice_sample_adaptive_offset_flag[1] != 0 ? 3 : 1;
-    if(!s->sh.disable_deblocking_filter_flag)
-        ff_hevc_deblocking_filter_CTB(s, x, y);
+    // won't work. not always deblocking same slice as currently decoded slice
+    //if(!s->sh.disable_deblocking_filter_flag)
+    ff_hevc_deblocking_filter_CTB(s, x, y);
     if(s->sps->sample_adaptive_offset_enabled_flag)
         ff_hevc_sao_filter_CTB(s, x, y, c_idx_min, c_idx_max);
 }
