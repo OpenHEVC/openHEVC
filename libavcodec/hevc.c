@@ -1032,7 +1032,8 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                     int y_pu = (y0 + i) >> log2_min_pu_size;
                     s->cbf_luma[y_pu * pic_width_in_min_pu + x_pu] = 1;
                 }
-        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
+        if (!s->sh.disable_deblocking_filter_flag)
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
     }
 }
 
@@ -1652,7 +1653,8 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
     if (SAMPLE_CTB(s->cu.skip_flag, x_cb, y_cb)) {
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0, entry);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size, entry);
-        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+        if (!s->sh.disable_deblocking_filter_flag)
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
     } else {
         if (s->sh.slice_type != I_SLICE) {
             s->cu.pred_mode[entry] = ff_hevc_pred_mode_decode(s, entry);
@@ -1726,7 +1728,8 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
                 hls_transform_tree(s, x0, y0, x0, y0, x0, y0, log2_cb_size,
                                    log2_cb_size, 0, 0, entry);
             } else {
-                ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+                if (!s->sh.disable_deblocking_filter_flag)
+                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
             }
         }
     }
@@ -1836,6 +1839,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         ff_hevc_cabac_init(s, ctb_addr_ts, 0);
         if (s->sh.slice_sample_adaptive_offset_flag[0] || s->sh.slice_sample_adaptive_offset_flag[1])
             hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size, 0);
+        s->deblock[ctb_addr_rs].disable = s->sh.disable_deblocking_filter_flag;
         s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
         s->deblock[ctb_addr_rs].tc_offset = s->sh.tc_offset;
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0, 0);
@@ -2208,6 +2212,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             printf_ref_pic_list(s);
             print_md5(poc, s->md5);
         }
+
         if (s->sh.first_slice_in_pic_flag) {
             if ((ret = ff_hevc_find_display(s, data, 0, &poc_display)) < 0)
                 return ret;

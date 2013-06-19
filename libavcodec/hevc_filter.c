@@ -178,7 +178,7 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     uint8_t *src;
     int x, y;
     int pixel = 1 + !!(s->sps->bit_depth - 8); // sizeof(pixel)
-    
+
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
     int min_pu_size = 1 << (s->sps->log2_min_pu_size - 1);
     int log2_min_pu_size = s->sps->log2_min_pu_size - 1;
@@ -188,6 +188,9 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int ctb = (x0 >> log2_ctb_size) + (y0 >> log2_ctb_size) * s->sps->pic_width_in_ctbs;
     int tc_offset = s->deblock[ctb].tc_offset;
     int beta_offset = s->deblock[ctb].beta_offset;
+    if (s->deblock[ctb].disable)
+        return;
+
     x_end = x0+ctb_size;
     if (x_end > s->sps->pic_width_in_luma_samples)
         x_end = s->sps->pic_width_in_luma_samples;
@@ -438,8 +441,6 @@ void hls_filter(HEVCContext *s, int x, int y)
 {
     int c_idx_min = s->sh.slice_sample_adaptive_offset_flag[0] != 0 ? 0 : 1;
     int c_idx_max = s->sh.slice_sample_adaptive_offset_flag[1] != 0 ? 3 : 1;
-    // won't work. not always deblocking same slice as currently decoded slice
-    //if(!s->sh.disable_deblocking_filter_flag)
     ff_hevc_deblocking_filter_CTB(s, x, y);
     if(s->sps->sample_adaptive_offset_enabled_flag)
         ff_hevc_sao_filter_CTB(s, x, y, c_idx_min, c_idx_max);
