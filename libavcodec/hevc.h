@@ -705,6 +705,12 @@ typedef struct SAOParams {
     int offset_val[3][5]; ///<SaoOffsetVal
 } SAOParams;
 
+typedef struct DBParams {
+    uint8_t disable;
+    int beta_offset;
+    int tc_offset;
+} DBParams;
+
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
 
@@ -766,6 +772,7 @@ typedef struct HEVCContext {
 
     SliceHeader sh;
     SAOParams *sao;
+    DBParams *deblock;
 
     uint8_t isFirstQPgroup[MAX_ENTRIES];
     int8_t qp_y[MAX_ENTRIES];
