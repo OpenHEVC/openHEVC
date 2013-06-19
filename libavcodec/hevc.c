@@ -1837,7 +1837,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         save_states(s, ctb_addr_ts, 0);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
     }
-    hls_filter(s, x_ctb, y_ctb);
+    if (x_ctb + ctb_size >= s->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= s->sps->pic_height_in_luma_samples)
+        hls_filter(s, x_ctb, y_ctb);
     return ctb_addr_ts;
 }
 
