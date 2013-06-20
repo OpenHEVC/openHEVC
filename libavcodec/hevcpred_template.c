@@ -71,8 +71,8 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
     int cand_up       = (s->ctb_up_flag[entry] || y0b);
     int cand_up_right = ((x0b + size_in_luma) == (1 << s->sps->log2_ctb_size)) ? s->ctb_up_right_flag[entry] && !y0b: cand_up;
     int cand_left     = (s->ctb_left_flag[entry] || x0b);
-    
-    int bottom_left_available = cand_left && (y_tb + size_in_tbs) < s->sps->pic_height_in_min_tbs &&
+
+    int bottom_left_available = cand_left && (y_tb + size_in_tbs) < (s->end_of_tiles_y[entry]>>s->sps->log2_min_transform_block_size) &&
                                 cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs);
     int left_available = cand_left;
     int top_left_available = (!x0b && !y0b) ? s->ctb_up_left_flag[entry] : cand_left && cand_up;
@@ -87,12 +87,16 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
                           (x0 + size_in_luma)) >> hshift;
     if (s->pps->constrained_intra_pred_flag == 1) {
         int pic_width_in_min_pu  = s->sps->pic_width_in_min_cbs * 4;
-        int x_pu        = x0 >> s->sps->log2_min_pu_size;
-        int y_pu        = y0 >> s->sps->log2_min_pu_size;
-        int x_left_pu   = x0b == 0 ? x_pu - (size_in_luma >> s->sps->log2_min_pu_size) : x_pu;
-        int y_top_pu    = y0b == 0 ? y_pu - (size_in_luma >> s->sps->log2_min_pu_size) : y_pu;
-        int x_right_pu  = x0b + size_in_luma >= (1 << s->sps->log2_ctb_size) ? x_pu + (size_in_luma >> s->sps->log2_min_pu_size) : x_pu;
-        int y_bottom_pu = y0b + size_in_luma >= (1 << s->sps->log2_ctb_size) ? y_pu + (size_in_luma >> s->sps->log2_min_pu_size) : y_pu;
+        int x_pu         = x0     >> s->sps->log2_min_pu_size;
+        int y_pu         = y0     >> s->sps->log2_min_pu_size;
+        int x0_left_pu   = (x0-1) >> s->sps->log2_min_pu_size;
+        int y0_top_pu    = (y0-1) >> s->sps->log2_min_pu_size;
+        int x0_right_pu  = (x0+1) >> s->sps->log2_min_pu_size;
+        int y0_bottom_pu = (y0+1) >> s->sps->log2_min_pu_size;
+        int x_left_pu    = x0b == 0 ? x_pu - (size_in_luma >> s->sps->log2_min_pu_size) : x0_left_pu;
+        int y_top_pu     = y0b == 0 ? y_pu - (size_in_luma >> s->sps->log2_min_pu_size) : y0_top_pu;
+        int x_right_pu   = x0b + size_in_luma >= (1 << s->sps->log2_ctb_size) ? x_pu + (size_in_luma >> s->sps->log2_min_pu_size) : x0_right_pu;
+        int y_bottom_pu  = y0b + size_in_luma >= (1 << s->sps->log2_ctb_size) ? y_pu + (size_in_luma >> s->sps->log2_min_pu_size) : y0_bottom_pu;
         if (bottom_left_available == 1)
             bottom_left_available = s->ref->tab_mvf[x_left_pu + y_bottom_pu * pic_width_in_min_pu].is_intra;
         if (left_available == 1)

@@ -1832,6 +1832,9 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         if ((x_ctb + ctb_size < s->sps->pic_width_in_luma_samples) &&
             (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1]]))
             s->end_of_tiles_x[0] = x_ctb + ctb_size;
+        s->end_of_tiles_y[0] = y_ctb + ctb_size;
+        if (y_ctb + ctb_size >= s->sps->pic_height_in_luma_samples)
+            s->end_of_tiles_y[0] = s->sps->pic_height_in_luma_samples;
         s->ctb_left_flag[0] = ((x_ctb > 0) && (ctb_addr_in_slice > 0) &&
                             (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
         s->ctb_up_flag[0]   = ((y_ctb > 0)  && (ctb_addr_in_slice >= s->sps->pic_width_in_ctbs) &&
