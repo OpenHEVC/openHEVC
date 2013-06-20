@@ -78,7 +78,8 @@ static void video_decode_example(const char *filename)
                 if (display_flags == DISPLAY_ENABLE) {
                     libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
                     Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
-                } else if (fout) {
+                }
+                if (fout) {
                     int nbData;
                     nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight;
                     openHevcFrameCpy.pvY = calloc ( nbData    , sizeof(unsigned char));
@@ -93,7 +94,8 @@ static void video_decode_example(const char *filename)
                 libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
                 SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
                         openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
-            } else if (fout) {
+            }
+            if (fout) {
                 int nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight;
                 libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
                 fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , nbData    , fout);
