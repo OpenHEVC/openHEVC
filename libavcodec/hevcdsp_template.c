@@ -4027,6 +4027,7 @@ uint8_t *_src, ptrdiff_t _srcstride,                                        \
 int width, int height)                                                      \
 {                                                                           \
 int x, y;                                                                   \
+x = 0;                                                                      \
 pixel *src = (pixel*)_src;                                                  \
 ptrdiff_t srcstride = _srcstride/sizeof(pixel);                             \
 __m128i x1,x2,x3,x4,x5,x6,x7,x8, r0, r1, r2;                                \
