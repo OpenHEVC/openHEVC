@@ -1056,7 +1056,7 @@ static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size, int
 {
     //TODO: non-4:2:0 support
     int i, j;
-    int log2_min_pu_size = s->sps->log2_min_pu_size - 1;
+    int log2_min_pu_size = s->sps->log2_min_pu_size;
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
     GetBitContext gb;
     int cb_size = 1 << log2_cb_size;
