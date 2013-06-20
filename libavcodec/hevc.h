@@ -76,7 +76,7 @@ enum NALUnitType {
     NAL_AUD         = 35,
     NAL_EOS_NUT     = 36,
     NAL_EOB_NUT     = 37,
-    NAL_FILLER_DATA = 38,
+    NAL_FD_NUT      = 38,
     NAL_SEI_PREFIX  = 39,
     NAL_SEI_SUFFIX  = 40,
 };

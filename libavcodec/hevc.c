@@ -2234,6 +2234,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         break;
     case NAL_AUD:
     case NAL_EOS_NUT:
+    case NAL_EOB_NUT:
+    case NAL_FD_NUT:
         return avpkt->size;
     default:
         av_log(s->avctx, AV_LOG_INFO, "Skipping NAL unit %d\n", s->nal_unit_type);
