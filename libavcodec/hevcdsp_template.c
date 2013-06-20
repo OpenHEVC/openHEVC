@@ -82,16 +82,14 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
 
 static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
 {
-    __m128i c0,c1,x0,x1,x2,x3,f0,f1,c2,c3;
+    __m128i c0,c1,f0,f1,c2,c3;
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
-  int y;
     //TODO: scaling_list_enabled_flag support
-  int16_t coeffs2[16];
-  int shift  = BIT_DEPTH -3;
-  int scale  = level_scale[qp % 6] << (qp / 6);
-  int add    = 1 << (shift - 1);
-  int scale2 = scale << 4;  // > 16Bit
-     //4x4 = 16 coeffs.
+    int shift  = BIT_DEPTH -3;
+    int scale  = level_scale[qp % 6] << (qp / 6);
+    int add    = 1 << (shift - 1);
+    int scale2 = scale << 4;  // > 16Bit
+    //4x4 = 16 coeffs.
 
     f0= _mm_set1_epi32(scale2);
 
@@ -130,8 +128,8 @@ static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
     c0= _mm_packs_epi32(c0,c1);
     c2= _mm_packs_epi32(c2,c3);
 
-    _mm_store_si128(&coeffs[0], c0);
-    _mm_store_si128(&coeffs[8], c2);
+    _mm_store_si128((__m128i*)&coeffs[0], c0);
+    _mm_store_si128((__m128i*)&coeffs[8], c2);
 
 
 }
@@ -206,10 +204,10 @@ static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
     c4= _mm_packs_epi32(c4,c5);
     c6= _mm_packs_epi32(c6,c7);
 
-    _mm_store_si128(&coeffs[0], c0);
-    _mm_store_si128(&coeffs[8], c2);
-    _mm_store_si128(&coeffs[16], c4);
-    _mm_store_si128(&coeffs[24], c6);
+    _mm_store_si128((__m128i*)&coeffs[0], c0);
+    _mm_store_si128((__m128i*)&coeffs[8], c2);
+    _mm_store_si128((__m128i*)&coeffs[16], c4);
+    _mm_store_si128((__m128i*)&coeffs[24], c6);
 
     c0= _mm_load_si128((__m128i*)&coeffs[32]);
     c2= _mm_load_si128((__m128i*)&coeffs[40]);
@@ -267,16 +265,15 @@ static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
     c4= _mm_packs_epi32(c4,c5);
     c6= _mm_packs_epi32(c6,c7);
 
-    _mm_store_si128(&coeffs[32], c0);
-    _mm_store_si128(&coeffs[40], c2);
-    _mm_store_si128(&coeffs[48], c4);
-    _mm_store_si128(&coeffs[56], c6);
+    _mm_store_si128((__m128i*)&coeffs[32], c0);
+    _mm_store_si128((__m128i*)&coeffs[40], c2);
+    _mm_store_si128((__m128i*)&coeffs[48], c4);
+    _mm_store_si128((__m128i*)&coeffs[56], c6);
 }
 
 static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
 {
-    int x, y;
-    int size = 16;
+    int x;
     __m128i c0,c1,c2,c3,c4,c5,c6,c7,f0,f1;
 
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
@@ -346,10 +343,10 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
         c4= _mm_packs_epi32(c4,c5);
         c6= _mm_packs_epi32(c6,c7);
 
-        _mm_store_si128(&coeffs[0+x], c0);
-        _mm_store_si128(&coeffs[8+x], c2);
-        _mm_store_si128(&coeffs[16+x], c4);
-        _mm_store_si128(&coeffs[24+x], c6);
+        _mm_store_si128((__m128i*)&coeffs[0+x], c0);
+        _mm_store_si128((__m128i*)&coeffs[8+x], c2);
+        _mm_store_si128((__m128i*)&coeffs[16+x], c4);
+        _mm_store_si128((__m128i*)&coeffs[24+x], c6);
 
         c0= _mm_load_si128((__m128i*)&coeffs[32+x]);
         c2= _mm_load_si128((__m128i*)&coeffs[40+x]);
@@ -406,10 +403,10 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
         c4= _mm_packs_epi32(c4,c5);
         c6= _mm_packs_epi32(c6,c7);
 
-        _mm_store_si128(&coeffs[32+x], c0);
-        _mm_store_si128(&coeffs[40+x], c2);
-        _mm_store_si128(&coeffs[48+x], c4);
-        _mm_store_si128(&coeffs[56+x], c6);
+        _mm_store_si128((__m128i*)&coeffs[32+x], c0);
+        _mm_store_si128((__m128i*)&coeffs[40+x], c2);
+        _mm_store_si128((__m128i*)&coeffs[48+x], c4);
+        _mm_store_si128((__m128i*)&coeffs[56+x], c6);
 
     }
 
@@ -418,8 +415,7 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
 
 static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
 {
-    int x, y;
-    int size = 32;
+    int x;
     __m128i c0,c1,c2,c3,c4,c5,c6,c7,f0,f1;
 
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
@@ -430,7 +426,8 @@ static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
     int scale2  = level_scale[qp % 6] << ((qp / 6) + 4);
     int add    = 1 << (BIT_DEPTH - 1);
     f0= _mm_set1_epi32(scale2);
-     f1= _mm_set1_epi32(add);
+    f1= _mm_set1_epi32(add);
+
     for(x= 0; x< 32*32 ; x+=64)
     {
 
@@ -490,10 +487,10 @@ static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
          c4= _mm_packs_epi32(c4,c5);
          c6= _mm_packs_epi32(c6,c7);
 
-         _mm_store_si128(&coeffs[0+x], c0);
-         _mm_store_si128(&coeffs[8+x], c2);
-         _mm_store_si128(&coeffs[16+x], c4);
-         _mm_store_si128(&coeffs[24+x], c6);
+         _mm_store_si128((__m128i*)&coeffs[0+x], c0);
+         _mm_store_si128((__m128i*)&coeffs[8+x], c2);
+         _mm_store_si128((__m128i*)&coeffs[16+x], c4);
+         _mm_store_si128((__m128i*)&coeffs[24+x], c6);
 
          c0= _mm_load_si128((__m128i*)&coeffs[32+x]);
          c2= _mm_load_si128((__m128i*)&coeffs[40+x]);
@@ -550,10 +547,10 @@ static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
          c4= _mm_packs_epi32(c4,c5);
          c6= _mm_packs_epi32(c6,c7);
 
-         _mm_store_si128(&coeffs[32+x], c0);
-         _mm_store_si128(&coeffs[40+x], c2);
-         _mm_store_si128(&coeffs[48+x], c4);
-         _mm_store_si128(&coeffs[56+x], c6);
+         _mm_store_si128((__m128i*)&coeffs[32+x], c0);
+         _mm_store_si128((__m128i*)&coeffs[40+x], c2);
+         _mm_store_si128((__m128i*)&coeffs[48+x], c4);
+         _mm_store_si128((__m128i*)&coeffs[56+x], c6);
     }
 }
 
@@ -767,15 +764,14 @@ static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t
     int x, y;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t stride = _stride / sizeof(pixel);
-    int size = 1 << 2;
 
-            for (y = 0; y < 4; y++) {
-                for (x = 0; x < 4; x++) {
-                    dst[x] += *coeffs;
-                    coeffs++;
-                }
-                dst += stride;
-            }
+    for (y = 0; y < 4; y++) {
+        for (x = 0; x < 4; x++) {
+            dst[x] += *coeffs;
+            coeffs++;
+        }
+        dst += stride;
+    }
 
 }
 
@@ -784,15 +780,14 @@ static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t
     int x, y;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t stride = _stride / sizeof(pixel);
-    int size = 1 << 3;
 
-            for (y = 0; y < 8; y++) {
-                for (x = 0; x < 8; x++) {
-                    dst[x] += *coeffs;
-                    coeffs++;
-                }
-                dst += stride;
-            }
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x++) {
+            dst[x] += *coeffs;
+            coeffs++;
+        }
+        dst += stride;
+    }
 }
 
 static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
@@ -800,15 +795,14 @@ static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs, ptrdiff
     int x, y;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t stride = _stride / sizeof(pixel);
-    int size = 1 << 4;
 
-            for (y = 0; y < 16; y++) {
-                for (x = 0; x < 16; x++) {
-                    dst[x] += *coeffs;
-                    coeffs++;
-                }
-                dst += stride;
-            }
+    for (y = 0; y < 16; y++) {
+        for (x = 0; x < 16; x++) {
+            dst[x] += *coeffs;
+            coeffs++;
+        }
+        dst += stride;
+    }
 
 }
 
@@ -817,16 +811,14 @@ static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs, ptrdiff
     int x, y;
     pixel *dst = (pixel*)_dst;
     ptrdiff_t stride = _stride / sizeof(pixel);
-    int size = 1 << 5;
 
-            for (y = 0; y < 32; y++) {
-                for (x = 0; x < 32; x++) {
-                    dst[x] += *coeffs;
-                    coeffs++;
-                }
-                dst += stride;
-            }
-
+    for (y = 0; y < 32; y++) {
+        for (x = 0; x < 32; x++) {
+            dst[x] += *coeffs;
+            coeffs++;
+        }
+        dst += stride;
+    }
 }
 
 #endif
