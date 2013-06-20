@@ -180,8 +180,8 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int pixel = 1 + !!(s->sps->bit_depth - 8); // sizeof(pixel)
 
     int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
-    int min_pu_size = 1 << (s->sps->log2_min_pu_size - 1);
-    int log2_min_pu_size = s->sps->log2_min_pu_size - 1;
+    int min_pu_size = 1 << s->sps->log2_min_pu_size;
+    int log2_min_pu_size = s->sps->log2_min_pu_size;
     int log2_ctb_size =  s->sps->log2_ctb_size;
     int x_end, y_end;
     int ctb_size = 1<<log2_ctb_size;
@@ -197,7 +197,7 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     y_end = y0+ctb_size ;
     if (y_end > s->sps->pic_height_in_luma_samples)
         y_end = s->sps->pic_height_in_luma_samples;
-    
+
     // vertical filtering
     for (x = x0 ? x0:8; x < x_end; x += 8) {
         for (y = y0; y < y_end; y += 4) {
@@ -210,7 +210,7 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 int no_q = 0;
                 const int idxt = av_clip_c(qp + DEFAULT_INTRA_TC_OFFSET * (bs - 1) + ((tc_offset >> 1) << 1), 0, MAX_QP + DEFAULT_INTRA_TC_OFFSET);
                 const int tc = tctable[idxt];
-                if(s->sps->pcm_enabled_flag && s->sps->pcm.loop_filter_disable_flag) {
+                if((s->sps->pcm_enabled_flag && s->sps->pcm.loop_filter_disable_flag) || s->pps->transquant_bypass_enable_flag) {
                     int y_pu = y >> log2_min_pu_size;
                     int xp_pu = (x - 1) / min_pu_size;
                     int xq_pu = x >> log2_min_pu_size;
@@ -221,7 +221,7 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 }
                 src = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + x];
                 s->hevcdsp.hevc_loop_filter_luma(src, pixel, s->frame->linesize[LUMA], no_p, no_q, beta, tc);
-                
+
                 if ((x & 15) == 0 && (y & 7) == 0 && bs == 2) {
                     src = &s->frame->data[CB][(y / 2) * s->frame->linesize[CB] + (x / 2)];
                     s->hevcdsp.hevc_loop_filter_chroma(src, pixel, s->frame->linesize[CB], no_p, no_q, chroma_tc(s, qp, CB, tc_offset));
@@ -235,8 +235,6 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     if (x_end != s->sps->pic_width_in_luma_samples)
         x_end -= 8;
     for (y = y0 ? y0:8; y < y_end; y += 8) {
-        int yp_pu = (y - 1) / min_pu_size;
-        int yq_pu = y >> log2_min_pu_size;
         for (x = x0 ? x0-8:0; x < x_end; x += 4) {
             int bs = s->horizontal_bs[(x + y * s->bs_width) >> 2];
             if (bs) {
@@ -247,7 +245,9 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 int no_q = 0;
                 const int idxt = av_clip_c(qp + DEFAULT_INTRA_TC_OFFSET * (bs - 1) + ((tc_offset >> 1) << 1), 0, MAX_QP + DEFAULT_INTRA_TC_OFFSET);
                 const int tc = tctable[idxt];
-                if(s->sps->pcm_enabled_flag && s->sps->pcm.loop_filter_disable_flag) {
+                if((s->sps->pcm_enabled_flag && s->sps->pcm.loop_filter_disable_flag) || s->pps->transquant_bypass_enable_flag) {
+                    int yp_pu = (y - 1) / min_pu_size;
+                    int yq_pu = y >> log2_min_pu_size;
                     int x_pu = x >> log2_min_pu_size;
                     if (s->is_pcm[yp_pu * pic_width_in_min_pu + x_pu])
                         no_p = 1;
