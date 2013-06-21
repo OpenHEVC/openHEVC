@@ -1044,7 +1044,7 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                     s->cbf_luma[y_pu * pic_width_in_min_pu + x_pu] = 1;
                 }
         if (!s->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size, entry);
             if (s->pps->transquant_bypass_enable_flag && s->cu.cu_transquant_bypass_flag[entry]) {
                  set_deblocking_bypass(s, x0, y0, log2_cb_size, entry);
             }
@@ -1669,7 +1669,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0, entry);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size, entry);
         if (!s->sh.disable_deblocking_filter_flag) {
-             ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+             ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size, entry);
              if (s->pps->transquant_bypass_enable_flag && s->cu.cu_transquant_bypass_flag[entry]) {
                  set_deblocking_bypass(s, x, y, log2_cb_size, entry);
              }
@@ -1748,7 +1748,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size, in
                                    log2_cb_size, 0, 0, entry);
             } else {
                 if (!s->sh.disable_deblocking_filter_flag) {
-                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size, entry);
                     if (s->pps->transquant_bypass_enable_flag && s->cu.cu_transquant_bypass_flag[entry]) {
                         set_deblocking_bypass(s, x, y, log2_cb_size, entry);
                     }
