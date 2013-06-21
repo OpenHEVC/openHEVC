@@ -46,7 +46,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
     
     s = openHevcContext->c->priv_data;
     s->decode_checksum_sei = 0;
-    s->enable_multithreads = openHevcContext->c->thread_count>1;
+    s->threads_number = openHevcContext->c->thread_count; //>1;
     return (OpenHevc_Handle) openHevcContext;
 }
 
@@ -58,7 +58,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     HEVCContext *s = openHevcContext->c->priv_data;
     openHevcContext->avpkt.size = nal_len;
     if (nal_len == - 1) return -1;
-    s->pts = pts;
+    s->HEVCsc->pts = pts;
     av_parser_parse2(openHevcContext->parser,
             openHevcContext->c,
             &poutbuf, &nal_len,
