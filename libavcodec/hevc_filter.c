@@ -57,6 +57,7 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
     int qPy_b;
     int availableA           = (xQg & ((1<<Log2CtbSizeY)-1)) != 0 && xQg == xQgBase;
     int availableB           = (yQg & ((1<<Log2CtbSizeY)-1)) != 0 && yQg == yQgBase;
+
     // qPy_pred
     if (s->isFirstQPgroup[entry] != 0) {
         s->isFirstQPgroup[entry] = 0;
@@ -351,7 +352,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, uint8_t curr_cbf_lum
     return 0;
 }
 
-void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size)
+void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size, int entry)
 {
     int log2_min_pu_size = s->sps->log2_min_pu_size;
     int min_pu_size = 1 << s->sps->log2_min_pu_size;
@@ -369,7 +370,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             uint8_t top_cbf_luma = s->cbf_luma[yp_pu * pic_width_in_min_pu + x_pu];
             uint8_t curr_cbf_luma = s->cbf_luma[yq_pu * pic_width_in_min_pu + x_pu];
             bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, 1);
-            if (s->sh.slice_loop_filter_across_slices_enabled_flag == 0 && (y0 % (1 << s->sps->log2_ctb_size)) == 0 && !s->ctb_up_flag[0])
+            if (s->sh.slice_loop_filter_across_slices_enabled_flag == 0 && (y0 % (1 << s->sps->log2_ctb_size)) == 0 && !s->ctb_up_flag[entry])
                 bs = 0;
             if (s->sh.disable_deblocking_filter_flag == 1)
                 bs = 0;
@@ -406,7 +407,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             uint8_t left_cbf_luma = s->cbf_luma[y_pu * pic_width_in_min_pu + xp_pu];
             uint8_t curr_cbf_luma = s->cbf_luma[y_pu * pic_width_in_min_pu + xq_pu];
             bs = boundary_strength(s, curr, curr_cbf_luma, left, left_cbf_luma, 1);
-            if (s->sh.slice_loop_filter_across_slices_enabled_flag == 0 && (x0 % (1 << s->sps->log2_ctb_size)) == 0 && !s->ctb_left_flag[0])
+            if (s->sh.slice_loop_filter_across_slices_enabled_flag == 0 && (x0 % (1 << s->sps->log2_ctb_size)) == 0 && !s->ctb_left_flag[entry])
                 bs = 0;
             if (s->sh.disable_deblocking_filter_flag == 1)
                 bs = 0;
