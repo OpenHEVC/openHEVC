@@ -41,14 +41,11 @@
  * Section 5.7
  */
 //#define POC_DISPLAY_MD5
-//#define WPP1
+#define WPP1
 static void pic_arrays_free(HEVCContext *s)
 {
     int i;
     HEVCSharedContext *sc = s->HEVCsc;
- //   HEVCLocalContext *lc = s->HEVClc;
-    
-    
     av_freep(&sc->sao);
     av_freep(&sc->deblock);
 
@@ -69,8 +66,8 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&sc->qp_y_tab);
 
     av_freep(&sc->sh.entry_point_offset);
-     av_freep(&sc->sh.size);
-     av_freep(&sc->sh.offset);
+    av_freep(&sc->sh.size);
+    av_freep(&sc->sh.offset);
    
     for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
         av_freep(&sc->DPB[i].tab_mvf);
@@ -81,8 +78,6 @@ static int pic_arrays_init(HEVCContext *s)
 {
     int i;
     HEVCSharedContext *sc = s->HEVCsc;
-   // HEVCLocalContext *lc = s->HEVClc;
-    printf("############################################### \n"); 
     int pic_size = sc->sps->pic_width_in_luma_samples * sc->sps->pic_height_in_luma_samples;
     int pic_size_in_ctb = pic_size>>(sc->sps->log2_min_coding_block_size<<1);
     int ctb_count = sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs;
@@ -129,7 +124,6 @@ static int pic_arrays_init(HEVCContext *s)
     if (!sc->horizontal_bs || !sc->vertical_bs)
         goto fail;
     return 0;
-
 fail:
     pic_arrays_free(s);
     return AVERROR(ENOMEM);
@@ -1997,8 +1991,11 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
     HEVCLocalContext *lc = s->HEVClc;
     int *ret = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
     int *arg = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
-    int i, j, res = 0;
-    
+    int i, j, res = 0;    
+#ifdef WPP1
+    int startheader, cmpt = 0;
+#endif
+
     if(!sc->ctb_entry_count) {
         sc->ctb_entry_count = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
         for(i=1; i< s->threads_number; i++)
@@ -2025,15 +2022,11 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
         }
     }
 
+    int offset = (lc->gb->index>>3);
     
 #ifdef WPP1
-    int startheader, cmpt = 0;
-#endif
-    int offset = (lc->gb->index>>3);
- 
-#ifdef WPP1
-    for(j=0, cmpt = 0,startheader=offset+sc->sh.entry_point_offset[0]; j< s->skipped_bytes; j++){
-        if(s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader){
+    for(j=0, cmpt = 0,startheader=offset+sc->sh.entry_point_offset[0]; j< sc->skipped_bytes; j++){
+        if(sc->skipped_bytes_pos[j] >= offset && sc->skipped_bytes_pos[j] < startheader){
             startheader--;
             cmpt++;
         }
@@ -2041,14 +2034,14 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 #endif
     for(i=1; i< sc->sh.num_entry_point_offsets; i++) {
 #ifdef WPP1
-        offset += (sc->sh.entry_point_offset[i-1]+cmpt);
-        for(j=0, cmpt=0, startheader=offset+sc->sh.entry_point_offset[i]; j< s->skipped_bytes; j++){
-            if(s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader){
+        offset += (sc->sh.entry_point_offset[i-1]-cmpt);
+        for(j=0, cmpt=0, startheader=offset+sc->sh.entry_point_offset[i]; j< sc->skipped_bytes; j++){
+            if(sc->skipped_bytes_pos[j] >= offset && sc->skipped_bytes_pos[j] < startheader){
                 startheader--;
                 cmpt++;
             }
         }
-        sc->sh.size[i-1] = sc->sh.entry_point_offset[i]+cmpt;
+        sc->sh.size[i-1] = sc->sh.entry_point_offset[i]-cmpt;
 #else
         offset += (sc->sh.entry_point_offset[i-1]);
         sc->sh.size[i-1] = sc->sh.entry_point_offset[i];
@@ -2348,9 +2341,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->HEVCsc = av_malloc(sizeof(HEVCSharedContext));
     s->HEVClc = av_malloc(sizeof(HEVCLocalContext));
     lc = s->HEVClcList[0] = s->HEVClc;
-    sc = s->HEVCsc; 
+    sc = s->HEVCsc;
     s->sList[0] = s;
     lc->id = 0;
+    
     sc->tmp_frame = av_frame_alloc();
     lc->gb = av_malloc(sizeof(GetBitContext));
     lc->cc = av_malloc(sizeof(CABACContext));
@@ -2370,21 +2364,15 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         if (!sc->DPB[i].frame)
             return AVERROR(ENOMEM);
     }
-
     memset(sc->sps_list, 0, sizeof(sc->sps_list));
     memset(sc->pps_list, 0, sizeof(sc->pps_list));
     sc->ctb_entry_count  = NULL;
-    
-    
-    
-    
     for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
         lc->tt.cbf_cb[i] = av_malloc(MAX_CU_SIZE*MAX_CU_SIZE);
         lc->tt.cbf_cr[i] = av_malloc(MAX_CU_SIZE*MAX_CU_SIZE);
         if (!lc->tt.cbf_cb[i] || !lc->tt.cbf_cr[i])
             return AVERROR(ENOMEM);
     }
-    
     sc->skipped_buf_size = 0;
     return 0;
 }
@@ -2395,13 +2383,21 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     HEVCContext *s = avctx->priv_data;
     HEVCSharedContext *sc = s->HEVCsc;
     HEVCLocalContext *lc = s->HEVClc;
+    
     av_free(sc->skipped_bytes_pos);
     av_frame_free(&sc->tmp_frame);
-    av_free(lc->gb);
-    av_free(lc->cc);
     av_free(sc->cabac_state[0]);
     av_free(sc->cabac_state[1]);
+    
+    av_free(lc->gb);
+    av_free(lc->cc);
     av_free(lc->edge_emu_buffer);
+    
+    for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
+        av_freep(&lc->tt.cbf_cb[i]);
+        av_freep(&lc->tt.cbf_cr[i]);
+    }
+    
     if(sc->ctb_entry_count) {
         av_freep(&sc->sh.entry_point_offset);
         av_freep(&sc->sh.offset);
@@ -2412,34 +2408,24 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             av_free(lc->cc);
             av_free(lc->edge_emu_buffer);
             for (j = 0; j < MAX_TRANSFORM_DEPTH; j++) {
-                av_freep(&lc->tt.cbf_cb[i]);
-                av_freep(&lc->tt.cbf_cr[i]);
+                av_freep(&lc->tt.cbf_cb[j]);
+                av_freep(&lc->tt.cbf_cr[j]);
             }
             av_free(sc->cabac_state[i+1]);
             av_free(lc);
         }
         av_free(sc->ctb_entry_count);
+        av_free(s->HEVClcList[i]);
     }
-    
-    lc = s->HEVClcList[0];
-    for (j = 0; j < MAX_TRANSFORM_DEPTH; j++) {
-        av_freep(&lc->tt.cbf_cb[i]);
-        av_freep(&lc->tt.cbf_cr[i]);
-    }
-    
     for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
         av_frame_free(&sc->DPB[i].frame);
     }
-
-
     for (i = 0; i < MAX_VPS_COUNT; i++) {
         av_freep(&sc->vps_list[i]);
     }
-
     for (i = 0; i < MAX_SPS_COUNT; i++) {
         av_freep(&sc->sps_list[i]);
     }
-
     for (i = 0; i < MAX_PPS_COUNT; i++) {
         if (sc->pps_list[i]) {
             av_freep(&sc->pps_list[i]->column_width);
@@ -2454,7 +2440,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         }
         av_freep(&sc->pps_list[i]);
     }
-    av_freep(&lc);
+    av_freep(&s->HEVClc);
     av_freep(&sc);
     pic_arrays_free(s);
 

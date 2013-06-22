@@ -550,7 +550,6 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 {
     int i, j, x, y, ctb_addr_rs, tile_id;
     GetBitContext *gb = s->HEVClc->gb;
-    printf("Decode PPS  \n"); 
     SPS *sps = 0;
     int pps_id = 0;
     int log2_diff_ctb_min_tb_size;

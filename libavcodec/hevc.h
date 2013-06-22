@@ -824,26 +824,17 @@ typedef struct HEVCSharedContext {
 
 typedef struct HEVCContext {
     AVClass *c;  // needed by private avoptions
-    AVCodecContext *avctx;
+    AVCodecContext      *avctx;
     
-    // CABAC variables
-    struct HEVCContext *sList[MAX_NB_THREADS];
+    struct HEVCContext  *sList[MAX_NB_THREADS];
     
-    HEVCSharedContext *HEVCsc;
-    HEVCLocalContext *HEVClcList[MAX_NB_THREADS];
-    HEVCLocalContext *HEVClc;
-    uint8_t threads_number;
+    HEVCSharedContext   *HEVCsc;
     
+    HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
+    HEVCLocalContext    *HEVClc;
     
-  //  uint8_t last_save_state; //
-    
-  //  int nal_ref_flag;
-    
-    
-
-    
-    int decode_checksum_sei;
-    
+    uint8_t             threads_number;
+    int                 decode_checksum_sei;
 } HEVCContext;
 
 enum ScanType {
