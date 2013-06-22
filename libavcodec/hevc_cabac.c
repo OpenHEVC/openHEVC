@@ -357,10 +357,8 @@ void save_states(HEVCContext *s, int ctb_addr_ts)
             (ctb_addr_ts % s->HEVCsc->sps->pic_width_in_ctbs) == 2 ||
             (s->HEVCsc->sps->pic_width_in_ctbs == 2 && (ctb_addr_ts % s->HEVCsc->sps->pic_width_in_ctbs) == 0)
     ) ) {
-//        printf("Save state -        ------       %d to %d \n", s->HEVClc->id, s->threads_number);
-       printTitle("save_states %d => %d\n", s->HEVClc->id, s->threads_number);
-        //s->last_save_state = entry+1;
-	    memcpy(s->HEVCsc->cabac_state[ s->threads_number ], s->HEVCsc->cabac_state[s->HEVClc->id], HEVC_CONTEXTS);
+//       printTitle("save_states %d => %d\n", s->HEVClc->id, s->threads_number);
+	    memcpy(s->HEVCsc->cabac_state, s->HEVClc->cabac_state, HEVC_CONTEXTS);
 	}
 }
 
@@ -368,7 +366,7 @@ void load_states(HEVCContext *s)
 {
   //  printTitle("load_states %d => %d\n", s->last_save_state);
  //    printf("Load state -        ------       %d to %d \n", s->HEVClc->id, s->threads_number);
-    memcpy(s->HEVCsc->cabac_state[s->HEVClc->id], s->HEVCsc->cabac_state[s->threads_number], HEVC_CONTEXTS);
+    memcpy(s->HEVClc->cabac_state, s->HEVCsc->cabac_state, HEVC_CONTEXTS);
 }
 
 void ff_hevc_cabac_reinit(HEVCLocalContext *lc)
@@ -404,8 +402,7 @@ void ff_hevc_cabac_init_state(HEVCContext *s)
         pre ^= pre >> 31;
         if (pre > 124)
             pre = 124 + (pre & 1);
-
-        sc->cabac_state[s->HEVClc->id][i] =  pre;
+        s->HEVClc->cabac_state[i] =  pre;
     }
 }
 
@@ -451,11 +448,11 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
     }
 }
 
-#define GET_CABAC(ctx) get_cabac(s->HEVClc->cc, &s->HEVCsc->cabac_state[s->HEVClc->id][ctx])
+#define GET_CABAC(ctx) get_cabac(s->HEVClc->cc, &s->HEVClc->cabac_state[ctx])
 
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s)
 {
-    print_cabac2("sao_merge_flag", s->HEVCsc->cabac_state[s->HEVClc->id][elem_offset[SAO_MERGE_FLAG]]);
+    print_cabac2("sao_merge_flag", s->HEVClc->cabac_state[elem_offset[SAO_MERGE_FLAG]]);
     int ret = GET_CABAC(elem_offset[SAO_MERGE_FLAG]);
     print_cabac("sao_merge_flag", ret);
     return ret;
@@ -464,7 +461,7 @@ int ff_hevc_sao_merge_flag_decode(HEVCContext *s)
 
 int ff_hevc_sao_type_idx_decode(HEVCContext *s)
 {
-    print_cabac2("sao_type_idx", s->HEVCsc->cabac_state[s->HEVClc->id][elem_offset[SAO_TYPE_IDX]]);
+    print_cabac2("sao_type_idx", s->HEVClc->cabac_state[elem_offset[SAO_TYPE_IDX]]);
     if (!GET_CABAC(elem_offset[SAO_TYPE_IDX]))
         return 0;
 
@@ -591,7 +588,7 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, 
 
     inc += (depth_left > ct_depth);
     inc += (depth_top > ct_depth);
-    print_cabac("split_coding_unit_flag", s->HEVCsc->cabac_state[s->HEVClc->id][elem_offset[SPLIT_CODING_UNIT_FLAG] + inc]);
+    print_cabac("split_coding_unit_flag", s->HEVClc->cabac_state[elem_offset[SPLIT_CODING_UNIT_FLAG] + inc]);
     return GET_CABAC(elem_offset[SPLIT_CODING_UNIT_FLAG] + inc);
 }
 

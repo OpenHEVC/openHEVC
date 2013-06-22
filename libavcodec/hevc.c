@@ -1998,8 +1998,8 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 
     if(!sc->ctb_entry_count) {
         sc->ctb_entry_count = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
-        for(i=1; i< s->threads_number; i++)
-            sc->cabac_state [i+1] = av_malloc(HEVC_CONTEXTS);
+        
+        
         for(i=1; i< s->threads_number; i++) {
             s->sList[i] =  av_malloc(sizeof(HEVCContext));
             memcpy(s->sList[i], s, sizeof(HEVCContext));
@@ -2014,10 +2014,9 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
             s->HEVClcList[i]->ctx_set = 0;
             s->HEVClcList[i]->greater1_ctx = 0;
             s->HEVClcList[i]->last_coeff_abs_level_greater1_flag = 0;
-            
+            s->HEVClcList[i]->cabac_state = av_malloc(HEVC_CONTEXTS);
             s->HEVClcList[i]->cc = av_malloc(sizeof(CABACContext));
             s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->HEVCsc->frame->linesize[0]);
-            s->HEVClcList[i]->id = i;
             s->sList[i]->HEVClc = s->HEVClcList[i];
         }
     }
@@ -2343,15 +2342,17 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     lc = s->HEVClcList[0] = s->HEVClc;
     sc = s->HEVCsc;
     s->sList[0] = s;
-    lc->id = 0;
+    
     
     sc->tmp_frame = av_frame_alloc();
+    sc->cabac_state = av_malloc(HEVC_CONTEXTS);
+    
+    
+    
+    
     lc->gb = av_malloc(sizeof(GetBitContext));
     lc->cc = av_malloc(sizeof(CABACContext));
-    
-    sc->cabac_state[0] = av_malloc(HEVC_CONTEXTS);
-    sc->cabac_state[1] = av_malloc(HEVC_CONTEXTS);
-    
+    lc->cabac_state = av_malloc(HEVC_CONTEXTS);
     lc->ctx_set = 0;
     lc->greater1_ctx = 0;
     lc->last_coeff_abs_level_greater1_flag = 0;
@@ -2386,9 +2387,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     
     av_free(sc->skipped_bytes_pos);
     av_frame_free(&sc->tmp_frame);
-    av_free(sc->cabac_state[0]);
-    av_free(sc->cabac_state[1]);
+    av_free(sc->cabac_state);
     
+    av_free(lc->cabac_state);
     av_free(lc->gb);
     av_free(lc->cc);
     av_free(lc->edge_emu_buffer);
@@ -2411,7 +2412,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
                 av_freep(&lc->tt.cbf_cb[j]);
                 av_freep(&lc->tt.cbf_cr[j]);
             }
-            av_free(sc->cabac_state[i+1]);
+            av_free(lc->cabac_state);
             av_free(lc);
         }
         av_free(sc->ctb_entry_count);

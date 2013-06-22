@@ -726,7 +726,7 @@ typedef struct HEVCFrame {
     uint16_t sequence;
 } HEVCFrame;
 typedef struct HEVCLocalContext {
-    int id; 
+    uint8_t *cabac_state;
     int ctx_set;
     int greater1_ctx;
     int last_coeff_abs_level_greater1_flag;
@@ -754,7 +754,7 @@ typedef struct HEVCLocalContext {
 } HEVCLocalContext;
 
 typedef struct HEVCSharedContext {
-    uint8_t *cabac_state[MAX_NB_THREADS+1]; //
+    uint8_t *cabac_state; //
     
     AVFrame *frame;
     AVFrame *sao_frame;
