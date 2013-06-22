@@ -1050,7 +1050,7 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                     int x_pu = (x0 + j) >> log2_min_pu_size;
                     int y_pu = (y0 + i) >> log2_min_pu_size;
                     sc->cbf_luma[y_pu * pic_width_in_min_pu + x_pu] = 1;
-                }
+        }
         if (!sc->sh.disable_deblocking_filter_flag) {
             ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
@@ -1689,6 +1689,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
              ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
              if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
                  set_deblocking_bypass(s, x, y, log2_cb_size);
+
              }
         }
     } else {
@@ -1952,8 +1953,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     while(more_data) {
         int x_ctb = (ctb_addr_rs % ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
-        hls_decode_neighbour(s,x_ctb, y_ctb, ctb_addr_ts);
-        while(*ctb_row && (av_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&sc->ctb_entry_count[*ctb_row]))<SHIFT_CTB_WPP);
+        hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
+        while(*ctb_row && (av_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
         if (av_atomic_int_get(&sc->ERROR)){
         	av_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
         	return 0;
@@ -2152,7 +2153,7 @@ static void print_md5(int poc, uint8_t md5[3][16]) {
         for (i = 0; i < 16; i++)
             printf("%02x", md5[j][i]);
     }
-    printf("\n] ");
+    printf("\n]");
 
 }
 

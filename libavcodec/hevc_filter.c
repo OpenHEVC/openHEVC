@@ -59,6 +59,7 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase)
     int qPy_b;
     int availableA           = (xQg & ((1<<Log2CtbSizeY)-1)) != 0 && xQg == xQgBase;
     int availableB           = (yQg & ((1<<Log2CtbSizeY)-1)) != 0 && yQg == yQgBase;
+
     // qPy_pred
     if (lc->isFirstQPgroup != 0) {
         lc->isFirstQPgroup = 0;
@@ -375,6 +376,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             uint8_t curr_cbf_luma = sc->cbf_luma[yq_pu * pic_width_in_min_pu + x_pu];
             bs = boundary_strength(sc, curr, curr_cbf_luma, top, top_cbf_luma, 1);
             if (sc->sh.slice_loop_filter_across_slices_enabled_flag == 0 && (y0 % (1 << sc->sps->log2_ctb_size)) == 0 && !s->HEVClc->ctb_up_flag)
+
                 bs = 0;
             if (sc->sh.disable_deblocking_filter_flag == 1)
                 bs = 0;
@@ -408,10 +410,12 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             int y_pu = (y0 + i) >> log2_min_pu_size;
             MvField *left = &tab_mvf[y_pu * pic_width_in_min_pu + xp_pu];
             MvField *curr = &tab_mvf[y_pu * pic_width_in_min_pu + xq_pu];
+
             uint8_t left_cbf_luma = sc->cbf_luma[y_pu * pic_width_in_min_pu + xp_pu];
             uint8_t curr_cbf_luma = sc->cbf_luma[y_pu * pic_width_in_min_pu + xq_pu];
             bs = boundary_strength(sc, curr, curr_cbf_luma, left, left_cbf_luma, 1);
             if (sc->sh.slice_loop_filter_across_slices_enabled_flag == 0 && (x0 % (1 << sc->sps->log2_ctb_size)) == 0 && !s->HEVClc->ctb_left_flag)
+
                 bs = 0;
             if (sc->sh.disable_deblocking_filter_flag == 1)
                 bs = 0;
