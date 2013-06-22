@@ -471,7 +471,7 @@ typedef struct SliceHeader {
 
     int* entry_point_offset;
     int * offset;
-    int * offset1;
+    int * size;
     int num_entry_point_offsets; 
 
     uint8_t luma_log2_weight_denom;
@@ -813,6 +813,11 @@ typedef struct HEVCSharedContext {
      */
     uint16_t seq_decode;
     uint16_t seq_output;
+    
+    int skipped_bytes;
+    int *skipped_bytes_pos;
+    int skipped_buf_size;
+    uint8_t *data;
     int ERROR;
 
 } HEVCSharedContext;
@@ -836,11 +841,9 @@ typedef struct HEVCContext {
     
     
 
-    int skipped_bytes;
-    int *skipped_bytes_pos;
-    int skipped_buf_size;
+    
     int decode_checksum_sei;
-    uint8_t *data;
+    
 } HEVCContext;
 
 enum ScanType {

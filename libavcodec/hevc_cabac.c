@@ -331,21 +331,21 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
 #endif
 #if printLevel == 1
 #define print_cabac(string, val) \
-        printf("%s\n", string);  \
+       // printf("%s\n", string);  \
         printf("codIRange := %d codIOffset := %d binVal := %d\n", s->HEVClc->cc->range, s->HEVClc->cc->low>>17, val)
 #else
 #define print_cabac(string, val)
 #endif
 #if printLevel <= 2
 #define print_cabac2(string, val) \
-        printf("%s\n", string);  \
+     //   printf("%s\n", string);  \
         printf("codIRange := %d codIOffset := %d binVal := %d\n", s->HEVClc->cc->range, s->HEVClc->cc->low>>17, val)
 #else
 #define print_cabac2(string, val)
 #endif
 #if printLevel <= 3
 #define print_cabac3(string, val) \
-        printf("%s\n", string);  \
+     //   printf("%s\n", string);  \
         printf("codIRange := %d codIOffset := %d binVal := %d\n", s->HEVClc->cc->range, s->HEVClc->cc->low>>17, val)
 #else
 #define print_cabac3(string, val)
@@ -357,7 +357,7 @@ void save_states(HEVCContext *s, int ctb_addr_ts)
             (ctb_addr_ts % s->HEVCsc->sps->pic_width_in_ctbs) == 2 ||
             (s->HEVCsc->sps->pic_width_in_ctbs == 2 && (ctb_addr_ts % s->HEVCsc->sps->pic_width_in_ctbs) == 0)
     ) ) {
-        printf("Save state -        ------       %d to %d \n", s->HEVClc->id, s->threads_number); 
+//        printf("Save state -        ------       %d to %d \n", s->HEVClc->id, s->threads_number);
        printTitle("save_states %d => %d\n", s->HEVClc->id, s->threads_number);
         //s->last_save_state = entry+1;
 	    memcpy(s->HEVCsc->cabac_state[ s->threads_number ], s->HEVCsc->cabac_state[s->HEVClc->id], HEVC_CONTEXTS);
@@ -367,7 +367,7 @@ void save_states(HEVCContext *s, int ctb_addr_ts)
 void load_states(HEVCContext *s)
 {
   //  printTitle("load_states %d => %d\n", s->last_save_state);
-     printf("Load state -        ------       %d to %d \n", s->HEVClc->id, s->threads_number); 
+ //    printf("Load state -        ------       %d to %d \n", s->HEVClc->id, s->threads_number);
     memcpy(s->HEVCsc->cabac_state[s->HEVClc->id], s->HEVCsc->cabac_state[s->threads_number], HEVC_CONTEXTS);
 }
 
