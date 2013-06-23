@@ -323,7 +323,7 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
         107, 167, 91, 107, 107, 167,
     },
 };
-#define printLevel 0
+#define printLevel 4
 #if 0
 #define printTitle printf
 #else
@@ -331,21 +331,21 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
 #endif
 #if printLevel == 1
 #define print_cabac(string, val) \
-       // printf("%s\n", string);  \
+        printf("%s\n", string);  \
         printf("codIRange := %d codIOffset := %d binVal := %d\n", s->HEVClc->cc->range, s->HEVClc->cc->low>>17, val)
 #else
 #define print_cabac(string, val)
 #endif
 #if printLevel <= 2
 #define print_cabac2(string, val) \
-     //   printf("%s\n", string);  \
+        printf("%s\n", string);  \
         printf("codIRange := %d codIOffset := %d binVal := %d\n", s->HEVClc->cc->range, s->HEVClc->cc->low>>17, val)
 #else
 #define print_cabac2(string, val)
 #endif
 #if printLevel <= 3
 #define print_cabac3(string, val) \
-     //   printf("%s\n", string);  \
+        printf("%s\n", string);  \
         printf("codIRange := %d codIOffset := %d binVal := %d\n", s->HEVClc->cc->range, s->HEVClc->cc->low>>17, val)
 #else
 #define print_cabac3(string, val)
@@ -357,15 +357,15 @@ void save_states(HEVCContext *s, int ctb_addr_ts)
             (ctb_addr_ts % s->HEVCsc->sps->pic_width_in_ctbs) == 2 ||
             (s->HEVCsc->sps->pic_width_in_ctbs == 2 && (ctb_addr_ts % s->HEVCsc->sps->pic_width_in_ctbs) == 0)
     ) ) {
-//       printTitle("save_states %d => %d\n", s->HEVClc->id, s->threads_number);
+       printTitle("save_states \n");
 	    memcpy(s->HEVCsc->cabac_state, s->HEVClc->cabac_state, HEVC_CONTEXTS);
 	}
 }
 
 void load_states(HEVCContext *s)
 {
-  //  printTitle("load_states %d => %d\n", s->last_save_state);
- //    printf("Load state -        ------       %d to %d \n", s->HEVClc->id, s->threads_number);
+
+    printTitle("load_states \n");
     memcpy(s->HEVClc->cabac_state, s->HEVCsc->cabac_state, HEVC_CONTEXTS);
 }
 
