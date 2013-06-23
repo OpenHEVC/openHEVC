@@ -39,7 +39,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     uint8_t hash_type;
     uint16_t picture_crc;
     uint32_t picture_checksum;
-    GetBitContext *gb = s->gb[0];
+    GetBitContext *gb = s->HEVClc->gb;
     uint8_t picture_md5[16];
     hash_type = get_bits(gb, 8);
 
@@ -50,7 +50,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
                 picture_md5[i] = get_bits(gb, 8);
             }
             if (s->decode_checksum_sei == 1) {
-                if (!compare_md5(picture_md5, s->md5[cIdx]) && s->is_decoded)
+                if (!compare_md5(picture_md5, s->HEVCsc->md5[cIdx]) && s->HEVCsc->is_decoded)
                     av_log(s->avctx, AV_LOG_ERROR, "md5 not ok %d\n", cIdx);
                 else
                     av_log(s->avctx, AV_LOG_ERROR, "md5 ok %d\n", cIdx);
@@ -63,9 +63,9 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     }
 }
 
-static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
+static void decode_nal_sei_frame_packing_arrangement(HEVCLocalContext *lc)
 {
-    GetBitContext *gb = s->gb[0];
+    GetBitContext *gb = lc->gb;
     int cancel, type, quincunx;
 
     get_ue_golomb(gb);                      // frame_packing_arrangement_id
@@ -91,7 +91,7 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 
 static int decode_nal_sei_message(HEVCContext *s)
 {
-    GetBitContext *gb = s->gb[0];
+    GetBitContext *gb = s->HEVClc->gb;
 
     int payload_type = 0;
     int payload_size = 0;
@@ -107,11 +107,11 @@ static int decode_nal_sei_message(HEVCContext *s)
         byte = get_bits(gb, 8);
         payload_size += byte;
     }
-    if (s->nal_unit_type == NAL_SEI_PREFIX) {
+    if (s->HEVCsc->nal_unit_type == NAL_SEI_PREFIX) {
         if (payload_type == 256 /*&& s->decode_checksum_sei*/)
             decode_nal_sei_decoded_picture_hash(s, payload_size);
         else if (payload_type == 45)
-            decode_nal_sei_frame_packing_arrangement(s);
+            decode_nal_sei_frame_packing_arrangement(s->HEVClc);
         else {
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
             skip_bits(gb, 8*payload_size);
@@ -136,7 +136,7 @@ int ff_hevc_decode_nal_sei(HEVCContext *s)
 {
     do {
         decode_nal_sei_message(s);
-    } while (more_rbsp_data(s->gb[0]));
+    } while (more_rbsp_data(s->HEVClc->gb));
     return 0;
 }
 

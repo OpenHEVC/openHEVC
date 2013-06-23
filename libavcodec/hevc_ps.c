@@ -27,7 +27,7 @@
  * Section 7.3.3.1
  */
 
-int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
+int ff_hevc_decode_short_term_rps(HEVCLocalContext *lc, int idx, SPS *sps)
 {
     int delta_idx = 1;
     int delta_rps;
@@ -41,7 +41,8 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
     int abs_delta_rps;
 
     int i;
-    GetBitContext *gb = s->gb[0];
+    
+    GetBitContext *gb = lc->gb;
 
     ShortTermRPS *rps = &sps->short_term_rps_list[idx];
     ShortTermRPS *rps_ridx;
@@ -138,10 +139,10 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, SPS *sps)
     return 0;
 }
 
-static int decode_profile_tier_level(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
+static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl, int max_num_sub_layers)
 {
     int i, j;
-    GetBitContext *gb = s->gb[0];
+    GetBitContext *gb = lc->gb;
 
     ptl->general_profile_space = get_bits(gb, 2);
     ptl->general_tier_flag = get_bits1(gb);
@@ -200,7 +201,7 @@ static void decode_hrd(HEVCContext *s)
 static void decode_vui(HEVCContext *s, SPS *sps)
 {
     VUI *vui = &sps->vui;
-    GetBitContext *gb = s->gb[0];
+    GetBitContext *gb = s->HEVClc->gb;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VUI\n");
 
@@ -275,7 +276,7 @@ static void decode_vui(HEVCContext *s, SPS *sps)
 int ff_hevc_decode_nal_vps(HEVCContext *s)
 {
     int i,j;
-    GetBitContext *gb = s->gb[0];
+    GetBitContext *gb = s->HEVClc->gb;
     int vps_id = 0;
     VPS *vps = av_mallocz(sizeof(*vps));
 
@@ -309,7 +310,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         goto err;
     }
 
-    if (decode_profile_tier_level(s, &vps->ptl, vps->vps_max_sub_layers) < 0) {
+    if (decode_profile_tier_level(s->HEVClc, &vps->ptl, vps->vps_max_sub_layers) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error decoding profile tier level");
         goto err;
     }
@@ -354,8 +355,8 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         }
     }
     get_bits1(gb); /* vps_extension_flag */
-    av_free(s->vps_list[vps_id]);
-    s->vps_list[vps_id] = vps;
+    av_free(s->HEVCsc->vps_list[vps_id]);
+    s->HEVCsc->vps_list[vps_id] = vps;
     return 0;
 
 err:
@@ -366,14 +367,14 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 {
     int i;
     int bit_depth_chroma, start;
-    GetBitContext *gb = s->gb[0];
+    GetBitContext *gb = s->HEVClc->gb;
     int log2_diff_max_min_transform_block_size;
 
     int sps_id = 0;
     SPS *sps = av_mallocz(sizeof(*sps));
     if (!sps)
         goto err;
-
+    
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding SPS\n");
 
     memset(sps->short_term_rps_list, 0, sizeof(sps->short_term_rps_list));
@@ -394,7 +395,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps->temporal_id_nesting_flag = get_bits1(gb);
-    if (decode_profile_tier_level(s, &sps->ptl, sps->sps_max_sub_layers) < 0) {
+    if (decode_profile_tier_level(s->HEVClc, &sps->ptl, sps->sps_max_sub_layers) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error decoding profile tier level\n");
         goto err;
     }
@@ -498,7 +499,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->num_short_term_ref_pic_sets = get_ue_golomb(gb);
     for (i = 0; i < sps->num_short_term_ref_pic_sets; i++) {
-        if (ff_hevc_decode_short_term_rps(s, i, sps) < 0)
+        if (ff_hevc_decode_short_term_rps(s->HEVClc, i, sps) < 0)
             goto err;
     }
 
@@ -536,10 +537,9 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->qp_bd_offset = 6 * (sps->bit_depth - 8);
 
-    av_free(s->sps_list[sps_id]);
-    s->sps_list[sps_id] = sps;
+    av_free(s->HEVCsc->sps_list[sps_id]);
+    s->HEVCsc->sps_list[sps_id] = sps;
     return 0;
-
 err:
 
     av_free(sps);
@@ -549,8 +549,7 @@ err:
 int ff_hevc_decode_nal_pps(HEVCContext *s)
 {
     int i, j, x, y, ctb_addr_rs, tile_id;
-    GetBitContext *gb = s->gb[0];
-
+    GetBitContext *gb = s->HEVClc->gb;
     SPS *sps = 0;
     int pps_id = 0;
     int log2_diff_ctb_min_tb_size;
@@ -580,7 +579,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", pps->sps_id);
         goto err;
     }
-    sps = s->sps_list[pps->sps_id];
+    sps = s->HEVCsc->sps_list[pps->sps_id];
 
     pps->dependent_slice_segments_enabled_flag = get_bits1(gb);
     pps->output_flag_present_flag = get_bits1(gb);
@@ -799,8 +798,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
-    if (s->pps_list[pps_id] != NULL) {
-        PPS *pps_f = s->pps_list[pps_id];
+    if (s->HEVCsc->pps_list[pps_id] != NULL) {
+        PPS *pps_f = s->HEVCsc->pps_list[pps_id];
         av_free(pps_f->column_width);
         av_free(pps_f->row_height);
         av_free(pps_f->col_bd);
@@ -813,7 +812,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         av_free(pps_f);
     }
 
-    s->pps_list[pps_id] = pps;
+    s->HEVCsc->pps_list[pps_id] = pps;
     return 0;
 
 err:

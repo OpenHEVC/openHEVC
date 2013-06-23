@@ -46,7 +46,8 @@ static int hevc_parse_nal_unit(HEVCParserContext *hpc, HEVCContext *cct, uint8_t
 	int mask = 0xFFFFFF;
 	int skipped = 0;
 	int header = 0;
-    cct->skipped_bytes = 0;
+    HEVCSharedContext *sc = cct->HEVCsc;
+    sc->skipped_bytes = 0;
 	pc->frame_start_found = 1;
 
 
@@ -66,14 +67,14 @@ static int hevc_parse_nal_unit(HEVCParserContext *hpc, HEVCContext *cct, uint8_t
 	        return header + i - 2;
 	    case EMULATION_CODE:
 	        skipped++;
-            if(skipped > cct->skipped_buf_size)  {
-                int *temp = cct->skipped_bytes_pos;
-                cct->skipped_bytes_pos = av_malloc((MAX_SKIPPED_BUFFER_SIZE+cct->skipped_buf_size)*sizeof(int));
-                memcpy(cct->skipped_bytes_pos, temp, cct->skipped_buf_size*sizeof(int));
+            if(skipped > sc->skipped_buf_size)  {
+                int *temp = sc->skipped_bytes_pos;
+                sc->skipped_bytes_pos = av_malloc((MAX_SKIPPED_BUFFER_SIZE+sc->skipped_buf_size)*sizeof(int));
+                memcpy(sc->skipped_bytes_pos, temp, sc->skipped_buf_size*sizeof(int));
                 av_free(temp);
-                cct->skipped_buf_size += MAX_SKIPPED_BUFFER_SIZE;
+                sc->skipped_buf_size += MAX_SKIPPED_BUFFER_SIZE;
             }
-            cct->skipped_bytes_pos[skipped-1] = i-skipped;
+            sc->skipped_bytes_pos[skipped-1] = i-skipped;
 	        if (*poutbuf != hpc->nal_buffer) {
 	            hpc->nal_buffer = av_fast_realloc(hpc->nal_buffer,
 	                    &hpc->nal_buffer_size,
@@ -89,7 +90,7 @@ static int hevc_parse_nal_unit(HEVCParserContext *hpc, HEVCContext *cct, uint8_t
 	            (*poutbuf)[i-skipped] = buf[i];
 	    }
 	}
-    cct->skipped_bytes = skipped;
+    sc->skipped_bytes = skipped;
 	*poutbuf_size = buf_size - skipped;
 	if (buf_size == 0)
 		return 0;
