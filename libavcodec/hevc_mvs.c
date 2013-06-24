@@ -185,11 +185,11 @@ static int derive_temporal_colocated_mvs(HEVCSharedContext *s, MvField temp_col,
                     int tb = av_clip_c(curPocDiff, -128, 127);
                     int tx = (0x4000 + abs(td/2)) / td;
                     int distScaleFactor = av_clip_c((tb * tx + 32) >> 6,
-                                                -4096, 4095);
+                                                    -4096, 4095);
                     mvLXCol->x = av_clip_c((distScaleFactor * mvCol.x + 127 + (distScaleFactor * mvCol.x < 0)) >> 8,
-                                       -32768, 32767);
+                                           -32768, 32767);
                     mvLXCol->y = av_clip_c((distScaleFactor * mvCol.y + 127 + (distScaleFactor * mvCol.y < 0)) >> 8,
-                                       -32768, 32767);
+                                           -32768, 32767);
                 }
             }
         }
@@ -266,7 +266,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0, int 
     HEVCLocalContext *lc = s->HEVClc;
     RefPicList  *refPicList =  sc->ref->refPicList;
     MvField *tab_mvf = sc->ref->tab_mvf;
-    
+
     int available_a1_flag=0;
     int available_b1_flag=0;
     int available_b0_flag=0;
@@ -850,7 +850,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
 
     if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
         int colIsLongTerm = refPicList[pi_L0].isLongTerm[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pi_L0])];
-       //XA1 and L1
+        //XA1 and L1
         if (TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L0] == 1 && colIsLongTerm == currIsLongTerm) {
             availableFlagLXA0 = 1;
             mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pi_L0];
@@ -1062,7 +1062,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
         mvpcand_list[numMVPCandLX].y = 0;
         numMVPCandLX++;
     }
-
+    
     if (LX == 0) {
         mv->mv[0].x  = mvpcand_list[mvp_lx_flag].x;
         mv->mv[0].y  = mvpcand_list[mvp_lx_flag].y;

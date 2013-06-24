@@ -41,7 +41,7 @@ int ff_hevc_decode_short_term_rps(HEVCLocalContext *lc, int idx, SPS *sps)
     int abs_delta_rps;
 
     int i;
-    
+
     GetBitContext *gb = lc->gb;
 
     ShortTermRPS *rps = &sps->short_term_rps_list[idx];
@@ -374,7 +374,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     SPS *sps = av_mallocz(sizeof(*sps));
     if (!sps)
         goto err;
-    
+
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding SPS\n");
 
     memset(sps->short_term_rps_list, 0, sizeof(sps->short_term_rps_list));
