@@ -117,7 +117,7 @@ void ff_hevc_sao_filter_CTB(HEVCSharedContext *sc, int x, int y, int c_idx_min, 
     int c_idx = 0;
     int class=1, class_index;
     int  edges[4]; // 0 left 1 top 2 right 3 bottom
-    struct SAOParams *sao[4];
+    SAOParams *sao[4];
     int classes[4];
     int x_shift = 0, y_shift = 0;
     int x_ctb = x>>sc->sps->log2_ctb_size;
@@ -165,11 +165,11 @@ void ff_hevc_sao_filter_CTB(HEVCSharedContext *sc, int x, int y, int c_idx_min, 
         for(class_index = 0; class_index < class && c_idx>=c_idx_min && c_idx<c_idx_max; class_index++)    {
             switch (sao[class_index]->type_idx[c_idx]) {
                 case SAO_BAND:
-                    sc->hevcdsp.sao_band_filter_wpp(dst, src, stride,  sao[class_index], edges, width, height, c_idx, classes[class_index]);
+                    sc->hevcdsp.sao_band_filter(dst, src, stride,  sao[class_index], edges, width, height, c_idx, classes[class_index]);
                     
                     break;
                 case SAO_EDGE: {
-                    sc->hevcdsp.sao_edge_filter_wpp(dst, src, stride, sao[class_index],  edges, width, height, c_idx, classes[class_index]);
+                    sc->hevcdsp.sao_edge_filter(dst, src, stride, sao[class_index],  edges, width, height, c_idx, classes[class_index]);
                     break;
                 }
             }

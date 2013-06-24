@@ -46,10 +46,10 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->dequant[1] = FUNC(dequant8x8, depth);                          \
     hevcdsp->dequant[2] = FUNC(dequant16x16, depth);                        \
     hevcdsp->dequant[3] = FUNC(dequant32x32, depth);                        \
-    hevcdsp->transquant_bypass[0] = FUNC(transquant_bypass4x4, depth);            \
-    hevcdsp->transquant_bypass[1] = FUNC(transquant_bypass8x8, depth);            \
-    hevcdsp->transquant_bypass[2] = FUNC(transquant_bypass16x16, depth);            \
-    hevcdsp->transquant_bypass[3] = FUNC(transquant_bypass32x32, depth);            \
+    hevcdsp->transquant_bypass[0] = FUNC(transquant_bypass4x4, depth);      \
+    hevcdsp->transquant_bypass[1] = FUNC(transquant_bypass8x8, depth);      \
+    hevcdsp->transquant_bypass[2] = FUNC(transquant_bypass16x16, depth);    \
+    hevcdsp->transquant_bypass[3] = FUNC(transquant_bypass32x32, depth);    \
     hevcdsp->transform_skip = FUNC(transform_skip, depth);                  \
     hevcdsp->transform_4x4_luma_add = FUNC(transform_4x4_luma_add, depth);  \
     hevcdsp->transform_add[0] = FUNC(transform_4x4_add, depth);             \
@@ -59,8 +59,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
                                                                             \
     hevcdsp->sao_band_filter  = FUNC(sao_band_filter, depth);               \
     hevcdsp->sao_edge_filter  = FUNC(sao_edge_filter, depth);               \
-    hevcdsp->sao_band_filter_wpp  = FUNC(sao_band_filter_wpp, depth);       \
-    hevcdsp->sao_edge_filter_wpp  = FUNC(sao_edge_filter_wpp, depth);       \
                                                                             \
     hevcdsp->put_hevc_qpel[0][0] = FUNC(put_hevc_qpel_pixels, depth);       \
     hevcdsp->put_hevc_qpel[0][1] = FUNC(put_hevc_qpel_h1, depth);           \
@@ -85,17 +83,13 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->put_hevc_epel[1][1] = FUNC(put_hevc_epel_hv, depth);           \
                                                                             \
                                                                             \
-    hevcdsp->put_unweighted_pred = FUNC(put_unweighted_pred, depth);    /*  code identical for both funtions    */            \
-/*    hevcdsp->put_unweighted_pred_chroma = FUNC(put_unweighted_pred, depth);     */   \
+    hevcdsp->put_unweighted_pred = FUNC(put_unweighted_pred, depth);        \
     hevcdsp->put_weighted_pred_avg = FUNC(put_weighted_pred_avg, depth);    \
-/*    hevcdsp->put_weighted_pred_avg_chroma = FUNC(put_weighted_pred_avg, depth);  */  \
-                                                                                \
-    hevcdsp->weighted_pred = FUNC(weighted_pred, depth);              \
-/*    hevcdsp->weighted_pred_chroma = FUNC(weighted_pred, depth);     */     \
-    hevcdsp->weighted_pred_avg = FUNC(weighted_pred_avg, depth);      \
-/*    hevcdsp->weighted_pred_avg_chroma = FUNC(weighted_pred_avg, depth);*/  \
-                                                                                \
-    hevcdsp->hevc_loop_filter_luma = FUNC(hevc_loop_filter_luma, depth);        \
+                                                                            \
+    hevcdsp->weighted_pred = FUNC(weighted_pred, depth);                    \
+    hevcdsp->weighted_pred_avg = FUNC(weighted_pred_avg, depth);            \
+                                                                            \
+    hevcdsp->hevc_loop_filter_luma = FUNC(hevc_loop_filter_luma, depth);    \
     hevcdsp->hevc_loop_filter_chroma = FUNC(hevc_loop_filter_chroma, depth);
 
     switch (bit_depth) {

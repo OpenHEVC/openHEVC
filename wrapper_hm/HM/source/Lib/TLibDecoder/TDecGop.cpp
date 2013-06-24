@@ -177,7 +177,7 @@ Void TDecGop::filterPicture(TComPic*& rpcPic)
   // deblocking filter
   Bool bLFCrossTileBoundary = pcSlice->getPPS()->getLoopFilterAcrossTilesEnabledFlag();
   m_pcLoopFilter->setCfg(bLFCrossTileBoundary);
-  m_pcLoopFilter->loopFilterPic( rpcPic );
+//  m_pcLoopFilter->loopFilterPic( rpcPic );
 
   if(pcSlice->getSPS()->getUseSAO())
   {
@@ -193,7 +193,7 @@ Void TDecGop::filterPicture(TComPic*& rpcPic)
       saoParam->bSaoFlag[1] = pcSlice->getSaoEnabledFlagChroma();
       m_pcSAO->setSaoLcuBasedOptimization(1);
       m_pcSAO->createPicSaoInfo(rpcPic);
-      m_pcSAO->SAOProcess(saoParam);
+//      m_pcSAO->SAOProcess(saoParam);
       m_pcSAO->PCMLFDisableProcess(rpcPic);
       m_pcSAO->destroyPicSaoInfo();
     }
@@ -301,7 +301,7 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
   const Char* ok = "";
   Bool mismatch = false;
 
-  if (pictureHashSEI)
+/*  if (pictureHashSEI)
   {
     ok = "(OK)";
     for(Int yuvIdx = 0; yuvIdx < 3; yuvIdx++)
@@ -315,7 +315,8 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
         }
       }
     }
-  }
+  }*/
+    ok= "";
 
   printf("\n[%s:\n%s\n%s] ", hashType, digestToString(recon_digest, numChar), ok);
 

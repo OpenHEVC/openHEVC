@@ -3478,7 +3478,7 @@ static void FUNC(transform_32x32_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t 
 }
 
 
-static void FUNC(sao_band_filter_wpp)( uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+static void FUNC(sao_band_filter)( uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
 {
     uint8_t *dst = _dst;
     uint8_t *src = _src;
@@ -3533,7 +3533,7 @@ static void FUNC(sao_band_filter_wpp)( uint8_t *_dst, uint8_t *_src, ptrdiff_t _
 }
 
 
-static void FUNC(sao_edge_filter_wpp)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, int class_index)
+static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx, int class_index)
 {
     int x, y;
     uint8_t *dst = _dst;   // put here pixel
@@ -3647,157 +3647,6 @@ static void FUNC(sao_edge_filter_wpp)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _s
 #undef CMP
 }
 
-static void FUNC(sao_band_filter)(uint8_t * _dst, uint8_t *_src, ptrdiff_t _stride, int *sao_offset_val,
-                                  int sao_left_class, int width, int height)
-{
-    pixel *dst = (pixel*)_dst;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t stride = _stride/sizeof(pixel);
-    int band_table[32] = { 0 };
-    int k, y, x;
-    int shift = BIT_DEPTH - 5;
-
-    for (k = 0; k < 4; k++)
-        band_table[(k + sao_left_class) & 31] = k + 1;
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
-#ifndef GCC_OPTIMIZATION_ENABLE
-            x++;
-            dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
-#endif
-        }
-        dst += stride;
-        src += stride;
-    }
-}
-
-static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, int *sao_offset_val,
-                                  int sao_eo_class, int at_top_border, int at_bottom_border,
-                                  int at_left_border, int at_right_border,
-                                  int width, int height)
-{
-    int x, y;
-    pixel *dst = (pixel*)_dst;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t stride = _stride/sizeof(pixel);
-
-    const int8_t pos[4][2][2] = {
-        { { -1,  0 }, {  1, 0 } }, // horizontal
-        { {  0, -1 }, {  0, 1 } }, // vertical
-        { { -1, -1 }, {  1, 1 } }, // 45 degree
-        { {  1, -1 }, { -1, 1 } }, // 135 degree
-    };
-    const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
-
-    int init_x = 0, init_y = 0;
-
-#ifndef OPTIMIZATION_ENABLE
-    int border_edge_idx = 0;
-#define DST(x, y) dst[(x) + stride * (y)]
-#define SRC(x, y) src[(x) + stride * (y)]
-
-#define FILTER(x, y, edge_idx)                                      \
-    DST(x, y) = av_clip_pixel(SRC(x, y) + sao_offset_val[edge_idx])
-
-#define DIFF(x, y, k) CMP(SRC(x, y), SRC((x) + pos[sao_eo_class][(k)][0],       \
-                                         (y) + pos[sao_eo_class][(k)][1]))
-#endif
-#define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
-
-    if (sao_eo_class != SAO_EO_VERT) {
-        if (at_left_border) {
-#ifdef OPTIMIZATION_ENABLE
-            int offset_val = sao_offset_val[0];
-            int y_stride   = 0;
-            for (y = 0; y < height; y++) {
-                dst[y_stride] = av_clip_pixel(src[y_stride] + offset_val);
-                y_stride += stride;
-            }
-#else
-            for (y = 0; y < height; y++)
-                FILTER(0, y, border_edge_idx);
-#endif
-            init_x = 1;
-        }
-        if (at_right_border) {
-#ifdef OPTIMIZATION_ENABLE
-            int offset_val = sao_offset_val[0];
-            int x_stride   = width - 1;
-            for (x = 0; x < height; x++) {
-                dst[x_stride] = av_clip_pixel(src[x_stride] + offset_val);
-                x_stride += stride;
-            }
-#else
-            for (x = 0; x < height; x++)
-                FILTER(width - 1, x, border_edge_idx);
-#endif
-            width--;
-        }
-    }
-    if (sao_eo_class != SAO_EO_HORIZ) {
-        if (at_top_border) {
-#ifdef OPTIMIZATION_ENABLE
-            int offset_val = sao_offset_val[0];
-            for (x = init_x; x < width; x++) {
-                dst[x] = av_clip_pixel(src[x] + offset_val);
-            }
-#else
-            for (x = init_x; x < width; x++)
-                FILTER(x, 0, border_edge_idx);
-#endif
-            init_y = 1;
-        }
-        if (at_bottom_border) {
-#ifdef OPTIMIZATION_ENABLE
-            int offset_val = sao_offset_val[0];
-            int y_stride   = stride * (height - 1);
-            for (x = init_x; x < width; x++) {
-                dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + offset_val);
-            }
-#else
-            for (x = init_x; x < width; x++)
-                FILTER(x, height - 1, border_edge_idx);
-#endif
-            height--;
-        }
-    }
-#ifdef OPTIMIZATION_ENABLE
-    {
-    int y_stride     = init_y * stride;
-    int pos_0_0      = pos[sao_eo_class][0][0];
-    int pos_0_1      = pos[sao_eo_class][0][1];
-    int pos_1_0      = pos[sao_eo_class][1][0];
-    int pos_1_1      = pos[sao_eo_class][1][1];
-    int y_stride_0_1 = (init_y + pos_0_1) * stride;
-    int y_stride_1_1 = (init_y + pos_1_1) * stride;
-    for (y = init_y; y < height; y++) {
-        for (x = init_x; x < width; x++) {
-            int diff0         = CMP(src[x + y_stride], src[x + pos_0_0 + y_stride_0_1]);
-            int diff1         = CMP(src[x + y_stride], src[x + pos_1_0 + y_stride_1_1]);
-            int offset_val    = edge_idx[2 + diff0 + diff1];
-            dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + sao_offset_val[offset_val]);
-        }
-        y_stride     += stride;
-        y_stride_0_1 += stride;
-        y_stride_1_1 += stride;
-    }
-    }
-#else
-    for (y = init_y; y < height; y++) {
-        for (x = init_x; x < width; x++)
-            FILTER(x, y, edge_idx[2 + DIFF(x, y, 0) + DIFF(x, y, 1)]);
-    }
-#endif
-
-#ifndef OPTIMIZATION_ENABLE
-#undef DST
-#undef SRC
-#undef FILTER
-#undef DIFF
-#endif
-#undef CMP
-}
 
 #undef SET
 #undef SCALE

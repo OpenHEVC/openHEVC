@@ -91,6 +91,7 @@ typedef struct ShortTermRPS {
     int32_t delta_poc[32];
     uint8_t used[32];
 } ShortTermRPS;
+
 typedef struct LongTermRPS {
     uint8_t num_long_term_sps;
     uint8_t num_long_term_pics;
@@ -105,6 +106,7 @@ typedef struct LongTermRPS {
 #define ST_FOLL      2
 #define LT_CURR      3
 #define LT_FOLL      4
+
 typedef struct RefPicList {
     int list[16];
     int idx[16];
@@ -725,6 +727,7 @@ typedef struct HEVCFrame {
      */
     uint16_t sequence;
 } HEVCFrame;
+
 typedef struct HEVCLocalContext {
     uint8_t *cabac_state;
     int ctx_set;
