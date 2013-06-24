@@ -148,7 +148,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
         for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
             HEVCFrame *frame = &sc->DPB[i];
             if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
-            	 frame->sequence == sc->seq_output) {
+                frame->sequence == sc->seq_output) {
                 nb_output++;
                 if (frame->poc < min_poc) {
                     min_poc = frame->poc;
@@ -182,7 +182,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
         else
             run = 0;
     }
-    
+
     return 0;
 }
 
