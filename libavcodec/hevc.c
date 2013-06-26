@@ -2277,7 +2277,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             lc->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * sc->frame->linesize[0]);
         if (!lc->edge_emu_buffer)
             return -1;
-        if(sc->pps->entropy_coding_sync_enabled_flag && s->threads_number>1 && sc->sh.num_entry_point_offsets > 0 ) {
+        if(s->threads_number>1 && sc->sh.num_entry_point_offsets > 0 ) {
             ctb_addr_ts = hls_slice_data_wpp(s, avpkt);
         } else {
             //ctb_addr_ts = hls_slice_data_wpp(s, avpkt);
