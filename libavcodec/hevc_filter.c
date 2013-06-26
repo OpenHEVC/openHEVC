@@ -90,12 +90,14 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
             int yC0b = (yC - (yC & ctb_size_mask)) >> sc->sps->log2_min_coding_block_size;
             int idxX = (xQgBase & ctb_size_mask)>>sc->sps->log2_min_coding_block_size;
             int idxY = (yQgBase & ctb_size_mask)>>sc->sps->log2_min_coding_block_size;
+            int idxMask = ctb_size_mask >> sc->sps->log2_min_coding_block_size;
             int x, y;
-            x = FFMIN(xC0b+offsetX[idxX][idxY], pic_width - 1);
-            y = FFMIN(yC0b+offsetY[idxX][idxY], pic_height - 1);
 
-            if (xC0b == 0 && offsetX[idxX][idxY] == -1) {
-                x = pic_width - 1;
+            x = FFMIN(xC0b+offsetX[idxX][idxY], pic_width - 1);
+            y = FFMIN(yC0b+(offsetY[idxX][idxY]&idxMask), pic_height - 1);
+
+            if (xC0b == (lc->start_of_tiles_x >> sc->sps->log2_min_coding_block_size) && offsetX[idxX][idxY] == -1) {
+                x = (lc->end_of_tiles_x >> sc->sps->log2_min_coding_block_size) - 1;
                 y = yC0b - 1;
             }
             qPy_pred = sc->qp_y_tab[y * pic_width + x];
