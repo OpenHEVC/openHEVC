@@ -74,8 +74,8 @@ static void video_decode_example(const char *filename)
         if (libOpenHevcDecode(openHevcHandle, buf, !feof(f) ? get_next_nal(f, buf) : 0, pts++)) {
             fflush(stdout);
             if (init == 1 ) {
+                libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
                 if (display_flags == DISPLAY_ENABLE) {
-                    libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
                     Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
                 }
                 if (fout) {
@@ -109,10 +109,9 @@ static void video_decode_example(const char *filename)
     CloseSDLDisplay();
     fclose(f);
     if (fout) {
-        printf("video size : %d x %d\n", openHevcFrameCpy.frameInfo.nWidth, openHevcFrameCpy.frameInfo.nHeight);
         fclose(fout);
     }
-    printf("video size : %d x %d\n", openHevcFrameCpy.frameInfo.nWidth, openHevcFrameCpy.frameInfo.nHeight);
+    printf("video size : %d x %d\n", openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
     libOpenHevcClose(openHevcHandle);
     printf("nbFrame : %d\n", nbFrame);
 }

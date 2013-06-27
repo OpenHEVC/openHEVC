@@ -318,7 +318,7 @@ static void calcAndPrintHashStatus(TComPicYuv& pic, const SEIDecodedPictureHash*
   }*/
     ok= "";
 
-  printf("\n[%s:\n%s\n%s] ", hashType, digestToString(recon_digest, numChar), ok);
+  printf("\n[%s:\n%s\n%s]", hashType, digestToString(recon_digest, numChar), ok);
 
 /*  if (mismatch)
   {
