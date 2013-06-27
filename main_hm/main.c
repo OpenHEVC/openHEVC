@@ -73,7 +73,6 @@ static void video_decode_example(const char *filename)
     while(!stop) {
         if (libOpenHevcDecode(openHevcHandle, buf, !feof(f) ? get_next_nal(f, buf) : 0, pts++)) {
             fflush(stdout);
-            libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
             if (init == 1 ) {
                 if (display_flags == DISPLAY_ENABLE) {
                     libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
@@ -81,6 +80,7 @@ static void video_decode_example(const char *filename)
                 }
                 if (fout) {
                     int nbData;
+                    libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
                     nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight;
                     openHevcFrameCpy.pvY = calloc ( nbData    , sizeof(unsigned char));
                     openHevcFrameCpy.pvU = calloc ( nbData / 4, sizeof(unsigned char));
