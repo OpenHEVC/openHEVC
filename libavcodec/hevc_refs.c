@@ -62,6 +62,8 @@ static void update_refs(HEVCContext *s)
             printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
 #endif
             av_frame_unref(ref->frame);
+            ref->refPicList[0].numPic = 0;
+            ref->refPicList[1].numPic = 0;
         }
     }
 }
@@ -77,6 +79,8 @@ void ff_hevc_clear_refs(HEVCContext *s)
 #endif
             av_frame_unref(ref->frame);
             ref->flags = 0;
+            ref->refPicList[0].numPic = 0;
+            ref->refPicList[1].numPic = 0;
         }
     }
 }
