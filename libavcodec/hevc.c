@@ -1981,6 +1981,7 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
     int *ret = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
     int *arg = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
     int i, j, res = 0;
+    int offset;
 #ifdef WPP1
     int startheader, cmpt = 0;
 #endif
@@ -2010,7 +2011,7 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
         }
     }
 
-    int offset = (lc->gb->index>>3);
+    offset = (lc->gb->index>>3);
 
 #ifdef WPP1
     for(j=0, cmpt = 0,startheader=offset+sc->sh.entry_point_offset[0]; j< sc->skipped_bytes; j++){
@@ -2328,10 +2329,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     int i;
     HEVCContext *s = avctx->priv_data;
 
-    s->avctx = avctx;
     HEVCSharedContext *sc;
     HEVCLocalContext *lc;
 
+    s->avctx = avctx;
     s->HEVCsc = av_malloc(sizeof(HEVCSharedContext));
     s->HEVClc = av_malloc(sizeof(HEVCLocalContext));
     lc = s->HEVClcList[0] = s->HEVClc;
@@ -2359,6 +2360,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         if (!sc->DPB[i].frame)
             return AVERROR(ENOMEM);
     }
+    memset(sc->vps_list, 0, sizeof(sc->vps_list));
     memset(sc->sps_list, 0, sizeof(sc->sps_list));
     memset(sc->pps_list, 0, sizeof(sc->pps_list));
     sc->ctb_entry_count  = NULL;
@@ -2369,6 +2371,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
     sc->skipped_buf_size = 0;
+    s->threads_number = 1;
     return 0;
 }
 
