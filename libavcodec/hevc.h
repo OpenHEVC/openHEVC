@@ -418,6 +418,7 @@ typedef struct PPS {
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
     int *tile_id; ///< TileId
+    int *tile_pos_rs; ///< TilePosRS
     int *min_cb_addr_zs; ///< MinCbAddrZS
     int *min_tb_addr_zs; ///< MinTbAddrZS
 } PPS;
@@ -759,7 +760,7 @@ typedef struct HEVCLocalContext {
 } HEVCLocalContext;
 
 typedef struct HEVCSharedContext {
-    uint8_t *cabac_state; //
+//    uint8_t *cabac_state; //
     
     AVFrame *frame;
     AVFrame *sao_frame;

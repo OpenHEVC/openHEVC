@@ -65,6 +65,6 @@ typedef struct HEVCDSPContext {
     void (*hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride, ptrdiff_t _ystride, int no_p, int no_q, int _tc);
 } HEVCDSPContext;
 
-void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
+void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth, int pcm_deblock);
 
 #endif /* AVCODEC_HEVCDSP_H */

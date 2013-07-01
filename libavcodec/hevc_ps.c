@@ -862,6 +862,13 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
                 for (x = pps->col_bd[i]; x < pps->col_bd[i+1]; x++)
                     pps->tile_id[pps->ctb_addr_rs_to_ts[y * sps->pic_width_in_ctbs + x]] = tile_id;
 
+    pps->tile_pos_rs = av_malloc_array(tile_id, sizeof(*pps->tile_pos_rs));
+    for (j = 0; j < pps->num_tile_rows; j++)
+        for (i = 0; i < pps->num_tile_columns; i++) {
+            pps->tile_pos_rs[j * pps->num_tile_columns + i] = pps->row_bd[j] * sps->pic_width_in_ctbs + pps->col_bd[i];
+            printf("%d\n", pps->tile_pos_rs[j * pps->num_tile_columns + i]);
+        }
+
     for (y = 0; y < sps->pic_height_in_min_cbs; y++) {
         for (x = 0; x < sps->pic_width_in_min_cbs; x++) {
             int tb_x = x >> sps->log2_diff_max_min_coding_block_size;
@@ -902,6 +909,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         av_free(pps_f->col_idxX);
         av_free(pps_f->ctb_addr_rs_to_ts);
         av_free(pps_f->ctb_addr_ts_to_rs);
+        av_free(pps_f->tile_pos_rs);
         av_free(pps_f->tile_id);
         av_free(pps_f->min_cb_addr_zs);
         av_free(pps_f->min_tb_addr_zs);
@@ -919,6 +927,7 @@ err:
     av_free(pps->col_idxX);
     av_free(pps->ctb_addr_rs_to_ts);
     av_free(pps->ctb_addr_ts_to_rs);
+    av_free(pps->tile_pos_rs);
     av_free(pps->tile_id);
     av_free(pps->min_cb_addr_zs);
     av_free(pps->min_tb_addr_zs);
