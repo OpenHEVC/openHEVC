@@ -28,17 +28,33 @@
 
 static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int c_idx)
 {
-#define MIN_TB_ADDR_ZS(x, y)                                            \
+#define IS_INTRA(x, y) (sc->ref->tab_mvf[((x0+((x)<<hshift)) >> sc->sps->log2_min_pu_size) + (((y0+((y)<<vshift))>> sc->sps->log2_min_pu_size) * pic_width_in_min_pu)].is_intra || !sc->pps->constrained_intra_pred_flag)
+#define MIN_TB_ADDR_ZS(x, y)                            \
     sc->pps->min_tb_addr_zs[(y) * sc->sps->pic_width_in_min_tbs + (x)]
-
-#define EXTEND_LEFT(ptr, length)                \
-    for (i = 0; i < (length); i++)              \
-        (ptr)[-(i+1)] = (ptr)[0];
-#define EXTEND_RIGHT(ptr, length)               \
-    for (i = 0; i < (length); i++)              \
-        (ptr)[i+1] = (ptr)[0];
-#define EXTEND_UP(ptr, length) EXTEND_LEFT(ptr, length)
-#define EXTEND_DOWN(ptr, length) EXTEND_RIGHT(ptr, length)
+#define EXTEND_LEFT(ptr, start, length)                 \
+        for (i = (start); i > (start)-(length); i--)    \
+            ptr[i-1] = ptr[i]
+#define EXTEND_RIGHT(ptr, start, length)                \
+        for (i = (start); i < (start)+(length); i++)    \
+            ptr[i] = ptr[i-1]
+#define EXTEND_UP(ptr, start, length)   EXTEND_LEFT(ptr, start, length)
+#define EXTEND_DOWN(ptr, start, length) EXTEND_RIGHT(ptr, start, length)
+#define EXTEND_LEFT_CIP(ptr, start, length)             \
+        for (i = (start); i > (start)-(length); i--)    \
+            if (!IS_INTRA(i-1, -1))                     \
+                ptr[i-1] = ptr[i]
+#define EXTEND_RIGHT_CIP(ptr, start, length)            \
+        for (i = (start); i < (start)+(length); i++)    \
+            if (!IS_INTRA(i, -1))                       \
+                ptr[i] = ptr[i-1]
+#define EXTEND_UP_CIP(ptr, start, length)               \
+        for (i = (start); i > (start)-(length); i--)    \
+            if (!IS_INTRA(-1, i-1))                     \
+                ptr[i-1] = ptr[i]
+#define EXTEND_DOWN_CIP(ptr, start, length)             \
+        for (i = (start); i < (start)+(length); i++)    \
+            if (!IS_INTRA(-1, i))                       \
+            ptr[i] = ptr[i-1]
     HEVCSharedContext *sc = s->HEVCsc;
     HEVCLocalContext *lc = s->HEVClc;
     int i;
@@ -55,7 +71,7 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
 
     ptrdiff_t stride = sc->frame->linesize[c_idx] / sizeof(pixel);
     pixel *src = (pixel*)sc->frame->data[c_idx] + x + y * stride;
-
+    int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
     enum IntraPredMode mode = c_idx ? lc->pu.intra_pred_mode_c :
                               lc->tu.cur_intra_pred_mode;
 
@@ -86,99 +102,138 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
                             (y0 + size_in_luma)) >> vshift;
     int top_right_size = (FFMIN(x0 + 2*size_in_luma, sc->sps->pic_width_in_luma_samples) -
                           (x0 + size_in_luma)) >> hshift;
+
     if (sc->pps->constrained_intra_pred_flag == 1) {
-        int min_pu_size = sc->sps->log2_min_pu_size; 
-        int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
-        int x_pu         = x0     >> min_pu_size;
-        int y_pu         = y0     >> min_pu_size;
-        int x0_left_pu   = (x0-1) >> min_pu_size;
-        int y0_top_pu    = (y0-1) >> min_pu_size;
-        int x0_right_pu  = (x0+1) >> min_pu_size;
-        int y0_bottom_pu = (y0+1) >> min_pu_size;
-        int x_left_pu    = x0b == 0 ? x_pu - (size_in_luma >> sc->sps->log2_min_pu_size) : x0_left_pu;
-        int y_top_pu     = y0b == 0 ? y_pu - (size_in_luma >> sc->sps->log2_min_pu_size) : y0_top_pu;
-        int x_right_pu   = x0b + size_in_luma >= (1 << sc->sps->log2_ctb_size) ? x_pu + (size_in_luma >> sc->sps->log2_min_pu_size) : x0_right_pu;
-        int y_bottom_pu  = y0b + size_in_luma >= (1 << sc->sps->log2_ctb_size) ? y_pu + (size_in_luma >> sc->sps->log2_min_pu_size) : y0_bottom_pu;
-        if (bottom_left_available == 1)
-            bottom_left_available = sc->ref->tab_mvf[x_left_pu + y_bottom_pu * pic_width_in_min_pu].is_intra;
-        if (left_available == 1)
-            left_available = sc->ref->tab_mvf[x_left_pu + y_pu * pic_width_in_min_pu].is_intra;
+        int x_left_pu   = (x0-1) >> sc->sps->log2_min_pu_size;
+        int y_left_pu   = (y0  ) >> sc->sps->log2_min_pu_size;
+        int x_top_pu    = (x0  ) >> sc->sps->log2_min_pu_size;
+        int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
+        int x_right_pu  = (x0+size_in_luma) >> sc->sps->log2_min_pu_size;
+        int y_bottom_pu = (y0+size_in_luma) >> sc->sps->log2_min_pu_size;
+        if (bottom_left_available == 1) {
+            bottom_left_available = 0;
+            for(i=0; i< (size_in_luma>>2); i++)
+                bottom_left_available |= sc->ref->tab_mvf[x_left_pu + (y_bottom_pu+i) * pic_width_in_min_pu].is_intra;
+        }
+        if (left_available == 1) {
+            left_available = 0;
+            for(i=0; i< (size_in_luma>>2); i++)
+                left_available |= sc->ref->tab_mvf[x_left_pu + (y_left_pu+i) * pic_width_in_min_pu].is_intra;
+        }
         if (top_left_available == 1)
             top_left_available = sc->ref->tab_mvf[x_left_pu + y_top_pu * pic_width_in_min_pu].is_intra;
-        if (top_available == 1)
-            top_available = sc->ref->tab_mvf[x_pu + y_top_pu * pic_width_in_min_pu].is_intra;
-        if (top_right_available == 1)
-            top_right_available = sc->ref->tab_mvf[x_right_pu + y_top_pu * pic_width_in_min_pu].is_intra;
+        if (top_available == 1) {
+            top_available = 0;
+            for(i=0; i< (size_in_luma>>2); i++)
+                top_available |= sc->ref->tab_mvf[(x_top_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
+        }
+        if (top_right_available == 1) {
+            top_right_available = 0;
+            for(i=0; i< (size_in_luma>>2); i++)
+                top_right_available |= sc->ref->tab_mvf[(x_right_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
+        }
+        for (i = 0; i < 2*MAX_TB_SIZE+1; i++) {
+            left[i] = 128;
+            top[i]  = 128;
+        }
     }
-
-    // Fill left and top with the available samples
     if (bottom_left_available) {
-        for (i = 0; i < bottom_left_size; i++) {
-            left[size + i] = POS(-1, size + i);
-        }
-        for (; i < size; i++) {
-            left[size + i] = POS(-1, size + bottom_left_size - 1);
-        }
+        for (i = size + bottom_left_size; i < (size<<1); i++)
+            if (IS_INTRA(-1, size + bottom_left_size - 1))
+                left[i] = POS(-1, size + bottom_left_size - 1);
+        for (i = size + bottom_left_size - 1; i >= size; i--)
+            if (IS_INTRA(-1, i))
+                left[i] = POS(-1, i);
     }
-    if (left_available) {
-        for (i = 0; i < size; i++)
-            left[i] = POS(-1, i);
-    }
+    if (left_available)
+        for (i = size - 1; i >= 0; i--)
+            if (IS_INTRA(-1, i))
+                left[i] = POS(-1, i);
     if (top_left_available)
-        left[-1] = POS(-1, -1);
-    if (top_available && top_right_available && top_right_size == size) {
-        memcpy(&top[0], &POS(0, -1), size * sizeof(pixel));
-        memcpy(&top[size], &POS(size, -1), top_right_size * sizeof(pixel));
-    } else {
-        if (top_available)
-            memcpy(&top[0], &POS(0, -1), size * sizeof(pixel));
-        if (top_right_available) {
-            memcpy(&top[size], &POS(size, -1), top_right_size * sizeof(pixel));
-            for (i = top_right_size; i < size; i++)
-                top[size + i] = POS(size + top_right_size - 1, -1);
+        if (IS_INTRA(-1, -1)) {
+            left[-1] = POS(-1, -1);
+            top[-1]  = left[-1];
+        }
+    if (top_available)
+        for (i = size-1; i >= 0; i--)
+            if (IS_INTRA(i, -1))
+                top[i] = POS(i, -1);
+    if (top_right_available) {
+        for (i = size+top_right_size; i < (size<<1); i++)
+            if (IS_INTRA(size + top_right_size - 1, -1))
+                top[i] = POS(size + top_right_size - 1, -1);
+        for (i = size+top_right_size-1; i >= size; i--)
+            if (IS_INTRA(i, -1))
+                top[i] = POS(i, -1);
+   }
+
+    if (sc->pps->constrained_intra_pred_flag == 1) {
+        if (bottom_left_available || left_available || top_left_available || top_available || top_right_available) {
+            i = size + (bottom_left_available? bottom_left_size: 0) -1;
+            while(i>-1 && !IS_INTRA(-1, i)) i--;
+            if (!IS_INTRA(-1, i)) {
+                i = 0;
+                while(i<2*size && !IS_INTRA(i, -1)) i++;
+                EXTEND_LEFT_CIP(top, i, i+1);
+                left[-1] = top[-1];
+                i = 0;
+            }
+            EXTEND_DOWN_CIP(left, i, 2*size-i);
+            if (!bottom_left_available) {
+                EXTEND_DOWN(left, size, size);
+            }
+            EXTEND_UP_CIP(left, 2*size-1, 2*size);
+            top[-1] = left[-1];
+            EXTEND_RIGHT_CIP(top, 0, 2*size);
         }
     }
     // Infer the unavailable samples
     if (!bottom_left_available) {
         if (left_available) {
-            EXTEND_DOWN(&left[size-1], size);
+            EXTEND_DOWN(left, size, size);
         } else if (top_left_available) {
-            EXTEND_DOWN(&left[-1], 2*size);
+            EXTEND_DOWN(left, 0, 2*size);
             left_available = 1;
         } else if (top_available) {
             left[-1] = top[0];
-            EXTEND_DOWN(&left[-1], 2*size);
+            EXTEND_DOWN(left, 0, 2*size);
             top_left_available = 1;
             left_available = 1;
         } else if (top_right_available) {
-            EXTEND_LEFT(&top[size], size);
+            EXTEND_LEFT(top, size, size);
             left[-1] = top[0];
-            EXTEND_DOWN(&left[-1], 2*size);
+            EXTEND_DOWN(left ,0 , 2*size);
             top_available = 1;
             top_left_available = 1;
             left_available = 1;
         } else { // No samples available
             top[0] = left[-1] = (1 << (BIT_DEPTH - 1));
-            EXTEND_RIGHT(&top[0], 2*size-1);
-            EXTEND_DOWN(&left[-1], 2*size);
+            EXTEND_RIGHT(top, 1, 2*size-1);
+            EXTEND_DOWN(left, 0, 2*size);
         }
     }
 
     if (!left_available) {
-        EXTEND_UP(&left[size], size);
+        EXTEND_UP(left, size, size);
     }
     if (!top_left_available) {
         left[-1] = left[0];
     }
     if (!top_available) {
         top[0] = left[-1];
-        EXTEND_RIGHT(&top[0], size-1);
+        EXTEND_RIGHT(top, 1, size-1);
     }
-    if (!top_right_available)
-        EXTEND_RIGHT(&top[size-1], size);
+    if (!top_right_available) {
+        EXTEND_RIGHT(top, size, size);
+    }
 
     top[-1] = left[-1];
 
+#undef EXTEND_LEFT_CIP
+#undef EXTEND_RIGHT_CIP
+#undef EXTEND_UP_CIP
+#undef EXTEND_DOWN_CIP
+#undef IS_INTRA
 #undef EXTEND_LEFT
 #undef EXTEND_RIGHT
 #undef EXTEND_UP
