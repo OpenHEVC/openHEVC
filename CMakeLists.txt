@@ -2,6 +2,32 @@ cmake_minimum_required (VERSION 2.8)
 project (libavHM)
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
+
+#find asm compiler
+FIND_PROGRAM(YASM_EXECUTABLE yasm)
+#define asm sources
+SET(YASM_NAMES )
+
+set(YASM_NAMES
+libavcodec/x86/hevc_deblock
+libavutil/x86/cpuid
+)
+
+SET(YASM_ARGS -f macho64 -m amd64 -DPIC -DPREFIX -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+
+#compile all asm files
+FOREACH(src ${YASM_NAMES})
+      SET(YASM_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${src}.asm)
+      SET(YASM_OBJ ${CMAKE_CURRENT_SOURCE_DIR}/${src}.o)
+      ADD_CUSTOM_COMMAND(
+      OUTPUT ${YASM_OBJ}
+      COMMAND ${YASM_EXECUTABLE}     
+               ARGS ${YASM_ARGS} -o ${YASM_OBJ} ${YASM_SRC}
+      DEPENDS ${YASM_SRC}
+      )
+      SET(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
+ENDFOREACH(src)
+
 if(NOT ((CMAKE_BUILD_TYPE STREQUAL "DEBUG") OR (CMAKE_BUILD_TYPE STREQUAL "RELEASE")))
     message(FATAL_ERROR "Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.\nFor example: cmake -DCMAKE_BUILD_TYPE=RELEASE")
 endif(NOT ((CMAKE_BUILD_TYPE STREQUAL "DEBUG") OR (CMAKE_BUILD_TYPE STREQUAL "RELEASE")))
@@ -30,6 +56,7 @@ find_package(SDL2)
 
 set(libfilenames
 openHevcWrapper.c
+libavcodec/x86/hevcdsp_init.c
 libavcodec/allcodecs.c
 libavcodec/avpacket.c
 libavcodec/avpicture.c
@@ -57,6 +84,7 @@ libavutil/audioconvert.c
 libavutil/avstring.c
 libavutil/atomic.c
 libavutil/buffer.c
+libavutil/cpu.c
 libavutil/dict.c
 libavutil/eval.c
 libavutil/frame.c
@@ -69,15 +97,16 @@ libavutil/opt.c
 libavutil/pixdesc.c
 libavutil/rational.c
 libavutil/samplefmt.c
+libavutil/x86/cpu.c
 )
 
 add_subdirectory(wrapper_hm)
 
 OPTION(ENABLE_STATIC "enabled static library instead of shared" OFF)
 if (ENABLE_STATIC)
-add_library (LibOpenHevcWrapper STATIC ${libfilenames})
+add_library (LibOpenHevcWrapper STATIC ${libfilenames} ${YASM_OBJECTS})
 else(ENABLE_STATIC)
-add_library (LibOpenHevcWrapper SHARED ${libfilenames})
+add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
 endif(ENABLE_STATIC)
 include_directories(.)
 
@@ -100,7 +129,7 @@ add_executable(hevc_sdl2 main_hm/getopt.c main_hm/main.c main_hm/sdl2.c)
 if(MINGW)
 target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY} -lwinmm)
 else(MINGW)
-target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY})
+target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY} )
 endif(MINGW)
 endif()
 endif(ENABLE_EXECUTABLE)

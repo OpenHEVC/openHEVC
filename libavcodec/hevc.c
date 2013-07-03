@@ -298,7 +298,7 @@ static int hls_slice_header(HEVCContext *s)
         sc->sps->pixel_shift = sc->sps->bit_depth > 8;
 
         ff_hevc_pred_init(&sc->hpc, sc->sps->bit_depth);
-        ff_hevc_dsp_init(&sc->hevcdsp, sc->sps->bit_depth);
+        ff_hevc_dsp_init(&sc->hevcdsp, sc->sps->bit_depth, (sc->sps->pcm_enabled_flag && sc->sps->pcm.loop_filter_disable_flag) || sc->pps->transquant_bypass_enable_flag);
 
         ff_videodsp_init(&sc->vdsp, sc->sps->bit_depth);
     }
@@ -1974,6 +1974,57 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     return 0;
 }
 
+static int hls_decode_entry_tiles(AVCodecContext *avctxt, void *input_ctb_row)
+{
+    HEVCContext *s  = avctxt->priv_data;
+    HEVCSharedContext *sc = s->HEVCsc;
+    HEVCLocalContext *lc;
+    int x_ctb       = 0;
+    int y_ctb       = 0;
+
+    int ctb_size    = 1<< sc->sps->log2_ctb_size;
+    int more_data   = 1;
+
+    int *ctb_row    = input_ctb_row;
+    int ctb_addr_rs = sc->pps->tile_pos_rs[*ctb_row];
+    int ctb_addr_ts = sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
+    printf("ctb_addr_rs[%d] %d\n", ctb_addr_rs, *ctb_row);
+    s = s->sList[(*ctb_row)%s->threads_number];
+    lc = s->HEVClc;
+    if(*ctb_row) {
+        init_get_bits(lc->gb, sc->data+sc->sh.offset[(*ctb_row)-1], sc->sh.size[(*ctb_row)-1]*8);
+    }
+    ff_hevc_cabac_init_decoder(s);
+    ff_hevc_cabac_init_state(s);
+    while (more_data) {
+        int ctb_addr_rs       = sc->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+        x_ctb = (ctb_addr_rs % ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
+        y_ctb = (ctb_addr_rs / ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
+        if (*ctb_row == 1)
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "ctb_addr_ts %d x_ctb %d , y_ctb %d\n",
+                   ctb_addr_ts, x_ctb, y_ctb);
+        hls_decode_neighbour(s,x_ctb, y_ctb, ctb_addr_ts);
+//        ff_hevc_cabac_init(s, ctb_addr_ts);
+        if (sc->sh.slice_sample_adaptive_offset_flag[0] || sc->sh.slice_sample_adaptive_offset_flag[1])
+            hls_sao_param(s, x_ctb >> sc->sps->log2_ctb_size, y_ctb >> sc->sps->log2_ctb_size);
+        sc->deblock[ctb_addr_rs].disable = sc->sh.disable_deblocking_filter_flag;
+        sc->deblock[ctb_addr_rs].beta_offset = sc->sh.beta_offset;
+        sc->deblock[ctb_addr_rs].tc_offset = sc->sh.tc_offset;
+        if (*ctb_row == 0 || *ctb_row == 3)
+        more_data = hls_coding_quadtree(s, x_ctb, y_ctb, sc->sps->log2_ctb_size, 0);
+        ctb_addr_ts++;
+        save_states(s, ctb_addr_ts);
+        hls_filters(s, x_ctb, y_ctb, ctb_size);
+        if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
+            break;
+        }
+    }
+    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
+        hls_filter(s, x_ctb, y_ctb);
+    return ctb_addr_ts;
+}
+
 static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 {
     HEVCSharedContext *sc = s->HEVCsc;
@@ -2066,8 +2117,10 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
         ret[i] = 0;
     }
 
-
-    s->avctx->execute(s->avctx, hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1, sizeof(int));
+    if (sc->pps->entropy_coding_sync_enabled_flag)
+        s->avctx->execute(s->avctx, hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1, sizeof(int));
+    else
+        s->avctx->execute(s->avctx, hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1, sizeof(int));
     for(i=0; i<=sc->sh.num_entry_point_offsets; i++)
         res += ret[i];
     av_free(ret);
@@ -2433,6 +2486,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             av_freep(&sc->pps_list[i]->ctb_addr_rs_to_ts);
             av_freep(&sc->pps_list[i]->ctb_addr_ts_to_rs);
             av_freep(&sc->pps_list[i]->tile_id);
+            av_freep(&sc->pps_list[i]->tile_pos_rs);
             av_freep(&sc->pps_list[i]->min_cb_addr_zs);
             av_freep(&sc->pps_list[i]->min_tb_addr_zs);
         }
