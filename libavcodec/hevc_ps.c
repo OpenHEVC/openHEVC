@@ -864,10 +864,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     pps->tile_pos_rs = av_malloc_array(tile_id, sizeof(*pps->tile_pos_rs));
     for (j = 0; j < pps->num_tile_rows; j++)
-        for (i = 0; i < pps->num_tile_columns; i++) {
+        for (i = 0; i < pps->num_tile_columns; i++)
             pps->tile_pos_rs[j * pps->num_tile_columns + i] = pps->row_bd[j] * sps->pic_width_in_ctbs + pps->col_bd[i];
-            printf("%d\n", pps->tile_pos_rs[j * pps->num_tile_columns + i]);
-        }
 
     for (y = 0; y < sps->pic_height_in_min_cbs; y++) {
         for (x = 0; x < sps->pic_width_in_min_cbs; x++) {

@@ -78,7 +78,8 @@ static const int8_t num_bins_in_se[] = {
 /**
  * Offset to ctxIdx 0 in init_values and states, indexed by SyntaxElement.
  */
-static const int elem_offset[sizeof(num_bins_in_se)] ={ 0,
+static const int elem_offset[sizeof(num_bins_in_se)] = {
+    0,
     1,
     2,
     2,
@@ -426,7 +427,7 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
         }
     } else {
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
-            printf("ts = %d , tiles_enabled_flag = %d , tile_id[ts] = %d , tile_id[ts] = %d\n", ctb_addr_ts, sc->pps->tiles_enabled_flag, sc->pps->tile_id[ctb_addr_ts], sc->pps->tile_id[ctb_addr_ts-1]);
+            printTitle("ts = %d , tiles_enabled_flag = %d , tile_id[ts] = %d , tile_id[ts] = %d\n", ctb_addr_ts, sc->pps->tiles_enabled_flag, sc->pps->tile_id[ctb_addr_ts], sc->pps->tile_id[ctb_addr_ts-1]);
             ff_hevc_cabac_reinit(s->HEVClc);
             ff_hevc_cabac_init_state(s);
         }
