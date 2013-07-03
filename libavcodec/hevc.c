@@ -1,7 +1,10 @@
 /*
  * HEVC video Decoder
  *
- * Copyright (C) 2012 Guillaume Martres
+ * Copyright (C) 2012 - 2013 Guillaume Martres
+ * Copyright (C) 2012 - 2013 Mickael Raulet
+ * Copyright (C) 2012 - 2013 Gildas Cocherel
+ * Copyright (C) 2012 - 2013 Wassim Hamidouche
  *
  * This file is part of Libav.
  *
@@ -2386,8 +2389,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     HEVCLocalContext *lc;
 
     s->avctx = avctx;
-    s->HEVCsc = av_malloc(sizeof(HEVCSharedContext));
-    s->HEVClc = av_malloc(sizeof(HEVCLocalContext));
+    s->HEVCsc = av_mallocz(sizeof(HEVCSharedContext));
+    s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
     lc = s->HEVClcList[0] = s->HEVClc;
     sc = s->HEVCsc;
     s->sList[0] = s;
@@ -2483,6 +2486,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             av_freep(&sc->pps_list[i]->row_height);
             av_freep(&sc->pps_list[i]->col_bd);
             av_freep(&sc->pps_list[i]->row_bd);
+            av_freep(&sc->pps_list[i]->col_idxX);
             av_freep(&sc->pps_list[i]->ctb_addr_rs_to_ts);
             av_freep(&sc->pps_list[i]->ctb_addr_ts_to_rs);
             av_freep(&sc->pps_list[i]->tile_id);
@@ -2493,8 +2497,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_freep(&sc->pps_list[i]);
     }
     av_freep(&s->HEVClc);
-    av_freep(&sc);
     pic_arrays_free(s);
+    av_freep(&s->HEVCsc);
 
     return 0;
 }
