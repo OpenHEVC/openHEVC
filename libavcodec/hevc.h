@@ -760,7 +760,7 @@ typedef struct HEVCLocalContext {
 } HEVCLocalContext;
 
 typedef struct HEVCSharedContext {
-//    uint8_t *cabac_state; //
+    uint8_t *cabac_state; //
     
     AVFrame *frame;
     AVFrame *sao_frame;
