@@ -66,8 +66,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
 
                 if (EXTERNAL_SSE2(mm_flags)) {
                     if (!pcm_deblock) {
-//                        c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
-//                        c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
+                        c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
+                        c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
                     }
                 }
                 if (EXTERNAL_SSSE3(mm_flags)) {
