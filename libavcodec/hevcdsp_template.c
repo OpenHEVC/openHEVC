@@ -915,12 +915,6 @@ static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
-            x++;
-            dst[x] = av_clip_pixel((src[x] + offset) >> shift);
-            x++;
-            dst[x] = av_clip_pixel((src[x] + offset) >> shift);
-            x++;
-            dst[x] = av_clip_pixel((src[x] + offset) >> shift);
         }
         dst += dststride;
         src += srcstride;

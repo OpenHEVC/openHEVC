@@ -360,14 +360,21 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 int bs0, bs1;
                 // to make sure no memory access over boundary when x = -8
                 // TODO: simplify with row based deblocking
-                if (x < 0)
+                if (x < 0) {
                     bs0 = 0;
-                else
+                    bs1 = sc->horizontal_bs[(x + 8 + y * sc->bs_width) >> 2];
+                }
+                else if (x >= x_end - 8) {
+                    bs0 = sc->horizontal_bs[(x + y * sc->bs_width) >> 2];
+                    bs1 = 0;
+                }
+                else {
                     bs0 = sc->horizontal_bs[(x + y * sc->bs_width) >> 2];
                     bs1 = sc->horizontal_bs[(x + 8 + y * sc->bs_width) >> 2];
+                }
                 if ((bs0 == 2) || (bs1 == 2)) {
                     const int qp0 = (bs0 == 2) ? ((get_qPy(s, x, y - 1) + get_qPy(s, x, y) + 1) >> 1) : 0;
-                    const int qp1 = (get_qPy(s, x + 8, y - 1) + get_qPy(s, x + 8, y) + 1) >> 1;
+                    const int qp1 = (bs1 == 2) ? (get_qPy(s, x + 8, y - 1) + get_qPy(s, x + 8, y) + 1) >> 1 : 0;
                     if (pcmf) {
                             no_p[0] = get_pcm(s, x, y - 1);
                             no_p[1] = get_pcm(s, x + 8, y - 1);
