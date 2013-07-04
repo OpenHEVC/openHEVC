@@ -13,7 +13,11 @@ libavcodec/x86/hevc_deblock
 libavutil/x86/cpuid
 )
 
+if(APPLE)
 SET(YASM_ARGS -f macho64 -m amd64 -DPIC -DPREFIX -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+else(APPLE)
+SET(YASM_ARGS -f elf     -m amd64 -DPIC -DPREFIX -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+endif(APPLE)
 
 #compile all asm files
 FOREACH(src ${YASM_NAMES})
