@@ -1,7 +1,9 @@
 /*
  * HEVC Parameter Set Decoding
  *
- * Copyright (C) 2012 Guillaume Martres
+ * Copyright (C) 2012 - 2103 Guillaume Martres
+ * Copyright (C) 2012 - 2103 Mickael Raulet
+ * Copyright (C) 2012 - 2013 Gildas Cocherel
  *
  * This file is part of Libav.
  *
@@ -350,7 +352,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
             vps->vps_num_ticks_poc_diff_one = get_ue_golomb(gb) + 1;
         vps->vps_num_hrd_parameters = get_ue_golomb(gb);
         if (vps->vps_num_hrd_parameters != 0) {
-            av_log_missing_feature(s->avctx, "support for vps_num_hrd_parameters != 0", 0);
+            avpriv_report_missing_feature(s->avctx, "support for vps_num_hrd_parameters != 0");
             av_free(vps);
             return AVERROR_PATCHWELCOME;
         }
@@ -408,7 +410,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->chroma_format_idc = get_ue_golomb(gb);
     if (sps->chroma_format_idc != 1) {
-        av_log_missing_feature(s->avctx, "chroma_format_idc != 1\n", 0);
+        avpriv_report_missing_feature(s->avctx, "chroma_format_idc != 1\n");
         goto err;
     }
 
@@ -450,7 +452,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps->log2_max_poc_lsb = get_ue_golomb(gb) + 4;
-    if (sps->log2_max_poc_lsb > 12) {
+    if (sps->log2_max_poc_lsb > 16) {
         av_log(s->avctx, AV_LOG_ERROR, "log2_max_pic_order_cnt_lsb_minus4 out range: %d\n",
                sps->log2_max_poc_lsb - 4);
         goto err;

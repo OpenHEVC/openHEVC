@@ -1,7 +1,8 @@
 /*
  * HEVC Supplementary Enhancement Information messages
  *
- * Copyright (C) 2012 Guillaume Martres
+ * Copyright (C) 2012 - 2013 Guillaume Martres
+ * Copyright (C) 2012 - 2013 Gildas Cocherel
  * Copyright (C) 2013 Vittorio Giovara
  *
  * This file is part of Libav.

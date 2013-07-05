@@ -938,12 +938,6 @@ static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-            x++;
-            dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-            x++;
-            dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-            x++;
-            dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
         }
         dst  += dststride;
         src1 += srcstride;

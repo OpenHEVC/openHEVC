@@ -2,6 +2,7 @@
  * HEVC video Decoder
  *
  * Copyright (C) 2012 Guillaume Martres
+ * Copyright (C) 2012 - 2013 Gildas Cocherel
  *
  * This file is part of Libav.
  *

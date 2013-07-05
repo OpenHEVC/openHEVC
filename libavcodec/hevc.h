@@ -37,11 +37,6 @@
 #ifdef DEBLOCKING_IN_LOOP
 #define SAO_IN_LOOP
 #endif
-/**
- * Enable to diverge from the spec when the reference encoder
- * does so.
- */
-#define REFERENCE_ENCODER_QUIRKS 1
 
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
@@ -493,10 +488,6 @@ typedef struct SliceHeader {
     int16_t luma_offset_l1[16];
     int16_t chroma_offset_l1[16][2];
 
-#if REFERENCE_ENCODER_QUIRKS
-    uint8_t tile_marker_flag;
-#endif
-
     // Inferred parameters
     uint8_t slice_qp; ///< SliceQP
     int slice_ctb_addr_rs; ///< SliceCtbAddrRS
@@ -831,7 +822,7 @@ typedef struct HEVCSharedContext {
 typedef struct HEVCContext {
     AVClass *c;  // needed by private avoptions
     AVCodecContext      *avctx;
-    
+
     struct HEVCContext  *sList[MAX_NB_THREADS];
     
     HEVCSharedContext   *HEVCsc;

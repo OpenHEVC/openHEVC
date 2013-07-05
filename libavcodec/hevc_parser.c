@@ -1,7 +1,7 @@
 /*
  * HEVC Annex B format parser
  *
- * Copyright (C) 2012 Guillaume Martres
+ * Copyright (C) 2012 - 2013 Guillaume Martres
  *
  * This file is part of Libav.
  *
