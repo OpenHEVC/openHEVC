@@ -182,9 +182,15 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
             if (!bottom_left_available) {
                 EXTEND_DOWN(left, size, size);
             }
-            EXTEND_UP_CIP(left, 2*size-1, 2*size);
+            if (y0 != 0) {
+                EXTEND_UP_CIP(left, 2*size-1, 2*size);
+            } else {
+                EXTEND_UP_CIP(left, 2*size-1, 2*size-1);
+            }
             top[-1] = left[-1];
-            EXTEND_RIGHT_CIP(top, 0, 2*size);
+            if (y0 != 0) {
+                EXTEND_RIGHT_CIP(top, 0, 2*size);
+            }
         }
     }
     // Infer the unavailable samples
