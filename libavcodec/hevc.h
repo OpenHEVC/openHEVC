@@ -794,11 +794,9 @@ typedef struct HEVCSharedContext {
     
     //  CU
     uint8_t *skip_flag;
-    uint8_t *top_ct_depth;
-    uint8_t *left_ct_depth;
+    uint8_t *tab_ct_depth;
     // PU
-    uint8_t *top_ipm;
-    uint8_t *left_ipm;
+    uint8_t *tab_ipm;
     
     
     uint8_t *cbf_luma; // cbf_luma of colocated TU
