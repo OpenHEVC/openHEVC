@@ -52,6 +52,15 @@ void ff_hevc_dequant8x8_sse4(int16_t *coeffs, int qp);
 void ff_hevc_dequant16x16_sse4(int16_t *coeffs, int qp);
 void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp);
 
+void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+
+void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+void ff_hevc_transform_8x8_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+
+
+
 //LF_FUNCS(uint16_t, 10)
 
 
@@ -87,6 +96,13 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                     c->dequant[1] = ff_hevc_dequant8x8_sse4;
                     c->dequant[2] = ff_hevc_dequant16x16_sse4;
                     c->dequant[3] = ff_hevc_dequant32x32_sse4;
+
+                    c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
+
+                    c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
+                    c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
+                    c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
+                    c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
                 }
             }
         }
