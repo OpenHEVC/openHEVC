@@ -1904,7 +1904,7 @@ static int hls_slice_data(HEVCContext *s)
     } else {
         sc->SliceAddrRs = (sc->sh.dependent_slice_segment_flag == 0 ? sc->sh.slice_address : sc->SliceAddrRs);
     }
-    av_atomic_int_set(&sc->coding_tree_count, 0);
+    avpriv_atomic_int_set(&sc->coding_tree_count, 0);
 
     s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
     return ret[0];
@@ -1934,9 +1934,9 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         int x_ctb = (ctb_addr_rs % ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
-        while(*ctb_row && (av_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)-1])-av_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
-        if (av_atomic_int_get(&sc->ERROR)){
-        	av_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+        while(*ctb_row && (avpriv_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)-1]) - avpriv_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
+        if (avpriv_atomic_int_get(&sc->ERROR)){
+        	avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
         	return 0;
         }
         ff_hevc_cabac_init(s, ctb_addr_ts);
@@ -1948,17 +1948,17 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ctb_addr_ts++;
         ctb_addr_rs       = sc->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
         save_states(s, ctb_addr_ts);
-        av_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],1);
+        avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],1);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
         if (!more_data && (x_ctb+ctb_size) < sc->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) < sc->sps->pic_height_in_luma_samples) {
-        	av_atomic_int_set(&sc->ERROR,  1);
-            av_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+        	avpriv_atomic_int_set(&sc->ERROR,  1);
+            avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
             return 0;
         }
 
         if (!more_data) {
             hls_filter(s, x_ctb, y_ctb);
-            av_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+            avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
             return ctb_addr_ts;
         }
         x_ctb+=ctb_size;
@@ -1967,7 +1967,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
             break;
         }
     }
-    av_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+    avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
     return 0;
 }
 
@@ -2100,7 +2100,7 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
         sc->SliceAddrRs = (sc->sh.dependent_slice_segment_flag == 0 ? sc->sh.slice_address : sc->SliceAddrRs);
     }
     memset(sc->ctb_entry_count, 0, (sc->sh.num_entry_point_offsets+1)*sizeof(int));
-    av_atomic_int_set(&sc->ERROR,  0);
+    avpriv_atomic_int_set(&sc->ERROR,  0);
     for(i=0; i<=sc->sh.num_entry_point_offsets; i++) {
         arg[i] = i;
         ret[i] = 0;
@@ -2324,7 +2324,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         if(s->threads_number>1 && sc->sh.num_entry_point_offsets > 0 ) {
             ctb_addr_ts = hls_slice_data_wpp(s, avpkt);
         } else {
-            //ctb_addr_ts = hls_slice_data_wpp(s, avpkt);
             ctb_addr_ts = hls_slice_data(s);
         }
         if (s->decode_checksum_sei && ctb_addr_ts >= (sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs)) {

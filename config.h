@@ -128,9 +128,9 @@
 #else
 #define HAVE_PTHREADS 1
 #define HAVE_W32THREADS 0
-#define HAVE_ATOMICS_GCC 0
+#define HAVE_ATOMICS_GCC 1
 #define HAVE_ATOMICS_SUNCC 0
-#define HAVE_ATOMICS_WIN32 1
+#define HAVE_ATOMICS_WIN32 0
 #endif
 #define HAVE_ATANF 1
 #define HAVE_ATAN2F 1
