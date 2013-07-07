@@ -1912,7 +1912,7 @@ static int hls_slice_data(HEVCContext *s)
 
 #define SHIFT_CTB_WPP 2
 
-static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
+static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
 {
     HEVCContext *s  = avctxt->priv_data;
     HEVCSharedContext *sc = s->HEVCsc;
@@ -1921,10 +1921,10 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     int ctb_size    = 1<< sc->sps->log2_ctb_size;
     int more_data   = 1;
 
-    int *ctb_row    = input_ctb_row;
+    int *ctb_row    = input_ctb_row + job;
     int ctb_addr_rs = sc->sh.slice_ctb_addr_rs + (*ctb_row) * ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size);
     int ctb_addr_ts = sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-    s = s->sList[(*ctb_row)%s->threads_number];
+    s = s->sList[self_id];
     lc = s->HEVClc;
     if(*ctb_row) {
         init_get_bits(lc->gb, sc->data+sc->sh.offset[(*ctb_row)-1], sc->sh.size[(*ctb_row)-1]*8);
@@ -1971,7 +1971,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row)
     return 0;
 }
 
-static int hls_decode_entry_tiles(AVCodecContext *avctxt, void *input_ctb_row)
+static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, int job, int self_id)
 {
     HEVCContext *s  = avctxt->priv_data;
     HEVCSharedContext *sc = s->HEVCsc;
@@ -1982,10 +1982,10 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, void *input_ctb_row)
     int ctb_size    = 1<< sc->sps->log2_ctb_size;
     int more_data   = 1;
 
-    int *ctb_row    = input_ctb_row;
+    int *ctb_row    = input_ctb_row + job;
     int ctb_addr_rs = sc->pps->tile_pos_rs[*ctb_row];
     int ctb_addr_ts = sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-    s = s->sList[(*ctb_row)%s->threads_number];
+    s = s->sList[self_id];
     lc = s->HEVClc;
     if(*ctb_row) {
         init_get_bits(lc->gb, sc->data+sc->sh.offset[(*ctb_row)-1], sc->sh.size[(*ctb_row)-1]*8);
@@ -2107,9 +2107,9 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
     }
 
     if (sc->pps->entropy_coding_sync_enabled_flag)
-        s->avctx->execute(s->avctx, hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1, sizeof(int));
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1);
     else
-        s->avctx->execute(s->avctx, hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1, sizeof(int));
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1);
     for(i=0; i<=sc->sh.num_entry_point_offsets; i++)
         res += ret[i];
     av_free(ret);
