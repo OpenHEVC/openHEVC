@@ -47,6 +47,11 @@ LFL_FUNC(v, depth, ssse3)
 LFC_FUNCS(uint8_t,   8)
 LFL_FUNCS(uint8_t,   8)
 
+void ff_hevc_dequant4x4_sse4(int16_t *coeffs, int qp);
+void ff_hevc_dequant8x8_sse4(int16_t *coeffs, int qp);
+void ff_hevc_dequant16x16_sse4(int16_t *coeffs, int qp);
+void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp);
+
 //LF_FUNCS(uint16_t, 10)
 
 
@@ -78,6 +83,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
 
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
+                    c->dequant[0] = ff_hevc_dequant4x4_sse4;
+                    c->dequant[1] = ff_hevc_dequant8x8_sse4;
+                    c->dequant[2] = ff_hevc_dequant16x16_sse4;
+                    c->dequant[3] = ff_hevc_dequant32x32_sse4;
                 }
             }
         }
