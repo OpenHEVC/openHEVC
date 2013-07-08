@@ -59,6 +59,10 @@ void ff_hevc_transform_8x8_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t 
 void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
+void ff_hevc_put_unweighted_pred_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
+void ff_hevc_put_weighted_pred_avg_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src1, int16_t *src2, ptrdiff_t srcstride,int width, int height);
+void ff_hevc_weighted_pred_sse(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
+void ff_hevc_weighted_pred_avg_sse(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,int16_t ol0Flag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,int16_t *src1, int16_t *src2, ptrdiff_t srcstride,int width, int height);
 
 
 //LF_FUNCS(uint16_t, 10)
@@ -91,7 +95,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
 #endif
 
                 }
-                if (EXTERNAL_AVX(mm_flags)) {
+                if (EXTERNAL_SSE4(mm_flags)) {
+                	c->put_unweighted_pred = ff_hevc_put_unweighted_pred_sse;
+                	c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_sse;
+                	c->weighted_pred = ff_hevc_weighted_pred_sse;
+                	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_sse;
                     c->dequant[0] = ff_hevc_dequant4x4_sse4;
                     c->dequant[1] = ff_hevc_dequant8x8_sse4;
                     c->dequant[2] = ff_hevc_dequant16x16_sse4;
@@ -103,6 +111,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                     c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
                     c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
                     c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
+                }
+                if (EXTERNAL_AVX(mm_flags)) {
+
                 }
             }
         }
