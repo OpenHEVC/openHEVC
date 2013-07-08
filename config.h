@@ -9,7 +9,7 @@
 #ifdef __APPLE_CC__
 #define EXTERN_PREFIX "_"
 #else
-	#define restrict restrict
+	#define restrict
     #ifdef __MINGW32__
         #ifdef __MINGW64__
         #define EXTERN_PREFIX ""
@@ -45,8 +45,8 @@
 #define ARCH_TOMI 0
 #define ARCH_X86 1
 #ifdef __MINGW32__
-#define ARCH_X86_32 1
-#define ARCH_X86_64 0
+#define ARCH_X86_32 0
+#define ARCH_X86_64 1
 #else
 #define ARCH_X86_32 0
 #define ARCH_X86_64 1

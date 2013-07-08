@@ -54,6 +54,9 @@ static int (*lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
 static void *avformat_mutex;
 
+#define attribute_align_arg
+
+
 void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
 {
     if (min_size < *size)
@@ -395,7 +398,7 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         pool->samples = frame->nb_samples;
         break;
         }
-    default: av_assert0(0);
+    //default: av_assert0(0);
     }
     return 0;
 fail:
@@ -729,7 +732,7 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame)
     AVFrame tmp;
     int ret;
 
-    av_assert0(avctx->codec_type == AVMEDIA_TYPE_VIDEO);
+ //   av_assert0(avctx->codec_type == AVMEDIA_TYPE_VIDEO);
 
     if (!frame->data[0])
         return ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
@@ -761,7 +764,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
 
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic)
 {
-    av_assert0(0);
+  //  av_assert0(0);
     return AVERROR_BUG;
 }
 #endif
@@ -1270,7 +1273,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
         return AVERROR(EINVAL);
 
-    av_assert0(avctx->codec->encode2);
+//    av_assert0(avctx->codec->encode2);
 
     ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
     if (!ret) {
@@ -1291,7 +1294,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     if (ret < 0 || !*got_packet_ptr)
         av_free_packet(avpkt);
 
-    emms_c();
+
     return ret;
 }
 
@@ -1388,7 +1391,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             }
         }
 
-        emms_c(); //needed to avoid an emms_c() call before every return;
+       // emms_c(); //needed to avoid an emms_c() call before every return;
 
         if (ret < 0 && picture->data[0])
             av_frame_unref(picture);
@@ -2212,7 +2215,7 @@ const uint8_t *avpriv_find_start_code(const uint8_t *restrict p,
 {
     int i;
 
-    assert(p <= end);
+   // assert(p <= end);
     if (p >= end)
         return end;
 
