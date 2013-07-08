@@ -1986,13 +1986,14 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     int ctb_size    = 1<< sc->sps->log2_ctb_size;
     int more_data   = 1;
 
-    int *ctb_row    = input_ctb_row + job;
-    int ctb_addr_rs = sc->pps->tile_pos_rs[*ctb_row];
+    int *ctb_row_p    = input_ctb_row;
+    int ctb_row    = ctb_row_p[job];
+    int ctb_addr_rs = sc->pps->tile_pos_rs[ctb_row];
     int ctb_addr_ts = sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     s = s->sList[self_id];
     lc = s->HEVClc;
-    if(*ctb_row) {
-        init_get_bits(lc->gb, sc->data+sc->sh.offset[(*ctb_row)-1], sc->sh.size[(*ctb_row)-1]*8);
+    if(ctb_row) {
+        init_get_bits(lc->gb, sc->data+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]*8);
     }
     while (more_data) {
         int ctb_addr_rs       = sc->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
