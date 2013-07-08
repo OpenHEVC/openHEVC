@@ -1561,7 +1561,7 @@ x4= _mm_load_si128((__m128i*)&tmp[x]);
 x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
 x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
 x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
-x8= _mm_loadu_si128((__m128i*)&src[x+4*srcstride]);
+x8= _mm_loadu_si128((__m128i*)&tmp[x+4*srcstride]);
 
     r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
     r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
@@ -2353,9 +2353,11 @@ if(width == 4){
 
 for (y = 0; y < height + qpel_extra[1]; y+=2) {
 /* load data in register     */
-    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x1= _mm_loadu_si128((__m128i*)&src[-2]);
+    x1= _mm_slli_si128(x1,1);
     src += srcstride;
-    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    t1= _mm_loadu_si128((__m128i*)&src[-2]);
+    t1= _mm_slli_si128(t1,1);
     x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
     t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
     x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
@@ -2385,7 +2387,8 @@ tmp += MAX_PB_SIZE;
 for (y = 0; y < height + qpel_extra[1]; y++) {
 for (x = 0; x < width; x+=8)  {
 /* load data in register     */
-x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x1= _mm_loadu_si128((__m128i*)&src[x-2]);
+x1= _mm_slli_si128(x1,1);
 x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
 x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
 x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
@@ -2526,9 +2529,11 @@ if(width == 4){
 
 for (y = 0; y < height + qpel_extra[2]; y+=2) {
 /* load data in register     */
-    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x1= _mm_loadu_si128((__m128i*)&src[-2]);
+    x1= _mm_slli_si128(x1,1);
     src += srcstride;
-    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    t1= _mm_loadu_si128((__m128i*)&src[-2]);
+    t1= _mm_slli_si128(t1,1);
     x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
     t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
     x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
@@ -2558,7 +2563,8 @@ tmp += MAX_PB_SIZE;
 for (y = 0; y < height + qpel_extra[2]; y++) {
 for (x = 0; x < width; x+=8)  {
 /* load data in register     */
-x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x1= _mm_loadu_si128((__m128i*)&src[x-2]);
+x1= _mm_slli_si128(x1,1);
 x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
 x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
 x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
