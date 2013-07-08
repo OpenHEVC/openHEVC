@@ -2733,7 +2733,8 @@ tmp += MAX_PB_SIZE;
 for (y = 0; y < height + qpel_extra[3]; y++) {
 for (x = 0; x < width; x+=8)  {
 /* load data in register     */
-x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x1= _mm_loadu_si128((__m128i*)&src[x-2]);
+x1= _mm_slli_si128(x1,1);
 x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
 x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
 x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
