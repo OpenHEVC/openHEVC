@@ -1191,6 +1191,7 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2, ptrdiff_t ds
     ptrdiff_t src1stride = ref->linesize[1];
     ptrdiff_t src2stride = ref->linesize[2];
     HEVCSharedContext *sc = s->HEVCsc;
+    HEVCLocalContext *lc = s->HEVClc;
     int pic_width = sc->sps->pic_width_in_luma_samples >> 1;
     int pic_height = sc->sps->pic_height_in_luma_samples >> 1;
 
@@ -1211,17 +1212,17 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2, ptrdiff_t ds
                                   x_off - epel_extra_before, y_off - epel_extra_before,
                                   pic_width, pic_height);
         src1 = s->HEVClc->edge_emu_buffer + offset1;
-        sc->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride, block_w, block_h, mx, my);
+        sc->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride, block_w, block_h, mx, my, lc->BufferMC);
 
         sc->vdsp.emulated_edge_mc(s->HEVClc->edge_emu_buffer, src2 - offset2, src2stride,
                                   block_w + epel_extra, block_h + epel_extra,
                                   x_off - epel_extra_before, y_off - epel_extra_before,
                                   pic_width, pic_height);
         src2 = s->HEVClc->edge_emu_buffer + offset2;
-        sc->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride, block_w, block_h, mx, my);
+        sc->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride, block_w, block_h, mx, my, lc->BufferMC);
     } else {
-        sc->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride, block_w, block_h, mx, my);
-        sc->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride, block_w, block_h, mx, my);
+        sc->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride, block_w, block_h, mx, my, lc->BufferMC);
+        sc->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride, block_w, block_h, mx, my, lc->BufferMC);
     }
 }
 /*
@@ -2381,7 +2382,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     sc = s->HEVCsc;
     s->sList[0] = s;
 
-
+    lc->BufferMC = av_malloc((MAX_PB_SIZE+7)*MAX_PB_SIZE*sizeof(int16_t));
     sc->tmp_frame = av_frame_alloc();
     sc->cabac_state = av_malloc(HEVC_CONTEXTS);
 
@@ -2432,6 +2433,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_free(lc->gb);
     av_free(lc->cc);
     av_free(lc->edge_emu_buffer);
+    av_free(lc->BufferMC);
 
     for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
         av_freep(&lc->tt.cbf_cb[i]);

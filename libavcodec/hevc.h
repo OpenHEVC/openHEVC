@@ -747,6 +747,7 @@ typedef struct HEVCLocalContext {
     CodingTree ct;
     CodingUnit cu;
     PredictionUnit pu;
+    int16_t* BufferMC;
 
 } HEVCLocalContext;
 

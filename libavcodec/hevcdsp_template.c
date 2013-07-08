@@ -799,7 +799,7 @@ PUT_HEVC_QPEL_HV(3, 3)
 
 static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                       int width, int height, int mx, int my)
+                                       int width, int height, int mx, int my,int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel*)_src;
@@ -819,7 +819,7 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my)
+                                  int width, int height, int mx, int my,int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel*)_src;
@@ -840,7 +840,7 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my)
+                                  int width, int height, int mx, int my,int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel*)_src;
@@ -860,7 +860,7 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
 }
 static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
-                                   int width, int height, int mx, int my)
+                                   int width, int height, int mx, int my,int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel*)_src;
