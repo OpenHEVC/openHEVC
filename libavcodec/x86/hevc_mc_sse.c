@@ -2699,9 +2699,11 @@ if(width == 4){
 
 for (y = 0; y < height + qpel_extra[3]; y+=2) {
 /* load data in register     */
-    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x1= _mm_loadu_si128((__m128i*)&src[-2]);
+    x1= _mm_slli_si128(x1,1);
     src += srcstride;
-    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    t1= _mm_loadu_si128((__m128i*)&src[-2]);
+    t1= _mm_slli_si128(t1,1);
     x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
     t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
     x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
