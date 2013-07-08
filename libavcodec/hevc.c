@@ -1921,22 +1921,23 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     int ctb_size    = 1<< sc->sps->log2_ctb_size;
     int more_data   = 1;
 
-    int *ctb_row    = input_ctb_row + job;
-    int ctb_addr_rs = sc->sh.slice_ctb_addr_rs + (*ctb_row) * ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size);
+    int *ctb_row_p    = input_ctb_row;
+    int ctb_row = ctb_row_p[job];
+    int ctb_addr_rs = sc->sh.slice_ctb_addr_rs + (ctb_row) * ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size);
     int ctb_addr_ts = sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     s = s->sList[self_id];
     lc = s->HEVClc;
-    if(*ctb_row) {
-        init_get_bits(lc->gb, sc->data+sc->sh.offset[(*ctb_row)-1], sc->sh.size[(*ctb_row)-1]*8);
-        ff_init_cabac_decoder(lc->cc, sc->data+sc->sh.offset[(*ctb_row)-1], sc->sh.size[(*ctb_row)-1]);
+    if(ctb_row) {
+        init_get_bits(lc->gb, sc->data+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]*8);
+        ff_init_cabac_decoder(lc->cc, sc->data+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]);
     }
     while(more_data) {
         int x_ctb = (ctb_addr_rs % ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
-        while(*ctb_row && (avpriv_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)-1]) - avpriv_atomic_int_get(&sc->ctb_entry_count[(*ctb_row)]))<SHIFT_CTB_WPP);
+        while(ctb_row && (avpriv_atomic_int_get(&sc->ctb_entry_count[(ctb_row)-1]) - avpriv_atomic_int_get(&sc->ctb_entry_count[(ctb_row)]))<SHIFT_CTB_WPP);
         if (avpriv_atomic_int_get(&sc->ERROR)){
-        	avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+        	avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
         	return 0;
         }
         ff_hevc_cabac_init(s, ctb_addr_ts);
@@ -1948,17 +1949,17 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ctb_addr_ts++;
         ctb_addr_rs       = sc->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
         save_states(s, ctb_addr_ts);
-        avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],1);
+        avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],1);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
         if (!more_data && (x_ctb+ctb_size) < sc->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) < sc->sps->pic_height_in_luma_samples) {
         	avpriv_atomic_int_set(&sc->ERROR,  1);
-            avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+            avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
             return 0;
         }
 
         if (!more_data) {
             hls_filter(s, x_ctb, y_ctb);
-            avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+            avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
             return ctb_addr_ts;
         }
         x_ctb+=ctb_size;
@@ -1967,7 +1968,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
             break;
         }
     }
-    avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[*ctb_row],SHIFT_CTB_WPP);
+    avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
     return 0;
 }
 
