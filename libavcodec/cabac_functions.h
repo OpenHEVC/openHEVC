@@ -31,11 +31,11 @@
 
 #include "cabac.h"
 #include "config.h"
-/*
+
 #if ARCH_X86
 #   include "x86/cabac.h"
 #endif
-*/
+
 extern uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
 static uint8_t * const ff_h264_norm_shift = ff_h264_cabac_tables + H264_NORM_SHIFT_OFFSET;
 static uint8_t * const ff_h264_lps_range = ff_h264_cabac_tables + H264_LPS_RANGE_OFFSET;
