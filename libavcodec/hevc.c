@@ -1145,6 +1145,7 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride, AVFrame *
     uint8_t *src = ref->data[0];
     ptrdiff_t srcstride = ref->linesize[0];
     HEVCSharedContext *sc = s->HEVCsc;
+    HEVCLocalContext *lc = s->HEVClc;
     int pic_width = sc->sps->pic_width_in_luma_samples;
     int pic_height = sc->sps->pic_height_in_luma_samples;
 
@@ -1166,7 +1167,7 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride, AVFrame *
                                   pic_width, pic_height);
         src = s->HEVClc->edge_emu_buffer + offset;
     }
-    sc->hevcdsp.put_hevc_qpel[my][mx](dst, dststride, src, srcstride, block_w, block_h);
+    sc->hevcdsp.put_hevc_qpel[my][mx](dst, dststride, src, srcstride, block_w, block_h,lc->BufferMC);
 }
 
 /**

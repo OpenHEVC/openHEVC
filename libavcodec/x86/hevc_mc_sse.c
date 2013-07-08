@@ -545,7 +545,7 @@ void ff_hevc_put_hevc_epel_hv_sse(int16_t *dst, ptrdiff_t dststride,
 
 }
 
-void put_hevc_qpel_pixels_sse(int16_t *dst, ptrdiff_t dststride,
+void ff_hevc_put_hevc_qpel_pixels_sse(int16_t *dst, ptrdiff_t dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
                                        int width, int height, int16_t* mcbuffer)
 {
@@ -846,7 +846,7 @@ dst += dststride;
  of each row.
 
  */
-void put_hevc_qpel_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+void ff_hevc_put_hevc_qpel_v_1_sse(int16_t *dst, ptrdiff_t dststride,
 		uint8_t *_src, ptrdiff_t _srcstride,
 		int width, int height, int16_t* mcbuffer)
 {
@@ -994,7 +994,7 @@ void put_hevc_qpel_v_1_sse(int16_t *dst, ptrdiff_t dststride,
 			dst += dststride;
 		}
 }
-void put_hevc_qpel_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+void ff_hevc_put_hevc_qpel_v_2_sse(int16_t *dst, ptrdiff_t dststride,
 		uint8_t *_src, ptrdiff_t _srcstride,
 		int width, int height, int16_t* mcbuffer)
 {
@@ -1142,7 +1142,7 @@ void put_hevc_qpel_v_2_sse(int16_t *dst, ptrdiff_t dststride,
 			dst += dststride;
 		}
 }
-void put_hevc_qpel_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+void ff_hevc_put_hevc_qpel_v_3_sse(int16_t *dst, ptrdiff_t dststride,
 		uint8_t *_src, ptrdiff_t _srcstride,
 		int width, int height, int16_t* mcbuffer)
 {
