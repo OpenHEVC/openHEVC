@@ -787,10 +787,12 @@ if(width == 4){
 
 for (y = 0; y < height; y+=2) {
 /* load data in register     */
-x1= _mm_loadu_si128((__m128i*)&src[-3]);
+x1= _mm_loadu_si128((__m128i*)&src[-2]);
     src+= srcstride;
-y1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x1= _mm_slli_si128(x1,1);
+y1= _mm_loadu_si128((__m128i*)&src[-2]);
 x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+y1= _mm_slli_si128(y1,1);
 x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
 y2= _mm_unpacklo_epi64(y1,_mm_srli_si128(y1,1));
 y3= _mm_unpacklo_epi64(_mm_srli_si128(y1,2),_mm_srli_si128(y1,3));
@@ -819,7 +821,8 @@ dst += dststride;
 for (y = 0; y < height; y++) {
 for (x = 0; x < width; x+=8)  {
 /* load data in register     */
-x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x1= _mm_loadu_si128((__m128i*)&src[x-2]);
+x1= _mm_slli_si128(x1,1);
 x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
 x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
 x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
@@ -1290,28 +1293,28 @@ void ff_hevc_put_hevc_qpel_v_3_sse(int16_t *dst, ptrdiff_t dststride,
 			dst += dststride;
 		}
 }
-/*
-void put_hevc_qpel_h_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+
+void ff_hevc_put_hevc_qpel_h_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
 uint8_t *_src, ptrdiff_t _srcstride,
 int width, int height, int16_t* mcbuffer)
 {
 int x, y, temp1;
-pixel *src = (pixel*)_src;
-ptrdiff_t srcstride = _srcstride/sizeof(pixel);
+uint8_t* src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
 /*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
-/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     *//*
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
 int16_t *tmp = mcbuffer;
 __m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
 __m128i t1,t2,t3,t4,t5,t6,t7,t8;
 
-src -= qpel_extra_before[V] * srcstride;
-r0= QPEL2_H_FILTER_## H;
+src -= qpel_extra_before[1] * srcstride;
+r0= _mm_set_epi8(0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1 ,0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1);
 
-/* LOAD src from memory to registers to limit memory bandwidth *//*
+/* LOAD src from memory to registers to limit memory bandwidth */
 if(width == 4){
 
-for (y = 0; y < height + qpel_extra[V]; y+=2) {
-/* load data in register     *//*
+for (y = 0; y < height + qpel_extra[1]; y+=2) {
+/* load data in register     */
     x1= _mm_loadu_si128((__m128i*)&src[-3]);
     src += srcstride;
     t1= _mm_loadu_si128((__m128i*)&src[-3]);
@@ -1320,7 +1323,7 @@ for (y = 0; y < height + qpel_extra[V]; y+=2) {
     x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
     t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
 
-/*  PMADDUBSW then PMADDW     *//*
+/*  PMADDUBSW then PMADDW     */
     x2= _mm_maddubs_epi16(x2,r0);
         t2= _mm_maddubs_epi16(t2,r0);
     x3= _mm_maddubs_epi16(x3,r0);
@@ -1331,7 +1334,7 @@ for (y = 0; y < height + qpel_extra[V]; y+=2) {
         t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
     x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
         t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
-/* give results back            *//*
+/* give results back            */
     _mm_storel_epi64((__m128i*)&tmp[0], x2);
 
     tmp += MAX_PB_SIZE;
@@ -1341,16 +1344,16 @@ src += srcstride;
 tmp += MAX_PB_SIZE;
 }
 }else
-for (y = 0; y < height + qpel_extra[V]; y++) {
+for (y = 0; y < height + qpel_extra[1]; y++) {
 for (x = 0; x < width; x+=8)  {
-/* load data in register     *//*
+/* load data in register     */
 x1= _mm_loadu_si128((__m128i*)&src[x-3]);
 x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
 x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
 x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
 x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
 
-/*  PMADDUBSW then PMADDW     *//*
+/*  PMADDUBSW then PMADDW     */
 x2= _mm_maddubs_epi16(x2,r0);
 x3= _mm_maddubs_epi16(x3,r0);
 x4= _mm_maddubs_epi16(x4,r0);
@@ -1360,7 +1363,7 @@ x4= _mm_hadd_epi16(x4,x5);
 x2= _mm_hadd_epi16(x2,x4);
     x2= _mm_srli_si128(x2,BIT_DEPTH -8);
 
-/* give results back            *//*
+/* give results back            */
 _mm_store_si128((__m128i*)&tmp[x], x2);
 
 }
@@ -1369,23 +1372,23 @@ tmp += MAX_PB_SIZE;
 }
 
 
-tmp = mcbuffer + qpel_extra_before[V] * MAX_PB_SIZE;
+tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
     srcstride= MAX_PB_SIZE;
 
 /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
-for register calculations *//*
-rTemp= QPEL2_FILTER_## V;
+for register calculations */
+rTemp= _mm_set_epi16(0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1);
 for (y = 0; y < height; y++)  {
 for (x = 0; x < width; x+=8)  {
 
-x1= QPEL2_X3V_FILTER_## V;
+x1= _mm_load_si128((__m128i*)&tmp[x-3*srcstride]);
 x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
 x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
 x4= _mm_load_si128((__m128i*)&tmp[x]);
 x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
 x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
 x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
-x8= QPEL2_X4V_FILTER_## V;
+x8= _mm_setzero_si128();
 
     r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
     r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
@@ -1434,7 +1437,7 @@ x5 = _mm_unpackhi_epi16(t8,rBuffer);
     x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
 
 
-/* add calculus by correct value : *//*
+/* add calculus by correct value : */
 
     r1= _mm_add_epi32(x1,x2);
     x3= _mm_add_epi32(x3,x4);
@@ -1464,7 +1467,1390 @@ tmp += MAX_PB_SIZE;
 dst += dststride;
 }
 }
-*/
+void ff_hevc_put_hevc_qpel_h_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+uint8_t *_src, ptrdiff_t _srcstride,
+int width, int height, int16_t* mcbuffer)
+{
+int x, y, temp1;
+uint8_t *src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
+/*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
+int16_t *tmp = mcbuffer;
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
+__m128i t1,t2,t3,t4,t5,t6,t7,t8;
+
+src -= qpel_extra_before[2] * srcstride;
+r0= _mm_set_epi8(0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1 ,0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1);
+
+/* LOAD src from memory to registers to limit memory bandwidth */
+if(width == 4){
+
+for (y = 0; y < height + qpel_extra[2]; y+=2) {
+/* load data in register     */
+    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    src += srcstride;
+    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+    t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
+    x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+    t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
+
+/*  PMADDUBSW then PMADDW     */
+    x2= _mm_maddubs_epi16(x2,r0);
+        t2= _mm_maddubs_epi16(t2,r0);
+    x3= _mm_maddubs_epi16(x3,r0);
+        t3= _mm_maddubs_epi16(t3,r0);
+    x2= _mm_hadd_epi16(x2,x3);
+        t2= _mm_hadd_epi16(t2,t3);
+    x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
+        t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
+    x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
+        t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
+/* give results back            */
+    _mm_storel_epi64((__m128i*)&tmp[0], x2);
+
+    tmp += MAX_PB_SIZE;
+    _mm_storel_epi64((__m128i*)&tmp[0], t2);
+
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+}else
+for (y = 0; y < height + qpel_extra[2]; y++) {
+for (x = 0; x < width; x+=8)  {
+/* load data in register     */
+x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
+x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
+
+/*  PMADDUBSW then PMADDW     */
+x2= _mm_maddubs_epi16(x2,r0);
+x3= _mm_maddubs_epi16(x3,r0);
+x4= _mm_maddubs_epi16(x4,r0);
+x5= _mm_maddubs_epi16(x5,r0);
+x2= _mm_hadd_epi16(x2,x3);
+x4= _mm_hadd_epi16(x4,x5);
+x2= _mm_hadd_epi16(x2,x4);
+    x2= _mm_srli_si128(x2,BIT_DEPTH -8);
+
+/* give results back            */
+_mm_store_si128((__m128i*)&tmp[x], x2);
+
+}
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+
+
+tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+    srcstride= MAX_PB_SIZE;
+
+/* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
+for register calculations */
+rTemp= _mm_set_epi16(-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1);
+for (y = 0; y < height; y++)  {
+for (x = 0; x < width; x+=8)  {
+
+x1= _mm_load_si128((__m128i*)&tmp[x-3*srcstride]);
+x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
+x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
+x4= _mm_load_si128((__m128i*)&tmp[x]);
+x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
+x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
+x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
+x8= _mm_loadu_si128((__m128i*)&src[x+4*srcstride]);
+
+    r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
+    r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
+    t8= _mm_mullo_epi16(x1,r0);
+    rBuffer= _mm_mulhi_epi16(x1,r0);
+        t7= _mm_mullo_epi16(x2,r1);
+    t1 = _mm_unpacklo_epi16(t8,rBuffer);
+    x1 = _mm_unpackhi_epi16(t8,rBuffer);
+
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,2));
+    rBuffer= _mm_mulhi_epi16(x2,r1);
+    t8= _mm_mullo_epi16(x3,r0);
+    t2 = _mm_unpacklo_epi16(t7,rBuffer);
+    x2 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,3));
+    rBuffer= _mm_mulhi_epi16(x3,r0);
+    t7= _mm_mullo_epi16(x4,r1);
+t3 = _mm_unpacklo_epi16(t8,rBuffer);
+x3 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,4));
+rBuffer= _mm_mulhi_epi16(x4,r1);
+    t8= _mm_mullo_epi16(x5,r0);
+t4 = _mm_unpacklo_epi16(t7,rBuffer);
+x4 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,5));
+rBuffer= _mm_mulhi_epi16(x5,r0);
+    t7= _mm_mullo_epi16(x6,r1);
+t5 = _mm_unpacklo_epi16(t8,rBuffer);
+x5 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,6));
+    rBuffer= _mm_mulhi_epi16(x6,r1);
+    t8= _mm_mullo_epi16(x7,r0);
+    t6 = _mm_unpacklo_epi16(t7,rBuffer);
+    x6 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    rBuffer= _mm_mulhi_epi16(x7,r0);
+    t7 = _mm_unpacklo_epi16(t8,rBuffer);
+    x7 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    t8 = _mm_unpacklo_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+    x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+
+
+/* add calculus by correct value : */
+
+    r1= _mm_add_epi32(x1,x2);
+    x3= _mm_add_epi32(x3,x4);
+    x5= _mm_add_epi32(x5,x6);
+    r1= _mm_add_epi32(r1,x3);
+    x7= _mm_add_epi32(x7,x8);
+    r1= _mm_add_epi32(r1,x5);
+
+r0= _mm_add_epi32(t1,t2);
+t3= _mm_add_epi32(t3,t4);
+t5= _mm_add_epi32(t5,t6);
+r0= _mm_add_epi32(r0,t3);
+t7= _mm_add_epi32(t7,t8);
+r0= _mm_add_epi32(r0,t5);
+r1= _mm_add_epi32(r1,x7);
+r0= _mm_add_epi32(r0,t7);
+r1= _mm_srli_epi32(r1,6);
+r0= _mm_srli_epi32(r0,6);
+
+    r1= _mm_and_si128(r1,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_and_si128(r0,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_hadd_epi16(r0,r1);
+    _mm_store_si128((__m128i*)&dst[x],r0);
+
+}
+tmp += MAX_PB_SIZE;
+dst += dststride;
+}
+}
+void ff_hevc_put_hevc_qpel_h_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+uint8_t *_src, ptrdiff_t _srcstride,
+int width, int height, int16_t* mcbuffer)
+{
+int x, y, temp1;
+uint8_t *src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
+/*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
+int16_t *tmp = mcbuffer;
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
+__m128i t1,t2,t3,t4,t5,t6,t7,t8;
+
+src -= qpel_extra_before[3] * srcstride;
+r0= _mm_set_epi8(0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1 ,0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1);
+
+/* LOAD src from memory to registers to limit memory bandwidth */
+if(width == 4){
+
+for (y = 0; y < height + qpel_extra[3]; y+=2) {
+/* load data in register     */
+    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    src += srcstride;
+    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+    t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
+    x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+    t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
+
+/*  PMADDUBSW then PMADDW     */
+    x2= _mm_maddubs_epi16(x2,r0);
+        t2= _mm_maddubs_epi16(t2,r0);
+    x3= _mm_maddubs_epi16(x3,r0);
+        t3= _mm_maddubs_epi16(t3,r0);
+    x2= _mm_hadd_epi16(x2,x3);
+        t2= _mm_hadd_epi16(t2,t3);
+    x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
+        t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
+    x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
+        t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
+/* give results back            */
+    _mm_storel_epi64((__m128i*)&tmp[0], x2);
+
+    tmp += MAX_PB_SIZE;
+    _mm_storel_epi64((__m128i*)&tmp[0], t2);
+
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+}else
+for (y = 0; y < height + qpel_extra[3]; y++) {
+for (x = 0; x < width; x+=8)  {
+/* load data in register     */
+x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
+x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
+
+/*  PMADDUBSW then PMADDW     */
+x2= _mm_maddubs_epi16(x2,r0);
+x3= _mm_maddubs_epi16(x3,r0);
+x4= _mm_maddubs_epi16(x4,r0);
+x5= _mm_maddubs_epi16(x5,r0);
+x2= _mm_hadd_epi16(x2,x3);
+x4= _mm_hadd_epi16(x4,x5);
+x2= _mm_hadd_epi16(x2,x4);
+    x2= _mm_srli_si128(x2,BIT_DEPTH -8);
+
+/* give results back            */
+_mm_store_si128((__m128i*)&tmp[x], x2);
+
+}
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+
+
+tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+    srcstride= MAX_PB_SIZE;
+
+/* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
+for register calculations */
+rTemp= _mm_set_epi16(-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0);
+for (y = 0; y < height; y++)  {
+for (x = 0; x < width; x+=8)  {
+
+x1= _mm_setzero_si128();
+x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
+x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
+x4= _mm_load_si128((__m128i*)&tmp[x]);
+x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
+x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
+x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
+x8= _mm_load_si128((__m128i*)&tmp[x+4*srcstride]);
+
+    r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
+    r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
+    t8= _mm_mullo_epi16(x1,r0);
+    rBuffer= _mm_mulhi_epi16(x1,r0);
+        t7= _mm_mullo_epi16(x2,r1);
+    t1 = _mm_unpacklo_epi16(t8,rBuffer);
+    x1 = _mm_unpackhi_epi16(t8,rBuffer);
+
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,2));
+    rBuffer= _mm_mulhi_epi16(x2,r1);
+    t8= _mm_mullo_epi16(x3,r0);
+    t2 = _mm_unpacklo_epi16(t7,rBuffer);
+    x2 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,3));
+    rBuffer= _mm_mulhi_epi16(x3,r0);
+    t7= _mm_mullo_epi16(x4,r1);
+t3 = _mm_unpacklo_epi16(t8,rBuffer);
+x3 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,4));
+rBuffer= _mm_mulhi_epi16(x4,r1);
+    t8= _mm_mullo_epi16(x5,r0);
+t4 = _mm_unpacklo_epi16(t7,rBuffer);
+x4 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,5));
+rBuffer= _mm_mulhi_epi16(x5,r0);
+    t7= _mm_mullo_epi16(x6,r1);
+t5 = _mm_unpacklo_epi16(t8,rBuffer);
+x5 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,6));
+    rBuffer= _mm_mulhi_epi16(x6,r1);
+    t8= _mm_mullo_epi16(x7,r0);
+    t6 = _mm_unpacklo_epi16(t7,rBuffer);
+    x6 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    rBuffer= _mm_mulhi_epi16(x7,r0);
+    t7 = _mm_unpacklo_epi16(t8,rBuffer);
+    x7 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    t8 = _mm_unpacklo_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+    x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+
+
+/* add calculus by correct value : */
+
+    r1= _mm_add_epi32(x1,x2);
+    x3= _mm_add_epi32(x3,x4);
+    x5= _mm_add_epi32(x5,x6);
+    r1= _mm_add_epi32(r1,x3);
+    x7= _mm_add_epi32(x7,x8);
+    r1= _mm_add_epi32(r1,x5);
+
+r0= _mm_add_epi32(t1,t2);
+t3= _mm_add_epi32(t3,t4);
+t5= _mm_add_epi32(t5,t6);
+r0= _mm_add_epi32(r0,t3);
+t7= _mm_add_epi32(t7,t8);
+r0= _mm_add_epi32(r0,t5);
+r1= _mm_add_epi32(r1,x7);
+r0= _mm_add_epi32(r0,t7);
+r1= _mm_srli_epi32(r1,6);
+r0= _mm_srli_epi32(r0,6);
+
+    r1= _mm_and_si128(r1,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_and_si128(r0,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_hadd_epi16(r0,r1);
+    _mm_store_si128((__m128i*)&dst[x],r0);
+
+}
+tmp += MAX_PB_SIZE;
+dst += dststride;
+}
+}
+void ff_hevc_put_hevc_qpel_h_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+uint8_t *_src, ptrdiff_t _srcstride,
+int width, int height, int16_t* mcbuffer)
+{
+int x, y, temp1;
+uint8_t *src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
+/*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
+int16_t *tmp = mcbuffer;
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
+__m128i t1,t2,t3,t4,t5,t6,t7,t8;
+
+src -= qpel_extra_before[1] * srcstride;
+r0= _mm_set_epi8(-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1 ,-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1);
+
+/* LOAD src from memory to registers to limit memory bandwidth */
+if(width == 4){
+
+for (y = 0; y < height + qpel_extra[1]; y+=2) {
+/* load data in register     */
+    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    src += srcstride;
+    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+    t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
+    x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+    t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
+
+/*  PMADDUBSW then PMADDW     */
+    x2= _mm_maddubs_epi16(x2,r0);
+        t2= _mm_maddubs_epi16(t2,r0);
+    x3= _mm_maddubs_epi16(x3,r0);
+        t3= _mm_maddubs_epi16(t3,r0);
+    x2= _mm_hadd_epi16(x2,x3);
+        t2= _mm_hadd_epi16(t2,t3);
+    x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
+        t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
+    x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
+        t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
+/* give results back            */
+    _mm_storel_epi64((__m128i*)&tmp[0], x2);
+
+    tmp += MAX_PB_SIZE;
+    _mm_storel_epi64((__m128i*)&tmp[0], t2);
+
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+}else
+for (y = 0; y < height + qpel_extra[1]; y++) {
+for (x = 0; x < width; x+=8)  {
+/* load data in register     */
+x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
+x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
+
+/*  PMADDUBSW then PMADDW     */
+x2= _mm_maddubs_epi16(x2,r0);
+x3= _mm_maddubs_epi16(x3,r0);
+x4= _mm_maddubs_epi16(x4,r0);
+x5= _mm_maddubs_epi16(x5,r0);
+x2= _mm_hadd_epi16(x2,x3);
+x4= _mm_hadd_epi16(x4,x5);
+x2= _mm_hadd_epi16(x2,x4);
+    x2= _mm_srli_si128(x2,BIT_DEPTH -8);
+
+/* give results back            */
+_mm_store_si128((__m128i*)&tmp[x], x2);
+
+}
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+
+
+tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+    srcstride= MAX_PB_SIZE;
+
+/* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
+for register calculations */
+rTemp= _mm_set_epi16(0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1);
+for (y = 0; y < height; y++)  {
+for (x = 0; x < width; x+=8)  {
+
+x1= _mm_load_si128((__m128i*)&tmp[x-3*srcstride]);
+x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
+x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
+x4= _mm_load_si128((__m128i*)&tmp[x]);
+x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
+x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
+x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
+x8= _mm_setzero_si128();
+
+    r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
+    r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
+    t8= _mm_mullo_epi16(x1,r0);
+    rBuffer= _mm_mulhi_epi16(x1,r0);
+        t7= _mm_mullo_epi16(x2,r1);
+    t1 = _mm_unpacklo_epi16(t8,rBuffer);
+    x1 = _mm_unpackhi_epi16(t8,rBuffer);
+
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,2));
+    rBuffer= _mm_mulhi_epi16(x2,r1);
+    t8= _mm_mullo_epi16(x3,r0);
+    t2 = _mm_unpacklo_epi16(t7,rBuffer);
+    x2 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,3));
+    rBuffer= _mm_mulhi_epi16(x3,r0);
+    t7= _mm_mullo_epi16(x4,r1);
+t3 = _mm_unpacklo_epi16(t8,rBuffer);
+x3 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,4));
+rBuffer= _mm_mulhi_epi16(x4,r1);
+    t8= _mm_mullo_epi16(x5,r0);
+t4 = _mm_unpacklo_epi16(t7,rBuffer);
+x4 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,5));
+rBuffer= _mm_mulhi_epi16(x5,r0);
+    t7= _mm_mullo_epi16(x6,r1);
+t5 = _mm_unpacklo_epi16(t8,rBuffer);
+x5 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,6));
+    rBuffer= _mm_mulhi_epi16(x6,r1);
+    t8= _mm_mullo_epi16(x7,r0);
+    t6 = _mm_unpacklo_epi16(t7,rBuffer);
+    x6 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    rBuffer= _mm_mulhi_epi16(x7,r0);
+    t7 = _mm_unpacklo_epi16(t8,rBuffer);
+    x7 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    t8 = _mm_unpacklo_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+    x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+
+
+/* add calculus by correct value : */
+
+    r1= _mm_add_epi32(x1,x2);
+    x3= _mm_add_epi32(x3,x4);
+    x5= _mm_add_epi32(x5,x6);
+    r1= _mm_add_epi32(r1,x3);
+    x7= _mm_add_epi32(x7,x8);
+    r1= _mm_add_epi32(r1,x5);
+
+r0= _mm_add_epi32(t1,t2);
+t3= _mm_add_epi32(t3,t4);
+t5= _mm_add_epi32(t5,t6);
+r0= _mm_add_epi32(r0,t3);
+t7= _mm_add_epi32(t7,t8);
+r0= _mm_add_epi32(r0,t5);
+r1= _mm_add_epi32(r1,x7);
+r0= _mm_add_epi32(r0,t7);
+r1= _mm_srli_epi32(r1,6);
+r0= _mm_srli_epi32(r0,6);
+
+    r1= _mm_and_si128(r1,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_and_si128(r0,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_hadd_epi16(r0,r1);
+    _mm_store_si128((__m128i*)&dst[x],r0);
+
+}
+tmp += MAX_PB_SIZE;
+dst += dststride;
+}
+}
+void ff_hevc_put_hevc_qpel_h_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+uint8_t *_src, ptrdiff_t _srcstride,
+int width, int height, int16_t* mcbuffer)
+{
+int x, y, temp1;
+uint8_t *src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
+/*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
+int16_t *tmp = mcbuffer;
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
+__m128i t1,t2,t3,t4,t5,t6,t7,t8;
+
+src -= qpel_extra_before[2] * srcstride;
+r0= _mm_set_epi8(-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1 ,-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1);
+
+/* LOAD src from memory to registers to limit memory bandwidth */
+if(width == 4){
+
+for (y = 0; y < height + qpel_extra[2]; y+=2) {
+/* load data in register     */
+    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    src += srcstride;
+    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+    t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
+    x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+    t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
+
+/*  PMADDUBSW then PMADDW     */
+    x2= _mm_maddubs_epi16(x2,r0);
+        t2= _mm_maddubs_epi16(t2,r0);
+    x3= _mm_maddubs_epi16(x3,r0);
+        t3= _mm_maddubs_epi16(t3,r0);
+    x2= _mm_hadd_epi16(x2,x3);
+        t2= _mm_hadd_epi16(t2,t3);
+    x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
+        t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
+    x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
+        t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
+/* give results back            */
+    _mm_storel_epi64((__m128i*)&tmp[0], x2);
+
+    tmp += MAX_PB_SIZE;
+    _mm_storel_epi64((__m128i*)&tmp[0], t2);
+
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+}else
+for (y = 0; y < height + qpel_extra[2]; y++) {
+for (x = 0; x < width; x+=8)  {
+/* load data in register     */
+x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
+x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
+
+/*  PMADDUBSW then PMADDW     */
+x2= _mm_maddubs_epi16(x2,r0);
+x3= _mm_maddubs_epi16(x3,r0);
+x4= _mm_maddubs_epi16(x4,r0);
+x5= _mm_maddubs_epi16(x5,r0);
+x2= _mm_hadd_epi16(x2,x3);
+x4= _mm_hadd_epi16(x4,x5);
+x2= _mm_hadd_epi16(x2,x4);
+    x2= _mm_srli_si128(x2,BIT_DEPTH -8);
+
+/* give results back            */
+_mm_store_si128((__m128i*)&tmp[x], x2);
+
+}
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+
+
+tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+    srcstride= MAX_PB_SIZE;
+
+/* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
+for register calculations */
+rTemp= _mm_set_epi16(-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1);
+for (y = 0; y < height; y++)  {
+for (x = 0; x < width; x+=8)  {
+
+x1= _mm_load_si128((__m128i*)&tmp[x-3*srcstride]);
+x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
+x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
+x4= _mm_load_si128((__m128i*)&tmp[x]);
+x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
+x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
+x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
+x8= _mm_load_si128((__m128i*)&tmp[x+4*srcstride]);
+
+    r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
+    r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
+    t8= _mm_mullo_epi16(x1,r0);
+    rBuffer= _mm_mulhi_epi16(x1,r0);
+        t7= _mm_mullo_epi16(x2,r1);
+    t1 = _mm_unpacklo_epi16(t8,rBuffer);
+    x1 = _mm_unpackhi_epi16(t8,rBuffer);
+
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,2));
+    rBuffer= _mm_mulhi_epi16(x2,r1);
+    t8= _mm_mullo_epi16(x3,r0);
+    t2 = _mm_unpacklo_epi16(t7,rBuffer);
+    x2 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,3));
+    rBuffer= _mm_mulhi_epi16(x3,r0);
+    t7= _mm_mullo_epi16(x4,r1);
+t3 = _mm_unpacklo_epi16(t8,rBuffer);
+x3 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,4));
+rBuffer= _mm_mulhi_epi16(x4,r1);
+    t8= _mm_mullo_epi16(x5,r0);
+t4 = _mm_unpacklo_epi16(t7,rBuffer);
+x4 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,5));
+rBuffer= _mm_mulhi_epi16(x5,r0);
+    t7= _mm_mullo_epi16(x6,r1);
+t5 = _mm_unpacklo_epi16(t8,rBuffer);
+x5 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,6));
+    rBuffer= _mm_mulhi_epi16(x6,r1);
+    t8= _mm_mullo_epi16(x7,r0);
+    t6 = _mm_unpacklo_epi16(t7,rBuffer);
+    x6 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    rBuffer= _mm_mulhi_epi16(x7,r0);
+    t7 = _mm_unpacklo_epi16(t8,rBuffer);
+    x7 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    t8 = _mm_unpacklo_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+    x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+
+
+/* add calculus by correct value : */
+
+    r1= _mm_add_epi32(x1,x2);
+    x3= _mm_add_epi32(x3,x4);
+    x5= _mm_add_epi32(x5,x6);
+    r1= _mm_add_epi32(r1,x3);
+    x7= _mm_add_epi32(x7,x8);
+    r1= _mm_add_epi32(r1,x5);
+
+r0= _mm_add_epi32(t1,t2);
+t3= _mm_add_epi32(t3,t4);
+t5= _mm_add_epi32(t5,t6);
+r0= _mm_add_epi32(r0,t3);
+t7= _mm_add_epi32(t7,t8);
+r0= _mm_add_epi32(r0,t5);
+r1= _mm_add_epi32(r1,x7);
+r0= _mm_add_epi32(r0,t7);
+r1= _mm_srli_epi32(r1,6);
+r0= _mm_srli_epi32(r0,6);
+
+    r1= _mm_and_si128(r1,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_and_si128(r0,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_hadd_epi16(r0,r1);
+    _mm_store_si128((__m128i*)&dst[x],r0);
+
+}
+tmp += MAX_PB_SIZE;
+dst += dststride;
+}
+}
+void ff_hevc_put_hevc_qpel_h_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+uint8_t *_src, ptrdiff_t _srcstride,
+int width, int height, int16_t* mcbuffer)
+{
+int x, y, temp1;
+uint8_t *src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
+/*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
+int16_t *tmp = mcbuffer;
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
+__m128i t1,t2,t3,t4,t5,t6,t7,t8;
+
+src -= qpel_extra_before[3] * srcstride;
+r0= _mm_set_epi8(-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1 ,-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1);
+
+/* LOAD src from memory to registers to limit memory bandwidth */
+if(width == 4){
+
+for (y = 0; y < height + qpel_extra[3]; y+=2) {
+/* load data in register     */
+    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    src += srcstride;
+    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+    t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
+    x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+    t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
+
+/*  PMADDUBSW then PMADDW     */
+    x2= _mm_maddubs_epi16(x2,r0);
+        t2= _mm_maddubs_epi16(t2,r0);
+    x3= _mm_maddubs_epi16(x3,r0);
+        t3= _mm_maddubs_epi16(t3,r0);
+    x2= _mm_hadd_epi16(x2,x3);
+        t2= _mm_hadd_epi16(t2,t3);
+    x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
+        t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
+    x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
+        t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
+/* give results back            */
+    _mm_storel_epi64((__m128i*)&tmp[0], x2);
+
+    tmp += MAX_PB_SIZE;
+    _mm_storel_epi64((__m128i*)&tmp[0], t2);
+
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+}else
+for (y = 0; y < height + qpel_extra[3]; y++) {
+for (x = 0; x < width; x+=8)  {
+/* load data in register     */
+x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
+x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
+
+/*  PMADDUBSW then PMADDW     */
+x2= _mm_maddubs_epi16(x2,r0);
+x3= _mm_maddubs_epi16(x3,r0);
+x4= _mm_maddubs_epi16(x4,r0);
+x5= _mm_maddubs_epi16(x5,r0);
+x2= _mm_hadd_epi16(x2,x3);
+x4= _mm_hadd_epi16(x4,x5);
+x2= _mm_hadd_epi16(x2,x4);
+    x2= _mm_srli_si128(x2,BIT_DEPTH -8);
+
+/* give results back            */
+_mm_store_si128((__m128i*)&tmp[x], x2);
+
+}
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+
+
+tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+    srcstride= MAX_PB_SIZE;
+
+/* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
+for register calculations */
+rTemp= _mm_set_epi16(-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0);
+for (y = 0; y < height; y++)  {
+for (x = 0; x < width; x+=8)  {
+
+x1= _mm_setzero_si128();
+x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
+x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
+x4= _mm_load_si128((__m128i*)&tmp[x]);
+x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
+x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
+x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
+x8= _mm_load_si128((__m128i*)&tmp[x+4*srcstride]);
+
+    r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
+    r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
+    t8= _mm_mullo_epi16(x1,r0);
+    rBuffer= _mm_mulhi_epi16(x1,r0);
+        t7= _mm_mullo_epi16(x2,r1);
+    t1 = _mm_unpacklo_epi16(t8,rBuffer);
+    x1 = _mm_unpackhi_epi16(t8,rBuffer);
+
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,2));
+    rBuffer= _mm_mulhi_epi16(x2,r1);
+    t8= _mm_mullo_epi16(x3,r0);
+    t2 = _mm_unpacklo_epi16(t7,rBuffer);
+    x2 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,3));
+    rBuffer= _mm_mulhi_epi16(x3,r0);
+    t7= _mm_mullo_epi16(x4,r1);
+t3 = _mm_unpacklo_epi16(t8,rBuffer);
+x3 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,4));
+rBuffer= _mm_mulhi_epi16(x4,r1);
+    t8= _mm_mullo_epi16(x5,r0);
+t4 = _mm_unpacklo_epi16(t7,rBuffer);
+x4 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,5));
+rBuffer= _mm_mulhi_epi16(x5,r0);
+    t7= _mm_mullo_epi16(x6,r1);
+t5 = _mm_unpacklo_epi16(t8,rBuffer);
+x5 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,6));
+    rBuffer= _mm_mulhi_epi16(x6,r1);
+    t8= _mm_mullo_epi16(x7,r0);
+    t6 = _mm_unpacklo_epi16(t7,rBuffer);
+    x6 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    rBuffer= _mm_mulhi_epi16(x7,r0);
+    t7 = _mm_unpacklo_epi16(t8,rBuffer);
+    x7 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    t8 = _mm_unpacklo_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+    x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+
+
+/* add calculus by correct value : */
+
+    r1= _mm_add_epi32(x1,x2);
+    x3= _mm_add_epi32(x3,x4);
+    x5= _mm_add_epi32(x5,x6);
+    r1= _mm_add_epi32(r1,x3);
+    x7= _mm_add_epi32(x7,x8);
+    r1= _mm_add_epi32(r1,x5);
+
+r0= _mm_add_epi32(t1,t2);
+t3= _mm_add_epi32(t3,t4);
+t5= _mm_add_epi32(t5,t6);
+r0= _mm_add_epi32(r0,t3);
+t7= _mm_add_epi32(t7,t8);
+r0= _mm_add_epi32(r0,t5);
+r1= _mm_add_epi32(r1,x7);
+r0= _mm_add_epi32(r0,t7);
+r1= _mm_srli_epi32(r1,6);
+r0= _mm_srli_epi32(r0,6);
+
+    r1= _mm_and_si128(r1,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_and_si128(r0,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_hadd_epi16(r0,r1);
+    _mm_store_si128((__m128i*)&dst[x],r0);
+
+}
+tmp += MAX_PB_SIZE;
+dst += dststride;
+}
+}
+void ff_hevc_put_hevc_qpel_h_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+uint8_t *_src, ptrdiff_t _srcstride,
+int width, int height, int16_t* mcbuffer)
+{
+int x, y, temp1;
+uint8_t *src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
+/*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
+int16_t *tmp = mcbuffer;
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
+__m128i t1,t2,t3,t4,t5,t6,t7,t8;
+
+src -= qpel_extra_before[1] * srcstride;
+r0= _mm_set_epi8(-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0 ,-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0);
+
+/* LOAD src from memory to registers to limit memory bandwidth */
+if(width == 4){
+
+for (y = 0; y < height + qpel_extra[1]; y+=2) {
+/* load data in register     */
+    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    src += srcstride;
+    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+    t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
+    x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+    t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
+
+/*  PMADDUBSW then PMADDW     */
+    x2= _mm_maddubs_epi16(x2,r0);
+        t2= _mm_maddubs_epi16(t2,r0);
+    x3= _mm_maddubs_epi16(x3,r0);
+        t3= _mm_maddubs_epi16(t3,r0);
+    x2= _mm_hadd_epi16(x2,x3);
+        t2= _mm_hadd_epi16(t2,t3);
+    x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
+        t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
+    x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
+        t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
+/* give results back            */
+    _mm_storel_epi64((__m128i*)&tmp[0], x2);
+
+    tmp += MAX_PB_SIZE;
+    _mm_storel_epi64((__m128i*)&tmp[0], t2);
+
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+}else
+for (y = 0; y < height + qpel_extra[1]; y++) {
+for (x = 0; x < width; x+=8)  {
+/* load data in register     */
+x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
+x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
+
+/*  PMADDUBSW then PMADDW     */
+x2= _mm_maddubs_epi16(x2,r0);
+x3= _mm_maddubs_epi16(x3,r0);
+x4= _mm_maddubs_epi16(x4,r0);
+x5= _mm_maddubs_epi16(x5,r0);
+x2= _mm_hadd_epi16(x2,x3);
+x4= _mm_hadd_epi16(x4,x5);
+x2= _mm_hadd_epi16(x2,x4);
+    x2= _mm_srli_si128(x2,BIT_DEPTH -8);
+
+/* give results back            */
+_mm_store_si128((__m128i*)&tmp[x], x2);
+
+}
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+
+
+tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+    srcstride= MAX_PB_SIZE;
+
+/* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
+for register calculations */
+rTemp= _mm_set_epi16(0 ,1 ,-5 ,17 ,58 ,-10 ,4 ,-1);
+for (y = 0; y < height; y++)  {
+for (x = 0; x < width; x+=8)  {
+
+x1= _mm_load_si128((__m128i*)&tmp[x-3*srcstride]);
+x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
+x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
+x4= _mm_load_si128((__m128i*)&tmp[x]);
+x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
+x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
+x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
+x8= _mm_setzero_si128();
+
+    r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
+    r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
+    t8= _mm_mullo_epi16(x1,r0);
+    rBuffer= _mm_mulhi_epi16(x1,r0);
+        t7= _mm_mullo_epi16(x2,r1);
+    t1 = _mm_unpacklo_epi16(t8,rBuffer);
+    x1 = _mm_unpackhi_epi16(t8,rBuffer);
+
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,2));
+    rBuffer= _mm_mulhi_epi16(x2,r1);
+    t8= _mm_mullo_epi16(x3,r0);
+    t2 = _mm_unpacklo_epi16(t7,rBuffer);
+    x2 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,3));
+    rBuffer= _mm_mulhi_epi16(x3,r0);
+    t7= _mm_mullo_epi16(x4,r1);
+t3 = _mm_unpacklo_epi16(t8,rBuffer);
+x3 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,4));
+rBuffer= _mm_mulhi_epi16(x4,r1);
+    t8= _mm_mullo_epi16(x5,r0);
+t4 = _mm_unpacklo_epi16(t7,rBuffer);
+x4 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,5));
+rBuffer= _mm_mulhi_epi16(x5,r0);
+    t7= _mm_mullo_epi16(x6,r1);
+t5 = _mm_unpacklo_epi16(t8,rBuffer);
+x5 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,6));
+    rBuffer= _mm_mulhi_epi16(x6,r1);
+    t8= _mm_mullo_epi16(x7,r0);
+    t6 = _mm_unpacklo_epi16(t7,rBuffer);
+    x6 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    rBuffer= _mm_mulhi_epi16(x7,r0);
+    t7 = _mm_unpacklo_epi16(t8,rBuffer);
+    x7 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    t8 = _mm_unpacklo_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+    x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+
+
+/* add calculus by correct value : */
+
+    r1= _mm_add_epi32(x1,x2);
+    x3= _mm_add_epi32(x3,x4);
+    x5= _mm_add_epi32(x5,x6);
+    r1= _mm_add_epi32(r1,x3);
+    x7= _mm_add_epi32(x7,x8);
+    r1= _mm_add_epi32(r1,x5);
+
+r0= _mm_add_epi32(t1,t2);
+t3= _mm_add_epi32(t3,t4);
+t5= _mm_add_epi32(t5,t6);
+r0= _mm_add_epi32(r0,t3);
+t7= _mm_add_epi32(t7,t8);
+r0= _mm_add_epi32(r0,t5);
+r1= _mm_add_epi32(r1,x7);
+r0= _mm_add_epi32(r0,t7);
+r1= _mm_srli_epi32(r1,6);
+r0= _mm_srli_epi32(r0,6);
+
+    r1= _mm_and_si128(r1,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_and_si128(r0,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_hadd_epi16(r0,r1);
+    _mm_store_si128((__m128i*)&dst[x],r0);
+
+}
+tmp += MAX_PB_SIZE;
+dst += dststride;
+}
+}
+void ff_hevc_put_hevc_qpel_h_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+uint8_t *_src, ptrdiff_t _srcstride,
+int width, int height, int16_t* mcbuffer)
+{
+int x, y, temp1;
+uint8_t *src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
+/*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
+int16_t *tmp = mcbuffer;
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
+__m128i t1,t2,t3,t4,t5,t6,t7,t8;
+
+src -= qpel_extra_before[2] * srcstride;
+r0= _mm_set_epi8(-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0 ,-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0);
+
+/* LOAD src from memory to registers to limit memory bandwidth */
+if(width == 4){
+
+for (y = 0; y < height + qpel_extra[2]; y+=2) {
+/* load data in register     */
+    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    src += srcstride;
+    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+    t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
+    x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+    t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
+
+/*  PMADDUBSW then PMADDW     */
+    x2= _mm_maddubs_epi16(x2,r0);
+        t2= _mm_maddubs_epi16(t2,r0);
+    x3= _mm_maddubs_epi16(x3,r0);
+        t3= _mm_maddubs_epi16(t3,r0);
+    x2= _mm_hadd_epi16(x2,x3);
+        t2= _mm_hadd_epi16(t2,t3);
+    x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
+        t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
+    x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
+        t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
+/* give results back            */
+    _mm_storel_epi64((__m128i*)&tmp[0], x2);
+
+    tmp += MAX_PB_SIZE;
+    _mm_storel_epi64((__m128i*)&tmp[0], t2);
+
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+}else
+for (y = 0; y < height + qpel_extra[2]; y++) {
+for (x = 0; x < width; x+=8)  {
+/* load data in register     */
+x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
+x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
+
+/*  PMADDUBSW then PMADDW     */
+x2= _mm_maddubs_epi16(x2,r0);
+x3= _mm_maddubs_epi16(x3,r0);
+x4= _mm_maddubs_epi16(x4,r0);
+x5= _mm_maddubs_epi16(x5,r0);
+x2= _mm_hadd_epi16(x2,x3);
+x4= _mm_hadd_epi16(x4,x5);
+x2= _mm_hadd_epi16(x2,x4);
+    x2= _mm_srli_si128(x2,BIT_DEPTH -8);
+
+/* give results back            */
+_mm_store_si128((__m128i*)&tmp[x], x2);
+
+}
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+
+
+tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+    srcstride= MAX_PB_SIZE;
+
+/* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
+for register calculations */
+rTemp= _mm_set_epi16(-1 ,4 ,-11 ,40 ,40 ,-11 ,4 ,-1);
+for (y = 0; y < height; y++)  {
+for (x = 0; x < width; x+=8)  {
+
+x1= _mm_load_si128((__m128i*)&tmp[x-3*srcstride]);
+x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
+x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
+x4= _mm_load_si128((__m128i*)&tmp[x]);
+x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
+x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
+x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
+x8= _mm_load_si128((__m128i*)&tmp[x+4*srcstride]);
+
+    r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
+    r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
+    t8= _mm_mullo_epi16(x1,r0);
+    rBuffer= _mm_mulhi_epi16(x1,r0);
+        t7= _mm_mullo_epi16(x2,r1);
+    t1 = _mm_unpacklo_epi16(t8,rBuffer);
+    x1 = _mm_unpackhi_epi16(t8,rBuffer);
+
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,2));
+    rBuffer= _mm_mulhi_epi16(x2,r1);
+    t8= _mm_mullo_epi16(x3,r0);
+    t2 = _mm_unpacklo_epi16(t7,rBuffer);
+    x2 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,3));
+    rBuffer= _mm_mulhi_epi16(x3,r0);
+    t7= _mm_mullo_epi16(x4,r1);
+t3 = _mm_unpacklo_epi16(t8,rBuffer);
+x3 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,4));
+rBuffer= _mm_mulhi_epi16(x4,r1);
+    t8= _mm_mullo_epi16(x5,r0);
+t4 = _mm_unpacklo_epi16(t7,rBuffer);
+x4 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,5));
+rBuffer= _mm_mulhi_epi16(x5,r0);
+    t7= _mm_mullo_epi16(x6,r1);
+t5 = _mm_unpacklo_epi16(t8,rBuffer);
+x5 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,6));
+    rBuffer= _mm_mulhi_epi16(x6,r1);
+    t8= _mm_mullo_epi16(x7,r0);
+    t6 = _mm_unpacklo_epi16(t7,rBuffer);
+    x6 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    rBuffer= _mm_mulhi_epi16(x7,r0);
+    t7 = _mm_unpacklo_epi16(t8,rBuffer);
+    x7 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    t8 = _mm_unpacklo_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+    x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+
+
+/* add calculus by correct value : */
+
+    r1= _mm_add_epi32(x1,x2);
+    x3= _mm_add_epi32(x3,x4);
+    x5= _mm_add_epi32(x5,x6);
+    r1= _mm_add_epi32(r1,x3);
+    x7= _mm_add_epi32(x7,x8);
+    r1= _mm_add_epi32(r1,x5);
+
+r0= _mm_add_epi32(t1,t2);
+t3= _mm_add_epi32(t3,t4);
+t5= _mm_add_epi32(t5,t6);
+r0= _mm_add_epi32(r0,t3);
+t7= _mm_add_epi32(t7,t8);
+r0= _mm_add_epi32(r0,t5);
+r1= _mm_add_epi32(r1,x7);
+r0= _mm_add_epi32(r0,t7);
+r1= _mm_srli_epi32(r1,6);
+r0= _mm_srli_epi32(r0,6);
+
+    r1= _mm_and_si128(r1,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_and_si128(r0,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_hadd_epi16(r0,r1);
+    _mm_store_si128((__m128i*)&dst[x],r0);
+
+}
+tmp += MAX_PB_SIZE;
+dst += dststride;
+}
+}
+void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+uint8_t *_src, ptrdiff_t _srcstride,
+int width, int height, int16_t* mcbuffer)
+{
+int x, y, temp1;
+uint8_t *src = (uint8_t*)_src;
+ptrdiff_t srcstride = _srcstride/sizeof(uint8_t);
+/*DECLARE_ALIGNED( 16, int16_t, tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE] );*/
+/* int16_t tmp_array[(MAX_PB_SIZE+7)*MAX_PB_SIZE];     */
+int16_t *tmp = mcbuffer;
+__m128i x1,x2,x3,x4,x5,x6,x7,x8, rBuffer, rTemp, r0, r1, r2;
+__m128i t1,t2,t3,t4,t5,t6,t7,t8;
+
+src -= qpel_extra_before[3] * srcstride;
+r0= _mm_set_epi8(-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0 ,-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0);
+
+/* LOAD src from memory to registers to limit memory bandwidth */
+if(width == 4){
+
+for (y = 0; y < height + qpel_extra[3]; y+=2) {
+/* load data in register     */
+    x1= _mm_loadu_si128((__m128i*)&src[-3]);
+    src += srcstride;
+    t1= _mm_loadu_si128((__m128i*)&src[-3]);
+    x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+    t2= _mm_unpacklo_epi64(t1,_mm_srli_si128(t1,1));
+    x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+    t3= _mm_unpacklo_epi64(_mm_srli_si128(t1,2),_mm_srli_si128(t1,3));
+
+/*  PMADDUBSW then PMADDW     */
+    x2= _mm_maddubs_epi16(x2,r0);
+        t2= _mm_maddubs_epi16(t2,r0);
+    x3= _mm_maddubs_epi16(x3,r0);
+        t3= _mm_maddubs_epi16(t3,r0);
+    x2= _mm_hadd_epi16(x2,x3);
+        t2= _mm_hadd_epi16(t2,t3);
+    x2= _mm_hadd_epi16(x2,_mm_set1_epi16(0));
+        t2= _mm_hadd_epi16(t2,_mm_set1_epi16(0));
+    x2= _mm_srli_epi16(x2, BIT_DEPTH - 8);
+        t2= _mm_srli_epi16(t2, BIT_DEPTH - 8);
+/* give results back            */
+    _mm_storel_epi64((__m128i*)&tmp[0], x2);
+
+    tmp += MAX_PB_SIZE;
+    _mm_storel_epi64((__m128i*)&tmp[0], t2);
+
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+}else
+for (y = 0; y < height + qpel_extra[3]; y++) {
+for (x = 0; x < width; x+=8)  {
+/* load data in register     */
+x1= _mm_loadu_si128((__m128i*)&src[x-3]);
+x2= _mm_unpacklo_epi64(x1,_mm_srli_si128(x1,1));
+x3= _mm_unpacklo_epi64(_mm_srli_si128(x1,2),_mm_srli_si128(x1,3));
+x4= _mm_unpacklo_epi64(_mm_srli_si128(x1,4),_mm_srli_si128(x1,5));
+x5= _mm_unpacklo_epi64(_mm_srli_si128(x1,6),_mm_srli_si128(x1,7));
+
+/*  PMADDUBSW then PMADDW     */
+x2= _mm_maddubs_epi16(x2,r0);
+x3= _mm_maddubs_epi16(x3,r0);
+x4= _mm_maddubs_epi16(x4,r0);
+x5= _mm_maddubs_epi16(x5,r0);
+x2= _mm_hadd_epi16(x2,x3);
+x4= _mm_hadd_epi16(x4,x5);
+x2= _mm_hadd_epi16(x2,x4);
+    x2= _mm_srli_si128(x2,BIT_DEPTH -8);
+
+/* give results back            */
+_mm_store_si128((__m128i*)&tmp[x], x2);
+
+}
+src += srcstride;
+tmp += MAX_PB_SIZE;
+}
+
+
+tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+    srcstride= MAX_PB_SIZE;
+
+/* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
+for register calculations */
+rTemp= _mm_set_epi16(-1 ,4 ,-10 ,58 ,17 ,-5 ,1 ,0);
+for (y = 0; y < height; y++)  {
+for (x = 0; x < width; x+=8)  {
+
+x1= _mm_setzero_si128();
+x2= _mm_load_si128((__m128i*)&tmp[x-2*srcstride]);
+x3= _mm_load_si128((__m128i*)&tmp[x-srcstride]);
+x4= _mm_load_si128((__m128i*)&tmp[x]);
+x5= _mm_load_si128((__m128i*)&tmp[x+srcstride]);
+x6= _mm_load_si128((__m128i*)&tmp[x+2*srcstride]);
+x7= _mm_load_si128((__m128i*)&tmp[x+3*srcstride]);
+x8= _mm_load_si128((__m128i*)&tmp[x+4*srcstride]);
+
+    r0= _mm_set1_epi16(_mm_extract_epi16(rTemp,0));
+    r1= _mm_set1_epi16(_mm_extract_epi16(rTemp,1));
+    t8= _mm_mullo_epi16(x1,r0);
+    rBuffer= _mm_mulhi_epi16(x1,r0);
+        t7= _mm_mullo_epi16(x2,r1);
+    t1 = _mm_unpacklo_epi16(t8,rBuffer);
+    x1 = _mm_unpackhi_epi16(t8,rBuffer);
+
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,2));
+    rBuffer= _mm_mulhi_epi16(x2,r1);
+    t8= _mm_mullo_epi16(x3,r0);
+    t2 = _mm_unpacklo_epi16(t7,rBuffer);
+    x2 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,3));
+    rBuffer= _mm_mulhi_epi16(x3,r0);
+    t7= _mm_mullo_epi16(x4,r1);
+t3 = _mm_unpacklo_epi16(t8,rBuffer);
+x3 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,4));
+rBuffer= _mm_mulhi_epi16(x4,r1);
+    t8= _mm_mullo_epi16(x5,r0);
+t4 = _mm_unpacklo_epi16(t7,rBuffer);
+x4 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    r1=_mm_set1_epi16(_mm_extract_epi16(rTemp,5));
+rBuffer= _mm_mulhi_epi16(x5,r0);
+    t7= _mm_mullo_epi16(x6,r1);
+t5 = _mm_unpacklo_epi16(t8,rBuffer);
+x5 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    r0=_mm_set1_epi16(_mm_extract_epi16(rTemp,6));
+    rBuffer= _mm_mulhi_epi16(x6,r1);
+    t8= _mm_mullo_epi16(x7,r0);
+    t6 = _mm_unpacklo_epi16(t7,rBuffer);
+    x6 = _mm_unpackhi_epi16(t7,rBuffer);
+
+    rBuffer= _mm_mulhi_epi16(x7,r0);
+    t7 = _mm_unpacklo_epi16(t8,rBuffer);
+    x7 = _mm_unpackhi_epi16(t8,rBuffer);
+
+    t8 = _mm_unpacklo_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+    x8 = _mm_unpackhi_epi16(_mm_mullo_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))),_mm_mulhi_epi16(x8,_mm_set1_epi16(_mm_extract_epi16(rTemp,7))));
+
+
+/* add calculus by correct value : */
+
+    r1= _mm_add_epi32(x1,x2);
+    x3= _mm_add_epi32(x3,x4);
+    x5= _mm_add_epi32(x5,x6);
+    r1= _mm_add_epi32(r1,x3);
+    x7= _mm_add_epi32(x7,x8);
+    r1= _mm_add_epi32(r1,x5);
+
+r0= _mm_add_epi32(t1,t2);
+t3= _mm_add_epi32(t3,t4);
+t5= _mm_add_epi32(t5,t6);
+r0= _mm_add_epi32(r0,t3);
+t7= _mm_add_epi32(t7,t8);
+r0= _mm_add_epi32(r0,t5);
+r1= _mm_add_epi32(r1,x7);
+r0= _mm_add_epi32(r0,t7);
+r1= _mm_srli_epi32(r1,6);
+r0= _mm_srli_epi32(r0,6);
+
+    r1= _mm_and_si128(r1,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_and_si128(r0,_mm_set_epi16(0,65535,0,65535,0,65535,0,65535));
+    r0= _mm_hadd_epi16(r0,r1);
+    _mm_store_si128((__m128i*)&dst[x],r0);
+
+}
+tmp += MAX_PB_SIZE;
+dst += dststride;
+}
+}
 
 
 
