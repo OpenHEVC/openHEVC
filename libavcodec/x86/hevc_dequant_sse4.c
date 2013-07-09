@@ -5,7 +5,6 @@
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
 
-#ifdef ARCH_X86_64
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
@@ -452,5 +451,3 @@ void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp) {
         _mm_store_si128((__m128i *) &coeffs[56 + x], c6);
     }
 }
-
-#endif

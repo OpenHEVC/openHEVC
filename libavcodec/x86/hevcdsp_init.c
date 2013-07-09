@@ -158,6 +158,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->put_hevc_qpel[3][1] = ff_hevc_put_hevc_qpel_h_1_v_3_sse;
                 	c->put_hevc_qpel[3][2] = ff_hevc_put_hevc_qpel_h_2_v_3_sse;
                 	c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
+#endif
 
 
                 	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
@@ -177,7 +178,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                     c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
                     c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
                     c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
-#endif
                     }
                 if (EXTERNAL_AVX(mm_flags)) {
 

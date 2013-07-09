@@ -10,7 +10,7 @@
 #define EXTERN_PREFIX "_"
 #else
 	#define restrict
-    #ifdef X86_32
+    #ifdef __MINGW32__
         #ifdef __MINGW64__
         #define EXTERN_PREFIX ""
         #else
