@@ -10,7 +10,7 @@
 #define EXTERN_PREFIX "_"
 #else
 	#define restrict
-    #ifdef __MINGW32__
+    #ifdef CONFIG_X86_32
         #ifdef __MINGW64__
         #define EXTERN_PREFIX ""
         #else
@@ -44,7 +44,7 @@
 #define ARCH_TILEPRO 0
 #define ARCH_TOMI 0
 #define ARCH_X86 1
-#ifdef __i386
+#ifdef CONFIG_X86_32
 #define ARCH_X86_32 1
 #define ARCH_X86_64 0
 #else
