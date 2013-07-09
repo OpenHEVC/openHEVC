@@ -54,8 +54,8 @@ SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -fPIC -Wl,-Bsymbolic -
 SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
 endif(MINGW)
 ELSE("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_32")
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
-SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DX86_32 -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
+SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -DX86_32 -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
 
