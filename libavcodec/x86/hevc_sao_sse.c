@@ -1,9 +1,11 @@
+#include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
 
+#ifdef ARCH_X86_64
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
@@ -1076,3 +1078,4 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
         }
     }
 }
+#endif

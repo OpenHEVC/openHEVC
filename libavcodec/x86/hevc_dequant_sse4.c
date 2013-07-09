@@ -1,14 +1,16 @@
+#include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
 
+#ifdef ARCH_X86_64
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
-
 #define BIT_DEPTH 8
+
 void ff_hevc_dequant4x4_sse4(int16_t *coeffs, int qp) {
     __m128i c0, c1, f0, f1, c2, c3;
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
@@ -318,8 +320,7 @@ void ff_hevc_dequant16x16_sse4(int16_t *coeffs, int qp) {
 }
 
 void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp) {
-    int x, y;
-    int size = 32;
+    int x;
     __m128i c0, c1, c2, c3, c4, c5, c6, c7, f0, f1;
 
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
@@ -451,3 +452,5 @@ void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp) {
         _mm_store_si128((__m128i *) &coeffs[56 + x], c6);
     }
 }
+
+#endif

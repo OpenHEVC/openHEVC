@@ -1,9 +1,11 @@
+#include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
 
+#ifdef ARCH_X86_64
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
@@ -3140,4 +3142,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 }
+
+#endif
+
 

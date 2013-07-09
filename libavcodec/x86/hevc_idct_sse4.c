@@ -1,8 +1,12 @@
+#include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
+
+#ifdef ARCH_X86_64
+
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
@@ -3088,3 +3092,5 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         }
     }
 }
+
+#endif
