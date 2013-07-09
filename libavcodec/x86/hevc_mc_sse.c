@@ -10,6 +10,7 @@
 
 #define BIT_DEPTH 8
 
+
 void ff_hevc_put_unweighted_pred_sse(uint8_t *_dst, ptrdiff_t _dststride,
         int16_t *src, ptrdiff_t srcstride, int width, int height) {
     int x, y;
