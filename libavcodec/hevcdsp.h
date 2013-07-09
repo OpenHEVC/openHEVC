@@ -39,9 +39,9 @@ typedef struct HEVCDSPContext {
 
     void (*transform_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t _stride);
 
-    void (*sao_band_filter)( uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx, int class_index);
+    void (*sao_band_filter[4])( uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx, int class_index);
 
-    void (*sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, int class_index);
+    void (*sao_edge_filter[4])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, int class_index);
 
 
     void (*put_hevc_qpel[4][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,

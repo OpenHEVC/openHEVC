@@ -64,6 +64,7 @@ libavcodec/x86/hevcdsp_init.c
 libavcodec/x86/hevc_dequant_sse4.c
 libavcodec/x86/hevc_idct_sse4.c
 libavcodec/x86/hevc_mc_sse.c
+libavcodec/x86/hevc_sao_sse.c
 libavcodec/allcodecs.c
 libavcodec/avpacket.c
 libavcodec/avpicture.c

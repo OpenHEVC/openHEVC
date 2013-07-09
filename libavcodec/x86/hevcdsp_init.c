@@ -89,6 +89,13 @@ void ff_hevc_put_hevc_qpel_h_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,uint8_t
 void ff_hevc_put_hevc_qpel_h_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int16_t* mcbuffer);
 void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int16_t* mcbuffer);
 
+// SAO functions
+
+void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx);
+void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx);
+void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx);
+void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx);
+
 
 //LF_FUNCS(uint16_t, 10)
 
@@ -126,6 +133,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->weighted_pred = ff_hevc_weighted_pred_sse;
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_sse;
 
+
                 	c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_sse;
                 	c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_sse;
                 	c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_sse;
@@ -150,7 +158,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
 
 
-
+                	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
+                	c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
+                	c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_2_8_sse;
+                	c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_3_8_sse;
 
 
                     c->dequant[0] = ff_hevc_dequant4x4_sse4;
