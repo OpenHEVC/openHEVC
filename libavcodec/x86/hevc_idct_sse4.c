@@ -21,11 +21,9 @@
 
 void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         ptrdiff_t _stride) {
-    int i;
     uint8_t *dst = (uint8_t*) _dst;
     ptrdiff_t stride = _stride;
     int16_t *src = coeffs;
-    int j;
     __m128i m128iAdd, S0, S8, m128iTmp1, m128iTmp2, m128iAC, m128iBD, m128iA,
             m128iD;
     m128iAdd = _mm_set1_epi32(64);
@@ -168,11 +166,9 @@ void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
 
 void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         ptrdiff_t _stride) {
-    int i;
     uint8_t *dst = (uint8_t*) _dst;
     ptrdiff_t stride = _stride;
     int16_t *src = coeffs;
-    int j;
     __m128i S0, S8, m128iAdd, m128Tmp, E1, E2, O1, O2, m128iA, m128iD, m128iTmp1,m128iTmp2;
     S0 = _mm_load_si128((__m128i *) (src));
     S8 = _mm_load_si128((__m128i *) (src + 8));
@@ -281,7 +277,6 @@ void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
 
 void ff_hevc_transform_8x8_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         ptrdiff_t _stride) {
-    int i;
     uint8_t *dst = (uint8_t*) _dst;
     ptrdiff_t stride = _stride / sizeof(uint8_t);
     int16_t *src = coeffs;
@@ -302,7 +297,6 @@ void ff_hevc_transform_8x8_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
     T9= _mm_load_si128((__m128i *) (transform8x8[9]));
     T10= _mm_load_si128((__m128i *) (transform8x8[10]));
     T11= _mm_load_si128((__m128i *) (transform8x8[11]));
-    int j;
     m128iAdd = _mm_set1_epi32(add_1st);
 
     m128iS1 = _mm_load_si128((__m128i *) (src + 8));
