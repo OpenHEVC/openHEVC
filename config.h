@@ -44,7 +44,7 @@
 #define ARCH_TILEPRO 0
 #define ARCH_TOMI 0
 #define ARCH_X86 1
-#ifdef __i386
+#ifdef X86_32
 #define ARCH_X86_32 1
 #define ARCH_X86_64 0
 #else

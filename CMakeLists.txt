@@ -16,7 +16,11 @@ libavutil/x86/cpuid
 if(APPLE)
 SET(YASM_ARGS -f macho64 -m amd64 -DPIC -DPREFIX -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
 else(APPLE)
-SET(YASM_ARGS -f elf     -m amd64 -DPIC -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+IF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+ SET(YASM_ARGS -f elf     -m amd64 -DPIC -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+ELSE("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+SET(YASM_ARGS -f elf    -DX86_32 -DPIC -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 endif(APPLE)
 
 #compile all asm files
@@ -53,7 +57,11 @@ else(MINGW)
 SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
 SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
 endif(MINGW)
+ELSE("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_32")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DX86_32 -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
+SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -DX86_32 -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
 ENDIF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+
 
 find_package(SDL)
 find_package(SDL2)

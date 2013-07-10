@@ -1,3 +1,4 @@
+#include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/get_bits.h"

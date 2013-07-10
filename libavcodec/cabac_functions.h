@@ -31,9 +31,10 @@
 
 #include "cabac.h"
 #include "config.h"
-
+#ifndef X86_32
 #if ARCH_X86
 #   include "x86/cabac.h"
+#endif
 #endif
 
 extern uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
