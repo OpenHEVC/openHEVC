@@ -5,7 +5,7 @@
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
 
-#ifdef ARCH_X86_64
+#if ARCH_X86_64
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
