@@ -6,7 +6,7 @@
 #include "libavcodec/hevc.h"
 
 #if ARCH_X86_64
-#if GCC_VERSION > MIN_GCC_VERSION_MC
+#if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
