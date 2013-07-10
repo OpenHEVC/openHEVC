@@ -1077,4 +1077,3 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
         }
     }
 }
-#endif
