@@ -136,6 +136,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
 #if ARCH_X86_64
+#if GCC_VERSION > 40400
                 	c->put_unweighted_pred = ff_hevc_put_unweighted_pred_sse;
                 	c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_sse;
                 	c->weighted_pred = ff_hevc_weighted_pred_sse;
@@ -164,6 +165,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->put_hevc_qpel[3][1] = ff_hevc_put_hevc_qpel_h_1_v_3_sse;
                 	c->put_hevc_qpel[3][2] = ff_hevc_put_hevc_qpel_h_2_v_3_sse;
                 	c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
+#endif
 #endif
 
 
