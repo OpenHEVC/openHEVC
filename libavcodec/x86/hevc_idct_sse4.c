@@ -123,16 +123,16 @@ void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
     _mm_storeu_si128((__m128i *) (src + 8), m128iD);
     j = 0;
     for (i = 0; i < 2; i++) {
-        dst[0] = av_clip_uint8(dst[0] + av_clip_int16(src[j]));
-        dst[1] = av_clip_uint8(dst[1] + av_clip_int16(src[j + 4]));
-        dst[2] = av_clip_uint8(dst[2] + av_clip_int16(src[j + 8]));
-        dst[3] = av_clip_uint8(dst[3] + av_clip_int16(src[j + 12]));
+        dst[0] = av_clip_uint8(dst[0] + src[j]);
+        dst[1] = av_clip_uint8(dst[1] + src[j + 4]);
+        dst[2] = av_clip_uint8(dst[2] + src[j + 8]);
+        dst[3] = av_clip_uint8(dst[3] + src[j + 12]);
         j += 1;
         dst += stride;
-        dst[0] = av_clip_uint8(dst[0] + av_clip_int16(src[j]));
-        dst[1] = av_clip_uint8(dst[1] + av_clip_int16(src[j + 4]));
-        dst[2] = av_clip_uint8(dst[2] + av_clip_int16(src[j + 8]));
-        dst[3] = av_clip_uint8(dst[3] + av_clip_int16(src[j + 12]));
+        dst[0] = av_clip_uint8(dst[0] + src[j]);
+        dst[1] = av_clip_uint8(dst[1] + src[j + 4]);
+        dst[2] = av_clip_uint8(dst[2] + src[j + 8]);
+        dst[3] = av_clip_uint8(dst[3] + src[j + 12]);
         j += 1;
         dst += stride;
     }
@@ -213,16 +213,16 @@ void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
     _mm_storeu_si128((__m128i *) (src + 8), m128iD);
     j = 0;
     for (i = 0; i < 2; i++) {
-        dst[0] = av_clip_uint8(dst[0] + av_clip_int16(src[j]));
-        dst[1] = av_clip_uint8(dst[1] + av_clip_int16(src[j + 4]));
-        dst[2] = av_clip_uint8(dst[2] + av_clip_int16(src[j + 8]));
-        dst[3] = av_clip_uint8(dst[3] + av_clip_int16(src[j + 12]));
+        dst[0] = av_clip_uint8(dst[0] + src[j]);
+        dst[1] = av_clip_uint8(dst[1] + src[j + 4]);
+        dst[2] = av_clip_uint8(dst[2] + src[j + 8]);
+        dst[3] = av_clip_uint8(dst[3] + src[j + 12]);
         j += 1;
         dst += stride;
-        dst[0] = av_clip_uint8(dst[0] + av_clip_int16(src[j]));
-        dst[1] = av_clip_uint8(dst[1] + av_clip_int16(src[j + 4]));
-        dst[2] = av_clip_uint8(dst[2] + av_clip_int16(src[j + 8]));
-        dst[3] = av_clip_uint8(dst[3] + av_clip_int16(src[j + 12]));
+        dst[0] = av_clip_uint8(dst[0] + src[j]);
+        dst[1] = av_clip_uint8(dst[1] + src[j + 4]);
+        dst[2] = av_clip_uint8(dst[2] + src[j + 8]);
+        dst[3] = av_clip_uint8(dst[3] + src[j + 12]);
         j += 1;
         dst += stride;
     }
@@ -513,24 +513,24 @@ void ff_hevc_transform_8x8_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
 
     j = 0;
     for (i = 0; i < 4; i++) {
-        dst[0] = av_clip_uint8(dst[0] + av_clip_int16(src[j]));
-        dst[1] = av_clip_uint8(dst[1] + av_clip_int16(src[j + 8]));
-        dst[2] = av_clip_uint8(dst[2] + av_clip_int16(src[j + 16]));
-        dst[3] = av_clip_uint8(dst[3] + av_clip_int16(src[j + 24]));
-        dst[4] = av_clip_uint8(dst[4] + av_clip_int16(src[j + 32]));
-        dst[5] = av_clip_uint8(dst[5] + av_clip_int16(src[j + 40]));
-        dst[6] = av_clip_uint8(dst[6] + av_clip_int16(src[j + 48]));
-        dst[7] = av_clip_uint8(dst[7] + av_clip_int16(src[j + 56]));
+        dst[0] = av_clip_uint8(dst[0] + src[j]);
+        dst[1] = av_clip_uint8(dst[1] + src[j + 8]);
+        dst[2] = av_clip_uint8(dst[2] + src[j + 16]);
+        dst[3] = av_clip_uint8(dst[3] + src[j + 24]);
+        dst[4] = av_clip_uint8(dst[4] + src[j + 32]);
+        dst[5] = av_clip_uint8(dst[5] + src[j + 40]);
+        dst[6] = av_clip_uint8(dst[6] + src[j + 48]);
+        dst[7] = av_clip_uint8(dst[7] + src[j + 56]);
         j += 1;
         dst += stride;
-        dst[0] = av_clip_uint8(dst[0] + av_clip_int16(src[j]));
-        dst[1] = av_clip_uint8(dst[1] + av_clip_int16(src[j + 8]));
-        dst[2] = av_clip_uint8(dst[2] + av_clip_int16(src[j + 16]));
-        dst[3] = av_clip_uint8(dst[3] + av_clip_int16(src[j + 24]));
-        dst[4] = av_clip_uint8(dst[4] + av_clip_int16(src[j + 32]));
-        dst[5] = av_clip_uint8(dst[5] + av_clip_int16(src[j + 40]));
-        dst[6] = av_clip_uint8(dst[6] + av_clip_int16(src[j + 48]));
-        dst[7] = av_clip_uint8(dst[7] + av_clip_int16(src[j + 56]));
+        dst[0] = av_clip_uint8(dst[0] + src[j]);
+        dst[1] = av_clip_uint8(dst[1] + src[j + 8]);
+        dst[2] = av_clip_uint8(dst[2] + src[j + 16]);
+        dst[3] = av_clip_uint8(dst[3] + src[j + 24]);
+        dst[4] = av_clip_uint8(dst[4] + src[j + 32]);
+        dst[5] = av_clip_uint8(dst[5] + src[j + 40]);
+        dst[6] = av_clip_uint8(dst[6] + src[j + 48]);
+        dst[7] = av_clip_uint8(dst[7] + src[j + 56]);
         j += 1;
         dst += stride;
     }
@@ -1151,32 +1151,32 @@ void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                 dst = (uint8_t*) _dst + (i * stride);
 
                 for (k = 0; k < 8; k++) {
-                    dst[0] = av_clip_uint8(dst[0] + av_clip_int16(src[m]));
-                    dst[1] = av_clip_uint8(dst[1] + av_clip_int16(src[m + 8]));
-                    dst[2] = av_clip_uint8(dst[2] + av_clip_int16(src[m + 32]));
-                    dst[3] = av_clip_uint8(dst[3] + av_clip_int16(src[m + 40]));
-                    dst[4] = av_clip_uint8(dst[4] + av_clip_int16(src[m + 64]));
-                    dst[5] = av_clip_uint8(dst[5] + av_clip_int16(src[m + 72]));
-                    dst[6] = av_clip_uint8(dst[6] + av_clip_int16(src[m + 96]));
+                    dst[0] = av_clip_uint8(dst[0] + src[m]);
+                    dst[1] = av_clip_uint8(dst[1] + src[m + 8]);
+                    dst[2] = av_clip_uint8(dst[2] + src[m + 32]);
+                    dst[3] = av_clip_uint8(dst[3] + src[m + 40]);
+                    dst[4] = av_clip_uint8(dst[4] + src[m + 64]);
+                    dst[5] = av_clip_uint8(dst[5] + src[m + 72]);
+                    dst[6] = av_clip_uint8(dst[6] + src[m + 96]);
                     dst[7] = av_clip_uint8(
-                            dst[7] + av_clip_int16(src[m + 104]));
+                            dst[7] + src[m + 104]);
 
                     dst[8] = av_clip_uint8(
-                            dst[8] + av_clip_int16(src[m + 128]));
+                            dst[8] + src[m + 128]);
                     dst[9] = av_clip_uint8(
-                            dst[9] + av_clip_int16(src[m + 136]));
+                            dst[9] + src[m + 136]);
                     dst[10] = av_clip_uint8(
-                            dst[10] + av_clip_int16(src[m + 160]));
+                            dst[10] + src[m + 160]);
                     dst[11] = av_clip_uint8(
-                            dst[11] + av_clip_int16(src[m + 168]));
+                            dst[11] + src[m + 168]);
                     dst[12] = av_clip_uint8(
-                            dst[12] + av_clip_int16(src[m + 192]));
+                            dst[12] + src[m + 192]);
                     dst[13] = av_clip_uint8(
-                            dst[13] + av_clip_int16(src[m + 200]));
+                            dst[13] + src[m + 200]);
                     dst[14] = av_clip_uint8(
-                            dst[14] + av_clip_int16(src[m + 224]));
+                            dst[14] + src[m + 224]);
                     dst[15] = av_clip_uint8(
-                            dst[15] + av_clip_int16(src[m + 232]));
+                            dst[15] + src[m + 232]);
                     m += 1;
                     dst += stride;
                 }
@@ -2983,69 +2983,69 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                 _mm_storeu_si128((__m128i *) (src + 896 + 24), m128iS31);
                 dst = (uint8_t*) _dst + (i * stride);
                 for (k = 0; k < 8; k++) {
-                    dst[0] = av_clip_uint8(dst[0] + av_clip_int16(src[m]));
-                    dst[1] = av_clip_uint8(dst[1] + av_clip_int16(src[m + 8]));
-                    dst[2] = av_clip_uint8(dst[2] + av_clip_int16(src[m + 16]));
-                    dst[3] = av_clip_uint8(dst[3] + av_clip_int16(src[m + 24]));
+                    dst[0] = av_clip_uint8(dst[0] + src[m]);
+                    dst[1] = av_clip_uint8(dst[1] + src[m + 8]);
+                    dst[2] = av_clip_uint8(dst[2] + src[m + 16]);
+                    dst[3] = av_clip_uint8(dst[3] + src[m + 24]);
                     dst[4] = av_clip_uint8(
-                            dst[4] + av_clip_int16(src[m + 128]));
+                            dst[4] + src[m + 128]);
                     dst[5] = av_clip_uint8(
-                            dst[5] + av_clip_int16(src[m + 128 + 8]));
+                            dst[5] + src[m + 128 + 8]);
                     dst[6] = av_clip_uint8(
-                            dst[6] + av_clip_int16(src[m + 128 + 16]));
+                            dst[6] + src[m + 128 + 16]);
                     dst[7] = av_clip_uint8(
-                            dst[7] + av_clip_int16(src[m + 128 + 24]));
+                            dst[7] + src[m + 128 + 24]);
 
                     dst[8] = av_clip_uint8(
-                            dst[8] + av_clip_int16(src[m + 256]));
+                            dst[8] + src[m + 256]);
                     dst[9] = av_clip_uint8(
-                            dst[9] + av_clip_int16(src[m + 256 + 8]));
+                            dst[9] + src[m + 256 + 8]);
                     dst[10] = av_clip_uint8(
-                            dst[10] + av_clip_int16(src[m + 256 + 16]));
+                            dst[10] + src[m + 256 + 16]);
                     dst[11] = av_clip_uint8(
-                            dst[11] + av_clip_int16(src[m + 256 + 24]));
+                            dst[11] + src[m + 256 + 24]);
                     dst[12] = av_clip_uint8(
-                            dst[12] + av_clip_int16(src[m + 384]));
+                            dst[12] + src[m + 384]);
                     dst[13] = av_clip_uint8(
-                            dst[13] + av_clip_int16(src[m + 384 + 8]));
+                            dst[13] + src[m + 384 + 8]);
                     dst[14] = av_clip_uint8(
-                            dst[14] + av_clip_int16(src[m + 384 + 16]));
+                            dst[14] + src[m + 384 + 16]);
                     dst[15] = av_clip_uint8(
-                            dst[15] + av_clip_int16(src[m + 384 + 24]));
+                            dst[15] + src[m + 384 + 24]);
 
                     dst[16] = av_clip_uint8(
-                            dst[16] + av_clip_int16(src[m + 512]));
+                            dst[16] + src[m + 512]);
                     dst[17] = av_clip_uint8(
-                            dst[17] + av_clip_int16(src[m + 512 + 8]));
+                            dst[17] + src[m + 512 + 8]);
                     dst[18] = av_clip_uint8(
-                            dst[18] + av_clip_int16(src[m + 512 + 16]));
+                            dst[18] + src[m + 512 + 16]);
                     dst[19] = av_clip_uint8(
-                            dst[19] + av_clip_int16(src[m + 512 + 24]));
+                            dst[19] + src[m + 512 + 24]);
                     dst[20] = av_clip_uint8(
-                            dst[20] + av_clip_int16(src[m + 640]));
+                            dst[20] + src[m + 640]);
                     dst[21] = av_clip_uint8(
-                            dst[21] + av_clip_int16(src[m + 640 + 8]));
+                            dst[21] + src[m + 640 + 8]);
                     dst[22] = av_clip_uint8(
-                            dst[22] + av_clip_int16(src[m + 640 + 16]));
+                            dst[22] + src[m + 640 + 16]);
                     dst[23] = av_clip_uint8(
-                            dst[23] + av_clip_int16(src[m + 640 + 24]));
+                            dst[23] + src[m + 640 + 24]);
 
                     dst[24] = av_clip_uint8(
-                            dst[24] + av_clip_int16(src[m + 768]));
+                            dst[24] + src[m + 768]);
                     dst[25] = av_clip_uint8(
-                            dst[25] + av_clip_int16(src[m + 768 + 8]));
+                            dst[25] + src[m + 768 + 8]);
                     dst[26] = av_clip_uint8(
-                            dst[26] + av_clip_int16(src[m + 768 + 16]));
+                            dst[26] + src[m + 768 + 16]);
                     dst[27] = av_clip_uint8(
-                            dst[27] + av_clip_int16(src[m + 768 + 24]));
+                            dst[27] + src[m + 768 + 24]);
                     dst[28] = av_clip_uint8(
-                            dst[28] + av_clip_int16(src[m + 896]));
+                            dst[28] + src[m + 896]);
                     dst[29] = av_clip_uint8(
-                            dst[29] + av_clip_int16(src[m + 896 + 8]));
+                            dst[29] + src[m + 896 + 8]);
                     dst[30] = av_clip_uint8(
-                            dst[30] + av_clip_int16(src[m + 896 + 16]));
+                            dst[30] + src[m + 896 + 16]);
                     dst[31] = av_clip_uint8(
-                            dst[31] + av_clip_int16(src[m + 896 + 24]));
+                            dst[31] + src[m + 896 + 24]);
 
                     m += 1;
                     dst += stride;
