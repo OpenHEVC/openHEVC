@@ -6,7 +6,7 @@
 #include "libavcodec/hevc.h"
 
 #if ARCH_X86_64
-#if GCC_VERSION > 40400
+#if GCC_VERSION > MIN_GCC_VERSION_MC
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
@@ -45,6 +45,39 @@ void ff_hevc_put_unweighted_pred_sse(uint8_t *_dst, ptrdiff_t _dststride,
         }
         dst += dststride;
         src += srcstride;
+    }
+}
+
+void ff_hevc_put_weighted_pred_avg_8_sse(uint8_t *_dst, ptrdiff_t dststride,
+        int16_t *src1, int16_t *src2, ptrdiff_t srcstride, int width,
+        int height) {
+    int x, y;
+    uint8_t *dst = (uint8_t*) _dst;
+    __m128i r0, r1, f0, r2, r3;
+
+
+    f0 = _mm_set1_epi16(64);
+    for (y = 0; y < height; y++) {
+
+        for (x = 0; x < width; x += 16) {
+            r0 = _mm_load_si128((__m128i *) &src1[x]);
+            r1 = _mm_load_si128((__m128i *) &src1[x + 8]);
+            r2 = _mm_load_si128((__m128i *) &src2[x]);
+            r3 = _mm_load_si128((__m128i *) &src2[x + 8]);
+
+            r0 = _mm_adds_epi16(r0, f0);
+            r1 = _mm_adds_epi16(r1, f0);
+            r0 = _mm_adds_epi16(r0, r2);
+            r1 = _mm_adds_epi16(r1, r3);
+            r0 = _mm_srai_epi16(r0, 7);
+            r1 = _mm_srai_epi16(r1, 7);
+            r0 = _mm_packus_epi16(r0, r1);
+
+            _mm_storeu_si128((__m128i *) (dst + x), r0);
+        }
+        dst += dststride;
+        src1 += srcstride;
+        src2 += srcstride;
     }
 }
 
