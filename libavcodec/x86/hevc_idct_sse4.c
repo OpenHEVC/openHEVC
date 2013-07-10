@@ -18,16 +18,17 @@
 #define shift_2nd (20 - BIT_DEPTH)
 #define add_2nd (1 << (shift_2nd - 1))
 
+
 void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         ptrdiff_t _stride) {
     int i;
     uint8_t *dst = (uint8_t*) _dst;
-    ptrdiff_t stride = _stride / sizeof(uint8_t);
+    ptrdiff_t stride = _stride;
     int16_t *src = coeffs;
     int j;
     __m128i m128iAdd, S0, S8, m128iTmp1, m128iTmp2, m128iAC, m128iBD, m128iA,
             m128iD;
-    m128iAdd = _mm_set1_epi32(add_1st);
+    m128iAdd = _mm_set1_epi32(64);
 
     S0 = _mm_load_si128((__m128i *) (src));
     S8 = _mm_load_si128((__m128i *) (src + 8));
@@ -119,23 +120,49 @@ void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
 
     m128iD = _mm_packs_epi32(S0, S8);
 
-    _mm_storeu_si128((__m128i *) (src), m128iA);
-    _mm_storeu_si128((__m128i *) (src + 8), m128iD);
-    j = 0;
-    for (i = 0; i < 2; i++) {
-        dst[0] = av_clip_uint8(dst[0] + src[j]);
-        dst[1] = av_clip_uint8(dst[1] + src[j + 4]);
-        dst[2] = av_clip_uint8(dst[2] + src[j + 8]);
-        dst[3] = av_clip_uint8(dst[3] + src[j + 12]);
-        j += 1;
-        dst += stride;
-        dst[0] = av_clip_uint8(dst[0] + src[j]);
-        dst[1] = av_clip_uint8(dst[1] + src[j + 4]);
-        dst[2] = av_clip_uint8(dst[2] + src[j + 8]);
-        dst[3] = av_clip_uint8(dst[3] + src[j + 12]);
-        j += 1;
-        dst += stride;
-    }
+//    _mm_storeu_si128((__m128i *) (src), m128iA);
+//    _mm_storeu_si128((__m128i *) (src + 8), m128iD);
+
+    S0 = _mm_move_epi64(m128iA); //contains row 0
+    S8 = _mm_move_epi64(m128iD); //row 2
+    m128iA = _mm_srli_si128(m128iA,8); // row 1
+    m128iD = _mm_srli_si128(m128iD,8); // row 3
+    m128iTmp1= _mm_unpacklo_epi16(S0,m128iA);
+    m128iTmp2= _mm_unpacklo_epi16(S8,m128iD);
+    S0 = _mm_unpacklo_epi32(m128iTmp1,m128iTmp2);
+    S8 = _mm_unpackhi_epi32(m128iTmp1,m128iTmp2);
+
+    m128iTmp2 = _mm_set_epi32(0,0,0,-1);   //mask to store 4 * 8bit data
+
+    m128iA = _mm_loadl_epi64((__m128i*)dst);
+    m128iA = _mm_unpacklo_epi8(m128iA,_mm_setzero_si128());
+    m128iTmp1= _mm_adds_epi16(S0,m128iA);	//contains first 4 values
+    m128iTmp1= _mm_packus_epi16(m128iTmp1,_mm_setzero_si128());
+    _mm_maskmoveu_si128(m128iTmp1,m128iTmp2,(char*)dst);
+
+    dst += stride;
+
+    m128iA = _mm_loadl_epi64((__m128i*)dst);
+    m128iA = _mm_unpacklo_epi8(m128iA,_mm_setzero_si128());
+    m128iTmp1= _mm_adds_epi16(_mm_srli_si128(S0,8),m128iA);
+    m128iTmp1= _mm_packus_epi16(m128iTmp1,_mm_setzero_si128());
+    _mm_maskmoveu_si128(m128iTmp1,m128iTmp2,(char*)dst);
+
+    dst += stride;
+
+    m128iA = _mm_loadl_epi64((__m128i*)dst);
+    m128iA = _mm_unpacklo_epi8(m128iA,_mm_setzero_si128());
+    m128iTmp1= _mm_adds_epi16(S8,m128iA);
+    m128iTmp1= _mm_packus_epi16(m128iTmp1,_mm_setzero_si128());
+    _mm_maskmoveu_si128(m128iTmp1,m128iTmp2,(char*)dst);
+
+    dst += stride;
+
+    m128iA = _mm_loadl_epi64((__m128i*)dst);
+    m128iA = _mm_unpacklo_epi8(m128iA,_mm_setzero_si128());
+    m128iTmp1= _mm_adds_epi16(_mm_srli_si128(S8,8),m128iA);
+    m128iTmp1= _mm_packus_epi16(m128iTmp1,_mm_setzero_si128());
+    _mm_maskmoveu_si128(m128iTmp1,m128iTmp2,(char*)dst);
 
 }
 
@@ -143,10 +170,10 @@ void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         ptrdiff_t _stride) {
     int i;
     uint8_t *dst = (uint8_t*) _dst;
-    ptrdiff_t stride = _stride / sizeof(uint8_t);
+    ptrdiff_t stride = _stride;
     int16_t *src = coeffs;
     int j;
-    __m128i S0, S8, m128iAdd, m128Tmp, E1, E2, O1, O2, m128iA, m128iD;
+    __m128i S0, S8, m128iAdd, m128Tmp, E1, E2, O1, O2, m128iA, m128iD, m128iTmp1,m128iTmp2;
     S0 = _mm_load_si128((__m128i *) (src));
     S8 = _mm_load_si128((__m128i *) (src + 8));
     m128iAdd = _mm_set1_epi32(add_1st);
@@ -209,23 +236,47 @@ void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
     m128Tmp = _mm_srai_epi32(m128Tmp, shift_2nd);
 
     m128iD = _mm_packs_epi32(m128iD, m128Tmp);
-    _mm_storeu_si128((__m128i *) (src), m128iA);
-    _mm_storeu_si128((__m128i *) (src + 8), m128iD);
-    j = 0;
-    for (i = 0; i < 2; i++) {
-        dst[0] = av_clip_uint8(dst[0] + src[j]);
-        dst[1] = av_clip_uint8(dst[1] + src[j + 4]);
-        dst[2] = av_clip_uint8(dst[2] + src[j + 8]);
-        dst[3] = av_clip_uint8(dst[3] + src[j + 12]);
-        j += 1;
-        dst += stride;
-        dst[0] = av_clip_uint8(dst[0] + src[j]);
-        dst[1] = av_clip_uint8(dst[1] + src[j + 4]);
-        dst[2] = av_clip_uint8(dst[2] + src[j + 8]);
-        dst[3] = av_clip_uint8(dst[3] + src[j + 12]);
-        j += 1;
-        dst += stride;
-    }
+
+    S0 = _mm_move_epi64(m128iA); //contains row 0
+    S8 = _mm_move_epi64(m128iD); //row 2
+    m128iA = _mm_srli_si128(m128iA,8); // row 1
+    m128iD = _mm_srli_si128(m128iD,8); // row 3
+    m128iTmp1= _mm_unpacklo_epi16(S0,m128iA);
+    m128iTmp2= _mm_unpacklo_epi16(S8,m128iD);
+    S0 = _mm_unpacklo_epi32(m128iTmp1,m128iTmp2);
+    S8 = _mm_unpackhi_epi32(m128iTmp1,m128iTmp2);
+
+    m128iTmp2 = _mm_set_epi32(0,0,0,-1);   //mask to store 4 * 8bit data
+
+    m128iA = _mm_loadl_epi64((__m128i*)dst);
+    m128iA = _mm_unpacklo_epi8(m128iA,_mm_setzero_si128());
+    m128iTmp1= _mm_adds_epi16(S0,m128iA);	//contains first 4 values
+    m128iTmp1= _mm_packus_epi16(m128iTmp1,_mm_setzero_si128());
+    _mm_maskmoveu_si128(m128iTmp1,m128iTmp2,(char*)dst);
+
+    dst += stride;
+
+    m128iA = _mm_loadl_epi64((__m128i*)dst);
+    m128iA = _mm_unpacklo_epi8(m128iA,_mm_setzero_si128());
+    m128iTmp1= _mm_adds_epi16(_mm_srli_si128(S0,8),m128iA);
+    m128iTmp1= _mm_packus_epi16(m128iTmp1,_mm_setzero_si128());
+    _mm_maskmoveu_si128(m128iTmp1,m128iTmp2,(char*)dst);
+
+    dst += stride;
+
+    m128iA = _mm_loadl_epi64((__m128i*)dst);
+    m128iA = _mm_unpacklo_epi8(m128iA,_mm_setzero_si128());
+    m128iTmp1= _mm_adds_epi16(S8,m128iA);
+    m128iTmp1= _mm_packus_epi16(m128iTmp1,_mm_setzero_si128());
+    _mm_maskmoveu_si128(m128iTmp1,m128iTmp2,(char*)dst);
+
+    dst += stride;
+
+    m128iA = _mm_loadl_epi64((__m128i*)dst);
+    m128iA = _mm_unpacklo_epi8(m128iA,_mm_setzero_si128());
+    m128iTmp1= _mm_adds_epi16(_mm_srli_si128(S8,8),m128iA);
+    m128iTmp1= _mm_packus_epi16(m128iTmp1,_mm_setzero_si128());
+    _mm_maskmoveu_si128(m128iTmp1,m128iTmp2,(char*)dst);
 }
 
 void ff_hevc_transform_8x8_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
