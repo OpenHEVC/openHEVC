@@ -67,9 +67,15 @@ void ff_hevc_weighted_pred_sse(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,u
 void ff_hevc_weighted_pred_avg_sse(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,int16_t ol0Flag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,int16_t *src1, int16_t *src2, ptrdiff_t srcstride,int width, int height);
 
 void ff_hevc_put_hevc_epel_pixels_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my, int16_t* mcbuffer);
+void ff_hevc_put_hevc_epel_pixels_8_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my, int16_t* mcbuffer);
+
 void ff_hevc_put_hevc_epel_h_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my, int16_t* mcbuffer);
+void ff_hevc_put_hevc_epel_h_8_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my, int16_t* mcbuffer);
+
 void ff_hevc_put_hevc_epel_v_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my, int16_t* mcbuffer);
-void ff_hevc_put_hevc_epel_hv_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my, int16_t* mcbuffer);
+void ff_hevc_put_hevc_epel_v_8_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my, int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my, int16_t* mcbuffer);
 
 void ff_hevc_put_hevc_qpel_pixels_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int16_t* mcbuffer);
 void ff_hevc_put_hevc_qpel_h_1_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int16_t* mcbuffer);
@@ -134,10 +140,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_sse;
 
 
-                	c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_sse;
-                	c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_sse;
-                	c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_sse;
-                	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_sse;
+                	c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_8_sse;
+                	c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_8_sse;
+                	c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_8_sse;
+                	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
 
                 	c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_sse;
                 	c->put_hevc_qpel[0][1] = ff_hevc_put_hevc_qpel_h_1_sse;
