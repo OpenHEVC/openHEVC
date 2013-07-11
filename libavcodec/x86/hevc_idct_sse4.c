@@ -18,11 +18,9 @@
 
 void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         ptrdiff_t _stride) {
-    int i;
     uint8_t *dst = (uint8_t*) _dst;
     ptrdiff_t stride = _stride;
     int16_t *src = coeffs;
-    int j;
     __m128i m128iAdd, S0, S8, m128iTmp1, m128iTmp2, m128iAC, m128iBD, m128iA,
             m128iD;
     m128iAdd = _mm_set1_epi32(64);
@@ -165,13 +163,11 @@ void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
 
 void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         ptrdiff_t _stride) {
-    int i;
     uint8_t *dst = (uint8_t*) _dst;
     ptrdiff_t stride = _stride;
     int16_t *src = coeffs;
-    int j;
-    __m128i S0, S8, m128iAdd, m128Tmp, E1, E2, O1, O2, m128iA, m128iD,
-            m128iTmp1, m128iTmp2;
+
+    __m128i S0, S8, m128iAdd, m128Tmp, E1, E2, O1, O2, m128iA, m128iD, m128iTmp1,m128iTmp2;
     S0 = _mm_load_si128((__m128i *) (src));
     S8 = _mm_load_si128((__m128i *) (src + 8));
     m128iAdd = _mm_set1_epi32(add_1st);
@@ -279,28 +275,28 @@ void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
 
 void ff_hevc_transform_8x8_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
         ptrdiff_t _stride) {
-    int i;
     uint8_t *dst = (uint8_t*) _dst;
     ptrdiff_t stride = _stride / sizeof(uint8_t);
     int16_t *src = coeffs;
     __m128i m128iS0, m128iS1, m128iS2, m128iS3, m128iS4, m128iS5, m128iS6,
             m128iS7, m128iAdd, m128Tmp0, m128Tmp1, m128Tmp2, m128Tmp3, E0h, E1h,
             E2h, E3h, E0l, E1l, E2l, E3l, O0h, O1h, O2h, O3h, O0l, O1l, O2l,
-            O3l, EE0l, EE1l, E00l, E01l, EE0h, EE1h, E00h, E01h, T0, T1, T2, T3,
-            T4, T5, T6, T7, T8, T9, T10, T11;
-    T0 = _mm_load_si128((__m128i *) (transform8x8[0]));
-    T1 = _mm_load_si128((__m128i *) (transform8x8[1]));
-    T2 = _mm_load_si128((__m128i *) (transform8x8[2]));
-    T3 = _mm_load_si128((__m128i *) (transform8x8[3]));
-    T4 = _mm_load_si128((__m128i *) (transform8x8[4]));
-    T5 = _mm_load_si128((__m128i *) (transform8x8[5]));
-    T6 = _mm_load_si128((__m128i *) (transform8x8[6]));
-    T7 = _mm_load_si128((__m128i *) (transform8x8[7]));
-    T8 = _mm_load_si128((__m128i *) (transform8x8[8]));
-    T9 = _mm_load_si128((__m128i *) (transform8x8[9]));
-    T10 = _mm_load_si128((__m128i *) (transform8x8[10]));
-    T11 = _mm_load_si128((__m128i *) (transform8x8[11]));
-    int j;
+
+            O3l, EE0l, EE1l, E00l, E01l, EE0h, EE1h, E00h, E01h,
+            T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11;
+    T0= _mm_load_si128((__m128i *) (transform8x8[0]));
+    T1= _mm_load_si128((__m128i *) (transform8x8[1]));
+    T2= _mm_load_si128((__m128i *) (transform8x8[2]));
+    T3= _mm_load_si128((__m128i *) (transform8x8[3]));
+    T4= _mm_load_si128((__m128i *) (transform8x8[4]));
+    T5= _mm_load_si128((__m128i *) (transform8x8[5]));
+    T6= _mm_load_si128((__m128i *) (transform8x8[6]));
+    T7= _mm_load_si128((__m128i *) (transform8x8[7]));
+    T8= _mm_load_si128((__m128i *) (transform8x8[8]));
+    T9= _mm_load_si128((__m128i *) (transform8x8[9]));
+    T10= _mm_load_si128((__m128i *) (transform8x8[10]));
+    T11= _mm_load_si128((__m128i *) (transform8x8[11]));
+
     m128iAdd = _mm_set1_epi32(add_1st);
 
     m128iS1 = _mm_load_si128((__m128i *) (src + 8));
