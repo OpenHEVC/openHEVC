@@ -312,7 +312,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     //first left spatial merge candidate
     int xA1 = x0 - 1;
     int yA1 = y0 + nPbH - 1;
-    int isAvailableA1;
+    int is_available_a1;
     int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
     int check_MER = 1;
     int check_MER_1 = 1;
@@ -330,7 +330,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     int check_A0;
     int xA0, yA0;
-    int isAvailableA0;
+    int is_available_a0;
     int xA0_pu;
     int yA0_pu;
 
@@ -376,9 +376,9 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     if (cand_left
             && !(tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra)) {
-        isAvailableA1 = 1;
+        is_available_a1 = 1;
     } else {
-        isAvailableA1 = 0;
+        is_available_a1 = 0;
     }
 
     if ((singleMCLFlag == 0) && (part_idx == 1)
@@ -386,10 +386,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                     || (lc->cu.part_mode == PART_nLx2N)
                     || (lc->cu.part_mode == PART_nRx2N))
             || isDiffMER(sc, xA1, yA1, x0, y0)) {
-        isAvailableA1 = 0;
+        is_available_a1 = 0;
     }
 
-    if (isAvailableA1) {
+    if (is_available_a1) {
         available_a1_flag = 1;
         spatialCMVS[0] = tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu];
     } else {
@@ -426,7 +426,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
             || isDiffMER(sc, xB1, yB1, x0, y0)) {
         is_available_b1 = 0;
     }
-    if (isAvailableA1 && is_available_b1) {
+    if (is_available_a1 && is_available_b1) {
         check_MER = !(compareMVrefidx(
                 tab_mvf[(yB1_pu) * pic_width_in_min_pu + xB1_pu],
                 tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
@@ -500,21 +500,21 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     if (cand_bottom_left && check_A0
             && !(tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu].is_intra)) {
-        isAvailableA0 = 1;
+        is_available_a0 = 1;
     } else {
-        isAvailableA0 = 0;
+        is_available_a0 = 0;
     }
 
     if ((isDiffMER(sc, xA0, yA0, x0, y0))) {
-        isAvailableA0 = 0;
+        is_available_a0 = 0;
     }
-    if (isAvailableA1 && isAvailableA0) {
+    if (is_available_a1 && is_available_a0) {
         check_MER = !(compareMVrefidx(
                 tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu],
                 tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
     }
 
-    if (isAvailableA0 && check_MER) {
+    if (is_available_a0 && check_MER) {
         available_a0_flag = 1;
         spatialCMVS[3] = tab_mvf[(yA0_pu) * pic_width_in_min_pu + xA0_pu];
     } else {
@@ -546,7 +546,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     if ((isDiffMER(sc, xB2, yB2, x0, y0))) {
         isAvailableB2 = 0;
     }
-    if (isAvailableA1 && isAvailableB2) {
+    if (is_available_a1 && isAvailableB2) {
         check_MER = !(compareMVrefidx(
                 tab_mvf[(yB2_pu) * pic_width_in_min_pu + xB2_pu],
                 tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu]));
@@ -788,11 +788,11 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
     int xA0, yA0;
     int xA0_pu, yA0_pu;
-    int isAvailableA0;
+    int is_available_a0;
 
     int xA1, yA1;
     int xA1_pu, yA1_pu;
-    int isAvailableA1;
+    int is_available_a1;
 
     int xB0, yB0;
     int xB0_pu, yB0_pu;
@@ -804,16 +804,15 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
 
     int xB2, yB2;
     int xB2_pu, yB2_pu;
-    int isAvailableB2 = 0;
+    int is_available_b2 = 0;
     Mv mvpcand_list[2] = { { 0 } };
-    int check_A0, check_B0;
     Mv mxA = { 0 };
     Mv mxB = { 0 };
     Mv mvLXCol = { 0 };
     int ref_idx_curr = 0;
     int ref_idx = 0;
-    int pi_L0 = 0; //pred_flag_index_l0
-    int pi_L1 = 0; //pred_flag_index_l1
+    int pred_flag_index_l0 = 0;
+    int pred_flag_index_l1 = 0;
     int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
 
@@ -831,13 +830,13 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     if (LX == 0) {
         ref_idx_curr = 0; //l0
         ref_idx = mv->ref_idx[0];
-        pi_L0 = 0;
-        pi_L1 = 1;
+        pred_flag_index_l0 = 0;
+        pred_flag_index_l1 = 1;
     } else if (LX == 1) {
         ref_idx_curr = 1; // l1
         ref_idx = mv->ref_idx[1];
-        pi_L0 = 1;
-        pi_L1 = 0;
+        pred_flag_index_l0 = 1;
+        pred_flag_index_l1 = 0;
     }
     currIsLongTerm = refPicList[ref_idx_curr].isLongTerm[ref_idx];
 
@@ -846,11 +845,12 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     yA0 = y0 + nPbH;
     xA0_pu = xA0 >> sc->sps->log2_min_pu_size;
     yA0_pu = yA0 >> sc->sps->log2_min_pu_size;
-    check_A0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW,
-            nPbH, xA0, yA0, part_idx);
 
-    isAvailableA0 = (cand_bottom_left && check_A0
+    is_available_a0 = (cand_bottom_left
             && !(TAB_MVF(xA0_pu, yA0_pu).is_intra));
+    if (is_available_a0)
+        is_available_a0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW,
+                                                           nPbH, xA0, yA0, part_idx);
 
     //left spatial merge candidate
     xA1 = x0 - 1;
@@ -858,92 +858,92 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     xA1_pu = xA1 >> sc->sps->log2_min_pu_size;
     yA1_pu = yA1 >> sc->sps->log2_min_pu_size;
 
-    isAvailableA1 = cand_left && !(TAB_MVF(xA1_pu, yA1_pu).is_intra);
-    if ((isAvailableA0) || (isAvailableA1)) {
+    is_available_a1 = cand_left && !(TAB_MVF(xA1_pu, yA1_pu).is_intra);
+    if ((is_available_a0) || (is_available_a1)) {
         isScaledFlag_L0 = 1;
     }
 
     // XA0 and L1
-    if ((isAvailableA0) && (availableFlagLXA0 == 0)) {
-        if ((TAB_MVF(xA0_pu, yA0_pu).pred_flag[pi_L0] == 1) &&
-            (DiffPicOrderCnt(refPicList[pi_L0].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pi_L0])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+    if (is_available_a0) {
+        if ((TAB_MVF(xA0_pu, yA0_pu).pred_flag[pred_flag_index_l0] == 1) &&
+            (DiffPicOrderCnt(refPicList[pred_flag_index_l0].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pred_flag_index_l0])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXA0 = 1;
-            mxA = TAB_MVF(xA0_pu, yA0_pu).mv[pi_L0];
+            mxA = TAB_MVF(xA0_pu, yA0_pu).mv[pred_flag_index_l0];
         }
     }
 
     // XA0 and L0
-    if ((isAvailableA0) && (availableFlagLXA0 == 0)) {
-        if ((TAB_MVF(xA0_pu, yA0_pu).pred_flag[pi_L1] == 1) &&
-            (DiffPicOrderCnt(refPicList[pi_L1].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pi_L1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+    if (is_available_a0 && !availableFlagLXA0) {
+        if ((TAB_MVF(xA0_pu, yA0_pu).pred_flag[pred_flag_index_l1] == 1) &&
+            (DiffPicOrderCnt(refPicList[pred_flag_index_l1].list[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pred_flag_index_l1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXA0 = 1;
-            mxA = TAB_MVF(xA0_pu, yA0_pu).mv[pi_L1];
+            mxA = TAB_MVF(xA0_pu, yA0_pu).mv[pred_flag_index_l1];
         }
     }
 
     //XA1 and L1
-    if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
-        if ((TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L0] == 1) &&
-            (DiffPicOrderCnt(refPicList[pi_L0].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pi_L0])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+    if (is_available_a1 && !availableFlagLXA0) {
+        if ((TAB_MVF(xA1_pu, yA1_pu).pred_flag[pred_flag_index_l0] == 1) &&
+            (DiffPicOrderCnt(refPicList[pred_flag_index_l0].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pred_flag_index_l0])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXA0 = 1;
-            mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pi_L0];
+            mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pred_flag_index_l0];
         }
     }
 
     //XA1 and L0
-    if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
-        if ((TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L1] == 1) &&
-            (DiffPicOrderCnt(refPicList[pi_L1].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pi_L1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+    if (is_available_a1 && !availableFlagLXA0) {
+        if ((TAB_MVF(xA1_pu, yA1_pu).pred_flag[pred_flag_index_l1] == 1) &&
+            (DiffPicOrderCnt(refPicList[pred_flag_index_l1].list[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pred_flag_index_l1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXA0 =1;
-            mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pi_L1];
+            mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pred_flag_index_l1];
         }
     }
 
-    if ((isAvailableA0) && (availableFlagLXA0 == 0)) {
+    if (is_available_a0 && !availableFlagLXA0) {
         int colIsLongTerm =
-            refPicList[pi_L0].isLongTerm[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pi_L0])];
+            refPicList[pred_flag_index_l0].isLongTerm[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pred_flag_index_l0])];
         // XA0 and L1
-        if (TAB_MVF(xA0_pu, yA0_pu).pred_flag[pi_L0] == 1 && colIsLongTerm == currIsLongTerm) {
+        if (TAB_MVF(xA0_pu, yA0_pu).pred_flag[pred_flag_index_l0] == 1 && colIsLongTerm == currIsLongTerm) {
             availableFlagLXA0 = 1;
-            mxA = TAB_MVF(xA0_pu, yA0_pu).mv[pi_L0];
+            mxA = TAB_MVF(xA0_pu, yA0_pu).mv[pred_flag_index_l0];
             if (!currIsLongTerm)
-                dist_scale(sc, &mxA, pic_width_in_min_pu, xA0_pu, yA0_pu, pi_L0, ref_idx_curr, ref_idx);
+                dist_scale(sc, &mxA, pic_width_in_min_pu, xA0_pu, yA0_pu, pred_flag_index_l0, ref_idx_curr, ref_idx);
         }
     }
 
-    if ((isAvailableA0) && (availableFlagLXA0 == 0)) {
+    if (is_available_a0 && !availableFlagLXA0) {
         int colIsLongTerm =
-                refPicList[pi_L1].isLongTerm[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pi_L1])];
+                refPicList[pred_flag_index_l1].isLongTerm[(TAB_MVF(xA0_pu, yA0_pu).ref_idx[pred_flag_index_l1])];
         // XA0 and L0
-        if (TAB_MVF(xA0_pu, yA0_pu).pred_flag[pi_L1] == 1 && colIsLongTerm == currIsLongTerm) {
+        if (TAB_MVF(xA0_pu, yA0_pu).pred_flag[pred_flag_index_l1] == 1 && colIsLongTerm == currIsLongTerm) {
             availableFlagLXA0 = 1;
-            mxA = TAB_MVF(xA0_pu, yA0_pu).mv[pi_L1];
+            mxA = TAB_MVF(xA0_pu, yA0_pu).mv[pred_flag_index_l1];
             if (!currIsLongTerm)
-                dist_scale(sc, &mxA, pic_width_in_min_pu, xA0_pu, yA0_pu, pi_L1, ref_idx_curr, ref_idx);
+                dist_scale(sc, &mxA, pic_width_in_min_pu, xA0_pu, yA0_pu, pred_flag_index_l1, ref_idx_curr, ref_idx);
         }
     }
 
-    if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
+    if (is_available_a1 && !availableFlagLXA0) {
         int colIsLongTerm =
-                refPicList[pi_L0].isLongTerm[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pi_L0])];
+                refPicList[pred_flag_index_l0].isLongTerm[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pred_flag_index_l0])];
         //XA1 and L1
-        if (TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L0] == 1 && colIsLongTerm == currIsLongTerm) {
+        if (TAB_MVF(xA1_pu, yA1_pu).pred_flag[pred_flag_index_l0] == 1 && colIsLongTerm == currIsLongTerm) {
             availableFlagLXA0 = 1;
-            mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pi_L0];
+            mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pred_flag_index_l0];
             if (!currIsLongTerm)
-                dist_scale(sc, &mxA, pic_width_in_min_pu, xA1_pu, yA1_pu, pi_L0, ref_idx_curr, ref_idx);
+                dist_scale(sc, &mxA, pic_width_in_min_pu, xA1_pu, yA1_pu, pred_flag_index_l0, ref_idx_curr, ref_idx);
         }
     }
 
-    if ((isAvailableA1) && (availableFlagLXA0 == 0)) {
+    if (is_available_a1 && !availableFlagLXA0) {
         int colIsLongTerm =
-                refPicList[pi_L1].isLongTerm[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pi_L1])];
+                refPicList[pred_flag_index_l1].isLongTerm[(TAB_MVF(xA1_pu, yA1_pu).ref_idx[pred_flag_index_l1])];
         //XA1 and L0
-        if (TAB_MVF(xA1_pu, yA1_pu).pred_flag[pi_L1] == 1 && colIsLongTerm == currIsLongTerm) {
+        if (TAB_MVF(xA1_pu, yA1_pu).pred_flag[pred_flag_index_l1] == 1 && colIsLongTerm == currIsLongTerm) {
             availableFlagLXA0 = 1;
-            mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pi_L1];
+            mxA = TAB_MVF(xA1_pu, yA1_pu).mv[pred_flag_index_l1];
             if (!currIsLongTerm)
-                dist_scale(sc, &mxA, pic_width_in_min_pu, xA1_pu, yA1_pu, pi_L1, ref_idx_curr, ref_idx);
+                dist_scale(sc, &mxA, pic_width_in_min_pu, xA1_pu, yA1_pu, pred_flag_index_l1, ref_idx_curr, ref_idx);
         }
     }
 
@@ -953,26 +953,26 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     yB0 = y0 - 1;
     xB0_pu = xB0 >> sc->sps->log2_min_pu_size;
     yB0_pu = yB0 >> sc->sps->log2_min_pu_size;
-    check_B0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW,
-            nPbH, xB0, yB0, part_idx);
 
-    isAvailableB0 = (cand_up_right && check_B0);
+    isAvailableB0 = (cand_up_right && !(TAB_MVF(xB0_pu, yB0_pu).is_intra));
+    if (isAvailableB0)
+        isAvailableB0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW,
+                                                         nPbH, xB0, yB0, part_idx);
 
-    // XB0 and L1
-    if ((isAvailableB0) && !(TAB_MVF(xB0_pu, yB0_pu).is_intra) && (availableFlagLXB0 == 0)) {
-        if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag[pi_L0] == 1) &&
-            (DiffPicOrderCnt(refPicList[pi_L0].list[TAB_MVF(xB0_pu, yB0_pu).ref_idx[pi_L0]], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+    if (isAvailableB0) {
+        // XB0 and L1
+        if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag[pred_flag_index_l0] == 1) &&
+            (DiffPicOrderCnt(refPicList[pred_flag_index_l0].list[TAB_MVF(xB0_pu, yB0_pu).ref_idx[pred_flag_index_l0]], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
             availableFlagLXB0 = 1;
-            mxB = TAB_MVF(xB0_pu, yB0_pu).mv[pi_L0];
+            mxB = TAB_MVF(xB0_pu, yB0_pu).mv[pred_flag_index_l0];
         }
-    }
-
-    // XB0 and L0
-    if ((isAvailableB0) && !(TAB_MVF(xB0_pu, yB0_pu).is_intra) && (availableFlagLXB0 == 0)) {
-        if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag[pi_L1] == 1) &&
-            (DiffPicOrderCnt(refPicList[pi_L1].list[(TAB_MVF(xB0_pu, yB0_pu).ref_idx[pi_L1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
-            availableFlagLXB0 = 1;
-            mxB = TAB_MVF(xB0_pu, yB0_pu).mv[pi_L1];
+        if (!availableFlagLXB0) {
+            // XB0 and L0
+            if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag[pred_flag_index_l1] == 1) &&
+                (DiffPicOrderCnt(refPicList[pred_flag_index_l1].list[(TAB_MVF(xB0_pu, yB0_pu).ref_idx[pred_flag_index_l1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+                availableFlagLXB0 = 1;
+                mxB = TAB_MVF(xB0_pu, yB0_pu).mv[pred_flag_index_l1];
+            }
         }
     }
 
@@ -983,23 +983,22 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         xB1_pu = xB1 >> sc->sps->log2_min_pu_size;
         yB1_pu = yB1 >> sc->sps->log2_min_pu_size;
 
-        is_available_b1 = cand_up;
+        is_available_b1 = cand_up && !(TAB_MVF(xB1_pu, yB1_pu).is_intra);
 
-        // XB1 and L1
-        if ((is_available_b1) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && (availableFlagLXB0 == 0)) {
+        if (is_available_b1) {
             // XB1 and L1
-            if ((TAB_MVF(xB1_pu, yB1_pu).pred_flag[pi_L0] == 1) &&
-                (DiffPicOrderCnt(refPicList[pi_L0].list[(TAB_MVF(xB1_pu, yB1_pu).ref_idx[pi_L0])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+            if ((TAB_MVF(xB1_pu, yB1_pu).pred_flag[pred_flag_index_l0] == 1) &&
+                (DiffPicOrderCnt(refPicList[pred_flag_index_l0].list[(TAB_MVF(xB1_pu, yB1_pu).ref_idx[pred_flag_index_l0])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
                 availableFlagLXB0 =1;
-                mxB = TAB_MVF(xB1_pu, yB1_pu).mv[pi_L0];
+                mxB = TAB_MVF(xB1_pu, yB1_pu).mv[pred_flag_index_l0];
             }
-        }
-        // XB1 and L0
-        if ((is_available_b1) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && (availableFlagLXB0 == 0)) {
-            if ((TAB_MVF(xB1_pu, yB1_pu).pred_flag[pi_L1] == 1) &&
-                (DiffPicOrderCnt(refPicList[pi_L1].list[(TAB_MVF(xB1_pu, yB1_pu).ref_idx[pi_L1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
-                availableFlagLXB0 = 1;
-                mxB = TAB_MVF(xB1_pu, yB1_pu).mv[pi_L1];
+            if (!availableFlagLXB0) {
+                // XB1 and L0
+                if ((TAB_MVF(xB1_pu, yB1_pu).pred_flag[pred_flag_index_l1] == 1) &&
+                    (DiffPicOrderCnt(refPicList[pred_flag_index_l1].list[(TAB_MVF(xB1_pu, yB1_pu).ref_idx[pred_flag_index_l1])], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+                    availableFlagLXB0 = 1;
+                    mxB = TAB_MVF(xB1_pu, yB1_pu).mv[pred_flag_index_l1];
+                }
             }
         }
     }
@@ -1010,23 +1009,22 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         yB2 = y0 - 1;
         xB2_pu = xB2 >> sc->sps->log2_min_pu_size;
         yB2_pu = yB2 >> sc->sps->log2_min_pu_size;
-        isAvailableB2 = cand_up_left;
+        is_available_b2 = cand_up_left && !(TAB_MVF(xB2_pu, yB2_pu).is_intra);
 
         // XB2 and L1
-        if ((isAvailableB2) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && (availableFlagLXB0 == 0)) {
-            if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag[pi_L0] == 1) &&
-                (DiffPicOrderCnt(refPicList[pi_L0].list[(TAB_MVF(xB2_pu, yB2_pu).ref_idx[pi_L0])], refPicList[ref_idx_curr].list[ref_idx]))== 0) {
+        if (is_available_b2) {
+            if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag[pred_flag_index_l0] == 1) &&
+                (DiffPicOrderCnt(refPicList[pred_flag_index_l0].list[(TAB_MVF(xB2_pu, yB2_pu).ref_idx[pred_flag_index_l0])], refPicList[ref_idx_curr].list[ref_idx]))== 0) {
                 availableFlagLXB0 = 1;
-                mxB = TAB_MVF(xB2_pu, yB2_pu).mv[pi_L0];
+                mxB = TAB_MVF(xB2_pu, yB2_pu).mv[pred_flag_index_l0];
             }
-        }
-
-        // XB2 and L0
-        if ((isAvailableB2) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && (availableFlagLXB0 == 0)) {
-            if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag[pi_L1] == 1) &&
-                (DiffPicOrderCnt(refPicList[pi_L1].list[(TAB_MVF(xB2_pu, yB2_pu).ref_idx[pi_L1])], refPicList[ref_idx_curr].list[ref_idx]))==0) {
-                availableFlagLXB0 =1;
-                mxB = TAB_MVF(xB2_pu, yB2_pu).mv[pi_L1];
+            // XB2 and L0
+            if (!availableFlagLXB0) {
+                if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag[pred_flag_index_l1] == 1) &&
+                    (DiffPicOrderCnt(refPicList[pred_flag_index_l1].list[(TAB_MVF(xB2_pu, yB2_pu).ref_idx[pred_flag_index_l1])], refPicList[ref_idx_curr].list[ref_idx]))==0) {
+                    availableFlagLXB0 =1;
+                    mxB = TAB_MVF(xB2_pu, yB2_pu).mv[pred_flag_index_l1];
+                }
             }
         }
     }
@@ -1036,70 +1034,70 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     }
     if (isScaledFlag_L0 == 0) {
         availableFlagLXB0 = 0;
-    }
 
-    // XB0 and L1
-    if ((isAvailableB0) && !(TAB_MVF(xB0_pu, yB0_pu).is_intra) && (availableFlagLXB0 == 0)) {
-        int colIsLongTerm = refPicList[pi_L0].isLongTerm[(TAB_MVF(xB0_pu, yB0_pu).ref_idx[pi_L0])];
-        if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag[pi_L0] == 1) && (isScaledFlag_L0 == 0) && colIsLongTerm == currIsLongTerm) {
-            availableFlagLXB0 =1;
-            mxB = TAB_MVF(xB0_pu, yB0_pu).mv[pi_L0];
-            if (!currIsLongTerm)
-                dist_scale(sc, &mxB, pic_width_in_min_pu, xB0_pu, yB0_pu, pi_L0, ref_idx_curr, ref_idx);
+        // XB0 and L1
+        if (isAvailableB0 && !availableFlagLXB0) {
+            int colIsLongTerm = refPicList[pred_flag_index_l0].isLongTerm[(TAB_MVF(xB0_pu, yB0_pu).ref_idx[pred_flag_index_l0])];
+            if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag[pred_flag_index_l0] == 1) && colIsLongTerm == currIsLongTerm) {
+                availableFlagLXB0 =1;
+                mxB = TAB_MVF(xB0_pu, yB0_pu).mv[pred_flag_index_l0];
+                if (!currIsLongTerm)
+                    dist_scale(sc, &mxB, pic_width_in_min_pu, xB0_pu, yB0_pu, pred_flag_index_l0, ref_idx_curr, ref_idx);
+            }
         }
-    }
-    // XB0 and L0
-    if ((isAvailableB0) && !(TAB_MVF(xB0_pu, yB0_pu).is_intra) && (availableFlagLXB0 == 0)) {
-        int colIsLongTerm = refPicList[pi_L1].isLongTerm[(TAB_MVF(xB0_pu, yB0_pu).ref_idx[pi_L1])];
-        if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag[pi_L1] == 1) && (isScaledFlag_L0 == 0) && colIsLongTerm == currIsLongTerm) {
-            availableFlagLXB0 = 1;
-            mxB = TAB_MVF(xB0_pu, yB0_pu).mv[pi_L1];
-            if (!currIsLongTerm)
-                dist_scale(sc, &mxB, pic_width_in_min_pu, xB0_pu, yB0_pu, pi_L1, ref_idx_curr, ref_idx);
+        // XB0 and L0
+        if (isAvailableB0 && !availableFlagLXB0) {
+            int colIsLongTerm = refPicList[pred_flag_index_l1].isLongTerm[(TAB_MVF(xB0_pu, yB0_pu).ref_idx[pred_flag_index_l1])];
+            if ((TAB_MVF(xB0_pu, yB0_pu).pred_flag[pred_flag_index_l1] == 1) && colIsLongTerm == currIsLongTerm) {
+                availableFlagLXB0 = 1;
+                mxB = TAB_MVF(xB0_pu, yB0_pu).mv[pred_flag_index_l1];
+                if (!currIsLongTerm)
+                    dist_scale(sc, &mxB, pic_width_in_min_pu, xB0_pu, yB0_pu, pred_flag_index_l1, ref_idx_curr, ref_idx);
+            }
         }
-    }
 
-    if ((is_available_b1) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && (availableFlagLXB0 == 0)) {
-        int colIsLongTerm = refPicList[pi_L0].isLongTerm[(TAB_MVF(xB1_pu, yB1_pu).ref_idx[pi_L0])];
-        // XB1 and L1
-        if((TAB_MVF(xB1_pu, yB1_pu).pred_flag[pi_L0] == 1) && (isScaledFlag_L0 == 0) && colIsLongTerm == currIsLongTerm) {
-            availableFlagLXB0 =1;
-            mxB = TAB_MVF(xB1_pu, yB1_pu).mv[pi_L0];
-            if (!currIsLongTerm)
-                dist_scale(sc, &mxB, pic_width_in_min_pu, xB1_pu, yB1_pu, pi_L0, ref_idx_curr, ref_idx);
+        if (is_available_b1 && !availableFlagLXB0) {
+            int colIsLongTerm = refPicList[pred_flag_index_l0].isLongTerm[(TAB_MVF(xB1_pu, yB1_pu).ref_idx[pred_flag_index_l0])];
+            // XB1 and L1
+            if((TAB_MVF(xB1_pu, yB1_pu).pred_flag[pred_flag_index_l0] == 1) && colIsLongTerm == currIsLongTerm) {
+                availableFlagLXB0 =1;
+                mxB = TAB_MVF(xB1_pu, yB1_pu).mv[pred_flag_index_l0];
+                if (!currIsLongTerm)
+                    dist_scale(sc, &mxB, pic_width_in_min_pu, xB1_pu, yB1_pu, pred_flag_index_l0, ref_idx_curr, ref_idx);
+            }
         }
-    }
 
-    if ((is_available_b1) && !(TAB_MVF(xB1_pu, yB1_pu).is_intra) && (availableFlagLXB0 == 0)) {
-        int colIsLongTerm = refPicList[pi_L1].isLongTerm[(TAB_MVF(xB1_pu, yB1_pu).ref_idx[pi_L1])];
-        // XB1 and L0
-        if((TAB_MVF(xB1_pu, yB1_pu).pred_flag[pi_L1] == 1) && (isScaledFlag_L0 == 0) && colIsLongTerm == currIsLongTerm) {
-            availableFlagLXB0 = 1;
-            mxB = TAB_MVF(xB1_pu, yB1_pu).mv[pi_L1];
-            if (!currIsLongTerm)
-                dist_scale(sc, &mxB, pic_width_in_min_pu, xB1_pu, yB1_pu, pi_L1, ref_idx_curr, ref_idx);
+        if (is_available_b1 && !availableFlagLXB0) {
+            int colIsLongTerm = refPicList[pred_flag_index_l1].isLongTerm[(TAB_MVF(xB1_pu, yB1_pu).ref_idx[pred_flag_index_l1])];
+            // XB1 and L0
+            if((TAB_MVF(xB1_pu, yB1_pu).pred_flag[pred_flag_index_l1] == 1) && colIsLongTerm == currIsLongTerm) {
+                availableFlagLXB0 = 1;
+                mxB = TAB_MVF(xB1_pu, yB1_pu).mv[pred_flag_index_l1];
+                if (!currIsLongTerm)
+                    dist_scale(sc, &mxB, pic_width_in_min_pu, xB1_pu, yB1_pu, pred_flag_index_l1, ref_idx_curr, ref_idx);
+            }
         }
-    }
 
-    if ((isAvailableB2) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && (availableFlagLXB0 == 0)) {
-        int colIsLongTerm = refPicList[pi_L0].isLongTerm[(TAB_MVF(xB2_pu, yB2_pu).ref_idx[pi_L0])];
-        // XB2 and L1
-        if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag[pi_L0] == 1) && (isScaledFlag_L0 == 0) && colIsLongTerm == currIsLongTerm) {
-            availableFlagLXB0 = 1;
-            mxB = TAB_MVF(xB2_pu, yB2_pu).mv[pi_L0];
-            if (!currIsLongTerm)
-                dist_scale(sc, &mxB, pic_width_in_min_pu, xB2_pu, yB2_pu, pi_L0, ref_idx_curr, ref_idx);
+        if (is_available_b2 && !availableFlagLXB0) {
+            int colIsLongTerm = refPicList[pred_flag_index_l0].isLongTerm[(TAB_MVF(xB2_pu, yB2_pu).ref_idx[pred_flag_index_l0])];
+            // XB2 and L1
+            if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag[pred_flag_index_l0] == 1) && colIsLongTerm == currIsLongTerm) {
+                availableFlagLXB0 = 1;
+                mxB = TAB_MVF(xB2_pu, yB2_pu).mv[pred_flag_index_l0];
+                if (!currIsLongTerm)
+                    dist_scale(sc, &mxB, pic_width_in_min_pu, xB2_pu, yB2_pu, pred_flag_index_l0, ref_idx_curr, ref_idx);
+            }
         }
-    }
 
-    if ((isAvailableB2) && !(TAB_MVF(xB2_pu, yB2_pu).is_intra) && (availableFlagLXB0 == 0)) {
-        int colIsLongTerm = refPicList[pi_L1].isLongTerm[(TAB_MVF(xB2_pu, yB2_pu).ref_idx[pi_L1])];
-        // XB2 and L0
-        if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag[pi_L1] == 1) && (isScaledFlag_L0 == 0) && colIsLongTerm == currIsLongTerm) {
-            availableFlagLXB0 = 1;
-            mxB = TAB_MVF(xB2_pu, yB2_pu).mv[pi_L1];
-            if (!currIsLongTerm)
-                dist_scale(sc, &mxB, pic_width_in_min_pu, xB2_pu, yB2_pu, pi_L1, ref_idx_curr, ref_idx);
+        if (is_available_b2 && !availableFlagLXB0) {
+            int colIsLongTerm = refPicList[pred_flag_index_l1].isLongTerm[(TAB_MVF(xB2_pu, yB2_pu).ref_idx[pred_flag_index_l1])];
+            // XB2 and L0
+            if ((TAB_MVF(xB2_pu, yB2_pu).pred_flag[pred_flag_index_l1] == 1) && colIsLongTerm == currIsLongTerm) {
+                availableFlagLXB0 = 1;
+                mxB = TAB_MVF(xB2_pu, yB2_pu).mv[pred_flag_index_l1];
+                if (!currIsLongTerm)
+                    dist_scale(sc, &mxB, pic_width_in_min_pu, xB2_pu, yB2_pu, pred_flag_index_l1, ref_idx_curr, ref_idx);
+            }
         }
     }
 
