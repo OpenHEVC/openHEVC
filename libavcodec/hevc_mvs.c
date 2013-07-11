@@ -894,28 +894,29 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         isScaledFlag_L0 = 1;
     }
 
-    if (is_available_a0)
+    if (is_available_a0) {
         availableFlagLXA0 = mv_mp_mode_mx(s, xA0_pu, yA0_pu, pred_flag_index_l0, &mxA, ref_idx_curr, ref_idx);
         if (!availableFlagLXA0)
             availableFlagLXA0 = mv_mp_mode_mx(s, xA0_pu, yA0_pu, pred_flag_index_l1, &mxA, ref_idx_curr, ref_idx);
-
-    if (is_available_a1 && !availableFlagLXA0)
+    }
+    
+    if (is_available_a1 && !availableFlagLXA0) {
         availableFlagLXA0 = mv_mp_mode_mx(s, xA1_pu, yA1_pu, pred_flag_index_l0, &mxA, ref_idx_curr, ref_idx);
         if (!availableFlagLXA0)
             availableFlagLXA0 = mv_mp_mode_mx(s, xA1_pu, yA1_pu, pred_flag_index_l1, &mxA, ref_idx_curr, ref_idx);
+    }
 
-
-    if (is_available_a0 && !availableFlagLXA0)
+    if (is_available_a0 && !availableFlagLXA0) {
         availableFlagLXA0 = mv_mp_mode_mx_lt(s, xA0_pu, yA0_pu, pred_flag_index_l0, &mxA, ref_idx_curr, ref_idx);
         if (!availableFlagLXA0)
             availableFlagLXA0 = mv_mp_mode_mx_lt(s, xA0_pu, yA0_pu, pred_flag_index_l1, &mxA, ref_idx_curr, ref_idx);
+    }
 
-
-    if (is_available_a1 && !availableFlagLXA0)
+    if (is_available_a1 && !availableFlagLXA0) {
         availableFlagLXA0 = mv_mp_mode_mx_lt(s, xA1_pu, yA1_pu, pred_flag_index_l0, &mxA, ref_idx_curr, ref_idx);
         if (!availableFlagLXA0)
             availableFlagLXA0 = mv_mp_mode_mx_lt(s, xA1_pu, yA1_pu, pred_flag_index_l1, &mxA, ref_idx_curr, ref_idx);
-
+    }
 
     // B candidates
     // above right spatial merge candidate
@@ -929,11 +930,12 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         isAvailable_b0 = check_prediction_block_available(s, log2_cb_size, x0, y0, nPbW,
                                                          nPbH, xB0, yB0, part_idx);
 
-    if (isAvailable_b0)
+    if (isAvailable_b0) {
         availableFlagLXB0 = mv_mp_mode_mx(s, xB0_pu, yB0_pu, pred_flag_index_l0, &mxB, ref_idx_curr, ref_idx);
         if (!availableFlagLXB0)
             availableFlagLXB0 = mv_mp_mode_mx(s, xB0_pu, yB0_pu, pred_flag_index_l1, &mxB, ref_idx_curr, ref_idx);
-
+    }
+    
     if (!availableFlagLXB0) {
         // above spatial merge candidate
         xB1 = x0 + nPbW - 1;
@@ -943,10 +945,11 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
 
         is_available_b1 = cand_up && !(TAB_MVF(xB1_pu, yB1_pu).is_intra);
 
-        if (is_available_b1)
+        if (is_available_b1) {
             availableFlagLXB0 = mv_mp_mode_mx(s, xB1_pu, yB1_pu, pred_flag_index_l0, &mxB, ref_idx_curr, ref_idx);
             if (!availableFlagLXB0)
                 availableFlagLXB0 = mv_mp_mode_mx(s, xB1_pu, yB1_pu, pred_flag_index_l1, &mxB, ref_idx_curr, ref_idx);
+        }
     }
 
     if (!availableFlagLXB0) {
@@ -957,10 +960,11 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         yB2_pu = yB2 >> sc->sps->log2_min_pu_size;
         is_available_b2 = cand_up_left && !(TAB_MVF(xB2_pu, yB2_pu).is_intra);
 
-        if (is_available_b2)
+        if (is_available_b2) {
             availableFlagLXB0 = mv_mp_mode_mx(s, xB2_pu, yB2_pu, pred_flag_index_l0, &mxB, ref_idx_curr, ref_idx);
             if (!availableFlagLXB0)
                 availableFlagLXB0 = mv_mp_mode_mx(s, xB2_pu, yB2_pu, pred_flag_index_l1, &mxB, ref_idx_curr, ref_idx);
+        }
     }
     if (isScaledFlag_L0 == 0) {
         if (availableFlagLXB0) {
@@ -970,20 +974,23 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         availableFlagLXB0 = 0;
 
         // XB0 and L1
-        if (isAvailable_b0)
+        if (isAvailable_b0) {
             availableFlagLXB0 = mv_mp_mode_mx_lt(s, xB0_pu, yB0_pu, pred_flag_index_l0, &mxB, ref_idx_curr, ref_idx);
             if (!availableFlagLXB0)
                 availableFlagLXB0 = mv_mp_mode_mx_lt(s, xB0_pu, yB0_pu, pred_flag_index_l1, &mxB, ref_idx_curr, ref_idx);
+        }
 
-        if (is_available_b1 && !availableFlagLXB0)
+        if (is_available_b1 && !availableFlagLXB0) {
             availableFlagLXB0 = mv_mp_mode_mx_lt(s, xB1_pu, yB1_pu, pred_flag_index_l0, &mxB, ref_idx_curr, ref_idx);
             if (is_available_b1 && !availableFlagLXB0)
                 availableFlagLXB0 = mv_mp_mode_mx_lt(s, xB1_pu, yB1_pu, pred_flag_index_l1, &mxB, ref_idx_curr, ref_idx);
+        }
 
-        if (is_available_b2 && !availableFlagLXB0)
+        if (is_available_b2 && !availableFlagLXB0) {
             availableFlagLXB0 = mv_mp_mode_mx_lt(s, xB2_pu, yB2_pu, pred_flag_index_l0, &mxB, ref_idx_curr, ref_idx);
             if (is_available_b2 && !availableFlagLXB0)
                 availableFlagLXB0 = mv_mp_mode_mx_lt(s, xB2_pu, yB2_pu, pred_flag_index_l1, &mxB, ref_idx_curr, ref_idx);
+        }
 
     }
 
