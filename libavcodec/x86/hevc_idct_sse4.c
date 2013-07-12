@@ -619,6 +619,9 @@ void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
             E00l, E01l, EE0h, EE1h, EE2h, EE3h, E00h, E01h;
     __m128i E4l, E5l, E6l, E7l;
     __m128i E4h, E5h, E6h, E7h;
+    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;
+    __m128i r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31;
+    __m128i Rdst = _mm_loadu_si128((__m128i*)dst);
 
 
     /*__m128i T00,T01, T02, T03, T04, T05, T06, T07;
@@ -1027,7 +1030,10 @@ void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                     _mm_srai_epi32(_mm_sub_epi32(E7l, O7l), shift),
                     _mm_srai_epi32(_mm_sub_epi32(E7h, O7h), shift));
 
-            if (!j) {
+
+
+            if (!j) { //first pass
+
                 /*      Inverse the matrix      */
                 E0l = _mm_unpacklo_epi16(m128iS0, m128iS8);
                 E1l = _mm_unpacklo_epi16(m128iS1, m128iS9);
@@ -1107,25 +1113,27 @@ void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                 m128iS14 = _mm_unpacklo_epi16(m128Tmp4, m128Tmp5);
                 m128iS15 = _mm_unpackhi_epi16(m128Tmp4, m128Tmp5);
 
-                /*  */
-                _mm_store_si128((__m128i *) (src + i), m128iS0);
-                _mm_store_si128((__m128i *) (src + 16 + i), m128iS1);
-                _mm_store_si128((__m128i *) (src + 32 + i), m128iS2);
-                _mm_store_si128((__m128i *) (src + 48 + i), m128iS3);
-                _mm_store_si128((__m128i *) (src + 64 + i), m128iS4);
-                _mm_store_si128((__m128i *) (src + 80 + i), m128iS5);
-                _mm_store_si128((__m128i *) (src + 96 + i), m128iS6);
-                _mm_store_si128((__m128i *) (src + 112 + i), m128iS7);
-                _mm_store_si128((__m128i *) (src + 128 + i), m128iS8);
-                _mm_store_si128((__m128i *) (src + 144 + i), m128iS9);
-                _mm_store_si128((__m128i *) (src + 160 + i), m128iS10);
-                _mm_store_si128((__m128i *) (src + 176 + i), m128iS11);
-                _mm_store_si128((__m128i *) (src + 192 + i), m128iS12);
-                _mm_store_si128((__m128i *) (src + 208 + i), m128iS13);
-                _mm_store_si128((__m128i *) (src + 224 + i), m128iS14);
-                _mm_store_si128((__m128i *) (src + 240 + i), m128iS15);
-
                 if (!i) {
+
+                    r0= m128iS0;    //0
+                    r1= m128iS1;    //16
+                    r2= m128iS2;    //32
+                    r3= m128iS3;    //48
+                    r4= m128iS4;    //64
+                    r5= m128iS5;    //80
+                    r6= m128iS6;    //96
+                    r7= m128iS7;    //112
+                    r8= m128iS8;    //128
+                    r9= m128iS9;    //144
+                    r10= m128iS10;  //160
+                    r11= m128iS11;  //176
+                    r12= m128iS12;  //192
+                    r13= m128iS13;  //208
+                    r14= m128iS14;  //224
+                    r15= m128iS15;  //240
+
+
+
                     m128iS0 = _mm_load_si128((__m128i *) (src + 8));
                     m128iS1 = _mm_load_si128((__m128i *) (src + 24));
                     m128iS2 = _mm_load_si128((__m128i *) (src + 40));
@@ -1143,88 +1151,374 @@ void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                     m128iS14 = _mm_load_si128((__m128i *) (src + 232));
                     m128iS15 = _mm_load_si128((__m128i *) (src + 248));
                 } else {
-                    m128iS0 = _mm_load_si128((__m128i *) (src));
-                    m128iS1 = _mm_load_si128((__m128i *) (src + 32));
-                    m128iS2 = _mm_load_si128((__m128i *) (src + 64));
-                    m128iS3 = _mm_load_si128((__m128i *) (src + 96));
-                    m128iS4 = _mm_loadu_si128((__m128i *) (src + 128));
-                    m128iS5 = _mm_load_si128((__m128i *) (src + 160));
-                    m128iS6 = _mm_load_si128((__m128i *) (src + 192));
-                    m128iS7 = _mm_load_si128((__m128i *) (src + 224));
-                    m128iS8 = _mm_load_si128((__m128i *) (src + 8));
-                    m128iS9 = _mm_load_si128((__m128i *) (src + 32 + 8));
-                    m128iS10 = _mm_load_si128((__m128i *) (src + 64 + 8));
-                    m128iS11 = _mm_load_si128((__m128i *) (src + 96 + 8));
-                    m128iS12 = _mm_loadu_si128((__m128i *) (src + 128 + 8));
-                    m128iS13 = _mm_load_si128((__m128i *) (src + 160 + 8));
-                    m128iS14 = _mm_load_si128((__m128i *) (src + 192 + 8));
-                    m128iS15 = _mm_load_si128((__m128i *) (src + 224 + 8));
+
+                    r16= m128iS0;    //8
+                    r17= m128iS1;    //24
+                    r18= m128iS2;    //40
+                    r19= m128iS3;    //56
+                    r20= m128iS4;    //72
+                    r21= m128iS5;    //88
+                    r22= m128iS6;    //104
+                    r23= m128iS7;    //120
+                    r24= m128iS8;    //136
+                    r25= m128iS9;    //152
+                    r26= m128iS10;  //168
+                    r27= m128iS11;  //184
+                    r28= m128iS12;  //200
+                    r29= m128iS13;  //216
+                    r30= m128iS14;  //232
+                    r31= m128iS15;  //248
+
+                    //prepare next iteration :
+
+                    m128iS0= r0;
+                    m128iS1= r2;
+                    m128iS2= r4;
+                    m128iS3= r6;
+                    m128iS4= r8;
+                    m128iS5= r10;
+                    m128iS6= r12;
+                    m128iS7= r14;
+                    m128iS8= r16;
+                    m128iS9= r18;
+                    m128iS10=r20;
+                    m128iS11=r22;
+                    m128iS12=r24;
+                    m128iS13=r26;
+                    m128iS14=r28;
+                    m128iS15=r30;
+
                     shift = shift_2nd;
                     m128iAdd = _mm_set1_epi32(add_2nd);
                 }
 
             } else {
-                int k, m = 0;
-                _mm_storeu_si128((__m128i *) (src), m128iS0);
-                _mm_storeu_si128((__m128i *) (src + 8), m128iS1);
-                _mm_storeu_si128((__m128i *) (src + 32), m128iS2);
-                _mm_storeu_si128((__m128i *) (src + 40), m128iS3);
-                _mm_storeu_si128((__m128i *) (src + 64), m128iS4);
-                _mm_storeu_si128((__m128i *) (src + 72), m128iS5);
-                _mm_storeu_si128((__m128i *) (src + 96), m128iS6);
-                _mm_storeu_si128((__m128i *) (src + 104), m128iS7);
-                _mm_storeu_si128((__m128i *) (src + 128), m128iS8);
-                _mm_storeu_si128((__m128i *) (src + 136), m128iS9);
-                _mm_storeu_si128((__m128i *) (src + 160), m128iS10);
-                _mm_storeu_si128((__m128i *) (src + 168), m128iS11);
-                _mm_storeu_si128((__m128i *) (src + 192), m128iS12);
-                _mm_storeu_si128((__m128i *) (src + 200), m128iS13);
-                _mm_storeu_si128((__m128i *) (src + 224), m128iS14);
-                _mm_storeu_si128((__m128i *) (src + 232), m128iS15);
-                dst = (uint8_t*) _dst + (i * stride);
 
-                for (k = 0; k < 8; k++) {
-                    dst[0] = av_clip_uint8(dst[0] + src[m]);
-                    dst[1] = av_clip_uint8(dst[1] + src[m + 8]);
-                    dst[2] = av_clip_uint8(dst[2] + src[m + 32]);
-                    dst[3] = av_clip_uint8(dst[3] + src[m + 40]);
-                    dst[4] = av_clip_uint8(dst[4] + src[m + 64]);
-                    dst[5] = av_clip_uint8(dst[5] + src[m + 72]);
-                    dst[6] = av_clip_uint8(dst[6] + src[m + 96]);
-                    dst[7] = av_clip_uint8(dst[7] + src[m + 104]);
-
-                    dst[8] = av_clip_uint8(dst[8] + src[m + 128]);
-                    dst[9] = av_clip_uint8(dst[9] + src[m + 136]);
-                    dst[10] = av_clip_uint8(dst[10] + src[m + 160]);
-                    dst[11] = av_clip_uint8(dst[11] + src[m + 168]);
-                    dst[12] = av_clip_uint8(dst[12] + src[m + 192]);
-                    dst[13] = av_clip_uint8(dst[13] + src[m + 200]);
-                    dst[14] = av_clip_uint8(dst[14] + src[m + 224]);
-                    dst[15] = av_clip_uint8(dst[15] + src[m + 232]);
-                    m += 1;
-                    dst += stride;
-                }
                 if (!i) {
-                    m128iS0 = _mm_load_si128((__m128i *) (src + 16));
-                    m128iS1 = _mm_load_si128((__m128i *) (src + 48));
-                    m128iS2 = _mm_load_si128((__m128i *) (src + 80));
-                    m128iS3 = _mm_loadu_si128((__m128i *) (src + 112));
-                    m128iS4 = _mm_load_si128((__m128i *) (src + 144));
-                    m128iS5 = _mm_load_si128((__m128i *) (src + 176));
-                    m128iS6 = _mm_load_si128((__m128i *) (src + 208));
-                    m128iS7 = _mm_load_si128((__m128i *) (src + 240));
-                    m128iS8 = _mm_load_si128((__m128i *) (src + 24));
-                    m128iS9 = _mm_load_si128((__m128i *) (src + 56));
-                    m128iS10 = _mm_load_si128((__m128i *) (src + 88));
-                    m128iS11 = _mm_loadu_si128((__m128i *) (src + 120));
-                    m128iS12 = _mm_load_si128((__m128i *) (src + 152));
-                    m128iS13 = _mm_load_si128((__m128i *) (src + 184));
-                    m128iS14 = _mm_load_si128((__m128i *) (src + 216));
-                    m128iS15 = _mm_load_si128((__m128i *) (src + 248));
+
+                    r0= m128iS0;    //0
+                    r16= m128iS1;    //8
+                    r2= m128iS2;    //32
+                    r18= m128iS3;    //40
+                    r4= m128iS4;    //64
+                    r20= m128iS5;    //72
+                    r6= m128iS6;    //96
+                    r22= m128iS7;    //104
+                    r8= m128iS8;    //128
+                    r24= m128iS9;    //136
+                    r10= m128iS10;  //160
+                    r26= m128iS11;  //168
+                    r12= m128iS12;  //192
+                    r28= m128iS13;  //200
+                    r14= m128iS14;  //224
+                    r30= m128iS15;  //232
+
+                    m128iS0= r1;
+                    m128iS1= r3;
+                    m128iS2= r5;
+                    m128iS3= r7;
+                    m128iS4= r9;
+                    m128iS5= r11;
+                    m128iS6= r13;
+                    m128iS7= r15;
+                    m128iS8= r17;
+                    m128iS9= r19;
+                    m128iS10=r21;
+                    m128iS11=r23;
+                    m128iS12=r25;
+                    m128iS13=r27;
+                    m128iS14=r29;
+                    m128iS15=r31;
+                }
+                else{
+                    r1= m128iS0;    //16
+                    r17= m128iS1;    //24
+                    r3= m128iS2;    //32+8
+                    r19= m128iS3;    //40+8
+                    r5= m128iS4;    //64+8
+                    r21= m128iS5;    //72+8
+                    r7= m128iS6;    //96+8
+                    r23= m128iS7;    //104+8
+                    r9= m128iS8;    //128+8
+                    r25= m128iS9;    //136+8
+                    r11= m128iS10;  //160+8
+                    r27= m128iS11;  //168+8
+                    r13= m128iS12;  //192+8
+                    r29= m128iS13;  //200+8
+                    r15= m128iS14;  //224+8
+                    r31= m128iS15;  //232+8
                 }
             }
         }
-    }
+    }// end calculus
+
+    //inverse matrix
+    E0l = _mm_unpacklo_epi16(r0, r16);
+    E1l = _mm_unpacklo_epi16(r2, r18);
+    E2l = _mm_unpacklo_epi16(r4, r20);
+    E3l = _mm_unpacklo_epi16(r6, r22);
+    E4l = _mm_unpacklo_epi16(r8, r24);
+    E5l = _mm_unpacklo_epi16(r10, r26);
+    E6l = _mm_unpacklo_epi16(r12, r28);
+    E7l = _mm_unpacklo_epi16(r14, r30);
+
+    O0l = _mm_unpackhi_epi16(r0, r16);
+    O1l = _mm_unpackhi_epi16(r2, r18);
+    O2l = _mm_unpackhi_epi16(r4, r20);
+    O3l = _mm_unpackhi_epi16(r6, r22);
+    O4l = _mm_unpackhi_epi16(r8, r24);
+    O5l = _mm_unpackhi_epi16(r10, r26);
+    O6l = _mm_unpackhi_epi16(r12, r28);
+    O7l = _mm_unpackhi_epi16(r14, r30);
+
+
+    m128Tmp0 = _mm_unpacklo_epi32(E0l, E1l);
+    m128Tmp1 = _mm_unpacklo_epi32(E2l, E3l);
+
+    m128Tmp2 = _mm_unpacklo_epi32(E4l, E5l);
+    m128Tmp3 = _mm_unpacklo_epi32(E6l, E7l);
+
+    r0 = _mm_unpacklo_epi64(m128Tmp0, m128Tmp1);    //1st half 1st row
+    r2 = _mm_unpacklo_epi64(m128Tmp2, m128Tmp3);    //2nd half 1st row
+
+
+    r4 = _mm_unpackhi_epi64(m128Tmp0, m128Tmp1);    //1st half 2nd row
+    r6 = _mm_unpackhi_epi64(m128Tmp2, m128Tmp3);    //2nd hald 2nd row
+
+    m128Tmp0 = _mm_unpackhi_epi32(E0l, E1l);
+    m128Tmp1 = _mm_unpackhi_epi32(E2l, E3l);
+    m128Tmp2 = _mm_unpackhi_epi32(E4l, E5l);
+    m128Tmp3 = _mm_unpackhi_epi32(E6l, E7l);
+
+
+    r8 = _mm_unpacklo_epi64(m128Tmp0, m128Tmp1);
+    r10 = _mm_unpacklo_epi64(m128Tmp2, m128Tmp3);
+
+    r12 = _mm_unpackhi_epi64(m128Tmp0, m128Tmp1);
+    r14 = _mm_unpackhi_epi64(m128Tmp2, m128Tmp3);
+
+    m128Tmp0 = _mm_unpacklo_epi32(O0l, O1l);
+    m128Tmp1 = _mm_unpacklo_epi32(O2l, O3l);
+    m128Tmp2 = _mm_unpacklo_epi32(O4l, O5l);
+    m128Tmp3 = _mm_unpacklo_epi32(O6l, O7l);
+
+    r16 = _mm_unpacklo_epi64(m128Tmp0, m128Tmp1);
+    r18 = _mm_unpacklo_epi64(m128Tmp2, m128Tmp3);
+
+
+    r20 = _mm_unpackhi_epi64(m128Tmp0, m128Tmp1);
+    r22 = _mm_unpackhi_epi64(m128Tmp2, m128Tmp3);
+
+    m128Tmp0 = _mm_unpackhi_epi32(O0l, O1l);
+    m128Tmp1 = _mm_unpackhi_epi32(O2l, O3l);
+    m128Tmp2 = _mm_unpackhi_epi32(O4l, O5l);
+    m128Tmp3 = _mm_unpackhi_epi32(O6l, O7l);
+
+    r24 = _mm_unpacklo_epi64(m128Tmp0, m128Tmp1);
+    r26 = _mm_unpacklo_epi64(m128Tmp2, m128Tmp3);
+
+
+    r28 = _mm_unpackhi_epi64(m128Tmp0, m128Tmp1);
+    r30 = _mm_unpackhi_epi64(m128Tmp2, m128Tmp3);
+//first 8 rows transposed. Can do last addition before store :
+    dst = (uint8_t*) _dst;
+    m128Tmp0= _mm_setzero_si128();
+    m128Tmp1= _mm_loadu_si128((__m128i*)dst);
+    m128Tmp2= _mm_loadu_si128((__m128i*)(dst+stride));
+    m128Tmp3= _mm_loadu_si128((__m128i*)(dst+2*stride));
+    m128Tmp4= _mm_loadu_si128((__m128i*)(dst+3*stride));
+    m128Tmp5= _mm_loadu_si128((__m128i*)(dst+4*stride));
+    m128Tmp6= _mm_loadu_si128((__m128i*)(dst+5*stride));
+    m128Tmp7= _mm_loadu_si128((__m128i*)(dst+6*stride));
+    E0l= _mm_loadu_si128((__m128i*)(dst+7*stride));
+
+
+
+
+    r0= _mm_adds_epi16(r0,_mm_unpacklo_epi8(m128Tmp1,m128Tmp0));
+    r2= _mm_adds_epi16(r2,_mm_unpackhi_epi8(m128Tmp1,m128Tmp0));
+    r0= _mm_packus_epi16(r0,r2);
+
+    r4= _mm_adds_epi16(r4,_mm_unpacklo_epi8(m128Tmp2,m128Tmp0));
+    r6= _mm_adds_epi16(r6,_mm_unpackhi_epi8(m128Tmp2,m128Tmp0));
+    r4= _mm_packus_epi16(r4,r6);
+
+
+    r8= _mm_adds_epi16(r8,_mm_unpacklo_epi8(m128Tmp3,m128Tmp0));
+    r10= _mm_adds_epi16(r10,_mm_unpackhi_epi8(m128Tmp3,m128Tmp0));
+    r8= _mm_packus_epi16(r8,r10);
+
+
+    r12= _mm_adds_epi16(r12,_mm_unpacklo_epi8(m128Tmp4,m128Tmp0));
+    r14= _mm_adds_epi16(r14,_mm_unpackhi_epi8(m128Tmp4,m128Tmp0));
+    r12= _mm_packus_epi16(r12,r14);
+
+
+    r16= _mm_adds_epi16(r16,_mm_unpacklo_epi8(m128Tmp5,m128Tmp0));
+    r18= _mm_adds_epi16(r18,_mm_unpackhi_epi8(m128Tmp5,m128Tmp0));
+    r16= _mm_packus_epi16(r16,r18);
+
+
+    r20= _mm_adds_epi16(r20,_mm_unpacklo_epi8(m128Tmp6,m128Tmp0));
+    r22= _mm_adds_epi16(r22,_mm_unpackhi_epi8(m128Tmp6,m128Tmp0));
+    r20= _mm_packus_epi16(r20,r22);
+
+
+    r24= _mm_adds_epi16(r24,_mm_unpacklo_epi8(m128Tmp7,m128Tmp0));
+    r26= _mm_adds_epi16(r26,_mm_unpackhi_epi8(m128Tmp7,m128Tmp0));
+    r24= _mm_packus_epi16(r24,r26);
+
+
+
+    r28= _mm_adds_epi16(r28,_mm_unpacklo_epi8(E0l,m128Tmp0));
+    r30= _mm_adds_epi16(r30,_mm_unpackhi_epi8(E0l,m128Tmp0));
+    r28= _mm_packus_epi16(r28,r30);
+
+  //  printf("sse :\ndst 0 = %d\n", _mm_extract_epi8(m128Tmp1,0));
+    //printf("calcu  = %d\n", _mm_extract_epi8(r0,0));
+    _mm_storeu_si128((__m128i*)dst,r0);
+    _mm_storeu_si128((__m128i*)(dst+stride),r4);
+    _mm_storeu_si128((__m128i*)(dst+2*stride),r8);
+    _mm_storeu_si128((__m128i*)(dst+3*stride),r12);
+    _mm_storeu_si128((__m128i*)(dst+4*stride),r16);
+    _mm_storeu_si128((__m128i*)(dst+5*stride),r20);
+    _mm_storeu_si128((__m128i*)(dst+6*stride),r24);
+    _mm_storeu_si128((__m128i*)(dst+7*stride),r28);
+
+
+//do last 8 rows :
+
+    //inverse matrix
+    E0l = _mm_unpacklo_epi16(r1, r17);
+    E1l = _mm_unpacklo_epi16(r3, r19);
+    E2l = _mm_unpacklo_epi16(r5, r21);
+    E3l = _mm_unpacklo_epi16(r7, r23);
+    E4l = _mm_unpacklo_epi16(r9, r25);
+    E5l = _mm_unpacklo_epi16(r11, r27);
+    E6l = _mm_unpacklo_epi16(r13, r29);
+    E7l = _mm_unpacklo_epi16(r15, r31);
+
+    O0l = _mm_unpackhi_epi16(r1, r17);
+    O1l = _mm_unpackhi_epi16(r3, r19);
+    O2l = _mm_unpackhi_epi16(r5, r21);
+    O3l = _mm_unpackhi_epi16(r7, r23);
+    O4l = _mm_unpackhi_epi16(r9, r25);
+    O5l = _mm_unpackhi_epi16(r11, r27);
+    O6l = _mm_unpackhi_epi16(r13, r29);
+    O7l = _mm_unpackhi_epi16(r15, r31);
+
+    m128Tmp0 = _mm_unpacklo_epi32(E0l, E1l);
+    m128Tmp1 = _mm_unpacklo_epi32(E2l, E3l);
+
+    m128Tmp2 = _mm_unpacklo_epi32(E4l, E5l);
+    m128Tmp3 = _mm_unpacklo_epi32(E6l, E7l);
+
+    r0 = _mm_unpacklo_epi64(m128Tmp0, m128Tmp1);    //1st half 1st row
+    r2 = _mm_unpacklo_epi64(m128Tmp2, m128Tmp3);    //2nd half 1st row
+
+
+    r4 = _mm_unpackhi_epi64(m128Tmp0, m128Tmp1);    //1st half 2nd row
+    r6 = _mm_unpackhi_epi64(m128Tmp2, m128Tmp3);    //2nd hald 2nd row
+
+    m128Tmp0 = _mm_unpackhi_epi32(E0l, E1l);
+    m128Tmp1 = _mm_unpackhi_epi32(E2l, E3l);
+    m128Tmp2 = _mm_unpackhi_epi32(E4l, E5l);
+    m128Tmp3 = _mm_unpackhi_epi32(E6l, E7l);
+
+
+    r8 = _mm_unpacklo_epi64(m128Tmp0, m128Tmp1);
+    r10 = _mm_unpacklo_epi64(m128Tmp2, m128Tmp3);
+
+    r12 = _mm_unpackhi_epi64(m128Tmp0, m128Tmp1);
+    r14 = _mm_unpackhi_epi64(m128Tmp2, m128Tmp3);
+
+    m128Tmp0 = _mm_unpacklo_epi32(O0l, O1l);
+    m128Tmp1 = _mm_unpacklo_epi32(O2l, O3l);
+    m128Tmp2 = _mm_unpacklo_epi32(O4l, O5l);
+    m128Tmp3 = _mm_unpacklo_epi32(O6l, O7l);
+
+    r16 = _mm_unpacklo_epi64(m128Tmp0, m128Tmp1);
+    r18 = _mm_unpacklo_epi64(m128Tmp2, m128Tmp3);
+
+
+    r20 = _mm_unpackhi_epi64(m128Tmp0, m128Tmp1);
+    r22 = _mm_unpackhi_epi64(m128Tmp2, m128Tmp3);
+
+    m128Tmp0 = _mm_unpackhi_epi32(O0l, O1l);
+    m128Tmp1 = _mm_unpackhi_epi32(O2l, O3l);
+    m128Tmp2 = _mm_unpackhi_epi32(O4l, O5l);
+    m128Tmp3 = _mm_unpackhi_epi32(O6l, O7l);
+
+    r24 = _mm_unpacklo_epi64(m128Tmp0, m128Tmp1);
+    r26 = _mm_unpacklo_epi64(m128Tmp2, m128Tmp3);
+
+
+    r28 = _mm_unpackhi_epi64(m128Tmp0, m128Tmp1);
+    r30 = _mm_unpackhi_epi64(m128Tmp2, m128Tmp3);
+//first 8 rows transposed. Can do last addition before store :
+
+    dst = (uint8_t*) (_dst + (8*stride));
+    m128Tmp0= _mm_setzero_si128();
+    m128Tmp1= _mm_loadu_si128((__m128i*)dst);
+    m128Tmp2= _mm_loadu_si128((__m128i*)(dst+stride));
+    m128Tmp3= _mm_loadu_si128((__m128i*)(dst+2*stride));
+    m128Tmp4= _mm_loadu_si128((__m128i*)(dst+3*stride));
+    m128Tmp5= _mm_loadu_si128((__m128i*)(dst+4*stride));
+    m128Tmp6= _mm_loadu_si128((__m128i*)(dst+5*stride));
+    m128Tmp7= _mm_loadu_si128((__m128i*)(dst+6*stride));
+    E0l= _mm_loadu_si128((__m128i*)(dst+7*stride));
+
+
+    r0= _mm_adds_epi16(r0,_mm_unpacklo_epi8(m128Tmp1,m128Tmp0));
+    r2= _mm_adds_epi16(r2,_mm_unpackhi_epi8(m128Tmp1,m128Tmp0));
+    r0= _mm_packus_epi16(r0,r2);
+
+
+
+
+    r4= _mm_adds_epi16(r4,_mm_unpacklo_epi8(m128Tmp2,m128Tmp0));
+    r6= _mm_adds_epi16(r6,_mm_unpackhi_epi8(m128Tmp2,m128Tmp0));
+    r4= _mm_packus_epi16(r4,r6);
+
+
+    r8= _mm_adds_epi16(r8,_mm_unpacklo_epi8(m128Tmp3,m128Tmp0));
+    r10= _mm_adds_epi16(r10,_mm_unpackhi_epi8(m128Tmp3,m128Tmp0));
+    r8= _mm_packus_epi16(r8,r10);
+
+
+    r12= _mm_adds_epi16(r12,_mm_unpacklo_epi8(m128Tmp4,m128Tmp0));
+    r14= _mm_adds_epi16(r14,_mm_unpackhi_epi8(m128Tmp4,m128Tmp0));
+    r12= _mm_packus_epi16(r12,r14);
+
+
+    r16= _mm_adds_epi16(r16,_mm_unpacklo_epi8(m128Tmp5,m128Tmp0));
+    r18= _mm_adds_epi16(r18,_mm_unpackhi_epi8(m128Tmp5,m128Tmp0));
+    r16= _mm_packus_epi16(r16,r18);
+
+
+    r20= _mm_adds_epi16(r20,_mm_unpacklo_epi8(m128Tmp6,m128Tmp0));
+    r22= _mm_adds_epi16(r22,_mm_unpackhi_epi8(m128Tmp6,m128Tmp0));
+    r20= _mm_packus_epi16(r20,r22);
+
+
+    r24= _mm_adds_epi16(r24,_mm_unpacklo_epi8(m128Tmp7,m128Tmp0));
+    r26= _mm_adds_epi16(r26,_mm_unpackhi_epi8(m128Tmp7,m128Tmp0));
+    r24= _mm_packus_epi16(r24,r26);
+
+
+
+    r28= _mm_adds_epi16(r28,_mm_unpacklo_epi8(E0l,m128Tmp0));
+    r30= _mm_adds_epi16(r30,_mm_unpackhi_epi8(E0l,m128Tmp0));
+    r28= _mm_packus_epi16(r28,r30);
+
+    _mm_storeu_si128((__m128i*)dst,r0);
+    _mm_storeu_si128((__m128i*)(dst+stride),r4);
+    _mm_storeu_si128((__m128i*)(dst+2*stride),r8);
+    _mm_storeu_si128((__m128i*)(dst+3*stride),r12);
+    _mm_storeu_si128((__m128i*)(dst+4*stride),r16);
+    _mm_storeu_si128((__m128i*)(dst+5*stride),r20);
+    _mm_storeu_si128((__m128i*)(dst+6*stride),r24);
+    _mm_storeu_si128((__m128i*)(dst+7*stride),r28);
 
 }
 
