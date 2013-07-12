@@ -6,10 +6,10 @@
 #define AVCONV_DATADIR "/usr/local/share/avconv"
 #define CC_IDENT "llvm-gcc 4.2.1 (LLVM build 2336.11.00)"
 
+#define restrict
 #ifdef __APPLE_CC__
 #define EXTERN_PREFIX "_"
 #else
-	#define restrict
     #ifdef __MINGW32__
         #ifdef __MINGW64__
         #define EXTERN_PREFIX ""
@@ -267,7 +267,7 @@
 #define HAVE_SYMVER_GNU_ASM 0
 #define HAVE_SYNC_VAL_COMPARE_AND_SWAP 1
 #define HAVE_SYSCONF 1
-#define HAVE_SYSCTL 1
+#define HAVE_SYSCTL 0
 #define HAVE_SYS_MMAN_H 1
 #define HAVE_SYS_PARAM_H 1
 #define HAVE_SYS_RESOURCE_H 1
@@ -357,7 +357,7 @@
 #define CONFIG_LSP 1
 #define CONFIG_LZO 1
 #define CONFIG_MDCT 1
-#define CONFIG_MEMALIGN_HACK 0
+#define CONFIG_MEMALIGN_HACK 1
 #define CONFIG_NETWORK 1
 #define CONFIG_NONFREE 0
 #define CONFIG_PIC 1
