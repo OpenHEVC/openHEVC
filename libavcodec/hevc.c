@@ -2351,8 +2351,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             calc_md5(sc->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
             calc_md5(sc->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
             sc->is_decoded = 1;
-            printf_ref_pic_list(s);
-            print_md5(poc, sc->md5);
+            //printf_ref_pic_list(s);
+            //print_md5(poc, sc->md5);
         }
 
         if (sc->sh.first_slice_in_pic_flag) {

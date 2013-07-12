@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 2.8)
 project (libavHM)
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
+message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 
 #find asm compiler
 FIND_PROGRAM(YASM_EXECUTABLE yasm)

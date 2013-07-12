@@ -33,10 +33,6 @@
 
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_NB_THREADS 16
-//#define DEBLOCKING_IN_LOOP
-#ifdef DEBLOCKING_IN_LOOP
-#define SAO_IN_LOOP
-#endif
 
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
