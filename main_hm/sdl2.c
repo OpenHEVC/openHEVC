@@ -53,7 +53,7 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     // allocate window, renderer, texture
     pWindow1    = SDL_CreateWindow( "YUV", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                     (frame_width + 2 * edge), frame_height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
-    pRenderer1  = SDL_CreateRenderer(pWindow1, -1, SDL_RENDERER_ACCELERATED);
+    pRenderer1  = SDL_CreateRenderer(pWindow1, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     bmpTex1     = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12,
                     SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);
     if(pWindow1==NULL || pRenderer1==NULL || bmpTex1==NULL) {
