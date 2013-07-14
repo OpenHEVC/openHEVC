@@ -2016,13 +2016,13 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, sc->sps->log2_ctb_size, 0);
         ctb_addr_ts++;
         save_states(s, ctb_addr_ts);
-     //   hls_filters(s, x_ctb, y_ctb, ctb_size);
+  //      hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
             break;
         }
     }
-  //  if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
-    //    hls_filter(s, x_ctb, y_ctb);
+//    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
+//       hls_filters_tiles(s, x_ctb, y_ctb);
     return ctb_addr_ts;
 }
 
@@ -2130,7 +2130,27 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
    				hls_filter(s, x_ctb, y_ctb);
     	   	}
   		}
+	// Deblocking and SAO filters edjes 
+/*		for(offset = 0, i = 0; i < sc->pps->num_tile_columns-1; i++ ) {
+        	offset += sc->pps->column_width[i];
+			for(j = 0; j < sc->sps->pic_height_in_ctbs; j++ ){
+            	hls_filter(s,  (offset-1)*ctb_size, j*ctb_size );
+            }
+            for(j = 0; j < sc->sps->pic_height_in_ctbs; j++ ){
+            	hls_filter(s,  offset*ctb_size, j*ctb_size );
+            }
+        }
+        for(offset = 0, i = 0; i < sc->pps->num_tile_rows-1; i++ ) {
+        	offset += sc->pps->row_height[i];
+			for(j = 0; j < sc->sps->pic_width_in_ctbs; j++ ){
+       	        hls_filter(s,  j*ctb_size, (offset-1)*ctb_size  );
+            }
+            for(j = 0; j < sc->sps->pic_width_in_ctbs; j++ ){
+       	        hls_filter(s,  j*ctb_size, offset*ctb_size  );
+            }
+        }*/
 	}
+
     for(i=0; i<=sc->sh.num_entry_point_offsets; i++)
         res += ret[i];
     av_free(ret);
