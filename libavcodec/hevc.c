@@ -2016,13 +2016,13 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, sc->sps->log2_ctb_size, 0);
         ctb_addr_ts++;
         save_states(s, ctb_addr_ts);
-        hls_filters(s, x_ctb, y_ctb, ctb_size);
+     //   hls_filters(s, x_ctb, y_ctb, ctb_size);
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
             break;
         }
     }
-    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
-        hls_filter(s, x_ctb, y_ctb);
+  //  if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
+    //    hls_filter(s, x_ctb, y_ctb);
     return ctb_addr_ts;
 }
 
@@ -2121,8 +2121,16 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 
     if (sc->pps->entropy_coding_sync_enabled_flag)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1);
-    else
+    else	{
+	int ctb_size = 1<<s->HEVCsc->sps->log2_ctb_size, y_ctb, x_ctb;
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1);
+	// Deblocking and SAO filters
+		for(y_ctb = 0; y_ctb < sc->sps->pic_height_in_luma_samples; y_ctb+= ctb_size )	{
+   			for(x_ctb = 0; x_ctb < sc->sps->pic_width_in_luma_samples; x_ctb+= ctb_size)	{
+   				hls_filter(s, x_ctb, y_ctb);
+    	   	}
+  		}
+	}
     for(i=0; i<=sc->sh.num_entry_point_offsets; i++)
         res += ret[i];
     av_free(ret);
