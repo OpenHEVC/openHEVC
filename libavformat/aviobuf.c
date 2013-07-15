@@ -706,7 +706,7 @@ int ffio_set_buf_size(AVIOContext *s, int buf_size)
 
 static int url_resetbuf(AVIOContext *s, int flags)
 {
-    assert(flags == AVIO_FLAG_WRITE || flags == AVIO_FLAG_READ);
+  //  assert(flags == AVIO_FLAG_WRITE || flags == AVIO_FLAG_READ);
 
     if (flags & AVIO_FLAG_WRITE) {
         s->buf_end = s->buffer + s->buffer_size;
