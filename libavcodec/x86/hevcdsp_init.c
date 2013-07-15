@@ -63,6 +63,8 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_
 
 // MC functions
 void ff_hevc_put_unweighted_pred_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
+void ff_hevc_put_unweighted_pred_8_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
+
 void ff_hevc_put_weighted_pred_avg_8_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src1, int16_t *src2, ptrdiff_t srcstride,int width, int height);
 void ff_hevc_weighted_pred_sse(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
 void ff_hevc_put_weighted_pred_avg_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src1, int16_t *src2, ptrdiff_t srcstride,int width, int height);
@@ -138,7 +140,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 if (EXTERNAL_SSE4(mm_flags)) {
 #if ARCH_X86_64
 #if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
-                	c->put_unweighted_pred = ff_hevc_put_unweighted_pred_sse;
+                	c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
                 	c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
                 	c->weighted_pred = ff_hevc_weighted_pred_sse;
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_sse;
