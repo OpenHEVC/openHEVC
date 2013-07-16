@@ -1050,7 +1050,15 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                     sc->cbf_luma[y_pu * pic_width_in_min_pu + x_pu] = 1;
                 }
         if (!sc->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
+        	if(!sc->enable_parallel_tiles)
+        		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
+        	else {
+        		lc->save_boundary_strengths[lc->nb_saved].x = x0;
+        		lc->save_boundary_strengths[lc->nb_saved].y = y0;
+        		lc->save_boundary_strengths[lc->nb_saved].size = log2_trafo_size;
+        		lc->nb_saved ++;
+        	}
+
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
                 set_deblocking_bypass(s, x0, y0, log2_cb_size);
             }
@@ -1064,7 +1072,6 @@ static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int i, j;
     HEVCSharedContext *sc = s->HEVCsc ;
     int log2_min_pu_size = sc->sps->log2_min_pu_size;
-
 
     int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
 
@@ -1120,7 +1127,6 @@ static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
         case 0:
             lc->pu.mvd.x = 0;
     }
-
     switch (y) {
         case 2:
             lc->pu.mvd.y = ff_hevc_mvd_decode(s);
@@ -1638,8 +1644,6 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
     int pb_size = (1 << log2_cb_size) >> split;
     int side = split + 1;
     int size_in_pus = pb_size >> sc->sps->log2_min_pu_size;
-
-
     int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
 
 
@@ -1698,7 +1702,14 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
         if (!sc->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+        	if(!s->HEVCsc->enable_parallel_tiles)
+        		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+        	else {
+        		lc->save_boundary_strengths[lc->nb_saved].x = x0;
+        		lc->save_boundary_strengths[lc->nb_saved].y = y0;
+        		lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
+        		lc->nb_saved ++;
+        	}
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
                 set_deblocking_bypass(s, x, y, log2_cb_size);
 
@@ -1778,7 +1789,14 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                                    log2_cb_size, 0, 0);
             } else {
                 if (!sc->sh.disable_deblocking_filter_flag) {
-                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+                	if(!s->HEVCsc->enable_parallel_tiles)
+                		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+                	else {
+                		lc->save_boundary_strengths[lc->nb_saved].x = x0;
+                		lc->save_boundary_strengths[lc->nb_saved].y = y0;
+                		lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
+                		lc->nb_saved ++;
+                	}
                     if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
                         set_deblocking_bypass(s, x, y, log2_cb_size);
                     }
@@ -2056,11 +2074,11 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 #ifdef WPP1
     int startheader, cmpt = 0;
 #endif
-
     if(!sc->ctb_entry_count) {
         sc->ctb_entry_count = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
-
-
+        if(sc->enable_parallel_tiles)	{
+        	s->HEVClcList[0]->save_boundary_strengths = av_malloc(sizeof(Filter_data) * (sc->sps->pic_height_in_luma_samples >> sc->sps->log2_min_transform_block_size) * (sc->sps->pic_width_in_luma_samples >> sc->sps->log2_min_transform_block_size) );
+        }
         for(i=1; i< s->threads_number; i++) {
             s->sList[i] =  av_malloc(sizeof(HEVCContext));
             memcpy(s->sList[i], s, sizeof(HEVCContext));
@@ -2079,6 +2097,10 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
             s->HEVClcList[i]->cc = av_malloc(sizeof(CABACContext));
             s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->HEVCsc->frame->linesize[0]);
             s->HEVClcList[i]->BufferMC = av_malloc((MAX_PB_SIZE + 7)*MAX_PB_SIZE*sizeof(uint16_t));
+            if(sc->enable_parallel_tiles)	{
+            	s->HEVClcList[i]->save_boundary_strengths = av_malloc(sizeof(Filter_data) * (sc->sps->pic_height_in_luma_samples >> sc->sps->log2_min_transform_block_size) * (sc->sps->pic_width_in_luma_samples >> sc->sps->log2_min_transform_block_size) );
+            }
+
             s->sList[i]->HEVClc = s->HEVClcList[i];
         }
     }
@@ -2141,33 +2163,24 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
     if (sc->pps->entropy_coding_sync_enabled_flag)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1);
     else	{
-	int ctb_size = 1<<s->HEVCsc->sps->log2_ctb_size, y_ctb, x_ctb;
-        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1);
-	// Deblocking and SAO filters
+    	int ctb_size = 1<<s->HEVCsc->sps->log2_ctb_size, y_ctb, x_ctb;
+    	for(i=0; i< s->threads_number; i++) {
+    		s->HEVClcList[i]->nb_saved = 0;
+    	}
+    	s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1);
+        // Deblocking and SAO filters
+
+        for(i=0; i< s->threads_number; i++) {
+        	for(j=0; j< s->HEVClcList[i]->nb_saved; j++)	{
+        		ff_hevc_deblocking_boundary_strengths(s, s->HEVClcList[i]->save_boundary_strengths[j].x, s->HEVClcList[i]->save_boundary_strengths[j].y, s->HEVClcList[i]->save_boundary_strengths[j].size);
+        	}
+        }
+
 		for(y_ctb = 0; y_ctb < sc->sps->pic_height_in_luma_samples; y_ctb+= ctb_size )	{
    			for(x_ctb = 0; x_ctb < sc->sps->pic_width_in_luma_samples; x_ctb+= ctb_size)	{
    				hls_filter(s, x_ctb, y_ctb);
     	   	}
   		}
-	// Deblocking and SAO filters edjes 
-/*		for(offset = 0, i = 0; i < sc->pps->num_tile_columns-1; i++ ) {
-        	offset += sc->pps->column_width[i];
-			for(j = 0; j < sc->sps->pic_height_in_ctbs; j++ ){
-            	hls_filter(s,  (offset-1)*ctb_size, j*ctb_size );
-            }
-            for(j = 0; j < sc->sps->pic_height_in_ctbs; j++ ){
-            	hls_filter(s,  offset*ctb_size, j*ctb_size );
-            }
-        }
-        for(offset = 0, i = 0; i < sc->pps->num_tile_rows-1; i++ ) {
-        	offset += sc->pps->row_height[i];
-			for(j = 0; j < sc->sps->pic_width_in_ctbs; j++ ){
-       	        hls_filter(s,  j*ctb_size, (offset-1)*ctb_size  );
-            }
-            for(j = 0; j < sc->sps->pic_width_in_ctbs; j++ ){
-       	        hls_filter(s,  j*ctb_size, offset*ctb_size  );
-            }
-        }*/
 	}
 
     for(i=0; i<=sc->sh.num_entry_point_offsets; i++)
@@ -2473,7 +2486,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
     sc->skipped_buf_size = 0;
+    sc->enable_parallel_tiles = 0;
     s->threads_number = 1;
+
     return 0;
 }
 
