@@ -169,7 +169,8 @@ static int get_pcm(HEVCContext *s, int x, int y)
 {
     HEVCSharedContext *sc = s->HEVCsc;
     int log2_min_pu_size = sc->sps->log2_min_pu_size - 1;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
     if (x < 0)
         return 0;
     return sc->is_pcm[(y >> log2_min_pu_size) * pic_width_in_min_pu + (x >> log2_min_pu_size)];
@@ -259,11 +260,7 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int tc[2];
     uint8_t no_p[2] = {0};
     uint8_t no_q[2] = {0};
-    //int pixel = 1 + !!(sc->sps->bit_depth - 8); // sizeof(pixel)
 
-    //int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
-    //int min_pu_size = 1 << sc->sps->log2_min_pu_size;
-    //int log2_min_pu_size = sc->sps->log2_min_pu_size;
     int log2_ctb_size =  sc->sps->log2_ctb_size;
     int x_end, y_end;
     int ctb_size = 1<<log2_ctb_size;
@@ -481,7 +478,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
     HEVCSharedContext *sc = s->HEVCsc; 
     int log2_min_pu_size = sc->sps->log2_min_pu_size;
     int min_pu_size = 1 << sc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
     int i, j;
     int bs;
     MvField *tab_mvf = sc->ref->tab_mvf;

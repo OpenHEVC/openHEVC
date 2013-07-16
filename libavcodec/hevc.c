@@ -82,8 +82,8 @@ static int pic_arrays_init(HEVCContext *s)
     int pic_size = sc->sps->pic_width_in_luma_samples * sc->sps->pic_height_in_luma_samples;
     int pic_size_in_ctb = pic_size>>(sc->sps->log2_min_coding_block_size<<1);
     int ctb_count = sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs;
-    int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
-    int pic_height_in_min_pu = sc->sps->pic_height_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+    int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
     sc->bs_width = sc->sps->pic_width_in_luma_samples >> 3;
     sc->bs_height = sc->sps->pic_height_in_luma_samples >> 3;
     sc->sao = av_mallocz(ctb_count * sizeof(*sc->sao));
@@ -953,7 +953,8 @@ static void set_deblocking_bypass(HEVCContext *s, int x0, int y0, int log2_cb_si
     int i, j;
     int cb_size = 1 << log2_cb_size;
     int log2_min_pu_size = s->HEVCsc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_min_cbs * 4;
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
     for (j = (y0 >> log2_min_pu_size); j < ((y0 + cb_size) >> log2_min_pu_size); j++)
         for (i = (x0 >> log2_min_pu_size); i < ((x0 + cb_size) >> log2_min_pu_size); i++)
             s->HEVCsc->is_pcm[i + j * pic_width_in_min_pu] = 2;
@@ -1028,7 +1029,9 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
         int i,j;
         int min_pu_size = 1 << sc->sps->log2_min_pu_size;
         int log2_min_pu_size = sc->sps->log2_min_pu_size;
-        int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+
+        int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
         if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
             SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) ||
             SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0)) {
@@ -1061,7 +1064,11 @@ static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int i, j;
     HEVCSharedContext *sc = s->HEVCsc ;
     int log2_min_pu_size = sc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
+
     GetBitContext gb;
     int cb_size = 1 << log2_cb_size;
     int stride0 = sc->frame->linesize[0];
@@ -1250,7 +1257,11 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     struct MvField current_mv = {{{ 0 }}};
     int i, j;
     int x_pu, y_pu;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
+
     MvField *tab_mvf = sc->ref->tab_mvf;
     RefPicList  *refPicList =  sc->ref->refPicList;
 
@@ -1487,7 +1498,11 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     HEVCLocalContext *lc = s->HEVClc;
     int x_pu = x0 >> sc->sps->log2_min_pu_size;
     int y_pu = y0 >> sc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs << 2;
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
+
+
     int size_in_pus = pu_size >> sc->sps->log2_min_pu_size;
     int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
@@ -1623,7 +1638,11 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
     int pb_size = (1 << log2_cb_size) >> split;
     int side = split + 1;
     int size_in_pus = pb_size >> sc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
+
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
+
     MvField *tab_mvf = sc->ref->tab_mvf;
     for (i = 0; i < side; i++) {
         int x_pu = (x0 + pb_size * i) >> sc->sps->log2_min_pu_size;
@@ -2330,8 +2349,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
 
         if(sc->sh.first_slice_in_pic_flag) {
-            int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
-            int pic_height_in_min_pu = sc->sps->pic_height_in_min_cbs * 4;
+            int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+            int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
             memset(sc->horizontal_bs, 0, 2 * sc->bs_width * sc->bs_height);
             memset(sc->vertical_bs, 0, sc->bs_width * 2 * sc->bs_height);
             memset(sc->cbf_luma, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
