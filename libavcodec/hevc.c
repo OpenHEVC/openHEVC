@@ -2025,7 +2025,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     return ctb_addr_ts;
 }
 
-static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
+static int hls_slice_data_wpp(HEVCContext *s, int length)
 {
     HEVCSharedContext *sc = s->HEVCsc;
     HEVCLocalContext *lc = s->HEVClc;
@@ -2095,7 +2095,7 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 #else
         offset += sc->sh.entry_point_offset[sc->sh.num_entry_point_offsets-1];
 #endif
-        sc->sh.size[sc->sh.num_entry_point_offsets-1] = avpkt->size-offset;
+        sc->sh.size[sc->sh.num_entry_point_offsets-1] = length-offset;
         sc->sh.offset[sc->sh.num_entry_point_offsets-1] = offset;
     }
 
@@ -2116,6 +2116,37 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
         arg[i] = i;
         ret[i] = 0;
     }
+    if (sc->pps->entropy_coding_sync_enabled_flag)
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1);
+    else	{
+	int ctb_size = 1<<s->HEVCsc->sps->log2_ctb_size, y_ctb, x_ctb;
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1);
+	// Deblocking and SAO filters
+		for(y_ctb = 0; y_ctb < sc->sps->pic_height_in_luma_samples; y_ctb+= ctb_size )	{
+   			for(x_ctb = 0; x_ctb < sc->sps->pic_width_in_luma_samples; x_ctb+= ctb_size)	{
+   				hls_filter(s, x_ctb, y_ctb);
+    	   	}
+  		}
+	// Deblocking and SAO filters edjes 
+/*		for(offset = 0, i = 0; i < sc->pps->num_tile_columns-1; i++ ) {
+        	offset += sc->pps->column_width[i];
+			for(j = 0; j < sc->sps->pic_height_in_ctbs; j++ ){
+            	hls_filter(s,  (offset-1)*ctb_size, j*ctb_size );
+            }
+            for(j = 0; j < sc->sps->pic_height_in_ctbs; j++ ){
+            	hls_filter(s,  offset*ctb_size, j*ctb_size );
+            }
+        }
+        for(offset = 0, i = 0; i < sc->pps->num_tile_rows-1; i++ ) {
+        	offset += sc->pps->row_height[i];
+			for(j = 0; j < sc->sps->pic_width_in_ctbs; j++ ){
+       	        hls_filter(s,  j*ctb_size, (offset-1)*ctb_size  );
+            }
+            for(j = 0; j < sc->sps->pic_width_in_ctbs; j++ ){
+       	        hls_filter(s,  j*ctb_size, offset*ctb_size  );
+            }
+        }*/
+	}
 
 
     for(i=0; i<=sc->sh.num_entry_point_offsets; i++)
@@ -2512,7 +2543,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     *got_output = ret;
 
-    if (1){ //s->decode_checksum_sei) {
+    if (s->decode_checksum_sei) {
         int cIdx;
         uint8_t md5[3][16];
         AVFrame *frame = sc->ref->frame;
@@ -2524,13 +2555,13 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         calc_md5(md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
         for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
             if (!compare_md5(md5[cIdx], s->HEVCsc->md5[cIdx])) {
-                av_log(s->avctx, AV_LOG_ERROR, "Incorrect MD5 (poc: %d, plane: %d)\n", sc->poc, cIdx);
+                av_log(s->avctx, AV_LOG_ERROR, "MD5 not ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
                 if (s->avctx->err_recognition & AV_EF_EXPLODE) {
                     *got_output = 0;
                     return AVERROR_INVALIDDATA;
                 }
             } else {
-                av_log(s->avctx, AV_LOG_INFO, "Correct MD5 (poc: %d, plane: %d)\n", sc->poc, cIdx);
+                av_log(s->avctx, AV_LOG_INFO, "MD5 ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
             }
         }
 #ifdef POC_DISPLAY_MD5
