@@ -49,7 +49,7 @@ void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem);
 do {\
     __typeof__(tab) _tab = (tab);\
     __typeof__(elem) _elem = (elem);\
-    (void)sizeof(**_tab == _elem); \
+    (void)sizeof(**_tab == _elem); /* check that types are compatible */\
     ff_dynarray_add((intptr_t **)_tab, nb_ptr, (intptr_t)_elem);\
 } while(0)
 #else
@@ -57,7 +57,7 @@ do {\
 do {\
     ff_dynarray_add((intptr_t **)(tab), nb_ptr, (intptr_t)(elem));\
 } while(0)
-#endif 
+#endif
 
 struct tm *ff_brktimegm(time_t secs, struct tm *tm);
 

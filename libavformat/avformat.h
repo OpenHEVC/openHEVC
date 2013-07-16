@@ -200,7 +200,7 @@
 
 #include <time.h>
 #include <stdio.h>  /* FILE */
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
 

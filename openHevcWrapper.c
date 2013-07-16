@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "openHevcWrapper.h"
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 #include "libavcodec/hevc.h"
 
 typedef struct OpenHevcWrapperContext {
