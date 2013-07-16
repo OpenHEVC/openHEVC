@@ -114,7 +114,6 @@ libavformat/format.c
 libavformat/id3v2.c
 libavformat/hevcdec.c
 libavformat/metadata.c
-libavformat/network.c
 libavformat/options.c
 libavformat/os_support.c
 libavformat/rawdec.c
