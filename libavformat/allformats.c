@@ -64,7 +64,6 @@ void av_register_all(void)
     /* protocols */
     REGISTER_PROTOCOL(CONCAT,           concat);
     REGISTER_PROTOCOL(FILE,             file);
-    REGISTER_PROTOCOL(FFRTMPHTTP,       ffrtmphttp);
 
 
 }

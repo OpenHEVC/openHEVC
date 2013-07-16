@@ -113,14 +113,11 @@ libavformat/file.c
 libavformat/format.c
 libavformat/id3v2.c
 libavformat/hevcdec.c
-libavformat/http.c
-libavformat/httpauth.c
 libavformat/metadata.c
 libavformat/network.c
 libavformat/options.c
 libavformat/os_support.c
 libavformat/rawdec.c
-libavformat/rtmphttp.c
 libavformat/utils.c
 libavformat/url.c
 libavformat/urldecode.c
