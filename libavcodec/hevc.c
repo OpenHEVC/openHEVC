@@ -2518,6 +2518,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_freep(&sc->sh.entry_point_offset);
         av_freep(&sc->sh.offset);
         av_freep(&sc->sh.size);
+        if(sc->enable_parallel_tiles)
+        	av_free(s->HEVClcList[0]->save_boundary_strengths);
+
         for (i = 1; i < s->threads_number; i++) {
             lc = s->HEVClcList[i];
             av_free(lc->gb);
@@ -2529,6 +2532,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
                 av_freep(&lc->tt.cbf_cr[j]);
             }
             av_free(lc->cabac_state);
+            if(sc->enable_parallel_tiles)
+             	av_free(lc->save_boundary_strengths);
             av_free(lc);
         }
         av_free(sc->ctb_entry_count);
