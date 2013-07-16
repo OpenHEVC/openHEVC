@@ -21,51 +21,70 @@ void ff_hevc_put_unweighted_pred_8_sse(uint8_t *_dst, ptrdiff_t dststride,
 
     f0 = _mm_set1_epi16(32);
 
-    if(width == 4){
+
+    if(!(width & 15))
+    {
         for (y = 0; y < height; y++) {
+                    for (x = 0; x < width; x += 16) {
+                        r0 = _mm_load_si128((__m128i *) (src+x));
 
-            r0 = _mm_loadl_epi64((__m128i *) src);
-            r0 = _mm_adds_epi16(r0, f0);
+                        r1 = _mm_load_si128((__m128i *) (src+x + 8));
+                        r0 = _mm_adds_epi16(r0, f0);
 
-            r0 = _mm_srai_epi16(r0, 6);
-            r0 = _mm_packus_epi16(r0, _mm_setzero_si128());
-            _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char *) dst);
+                        r1 = _mm_adds_epi16(r1, f0);
+                        r0 = _mm_srai_epi16(r0, 6);
+                        r1 = _mm_srai_epi16(r1, 6);
+                        r0 = _mm_packus_epi16(r0, r1);
 
-            dst += dststride;
-            src += srcstride;
-        }
-    }else if (width == 8){
+                        _mm_storeu_si128((__m128i *) (dst+x), r0);
+                    }
+                    dst += dststride;
+                    src += srcstride;
+                }
+    }else if(!(width & 7))
+    {
         for (y = 0; y < height; y++) {
-            r0 = _mm_load_si128((__m128i *) src);
+            for (x = 0; x < width; x += 8) {
+                    r0 = _mm_load_si128((__m128i *) (src+x));
 
-            r0 = _mm_adds_epi16(r0, f0);
+                    r0 = _mm_adds_epi16(r0, f0);
 
-            r0 = _mm_srai_epi16(r0, 6);
-            r0 = _mm_packus_epi16(r0, r0);
+                    r0 = _mm_srai_epi16(r0, 6);
+                    r0 = _mm_packus_epi16(r0, r0);
 
-            _mm_storel_epi64((__m128i *) dst, r0);
-
-            dst += dststride;
-            src += srcstride;
-        }
-    }else
-        for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x += 16) {
-                r0 = _mm_load_si128((__m128i *) &src[x]);
-
-                r1 = _mm_load_si128((__m128i *) &src[x + 8]);
-                r0 = _mm_adds_epi16(r0, f0);
-
-                r1 = _mm_adds_epi16(r1, f0);
-                r0 = _mm_srai_epi16(r0, 6);
-                r1 = _mm_srai_epi16(r1, 6);
-                r0 = _mm_packus_epi16(r0, r1);
-
-                _mm_storeu_si128((__m128i *) (dst+x), r0);
+                    _mm_storel_epi64((__m128i *) (dst+x), r0);
             }
-            dst += dststride;
-            src += srcstride;
-        }
+                    dst += dststride;
+                    src += srcstride;
+                }
+    }else if(!(width & 3)){
+        for (y = 0; y < height; y++) {
+                    for(x = 0;x < width; x+=4){
+                    r0 = _mm_loadl_epi64((__m128i *) (src+x));
+                    r0 = _mm_adds_epi16(r0, f0);
+
+                    r0 = _mm_srai_epi16(r0, 6);
+                    r0 = _mm_packus_epi16(r0, r0);
+                    _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char *) (dst+x));
+                    }
+                    dst += dststride;
+                    src += srcstride;
+                }
+    }else{
+        for (y = 0; y < height; y++) {
+                    for(x = 0;x < width; x+=2){
+                    r0 = _mm_loadl_epi64((__m128i *) (src+x));
+                    r0 = _mm_adds_epi16(r0, f0);
+
+                    r0 = _mm_srai_epi16(r0, 6);
+                    r0 = _mm_packus_epi16(r0, r0);
+                    _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-1),(char *) (dst+x));
+                    }
+                    dst += dststride;
+                    src += srcstride;
+                }
+    }
+
 }
 
 void ff_hevc_put_unweighted_pred_sse(uint8_t *_dst, ptrdiff_t _dststride,
@@ -111,44 +130,7 @@ void ff_hevc_put_weighted_pred_avg_8_sse(uint8_t *_dst, ptrdiff_t dststride,
 
 
     f0 = _mm_set1_epi16(64);
-    if(width == 4){
-        for (y = 0; y < height; y++) {
-
-            r0 = _mm_load_si128((__m128i *) src1);
-            r2 = _mm_load_si128((__m128i *) src2);
-
-            r0 = _mm_adds_epi16(r0, f0);
-            r0 = _mm_adds_epi16(r0, r2);
-            r0 = _mm_srai_epi16(r0, 7);
-            r0 = _mm_packus_epi16(r0, r0);
-
-            _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char *) dst);
-            // _mm_storeu_si128((__m128i *) (dst + x), r0);
-
-            dst += dststride;
-            src1 += srcstride;
-            src2 += srcstride;
-        }
-
-    }else if(width == 8){
-
-        for (y = 0; y < height; y++) {
-
-            r0 = _mm_load_si128((__m128i *) src1);
-            r2 = _mm_load_si128((__m128i *) src2);
-
-            r0 = _mm_adds_epi16(r0, f0);
-            r0 = _mm_adds_epi16(r0, r2);
-            r0 = _mm_srai_epi16(r0, 7);
-            r0 = _mm_packus_epi16(r0, r1);
-
-            _mm_storel_epi64((__m128i *) dst, r0);
-
-            dst += dststride;
-            src1 += srcstride;
-            src2 += srcstride;
-        }
-    }else
+    if(!(width & 15)){
         for (y = 0; y < height; y++) {
 
             for (x = 0; x < width; x += 16) {
@@ -171,6 +153,62 @@ void ff_hevc_put_weighted_pred_avg_8_sse(uint8_t *_dst, ptrdiff_t dststride,
             src1 += srcstride;
             src2 += srcstride;
         }
+    }else if(!(width & 7)){
+        for (y = 0; y < height; y++) {
+            for(x=0;x<width;x+=8){
+                r0 = _mm_load_si128((__m128i *) (src1+x));
+                r2 = _mm_load_si128((__m128i *) (src2+x));
+
+                r0 = _mm_adds_epi16(r0, f0);
+                r0 = _mm_adds_epi16(r0, r2);
+                r0 = _mm_srai_epi16(r0, 7);
+                r0 = _mm_packus_epi16(r0, r1);
+
+                _mm_storel_epi64((__m128i *) (dst+x), r0);
+            }
+            dst += dststride;
+            src1 += srcstride;
+            src2 += srcstride;
+        }
+    }else if(!(width & 3)){
+        for (y = 0; y < height; y++) {
+            for(x=0;x<width;x+=4)
+            {
+                r0 = _mm_loadl_epi64((__m128i *) (src1+x));
+                r2 = _mm_loadl_epi64((__m128i *) (src2+x));
+
+                r0 = _mm_adds_epi16(r0, f0);
+                r0 = _mm_adds_epi16(r0, r2);
+                r0 = _mm_srai_epi16(r0, 7);
+                r0 = _mm_packus_epi16(r0, r0);
+
+                _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char *) (dst+x));
+            }
+            dst += dststride;
+            src1 += srcstride;
+            src2 += srcstride;
+        }
+    }else{
+        for (y = 0; y < height; y++) {
+                    for(x=0;x<width;x+=2)
+                    {
+                        r0 = _mm_loadl_epi64((__m128i *) (src1+x));
+                        r2 = _mm_loadl_epi64((__m128i *) (src2+x));
+
+                        r0 = _mm_adds_epi16(r0, f0);
+                        r0 = _mm_adds_epi16(r0, r2);
+                        r0 = _mm_srai_epi16(r0, 7);
+                        r0 = _mm_packus_epi16(r0, r0);
+
+                        _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-1),(char *) (dst+x));
+                    }
+                    dst += dststride;
+                    src1 += srcstride;
+                    src2 += srcstride;
+                }
+    }
+
+
 }
 
 void ff_hevc_put_weighted_pred_avg_sse(uint8_t *_dst, ptrdiff_t _dststride,
