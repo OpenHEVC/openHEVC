@@ -25,14 +25,6 @@
 #include "hevc.h"
 #include "golomb.h"
 
-static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        if (md5_in1[i] != md5_in2[i])
-            return 0;
-    return 1;
-}
 
 static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size)
 {
@@ -41,20 +33,13 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     uint16_t picture_crc;
     uint32_t picture_checksum;
     GetBitContext *gb = s->HEVClc->gb;
-    uint8_t picture_md5[16];
     hash_type = get_bits(gb, 8);
 
 
     for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
         if ( hash_type == 0 ) {
             for( i = 0; i < 16; i++) {
-                picture_md5[i] = get_bits(gb, 8);
-            }
-            if (s->decode_checksum_sei == 1) {
-                if (!compare_md5(picture_md5, s->HEVCsc->md5[cIdx]) && s->HEVCsc->is_decoded)
-                    av_log(s->avctx, AV_LOG_ERROR, "md5 not ok %d\n", cIdx);
-                else
-                    av_log(s->avctx, AV_LOG_ERROR, "md5 ok %d\n", cIdx);
+                s->HEVCsc->md5[cIdx][i] = get_bits(gb, 8);
             }
         } else if( hash_type == 1 ) {
             picture_crc = get_bits(gb, 16);

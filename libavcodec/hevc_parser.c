@@ -24,146 +24,99 @@
 #include "parser.h"
 #include "hevc.h"
 
-
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
-#define EMULATION_CODE 0x03 ///< emulation_prevention_three_byte
-#define MAX_SKIPPED_BUFFER_SIZE 64
-typedef struct HEVCParserContext {
-    ParseContext pc;
-    uint8_t *nal_buffer;
-    unsigned int nal_buffer_size;
-} HEVCParserContext;
 
 /**
- * Annex B.1: Byte stream NAL unit syntax and semantics
+ * Find the end of the current frame in the bitstream.
+ * @return the position of the first byte of the next frame, or END_NOT_FOUND
  */
-static int hevc_parse_nal_unit(HEVCParserContext *hpc, HEVCContext *cct, uint8_t **poutbuf,
-		int *poutbuf_size, const uint8_t *buf,
-		int buf_size)
+static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf, int buf_size)
 {
     int i;
-    ParseContext *pc = &hpc->pc;
-    int mask = 0xFFFFFF;
-    int skipped = 0;
-    int header = 0;
-    HEVCSharedContext *sc = cct->HEVCsc;
+    ParseContext *pc = s->priv_data;
 
-    // skip leading zeroes
-/*    if (!pc->frame_start_found) {
-        for (i = 0; i < buf_size; i++) {
-            pc->state = (pc->state << 8) | buf[i];
-            if ((pc->state & mask) == START_CODE) {
-                pc->frame_start_found = 1;
-                // the frame starts one byte after the start code
-                header = i + 1;
-                break;
-            } else if (buf[i] != 0) {
-                return AVERROR_INVALIDDATA;
-            }
-        }
-    }
-*/    
-	sc->skipped_bytes = 0;
-	pc->frame_start_found = 1;
-
-    buf      += header;
-    buf_size -= header;
-    *poutbuf = (uint8_t*)buf;
-
-    // Remove emulation bytes and find the frame end
-    if (pc->frame_start_found) {
-        for (i = 0; i < buf_size; i++) {
-            pc->state = (pc->state << 8) | buf[i];
-            switch (pc->state & mask) {
-            case START_CODE:
-                *poutbuf_size = FFMAX(i - 2 - skipped, 0);
-                return header + i + 1;
-            case EMULATION_CODE:
-                skipped++;
-                if(skipped > sc->skipped_buf_size)  {
-                    int *temp = sc->skipped_bytes_pos;
-                    sc->skipped_bytes_pos = av_malloc((MAX_SKIPPED_BUFFER_SIZE+sc->skipped_buf_size)*sizeof(int));
-                    memcpy(sc->skipped_bytes_pos, temp, sc->skipped_buf_size*sizeof(int));
-                    av_free(temp);
-                    sc->skipped_buf_size += MAX_SKIPPED_BUFFER_SIZE;
+    for (i = 0; i < buf_size; i++) {
+        pc->state64 = (pc->state64 << 8) | buf[i];
+        if (((pc->state64 >> 3*8) & 0xFFFFFF) == START_CODE) {
+            int nut = (pc->state64 >> 2*8+1) & 0x3F;
+            printf("nut %d\n",nut);
+            // Beginning of access unit
+            if (nut >= NAL_VPS && nut <= NAL_AUD || nut == NAL_SEI_PREFIX ||
+                nut >= 41 && nut <= 44 || nut >= 48 && nut <= 55) {
+                if (pc->frame_start_found) {
+                    pc->frame_start_found = 0;
+                    return i - 5;
                 }
-                sc->skipped_bytes_pos[skipped-1] = i-skipped;
-                if (*poutbuf != hpc->nal_buffer) {
-                    hpc->nal_buffer = av_fast_realloc(hpc->nal_buffer,
-                                                      &hpc->nal_buffer_size,
-                                                      buf_size - skipped);
-                    if (!hpc->nal_buffer)
-                        return END_NOT_FOUND;
-                    *poutbuf = hpc->nal_buffer;
-                    memcpy(*poutbuf, buf, i - skipped + 1);
+            } else if (nut <= NAL_RASL_R ||
+                       (nut >= NAL_BLA_W_LP && nut <= NAL_CRA_NUT)) {
+                int first_slice_segment_in_pic_flag = buf[i] >> 7;
+                if (first_slice_segment_in_pic_flag) {
+                    if (!pc->frame_start_found) {
+                        pc->frame_start_found = 1;
+                        s->key_frame = nut >= NAL_BLA_W_LP && nut <= NAL_CRA_NUT;
+                    } else { // First slice of next frame found
+                        pc->frame_start_found = 0;
+                        return i - 5;
+                    }
                 }
-                break;
-            default:
-                if (*poutbuf == hpc->nal_buffer)
-                    (*poutbuf)[i-skipped] = buf[i];
             }
         }
     }
 
-    sc->skipped_bytes = skipped;
-	*poutbuf_size = buf_size - skipped;
-	if (buf_size == 0)
-		return 0;
     return END_NOT_FOUND;
 }
 
-// Each parsed packet is a NAL unit with the emulation bytes removed and may
-// have trailing zero bytes.
 static int hevc_parse(AVCodecParserContext *s,
                       AVCodecContext *avctx,
                       const uint8_t **poutbuf, int *poutbuf_size,
                       const uint8_t *buf, int buf_size)
 {
-    HEVCParserContext *hpc = s->priv_data;
-    HEVCContext *cct = avctx->priv_data;
-    ParseContext *pc = &hpc->pc;
-    int combine_next = 0;
-    int next = hevc_parse_nal_unit(hpc, cct, (uint8_t**)poutbuf, poutbuf_size, buf, buf_size);
+    int next;
+    ParseContext *pc = s->priv_data;
 
-    if (next == AVERROR_INVALIDDATA) {
-        av_log(NULL, AV_LOG_ERROR, "Data fed to parser isn't a NAL unit\n");
-        return buf_size;
+    if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        next = buf_size;
+    } else {
+        next = hevc_find_frame_end(s, buf, buf_size);
+        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
+            *poutbuf = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
     }
 
-    // next is an offset in buf, but we want to combine frames from *poutbuf
- /*   combine_next = (next != END_NOT_FOUND) ? *poutbuf_size : next;
-
-    if (ff_combine_frame(pc, combine_next, poutbuf, poutbuf_size) < 0 ||
-        *poutbuf_size == 0) {
-        *poutbuf      = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
-    }
-*/
+    *poutbuf = buf;
+    *poutbuf_size = buf_size;
     return next;
 }
 
-static int hevc_init(AVCodecParserContext *s)
+// Split after the parameter sets at the beginning of the stream if they exist.
+static int hevc_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
 {
-    HEVCParserContext *hpc = s->priv_data;
-    hpc->nal_buffer_size = 0;
-    hpc->nal_buffer      = NULL;
+    int i;
+    uint32_t state = -1;
+    int has_ps = 0;
+
+    for (i = 0; i < buf_size; i++) {
+        state = (state << 8) | buf[i];
+        if (((state >> 8) & 0xFFFFFF) == START_CODE) {
+            int nut = (state >> 1) & 0x3F;
+            if (nut >= NAL_VPS && nut <= NAL_PPS) {
+                has_ps = 1;
+            } else if (has_ps) {
+                return i - 3;
+            } else { // no parameter set at the beginning of the stream
+                return 0;
+            }
+        }
+    }
     return 0;
 }
 
-static void hevc_close(AVCodecParserContext *s)
-{
-    HEVCParserContext *hpc = s->priv_data;
-    av_free(hpc->nal_buffer);
-
-    ff_parse_close(s);
-}
-
-
 AVCodecParser ff_hevc_parser = {
     .codec_ids      = { AV_CODEC_ID_HEVC },
-    .priv_data_size = sizeof(HEVCParserContext),
-    .parser_init    = hevc_init,
+    .priv_data_size = sizeof(ParseContext),
     .parser_parse   = hevc_parse,
-    .parser_close   = hevc_close
+    .parser_close   = ff_parse_close,
+    .split          = hevc_split,
 };

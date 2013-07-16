@@ -7,6 +7,7 @@
 //
 #include "openHevcWrapper.h"
 #include "getopt.h"
+#include <libavformat/avformat.h>
 
 int find_start_code (unsigned char *Buf, int zeros_in_startcode)
 {
@@ -45,33 +46,44 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
 
 static void video_decode_example(const char *filename)
 {
-    FILE *f = NULL;
+    AVFormatContext *pFormatCtx=NULL;
+    AVInputFormat *file_iformat;
+    AVPacket        packet;
+    char filename_str[128];
+    AVCodec *codec;
+
     FILE *fout = NULL;
+
     int init    = 1;
     int nbFrame = 0;
     int pts     = 0;
     int stop    = 0;
-    unsigned int width, height, stride;
-    unsigned char * buf;
+    AVCodecContext *c;
+    AVFrame *picture;
+    int got_picture=0;
     OpenHevc_Frame openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
+
     OpenHevc_Handle openHevcHandle = libOpenHevcInit(nb_pthreads);
     if (!openHevcHandle) {
         fprintf(stderr, "could not open OpenHevc\n");
         exit(1);
     }
-    libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
-    f = fopen(filename, "rb");
-    if (!f) {
-        fprintf(stderr, "could not open %s\n", filename);
-        exit(1);
+    av_register_all();
+    pFormatCtx = avformat_alloc_context();
+    file_iformat = av_find_input_format("hevc");
+
+    if(avformat_open_input(&pFormatCtx, filename, file_iformat, NULL)!=0) {
+        printf("%s",filename_str);
+        return -1; // Couldn't open file
     }
-    if (output_file) {
-        fout = fopen(output_file, "wb");
-    }
-    buf = calloc ( 1000000, sizeof(char));
+
     while(!stop) {
-        if (libOpenHevcDecode(openHevcHandle, buf, !feof(f) ? get_next_nal(f, buf) : 0, pts++)) {
+        if (av_read_frame(pFormatCtx, &packet)<0) {
+            stop = 1 ;
+        } else
+            got_picture = libOpenHevcDecode(openHevcHandle, packet.data, packet.size, pts++);
+        if (got_picture) {
             fflush(stdout);
             if (init == 1 ) {
                 libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
@@ -103,14 +115,13 @@ static void video_decode_example(const char *filename)
                 fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , nbData / 4, fout);
             }
             nbFrame++;
-        } else if (feof(f) && nbFrame)
-            stop = 1;
+        } 
     }
     CloseSDLDisplay();
-    fclose(f);
     if (fout) {
         fclose(fout);
     }
+    avformat_close_input(&pFormatCtx);
     printf("video size : %d x %d\n", openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
     libOpenHevcClose(openHevcHandle);
     printf("nbFrame : %d\n", nbFrame);

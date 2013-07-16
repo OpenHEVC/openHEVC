@@ -50,22 +50,14 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
     return (OpenHevc_Handle) openHevcContext;
 }
 
-int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int nal_len, int64_t pts)
+int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
 {
-    uint8_t *poutbuf;
     int got_picture, len;
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     HEVCContext *s = openHevcContext->c->priv_data;
-    openHevcContext->avpkt.size = nal_len;
-    if (nal_len == - 1) return -1;
+    openHevcContext->avpkt.size = au_len;
     s->HEVCsc->pts = pts;
-    av_parser_parse2(openHevcContext->parser,
-            openHevcContext->c,
-            &poutbuf, &nal_len,
-            buff, openHevcContext->avpkt.size,
-            0, 0,
-            0);
-    openHevcContext->avpkt.data = poutbuf;
+    openHevcContext->avpkt.data = buff;
     len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture, &openHevcContext->avpkt);
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");
