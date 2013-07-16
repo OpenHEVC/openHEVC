@@ -38,23 +38,7 @@
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 
-#if HAVE_SCHED_GETAFFINITY
-#define _GNU_SOURCE
-#include <sched.h>
-#endif
-#if HAVE_GETPROCESSAFFINITYMASK
-#include <windows.h>
-#endif
-#if HAVE_SYSCTL
-#if HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#endif
-#if HAVE_SYSCONF
-#include <unistd.h>
-#endif
+#define attribute_align_arg
 
 #if HAVE_PTHREADS
 #include <pthread.h>
