@@ -44,6 +44,7 @@
  * Section 5.7
  */
 //#define POC_DISPLAY_MD5
+//#define WPP1
 static void pic_arrays_free(HEVCContext *s)
 {
     int i;
@@ -1974,8 +1975,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     s = s->sList[self_id];
     lc = s->HEVClc;
     if(ctb_row) {
-        init_get_bits8(lc->gb, sc->rbsp_buffer+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]);
-        ff_init_cabac_decoder(lc->cc, sc->rbsp_buffer+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]);
+        init_get_bits8(lc->gb, sc->data+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]);
+        ff_init_cabac_decoder(lc->cc, sc->data+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]);
     }
     while(more_data) {
         int x_ctb = (ctb_addr_rs % ((sc->sps->pic_width_in_luma_samples + (ctb_size - 1))>> sc->sps->log2_ctb_size)) << sc->sps->log2_ctb_size;
@@ -2036,7 +2037,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     s = s->sList[self_id];
     lc = s->HEVClc;
     if(ctb_row) {
-        init_get_bits(lc->gb, sc->rbsp_buffer+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]*8);
+        init_get_bits(lc->gb, sc->data+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]*8);
     }
     while (more_data) {
         int ctb_addr_rs       = sc->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
@@ -2062,7 +2063,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     return ctb_addr_ts;
 }
 
-static int hls_slice_data_wpp(HEVCContext *s, int length)
+static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCSharedContext *sc = s->HEVCsc;
     HEVCLocalContext *lc = s->HEVClc;
@@ -2070,7 +2071,9 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
     int *arg = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
     int i, j, res = 0;
     int offset;
+#ifdef WPP1
     int startheader, cmpt = 0;
+#endif
     if(!sc->ctb_entry_count) {
         sc->ctb_entry_count = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
         if(sc->enable_parallel_tiles)	{
@@ -2104,13 +2107,16 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
 
     offset = (lc->gb->index>>3);
 
+#ifdef WPP1
     for(j=0, cmpt = 0,startheader=offset+sc->sh.entry_point_offset[0]; j< sc->skipped_bytes; j++){
         if(sc->skipped_bytes_pos[j] >= offset && sc->skipped_bytes_pos[j] < startheader){
             startheader--;
             cmpt++;
         }
     }
+#endif
     for(i=1; i< sc->sh.num_entry_point_offsets; i++) {
+#ifdef WPP1
         offset += (sc->sh.entry_point_offset[i-1]-cmpt);
         for(j=0, cmpt=0, startheader=offset+sc->sh.entry_point_offset[i]; j< sc->skipped_bytes; j++){
             if(sc->skipped_bytes_pos[j] >= offset && sc->skipped_bytes_pos[j] < startheader){
@@ -2119,10 +2125,18 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
             }
         }
         sc->sh.size[i-1] = sc->sh.entry_point_offset[i]-cmpt;
+#else
+        offset += (sc->sh.entry_point_offset[i-1]);
+        sc->sh.size[i-1] = sc->sh.entry_point_offset[i];
+#endif
         sc->sh.offset[i-1] = offset;
     }
     if(sc->sh.num_entry_point_offsets!= 0) {
+#ifdef WPP1
         offset += sc->sh.entry_point_offset[sc->sh.num_entry_point_offsets-1]-cmpt;
+#else
+        offset += sc->sh.entry_point_offset[sc->sh.num_entry_point_offsets-1];
+#endif
         sc->sh.size[sc->sh.num_entry_point_offsets-1] = length-offset;
         sc->sh.offset[sc->sh.num_entry_point_offsets-1] = offset;
     }
@@ -2133,6 +2147,7 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
         s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
 
     }
+    sc->data = nal;
     if (sc->sh.first_slice_in_pic_flag == 1) {
         sc->SliceAddrRs = sc->sh.slice_address;
     } else {
@@ -2144,6 +2159,7 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
         arg[i] = i;
         ret[i] = 0;
     }
+
     if (sc->pps->entropy_coding_sync_enabled_flag)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1);
     else	{
@@ -2167,12 +2183,8 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
   		}
 	}
 
-
-    for(i=0; i<=sc->sh.num_entry_point_offsets; i++) {
-        if (ret[i] < 0)
-            return ret[i];
-    }
-    res += ret[i];
+    for(i=0; i<=sc->sh.num_entry_point_offsets; i++)
+        res += ret[i];
     av_free(ret);
     av_free(arg);
     return res;
@@ -2376,7 +2388,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             return -1;
         ff_init_cabac_states(NULL);
         if(s->threads_number>1 && sc->sh.num_entry_point_offsets > 0 ) {
-            ctb_addr_ts = hls_slice_data_wpp(s, length);
+            ctb_addr_ts = hls_slice_data_wpp(s, nal, length);
         } else {
             ctb_addr_ts = hls_slice_data(s);
         }

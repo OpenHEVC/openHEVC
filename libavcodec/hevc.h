@@ -815,6 +815,7 @@ typedef struct HEVCSharedContext {
     int skipped_bytes;
     int *skipped_bytes_pos;
     int skipped_bytes_pos_size;
+    uint8_t *data;
 
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
