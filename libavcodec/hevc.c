@@ -2198,24 +2198,25 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 static int hls_nal_unit(HEVCContext *s)
 {
     GetBitContext *gb = s->HEVClc->gb;
-    int nuh_layer_id;
-
+    HEVCSharedContext *sc = s->HEVCsc;
     if (get_bits1(gb) != 0)
         return AVERROR_INVALIDDATA;
 
-    s->HEVCsc->nal_unit_type = get_bits(gb, 6);
+    sc->nal_unit_type = get_bits(gb, 6);
 
-    nuh_layer_id = get_bits(gb, 6);
-    s->HEVCsc->temporal_id = get_bits(gb, 3) - 1;
-    if (s->HEVCsc->temporal_id < 0)
+    sc->nuh_layer_id = get_bits(gb, 6);
+    sc->temporal_id = get_bits(gb, 3) - 1;
+    
+    if (sc->temporal_id < 0)
         return AVERROR_INVALIDDATA;
 
     av_log(s->avctx, AV_LOG_DEBUG,
            "nal_unit_type: %d, nuh_layer_id: %dtemporal_id: %d\n",
-           s->HEVCsc->nal_unit_type, nuh_layer_id, s->HEVCsc->temporal_id);
-
-    return (nuh_layer_id == 0);
+           sc->nal_unit_type, sc->nuh_layer_id, sc->temporal_id);
+    
+    return sc->nuh_layer_id;
 }
+
 
 static void printf_ref_pic_list(HEVCContext *s)
 {
@@ -2294,14 +2295,12 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
-
     ret = hls_nal_unit(s);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n", sc->nal_unit_type);
         return avpkt->size;
-    } else if (!ret)
+    } else if (ret)
         return avpkt->size;
-
     switch (sc->nal_unit_type) {
     case NAL_VPS:
         ff_hevc_decode_nal_vps(s);

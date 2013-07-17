@@ -817,6 +817,7 @@ typedef struct HEVCSharedContext {
     int skipped_buf_size;
     uint8_t *data;
     int enable_parallel_tiles;
+    int nuh_layer_id;
     int ERROR;
 
 } HEVCSharedContext;
