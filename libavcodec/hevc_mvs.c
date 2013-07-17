@@ -235,7 +235,8 @@ static int temporal_luma_motion_vector(HEVCSharedContext *s, int x0, int y0,
     int xPCtr, yPCtr;
     int xPCtr_pu;
     int yPCtr_pu;
-    int pic_width_in_min_pu = s->sps->pic_width_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
+
     int short_ref_idx = 0;
     int availableFlagLXCol = 0;
     int colPic = 0;
@@ -313,7 +314,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     int xA1 = x0 - 1;
     int yA1 = y0 + nPbH - 1;
     int is_available_a1;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
     int check_MER = 1;
     int check_MER_1 = 1;
 
@@ -775,7 +777,8 @@ static av_always_inline void dist_scale(HEVCSharedContext *s, Mv * mv,
 static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index, Mv *mv, int ref_idx_curr, int ref_idx) {
     HEVCSharedContext *sc = s->HEVCsc;
     MvField *tab_mvf = sc->ref->tab_mvf;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
     RefPicList *refPicList = sc->ref->refPicList;
 
     if ((TAB_MVF(x, y).pred_flag[pred_flag_index] == 1) &&
@@ -790,7 +793,8 @@ static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index, Mv *
 static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index, Mv *mv, int ref_idx_curr, int ref_idx) {
     HEVCSharedContext *sc = s->HEVCsc;
     MvField *tab_mvf = sc->ref->tab_mvf;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
     RefPicList *refPicList = sc->ref->refPicList;
     int currIsLongTerm = refPicList[ref_idx_curr].isLongTerm[ref_idx];
 
@@ -818,7 +822,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int availableFlagLXB0 = 0;
     int availableFlagLXCol = 0;
     int numMVPCandLX = 0;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
     int xA0, yA0;
     int xA0_pu, yA0_pu;
     int is_available_a0;

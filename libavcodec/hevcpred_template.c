@@ -71,7 +71,9 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 
     ptrdiff_t stride = sc->frame->linesize[c_idx] / sizeof(pixel);
     pixel *src = (pixel*)sc->frame->data[c_idx] + x + y * stride;
-    int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
     enum IntraPredMode mode = c_idx ? lc->pu.intra_pred_mode_c :
                               lc->tu.cur_intra_pred_mode;
 

@@ -716,6 +716,11 @@ typedef struct HEVCFrame {
      */
     uint16_t sequence;
 } HEVCFrame;
+typedef struct Filter_data{
+	int x;
+	int y;
+	int size;
+}Filter_data;
 
 typedef struct HEVCLocalContext {
     uint8_t *cabac_state;
@@ -744,7 +749,8 @@ typedef struct HEVCLocalContext {
     CodingUnit cu;
     PredictionUnit pu;
     int16_t* BufferMC;
-
+    Filter_data *save_boundary_strengths;
+    int nb_saved;
 } HEVCLocalContext;
 
 typedef struct HEVCSharedContext {
@@ -813,6 +819,7 @@ typedef struct HEVCSharedContext {
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
 
+    int enable_parallel_tiles;
     int ERROR;
 
 } HEVCSharedContext;

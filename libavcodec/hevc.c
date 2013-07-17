@@ -81,8 +81,8 @@ static int pic_arrays_init(HEVCContext *s)
     int pic_size = sc->sps->pic_width_in_luma_samples * sc->sps->pic_height_in_luma_samples;
     int pic_size_in_ctb = pic_size>>(sc->sps->log2_min_coding_block_size<<1);
     int ctb_count = sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs;
-    int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
-    int pic_height_in_min_pu = sc->sps->pic_height_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+    int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
     sc->bs_width = sc->sps->pic_width_in_luma_samples >> 3;
     sc->bs_height = sc->sps->pic_height_in_luma_samples >> 3;
     sc->sao = av_mallocz(ctb_count * sizeof(*sc->sao));
@@ -952,7 +952,8 @@ static void set_deblocking_bypass(HEVCContext *s, int x0, int y0, int log2_cb_si
     int i, j;
     int cb_size = 1 << log2_cb_size;
     int log2_min_pu_size = s->HEVCsc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_min_cbs * 4;
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
     for (j = (y0 >> log2_min_pu_size); j < ((y0 + cb_size) >> log2_min_pu_size); j++)
         for (i = (x0 >> log2_min_pu_size); i < ((x0 + cb_size) >> log2_min_pu_size); i++)
             s->HEVCsc->is_pcm[i + j * pic_width_in_min_pu] = 2;
@@ -1027,7 +1028,9 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
         int i,j;
         int min_pu_size = 1 << sc->sps->log2_min_pu_size;
         int log2_min_pu_size = sc->sps->log2_min_pu_size;
-        int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+
+        int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
         if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
             SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) ||
             SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0)) {
@@ -1046,7 +1049,15 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                     sc->cbf_luma[y_pu * pic_width_in_min_pu + x_pu] = 1;
                 }
         if (!sc->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
+        	if(!sc->enable_parallel_tiles)
+        		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
+        	else {
+        		lc->save_boundary_strengths[lc->nb_saved].x = x0;
+        		lc->save_boundary_strengths[lc->nb_saved].y = y0;
+        		lc->save_boundary_strengths[lc->nb_saved].size = log2_trafo_size;
+        		lc->nb_saved ++;
+        	}
+
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
                 set_deblocking_bypass(s, x0, y0, log2_cb_size);
             }
@@ -1060,7 +1071,10 @@ static void hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int i, j;
     HEVCSharedContext *sc = s->HEVCsc ;
     int log2_min_pu_size = sc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
+
     GetBitContext gb;
     int cb_size = 1 << log2_cb_size;
     int stride0 = sc->frame->linesize[0];
@@ -1112,7 +1126,6 @@ static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
         case 0:
             lc->pu.mvd.x = 0;
     }
-
     switch (y) {
         case 2:
             lc->pu.mvd.y = ff_hevc_mvd_decode(s);
@@ -1249,7 +1262,11 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     struct MvField current_mv = {{{ 0 }}};
     int i, j;
     int x_pu, y_pu;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs * 4;
+
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
+
     MvField *tab_mvf = sc->ref->tab_mvf;
     RefPicList  *refPicList =  sc->ref->refPicList;
 
@@ -1486,7 +1503,11 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     HEVCLocalContext *lc = s->HEVClc;
     int x_pu = x0 >> sc->sps->log2_min_pu_size;
     int y_pu = y0 >> sc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = sc->sps->pic_width_in_min_cbs << 2;
+
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
+
+
     int size_in_pus = pu_size >> sc->sps->log2_min_pu_size;
     int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
@@ -1622,7 +1643,9 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
     int pb_size = (1 << log2_cb_size) >> split;
     int side = split + 1;
     int size_in_pus = pb_size >> sc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
+    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+
+
     MvField *tab_mvf = sc->ref->tab_mvf;
     for (i = 0; i < side; i++) {
         int x_pu = (x0 + pb_size * i) >> sc->sps->log2_min_pu_size;
@@ -1678,7 +1701,14 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
         if (!sc->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+        	if(!s->HEVCsc->enable_parallel_tiles)
+        		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+        	else {
+        		lc->save_boundary_strengths[lc->nb_saved].x = x0;
+        		lc->save_boundary_strengths[lc->nb_saved].y = y0;
+        		lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
+        		lc->nb_saved ++;
+        	}
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
                 set_deblocking_bypass(s, x, y, log2_cb_size);
 
@@ -1758,7 +1788,14 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                                    log2_cb_size, 0, 0);
             } else {
                 if (!sc->sh.disable_deblocking_filter_flag) {
-                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+                	if(!s->HEVCsc->enable_parallel_tiles)
+                		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+                	else {
+                		lc->save_boundary_strengths[lc->nb_saved].x = x0;
+                		lc->save_boundary_strengths[lc->nb_saved].y = y0;
+                		lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
+                		lc->nb_saved ++;
+                	}
                     if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
                         set_deblocking_bypass(s, x, y, log2_cb_size);
                     }
@@ -2034,11 +2071,11 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
     int i, j, res = 0;
     int offset;
     int startheader, cmpt = 0;
-
     if(!sc->ctb_entry_count) {
         sc->ctb_entry_count = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
-
-
+        if(sc->enable_parallel_tiles)	{
+        	s->HEVClcList[0]->save_boundary_strengths = av_malloc(sizeof(Filter_data) * (sc->sps->pic_height_in_luma_samples >> sc->sps->log2_min_transform_block_size) * (sc->sps->pic_width_in_luma_samples >> sc->sps->log2_min_transform_block_size) );
+        }
         for(i=1; i< s->threads_number; i++) {
             s->sList[i] =  av_malloc(sizeof(HEVCContext));
             memcpy(s->sList[i], s, sizeof(HEVCContext));
@@ -2057,6 +2094,10 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
             s->HEVClcList[i]->cc = av_malloc(sizeof(CABACContext));
             s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->HEVCsc->frame->linesize[0]);
             s->HEVClcList[i]->BufferMC = av_malloc((MAX_PB_SIZE + 7)*MAX_PB_SIZE*sizeof(uint16_t));
+            if(sc->enable_parallel_tiles)	{
+            	s->HEVClcList[i]->save_boundary_strengths = av_malloc(sizeof(Filter_data) * (sc->sps->pic_height_in_luma_samples >> sc->sps->log2_min_transform_block_size) * (sc->sps->pic_width_in_luma_samples >> sc->sps->log2_min_transform_block_size) );
+            }
+
             s->sList[i]->HEVClc = s->HEVClcList[i];
         }
     }
@@ -2106,33 +2147,24 @@ static int hls_slice_data_wpp(HEVCContext *s, int length)
     if (sc->pps->entropy_coding_sync_enabled_flag)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1);
     else	{
-	int ctb_size = 1<<s->HEVCsc->sps->log2_ctb_size, y_ctb, x_ctb;
-        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1);
-	// Deblocking and SAO filters
+    	int ctb_size = 1<<s->HEVCsc->sps->log2_ctb_size, y_ctb, x_ctb;
+    	for(i=0; i< s->threads_number; i++) {
+    		s->HEVClcList[i]->nb_saved = 0;
+    	}
+    	s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret , sc->sh.num_entry_point_offsets+1);
+        // Deblocking and SAO filters
+
+        for(i=0; i< s->threads_number; i++) {
+        	for(j=0; j< s->HEVClcList[i]->nb_saved; j++)	{
+        		ff_hevc_deblocking_boundary_strengths(s, s->HEVClcList[i]->save_boundary_strengths[j].x, s->HEVClcList[i]->save_boundary_strengths[j].y, s->HEVClcList[i]->save_boundary_strengths[j].size);
+        	}
+        }
+
 		for(y_ctb = 0; y_ctb < sc->sps->pic_height_in_luma_samples; y_ctb+= ctb_size )	{
    			for(x_ctb = 0; x_ctb < sc->sps->pic_width_in_luma_samples; x_ctb+= ctb_size)	{
    				hls_filter(s, x_ctb, y_ctb);
     	   	}
   		}
-	// Deblocking and SAO filters edjes 
-/*		for(offset = 0, i = 0; i < sc->pps->num_tile_columns-1; i++ ) {
-        	offset += sc->pps->column_width[i];
-			for(j = 0; j < sc->sps->pic_height_in_ctbs; j++ ){
-            	hls_filter(s,  (offset-1)*ctb_size, j*ctb_size );
-            }
-            for(j = 0; j < sc->sps->pic_height_in_ctbs; j++ ){
-            	hls_filter(s,  offset*ctb_size, j*ctb_size );
-            }
-        }
-        for(offset = 0, i = 0; i < sc->pps->num_tile_rows-1; i++ ) {
-        	offset += sc->pps->row_height[i];
-			for(j = 0; j < sc->sps->pic_width_in_ctbs; j++ ){
-       	        hls_filter(s,  j*ctb_size, (offset-1)*ctb_size  );
-            }
-            for(j = 0; j < sc->sps->pic_width_in_ctbs; j++ ){
-       	        hls_filter(s,  j*ctb_size, offset*ctb_size  );
-            }
-        }*/
 	}
 
 
@@ -2311,8 +2343,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
         if(sc->sh.first_slice_in_pic_flag) {
-            int pic_width_in_min_pu  = sc->sps->pic_width_in_min_cbs * 4;
-            int pic_height_in_min_pu = sc->sps->pic_height_in_min_cbs * 4;
+            int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+            int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
             memset(sc->horizontal_bs, 0, 2 * sc->bs_width * sc->bs_height);
             memset(sc->vertical_bs, 0, sc->bs_width * 2 * sc->bs_height);
             memset(sc->cbf_luma, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
@@ -2612,6 +2644,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     sc->skipped_bytes_pos_size = 1024; // initial buffer size
     sc->skipped_bytes_pos = av_malloc_array(sc->skipped_bytes_pos_size,
                                             sizeof(*sc->skipped_bytes_pos));
+    sc->enable_parallel_tiles = 0;
     s->threads_number = 1;
 
 
@@ -2648,6 +2681,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_freep(&sc->sh.entry_point_offset);
         av_freep(&sc->sh.offset);
         av_freep(&sc->sh.size);
+        if(sc->enable_parallel_tiles)
+        	av_free(s->HEVClcList[0]->save_boundary_strengths);
+
         for (i = 1; i < s->threads_number; i++) {
             lc = s->HEVClcList[i];
             av_free(lc->gb);
@@ -2659,6 +2695,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
                 av_freep(&lc->tt.cbf_cr[j]);
             }
             av_free(lc->cabac_state);
+            if(sc->enable_parallel_tiles)
+             	av_free(lc->save_boundary_strengths);
             av_free(lc);
         }
         av_free(sc->ctb_entry_count);
