@@ -2198,23 +2198,22 @@ static int hls_slice_data_wpp(HEVCContext *s, AVPacket *avpkt)
 static int hls_nal_unit(HEVCContext *s)
 {
     GetBitContext *gb = s->HEVClc->gb;
-    int nuh_layer_id;
 
     if (get_bits1(gb) != 0)
         return AVERROR_INVALIDDATA;
 
     s->HEVCsc->nal_unit_type = get_bits(gb, 6);
 
-    nuh_layer_id = get_bits(gb, 6);
+    s->HEVCsc->nuh_layer_id = get_bits(gb, 6);
     s->HEVCsc->temporal_id = get_bits(gb, 3) - 1;
     if (s->HEVCsc->temporal_id < 0)
         return AVERROR_INVALIDDATA;
 
     av_log(s->avctx, AV_LOG_DEBUG,
            "nal_unit_type: %d, nuh_layer_id: %dtemporal_id: %d\n",
-           s->HEVCsc->nal_unit_type, nuh_layer_id, s->HEVCsc->temporal_id);
+           s->HEVCsc->nal_unit_type, s->HEVCsc->nuh_layer_id, s->HEVCsc->temporal_id);
 
-    return (nuh_layer_id == 0);
+    return s->HEVCsc->nuh_layer_id;
 }
 
 static void printf_ref_pic_list(HEVCContext *s)
