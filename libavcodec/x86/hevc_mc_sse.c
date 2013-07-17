@@ -1488,42 +1488,7 @@ void ff_hevc_put_hevc_qpel_h_1_sse(int16_t *dst, ptrdiff_t dststride,
     r0 = _mm_set_epi8(0, 1, -5, 17, 58, -10, 4, -1, 0, 1, -5, 17, 58, -10, 4,
             -1);
 
-    /* LOAD src from memory to registers to limit memory bandwidth */
-    if (width == 4) {
-
-        for (y = 0; y < height; y += 2) {
-            /* load data in register     */
-            x1 = _mm_loadu_si128((__m128i *) &src[-3]);
-            src += srcstride;
-            y1 = _mm_loadu_si128((__m128i *) &src[-3]);
-            x2 = _mm_unpacklo_epi64(x1, _mm_srli_si128(x1, 1));
-            x3 = _mm_unpacklo_epi64(_mm_srli_si128(x1, 2),
-                    _mm_srli_si128(x1, 3));
-            y2 = _mm_unpacklo_epi64(y1, _mm_srli_si128(y1, 1));
-            y3 = _mm_unpacklo_epi64(_mm_srli_si128(y1, 2),
-                    _mm_srli_si128(y1, 3));
-
-            /*  PMADDUBSW then PMADDW     */
-            x2 = _mm_maddubs_epi16(x2, r0);
-            y2 = _mm_maddubs_epi16(y2, r0);
-            x3 = _mm_maddubs_epi16(x3, r0);
-            y3 = _mm_maddubs_epi16(y3, r0);
-            x2 = _mm_hadd_epi16(x2, x3);
-            y2 = _mm_hadd_epi16(y2, y3);
-            x2 = _mm_hadd_epi16(x2, _mm_set1_epi16(0));
-            y2 = _mm_hadd_epi16(y2, _mm_set1_epi16(0));
-            x2 = _mm_srli_epi16(x2, BIT_DEPTH - 8);
-            y2 = _mm_srli_epi16(y2, BIT_DEPTH - 8);
-            /* give results back            */
-            _mm_storel_epi64((__m128i *) &dst[0], x2);
-
-            dst += dststride;
-            _mm_storel_epi64((__m128i *) &dst[0], y2);
-
-            src += srcstride;
-            dst += dststride;
-        }
-    } else
+    if(!(width & 7)){
         for (y = 0; y < height; y++) {
             for (x = 0; x < width; x += 8) {
                 /* load data in register     */
@@ -1545,12 +1510,37 @@ void ff_hevc_put_hevc_qpel_h_1_sse(int16_t *dst, ptrdiff_t dststride,
                 x4 = _mm_hadd_epi16(x4, x5);
                 x2 = _mm_hadd_epi16(x2, x4);
                 /* give results back            */
-                _mm_store_si128((__m128i *) &dst[x],
-                        _mm_srli_si128(x2, BIT_DEPTH - 8));
+                _mm_store_si128((__m128i *) &dst[x],x2);
+
             }
             src += srcstride;
             dst += dststride;
         }
+    }else{
+
+        for (y = 0; y < height; y ++) {
+            for(x=0;x<width;x+=4){
+            /* load data in register     */
+            x1 = _mm_loadu_si128((__m128i *) &src[x-3]);
+            x2 = _mm_unpacklo_epi64(x1, _mm_srli_si128(x1, 1));
+            x3 = _mm_unpacklo_epi64(_mm_srli_si128(x1, 2),
+                    _mm_srli_si128(x1, 3));
+
+
+            /*  PMADDUBSW then PMADDW     */
+            x2 = _mm_maddubs_epi16(x2, r0);
+            x3 = _mm_maddubs_epi16(x3, r0);
+            x2 = _mm_hadd_epi16(x2, x3);
+            x2 = _mm_hadd_epi16(x2, x2);
+
+            /* give results back            */
+            _mm_storel_epi64((__m128i *) &dst[x], x2);
+            }
+
+            src += srcstride;
+            dst += dststride;
+        }
+    }
 
 }
 void ff_hevc_put_hevc_qpel_h_2_sse(int16_t *dst, ptrdiff_t dststride,
