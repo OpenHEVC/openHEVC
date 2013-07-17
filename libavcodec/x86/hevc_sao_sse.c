@@ -384,7 +384,9 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
         ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,
         int _height, int c_idx) {
     int x, y;
-    uint8_t *dst = _dst;   // put here pixel
+    x = 0;
+    y = 0;
+    uint8_t *dst = _dst;
     uint8_t *src = _src;
     ptrdiff_t stride = _stride;
     int chroma = c_idx != 0;
@@ -402,6 +404,7 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     int init_x = 0, init_y = 0, width = _width, height = _height;
     __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4, cmp0,
             cmp1, r0, r1, r2, r3, r4;
+
     if (!borders[2])
         width -= ((8 >> chroma) + 2);
     if (!borders[3])
@@ -434,22 +437,35 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     if (sao_eo_class != SAO_EO_HORIZ) {
         if (borders[1]) {
             x1 = _mm_set1_epi8(sao_offset_val[0]);
-            for (x = init_x; x < width; x += 16) {
+            for (x = init_x; x < width-15; x += 16) {
                 x0 = _mm_loadu_si128((__m128i *) (src + x));
                 x0 = _mm_add_epi8(x0, x1);
                 _mm_storeu_si128((__m128i *) (dst + x), x0);
                 //dst[x] = av_clip_pixel(src[x] + offset_val);
             }
+            x0 = _mm_loadu_si128((__m128i *) (src + x));
+            x0 = _mm_add_epi8(x0, x1);
+            for(;x<width;x++){
+                dst[x]=_mm_extract_epi8(x0,0);
+                x0= _mm_srli_si128(x0,1);
+            }
+            //_mm_storeu_si128((__m128i *) (dst + x), x0);
             init_y = 1;
         }
         if (borders[3]) {
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             int y_stride = stride * (_height - 1);
-            for (x = init_x; x < width; x += 16) {
+            for (x = init_x; x < width-15; x += 16) {
                 x0 = _mm_loadu_si128((__m128i *) (src + x + y_stride));
                 x0 = _mm_add_epi8(x0, x1);
                 _mm_storeu_si128((__m128i *) (dst + x + y_stride), x0);
                 //dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + offset_val);
+            }
+            x0 = _mm_loadu_si128((__m128i *) (src + x + y_stride));
+            x0 = _mm_add_epi8(x0, x1);
+            for(;x<width;x++){
+                dst[x]=_mm_extract_epi8(x0,0);
+                x0= _mm_srli_si128(x0,1);
             }
             height--;
         }
@@ -470,7 +486,7 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
         offset2 = _mm_set1_epi8(sao_offset_val[edge_idx[2]]);
         offset3 = _mm_set1_epi8(sao_offset_val[edge_idx[3]]);
         offset4 = _mm_set1_epi8(sao_offset_val[edge_idx[4]]);
-
+        x=0;
         for (y = init_y; y < height; y++) {
             for (x = init_x; x < width - 15; x += 16) {
 
