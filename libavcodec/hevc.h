@@ -821,6 +821,7 @@ typedef struct HEVCSharedContext {
     int rbsp_buffer_size;
 
     int enable_parallel_tiles;
+    int nuh_layer_id;
     int ERROR;
 
 } HEVCSharedContext;
