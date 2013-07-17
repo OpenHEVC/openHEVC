@@ -920,7 +920,7 @@ void ff_hevc_put_hevc_epel_h_8_sse(int16_t *dst, ptrdiff_t dststride,
         int my, int16_t* mcbuffer) {
     int x, y;
     uint8_t *src = (uint8_t*) _src;
-    ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
+    ptrdiff_t srcstride = _srcstride;
     const int8_t *filter = epel_filters[mx - 1];
     __m128i r0, bshuffle1, bshuffle2, x1, x2, x3;
     int8_t filter_0 = filter[0];
@@ -932,37 +932,39 @@ void ff_hevc_put_hevc_epel_h_8_sse(int16_t *dst, ptrdiff_t dststride,
             filter_0, filter_3, filter_2, filter_1, filter_0);
     bshuffle1 = _mm_set_epi8(6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0);
 
-    if (width == 4) {
+
+    if(!(width & 8)){
+        bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5,
+                        4);
+                for (y = 0; y < height; y++) {
+                    for (x = 0; x < width; x += 8) {
+
+                        x1 = _mm_loadu_si128((__m128i *) &src[x - 1]);
+                        x2 = _mm_shuffle_epi8(x1, bshuffle1);
+                        x3 = _mm_shuffle_epi8(x1, bshuffle2);
+
+                        /*  PMADDUBSW then PMADDW     */
+                        x2 = _mm_maddubs_epi16(x2, r0);
+                        x3 = _mm_maddubs_epi16(x3, r0);
+                        x2 = _mm_hadd_epi16(x2, x3);
+                        _mm_store_si128((__m128i *) &dst[x], x2);
+                    }
+                    src += srcstride;
+                    dst += dststride;
+                }
+    }else {
 
         for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x += 4) {
             /* load data in register     */
-            x1 = _mm_loadu_si128((__m128i *) &src[-1]);
+            x1 = _mm_loadu_si128((__m128i *) &src[x-1]);
             x2 = _mm_shuffle_epi8(x1, bshuffle1);
 
             /*  PMADDUBSW then PMADDW     */
             x2 = _mm_maddubs_epi16(x2, r0);
             x2 = _mm_hadd_epi16(x2, _mm_setzero_si128());
             /* give results back            */
-            _mm_storel_epi64((__m128i *) &dst[0], x2);
-
-            src += srcstride;
-            dst += dststride;
-        }
-    } else {
-        bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5,
-                4);
-        for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x += 8) {
-
-                x1 = _mm_loadu_si128((__m128i *) &src[x - 1]);
-                x2 = _mm_shuffle_epi8(x1, bshuffle1);
-                x3 = _mm_shuffle_epi8(x1, bshuffle2);
-
-                /*  PMADDUBSW then PMADDW     */
-                x2 = _mm_maddubs_epi16(x2, r0);
-                x3 = _mm_maddubs_epi16(x3, r0);
-                x2 = _mm_hadd_epi16(x2, x3);
-                _mm_store_si128((__m128i *) &dst[x], x2);
+            _mm_storel_epi64((__m128i *) &dst[x], x2);
             }
             src += srcstride;
             dst += dststride;
