@@ -1701,6 +1701,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     if (SAMPLE_CTB(sc->skip_flag, x_cb, y_cb)) {
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
+
         if (!sc->sh.disable_deblocking_filter_flag) {
         	if(!s->HEVCsc->enable_parallel_tiles)
         		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
