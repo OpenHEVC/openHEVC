@@ -44,7 +44,7 @@
  * Section 5.7
  */
 //#define POC_DISPLAY_MD5
-//#define WPP1
+#define WPP1
 static void pic_arrays_free(HEVCContext *s)
 {
     int i;
