@@ -2295,15 +2295,12 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     init_get_bits(gb, avpkt->data, avpkt->size*8);
     av_log(s->avctx, AV_LOG_DEBUG, "=================\n");
-   
     ret = hls_nal_unit(s);
-   
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n", sc->nal_unit_type);
         return avpkt->size;
-    } else if (!ret)
+    } else if (ret)
         return avpkt->size;
-
     switch (sc->nal_unit_type) {
     case NAL_VPS:
         ff_hevc_decode_nal_vps(s);
