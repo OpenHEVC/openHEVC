@@ -353,7 +353,7 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
 #define print_cabac3(string, val)
 #endif
 
-void save_states(HEVCContext *s, int ctb_addr_ts)
+void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
 {
     if (s->HEVCsc->pps->entropy_coding_sync_enabled_flag && (
             (ctb_addr_ts % s->HEVCsc->sps->pic_width_in_ctbs) == 2 ||
@@ -364,21 +364,21 @@ void save_states(HEVCContext *s, int ctb_addr_ts)
 	}
 }
 
-void load_states(HEVCContext *s)
+static void load_states(HEVCContext *s)
 {
 
     printTitle("load_states \n");
     memcpy(s->HEVClc->cabac_state, s->HEVCsc->cabac_state, HEVC_CONTEXTS);
 }
 
-void ff_hevc_cabac_reinit(HEVCLocalContext *lc)
+static void cabac_reinit(HEVCLocalContext *lc)
 {
     printTitle("ff_hevc_cabac_reinit\n");
     skip_bytes(lc->cc,0);
 }
-void ff_hevc_cabac_init_decoder(HEVCContext *s)
+static void cabac_init_decoder(HEVCContext *s)
 {
-    printTitle("ff_hevc_cabac_init_decoder\n");
+    printTitle("cabac_init_decoder\n");
     GetBitContext *gb = s->HEVClc->gb;
     skip_bits(gb, 1);
     align_get_bits(gb);
@@ -386,9 +386,9 @@ void ff_hevc_cabac_init_decoder(HEVCContext *s)
                           gb->buffer + get_bits_count(gb) / 8,
                           (get_bits_left(gb) + 7) / 8);
 }
-void ff_hevc_cabac_init_state(HEVCContext *s)
+static void cabac_init_state(HEVCContext *s)
 {
-    printTitle("ff_hevc_cabac_init_state\n");
+    printTitle("cabac_init_state\n");
     int i;
     HEVCSharedContext *sc = s->HEVCsc;
     int init_type = 2 - sc->sh.slice_type;
@@ -412,15 +412,15 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
     HEVCSharedContext *sc = s->HEVCsc;
     if (ctb_addr_ts == sc->pps->ctb_addr_rs_to_ts[sc->sh.slice_ctb_addr_rs]) {
         printTitle("ts = %d , slice_ctb_addr_rs = %d , dependent_slice_segment_flag = %d\n", ctb_addr_ts, sc->pps->ctb_addr_rs_to_ts[sc->sh.slice_ctb_addr_rs], sc->sh.dependent_slice_segment_flag);
-        ff_hevc_cabac_init_decoder(s);
+        cabac_init_decoder(s);
         if ((sc->sh.dependent_slice_segment_flag == 0) ||
             (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])))
-            ff_hevc_cabac_init_state(s);
+            cabac_init_state(s);
 
         if (!sc->sh.first_slice_in_pic_flag && sc->pps->entropy_coding_sync_enabled_flag) {
             if ((ctb_addr_ts % sc->sps->pic_width_in_ctbs) == 0) {
                 if (sc->sps->pic_width_in_ctbs == 1)
-                    ff_hevc_cabac_init_state(s);
+                    cabac_init_state(s);
                 else if (sc->sh.dependent_slice_segment_flag == 1)
                     load_states(s);
             }
@@ -429,22 +429,22 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
             printTitle("ts = %d , tiles_enabled_flag = %d , tile_id[ts] = %d , tile_id[ts] = %d\n", ctb_addr_ts, sc->pps->tiles_enabled_flag, sc->pps->tile_id[ctb_addr_ts], sc->pps->tile_id[ctb_addr_ts-1]);
             if (s->threads_number==1)
-            	ff_hevc_cabac_reinit(s->HEVClc);
+            	cabac_reinit(s->HEVClc);
             else
-                ff_hevc_cabac_init_decoder(s);
-            ff_hevc_cabac_init_state(s);
+                cabac_init_decoder(s);
+            cabac_init_state(s);
         }
         if (sc->pps->entropy_coding_sync_enabled_flag) {
             if ((ctb_addr_ts % sc->sps->pic_width_in_ctbs) == 0) {
                 printTitle("entropy_coding_sync_enabled_flag = %d , ts = %d , pic_width_in_ctbs = %d\n", sc->pps->entropy_coding_sync_enabled_flag, ctb_addr_ts, sc->sps->pic_width_in_ctbs);
                 ff_hevc_end_of_sub_stream_one_bit_decode(s);
                 if (s->threads_number==1)
-                    ff_hevc_cabac_reinit(s->HEVClc);
+                    cabac_reinit(s->HEVClc);
                 else
-                    ff_hevc_cabac_init_decoder(s);
+                    cabac_init_decoder(s);
 
                 if (sc->sps->pic_width_in_ctbs == 1)
-                    ff_hevc_cabac_init_state(s);
+                    cabac_init_state(s);
                 else //if (!s->enable_multithreads)
                     load_states(s);
             }
