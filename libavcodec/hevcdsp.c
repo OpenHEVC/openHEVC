@@ -62,10 +62,10 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth, int pcm_deblock)
     hevcdsp->sao_band_filter[2]  = FUNC(sao_band_filter, depth);            \
     hevcdsp->sao_band_filter[3]  = FUNC(sao_band_filter, depth);            \
     																		\
-    hevcdsp->sao_edge_filter[0]  = FUNC(sao_edge_filter, depth);            \
-    hevcdsp->sao_edge_filter[1]  = FUNC(sao_edge_filter, depth);            \
-    hevcdsp->sao_edge_filter[2]  = FUNC(sao_edge_filter, depth);            \
-    hevcdsp->sao_edge_filter[3]  = FUNC(sao_edge_filter, depth);            \
+    hevcdsp->sao_edge_filter[0]  = FUNC(sao_edge_filter_0, depth);            \
+    hevcdsp->sao_edge_filter[1]  = FUNC(sao_edge_filter_1, depth);            \
+    hevcdsp->sao_edge_filter[2]  = FUNC(sao_edge_filter_2, depth);            \
+    hevcdsp->sao_edge_filter[3]  = FUNC(sao_edge_filter_3, depth);            \
                                                                             \
     hevcdsp->put_hevc_qpel[0][0] = FUNC(put_hevc_qpel_pixels, depth);       \
     hevcdsp->put_hevc_qpel[0][1] = FUNC(put_hevc_qpel_h1, depth);           \

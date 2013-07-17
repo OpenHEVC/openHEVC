@@ -239,7 +239,7 @@ void ff_hevc_sao_filter_CTB(HEVCSharedContext *sc, int x, int y, int c_idx_min, 
                     
                     break;
                 case SAO_EDGE: {
-                    sc->hevcdsp.sao_edge_filter[ classes[class_index] ](dst, src, stride, sao[class_index],  edges, width, height, c_idx, classes[class_index]);
+                    sc->hevcdsp.sao_edge_filter[ classes[class_index] ](dst, src, stride, sao[class_index],  edges, width, height, c_idx);
                     break;
                 }
             }
