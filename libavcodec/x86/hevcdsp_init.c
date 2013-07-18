@@ -110,6 +110,10 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
 void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx);
 void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx);
 
+void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
+void ff_hevc_sao_band_filter_1_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
+void ff_hevc_sao_band_filter_2_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
+void ff_hevc_sao_band_filter_3_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 
 //LF_FUNCS(uint16_t, 10)
 
@@ -181,6 +185,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_2_8_sse;
                 	c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_3_8_sse;
 
+                	c->sao_band_filter[0] = ff_hevc_sao_band_filter_0_8_sse;
+                	c->sao_band_filter[1] = ff_hevc_sao_band_filter_1_8_sse;
+                	c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
+                	c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
 
                     c->dequant[0] = ff_hevc_dequant4x4_sse4;
                     c->dequant[1] = ff_hevc_dequant8x8_sse4;
