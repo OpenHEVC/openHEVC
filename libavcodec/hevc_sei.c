@@ -38,6 +38,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
 
     for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
         if ( hash_type == 0 ) {
+            s->HEVCsc->is_md5 = 1;
             for( i = 0; i < 16; i++) {
                 s->HEVCsc->md5[cIdx][i] = get_bits(gb, 8);
             }

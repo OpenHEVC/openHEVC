@@ -2593,12 +2593,13 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         calc_md5(md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
         calc_md5(md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
         for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
-            if (!compare_md5(md5[cIdx], s->HEVCsc->md5[cIdx])) {
+            if (s->HEVCsc->is_md5 && !compare_md5(md5[cIdx], s->HEVCsc->md5[cIdx])) {
                 av_log(s->avctx, AV_LOG_ERROR, "MD5 not ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
                 if (s->avctx->err_recognition & AV_EF_EXPLODE) {
                     *got_output = 0;
                     return AVERROR_INVALIDDATA;
                 }
+                s->HEVCsc->is_md5 = 0;
             } else {
                 av_log(s->avctx, AV_LOG_INFO, "MD5 ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
             }
@@ -2663,6 +2664,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
                                             sizeof(*sc->skipped_bytes_pos));
     sc->enable_parallel_tiles = 0;
     s->threads_number = 1;
+
+    s->HEVCsc->is_md5 = 0;
 
 
     if (avctx->extradata_size > 0 && avctx->extradata)

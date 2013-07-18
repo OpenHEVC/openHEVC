@@ -780,6 +780,7 @@ typedef struct HEVCSharedContext {
     int bs_height;
     
     uint8_t md5[3][16];
+    uint8_t is_md5;
     int * ctb_entry_count;
     int coding_tree_count;
     int is_decoded;
