@@ -285,7 +285,7 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
 
     switch(mode) {
     case INTRA_PLANAR:
-        sc->hpc.pred_planar((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride, log2_size);
+        sc->hpc.pred_planar[log2_size -2]((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride);
         break;
     case INTRA_DC:
         sc->hpc.pred_dc((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride, log2_size, c_idx);
@@ -298,19 +298,63 @@ static void FUNCC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int
 
 }
 
-static void FUNCC(pred_planar)(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
-                               ptrdiff_t stride, int log2_size)
+static void FUNCC(pred_planar_0)(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+                               ptrdiff_t stride)
 {
     int x, y;
-    int size = (1 << log2_size);
     pixel *src = (pixel*)_src;
     const pixel *top = (const pixel*)_top;
     const pixel *left = (const pixel*)_left;
-    for (y = 0; y < size; y++)
-        for (x = 0; x < size; x++)
-            POS(x, y) = ((size - 1 - x) * left[y]  + (x + 1) * top[size] +
-                         (size - 1 - y) * top[x] + (y + 1) * left[size] + size) >>
-                        (log2_size + 1);
+    for (y = 0; y < 4; y++)
+        for (x = 0; x < 4; x++)
+            POS(x, y) = ((3 - x) * left[y]  + (x + 1) * top[4] +
+                         (3 - y) * top[x] + (y + 1) * left[4] + 4) >>
+                        (3);
+}
+
+static void FUNCC(pred_planar_1)(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+                               ptrdiff_t stride)
+{
+    int x, y;
+    int size = 8;
+    pixel *src = (pixel*)_src;
+    const pixel *top = (const pixel*)_top;
+    const pixel *left = (const pixel*)_left;
+    for (y = 0; y < 8; y++)
+        for (x = 0; x < 8; x++)
+            POS(x, y) = ((7 - x) * left[y]  + (x + 1) * top[8] +
+                         (7 - y) * top[x] + (y + 1) * left[8] + 8) >>
+                        (4);
+}
+
+static void FUNCC(pred_planar_2)(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+                               ptrdiff_t stride)
+{
+    int x, y;
+    int size = 16;
+    pixel *src = (pixel*)_src;
+    const pixel *top = (const pixel*)_top;
+    const pixel *left = (const pixel*)_left;
+    for (y = 0; y < 16; y++)
+        for (x = 0; x < 16; x++)
+            POS(x, y) = ((15 - x) * left[y]  + (x + 1) * top[16] +
+                         (15 - y) * top[x] + (y + 1) * left[16] + 16) >>
+                        (5);
+}
+
+static void FUNCC(pred_planar_3)(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+                               ptrdiff_t stride)
+{
+    int x, y;
+    int size = 32;
+    pixel *src = (pixel*)_src;
+    const pixel *top = (const pixel*)_top;
+    const pixel *left = (const pixel*)_left;
+    for (y = 0; y < 32; y++)
+        for (x = 0; x < 32; x++)
+            POS(x, y) = ((31 - x) * left[y]  + (x + 1) * top[32] +
+                         (31 - y) * top[x] + (y + 1) * left[32] + 32) >>
+                        (6);
 }
 
 static void FUNCC(pred_dc)(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
