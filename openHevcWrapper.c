@@ -16,6 +16,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
     HEVCContext *s;
     /* register all the codecs */
     avcodec_register_all();
+
     OpenHevcWrapperContext * openHevcContext = av_malloc(sizeof(OpenHevcWrapperContext));
     av_init_packet(&openHevcContext->avpkt);
     openHevcContext->codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
@@ -36,9 +37,10 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
          available in the bitstream. */
 
     /* open it */
-
-    openHevcContext->c->thread_type = FF_THREAD_SLICE;
-    openHevcContext->c->thread_count = nb_pthreads;
+    if(nb_pthreads)	{
+    	openHevcContext->c->thread_type = FF_THREAD_SLICE;
+    	openHevcContext->c->thread_count = nb_pthreads;
+    }
     if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         return NULL;
@@ -46,7 +48,8 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
     
     s = openHevcContext->c->priv_data;
     s->decode_checksum_sei = 0;
-    s->threads_number = openHevcContext->c->thread_count; //>1;
+    s->threads_number = openHevcContext->c->thread_count;
+
     return (OpenHevc_Handle) openHevcContext;
 }
 

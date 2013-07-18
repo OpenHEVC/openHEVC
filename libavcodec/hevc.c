@@ -44,7 +44,7 @@
  * Section 5.7
  */
 //#define POC_DISPLAY_MD5
-#define WPP1
+//#define WPP1
 static void pic_arrays_free(HEVCContext *s)
 {
     int i;
@@ -2063,7 +2063,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     return ctb_addr_ts;
 }
 
-static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
+static int hls_slice_data_wpp(HEVCContext *s,  const uint8_t *nal, int length)
 {
     HEVCSharedContext *sc = s->HEVCsc;
     HEVCLocalContext *lc = s->HEVClc;
@@ -2071,6 +2071,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     int *arg = av_malloc((sc->sh.num_entry_point_offsets+1)*sizeof(int));
     int i, j, res = 0;
     int offset;
+
 #ifdef WPP1
     int startheader, cmpt = 0;
 #endif
@@ -2107,6 +2108,9 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 
     offset = (lc->gb->index>>3);
 
+    sc->data = nal;
+
+
 #ifdef WPP1
     for(j=0, cmpt = 0,startheader=offset+sc->sh.entry_point_offset[0]; j< sc->skipped_bytes; j++){
         if(sc->skipped_bytes_pos[j] >= offset && sc->skipped_bytes_pos[j] < startheader){
@@ -2138,6 +2142,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         offset += sc->sh.entry_point_offset[sc->sh.num_entry_point_offsets-1];
 #endif
         sc->sh.size[sc->sh.num_entry_point_offsets-1] = length-offset;
+
         sc->sh.offset[sc->sh.num_entry_point_offsets-1] = offset;
     }
 
@@ -2147,7 +2152,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
 
     }
-    sc->data = nal;
+
     if (sc->sh.first_slice_in_pic_flag == 1) {
         sc->SliceAddrRs = sc->sh.slice_address;
     } else {
@@ -2483,7 +2488,6 @@ static const uint8_t *extract_rbsp(HEVCContext *s, const uint8_t *src,
                 dst[di++]  = 0;
                 dst[di++]  = 0;
                 si        += 3;
-
                 sc->skipped_bytes++;
                 if (sc->skipped_bytes_pos_size < sc->skipped_bytes) {
                     sc->skipped_bytes_pos_size *= 2;
@@ -2532,6 +2536,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         length -= 3;
 
         nal = extract_rbsp(s, buf, &nal_length, &consumed, length);
+
         if (nal == NULL)
             return -1;
 
