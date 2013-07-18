@@ -327,5 +327,340 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
             LY= _mm_srli_si128(LY,1);
         }
 
+}
 
+void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+        ptrdiff_t stride, int c_idx, int mode)
+{
+    int x, y;
+    int size = 4;
+    __m128* r0,r1,r2,r3,r4,r5,r6,r7,r8,r9;
+
+    uint8_t *src = (uint8_t*)_src;
+    const uint8_t *top = (const uint8_t*)_top;
+    const uint8_t *left = (const uint8_t*)_left;
+
+    const int intra_pred_angle[] = {
+            32, 26, 21, 17, 13, 9, 5, 2, 0, -2, -5, -9, -13, -17, -21, -26, -32,
+            -26, -21, -17, -13, -9, -5, -2, 0, 2, 5, 9, 13, 17, 21, 26, 32
+    };
+    const int inv_angle[] = {
+            -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,
+            -630, -910, -1638, -4096
+    };
+
+    int angle = intra_pred_angle[mode-2];
+    uint8_t ref_array[3*MAX_TB_SIZE+1];
+    const uint8_t *ref;
+    int last = (size * angle) >> 5;
+
+    if (mode >= 18) {
+        ref = top - 1;
+        if (angle < 0 && last < -1) {
+            for (x = last; x <= -1; x++)
+                (ref_array + size)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+            for (x = 0; x <= size; x++){
+                (ref_array + size)[x] = top[x - 1];
+
+            }
+            ref = ref_array + size;
+        }
+
+        for (y = 0; y < size; y++) {
+            int idx = ((y + 1) * angle) >> 5;
+            int fact = ((y + 1) * angle) & 31;
+            if (fact) {
+                for (x = 0; x < size; x++) {
+                    src[(x) + stride * (y)] = ((32 - fact) * ref[x + idx + 1] + fact * ref[x + idx + 2] + 16) >> 5;
+                }
+            } else {
+                for (x = 0; x < size; x++) {
+                    src[(x) + stride * (y)] = ref[x + idx + 1];
+                }
+            }
+        }
+        if (mode == 26 && c_idx == 0 && size < 32) {
+            for (y = 0; y < size; y++)
+                src[stride * (y)] = av_clip_uint8(top[0] + ((left[y] - left[-1]) >> 1));
+        }
+    } else {
+        ref = left - 1;
+        if (angle < 0 && last < -1) {
+            for (x = 0; x <= size; x++)
+                (ref_array + size)[x] = left[x - 1];
+            for (x = last; x <= -1; x++)
+                (ref_array + size)[x] = top[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+            ref = ref_array + size;
+        }
+
+        for (x = 0; x < size; x++) {
+            int idx = ((x + 1) * angle) >> 5;
+            int fact = ((x + 1) * angle) & 31;
+            if (fact) {
+                for (y = 0; y < size; y++) {
+                    src[(x) + stride * (y)] = ((32 - fact) * ref[y + idx + 1] + fact * ref[y + idx + 2] + 16) >> 5;
+                }
+            } else {
+                for (y = 0; y < size; y++) {
+                    src[(x) + stride * (y)] = ref[y + idx + 1];
+                }
+            }
+        }
+        if (mode == 10 && c_idx == 0 && size < 32) {
+            for (x = 0; x < size; x++)
+                src[x] = av_clip_uint8(left[0] + ((top[x] - top[-1]) >> 1));
+        }
+    }
+}
+void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+        ptrdiff_t stride, int c_idx, int mode)
+{
+    int x, y;
+    int size = 8;
+
+    uint8_t *src = (uint8_t*)_src;
+    const uint8_t *top = (const uint8_t*)_top;
+    const uint8_t *left = (const uint8_t*)_left;
+
+    const int intra_pred_angle[] = {
+            32, 26, 21, 17, 13, 9, 5, 2, 0, -2, -5, -9, -13, -17, -21, -26, -32,
+            -26, -21, -17, -13, -9, -5, -2, 0, 2, 5, 9, 13, 17, 21, 26, 32
+    };
+    const int inv_angle[] = {
+            -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,
+            -630, -910, -1638, -4096
+    };
+
+    int angle = intra_pred_angle[mode-2];
+    uint8_t ref_array[3*MAX_TB_SIZE+1];
+    const uint8_t *ref;
+    int last = (size * angle) >> 5;
+
+    if (mode >= 18) {
+        ref = top - 1;
+        if (angle < 0 && last < -1) {
+            for (x = last; x <= -1; x++)
+                (ref_array + size)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+            for (x = 0; x <= size; x++)
+                (ref_array + size)[x] = top[x - 1];
+            ref = ref_array + size;
+        }
+
+        for (y = 0; y < size; y++) {
+            int idx = ((y + 1) * angle) >> 5;
+            int fact = ((y + 1) * angle) & 31;
+            if (fact) {
+                for (x = 0; x < size; x++) {
+                    src[(x) + stride * (y)] = ((32 - fact) * ref[x + idx + 1] + fact * ref[x + idx + 2] + 16) >> 5;
+                }
+            } else {
+                for (x = 0; x < size; x++) {
+                    src[(x) + stride * (y)] = ref[x + idx + 1];
+                }
+            }
+        }
+        if (mode == 26 && c_idx == 0 && size < 32) {
+            for (y = 0; y < size; y++)
+                src[stride * (y)] = av_clip_uint8(top[0] + ((left[y] - left[-1]) >> 1));
+        }
+    } else {
+        ref = left - 1;
+        if (angle < 0 && last < -1) {
+            for (x = 0; x <= size; x++)
+                (ref_array + size)[x] = left[x - 1];
+            for (x = last; x <= -1; x++)
+                (ref_array + size)[x] = top[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+            ref = ref_array + size;
+        }
+
+        for (x = 0; x < size; x++) {
+            int idx = ((x + 1) * angle) >> 5;
+            int fact = ((x + 1) * angle) & 31;
+            if (fact) {
+                for (y = 0; y < size; y++) {
+                    src[(x) + stride * (y)] = ((32 - fact) * ref[y + idx + 1] + fact * ref[y + idx + 2] + 16) >> 5;
+                }
+            } else {
+                for (y = 0; y < size; y++) {
+                    src[(x) + stride * (y)] = ref[y + idx + 1];
+                }
+            }
+        }
+        if (mode == 10 && c_idx == 0 && size < 32) {
+            for (x = 0; x < size; x++)
+                src[x] = av_clip_uint8(left[0] + ((top[x] - top[-1]) >> 1));
+        }
+    }
+}
+void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+        ptrdiff_t stride, int c_idx, int mode)
+{
+    int x, y;
+    int size = 16;
+    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9;
+
+    uint8_t *src = (uint8_t*)_src;
+    const uint8_t *top = (const uint8_t*)_top;
+    const uint8_t *left = (const uint8_t*)_left;
+
+    const int intra_pred_angle[] = {
+            32, 26, 21, 17, 13, 9, 5, 2, 0, -2, -5, -9, -13, -17, -21, -26, -32,
+            -26, -21, -17, -13, -9, -5, -2, 0, 2, 5, 9, 13, 17, 21, 26, 32
+    };
+    const int inv_angle[] = {
+            -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,
+            -630, -910, -1638, -4096
+    };
+
+    int angle = intra_pred_angle[mode-2];
+    uint8_t ref_array[3*MAX_TB_SIZE+1];
+    const uint8_t *ref;
+    int last = (size * angle) >> 5;
+
+    if (mode >= 18) {
+        ref = top - 1;
+        if (angle < 0 && last < -1) {
+            for (x = last; x <= -1; x++)
+                (ref_array + size)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+
+                r0= _mm_loadu_si128((__m128i*)(top-1));
+                _mm_storeu_si128((__m128*)(ref_array+16),r0);
+                (ref_array + size)[16] = top[15];
+
+
+            ref = ref_array + size;
+        }
+
+        for (y = 0; y < size; y++) {
+            int idx = ((y + 1) * angle) >> 5;
+            int fact = ((y + 1) * angle) & 31;
+            if (fact) {
+                for (x = 0; x < 16; x++) {
+                    src[(x) + stride * (y)] = ((32 - fact) * ref[x + idx + 1] + fact * ref[x + idx + 2] + 16) >> 5;
+                }
+            } else {
+                    r0= _mm_loadu_si128((__m128i*)(ref+idx+1));
+                    _mm_storeu_si128((__m128*)(src+y*stride),r0);
+
+            }
+        }
+        if (mode == 26 && c_idx == 0) {
+            for (y = 0; y < size; y++)
+                src[stride * (y)] = av_clip_uint8(top[0] + ((left[y] - left[-1]) >> 1));
+        }
+    } else {
+        ref = left - 1;
+        if (angle < 0 && last < -1) {
+            for (x = last; x <= -1; x++)
+                (ref_array + size)[x] = top[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+
+                r0= _mm_loadu_si128((__m128i*)(left-1));
+                _mm_storeu_si128((__m128*)(ref_array+16),r0);
+                (ref_array + size)[16] = left[15];
+            ref = ref_array + size;
+        }
+
+        for (x = 0; x < size; x++) {
+            int idx = ((x + 1) * angle) >> 5;
+            int fact = ((x + 1) * angle) & 31;
+            if (fact) {
+                for (y = 0; y < size; y++) {
+                    src[(x) + stride * (y)] = ((32 - fact) * ref[y + idx + 1] + fact * ref[y + idx + 2] + 16) >> 5;
+                }
+            } else {
+                for (y = 0; y < size; y++) {
+                    src[(x) + stride * (y)] = ref[y + idx + 1];
+                }
+            }
+        }
+        if (mode == 10 && c_idx == 0) {
+            for (x = 0; x < size; x++)
+                src[x] = av_clip_uint8(left[0] + ((top[x] - top[-1]) >> 1));
+        }
+    }
+}
+void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+        ptrdiff_t stride, int c_idx, int mode)
+{
+    int x, y;
+    int size = 32;
+    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9;
+
+    uint8_t *src = (uint8_t*)_src;
+    const uint8_t *top = (const uint8_t*)_top;
+    const uint8_t *left = (const uint8_t*)_left;
+
+    const int intra_pred_angle[] = {
+            32, 26, 21, 17, 13, 9, 5, 2, 0, -2, -5, -9, -13, -17, -21, -26, -32,
+            -26, -21, -17, -13, -9, -5, -2, 0, 2, 5, 9, 13, 17, 21, 26, 32
+    };
+    const int inv_angle[] = {
+            -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,
+            -630, -910, -1638, -4096
+    };
+
+    int angle = intra_pred_angle[mode-2];
+    DECLARE_ALIGNED(16,uint8_t, ref_array[3*MAX_TB_SIZE+1]);
+    const uint8_t *ref;
+    int last = (size * angle) >> 5;
+    if (mode >= 18) {
+        ref = top - 1;
+        if (angle < 0 && last < -1) {
+            for (x = last; x <= -1; x++)
+                (ref_array + size)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+
+            r0= _mm_loadu_si128((__m128i*)(top-1));
+            _mm_store_si128((__m128*)(ref_array+32),r0);
+            r0= _mm_loadu_si128((__m128i*)(top+15));
+            _mm_store_si128((__m128*)(ref_array+48),r0);
+            (ref_array + size)[32] = top[31];
+            ref = ref_array + 32;
+        }
+
+        for (y = 0; y < 32; y++) {
+            int idx = ((y + 1) * angle) >> 5;
+            int fact = ((y + 1) * angle) & 31;
+            if (fact) {
+                for (x = 0; x < 32; x++) {
+                    src[(x) + stride * (y)] = ((32 - fact) * ref[x + idx + 1] + fact * ref[x + idx + 2] + 16) >> 5;
+                }
+            } else {
+                    r0= _mm_loadu_si128((__m128i*)(ref+idx+1));
+                    _mm_storeu_si128((__m128*)(src+y*stride),r0);
+
+                    r0= _mm_loadu_si128((__m128i*)(ref+idx+17));
+                    _mm_storeu_si128((__m128*)(src+y*stride+16),r0);
+            }
+        }
+
+    } else {
+        ref = left - 1;
+        if (angle < 0 && last < -1) {
+            for (x = last; x <= -1; x++)
+                (ref_array + size)[x] = top[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+
+            for (x = 0; x <= 32; x++)
+                r0= _mm_loadu_si128((__m128i*)(left-1));
+                _mm_storeu_si128((__m128*)(ref_array+32),r0);
+
+                r0= _mm_loadu_si128((__m128i*)(left+15));
+                _mm_storeu_si128((__m128*)(ref_array+48),r0);
+                (ref_array + size)[32] = left[31];
+
+            ref = ref_array + size;
+        }
+        for (x = 0; x < 32; x++) {
+            int idx = ((x + 1) * angle) >> 5;
+            int fact = ((x + 1) * angle) & 31;
+            if (fact) {
+                for (y = 0; y < 32; y++) {
+                    src[(x) + stride * (y)] = ((32 - fact) * ref[y + idx + 1] + fact * ref[y + idx + 2] + 16) >> 5;
+                }
+            } else {
+                for (y = 0; y < 32; y++) {
+                    src[(x) + stride * (y)] = ref[y + idx + 1];
+                }
+            }
+        }
+    }
 }
