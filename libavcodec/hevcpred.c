@@ -47,7 +47,10 @@ void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth)
     hpc->pred_planar[2]  = FUNCC(pred_planar_2, depth);  \
     hpc->pred_planar[3]  = FUNCC(pred_planar_3, depth);  \
     hpc->pred_dc      = FUNCC(pred_dc, depth);      \
-    hpc->pred_angular = FUNCC(pred_angular, depth);
+    hpc->pred_angular[0] = FUNCC(pred_angular_0, depth);\
+    hpc->pred_angular[1] = FUNCC(pred_angular_1, depth);\
+    hpc->pred_angular[2] = FUNCC(pred_angular_2, depth);\
+    hpc->pred_angular[3] = FUNCC(pred_angular_3, depth);
 
     switch (bit_depth) {
     case 9:

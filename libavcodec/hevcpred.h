@@ -31,8 +31,8 @@ typedef struct HEVCPredContext {
     void(*pred_planar[4])(uint8_t *src, const uint8_t *top, const uint8_t *left, ptrdiff_t stride);
     void(*pred_dc)(uint8_t *src, const uint8_t *top, const uint8_t *left, ptrdiff_t stride,
                    int log2_size, int c_idx);
-    void(*pred_angular)(uint8_t *src, const uint8_t *top, const uint8_t *left, ptrdiff_t stride,
-                        int log2_size, int c_idx, int mode);
+    void(*pred_angular[4])(uint8_t *src, const uint8_t *top, const uint8_t *left, ptrdiff_t stride,
+                         int c_idx, int mode);
 } HEVCPredContext;
 
 void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth);
