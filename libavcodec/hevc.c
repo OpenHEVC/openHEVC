@@ -66,10 +66,6 @@ static void pic_arrays_free(HEVCContext *s)
 
     av_freep(&sc->qp_y_tab);
 
-    av_freep(&sc->sh.entry_point_offset);
-    av_freep(&sc->sh.size);
-    av_freep(&sc->sh.offset);
-
     for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
         av_freep(&sc->DPB[i].tab_mvf);
     }
