@@ -542,6 +542,7 @@ static int hls_slice_header(HEVCContext *s)
 
 static int hls_sao_param(HEVCContext *s, int rx, int ry)
 {
+
     int c_idx, i;
     int sao_merge_left_flag = 0;
     int sao_merge_up_flag = 0;
@@ -591,6 +592,7 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry)
         }
 
         // Inferred parameters
+        sao->offset_val[c_idx][0]=0;   //avoid undefined values
         for (i = 0; i < 4; i++) {
             sao->offset_val[c_idx][i+1] = sao->offset_abs[c_idx][i] << shift;
             if (sao->type_idx[c_idx] == SAO_EDGE) {
