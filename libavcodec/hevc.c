@@ -2448,6 +2448,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->HEVCsc = av_mallocz(sizeof(HEVCSharedContext));
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
+	memset(&s->HEVCsc->sh, 0, sizeof(s->HEVCsc->sh)); 
+
     lc = s->HEVClcList[0] = s->HEVClc;
     sc = s->HEVCsc;
     s->sList[0] = s;
