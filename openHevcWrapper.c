@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include "openHevcWrapper.h"
 #include "avcodec.h"
-#include "libavcodec/hevc.h"
+#include "libavutil/mem.h"
+#include "libavutil/opt.h"
 
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
@@ -13,7 +14,6 @@ typedef struct OpenHevcWrapperContext {
 
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
 {
-    HEVCContext *s;
     /* register all the codecs */
     avcodec_register_all();
     OpenHevcWrapperContext * openHevcContext = av_malloc(sizeof(OpenHevcWrapperContext));
@@ -43,10 +43,8 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
         fprintf(stderr, "could not open codec\n");
         return NULL;
     }
+    av_opt_set_int(openHevcContext->c->priv_data, "thread-count", openHevcContext->c->thread_count, 0);
     
-    s = openHevcContext->c->priv_data;
-    s->decode_checksum_sei = 0;
-    s->threads_number = openHevcContext->c->thread_count; //>1;
     return (OpenHevc_Handle) openHevcContext;
 }
 
@@ -55,10 +53,8 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     uint8_t *poutbuf;
     int got_picture, len;
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    HEVCContext *s = openHevcContext->c->priv_data;
     openHevcContext->avpkt.size = nal_len;
     if (nal_len == - 1) return -1;
-    s->HEVCsc->pts = pts;
     av_parser_parse2(openHevcContext->parser,
             openHevcContext->c,
             &poutbuf, &nal_len,
@@ -146,10 +142,8 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
 
 void libOpenHevcSetCheckMD5(OpenHevc_Handle openHevcHandle, int val)
 {
-    HEVCContext *s;
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    s = openHevcContext->c->priv_data;
-    s->decode_checksum_sei = val;
+    av_opt_set_int(openHevcContext->c->priv_data, "decode-checksum", val, 0);
 }
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
 {

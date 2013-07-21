@@ -2582,6 +2582,8 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+    { "thread-count", "number of active threads", OFFSET(threads_number),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 50, PAR },
     { NULL },
 };
 
