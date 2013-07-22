@@ -75,7 +75,9 @@ static void video_decode_example(const char *filename)
         printf("%s",filename_str);
         return -1; // Couldn't open file
     }
-
+    if (output_file) {
+        fout = fopen(output_file, "wb");
+    }
     while(!stop) {
         if (av_read_frame(pFormatCtx, &packet)<0) {
             stop = 1 ;
