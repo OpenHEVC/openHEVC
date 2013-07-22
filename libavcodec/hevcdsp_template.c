@@ -471,8 +471,9 @@ static void FUNC(transform_32x32_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t 
 #undef IT4x4
 }
 
-static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx)
 {
+    int class_index= 0;
     uint8_t *dst = _dst;
     uint8_t *src = _src;
     ptrdiff_t stride = _stride;
@@ -524,8 +525,9 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
             src += stride;
         }
 }
-static void FUNC(sao_band_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+static void FUNC(sao_band_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx)
 {
+    int class_index = 1;
     uint8_t *dst = _dst;
     uint8_t *src = _src;
     ptrdiff_t stride = _stride;
@@ -577,8 +579,9 @@ static void FUNC(sao_band_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
             src += stride;
         }
 }
-static void FUNC(sao_band_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+static void FUNC(sao_band_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx)
 {
+    int class_index = 2;
     uint8_t *dst = _dst;
     uint8_t *src = _src;
     ptrdiff_t stride = _stride;
@@ -630,8 +633,9 @@ static void FUNC(sao_band_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
             src += stride;
         }
 }
-static void FUNC(sao_band_filter_3)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+static void FUNC(sao_band_filter_3)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx)
 {
+    int class_index= 3;
     uint8_t *dst = _dst;
     uint8_t *src = _src;
     ptrdiff_t stride = _stride;
