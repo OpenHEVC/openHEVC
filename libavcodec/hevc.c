@@ -2340,6 +2340,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
         if (sc->nal_unit_type == NAL_RASL_R && sc->poc <= sc->max_ra) {
+            sc->is_decoded = 0;
             break;
         } else {
             if (sc->nal_unit_type == NAL_RASL_R && sc->poc > sc->max_ra)
@@ -2537,14 +2538,6 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     return 0;
 }
 
-static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        if (md5_in1[i] != md5_in2[i])
-            return 0;
-    return 1;
-}
 
 
 static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
@@ -2570,27 +2563,13 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     *got_output = ret;
 
     if (s->decode_checksum_sei) {
-        int cIdx;
-        uint8_t md5[3][16];
         AVFrame *frame = sc->ref->frame;
 #ifdef POC_DISPLAY_MD5
         int poc        = sc->poc;
 #endif
-        calc_md5(md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  );
-        calc_md5(md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
-        calc_md5(md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
-        for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
-            if (s->HEVCsc->is_md5 && !compare_md5(md5[cIdx], s->HEVCsc->md5[cIdx])) {
-                av_log(s->avctx, AV_LOG_ERROR, "MD5 not ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
-                if (s->avctx->err_recognition & AV_EF_EXPLODE) {
-                    *got_output = 0;
-                    return AVERROR_INVALIDDATA;
-                }
-                s->HEVCsc->is_md5 = 0;
-            } else {
-                av_log(s->avctx, AV_LOG_INFO, "MD5 ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
-            }
-        }
+        calc_md5(sc->md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  );
+        calc_md5(sc->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
+        calc_md5(sc->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
 #ifdef POC_DISPLAY_MD5
         printf_ref_pic_list(s);
         print_md5(poc, sc->md5);
