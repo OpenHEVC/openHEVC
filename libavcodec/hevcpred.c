@@ -42,9 +42,15 @@ void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth)
 
 #define HEVC_PRED(depth)                            \
     hpc->intra_pred   = FUNC(intra_pred, depth);   \
-    hpc->pred_planar  = FUNC(pred_planar, depth);  \
+    hpc->pred_planar[0]  = FUNC(pred_planar_0, depth);  \
+    hpc->pred_planar[1]  = FUNC(pred_planar_1, depth);  \
+    hpc->pred_planar[2]  = FUNC(pred_planar_2, depth);  \
+    hpc->pred_planar[3]  = FUNC(pred_planar_3, depth);  \
     hpc->pred_dc      = FUNC(pred_dc, depth);      \
-    hpc->pred_angular = FUNC(pred_angular, depth);
+    hpc->pred_angular[0] = FUNC(pred_angular_0, depth);\
+    hpc->pred_angular[1] = FUNC(pred_angular_1, depth);\
+    hpc->pred_angular[2] = FUNC(pred_angular_2, depth);\
+    hpc->pred_angular[3] = FUNC(pred_angular_3, depth);
 
     switch (bit_depth) {
     case 9:
@@ -57,4 +63,6 @@ void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth)
         HEVC_PRED(8);
         break;
     }
+    if (ARCH_X86) ff_hevcpred_init_x86(hpc, bit_depth);
+
 }

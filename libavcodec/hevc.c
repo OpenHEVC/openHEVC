@@ -66,10 +66,6 @@ static void pic_arrays_free(HEVCContext *s)
 
     av_freep(&sc->qp_y_tab);
 
-    av_freep(&sc->sh.entry_point_offset);
-    av_freep(&sc->sh.size);
-    av_freep(&sc->sh.offset);
-
     for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
         av_freep(&sc->DPB[i].tab_mvf);
     }
@@ -542,6 +538,7 @@ static int hls_slice_header(HEVCContext *s)
 
 static int hls_sao_param(HEVCContext *s, int rx, int ry)
 {
+
     int c_idx, i;
     int sao_merge_left_flag = 0;
     int sao_merge_up_flag = 0;
@@ -591,6 +588,7 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry)
         }
 
         // Inferred parameters
+        sao->offset_val[c_idx][0]=0;   //avoid undefined values
         for (i = 0; i < 4; i++) {
             sao->offset_val[c_idx][i+1] = sao->offset_abs[c_idx][i] << shift;
             if (sao->type_idx[c_idx] == SAO_EDGE) {
@@ -1701,6 +1699,7 @@ static void hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     if (SAMPLE_CTB(sc->skip_flag, x_cb, y_cb)) {
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
+
         if (!sc->sh.disable_deblocking_filter_flag) {
         	if(!s->HEVCsc->enable_parallel_tiles)
         		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
@@ -2624,6 +2623,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->HEVCsc = av_mallocz(sizeof(HEVCSharedContext));
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
+	memset(&s->HEVCsc->sh, 0, sizeof(s->HEVCsc->sh)); 
+
     lc = s->HEVClcList[0] = s->HEVClc;
     sc = s->HEVCsc;
     s->sList[0] = s;
@@ -2717,10 +2718,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             av_free(lc->cabac_state);
             if(sc->enable_parallel_tiles)
              	av_free(lc->save_boundary_strengths);
-            av_free(lc);
         }
         av_free(sc->ctb_entry_count);
         av_free(s->HEVClcList[i]);
+		av_free(s->sList[i]);
     }
     for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
         av_frame_free(&sc->DPB[i].frame);
@@ -2749,7 +2750,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->HEVClc);
     pic_arrays_free(s);
     av_freep(&s->HEVCsc);
-
     return 0;
 }
 
@@ -2765,6 +2765,8 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+    { "thread-count", "number of active threads", OFFSET(threads_number),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 50, PAR },
     { NULL },
 };
 
