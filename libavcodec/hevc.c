@@ -43,7 +43,7 @@
 /**
  * Section 5.7
  */
-//#define POC_DISPLAY_MD5
+#define POC_DISPLAY_MD5
 #define WPP1
 static void pic_arrays_free(HEVCContext *s)
 {
@@ -2392,7 +2392,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         }
         if (s->decode_checksum_sei && ctb_addr_ts >= (sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs)) {
 #ifdef POC_DISPLAY_MD5
-            AVFrame *frame = (AVFrame *) data;
+            AVFrame *frame = (AVFrame *) sc->ref->frame;
             int poc        = poc_display;
 #else
             AVFrame *frame = sc->ref->frame;
@@ -2402,8 +2402,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             calc_md5(sc->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
             calc_md5(sc->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
             sc->is_decoded = 1;
-            //printf_ref_pic_list(s);
-            //print_md5(poc, sc->md5);
+            printf_ref_pic_list(s);
+            print_md5(poc, sc->md5);
         }
 
         if (sc->sh.first_slice_in_pic_flag) {
