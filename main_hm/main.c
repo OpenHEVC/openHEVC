@@ -69,7 +69,7 @@ static void video_decode_example(const char *filename)
     if (output_file) {
         fout = fopen(output_file, "wb");
     }
-    buf = calloc ( 1000000, sizeof(char));
+    buf = calloc ( 2000000, sizeof(char));
     while(!stop) {
         if (libOpenHevcDecode(openHevcHandle, buf, !feof(f) ? get_next_nal(f, buf) : 0, pts++)) {
             fflush(stdout);
@@ -103,6 +103,7 @@ static void video_decode_example(const char *filename)
                 fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , nbData / 4, fout);
             }
             nbFrame++;
+
         } else if (feof(f) && nbFrame)
             stop = 1;
     }
