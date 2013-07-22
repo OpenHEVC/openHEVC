@@ -761,7 +761,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0, int log2_trafo_s
         } else {
             n_end = 15;
         }
-
         for (n = n_end; n >= 0; n--) {
             GET_COORD(offset, n);
 
@@ -1521,7 +1520,6 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     if ((y0 - 1) < y_ctb)
         cand_up = INTRA_DC;
 
-
     if (cand_left == cand_up) {
         if (cand_left < 2) {
             candidate[0] = INTRA_PLANAR;
@@ -1638,22 +1636,17 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
     int i, j, k;
     HEVCLocalContext *lc = s->HEVClc;
     HEVCSharedContext *sc = s->HEVCsc;
-    int split = lc->cu.part_mode == PART_NxN;
-    int pb_size = (1 << log2_cb_size) >> split;
-    int side = split + 1;
+    int pb_size = 1 << log2_cb_size;
     int size_in_pus = pb_size >> sc->sps->log2_min_pu_size;
     int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
 
-
     MvField *tab_mvf = sc->ref->tab_mvf;
-    for (i = 0; i < side; i++) {
-        int x_pu = (x0 + pb_size * i) >> sc->sps->log2_min_pu_size;
-        int y_pu = (y0 + pb_size * i) >> sc->sps->log2_min_pu_size;
-        for(j = 0; j <size_in_pus; j++) {
-            memset(&sc->tab_ipm[(y_pu+j)*pic_width_in_min_pu + x_pu], INTRA_DC, size_in_pus);
-            for(k = 0; k <size_in_pus; k++) {
-                tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+k].is_intra = lc->cu.pred_mode == MODE_INTRA;
-            }
+    int x_pu = x0 >> sc->sps->log2_min_pu_size;
+    int y_pu = y0 >> sc->sps->log2_min_pu_size;
+    for(j = 0; j <size_in_pus; j++) {
+        memset(&sc->tab_ipm[(y_pu+j)*pic_width_in_min_pu + x_pu], INTRA_DC, size_in_pus);
+        for(k = 0; k <size_in_pus; k++) {
+            tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+k].is_intra = lc->cu.pred_mode == MODE_INTRA;
         }
     }
 
