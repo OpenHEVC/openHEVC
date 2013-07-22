@@ -46,7 +46,7 @@ void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     sao4 = _mm_set1_epi16(sao_offset_val[4]);
 
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x += 16) {
+        for (x = 0; x < width-15; x += 16) {
 
             src0 = _mm_loadu_si128((__m128i *) &src[x]);
 
