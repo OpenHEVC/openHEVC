@@ -485,32 +485,12 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
     int sao_left_class = sao->band_position[c_idx];
 
     int init_y = 0, init_x =0;
-    switch(class_index) {
-        case 0:
+
             if(!borders[2] )
                 width -= ((8>>chroma)+2) ;
             if(!borders[3] )
                 height -= ((4>>chroma)+2);
-            break;
-        case 1:
-            init_y = -(4>>chroma)-2;
-            if(!borders[2] )
-                width -= ((8>>chroma)+2);
-            height = (4>>chroma)+2;
-            break;
-        case 2:
-            init_x = -(8>>chroma)-2;
-            width = (8>>chroma)+2;
-            if(!borders[3])
-                height -= ((4>>chroma)+2);
-            break;
-        case 3:
-            init_y = -(4>>chroma)-2;
-            init_x = -(8>>chroma)-2;
-            width = (8>>chroma)+2;
-            height = (4>>chroma)+2;
-            break;
-    }
+
     dst = dst + (init_y*_stride + init_x);
     src = src + (init_y*_stride + init_x);
     for (k = 0; k < 4; k++)
@@ -539,32 +519,12 @@ static void FUNC(sao_band_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
     int sao_left_class = sao->band_position[c_idx];
 
     int init_y = 0, init_x =0;
-    switch(class_index) {
-        case 0:
-            if(!borders[2] )
-                width -= ((8>>chroma)+2) ;
-            if(!borders[3] )
-                height -= ((4>>chroma)+2);
-            break;
-        case 1:
+
             init_y = -(4>>chroma)-2;
             if(!borders[2] )
                 width -= ((8>>chroma)+2);
             height = (4>>chroma)+2;
-            break;
-        case 2:
-            init_x = -(8>>chroma)-2;
-            width = (8>>chroma)+2;
-            if(!borders[3])
-                height -= ((4>>chroma)+2);
-            break;
-        case 3:
-            init_y = -(4>>chroma)-2;
-            init_x = -(8>>chroma)-2;
-            width = (8>>chroma)+2;
-            height = (4>>chroma)+2;
-            break;
-    }
+
     dst = dst + (init_y*_stride + init_x);
     src = src + (init_y*_stride + init_x);
     for (k = 0; k < 4; k++)
@@ -593,32 +553,12 @@ static void FUNC(sao_band_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
     int sao_left_class = sao->band_position[c_idx];
 
     int init_y = 0, init_x =0;
-    switch(class_index) {
-        case 0:
-            if(!borders[2] )
-                width -= ((8>>chroma)+2) ;
-            if(!borders[3] )
-                height -= ((4>>chroma)+2);
-            break;
-        case 1:
-            init_y = -(4>>chroma)-2;
-            if(!borders[2] )
-                width -= ((8>>chroma)+2);
-            height = (4>>chroma)+2;
-            break;
-        case 2:
+
             init_x = -(8>>chroma)-2;
             width = (8>>chroma)+2;
             if(!borders[3])
                 height -= ((4>>chroma)+2);
-            break;
-        case 3:
-            init_y = -(4>>chroma)-2;
-            init_x = -(8>>chroma)-2;
-            width = (8>>chroma)+2;
-            height = (4>>chroma)+2;
-            break;
-    }
+
     dst = dst + (init_y*_stride + init_x);
     src = src + (init_y*_stride + init_x);
     for (k = 0; k < 4; k++)
@@ -647,32 +587,12 @@ static void FUNC(sao_band_filter_3)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
     int sao_left_class = sao->band_position[c_idx];
     
     int init_y = 0, init_x =0;
-    switch(class_index) {
-        case 0:
-            if(!borders[2] )
-                width -= ((8>>chroma)+2) ;
-            if(!borders[3] )
-                height -= ((4>>chroma)+2);
-            break;
-        case 1:
-            init_y = -(4>>chroma)-2;
-            if(!borders[2] )
-                width -= ((8>>chroma)+2);
-            height = (4>>chroma)+2;
-            break;
-        case 2:
-            init_x = -(8>>chroma)-2;
-            width = (8>>chroma)+2;
-            if(!borders[3])
-                height -= ((4>>chroma)+2);
-            break;
-        case 3:
+
             init_y = -(4>>chroma)-2;
             init_x = -(8>>chroma)-2;
             width = (8>>chroma)+2;
             height = (4>>chroma)+2;
-            break;
-    }
+
     dst = dst + (init_y*_stride + init_x);
     src = src + (init_y*_stride + init_x);
     for (k = 0; k < 4; k++)
