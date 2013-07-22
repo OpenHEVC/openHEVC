@@ -148,7 +148,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 if (EXTERNAL_SSE4(mm_flags)) {
 #if ARCH_X86_64
 #if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
-                	c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
+                    c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
                 	c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
                 	c->weighted_pred = ff_hevc_weighted_pred_8_sse;
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
