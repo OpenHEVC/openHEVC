@@ -471,7 +471,166 @@ static void FUNC(transform_32x32_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t 
 #undef IT4x4
 }
 
-static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+{
+    uint8_t *dst = _dst;
+    uint8_t *src = _src;
+    ptrdiff_t stride = _stride;
+    int band_table[32] = { 0 };
+    int k, y, x;
+    int chroma = c_idx!=0;
+    int shift = BIT_DEPTH - 5;
+    int *sao_offset_val = sao->offset_val[c_idx];
+    int sao_left_class = sao->band_position[c_idx];
+
+    int init_y = 0, init_x =0;
+    switch(class_index) {
+        case 0:
+            if(!borders[2] )
+                width -= ((8>>chroma)+2) ;
+            if(!borders[3] )
+                height -= ((4>>chroma)+2);
+            break;
+        case 1:
+            init_y = -(4>>chroma)-2;
+            if(!borders[2] )
+                width -= ((8>>chroma)+2);
+            height = (4>>chroma)+2;
+            break;
+        case 2:
+            init_x = -(8>>chroma)-2;
+            width = (8>>chroma)+2;
+            if(!borders[3])
+                height -= ((4>>chroma)+2);
+            break;
+        case 3:
+            init_y = -(4>>chroma)-2;
+            init_x = -(8>>chroma)-2;
+            width = (8>>chroma)+2;
+            height = (4>>chroma)+2;
+            break;
+    }
+    dst = dst + (init_y*_stride + init_x);
+    src = src + (init_y*_stride + init_x);
+    for (k = 0; k < 4; k++)
+        band_table[(k + sao_left_class) & 31] = k + 1;
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x++) {
+                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
+                x++;
+                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
+            }
+            dst += stride;
+            src += stride;
+        }
+}
+static void FUNC(sao_band_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+{
+    uint8_t *dst = _dst;
+    uint8_t *src = _src;
+    ptrdiff_t stride = _stride;
+    int band_table[32] = { 0 };
+    int k, y, x;
+    int chroma = c_idx!=0;
+    int shift = BIT_DEPTH - 5;
+    int *sao_offset_val = sao->offset_val[c_idx];
+    int sao_left_class = sao->band_position[c_idx];
+
+    int init_y = 0, init_x =0;
+    switch(class_index) {
+        case 0:
+            if(!borders[2] )
+                width -= ((8>>chroma)+2) ;
+            if(!borders[3] )
+                height -= ((4>>chroma)+2);
+            break;
+        case 1:
+            init_y = -(4>>chroma)-2;
+            if(!borders[2] )
+                width -= ((8>>chroma)+2);
+            height = (4>>chroma)+2;
+            break;
+        case 2:
+            init_x = -(8>>chroma)-2;
+            width = (8>>chroma)+2;
+            if(!borders[3])
+                height -= ((4>>chroma)+2);
+            break;
+        case 3:
+            init_y = -(4>>chroma)-2;
+            init_x = -(8>>chroma)-2;
+            width = (8>>chroma)+2;
+            height = (4>>chroma)+2;
+            break;
+    }
+    dst = dst + (init_y*_stride + init_x);
+    src = src + (init_y*_stride + init_x);
+    for (k = 0; k < 4; k++)
+        band_table[(k + sao_left_class) & 31] = k + 1;
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x++) {
+                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
+                x++;
+                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
+            }
+            dst += stride;
+            src += stride;
+        }
+}
+static void FUNC(sao_band_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
+{
+    uint8_t *dst = _dst;
+    uint8_t *src = _src;
+    ptrdiff_t stride = _stride;
+    int band_table[32] = { 0 };
+    int k, y, x;
+    int chroma = c_idx!=0;
+    int shift = BIT_DEPTH - 5;
+    int *sao_offset_val = sao->offset_val[c_idx];
+    int sao_left_class = sao->band_position[c_idx];
+
+    int init_y = 0, init_x =0;
+    switch(class_index) {
+        case 0:
+            if(!borders[2] )
+                width -= ((8>>chroma)+2) ;
+            if(!borders[3] )
+                height -= ((4>>chroma)+2);
+            break;
+        case 1:
+            init_y = -(4>>chroma)-2;
+            if(!borders[2] )
+                width -= ((8>>chroma)+2);
+            height = (4>>chroma)+2;
+            break;
+        case 2:
+            init_x = -(8>>chroma)-2;
+            width = (8>>chroma)+2;
+            if(!borders[3])
+                height -= ((4>>chroma)+2);
+            break;
+        case 3:
+            init_y = -(4>>chroma)-2;
+            init_x = -(8>>chroma)-2;
+            width = (8>>chroma)+2;
+            height = (4>>chroma)+2;
+            break;
+    }
+    dst = dst + (init_y*_stride + init_x);
+    src = src + (init_y*_stride + init_x);
+    for (k = 0; k < 4; k++)
+        band_table[(k + sao_left_class) & 31] = k + 1;
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x++) {
+                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
+                x++;
+                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
+            }
+            dst += stride;
+            src += stride;
+        }
+}
+static void FUNC(sao_band_filter_3)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class_index)
 {
     uint8_t *dst = _dst;
     uint8_t *src = _src;
