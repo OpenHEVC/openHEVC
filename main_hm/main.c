@@ -50,7 +50,6 @@ static void video_decode_example(const char *filename)
     AVInputFormat *file_iformat;
     AVPacket        packet;
     char filename_str[128];
-    AVCodec *codec;
 
     FILE *fout = NULL;
 
@@ -58,8 +57,6 @@ static void video_decode_example(const char *filename)
     int nbFrame = 0;
     int pts     = 0;
     int stop    = 0;
-    AVCodecContext *c;
-    AVFrame *picture;
     int got_picture=0;
     OpenHevc_Frame openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;

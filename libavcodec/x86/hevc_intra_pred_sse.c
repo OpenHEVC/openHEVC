@@ -13,11 +13,10 @@
 
 void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride)
 {
-    int x, y;
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
-    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2, mask, C0,C2,C3;
+    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, mask, C0,C2,C3;
     t0= _mm_set1_epi16(top[4]);
     l0= _mm_set1_epi16(left[4]);
     add= _mm_set1_epi16(4);
@@ -76,7 +75,7 @@ void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
 void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
                                ptrdiff_t stride)
 {
-    int x, y;
+    int y;
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
@@ -123,12 +122,12 @@ void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
 void pred_planar_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
                                ptrdiff_t stride)
 {
-    int x, y;
+    int y;
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
 
-    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2,C0,C1,C2,C3;
+    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2, C0, C1, C2;
     t0= _mm_set1_epi16(top[16]);
     l0= _mm_set1_epi16(left[16]);
     add= _mm_set1_epi16(16);
@@ -176,12 +175,12 @@ void pred_planar_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
 void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
                                ptrdiff_t stride)
 {
-    int x, y;
+    int y;
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
 
-    __m128i ly, LY, t0, tx, TX, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2, TMP1, TMP2,C0,C1,C2,C3;
+    __m128i ly, LY, t0, tx, TX, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2, TMP1, TMP2, C0, C1, C2;
         t0= _mm_set1_epi16(top[32]);
         l0= _mm_set1_epi16(left[32]);
         add= _mm_set1_epi16(32);
@@ -334,7 +333,7 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 {
     int x, y;
     int size = 4;
-    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9;
+    __m128i r0, r1, r2, r3, r5, r9;
 
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
@@ -445,7 +444,7 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 {
     int x, y;
     int size = 8;
-    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9;
+    __m128i r0, r1, r2, r3, r4, r5, r9;
 
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
@@ -472,7 +471,7 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
                 (ref_array + size)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
 
             r0= _mm_loadl_epi64((__m128i*)(top-1));
-            _mm_storel_epi64((__m128*)(ref_array+8),r0);
+            _mm_storel_epi64((__m128i *)(ref_array+8),r0);
                 (ref_array + size)[8] = top[7];
 
             ref = ref_array + size;
@@ -500,7 +499,7 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 
             } else {
                     r0= _mm_loadl_epi64((__m128i*)(ref+idx + 1));
-                    _mm_storel_epi64((__m128*)(src + stride*y),r0);
+                    _mm_storel_epi64((__m128i *)(src + stride*y),r0);
             }
         }
         if (mode == 26 && c_idx == 0) {
@@ -515,7 +514,7 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 
 
                 r0= _mm_loadl_epi64((__m128i*)(left-1));
-                _mm_storel_epi64((__m128*)(ref_array+8),r0);
+                _mm_storel_epi64((__m128i *)(ref_array+8),r0);
                 (ref_array + size)[8] = left[7];
 
             ref = ref_array + size;
@@ -557,7 +556,7 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 {
     int x, y;
     int size = 16;
-    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9;
+    __m128i r0, r1, r2, r3, r4, r5, r6, r9;
 
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
@@ -584,7 +583,7 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
                 (ref_array + size)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
 
                 r0= _mm_loadu_si128((__m128i*)(top-1));
-                _mm_storeu_si128((__m128*)(ref_array+16),r0);
+                _mm_storeu_si128((__m128i *)(ref_array+16),r0);
                 (ref_array + size)[16] = top[15];
 
 
@@ -619,7 +618,7 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 
             } else {
                     r0= _mm_loadu_si128((__m128i*)(ref+idx+1));
-                    _mm_storeu_si128((__m128*)(src+y*stride),r0);
+                    _mm_storeu_si128((__m128i *)(src+y*stride),r0);
 
             }
         }
@@ -634,7 +633,7 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
                 (ref_array + size)[x] = top[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
 
                 r0= _mm_loadu_si128((__m128i*)(left-1));
-                _mm_storeu_si128((__m128*)(ref_array+16),r0);
+                _mm_storeu_si128((__m128i *)(ref_array+16),r0);
                 (ref_array + size)[16] = left[15];
             ref = ref_array + size;
         }
@@ -680,7 +679,7 @@ void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 {
     int x, y;
     int size = 32;
-    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;
+    __m128i r0, r2, r3, r4, r5, r6, r9;
 
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
@@ -706,9 +705,9 @@ void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
                 (ref_array + size)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
 
             r0= _mm_loadu_si128((__m128i*)(top-1));
-            _mm_store_si128((__m128*)(ref_array+32),r0);
+            _mm_store_si128((__m128i *)(ref_array+32),r0);
             r0= _mm_loadu_si128((__m128i*)(top+15));
-            _mm_store_si128((__m128*)(ref_array+48),r0);
+            _mm_store_si128((__m128i *)(ref_array+48),r0);
             (ref_array + size)[32] = top[31];
             ref = ref_array + 32;
         }
@@ -755,10 +754,10 @@ void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 
             } else {
                     r0= _mm_loadu_si128((__m128i*)(ref+idx+1));
-                    _mm_storeu_si128((__m128*)(src+y*stride),r0);
+                    _mm_storeu_si128((__m128i *)(src+y*stride),r0);
 
                     r0= _mm_loadu_si128((__m128i*)(ref+idx+17));
-                    _mm_storeu_si128((__m128*)(src+y*stride+16),r0);
+                    _mm_storeu_si128((__m128i *)(src+y*stride+16),r0);
             }
         }
 
@@ -770,10 +769,10 @@ void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 
 
                 r0= _mm_loadu_si128((__m128i*)(left-1));
-                _mm_storeu_si128((__m128*)(ref_array+32),r0);
+                _mm_storeu_si128((__m128i *)(ref_array+32),r0);
 
                 r0= _mm_loadu_si128((__m128i*)(left+15));
-                _mm_storeu_si128((__m128*)(ref_array+48),r0);
+                _mm_storeu_si128((__m128i *)(ref_array+48),r0);
                 (ref_array + size)[32] = left[31];
 
             ref = ref_array + size;

@@ -1481,7 +1481,7 @@ void ff_hevc_put_hevc_qpel_h_1_8_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint8_t *src = _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    __m128i x1, r0, x2, x3, x4, x5, y1, y2, y3;
+    __m128i x1, r0, x2, x3, x4, x5;
 
     r0 = _mm_set_epi8(0, 1, -5, 17, 58, -10, 4, -1, 0, 1, -5, 17, 58, -10, 4,
             -1);
@@ -1547,7 +1547,7 @@ void ff_hevc_put_hevc_qpel_h_2_8_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint8_t *src = _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    __m128i x1, r0, x2, x3, x4, x5, y1, y2, y3;
+    __m128i x1, r0, x2, x3, x4, x5;
 
     r0 = _mm_set_epi8(-1, 4, -11, 40, 40, -11, 4, -1, -1, 4, -11, 40, 40, -11,
             4, -1);
@@ -1616,7 +1616,7 @@ void ff_hevc_put_hevc_qpel_h_1_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint8_t *src = _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    __m128i x1, r0, x2, x3, x4, x5, y1, y2, y3;
+    __m128i x1, r0, x2, x3, x4, x5;
 
     r0 = _mm_set_epi8(0, 1, -5, 17, 58, -10, 4, -1, 0, 1, -5, 17, 58, -10, 4,
             -1);
@@ -1682,7 +1682,7 @@ void ff_hevc_put_hevc_qpel_h_2_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint8_t *src = _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    __m128i x1, r0, x2, x3, x4, x5, y1, y2, y3;
+    __m128i x1, r0, x2, x3, x4, x5;
 
     r0 = _mm_set_epi8(-1, 4, -11, 40, 40, -11, 4, -1, -1, 4, -11, 40, 40, -11,
             4, -1);
@@ -1750,7 +1750,7 @@ void ff_hevc_put_hevc_qpel_h_3_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint8_t *src = _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    __m128i x1, r0, x2, x3, x4, x5, y1, y2, y3;
+    __m128i x1, r0, x2, x3, x4, x5;
 
     r0 = _mm_set_epi8(-1, 4, -10, 58, 17, -5, 1, 0, -1, 4, -10, 58, 17, -5, 1,
             0);
@@ -1815,7 +1815,7 @@ void ff_hevc_put_hevc_qpel_h_3_8_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint8_t *src = _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    __m128i x1, r0, x2, x3, x4, x5, y1, y2, y3;
+    __m128i x1, r0, x2, x3, x4, x5;
 
     r0 = _mm_set_epi8(-1, 4, -10, 58, 17, -5, 1, 0, -1, 4, -10, 58, 17, -5, 1,
             0);
@@ -2587,7 +2587,7 @@ void ff_hevc_put_hevc_qpel_v_3_sse(int16_t *dst, ptrdiff_t dststride,
     uint8_t *src = (uint8_t*) _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, r0, r1, r2;
-    __m128i t1, t2, t3, t4, t5, t6, t7, t8;
+    __m128i t2, t3, t4, t5, t6, t7, t8;
     r1 = _mm_set_epi16(-1, 4, -10, 58, 17, -5, 1, 0);
 
     if(!(width & 15)){
@@ -2752,7 +2752,7 @@ void ff_hevc_put_hevc_qpel_v_3_8_sse(int16_t *dst, ptrdiff_t dststride,
     uint8_t *src = (uint8_t*) _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, r0, r1, r2;
-    __m128i t1, t2, t3, t4, t5, t6, t7, t8;
+    __m128i t2, t3, t4, t5, t6, t7, t8;
     r1 = _mm_set_epi16(-1, 4, -10, 58, 17, -5, 1, 0);
 
     if(!(width & 15)){

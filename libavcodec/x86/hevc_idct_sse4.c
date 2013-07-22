@@ -621,7 +621,6 @@ void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
     __m128i E4h, E5h, E6h, E7h;
     __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;
     __m128i r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31;
-    __m128i Rdst = _mm_loadu_si128((__m128i*)dst);
 
 
     /*__m128i T00,T01, T02, T03, T04, T05, T06, T07;
@@ -3104,7 +3103,6 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                     r62=m128iS30;
                     r63=m128iS31;
 
-                    int k = 16;
                     m128iS0 = _mm_load_si128((__m128i *) (src + 16));
                     m128iS1 = _mm_load_si128((__m128i *) (src + 48));
                     m128iS2 = _mm_load_si128((__m128i *) (src + 80));
@@ -3175,7 +3173,6 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                     r94=m128iS30;
                     r95=m128iS31;
 
-                    int k = 24;
                     m128iS0 = _mm_load_si128((__m128i *) (src + 24));
                     m128iS1 = _mm_load_si128((__m128i *) (src + 56));
                     m128iS2 = _mm_load_si128((__m128i *) (src + 64 + 24));

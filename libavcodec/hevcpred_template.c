@@ -315,7 +315,6 @@ static void FUNC(pred_planar_1)(uint8_t *_src, const uint8_t *_top, const uint8_
                                ptrdiff_t stride)
 {
     int x, y;
-    int size = 8;
     pixel *src = (pixel*)_src;
     const pixel *top = (const pixel*)_top;
     const pixel *left = (const pixel*)_left;
@@ -330,7 +329,6 @@ static void FUNC(pred_planar_2)(uint8_t *_src, const uint8_t *_top, const uint8_
                                ptrdiff_t stride)
 {
     int x, y;
-    int size = 16;
     pixel *src = (pixel*)_src;
     const pixel *top = (const pixel*)_top;
     const pixel *left = (const pixel*)_left;
@@ -345,7 +343,6 @@ static void FUNC(pred_planar_3)(uint8_t *_src, const uint8_t *_top, const uint8_
                                ptrdiff_t stride)
 {
     int x, y;
-    int size = 32;
     pixel *src = (pixel*)_src;
     const pixel *top = (const pixel*)_top;
     const pixel *left = (const pixel*)_left;
