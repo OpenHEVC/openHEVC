@@ -334,11 +334,14 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 {
     int x, y;
     int size = 4;
-    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9;
+    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11;
 
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
+
+    r10= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1,-1);
+    r11= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1);
 
     const int intra_pred_angle[] = {
             32, 26, 21, 17, 13, 9, 5, 2, 0, -2, -5, -9, -13, -17, -21, -26, -32,
@@ -358,12 +361,12 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         ref = top - 1;
         if (angle < 0 && last < -1) {
             for (x = last; x <= -1; x++)
-                (ref_array + size)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
+                (ref_array + 4)[x] = left[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
 
                 r0= _mm_loadl_epi64((__m128i*)(top-1));
-                _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1,-1),(char*)(ref_array+4));
+                _mm_maskmoveu_si128(r0,r10,(char*)(ref_array+4));
 
-            ref = ref_array + size;
+            ref = ref_array + 4;
         }
 
         for (y = 0; y < 4; y++) {
@@ -382,12 +385,12 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 
 
                 r5= _mm_packus_epi16(r5,r5);
-                _mm_maskmoveu_si128(r5,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char*)(src+stride*y));
+                _mm_maskmoveu_si128(r5,r11,(char*)(src+stride*y));
 
             } else {
 
                     r0= _mm_loadl_epi64((__m128i*)(ref+idx+1));
-                    _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char*)(src+y*stride));
+                    _mm_maskmoveu_si128(r0,r11,(char*)(src+y*stride));
 
             }
         }
@@ -403,7 +406,7 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
                 (ref_array + size)[x] = top[-1 + ((x * inv_angle[mode-11] + 128) >> 8)];
 
             r0= _mm_loadl_epi64((__m128i*)(left-1));
-            _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1,-1),(char*)(ref_array+4));
+            _mm_maskmoveu_si128(r0,r10,(char*)(ref_array+4));
 
             ref = ref_array + size;
         }
@@ -436,7 +439,7 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             r3= _mm_add_epi16(r3,r2);
 
             r3= _mm_packus_epi16(r3,r3);
-            _mm_maskmoveu_si128(r3,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1,-1),(char*)(src));
+            _mm_maskmoveu_si128(r3,r11,(char*)(src));
         }
     }
 }
