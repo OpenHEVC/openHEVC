@@ -501,7 +501,12 @@ static int hls_slice_header(HEVCContext *s)
                 }
                 sh->entry_point_offset[i] = val + 1; // +1; // +1 to get the size
             }
-        }
+         if( s->threads_number > 1 && (sc->pps->num_tile_rows>1 || sc->pps->num_tile_columns>1) )
+            sc->enable_parallel_tiles = 1;
+        else
+            sc->enable_parallel_tiles = 0;
+        } else
+           sc->enable_parallel_tiles = 0;
     }
 
 

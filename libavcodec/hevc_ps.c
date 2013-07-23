@@ -672,8 +672,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     if (pps->tiles_enabled_flag) {
         pps->num_tile_columns     = get_ue_golomb(gb) + 1;
         pps->num_tile_rows        = get_ue_golomb(gb) + 1;
-        if( s->threads_number > 1 && (pps->num_tile_rows>1 || pps->num_tile_columns>1) )
-        	s->HEVCsc->enable_parallel_tiles = 1;
+       
 
         if (pps->num_tile_columns == 0 ||
             pps->num_tile_columns >= sps->pic_width_in_luma_samples) {
