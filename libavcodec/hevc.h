@@ -840,6 +840,7 @@ typedef struct HEVCContext {
     
     uint8_t             threads_number;
     int                 decode_checksum_sei;
+    int                 disable_au;
 } HEVCContext;
 
 enum ScanType {

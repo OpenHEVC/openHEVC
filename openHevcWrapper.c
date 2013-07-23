@@ -46,7 +46,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
         return NULL;
     }
     av_opt_set_int(openHevcContext->c->priv_data, "thread-count", openHevcContext->c->thread_count, 0);
-    
+    av_opt_set_int(openHevcContext->c->priv_data, "disable-au", 0, 0);
     return (OpenHevc_Handle) openHevcContext;
 }
 
@@ -138,6 +138,11 @@ void libOpenHevcSetCheckMD5(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     av_opt_set_int(openHevcContext->c->priv_data, "decode-checksum", val, 0);
+}
+void libOpenHevcSetDisableAU(OpenHevc_Handle openHevcHandle, int val)
+{
+    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    av_opt_set_int(openHevcContext->c->priv_data, "disable-au", val, 0);
 }
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
 {

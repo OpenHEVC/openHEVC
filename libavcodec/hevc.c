@@ -2053,13 +2053,13 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, sc->sps->log2_ctb_size, 0);
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
-        hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
+  //      hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
             break;
         }
     }
-    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
-       hls_filters_tiles(s, x_ctb, y_ctb);
+//    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
+//       hls_filters_tiles(s, x_ctb, y_ctb);
     return ctb_addr_ts;
 }
 
@@ -2526,8 +2526,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 {
     int consumed, nal_length, ret;
     const uint8_t *nal = NULL;
-
     while (length >= 4) {
+        if(s->disable_au == 0) {
             if (buf[2] == 0) {
                 length--;
                 buf++;
@@ -2538,7 +2538,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
             buf += 3;
             length -= 3;
-
+        }
         nal = extract_rbsp(s, buf, &nal_length, &consumed, length);
 
         if (nal == NULL)
@@ -2548,6 +2548,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         length -= consumed;
 
         ret = decode_nal_unit(s, nal, nal_length);
+
         if (ret < 0)
             return ret;
     }
@@ -2578,8 +2579,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         return 0;
     }
 
-    if ((ret = decode_nal_units(s, avpkt->data, avpkt->size)) < 0 ||
-        (ret = ff_hevc_find_display(s, data, 0, &poc_display)) < 0) {
+    if ((ret = decode_nal_units(s, avpkt->data, avpkt->size)) < 0) {
+        return ret;
+    }
+    if ((s->HEVCsc->is_decoded && (ret = ff_hevc_find_display(s, data, 0, &poc_display))) < 0) {
         return ret;
     }
 
@@ -2664,6 +2667,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
                                             sizeof(*sc->skipped_bytes_pos));
     sc->enable_parallel_tiles = 0;
     s->threads_number = 1;
+    s->disable_au     = 0;
 
     s->HEVCsc->is_md5 = 0;
 
@@ -2765,6 +2769,8 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "thread-count", "number of active threads", OFFSET(threads_number),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 50, PAR },
+    { "disable-au", "disable read frame AU by AU", OFFSET(disable_au),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { NULL },
 };
 
