@@ -1903,6 +1903,8 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb, int ctb_a
     lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= sc->sps->pic_width_in_ctbs) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - sc->sps->pic_width_in_ctbs]]));
 }
 
+
+
 static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 {
     HEVCContext *s  = avctxt->priv_data;
@@ -1971,6 +1973,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     int ctb_addr_ts = sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     s = s->sList[self_id];
     lc = s->HEVClc;
+   
     if(ctb_row) {
         init_get_bits8(lc->gb, sc->data+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]);
         ff_init_cabac_decoder(lc->cc, sc->data+sc->sh.offset[(ctb_row)-1], sc->sh.size[(ctb_row)-1]);
@@ -1995,13 +1998,13 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ff_hevc_save_states(s, ctb_addr_ts);
         avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],1);
         hls_filters(s, x_ctb, y_ctb, ctb_size);
-        if (!more_data && (x_ctb+ctb_size) < sc->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) < sc->sps->pic_height_in_luma_samples) {
+        if (!more_data && (x_ctb+ctb_size) < sc->sps->pic_width_in_luma_samples && ctb_row != sc->sh.num_entry_point_offsets) {  
         	avpriv_atomic_int_set(&sc->ERROR,  1);
             avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
             return 0;
         }
 
-        if (!more_data) {
+        if ((x_ctb+ctb_size) >= sc->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) >= sc->sps->pic_height_in_luma_samples ) {
             hls_filter(s, x_ctb, y_ctb);
             avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
             return ctb_addr_ts;
@@ -2050,13 +2053,13 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, sc->sps->log2_ctb_size, 0);
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
-  //      hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
+        hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
             break;
         }
     }
-//    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
-//       hls_filters_tiles(s, x_ctb, y_ctb);
+    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
+       hls_filters_tiles(s, x_ctb, y_ctb);
     return ctb_addr_ts;
 }
 
@@ -2150,13 +2153,16 @@ static int hls_slice_data_wpp(HEVCContext *s,  const uint8_t *nal, int length)
 	    } else {
 	        sc->SliceAddrRs = (sc->sh.dependent_slice_segment_flag == 0 ? sc->sh.slice_address : sc->SliceAddrRs);
 	    }
-	    memset(sc->ctb_entry_count, 0, (sc->sh.num_entry_point_offsets+1)*sizeof(int));
+	    
 	    avpriv_atomic_int_set(&sc->ERROR, 0);
+     
+        memset(sc->ctb_entry_count, 0, (sc->sh.num_entry_point_offsets+1)*sizeof(int));
 	    for(i=0; i<=sc->sh.num_entry_point_offsets; i++) {
-	        arg[i] = i;
-	        ret[i] = 0;
-	    }
-
+	       arg[i] = i;
+	       ret[i] = 0;
+        }
+     
+        
 	    if (sc->pps->entropy_coding_sync_enabled_flag)
 	        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret ,sc->sh.num_entry_point_offsets+1);
 	    else	{
@@ -2385,7 +2391,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if (!lc->edge_emu_buffer)
             return -1;
         ff_init_cabac_states(NULL);
+
+    
         if(s->threads_number>1 && sc->sh.num_entry_point_offsets > 0 ) {
+
             ctb_addr_ts = hls_slice_data_wpp(s, nal, length);
         } else {
             ctb_addr_ts = hls_slice_data(s);
@@ -2402,6 +2411,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     default:
         av_log(s->avctx, AV_LOG_INFO, "Skipping NAL unit %d\n", sc->nal_unit_type);
     }
+
     return 0;
 }
 
