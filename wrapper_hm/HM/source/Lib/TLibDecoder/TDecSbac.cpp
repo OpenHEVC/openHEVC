@@ -650,7 +650,7 @@ Void TDecSbac::parseIntraDirLumaAng  ( TComDataCU* pcCU, UInt absPartIdx, UInt d
     Int predNum = pcCU->getIntraDirLumaPredictor(absPartIdx+partOffset*j, preds);  
     if (mpmPred[j])
     {
-        print_cabac("mpm_idx", 0);
+      print_cabac("mpm_idx", 0);
       m_pcTDecBinIf->decodeBinEP( symbol );
       if (symbol)
       {
@@ -661,11 +661,12 @@ Void TDecSbac::parseIntraDirLumaAng  ( TComDataCU* pcCU, UInt absPartIdx, UInt d
     }
     else
     {
-        print_cabac("rem_intra_luma_pred_mode", 0);
+      print_cabac("rem_intra_luma_pred_mode", 0);
       m_pcTDecBinIf->decodeBinsEP( symbol, 5 );
       intraPredMode = symbol;
         
       //postponed sorting of MPMs (only in remaining branch)
+
       if (preds[0] > preds[1])
       { 
         std::swap(preds[0], preds[1]); 
@@ -1136,7 +1137,7 @@ Void TDecSbac::parseCoeffNxN( TComDataCU* pcCU, TCoeff* pcCoef, UInt uiAbsPartId
         if( iScanPosSig > iSubPos || iSubSet == 0  || numNonZero )
         {
           uiCtxSig  = TComTrQuant::getSigCtxInc( patternSigCtx, uiScanIdx, uiPosX, uiPosY, uiLog2BlockSize, eTType );
-          print_cabac("significant_coeff_flag", 0);
+          print_cabac("significant_coeff_flag", (baseCtx[ uiCtxSig ].getState()<<1)+baseCtx[ uiCtxSig ].getMps());
           m_pcTDecBinIf->decodeBin( uiSig, baseCtx[ uiCtxSig ] );
         }
         else

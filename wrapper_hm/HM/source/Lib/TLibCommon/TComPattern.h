@@ -155,11 +155,20 @@ public:
                                Int         iOrgBufHeight,
                                Bool&       bAbove,
                                Bool&       bLeft );
+  Void  initAdiPatternChroma2 ( TComDataCU* pcCU,
+                               UInt        uiZorderIdxInPart,
+                               UInt        uiPartDepth,
+                               Int*        piAdiBuf,
+                               Int         iOrgBufStride,
+                               Int         iOrgBufHeight,
+                               Bool&       bAbove,
+                               Bool&       bLeft );
 
 private:
 
   /// padding of unavailable reference samples for intra prediction
   Void  fillReferenceSamples        (Int bitDepth, Pel* piRoiOrigin, Int* piAdiTemp, Bool* bNeighborFlags, Int iNumIntraNeighbor, Int iUnitSize, Int iNumUnitsInCu, Int iTotalUnits, UInt uiCuWidth, UInt uiCuHeight, UInt uiWidth, UInt uiHeight, Int iPicStride, Bool bLMmode = false);
+  Void  fillReferenceSamples2       (Int bitDepth, Pel* piRoiOrigin, Int* piAdiTemp, Bool* bNeighborFlags, Int iNumIntraNeighbor, Int iUnitSize, Int iNumUnitsInCu, Int iTotalUnits, UInt uiCuWidth, UInt uiCuHeight, UInt uiWidth, UInt uiHeight, Int iPicStride, Bool bLMmode = false);
   
 
   /// constrained intra prediction
