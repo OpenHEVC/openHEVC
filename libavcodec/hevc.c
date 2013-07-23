@@ -2293,7 +2293,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     } else if (!ret)
         return 0;
 
-    sc->is_decoded = 0;
     switch (sc->nal_unit_type) {
     case NAL_VPS:
         ff_hevc_decode_nal_vps(s);
@@ -2360,6 +2359,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             memset(sc->cbf_luma, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
             memset(sc->is_pcm, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
             lc->start_of_tiles_x = 0;
+            sc->is_decoded = 0;
             if (sc->pps->tiles_enabled_flag )
 	            lc->end_of_tiles_x   = sc->pps->column_width[0]<< sc->sps->log2_ctb_size;
         }
