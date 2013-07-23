@@ -170,7 +170,9 @@ void ff_hevc_put_weighted_pred_avg_8_sse(uint8_t *_dst, ptrdiff_t dststride,
             src2 += srcstride;
         }
     }else if(!(width & 3)){
+        r1= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1);
         for (y = 0; y < height; y++) {
+
             for(x=0;x<width;x+=4)
             {
                 r0 = _mm_loadl_epi64((__m128i *) (src1+x));
@@ -181,13 +183,14 @@ void ff_hevc_put_weighted_pred_avg_8_sse(uint8_t *_dst, ptrdiff_t dststride,
                 r0 = _mm_srai_epi16(r0, 7);
                 r0 = _mm_packus_epi16(r0, r0);
 
-                _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char *) (dst+x));
+                _mm_maskmoveu_si128(r0,r1,(char *) (dst+x));
             }
             dst += dststride;
             src1 += srcstride;
             src2 += srcstride;
         }
     }else{
+        r1= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-1);
         for (y = 0; y < height; y++) {
                     for(x=0;x<width;x+=2)
                     {
@@ -199,7 +202,8 @@ void ff_hevc_put_weighted_pred_avg_8_sse(uint8_t *_dst, ptrdiff_t dststride,
                         r0 = _mm_srai_epi16(r0, 7);
                         r0 = _mm_packus_epi16(r0, r0);
 
-                        _mm_maskmoveu_si128(r0,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,-1),(char *) (dst+x));
+
+                        _mm_maskmoveu_si128(r0,r1,(char *) (dst+x));
                     }
                     dst += dststride;
                     src1 += srcstride;
