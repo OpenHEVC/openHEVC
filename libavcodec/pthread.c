@@ -30,7 +30,7 @@
  */
 
 #include "config.h"
-#define TEST 1
+#define TEST 0
 #if TEST
 #include "libavutil/atomic.h"
 #endif
