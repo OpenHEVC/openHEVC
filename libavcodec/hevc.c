@@ -2053,13 +2053,13 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, sc->sps->log2_ctb_size, 0);
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
-        hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
+    //    hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
             break;
         }
     }
-    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
-       hls_filters_tiles(s, x_ctb, y_ctb);
+  /*  if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
+       hls_filters_tiles(s, x_ctb, y_ctb);*/
     return ctb_addr_ts;
 }
 
