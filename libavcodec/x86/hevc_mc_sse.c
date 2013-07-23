@@ -5,7 +5,6 @@
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
 
-#if ARCH_X86_64
 #if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
 #include <emmintrin.h>
 #include <tmmintrin.h>
@@ -4508,7 +4507,6 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
     }
 }
 
-#endif
 #endif
 
 
