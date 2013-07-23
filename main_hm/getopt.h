@@ -50,6 +50,7 @@ char *input_file;
 // deactivate display
 char display_flags;
 int check_md5_flags;
+int disable_au;
 // Activate multi-threading if possible
 int nb_pthreads;
 
