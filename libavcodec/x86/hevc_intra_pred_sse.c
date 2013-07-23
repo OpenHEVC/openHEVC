@@ -22,10 +22,10 @@ void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
     l0= _mm_set1_epi16(left[4]);
     add= _mm_set1_epi16(4);
 
-    ly= _mm_loadu_si128((__m128i*)left);            //get 16 values
+    ly= _mm_loadl_epi64((__m128i*)left);            //get 16 values
     ly= _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
 
-    tx= _mm_loadu_si128((__m128i*)top);             //get 16 value
+    tx= _mm_loadl_epi64((__m128i*)top);             //get 16 value
     tx= _mm_unpacklo_epi8(tx,_mm_setzero_si128());  //drop to 8 values 16 bit
     tx= _mm_unpacklo_epi64(tx,tx);
     tmp1= _mm_set_epi16(0,1,2,3,0,1,2,3);
@@ -86,10 +86,10 @@ void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
     l0= _mm_set1_epi16(left[8]);
     add= _mm_set1_epi16(8);
 
-    ly= _mm_loadu_si128((__m128i*)left);            //get 16 values
+    ly= _mm_loadl_epi64((__m128i*)left);            //get 16 values
     ly= _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
 
-    tx= _mm_loadu_si128((__m128i*)top);             //get 16 values
+    tx= _mm_loadl_epi64((__m128i*)top);             //get 16 values
     tx= _mm_unpacklo_epi8(tx,_mm_setzero_si128());  //drop to 8 values 16 bit
     tmp1= _mm_set_epi16(0,1,2,3,4,5,6,7);
     tmp2= _mm_set_epi16(8,7,6,5,4,3,2,1);

@@ -139,6 +139,34 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                     }
                 }
                 if (EXTERNAL_SSSE3(mm_flags)) {
+
+                    c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
+
+                    c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
+                    c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
+                    c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
+                    c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
+
+                    c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
+
+                    c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_sse;
+                    c->put_hevc_qpel[0][1] = ff_hevc_put_hevc_qpel_h_1_8_sse;
+                    c->put_hevc_qpel[0][2] = ff_hevc_put_hevc_qpel_h_2_8_sse;
+                    c->put_hevc_qpel[0][3] = ff_hevc_put_hevc_qpel_h_3_8_sse;
+                    c->put_hevc_qpel[1][0] = ff_hevc_put_hevc_qpel_v_1_8_sse;
+                    c->put_hevc_qpel[2][0] = ff_hevc_put_hevc_qpel_v_2_8_sse;
+                    c->put_hevc_qpel[3][0] = ff_hevc_put_hevc_qpel_v_3_8_sse;
+
+                    c->put_hevc_qpel[1][1] = ff_hevc_put_hevc_qpel_h_1_v_1_sse;
+                    c->put_hevc_qpel[1][2] = ff_hevc_put_hevc_qpel_h_2_v_1_sse;
+                    c->put_hevc_qpel[1][3] = ff_hevc_put_hevc_qpel_h_3_v_1_sse;
+                    c->put_hevc_qpel[2][1] = ff_hevc_put_hevc_qpel_h_1_v_2_sse;
+                    c->put_hevc_qpel[2][2] = ff_hevc_put_hevc_qpel_h_2_v_2_sse;
+                    c->put_hevc_qpel[2][3] = ff_hevc_put_hevc_qpel_h_3_v_2_sse;
+                    c->put_hevc_qpel[3][1] = ff_hevc_put_hevc_qpel_h_1_v_3_sse;
+                    c->put_hevc_qpel[3][2] = ff_hevc_put_hevc_qpel_h_2_v_3_sse;
+                    c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
+
 #if ARCH_X86_64
                         c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
                         c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
@@ -146,9 +174,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
 
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
-#if ARCH_X86_64
+
 #if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
-                    c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
                 	c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
                 	c->weighted_pred = ff_hevc_weighted_pred_8_sse;
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
@@ -159,25 +186,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_8_sse;
                 	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
 
-                	c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_sse;
-                	c->put_hevc_qpel[0][1] = ff_hevc_put_hevc_qpel_h_1_8_sse;
-                	c->put_hevc_qpel[0][2] = ff_hevc_put_hevc_qpel_h_2_8_sse;
-                	c->put_hevc_qpel[0][3] = ff_hevc_put_hevc_qpel_h_3_8_sse;
-                	c->put_hevc_qpel[1][0] = ff_hevc_put_hevc_qpel_v_1_8_sse;
-                	c->put_hevc_qpel[2][0] = ff_hevc_put_hevc_qpel_v_2_8_sse;
-                	c->put_hevc_qpel[3][0] = ff_hevc_put_hevc_qpel_v_3_8_sse;
 
-                	c->put_hevc_qpel[1][1] = ff_hevc_put_hevc_qpel_h_1_v_1_sse;
-                	c->put_hevc_qpel[1][2] = ff_hevc_put_hevc_qpel_h_2_v_1_sse;
-                	c->put_hevc_qpel[1][3] = ff_hevc_put_hevc_qpel_h_3_v_1_sse;
-                	c->put_hevc_qpel[2][1] = ff_hevc_put_hevc_qpel_h_1_v_2_sse;
-                	c->put_hevc_qpel[2][2] = ff_hevc_put_hevc_qpel_h_2_v_2_sse;
-                	c->put_hevc_qpel[2][3] = ff_hevc_put_hevc_qpel_h_3_v_2_sse;
-                	c->put_hevc_qpel[3][1] = ff_hevc_put_hevc_qpel_h_1_v_3_sse;
-                	c->put_hevc_qpel[3][2] = ff_hevc_put_hevc_qpel_h_2_v_3_sse;
-                	c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
 #endif
-#endif
+
 
 
                 	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
@@ -195,12 +206,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                     c->dequant[2] = ff_hevc_dequant16x16_sse4;
                     c->dequant[3] = ff_hevc_dequant32x32_sse4;
 
-                    c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
-
-                    c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
-                    c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
-                    c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
-                    c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
                     }
                 if (EXTERNAL_AVX(mm_flags)) {
 
