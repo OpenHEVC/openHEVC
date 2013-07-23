@@ -435,7 +435,7 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             r3= _mm_add_epi16(r3,r2);
 
             r3= _mm_packus_epi16(r3,r3);
-            _mm_maskmoveu_si128(r3,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1,-1),(char*)(src));
+            _mm_maskmoveu_si128(r3,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char*)(src));
         }
     }
 }
