@@ -56,8 +56,6 @@ static void video_decode_example(const char *filename)
     int init    = 1;
     int nbFrame = 0;
     int pts     = 0;
-    int stop    = 0;
-    int got_picture=0;
     OpenHevc_Frame openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
 
@@ -78,12 +76,8 @@ static void video_decode_example(const char *filename)
     if (output_file) {
         fout = fopen(output_file, "wb");
     }
-    while(!stop) {
-        if (av_read_frame(pFormatCtx, &packet)<0) {
-            stop = 1 ;
-        } else
-            got_picture = libOpenHevcDecode(openHevcHandle, packet.data, packet.size, pts++);
-        if (got_picture) {
+    while(av_read_frame(pFormatCtx, &packet)>=0) {
+        if (libOpenHevcDecode(openHevcHandle, packet.data, packet.size, pts++)) {
             fflush(stdout);
             if (init == 1 ) {
                 libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
