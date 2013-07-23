@@ -2399,9 +2399,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         } else {
             ctb_addr_ts = hls_slice_data(s);
         }
+        if (ctb_addr_ts >= (sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs))
+            sc->is_decoded = 1;
         if (ctb_addr_ts < 0)
             return ctb_addr_ts;
-        sc->is_decoded = 1;
         break;
     case NAL_AUD:
     case NAL_EOS_NUT:
@@ -2527,16 +2528,16 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     const uint8_t *nal = NULL;
 
     while (length >= 4) {
-        if (buf[2] == 0) {
-            length--;
-            buf++;
-            continue;
-        }
-        if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1)
-            return AVERROR_INVALIDDATA;
+            if (buf[2] == 0) {
+                length--;
+                buf++;
+                continue;
+            }
+            if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1)
+                return AVERROR_INVALIDDATA;
 
-        buf += 3;
-        length -= 3;
+            buf += 3;
+            length -= 3;
 
         nal = extract_rbsp(s, buf, &nal_length, &consumed, length);
 
@@ -2553,7 +2554,14 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     return 0;
 }
 
-
+static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (md5_in1[i] != md5_in2[i])
+            return 0;
+    return 1;
+}
 
 static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                              AVPacket *avpkt)
@@ -2576,18 +2584,27 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     }
 
     *got_output = ret;
-
-    if (s->decode_checksum_sei) {
+    if (s->decode_checksum_sei && s->HEVCsc->is_decoded) {
         AVFrame *frame = sc->ref->frame;
-#ifdef POC_DISPLAY_MD5
-        int poc        = sc->poc;
-#endif
-        calc_md5(sc->md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  );
-        calc_md5(sc->md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
-        calc_md5(sc->md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
+        int cIdx;
+        uint8_t md5[3][16];
+
+        calc_md5(md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  );
+        calc_md5(md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
+        calc_md5(md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
+        if (s->HEVCsc->is_md5) {
+            for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
+                if (!compare_md5(md5[cIdx], s->HEVCsc->md5[cIdx])) {
+                     av_log(s->avctx, AV_LOG_ERROR, "MD5 not ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
+                 } else {
+                     av_log(s->avctx, AV_LOG_INFO, "MD5 ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
+                 }
+            }
+            s->HEVCsc->is_md5 = 0;
+        }
 #ifdef POC_DISPLAY_MD5
         printf_ref_pic_list(s);
-        print_md5(poc, sc->md5);
+        print_md5(sc->poc, md5);
 #endif
     }
 
@@ -2649,7 +2666,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->threads_number = 1;
 
     s->HEVCsc->is_md5 = 0;
-
 
     if (avctx->extradata_size > 0 && avctx->extradata)
         return decode_nal_units(s, s->avctx->extradata, s->avctx->extradata_size);

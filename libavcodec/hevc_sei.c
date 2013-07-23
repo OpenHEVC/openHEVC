@@ -25,15 +25,6 @@
 #include "hevc.h"
 #include "golomb.h"
 
-static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        if (md5_in1[i] != md5_in2[i])
-            return 0;
-    return 1;
-}
-
 static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size)
 {
     int cIdx, i;
@@ -43,19 +34,13 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     GetBitContext *gb = s->HEVClc->gb;
     HEVCSharedContext *sc = s->HEVCsc;
     hash_type = get_bits(gb, 8);
-    uint8_t md5[3][16];
 
 
     for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
         if ( hash_type == 0 ) {
             s->HEVCsc->is_md5 = 1;
             for( i = 0; i < 16; i++) {
-                md5[cIdx][i] = get_bits(gb, 8);
-            }
-            if (s->HEVCsc->is_decoded && !compare_md5(md5[cIdx], s->HEVCsc->md5[cIdx])) {
-                av_log(s->avctx, AV_LOG_ERROR, "MD5 not ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
-            } else {
-                av_log(s->avctx, AV_LOG_INFO, "MD5 ok (poc: %d, plane: %d)\n", sc->poc, cIdx);
+                sc->md5[cIdx][i] = get_bits(gb, 8);
             }
         } else if( hash_type == 1 ) {
             picture_crc = get_bits(gb, 16);
