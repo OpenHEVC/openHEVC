@@ -45,7 +45,6 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
         fprintf(stderr, "could not open codec\n");
         return NULL;
     }
-    av_opt_set_int(openHevcContext->c->priv_data, "thread-count", openHevcContext->c->thread_count, 0);
     av_opt_set_int(openHevcContext->c->priv_data, "disable-au", 0, 0);
     return (OpenHevc_Handle) openHevcContext;
 }

@@ -1712,7 +1712,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         		lc->nb_saved ++;
         	}
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
-                set_deblocking_bypass(s, x, y, log2_cb_size);
+                set_deblocking_bypass(s, x0, y0, log2_cb_size);
 
             }
         }
@@ -1801,7 +1801,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                 		lc->nb_saved ++;
                 	}
                     if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
-                        set_deblocking_bypass(s, x, y, log2_cb_size);
+                        set_deblocking_bypass(s, x0, y0, log2_cb_size);
                     }
                 }
             }
@@ -2681,10 +2681,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     sc->skipped_bytes_pos = av_malloc_array(sc->skipped_bytes_pos_size,
                                             sizeof(*sc->skipped_bytes_pos));
     sc->enable_parallel_tiles = 0;
-    s->threads_number = 1;
-    s->disable_au     = 0;
-
-    s->HEVCsc->is_md5 = 0;
+    s->threads_number = avctx->thread_count;
 
     if (avctx->extradata_size > 0 && avctx->extradata)
         return decode_nal_units(s, s->avctx->extradata, s->avctx->extradata_size);
@@ -2782,8 +2779,6 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-    { "thread-count", "number of active threads", OFFSET(threads_number),
-        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 50, PAR },
     { "disable-au", "disable read frame AU by AU", OFFSET(disable_au),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { NULL },
