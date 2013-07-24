@@ -234,7 +234,6 @@ static int hls_slice_header(HEVCContext *s)
     sh->tc_offset = 0;
 
     // Coded parameters
-
     sh->first_slice_in_pic_flag = get_bits1(gb);
     if (sc->nal_unit_type == NAL_IDR_W_RADL && sh->first_slice_in_pic_flag) {
         ff_hevc_clear_refs(s);
@@ -345,6 +344,7 @@ static int hls_slice_header(HEVCContext *s)
             sh->long_term_rps.num_long_term_sps = 0;
             sh->long_term_rps.num_long_term_pics = 0;
             if (sc->sps->long_term_ref_pics_present_flag) {
+                int prevDeltaMSB = 0;
                 if( sc->sps->num_long_term_ref_pics_sps > 0 )
                     sh->long_term_rps.num_long_term_sps = get_ue_golomb(gb);
                 sh->long_term_rps.num_long_term_pics = get_ue_golomb(gb);
@@ -364,7 +364,8 @@ static int hls_slice_header(HEVCContext *s)
                         if( i == 0 || i == sh->long_term_rps.num_long_term_sps )
                             sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb);
                         else
-                            sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb) + sh->long_term_rps.DeltaPocMsbCycleLt[ i - 1 ];
+                            sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb) + prevDeltaMSB;
+                        prevDeltaMSB = sh->long_term_rps.DeltaPocMsbCycleLt[ i ];
                     }
                 }
             }
