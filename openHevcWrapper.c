@@ -38,8 +38,8 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
 
     /* open it */
     if(nb_pthreads)	{
-    	openHevcContext->c->thread_type = FF_THREAD_SLICE;
-    	openHevcContext->c->thread_count = nb_pthreads;
+        av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
+        av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
     }
     if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
