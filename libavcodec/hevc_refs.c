@@ -227,6 +227,7 @@ static void set_ref_pic_list(HEVCContext *s)
 	
     num_ref_idx_lx_act[0] = sh->num_ref_idx_l0_active;
     num_ref_idx_lx_act[1] = sh->num_ref_idx_l1_active;
+    refPicList[1].numPic = 0;
     for ( list_idx = 0; list_idx < nb_list; list_idx++) {
         /* The order of the elements is
          * ST_CURR_BEF - ST_CURR_AFT - LT_CURR for the RefList0 and
