@@ -334,14 +334,11 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 {
     int x, y;
     int size = 4;
-    __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11;
+    __m128i r0,r1,r2,r3,r5,r9,r10,r11;
 
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
-
-    r10= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1,-1);
-    r11= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1);
 
     const int intra_pred_angle[] = {
             32, 26, 21, 17, 13, 9, 5, 2, 0, -2, -5, -9, -13, -17, -21, -26, -32,
@@ -356,6 +353,9 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
     uint8_t ref_array[3*5];
     const uint8_t *ref;
     int last = (size * angle) >> 5;
+
+    r10= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1,-1);
+    r11= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1);
 
     if (mode >= 18) {
         ref = top - 1;
