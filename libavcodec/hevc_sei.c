@@ -29,8 +29,8 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
 {
     int cIdx, i;
     uint8_t hash_type;
-    uint16_t picture_crc;
-    uint32_t picture_checksum;
+    //uint16_t picture_crc;
+    //uint32_t picture_checksum;
     GetBitContext *gb = s->HEVClc->gb;
     HEVCSharedContext *sc = s->HEVCsc;
     hash_type = get_bits(gb, 8);
@@ -43,9 +43,11 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
                 sc->md5[cIdx][i] = get_bits(gb, 8);
             }
         } else if( hash_type == 1 ) {
-            picture_crc = get_bits(gb, 16);
+            // picture_crc = get_bits(gb, 16);
+            skip_bits(gb, 16);
         } else if( hash_type == 2 ) {
-            picture_checksum = get_bits(gb, 32);
+            // picture_checksum = get_bits(gb, 32);
+            skip_bits(gb, 32);
         }
     }
 }

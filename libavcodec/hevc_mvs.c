@@ -837,11 +837,11 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int isAvailable_b0;
 
     int xB1, yB1;
-    int xB1_pu, yB1_pu;
+    int xB1_pu = 0, yB1_pu = 0;
     int is_available_b1 = 0;
 
     int xB2, yB2;
-    int xB2_pu, yB2_pu;
+    int xB2_pu = 0, yB2_pu = 0;
     int is_available_b2 = 0;
     Mv mvpcand_list[2] = { { 0 } };
     Mv mxA = { 0 };

@@ -66,6 +66,10 @@ static void pic_arrays_free(HEVCContext *s)
 
     av_freep(&sc->qp_y_tab);
 
+    av_freep(&sc->sh.entry_point_offset);
+    av_freep(&sc->sh.size);
+    av_freep(&sc->sh.offset);
+
     for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
         av_freep(&sc->DPB[i].tab_mvf);
     }
@@ -230,7 +234,6 @@ static int hls_slice_header(HEVCContext *s)
     sh->tc_offset = 0;
 
     // Coded parameters
-
     sh->first_slice_in_pic_flag = get_bits1(gb);
     if (sc->nal_unit_type == NAL_IDR_W_RADL && sh->first_slice_in_pic_flag) {
         ff_hevc_clear_refs(s);
@@ -341,6 +344,7 @@ static int hls_slice_header(HEVCContext *s)
             sh->long_term_rps.num_long_term_sps = 0;
             sh->long_term_rps.num_long_term_pics = 0;
             if (sc->sps->long_term_ref_pics_present_flag) {
+                int prevDeltaMSB = 0;
                 if( sc->sps->num_long_term_ref_pics_sps > 0 )
                     sh->long_term_rps.num_long_term_sps = get_ue_golomb(gb);
                 sh->long_term_rps.num_long_term_pics = get_ue_golomb(gb);
@@ -360,7 +364,8 @@ static int hls_slice_header(HEVCContext *s)
                         if( i == 0 || i == sh->long_term_rps.num_long_term_sps )
                             sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb);
                         else
-                            sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb) + sh->long_term_rps.DeltaPocMsbCycleLt[ i - 1 ];
+                            sh->long_term_rps.DeltaPocMsbCycleLt[ i ] = get_ue_golomb(gb) + prevDeltaMSB;
+                        prevDeltaMSB = sh->long_term_rps.DeltaPocMsbCycleLt[ i ];
                     }
                 }
             }
@@ -2070,13 +2075,10 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, sc->sps->log2_ctb_size, 0);
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
-  //      hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
             break;
         }
     }
-//    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
-//       hls_filters_tiles(s, x_ctb, y_ctb);
     return ctb_addr_ts;
 }
 
@@ -2732,6 +2734,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             av_free(lc->cabac_state);
             if(sc->enable_parallel_tiles)
              	av_free(lc->save_boundary_strengths);
+            av_free(lc);
         }
         av_free(sc->ctb_entry_count);
         av_free(s->HEVClcList[i]);

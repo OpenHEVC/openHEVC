@@ -4,18 +4,9 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/get_bits.h" /* required for hevcdsp.h GetBitContext */
 #include "libavcodec/hevcpred.h"
+#include "libavcodec/x86/hevcpred.h"
 
 //function declaration
-void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride);
-void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride);
-void pred_planar_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride);
-void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride);
-
-void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride, int c_idx, int mode);
-void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride, int c_idx, int mode);
-void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride, int c_idx, int mode);
-void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride, int c_idx, int mode);
-
 
 void ff_hevcpred_init_x86(HEVCPredContext *c, const int bit_depth)
 {
