@@ -5,7 +5,7 @@
 //  Created by Mickaël Raulet on 11/10/12.
 //
 //
-#include "openHevcWrapper.h"
+#include "gpac/modules/openhevc_dec/openHevcWrapper.h"
 #include "getopt.h"
 #include <libavformat/avformat.h>
 
