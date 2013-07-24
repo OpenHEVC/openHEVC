@@ -224,7 +224,7 @@ static void set_ref_pic_list(HEVCContext *s)
     uint8_t sec_list;
     uint8_t i, list_idx;
 	uint8_t nb_list = sc->sh.slice_type == B_SLICE ? 2 : 1;
-	
+
     num_ref_idx_lx_act[0] = sh->num_ref_idx_l0_active;
     num_ref_idx_lx_act[1] = sh->num_ref_idx_l1_active;
     refPicList[1].numPic = 0;
