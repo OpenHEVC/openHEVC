@@ -30,6 +30,28 @@
  */
 
 #include "config.h"
+#define TEST 0
+#if TEST
+#include "libavutil/atomic.h"
+#endif
+
+#if HAVE_SCHED_GETAFFINITY
+#define _GNU_SOURCE
+#include <sched.h>
+#endif
+#if HAVE_GETPROCESSAFFINITYMASK
+#include <windows.h>
+#endif
+#if HAVE_SYSCTL
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
+#if HAVE_SYSCONF
+#include <unistd.h>
+#endif
 
 #include "avcodec.h"
 #include "internal.h"
@@ -41,8 +63,10 @@
 #if HAVE_PTHREADS
 #include <pthread.h>
 #elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
+#include "w32pthreads.h"
 #endif
+
+#define attribute_align_arg
 
 typedef int (action_func)(AVCodecContext *c, void *arg);
 typedef int (action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr);
@@ -59,6 +83,9 @@ typedef struct ThreadContext {
 
     pthread_cond_t last_job_cond;
     pthread_cond_t current_job_cond;
+#if TEST
+    int current_job1;
+#endif
     pthread_mutex_t current_job_lock;
     int current_job;
     int done;
@@ -150,8 +177,14 @@ static void* attribute_align_arg worker(void *v)
         while (our_job >= c->job_count) {
             if (c->current_job == thread_count + c->job_count)
                 pthread_cond_signal(&c->last_job_cond);
-
+#if TEST
+            avpriv_atomic_int_set(&c->current_job1, 0);
+            pthread_mutex_unlock(&c->current_job_lock);
+            while(!avpriv_atomic_int_get(&c->current_job1));
+            pthread_mutex_lock(&c->current_job_lock);
+#else
             pthread_cond_wait(&c->current_job_cond, &c->current_job_lock);
+#endif
             our_job = self_id;
 
             if (c->done) {
@@ -182,7 +215,11 @@ static void thread_free(AVCodecContext *avctx)
 
     pthread_mutex_lock(&c->current_job_lock);
     c->done = 1;
+#if TEST
+    avpriv_atomic_int_set(&c->current_job1, 1);
+#else
     pthread_cond_broadcast(&c->current_job_cond);
+#endif
     pthread_mutex_unlock(&c->current_job_lock);
 
     for (i=0; i<avctx->thread_count; i++)
@@ -220,7 +257,12 @@ static int avcodec_thread_execute(AVCodecContext *avctx, action_func* func, void
         c->rets = &dummy_ret;
         c->rets_count = 1;
     }
+#if TEST
+    avpriv_atomic_int_set(&c->current_job1, 1);
+#else
     pthread_cond_broadcast(&c->current_job_cond);
+
+#endif
 
     avcodec_thread_park_workers(c, avctx->thread_count);
 
