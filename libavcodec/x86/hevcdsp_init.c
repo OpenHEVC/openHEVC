@@ -108,7 +108,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
 
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
-
 #if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
                 	c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
                 	c->weighted_pred = ff_hevc_weighted_pred_8_sse;
@@ -120,11 +119,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_8_sse;
                 	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
 
-
 #endif
-
-
-
 //                	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                 	c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
                 	c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_2_8_sse;
@@ -139,10 +134,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                     c->dequant[1] = ff_hevc_dequant8x8_sse4;
                     c->dequant[2] = ff_hevc_dequant16x16_sse4;
                     c->dequant[3] = ff_hevc_dequant32x32_sse4;
-
-                    }
+                }
                 if (EXTERNAL_AVX(mm_flags)) {
-
                 }
             }
         }

@@ -38,6 +38,7 @@ void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     src = src + (init_y * _stride + init_x);
 
 
+
     r0 = _mm_set1_epi16(sao_left_class & 31);
     r1 = _mm_set1_epi16((sao_left_class + 1) & 31);
     r2 = _mm_set1_epi16((sao_left_class + 2) & 31);
@@ -179,6 +180,7 @@ void ff_hevc_sao_band_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
 
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);
+
 
     r0 = _mm_set1_epi16(sao_left_class & 31);
     r1 = _mm_set1_epi16((sao_left_class + 1) & 31);

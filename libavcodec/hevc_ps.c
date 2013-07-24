@@ -672,8 +672,6 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     if (pps->tiles_enabled_flag) {
         pps->num_tile_columns     = get_ue_golomb(gb) + 1;
         pps->num_tile_rows        = get_ue_golomb(gb) + 1;
-       
-
         if (pps->num_tile_columns == 0 ||
             pps->num_tile_columns >= sps->pic_width_in_luma_samples) {
             av_log(s->avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
