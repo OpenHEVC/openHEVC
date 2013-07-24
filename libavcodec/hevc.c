@@ -66,6 +66,10 @@ static void pic_arrays_free(HEVCContext *s)
 
     av_freep(&sc->qp_y_tab);
 
+    av_freep(&sc->sh.entry_point_offset);
+    av_freep(&sc->sh.size);
+    av_freep(&sc->sh.offset);
+
     for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
         av_freep(&sc->DPB[i].tab_mvf);
     }
@@ -1712,7 +1716,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         		lc->nb_saved ++;
         	}
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
-                set_deblocking_bypass(s, x, y, log2_cb_size);
+                set_deblocking_bypass(s, x0, y0, log2_cb_size);
 
             }
         }
@@ -1801,7 +1805,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                 		lc->nb_saved ++;
                 	}
                     if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
-                        set_deblocking_bypass(s, x, y, log2_cb_size);
+                        set_deblocking_bypass(s, x0, y0, log2_cb_size);
                     }
                 }
             }
@@ -2070,13 +2074,10 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, sc->sps->log2_ctb_size, 0);
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
-  //      hls_filters_tiles(s, x_ctb, y_ctb, ctb_size);
         if (sc->pps->tiles_enabled_flag && (sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1])) {
             break;
         }
     }
-//    if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
-//       hls_filters_tiles(s, x_ctb, y_ctb);
     return ctb_addr_ts;
 }
 
@@ -2735,6 +2736,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             av_free(lc->cabac_state);
             if(sc->enable_parallel_tiles)
              	av_free(lc->save_boundary_strengths);
+            av_free(lc);
         }
         av_free(sc->ctb_entry_count);
         av_free(s->HEVClcList[i]);

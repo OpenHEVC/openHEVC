@@ -4,6 +4,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
+#include "libavcodec/x86/hevcpred.h"
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
@@ -444,7 +445,7 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 {
     int x, y;
     int size = 8;
-    __m128i r0, r1, r2, r3, r4, r5, r9;
+    __m128i r0, r1, r2, r3, r5, r9;
 
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
@@ -486,7 +487,6 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
                 r2=_mm_set1_epi16(16);
                 r9= _mm_set_epi8(8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,0);
                 r3= _mm_loadu_si128((__m128i*)(ref+idx+1));
-                r4= _mm_loadu_si128((__m128i*)(ref+idx+17));
                 r5=_mm_shuffle_epi8(r3,r9);
                 r5= _mm_maddubs_epi16(r5,r0);
                 r5=_mm_adds_epi16(r5,r2);

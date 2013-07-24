@@ -4,6 +4,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
+#include "libavcodec/x86/hevcdsp.h"
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
@@ -25,6 +26,10 @@ void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     int sao_left_class = sao->band_position[c_idx];
 
     int init_y = 0, init_x = 0;
+
+    __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4, src0, src1,
+             src2, src3;
+
     if (!borders[2])
         width -= ((8 >> chroma) + 2);
     if (!borders[3])
@@ -32,8 +37,6 @@ void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);
 
-    __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4, src0, src1,
-            src2, src3;
 
     r0 = _mm_set1_epi16(sao_left_class & 31);
     r1 = _mm_set1_epi16((sao_left_class + 1) & 31);
@@ -166,6 +169,9 @@ void ff_hevc_sao_band_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
 
     int init_y = 0, init_x = 0;
 
+    __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4, src0, src1,
+            src2, src3;
+
     init_y = -(4 >> chroma) - 2;
     if (!borders[2])
         width -= ((8 >> chroma) + 2);
@@ -173,8 +179,6 @@ void ff_hevc_sao_band_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
 
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);
-    __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4, src0, src1,
-            src2, src3;
 
     r0 = _mm_set1_epi16(sao_left_class & 31);
     r1 = _mm_set1_epi16((sao_left_class + 1) & 31);
@@ -487,9 +491,7 @@ void ff_hevc_sao_band_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
 void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
         ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,
         int _height, int c_idx) {
-    int x, y;
-    x = 0;
-    y = 0;
+    int x = 0, y = 0;
     uint8_t *dst = _dst;
     uint8_t *src = _src;
     ptrdiff_t stride = _stride;
@@ -557,8 +559,8 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
             init_y = 1;
         }
         if (borders[3]) {
-            x1 = _mm_set1_epi8(sao_offset_val[0]);
             int y_stride = stride * (_height - 1);
+            x1 = _mm_set1_epi8(sao_offset_val[0]);
             for (x = init_x; x < width-15; x += 16) {
                 x0 = _mm_loadu_si128((__m128i *) (src + x + y_stride));
                 x0 = _mm_add_epi8(x0, x1);
@@ -970,8 +972,8 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             init_y = 1;
         }
         if (borders[3]) {
-            x1 = _mm_set1_epi8(sao_offset_val[0]);
             int y_stride = stride * (_height - 1);
+            x1 = _mm_set1_epi8(sao_offset_val[0]);
             x0 = _mm_loadu_si128((__m128i *) (src + init_x + y_stride));
             x0 = _mm_add_epi8(x0, x1);
             _mm_maskmoveu_si128(x0,

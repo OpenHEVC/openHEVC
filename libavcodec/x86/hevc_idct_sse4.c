@@ -4,6 +4,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
+#include "libavcodec/x86/hevcdsp.h"
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
@@ -3001,6 +3002,7 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                 m128iS31 = _mm_unpackhi_epi16(m128Tmp4, m128Tmp5);
 
                 if(i==0){
+                    int k = 8;
                     r0=m128iS0;
                     r1=m128iS1;
                     r2=m128iS2;
@@ -3033,7 +3035,6 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
                     r29=m128iS29;
                     r30=m128iS30;
                     r31=m128iS31;
-                    int k = 8;
                     m128iS0 = _mm_load_si128((__m128i *) (src + k));
                     m128iS1 = _mm_load_si128((__m128i *) (src + 32 + k));
                     m128iS2 = _mm_load_si128((__m128i *) (src + 64 + k));
