@@ -45,6 +45,7 @@
  */
 //#define POC_DISPLAY_MD5
 #define WPP1
+#define FILTER_EN
 static void pic_arrays_free(HEVCContext *s)
 {
     int i;
@@ -1947,10 +1948,14 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
             return more_data;
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
+#ifdef FILTER_EN
         hls_filters(s, x_ctb, y_ctb, ctb_size);
+#endif
     }
+#ifdef FILTER_EN
     if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
         hls_filter(s, x_ctb, y_ctb);
+#endif
     return ctb_addr_ts;
 }
 
@@ -2019,15 +2024,19 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ctb_addr_rs       = sc->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
         ff_hevc_save_states(s, ctb_addr_ts);
         avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],1);
+#ifdef FILTER_EN
         hls_filters(s, x_ctb, y_ctb, ctb_size);
-        if (!more_data && (x_ctb+ctb_size) < sc->sps->pic_width_in_luma_samples && ctb_row != sc->sh.num_entry_point_offsets) {  
+#endif
+        if (!more_data && (x_ctb+ctb_size) < sc->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) < sc->sps->pic_height_in_luma_samples) {
         	avpriv_atomic_int_set(&sc->ERROR,  1);
             avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
             return 0;
         }
 
         if ((x_ctb+ctb_size) >= sc->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) >= sc->sps->pic_height_in_luma_samples ) {
+#ifdef FILTER_EN
             hls_filter(s, x_ctb, y_ctb);
+#endif
             avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
             return ctb_addr_ts;
         }
@@ -2205,9 +2214,11 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
                         s->HEVClcList[i]->save_boundary_strengths[j].y,
                         s->HEVClcList[i]->save_boundary_strengths[j].size);
 
+#ifdef FILTER_EN
         for (y_ctb = 0; y_ctb < sc->sps->pic_height_in_luma_samples; y_ctb += ctb_size)
             for (x_ctb = 0; x_ctb < sc->sps->pic_width_in_luma_samples; x_ctb += ctb_size)
                 hls_filter(s, x_ctb, y_ctb);
+#endif
     }
 
     for (i = 0; i <= sc->sh.num_entry_point_offsets; i++)
@@ -2401,6 +2412,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     (52 + sc->sps->qp_bd_offset)) - sc->sps->qp_bd_offset;
 
         if (sc->sh.first_slice_in_pic_flag) {
+#ifdef FILTER_EN
             if (sc->sps->sample_adaptive_offset_enabled_flag) {
                 av_frame_unref(sc->tmp_frame);
                 if ((ret = ff_reget_buffer(s->avctx, sc->tmp_frame)) < 0)
@@ -2409,9 +2421,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 if ((ret = ff_hevc_set_new_ref(s, &sc->sao_frame, sc->poc))< 0)
                     return ret;
             } else {
+#endif
                 if ((ret = ff_hevc_set_new_ref(s, &sc->frame, sc->poc))< 0)
                     return ret;
+#ifdef FILTER_EN
             }
+#endif
         }
         if (!lc->edge_emu_buffer)
             lc->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * sc->frame->linesize[0]);

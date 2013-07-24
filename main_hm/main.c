@@ -58,6 +58,7 @@ static void video_decode_example(const char *filename)
     int nbFrame = 0;
     int pts     = 0;
     int stop    = 0;
+    int stop_dec= 0;
     int got_picture;
     OpenHevc_Frame openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
@@ -91,10 +92,12 @@ static void video_decode_example(const char *filename)
     }
     while(!stop) {
         if (disable_au == 0) {
-            if (av_read_frame(pFormatCtx, &packet)<0) break;
-            got_picture = libOpenHevcDecode(openHevcHandle, packet.data, packet.size, pts++);
-        } else
-            got_picture = libOpenHevcDecode(openHevcHandle, buf, !feof(f) ? get_next_nal(f, buf) : 0, pts++);
+            if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
+            got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, pts++);
+        } else {
+            if (stop_dec == 0 && feof(f)) stop_dec = 1;
+            got_picture = libOpenHevcDecode(openHevcHandle, buf, !stop_dec ? get_next_nal(f, buf) : 0, pts++);
+        }
         if (got_picture) {
             fflush(stdout);
             if (init == 1 ) {
@@ -127,9 +130,8 @@ static void video_decode_example(const char *filename)
                 fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , nbData / 4, fout);
             }
             nbFrame++;
-        } else if (disable_au == 1)
-            if (feof(f) && nbFrame)
-                stop = 1;
+        } else  if (stop_dec==1 && nbFrame)
+            stop = 1;
     }
     CloseSDLDisplay();
     if (fout) {

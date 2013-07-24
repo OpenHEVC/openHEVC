@@ -161,7 +161,7 @@ extern const UChar g_aucDCTDSTMode_Hor[NUM_INTRA_MODE];
 extern       Char   g_aucConvertToBit  [ MAX_CU_SIZE+1 ];   // from width to log2(width)-2
 
 #ifndef ENC_DEC_TRACE
-# define ENC_DEC_TRACE 1
+# define ENC_DEC_TRACE 0
 #endif
 
 #if ENC_DEC_TRACE
