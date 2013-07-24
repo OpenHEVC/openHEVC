@@ -103,7 +103,7 @@ libavutil/random_seed.c
 libavutil/samplefmt.c
 libavutil/time.c
 libavutil/x86/cpu.c
-openHevcWrapper.c
+gpac/modules/openhevc_dec/openHevcWrapper.c
 libavformat/allformats.c
 libavformat/avio.c
 libavformat/aviobuf.c
@@ -186,7 +186,7 @@ endif(MINGW)
 endif()
 endif(ENABLE_EXECUTABLE)
 
-INSTALL(FILES "openHevcWrapper.h" DESTINATION include)
+INSTALL(FILES "gpac/modules/openhevc_dec/openHevcWrapper.h" DESTINATION include)
 
 INSTALL(TARGETS LibOpenHevcWrapper DESTINATION lib PERMISSIONS
 OWNER_READ OWNER_WRITE OWNER_EXECUTE

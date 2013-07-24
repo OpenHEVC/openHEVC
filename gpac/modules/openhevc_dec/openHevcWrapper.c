@@ -20,7 +20,6 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
     OpenHevcWrapperContext * openHevcContext = av_malloc(sizeof(OpenHevcWrapperContext));
     av_init_packet(&openHevcContext->avpkt);
     openHevcContext->codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
-    printf("libav\n");
     if (!openHevcContext->codec) {
         fprintf(stderr, "codec not found\n");
         return NULL;
@@ -39,15 +38,14 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
 
     /* open it */
     if(nb_pthreads)	{
-    	openHevcContext->c->thread_type = FF_THREAD_SLICE;
-    	openHevcContext->c->thread_count = nb_pthreads;
+        av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
+        av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
     }
     if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         return NULL;
     }
-    av_opt_set_int(openHevcContext->c->priv_data, "thread-count", openHevcContext->c->thread_count, 0);
-    av_opt_set_int(openHevcContext->c->priv_data, "disable-au", 1, 0);
+    av_opt_set_int(openHevcContext->c->priv_data, "disable-au", 0, 0);
     return (OpenHevc_Handle) openHevcContext;
 }
 

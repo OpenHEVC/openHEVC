@@ -3,6 +3,7 @@ include ../../config.mak
 vpath %.c $(SRC_PATH)/modules/openhevc_dec
 
 CFLAGS=$(OPTFLAGS) -I"$(SRC_PATH)/include" $(ffmpeg_lflags)
+LDFLAGS+=-Wl,-Bsymbolic
 
 ifeq ($(DEBUGBUILD), yes)
 CFLAGS+=-g
