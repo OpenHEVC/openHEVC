@@ -952,8 +952,10 @@ static void set_deblocking_bypass(HEVCContext *s, int x0, int y0, int log2_cb_si
     int log2_min_pu_size = s->HEVCsc->sps->log2_min_pu_size;
 
     int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
-    for (j = (y0 >> log2_min_pu_size); j < ((y0 + cb_size) >> log2_min_pu_size); j++)
-        for (i = (x0 >> log2_min_pu_size); i < ((x0 + cb_size) >> log2_min_pu_size); i++)
+    int x_end = FFMIN(x0 + cb_size, s->HEVCsc->sps->pic_width_in_luma_samples);
+    int y_end = FFMIN(y0 + cb_size, s->HEVCsc->sps->pic_height_in_luma_samples);
+    for (j = (y0 >> log2_min_pu_size); j < (y_end >> log2_min_pu_size); j++)
+        for (i = (x0 >> log2_min_pu_size); i < (x_end >> log2_min_pu_size); i++)
             s->HEVCsc->is_pcm[i + j * pic_width_in_min_pu] = 2;
 }
 
