@@ -70,6 +70,10 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&sc->sh.entry_point_offset);
     av_freep(&sc->sh.size);
     av_freep(&sc->sh.offset);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
+        av_freep(&sc->DPB[i].tab_mvf);
+    }
 }
 
 static int pic_arrays_init(HEVCContext *s)
@@ -106,6 +110,14 @@ static int pic_arrays_init(HEVCContext *s)
     sc->qp_y_tab = av_malloc(pic_size_in_ctb*sizeof(int8_t));
     if (!sc->qp_y_tab)
         goto fail;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
+        sc->DPB[i].tab_mvf = av_malloc(pic_width_in_min_pu  *
+                                       pic_height_in_min_pu *
+                                       sizeof(*sc->DPB[i].tab_mvf));
+        if (!sc->DPB[i].tab_mvf)
+            goto fail;
+    }
 
     sc->horizontal_bs = av_mallocz(2 * sc->bs_width * sc->bs_height);
     sc->vertical_bs   = av_mallocz(2 * sc->bs_width * sc->bs_height);
