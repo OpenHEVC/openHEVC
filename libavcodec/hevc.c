@@ -70,10 +70,6 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&sc->sh.entry_point_offset);
     av_freep(&sc->sh.size);
     av_freep(&sc->sh.offset);
-
-    for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
-        av_freep(&sc->DPB[i].tab_mvf);
-    }
 }
 
 static int pic_arrays_init(HEVCContext *s)
@@ -110,14 +106,6 @@ static int pic_arrays_init(HEVCContext *s)
     sc->qp_y_tab = av_malloc(pic_size_in_ctb*sizeof(int8_t));
     if (!sc->qp_y_tab)
         goto fail;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(sc->DPB); i++) {
-        sc->DPB[i].tab_mvf = av_malloc(pic_width_in_min_pu  *
-                                       pic_height_in_min_pu *
-                                       sizeof(*sc->DPB[i].tab_mvf));
-        if (!sc->DPB[i].tab_mvf)
-            goto fail;
-    }
 
     sc->horizontal_bs = av_mallocz(2 * sc->bs_width * sc->bs_height);
     sc->vertical_bs   = av_mallocz(2 * sc->bs_width * sc->bs_height);
@@ -221,7 +209,6 @@ static void pred_weight_table(HEVCSharedContext *sc, GetBitContext *gb)
         }
     }
 }
-
 static int hls_slice_header(HEVCContext *s)
 {
     int i, ret, j;
@@ -258,11 +245,13 @@ static int hls_slice_header(HEVCContext *s)
         sc->vps = sc->vps_list[sc->sps->vps_id];
 
         //TODO: Handle switching between different SPS better
-        pic_arrays_free(s);
-        ret = pic_arrays_init(s);
-        if (ret < 0)
-            return AVERROR(ENOMEM);
-
+        if (s->avctx->width  != sc->sps->pic_width_in_luma_samples ||
+            s->avctx->height != sc->sps->pic_height_in_luma_samples) {
+            pic_arrays_free(s);
+            ret = pic_arrays_init(s);
+            if (ret < 0)
+                return AVERROR(ENOMEM);
+        }
         s->avctx->width = sc->sps->pic_width_in_luma_samples;
         s->avctx->height = sc->sps->pic_height_in_luma_samples;
         if (sc->sps->chroma_format_idc == 0 || sc->sps->separate_colour_plane_flag) {

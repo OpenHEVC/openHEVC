@@ -79,6 +79,7 @@ void ff_hevc_clear_refs(HEVCContext *s)
             printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
 #endif
             av_frame_unref(ref->frame);
+            av_freep(&ref->tab_mvf);
             ref->flags = 0;
             ref->refPicList[0].numPic = 0;
             ref->refPicList[1].numPic = 0;
@@ -95,6 +96,7 @@ void ff_hevc_clean_refs(HEVCContext *s)
         printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
 #endif
         av_frame_unref(ref->frame);
+        av_freep(&ref->tab_mvf);
         ref->flags = 0;
     }
 }
@@ -123,8 +125,13 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     for (i = 0; i < FF_ARRAY_ELEMS(s->HEVCsc->DPB); i++) {
         HEVCFrame *ref = &s->HEVCsc->DPB[i];
         if (!ref->frame->buf[0]) {
+            int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+            int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
             *frame     = ref->frame;
             s->HEVCsc->ref     = ref;
+            ref->tab_mvf = av_malloc(pic_width_in_min_pu  *
+                                            pic_height_in_min_pu *
+                                            sizeof(*ref->tab_mvf));
             ref->poc   = poc;
             ref->frame->pts = s->HEVCsc->pts;
 
