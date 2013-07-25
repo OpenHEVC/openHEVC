@@ -84,7 +84,9 @@ void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, 
 
 void CloseSDLDisplay(){
 #ifndef SDL_NO_DISPLAY
-    printf("time : %d ms\n", SDL_GetTicks() - ticksSDL);
     SDL_Quit();
 #endif
+}
+int SDL_GetTime() {
+    return SDL_GetTicks() - ticksSDL;
 }

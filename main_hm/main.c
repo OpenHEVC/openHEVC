@@ -60,6 +60,7 @@ static void video_decode_example(const char *filename)
     int stop    = 0;
     int stop_dec= 0;
     int got_picture;
+    float time  = 0.0;
     OpenHevc_Frame openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
 
@@ -133,15 +134,14 @@ static void video_decode_example(const char *filename)
         } else  if (stop_dec==1 && nbFrame)
             stop = 1;
     }
+    time = SDL_GetTime()/1000.0;
     CloseSDLDisplay();
-    if (fout) {
+    if (fout)
         fclose(fout);
-    }
     if (disable_au == 0)
         avformat_close_input(&pFormatCtx);
-    printf("video size : %d x %d\n", openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
     libOpenHevcClose(openHevcHandle);
-    printf("nbFrame : %d\n", nbFrame);
+    printf("frame= %d fps= %.0f time=%.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
 }
 
 int main(int argc, char *argv[]) {
