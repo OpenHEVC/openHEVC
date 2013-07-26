@@ -1367,7 +1367,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         luma_mc(s, tmp, tmpstride,
                 sc->DPB[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH);
-        if (sc->pps->weighted_pred_flag){
+        if ((sc->sh.slice_type == P_SLICE && sc->pps->weighted_pred_flag) ||
+            (sc->sh.slice_type == B_SLICE && sc->pps->weighted_bipred_flag)){
             sc->hevcdsp.weighted_pred(sc->sh.luma_log2_weight_denom,
                                       sc->sh.luma_weight_l0[current_mv.ref_idx[0]],
                                       sc->sh.luma_offset_l0[current_mv.ref_idx[0]],
@@ -1378,7 +1379,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         chroma_mc(s, tmp, tmp2, tmpstride,
                   sc->DPB[refPicList[0].idx[current_mv.ref_idx[0]]].frame,
                   &current_mv.mv[0], x0/2, y0/2, nPbW/2, nPbH/2);
-        if (sc->pps->weighted_pred_flag){
+        if ((sc->sh.slice_type == P_SLICE && sc->pps->weighted_pred_flag) ||
+            (sc->sh.slice_type == B_SLICE && sc->pps->weighted_bipred_flag)){
             sc->hevcdsp.weighted_pred(sc->sh.chroma_log2_weight_denom,
                                       sc->sh.chroma_weight_l0[current_mv.ref_idx[0]][0],
                                       sc->sh.chroma_offset_l0[current_mv.ref_idx[0]][0],
@@ -1397,7 +1399,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         luma_mc(s, tmp, tmpstride,
                 sc->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH);
-        if (sc->pps->weighted_pred_flag){
+        if ((sc->sh.slice_type == P_SLICE && sc->pps->weighted_pred_flag) ||
+            (sc->sh.slice_type == B_SLICE && sc->pps->weighted_bipred_flag)){
             sc->hevcdsp.weighted_pred(sc->sh.luma_log2_weight_denom,
                                       sc->sh.luma_weight_l1[current_mv.ref_idx[1]],
                                       sc->sh.luma_offset_l1[current_mv.ref_idx[1]],
@@ -1410,7 +1413,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                   sc->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                   &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
 
-        if (sc->pps->weighted_pred_flag){
+        if ((sc->sh.slice_type == P_SLICE && sc->pps->weighted_pred_flag) ||
+            (sc->sh.slice_type == B_SLICE && sc->pps->weighted_bipred_flag)){
             sc->hevcdsp.weighted_pred(sc->sh.chroma_log2_weight_denom,
                                       sc->sh.chroma_weight_l1[current_mv.ref_idx[1]][0],
                                       sc->sh.chroma_offset_l1[current_mv.ref_idx[1]][0],
@@ -1434,7 +1438,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         luma_mc(s, tmp2, tmpstride,
                 sc->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH);
-        if (sc->pps->weighted_bipred_flag) {
+        if ((sc->sh.slice_type == P_SLICE && sc->pps->weighted_pred_flag) ||
+            (sc->sh.slice_type == B_SLICE && sc->pps->weighted_bipred_flag)){
             sc->hevcdsp.weighted_pred_avg(sc->sh.luma_log2_weight_denom,
                                           sc->sh.luma_weight_l0[current_mv.ref_idx[0]],
                                           sc->sh.luma_weight_l1[current_mv.ref_idx[1]],
@@ -1451,7 +1456,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                   sc->DPB[refPicList[1].idx[current_mv.ref_idx[1]]].frame,
                   &current_mv.mv[1], x0/2, y0/2, nPbW/2, nPbH/2);
 
-        if (sc->pps->weighted_bipred_flag) {
+        if ((sc->sh.slice_type == P_SLICE && sc->pps->weighted_pred_flag) ||
+            (sc->sh.slice_type == B_SLICE && sc->pps->weighted_bipred_flag)){
             sc->hevcdsp.weighted_pred_avg(sc->sh.chroma_log2_weight_denom ,
                                           sc->sh.chroma_weight_l0[current_mv.ref_idx[0]][0],
                                           sc->sh.chroma_weight_l1[current_mv.ref_idx[1]][0],
