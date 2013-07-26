@@ -66,15 +66,14 @@ static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift  = BIT_DEPTH -3;
+    int shift  = BIT_DEPTH - 3 - 4;
     int scale  = level_scale[qp % 6] << (qp / 6);
     int add    = 1 << (shift - 1);
-    int scale2 = scale << 4;
     for (y = 0; y < 4*4; y+=4) {
-        SCALE(coeffs[y+0], (coeffs[y+0] * scale2));
-        SCALE(coeffs[y+1], (coeffs[y+1] * scale2));
-        SCALE(coeffs[y+2], (coeffs[y+2] * scale2));
-        SCALE(coeffs[y+3], (coeffs[y+3] * scale2));
+        SCALE(coeffs[y+0], (coeffs[y+0] * scale));
+        SCALE(coeffs[y+1], (coeffs[y+1] * scale));
+        SCALE(coeffs[y+2], (coeffs[y+2] * scale));
+        SCALE(coeffs[y+3], (coeffs[y+3] * scale));
     }
 
 }
@@ -86,16 +85,15 @@ static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift  = BIT_DEPTH - 2;
+    int shift  = BIT_DEPTH - 2 - 4;
     int scale  = level_scale[qp % 6] << (qp / 6);
     int add    = 1 << (shift - 1);
-    int scale2 = scale << 4;
     for (y = 0; y < 8*8; y+=8) {
         for (x = 0; x < 8; x++) {
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2));
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale));
         }
     }
 }
@@ -108,16 +106,15 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift  = BIT_DEPTH -1;
+    int shift  = BIT_DEPTH - 1 - 4;
     int scale  = level_scale[qp % 6] << (qp / 6);
     int add    = 1 << (shift - 1);
-    int scale2 = scale << 4;
     for (y = 0; y < 16*16; y+=16) {
         for (x = 0; x < 16; x++) {
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2));
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale));
         }
     }
 }
@@ -130,16 +127,15 @@ static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift  = BIT_DEPTH;
+    int shift  = BIT_DEPTH - 4;
     int scale  = level_scale[qp % 6] << (qp / 6);
     int add    = 1 << (shift - 1);
-    int scale2 = scale << 4;
     for (y = 0; y < 32*32; y+=32) {
         for (x = 0; x < 32; x++) {
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale2));
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale));
         }
     }
 }
