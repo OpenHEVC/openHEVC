@@ -175,8 +175,16 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             int size_max_x = x0 + ((2*size)<<hshift) < s->HEVCsc->sps->pic_width_in_luma_samples ? 2*size : (s->HEVCsc->sps->pic_width_in_luma_samples - x0)>>hshift;
             int size_max_y = y0 + ((2*size)<<vshift) < s->HEVCsc->sps->pic_height_in_luma_samples ? 2*size : (s->HEVCsc->sps->pic_height_in_luma_samples - y0)>>vshift;
             int j = size + (bottom_left_available? bottom_left_size: 0) -1;
-            while(j>-1 && !IS_INTRA(-1, j)) j--;
-            if (!IS_INTRA(-1, j)) {
+            if (bottom_left_available || left_available || top_left_available) {
+                while(j>-1 && !IS_INTRA(-1, j)) j--;
+                if (!IS_INTRA(-1, j)) {
+                    j = 0;
+                    while(j<size_max_x && !IS_INTRA(j, -1)) j++;
+                    EXTEND_LEFT_CIP(top, j, j+1);
+                    left[-1] = top[-1];
+                    j = 0;
+                }
+            } else {
                 j = 0;
                 while(j<size_max_x && !IS_INTRA(j, -1)) j++;
                 EXTEND_LEFT_CIP(top, j, j+1);
