@@ -63,7 +63,7 @@ void ff_hevc_dequant8x8_sse4(int16_t *coeffs, int qp) {
     //TODO: scaling_list_enabled_flag support
     int shift = BIT_DEPTH - 6;
     int scale = level_scale[qp % 6] << (qp / 6);
-    int add = 1 << (BIT_DEPTH - 3);
+    int add = 1 << (shift - 1);
 
     //8x8= 64 coeffs.
     f0 = _mm_set1_epi32(scale);
@@ -194,7 +194,7 @@ void ff_hevc_dequant16x16_sse4(int16_t *coeffs, int qp) {
 
     int shift = BIT_DEPTH - 5;
     int scale = level_scale[qp % 6] << (qp / 6);
-    int add = 1 << (BIT_DEPTH - 2);
+    int add = 1 << (shift - 1);
     f0 = _mm_set1_epi32(scale);
     f1 = _mm_set1_epi32(add);
     for (x = 0; x < 16 * 16; x += 64) {
@@ -328,7 +328,7 @@ void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp) {
 
     int shift = BIT_DEPTH-4;
     int scale = level_scale[qp % 6] << (qp / 6);
-    int add = 1 << (BIT_DEPTH - 1);
+    int add = 1 << (shift - 1);
     f0 = _mm_set1_epi32(scale);
     f1 = _mm_set1_epi32(add);
     for (x = 0; x < 32 * 32; x += 64) {

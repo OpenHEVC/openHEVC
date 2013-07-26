@@ -117,7 +117,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                 	c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_8_sse;
                 	c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_8_sse;
                 	c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_8_sse;
-                	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
+//                	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
 
 #endif
 //                	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
