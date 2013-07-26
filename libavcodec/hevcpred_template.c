@@ -41,19 +41,19 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 #define EXTEND_DOWN(ptr, start, length) EXTEND_RIGHT(ptr, start, length)
 #define EXTEND_LEFT_CIP(ptr, start, length)             \
         for (i = (start); i > (start)-(length); i--)    \
-            if (!IS_INTRA(i-1, -1))                     \
+            if (!IS_INTRA(i-1, -1))           \
                 ptr[i-1] = ptr[i]
 #define EXTEND_RIGHT_CIP(ptr, start, length)            \
         for (i = (start); i < (start)+(length); i++)    \
-            if (!IS_INTRA(i, -1))                       \
+            if (!IS_INTRA(i, -1))             \
                 ptr[i] = ptr[i-1]
 #define EXTEND_UP_CIP(ptr, start, length)               \
         for (i = (start); i > (start)-(length); i--)    \
-            if (!IS_INTRA(-1, i-1))                     \
+            if (!IS_INTRA(-1, i-1))           \
                 ptr[i-1] = ptr[i]
 #define EXTEND_DOWN_CIP(ptr, start, length)             \
         for (i = (start); i < (start)+(length); i++)    \
-            if (!IS_INTRA(-1, i))                       \
+            if (!IS_INTRA(-1, i))             \
             ptr[i] = ptr[i-1]
     HEVCSharedContext *sc = s->HEVCsc;
     HEVCLocalContext *lc = s->HEVClc;
@@ -112,26 +112,27 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
         int x_right_pu  = (x0+size_in_luma) >> sc->sps->log2_min_pu_size;
         int y_bottom_pu = (y0+size_in_luma) >> sc->sps->log2_min_pu_size;
+        int size_in_luma_pu = size_in_luma >> sc->sps->log2_min_pu_size;
         if (bottom_left_available == 1) {
             bottom_left_available = 0;
-            for(i=0; i< (size_in_luma>>2); i++)
+            for(i=0; i< size_in_luma_pu; i++)
                 bottom_left_available |= sc->ref->tab_mvf[x_left_pu + (y_bottom_pu+i) * pic_width_in_min_pu].is_intra;
         }
         if (left_available == 1) {
             left_available = 0;
-            for(i=0; i< (size_in_luma>>2); i++)
+            for(i=0; i< size_in_luma_pu; i++)
                 left_available |= sc->ref->tab_mvf[x_left_pu + (y_left_pu+i) * pic_width_in_min_pu].is_intra;
         }
         if (top_left_available == 1)
             top_left_available = sc->ref->tab_mvf[x_left_pu + y_top_pu * pic_width_in_min_pu].is_intra;
         if (top_available == 1) {
             top_available = 0;
-            for(i=0; i< (size_in_luma>>2); i++)
+            for(i=0; i< size_in_luma_pu; i++)
                 top_available |= sc->ref->tab_mvf[(x_top_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
         }
         if (top_right_available == 1) {
             top_right_available = 0;
-            for(i=0; i< (size_in_luma>>2); i++)
+            for(i=0; i< size_in_luma_pu; i++)
                 top_right_available |= sc->ref->tab_mvf[(x_right_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
         }
         for (i = 0; i < 2*MAX_TB_SIZE+1; i++) {
@@ -171,27 +172,34 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 
     if (sc->pps->constrained_intra_pred_flag == 1) {
         if (bottom_left_available || left_available || top_left_available || top_available || top_right_available) {
-            i = size + (bottom_left_available? bottom_left_size: 0) -1;
-            while(i>-1 && !IS_INTRA(-1, i)) i--;
-            if (!IS_INTRA(-1, i)) {
-                i = 0;
-                while(i<2*size && !IS_INTRA(i, -1)) i++;
-                EXTEND_LEFT_CIP(top, i, i+1);
+            int size_max_x = x0 + ((2*size)<<hshift) < s->HEVCsc->sps->pic_width_in_luma_samples ? 2*size : (s->HEVCsc->sps->pic_width_in_luma_samples - x0)>>hshift;
+            int size_max_y = y0 + ((2*size)<<vshift) < s->HEVCsc->sps->pic_height_in_luma_samples ? 2*size : (s->HEVCsc->sps->pic_height_in_luma_samples - y0)>>vshift;
+            int j = size + (bottom_left_available? bottom_left_size: 0) -1;
+            while(j>-1 && !IS_INTRA(-1, j)) j--;
+            if (!IS_INTRA(-1, j)) {
+                j = 0;
+                while(j<size_max_x && !IS_INTRA(j, -1)) j++;
+                EXTEND_LEFT_CIP(top, j, j+1);
                 left[-1] = top[-1];
-                i = 0;
+                j = 0;
             }
-            EXTEND_DOWN_CIP(left, i, 2*size-i);
+            if (bottom_left_available || left_available) {
+                EXTEND_DOWN_CIP(left, j, size_max_y-j);
+            }
+            if (!left_available) {
+                EXTEND_DOWN(left, 0, size);
+            }
             if (!bottom_left_available) {
                 EXTEND_DOWN(left, size, size);
             }
             if (y0 != 0) {
-                EXTEND_UP_CIP(left, 2*size-1, 2*size);
+                EXTEND_UP_CIP(left, size_max_y-1, size_max_y);
             } else {
-                EXTEND_UP_CIP(left, 2*size-1, 2*size-1);
+                EXTEND_UP_CIP(left, size_max_y-1, size_max_y-1);
             }
             top[-1] = left[-1];
             if (y0 != 0) {
-                EXTEND_RIGHT_CIP(top, 0, 2*size);
+                EXTEND_RIGHT_CIP(top, 0, size_max_x);
             }
         }
     }
