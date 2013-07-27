@@ -1068,10 +1068,8 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                 lc->save_boundary_strengths[lc->nb_saved].size = log2_trafo_size;
                 lc->nb_saved++;
             }
-
-            if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
+            if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag)
                 set_deblocking_bypass(s, x0, y0, log2_trafo_size);
-            }
         }
     }
 }
@@ -1667,12 +1665,8 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     for (x = 0; x < 4; x++) {
         lc->pu.intra_pred_mode[x] = 1;
     }
-    if (sc->pps->transquant_bypass_enable_flag) {
+    if (sc->pps->transquant_bypass_enable_flag)
         lc->cu.cu_transquant_bypass_flag = ff_hevc_cu_transquant_bypass_flag_decode(s);
-        av_log(s->avctx, AV_LOG_ERROR,
-               "transquant: %d x0 %d y0 %d\n",
-               lc->cu.cu_transquant_bypass_flag, x0, y0);
-    }
 
     if (sc->sh.slice_type != I_SLICE) {
         uint8_t skip_flag = ff_hevc_skip_flag_decode(s, x0, y0, x_cb, y_cb);
@@ -1698,10 +1692,9 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         		lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
         		lc->nb_saved ++;
         	}
-            if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
+            if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag)
                 set_deblocking_bypass(s, x0, y0, log2_cb_size);
 
-            }
         }
     } else {
         if (sc->sh.slice_type != I_SLICE) {
@@ -1787,9 +1780,8 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                 		lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
                 		lc->nb_saved ++;
                 	}
-                    if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag) {
+                    if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag)
                         set_deblocking_bypass(s, x0, y0, log2_cb_size);
-                    }
                 }
             }
         }

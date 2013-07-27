@@ -168,14 +168,14 @@ static void copy_CTB(uint8_t *dst, uint8_t *src, int width, int height, int stri
 static int get_pcm(HEVCContext *s, int x, int y)
 {
     HEVCSharedContext *sc = s->HEVCsc;
-    int log2_min_pu_size = sc->sps->log2_min_pu_size - 1;
+    int log2_min_pu_size = sc->sps->log2_min_pu_size;
     int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
     int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
     int x_pu = x >> log2_min_pu_size;
     int y_pu = y >> log2_min_pu_size;
 
-    if (x < 0 || x_pu > pic_width_in_min_pu || y < 0 || y_pu > pic_height_in_min_pu)
-        return 0;
+    if (x < 0 || x_pu >= pic_width_in_min_pu || y < 0 || y_pu >= pic_height_in_min_pu)
+        return 2;
     return sc->is_pcm[y_pu * pic_width_in_min_pu + x_pu];
 }
 
@@ -294,10 +294,10 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 tc[0] = bs0 ? TC_CALC(qp0, bs0) : 0;
                 tc[1] = bs1 ? TC_CALC(qp1, bs1) : 0;
                 if (pcmf) {
-                        no_p[0] = get_pcm(s, x - 1, y);
-                        no_p[1] = get_pcm(s, x - 1, y + 8);
-                        no_q[0] = get_pcm(s, x, y);
-                        no_q[1] = get_pcm(s, x, y + 8);
+                    no_p[0] = get_pcm(s, x - 1, y);
+                    no_p[1] = get_pcm(s, x - 1, y + 8);
+                    no_q[0] = get_pcm(s, x, y);
+                    no_q[1] = get_pcm(s, x, y + 8);
                 }
                 src = &sc->frame->data[LUMA][y * sc->frame->linesize[LUMA] + x];
                 sc->hevcdsp.hevc_v_loop_filter_luma(src, sc->frame->linesize[LUMA], beta, tc, no_p, no_q);
@@ -376,10 +376,10 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     const int qp0 = (bs0 == 2) ? ((get_qPy(s, x, y - 1) + get_qPy(s, x, y) + 1) >> 1) : 0;
                     const int qp1 = (bs1 == 2) ? (get_qPy(s, x + 8, y - 1) + get_qPy(s, x + 8, y) + 1) >> 1 : 0;
                     if (pcmf) {
-                            no_p[0] = get_pcm(s, x, y - 1);
-                            no_p[1] = get_pcm(s, x + 8, y - 1);
-                            no_q[0] = get_pcm(s, x, y);
-                            no_q[1] = get_pcm(s, x + 8, y);
+                        no_p[0] = get_pcm(s, x, y - 1);
+                        no_p[1] = get_pcm(s, x + 8, y - 1);
+                        no_q[0] = get_pcm(s, x, y);
+                        no_q[1] = get_pcm(s, x + 8, y);
                     }
 
                     c_tc[0] = (bs0 == 2) ? chroma_tc(sc, qp0, chroma, tc_offset) : 0;
