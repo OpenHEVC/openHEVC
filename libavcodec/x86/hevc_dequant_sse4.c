@@ -14,13 +14,12 @@
 void ff_hevc_dequant4x4_sse4(int16_t *coeffs, int qp) {
     __m128i c0, c1, f0, f1, c2, c3;
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
-    int shift = BIT_DEPTH - 3;
+    int shift = BIT_DEPTH - 7;
     int scale = level_scale[qp % 6] << (qp / 6);
     int add = 1 << (shift - 1);
-    int scale2 = scale << 4;  // > 16Bit
     //4x4 = 16 coeffs.
 
-    f0 = _mm_set1_epi32(scale2);
+    f0 = _mm_set1_epi32(scale);
 
     f1 = _mm_set1_epi32(add);
     c0 = _mm_load_si128((__m128i *) &coeffs[0]); //loads 8 first values
@@ -62,12 +61,12 @@ void ff_hevc_dequant8x8_sse4(int16_t *coeffs, int qp) {
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
 
     //TODO: scaling_list_enabled_flag support
-    int shift = BIT_DEPTH - 2;
-    int scale2 = level_scale[qp % 6] << ((qp / 6) + 4);
-    int add = 1 << (BIT_DEPTH - 3);
+    int shift = BIT_DEPTH - 6;
+    int scale = level_scale[qp % 6] << (qp / 6);
+    int add = 1 << (shift - 1);
 
     //8x8= 64 coeffs.
-    f0 = _mm_set1_epi32(scale2);
+    f0 = _mm_set1_epi32(scale);
     f1 = _mm_set1_epi32(add);
     c0 = _mm_load_si128((__m128i *) &coeffs[0]); //loads 8 first values
     c2 = _mm_load_si128((__m128i *) &coeffs[8]);
@@ -193,10 +192,10 @@ void ff_hevc_dequant16x16_sse4(int16_t *coeffs, int qp) {
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift = BIT_DEPTH - 1;
-    int scale2 = level_scale[qp % 6] << ((qp / 6) + 4);
-    int add = 1 << (BIT_DEPTH - 2);
-    f0 = _mm_set1_epi32(scale2);
+    int shift = BIT_DEPTH - 5;
+    int scale = level_scale[qp % 6] << (qp / 6);
+    int add = 1 << (shift - 1);
+    f0 = _mm_set1_epi32(scale);
     f1 = _mm_set1_epi32(add);
     for (x = 0; x < 16 * 16; x += 64) {
         c0 = _mm_load_si128((__m128i *) &coeffs[0 + x]); //loads 8 first values
@@ -327,10 +326,10 @@ void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp) {
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift = BIT_DEPTH;
-    int scale2 = level_scale[qp % 6] << ((qp / 6) + 4);
-    int add = 1 << (BIT_DEPTH - 1);
-    f0 = _mm_set1_epi32(scale2);
+    int shift = BIT_DEPTH-4;
+    int scale = level_scale[qp % 6] << (qp / 6);
+    int add = 1 << (shift - 1);
+    f0 = _mm_set1_epi32(scale);
     f1 = _mm_set1_epi32(add);
     for (x = 0; x < 32 * 32; x += 64) {
 
