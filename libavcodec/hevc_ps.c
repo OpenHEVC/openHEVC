@@ -713,10 +713,6 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
             pps->row_height[pps->num_tile_rows - 1] = sps->pic_height_in_ctbs - sum;
         }
         pps->loop_filter_across_tiles_enabled_flag = get_bits1(gb);
-        if (pps->loop_filter_across_tiles_enabled_flag)
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "loop filter across tiles enabled\n");
-
     }
 
     pps->seq_loop_filter_across_slices_enabled_flag = get_bits1(gb);
