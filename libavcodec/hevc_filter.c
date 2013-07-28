@@ -295,9 +295,9 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 tc[1] = bs1 ? TC_CALC(qp1, bs1) : 0;
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x - 1, y);
-                    no_p[1] = get_pcm(s, x - 1, y + 8);
+                    no_p[1] = get_pcm(s, x - 1, y + 4);
                     no_q[0] = get_pcm(s, x, y);
-                    no_q[1] = get_pcm(s, x, y + 8);
+                    no_q[1] = get_pcm(s, x, y + 4);
                 }
                 src = &sc->frame->data[LUMA][y * sc->frame->linesize[LUMA] + x];
                 sc->hevcdsp.hevc_v_loop_filter_luma(src, sc->frame->linesize[LUMA], beta, tc, no_p, no_q);
@@ -314,10 +314,10 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     const int qp0 = (get_qPy(s, x - 1, y) + get_qPy(s, x, y) + 1) >> 1;
                     const int qp1 = (get_qPy(s, x - 1, y + 8) + get_qPy(s, x, y + 8) + 1) >> 1;
                     if (pcmf) {
-                            no_p[0] = get_pcm(s, x - 1, y);
-                            no_p[1] = get_pcm(s, x - 1, y + 8);
-                            no_q[0] = get_pcm(s, x, y);
-                            no_q[1] = get_pcm(s, x, y + 8);
+                        no_p[0] = get_pcm(s, x - 1, y);
+                        no_p[1] = get_pcm(s, x - 1, y + 8);
+                        no_q[0] = get_pcm(s, x, y);
+                        no_q[1] = get_pcm(s, x, y + 8);
                     }
                     c_tc[0] = (bs0 == 2) ? chroma_tc(sc, qp0, chroma, tc_offset) : 0;
                     c_tc[1] = (bs1 == 2) ? chroma_tc(sc, qp1, chroma, tc_offset) : 0;
@@ -342,10 +342,10 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 tc[0] = bs0 ? TC_CALC(qp0, bs0) : 0;
                 tc[1] = bs1 ? TC_CALC(qp1, bs1) : 0;
                 if (pcmf) {
-                        no_p[0] = get_pcm(s, x, y - 1);
-                        no_p[1] = get_pcm(s, x + 8, y - 1);
-                        no_q[0] = get_pcm(s, x, y);
-                        no_q[1] = get_pcm(s, x + 8, y);
+                    no_p[0] = get_pcm(s, x, y - 1);
+                    no_p[1] = get_pcm(s, x + 4, y - 1);
+                    no_q[0] = get_pcm(s, x, y);
+                    no_q[1] = get_pcm(s, x + 4, y);
                 }
 
                 src = &sc->frame->data[LUMA][y * sc->frame->linesize[LUMA] + x];
