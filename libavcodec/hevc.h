@@ -104,6 +104,9 @@ typedef struct RefPicList {
     int isLongTerm[16];
     int numPic;
 } RefPicList;
+typedef struct RefPicListTab {
+    RefPicList refPicList[2];
+} RefPicListTab;
 
 /**
  * 7.4.2.1
@@ -704,7 +707,8 @@ typedef struct HEVCFrame {
     AVFrame *frame;
     int poc;
     MvField *tab_mvf;
-    RefPicList refPicList[2];
+    RefPicList *refPicList;
+    RefPicListTab **refPicListTab;
     /**
      * A combination of HEVC_FRAME_FLAG_*
      */
@@ -859,6 +863,8 @@ void ff_hevc_clear_refs(HEVCContext *s);
 void ff_hevc_clean_refs(HEVCContext *s);
 int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
 void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
+void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref);
+RefPicList* ff_hevc_get_ref_list(HEVCSharedContext *sc, int short_ref_idx, int x0, int y0);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);

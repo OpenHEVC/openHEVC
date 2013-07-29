@@ -124,7 +124,7 @@ static int DiffPicOrderCnt(int A, int B)
 // derive the motion vectors section 8.5.3.1.8
 static int derive_temporal_colocated_mvs(HEVCSharedContext *s, MvField temp_col,
         int refIdxLx, Mv* mvLXCol, int X, int colPic,
-        RefPicList refPicList_col[])
+        RefPicList* refPicList_col)
 {
     int availableFlagLXCol = 0;
     Mv mvCol;
@@ -265,7 +265,7 @@ static int temporal_luma_motion_vector(HEVCSharedContext *s, int x0, int y0,
         yPRb_pu = yPRb >> s->sps->log2_min_pu_size;
         temp_col = coloc_tab_mvf[(yPRb_pu) * pic_width_in_min_pu + xPRb_pu];
         availableFlagLXCol = derive_temporal_colocated_mvs(s, temp_col,
-                refIdxLx, mvLXCol, X, colPic, s->DPB[short_ref_idx].refPicList);
+                refIdxLx, mvLXCol, X, colPic, ff_hevc_get_ref_list(s, short_ref_idx, xPRb/*x0*/, yPRb/*y0*/));
     } else {
         mvLXCol->x = 0;
         mvLXCol->y = 0;
@@ -282,7 +282,7 @@ static int temporal_luma_motion_vector(HEVCSharedContext *s, int x0, int y0,
         yPCtr_pu = yPCtr >> s->sps->log2_min_pu_size;
         temp_col = coloc_tab_mvf[(yPCtr_pu) * pic_width_in_min_pu + xPCtr_pu];
         availableFlagLXCol = derive_temporal_colocated_mvs(s, temp_col,
-                refIdxLx, mvLXCol, X, colPic, s->DPB[short_ref_idx].refPicList);
+                refIdxLx, mvLXCol, X, colPic, ff_hevc_get_ref_list(s, short_ref_idx, xPCtr/*x0*/, yPCtr/*y0*/));
     }
     return availableFlagLXCol;
 }
