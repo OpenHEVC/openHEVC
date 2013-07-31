@@ -24,7 +24,7 @@
 #include "hevc.h"
 #include "internal.h"
 //#define TEST_DPB
-static int find_ref_idx(HEVCContext *s, int poc)
+int ff_hevc_find_ref_idx(HEVCContext *s, int poc)
 {
     int i;
     HEVCSharedContext *sc = s->HEVCsc;
@@ -72,12 +72,16 @@ static void malloc_refPicListTab(HEVCContext *s)
 }
 RefPicList* ff_hevc_get_ref_list(HEVCSharedContext *sc, int short_ref_idx, int x0, int y0)
 {
-    HEVCFrame *ref   = &sc->DPB[short_ref_idx];
-    int x_cb         = x0 >> sc->sps->log2_ctb_size;
-    int y_cb         = y0 >> sc->sps->log2_ctb_size;
-    int pic_width_cb = (sc->sps->pic_width_in_luma_samples + (1<<sc->sps->log2_ctb_size)-1 ) >> sc->sps->log2_ctb_size;
-    int ctb_addr_ts  = sc->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
-    return (RefPicList*) ref->refPicListTab[ctb_addr_ts];
+    if (x0 < 0 || y0 < 0) {
+        return sc->ref->refPicList;
+    } else {
+        HEVCFrame *ref   = &sc->DPB[short_ref_idx];
+        int x_cb         = x0 >> sc->sps->log2_ctb_size;
+        int y_cb         = y0 >> sc->sps->log2_ctb_size;
+        int pic_width_cb = (sc->sps->pic_width_in_luma_samples + (1<<sc->sps->log2_ctb_size)-1 ) >> sc->sps->log2_ctb_size;
+        int ctb_addr_ts  = sc->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
+        return (RefPicList*) ref->refPicListTab[ctb_addr_ts];
+    }
 }
 
 static void update_refs(HEVCContext *s)
@@ -137,7 +141,7 @@ int ff_hevc_find_next_ref(HEVCContext *s, int poc)
 {
     int i;
     if (!s->HEVCsc->sh.first_slice_in_pic_flag)
-        return find_ref_idx(s, poc);
+        return ff_hevc_find_ref_idx(s, poc);
 
     update_refs(s);
 
@@ -332,11 +336,11 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
         for (i = 0; i < rps->num_negative_pics; i ++) {
             if ( rps->used[i] == 1 ) {
                 refPocList[ST_CURR_BEF].list[j] = sc->poc + rps->delta_poc[i];
-                refPocList[ST_CURR_BEF].idx[j]  = find_ref_idx(s, refPocList[ST_CURR_BEF].list[j]);
+                refPocList[ST_CURR_BEF].idx[j]  = ff_hevc_find_ref_idx(s, refPocList[ST_CURR_BEF].list[j]);
                 j++;
             } else {
                 refPocList[ST_FOLL].list[k] = sc->poc + rps->delta_poc[i];
-                refPocList[ST_FOLL].idx[k]  = find_ref_idx(s, refPocList[ST_FOLL].list[k]);
+                refPocList[ST_FOLL].idx[k]  = ff_hevc_find_ref_idx(s, refPocList[ST_FOLL].list[k]);
                 k++;
             }
         }
@@ -345,11 +349,11 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
         for (i = rps->num_negative_pics; i < rps->num_delta_pocs; i ++) {
             if (rps->used[i] == 1) {
                 refPocList[ST_CURR_AFT].list[j] = sc->poc + rps->delta_poc[i];
-                refPocList[ST_CURR_AFT].idx[j]  = find_ref_idx(s, refPocList[ST_CURR_AFT].list[j]);
+                refPocList[ST_CURR_AFT].idx[j]  = ff_hevc_find_ref_idx(s, refPocList[ST_CURR_AFT].list[j]);
                 j++;
             } else {
                 refPocList[ST_FOLL].list[k] = sc->poc + rps->delta_poc[i];
-                refPocList[ST_FOLL].idx[k]  = find_ref_idx(s, refPocList[ST_FOLL].list[k]);
+                refPocList[ST_FOLL].idx[k]  = ff_hevc_find_ref_idx(s, refPocList[ST_FOLL].list[k]);
                 k++;
             }
         }
@@ -360,11 +364,11 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
             if (long_rps->delta_poc_msb_present_flag[i])
                 pocLt += sc->poc - long_rps->DeltaPocMsbCycleLt[i] * MaxPicOrderCntLsb - sc->sh.pic_order_cnt_lsb;
             if (long_rps->UsedByCurrPicLt[i]) {
-                refPocList[LT_CURR].idx[j]  = find_ref_idx(s, pocLt);
+                refPocList[LT_CURR].idx[j]  = ff_hevc_find_ref_idx(s, pocLt);
                 refPocList[LT_CURR].list[j] = sc->DPB[refPocList[LT_CURR].idx[j]].poc;
                 j++;
             } else {
-                refPocList[LT_FOLL].idx[k]  = find_ref_idx(s, pocLt);
+                refPocList[LT_FOLL].idx[k]  = ff_hevc_find_ref_idx(s, pocLt);
                 refPocList[LT_FOLL].list[k] = sc->DPB[refPocList[LT_FOLL].idx[k]].poc;
                 k++;
             }

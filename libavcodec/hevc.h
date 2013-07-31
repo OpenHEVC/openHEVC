@@ -922,6 +922,7 @@ int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
 
 int ff_hevc_get_NumPocTotalCurr(HEVCContext *s);
 
+int ff_hevc_find_ref_idx(HEVCContext *s, int poc);
 int ff_hevc_find_next_ref(HEVCContext *s, int poc);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush, int* poc_display);
