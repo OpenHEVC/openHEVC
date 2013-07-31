@@ -161,15 +161,13 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     for (i = 0; i < FF_ARRAY_ELEMS(s->HEVCsc->DPB); i++) {
         HEVCFrame *ref = &s->HEVCsc->DPB[i];
         if (!ref->frame->buf[0]) {
-            int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
-            int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
-            *frame          = ref->frame;
-            s->HEVCsc->ref  = ref;
-            ref->poc        = poc;
+            *frame         = ref->frame;
+            s->HEVCsc->ref = ref;
+            ref->poc       = poc;
             ref->frame->pts = s->HEVCsc->pts;
 
-            ref->flags      = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
-            ref->sequence   = s->HEVCsc->seq_decode;
+            ref->flags    = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
+            ref->sequence = s->HEVCsc->seq_decode;
 #ifdef TEST_DPB
             printf("%d\t%d\n",i, poc);
 #endif

@@ -27,13 +27,6 @@
 #include "hevcdata.h"
 #include "hevcdsp.h"
 #include "hevc.h"
-//#define USE_SSE
-#ifdef USE_SSE
-#include <emmintrin.h>
-#include <x86intrin.h>
-#include <tmmintrin.h>
-#include <smmintrin.h>
-#endif
 #define shift_1st 7
 #define add_1st (1 << (shift_1st - 1))
 #define shift_2nd (20 - BIT_DEPTH)

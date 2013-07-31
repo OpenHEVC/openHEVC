@@ -305,9 +305,7 @@ static int hls_slice_header(HEVCContext *s)
         sc->sps->pixel_shift = sc->sps->bit_depth > 8;
 
         ff_hevc_pred_init(&sc->hpc, sc->sps->bit_depth);
-        ff_hevc_dsp_init(&sc->hevcdsp, sc->sps->bit_depth, (sc->sps->pcm_enabled_flag &&
-                         sc->sps->pcm.loop_filter_disable_flag) || sc->pps->transquant_bypass_enable_flag);
-
+        ff_hevc_dsp_init(&sc->hevcdsp, sc->sps->bit_depth);
         ff_videodsp_init(&sc->vdsp, sc->sps->bit_depth);
     }
     if (sc->nal_unit_type == NAL_IDR_W_RADL && sh->first_slice_in_pic_flag) {

@@ -104,6 +104,7 @@ typedef struct RefPicList {
     int isLongTerm[16];
     int numPic;
 } RefPicList;
+
 typedef struct RefPicListTab {
     RefPicList refPicList[2];
 } RefPicListTab;

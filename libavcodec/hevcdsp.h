@@ -23,6 +23,8 @@
 #ifndef AVCODEC_HEVCDSP_H
 #define AVCODEC_HEVCDSP_H
 
+#include "get_bits.h"
+
 struct SAOParams;
 
 typedef struct HEVCDSPContext {
@@ -64,8 +66,13 @@ typedef struct HEVCDSPContext {
     void (*hevc_v_loop_filter_luma)(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
     void (*hevc_h_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
     void (*hevc_v_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+    void (*hevc_h_loop_filter_luma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+    void (*hevc_v_loop_filter_luma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+    void (*hevc_h_loop_filter_chroma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+    void (*hevc_v_loop_filter_chroma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 } HEVCDSPContext;
 
-void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth, int pcm_enabled);
-void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, int pcm_enabled);
+void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
+void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth);
+void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth);
 #endif /* AVCODEC_HEVCDSP_H */
