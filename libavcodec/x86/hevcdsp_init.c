@@ -102,8 +102,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth, const int pcm_d
                     c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
 
 #if ARCH_X86_64
-                        c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
-                        c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
+//                        c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
+//                        c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
 #endif
 
                 }
