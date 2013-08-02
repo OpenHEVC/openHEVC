@@ -612,7 +612,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->num_tile_rows        = 1;
     pps->uniform_spacing_flag = 1;
     pps->pps_disable_deblocking_filter_flag = 0;
-
+    pps->beta_offset = 0;
+    pps->tc_offset = 0;
 
     // Coded parameters
     pps_id = get_ue_golomb(gb);
