@@ -491,11 +491,11 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             bs = boundary_strength(sc, curr, curr_cbf_luma, top, top_cbf_luma, top_refPicList, 1);
             if (!sc->sh.slice_loop_filter_across_slices_enabled_flag) {
                 if (!s->HEVClc->ctb_up_flag  && (y0 % (1 << sc->sps->log2_ctb_size)) == 0) {
-                    if (!sc->pps->loop_filter_across_tiles_enabled_flag)
+                    if (!sc->pps->loop_filter_across_tiles_enabled_flag && s->HEVClc->tile_up_flag)
                         bs = 0;
                 }
             } else if (!sc->pps->loop_filter_across_tiles_enabled_flag) {
-                if (!s->HEVClc->ctb_up_flag  && (y0 % (1 << sc->sps->log2_ctb_size)) == 0)
+                if (!s->HEVClc->tile_up_flag  && (y0 % (1 << sc->sps->log2_ctb_size)) == 0)
                     bs = 0;
             }
             if (sc->sh.disable_deblocking_filter_flag == 1)
@@ -539,10 +539,10 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
 
             if (!sc->sh.slice_loop_filter_across_slices_enabled_flag) {
                 if (!s->HEVClc->ctb_left_flag && (x0 % (1 << sc->sps->log2_ctb_size)) == 0)
-                    if (!sc->pps->loop_filter_across_tiles_enabled_flag)
+                    if (!sc->pps->loop_filter_across_tiles_enabled_flag && s->HEVClc->tile_left_flag)
                         bs = 0;
             } else if (!sc->pps->loop_filter_across_tiles_enabled_flag) {
-                if (!s->HEVClc->ctb_left_flag && (x0 % (1 << sc->sps->log2_ctb_size)) == 0)
+                if (!s->HEVClc->tile_left_flag && (x0 % (1 << sc->sps->log2_ctb_size)) == 0)
                     bs = 0;
             }
             if (sc->sh.disable_deblocking_filter_flag == 1)

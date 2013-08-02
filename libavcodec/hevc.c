@@ -237,10 +237,6 @@ static int hls_slice_header(HEVCContext *s)
     SliceHeader *sh = &sc->sh;
     int slice_address_length = 0;
 
-    // initial values
-    sh->beta_offset = 0;
-    sh->tc_offset = 0;
-
     // Coded parameters
     sh->first_slice_in_pic_flag = get_bits1(gb);
     if ((sc->nal_unit_type == NAL_IDR_W_RADL || sc->nal_unit_type == NAL_IDR_N_LP) &&
@@ -256,6 +252,10 @@ static int hls_slice_header(HEVCContext *s)
         return AVERROR_INVALIDDATA;
     }
     sc->pps = sc->pps_list[sh->pps_id];
+
+    // initial values
+    sh->beta_offset = sc->pps->beta_offset;
+    sh->tc_offset = sc->pps->tc_offset;
     if (sc->sps != sc->sps_list[sc->pps->sps_id]) {
 
         sc->sps = sc->sps_list[sc->pps->sps_id];
@@ -1895,8 +1895,10 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb, int ctb_a
     lc->end_of_tiles_y = y_ctb + ctb_size;
     if (y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
         lc->end_of_tiles_y = sc->sps->pic_height_in_luma_samples;
-    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
-    lc->ctb_up_flag   = ((y_ctb > 0)  && (ctb_addr_in_slice >= sc->sps->pic_width_in_ctbs) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs - sc->sps->pic_width_in_ctbs]]));
+    lc->tile_left_flag = ((x_ctb > 0) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
+    lc->ctb_left_flag = ((ctb_addr_in_slice > 0) && (lc->tile_left_flag));
+    lc->tile_up_flag = ((y_ctb > 0) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs - sc->sps->pic_width_in_ctbs]]));
+    lc->ctb_up_flag   = ((ctb_addr_in_slice >= sc->sps->pic_width_in_ctbs) && (lc->tile_up_flag));
     lc->ctb_up_right_flag = ((y_ctb > 0)  && (ctb_addr_in_slice+1 >= sc->sps->pic_width_in_ctbs) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - sc->sps->pic_width_in_ctbs]]));
     lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= sc->sps->pic_width_in_ctbs) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - sc->sps->pic_width_in_ctbs]]));
 }
