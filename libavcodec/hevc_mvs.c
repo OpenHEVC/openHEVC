@@ -361,8 +361,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
 
-    int cand_up = (lc->ctb_up_flag || y0b);
-    int cand_left = (lc->ctb_left_flag || x0b);
+    int cand_up = (!lc->ctb_up_flag || y0b);
+    int cand_left = (!lc->ctb_left_flag || x0b);
     int cand_up_left =
             (!x0b && !y0b) ? lc->ctb_up_left_flag : cand_left && cand_up;
     int cand_up_right =
@@ -854,8 +854,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
 
-    int cand_up = (lc->ctb_up_flag || y0b);
-    int cand_left = (lc->ctb_left_flag || x0b);
+    int cand_up = (!lc->ctb_up_flag || y0b);
+    int cand_left = (!lc->ctb_left_flag || x0b);
     int cand_up_left =
             (!x0b && !y0b) ? lc->ctb_up_left_flag : cand_left && cand_up;
     int cand_up_right =

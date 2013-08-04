@@ -742,8 +742,6 @@ typedef struct HEVCLocalContext {
     uint8_t isFirstQPgroup;
     int8_t qp_y;
     int8_t curr_qp_y;
-    uint8_t tile_left_flag;
-    uint8_t tile_up_flag;
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
     uint8_t ctb_up_right_flag;
