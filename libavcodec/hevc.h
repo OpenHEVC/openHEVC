@@ -427,7 +427,7 @@ enum SliceType {
 
 typedef struct SliceHeader {
     uint8_t first_slice_in_pic_flag;
-    int slice_address;
+    int32_t slice_address;
 
     enum SliceType slice_type;
 
@@ -799,6 +799,9 @@ typedef struct HEVCSharedContext {
     uint8_t *split_cu_flag;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
+
+    int32_t *tab_slice_address;
+
     
     
     //  CU
