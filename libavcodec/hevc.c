@@ -43,7 +43,7 @@
 /**
  * Section 5.7
  */
-#define POC_DISPLAY_MD5
+//#define POC_DISPLAY_MD5
 #define WPP1
 #define FILTER_EN
 static void pic_arrays_free(HEVCContext *s)
@@ -91,6 +91,9 @@ static int pic_arrays_init(HEVCContext *s)
     int ctb_count = sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs;
     int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
     int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+    int pic_width_in_min_tu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_transform_block_size;
+    int pic_height_in_min_tu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_transform_block_size;
+
     sc->bs_width = sc->sps->pic_width_in_luma_samples >> 3;
     sc->bs_height = sc->sps->pic_height_in_luma_samples >> 3;
     sc->sao = av_mallocz(ctb_count * sizeof(*sc->sao));
@@ -113,7 +116,7 @@ static int pic_arrays_init(HEVCContext *s)
     if (!sc->tab_slice_address)
         goto fail;
 
-    sc->cbf_luma = av_malloc(pic_width_in_min_pu * pic_height_in_min_pu);
+    sc->cbf_luma = av_malloc(pic_width_in_min_tu * pic_height_in_min_tu);
     sc->is_pcm = av_malloc(pic_width_in_min_pu * pic_height_in_min_pu);
     if (!sc->cbf_luma || !sc->is_pcm)
         goto fail;
@@ -261,8 +264,6 @@ static int hls_slice_header(HEVCContext *s)
     sc->pps = sc->pps_list[sh->pps_id];
 
     // initial values
-    sh->beta_offset = sc->pps->beta_offset;
-    sh->tc_offset = sc->pps->tc_offset;
     if (sc->sps != sc->sps_list[sc->pps->sps_id]) {
 
         sc->sps = sc->sps_list[sc->pps->sps_id];
@@ -480,7 +481,12 @@ static int hls_slice_header(HEVCContext *s)
                 }
             } else {
                 sh->disable_deblocking_filter_flag = sc->pps->pps_disable_deblocking_filter_flag;
+                sh->beta_offset = sc->pps->beta_offset;
+                sh->tc_offset = sc->pps->tc_offset;
             }
+        } else {
+            sh->beta_offset = 0;
+            sh->tc_offset = 0;
         }
 
         if (sc->pps->seq_loop_filter_across_slices_enabled_flag &&
@@ -1051,10 +1057,10 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                            log2_trafo_size - 1, trafo_depth + 1, 3);
     } else {
         int i, j;
-        int min_pu_size = 1 << sc->sps->log2_min_pu_size;
-        int log2_min_pu_size = sc->sps->log2_min_pu_size;
+        int min_tu_size = 1 << sc->sps->log2_min_transform_block_size;
+        int log2_min_tu_size = sc->sps->log2_min_transform_block_size;
 
-        int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+        int pic_width_in_min_tu = s->HEVCsc->sps->pic_width_in_luma_samples >> log2_min_tu_size;
 
         if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
             SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) ||
@@ -1067,11 +1073,11 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
 
         // TODO: store cbf_luma somewhere else
         if (lc->tt.cbf_luma)
-            for (i = 0; i < (1 << log2_trafo_size); i += min_pu_size)
-                for (j = 0; j < (1 << log2_trafo_size); j += min_pu_size) {
-                    int x_pu = (x0 + j) >> log2_min_pu_size;
-                    int y_pu = (y0 + i) >> log2_min_pu_size;
-                    sc->cbf_luma[y_pu * pic_width_in_min_pu + x_pu] = 1;
+            for (i = 0; i < (1 << log2_trafo_size); i += min_tu_size)
+                for (j = 0; j < (1 << log2_trafo_size); j += min_tu_size) {
+                    int x_tu = (x0 + j) >> log2_min_tu_size;
+                    int y_tu = (y0 + i) >> log2_min_tu_size;
+                    sc->cbf_luma[y_tu * pic_width_in_min_tu + x_tu] = 1;
                 }
         if (!sc->sh.disable_deblocking_filter_flag) {
             if (!sc->enable_parallel_tiles)
@@ -2399,9 +2405,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if(sc->sh.first_slice_in_pic_flag) {
             int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
             int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+            int pic_width_in_min_tu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_transform_block_size;
+            int pic_height_in_min_tu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_transform_block_size;
+
             memset(sc->horizontal_bs, 0, 2 * sc->bs_width * sc->bs_height);
             memset(sc->vertical_bs, 0, sc->bs_width * 2 * sc->bs_height);
-            memset(sc->cbf_luma, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
+            memset(sc->cbf_luma, 0 , pic_width_in_min_tu * pic_height_in_min_tu);
             memset(sc->is_pcm, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
             lc->start_of_tiles_x = 0;
             sc->is_decoded = 0;
