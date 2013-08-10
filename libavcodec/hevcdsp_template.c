@@ -474,10 +474,10 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
 
     int init_y = 0, init_x =0;
 
-            if(!borders[2] )
-                width -= ((8>>chroma)+2) ;
-            if(!borders[3] )
-                height -= ((4>>chroma)+2);
+    if (!borders[2] )
+        width -= ((8>>chroma)+2) ;
+    if (!borders[3] )
+            height -= ((4>>chroma)+2);
 
     dst = dst + (init_y*_stride + init_x);
     src = src + (init_y*_stride + init_x);
@@ -485,8 +485,6 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
         band_table[(k + sao_left_class) & 31] = k + 1;
         for (y = 0; y < height; y++) {
             for (x = 0; x < width; x++) {
-                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
-                x++;
                 dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
             }
             dst += stride;
@@ -519,8 +517,6 @@ static void FUNC(sao_band_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
         for (y = 0; y < height; y++) {
             for (x = 0; x < width; x++) {
                 dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
-                x++;
-                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
             }
             dst += stride;
             src += stride;
@@ -552,8 +548,6 @@ static void FUNC(sao_band_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
         for (y = 0; y < height; y++) {
             for (x = 0; x < width; x++) {
                 dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
-                x++;
-                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
             }
             dst += stride;
             src += stride;
@@ -584,8 +578,6 @@ static void FUNC(sao_band_filter_3)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
         band_table[(k + sao_left_class) & 31] = k + 1;
         for (y = 0; y < height; y++) {
             for (x = 0; x < width; x++) {
-                dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
-                x++;
                 dst[x] = av_clip_pixel(src[x] + sao_offset_val[band_table[src[x] >> shift]]);
             }
             dst += stride;

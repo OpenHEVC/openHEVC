@@ -273,7 +273,6 @@ void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int pcmf = (sc->sps->pcm_enabled_flag && sc->sps->pcm.loop_filter_disable_flag) || sc->pps->transquant_bypass_enable_flag;
     if (sc->deblock[ctb].disable)
         return;
-
     x_end = x0+ctb_size;
     if (x_end > sc->sps->pic_width_in_luma_samples)
         x_end = sc->sps->pic_width_in_luma_samples;
@@ -578,20 +577,20 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
 void hls_filter(HEVCContext *s, int x, int y)
 {
     HEVCSharedContext *sc = s->HEVCsc;
-    int c_idx_min = s->HEVCsc->sh.slice_sample_adaptive_offset_flag[0] != 0 ? 0 : 1;
-    int c_idx_max = s->HEVCsc->sh.slice_sample_adaptive_offset_flag[1] != 0 ? 3 : 1;
+    int c_idx_min = sc->sh.slice_sample_adaptive_offset_flag[0] != 0 ? 0 : 1;
+    int c_idx_max = sc->sh.slice_sample_adaptive_offset_flag[1] != 0 ? 3 : 1;
     ff_hevc_deblocking_filter_CTB(s, x, y);
-    if(s->HEVCsc->sps->sample_adaptive_offset_enabled_flag)
-        ff_hevc_sao_filter_CTB(s->HEVCsc, x, y, c_idx_min, c_idx_max);
+    if (s->HEVCsc->sps->sample_adaptive_offset_enabled_flag)
+        ff_hevc_sao_filter_CTB(sc, x, y, c_idx_min, c_idx_max);
 }
 void hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
 {
-    if(y_ctb && x_ctb) {
-        hls_filter(s, x_ctb-ctb_size, y_ctb-ctb_size);
-        if(x_ctb >= (s->HEVCsc->sps->pic_width_in_luma_samples - ctb_size))
-            hls_filter(s, x_ctb, y_ctb-ctb_size);
-        if(y_ctb >= (s->HEVCsc->sps->pic_height_in_luma_samples - ctb_size))
-            hls_filter(s, x_ctb-ctb_size, y_ctb);
+    if (y_ctb && x_ctb) {
+        hls_filter(s, x_ctb - ctb_size, y_ctb - ctb_size);
+        if (x_ctb >= (s->HEVCsc->sps->pic_width_in_luma_samples - ctb_size))
+            hls_filter(s, x_ctb, y_ctb - ctb_size);
+        if (y_ctb >= (s->HEVCsc->sps->pic_height_in_luma_samples - ctb_size))
+            hls_filter(s, x_ctb - ctb_size, y_ctb);
     }
 }
 
