@@ -978,13 +978,14 @@ static void hls_transform_unit(HEVCContext *s, int x0, int  y0, int xBase, int y
 
 static void set_deblocking_bypass(HEVCContext *s, int x0, int y0, int log2_cb_size)
 {
+    HEVCSharedContext *sc = s->HEVCsc;
     int i, j;
     int cb_size = 1 << log2_cb_size;
     int log2_min_pu_size = s->HEVCsc->sps->log2_min_pu_size;
 
-    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
-    int x_end = FFMIN(x0 + cb_size, s->HEVCsc->sps->pic_width_in_luma_samples);
-    int y_end = FFMIN(y0 + cb_size, s->HEVCsc->sps->pic_height_in_luma_samples);
+    int pic_width_in_min_pu = sc->sps->pic_width_in_luma_samples >> sc->sps->log2_min_pu_size;
+    int x_end = FFMIN(x0 + cb_size, sc->sps->pic_width_in_luma_samples);
+    int y_end = FFMIN(y0 + cb_size, sc->sps->pic_height_in_luma_samples);
     for (j = (y0 >> log2_min_pu_size); j < (y_end >> log2_min_pu_size); j++)
         for (i = (x0 >> log2_min_pu_size); i < (x_end >> log2_min_pu_size); i++)
             s->HEVCsc->is_pcm[i + j * pic_width_in_min_pu] = 2;
@@ -1099,6 +1100,7 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     //TODO: non-4:2:0 support
     int i, j, ret;
     HEVCSharedContext *sc = s->HEVCsc;
+    HEVCLocalContext *lc = s->HEVClc;
     int log2_min_pu_size = sc->sps->log2_min_pu_size;
 
     int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
@@ -1117,15 +1119,8 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
     for (j = y0 >> log2_min_pu_size; j < ((y0 + cb_size) >> log2_min_pu_size); j++)
         for (i = x0 >> log2_min_pu_size; i < ((x0 + cb_size) >> log2_min_pu_size); i++)
-            sc->is_pcm[i + j * pic_width_in_min_pu] = 1;
-    if (sc->sh.disable_deblocking_filter_flag == 0) {
-        if ((y0 & 7) == 0)
-            for (i = 0; i < cb_size; i += 4)
-                sc->horizontal_bs[((x0 + i) + y0 * sc->bs_width) >> 2] = 2;
-        if ((x0 & 7) == 0)
-            for (i = 0; i < cb_size; i += 4)
-                sc->vertical_bs[(x0 >> 3) + ((y0 + i) * sc->bs_width) >> 2] = 2;
-    }
+            sc->is_pcm[i + j * pic_width_in_min_pu] = ((sc->sps->pcm_enabled_flag && sc->sps->pcm.loop_filter_disable_flag)) + lc->cu.cu_transquant_bypass_flag;
+    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
