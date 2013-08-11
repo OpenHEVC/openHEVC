@@ -87,9 +87,9 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
 
-    int cand_up       = (!lc->ctb_up_flag || y0b);
+    int cand_up       = (lc->ctb_up_flag || y0b);
     int cand_up_right = ((x0b + size_in_luma) == (1 << sc->sps->log2_ctb_size)) ? lc->ctb_up_right_flag && !y0b: cand_up;
-    int cand_left     = (!lc->ctb_left_flag || x0b);
+    int cand_left     = (lc->ctb_left_flag || x0b);
 
     int bottom_left_available = cand_left && (y_tb + size_in_tbs) < (lc->end_of_tiles_y>>sc->sps->log2_min_transform_block_size) &&
                                 cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs);

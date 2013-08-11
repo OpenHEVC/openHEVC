@@ -262,8 +262,6 @@ static int hls_slice_header(HEVCContext *s)
         return AVERROR_INVALIDDATA;
     }
     sc->pps = sc->pps_list[sh->pps_id];
-
-    // initial values
     if (sc->sps != sc->sps_list[sc->pps->sps_id]) {
 
         sc->sps = sc->sps_list[sc->pps->sps_id];
@@ -581,11 +579,11 @@ static int hls_sao_param(HEVCContext *s, int rx, int ry)
     SAOParams *sao = &CTB(sc->sao, rx, ry);
 
     if (rx > 0) {
-        if (!lc->ctb_left_flag)
+        if (lc->ctb_left_flag)
             sao_merge_left_flag = ff_hevc_sao_merge_flag_decode(s);
     }
     if (ry > 0 && !sao_merge_left_flag) {
-        if (!lc->ctb_up_flag)
+        if (lc->ctb_up_flag)
             sao_merge_up_flag = ff_hevc_sao_merge_flag_decode(s);
     }
     for (c_idx = 0; c_idx < 3; c_idx++) {
@@ -1514,8 +1512,8 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
 
-    int cand_up   = (!lc->ctb_up_flag || y0b) ? sc->tab_ipm[(y_pu-1)*pic_width_in_min_pu+x_pu] : INTRA_DC ;
-    int cand_left = (!lc->ctb_left_flag || x0b) ? sc->tab_ipm[y_pu*pic_width_in_min_pu+x_pu-1] : INTRA_DC ;
+    int cand_up   = (lc->ctb_up_flag || y0b) ? sc->tab_ipm[(y_pu-1)*pic_width_in_min_pu+x_pu] : INTRA_DC ;
+    int cand_left = (lc->ctb_left_flag || x0b) ? sc->tab_ipm[y_pu*pic_width_in_min_pu+x_pu-1] : INTRA_DC ;
 
     int y_ctb = (y0 >> (sc->sps->log2_ctb_size)) << (sc->sps->log2_ctb_size);
     MvField *tab_mvf = sc->ref->tab_mvf;
@@ -1896,7 +1894,7 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb, int ctb_a
         if (x_ctb == 0 && (y_ctb&(ctb_size-1)) == 0)
             lc->isFirstQPgroup = 1;
         lc->end_of_tiles_x = sc->sps->pic_width_in_luma_samples;
-    } else if (sc->pps->tiles_enabled_flag ) {
+    } else if (sc->pps->tiles_enabled_flag) {
         if (ctb_addr_ts != 0 && sc->pps->tile_id[ctb_addr_ts] != sc->pps->tile_id[ctb_addr_ts-1]) {
             int idxX = sc->pps->col_idxX[x_ctb >> sc->sps->log2_ctb_size];
             lc->start_of_tiles_x = x_ctb;
@@ -1909,16 +1907,25 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb, int ctb_a
     lc->end_of_tiles_y = y_ctb + ctb_size;
     if (y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
         lc->end_of_tiles_y = sc->sps->pic_height_in_luma_samples;
-    tile_left_boundary = ((x_ctb > 0) &&
-                          (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
-    slice_left_boundary = ((x_ctb > 0) &&
-                           (sc->tab_slice_address[ctb_addr_rs] == sc->tab_slice_address[ctb_addr_rs - 1]));
-    lc->ctb_left_flag = (!slice_left_boundary) + (!tile_left_boundary << 1);
-    tile_up_boundary = ((y_ctb > 0) &&
-                        (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs - sc->sps->pic_width_in_ctbs]]));
-    slice_up_boundary = ((y_ctb > 0) &&
-                        (sc->tab_slice_address[ctb_addr_rs] == sc->tab_slice_address[ctb_addr_rs - sc->sps->pic_width_in_ctbs]));
-    lc->ctb_up_flag   = (!slice_up_boundary + (!tile_up_boundary << 1));
+    if (sc->pps->tiles_enabled_flag) {
+        tile_left_boundary = ((x_ctb > 0) &&
+                              (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
+        slice_left_boundary = ((x_ctb > 0) &&
+                               (sc->tab_slice_address[ctb_addr_rs] == sc->tab_slice_address[ctb_addr_rs - 1]));
+        tile_up_boundary = ((y_ctb > 0) &&
+                            (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs - sc->sps->pic_width_in_ctbs]]));
+        slice_up_boundary = ((y_ctb > 0) &&
+                             (sc->tab_slice_address[ctb_addr_rs] == sc->tab_slice_address[ctb_addr_rs - sc->sps->pic_width_in_ctbs]));
+    } else {
+        tile_left_boundary =
+        tile_up_boundary = 1;
+        slice_left_boundary = ctb_addr_in_slice > 0;
+        slice_up_boundary = ctb_addr_in_slice >= sc->sps->pic_width_in_ctbs;
+    }
+    lc->slice_or_tiles_left_boundary = (!slice_left_boundary) + (!tile_left_boundary << 1);
+    lc->slice_or_tiles_up_boundary   = (!slice_up_boundary + (!tile_up_boundary << 1));
+    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) && tile_left_boundary);
+    lc->ctb_up_flag   = ((y_ctb > 0) && (ctb_addr_in_slice >= sc->sps->pic_width_in_ctbs) && tile_up_boundary);
     lc->ctb_up_right_flag = ((y_ctb > 0)  && (ctb_addr_in_slice+1 >= sc->sps->pic_width_in_ctbs) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - sc->sps->pic_width_in_ctbs]]));
     lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= sc->sps->pic_width_in_ctbs) && (sc->pps->tile_id[ctb_addr_ts] == sc->pps->tile_id[sc->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - sc->sps->pic_width_in_ctbs]]));
 }

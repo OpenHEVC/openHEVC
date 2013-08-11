@@ -537,9 +537,9 @@ int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb)
     int inc = 0;
     int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
-    if (!s->HEVClc->ctb_left_flag || x0b)
+    if (s->HEVClc->ctb_left_flag || x0b)
         inc = SAMPLE_CTB(sc->skip_flag, x_cb-1, y_cb);
-    if (!s->HEVClc->ctb_up_flag || y0b)
+    if (s->HEVClc->ctb_up_flag || y0b)
         inc += SAMPLE_CTB(sc->skip_flag, x_cb, y_cb-1);
     print_cabac("skip_flag", inc);
     return GET_CABAC(elem_offset[SKIP_FLAG] + inc);
@@ -588,9 +588,9 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, 
     int x_cb = x0 >> sc->sps->log2_min_coding_block_size;
     int y_cb = y0 >> sc->sps->log2_min_coding_block_size;
 
-    if (!s->HEVClc->ctb_left_flag || x0b)
+    if (s->HEVClc->ctb_left_flag || x0b)
         depth_left = sc->tab_ct_depth[(y_cb)*sc->sps->pic_width_in_min_cbs + x_cb-1];
-    if (!s->HEVClc->ctb_up_flag || y0b)
+    if (s->HEVClc->ctb_up_flag || y0b)
         depth_top = sc->tab_ct_depth[(y_cb-1)*sc->sps->pic_width_in_min_cbs + x_cb];
 
     inc += (depth_left > ct_depth);

@@ -64,6 +64,9 @@ static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
     int add    = 1 << (shift - 1);
     for (y = 0; y < 4*4; y+=4) {
         SCALE(coeffs[y+0], (coeffs[y+0] * scale));
+        SCALE(coeffs[y+1], (coeffs[y+1] * scale));
+        SCALE(coeffs[y+2], (coeffs[y+2] * scale));
+        SCALE(coeffs[y+3], (coeffs[y+3] * scale));
     }
 
 }
@@ -98,7 +101,8 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
     int add    = 1 << (shift - 1);
     for (y = 0; y < 16*16; y+=16) {
         for (x = 0; x < 16; x++) {
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale));        }
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale));
+        }
     }
 }
 
