@@ -64,9 +64,6 @@ static void FUNC(dequant4x4)(int16_t *coeffs, int qp)
     int add    = 1 << (shift - 1);
     for (y = 0; y < 4*4; y+=4) {
         SCALE(coeffs[y+0], (coeffs[y+0] * scale));
-        SCALE(coeffs[y+1], (coeffs[y+1] * scale));
-        SCALE(coeffs[y+2], (coeffs[y+2] * scale));
-        SCALE(coeffs[y+3], (coeffs[y+3] * scale));
     }
 
 }
@@ -83,9 +80,6 @@ static void FUNC(dequant8x8)(int16_t *coeffs, int qp)
     int add    = 1 << (shift - 1);
     for (y = 0; y < 8*8; y+=8) {
         for (x = 0; x < 8; x++) {
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
             SCALE(coeffs[y+x], (coeffs[y+x] * scale));
         }
     }
@@ -104,11 +98,7 @@ static void FUNC(dequant16x16)(int16_t *coeffs, int qp)
     int add    = 1 << (shift - 1);
     for (y = 0; y < 16*16; y+=16) {
         for (x = 0; x < 16; x++) {
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale));
-        }
+            SCALE(coeffs[y+x], (coeffs[y+x] * scale));        }
     }
 }
 
@@ -125,9 +115,6 @@ static void FUNC(dequant32x32)(int16_t *coeffs, int qp)
     int add    = 1 << (shift - 1);
     for (y = 0; y < 32*32; y+=32) {
         for (x = 0; x < 32; x++) {
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
-            SCALE(coeffs[y+x], (coeffs[y+x] * scale)); x++;
             SCALE(coeffs[y+x], (coeffs[y+x] * scale));
         }
     }
@@ -1040,7 +1027,8 @@ PUT_HEVC_QPEL_HV(3, 3)
 
 static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                       int width, int height, int mx, int my,int16_t* mcbuffer)
+                                       int width, int height, int mx, int my,
+                                       int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel*)_src;
@@ -1060,7 +1048,8 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my,int16_t* mcbuffer)
+                                  int width, int height, int mx, int my,
+                                  int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel*)_src;
@@ -1081,7 +1070,8 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my,int16_t* mcbuffer)
+                                  int width, int height, int mx, int my,
+                                  int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel*)_src;
@@ -1099,6 +1089,7 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 }
+
 static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
                                    int width, int height, int mx, int my,int16_t* mcbuffer)
