@@ -106,36 +106,41 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
                           (x0 + size_in_luma)) >> hshift;
 
     if (sc->pps->constrained_intra_pred_flag == 1) {
-        int x_left_pu   = (x0-1) >> sc->sps->log2_min_pu_size;
-        int y_left_pu   = (y0  ) >> sc->sps->log2_min_pu_size;
-        int x_top_pu    = (x0  ) >> sc->sps->log2_min_pu_size;
-        int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
-        int x_right_pu  = (x0+size_in_luma) >> sc->sps->log2_min_pu_size;
-        int y_bottom_pu = (y0+size_in_luma) >> sc->sps->log2_min_pu_size;
         int size_in_luma_pu = size_in_luma >> sc->sps->log2_min_pu_size;
         if (bottom_left_available == 1) {
+            int x_left_pu   = (x0-1) >> sc->sps->log2_min_pu_size;
+            int y_bottom_pu = (y0+size_in_luma) >> sc->sps->log2_min_pu_size;
             bottom_left_available = 0;
             for(i=0; i< size_in_luma_pu; i++)
                 bottom_left_available |= sc->ref->tab_mvf[x_left_pu + (y_bottom_pu+i) * pic_width_in_min_pu].is_intra;
         }
         if (left_available == 1) {
+            int x_left_pu   = (x0-1) >> sc->sps->log2_min_pu_size;
+            int y_left_pu   = (y0  ) >> sc->sps->log2_min_pu_size;
             left_available = 0;
             for(i=0; i< size_in_luma_pu; i++)
                 left_available |= sc->ref->tab_mvf[x_left_pu + (y_left_pu+i) * pic_width_in_min_pu].is_intra;
         }
-        if (top_left_available == 1)
+        if (top_left_available == 1) {
+            int x_left_pu   = (x0-1) >> sc->sps->log2_min_pu_size;
+            int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
             top_left_available = sc->ref->tab_mvf[x_left_pu + y_top_pu * pic_width_in_min_pu].is_intra;
+        }
         if (top_available == 1) {
+            int x_top_pu    = (x0  ) >> sc->sps->log2_min_pu_size;
+            int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
             top_available = 0;
             for(i=0; i< size_in_luma_pu; i++)
                 top_available |= sc->ref->tab_mvf[(x_top_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
         }
         if (top_right_available == 1) {
+            int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
+            int x_right_pu  = (x0+size_in_luma) >> sc->sps->log2_min_pu_size;
             top_right_available = 0;
             for(i=0; i< size_in_luma_pu; i++)
                 top_right_available |= sc->ref->tab_mvf[(x_right_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
         }
-        for (i = 0; i < 2*MAX_TB_SIZE+1; i++) {
+        for (i = 0; i < 2*MAX_TB_SIZE; i++) {
             left[i] = 128;
             top[i]  = 128;
         }
