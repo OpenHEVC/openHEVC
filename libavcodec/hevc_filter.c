@@ -478,7 +478,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
     int i, j;
     int bs;
     MvField *tab_mvf = sc->ref->tab_mvf;
-    if ((y0 & 7) == 0) {
+    if (y0 > 0 && (y0 & 7) == 0) {
         int yp_pu = (y0 - 1) >> log2_min_pu_size;
         int yq_pu = y0 >> log2_min_pu_size;
         int yp_tu = (y0 - 1) >> log2_min_tu_size;
@@ -523,7 +523,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             }
         }
     // bs for vertical TU boundaries
-    if ((x0 & 7) == 0) {
+    if (x0 > 0 && (x0 & 7) == 0) {
         int xp_pu = (x0 - 1) >> log2_min_pu_size;
         int xq_pu = x0 >> log2_min_pu_size;
         int xp_tu = (x0 - 1) >> log2_min_tu_size;
