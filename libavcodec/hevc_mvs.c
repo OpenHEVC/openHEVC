@@ -22,7 +22,21 @@
  */
 
 #include "hevc.h"
-#include "hevcdata.h"
+
+static const uint8_t l0_l1_cand_idx[12][2] = {
+    { 0, 1, },
+    { 1, 0, },
+    { 0, 2, },
+    { 2, 0, },
+    { 1, 2, },
+    { 2, 1, },
+    { 0, 3, },
+    { 3, 0, },
+    { 1, 3, },
+    { 3, 1, },
+    { 2, 3, },
+    { 3, 2, },
+};
 
 /*
  * 6.4.1 Derivation process for z-scan order block availability
@@ -904,7 +918,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         if (!availableFlagLXA0)
             availableFlagLXA0 = mv_mp_mode_mx(s, xA0_pu, yA0_pu, pred_flag_index_l1, &mxA, ref_idx_curr, ref_idx);
     }
-    
+
     if (is_available_a1 && !availableFlagLXA0) {
         availableFlagLXA0 = mv_mp_mode_mx(s, xA1_pu, yA1_pu, pred_flag_index_l0, &mxA, ref_idx_curr, ref_idx);
         if (!availableFlagLXA0)
@@ -940,7 +954,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         if (!availableFlagLXB0)
             availableFlagLXB0 = mv_mp_mode_mx(s, xB0_pu, yB0_pu, pred_flag_index_l1, &mxB, ref_idx_curr, ref_idx);
     }
-    
+
     if (!availableFlagLXB0) {
         // above spatial merge candidate
         xB1 = x0 + nPbW - 1;

@@ -137,6 +137,10 @@ typedef struct RefPicListTab {
 #define L0 0
 #define L1 1
 
+#define EPEL_EXTRA_BEFORE 1
+#define EPEL_EXTRA_AFTER  2
+#define EPEL_EXTRA        3
+
 typedef struct HEVCWindow {
     int left_offset;
     int right_offset;
@@ -471,7 +475,7 @@ typedef struct SliceHeader {
     int* entry_point_offset;
     int * offset;
     int * size;
-    int num_entry_point_offsets; 
+    int num_entry_point_offsets;
 
     uint8_t luma_log2_weight_denom;
     int16_t chroma_log2_weight_denom;
@@ -569,7 +573,7 @@ typedef struct CodingTree {
 
 typedef struct CodingUnit {
     uint8_t cu_transquant_bypass_flag;
-    
+
     enum PredMode pred_mode; ///< PredMode
     enum PartMode part_mode; ///< PartMode
     uint8_t rqt_root_cbf;
@@ -582,7 +586,7 @@ typedef struct CodingUnit {
 
     int x;
     int y;
-    
+
 } CodingUnit;
 
 enum IntraPredMode {
@@ -764,7 +768,7 @@ typedef struct HEVCLocalContext {
 
 typedef struct HEVCSharedContext {
     uint8_t *cabac_state; //
-    
+
     AVFrame *frame;
     AVFrame *sao_frame;
     AVFrame *tmp_frame;
@@ -787,7 +791,7 @@ typedef struct HEVCSharedContext {
     int max_ra;
     int bs_width;
     int bs_height;
-    
+
     uint8_t md5[3][16];
     uint8_t is_md5;
     int * ctb_entry_count;
@@ -795,7 +799,7 @@ typedef struct HEVCSharedContext {
     int is_decoded;
     int SliceAddrRs;
     int64_t pts;
-    
+
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
@@ -806,25 +810,23 @@ typedef struct HEVCSharedContext {
 
     int32_t *tab_slice_address;
 
-    
-    
     //  CU
     uint8_t *skip_flag;
     uint8_t *tab_ct_depth;
     // PU
     uint8_t *tab_ipm;
-    
-    
+
+
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;
-    
+
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset
      */
     uint16_t seq_decode;
     uint16_t seq_output;
-    
+
     int skipped_bytes;
     int *skipped_bytes_pos;
     int skipped_bytes_pos_size;
@@ -844,12 +846,12 @@ typedef struct HEVCContext {
     AVCodecContext      *avctx;
 
     struct HEVCContext  *sList[MAX_NB_THREADS];
-    
+
     HEVCSharedContext   *HEVCsc;
-    
+
     HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
     HEVCLocalContext    *HEVClc;
-    
+
     uint8_t             threads_number;
     int                 decode_checksum_sei;
     int                 disable_au;
@@ -943,11 +945,13 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int l
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size, int slice_or_tiles_up_boundary, int slice_or_tiles_left_boundary);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
-void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0);
-void ff_hevc_sao_filter_CTB(HEVCSharedContext *s, int x, int y, int c_idx_min, int c_idx_max);
-void ff_hevc_deblocking_filter(HEVCContext *s);
-void ff_hevc_sao_filter(HEVCContext *s);
-void hls_filter(HEVCContext *s, int x, int y);
-void hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
+void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
+void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
+
+void ff_hevc_pps_free(PPS **ppps);
+
+extern const uint8_t ff_hevc_qpel_extra_before[4];
+extern const uint8_t ff_hevc_qpel_extra_after[4];
+extern const uint8_t ff_hevc_qpel_extra[4];
 
 #endif // AVCODEC_HEVC_H
