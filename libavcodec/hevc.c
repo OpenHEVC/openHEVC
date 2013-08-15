@@ -438,6 +438,7 @@ static int hls_slice_header(HEVCContext *s)
     }
     sc->pps = sc->pps_list[sh->pps_id];
     if (sc->sps != sc->sps_list[sc->pps->sps_id]) {
+        const AVPixFmtDescriptor *desc;
 
         sc->sps = sc->sps_list[sc->pps->sps_id];
         sc->vps = sc->vps_list[sc->sps->vps_id];
@@ -477,11 +478,16 @@ static int hls_slice_header(HEVCContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "non-4:2:0 support is currently unspecified.\n");
             return AVERROR_PATCHWELCOME;
         }
+
+        desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
+        if (!desc)
+            return AVERROR(EINVAL);
+
         sc->sps->hshift[0] = sc->sps->vshift[0] = 0;
         sc->sps->hshift[2] =
-        sc->sps->hshift[1] = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
+        sc->sps->hshift[1] = desc->log2_chroma_w;
         sc->sps->vshift[2] =
-        sc->sps->vshift[1] = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
+        sc->sps->vshift[1] = desc->log2_chroma_h;
 
         sc->sps->pixel_shift = sc->sps->bit_depth > 8;
 
