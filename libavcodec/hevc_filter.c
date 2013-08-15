@@ -467,7 +467,7 @@ static int boundary_strength(HEVCSharedContext *sc, MvField *curr, uint8_t curr_
     return 1;
 }
 
-void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size)
+void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size, int slice_or_tiles_up_boundary, int slice_or_tiles_left_boundary)
 {
     HEVCSharedContext *sc = s->HEVCsc;
     int log2_min_pu_size = sc->sps->log2_min_pu_size;
@@ -492,9 +492,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             uint8_t curr_cbf_luma = sc->cbf_luma[yq_tu * pic_width_in_min_tu + x_tu];
             RefPicList* top_refPicList = ff_hevc_get_ref_list(sc, ff_hevc_find_ref_idx(s, sc->poc), x0 + i, y0 - 1);
             bs = boundary_strength(sc, curr, curr_cbf_luma, top, top_cbf_luma, top_refPicList, 1);
-            if (!sc->sh.slice_loop_filter_across_slices_enabled_flag && (s->HEVClc->slice_or_tiles_up_boundary & 1) && (y0 % (1 << sc->sps->log2_ctb_size)) == 0)
+            if (!sc->sh.slice_loop_filter_across_slices_enabled_flag && (slice_or_tiles_up_boundary & 1) && (y0 % (1 << sc->sps->log2_ctb_size)) == 0)
                 bs = 0;
-            else if (!sc->pps->loop_filter_across_tiles_enabled_flag && (s->HEVClc->slice_or_tiles_up_boundary & 2)  && (y0 % (1 << sc->sps->log2_ctb_size)) == 0)
+            else if (!sc->pps->loop_filter_across_tiles_enabled_flag && (slice_or_tiles_up_boundary & 2)  && (y0 % (1 << sc->sps->log2_ctb_size)) == 0)
                 bs = 0;
             if (y0 == 0 || sc->sh.disable_deblocking_filter_flag == 1)
                 bs = 0;
@@ -539,9 +539,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             RefPicList* left_refPicList = ff_hevc_get_ref_list(sc, ff_hevc_find_ref_idx(s, sc->poc), x0 - 1, y0 + i);
             bs = boundary_strength(sc, curr, curr_cbf_luma, left, left_cbf_luma, left_refPicList, 1);
 
-            if (!sc->sh.slice_loop_filter_across_slices_enabled_flag && (s->HEVClc->slice_or_tiles_left_boundary & 1) && (x0 % (1 << sc->sps->log2_ctb_size)) == 0)
+            if (!sc->sh.slice_loop_filter_across_slices_enabled_flag && (slice_or_tiles_left_boundary & 1) && (x0 % (1 << sc->sps->log2_ctb_size)) == 0)
                 bs = 0;
-            else if (!sc->pps->loop_filter_across_tiles_enabled_flag && (s->HEVClc->slice_or_tiles_left_boundary & 2) && (x0 % (1 << sc->sps->log2_ctb_size)) == 0)
+            else if (!sc->pps->loop_filter_across_tiles_enabled_flag && (slice_or_tiles_left_boundary & 2) && (x0 % (1 << sc->sps->log2_ctb_size)) == 0)
                 bs = 0;
             if (x0 == 0 || sc->sh.disable_deblocking_filter_flag == 1)
                 bs = 0;

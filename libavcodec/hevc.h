@@ -725,6 +725,8 @@ typedef struct Filter_data{
 	int x;
 	int y;
 	int size;
+    int slice_or_tiles_left_boundary;
+    int slice_or_tiles_up_boundary;
 }Filter_data;
 
 typedef struct HEVCLocalContext {
@@ -938,7 +940,7 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush, int* poc_dis
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX);
 void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_cb_size);
-void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size);
+void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size, int slice_or_tiles_up_boundary, int slice_or_tiles_left_boundary);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_deblocking_filter_CTB(HEVCContext *s, int x0, int y0);

@@ -1080,11 +1080,13 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                 }
         if (!sc->sh.disable_deblocking_filter_flag) {
             if (!sc->enable_parallel_tiles)
-                ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
+                ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size, lc->slice_or_tiles_up_boundary, lc->slice_or_tiles_left_boundary);
             else {
                 lc->save_boundary_strengths[lc->nb_saved].x = x0;
                 lc->save_boundary_strengths[lc->nb_saved].y = y0;
                 lc->save_boundary_strengths[lc->nb_saved].size = log2_trafo_size;
+                lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_up_boundary = lc->slice_or_tiles_up_boundary;
+                lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_left_boundary = lc->slice_or_tiles_left_boundary;
                 lc->nb_saved++;
             }
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag)
@@ -1118,7 +1120,17 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     for (j = y0 >> log2_min_pu_size; j < ((y0 + cb_size) >> log2_min_pu_size); j++)
         for (i = x0 >> log2_min_pu_size; i < ((x0 + cb_size) >> log2_min_pu_size); i++)
             sc->is_pcm[i + j * pic_width_in_min_pu] = ((sc->sps->pcm_enabled_flag && sc->sps->pcm.loop_filter_disable_flag)) + lc->cu.cu_transquant_bypass_flag;
-    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+    if (!sc->enable_parallel_tiles)
+        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size, lc->slice_or_tiles_up_boundary, lc->slice_or_tiles_left_boundary);
+    else {
+        lc->save_boundary_strengths[lc->nb_saved].x = x0;
+        lc->save_boundary_strengths[lc->nb_saved].y = y0;
+        lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
+        lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_up_boundary = lc->slice_or_tiles_up_boundary;
+        lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_left_boundary = lc->slice_or_tiles_left_boundary;
+        lc->nb_saved++;
+    }
+
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
@@ -1697,14 +1709,16 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
         if (!sc->sh.disable_deblocking_filter_flag) {
-        	if(!s->HEVCsc->enable_parallel_tiles)
-        		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
-        	else {
-        		lc->save_boundary_strengths[lc->nb_saved].x = x0;
-        		lc->save_boundary_strengths[lc->nb_saved].y = y0;
-        		lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
-        		lc->nb_saved ++;
-        	}
+            if (!sc->enable_parallel_tiles)
+                ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size, lc->slice_or_tiles_up_boundary, lc->slice_or_tiles_left_boundary);
+            else {
+                lc->save_boundary_strengths[lc->nb_saved].x = x0;
+                lc->save_boundary_strengths[lc->nb_saved].y = y0;
+                lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
+                lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_up_boundary = lc->slice_or_tiles_up_boundary;
+                lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_left_boundary = lc->slice_or_tiles_left_boundary;
+                lc->nb_saved++;
+            }
             if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag)
                 set_deblocking_bypass(s, x0, y0, log2_cb_size);
 
@@ -1785,14 +1799,16 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                                    log2_cb_size, 0, 0);
             } else {
                 if (!sc->sh.disable_deblocking_filter_flag) {
-                	if(!s->HEVCsc->enable_parallel_tiles)
-                		ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
-                	else {
-                		lc->save_boundary_strengths[lc->nb_saved].x = x0;
-                		lc->save_boundary_strengths[lc->nb_saved].y = y0;
-                		lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
-                		lc->nb_saved ++;
-                	}
+                    if (!sc->enable_parallel_tiles)
+                        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size, lc->slice_or_tiles_up_boundary, lc->slice_or_tiles_left_boundary);
+                    else {
+                        lc->save_boundary_strengths[lc->nb_saved].x = x0;
+                        lc->save_boundary_strengths[lc->nb_saved].y = y0;
+                        lc->save_boundary_strengths[lc->nb_saved].size = log2_cb_size;
+                        lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_up_boundary = lc->slice_or_tiles_up_boundary;
+                        lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_left_boundary = lc->slice_or_tiles_left_boundary;
+                        lc->nb_saved++;
+                    }
                     if (sc->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag)
                         set_deblocking_bypass(s, x0, y0, log2_cb_size);
                 }
@@ -2221,7 +2237,9 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
                 ff_hevc_deblocking_boundary_strengths(s,
                         s->HEVClcList[i]->save_boundary_strengths[j].x,
                         s->HEVClcList[i]->save_boundary_strengths[j].y,
-                        s->HEVClcList[i]->save_boundary_strengths[j].size);
+                        s->HEVClcList[i]->save_boundary_strengths[j].size,
+                        s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_up_boundary,
+                        s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_left_boundary);
 
 #ifdef FILTER_EN
         for (y_ctb = 0; y_ctb < sc->sps->pic_height_in_luma_samples; y_ctb += ctb_size)
