@@ -37,6 +37,22 @@
 #define SCALE(dst, x) (dst) = av_clip_int16(((x) + add) >> shift)
 #define ADD_AND_SCALE(dst, x) (dst) = av_clip_pixel((dst) + av_clip_int16(((x) + add) >> shift))
 
+
+
+static void FUNC(copy_CTB)(uint8_t *_dst, uint8_t *_src, int width, int height, int _stride)
+{
+    pixel *dst = (pixel*)_dst;
+    pixel *src = (pixel*)_src;
+    ptrdiff_t stride = _stride / sizeof(pixel);
+    int i;
+
+    for(i=0; i< height; i++){
+        memcpy(dst, src, width * sizeof(pixel));
+        dst += stride;
+        src += stride;
+    }
+}
+
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
                           GetBitContext *gb, int pcm_bit_depth)
 {
@@ -452,9 +468,9 @@ static void FUNC(transform_32x32_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t 
 
 static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int width, int height, int c_idx, int class)
 {
-    uint8_t *dst = _dst;
-    uint8_t *src = _src;
-    ptrdiff_t stride = _stride;
+    pixel *dst = (pixel*)_dst;
+    pixel *src = (pixel*)_src;
+    ptrdiff_t stride = _stride / sizeof(pixel);
     int offset_table[32] = { 0 };
     int k, y, x;
     int chroma = c_idx!=0;
@@ -497,8 +513,6 @@ static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _strid
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
-            x++;
-            dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
         }
         dst += stride;
         src += stride;
@@ -524,9 +538,9 @@ static void FUNC(sao_band_filter_3)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
 static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx)
 {
     int x, y;
-    uint8_t *dst = _dst;   // put here pixel
-    uint8_t *src = _src;
-    ptrdiff_t stride = _stride;
+    pixel *dst = (pixel*)_dst;
+    pixel *src = (pixel*)_src;
+    ptrdiff_t stride = _stride / sizeof(pixel);
     int chroma = c_idx!=0;
     //struct SAOParams *sao;
     int *sao_offset_val = sao->offset_val[c_idx];
@@ -616,9 +630,9 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
 static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx)
 {
     int x, y;
-    uint8_t *dst = _dst;   // put here pixel
-    uint8_t *src = _src;
-    ptrdiff_t stride = _stride;
+    pixel *dst = (pixel*)_dst;
+    pixel *src = (pixel*)_src;
+    ptrdiff_t stride = _stride / sizeof(pixel);
     int chroma = c_idx!=0;
     //struct SAOParams *sao;
     int *sao_offset_val = sao->offset_val[c_idx];
@@ -691,9 +705,9 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
 static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx)
 {
     int x, y;
-    uint8_t *dst = _dst;   // put here pixel
-    uint8_t *src = _src;
-    ptrdiff_t stride = _stride;
+    pixel *dst = (pixel*)_dst;
+    pixel *src = (pixel*)_src;
+    ptrdiff_t stride = _stride / sizeof(pixel);
     int chroma = c_idx!=0;
     //struct SAOParams *sao;
     int *sao_offset_val = sao->offset_val[c_idx];
@@ -762,9 +776,9 @@ static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _str
 static void FUNC(sao_edge_filter_3)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx)
 {
     int x, y;
-    uint8_t *dst = _dst;   // put here pixel
-    uint8_t *src = _src;
-    ptrdiff_t stride = _stride;
+    pixel *dst = (pixel*)_dst;
+    pixel *src = (pixel*)_src;
+    ptrdiff_t stride = _stride / sizeof(pixel);
     int chroma = c_idx!=0;
     //struct SAOParams *sao;
     int *sao_offset_val = sao->offset_val[c_idx];

@@ -1287,11 +1287,11 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     GetBitContext gb;
     int cb_size = 1 << log2_cb_size;
     int stride0 = sc->frame->linesize[0];
-    uint8_t *dst0 = &sc->frame->data[0][y0 * stride0 + x0];
+    uint8_t *dst0 = &sc->frame->data[0][y0 * stride0 + (x0 << sc->sps->pixel_shift)];
     int stride1 = sc->frame->linesize[1];
-    uint8_t *dst1 = &sc->frame->data[1][(y0 >> sc->sps->vshift[1]) * stride1 + (x0 >> sc->sps->hshift[1])];
+    uint8_t *dst1 = &sc->frame->data[1][(y0 >> sc->sps->vshift[1]) * stride1 + (x0 >> sc->sps->hshift[1] << sc->sps->pixel_shift)];
     int stride2 = sc->frame->linesize[2];
-    uint8_t *dst2 = &sc->frame->data[2][(y0 >> sc->sps->vshift[2]) * stride2 + (x0 >> sc->sps->hshift[2])];
+    uint8_t *dst2 = &sc->frame->data[2][(y0 >> sc->sps->vshift[2]) * stride2 + (x0 >> sc->sps->hshift[2] << sc->sps->pixel_shift)];
 
     int length = cb_size * cb_size * 3 / 2 * sc->sps->pcm.bit_depth;
     const uint8_t *pcm = skip_bytes(s->HEVClc->cc, length >> 3);

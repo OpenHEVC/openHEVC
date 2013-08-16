@@ -171,17 +171,6 @@ static int get_qPy(HEVCContext *s, int xC, int yC)
     return sc->qp_y_tab[x + y * pic_width];
 }
 
-static void copy_CTB(uint8_t *dst, uint8_t *src, int width, int height, int stride)
-{
-    int i;
-
-    for(i=0; i< height; i++){
-        memcpy(dst, src, width);
-        dst += stride;
-        src += stride;
-    }
-}
-
 #define CTB(tab, x, y) ((tab)[(y) * sc->sps->pic_width_in_ctbs + (x)])
 
 static void sao_filter_CTB(HEVCSharedContext *sc, int x, int y, int c_idx_min, int c_idx_max)
@@ -235,11 +224,11 @@ static void sao_filter_CTB(HEVCSharedContext *sc, int x, int y, int c_idx_min, i
         int height = FFMIN(ctb_size,
                            (sc->sps->pic_height_in_luma_samples >> sc->sps->vshift[c_idx]) - y0);
 
-        uint8_t *src = &sc->frame->data[c_idx][y0 * stride + x0];
-        uint8_t *dst = &sc->sao_frame->data[c_idx][y0 * stride + x0];
+        uint8_t *src = &sc->frame->data[c_idx][y0 * stride + (x0 << sc->sps->pixel_shift)];
+        uint8_t *dst = &sc->sao_frame->data[c_idx][y0 * stride + (x0 << sc->sps->pixel_shift)];
         int offset = (y_shift>>chroma) * stride + (x_shift>>chroma);
 
-        copy_CTB(dst - offset, src - offset,
+        sc->hevcdsp.copy_CTB(dst - offset, src - offset,
                  edges[2] ? width  + (x_shift >> chroma) : width,
                  edges[3] ? height + (y_shift >> chroma) : height, stride);
 
@@ -316,7 +305,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 beta[1] = betatable[av_clip(qp1 + ((beta_offset >> 1) << 1), 0, MAX_QP)];
                 tc[0] = bs0 ? TC_CALC(qp0, bs0) : 0;
                 tc[1] = bs1 ? TC_CALC(qp1, bs1) : 0;
-                src = &sc->frame->data[LUMA][y * sc->frame->linesize[LUMA] + x];
+                src = &sc->frame->data[LUMA][y * sc->frame->linesize[LUMA] + (x << sc->sps->pixel_shift)];
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x - 1, y);
                     no_p[1] = get_pcm(s, x - 1, y + 4);
@@ -340,7 +329,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     const int qp1 = (get_qPy(s, x - 1, y + 8) + get_qPy(s, x, y + 8) + 1) >> 1;
                     c_tc[0] = (bs0 == 2) ? chroma_tc(sc, qp0, chroma, tc_offset) : 0;
                     c_tc[1] = (bs1 == 2) ? chroma_tc(sc, qp1, chroma, tc_offset) : 0;
-                    src = &sc->frame->data[chroma][(y / 2) * sc->frame->linesize[chroma] + (x / 2)];
+                    src = &sc->frame->data[chroma][(y / 2) * sc->frame->linesize[chroma] + (x / 2 << sc->sps->pixel_shift)];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x - 1, y);
                         no_p[1] = get_pcm(s, x - 1, y + 8);
@@ -368,7 +357,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 beta[1]  = betatable[av_clip(qp1 + ((beta_offset >> 1) << 1), 0, MAX_QP)];
                 tc[0] = bs0 ? TC_CALC(qp0, bs0) : 0;
                 tc[1] = bs1 ? TC_CALC(qp1, bs1) : 0;
-                src = &sc->frame->data[LUMA][y * sc->frame->linesize[LUMA] + x];
+                src = &sc->frame->data[LUMA][y * sc->frame->linesize[LUMA] + (x << sc->sps->pixel_shift)];
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x, y - 1);
                     no_p[1] = get_pcm(s, x + 4, y - 1);
@@ -404,7 +393,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     const int qp1 = (bs1 == 2) ? ((get_qPy(s, x + 8, y - 1) + get_qPy(s, x + 8, y) + 1) >> 1) : 0;
                     c_tc[0] = (bs0 == 2) ? chroma_tc(sc, qp0, chroma, tc_offset) : 0;
                     c_tc[1] = (bs1 == 2) ? chroma_tc(sc, qp1, chroma, tc_offset) : 0;
-                    src = &sc->frame->data[chroma][(y / 2) * sc->frame->linesize[chroma] + (x / 2)];
+                    src = &sc->frame->data[chroma][(y / 2) * sc->frame->linesize[chroma] + (x / 2 << sc->sps->pixel_shift)];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x, y - 1);
                         no_p[1] = get_pcm(s, x + 8, y - 1);
