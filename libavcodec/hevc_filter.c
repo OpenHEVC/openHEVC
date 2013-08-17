@@ -226,7 +226,7 @@ static void sao_filter_CTB(HEVCSharedContext *sc, int x, int y, int c_idx_min, i
 
         uint8_t *src = &sc->frame->data[c_idx][y0 * stride + (x0 << sc->sps->pixel_shift)];
         uint8_t *dst = &sc->sao_frame->data[c_idx][y0 * stride + (x0 << sc->sps->pixel_shift)];
-        int offset = (y_shift>>chroma) * stride + (x_shift>>chroma);
+        int offset = (y_shift>>chroma) * stride + (x_shift>>chroma << sc->sps->pixel_shift);
 
         sc->hevcdsp.copy_CTB(dst - offset, src - offset,
                  edges[2] ? width  + (x_shift >> chroma) : width,
