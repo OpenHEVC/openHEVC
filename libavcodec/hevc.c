@@ -220,8 +220,9 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 /**
  * Section 5.7
  */
-//#define POC_DISPLAY_MD5
+#define POC_DISPLAY_MD5
 #define WPP1
+#define FILTER_EN
 static void pic_arrays_free(HEVCContext *s)
 {
     int i;
@@ -2150,10 +2151,14 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
             return more_data;
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
+#ifdef FILTER_EN
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
+#endif
     }
+#ifdef FILTER_EN
     if (x_ctb + ctb_size >= sc->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= sc->sps->pic_height_in_luma_samples)
         ff_hevc_hls_filter(s, x_ctb, y_ctb);
+#endif
     return ctb_addr_ts;
 }
 
@@ -2222,7 +2227,9 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ctb_addr_rs       = sc->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
         ff_hevc_save_states(s, ctb_addr_ts);
         avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],1);
+#ifdef FILTER_EN
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
+#endif
         if (!more_data && (x_ctb+ctb_size) < sc->sps->pic_width_in_luma_samples && ctb_row != sc->sh.num_entry_point_offsets) {
         	avpriv_atomic_int_set(&sc->ERROR,  1);
             avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
@@ -2230,7 +2237,9 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         }
 
         if ((x_ctb+ctb_size) >= sc->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) >= sc->sps->pic_height_in_luma_samples ) {
+#ifdef FILTER_EN
             ff_hevc_hls_filter(s, x_ctb, y_ctb);
+#endif
             avpriv_atomic_int_add_and_fetch(&sc->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
             return ctb_addr_ts;
         }
@@ -2410,9 +2419,11 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
                         s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_up_boundary,
                         s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_left_boundary);
 
+#ifdef FILTER_EN
         for (y_ctb = 0; y_ctb < sc->sps->pic_height_in_luma_samples; y_ctb += ctb_size)
             for (x_ctb = 0; x_ctb < sc->sps->pic_width_in_luma_samples; x_ctb += ctb_size)
                 ff_hevc_hls_filter(s, x_ctb, y_ctb);
+#endif
     }
 
     for (i = 0; i <= sc->sh.num_entry_point_offsets; i++)
@@ -2489,19 +2500,20 @@ static void print_md5(int poc, uint8_t md5[3][16])
 }
 #endif
 
-static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height)
+static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift)
 {
     uint8_t *buf;
     int y, x;
-    buf = av_malloc(width * height);
+    int stride_buf = width << pixel_shift;
+    buf = av_malloc(stride_buf * height);
 
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            buf[y * width + x] = src[x];
+        for (x = 0; x < stride_buf; x++)
+            buf[y * stride_buf + x] = src[x];
 
         src += stride;
     }
-    av_md5_sum(md5, buf, width * height);
+    av_md5_sum(md5, buf, stride_buf * height);
     av_free(buf);
 }
 
@@ -2609,6 +2621,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     (52 + sc->sps->qp_bd_offset)) - sc->sps->qp_bd_offset;
 
         if (sc->sh.first_slice_in_pic_flag) {
+#ifdef FILTER_EN
             if (sc->sps->sample_adaptive_offset_enabled_flag) {
                 av_frame_unref(sc->tmp_frame);
                 if ((ret = ff_reget_buffer(s->avctx, sc->tmp_frame)) < 0)
@@ -2617,10 +2630,13 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 if ((ret = ff_hevc_set_new_ref(s, &sc->sao_frame, sc->poc))< 0)
                     return ret;
             } else {
+#endif
                 if ((ret = ff_hevc_set_new_ref(s, &sc->frame, sc->poc))< 0)
                     return ret;
             }
+#ifdef FILTER_EN
         }
+#endif
         if (!lc->edge_emu_buffer)
             lc->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * sc->frame->linesize[0]);
         if (!lc->edge_emu_buffer)
@@ -2824,9 +2840,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         int cIdx;
         uint8_t md5[3][16];
 
-        calc_md5(md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  );
-        calc_md5(md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2);
-        calc_md5(md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2);
+        calc_md5(md5[0], frame->data[0], frame->linesize[0], frame->width  , frame->height  , sc->sps->pixel_shift);
+        calc_md5(md5[1], frame->data[1], frame->linesize[1], frame->width/2, frame->height/2, sc->sps->pixel_shift);
+        calc_md5(md5[2], frame->data[2], frame->linesize[2], frame->width/2, frame->height/2, sc->sps->pixel_shift);
         if (s->HEVCsc->is_md5) {
             for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
                 if (!compare_md5(md5[cIdx], s->HEVCsc->md5[cIdx])) {
