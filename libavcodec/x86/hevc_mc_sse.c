@@ -1310,11 +1310,11 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
 	int8_t filter_1 = filter_h[1];
 	int8_t filter_2 = filter_h[2];
 	int8_t filter_3 = filter_h[3];
+	int16_t *tmp = mcbuffer;
 	r0 = _mm_set_epi8(filter_3, filter_2, filter_1, filter_0, filter_3,
 			filter_2, filter_1, filter_0, filter_3, filter_2, filter_1,
 			filter_0, filter_3, filter_2, filter_1, filter_0);
 	bshuffle1 = _mm_set_epi8(6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0);
-	int16_t *tmp = mcbuffer;
 
 	src -= epel_extra_before * srcstride;
 

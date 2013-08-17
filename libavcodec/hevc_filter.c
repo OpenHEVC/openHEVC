@@ -226,7 +226,7 @@ static void sao_filter_CTB(HEVCSharedContext *sc, int x, int y, int c_idx_min, i
 
         uint8_t *src = &sc->frame->data[c_idx][y0 * stride + (x0 << sc->sps->pixel_shift)];
         uint8_t *dst = &sc->sao_frame->data[c_idx][y0 * stride + (x0 << sc->sps->pixel_shift)];
-        int offset = (y_shift>>chroma) * stride + (x_shift>>chroma << sc->sps->pixel_shift);
+        int offset = (y_shift>>chroma) * stride + ((x_shift>>chroma) << sc->sps->pixel_shift);
 
         sc->hevcdsp.copy_CTB(dst - offset, src - offset,
                  edges[2] ? width  + (x_shift >> chroma) : width,
@@ -250,8 +250,8 @@ static int get_pcm(HEVCContext *s, int x, int y)
 {
     HEVCSharedContext *sc    = s->HEVCsc;
     int log2_min_pu_size     = sc->sps->log2_min_pu_size;
-    int pic_width_in_min_pu  = s->HEVCsc->sps->pic_width_in_luma_samples  >> s->HEVCsc->sps->log2_min_pu_size;
-    int pic_height_in_min_pu = s->HEVCsc->sps->pic_height_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+    int pic_width_in_min_pu  = sc->sps->pic_width_in_luma_samples  >> sc->sps->log2_min_pu_size;
+    int pic_height_in_min_pu = sc->sps->pic_height_in_luma_samples >> sc->sps->log2_min_pu_size;
     int x_pu = x >> log2_min_pu_size;
     int y_pu = y >> log2_min_pu_size;
 
