@@ -59,15 +59,13 @@ static int chroma_tc(HEVCSharedContext *s, int qp_y, int c_idx, int tc_offset)
     else
         offset = s->pps->cr_qp_offset;
 
-    qp_i = av_clip_c(qp_y + offset, - s->sps->qp_bd_offset, 57);
+    qp_i = av_clip_c(qp_y + offset, 0, 57);
     if (qp_i < 30)
         qp = qp_i;
     else if (qp_i > 43)
         qp = qp_i - 6;
     else
         qp = qp_c[qp_i - 30];
-
-    qp += s->sps->qp_bd_offset;
 
     idxt = av_clip_c(qp + DEFAULT_INTRA_TC_OFFSET + tc_offset, 0, 53);
     return tctable[idxt];
@@ -292,7 +290,6 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     y_end = y0+ctb_size;
     if (y_end > sc->sps->pic_height_in_luma_samples)
         y_end = sc->sps->pic_height_in_luma_samples;
-
     // vertical filtering luma
     for (y = y0; y < y_end; y += 8) {
         for (x = x0 ? x0 : 8; x < x_end; x += 8) {
