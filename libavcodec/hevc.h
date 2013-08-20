@@ -493,7 +493,7 @@ typedef struct SliceHeader {
     int16_t chroma_offset_l1[16][2];
 
     // Inferred parameters
-    uint8_t slice_qp; ///< SliceQP
+    int8_t slice_qp; ///< SliceQP
     int slice_ctb_addr_rs; ///< SliceCtbAddrRS
     int slice_cb_addr_zs; ///< SliceCbAddrZS
 } SliceHeader;
