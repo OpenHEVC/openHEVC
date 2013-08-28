@@ -2593,7 +2593,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             }
         }
 
-        if (sc->nal_unit_type == NAL_RASL_R && sc->poc <= sc->max_ra) {
+        if ((sc->nal_unit_type == NAL_RASL_R || sc->nal_unit_type == NAL_RASL_N) && sc->poc <= sc->max_ra) {
             sc->is_decoded = 0;
             break;
         } else {
