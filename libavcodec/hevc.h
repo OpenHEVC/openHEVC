@@ -45,8 +45,8 @@
  * Table 7-3: NAL unit type codes
  */
 enum NALUnitType {
-    NAL_TRAIL_R     =  0,
-    NAL_TRAIL_N     =  1,
+    NAL_TRAIL_N     =  0,
+    NAL_TRAIL_R     =  1,
     NAL_TSA_N       =  2,
     NAL_TSA_R       =  3,
     NAL_STSA_N      =  4,

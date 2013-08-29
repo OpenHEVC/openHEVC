@@ -425,9 +425,13 @@ static int hls_slice_header(HEVCContext *s)
 
     // Coded parameters
     sh->first_slice_in_pic_flag = get_bits1(gb);
-    if ((sc->nal_unit_type == NAL_IDR_W_RADL || sc->nal_unit_type == NAL_IDR_N_LP) &&
-        sh->first_slice_in_pic_flag) {
+    if ((sc->nal_unit_type == NAL_IDR_W_RADL || sc->nal_unit_type == NAL_IDR_N_LP ||
+         sc->nal_unit_type == NAL_BLA_W_LP ||
+         sc->nal_unit_type == NAL_BLA_N_LP ||
+         sc->nal_unit_type == NAL_BLA_N_LP) &&
+         sh->first_slice_in_pic_flag) {
         sc->seq_decode = (sc->seq_decode + 1) & 0xff;
+        sc->max_ra = INT_MAX;
     }
     if (sc->nal_unit_type >= 16 && sc->nal_unit_type <= 23)
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
@@ -576,7 +580,14 @@ static int hls_slice_header(HEVCContext *s)
             sc->sh.short_term_rps = NULL;
             sc->poc = 0;
         }
-        if (sc->temporal_id == 0)
+        if (sc->temporal_id == 0 &&
+            sc->nal_unit_type != NAL_TRAIL_N &&
+            sc->nal_unit_type != NAL_TSA_N &&
+            sc->nal_unit_type != NAL_STSA_N &&
+            sc->nal_unit_type != NAL_TRAIL_N &&
+            sc->nal_unit_type != NAL_RADL_N &&
+            sc->nal_unit_type != NAL_RADL_R &&
+            sc->nal_unit_type != NAL_RASL_R)
             sc->pocTid0 = sc->poc;
 //        av_log(s->avctx, AV_LOG_INFO, "Decode  : POC %d NAL %d\n", sc->poc, sc->nal_unit_type);
         if (!sc->pps) {
@@ -2585,9 +2596,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 return ret;
         if (sc->max_ra == INT_MAX) {
             if (sc->nal_unit_type == NAL_CRA_NUT ||
-                    sc->nal_unit_type == NAL_BLA_W_LP ||
-                    sc->nal_unit_type == NAL_BLA_N_LP ||
-                    sc->nal_unit_type == NAL_BLA_N_LP) {
+                sc->nal_unit_type == NAL_BLA_W_LP ||
+                sc->nal_unit_type == NAL_BLA_N_LP ||
+                sc->nal_unit_type == NAL_BLA_N_LP) {
                 sc->max_ra = sc->poc;
             } else {
                 if (sc->nal_unit_type == NAL_IDR_W_RADL || sc->nal_unit_type == NAL_IDR_N_LP)

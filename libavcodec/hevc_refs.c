@@ -243,6 +243,13 @@ void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
     } else {
         iPOCmsb = iPrevPOCmsb;
     }
+    if (sc->nal_unit_type == NAL_BLA_W_LP ||
+        sc->nal_unit_type == NAL_BLA_W_RADL ||
+        sc->nal_unit_type == NAL_BLA_N_LP) {
+        // For BLA picture types, POCmsb is set to 0.
+        iPOCmsb = 0;
+    }
+
     sc->poc = iPOCmsb + poc_lsb;
 }
 
