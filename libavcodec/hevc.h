@@ -633,10 +633,10 @@ typedef struct Mv {
 } Mv;
 
 typedef struct MvField {
-      Mv  mv[2];
-      int8_t ref_idx[2];
-      int8_t pred_flag[2];
-      uint8_t is_intra;
+    Mv  mv[2];
+    int8_t ref_idx[2];
+    int8_t pred_flag;
+    uint8_t is_intra;
 } MvField;
 
 // MERGE

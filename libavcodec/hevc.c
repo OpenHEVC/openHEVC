@@ -1538,7 +1538,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                     ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, sc->sh.num_ref_idx_l0_active);
                     current_mv.ref_idx[0] = ref_idx[0];
                 }
-                current_mv.pred_flag[0] = 1;
+                current_mv.pred_flag += 1;
                 hls_mvd_coding(s, x0, y0, 0 );
                 mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_flag[0], 0);
@@ -1558,7 +1558,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 } else {
                     hls_mvd_coding(s, x0, y0, 1);
                 }
-                current_mv.pred_flag[1] = 1;
+                current_mv.pred_flag += 2;
                 mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size, partIdx, merge_idx, &current_mv, mvp_flag[1], 1);
                 current_mv.mv[1].x += lc->pu.mvd.x;
@@ -1573,8 +1573,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             }
         }
     }
-
-    if (current_mv.pred_flag[0] && !current_mv.pred_flag[1]) {
+    if (current_mv.pred_flag == 1) {
         DECLARE_ALIGNED( 16, int16_t, tmp[MAX_PB_SIZE*MAX_PB_SIZE] );
         DECLARE_ALIGNED( 16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE] );
         luma_mc(s, tmp, tmpstride,
@@ -1606,7 +1605,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             sc->hevcdsp.put_unweighted_pred(dst1, sc->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
             sc->hevcdsp.put_unweighted_pred(dst2, sc->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
         }
-    } else if (!current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
+    } else if (current_mv.pred_flag == 2) {
         DECLARE_ALIGNED( 16, int16_t, tmp[MAX_PB_SIZE*MAX_PB_SIZE] );
         DECLARE_ALIGNED( 16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE] );
         luma_mc(s, tmp, tmpstride,
@@ -1640,7 +1639,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
             sc->hevcdsp.put_unweighted_pred(dst1, sc->frame->linesize[1], tmp, tmpstride, nPbW/2, nPbH/2);
             sc->hevcdsp.put_unweighted_pred(dst2, sc->frame->linesize[2], tmp2, tmpstride, nPbW/2, nPbH/2);
         }
-    } else if (current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
+    } else if (current_mv.pred_flag == 3) {
         DECLARE_ALIGNED( 16, int16_t, tmp[MAX_PB_SIZE*MAX_PB_SIZE] );
         DECLARE_ALIGNED( 16, int16_t, tmp2[MAX_PB_SIZE*MAX_PB_SIZE] );
         DECLARE_ALIGNED( 16, int16_t, tmp3[MAX_PB_SIZE*MAX_PB_SIZE] );
@@ -1767,8 +1766,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
         memset(&sc->tab_ipm[(y_pu+i)*pic_width_in_min_pu + x_pu], intra_pred_mode, size_in_pus);
         for(j = 0; j <size_in_pus; j++) {
             tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].is_intra = 1;
-            tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].pred_flag[0] = 0;
-            tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].pred_flag[1] = 0;
+            tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].pred_flag = 0;
             tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].ref_idx[0] = 0;
             tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].ref_idx[1] = 0;
             tab_mvf[(y_pu+j)*pic_width_in_min_pu + x_pu+i].mv[0].x = 0;
@@ -1789,7 +1787,7 @@ static av_always_inline void set_ct_depth(HEVCContext *s, int x0, int y0,
     int length = (1 << log2_cb_size) >> sc->sps->log2_min_coding_block_size;
     int x_cb = x0 >> sc->sps->log2_min_coding_block_size;
     int y_cb = y0 >> sc->sps->log2_min_coding_block_size;
-    for(y = 0; y< length; y++)
+    for(y = 0; y < length; y++)
         memset(&sc->tab_ct_depth[(y_cb+y)*sc->sps->pic_width_in_min_cbs + x_cb], ct_depth, length);
 }
 

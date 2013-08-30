@@ -410,7 +410,8 @@ static int boundary_strength(HEVCSharedContext *sc, MvField *curr,
                              uint8_t neigh_cbf_luma, RefPicList *neigh_refPicList,
                              int tu_border)
 {
-    int mvs = curr->pred_flag[0] + curr->pred_flag[1];
+    int mvs = curr->pred_flag == 2 ? 1 : curr->pred_flag;
+    int neigh_mvs = neigh->pred_flag == 2 ? 1 : neigh->pred_flag;
 
     if (tu_border) {
         if (curr->is_intra || neigh->is_intra)
@@ -419,8 +420,8 @@ static int boundary_strength(HEVCSharedContext *sc, MvField *curr,
             return 1;
     }
 
-    if (mvs == neigh->pred_flag[0] + neigh->pred_flag[1]) {
-        if (mvs == 2) {
+    if (mvs == neigh_mvs) {
+        if (mvs == 3) {
             // same L0 and L1
             if (sc->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]   &&
                 sc->ref->refPicList[0].list[curr->ref_idx[0]] == sc->ref->refPicList[1].list[curr->ref_idx[1]] &&
@@ -454,7 +455,7 @@ static int boundary_strength(HEVCSharedContext *sc, MvField *curr,
             int ref_A;
             int ref_B;
 
-            if (curr->pred_flag[0]) {
+            if (curr->pred_flag & 1) {
                 A = curr->mv[0];
                 ref_A = sc->ref->refPicList[0].list[curr->ref_idx[0]];
             } else {
@@ -462,7 +463,7 @@ static int boundary_strength(HEVCSharedContext *sc, MvField *curr,
                 ref_A = sc->ref->refPicList[1].list[curr->ref_idx[1]];
             }
 
-            if (neigh->pred_flag[0]) {
+            if (neigh->pred_flag & 1) {
                 B = neigh->mv[0];
                 ref_B = neigh_refPicList[0].list[neigh->ref_idx[0]];
             } else {
