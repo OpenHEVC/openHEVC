@@ -309,7 +309,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     RefPicList *refPicList = sc->ref->refPicList;
     MvField *tab_mvf = sc->ref->tab_mvf;
 
-    MvField TMVPCand = { { { 0 } } };
     Mv mvL0Col = { 0 };
     Mv mvL1Col = { 0 };
 
@@ -538,7 +537,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                     nPbH, refIdxL1Col, &mvL1Col, 1);
         }
         availableFlagLXCol = availableFlagL0Col || availableFlagL1Col;
-        if (availableFlagLXCol) {
+        if (availableFlagLXCol && (mergearray_index < sc->sh.max_num_merge_cand)) {
+            MvField TMVPCand = { { { 0 } } };
             TMVPCand.is_intra = 0;
             TMVPCand.pred_flag = availableFlagL0Col + 2 * availableFlagL1Col;
             if (availableFlagL0Col) {
@@ -549,12 +549,9 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                 TMVPCand.mv[1] = mvL1Col;
                 TMVPCand.ref_idx[1] = refIdxL1Col;
             }
+            mergecandlist[mergearray_index] = TMVPCand;
+            mergearray_index++;
         }
-    }
-
-    if (availableFlagLXCol && (mergearray_index < sc->sh.max_num_merge_cand)) {
-        mergecandlist[mergearray_index] = TMVPCand;
-        mergearray_index++;
     }
     numMergeCand = mergearray_index;
     numOrigMergeCand = mergearray_index;
