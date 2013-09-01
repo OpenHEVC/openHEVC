@@ -45,8 +45,7 @@ int ff_hevc_find_ref_idx(HEVCContext *s, int poc)
 void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref)
 {
     int j;
-    HEVCSharedContext *sc = s->HEVCsc;
-    int ctb_count = sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs;
+    int ctb_count = ref->count;
     for (j = ctb_count-1; j > 0; j--) {
         if (ref->refPicListTab[j] != ref->refPicListTab[j-1])
             av_free(ref->refPicListTab[j]);
@@ -57,6 +56,7 @@ void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref)
         ref->refPicListTab[0] = NULL;
     }
     ref->refPicList = NULL;
+    ref->count = 0;
 }
 static void malloc_refPicListTab(HEVCContext *s)
 {
@@ -65,6 +65,7 @@ static void malloc_refPicListTab(HEVCContext *s)
     HEVCFrame *ref  = &sc->DPB[ff_hevc_find_next_ref(s, sc->poc)];
     int ctb_count   = sc->sps->pic_width_in_ctbs * sc->sps->pic_height_in_ctbs;
     int ctb_addr_ts = sc->pps->ctb_addr_rs_to_ts[sc->sh.slice_address];
+    ref->count = ctb_count;
     ref->refPicListTab[ctb_addr_ts] = av_mallocz(sizeof(RefPicListTab));
     for (i = ctb_addr_ts; i < ctb_count-1; i++)
         ref->refPicListTab[i+1] = ref->refPicListTab[i];
