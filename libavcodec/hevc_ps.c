@@ -370,6 +370,37 @@ static void decode_vui(HEVCContext *s, SPS *sps)
     }
 }
 
+static void scaling_list_data(HEVCContext *s) {
+    GetBitContext *gb = s->HEVClc->gb;
+    uint8_t scaling_list_pred_mode_flag[4][6];
+    uint32_t scaling_list_pred_matrix_id_delta[4][6];
+    int32_t scaling_list_dc_coef_minus8[2][6];
+    
+    int size_id, matrix_id, i;
+	for (size_id = 0; size_id < 4; size_id++)
+		for (matrix_id = 0; matrix_id < ((size_id == 3) ? 2 : 6); matrix_id++) {
+			scaling_list_pred_mode_flag[size_id][matrix_id] = get_bits1(gb);
+			if (!scaling_list_pred_mode_flag[size_id][matrix_id])
+				scaling_list_pred_matrix_id_delta[size_id][matrix_id] = get_ue_golomb(gb);
+                else {
+                    int next_coef;
+                    int coef_num;
+                    int32_t scaling_list_delta_coef;
+                    next_coef = 8;
+                    coef_num = FFMIN(64, (1  <<  (4 + (size_id  <<  1))));
+                    if( size_id > 1 ) {
+                        scaling_list_dc_coef_minus8[size_id - 2][matrix_id] = get_se_golomb(gb);
+                        next_coef = scaling_list_dc_coef_minus8[size_id - 2][matrix_id] + 8;
+                    }
+                    for( i = 0; i < coef_num; i++) {
+                        scaling_list_delta_coef = get_se_golomb(gb);
+                        next_coef = (next_coef + scaling_list_delta_coef + 256 ) % 256;
+                        /*ScalingList[ size_id ][ matrix_id ][ i ] =*/ next_coef;
+                    }
+                }
+		}
+}
+
 int ff_hevc_decode_nal_sps(HEVCContext *s)
 {
     GetBitContext *gb = s->HEVClc->gb;
@@ -516,9 +547,9 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->scaling_list_enable_flag = get_bits1(gb);
     if (sps->scaling_list_enable_flag) {
-        av_log(s->avctx, AV_LOG_ERROR, "TODO: scaling_list_enable_flag\n");
-        ret = AVERROR_PATCHWELCOME;
-        goto err;
+        sps->scaling_list_data_present_flag = get_bits1(gb);
+        if (sps->scaling_list_data_present_flag)
+            scaling_list_data(s);
     }
 
     sps->amp_enabled_flag                    = get_bits1(gb);
@@ -801,9 +832,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     pps->pps_scaling_list_data_present_flag = get_bits1(gb);
     if (pps->pps_scaling_list_data_present_flag) {
-        av_log(s->avctx, AV_LOG_ERROR, "TODO: scaling_list_data_present_flag\n");
-        ret = AVERROR_PATCHWELCOME;
-        goto err;
+        scaling_list_data(s);
     }
     pps->lists_modification_present_flag = get_bits1(gb);
     pps->log2_parallel_merge_level       = get_ue_golomb(gb) + 2;

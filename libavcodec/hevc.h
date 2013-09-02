@@ -312,7 +312,8 @@ typedef struct SPS {
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
 
-    int scaling_list_enable_flag;
+    uint8_t scaling_list_enable_flag;
+    uint8_t scaling_list_data_present_flag;
 
     uint8_t deblocking_filter_in_aps_enabled_flag;
 
