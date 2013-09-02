@@ -676,7 +676,11 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         goto err;
     }
     sps = s->HEVCsc->sps_list[pps->sps_id];
-
+    if (!sps) {
+        av_log(s->avctx, AV_LOG_ERROR, "SPS does not exist \n");
+        ret = AVERROR_INVALIDDATA;
+        goto err;
+    }
     pps->dependent_slice_segments_enabled_flag = get_bits1(gb);
     pps->output_flag_present_flag              = get_bits1(gb);
     pps->num_extra_slice_header_bits           = get_bits(gb, 3);
