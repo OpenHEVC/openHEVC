@@ -1477,7 +1477,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     enum InterPredIdc inter_pred_idc = PRED_L0;
     int ref_idx[2];
     int mvp_flag[2];
-    struct MvField current_mv = {{{ 0 }}};
+    MvField current_mv = {{{ 0 }}};
     int i, j;
     int x_pu, y_pu;
 

@@ -295,19 +295,19 @@ static void set_ref_pic_list(HEVCContext *s)
         for(i = 0; i < refPocList[first_list].numPic; i++) {
             refPicListTmp[list_idx].list[cIdx] = refPocList[first_list].list[i];
             refPicListTmp[list_idx].idx[cIdx]  = refPocList[first_list].idx[i];
-            refPicListTmp[list_idx].isLongTerm[cIdx]  = 0;
+            refPicListTmp[list_idx].is_long_term[cIdx]  = 0;
             cIdx++;
         }
         for(i = 0; i < refPocList[sec_list].numPic; i++) {
             refPicListTmp[list_idx].list[cIdx] = refPocList[sec_list].list[i];
             refPicListTmp[list_idx].idx[cIdx]  = refPocList[sec_list].idx[i];
-            refPicListTmp[list_idx].isLongTerm[cIdx]  = 0;
+            refPicListTmp[list_idx].is_long_term[cIdx]  = 0;
             cIdx++;
         }
         for(i = 0; i < refPocList[LT_CURR].numPic; i++) {
             refPicListTmp[list_idx].list[cIdx] = refPocList[LT_CURR].list[i];
             refPicListTmp[list_idx].idx[cIdx]  = refPocList[LT_CURR].idx[i];
-            refPicListTmp[list_idx].isLongTerm[cIdx]  = 1;
+            refPicListTmp[list_idx].is_long_term[cIdx]  = 1;
             cIdx++;
         }
         refPicList[list_idx].numPic = num_rps_curr_lx;
@@ -315,13 +315,13 @@ static void set_ref_pic_list(HEVCContext *s)
             for(i = 0; i < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[sh->list_entry_lx[list_idx][ i ]];
                 refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[sh->list_entry_lx[list_idx][ i ]];
-                refPicList[list_idx].isLongTerm[i]  = refPicListTmp[list_idx].isLongTerm[sh->list_entry_lx[list_idx][ i ]];
+                refPicList[list_idx].is_long_term[i]  = refPicListTmp[list_idx].is_long_term[sh->list_entry_lx[list_idx][ i ]];
             }
         } else {
             for(i = 0; i < num_rps_curr_lx; i++) {
                 refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[i];
                 refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[i];
-                refPicList[list_idx].isLongTerm[i]  = refPicListTmp[list_idx].isLongTerm[i];
+                refPicList[list_idx].is_long_term[i]  = refPicListTmp[list_idx].is_long_term[i];
             }
         }
     }

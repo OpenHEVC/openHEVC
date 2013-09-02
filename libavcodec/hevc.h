@@ -101,7 +101,7 @@ typedef struct LongTermRPS {
 typedef struct RefPicList {
     int list[16];
     int idx[16];
-    int isLongTerm[16];
+    int is_long_term[16];
     int numPic;
 } RefPicList;
 
