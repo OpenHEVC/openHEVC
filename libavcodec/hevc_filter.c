@@ -122,8 +122,8 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
             int idx_mask = ctb_size_mask >> s->sps->log2_min_coding_block_size;
             int x, y;
 
-            x = xC0b + offsetX[idxX][idxY];
-            y = yC0b + (offsetY[idxX][idxY] & idx_mask);
+            x = FFMIN(xC0b + offsetX[idxX][idxY],              pic_width  - 1);
+            y = FFMIN(yC0b + (offsetY[idxX][idxY] & idx_mask), pic_height - 1);
 
             if (xC0b == (lc->start_of_tiles_x >> s->sps->log2_min_coding_block_size) &&
                 offsetX[idxX][idxY] == -1) {
@@ -161,9 +161,10 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int l
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
     int log2_min_cb_size  = s->sps->log2_min_coding_block_size;
-    int pic_width         = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
-    int x                 = xC >> log2_min_cb_size;
-    int y                 = yC >> log2_min_cb_size;
+    int pic_width         = s->sps->pic_width_in_luma_samples  >> log2_min_cb_size;
+    int pic_height        = s->sps->pic_height_in_luma_samples >> log2_min_cb_size;
+    int x                 = FFMIN(xC >> log2_min_cb_size, pic_width  - 1);
+    int y                 = FFMIN(yC >> log2_min_cb_size, pic_height - 1);
     return s->qp_y_tab[x + y * pic_width];
 }
 

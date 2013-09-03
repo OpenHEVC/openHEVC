@@ -262,13 +262,9 @@ static int pic_arrays_init(HEVCContext *s)
     int i;
     int pic_width      = s->sps->pic_width_in_luma_samples;
     int pic_height     = s->sps->pic_height_in_luma_samples;
-    int pic_width_ext  = pic_width  + (1 << s->sps->log2_min_coding_block_size);
-    int pic_height_ext = pic_height + (1 << s->sps->log2_min_coding_block_size);
     int pic_size       = pic_width * pic_height;
-    int pic_size_ext   = pic_width_ext * pic_height_ext;
+    int ctb_count      = s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs;
     int pic_size_in_ctb      = pic_size >> (s->sps->log2_min_coding_block_size << 1);
-    int pic_size_in_ctb_ext  = pic_size_ext >> (s->sps->log2_min_coding_block_size<<1);
-    int ctb_count = s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs;
     int pic_width_in_min_pu  = pic_width >> s->sps->log2_min_pu_size;
     int pic_height_in_min_pu = pic_height >> s->sps->log2_min_pu_size;
     int pic_width_in_min_tu  = pic_width >> s->sps->log2_min_transform_block_size;
@@ -301,7 +297,7 @@ static int pic_arrays_init(HEVCContext *s)
     if (!s->cbf_luma || !s->is_pcm)
         goto fail;
 
-    s->qp_y_tab = av_malloc(pic_size_in_ctb_ext * sizeof(int8_t));
+    s->qp_y_tab = av_malloc(pic_size_in_ctb * sizeof(int8_t));
     if (!s->qp_y_tab)
         goto fail;
 
