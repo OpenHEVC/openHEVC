@@ -32,15 +32,14 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     //uint16_t picture_crc;
     //uint32_t picture_checksum;
     GetBitContext *gb = s->HEVClc->gb;
-    HEVCSharedContext *sc = s->HEVCsc;
     hash_type = get_bits(gb, 8);
 
 
     for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
         if ( hash_type == 0 ) {
-            s->HEVCsc->is_md5 = 1;
+            s->is_md5 = 1;
             for( i = 0; i < 16; i++) {
-                sc->md5[cIdx][i] = get_bits(gb, 8);
+                s->md5[cIdx][i] = get_bits(gb, 8);
             }
         } else if( hash_type == 1 ) {
             // picture_crc = get_bits(gb, 16);
@@ -52,7 +51,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     }
 }
 
-static void decode_nal_sei_frame_packing_arrangement(HEVCLocalContext *lc)
+static void decode_nal_sei_frame_packing_arrangement(HEVCThreadContext *lc)
 {
     GetBitContext *gb = lc->gb;
     int cancel, type, quincunx;
@@ -96,7 +95,7 @@ static int decode_nal_sei_message(HEVCContext *s)
         byte = get_bits(gb, 8);
         payload_size += byte;
     }
-    if (s->HEVCsc->nal_unit_type == NAL_SEI_PREFIX) {
+    if (s->nal_unit_type == NAL_SEI_PREFIX) {
         if (payload_type == 256 /*&& s->decode_checksum_sei*/)
             decode_nal_sei_decoded_picture_hash(s, payload_size);
         else if (payload_type == 45)

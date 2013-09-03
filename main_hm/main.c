@@ -5,7 +5,11 @@
 //  Created by Mickaël Raulet on 11/10/12.
 //
 //
+#ifdef __MINGW32__
+#include "openHevcWrapper.h"
+#else
 #include "gpac/modules/openhevc_dec/openHevcWrapper.h"
+#endif
 #include "getopt.h"
 #include <libavformat/avformat.h>
 

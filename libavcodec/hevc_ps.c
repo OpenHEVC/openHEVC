@@ -30,7 +30,7 @@
  * Section 7.3.3.1
  */
 
-int ff_hevc_decode_short_term_rps(HEVCLocalContext *lc, int idx, SPS *sps)
+int ff_hevc_decode_short_term_rps(HEVCThreadContext *lc, int idx, SPS *sps)
 {
     int delta_idx = 1;
     int delta_rps;
@@ -142,7 +142,7 @@ int ff_hevc_decode_short_term_rps(HEVCLocalContext *lc, int idx, SPS *sps)
     return 0;
 }
 
-static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl, int max_num_sub_layers)
+static int decode_profile_tier_level(HEVCThreadContext *lc, PTL *ptl, int max_num_sub_layers)
 {
     int i, j;
     GetBitContext *gb = lc->gb;
@@ -286,8 +286,8 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     }
     get_bits1(gb); /* vps_extension_flag */
 
-    av_free(s->HEVCsc->vps_list[vps_id]);
-    s->HEVCsc->vps_list[vps_id] = vps;
+    av_free(s->vps_list[vps_id]);
+    s->vps_list[vps_id] = vps;
     return 0;
 
 err:
@@ -637,8 +637,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         goto err;
     }
 */
-    av_free(s->HEVCsc->sps_list[sps_id]);
-    s->HEVCsc->sps_list[sps_id] = sps;
+    av_free(s->sps_list[sps_id]);
+    s->sps_list[sps_id] = sps;
     return 0;
 err:
 
@@ -706,8 +706,12 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    sps = s->HEVCsc->sps_list[pps->sps_id];
-
+    sps = s->sps_list[pps->sps_id];
+    if (!sps) {
+        av_log(s->avctx, AV_LOG_ERROR, "SPS does not exist \n");
+        ret = AVERROR_INVALIDDATA;
+        goto err;
+    }
     pps->dependent_slice_segments_enabled_flag = get_bits1(gb);
     pps->output_flag_present_flag              = get_bits1(gb);
     pps->num_extra_slice_header_bits           = get_bits(gb, 3);
@@ -986,10 +990,10 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
-    if (s->HEVCsc->pps_list[pps_id] != NULL)
-        ff_hevc_pps_free(&s->HEVCsc->pps_list[pps_id]);
+    if (s->pps_list[pps_id] != NULL)
+        ff_hevc_pps_free(&s->pps_list[pps_id]);
 
-    s->HEVCsc->pps_list[pps_id] = pps;
+    s->pps_list[pps_id] = pps;
     return 0;
 
 err:

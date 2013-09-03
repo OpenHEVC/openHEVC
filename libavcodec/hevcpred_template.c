@@ -28,9 +28,9 @@
 
 static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int c_idx)
 {
-#define IS_INTRA(x, y) (sc->ref->tab_mvf[((x0+((x)<<hshift)) >> sc->sps->log2_min_pu_size) + (((y0+((y)<<vshift))>> sc->sps->log2_min_pu_size) * pic_width_in_min_pu)].is_intra || !sc->pps->constrained_intra_pred_flag)
+#define IS_INTRA(x, y) (s->ref->tab_mvf[((x0+((x)<<hshift)) >> s->sps->log2_min_pu_size) + (((y0+((y)<<vshift))>> s->sps->log2_min_pu_size) * pic_width_in_min_pu)].is_intra || !s->pps->constrained_intra_pred_flag)
 #define MIN_TB_ADDR_ZS(x, y)                            \
-    sc->pps->min_tb_addr_zs[(y) * sc->sps->pic_width_in_min_tbs + (x)]
+    s->pps->min_tb_addr_zs[(y) * s->sps->pic_width_in_min_tbs + (x)]
 #define EXTEND_LEFT(ptr, start, length)                 \
         for (i = (start); i > (start)-(length); i--)    \
             ptr[i-1] = ptr[i]
@@ -55,24 +55,24 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         for (i = (start); i < (start)+(length); i++)    \
             if (!IS_INTRA(-1, i))             \
             ptr[i] = ptr[i-1]
-    HEVCSharedContext *sc = s->HEVCsc;
-    HEVCLocalContext *lc = s->HEVClc;
+    
+    HEVCThreadContext *lc = s->HEVClc;
     int i;
-    int hshift = sc->sps->hshift[c_idx];
-    int vshift = sc->sps->vshift[c_idx];
+    int hshift = s->sps->hshift[c_idx];
+    int vshift = s->sps->vshift[c_idx];
     int size = (1 << log2_size);
     int size_in_luma = size << hshift;
-    int size_in_tbs = size_in_luma >> sc->sps->log2_min_transform_block_size;
+    int size_in_tbs = size_in_luma >> s->sps->log2_min_transform_block_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
-    int x_tb = x0 >> sc->sps->log2_min_transform_block_size;
-    int y_tb = y0 >> sc->sps->log2_min_transform_block_size;
+    int x_tb = x0 >> s->sps->log2_min_transform_block_size;
+    int y_tb = y0 >> s->sps->log2_min_transform_block_size;
     int cur_tb_addr = MIN_TB_ADDR_ZS(x_tb, y_tb);
 
-    ptrdiff_t stride = sc->frame->linesize[c_idx] / sizeof(pixel);
-    pixel *src = (pixel*)sc->frame->data[c_idx] + x + y * stride;
+    ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(pixel);
+    pixel *src = (pixel*)s->frame->data[c_idx] + x + y * stride;
 
-    int pic_width_in_min_pu = s->HEVCsc->sps->pic_width_in_luma_samples >> s->HEVCsc->sps->log2_min_pu_size;
+    int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
 
     enum IntraPredMode mode = c_idx ? lc->pu.intra_pred_mode_c :
                               lc->tu.cur_intra_pred_mode;
@@ -84,61 +84,61 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     pixel *filtered_left = filtered_left_array + 1;
     pixel *filtered_top = filtered_top_array + 1;
 
-    int x0b = x0 & ((1 << sc->sps->log2_ctb_size) - 1);
-    int y0b = y0 & ((1 << sc->sps->log2_ctb_size) - 1);
+    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
     int cand_up       = (lc->ctb_up_flag || y0b);
-    int cand_up_right = ((x0b + size_in_luma) == (1 << sc->sps->log2_ctb_size)) ? lc->ctb_up_right_flag && !y0b: cand_up;
+    int cand_up_right = ((x0b + size_in_luma) == (1 << s->sps->log2_ctb_size)) ? lc->ctb_up_right_flag && !y0b: cand_up;
     int cand_left     = (lc->ctb_left_flag || x0b);
 
-    int bottom_left_available = cand_left && (y_tb + size_in_tbs) < (lc->end_of_tiles_y>>sc->sps->log2_min_transform_block_size) &&
+    int bottom_left_available = cand_left && (y_tb + size_in_tbs) < (lc->end_of_tiles_y>>s->sps->log2_min_transform_block_size) &&
                                 cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs);
     int left_available = cand_left;
     int top_left_available = (!x0b && !y0b) ? lc->ctb_up_left_flag : cand_left && cand_up;
     int top_available = cand_up;
     //FIXME : top_right_available can be available even if cand_up is not 
-    int top_right_available = cand_up_right && (x_tb + size_in_tbs) < (lc->end_of_tiles_x>>sc->sps->log2_min_transform_block_size) &&
+    int top_right_available = cand_up_right && (x_tb + size_in_tbs) < (lc->end_of_tiles_x>>s->sps->log2_min_transform_block_size) &&
                               cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs, y_tb - 1);
 
-    int bottom_left_size = (FFMIN(y0 + 2*size_in_luma, sc->sps->pic_height_in_luma_samples) -
+    int bottom_left_size = (FFMIN(y0 + 2*size_in_luma, s->sps->pic_height_in_luma_samples) -
                             (y0 + size_in_luma)) >> vshift;
-    int top_right_size = (FFMIN(x0 + 2*size_in_luma, sc->sps->pic_width_in_luma_samples) -
+    int top_right_size = (FFMIN(x0 + 2*size_in_luma, s->sps->pic_width_in_luma_samples) -
                           (x0 + size_in_luma)) >> hshift;
 
-    if (sc->pps->constrained_intra_pred_flag == 1) {
-        int size_in_luma_pu = size_in_luma >> sc->sps->log2_min_pu_size;
+    if (s->pps->constrained_intra_pred_flag == 1) {
+        int size_in_luma_pu = size_in_luma >> s->sps->log2_min_pu_size;
         if (bottom_left_available == 1) {
-            int x_left_pu   = (x0-1) >> sc->sps->log2_min_pu_size;
-            int y_bottom_pu = (y0+size_in_luma) >> sc->sps->log2_min_pu_size;
+            int x_left_pu   = (x0-1) >> s->sps->log2_min_pu_size;
+            int y_bottom_pu = (y0+size_in_luma) >> s->sps->log2_min_pu_size;
             bottom_left_available = 0;
             for(i=0; i< size_in_luma_pu; i++)
-                bottom_left_available |= sc->ref->tab_mvf[x_left_pu + (y_bottom_pu+i) * pic_width_in_min_pu].is_intra;
+                bottom_left_available |= s->ref->tab_mvf[x_left_pu + (y_bottom_pu+i) * pic_width_in_min_pu].is_intra;
         }
         if (left_available == 1) {
-            int x_left_pu   = (x0-1) >> sc->sps->log2_min_pu_size;
-            int y_left_pu   = (y0  ) >> sc->sps->log2_min_pu_size;
+            int x_left_pu   = (x0-1) >> s->sps->log2_min_pu_size;
+            int y_left_pu   = (y0  ) >> s->sps->log2_min_pu_size;
             left_available = 0;
             for(i=0; i< size_in_luma_pu; i++)
-                left_available |= sc->ref->tab_mvf[x_left_pu + (y_left_pu+i) * pic_width_in_min_pu].is_intra;
+                left_available |= s->ref->tab_mvf[x_left_pu + (y_left_pu+i) * pic_width_in_min_pu].is_intra;
         }
         if (top_left_available == 1) {
-            int x_left_pu   = (x0-1) >> sc->sps->log2_min_pu_size;
-            int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
-            top_left_available = sc->ref->tab_mvf[x_left_pu + y_top_pu * pic_width_in_min_pu].is_intra;
+            int x_left_pu   = (x0-1) >> s->sps->log2_min_pu_size;
+            int y_top_pu    = (y0-1) >> s->sps->log2_min_pu_size;
+            top_left_available = s->ref->tab_mvf[x_left_pu + y_top_pu * pic_width_in_min_pu].is_intra;
         }
         if (top_available == 1) {
-            int x_top_pu    = (x0  ) >> sc->sps->log2_min_pu_size;
-            int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
+            int x_top_pu    = (x0  ) >> s->sps->log2_min_pu_size;
+            int y_top_pu    = (y0-1) >> s->sps->log2_min_pu_size;
             top_available = 0;
             for(i=0; i< size_in_luma_pu; i++)
-                top_available |= sc->ref->tab_mvf[(x_top_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
+                top_available |= s->ref->tab_mvf[(x_top_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
         }
         if (top_right_available == 1) {
-            int y_top_pu    = (y0-1) >> sc->sps->log2_min_pu_size;
-            int x_right_pu  = (x0+size_in_luma) >> sc->sps->log2_min_pu_size;
+            int y_top_pu    = (y0-1) >> s->sps->log2_min_pu_size;
+            int x_right_pu  = (x0+size_in_luma) >> s->sps->log2_min_pu_size;
             top_right_available = 0;
             for(i=0; i< size_in_luma_pu; i++)
-                top_right_available |= sc->ref->tab_mvf[(x_right_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
+                top_right_available |= s->ref->tab_mvf[(x_right_pu+i) + y_top_pu * pic_width_in_min_pu].is_intra;
         }
         for (i = 0; i < 2*MAX_TB_SIZE; i++) {
             left[i] = 128;
@@ -175,10 +175,10 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
                 top[i] = POS(i, -1);
    }
 
-    if (sc->pps->constrained_intra_pred_flag == 1) {
+    if (s->pps->constrained_intra_pred_flag == 1) {
         if (bottom_left_available || left_available || top_left_available || top_available || top_right_available) {
-            int size_max_x = x0 + ((2*size)<<hshift) < s->HEVCsc->sps->pic_width_in_luma_samples ? 2*size : (s->HEVCsc->sps->pic_width_in_luma_samples - x0)>>hshift;
-            int size_max_y = y0 + ((2*size)<<vshift) < s->HEVCsc->sps->pic_height_in_luma_samples ? 2*size : (s->HEVCsc->sps->pic_height_in_luma_samples - y0)>>vshift;
+            int size_max_x = x0 + ((2*size)<<hshift) < s->sps->pic_width_in_luma_samples ? 2*size : (s->sps->pic_width_in_luma_samples - x0)>>hshift;
+            int size_max_y = y0 + ((2*size)<<vshift) < s->sps->pic_height_in_luma_samples ? 2*size : (s->sps->pic_height_in_luma_samples - y0)>>vshift;
             int j = size + (bottom_left_available? bottom_left_size: 0) -1;
             if (bottom_left_available || left_available || top_left_available) {
                 while(j>-1 && !IS_INTRA(-1, j)) j--;
@@ -275,7 +275,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         int min_dist_vert_hor = FFMIN(FFABS((int)mode-26), FFABS((int)mode-10));
         if (min_dist_vert_hor > intra_hor_ver_dist_thresh[log2_size-3]) {
             int thresold = 1 << (BIT_DEPTH - 5);
-            if (sc->sps->sps_strong_intra_smoothing_enable_flag && log2_size == 5 &&
+            if (s->sps->sps_strong_intra_smoothing_enable_flag && log2_size == 5 &&
                 FFABS(top[-1] + top[63] - 2 * top[31]) < thresold &&
                 FFABS(left[-1] + left[63] - 2 * left[31]) < thresold) {
                 // We can't just overwrite values in top because it could be a pointer into src
@@ -306,13 +306,13 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 
     switch(mode) {
     case INTRA_PLANAR:
-        sc->hpc.pred_planar[log2_size -2]((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride);
+        s->hpc.pred_planar[log2_size -2]((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride);
         break;
     case INTRA_DC:
-        sc->hpc.pred_dc((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride, log2_size, c_idx);
+        s->hpc.pred_dc((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride, log2_size, c_idx);
         break;
     default:
-        sc->hpc.pred_angular[log2_size - 2]((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride, c_idx, mode);
+        s->hpc.pred_angular[log2_size - 2]((uint8_t*)src, (uint8_t*)top, (uint8_t*)left, stride, c_idx, mode);
         break;
     }
 
