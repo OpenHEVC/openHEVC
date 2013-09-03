@@ -32,12 +32,12 @@
 #include "hevcdsp.h"
 
 #define MAX_DPB_SIZE 16 // A.4.1
-#define MAX_NB_THREADS 16
+#define MAX_THREADS 16
 
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */
-#define SAMPLE(tab, x, y) ((tab)[(y) * sc->sps->pic_width_in_luma_samples + (x)])
+#define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->pic_width_in_luma_samples + (x)])
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * pic_width_in_ctb + (x)])
 #define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
 
@@ -734,7 +734,7 @@ typedef struct Filter_data{
     int slice_or_tiles_up_boundary;
 }Filter_data;
 
-typedef struct HEVCLocalContext {
+typedef struct HEVCThreadContext {
     uint8_t *cabac_state;
     int ctx_set;
     int greater1_ctx;
@@ -765,11 +765,21 @@ typedef struct HEVCLocalContext {
     int16_t* BufferMC;
     Filter_data *save_boundary_strengths;
     int nb_saved;
-} HEVCLocalContext;
+} HEVCThreadContext;
 
-typedef struct HEVCSharedContext {
+
+typedef struct HEVCContext {
+    AVClass *c;  // needed by private avoptions
+    AVCodecContext      *avctx;
+
+    struct HEVCContext  *sList[MAX_THREADS];
+
+
+    HEVCThreadContext    *HEVClcList[MAX_THREADS];
+    HEVCThreadContext    *HEVClc;
+
     uint8_t *cabac_state; //
-
+    
     AVFrame *frame;
     AVFrame *sao_frame;
     AVFrame *tmp_frame;
@@ -779,7 +789,7 @@ typedef struct HEVCSharedContext {
     VPS *vps_list[MAX_VPS_COUNT];
     SPS *sps_list[MAX_SPS_COUNT];
     PPS *pps_list[MAX_PPS_COUNT];
-
+    
     SliceHeader sh;
     SAOParams *sao;
     DBParams *deblock;
@@ -792,7 +802,7 @@ typedef struct HEVCSharedContext {
     int max_ra;
     int bs_width;
     int bs_height;
-
+    
     uint8_t md5[3][16];
     uint8_t is_md5;
     int * ctb_entry_count;
@@ -800,7 +810,7 @@ typedef struct HEVCSharedContext {
     int is_decoded;
     int SliceAddrRs;
     int64_t pts;
-
+    
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
@@ -808,51 +818,38 @@ typedef struct HEVCSharedContext {
     uint8_t *split_cu_flag;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
-
+    
     int32_t *tab_slice_address;
-
+    
     //  CU
     uint8_t *skip_flag;
     uint8_t *tab_ct_depth;
     // PU
     uint8_t *tab_ipm;
-
-
+    
+    
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;
-
+    
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset
      */
     uint16_t seq_decode;
     uint16_t seq_output;
-
+    
     int skipped_bytes;
     int *skipped_bytes_pos;
     int skipped_bytes_pos_size;
     uint8_t *data;
-
+    
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
-
+    
     int enable_parallel_tiles;
     int nuh_layer_id;
     int ERROR;
-
-} HEVCSharedContext;
-
-typedef struct HEVCContext {
-    AVClass *c;  // needed by private avoptions
-    AVCodecContext      *avctx;
-
-    struct HEVCContext  *sList[MAX_NB_THREADS];
-
-    HEVCSharedContext   *HEVCsc;
-
-    HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
-    HEVCLocalContext    *HEVClc;
-
+    
     uint8_t             threads_number;
     int                 decode_checksum_sei;
     int                 disable_au;
@@ -866,7 +863,7 @@ enum ScanType {
     SCAN_VERT
 };
 
-int ff_hevc_decode_short_term_rps(HEVCLocalContext *s, int idx, SPS *sps);
+int ff_hevc_decode_short_term_rps(HEVCThreadContext *s, int idx, SPS *sps);
 int ff_hevc_decode_nal_vps(HEVCContext *s);
 int ff_hevc_decode_nal_sps(HEVCContext *s);
 int ff_hevc_decode_nal_pps(HEVCContext *s);
@@ -877,7 +874,7 @@ void ff_hevc_clean_refs(HEVCContext *s);
 int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
 void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref);
-RefPicList* ff_hevc_get_ref_list(HEVCSharedContext *sc, int short_ref_idx, int x0, int y0);
+RefPicList* ff_hevc_get_ref_list(HEVCContext *sc, int short_ref_idx, int x0, int y0);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);
