@@ -708,6 +708,7 @@ typedef struct DBParams {
 
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
+#define HEVC_FRAME_FLAG_LT_REF    (1 << 2)
 
 typedef struct HEVCFrame {
     AVFrame *frame;
@@ -854,6 +855,7 @@ typedef struct HEVCContext {
     uint8_t             threads_number;
     int                 decode_checksum_sei;
     int                 disable_au;
+    int                 layer_id;
     int                 width;
     int                 height;
 } HEVCContext;
