@@ -160,7 +160,7 @@ add_library (LibOpenHevcWrapper STATIC ${libfilenames} ${YASM_OBJECTS})
 else(ENABLE_STATIC)
 add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
 endif(ENABLE_STATIC)
-include_directories(.)
+include_directories(. gpac/modules/openhevc_dec/)
 
 OPTION(ENABLE_EXECUTABLE "Generate the test application" ON)
 
