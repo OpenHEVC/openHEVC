@@ -9,12 +9,43 @@
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
-#define BIT_DEPTH 8
 
-void ff_hevc_dequant4x4_sse4(int16_t *coeffs, int qp) {
+void ff_hevc_dequant4x4_8_sse4(int16_t *coeffs, int qp) {
+    ff_hevc_dequant4x4_sse4(coeffs,qp,8);
+}
+
+void ff_hevc_dequant4x4_10_sse4(int16_t *coeffs, int qp) {
+    ff_hevc_dequant4x4_sse4(coeffs,qp,10);
+}
+
+void ff_hevc_dequant8x8_8_sse4(int16_t *coeffs, int qp) {
+    ff_hevc_dequant8x8_sse4(coeffs,qp,8);
+}
+
+void ff_hevc_dequant8x8_10_sse4(int16_t *coeffs, int qp) {
+    ff_hevc_dequant8x8_sse4(coeffs,qp,10);
+}
+
+void ff_hevc_dequant16x16_8_sse4(int16_t *coeffs, int qp) {
+    ff_hevc_dequant16x16_sse4(coeffs,qp,8);
+}
+
+void ff_hevc_dequant16x16_10_sse4(int16_t *coeffs, int qp) {
+    ff_hevc_dequant16x16_sse4(coeffs,qp,10);
+}
+
+void ff_hevc_dequant32x32_8_sse4(int16_t *coeffs, int qp) {
+    ff_hevc_dequant32x32_sse4(coeffs,qp,8);
+}
+
+void ff_hevc_dequant32x32_10_sse4(int16_t *coeffs, int qp) {
+    ff_hevc_dequant32x32_sse4(coeffs,qp,10);
+}
+
+void ff_hevc_dequant4x4_sse4(int16_t *coeffs, int qp, int bit_dep) {
     __m128i c0, c1, f0, f1, c2, c3;
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
-    int shift = BIT_DEPTH - 7;
+    int shift = bit_dep - 7;
     int scale = level_scale[qp % 6] << (qp / 6);
     int add = 1 << (shift - 1);
     //4x4 = 16 coeffs.
@@ -56,12 +87,12 @@ void ff_hevc_dequant4x4_sse4(int16_t *coeffs, int qp) {
     _mm_store_si128((__m128i *) &coeffs[8], c2);
 }
 
-void ff_hevc_dequant8x8_sse4(int16_t *coeffs, int qp) {
+void ff_hevc_dequant8x8_sse4(int16_t *coeffs, int qp, int bit_dep) {
     __m128i c0, c1, c2, c3, c4, c5, c6, c7, f0, f1;
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
 
     //TODO: scaling_list_enabled_flag support
-    int shift = BIT_DEPTH - 6;
+    int shift = bit_dep - 6;
     int scale = level_scale[qp % 6] << (qp / 6);
     int add = 1 << (shift - 1);
 
@@ -185,14 +216,14 @@ void ff_hevc_dequant8x8_sse4(int16_t *coeffs, int qp) {
     _mm_store_si128((__m128i *) &coeffs[56], c6);
 }
 
-void ff_hevc_dequant16x16_sse4(int16_t *coeffs, int qp) {
+void ff_hevc_dequant16x16_sse4(int16_t *coeffs, int qp, int bit_dep) {
     __m128i c0, c1, c2, c3, c4, c5, c6, c7, f0, f1;
     int x;
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift = BIT_DEPTH - 5;
+    int shift = bit_dep - 5;
     int scale = level_scale[qp % 6] << (qp / 6);
     int add = 1 << (shift - 1);
     f0 = _mm_set1_epi32(scale);
@@ -318,7 +349,7 @@ void ff_hevc_dequant16x16_sse4(int16_t *coeffs, int qp) {
     }
 }
 
-void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp) {
+void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp, int bit_dep) {
     int x;
     __m128i c0, c1, c2, c3, c4, c5, c6, c7, f0, f1;
 
@@ -326,7 +357,7 @@ void ff_hevc_dequant32x32_sse4(int16_t *coeffs, int qp) {
 
     //TODO: scaling_list_enabled_flag support
 
-    int shift = BIT_DEPTH-4;
+    int shift = bit_dep - 4;
     int scale = level_scale[qp % 6] << (qp / 6);
     int add = 1 << (shift - 1);
     f0 = _mm_set1_epi32(scale);
