@@ -1379,8 +1379,8 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
 				r1 = _mm_add_epi32(r1, x2);
 				r0 = _mm_add_epi32(r0, t3);
 				r1 = _mm_add_epi32(r1, x3);
-				r0 = _mm_srli_epi32(r0, 6);
-				r1 = _mm_srli_epi32(r1, 6);
+				r0 = _mm_srai_epi32(r0, 6);
+				r1 = _mm_srai_epi32(r1, 6);
 
 				/* give results back            */
 				r0 = _mm_packs_epi32(r0, r1);
@@ -1442,7 +1442,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
 				r0 = _mm_add_epi32(t0, t1);
 				r0 = _mm_add_epi32(r0, t2);
 				r0 = _mm_add_epi32(r0, t3);
-				r0 = _mm_srli_epi32(r0, 6);
+				r0 = _mm_srai_epi32(r0, 6);
 
 				/* give results back            */
 				r0 = _mm_packs_epi32(r0, r0);
@@ -1500,7 +1500,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
 				r0 = _mm_add_epi32(t0, t1);
 				r0 = _mm_add_epi32(r0, t2);
 				r0 = _mm_add_epi32(r0, t3);
-				r0 = _mm_srli_epi32(r0, 6);
+				r0 = _mm_srai_epi32(r0, 6);
 				/* give results back            */
 				r0 = _mm_packs_epi32(r0, r0);
 				_mm_maskmoveu_si128(r0,bshuffle2,(char *) (dst+x));
