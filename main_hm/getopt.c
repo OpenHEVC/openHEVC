@@ -130,9 +130,10 @@ void init_main(int argc, char *argv[]) {
 	display_flags   = DISPLAY_ENABLE;
     check_md5_flags = MD5_ENABLE;
     disable_au      = 0;
-    nb_pthreads = 0;
-    output_file = NULL;
-	program = argv[0];
+    layer_id        = 7;
+    nb_pthreads     = 1;
+    output_file     = NULL;
+	program         = argv[0];
     
 	c = getopt(argc, argv, ostr);
     
