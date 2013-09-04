@@ -506,7 +506,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     start = (sps->sps_sub_layer_ordering_info_present_flag ? 0 : (sps->sps_max_sub_layers - 1));
     for (i = start; i < sps->sps_max_sub_layers; i++) {
         sps->temporal_layer[i].max_dec_pic_buffering = get_ue_golomb(gb);
-        sps->temporal_layer[i].num_reorder_pics      = get_ue_golomb(gb);
+        sps->temporal_layer[i].num_reorder_pics      = get_ue_golomb(gb) + s->disable_au;
         sps->temporal_layer[i].max_latency_increase  = get_ue_golomb(gb);
         if (sps->temporal_layer[i].max_dec_pic_buffering >= MAX_DPB_SIZE) {
             av_log(s->avctx, AV_LOG_ERROR, "sps_max_dec_pic_buffering_minus1 out of range: %d\n",
