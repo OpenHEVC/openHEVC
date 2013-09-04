@@ -2536,6 +2536,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         return ret;
 
     ret = hls_nal_unit(s);
+    if (s->temporal_id >= s->layer_id)
+        return 0;
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                 s->nal_unit_type);
@@ -3000,6 +3002,8 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "disable-au", "disable read frame AU by AU", OFFSET(disable_au),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+    { "layer-id", "select layer temporal id", OFFSET(layer_id),
+        AV_OPT_TYPE_INT, {.i64 = 7}, 0, 7, PAR },
     { NULL },
 };
 

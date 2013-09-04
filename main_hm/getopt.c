@@ -52,6 +52,7 @@ void print_usage() {
     printf("     -n : no display\n");
     printf("     -c : no check md5\n");
     printf("     -a : disable AU\n");
+    printf("     -l : layer temporal id\n");
     printf("     -p <number of threads> \n");
 }
 
@@ -124,7 +125,7 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
 	// every command line option must be followed by ':' if it takes an
 	// argument, and '::' if this argument is optional
-	const char *ostr = "i:ncahp:o:";
+	const char *ostr = "i:ncahp:o:l:";
 	int c;
 	display_flags   = DISPLAY_ENABLE;
     check_md5_flags = MD5_ENABLE;
@@ -151,6 +152,9 @@ void init_main(int argc, char *argv[]) {
             break;
         case 'a':
              disable_au = 1;
+             break;
+        case 'l':
+             layer_id = atoi(optarg);
              break;
         case 'p':
             nb_pthreads = atoi(optarg);

@@ -51,6 +51,7 @@ char *input_file;
 char display_flags;
 int check_md5_flags;
 int disable_au;
+int layer_id;
 // Activate multi-threading if possible
 int nb_pthreads;
 

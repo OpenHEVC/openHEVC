@@ -67,6 +67,7 @@ static void video_decode_example(const char *filename)
     OpenHevc_Handle openHevcHandle = libOpenHevcInit(nb_pthreads);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetDisableAU(openHevcHandle, disable_au);
+    libOpenHevcSetLayer_id(openHevcHandle, layer_id);
     if (!openHevcHandle) {
         fprintf(stderr, "could not open OpenHevc\n");
         exit(1);
