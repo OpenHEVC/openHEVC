@@ -143,7 +143,7 @@ void libOpenHevcSetDisableAU(OpenHevc_Handle openHevcHandle, int val)
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     av_opt_set_int(openHevcContext->c->priv_data, "disable-au", val, 0);
 }
-void libOpenHevcSetLayer_id(OpenHevc_Handle openHevcHandle, int val)
+void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     av_opt_set_int(openHevcContext->c->priv_data, "temporal-layer-id", val+1, 0);
