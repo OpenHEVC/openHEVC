@@ -152,6 +152,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->dequant[1] = ff_hevc_dequant8x8_10_sse4;
                     c->dequant[2] = ff_hevc_dequant16x16_10_sse4;
                     c->dequant[3] = ff_hevc_dequant32x32_10_sse4;
+
+                    c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_10_sse;
+
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
