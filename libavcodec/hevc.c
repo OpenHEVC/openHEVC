@@ -2822,7 +2822,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 {
     int ret, poc_display;
     HEVCContext *s = avctx->priv_data;
-
+    s->pts = avpkt->pts;
 
     if (!avpkt->size) {
         if ((ret = ff_hevc_find_display(s, data, 1, &poc_display)) < 0)
