@@ -55,6 +55,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     openHevcContext->avpkt.size = au_len;
     openHevcContext->avpkt.data = buff;
+    openHevcContext->avpkt.pts  = pts;
     len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture, &openHevcContext->avpkt);
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");
