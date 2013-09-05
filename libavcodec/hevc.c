@@ -2956,10 +2956,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             if (s->enable_parallel_tiles)
                 av_free(lc->save_boundary_strengths);
             av_free(lc);
+            av_free(s->sList[i]);
         }
         av_free(s->ctb_entry_count);
-        av_free(s->HEVClcList[i]);
-        av_free(s->sList[i]);
     }
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         av_frame_free(&s->DPB[i].frame);
