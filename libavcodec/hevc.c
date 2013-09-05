@@ -2329,10 +2329,9 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
             s->HEVClcList[i]->ctx_set = 0;
             s->HEVClcList[i]->greater1_ctx = 0;
             s->HEVClcList[i]->last_coeff_abs_level_greater1_flag = 0;
-            s->HEVClcList[i]->cabac_state = av_malloc(HEVC_CONTEXTS);
             s->HEVClcList[i]->cc = av_malloc(sizeof(CABACContext));
             s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
-            s->HEVClcList[i]->BufferMC = av_malloc((MAX_PB_SIZE + 7) * MAX_PB_SIZE * sizeof(uint16_t));
+            
             if (s->enable_parallel_tiles) {
                 s->HEVClcList[i]->save_boundary_strengths =
                         av_malloc(
@@ -2872,26 +2871,16 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 {
     int i;
     HEVCContext *s = avctx->priv_data;
-
-
     HEVCThreadContext *lc;
-
     s->avctx = avctx;
-
     s->HEVClc = av_mallocz(sizeof(HEVCThreadContext));
     memset(&s->sh, 0, sizeof(s->sh));
-
     lc = s->HEVClcList[0] = s->HEVClc;
-   
     s->sList[0] = s;
-
-    lc->BufferMC = av_malloc((MAX_PB_SIZE + 7) * MAX_PB_SIZE * sizeof(uint16_t));
     s->tmp_frame = av_frame_alloc();
-    s->cabac_state = av_malloc(HEVC_CONTEXTS);
 
     lc->gb = av_malloc(sizeof(GetBitContext));
     lc->cc = av_malloc(sizeof(CABACContext));
-    lc->cabac_state = av_malloc(HEVC_CONTEXTS);
     lc->ctx_set = 0;
     lc->greater1_ctx = 0;
     lc->last_coeff_abs_level_greater1_flag = 0;
@@ -2934,13 +2923,13 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_free(s->rbsp_buffer);
     av_free(s->skipped_bytes_pos);
     av_frame_free(&s->tmp_frame);
-    av_free(s->cabac_state);
+    
 
-    av_free(lc->cabac_state);
+    
     av_free(lc->gb);
     av_free(lc->cc);
     av_free(lc->edge_emu_buffer);
-    av_free(lc->BufferMC);
+    
 
     for (i = 0; i < MAX_TRANSFORM_DEPTH; i++) {
         av_freep(&lc->tt.cbf_cb[i]);
@@ -2959,12 +2948,11 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
             av_free(lc->gb);
             av_free(lc->cc);
             av_free(lc->edge_emu_buffer);
-            av_free(lc->BufferMC);
+            
             for (j = 0; j < MAX_TRANSFORM_DEPTH; j++) {
                 av_freep(&lc->tt.cbf_cb[j]);
                 av_freep(&lc->tt.cbf_cr[j]);
             }
-            av_free(lc->cabac_state);
             if (s->enable_parallel_tiles)
                 av_free(lc->save_boundary_strengths);
             av_free(lc);
