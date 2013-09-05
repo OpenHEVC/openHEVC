@@ -2878,7 +2878,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     lc = s->HEVClcList[0] = s->HEVClc;
     s->sList[0] = s;
     s->tmp_frame = av_frame_alloc();
-
+    s->cabac_state = av_malloc(HEVC_CABAC_CONTEXTS);
     lc->gb = av_malloc(sizeof(GetBitContext));
     lc->cc = av_malloc(sizeof(CABACContext));
     lc->ctx_set = 0;
@@ -2923,7 +2923,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_free(s->rbsp_buffer);
     av_free(s->skipped_bytes_pos);
     av_frame_free(&s->tmp_frame);
-    
+    av_free(s->cabac_state);
 
     
     av_free(lc->gb);
