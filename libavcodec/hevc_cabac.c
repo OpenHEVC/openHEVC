@@ -128,7 +128,7 @@ static const int elem_offset[sizeof(num_bins_in_se)] = {
 /**
  * Indexed by init_type
  */
-static const uint8_t init_values[3][HEVC_CONTEXTS] = {
+static const uint8_t init_values[3][HEVC_CABAC_CONTEXTS] = {
     {
         // sao_merge_flag
         153,
@@ -360,7 +360,7 @@ void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
             (s->sps->pic_width_in_ctbs == 2 && (ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0)
     ) ) {
        printTitle("save_states \n");
-	    memcpy(s->cabac_state, s->HEVClc->cabac_state, HEVC_CONTEXTS);
+	    memcpy(s->cabac_state, s->HEVClc->cabac_state, HEVC_CABAC_CONTEXTS);
 	}
 }
 
@@ -368,7 +368,7 @@ static void load_states(HEVCContext *s)
 {
 
     printTitle("load_states \n");
-    memcpy(s->HEVClc->cabac_state, s->cabac_state, HEVC_CONTEXTS);
+    memcpy(s->HEVClc->cabac_state, s->cabac_state, HEVC_CABAC_CONTEXTS);
 }
 
 static void cabac_reinit(HEVCThreadContext *lc)
@@ -394,7 +394,7 @@ static void cabac_init_state(HEVCContext *s)
     if (s->sh.cabac_init_flag && s->sh.slice_type != I_SLICE)
         init_type ^= 3;
 
-    for (i = 0; i < HEVC_CONTEXTS; i++) {
+    for (i = 0; i < HEVC_CABAC_CONTEXTS; i++) {
         int init_value = init_values[init_type][i];
         int m = (init_value >> 4)*5 - 45;
         int n = ((init_value & 15) << 3) - 16;
