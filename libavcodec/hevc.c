@@ -3004,7 +3004,7 @@ static const AVOption options[] = {
     { "disable-au", "disable read frame AU by AU", OFFSET(disable_au),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "temporal-layer-id", "select layer temporal id", OFFSET(temporal_layer_id),
-        AV_OPT_TYPE_INT, {.i64 = 7}, 0, 7, PAR },
+        AV_OPT_TYPE_INT, {.i64 = 8}, 0, 8, PAR },
     { NULL },
 };
 
