@@ -780,7 +780,7 @@ typedef struct HEVCContext {
     HEVCThreadContext    *HEVClcList[MAX_THREADS];
     HEVCThreadContext    *HEVClc;
 
-    uint8_t cabac_state[HEVC_CABAC_CONTEXTS]; //
+    uint8_t *cabac_state; //
     
     AVFrame *frame;
     AVFrame *sao_frame;
