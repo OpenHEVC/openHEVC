@@ -146,7 +146,7 @@ void libOpenHevcSetDisableAU(OpenHevc_Handle openHevcHandle, int val)
 void libOpenHevcSetLayer_id(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    av_opt_set_int(openHevcContext->c->priv_data, "layer-id", val+1, 0);
+    av_opt_set_int(openHevcContext->c->priv_data, "temporal-layer-id", val+1, 0);
 }
 
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle)

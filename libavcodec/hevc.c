@@ -2446,23 +2446,22 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 static int hls_nal_unit(HEVCContext *s)
 {
     GetBitContext *gb = s->HEVClc->gb;
-    int nuh_layer_id;
 
     if (get_bits1(gb) != 0)
         return AVERROR_INVALIDDATA;
 
     s->nal_unit_type = get_bits(gb, 6);
 
-    nuh_layer_id = get_bits(gb, 6);
+    s->nuh_layer_id = get_bits(gb, 6);
     s->temporal_id = get_bits(gb, 3) - 1;
     if (s->temporal_id < 0)
         return AVERROR_INVALIDDATA;
 
     av_log(s->avctx, AV_LOG_DEBUG,
            "nal_unit_type: %d, nuh_layer_id: %dtemporal_id: %d\n",
-           s->nal_unit_type, nuh_layer_id, s->temporal_id);
+           s->nal_unit_type, s->nuh_layer_id, s->temporal_id);
 
-    return (nuh_layer_id == 0);
+    return (s->nuh_layer_id == 0);
 }
 #ifdef POC_DISPLAY_MD5
 
@@ -2538,7 +2537,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         return ret;
 
     ret = hls_nal_unit(s);
-    if (s->temporal_id >= s->layer_id)
+    if (s->temporal_id >= s->temporal_layer_id)
         return 0;
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
@@ -3004,7 +3003,7 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "disable-au", "disable read frame AU by AU", OFFSET(disable_au),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-    { "layer-id", "select layer temporal id", OFFSET(layer_id),
+    { "temporal-layer-id", "select layer temporal id", OFFSET(temporal_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 7}, 0, 7, PAR },
     { NULL },
 };
