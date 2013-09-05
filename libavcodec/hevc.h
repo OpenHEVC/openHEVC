@@ -141,6 +141,15 @@ typedef struct RefPicListTab {
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
 
+typedef struct NeighbourAvailable {
+    int cand_bottom_left;
+    int cand_left;
+    int cand_up;
+    int cand_up_left;
+    int cand_up_right;
+    int cand_up_right_sap;
+} NeighbourAvailable;
+
 typedef struct HEVCWindow {
     int left_offset;
     int right_offset;
@@ -764,6 +773,7 @@ typedef struct HEVCThreadContext {
     CodingTree ct;
     CodingUnit cu;
     PredictionUnit pu;
+    NeighbourAvailable na;
     DECLARE_ALIGNED( 16, int16_t, BufferMC[(MAX_PB_SIZE + 7) * MAX_PB_SIZE] );
     Filter_data *save_boundary_strengths;
     int nb_saved;
@@ -940,6 +950,7 @@ int ff_hevc_find_next_ref(HEVCContext *s, int poc);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 int ff_hevc_find_display(HEVCContext *s, AVFrame *frame, int flush, int* poc_display);
 
+void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, int nPbH);
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX);
 void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_cb_size);
