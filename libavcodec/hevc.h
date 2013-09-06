@@ -811,6 +811,7 @@ typedef struct HEVCContext {
     HEVCFrame DPB[32];
     int poc;
     int pocTid0;
+    int curr_dpb_idx;
     int max_ra;
     int bs_width;
     int bs_height;
