@@ -2007,9 +2007,6 @@ void ff_hevc_put_hevc_qpel_h_1_10_sse(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 
-
-
-
 }
 
 
@@ -2083,72 +2080,6 @@ void ff_hevc_put_hevc_qpel_h_2_8_sse(int16_t *dst, ptrdiff_t dststride,
 
 }
 
-static  void ff_hevc_put_hevc_qpel_h_1_sse(int16_t *dst, ptrdiff_t dststride,
-        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
-        int16_t* mcbuffer) {
-    int x, y;
-    uint8_t *src = _src;
-    ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    __m128i x1, r0, x2, x3, x4, x5;
-
-    r0 = _mm_set_epi8(0, 1, -5, 17, 58, -10, 4, -1, 0, 1, -5, 17, 58, -10, 4,
-            -1);
-
-    if(!(width & 7)){
-        for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x += 8) {
-                /* load data in register     */
-                x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);
-                x2 = _mm_unpacklo_epi64(x1, _mm_srli_si128(x1, 1));
-                x3 = _mm_unpacklo_epi64(_mm_srli_si128(x1, 2),
-                        _mm_srli_si128(x1, 3));
-                x4 = _mm_unpacklo_epi64(_mm_srli_si128(x1, 4),
-                        _mm_srli_si128(x1, 5));
-                x5 = _mm_unpacklo_epi64(_mm_srli_si128(x1, 6),
-                        _mm_srli_si128(x1, 7));
-
-                /*  PMADDUBSW then PMADDW     */
-                x2 = _mm_maddubs_epi16(x2, r0);
-                x3 = _mm_maddubs_epi16(x3, r0);
-                x4 = _mm_maddubs_epi16(x4, r0);
-                x5 = _mm_maddubs_epi16(x5, r0);
-                x2 = _mm_hadd_epi16(x2, x3);
-                x4 = _mm_hadd_epi16(x4, x5);
-                x2 = _mm_hadd_epi16(x2, x4);
-                /* give results back            */
-                _mm_store_si128((__m128i *) &dst[x],x2);
-
-            }
-            src += srcstride;
-            dst += dststride;
-        }
-    }else{
-
-        for (y = 0; y < height; y ++) {
-            for(x=0;x<width;x+=4){
-            /* load data in register     */
-            x1 = _mm_loadu_si128((__m128i *) &src[x-3]);
-            x2 = _mm_unpacklo_epi64(x1, _mm_srli_si128(x1, 1));
-            x3 = _mm_unpacklo_epi64(_mm_srli_si128(x1, 2),
-                    _mm_srli_si128(x1, 3));
-
-
-            /*  PMADDUBSW then PMADDW     */
-            x2 = _mm_maddubs_epi16(x2, r0);
-            x3 = _mm_maddubs_epi16(x3, r0);
-            x2 = _mm_hadd_epi16(x2, x3);
-            x2 = _mm_hadd_epi16(x2, x2);
-
-            /* give results back            */
-            _mm_storel_epi64((__m128i *) &dst[x], x2);
-            }
-
-            src += srcstride;
-            dst += dststride;
-        }
-    }
-
-}
 static void ff_hevc_put_hevc_qpel_h_2_sse(int16_t *dst, ptrdiff_t dststride,
         uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
         int16_t* mcbuffer) {
