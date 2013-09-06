@@ -977,7 +977,7 @@ void ff_hevc_put_hevc_epel_h_8_sse(int16_t *dst, ptrdiff_t dststride,
     bshuffle1 = _mm_set_epi8(6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0);
 
 
-    if(!(width & 8)){
+    if(!(width & 7)){
         bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5,
                         4);
                 for (y = 0; y < height; y++) {
@@ -1770,150 +1770,27 @@ void ff_hevc_put_hevc_epel_hv_10_sse(int16_t *dst, ptrdiff_t dststride,
             dst += dststride;
         }
     }
-
 }
 
-
-
-static void ff_hevc_put_hevc_epel_hv_sse(int16_t *dst, ptrdiff_t dststride,
-        uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx,
-        int my, int16_t* mcbuffer) {
-    int x, y;
-    uint8_t *src = (uint8_t*) _src;
-    ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    const int8_t *filter_h = epel_filters[mx - 1];
-    const int8_t *filter_v = epel_filters[my - 1];
-    __m128i r0, bshuffle1, bshuffle2, x0, x1, x2, x3, t0, t1, t2, t3, f0, f1,
-    f2, f3, r1, r2;
-    int8_t filter_0 = filter_h[0];
-    int8_t filter_1 = filter_h[1];
-    int8_t filter_2 = filter_h[2];
-    int8_t filter_3 = filter_h[3];
-    int16_t *tmp = mcbuffer;
-    r0 = _mm_set_epi8(filter_3, filter_2, filter_1, filter_0, filter_3,
-            filter_2, filter_1, filter_0, filter_3, filter_2, filter_1,
-            filter_0, filter_3, filter_2, filter_1, filter_0);
-    bshuffle1 = _mm_set_epi8(6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0);
-
-
-    src -= epel_extra_before * srcstride;
-    /* horizontal treatment */
-
-    if(!(width & 15)){
-        bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5,
-                        4);
-                for (y = 0; y < height + epel_extra; y++) {
-                    for (x = 0; x < width; x += 8) {
-
-                        x1 = _mm_loadu_si128((__m128i *) &src[x - 1]);
-                        x2 = _mm_shuffle_epi8(x1, bshuffle1);
-                        x3 = _mm_shuffle_epi8(x1, bshuffle2);
-
-                        /*  PMADDUBSW then PMADDW     */
-                        x2 = _mm_maddubs_epi16(x2, r0);
-                        x3 = _mm_maddubs_epi16(x3, r0);
-                        x2 = _mm_hadd_epi16(x2, x3);
-                        x2 = _mm_srli_epi16(x2, BIT_DEPTH - 8);
-                        _mm_store_si128((__m128i *) &tmp[x], x2);
-                    }
-                    src += srcstride;
-                    tmp += MAX_PB_SIZE;
-                }
-    }else{
-        for (y = 0; y < height + epel_extra; y += 2) {
-            for(x=0;x<width;x+=4){
-                    /* load data in register     */
-                    x1 = _mm_loadu_si128((__m128i *) &src[x-1]);
-
-                    x1 = _mm_shuffle_epi8(x1, bshuffle1);
-
-                    /*  PMADDUBSW then PMADDW     */
-                    x1 = _mm_maddubs_epi16(x1, r0);
-                    x1 = _mm_hadd_epi16(x1, _mm_setzero_si128());
-                    x1 = _mm_srli_epi16(x1, BIT_DEPTH - 8);
-
-                    /* give results back            */
-                    _mm_storel_epi64((__m128i *) &tmp[x], x1);
-
-            }
-                    src += srcstride;
-                    tmp += MAX_PB_SIZE;
-                }
-    }
-
-
-    tmp = mcbuffer + epel_extra_before * MAX_PB_SIZE;
-
-    /* vertical treatment */
-    //f0= _mm_loadu_si128((__m128i *)&filter_v);
-    f3 = _mm_set1_epi16(filter_v[3]);
-    f1 = _mm_set1_epi16(filter_v[1]);
-    f2 = _mm_set1_epi16(filter_v[2]);
-    f0 = _mm_set1_epi16(filter_v[0]);
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x += 8) {
-            /* check if memory needs to be reloaded */
-            x0 = _mm_load_si128((__m128i *) &tmp[x - MAX_PB_SIZE]);
-            x1 = _mm_load_si128((__m128i *) &tmp[x]);
-            x2 = _mm_load_si128((__m128i *) &tmp[x + MAX_PB_SIZE]);
-            x3 = _mm_load_si128((__m128i *) &tmp[x + 2 * MAX_PB_SIZE]);
-
-            r0 = _mm_mullo_epi16(x0, f0);
-            r1 = _mm_mulhi_epi16(x0, f0);
-            r2 = _mm_mullo_epi16(x1, f1);
-            t0 = _mm_unpacklo_epi16(r0, r1);
-            x0 = _mm_unpackhi_epi16(r0, r1);
-            r0 = _mm_mulhi_epi16(x1, f1);
-            r1 = _mm_mullo_epi16(x2, f2);
-            t1 = _mm_unpacklo_epi16(r2, r0);
-            x1 = _mm_unpackhi_epi16(r2, r0);
-            r2 = _mm_mulhi_epi16(x2, f2);
-            r0 = _mm_mullo_epi16(x3, f3);
-            t2 = _mm_unpacklo_epi16(r1, r2);
-            x2 = _mm_unpackhi_epi16(r1, r2);
-            r1 = _mm_mulhi_epi16(x3, f3);
-            t3 = _mm_unpacklo_epi16(r0, r1);
-            x3 = _mm_unpackhi_epi16(r0, r1);
-
-            /* multiply by correct value : */
-            r0 = _mm_add_epi32(t0, t1);
-            r1 = _mm_add_epi32(x0, x1);
-            r0 = _mm_add_epi32(r0, t2);
-            r1 = _mm_add_epi32(r1, x2);
-            r0 = _mm_add_epi32(r0, t3);
-            r1 = _mm_add_epi32(r1, x3);
-            r0 = _mm_srli_epi32(r0, 6);
-            r1 = _mm_srli_epi32(r1, 6);
-
-            /* give results back            */
-            r0 = _mm_packs_epi32(r0, r1);
-            _mm_store_si128((__m128i *) &dst[x], r0);
-        }
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-
-}
-
-void ff_hevc_put_hevc_qpel_pixels_sse(int16_t *dst, ptrdiff_t dststride,
+void ff_hevc_put_hevc_qpel_pixels_8_sse(int16_t *dst, ptrdiff_t dststride,
         uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
         int16_t* mcbuffer) {
     int x, y;
-    __m128i x1, x2, x3;
+    __m128i x1, x2, x3, x0, x4;
     uint8_t *src = (uint8_t*) _src;
-    ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-
+    ptrdiff_t srcstride = _srcstride;
+    x0= _mm_setzero_si128();
     if(!(width & 15)){
         for (y = 0; y < height; y++) {
             for (x = 0; x < width; x += 16) {
 
                 x1 = _mm_loadu_si128((__m128i *) &src[x]);
-                x2 = _mm_unpacklo_epi8(x1, _mm_set1_epi8(0));
+                x2 = _mm_unpacklo_epi8(x1, x0);
 
-                x3 = _mm_unpackhi_epi8(x1, _mm_set1_epi8(0));
+                x3 = _mm_unpackhi_epi8(x1, x0);
 
-                x2 = _mm_slli_epi16(x2, 14 - BIT_DEPTH);
-                x3 = _mm_slli_epi16(x3, 14 - BIT_DEPTH);
+                x2 = _mm_slli_epi16(x2, 6);
+                x3 = _mm_slli_epi16(x3, 6);
                 _mm_storeu_si128((__m128i *) &dst[x], x2);
                 _mm_storeu_si128((__m128i *) &dst[x + 8], x3);
 
@@ -1921,21 +1798,92 @@ void ff_hevc_put_hevc_qpel_pixels_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             dst += dststride;
         }
-    }else{
+    }else if(!(width & 7)){
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x += 8) {
+
+                x1 = _mm_loadu_si128((__m128i *) &src[x]);
+                x2 = _mm_unpacklo_epi8(x1, x0);
+                x2 = _mm_slli_epi16(x2, 6);
+                _mm_storeu_si128((__m128i *) &dst[x], x2);
+
+            }
+            src += srcstride;
+            dst += dststride;
+        }
+    }else if(!(width & 3)){
         for (y = 0; y < height; y++) {
             for(x=0;x<width;x+=4){
                 x1 = _mm_loadu_si128((__m128i *) &src[x]);
-                x2 = _mm_unpacklo_epi8(x1, _mm_set1_epi8(0));
-                x2 = _mm_slli_epi16(x2, 14 - BIT_DEPTH);
+                x2 = _mm_unpacklo_epi8(x1, x0);
+                x2 = _mm_slli_epi16(x2, 6);
                 _mm_storel_epi64((__m128i *) &dst[x], x2);
             }
             src += srcstride;
             dst += dststride;
         }
+    }else{
+        x4= _mm_set_epi32(0,0,0,-1); //mask to store
+        for (y = 0; y < height; y++) {
+                    for(x=0;x<width;x+=2){
+                        x1 = _mm_loadl_epi64((__m128i *) &src[x]);
+                        x2 = _mm_unpacklo_epi8(x1, x0);
+                        x2 = _mm_slli_epi16(x2, 6);
+                        _mm_maskmoveu_si128(x2,x4,(char *) (dst+x));
+                    }
+                    src += srcstride;
+                    dst += dststride;
+                }
     }
 
 
 }
+
+void ff_hevc_put_hevc_qpel_pixels_10_sse(int16_t *dst, ptrdiff_t dststride,
+        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+        int16_t* mcbuffer) {
+    int x, y;
+    __m128i x1, x2, x3, x4;
+    uint16_t *src = (uint16_t*) _src;
+    ptrdiff_t srcstride = _srcstride>>1;
+    if(!(width & 7)){
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x += 8) {
+
+                x1 = _mm_loadu_si128((__m128i *) &src[x]);
+                x2 = _mm_slli_epi16(x1, 4); //14-BIT DEPTH
+                _mm_storeu_si128((__m128i *) &dst[x], x2);
+
+            }
+            src += srcstride;
+            dst += dststride;
+        }
+    }else if(!(width & 3)){
+        for (y = 0; y < height; y++) {
+            for(x=0;x<width;x+=4){
+                x1 = _mm_loadl_epi64((__m128i *) &src[x]);
+                x2 = _mm_slli_epi16(x1, 4);//14-BIT DEPTH
+                _mm_storel_epi64((__m128i *) &dst[x], x2);
+            }
+            src += srcstride;
+            dst += dststride;
+        }
+    }else{
+        x4= _mm_set_epi32(0,0,0,-1); //mask to store
+        for (y = 0; y < height; y++) {
+                    for(x=0;x<width;x+=2){
+                        x1 = _mm_loadl_epi64((__m128i *) &src[x]);
+                        x2 = _mm_slli_epi16(x1, 4);//14-BIT DEPTH
+                        _mm_maskmoveu_si128(x2,x4,(char *) (dst+x));
+                    }
+                    src += srcstride;
+                    dst += dststride;
+                }
+    }
+
+
+}
+
 
 void ff_hevc_put_hevc_qpel_h_1_8_sse(int16_t *dst, ptrdiff_t dststride,
         uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
@@ -1976,7 +1924,7 @@ void ff_hevc_put_hevc_qpel_h_1_8_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             dst += dststride;
         }
-    }else{
+    }else if(!(width &3)){
 
         for (y = 0; y < height; y ++) {
             for(x=0;x<width;x+=4){
@@ -1985,7 +1933,6 @@ void ff_hevc_put_hevc_qpel_h_1_8_sse(int16_t *dst, ptrdiff_t dststride,
             x2 = _mm_unpacklo_epi64(x1, _mm_srli_si128(x1, 1));
             x3 = _mm_unpacklo_epi64(_mm_srli_si128(x1, 2),
                     _mm_srli_si128(x1, 3));
-
 
             /*  PMADDUBSW then PMADDW     */
             x2 = _mm_maddubs_epi16(x2, r0);
@@ -2000,9 +1947,73 @@ void ff_hevc_put_hevc_qpel_h_1_8_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             dst += dststride;
         }
+    }else{
+        x5= _mm_setzero_si128();
+        x3= _mm_set_epi32(0,0,0,-1);
+        for (y = 0; y < height; y ++) {
+            for(x=0;x<width;x+=4){
+            /* load data in register     */
+            x1 = _mm_loadu_si128((__m128i *) &src[x-3]);
+            x2 = _mm_unpacklo_epi64(x1, _mm_srli_si128(x1, 1));
+
+
+
+            /*  PMADDUBSW then PMADDW     */
+            x2 = _mm_maddubs_epi16(x2, r0);
+            x2 = _mm_hadd_epi16(x2,x5 );
+            x2 = _mm_hadd_epi16(x2,x5 );
+
+            /* give results back            */
+            //_mm_storel_epi64((__m128i *) &dst[x], x2);
+            _mm_maskmoveu_si128(x2,x3,(char *) (dst+x));
+            }
+
+            src += srcstride;
+            dst += dststride;
+        }
     }
 
 }
+/*
+ * @TODO : Valgrind to see if it's useful to use SSE or wait for AVX2 implementation
+ */
+void ff_hevc_put_hevc_qpel_h_1_10_sse(int16_t *dst, ptrdiff_t dststride,
+        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+        int16_t* mcbuffer) {
+    int x, y;
+    uint16_t *src = (uint16_t*)_src;
+    ptrdiff_t srcstride = _srcstride>>1;
+    __m128i x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, r0;
+
+    r0 = _mm_set_epi16(0, 1, -5, 17, 58, -10, 4, -1);
+    x0= _mm_setzero_si128();
+    x3= _mm_set_epi32(0,0,0,-1);
+    for (y = 0; y < height; y ++) {
+        for(x=0;x<width;x+=2){
+            x1 = _mm_loadu_si128((__m128i *) &src[x-3]);
+            x2 = _mm_srli_si128(x1,2); //last 16bit not used so 1 load can be used for 2 dst
+
+            x1 = _mm_madd_epi16(x1,r0);
+            x2 = _mm_madd_epi16(x2,r0);
+
+            x1 = _mm_hadd_epi32(x1,x2);
+            x1 = _mm_hadd_epi32(x1,x0);
+            x1= _mm_srai_epi32(x1,2); //>>BIT_DEPTH-8
+            x1= _mm_packs_epi32(x1,x0);
+         //   dst[x]= _mm_extract_epi16(x1,0);
+            _mm_maskmoveu_si128(x1,x3,(char *) (dst+x));
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+
+
+
+
+}
+
+
+
 void ff_hevc_put_hevc_qpel_h_2_8_sse(int16_t *dst, ptrdiff_t dststride,
         uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
         int16_t* mcbuffer) {
