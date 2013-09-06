@@ -1924,7 +1924,7 @@ void ff_hevc_put_hevc_qpel_h_1_8_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             dst += dststride;
         }
-    }else{
+    }else if(!(width &3)){
 
         for (y = 0; y < height; y ++) {
             for(x=0;x<width;x+=4){
@@ -1933,7 +1933,6 @@ void ff_hevc_put_hevc_qpel_h_1_8_sse(int16_t *dst, ptrdiff_t dststride,
             x2 = _mm_unpacklo_epi64(x1, _mm_srli_si128(x1, 1));
             x3 = _mm_unpacklo_epi64(_mm_srli_si128(x1, 2),
                     _mm_srli_si128(x1, 3));
-
 
             /*  PMADDUBSW then PMADDW     */
             x2 = _mm_maddubs_epi16(x2, r0);
@@ -1948,9 +1947,73 @@ void ff_hevc_put_hevc_qpel_h_1_8_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             dst += dststride;
         }
+    }else{
+        x5= _mm_setzero_si128();
+        x3= _mm_set_epi32(0,0,0,-1);
+        for (y = 0; y < height; y ++) {
+            for(x=0;x<width;x+=4){
+            /* load data in register     */
+            x1 = _mm_loadu_si128((__m128i *) &src[x-3]);
+            x2 = _mm_unpacklo_epi64(x1, _mm_srli_si128(x1, 1));
+
+
+
+            /*  PMADDUBSW then PMADDW     */
+            x2 = _mm_maddubs_epi16(x2, r0);
+            x2 = _mm_hadd_epi16(x2,x5 );
+            x2 = _mm_hadd_epi16(x2,x5 );
+
+            /* give results back            */
+            //_mm_storel_epi64((__m128i *) &dst[x], x2);
+            _mm_maskmoveu_si128(x2,x3,(char *) (dst+x));
+            }
+
+            src += srcstride;
+            dst += dststride;
+        }
     }
 
 }
+/*
+ * @TODO : Valgrind to see if it's useful to use SSE or wait for AVX2 implementation
+ */
+void ff_hevc_put_hevc_qpel_h_1_10_sse(int16_t *dst, ptrdiff_t dststride,
+        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+        int16_t* mcbuffer) {
+    int x, y;
+    uint16_t *src = (uint16_t*)_src;
+    ptrdiff_t srcstride = _srcstride>>1;
+    __m128i x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, r0;
+
+    r0 = _mm_set_epi16(0, 1, -5, 17, 58, -10, 4, -1);
+    x0= _mm_setzero_si128();
+    x3= _mm_set_epi32(0,0,0,-1);
+    for (y = 0; y < height; y ++) {
+        for(x=0;x<width;x+=2){
+            x1 = _mm_loadu_si128((__m128i *) &src[x-3]);
+            x2 = _mm_srli_si128(x1,2); //last 16bit not used so 1 load can be used for 2 dst
+
+            x1 = _mm_madd_epi16(x1,r0);
+            x2 = _mm_madd_epi16(x2,r0);
+
+            x1 = _mm_hadd_epi32(x1,x2);
+            x1 = _mm_hadd_epi32(x1,x0);
+            x1= _mm_srai_epi32(x1,2); //>>BIT_DEPTH-8
+            x1= _mm_packs_epi32(x1,x0);
+         //   dst[x]= _mm_extract_epi16(x1,0);
+            _mm_maskmoveu_si128(x1,x3,(char *) (dst+x));
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+
+
+
+
+}
+
+
+
 void ff_hevc_put_hevc_qpel_h_2_8_sse(int16_t *dst, ptrdiff_t dststride,
         uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
         int16_t* mcbuffer) {
