@@ -977,7 +977,7 @@ void ff_hevc_put_hevc_epel_h_8_sse(int16_t *dst, ptrdiff_t dststride,
     bshuffle1 = _mm_set_epi8(6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0);
 
 
-    if(!(width & 8)){
+    if(!(width & 7)){
         bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5,
                         4);
                 for (y = 0; y < height; y++) {
@@ -1770,7 +1770,6 @@ void ff_hevc_put_hevc_epel_hv_10_sse(int16_t *dst, ptrdiff_t dststride,
             dst += dststride;
         }
     }
-
 }
 
 void ff_hevc_put_hevc_qpel_pixels_sse(int16_t *dst, ptrdiff_t dststride,
