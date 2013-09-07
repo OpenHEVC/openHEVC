@@ -237,7 +237,7 @@ static void thread_free(AVCodecContext *avctx)
     pthread_cond_destroy(&c->current_job_cond);
     pthread_cond_destroy(&c->last_job_cond);
 #if WPP_PTHREAD_MUTEX
-    for(i=0; i < c->count-1; i++) {
+    for(i=0; i < c->count; i++) {
         pthread_mutex_lock(&c->progress_mutex[i]);
         pthread_cond_broadcast(&c->progress_cond[i]);
         pthread_mutex_unlock(&c->progress_mutex[i]);
@@ -1115,9 +1115,9 @@ int ff_alloc_entries(AVCodecContext *avctx, int count)
             return AVERROR(ENOMEM);
         }
         p->count = count;
-        p->progress_mutex = av_malloc((count-1)  * sizeof(pthread_mutex_t));
-        p->progress_cond = av_malloc((count-1)  * sizeof(pthread_cond_t));
-        for(i=0; i < count-1; i++){
+        p->progress_mutex = av_malloc(count  * sizeof(pthread_mutex_t));
+        p->progress_cond = av_malloc(count  * sizeof(pthread_cond_t));
+        for(i=0; i < count; i++) {
             pthread_mutex_init(&p->progress_mutex[i], NULL);
             pthread_cond_init(&p->progress_cond[i], NULL);
         }
