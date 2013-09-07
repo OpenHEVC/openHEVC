@@ -1125,9 +1125,9 @@ int ff_alloc_entries(AVCodecContext *avctx, int count)
     return 0;
 }
 
-void ff_reset_entries(AVCodecContext *avctx, int count)
+void ff_reset_entries(AVCodecContext *avctx)
 {
     ThreadContext *p = avctx->thread_opaque;
-    memset(p->count_entries, 0, count  * sizeof(int));
+    memset(p->count_entries, 0, p->count  * sizeof(int));
 }
 #endif

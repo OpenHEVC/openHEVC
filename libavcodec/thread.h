@@ -131,6 +131,7 @@ void ff_thread_free(AVCodecContext *s);
 
 #if WPP_PTHREAD_MUTEX
 int ff_alloc_entries(AVCodecContext *avctx, int count);
+void ff_reset_entries(AVCodecContext *avctx);
 void ff_thread_report_progress2(AVCodecContext *avctx, int field, int n);
 void ff_thread_await_progress2(AVCodecContext *avctx,  int field, int shift);
 #endif

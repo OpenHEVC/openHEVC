@@ -2435,7 +2435,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     avpriv_atomic_int_set(&s->ERROR, 0);
 
 #if WPP_PTHREAD_MUTEX
-    ff_reset_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
+    ff_reset_entries(s->avctx);
 #else
     memset(s->ctb_entry_count, 0, (s->sh.num_entry_point_offsets + 1) * sizeof(int));
 #endif
