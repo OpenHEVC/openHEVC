@@ -1083,7 +1083,6 @@ void ff_thread_report_progress2(AVCodecContext *avctx, int field, int n)
 {
     ThreadContext *p  = avctx->thread_opaque;
     int *count_entries = p->count_entries;
-    if (field == (p->count-1)) return;
     
     pthread_mutex_lock(&p->progress_mutex[field]);
     count_entries[field] +=n;
@@ -1096,6 +1095,7 @@ void ff_thread_await_progress2(AVCodecContext *avctx, int field, int shift)
 {
     ThreadContext *p  = avctx->thread_opaque;
     int *count_entries = p->count_entries;
+    
     if (!count_entries || !field) return;
     
     pthread_mutex_lock(&p->progress_mutex[field-1]);
