@@ -2206,6 +2206,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     int ctb_row = ctb_row_p[job];
     int ctb_addr_rs = s1->sh.slice_ctb_addr_rs + (ctb_row) * ((s1->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s1->sps->log2_ctb_size);
     int ctb_addr_ts = s1->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
+    int thread = ctb_row%s1->threads_number;
     s = s1->sList[self_id];
     lc = s->HEVClc;
    
@@ -2220,13 +2221,13 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         int y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
 #if WPP_PTHREAD_MUTEX
-        ff_thread_await_progress2(s->avctx, ctb_row, SHIFT_CTB_WPP);
+        ff_thread_await_progress2(s->avctx, ctb_row, thread, SHIFT_CTB_WPP);
 #else
         while(ctb_row && (avpriv_atomic_int_get(&s->ctb_entry_count[(ctb_row)-1]) - avpriv_atomic_int_get(&s->ctb_entry_count[(ctb_row)]))<SHIFT_CTB_WPP);
 #endif
         if (avpriv_atomic_int_get(&s1->ERROR)){
 #if WPP_PTHREAD_MUTEX
-            ff_thread_report_progress2(s->avctx, ctb_row ,SHIFT_CTB_WPP);
+            ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
 #else
             avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
 #endif
@@ -2245,7 +2246,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         
         ff_hevc_save_states(s, ctb_addr_ts);
 #if WPP_PTHREAD_MUTEX
-        ff_thread_report_progress2(s->avctx, ctb_row, 1);
+        ff_thread_report_progress2(s->avctx, ctb_row, thread, 1);
 #else
         avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],1);
 #endif
@@ -2255,7 +2256,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         if (!more_data && (x_ctb+ctb_size) < s->sps->pic_width_in_luma_samples && ctb_row != s->sh.num_entry_point_offsets) {
         	avpriv_atomic_int_set(&s1->ERROR,  1);
 #if WPP_PTHREAD_MUTEX
-            ff_thread_report_progress2(s->avctx, ctb_row ,SHIFT_CTB_WPP);
+            ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
 #else
             avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
 #endif
@@ -2267,7 +2268,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
             ff_hevc_hls_filter(s, x_ctb, y_ctb);
 #endif
 #if WPP_PTHREAD_MUTEX
-            ff_thread_report_progress2(s->avctx, ctb_row ,SHIFT_CTB_WPP);
+            ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
 #else
             avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
 #endif
@@ -2281,7 +2282,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         }
     }
 #if WPP_PTHREAD_MUTEX
-    ff_thread_report_progress2(s->avctx, ctb_row ,SHIFT_CTB_WPP);
+    ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
 #else
     avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
 #endif
