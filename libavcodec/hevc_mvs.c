@@ -38,6 +38,24 @@ static const uint8_t l0_l1_cand_idx[12][2] = {
     { 3, 2, },
 };
 
+void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, int nPbH)
+{
+    HEVCThreadContext *lc = s->HEVClc;
+    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
+
+    lc->na.cand_up       = (lc->ctb_up_flag   || y0b);
+    lc->na.cand_left     = (lc->ctb_left_flag || x0b);
+    lc->na.cand_up_left  = (!x0b && !y0b) ? lc->ctb_up_left_flag : lc->na.cand_left && lc->na.cand_up;
+    lc->na.cand_up_right_sap =
+            ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)) ?
+                    lc->ctb_up_right_flag && !y0b : lc->na.cand_up;
+    lc->na.cand_up_right =
+            ((x0b + nPbW) == (1 << s->sps->log2_ctb_size) ?
+                    lc->ctb_up_right_flag && !y0b : lc->na.cand_up )
+                     && (x0 + nPbW) < lc->end_of_tiles_x;
+    lc->na.cand_bottom_left = ((y0 + nPbH) >= lc->end_of_tiles_y) ? 0 : lc->na.cand_left;
+}
 /*
  * 6.4.1 Derivation process for z-scan order block availability
  */
@@ -360,23 +378,19 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     int refIdxL1Col = 0;
     int availableFlagLXCol = 0;
 
-    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
-
-    int cand_up = (lc->ctb_up_flag || y0b);
-    int cand_left = (lc->ctb_left_flag || x0b);
-    int cand_up_left =
-            (!x0b && !y0b) ? lc->ctb_up_left_flag : cand_left && cand_up;
-    int cand_up_right =
-            ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)) ?
-                    lc->ctb_up_right_flag && !y0b : cand_up;
-    int cand_bottom_left = ((y0 + nPbH) >= lc->end_of_tiles_y) ? 0 : cand_left;
+    int cand_bottom_left = lc->na.cand_bottom_left;
+    int cand_left        = lc->na.cand_left;
+    int cand_up_left     = lc->na.cand_up_left;
+    int cand_up          = lc->na.cand_up;
+    int cand_up_right    = lc->na.cand_up_right_sap;
 
     int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
     int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
 
     int availableFlagL0Col = 0;
     int availableFlagL1Col = 0;
+
+
 
     if (cand_left
             && !(tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra)) {
@@ -658,6 +672,7 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
         nPbH = nCS;
         part_idx = 0;
     }
+    ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
     derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size,
             singleMCLFlag, part_idx, mergecand_list);
     if ((mergecand_list[merge_idx].pred_flag == 3)
@@ -818,18 +833,12 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int ref_idx = 0;
     int pred_flag_index_l0;
     int pred_flag_index_l1;
-    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int cand_up = (lc->ctb_up_flag || y0b);
-    int cand_left = (lc->ctb_left_flag || x0b);
-    int cand_up_left =
-            (!x0b && !y0b) ? lc->ctb_up_left_flag : cand_left && cand_up;
-    int cand_up_right =
-            ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)
-                    || (x0 + nPbW) >= lc->end_of_tiles_x) ?
-                    lc->ctb_up_right_flag && !y0b : cand_up;
-    int cand_bottom_left = ((y0 + nPbH) >= lc->end_of_tiles_y) ? 0 : cand_left;
+    int cand_bottom_left = lc->na.cand_bottom_left;
+    int cand_left        = lc->na.cand_left;
+    int cand_up_left     = lc->na.cand_up_left;
+    int cand_up          = lc->na.cand_up;
+    int cand_up_right    = lc->na.cand_up_right;
 
     if (LX == 0) {
         ref_idx_curr = 0; //l0

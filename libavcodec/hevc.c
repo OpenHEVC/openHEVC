@@ -1109,11 +1109,17 @@ static void hls_transform_unit(HEVCContext *s, int x0, int  y0, int xBase, int y
     int scan_idx = SCAN_DIAG;
     int scan_idx_c = SCAN_DIAG;
     if (lc->cu.pred_mode == MODE_INTRA) {
+        int trafo_size = 1 << log2_trafo_size;
+        ff_hevc_set_neighbour_available(s, x0, y0, trafo_size, trafo_size);
         s->hpc.intra_pred(s, x0, y0, log2_trafo_size, 0);
         if (log2_trafo_size > 2) {
+            trafo_size = trafo_size<<(s->sps->hshift[1]-1);
+            ff_hevc_set_neighbour_available(s, x0, y0, trafo_size, trafo_size);
             s->hpc.intra_pred(s, x0, y0, log2_trafo_size - 1, 1);
             s->hpc.intra_pred(s, x0, y0, log2_trafo_size - 1, 2);
         } else if (blk_idx == 3) {
+            trafo_size = trafo_size<<(s->sps->hshift[1]);
+            ff_hevc_set_neighbour_available(s, xBase, yBase, trafo_size, trafo_size);
             s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 1);
             s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 2);
         }
@@ -1527,6 +1533,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 }
             }
         } else {
+            ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
             if (s->sh.slice_type == B_SLICE) {
                 inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, nPbW, nPbH);
             }

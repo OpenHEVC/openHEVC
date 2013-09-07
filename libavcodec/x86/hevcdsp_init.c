@@ -81,7 +81,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                     c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
 
-                    c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_sse;
+                    c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_8_sse;
                     c->put_hevc_qpel[0][1] = ff_hevc_put_hevc_qpel_h_1_8_sse;
                     c->put_hevc_qpel[0][2] = ff_hevc_put_hevc_qpel_h_2_8_sse;
                     c->put_hevc_qpel[0][3] = ff_hevc_put_hevc_qpel_h_3_8_sse;
@@ -156,6 +156,12 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_10_sse;
                     c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_10_sse;
                     c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_10_sse;
+                    c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_10_sse;
+
+                    c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_10_sse;
+                    c->put_hevc_qpel[0][1] = ff_hevc_put_hevc_qpel_h_1_10_sse;
+
+
 
 
 
