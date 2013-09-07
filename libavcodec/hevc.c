@@ -35,6 +35,8 @@
 #include "golomb.h"
 #include "hevc.h"
 
+#include "thread.h"
+
 const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 2 };
 const uint8_t ff_hevc_qpel_extra_after[4] = { 0, 3, 4, 4 };
 const uint8_t ff_hevc_qpel_extra[4] = { 0, 6, 7, 6 };
@@ -221,7 +223,7 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
  * Section 5.7
  */
 #define POC_DISPLAY_MD5
-#define WPP1
+#define WPP1 1
 #define FILTER_EN
 static void pic_arrays_free(HEVCContext *s)
 {
@@ -2210,9 +2212,17 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         int x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
+#if WPP_PTHREAD_MUTEX
+        ff_thread_await_progress2(s->avctx, ctb_row, SHIFT_CTB_WPP);
+#else
         while(ctb_row && (avpriv_atomic_int_get(&s->ctb_entry_count[(ctb_row)-1]) - avpriv_atomic_int_get(&s->ctb_entry_count[(ctb_row)]))<SHIFT_CTB_WPP);
+#endif
         if (avpriv_atomic_int_get(&s1->ERROR)){
-        	avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
+#if WPP_PTHREAD_MUTEX
+            ff_thread_report_progress2(s->avctx, ctb_row ,SHIFT_CTB_WPP);
+#else
+            avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
+#endif
         	return 0;
         }
         ff_hevc_cabac_init(s, ctb_addr_ts);
@@ -2227,13 +2237,21 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         
         
         ff_hevc_save_states(s, ctb_addr_ts);
+#if WPP_PTHREAD_MUTEX
+        ff_thread_report_progress2(s->avctx, ctb_row, 1);
+#else
         avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],1);
+#endif
 #ifdef FILTER_EN
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
 #endif
         if (!more_data && (x_ctb+ctb_size) < s->sps->pic_width_in_luma_samples && ctb_row != s->sh.num_entry_point_offsets) {
         	avpriv_atomic_int_set(&s1->ERROR,  1);
+#if WPP_PTHREAD_MUTEX
+            ff_thread_report_progress2(s->avctx, ctb_row ,SHIFT_CTB_WPP);
+#else
             avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
+#endif
             return 0;
         }
 
@@ -2241,7 +2259,11 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 #ifdef FILTER_EN
             ff_hevc_hls_filter(s, x_ctb, y_ctb);
 #endif
+#if WPP_PTHREAD_MUTEX
+            ff_thread_report_progress2(s->avctx, ctb_row ,SHIFT_CTB_WPP);
+#else
             avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
+#endif
             return ctb_addr_ts;
         }
         ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
@@ -2251,7 +2273,11 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
             break;
         }
     }
+#if WPP_PTHREAD_MUTEX
+    ff_thread_report_progress2(s->avctx, ctb_row ,SHIFT_CTB_WPP);
+#else
     avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],SHIFT_CTB_WPP);
+#endif
     return 0;
 }
 
@@ -2304,11 +2330,14 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     int *arg = av_malloc((s->sh.num_entry_point_offsets + 1) * sizeof(int));
     int i, j, res = 0;
     int offset;
-#ifdef WPP1
+#if WPP1
     int startheader, cmpt = 0;
 #endif
     if (!s->ctb_entry_count) {
         s->ctb_entry_count = av_malloc((s->sh.num_entry_point_offsets + 1) * sizeof(int));
+#if WPP_PTHREAD_MUTEX
+        ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
+#endif
         if (s->enable_parallel_tiles) {
             s->HEVClcList[0]->save_boundary_strengths = av_malloc(
                     sizeof(Filter_data)
@@ -2346,7 +2375,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 
     offset = (lc->gb->index >> 3);
 
-#ifdef WPP1
+#if WPP1
     for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
         if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
             startheader--;
@@ -2355,7 +2384,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     }
 #endif
     for (i = 1; i < s->sh.num_entry_point_offsets; i++) {
-#ifdef WPP1
+#if WPP1
         offset += (s->sh.entry_point_offset[i - 1] - cmpt);
         for (j = 0, cmpt = 0, startheader = offset
                 + s->sh.entry_point_offset[i]; j < s->skipped_bytes; j++) {
@@ -2366,14 +2395,14 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         }
         s->sh.size[i - 1] = s->sh.entry_point_offset[i] - cmpt;
 #else
-        offset += (sc->sh.entry_point_offset[i - 1]);
-        sc->sh.size[i - 1] = sc->sh.entry_point_offset[i];
+        offset += (s->sh.entry_point_offset[i - 1]);
+        s->sh.size[i - 1] = s->sh.entry_point_offset[i];
 #endif
         s->sh.offset[i - 1] = offset;
 
     }
     if (s->sh.num_entry_point_offsets != 0) {
-#ifdef WPP1
+#if WPP1
         offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
 #else
         offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1];
@@ -2398,7 +2427,11 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 
     avpriv_atomic_int_set(&s->ERROR, 0);
 
+#if WPP_PTHREAD_MUTEX
+    ff_reset_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
+#else
     memset(s->ctb_entry_count, 0, (s->sh.num_entry_point_offsets + 1) * sizeof(int));
+#endif
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
         arg[i] = i;
         ret[i] = 0;
