@@ -92,7 +92,7 @@ typedef struct ThreadContext {
     
 #if WPP_PTHREAD_MUTEX
     int *entries;
-    int enties_count;
+    int entries_count;
     int thread_count;
     pthread_cond_t *progress_cond;
     pthread_mutex_t *progress_mutex;
@@ -1115,7 +1115,7 @@ int ff_alloc_entries(AVCodecContext *avctx, int count)
         if (!p->entries) {
             return AVERROR(ENOMEM);
         }
-        p->enties_count = count;
+        p->entries_count = count;
         p->progress_mutex = av_malloc(p->thread_count  * sizeof(pthread_mutex_t));
         p->progress_cond = av_malloc(p->thread_count  * sizeof(pthread_cond_t));
         for(i=0; i < p->thread_count; i++) {
@@ -1129,6 +1129,6 @@ int ff_alloc_entries(AVCodecContext *avctx, int count)
 void ff_reset_entries(AVCodecContext *avctx)
 {
     ThreadContext *p = avctx->thread_opaque;
-    memset(p->entries, 0, p->enties_count  * sizeof(int));
+    memset(p->entries, 0, p->entries_count  * sizeof(int));
 }
 #endif

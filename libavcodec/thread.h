@@ -27,7 +27,7 @@
 #ifndef AVCODEC_THREAD_H
 #define AVCODEC_THREAD_H
 
-#define WPP_PTHREAD_MUTEX 0
+#define WPP_PTHREAD_MUTEX 1
 
 
 #include "libavutil/buffer.h"
