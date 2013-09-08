@@ -2914,14 +2914,14 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     HEVCContext *s = avctx->priv_data;
     HEVCThreadContext *lc;
     s->avctx = avctx;
-    s->HEVClc = av_mallocz(sizeof(HEVCThreadContext));
+    s->HEVClc = av_mallocz(sizeof(*s->HEVClc));
     memset(&s->sh, 0, sizeof(s->sh));
     lc = s->HEVClcList[0] = s->HEVClc;
     s->sList[0] = s;
     s->tmp_frame = av_frame_alloc();
     s->cabac_state = av_malloc(HEVC_CABAC_CONTEXTS);
-    lc->gb = av_malloc(sizeof(GetBitContext));
-    lc->cc = av_malloc(sizeof(CABACContext));
+    lc->gb = av_malloc(sizeof(*lc->gb));
+    lc->cc = av_malloc(sizeof(*lc->cc));
     lc->ctx_set = 0;
     lc->greater1_ctx = 0;
     lc->last_coeff_abs_level_greater1_flag = 0;
