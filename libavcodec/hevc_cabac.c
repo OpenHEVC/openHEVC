@@ -371,7 +371,7 @@ static void load_states(HEVCContext *s)
     memcpy(s->HEVClc->cabac_state, s->cabac_state, HEVC_CONTEXTS);
 }
 
-static void cabac_reinit(HEVCThreadContext *lc)
+static void cabac_reinit(HEVCLocalContext *lc)
 {
     printTitle("ff_hevc_cabac_reinit\n");
     skip_bytes(lc->cc,0);
@@ -967,7 +967,7 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int first_elem, int base_l
 {
     print_cabac("coeff_abs_level_remaining", 0);
     int i;
-    HEVCThreadContext *lc = s->HEVClc;
+    HEVCLocalContext *lc = s->HEVClc;
     int prefix = 0;
     int suffix = 0;
 

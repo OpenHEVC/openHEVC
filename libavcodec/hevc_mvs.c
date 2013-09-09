@@ -1,7 +1,7 @@
 /*
  * HEVC video Decoder
  *
- * Copyright (C) 2012 Guillaume Martres
+ * Copyright (C) 2012 - 2013 Guillaume Martres
  * Copyright (C) 2013 Anand Meher Kotra
  *
  * This file is part of Libav.
@@ -40,7 +40,7 @@ static const uint8_t l0_l1_cand_idx[12][2] = {
 
 void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, int nPbH)
 {
-    HEVCThreadContext *lc = s->HEVClc;
+    HEVCLocalContext *lc = s->HEVClc;
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
@@ -60,64 +60,55 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, i
 /*
  * 6.4.1 Derivation process for z-scan order block availability
  */
-static int z_scan_block_avail(HEVCContext *sc, int xCurr, int yCurr,
-        int xN, int yN)
+static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
+                              int xN, int yN)
 {
-
 #define MIN_TB_ADDR_ZS(x, y)                                            \
-sc->pps->min_tb_addr_zs[(y) * sc->sps->pic_width_in_min_tbs + (x)]
-    int availableN = 0;
-    int minBlockAddrCurr =
-            MIN_TB_ADDR_ZS((xCurr >> sc->sps->log2_min_transform_block_size), (yCurr >> sc->sps->log2_min_transform_block_size));
+    s->pps->min_tb_addr_zs[(y) * s->sps->pic_width_in_min_tbs + (x)]
+    int Curr =  MIN_TB_ADDR_ZS(xCurr >> s->sps->log2_min_transform_block_size,
+                               yCurr >> s->sps->log2_min_transform_block_size);
+    int N;
 
-    int minBlockAddrN;
+    if ((xN < 0) || (yN < 0) ||
+        (xN >= s->sps->pic_width_in_luma_samples) ||
+        (yN >= s->sps->pic_height_in_luma_samples))
+        return 0;
 
-    if ((xN < 0) || (yN < 0) || (xN >= sc->sps->pic_width_in_luma_samples)
-            || (yN >= sc->sps->pic_height_in_luma_samples)) {
-        minBlockAddrN = -1;
-    } else {
-        minBlockAddrN =
-                MIN_TB_ADDR_ZS((xN >> sc->sps->log2_min_transform_block_size), (yN >> sc->sps->log2_min_transform_block_size));
-    }
+    N = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_transform_block_size,
+                       yN >> s->sps->log2_min_transform_block_size);
 
-    if ((minBlockAddrN < 0) || (minBlockAddrN > minBlockAddrCurr)) {
-        availableN = 0;
-    } else {
-        availableN = 1;
-    }
-    return availableN;
+    return N <= Curr;
+}
+
+
+static int same_prediction_block(HEVCLocalContext *lc, int log2_cb_size,
+                                 int x0, int y0, int nPbW, int nPbH,
+                                 int xA1, int yA1, int partIdx)
+{
+    if ((nPbW << 1 == (1 << log2_cb_size)) &&
+        ((nPbH << 1) == (1 << log2_cb_size)) && (partIdx == 1) &&
+        ((lc->cu.x + nPbW) > xA1) && ((lc->cu.y + nPbH) <= yA1))
+        return 0;
+    else
+        return 1;
 }
 
 /*
  * 6.4.2 Derivation process for prediction block availability
  */
 static int check_prediction_block_available(HEVCContext *s, int log2_cb_size,
-        int x0, int y0, int nPbW, int nPbH, int xA1, int yA1, int partIdx)
+                                            int x0, int y0, int nPbW, int nPbH,
+                                            int xA1, int yA1, int partIdx)
 {
-    int sameCb = 0;
-    int availableN = 0;
-
-    HEVCThreadContext *lc = s->HEVClc;
-    if ((lc->cu.x < xA1) && (lc->cu.y < yA1)
-            && ((lc->cu.x + (1 << log2_cb_size)) > xA1)
-            && ((lc->cu.y + (1 << log2_cb_size)) > yA1)) {
-        sameCb = 1;
-    } else {
-        sameCb = 0;
-    }
-
-    if (sameCb == 0) {
-        availableN = z_scan_block_avail(s, x0, y0, xA1, yA1);
-    } else {
-        if ((nPbW << 1 == (1 << log2_cb_size))
-                && ((nPbH << 1) == (1 << log2_cb_size)) && (partIdx == 1)
-                && ((lc->cu.x + nPbW) > xA1) && ((lc->cu.y + nPbH) <= yA1)) {
-            availableN = 0;
-        } else {
-            availableN = 1;
-        }
-    }
-    return availableN;
+    HEVCLocalContext *lc = &s->HEVClc;
+    if ((lc->cu.x < xA1) && (lc->cu.y < yA1) &&
+        ((lc->cu.x + (1 << log2_cb_size)) > xA1) &&
+        ((lc->cu.y + (1 << log2_cb_size)) > yA1))
+        return same_prediction_block(lc, log2_cb_size, x0, y0,
+                                     nPbW, nPbH,
+                                     xA1, yA1, partIdx);
+    else
+        return z_scan_block_avail(s, x0, y0, xA1, yA1);
 }
 
 //check if the two luma locations belong to the same mostion estimation region
@@ -130,33 +121,27 @@ static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
     return 0;
 }
 
+#define MATCH(x) (A.x == B.x)
+
 // check if the mv's and refidx are the same between A and B
 static int compareMVrefidx(MvField A, MvField B)
 {
     if (A.pred_flag == B.pred_flag) {
         if (A.pred_flag == 3)
-            return ((A.ref_idx[0] == B.ref_idx[0]) && (A.mv[0].x == B.mv[0].x)
-                    && (A.mv[0].y == B.mv[0].y) && (A.ref_idx[1] == B.ref_idx[1])
-                    && (A.mv[1].x == B.mv[1].x) && (A.mv[1].y == B.mv[1].y));
+        return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y) &&
+               MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
         else if (A.pred_flag == 1)
-            return ((A.ref_idx[0] == B.ref_idx[0]) && (A.mv[0].x == B.mv[0].x)
-                    && (A.mv[0].y == B.mv[0].y));
+         return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y);
         else if (A.pred_flag == 2)
-            return ((A.ref_idx[1] == B.ref_idx[1]) && (A.mv[1].x == B.mv[1].x)
-                    && (A.mv[1].y == B.mv[1].y));
+        return MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
     }
     return 0;
 }
 
-static int DiffPicOrderCnt(int A, int B)
-{
-    return A - B;
-}
-
 // derive the motion vectors section 8.5.3.1.8
 static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
-        int refIdxLx, Mv* mvLXCol, int X, int colPic,
-        RefPicList* refPicList_col)
+                                         int refIdxLx, Mv* mvLXCol, int X, int colPic,
+                                         RefPicList* refPicList_col)
 {
     int availableFlagLXCol = 0;
     Mv mvCol;
@@ -184,11 +169,11 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
             int check_diffpicount = 0;
             int i = 0;
             for (i = 0; i < refPicList[0].numPic; i++) {
-                if (DiffPicOrderCnt(refPicList[0].list[i], s->poc) > 0)
+                if (refPicList[0].list[i] > s->poc)
                     check_diffpicount++;
             }
             for (i = 0; i < refPicList[1].numPic; i++) {
-                if (DiffPicOrderCnt(refPicList[1].list[i], s->poc) > 0)
+                if (refPicList[1].list[i] > s->poc)
                     check_diffpicount++;
             }
             if ((check_diffpicount == 0) && (X == 0)) {
@@ -221,10 +206,8 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
                 mvLXCol->x = 0;
                 mvLXCol->y = 0;
             } else {
-                int colPocDiff = DiffPicOrderCnt(colPic,
-                        refPicList_col[listCol].list[refidxCol]);
-                int curPocDiff = DiffPicOrderCnt(s->poc,
-                        refPicList[X].list[refIdxLx]);
+                int colPocDiff = colPic - refPicList_col[listCol].list[refidxCol];
+                int curPocDiff = s->poc - refPicList[X].list[refIdxLx];
                 colPocDiff = colPocDiff == 0 ? 1 : colPocDiff; //error resilience
                 availableFlagLXCol = 1;
                 if (currIsLongTerm || colPocDiff == curPocDiff) {
@@ -255,7 +238,8 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
  * 8.5.3.1.7  temporal luma motion vector prediction
  */
 static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
-        int nPbW, int nPbH, int refIdxLx, Mv* mvLXCol, int X)
+                                       int nPbW, int nPbH, int refIdxLx,
+                                       Mv* mvLXCol, int X)
 {
     MvField *coloc_tab_mvf = NULL;
     MvField temp_col;
@@ -275,21 +259,21 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     if ((s->sh.slice_type == B_SLICE) && (s->sh.collocated_from_l0_flag == 0)) {
         short_ref_idx = refPicList[1].idx[s->sh.collocated_ref_idx];
         coloc_tab_mvf = s->DPB[short_ref_idx].tab_mvf;
-        colPic = s->DPB[short_ref_idx].poc;
-    } else if (((s->sh.slice_type == B_SLICE)
-            && (s->sh.collocated_from_l0_flag == 1))
-            || (s->sh.slice_type == P_SLICE)) {
+        colPic        = s->DPB[short_ref_idx].poc;
+    } else if (((s->sh.slice_type == B_SLICE) &&
+                (s->sh.collocated_from_l0_flag == 1)) ||
+               (s->sh.slice_type == P_SLICE)) {
         short_ref_idx = refPicList[0].idx[s->sh.collocated_ref_idx];
         coloc_tab_mvf = s->DPB[short_ref_idx].tab_mvf;
-        colPic = s->DPB[short_ref_idx].poc;
+        colPic        = s->DPB[short_ref_idx].poc;
     }
     //bottom right collocated motion vector
     xPRb = x0 + nPbW;
     yPRb = y0 + nPbH;
-    if (coloc_tab_mvf
-            && ((y0 >> s->sps->log2_ctb_size) == (yPRb >> s->sps->log2_ctb_size))
-            && (yPRb < s->sps->pic_height_in_luma_samples)
-            && (xPRb < s->sps->pic_width_in_luma_samples)) {
+    if (coloc_tab_mvf &&
+        ((y0 >> s->sps->log2_ctb_size) == (yPRb >> s->sps->log2_ctb_size)) &&
+        (yPRb < s->sps->pic_height_in_luma_samples) &&
+        (xPRb < s->sps->pic_width_in_luma_samples)) {
         xPRb = ((xPRb >> 4) << 4);
         yPRb = ((yPRb >> 4) << 4);
         xPRb_pu = xPRb >> s->sps->log2_min_pu_size;
@@ -317,16 +301,16 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     }
     return availableFlagLXCol;
 }
+
 /*
  * 8.5.3.1.2  Derivation process for spatial merging candidates
  */
 static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
-        int nPbW, int nPbH, int log2_cb_size, int singleMCLFlag, int part_idx,
-        MvField mergecandlist[])
+                                            int nPbW, int nPbH, int log2_cb_size,
+                                            int singleMCLFlag, int part_idx,
+                                            MvField mergecandlist[])
 {
-
-
-    HEVCThreadContext *lc = s->HEVClc;
+    HEVCLocalContext *lc = s->HEVClc;
     RefPicList *refPicList = s->ref->refPicList;
     MvField *tab_mvf = s->ref->tab_mvf;
 
@@ -585,12 +569,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                 l1CandIdx = l0_l1_cand_idx[combIdx][1];
                 l0Cand = mergecandlist[l0CandIdx];
                 l1Cand = mergecandlist[l1CandIdx];
-                if ((l0Cand.pred_flag & 1) && (l1Cand.pred_flag & 2)
-                        && (((DiffPicOrderCnt(
-                                refPicList[0].list[l0Cand.ref_idx[0]],
-                                refPicList[1].list[l1Cand.ref_idx[1]])) != 0)
-                                || ((l0Cand.mv[0].x != l1Cand.mv[1].x)
-                                        || (l0Cand.mv[0].y != l1Cand.mv[1].y)))) {
+                if ((l0Cand.pred_flag & 1) && (l1Cand.pred_flag & 2) &&
+                     (refPicList[0].list[l0Cand.ref_idx[0]] != refPicList[1].list[l1Cand.ref_idx[1]] ||
+                     l0Cand.mv[0].x != l1Cand.mv[1].x ||
+                     l0Cand.mv[0].y != l1Cand.mv[1].y)) {
                     MvField combCand;
 
                     combCand.ref_idx[0] = l0Cand.ref_idx[0];
@@ -655,15 +637,16 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
  * 8.5.3.1.1 Derivation process of luma Mvs for merge mode
  */
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
-        int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv)
+                                int nPbH, int log2_cb_size, int part_idx,
+                                int merge_idx, MvField *mv)
 {
+    HEVCLocalContext *lc = s->HEVClc;
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
     MvField mergecand_list[MRG_MAX_NUM_CANDS] = { { { { 0 } } } };
     int nPbW2 = nPbW;
     int nPbH2 = nPbH;
     
-    HEVCThreadContext *lc = s->HEVClc;
     if ((s->pps->log2_parallel_merge_level > 2) && (nCS == 8)) {
         singleMCLFlag = 1;
         x0 = lc->cu.x;
@@ -687,15 +670,15 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
     tab_mvf[(y) * pic_width_in_min_pu + x]
 
 static av_always_inline void dist_scale(HEVCContext *s, Mv * mv,
-        int pic_width_in_min_pu, int x, int y, int elist,
-        int ref_idx_curr, int ref_idx)
+                                        int pic_width_in_min_pu, int x, int y,
+                                        int elist, int ref_idx_curr, int ref_idx)
 {
     RefPicList *refPicList = s->ref->refPicList;
     MvField *tab_mvf = s->ref->tab_mvf;
-    if ((DiffPicOrderCnt(
-            refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]], refPicList[ref_idx_curr].list[ref_idx]))!=0) {
-        int td = av_clip_int8_c((DiffPicOrderCnt(s->poc,refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]])));
-        int tb = av_clip_int8_c((DiffPicOrderCnt(s->poc,refPicList[ref_idx_curr].list[ref_idx])));
+    if (refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]] !=
+        refPicList[ref_idx_curr].list[ref_idx]) {
+        int td = av_clip_int8(s->poc - refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]]);
+        int tb = av_clip_int8(s->poc - refPicList[ref_idx_curr].list[ref_idx]);
         int tx = (0x4000 + abs(td/2)) / td;
         int distScaleFactor = av_clip_c((tb * tx + 32) >> 6, -4096, 4095);
         mv->x = av_clip_int16((distScaleFactor * mv->x + 127 + (distScaleFactor * mv->x < 0)) >> 8);
@@ -703,15 +686,16 @@ static av_always_inline void dist_scale(HEVCContext *s, Mv * mv,
     }
 }
 
-static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index, Mv *mv, int ref_idx_curr, int ref_idx) {
-
+static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
+                         Mv *mv, int ref_idx_curr, int ref_idx)
+{
     MvField *tab_mvf = s->ref->tab_mvf;
     int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
 
     RefPicList *refPicList = s->ref->refPicList;
 
     if ((TAB_MVF(x, y).pred_flag & (1 << pred_flag_index)) &&
-        (DiffPicOrderCnt(refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]], refPicList[ref_idx_curr].list[ref_idx])) == 0) {
+        refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]] == refPicList[ref_idx_curr].list[ref_idx]) {
         *mv = TAB_MVF(x, y).mv[pred_flag_index];
         return 1;
     }
@@ -719,7 +703,9 @@ static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index, Mv *
 }
 
 
-static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index, Mv *mv, int ref_idx_curr, int ref_idx) {
+static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
+                            Mv *mv, int ref_idx_curr, int ref_idx)
+{
     MvField *tab_mvf = s->ref->tab_mvf;
     int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
 
@@ -800,7 +786,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         int mvp_lx_flag, int LX)
 {
     
-    HEVCThreadContext *lc = s->HEVClc;
+    HEVCLocalContext *lc = s->HEVClc;
     MvField *tab_mvf = s->ref->tab_mvf;
     int is_scaled_flag_l0 = 0;
     int available_flag_lx_a0 = 0;

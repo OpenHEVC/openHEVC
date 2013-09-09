@@ -4,6 +4,7 @@
  * Copyright (C) 2012 - 2103 Guillaume Martres
  * Copyright (C) 2012 - 2103 Mickael Raulet
  * Copyright (C) 2012 - 2013 Gildas Cocherel
+ * Copyright (C) 2013 Vittorio Giovara
  *
  * This file is part of Libav.
  *
@@ -30,7 +31,7 @@
  * Section 7.3.3.1
  */
 
-int ff_hevc_decode_short_term_rps(HEVCThreadContext *lc, int idx, SPS *sps)
+int ff_hevc_decode_short_term_rps(HEVCLocalContext *lc, int idx, SPS *sps)
 {
     int delta_idx = 1;
     int delta_rps;
@@ -87,7 +88,7 @@ int ff_hevc_decode_short_term_rps(HEVCThreadContext *lc, int idx, SPS *sps)
         rps->num_negative_pics = k0;
         rps->num_positive_pics = k1;
         // sort in increasing order (smallest first)
-        if ( rps->num_delta_pocs != 0 ) {
+        if (rps->num_delta_pocs != 0) {
             int used, tmp;
             for (i = 1; i < rps->num_delta_pocs; i++) {
                 delta_poc = rps->delta_poc[i];
@@ -103,11 +104,11 @@ int ff_hevc_decode_short_term_rps(HEVCThreadContext *lc, int idx, SPS *sps)
                 }
             }
         }
-        if ( (rps->num_negative_pics>>1) != 0 ) {
+        if ((rps->num_negative_pics >> 1) != 0) {
             int used;
             k = rps->num_negative_pics - 1;
             // flip the negative values to largest first
-            for( i = 0; i < rps->num_negative_pics>>1; i++) {
+            for (i = 0; i < rps->num_negative_pics>>1; i++) {
                 delta_poc          = rps->delta_poc[i];
                 used               = rps->used[i];
                 rps->delta_poc[i]  = rps->delta_poc[k];
@@ -142,7 +143,7 @@ int ff_hevc_decode_short_term_rps(HEVCThreadContext *lc, int idx, SPS *sps)
     return 0;
 }
 
-static int decode_profile_tier_level(HEVCThreadContext *lc, PTL *ptl, int max_num_sub_layers)
+static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl, int max_num_sub_layers)
 {
     int i, j;
     GetBitContext *gb = lc->gb;

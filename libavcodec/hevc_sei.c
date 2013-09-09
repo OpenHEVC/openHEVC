@@ -51,7 +51,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     }
 }
 
-static void decode_nal_sei_frame_packing_arrangement(HEVCThreadContext *lc)
+static void decode_nal_sei_frame_packing_arrangement(HEVCLocalContext *lc)
 {
     GetBitContext *gb = lc->gb;
     int cancel, type, quincunx;

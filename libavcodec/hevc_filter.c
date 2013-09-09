@@ -73,7 +73,7 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
 
 static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_cb_size)
 {
-    HEVCThreadContext *lc     = s->HEVClc;
+    HEVCLocalContext *lc     = s->HEVClc;
     int ctb_size_mask        = (1 << s->sps->log2_ctb_size) - 1;
     int MinCuQpDeltaSizeMask = (1 << (s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
     int xQgBase              = xBase - ( xBase & MinCuQpDeltaSizeMask );
