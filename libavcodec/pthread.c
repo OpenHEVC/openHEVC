@@ -247,6 +247,7 @@ static void thread_free(AVCodecContext *avctx)
     }
     av_free(c->progress_mutex);
     av_free(c->progress_cond);
+    av_free(c->entries);
 #endif
     av_free(c->workers);
     av_freep(&avctx->thread_opaque);
@@ -1082,10 +1083,10 @@ void ff_thread_free(AVCodecContext *avctx)
 void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n)
 {
     ThreadContext *p  = avctx->thread_opaque;
-    int *count_entries = p->entries;
+    int *entries = p->entries;
     
     pthread_mutex_lock(&p->progress_mutex[thread]);
-    count_entries[field] +=n;
+    entries[field] +=n;
     pthread_cond_signal(&p->progress_cond[thread]);
     pthread_mutex_unlock(&p->progress_mutex[thread]);
     
@@ -1094,13 +1095,13 @@ void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, in
 void ff_thread_await_progress2(AVCodecContext *avctx, int field, int thread, int shift)
 {
     ThreadContext *p  = avctx->thread_opaque;
-    int *count_entries = p->entries;
+    int *entries = p->entries;
    
-    if (!count_entries || !field) return;
+    if (!entries || !field) return;
     thread = thread ? thread-1:p->thread_count-1;
 
     pthread_mutex_lock(&p->progress_mutex[thread]);
-    while ( (count_entries[field-1]-count_entries[field]) < shift ){
+    while ( (entries[field-1]-entries[field]) < shift ){
         pthread_cond_wait(&p->progress_cond[thread], &p->progress_mutex[thread]);
     }
     pthread_mutex_unlock(&p->progress_mutex[thread]);
