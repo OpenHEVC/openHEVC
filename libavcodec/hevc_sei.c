@@ -127,4 +127,3 @@ int ff_hevc_decode_nal_sei(HEVCContext *s)
     } while (more_rbsp_data(s->HEVClc->gb));
     return 0;
 }
-

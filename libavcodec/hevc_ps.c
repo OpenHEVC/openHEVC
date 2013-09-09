@@ -521,7 +521,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             goto err;
         }
     }
-    
+
     if (!sps->sps_sub_layer_ordering_info_present_flag) {
         for (i = 0; i < start; i++){
             sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[start].max_dec_pic_buffering;
@@ -529,7 +529,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps->temporal_layer[i].max_latency_increase  = sps->temporal_layer[start].max_latency_increase;
         }
     }
-
 
     sps->log2_min_coding_block_size             = get_ue_golomb(gb) + 3;
     sps->log2_diff_max_min_coding_block_size    = get_ue_golomb(gb);

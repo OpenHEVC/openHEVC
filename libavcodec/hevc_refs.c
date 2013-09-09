@@ -39,17 +39,22 @@ int ff_hevc_find_ref_idx(HEVCContext *s, int poc)
         HEVCFrame *ref = &s->DPB[i];
         if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
             if ((ref->flags & HEVC_FRAME_FLAG_SHORT_REF) != 0 && (ref->poc == poc || (ref->poc & LtMask) == poc))
-                return i;
-        }
+	            return i;
+	    }
     }
     av_log(s->avctx, AV_LOG_ERROR,
            "Could not find ref with POC %d\n", poc);
     return 0;
 }
+
 void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref)
 {
     int j;
     int ctb_count = ref->count;
+
+    if (!ref->refPicListTab)
+        return;
+
     for (j = ctb_count-1; j > 0; j--) {
         if (ref->refPicListTab[j] != ref->refPicListTab[j-1])
             av_free(ref->refPicListTab[j]);
@@ -61,31 +66,6 @@ void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref)
     }
     ref->refPicList = NULL;
     ref->count = 0;
-}
-static void malloc_refPicListTab(HEVCContext *s)
-{
-    int i;
-    HEVCFrame *ref  = &s->DPB[ff_hevc_find_next_ref(s, s->poc)];
-    int ctb_count   = s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs;
-    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_address];
-    ref->count = ctb_count;
-    ref->refPicListTab[ctb_addr_ts] = av_mallocz(sizeof(RefPicListTab));
-    for (i = ctb_addr_ts; i < ctb_count-1; i++)
-        ref->refPicListTab[i+1] = ref->refPicListTab[i];
-    ref->refPicList = (RefPicList*) ref->refPicListTab[ctb_addr_ts];
-}
-RefPicList* ff_hevc_get_ref_list(HEVCContext *sc, int short_ref_idx, int x0, int y0)
-{
-    if (x0 < 0 || y0 < 0) {
-        return sc->ref->refPicList;
-    } else {
-        HEVCFrame *ref   = &sc->DPB[short_ref_idx];
-        int x_cb         = x0 >> sc->sps->log2_ctb_size;
-        int y_cb         = y0 >> sc->sps->log2_ctb_size;
-        int pic_width_cb = (sc->sps->pic_width_in_luma_samples + (1<<sc->sps->log2_ctb_size)-1 ) >> sc->sps->log2_ctb_size;
-        int ctb_addr_ts  = sc->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
-        return (RefPicList*) ref->refPicListTab[ctb_addr_ts];
-    }
 }
 
 static void update_refs(HEVCContext *s)
@@ -159,6 +139,33 @@ int ff_hevc_find_next_ref(HEVCContext *s, int poc)
            "could not free room for POC %d\n", poc);
     return -1;
 }
+static void malloc_refPicListTab(HEVCContext *s)
+{
+    int i;
+    HEVCFrame *ref  = &s->DPB[ff_hevc_find_next_ref(s, s->poc)];
+    int ctb_count   = s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs;
+    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_address];
+    ref->count = ctb_count;
+    ref->refPicListTab[ctb_addr_ts] = av_mallocz(sizeof(RefPicListTab));
+    for (i = ctb_addr_ts; i < ctb_count-1; i++)
+        ref->refPicListTab[i+1] = ref->refPicListTab[i];
+    ref->refPicList = (RefPicList*) ref->refPicListTab[ctb_addr_ts];
+}
+
+RefPicList* ff_hevc_get_ref_list(HEVCContext *sc, int short_ref_idx, int x0, int y0)
+{
+    if (x0 < 0 || y0 < 0) {
+        return sc->ref->refPicList;
+    } else {
+        HEVCFrame *ref   = &sc->DPB[short_ref_idx];
+        int x_cb         = x0 >> sc->sps->log2_ctb_size;
+        int y_cb         = y0 >> sc->sps->log2_ctb_size;
+        int pic_width_cb = (sc->sps->pic_width_in_luma_samples + (1<<sc->sps->log2_ctb_size)-1 ) >> sc->sps->log2_ctb_size;
+        int ctb_addr_ts  = sc->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
+        return (RefPicList*) ref->refPicListTab[ctb_addr_ts];
+    }
+}
+
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
     int i;
@@ -233,28 +240,27 @@ int ff_hevc_find_display(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
     return 0;
 }
 
-void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
+int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
 {
-    
-    int iMaxPOClsb  = 1 << s->sps->log2_max_poc_lsb;
-    int iPrevPOClsb = s->pocTid0 % iMaxPOClsb;
-    int iPrevPOCmsb = s->pocTid0 - iPrevPOClsb;
-    int iPOCmsb;
-    if ((poc_lsb < iPrevPOClsb) && ((iPrevPOClsb - poc_lsb) >= (iMaxPOClsb / 2))) {
-        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
-    } else if ((poc_lsb > iPrevPOClsb) && ((poc_lsb - iPrevPOClsb) > (iMaxPOClsb / 2))) {
-        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
-    } else {
-        iPOCmsb = iPrevPOCmsb;
-    }
+    int max_poc_lsb  = 1 << s->sps->log2_max_poc_lsb;
+    int prev_poc_lsb = s->pocTid0 % max_poc_lsb;
+    int prev_poc_msb = s->pocTid0 - prev_poc_lsb;
+    int poc_msb;
+
+    if ((poc_lsb < prev_poc_lsb) && ((prev_poc_lsb - poc_lsb) >= max_poc_lsb / 2))
+        poc_msb = prev_poc_msb + max_poc_lsb;
+    else if ((poc_lsb > prev_poc_lsb) && ((poc_lsb - prev_poc_lsb) > (max_poc_lsb / 2)))
+        poc_msb = prev_poc_msb - max_poc_lsb;
+    else
+        poc_msb = prev_poc_msb;
+
+    // For BLA picture types, POCmsb is set to 0.
     if (s->nal_unit_type == NAL_BLA_W_LP ||
         s->nal_unit_type == NAL_BLA_W_RADL ||
-        s->nal_unit_type == NAL_BLA_N_LP) {
-        // For BLA picture types, POCmsb is set to 0.
-        iPOCmsb = 0;
-    }
+        s->nal_unit_type == NAL_BLA_N_LP)
+        poc_msb = 0;
 
-    s->poc = iPOCmsb + poc_lsb;
+    return poc_msb + poc_lsb;
 }
 
 static void set_ref_pic_list(HEVCContext *s)
@@ -327,7 +333,7 @@ static void set_ref_pic_list(HEVCContext *s)
                 refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[i];
                 refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[i];
                 refPicList[list_idx].is_long_term[i]  = refPicListTmp[list_idx].is_long_term[i];
-           }
+            }
         }
     }
 }
@@ -392,21 +398,23 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
     }
 }
 
-int ff_hevc_get_NumPocTotalCurr(HEVCContext *s) {
-    int NumPocTotalCurr = 0;
+int ff_hevc_get_num_poc(HEVCContext *s)
+{
+    int ret = 0;
     int i;
     ShortTermRPS *rps     = s->sh.short_term_rps;
     LongTermRPS *long_rps = &s->sh.long_term_rps;
-    if (rps != NULL) {
-        for( i = 0; i < rps->num_negative_pics; i++ )
-            if( rps->used[i] == 1 )
-                NumPocTotalCurr++;
-        for (i = rps->num_negative_pics; i < rps->num_delta_pocs; i ++)
-            if( rps->used[i] == 1 )
-                NumPocTotalCurr++;
-        for( i = 0; i < long_rps->num_long_term_sps + long_rps->num_long_term_pics; i++ )
-            if( long_rps->UsedByCurrPicLt[ i ] == 1 )
-                NumPocTotalCurr++;
+
+    if (rps) {
+        for (i = 0; i < rps->num_negative_pics; i++)
+            ret += !!rps->used[i];
+        for (; i < rps->num_delta_pocs; i++)
+            ret += !!rps->used[i];
     }
-    return NumPocTotalCurr;
+
+    if (long_rps) {
+        for (i = 0; i < long_rps->num_long_term_sps + long_rps->num_long_term_pics; i++)
+            ret += !!long_rps->UsedByCurrPicLt[i];
+    }
+    return ret;
 }

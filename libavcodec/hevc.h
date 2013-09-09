@@ -32,7 +32,7 @@
 #include "hevcdsp.h"
 
 #define MAX_DPB_SIZE 16 // A.4.1
-#define MAX_THREADS 16
+#define MAX_NB_THREADS 16
 
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
@@ -128,7 +128,7 @@ typedef struct RefPicListTab {
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
 
-#define HEVC_CABAC_CONTEXTS 183
+#define HEVC_CONTEXTS 183
 
 
 
@@ -438,7 +438,6 @@ enum SliceType {
     I_SLICE = 2
 };
 
-
 typedef struct SliceHeader {
     uint8_t first_slice_in_pic_flag;
     int32_t slice_address;
@@ -725,7 +724,7 @@ typedef struct HEVCFrame {
     MvField *tab_mvf;
     RefPicList *refPicList;
     RefPicListTab **refPicListTab;
-    int count; 
+    int count;
     /**
      * A combination of HEVC_FRAME_FLAG_*
      */
@@ -737,16 +736,17 @@ typedef struct HEVCFrame {
      */
     uint16_t sequence;
 } HEVCFrame;
-typedef struct Filter_data{
+
+typedef struct Filter_data {
 	int x;
 	int y;
 	int size;
     int slice_or_tiles_left_boundary;
     int slice_or_tiles_up_boundary;
-}Filter_data;
+} Filter_data;
 
 typedef struct HEVCThreadContext {
-    uint8_t cabac_state[HEVC_CABAC_CONTEXTS];
+    uint8_t cabac_state[HEVC_CONTEXTS];
     int ctx_set;
     int greater1_ctx;
     int last_coeff_abs_level_greater1_flag;
@@ -779,15 +779,14 @@ typedef struct HEVCThreadContext {
     int nb_saved;
 } HEVCThreadContext;
 
-
 typedef struct HEVCContext {
     AVClass *c;  // needed by private avoptions
     AVCodecContext      *avctx;
 
-    struct HEVCContext  *sList[MAX_THREADS];
+    struct HEVCContext  *sList[MAX_NB_THREADS];
 
 
-    HEVCThreadContext    *HEVClcList[MAX_THREADS];
+    HEVCThreadContext    *HEVClcList[MAX_NB_THREADS];
     HEVCThreadContext    *HEVClc;
 
     uint8_t *cabac_state; //
@@ -801,7 +800,7 @@ typedef struct HEVCContext {
     VPS *vps_list[MAX_VPS_COUNT];
     SPS *sps_list[MAX_SPS_COUNT];
     PPS *pps_list[MAX_PPS_COUNT];
-    
+
     SliceHeader sh;
     SAOParams *sao;
     DBParams *deblock;
@@ -823,7 +822,7 @@ typedef struct HEVCContext {
     int is_decoded;
     int SliceAddrRs;
     int64_t pts;
-    
+
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
@@ -839,26 +838,26 @@ typedef struct HEVCContext {
     uint8_t *tab_ct_depth;
     // PU
     uint8_t *tab_ipm;
-    
-    
+
+
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;
-    
+
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset
      */
     uint16_t seq_decode;
     uint16_t seq_output;
-    
+
     int skipped_bytes;
     int *skipped_bytes_pos;
     int skipped_bytes_pos_size;
     uint8_t *data;
-    
+
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
-    
+
     int enable_parallel_tiles;
     int nuh_layer_id;
     int ERROR;
@@ -883,10 +882,16 @@ int ff_hevc_decode_nal_sps(HEVCContext *s);
 int ff_hevc_decode_nal_pps(HEVCContext *s);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
 
+/**
+ * Mark all frames in DPB as unused for reference.
+ */
 void ff_hevc_clear_refs(HEVCContext *s);
 void ff_hevc_clean_refs(HEVCContext *s);
 int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
-void ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
+/**
+ * Compute POC of the current frame and return it.
+ */
+int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref);
 RefPicList* ff_hevc_get_ref_list(HEVCContext *sc, int short_ref_idx, int x0, int y0);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
@@ -944,7 +949,7 @@ int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
 int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int n, int base_level);
 int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
 
-int ff_hevc_get_NumPocTotalCurr(HEVCContext *s);
+int ff_hevc_get_num_poc(HEVCContext *s);
 
 int ff_hevc_find_ref_idx(HEVCContext *s, int poc);
 int ff_hevc_find_next_ref(HEVCContext *s, int poc);

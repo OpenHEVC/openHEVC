@@ -56,6 +56,7 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, i
                      && (x0 + nPbW) < lc->end_of_tiles_x;
     lc->na.cand_bottom_left = ((y0 + nPbH) >= lc->end_of_tiles_y) ? 0 : lc->na.cand_left;
 }
+
 /*
  * 6.4.1 Derivation process for z-scan order block availability
  */
@@ -249,6 +250,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
     }
     return availableFlagLXCol;
 }
+
 /*
  * 8.5.3.1.7  temporal luma motion vector prediction
  */
@@ -389,8 +391,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     int availableFlagL0Col = 0;
     int availableFlagL1Col = 0;
-
-
 
     if (cand_left
             && !(tab_mvf[(yA1_pu) * pic_width_in_min_pu + xA1_pu].is_intra)) {
