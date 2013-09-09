@@ -582,6 +582,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs;
         }
     }
+
     // bs for TU internal vertical PU boundaries
     if (log2_trafo_size > s->sps->log2_min_pu_size && s->sh.slice_type != I_SLICE)
         for (j = 0; j < (1 << log2_trafo_size); j += 4) {

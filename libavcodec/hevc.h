@@ -774,7 +774,7 @@ typedef struct HEVCThreadContext {
     CodingUnit cu;
     PredictionUnit pu;
     NeighbourAvailable na;
-    DECLARE_ALIGNED( 16, int16_t, BufferMC[(MAX_PB_SIZE + 7) * MAX_PB_SIZE] );
+    DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
     Filter_data *save_boundary_strengths;
     int nb_saved;
 } HEVCThreadContext;
@@ -886,14 +886,20 @@ int ff_hevc_decode_nal_sei(HEVCContext *s);
  * Mark all frames in DPB as unused for reference.
  */
 void ff_hevc_clear_refs(HEVCContext *s);
-void ff_hevc_clean_refs(HEVCContext *s);
-int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
+
+/**
+ * Drop all frames currently in DPB.
+ */
+void ff_hevc_flush_dpb(HEVCContext *s);
+
 /**
  * Compute POC of the current frame and return it.
  */
 int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
+
+int ff_hevc_add_ref(HEVCContext *s, AVFrame *frame, int poc);
 void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref);
-RefPicList* ff_hevc_get_ref_list(HEVCContext *sc, int short_ref_idx, int x0, int y0);
+RefPicList* ff_hevc_get_ref_list(HEVCContext *s, int short_ref_idx, int x0, int y0);
 void ff_hevc_set_ref_poc_list(HEVCContext *s);
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);
