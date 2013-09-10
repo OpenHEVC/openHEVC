@@ -623,11 +623,10 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y)
 
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
 {
-    if (y_ctb && x_ctb) {
+    if (y_ctb && x_ctb)
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb - ctb_size);
-        if (x_ctb >= (s->sps->pic_width_in_luma_samples - ctb_size))
-            ff_hevc_hls_filter(s, x_ctb, y_ctb - ctb_size);
-        if (y_ctb >= (s->sps->pic_height_in_luma_samples - ctb_size))
-            ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb);
-    }
+    if (y_ctb && x_ctb >= (s->sps->pic_width_in_luma_samples - ctb_size))
+        ff_hevc_hls_filter(s, x_ctb, y_ctb - ctb_size);
+    if (x_ctb && y_ctb >= (s->sps->pic_height_in_luma_samples - ctb_size))
+        ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb);
 }
