@@ -2742,12 +2742,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             return ctb_addr_ts;
         break;
     case NAL_AUD:
+    case NAL_FD_NUT:
+         break;
     case NAL_EOS_NUT:
     case NAL_EOB_NUT:
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra = INT_MAX;
-        break;
-    case NAL_FD_NUT:
         break;
     default:
         av_log(s->avctx, AV_LOG_INFO, "Skipping NAL unit %d\n", s->nal_unit_type);
