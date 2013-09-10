@@ -95,7 +95,7 @@ static void update_refs(HEVCContext *s)
         if (frame->frame->buf[0] && !used[i]) {
             ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF);
 #ifdef TEST_DPB
-            printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
+            printf("\t\t\t\t\t\t%d\t%d\n",i, frame->poc);
 #endif
         }            
     }
