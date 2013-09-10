@@ -752,8 +752,8 @@ typedef struct HEVCLocalContext {
     int last_coeff_abs_level_greater1_flag;
     int c_rice_param;
     int last_coeff_abs_level_remaining;
-    GetBitContext *gb; //
-    CABACContext *cc; //
+    GetBitContext gb; //
+    CABACContext cc; //
     TransformTree tt;
     TransformUnit tu;
     ResidualCoding rc;

@@ -31,7 +31,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     uint8_t hash_type;
     //uint16_t picture_crc;
     //uint32_t picture_checksum;
-    GetBitContext *gb = s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     hash_type = get_bits(gb, 8);
 
 
@@ -53,7 +53,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
 
 static void decode_nal_sei_frame_packing_arrangement(HEVCLocalContext *lc)
 {
-    GetBitContext *gb = lc->gb;
+    GetBitContext *gb = &lc->gb;
     int cancel, type, quincunx;
 
     get_ue_golomb(gb);                      // frame_packing_arrangement_id
@@ -79,7 +79,7 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCLocalContext *lc)
 
 static int decode_nal_sei_message(HEVCContext *s)
 {
-    GetBitContext *gb = s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->gb;
 
     int payload_type = 0;
     int payload_size = 0;
@@ -124,6 +124,6 @@ int ff_hevc_decode_nal_sei(HEVCContext *s)
 {
     do {
         decode_nal_sei_message(s);
-    } while (more_rbsp_data(s->HEVClc->gb));
+    } while (more_rbsp_data(&s->HEVClc->gb));
     return 0;
 }

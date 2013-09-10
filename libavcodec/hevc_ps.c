@@ -46,7 +46,7 @@ int ff_hevc_decode_short_term_rps(HEVCLocalContext *lc, int idx, SPS *sps)
 
     int i;
 
-    GetBitContext *gb = lc->gb;
+    GetBitContext *gb = &lc->gb;
 
     ShortTermRPS *rps = &sps->short_term_rps_list[idx];
     ShortTermRPS *rps_ridx;
@@ -146,7 +146,7 @@ int ff_hevc_decode_short_term_rps(HEVCLocalContext *lc, int idx, SPS *sps)
 static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl, int max_num_sub_layers)
 {
     int i, j;
-    GetBitContext *gb = lc->gb;
+    GetBitContext *gb = &lc->gb;
 
     ptl->general_profile_space = get_bits(gb, 2);
     ptl->general_tier_flag = get_bits1(gb);
@@ -205,7 +205,7 @@ static void decode_hrd(HEVCContext *s)
 int ff_hevc_decode_nal_vps(HEVCContext *s)
 {
     int i,j;
-    GetBitContext *gb = s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     int vps_id = 0;
     VPS *vps;
 
@@ -299,7 +299,7 @@ err:
 static void decode_vui(HEVCContext *s, SPS *sps)
 {
     VUI *vui = &sps->vui;
-    GetBitContext *gb = s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->gb;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VUI\n");
 
@@ -372,7 +372,7 @@ static void decode_vui(HEVCContext *s, SPS *sps)
 }
 
 static void scaling_list_data(HEVCContext *s) {
-    GetBitContext *gb = s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     uint8_t scaling_list_pred_mode_flag[4][6];
     uint32_t scaling_list_pred_matrix_id_delta[4][6];
     int32_t scaling_list_dc_coef_minus8[2][6];
@@ -404,7 +404,7 @@ static void scaling_list_data(HEVCContext *s) {
 
 int ff_hevc_decode_nal_sps(HEVCContext *s)
 {
-    GetBitContext *gb = s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     int ret    = 0;
     int sps_id = 0;
     int log2_diff_max_min_transform_block_size;
@@ -670,7 +670,7 @@ void ff_hevc_pps_free(PPS **ppps)
 
 int ff_hevc_decode_nal_pps(HEVCContext *s)
 {
-    GetBitContext *gb = s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     SPS          *sps = NULL;
     int pic_area_in_ctbs, pic_area_in_min_cbs, pic_area_in_min_tbs;
     int log2_diff_ctb_min_tb_size;
