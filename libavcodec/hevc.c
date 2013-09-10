@@ -2956,7 +2956,12 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     return avpkt->size;
 }
-
+static int hevc_update_thread_context(AVCodecContext *dst, const AVCodecContext *src){
+    HEVCContext *h = dst->priv_data, *h1 = src->priv_data;
+    memcpy(h, h1, sizeof(*h));
+    h->avctx = dst; 
+    return 0;
+}
 static av_cold int hevc_decode_init(AVCodecContext *avctx)
 {
     int i;
@@ -3001,7 +3006,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         s->threads_number = avctx->thread_count;
     else
         s->threads_number = 1;
-
+    
     if (avctx->extradata_size > 0 && avctx->extradata)
         return decode_nal_units(s, s->avctx->extradata, s->avctx->extradata_size);
     s->width = s->height = 0;
@@ -3102,7 +3107,8 @@ AVCodec ff_hevc_decoder = {
     .init           = hevc_decode_init,
     .close          = hevc_decode_free,
     .decode         = hevc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,/* | CODEC_CAP_FRAME_THREADS,*/
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(hevc_update_thread_context),
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS,
     .flush          = hevc_decode_flush,
     .long_name      = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
 };
