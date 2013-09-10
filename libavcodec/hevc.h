@@ -450,7 +450,7 @@ typedef struct SliceHeader {
     uint8_t colour_plane_id;
 
     int pic_order_cnt_lsb;
-    ShortTermRPS *short_term_rps;
+    const ShortTermRPS *short_term_rps;
     RefPicList refPocList[5];
     LongTermRPS long_term_rps;
     uint8_t ref_pic_list_modification_flag_lx[2];
@@ -752,8 +752,8 @@ typedef struct HEVCLocalContext {
     int last_coeff_abs_level_greater1_flag;
     int c_rice_param;
     int last_coeff_abs_level_remaining;
-    GetBitContext gb; //
-    CABACContext cc; //
+    GetBitContext gb;
+    CABACContext cc;
     TransformTree tt;
     TransformUnit tu;
     ResidualCoding rc;
@@ -785,10 +785,8 @@ typedef struct HEVCContext {
 
     struct HEVCContext  *sList[MAX_NB_THREADS];
 
-
     HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
     HEVCLocalContext    *HEVClc;
-
 
     uint8_t             threads_number;
     int                 decode_checksum_sei;
@@ -797,7 +795,7 @@ typedef struct HEVCContext {
     int                 width;
     int                 height;
 
-    uint8_t *cabac_state; //
+    uint8_t *cabac_state;
 
     AVFrame *frame;
     AVFrame *sao_frame;
@@ -822,8 +820,8 @@ typedef struct HEVCContext {
     int max_ra;
     int bs_width;
     int bs_height;
-    
-    int * ctb_entry_count;
+
+    int *ctb_entry_count;
     int coding_tree_count;
     int is_decoded;
     int SliceAddrRs;
@@ -871,6 +869,8 @@ typedef struct HEVCContext {
     // for checking the frame checksums
     uint8_t md5[3][16];
     uint8_t is_md5;
+
+    int strict_def_disp_win;
 } HEVCContext;
 
 enum ScanType {
@@ -914,7 +914,6 @@ int ff_hevc_sao_offset_abs_decode(HEVCContext *s);
 int ff_hevc_sao_offset_sign_decode(HEVCContext *s);
 int ff_hevc_sao_eo_class_decode(HEVCContext *s);
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
-int ff_hevc_end_of_sub_stream_one_bit_decode(HEVCContext *s);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb);
 int ff_hevc_pred_mode_decode(HEVCContext *s);
@@ -982,6 +981,8 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 
 void ff_hevc_pps_free(PPS **ppps);
+
+int ff_hevc_apply_window(HEVCContext *s, HEVCWindow *window);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

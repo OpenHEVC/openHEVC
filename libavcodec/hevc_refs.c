@@ -203,10 +203,10 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
 {
     int nb_output = 0;
     int min_poc   = 0xFFFF;
-    int i, min_idx, ret;
-    uint8_t run = 1;
-    min_idx = 0;
-    while (run) {
+    int i, j, min_idx, ret;
+    AVFrame *dst, *src;
+
+    do {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
             if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
@@ -230,20 +230,33 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
 #endif
 //            av_log(s->avctx, AV_LOG_INFO, "Display : POC %d\n", min_poc);
             HEVCFrame *frame = &s->DPB[min_idx];
+            dst = out;
+            src = frame->frame;
+
+            dst = out;
+            src = frame->frame;
 
             *poc_display = frame->poc;
-            ret = av_frame_ref(out, frame->frame);
-            ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT);
+            frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
+            ret = av_frame_ref(dst, src);
             if (ret < 0)
                 return ret;
+
+            for (j = 0; j < 3; j++) {
+                int off = (s->sps->pic_conf_win.left_offset >> s->sps->hshift[j]) << s->sps->pixel_shift +
+                          (s->sps->pic_conf_win.top_offset >> s->sps->vshift[j]) * dst->linesize[j];
+                if (s->strict_def_disp_win)
+                    off += (s->sps->vui.def_disp_win.left_offset >> s->sps->hshift[j]) +
+                           (s->sps->vui.def_disp_win.top_offset >> s->sps->vshift[j]) * dst->linesize[j]; 
+                dst->data[j] += off;
+            }
             return 1;
         }
 
         if (s->seq_output != s->seq_decode)
             s->seq_output = (s->seq_output + 1) & 0xff;
-        else
-            run = 0;
-    }
+    } while (s->seq_output != s->seq_decode);
+
     return 0;
 }
 
@@ -350,7 +363,7 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
     int i;
     int j = 0;
     int k = 0;
-    ShortTermRPS *rps        = s->sh.short_term_rps;
+    const ShortTermRPS *rps  = s->sh.short_term_rps;
     LongTermRPS *long_rps    = &s->sh.long_term_rps;
     RefPicList   *refPocList = s->sh.refPocList;
     int MaxPicOrderCntLsb = 1 << s->sps->log2_max_poc_lsb;
@@ -410,8 +423,8 @@ int ff_hevc_get_num_poc(HEVCContext *s)
 {
     int ret = 0;
     int i;
-    ShortTermRPS *rps     = s->sh.short_term_rps;
-    LongTermRPS *long_rps = &s->sh.long_term_rps;
+    const ShortTermRPS *rps = s->sh.short_term_rps;
+    LongTermRPS *long_rps   = &s->sh.long_term_rps;
 
     if (rps) {
         for (i = 0; i < rps->num_negative_pics; i++)
@@ -425,4 +438,30 @@ int ff_hevc_get_num_poc(HEVCContext *s)
             ret += !!long_rps->UsedByCurrPicLt[i];
     }
     return ret;
+}
+
+int ff_hevc_apply_window(HEVCContext *s, HEVCWindow *window)
+{
+    int original_width  = s->avctx->width;
+    int original_height = s->avctx->height;
+
+    s->avctx->width -= window->left_offset + window->right_offset;
+    s->avctx->height -= window->top_offset + window->bottom_offset;
+
+    if (s->avctx->width <= 0 || s->avctx->height <= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid frame dimensions: %dx%d.\n",
+               s->avctx->width, s->avctx->height);
+        if (s->avctx->err_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+
+        av_log(s->avctx, AV_LOG_WARNING, "Ignoring window information.\n");
+        window->left_offset   =
+        window->top_offset    =
+        window->right_offset  =
+        window->bottom_offset = 0;
+        s->avctx->width = original_width;
+        s->avctx->height = original_height;
+    }
+
+    return 0;
 }

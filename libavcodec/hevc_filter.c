@@ -163,10 +163,9 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int l
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
     int log2_min_cb_size  = s->sps->log2_min_coding_block_size;
-    int pic_width         = s->sps->pic_width_in_luma_samples  >> log2_min_cb_size;
-    int pic_height        = s->sps->pic_height_in_luma_samples >> log2_min_cb_size;
-    int x                 = FFMIN(xC >> log2_min_cb_size, pic_width  - 1);
-    int y                 = FFMIN(yC >> log2_min_cb_size, pic_height - 1);
+    int pic_width         = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
+    int x                 = xC >> log2_min_cb_size;
+    int y                 = yC >> log2_min_cb_size;
     return s->qp_y_tab[x + y * pic_width];
 }
 
@@ -224,7 +223,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_id
     }
 
     for (c_idx = 0; c_idx < 3; c_idx++) {
-        int chroma = c_idx ? 1 : c_idx;
+        int chroma = c_idx ? 1 : 0;
         int x0 = x >> chroma;
         int y0 = y >> chroma;
         int stride = s->frame->linesize[c_idx];
