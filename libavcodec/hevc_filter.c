@@ -329,8 +329,6 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
         left_beta_offset = s->deblock[ctb-1].beta_offset;
     }
 
-    if (s->deblock[ctb].disable)
-        return;
 
     x_end = x0+ctb_size;
     if (x_end > s->sps->pic_width_in_luma_samples)
