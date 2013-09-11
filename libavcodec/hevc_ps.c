@@ -27,6 +27,75 @@
 #include "libavutil/imgutils.h"
 #include "hevc.h"
 
+static const uint8_t diag_scan4x4_x[16] = {
+    0, 0, 1, 0,
+    1, 2, 0, 1,
+    2, 3, 1, 2,
+    3, 2, 3, 3,
+};
+
+static const uint8_t diag_scan4x4_y[16] = {
+    0, 1, 0, 2,
+    1, 0, 3, 2,
+    1, 0, 3, 2,
+    1, 3, 2, 3,
+};
+static const uint8_t diag_scan8x8_x[64] = {
+    0, 0, 1, 0,
+    1, 2, 0, 1,
+    2, 3, 0, 1,
+    2, 3, 4, 0,
+    1, 2, 3, 4,
+    5, 0, 1, 2,
+    3, 4, 5, 6,
+    0, 1, 2, 3,
+    4, 5, 6, 7,
+    1, 2, 3, 4,
+    5, 6, 7, 2,
+    3, 4, 5, 6,
+    7, 3, 4, 5,
+    6, 7, 4, 5,
+    6, 7, 5, 6,
+    7, 6, 7, 7,
+};
+
+static const uint8_t diag_scan8x8_y[64] = {
+    0, 1, 0, 2,
+    1, 0, 3, 2,
+    1, 0, 4, 3,
+    2, 1, 0, 5,
+    4, 3, 2, 1,
+    0, 6, 5, 4,
+    3, 2, 1, 0,
+    7, 6, 5, 4,
+    3, 2, 1, 0,
+    7, 6, 5, 4,
+    3, 2, 1, 7,
+    6, 5, 4, 3,
+    2, 7, 6, 5,
+    4, 3, 7, 6,
+    5, 4, 7, 6,
+    5, 7, 6, 7,
+};
+static const uint8_t DefaultScalingListIntra[] = {
+        16, 16, 16, 16, 17, 18, 21, 24,
+		16, 16, 16, 16, 17, 19, 22, 25, 
+		16, 16, 17, 18, 20, 22, 25, 29,
+		16, 16, 18, 21, 24, 27, 31, 36,
+		17, 17, 20, 24, 30, 35, 41, 47,
+		18, 19, 22, 27, 35, 44, 54, 65,
+		21, 22, 25, 31, 41, 54, 70, 88,
+		24, 25, 29,36, 47, 65, 88, 115 };
+static const uint8_t DefaultScalingListInter[] = {
+		16, 16, 16, 16, 17, 18, 20, 24,
+		16, 16, 16, 17, 18, 20, 24, 25, 
+		16, 16, 17, 18, 20, 24, 25, 28,
+		16, 17, 18, 20, 24, 25, 28, 33,
+		17, 18, 20, 24, 25, 28, 33, 41,
+		18, 20, 24, 25, 28, 33, 41, 54,
+		20, 24, 25, 28, 33, 41, 54, 71,
+		24, 25, 28, 33, 41, 54, 71, 91};
+
 /**
  * Section 7.3.3.1
  */
@@ -393,35 +462,70 @@ static void decode_vui(HEVCContext *s, SPS *sps)
         vui->log2_max_mv_length_vertical             = get_ue_golomb(gb);
     }
 }
+static void set_default_scaling_list_data(ScalingListData *sld) {
+    int sizeId, matrixId;
+    for(matrixId = 0; matrixId < 6; matrixId++) {
+        // 4x4 default is 16   
+        memset(sld->ScalingList[0][matrixId],16,16);
+        sld->ScalingListDC[0][matrixId] = 16; // default for 16x16
+        sld->ScalingListDC[1][matrixId] = 16; // default for 32x32
+    }
+    memcpy(sld->ScalingList[1][0],DefaultScalingListIntra,64);
+    memcpy(sld->ScalingList[1][1],DefaultScalingListIntra,64);
+    memcpy(sld->ScalingList[1][2],DefaultScalingListIntra,64);
+    memcpy(sld->ScalingList[1][3],DefaultScalingListInter,64);
+    memcpy(sld->ScalingList[1][4],DefaultScalingListInter,64);
+    memcpy(sld->ScalingList[1][5],DefaultScalingListInter,64);
+    memcpy(sld->ScalingList[2][0],DefaultScalingListIntra,64);
+    memcpy(sld->ScalingList[2][1],DefaultScalingListIntra,64);
+    memcpy(sld->ScalingList[2][2],DefaultScalingListIntra,64);
+    memcpy(sld->ScalingList[2][3],DefaultScalingListInter,64);
+    memcpy(sld->ScalingList[2][4],DefaultScalingListInter,64);
+    memcpy(sld->ScalingList[2][5],DefaultScalingListInter,64);
+    memcpy(sld->ScalingList[3][0],DefaultScalingListIntra,64);
+    memcpy(sld->ScalingList[3][1],DefaultScalingListInter,64);
+}
 
-static void scaling_list_data(HEVCContext *s) {
+static void scaling_list_data(HEVCContext *s, ScalingListData *sld) {
     GetBitContext *gb = &s->HEVClc->gb;
     uint8_t scaling_list_pred_mode_flag[4][6];
-    uint32_t scaling_list_pred_matrix_id_delta[4][6];
     int32_t scaling_list_dc_coef_minus8[2][6];
     
-    int size_id, matrix_id, i;
+    int size_id, matrix_id, i, pos, delta;
 	for (size_id = 0; size_id < 4; size_id++)
 		for (matrix_id = 0; matrix_id < ((size_id == 3) ? 2 : 6); matrix_id++) {
 			scaling_list_pred_mode_flag[size_id][matrix_id] = get_bits1(gb);
-			if (!scaling_list_pred_mode_flag[size_id][matrix_id])
-				scaling_list_pred_matrix_id_delta[size_id][matrix_id] = get_ue_golomb(gb);
-                else {
-                    int next_coef;
-                    int coef_num;
-                    int32_t scaling_list_delta_coef;
-                    next_coef = 8;
-                    coef_num = FFMIN(64, (1  <<  (4 + (size_id  <<  1))));
-                    if( size_id > 1 ) {
-                        scaling_list_dc_coef_minus8[size_id - 2][matrix_id] = get_se_golomb(gb);
-                        next_coef = scaling_list_dc_coef_minus8[size_id - 2][matrix_id] + 8;
-                    }
-                    for( i = 0; i < coef_num; i++) {
-                        scaling_list_delta_coef = get_se_golomb(gb);
-                        next_coef = (next_coef + scaling_list_delta_coef + 256 ) % 256;
-                        /*ScalingList[ size_id ][ matrix_id ][ i ] =*/ next_coef;
-                    }
+			if (!scaling_list_pred_mode_flag[size_id][matrix_id]) {
+				delta = get_ue_golomb(gb);
+                // Only need to handle non-zero delta. Zero means default, which should already be in the arrays.
+                if(delta != 0) {
+                    // Copy from previous array.
+                    memcpy(sld->ScalingList[ size_id ][ matrix_id ], sld->ScalingList[ size_id ][ matrix_id - delta], size_id > 0 ? 64 : 16);
+                    if(size_id > 1)
+                        sld->ScalingListDC[size_id-2][matrix_id] = sld->ScalingListDC[size_id-2][matrix_id-delta];
                 }
+            } else {
+                int next_coef;
+                int coef_num;
+                int32_t scaling_list_delta_coef;
+                next_coef = 8;
+                coef_num = FFMIN(64, (1  <<  (4 + (size_id  <<  1))));
+                if( size_id > 1 ) {
+                    scaling_list_dc_coef_minus8[size_id - 2][matrix_id] = get_se_golomb(gb);
+                    next_coef = scaling_list_dc_coef_minus8[size_id - 2][matrix_id] + 8;
+                    sld->ScalingListDC[ size_id - 2 ][ matrix_id ] = next_coef;
+                }
+                for( i = 0; i < coef_num; i++) {
+                    if(size_id == 0) {
+                        pos = 4*diag_scan4x4_y[ i ] + diag_scan4x4_x[ i ];
+                    } else {
+                        pos = 8*diag_scan8x8_y[ i ] + diag_scan8x8_x[ i ];
+                    }
+                    scaling_list_delta_coef = get_se_golomb(gb);
+                    next_coef = (next_coef + scaling_list_delta_coef + 256 ) % 256;
+                    sld->ScalingList[ size_id ][ matrix_id ][ pos ] = next_coef;
+                }
+            }
 		}
 }
 
@@ -433,6 +537,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     int log2_diff_max_min_transform_block_size;
     int bit_depth_chroma, start;
     int i;
+    int matrixId, sizeId;
 
     SPS *sps = av_mallocz(sizeof(*sps));
     if (!sps)
@@ -596,8 +701,9 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->scaling_list_enable_flag = get_bits1(gb);
     if (sps->scaling_list_enable_flag) {
         sps->scaling_list_data_present_flag = get_bits1(gb);
+        set_default_scaling_list_data(&sps->scalingList);
         if (sps->scaling_list_data_present_flag)
-            scaling_list_data(s);
+            scaling_list_data(s, &sps->scalingList);
     }
 
     sps->amp_enabled_flag                    = get_bits1(gb);
@@ -884,7 +990,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     pps->pps_scaling_list_data_present_flag = get_bits1(gb);
     if (pps->pps_scaling_list_data_present_flag) {
-        scaling_list_data(s);
+        set_default_scaling_list_data(&pps->scalingList);
+        scaling_list_data(s,&pps->scalingList);
     }
     pps->lists_modification_present_flag = get_bits1(gb);
     pps->log2_parallel_merge_level       = get_ue_golomb(gb) + 2;

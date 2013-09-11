@@ -525,10 +525,7 @@ static void FUNC(sao_band_filter_3)(uint8_t *_dst, uint8_t *_src,
     FUNC(sao_band_filter)(_dst, _src, _stride, sao, borders, width, height, c_idx, 3);
 }
 
-static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t _stride, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx)
+static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t vert_edge, uint8_t horiz_edge, uint8_t diag_edge)
 {
     int x, y;
     pixel *dst = (pixel*)_dst;
@@ -619,11 +616,7 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     }
 #undef CMP
 }
-
-static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t _stride, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx)
+static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t vert_edge, uint8_t horiz_edge, uint8_t diag_edge)
 {
     int x, y;
     pixel *dst = (pixel*)_dst;
@@ -697,11 +690,7 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
     }
 #undef CMP
 }
-
-static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t _stride, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx)
+static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t vert_edge, uint8_t horiz_edge, uint8_t diag_edge)
 {
     int x, y;
     pixel *dst = (pixel*)_dst;
@@ -771,11 +760,7 @@ static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src,
     }
 #undef CMP
 }
-
-static void FUNC(sao_edge_filter_3)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t _stride, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx)
+static void FUNC(sao_edge_filter_3)(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t vert_edge, uint8_t horiz_edge, uint8_t diag_edge)
 {
     int x, y;
     pixel *dst = (pixel*)_dst;

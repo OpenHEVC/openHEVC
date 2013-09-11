@@ -184,7 +184,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
 {
     RefPicList *refPicList = s->ref->refPicList;
 
-    if (temp_col.is_intra) {
+    if (temp_col.is_intra || !temp_col.pred_flag) {
         mvLXCol->x = 0;
         mvLXCol->y = 0;
         return 0;

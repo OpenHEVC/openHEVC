@@ -182,7 +182,7 @@ static void copy_CTB(uint8_t *dst, uint8_t *src, int width, int height, int stri
 
 #define CTB(tab, x, y) ((tab)[(y) * s->sps->pic_width_in_ctbs + (x)])
 
-static void sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_idx_max)
+static void sao_filter_CTB(HEVCContext *s, int x, int y)
 {
     //  TODO: This should be easily parallelizable
     //  TODO: skip CBs when (cu_transquant_bypass_flag || (pcm_loop_filter_disable_flag && pcm_flag))
@@ -194,16 +194,25 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_id
     int x_shift = 0, y_shift = 0;
     int x_ctb = x>>s->sps->log2_ctb_size;
     int y_ctb = y>>s->sps->log2_ctb_size;
+    // flags indicating unfilterable edges
+    uint8_t vert_edge[] = {0,0,0,0};
+    uint8_t horiz_edge[] = {0,0,0,0};
+    uint8_t diag_edge[] = {0,0,0,0};
+    uint8_t lfase[3]; // current, above, left
 
     sao[0]     = &CTB(s->sao, x_ctb, y_ctb);
     edges[0]   = x_ctb == 0;
     edges[1]   = y_ctb == 0;
     edges[2]   = x_ctb == (s->sps->pic_width_in_ctbs - 1);
     edges[3]   = y_ctb == (s->sps->pic_height_in_ctbs - 1);
+    lfase[0]   = CTB(s->filter_slice_edges, x_ctb, y_ctb);
     classes[0] = 0;
 
     if (!edges[0]) {
         sao[class] = &CTB(s->sao, x_ctb - 1, y_ctb);
+        vert_edge[0] = !lfase[0] && CTB(s->tab_slice_address, x_ctb, y_ctb) != CTB(s->tab_slice_address, x_ctb - 1, y_ctb);
+        vert_edge[2] = vert_edge[0];
+        lfase[2] = CTB(s->filter_slice_edges, x_ctb - 1, y_ctb);
         classes[class] = 2;
         class++;
         x_shift = 8;
@@ -211,6 +220,9 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_id
 
     if (!edges[1]) {
         sao[class] = &CTB(s->sao, x_ctb, y_ctb - 1);
+        horiz_edge[0] = !lfase[0] && CTB(s->tab_slice_address, x_ctb, y_ctb) != CTB(s->tab_slice_address, x_ctb, y_ctb - 1);
+        horiz_edge[1] = horiz_edge[0];
+        lfase[1] = CTB(s->filter_slice_edges, x_ctb, y_ctb - 1);
         classes[class] = 1;
         class++;
         y_shift = 4;
@@ -219,6 +231,24 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_id
             classes[class] = 3;
             sao[class] = &CTB(s->sao, x_ctb - 1, y_ctb - 1);
             class++;
+            
+            vert_edge[1] = !lfase[1] && CTB(s->tab_slice_address, x_ctb, y_ctb - 1) != CTB(s->tab_slice_address, x_ctb - 1, y_ctb - 1);
+            vert_edge[3] = vert_edge[1];
+            horiz_edge[2] = !lfase[2] && CTB(s->tab_slice_address, x_ctb - 1, y_ctb) != CTB(s->tab_slice_address, x_ctb - 1, y_ctb - 1);
+            horiz_edge[3] = horiz_edge[2];
+            diag_edge[0] = !lfase[0] && CTB(s->tab_slice_address, x_ctb, y_ctb) != CTB(s->tab_slice_address, x_ctb - 1, y_ctb - 1);
+            diag_edge[3] = diag_edge[0];
+            // Does left CTB comes after above CTB?
+            if(CTB(s->tab_slice_address, x_ctb - 1, y_ctb) > CTB(s->tab_slice_address, x_ctb, y_ctb - 1)) {
+                diag_edge[2] = !lfase[2];
+                diag_edge[1] = diag_edge[2];
+            } else if(CTB(s->tab_slice_address, x_ctb - 1, y_ctb) < CTB(s->tab_slice_address, x_ctb, y_ctb - 1)) {
+                diag_edge[1] = !lfase[1];
+                diag_edge[2] = diag_edge[1];
+            } else {
+                // Same slice, do nothing
+            }
+
         }
     }
 
@@ -241,14 +271,16 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_id
                  (edges[2] ? width  + (x_shift >> chroma) : width)  << s->sps->pixel_shift,
                  (edges[3] ? height + (y_shift >> chroma) : height), stride);
 
-        for (class_index = 0; class_index < class && c_idx >= c_idx_min &&
-                              c_idx < c_idx_max; class_index++) {
+
+
+        for (class_index = 0; class_index < class; class_index++) {
+
             switch (sao[class_index]->type_idx[c_idx]) {
             case SAO_BAND:
                 s->hevcdsp.sao_band_filter[classes[class_index]](dst, src, stride, sao[class_index], edges, width, height, c_idx);
                     break;
             case SAO_EDGE:
-                s->hevcdsp.sao_edge_filter[classes[class_index]](dst, src, stride, sao[class_index],  edges, width, height, c_idx);
+                s->hevcdsp.sao_edge_filter[classes[class_index]](dst, src, stride, sao[class_index],  edges, width, height, c_idx, vert_edge[classes[class_index]], horiz_edge[classes[class_index]], diag_edge[classes[class_index]]);
                 break;
             }
         }
@@ -285,10 +317,17 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int x_end, y_end;
     int ctb_size    = 1<<log2_ctb_size;
     int ctb         = (x0 >> log2_ctb_size) + (y0 >> log2_ctb_size) * s->sps->pic_width_in_ctbs;
-    int tc_offset   = s->deblock[ctb].tc_offset;
-    int beta_offset = s->deblock[ctb].beta_offset;
+    int cur_tc_offset   = s->deblock[ctb].tc_offset;
+    int cur_beta_offset = s->deblock[ctb].beta_offset;
+    int left_tc_offset, left_beta_offset;
+    int tc_offset, beta_offset;
     int pcmf        = (s->sps->pcm_enabled_flag && s->sps->pcm.loop_filter_disable_flag) ||
                       s->pps->transquant_bypass_enable_flag;
+    
+    if(x0) {
+        left_tc_offset = s->deblock[ctb-1].tc_offset;
+        left_beta_offset = s->deblock[ctb-1].beta_offset;
+    }
 
     if (s->deblock[ctb].disable)
         return;
@@ -300,6 +339,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     if (y_end > s->sps->pic_height_in_luma_samples)
         y_end = s->sps->pic_height_in_luma_samples;
 
+    tc_offset = cur_tc_offset;
+    beta_offset = cur_beta_offset;
     // vertical filtering luma
     for (y = y0; y < y_end; y += 8) {
         for (x = x0 ? x0 : 8; x < x_end; x += 8) {
@@ -358,6 +399,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
             const int bs0 = s->horizontal_bs[(x +     y * s->bs_width) >> 2];
             const int bs1 = s->horizontal_bs[(x + 4 + y * s->bs_width) >> 2];
             if (bs0 || bs1) {
+                tc_offset = x >= x0 ? cur_tc_offset : left_tc_offset;
+                beta_offset = x >= x0 ? cur_beta_offset : left_beta_offset;
                 const int qp0 = (get_qPy(s, x, y - 1)     + get_qPy(s, x, y)     + 1) >> 1;
                 const int qp1 = (get_qPy(s, x + 4, y - 1) + get_qPy(s, x + 4, y) + 1) >> 1;
                 beta[0]  = betatable[av_clip(qp0 + ((beta_offset >> 1) << 1), 0, MAX_QP)];
@@ -396,10 +439,11 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 }
 
                 if ((bs0 == 2) || (bs1 == 2)) {
+                    tc_offset = x >= x0 ? cur_tc_offset : left_tc_offset;
                     const int qp0 = (bs0 == 2) ? ((get_qPy(s, x, y - 1)     + get_qPy(s, x, y)     + 1) >> 1) : 0;
                     const int qp1 = (bs1 == 2) ? ((get_qPy(s, x + 8, y - 1) + get_qPy(s, x + 8, y) + 1) >> 1) : 0;
                     c_tc[0] = (bs0 == 2) ? chroma_tc(s, qp0, chroma, tc_offset) : 0;
-                    c_tc[1] = (bs1 == 2) ? chroma_tc(s, qp1, chroma, tc_offset) : 0;
+                    c_tc[1] = (bs1 == 2) ? chroma_tc(s, qp1, chroma, cur_tc_offset) : 0;
                     src = &s->frame->data[chroma][(y / 2) * s->frame->linesize[chroma] + ((x / 2) << s->sps->pixel_shift)];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x, y - 1);
@@ -531,7 +575,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
         }
     }
     // bs for TU internal horizontal PU boundaries
-    if (log2_trafo_size > s->sps->log2_min_pu_size && s->sh.slice_type != I_SLICE)
+    if (log2_trafo_size > s->sps->log2_min_pu_size && s->HEVClc->cu.pred_mode != MODE_INTRA)
         for (j = 8; j < (1 << log2_trafo_size); j += 8) {
             int yp_pu = (y0 + j - 1) >> log2_min_pu_size;
             int yq_pu = (y0 + j)     >> log2_min_pu_size;
@@ -546,7 +590,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * pic_width_in_min_tu + x_tu];
                 uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * pic_width_in_min_tu + x_tu];
                 RefPicList* top_refPicList = ff_hevc_get_ref_list(s, s->curr_dpb_idx, x0 + i, y0 + j - 1);
-
+                
                 bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, top_refPicList, 0);
                 if (s->sh.disable_deblocking_filter_flag == 1)
                     bs = 0;
@@ -583,7 +627,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
     }
 
     // bs for TU internal vertical PU boundaries
-    if (log2_trafo_size > s->sps->log2_min_pu_size && s->sh.slice_type != I_SLICE)
+    if (log2_trafo_size > s->sps->log2_min_pu_size && s->HEVClc->cu.pred_mode != MODE_INTRA)
         for (j = 0; j < (1 << log2_trafo_size); j += 4) {
             int y_pu = (y0 + j) >> log2_min_pu_size;
             int y_tu = (y0 + j) >> log2_min_tu_size;
@@ -613,11 +657,11 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
 
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y)
 {
-    int c_idx_min = s->sh.slice_sample_adaptive_offset_flag[0] != 0 ? 0 : 1;
-    int c_idx_max = s->sh.slice_sample_adaptive_offset_flag[1] != 0 ? 3 : 1;
+    //int c_idx_min = s->sh.slice_sample_adaptive_offset_flag[0] != 0 ? 0 : 1;
+    //int c_idx_max = s->sh.slice_sample_adaptive_offset_flag[1] != 0 ? 3 : 1;
     deblocking_filter_CTB(s, x, y);
-    if(s->sps->sample_adaptive_offset_enabled_flag)
-        sao_filter_CTB(s, x, y, c_idx_min, c_idx_max);
+    if (s->sps->sample_adaptive_offset_enabled_flag)
+        sao_filter_CTB(s, x, y);
 }
 
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)

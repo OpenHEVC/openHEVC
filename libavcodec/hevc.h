@@ -141,6 +141,8 @@ typedef struct RefPicListTab {
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
 
+
+
 typedef struct NeighbourAvailable {
     int cand_bottom_left;
     int cand_left;
@@ -275,6 +277,11 @@ typedef struct VPS {
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
 } VPS;
+typedef struct ScalingListData {
+    // This is a little wasteful, since sizeID 0 only needs 8 coeffs, and size ID 3 only has 2 arrays, not 6.
+    uint8_t ScalingList[4][6][64];
+    uint8_t ScalingListDC[2][6];
+} ScalingListData;
 
 typedef struct SPS {
     int vps_id;
@@ -323,6 +330,7 @@ typedef struct SPS {
 
     uint8_t scaling_list_enable_flag;
     uint8_t scaling_list_data_present_flag;
+    ScalingListData scalingList;
 
     uint8_t deblocking_filter_in_aps_enabled_flag;
 
@@ -408,6 +416,8 @@ typedef struct PPS {
     int tc_offset; ///< tc_offset_div2 * 2
 
     int pps_scaling_list_data_present_flag;
+    
+    ScalingListData scalingList;
 
     uint8_t lists_modification_present_flag;
     int log2_parallel_merge_level; ///< log2_parallel_merge_level_minus2 + 2
@@ -706,6 +716,7 @@ typedef struct SAOParams {
 
     // Inferred parameters
     int offset_val[3][5]; ///<SaoOffsetVal
+
 } SAOParams;
 
 typedef struct DBParams {
@@ -846,7 +857,10 @@ typedef struct HEVCContext {
 
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;
-
+    // CTB-level flags affecting loop filter operation
+    uint8_t *filter_slice_edges;
+    
+    
     /**
      * Sequence counters for decoded and output frames, so that old
      * frames are output first after a POC reset
