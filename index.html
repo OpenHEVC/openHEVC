@@ -1,37 +1,38 @@
 <!DOCTYPE html>
 <html>
+
   <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <title>Openhevc by OpenHEVC</title>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Openhevc : " />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Openhevc</title>
   </head>
 
   <body>
-    <div id="container">
-      <div class="inner">
 
-        <header>
-          <h1>Openhevc</h1>
-          <h2></h2>
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/OpenHEVC/openHEVC">View on GitHub</a>
+
+          <h1 id="project_title">Openhevc</h1>
+          <h2 id="project_tagline"></h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/OpenHEVC/openHEVC/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/OpenHEVC/openHEVC/tarball/master">Download this project as a tar.gz file</a>
+            </section>
         </header>
+    </div>
 
-        <section id="downloads" class="clearfix">
-          <a href="https://github.com/OpenHEVC/openHEVC/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
-          <a href="https://github.com/OpenHEVC/openHEVC/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
-          <a href="https://github.com/OpenHEVC/openHEVC" id="view-on-github" class="button"><span>View on GitHub</span></a>
-        </section>
-
-        <hr>
-
-        <section id="main_content">
-          <h1>openHEVC</h1>
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="openhevc" class="anchor" href="#openhevc"><span class="octicon octicon-link"></span></a>openHEVC</h1>
 
 <p>openHEVC is a fork from smarter's libav git (smarter.free.fr) with only required files from libav to decode HEVC content.
 openHEVC in combination with GPAC is used into 3 research projects:</p>
@@ -42,45 +43,52 @@ openHEVC in combination with GPAC is used into 3 research projects:</p>
 <li>AUSTRAL</li>
 </ul><p>openHEVC is an open source compliant HEVC video decoder created as a fork of Libav for research purposes</p>
 
-<h2>- Where is the source code of openHEVC?</h2>
+<h2>
+<a name="--where-is-the-source-code-of-openhevc" class="anchor" href="#--where-is-the-source-code-of-openhevc"><span class="octicon octicon-link"></span></a>- Where is the source code of openHEVC?</h2>
 
 <ul>
 <li>openHEVC is located at <a href="https://github.com/OpenHEVC/openHEVC">https://github.com/OpenHEVC/openHEVC</a>.</li>
 <li><p>openHEVC is under LGPL license</p></li>
-</ul><h2>- Where is the source code of openHEVC?</h2>
+</ul><h2>
+<a name="--where-is-the-source-code-of-openhevc-1" class="anchor" href="#--where-is-the-source-code-of-openhevc-1"><span class="octicon octicon-link"></span></a>- Where is the source code of openHEVC?</h2>
 
 <ul>
 <li>gpac is located at <a href="http://gpac.wp.mines-telecom.fr">http://gpac.wp.mines-telecom.fr</a>.</li>
 <li><p>gpac is under LGPL license</p></li>
-</ul><h2>- How to compile openHEVC on linux from source code</h2>
+</ul><h2>
+<a name="--how-to-compile-openhevc-on-linux-from-source-code" class="anchor" href="#--how-to-compile-openhevc-on-linux-from-source-code"><span class="octicon octicon-link"></span></a>- How to compile openHEVC on linux from source code</h2>
 
 <ul>
 <li>git clone git://github.com/OpenHEVC/openHEVC.git</li>
-<li>git checkout hm10.0</li>
+<li>git checkout hm10.0_au</li>
+<li>install yasm</li>
 <li>go into OpenHEVC source folder</li>
 <li>mkdir build</li>
 <li>cd build</li>
 <li>cmake -DCMAKE_BUILD_TYPE=RELEASE ..</li>
 <li>make</li>
 <li><p>sudo make install</p></li>
-</ul><h2>- How to test openHEVC on linux from source code</h2>
+</ul><h2>
+<a name="--how-to-test-openhevc-on-linux-from-source-code" class="anchor" href="#--how-to-test-openhevc-on-linux-from-source-code"><span class="octicon octicon-link"></span></a>- How to test openHEVC on linux from source code</h2>
 
 <ul>
 <li>Prerequisites: SDL or SDL2</li>
 <li>go into source folder of openHEVC</li>
 <li>with SDL cd build; ./hevc -i name_of_annexB_bitstream.(bit,bin,265)</li>
 <li><p>with SDL2 cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)</p></li>
-</ul><h2>- How to compile gpac with openHEVC on linux</h2>
+</ul><h2>
+<a name="--how-to-compile-gpac-with-openhevc-on-linux" class="anchor" href="#--how-to-compile-gpac-with-openhevc-on-linux"><span class="octicon octicon-link"></span></a>- How to compile gpac with openHEVC on linux</h2>
 
 <ul>
 <li>Prerequisites (see <a href="http://gpac.wp.mines-telecom.fr/2011/04/20/compiling-gpac-on-ubuntu/">http://gpac.wp.mines-telecom.fr/2011/04/20/compiling-gpac-on-ubuntu/</a>)</li>
-<li>svn checkout -rev 4566 <a href="https://gpac.svn.sourceforge.net/svnroot/gpac/trunk">https://gpac.svn.sourceforge.net/svnroot/gpac/trunk</a>
+<li>svn checkout <a href="https://gpac.svn.sourceforge.net/svnroot/gpac/trunk">https://gpac.svn.sourceforge.net/svnroot/gpac/trunk</a>
 </li>
 <li>go into gpac source folder</li>
 <li>./configure </li>
 <li>make</li>
 <li><p>sudo make install</p></li>
-</ul><h2>- How to embed HEVC into MP4 file format</h2>
+</ul><h2>
+<a name="--how-to-embed-hevc-into-mp4-file-format" class="anchor" href="#--how-to-embed-hevc-into-mp4-file-format"><span class="octicon octicon-link"></span></a>- How to embed HEVC into MP4 file format</h2>
 
 <ul>
 <li>use i_main, lp_main, ld_main or ra_main bitstreams from <a href="http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/">http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/</a>
@@ -92,7 +100,8 @@ openHEVC in combination with GPAC is used into 3 research projects:</p>
 </ul>
 </li>
 <li><p>MP4Client output.mp4 // to play HEVC mp4 content</p></li>
-</ul><h2>- How to embed HEVC into TS</h2>
+</ul><h2>
+<a name="--how-to-embed-hevc-into-ts" class="anchor" href="#--how-to-embed-hevc-into-ts"><span class="octicon octicon-link"></span></a>- How to embed HEVC into TS</h2>
 
 <ul>
 <li>use i_main, lp_main, ld_main or ra_main bitstreams from <a href="http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/">http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/</a>
@@ -101,14 +110,15 @@ openHEVC in combination with GPAC is used into 3 research projects:</p>
 <li>cd bin/gcc</li>
 <li>./mp42ts -prog=hevc.mp4 -dst-file=test.ts</li>
 <li><p>MP4Client test.ts // to play HEVC transport streams</p></li>
-</ul><h2>- openHEVC contributors</h2>
+</ul><h2>
+<a name="--openhevc-contributors" class="anchor" href="#--openhevc-contributors"><span class="octicon octicon-link"></span></a>- openHEVC contributors</h2>
 
 <ul>
 <li>
 <p>Active contributors</p>
 
 <ul>
-<li>Guillaume Martres (alias smarter - google summer of code / EPFL)</li>
+<li>Guillaume Martres (alias smarter - google summer of code / EPFL) - student</li>
 <li>Mickaël Raulet (IETR/INSA Rennes)</li>
 <li>Gildas Cocherel (IETR/INSA Rennes)</li>
 <li>Wassim Hamidouche (IETR/INSA Rennes)</li>
@@ -125,21 +135,25 @@ openHEVC in combination with GPAC is used into 3 research projects:</p>
 <li>Anand Meher Kotra (IETR/INSA Rennes)</li>
 </ul>
 </li>
-</ul><h2>- gpac contributors</h2>
+</ul><h2>
+<a name="--gpac-contributors" class="anchor" href="#--gpac-contributors"><span class="octicon octicon-link"></span></a>- gpac contributors</h2>
 
 <ul>
 <li>see <a href="http://gpac.wp.mines-telecom.fr/about/">http://gpac.wp.mines-telecom.fr/about/</a>
 </li>
 </ul>
-        </section>
-
-        <footer>
-          Openhevc is maintained by <a href="https://github.com/OpenHEVC">OpenHEVC</a><br>
-          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.
-        </footer>
-
-        
-      </div>
+      </section>
     </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Openhevc maintained by <a href="https://github.com/OpenHEVC">OpenHEVC</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
   </body>
 </html>
