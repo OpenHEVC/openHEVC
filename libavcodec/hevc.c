@@ -294,7 +294,7 @@ static int pic_arrays_init(HEVCContext *s)
     s->cbf_luma = av_malloc(pic_width_in_min_tu * pic_height_in_min_tu);
     s->is_pcm   = av_malloc(pic_size_in_min_pu);
     s->filter_slice_edges = av_malloc(ctb_count);
-    if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm || s->filter_slice_edges)
+    if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm || !s->filter_slice_edges)
         goto fail;
 
     s->tab_slice_address = av_malloc(pic_size_in_ctb *
