@@ -54,6 +54,7 @@ int disable_au;
 int temporal_layer_id;
 // Activate multi-threading if possible
 int nb_pthreads;
+int no_cropping;
 
 // output file
 char *output_file;

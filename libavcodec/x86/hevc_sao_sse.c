@@ -523,7 +523,7 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     src = src + (init_y * _stride + init_x);
     init_y = init_x = 0;
     if (sao_eo_class != SAO_EO_VERT) {
-        if (borders[0] || vert_edge) {
+        if (borders[0]) {
             int offset_val = sao_offset_val[0];
             int y_stride = 0;
 
@@ -545,7 +545,7 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
 
     }
     if (sao_eo_class != SAO_EO_HORIZ) {
-        if (borders[1] || horiz_edge) {
+        if (borders[1]) {
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             for (x = init_x; x < width-15; x += 16) {
                 x0 = _mm_loadu_si128((__m128i *) (src + x));
@@ -726,10 +726,22 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
         }
         
     }
-    // restore unfilterable upper left pixel
-    if(diag_edge && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1]) {
+    // Restore pixels that can't be modified
+    int save_upper_left = !diag_edge && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
+    if(vert_edge && sao_eo_class != SAO_EO_VERT) {
+        for(y = init_y+save_upper_left; y< height; y++) {
+            dst[y*stride] = src[y*stride];
+        }
+    }
+    if(horiz_edge && sao_eo_class != SAO_EO_HORIZ) {
+        for(x = init_x+save_upper_left; x<width; x++) {
+            dst[x] = src[x];
+        }
+    }
+    if(diag_edge && sao_eo_class == SAO_EO_135D) { 
         dst[0] = src[0];
     }
+
 }
 
 void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
@@ -757,13 +769,13 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
     init_y = -(4 >> chroma) - 2;
     if (!borders[2])
         width -= ((8 >> chroma) + 2);
-    height = (4 >> chroma) + 2 - (horiz_edge && sao_eo_class != SAO_EO_HORIZ);
+    height = (4 >> chroma) + 2;
 
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);
     init_y = init_x = 0;
     if (sao_eo_class != SAO_EO_VERT) {
-        if (borders[0] || vert_edge) {
+        if (borders[0]) {
             int offset_val = sao_offset_val[0];
             int y_stride = 0;
             for (y = 0; y < height; y++) {
@@ -772,13 +784,6 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
             }
             init_x = 1;
         }
-        // Special case, filter bottom left pixel if no diagonal edge and 45Degree
-        
-        if(!diag_edge && !borders[0] && sao_eo_class == SAO_EO_45D) {
-            int y_stride = ((4 >> chroma) + 1)*stride;
-            dst[y_stride] = av_clip_uint8( src[y_stride] + sao_offset_val[edge_idx[2 + CMP(src[y_stride], src[y_stride-stride+1]) + CMP(src[y_stride], src[y_stride+stride-1])]]);
-        }
-    
         if (borders[2]) {
             int offset_val = sao_offset_val[0];
             int x_stride = _width - 1;
@@ -936,10 +941,22 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
             y_stride_1_1 += stride;
         }
     }
-    // Restore bottom left pixel if it can't be modified
-    if(diag_edge && !horiz_edge && !vert_edge && sao_eo_class == SAO_EO_45D && !borders[3] && !borders[1]) {
+    // Restore pixels that can't be modified
+    int save_lower_left = !diag_edge && sao_eo_class == SAO_EO_45D && !borders[0];
+    if(vert_edge && sao_eo_class != SAO_EO_VERT) {
+        for(y = init_y; y< height-save_lower_left; y++) {
+            dst[y*stride] = src[y*stride];
+        }
+    }
+    if(horiz_edge && sao_eo_class != SAO_EO_HORIZ) {
+        for(x = init_x+save_lower_left; x<width; x++) {
+            dst[(height-1)*stride+x] = src[(height-1)*stride+x];
+        }
+    }
+    if(diag_edge && sao_eo_class == SAO_EO_45D) { 
         dst[stride*(height-1)] = src[stride*(height-1)];
     }
+
 }
 
 void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
@@ -975,7 +992,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
     init_y = init_x = 0;
 
     if (sao_eo_class != SAO_EO_HORIZ) {
-        if (borders[1] || horiz_edge) {
+        if (borders[1]) {
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             x0 = _mm_loadu_si128((__m128i *) (src + init_x));
             x0 = _mm_add_epi8(x0, x1);
@@ -1096,18 +1113,21 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
         }
     }
     // Restore pixels that can't be modified
+    int save_upper_right = !diag_edge && sao_eo_class == SAO_EO_45D && !borders[1];
     if(vert_edge && sao_eo_class != SAO_EO_VERT) {
-        for(y = init_y; y< height; y++) {
+        for(y = init_y+save_upper_right; y< height; y++) {
             dst[y*stride+width-1] = src[y*stride+width-1];
         }
     }
-    if (sao_eo_class == SAO_EO_45D && !borders[1] && !diag_edge) {
-        // upper right pixel was not modified. Modify it now.
-        dst[width-1] = av_clip_uint8( src[width-1] + sao_offset_val[edge_idx[2 + CMP(src[width-1], src[width-2+stride]) + CMP(src[width-1], src[width-stride])]]);
+    if(horiz_edge && sao_eo_class != SAO_EO_HORIZ) {
+        for(x = init_x; x<width-save_upper_right; x++) {
+            dst[x] = src[x];
+        }
     }
-    if(diag_edge && !horiz_edge && !vert_edge && sao_eo_class == SAO_EO_45D) { 
+    if(diag_edge && sao_eo_class == SAO_EO_45D) { 
         dst[width-1] = src[width-1];
     }
+
 }
 
 void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
@@ -1231,25 +1251,21 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
         }
     }
 
-        // Restore pixels that can't be modified
+    // Restore pixels that can't be modified
+    int save_lower_right = !diag_edge && sao_eo_class == SAO_EO_135D;
     if(vert_edge && sao_eo_class != SAO_EO_VERT) {
-        for(y = init_y; y< height; y++) {
+        for(y = init_y; y< height-save_lower_right; y++) {
             dst[y*stride+width-1] = src[y*stride+width-1];
         }
     }
     if(horiz_edge && sao_eo_class != SAO_EO_HORIZ) {
-        int restore_width = width;
-        if(!diag_edge && sao_eo_class == SAO_EO_135D)
-            restore_width--;
-        for(x = init_x; x< restore_width; x++) {
+        for(x = init_x; x<width-save_lower_right; x++) {
             dst[(height-1)*stride+x] = src[(height-1)*stride+x];
         }
     }
-    if(diag_edge && !horiz_edge && !vert_edge && sao_eo_class == SAO_EO_135D) { 
+    if(diag_edge && sao_eo_class == SAO_EO_135D) { 
         dst[stride*(height-1)+width-1] = src[stride*(height-1)+width-1];
     }
-
-
 }
 
 

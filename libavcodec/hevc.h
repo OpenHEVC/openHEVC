@@ -885,6 +885,7 @@ typedef struct HEVCContext {
     uint8_t is_md5;
 
     int strict_def_disp_win;
+    int no_cropping;
 } HEVCContext;
 
 enum ScanType {

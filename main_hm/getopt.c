@@ -54,6 +54,7 @@ void print_usage() {
     printf("     -a : disable AU\n");
     printf("     -t <temporal layer id>\n");
     printf("     -p <number of threads> \n");
+    printf("     -w : Do not apply cropping windows\n");
 }
 
 /*
@@ -125,7 +126,7 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
 	// every command line option must be followed by ':' if it takes an
 	// argument, and '::' if this argument is optional
-	const char *ostr = "i:ncahp:o:t:";
+	const char *ostr = "i:ncahwp:o:t:";
 	int c;
 	display_flags   = DISPLAY_ENABLE;
     check_md5_flags = MD5_ENABLE;
@@ -134,6 +135,7 @@ void init_main(int argc, char *argv[]) {
     nb_pthreads     = 1;
     output_file     = NULL;
 	program         = argv[0];
+    no_cropping     = 0;
     
 	c = getopt(argc, argv, ostr);
     
@@ -159,6 +161,9 @@ void init_main(int argc, char *argv[]) {
              break;
         case 'p':
             nb_pthreads = atoi(optarg);
+            break;
+        case 'w':
+            no_cropping = 1;
             break;
 		default:
 			print_usage();

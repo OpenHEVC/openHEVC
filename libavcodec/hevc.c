@@ -481,11 +481,13 @@ static int hls_slice_header(HEVCContext *s)
         s->avctx->coded_height =
         s->avctx->height       = s->sps->pic_height_in_luma_samples;
 
-        ret = ff_hevc_apply_window(s, &s->sps->pic_conf_win);
-        if (ret < 0)
-            return ret;
+        if(!s->no_cropping) {
+            ret = ff_hevc_apply_window(s, &s->sps->pic_conf_win);
+            if (ret < 0)
+                return ret;
+        }
 
-        if (s->strict_def_disp_win) {
+        if (s->strict_def_disp_win && !s->no_cropping) {
             ret = ff_hevc_apply_window(s, &s->sps->vui.def_disp_win);
             if (ret < 0)
                 return ret;
@@ -740,6 +742,7 @@ static int hls_slice_header(HEVCContext *s)
                 sh->tc_offset = s->pps->tc_offset;
             }
         } else {
+            sh->disable_deblocking_filter_flag = 0;
             sh->beta_offset = 0;
             sh->tc_offset = 0;
         }
@@ -1416,8 +1419,6 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                 lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_left_boundary = lc->slice_or_tiles_left_boundary;
                 lc->nb_saved++;
             }
-            if (s->pps->transquant_bypass_enable_flag && lc->cu.cu_transquant_bypass_flag)
-                set_deblocking_bypass(s, x0, y0, log2_trafo_size);
         }
     }
 }
@@ -2293,8 +2294,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     while (more_data) {
         int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
 
-        x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-        y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        x_ctb = (ctb_addr_rs % s->sps->pic_width_in_ctbs) << s->sps->log2_ctb_size;
+        y_ctb = (ctb_addr_rs / s->sps->pic_width_in_ctbs) << s->sps->log2_ctb_size;
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
 
         ff_hevc_cabac_init(s, ctb_addr_ts);
@@ -2366,8 +2367,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ff_init_cabac_decoder(&lc->cc, s->data+s->sh.offset[(ctb_row)-1], s->sh.size[(ctb_row)-1]);
     }
     while(more_data) {
-        int x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-        int y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        int x_ctb = (ctb_addr_rs % s->sps->pic_width_in_ctbs) << s->sps->log2_ctb_size;
+        int y_ctb = (ctb_addr_rs / s->sps->pic_width_in_ctbs) << s->sps->log2_ctb_size;
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
 #if WPP_PTHREAD_MUTEX
         ff_thread_await_progress2(s->avctx, ctb_row, thread, SHIFT_CTB_WPP);
@@ -2443,7 +2444,6 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     int x_ctb       = 0;
     int y_ctb       = 0;
 
-    int ctb_size    = 1<< s->sps->log2_ctb_size;
     int more_data   = 1;
 
     int *ctb_row_p    = input_ctb_row;
@@ -2457,8 +2457,8 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     }
     while (more_data) {
         int ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
-        x_ctb = (ctb_addr_rs % ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-        y_ctb = (ctb_addr_rs / ((s->sps->pic_width_in_luma_samples + (ctb_size - 1))>> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        x_ctb = (ctb_addr_rs % s->sps->pic_width_in_ctbs) << s->sps->log2_ctb_size;
+        y_ctb = (ctb_addr_rs / s->sps->pic_width_in_ctbs) << s->sps->log2_ctb_size;
         hls_decode_neighbour(s,x_ctb, y_ctb, ctb_addr_ts);
 		ff_hevc_cabac_init(s, ctb_addr_ts);
         hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
@@ -3236,6 +3236,8 @@ static const AVOption options[] = {
     { "temporal-layer-id", "select layer temporal id", OFFSET(temporal_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 8}, 0, 8, PAR },
     { "strict-displaywin", "stricly apply default display window size", OFFSET(strict_def_disp_win),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+    { "no-cropping", "Output full decoded image, no conformance or display window applied", OFFSET(no_cropping),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { NULL },
 };
