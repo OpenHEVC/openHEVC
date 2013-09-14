@@ -1188,11 +1188,13 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
                     }
                 }
                 trans_coeff_level = (trans_coeff_level * (int64_t)scale * (int64_t)scale_m + add) >> shift;
+                if (trans_coeff_level == 40960)
+                    printf("");
                 if(trans_coeff_level < 0) {
-                    if((~trans_coeff_level) & 0xffffffffffff0000)
+                    if((~trans_coeff_level) & 0xFffffffffff8000)
                         trans_coeff_level = -32768;
                 } else {
-                    if(trans_coeff_level & 0xffffffffffff0000)
+                    if(trans_coeff_level & 0xffffffffffff8000)
                         trans_coeff_level = 32767;
                 }
             }
