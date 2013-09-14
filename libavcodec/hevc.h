@@ -304,6 +304,7 @@ typedef struct SPS {
     int pcm_enabled_flag;
     struct {
         uint8_t bit_depth; ///< pcm_bit_depth_luma_minus1 + 1
+        uint8_t bit_depth_chroma;
         int log2_min_pcm_cb_size; ///< log2_min_pcm_coding_block_size_minus3 + 3
         int log2_max_pcm_cb_size;
         uint8_t loop_filter_disable_flag;

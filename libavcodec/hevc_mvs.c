@@ -577,7 +577,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     if (s->sh.slice_type == P_SLICE)
         numRefIdx = s->sh.num_ref_idx_l0_active;
     else // B_SLICE
-        numRefIdx = FFMAX(s->sh.num_ref_idx_l0_active,
+        numRefIdx = FFMIN(s->sh.num_ref_idx_l0_active,
                           s->sh.num_ref_idx_l1_active);
 
     while (numMergeCand < s->sh.max_num_merge_cand) {

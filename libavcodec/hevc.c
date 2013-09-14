@@ -1062,7 +1062,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
         int sum_abs;
         int x_cg, y_cg, x_c, y_c, pos;
         int implicit_non_zero_coeff = 0;
-        int trans_coeff_level;
+        int64_t trans_coeff_level;
 
         int offset = i << 4;
 
@@ -1187,7 +1187,14 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
                         scale_m = dcScale;
                     }
                 }
-                trans_coeff_level = av_clip_int16((trans_coeff_level * scale * scale_m + add) >> shift);
+                trans_coeff_level = (trans_coeff_level * (int64_t)scale * (int64_t)scale_m + add) >> shift;
+                if(trans_coeff_level < 0) {
+                    if((~trans_coeff_level) & 0xffffffffffff0000)
+                        trans_coeff_level = -32768;
+                } else {
+                    if(trans_coeff_level & 0xffffffffffff0000)
+                        trans_coeff_level = 32767;
+                }
             }
             coeffs[y_c * trafo_size + x_c] = trans_coeff_level;
 
@@ -1438,8 +1445,8 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int   stride2 = s->frame->linesize[2];
     uint8_t *dst2 = &s->frame->data[2][(y0 >> s->sps->vshift[2]) * stride2 + ((x0 >> s->sps->hshift[2]) << s->sps->pixel_shift)];
 
-    int length = cb_size * cb_size * 3 / 2 * s->sps->pcm.bit_depth;
-    const uint8_t *pcm = skip_bytes(&lc->cc, length >> 3);
+    int length = cb_size * cb_size * s->sps->pcm.bit_depth + ((cb_size * cb_size) >> 1) * s->sps->pcm.bit_depth_chroma;
+    const uint8_t *pcm = skip_bytes(&lc->cc, (length + 7) >> 3);
     int i, j, ret;
 
     //for (j = y0 >> log2_min_pu_size; j < ((y0 + cb_size) >> log2_min_pu_size); j++)
@@ -1461,8 +1468,8 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
         return ret;
 
     s->hevcdsp.put_pcm(dst0, stride0, cb_size, &gb, s->sps->pcm.bit_depth);
-    s->hevcdsp.put_pcm(dst1, stride1, cb_size / 2, &gb, s->sps->pcm.bit_depth);
-    s->hevcdsp.put_pcm(dst2, stride2, cb_size / 2, &gb, s->sps->pcm.bit_depth);
+    s->hevcdsp.put_pcm(dst1, stride1, cb_size / 2, &gb, s->sps->pcm.bit_depth_chroma);
+    s->hevcdsp.put_pcm(dst2, stride2, cb_size / 2, &gb, s->sps->pcm.bit_depth_chroma);
     return 0;
 }
 
