@@ -321,12 +321,12 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         vps->vps_num_reorder_pics[i]      = get_ue_golomb(gb);
         vps->vps_max_latency_increase[i]  = get_ue_golomb(gb) - 1;
 
-        if (vps->vps_max_dec_pic_buffering[i] >= MAX_DPB_SIZE) {
+        if (vps->vps_max_dec_pic_buffering[i] > MAX_DPB_SIZE) {
             av_log(s->avctx, AV_LOG_ERROR, "vps_max_dec_pic_buffering_minus1 out of range: %d\n",
                    vps->vps_max_dec_pic_buffering[i] - 1);
             goto err;
         }
-        if (vps->vps_num_reorder_pics[i] > vps->vps_max_dec_pic_buffering[i]) {
+        if (vps->vps_num_reorder_pics[i] > vps->vps_max_dec_pic_buffering[i] - 1) {
             av_log(s->avctx, AV_LOG_ERROR, "vps_max_num_reorder_pics out of range: %d\n",
                    vps->vps_num_reorder_pics[i]);
             goto err;
@@ -661,13 +661,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->temporal_layer[i].max_dec_pic_buffering = get_ue_golomb(gb) + 1;
         sps->temporal_layer[i].num_reorder_pics      = get_ue_golomb(gb);
         sps->temporal_layer[i].max_latency_increase  = get_ue_golomb(gb) - 1;
-        if (sps->temporal_layer[i].max_dec_pic_buffering >= MAX_DPB_SIZE) {
+        if (sps->temporal_layer[i].max_dec_pic_buffering > MAX_DPB_SIZE) {
             av_log(s->avctx, AV_LOG_ERROR, "sps_max_dec_pic_buffering_minus1 out of range: %d\n",
                    sps->temporal_layer[i].max_dec_pic_buffering - 1);
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
-        if (sps->temporal_layer[i].num_reorder_pics > sps->temporal_layer[i].max_dec_pic_buffering) {
+        if (sps->temporal_layer[i].num_reorder_pics > sps->temporal_layer[i].max_dec_pic_buffering - 1) {
             av_log(s->avctx, AV_LOG_ERROR, "sps_max_num_reorder_pics out of range: %d\n",
                    sps->temporal_layer[i].num_reorder_pics);
             ret = AVERROR_INVALIDDATA;
