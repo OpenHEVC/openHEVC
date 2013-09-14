@@ -127,11 +127,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->sao_band_filter[1] = ff_hevc_sao_band_filter_1_8_sse;
                 	c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
                 	c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
-
-                    c->dequant[0] = ff_hevc_dequant4x4_8_sse4;
-                    c->dequant[1] = ff_hevc_dequant8x8_8_sse4;
-                    c->dequant[2] = ff_hevc_dequant16x16_8_sse4;
-                    c->dequant[3] = ff_hevc_dequant32x32_8_sse4;
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
