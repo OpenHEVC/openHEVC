@@ -96,10 +96,10 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 
     if (s->pps->constrained_intra_pred_flag == 1) {
         int size_in_luma_pu = size_in_luma >> s->sps->log2_min_pu_size;
-        if(!size_in_luma_pu)
-            size_in_luma_pu++;
         int on_pu_edge_x = (x0 & ((1<<s->sps->log2_min_pu_size)-1)) == 0;
         int on_pu_edge_y = (y0 & ((1<<s->sps->log2_min_pu_size)-1)) == 0;
+        if(!size_in_luma_pu)
+            size_in_luma_pu++;
         if (cand_bottom_left == 1 && on_pu_edge_x) {
             int x_left_pu   = (x0-1) >> s->sps->log2_min_pu_size;
             int y_bottom_pu = (y0+size_in_luma) >> s->sps->log2_min_pu_size;

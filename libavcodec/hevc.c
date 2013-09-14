@@ -1204,34 +1204,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
     if (lc->cu.cu_transquant_bypass_flag) {
         s->hevcdsp.transquant_bypass[log2_trafo_size-2](dst, coeffs, stride);
     } else {
-        /*
-        int qp;
-        int qp_y = lc->qp_y;
-        static int qp_c[] = { 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37 };
-        if (c_idx == 0) {
-            qp = qp_y + s->sps->qp_bd_offset;
-        } else {
-            int qp_i, offset;
-
-            if (c_idx == 1) {
-                offset = s->pps->cb_qp_offset + s->sh.slice_cb_qp_offset;
-            } else {
-                offset = s->pps->cr_qp_offset + s->sh.slice_cr_qp_offset;
-            }
-            qp_i = av_clip_c(qp_y + offset, - s->sps->qp_bd_offset, 57);
-            if (qp_i < 30) {
-                qp = qp_i;
-            } else if (qp_i > 43) {
-                qp = qp_i - 6;
-            } else {
-                qp = qp_c[qp_i - 30];
-            }
-
-            qp += s->sps->qp_bd_offset;
-
-        }
-        s->hevcdsp.dequant[log2_trafo_size-2](coeffs, qp);
-        */
         if (transform_skip_flag) {
             s->hevcdsp.transform_skip(dst, coeffs, stride);
         } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
@@ -2076,8 +2048,9 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                 lc->cu.pcm_flag = ff_hevc_pcm_flag_decode(s);
             }
             if (lc->cu.pcm_flag) {
+                int ret;
                 intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
-                int ret = hls_pcm_sample(s, x0, y0, log2_cb_size);
+                ret = hls_pcm_sample(s, x0, y0, log2_cb_size);
                 if(s->sps->pcm.loop_filter_disable_flag)
                     set_deblocking_bypass(s, x0, y0, log2_cb_size);
 

@@ -119,10 +119,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 
 #define HEVC_DSP(depth)                                                            \
     hevcdsp->put_pcm = FUNC(put_pcm, depth);                                       \
-    hevcdsp->dequant[0] = FUNC(dequant4x4, depth);                                 \
-    hevcdsp->dequant[1] = FUNC(dequant8x8, depth);                                 \
-    hevcdsp->dequant[2] = FUNC(dequant16x16, depth);                               \
-    hevcdsp->dequant[3] = FUNC(dequant32x32, depth);                               \
     hevcdsp->transquant_bypass[0] = FUNC(transquant_bypass4x4, depth);             \
     hevcdsp->transquant_bypass[1] = FUNC(transquant_bypass8x8, depth);             \
     hevcdsp->transquant_bypass[2] = FUNC(transquant_bypass16x16, depth);           \
