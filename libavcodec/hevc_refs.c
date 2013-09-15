@@ -243,13 +243,13 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
             ret = av_frame_ref(dst, src);
             if (ret < 0)
                 return ret;
-
+            SPS *sps = s->sps_list[s->prev_sps_id];
             for (j = 0; j < 3; j++) {
-                int off = (s->sps->pic_conf_win.left_offset >> s->sps->hshift[j]) << s->sps->pixel_shift +
-                          (s->sps->pic_conf_win.top_offset >> s->sps->vshift[j]) * dst->linesize[j];
+                int off = (sps->pic_conf_win.left_offset >> sps->hshift[j]) << sps->pixel_shift +
+                          (sps->pic_conf_win.top_offset >> sps->vshift[j]) * dst->linesize[j];
                 if (s->strict_def_disp_win)
-                    off += (s->sps->vui.def_disp_win.left_offset >> s->sps->hshift[j]) +
-                           (s->sps->vui.def_disp_win.top_offset >> s->sps->vshift[j]) * dst->linesize[j]; 
+                    off += (sps->vui.def_disp_win.left_offset >> sps->hshift[j]) +
+                           (sps->vui.def_disp_win.top_offset >> sps->vshift[j]) * dst->linesize[j];
                 dst->data[j] += off;
             }
             return 1;

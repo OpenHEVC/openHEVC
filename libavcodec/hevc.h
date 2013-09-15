@@ -819,6 +819,7 @@ typedef struct HEVCContext {
     SPS *sps_list[MAX_SPS_COUNT];
     PPS *pps_list[MAX_PPS_COUNT];
 
+    int prev_sps_id; 
     SliceHeader sh;
     SAOParams *sao;
     DBParams *deblock;

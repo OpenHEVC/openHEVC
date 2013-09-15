@@ -251,7 +251,7 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->sh.size);
     av_freep(&s->sh.offset);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+    for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
         av_freep(&s->DPB[i].tab_mvf);
         ff_hevc_free_refPicListTab(s, &s->DPB[i]);
         av_freep(&s->DPB[i].refPicListTab);
@@ -317,8 +317,9 @@ static int pic_arrays_init(HEVCContext *s)
     s->vertical_bs   = av_mallocz(2 * s->bs_width * (s->bs_height + 1));
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+    // TO DO:   This memory should be allocated even if evctx is a copy,
+    //          especially when it's not the first allocation
+    for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *f = &s->DPB[i];
         f->tab_mvf = av_malloc_array(pic_size_in_min_pu, sizeof(*f->tab_mvf));
         if (!f->tab_mvf)
@@ -460,7 +461,7 @@ static int hls_slice_header(HEVCContext *s)
 
     if (s->sps != s->sps_list[s->pps->sps_id] || re_init) {
         const AVPixFmtDescriptor *desc;
-
+        s->prev_sps_id = s->pps->sps_id; 
         s->sps = s->sps_list[s->pps->sps_id];
         s->vps = s->vps_list[s->sps->vps_id];
 
@@ -3083,8 +3084,26 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
 static int hevc_update_thread_context(AVCodecContext *dst, const AVCodecContext *src){
     HEVCContext *h = dst->priv_data, *h1 = src->priv_data;
-    memcpy(h, h1, sizeof(*h));
-    h->avctx = dst; 
+    if(dst != src)  {
+        h->threads_number = h1->threads_number;
+        h->decode_checksum_sei = h1->decode_checksum_sei;
+        h->disable_au = h1->disable_au;
+        h->temporal_layer_id = h1->temporal_layer_id;
+     
+        
+        memcpy(h->DPB, h1->DPB, sizeof(h1->DPB));
+        memcpy(h->vps_list, h1->vps_list, sizeof(h1->vps_list));
+        memcpy(h->sps_list, h1->sps_list, sizeof(h1->sps_list));
+        memcpy(h->pps_list, h1->pps_list, sizeof(h1->pps_list));
+        h->seq_decode = h1->seq_decode;
+        h->seq_output = h1->seq_output;
+        h->strict_def_disp_win = h1->strict_def_disp_win;
+        h->no_cropping = h1->no_cropping;
+        h->pocTid0 = h1->pocTid0;
+        h->curr_dpb_idx = h1->curr_dpb_idx;
+        h->max_ra = h1->max_ra;
+        h->prev_sps_id = h1->prev_sps_id;
+    }
     return 0;
 }
 
@@ -3094,8 +3113,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     HEVCLocalContext *lc = s->HEVClc;
     int i, j;
 
-    if(avctx->internal->is_copy)
-        return 0;
+
     pic_arrays_free(s);
     av_freep(&s->rbsp_buffer);
     av_freep(&s->skipped_bytes_pos);
@@ -3131,15 +3149,16 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         }
         av_freep(&s->ctb_entry_count);
     }
-
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
-        av_frame_free(&s->DPB[i].frame);
-    for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++)
-        av_freep(&s->vps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
-        av_freep(&s->sps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
-        ff_hevc_pps_free(&s->pps_list[i]);
+    if(!avctx->internal->is_copy) {
+        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+            av_frame_free(&s->DPB[i].frame);
+        for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++)
+            av_freep(&s->vps_list[i]);
+        for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
+            av_freep(&s->sps_list[i]);
+        for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
+            ff_hevc_pps_free(&s->pps_list[i]);
+    }
 
     av_freep(&s->HEVClcList[0]);
     return 0;
@@ -3149,10 +3168,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 {
     int i;
     HEVCContext *s = avctx->priv_data;
-
-
     HEVCLocalContext *lc;
-
     s->avctx = avctx;
 
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
@@ -3169,7 +3185,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     if (!s->tmp_frame)
         return AVERROR(ENOMEM);
     s->max_ra = INT_MAX;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+    for (i = 0; !avctx->internal->is_copy && i < FF_ARRAY_ELEMS(s->DPB); i++) {
         s->DPB[i].frame = av_frame_alloc();
         if (!s->DPB[i].frame)
             return AVERROR(ENOMEM);
@@ -3238,6 +3254,7 @@ AVCodec ff_hevc_decoder = {
     .init           = hevc_decode_init,
     .close          = hevc_decode_free,
     .decode         = hevc_decode_frame,
+    .init_thread_copy = hevc_decode_init,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(hevc_update_thread_context),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS,
     .flush          = hevc_decode_flush,
