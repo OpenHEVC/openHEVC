@@ -212,8 +212,8 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 
 
     if(s->pps->tiles_enabled_flag && !s->pps->loop_filter_across_tiles_enabled_flag) {
-        if(x_ctb > 0)
-            edges[0] |= s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]];
+//        if(x_ctb > 0)
+//            edges[0] |= s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]];
         if(y_ctb > 0)
             edges[1] |= s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]];
         if(x_ctb < (s->sps->pic_width_in_ctbs-1 ))
