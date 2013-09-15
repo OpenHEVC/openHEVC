@@ -317,7 +317,7 @@ static int pic_arrays_init(HEVCContext *s)
     s->vertical_bs   = av_mallocz(2 * s->bs_width * (s->bs_height + 1));
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
-    // TO DO:   This memory should be allocated even if evctx is a copy,
+    // TO DO:   This memory should be allocated even if avctx is a copy,
     //          especially when it's not the first allocation
     for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *f = &s->DPB[i];
