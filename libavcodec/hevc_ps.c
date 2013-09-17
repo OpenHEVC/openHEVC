@@ -759,9 +759,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->pic_width_in_min_tbs  = sps->pic_width_in_luma_samples  >> sps->log2_min_transform_block_size;
     sps->pic_height_in_min_tbs = sps->pic_height_in_luma_samples >> sps->log2_min_transform_block_size;
     sps->log2_min_pu_size      = sps->log2_min_coding_block_size - 1;
+    sps->pic_width_in_min_pus  = sps->pic_width_in_luma_samples  >> sps->log2_min_pu_size;
+    sps->pic_height_in_min_pus = sps->pic_height_in_luma_samples >> sps->log2_min_pu_size;
+    sps->log2_diff_ctb_min_tb_size = sps->log2_ctb_size - sps->log2_min_transform_block_size;
 
     sps->qp_bd_offset = 6 * (sps->bit_depth - 8);
-/*    if ((1 << sps->log2_ctb_size) > MAX_CTB_SIZE) {
+    if ((1 << sps->log2_ctb_size) > MAX_CTB_SIZE) {
         av_log(s->avctx, AV_LOG_ERROR, "CTB size out of range: %d\n", 1 << sps->log2_ctb_size);
         goto err;
     }
@@ -775,12 +778,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
                sps->max_transform_hierarchy_depth_intra);
         goto err;
     }
-    if (sps->log2_max_transform_block_size > FFMIN(sps->log2_ctb_size, 5)) {
-        av_log(s->avctx, AV_LOG_ERROR, "max transform block size out of range: %d\n",
-               sps->log2_max_transform_block_size);
-        goto err;
-    }
-*/
     av_free(s->sps_list[sps_id]);
     s->sps_list[sps_id] = sps;
     return 0;
@@ -817,7 +814,6 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     GetBitContext *gb = &s->HEVClc->gb;
     SPS          *sps = NULL;
     int pic_area_in_ctbs, pic_area_in_min_cbs, pic_area_in_min_tbs;
-    int log2_diff_ctb_min_tb_size;
     int i, j, x, y, ctb_addr_rs, tile_id;
     int ret    = 0;
     int pps_id = 0;
@@ -1119,15 +1115,14 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
-    log2_diff_ctb_min_tb_size = sps->log2_ctb_size - sps->log2_min_transform_block_size;
     for (y = 0; y < sps->pic_height_in_min_tbs; y++) {
         for (x = 0; x < sps->pic_width_in_min_tbs; x++) {
-            int tb_x = x >> log2_diff_ctb_min_tb_size;
-            int tb_y = y >> log2_diff_ctb_min_tb_size;
+            int tb_x = x >> sps->log2_diff_ctb_min_tb_size;
+            int tb_y = y >> sps->log2_diff_ctb_min_tb_size;
             int ctb_addr_rs = sps->pic_width_in_ctbs * tb_y + tb_x;
             int val = pps->ctb_addr_rs_to_ts[ctb_addr_rs] <<
-                      (log2_diff_ctb_min_tb_size * 2);
-            for (i = 0; i < log2_diff_ctb_min_tb_size; i++) {
+                      (sps->log2_diff_ctb_min_tb_size * 2);
+            for (i = 0; i < sps->log2_diff_ctb_min_tb_size; i++) {
                 int m = 1 << i;
                 val += (m & x ? m * m : 0) + (m & y ? 2 * m * m : 0);
             }

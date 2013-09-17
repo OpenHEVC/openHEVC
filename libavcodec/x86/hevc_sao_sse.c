@@ -514,7 +514,8 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     int init_x = 0, init_y = 0, width = _width, height = _height;
     __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4, cmp0,
             cmp1, r0, r1, r2, r3, r4;
-
+    int save_upper_left;
+    
     if (!borders[2])
         width -= ((8 >> chroma) + 2);
     if (!borders[3])
@@ -727,7 +728,7 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
         
     }
     // Restore pixels that can't be modified
-    int save_upper_left = !diag_edge && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
+    save_upper_left = !diag_edge && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
     if(vert_edge && sao_eo_class != SAO_EO_VERT) {
         for(y = init_y+save_upper_left; y< height; y++) {
             dst[y*stride] = src[y*stride];
@@ -766,6 +767,8 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
     const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
 
     int init_x = 0, init_y = 0, width = _width, height = _height;
+    int save_lower_left;
+    
     init_y = -(4 >> chroma) - 2;
     if (!borders[2])
         width -= ((8 >> chroma) + 2);
@@ -942,7 +945,7 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
         }
     }
     // Restore pixels that can't be modified
-    int save_lower_left = !diag_edge && sao_eo_class == SAO_EO_45D && !borders[0];
+    save_lower_left = !diag_edge && sao_eo_class == SAO_EO_45D && !borders[0];
     if(vert_edge && sao_eo_class != SAO_EO_VERT) {
         for(y = init_y; y< height-save_lower_left; y++) {
             dst[y*stride] = src[y*stride];
@@ -981,7 +984,8 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
     const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
 
     int init_x = 0, init_y = 0, width = _width, height = _height;
-
+    int save_upper_right;
+    
     init_x = -(8 >> chroma) - 2;
     width = (8 >> chroma) + 2;
     if (!borders[3])
@@ -1113,7 +1117,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
         }
     }
     // Restore pixels that can't be modified
-    int save_upper_right = !diag_edge && sao_eo_class == SAO_EO_45D && !borders[1];
+    save_upper_right = !diag_edge && sao_eo_class == SAO_EO_45D && !borders[1];
     if(vert_edge && sao_eo_class != SAO_EO_VERT) {
         for(y = init_y+save_upper_right; y< height; y++) {
             dst[y*stride+width-1] = src[y*stride+width-1];
@@ -1151,7 +1155,8 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
     const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
 
     int init_x = 0, init_y = 0, width = _width, height = _height;
-
+    int save_lower_right;
+    
     init_y = -(4 >> chroma) - 2;
     init_x = -(8 >> chroma) - 2;
     width = (8 >> chroma) + 2;
@@ -1252,7 +1257,7 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
     }
 
     // Restore pixels that can't be modified
-    int save_lower_right = !diag_edge && sao_eo_class == SAO_EO_135D;
+    save_lower_right = !diag_edge && sao_eo_class == SAO_EO_135D;
     if(vert_edge && sao_eo_class != SAO_EO_VERT) {
         for(y = init_y; y< height-save_lower_right; y++) {
             dst[y*stride+width-1] = src[y*stride+width-1];

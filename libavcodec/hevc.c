@@ -1289,7 +1289,7 @@ static void set_deblocking_bypass(HEVCContext *s, int x0, int y0, int log2_cb_si
     int cb_size = 1 << log2_cb_size;
     int log2_min_pu_size = s->sps->log2_min_pu_size;
 
-    int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_pu = s->sps->pic_width_in_min_pus;
     int x_end = FFMIN(x0 + cb_size, s->sps->pic_width_in_luma_samples);
     int y_end = FFMIN(y0 + cb_size, s->sps->pic_height_in_luma_samples);
     int i, j;
@@ -1581,7 +1581,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     enum InterPredIdc inter_pred_idc = PRED_L0;
     MvField current_mv = {{{ 0 }}};
 
-    int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_pu = s->sps->pic_width_in_min_pus;
 
     MvField *tab_mvf = s->ref->tab_mvf;
     RefPicList  *refPicList =  s->ref->refPicList;
@@ -1815,7 +1815,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     HEVCLocalContext *lc = s->HEVClc;
     int x_pu = x0 >> s->sps->log2_min_pu_size;
     int y_pu = y0 >> s->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_pu = s->sps->pic_width_in_min_pus;
     int size_in_pus = pu_size >> s->sps->log2_min_pu_size;
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
@@ -1951,7 +1951,7 @@ static void intra_prediction_unit_default_value(HEVCContext *s, int x0, int y0, 
     HEVCLocalContext *lc = s->HEVClc;
     int pb_size = 1 << log2_cb_size;
     int size_in_pus = pb_size >> s->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_pu = s->sps->pic_width_in_min_pus;
     MvField *tab_mvf = s->ref->tab_mvf;
     int x_pu = x0 >> s->sps->log2_min_pu_size;
     int y_pu = y0 >> s->sps->log2_min_pu_size;
@@ -2623,8 +2623,8 @@ static int hls_nal_unit(HEVCContext *s)
 
 static void restore_tqb_pixels(HEVCContext *s)
 {
-    int pic_width_in_min_pu  = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
-    int pic_height_in_min_pu = s->sps->pic_height_in_luma_samples >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_pu  = s->sps->pic_width_in_min_pus;
+    int pic_height_in_min_pu = s->sps->pic_height_in_min_pus;
     int min_pu_size = 1 << s->sps->log2_min_pu_size;
     int x, y, c_idx;
     for(c_idx=0; c_idx < 3; c_idx++) {
@@ -2742,8 +2742,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
         if (s->sh.first_slice_in_pic_flag) {
-            int pic_width_in_min_pu  = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
-            int pic_height_in_min_pu = s->sps->pic_height_in_luma_samples >> s->sps->log2_min_pu_size;
+            int pic_width_in_min_pu  = s->sps->pic_width_in_min_pus;
+            int pic_height_in_min_pu = s->sps->pic_height_in_min_pus;
             int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
             int pic_height_in_min_tu = s->sps->pic_height_in_min_tbs;
 
@@ -3163,6 +3163,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     int i;
     HEVCContext *s = avctx->priv_data;
     HEVCLocalContext *lc;
+
     s->avctx = avctx;
 
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));

@@ -363,6 +363,10 @@ typedef struct SPS {
     int pic_height_in_min_cbs;
     int pic_width_in_min_tbs;
     int pic_height_in_min_tbs;
+    int pic_width_in_min_pus;
+    int pic_height_in_min_pus;
+
+    int log2_diff_ctb_min_tb_size;
 
     int log2_min_pu_size;
 
