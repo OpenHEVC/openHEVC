@@ -194,14 +194,14 @@ int ff_hevc_decode_short_term_rps(HEVCLocalContext *lc, int idx, SPS *sps)
         if (rps->num_negative_pics || rps->num_positive_pics) {
             prev = 0;
             for (i = 0; i < rps->num_negative_pics; i++) {
-                delta_poc = get_ue_golomb(gb) + 1;
+                delta_poc = get_ue_golomb_long(gb) + 1;
                 prev -= delta_poc;
                 rps->delta_poc[i] = prev;
                 rps->used[i] = get_bits1(gb);
             }
             prev = 0;
             for (i = 0; i < rps->num_positive_pics; i++) {
-                delta_poc = get_ue_golomb(gb) + 1;
+                delta_poc = get_ue_golomb_long(gb) + 1;
                 prev += delta_poc;
                 rps->delta_poc[rps->num_negative_pics + i] = prev;
                 rps->used[rps->num_negative_pics + i] = get_bits1(gb);
