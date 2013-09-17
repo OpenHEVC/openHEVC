@@ -155,6 +155,7 @@ typedef struct FrameThreadContext {
     PerThreadContext *prev_thread; ///< The last thread submit_packet() was called on.
 
     pthread_mutex_t buffer_mutex;  ///< Mutex used to protect get/release_buffer().
+    pthread_mutex_t dpb_mutex;     ///< Mutex used to protect get/release_buffer().
 
     int next_decoding;             ///< The next context to submit a packet to.
     int next_finished;             ///< The next context to return output from.
@@ -541,11 +542,10 @@ static int submit_packet(PerThreadContext *p, AVPacket *avpkt)
         int err;
         if (prev_thread->state == STATE_SETTING_UP) {
             pthread_mutex_lock(&prev_thread->progress_mutex);
-            while (prev_thread->state == STATE_SETTING_UP)
+//            while (prev_thread->state == STATE_SETTING_UP)
                 pthread_cond_wait(&prev_thread->progress_cond, &prev_thread->progress_mutex);
             pthread_mutex_unlock(&prev_thread->progress_mutex);
         }
-
         err = update_context_from_thread(p->avctx, prev_thread->avctx, 0);
         if (err) {
             pthread_mutex_unlock(&p->mutex);
@@ -629,7 +629,6 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
         if (avpkt->size)
             return avpkt->size;
     }
-
     /*
      * Return the next available frame from the oldest thread.
      * If we're at the end of the stream, then we have to skip threads that
@@ -683,6 +682,7 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 
     if (f->owner->debug&FF_DEBUG_THREADS)
         av_log(f->owner, AV_LOG_DEBUG, "%p finished %d field %d\n", progress, n, field);
+//    av_log(f->owner, AV_LOG_INFO, "poc %d : finished %d\n", progress[1], n);
 
     pthread_mutex_lock(&p->progress_mutex);
     progress[field] = n;
@@ -701,6 +701,7 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
 
     if (f->owner->debug&FF_DEBUG_THREADS)
         av_log(f->owner, AV_LOG_DEBUG, "thread awaiting %d field %d from %p\n", n, field, progress);
+//    av_log(f->owner, AV_LOG_INFO, "poc %d : thread awaiting %d\n", progress[1], n);
 
     pthread_mutex_lock(&p->progress_mutex);
     while (progress[field] < n)
@@ -708,6 +709,24 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
     pthread_mutex_unlock(&p->progress_mutex);
 }
 
+void ff_thread_mutex_lock_dpb(AVCodecContext *avctx)
+{
+    PerThreadContext   *p  = avctx->thread_opaque;
+    FrameThreadContext *p1 = p->parent;
+    pthread_mutex_lock(&p1->dpb_mutex);
+}
+void ff_thread_mutex_unlock_dpb(AVCodecContext *avctx)
+{
+    PerThreadContext   *p  = avctx->thread_opaque;
+    FrameThreadContext *p1 = p->parent;
+    pthread_mutex_unlock(&p1->dpb_mutex);
+}
+void ff_thread_set_delay(AVCodecContext *avctx, int val)
+{
+    PerThreadContext   *p  = avctx->thread_opaque;
+    FrameThreadContext *p1 = p->parent;
+    p1->delaying = val;
+}
 void ff_thread_finish_setup(AVCodecContext *avctx) {
     PerThreadContext *p = avctx->thread_opaque;
 
@@ -791,6 +810,7 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
 
     av_freep(&fctx->threads);
     pthread_mutex_destroy(&fctx->buffer_mutex);
+    pthread_mutex_destroy(&fctx->dpb_mutex);
     av_freep(&avctx->thread_opaque);
 }
 
@@ -821,6 +841,7 @@ static int frame_thread_init(AVCodecContext *avctx)
 
     fctx->threads = av_mallocz(sizeof(PerThreadContext) * thread_count);
     pthread_mutex_init(&fctx->buffer_mutex, NULL);
+    pthread_mutex_init(&fctx->dpb_mutex, NULL);
     fctx->delaying = 1;
 
     for (i = 0; i < thread_count; i++) {

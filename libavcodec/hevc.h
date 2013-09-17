@@ -24,6 +24,7 @@
 #define AVCODEC_HEVC_H
 
 #include "avcodec.h"
+#include "thread.h"
 #include "cabac.h"
 #include "internal.h"
 #include "videodsp.h"
@@ -747,6 +748,9 @@ typedef struct HEVCFrame {
      * after a POC reset
      */
     uint16_t sequence;
+
+    ThreadFrame threadFrame;
+    int threadCnt;  
 } HEVCFrame;
 
 typedef struct Filter_data {
@@ -801,6 +805,7 @@ typedef struct HEVCContext {
     HEVCLocalContext    *HEVClc;
 
     uint8_t             threads_number;
+    uint8_t             threads_type;
     int                 decode_checksum_sei;
     int                 disable_au;
     int                 temporal_layer_id;
@@ -826,7 +831,7 @@ typedef struct HEVCContext {
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
     HEVCFrame *ref;
-    HEVCFrame DPB[32];
+    HEVCFrame *DPB[32];
     int poc;
     int pocTid0;
     int curr_dpb_idx;
