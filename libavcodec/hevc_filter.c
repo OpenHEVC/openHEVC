@@ -669,6 +669,13 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y)
     deblocking_filter_CTB(s, x, y);
     if (s->sps->sample_adaptive_offset_enabled_flag)
         sao_filter_CTB(s, x, y);
+    if (s->threads_type == FF_THREAD_FRAME) {
+        int x_off       = x >> s->sps->log2_ctb_size;
+        int y_off       = y >> s->sps->log2_ctb_size;
+        int ctb_addr_rs = y_off * s->sps->pic_width_in_ctbs + x_off;
+//        av_log(s->avctx, AV_LOG_INFO, "poc_cur %d : end ctb %d : %dx%d\n", s->poc, ctb_addr_rs, y_off , x_off);
+        ff_thread_report_progress(&s->ref->threadFrame, ctb_addr_rs, 0);
+    }
 }
 
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)

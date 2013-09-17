@@ -30,7 +30,7 @@ int ff_hevc_find_ref_idx(HEVCContext *s, int poc)
     int LtMask = (1 << s->sps->log2_max_poc_lsb) - 1;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = &s->DPB[i];
+        HEVCFrame *ref = s->DPB[i];
         if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
             if ((ref->flags & HEVC_FRAME_FLAG_LONG_REF) != 0 && (ref->poc & LtMask) == poc)
 	            return i;
@@ -38,7 +38,7 @@ int ff_hevc_find_ref_idx(HEVCContext *s, int poc)
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = &s->DPB[i];
+        HEVCFrame *ref = s->DPB[i];
         if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
             if ((ref->flags & HEVC_FRAME_FLAG_SHORT_REF) != 0 && (ref->poc == poc || (ref->poc & LtMask) == poc))
 	            return i;
@@ -72,6 +72,8 @@ void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref)
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
 {
+    if (s->threads_type == FF_THREAD_FRAME && frame->threadCnt != 0)
+        return;
     frame->flags &= ~flags;
     if (!frame->flags) {
         av_frame_unref(frame->frame);
@@ -91,7 +93,7 @@ static void update_refs(HEVCContext *s)
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *frame = &s->DPB[i];
+        HEVCFrame *frame = s->DPB[i];
         if (frame->frame->buf[0] && !used[i]) {
             ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF);
 #ifdef TEST_DPB
@@ -111,7 +113,7 @@ static int find_next_ref(HEVCContext *s, int poc)
     update_refs(s);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = &s->DPB[i];
+        HEVCFrame *ref = s->DPB[i];
         if (!ref->frame->buf[0]) {
             return i;
         }
@@ -124,7 +126,7 @@ static int find_next_ref(HEVCContext *s, int poc)
 static void malloc_refPicListTab(HEVCContext *s)
 {
     int i;
-    HEVCFrame *ref  = &s->DPB[find_next_ref(s, s->poc)];
+    HEVCFrame *ref  = s->DPB[find_next_ref(s, s->poc)];
     int ctb_count   = ref->ctb_count;
     int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_address];
 
@@ -139,7 +141,7 @@ RefPicList* ff_hevc_get_ref_list(HEVCContext *s, int short_ref_idx, int x0, int 
     if (x0 < 0 || y0 < 0) {
         return s->ref->refPicList;
     } else {
-        HEVCFrame *ref   = &s->DPB[short_ref_idx];
+        HEVCFrame *ref   = s->DPB[short_ref_idx];
         int x_cb         = x0 >> s->sps->log2_ctb_size;
         int y_cb         = y0 >> s->sps->log2_ctb_size;
         int pic_width_cb = (s->sps->pic_width_in_luma_samples + (1<<s->sps->log2_ctb_size)-1 ) >> s->sps->log2_ctb_size;
@@ -152,12 +154,12 @@ void ff_hevc_clear_refs(HEVCContext *s)
 {
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = &s->DPB[i];
+        HEVCFrame *ref = s->DPB[i];
         if (!(ref->flags & HEVC_FRAME_FLAG_OUTPUT)) {
 #ifdef TEST_DPB
             printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
 #endif
-            ff_hevc_unref_frame(s, &s->DPB[i], HEVC_FRAME_FLAG_SHORT_REF);
+            ff_hevc_unref_frame(s, s->DPB[i], HEVC_FRAME_FLAG_SHORT_REF);
         }
     }
 }
@@ -167,10 +169,10 @@ void ff_hevc_flush_dpb(HEVCContext *s)
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
 #ifdef TEST_DPB
-        HEVCFrame *ref = &s->DPB[i];
+        HEVCFrame *ref = s->DPB[i];
         printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
 #endif
-        ff_hevc_unref_frame(s, &s->DPB[i], ~0);
+        ff_hevc_unref_frame(s, s->DPB[i], ~0);
     }
 }
 
@@ -178,7 +180,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = &s->DPB[i];
+        HEVCFrame *ref = s->DPB[i];
         if (!ref->frame->buf[0]) {
             *frame          = ref->frame;
             s->ref          = ref;
@@ -188,6 +190,13 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
             ref->flags      = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
             ref->sequence   = s->seq_decode;
+            if (s->threads_type == FF_THREAD_FRAME ) {
+                int *progress   = (int*)ref->threadFrame.progress->data;
+                progress[0]      = 0;
+                progress[1]      = poc;
+//                av_log(s->avctx, AV_LOG_INFO, "ff_hevc_set_new_ref : DPB[%d] : poc %d data[1] %d\n", i, s->DPB[i]->poc, progress[1]);
+                ref->threadCnt = 0;
+            }
 #ifdef TEST_DPB
             printf("%d\t%d\n",i, poc);
 #endif
@@ -210,7 +219,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
 
     while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-            HEVCFrame *frame = &s->DPB[i];
+            HEVCFrame *frame = s->DPB[i];
             if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
                 frame->sequence == s->seq_output) {
                 nb_output++;
@@ -231,10 +240,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
             printf("\t\t\t%d\t%d\n", min_idx, min_poc);
 #endif
 //            av_log(s->avctx, AV_LOG_INFO, "Display : POC %d\n", min_poc);
-            HEVCFrame *frame = &s->DPB[min_idx];
-            dst = out;
-            src = frame->frame;
-
+            HEVCFrame *frame = s->DPB[min_idx];
             dst = out;
             src = frame->frame;
 
@@ -304,7 +310,7 @@ static void set_ref_pic_list(HEVCContext *s)
 	uint8_t nb_list = s->sh.slice_type == B_SLICE ? 2 : 1;
 
     malloc_refPicListTab(s);
-    refPicList = s->DPB[find_next_ref(s, s->poc)].refPicList;
+    refPicList = s->DPB[find_next_ref(s, s->poc)]->refPicList;
 
     num_ref_idx_lx_act[0] = sh->num_ref_idx_l0_active;
     num_ref_idx_lx_act[1] = sh->num_ref_idx_l1_active;
@@ -353,12 +359,18 @@ static void set_ref_pic_list(HEVCContext *s)
                 refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[sh->list_entry_lx[list_idx][ i ]];
                 refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[sh->list_entry_lx[list_idx][ i ]];
                 refPicList[list_idx].is_long_term[i]  = refPicListTmp[list_idx].is_long_term[sh->list_entry_lx[list_idx][ i ]];
+                if (s->threads_type == FF_THREAD_FRAME ) {
+                    s->DPB[refPicList[list_idx].idx[i]]->threadCnt++;
+                }
             }
         } else {
             for(i = 0; i < num_ref_idx_lx_act[list_idx]; i++) {
                 refPicList[list_idx].list[i] = refPicListTmp[list_idx].list[i];
                 refPicList[list_idx].idx[i]  = refPicListTmp[list_idx].idx[i];
                 refPicList[list_idx].is_long_term[i]  = refPicListTmp[list_idx].is_long_term[i];
+                if (s->threads_type == FF_THREAD_FRAME ) {
+                    s->DPB[refPicList[list_idx].idx[i]]->threadCnt++;
+                }
             }
         }
     }
@@ -407,13 +419,13 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
                 pocLt += s->poc - long_rps->DeltaPocMsbCycleLt[i] * MaxPicOrderCntLsb - s->sh.pic_order_cnt_lsb;
             if (long_rps->UsedByCurrPicLt[i]) {
                 refPocList[LT_CURR].idx[j]  = ff_hevc_find_ref_idx(s, pocLt);
-                refPocList[LT_CURR].list[j] = s->DPB[refPocList[LT_CURR].idx[j]].poc;
-                s->DPB[refPocList[LT_CURR].idx[j]].flags |= HEVC_FRAME_FLAG_LONG_REF;
+                refPocList[LT_CURR].list[j] = s->DPB[refPocList[LT_CURR].idx[j]]->poc;
+                s->DPB[refPocList[LT_CURR].idx[j]]->flags |= HEVC_FRAME_FLAG_LONG_REF;
                 j++;
             } else {
                 refPocList[LT_FOLL].idx[k]  = ff_hevc_find_ref_idx(s, pocLt);
-                refPocList[LT_FOLL].list[k] = s->DPB[refPocList[LT_FOLL].idx[k]].poc;
-                s->DPB[refPocList[LT_CURR].idx[j]].flags &= ~HEVC_FRAME_FLAG_LONG_REF;
+                refPocList[LT_FOLL].list[k] = s->DPB[refPocList[LT_FOLL].idx[k]]->poc;
+                s->DPB[refPocList[LT_FOLL].idx[k]]->flags &= ~HEVC_FRAME_FLAG_LONG_REF;
                 k++;
             }
         }

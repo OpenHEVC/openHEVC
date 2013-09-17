@@ -257,14 +257,14 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 
     if (s->sh.slice_type == B_SLICE && s->sh.collocated_from_l0_flag == 0) {
         short_ref_idx = refPicList[1].idx[s->sh.collocated_ref_idx];
-        tab_mvf = s->DPB[short_ref_idx].tab_mvf;
-        colPic  = s->DPB[short_ref_idx].poc;
+        tab_mvf = s->DPB[short_ref_idx]->tab_mvf;
+        colPic  = s->DPB[short_ref_idx]->poc;
     } else if (s->sh.slice_type == P_SLICE ||
                (s->sh.slice_type == B_SLICE &&
                 s->sh.collocated_from_l0_flag == 1)) {
         short_ref_idx = refPicList[0].idx[s->sh.collocated_ref_idx];
-        tab_mvf = s->DPB[short_ref_idx].tab_mvf;
-        colPic  = s->DPB[short_ref_idx].poc;
+        tab_mvf = s->DPB[short_ref_idx]->tab_mvf;
+        colPic  = s->DPB[short_ref_idx]->poc;
     }
     //bottom right collocated motion vector
     xPRb = x0 + nPbW;
