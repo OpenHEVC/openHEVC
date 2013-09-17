@@ -154,13 +154,11 @@ void ff_hevc_clear_refs(HEVCContext *s)
 {
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = s->DPB[i];
-        if (!(ref->flags & HEVC_FRAME_FLAG_OUTPUT)) {
 #ifdef TEST_DPB
-            printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
+        HEVCFrame *ref = s->DPB[i];
+        printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
 #endif
-            ff_hevc_unref_frame(s, s->DPB[i], HEVC_FRAME_FLAG_SHORT_REF);
-        }
+        ff_hevc_unref_frame(s, s->DPB[i], HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF);
     }
 }
 
