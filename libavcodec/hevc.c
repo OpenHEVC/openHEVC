@@ -222,7 +222,7 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
  */
 #define POC_DISPLAY_MD5
 #define WPP1 1
-#define FILTER_EN
+//#define FILTER_EN
 
 /* free everything allocated  by pic_arrays_init() */
 static void pic_arrays_free(HEVCContext *s)
@@ -638,8 +638,8 @@ static int hls_slice_header(HEVCContext *s)
             s->nal_unit_type != NAL_TRAIL_N &&
             s->nal_unit_type != NAL_TSA_N &&
             s->nal_unit_type != NAL_STSA_N &&
-            s->nal_unit_type != NAL_TRAIL_N &&
             s->nal_unit_type != NAL_RADL_N &&
+            s->nal_unit_type != NAL_RASL_N &&
             s->nal_unit_type != NAL_RADL_R &&
             s->nal_unit_type != NAL_RASL_R)
             s->pocTid0 = s->poc;
