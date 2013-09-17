@@ -261,18 +261,17 @@ static void pic_arrays_free(HEVCContext *s)
 /* allocate arrays that depend on frame dimensions */
 static int pic_arrays_init(HEVCContext *s)
 {
-    int log2_min_cb_size     = s->sps->log2_min_coding_block_size;
     int pic_width            = s->sps->pic_width_in_luma_samples;
     int pic_height           = s->sps->pic_height_in_luma_samples;
     int pic_size             = pic_width * pic_height;
-    int pic_size_in_ctb      = ((pic_width >> log2_min_cb_size) + 1) *
-                               ((pic_height >> log2_min_cb_size) + 1);
+    int pic_size_in_ctb      = (s->sps->pic_width_in_min_cbs + 1) *
+                               (s->sps->pic_height_in_min_cbs + 1);
     int ctb_count            = s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs;
     int pic_width_in_min_pu  = s->sps->pic_width_in_luma_samples  >> s->sps->log2_min_pu_size;
     int pic_height_in_min_pu = s->sps->pic_height_in_luma_samples >> s->sps->log2_min_pu_size;
     int pic_size_in_min_pu   = pic_width_in_min_pu * pic_height_in_min_pu;
-    int pic_width_in_min_tu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_transform_block_size;
-    int pic_height_in_min_tu = s->sps->pic_height_in_luma_samples >> s->sps->log2_min_transform_block_size;
+    int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
+    int pic_height_in_min_tu = s->sps->pic_height_in_min_tbs;
     int i;
 
     s->bs_width  = pic_width  >> 3;
@@ -1367,7 +1366,7 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
     } else {
         int min_tu_size = 1 << s->sps->log2_min_transform_block_size;
         int log2_min_tu_size = s->sps->log2_min_transform_block_size;
-        int pic_width_in_min_tu = s->sps->pic_width_in_luma_samples >> log2_min_tu_size;
+        int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
         int i, j;
 
         if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
@@ -1407,8 +1406,6 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     //TODO: non-4:2:0 support
     GetBitContext gb;
     HEVCLocalContext *lc = s->HEVClc;
-    int log2_min_pu_size    = s->sps->log2_min_pu_size;
-    int pic_width_in_min_pu = s->sps->pic_width_in_luma_samples >> log2_min_pu_size;
     int cb_size = 1 << log2_cb_size;
     int    stride0 = s->frame->linesize[0];
     uint8_t *dst0 = &s->frame->data[0][y0 * stride0 + (x0 << s->sps->pixel_shift)];
@@ -1419,11 +1416,8 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
     int length = cb_size * cb_size * s->sps->pcm.bit_depth + ((cb_size * cb_size) >> 1) * s->sps->pcm.bit_depth_chroma;
     const uint8_t *pcm = skip_bytes(&lc->cc, (length + 7) >> 3);
-    int i, j, ret;
+    int ret;
 
-    //for (j = y0 >> log2_min_pu_size; j < ((y0 + cb_size) >> log2_min_pu_size); j++)
-    //    for (i = x0 >> log2_min_pu_size; i < ((x0 + cb_size) >> log2_min_pu_size); i++)
-    //        s->is_pcm[i + j * pic_width_in_min_pu] = ((s->sps->pcm_enabled_flag && s->sps->pcm.loop_filter_disable_flag)) + (lc->cu.cu_transquant_bypass_flag && s->pps->transquant_bypass_enable_flag);
     if (!s->enable_parallel_tiles)
         ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size, lc->slice_or_tiles_up_boundary, lc->slice_or_tiles_left_boundary);
     else {
@@ -1597,7 +1591,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);
     int log2_min_cb_size = s->sps->log2_min_coding_block_size;
-    int pic_width_in_ctb = s->sps->pic_width_in_luma_samples>>log2_min_cb_size;
+    int pic_width_in_ctb = s->sps->pic_width_in_min_cbs;
     int x_cb             = x0 >> log2_min_cb_size;
     int y_cb             = y0 >> log2_min_cb_size;
     int ref_idx[2];
@@ -1978,7 +1972,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int cb_size          = 1 << log2_cb_size;
     int log2_min_cb_size = s->sps->log2_min_coding_block_size;
     int length           = cb_size >> log2_min_cb_size;
-    int pic_width_in_ctb = s->sps->pic_width_in_luma_samples >> log2_min_cb_size;
+    int pic_width_in_ctb = s->sps->pic_width_in_min_cbs;
     int x_cb             = x0 >> log2_min_cb_size;
     int y_cb             = y0 >> log2_min_cb_size;
     int x, y;
@@ -2474,8 +2468,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         if (s->enable_parallel_tiles) {
             s->HEVClcList[0]->save_boundary_strengths = av_malloc(
                     sizeof(Filter_data)
-                            * (s->sps->pic_height_in_luma_samples >> s->sps->log2_min_transform_block_size)
-                            * (s->sps->pic_width_in_luma_samples >> s->sps->log2_min_transform_block_size));
+                            * (s->sps->pic_width_in_min_tbs)
+                            * (s->sps->pic_height_in_min_tbs));
         }
         for (i = 1; i < s->threads_number; i++) {
             s->sList[i] = av_malloc(sizeof(HEVCContext));
@@ -2496,8 +2490,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
                 s->HEVClcList[i]->save_boundary_strengths =
                         av_malloc(
                                 sizeof(Filter_data)
-                                        * (s->sps->pic_height_in_luma_samples >> s->sps->log2_min_transform_block_size)
-                                        * (s->sps->pic_width_in_luma_samples >> s->sps->log2_min_transform_block_size));
+                                        * (s->sps->pic_width_in_min_tbs)
+                                        * (s->sps->pic_height_in_min_tbs));
             }
 
             s->sList[i]->HEVClc = s->HEVClcList[i];
@@ -2749,8 +2743,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if (s->sh.first_slice_in_pic_flag) {
             int pic_width_in_min_pu  = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_pu_size;
             int pic_height_in_min_pu = s->sps->pic_height_in_luma_samples >> s->sps->log2_min_pu_size;
-            int pic_width_in_min_tu = s->sps->pic_width_in_luma_samples >> s->sps->log2_min_transform_block_size;
-            int pic_height_in_min_tu = s->sps->pic_height_in_luma_samples >> s->sps->log2_min_transform_block_size;
+            int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
+            int pic_height_in_min_tu = s->sps->pic_height_in_min_tbs;
 
             memset(s->horizontal_bs, 0, 2 * s->bs_width * (s->bs_height + 1));
             memset(s->vertical_bs,   0, 2 * s->bs_width * (s->bs_height + 1));

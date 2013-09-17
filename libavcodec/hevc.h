@@ -875,7 +875,7 @@ typedef struct HEVCContext {
     uint8_t *data;
 
     uint8_t *rbsp_buffer;
-    int rbsp_buffer_size;
+    uint32_t rbsp_buffer_size;
 
     int enable_parallel_tiles;
     int nuh_layer_id;

@@ -166,8 +166,8 @@ void ff_hevc_flush_dpb(HEVCContext *s)
 {
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = &s->DPB[i];
 #ifdef TEST_DPB
+        HEVCFrame *ref = &s->DPB[i];
         printf("\t\t\t\t\t\t%d\t%d\n",i, ref->poc);
 #endif
         ff_hevc_unref_frame(s, &s->DPB[i], ~0);
@@ -205,8 +205,8 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush, int* poc_displ
     int min_poc   = 0xFFFF;
     int i, j, min_idx, ret;
     uint8_t run = 1;
-    min_idx = 0;
     AVFrame *dst, *src;
+    min_idx = 0;
 
     while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {

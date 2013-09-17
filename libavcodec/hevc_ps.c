@@ -463,7 +463,7 @@ static void decode_vui(HEVCContext *s, SPS *sps)
     }
 }
 static void set_default_scaling_list_data(ScalingListData *sld) {
-    int sizeId, matrixId;
+    int matrixId;
     for(matrixId = 0; matrixId < 6; matrixId++) {
         // 4x4 default is 16   
         memset(sld->ScalingList[0][matrixId],16,16);
