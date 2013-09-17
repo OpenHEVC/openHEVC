@@ -535,7 +535,7 @@ static int hls_slice_header(HEVCContext *s)
         ff_videodsp_init (&s->vdsp,    s->sps->bit_depth);
     }
     if (s->nal_unit_type == NAL_IDR_W_RADL &&
-        s->nal_unit_type == NAL_IDR_NLP    &&
+        s->nal_unit_type == NAL_IDR_N_LP   &&
         sh->first_slice_in_pic_flag) {
         ff_hevc_clear_refs(s);
     }
