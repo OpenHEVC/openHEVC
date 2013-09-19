@@ -1647,6 +1647,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 current_mv.pred_flag += 1;
                 hls_mvd_coding(s, x0, y0, 0);
                 mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
+
+                ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0);
+
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv, mvp_flag[0], 0);
                 current_mv.mv[0].x += lc->pu.mvd.x;
@@ -1667,6 +1670,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 }
 
                 current_mv.pred_flag += 2;
+
+                ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0);
+
                 mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv, mvp_flag[1], 1);
@@ -1683,35 +1689,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         }
     }
 
-    if (s->threads_type == FF_THREAD_FRAME ) {
-        int ctb_addr_rs;
-        int dpb_idx;
-        int x_off;
-        int y_off;
-        int *progress;
-        if (current_mv.pred_flag == 1 || current_mv.pred_flag == 3) {
-            dpb_idx     = refPicList[0].idx[current_mv.ref_idx[0]];
-            x_off       = (x0 + (current_mv.mv[0].x >> 2)) >> s->sps->log2_ctb_size;
-            y_off       = (y0 + (current_mv.mv[0].y >> 2)) >> s->sps->log2_ctb_size;
-            ctb_addr_rs = FFMIN(y_off * s->sps->pic_width_in_ctbs + x_off, s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1);
-//            ctb_addr_rs = s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1;
-//            progress    = (int*)s->DPB[dpb_idx]->threadFrame.progress->data;
-//            av_log(s->avctx, AV_LOG_INFO, "poc_cur %d (%dx%d) : L0 : poc %d %d : wait ctb %d : (%dx%d)\n",
-//                    s->poc, x0, y0, s->DPB[dpb_idx]->poc, progress[1], ctb_addr_rs, y_off , x_off);
-            ff_thread_await_progress(&s->DPB[dpb_idx]->threadFrame, ctb_addr_rs, 0);
-        }
-        if (current_mv.pred_flag == 2 || current_mv.pred_flag == 3) {
-            dpb_idx     = refPicList[1].idx[current_mv.ref_idx[1]];
-            x_off       = (x0 + (current_mv.mv[1].x >> 2)) >> s->sps->log2_ctb_size;
-            y_off       = (y0 + (current_mv.mv[1].y >> 2)) >> s->sps->log2_ctb_size;
-            ctb_addr_rs = FFMIN(y_off * s->sps->pic_width_in_ctbs + x_off, s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1);
-//            ctb_addr_rs = s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1;
-//            progress    = (int*)s->DPB[dpb_idx]->threadFrame.progress->data;
-//            av_log(s->avctx, AV_LOG_INFO, "poc_cur %d (%dx%d) : L1 : poc %d %d : wait ctb %d : (%dx%d)\n",
-//                    s->poc, x0, y0, s->DPB[dpb_idx]->poc, progress[1], ctb_addr_rs, y_off , x_off);
-            ff_thread_await_progress(&s->DPB[dpb_idx]->threadFrame, ctb_addr_rs, 0);
-        }
-    }
+    ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0);
 
     if (current_mv.pred_flag == 1) {
         DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
@@ -2809,10 +2787,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 #endif
                 if ((ret = ff_hevc_set_new_ref(s, &s->frame, s->poc))< 0)
                     return ret;
-            }
 #ifdef FILTER_EN
-        }
+            }
 #endif
+        } else {
+            ff_hevc_set_ref_pic_list(s, s->DPB[ff_hevc_find_next_ref(s, s->poc)]);
+        }
         if (!lc->edge_emu_buffer)
             lc->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
         if (!lc->edge_emu_buffer)
@@ -2829,10 +2809,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if((s->pps->transquant_bypass_enable_flag || (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) && s->sps->sample_adaptive_offset_enabled_flag) {
                 restore_tqb_pixels(s);
             }
+            ff_hevc_thread_cnt_dec_ref(s);
         }
         
-        ff_hevc_thread_cnt_dec_ref(s);
-
         if (ctb_addr_ts < 0)
             return ctb_addr_ts;
         break;

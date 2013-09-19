@@ -988,8 +988,11 @@ int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
 
 int ff_hevc_get_num_poc(HEVCContext *s);
 
+int ff_hevc_find_next_ref(HEVCContext *s, int poc);
 int ff_hevc_find_ref_idx(HEVCContext *s, int poc);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
+void ff_hevc_set_ref_pic_list(HEVCContext *s, HEVCFrame *ref);
+void ff_hevc_wait_neighbour_ctb(HEVCContext *s, MvField *current_mv, int x0, int y0);
 
 /**
  * Find next frame in output order and put a reference to it in frame.
