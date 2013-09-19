@@ -164,7 +164,7 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
     av_free(openHevcContext->c);
     av_free(openHevcContext->picture);
     av_free(openHevcContext);
-    av_parser_close(openHevcContext->parser)
+    av_parser_close(openHevcContext->parser);
 }
 
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle)
