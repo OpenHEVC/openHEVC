@@ -277,6 +277,7 @@ typedef struct VPS {
     uint8_t vps_poc_proportional_to_timing_flag;
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
+    int threadCnt;
 } VPS;
 typedef struct ScalingListData {
     // This is a little wasteful, since sizeID 0 only needs 8 coeffs, and size ID 3 only has 2 arrays, not 6.
@@ -377,6 +378,7 @@ typedef struct SPS {
     int pixel_shift;
 
     int qp_bd_offset; ///< QpBdOffsetY
+    int threadCnt;
 } SPS;
 
 typedef struct PPS {
@@ -446,6 +448,7 @@ typedef struct PPS {
     int *tile_pos_rs; ///< TilePosRS
     int *min_cb_addr_zs; ///< MinCbAddrZS
     int *min_tb_addr_zs; ///< MinTbAddrZS
+    int threadCnt;
 } PPS;
 
 enum SliceType {
@@ -994,8 +997,6 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
  */
 int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush, int* poc_display);
 
-void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags);
-
 void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, int nPbH);
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv);
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX);
@@ -1009,6 +1010,7 @@ void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 void ff_hevc_pps_free(PPS **ppps);
 
 int ff_hevc_apply_window(HEVCContext *s, HEVCWindow *window);
+void ff_hevc_thread_cnt_dec_ref(HEVCContext *s);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

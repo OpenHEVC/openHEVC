@@ -222,7 +222,7 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
  */
 #define POC_DISPLAY_MD5
 #define WPP1 1
-//#define FILTER_EN
+#define FILTER_EN
 
 /* free everything allocated  by pic_arrays_init() */
 static void pic_arrays_free(HEVCContext *s)
@@ -251,11 +251,12 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->sh.size);
     av_freep(&s->sh.offset);
 
-    for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        av_freep(&s->DPB[i]->tab_mvf);
-        ff_hevc_free_refPicListTab(s, s->DPB[i]);
-        av_freep(&s->DPB[i]->refPicListTab);
-    }
+    if(!s->DPB)
+        for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
+            av_freep(&s->DPB[i]->tab_mvf);
+            ff_hevc_free_refPicListTab(s, s->DPB[i]);
+            av_freep(&s->DPB[i]->refPicListTab);
+        }
 }
 
 /* allocate arrays that depend on frame dimensions */
@@ -1691,10 +1692,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         if (current_mv.pred_flag == 1 || current_mv.pred_flag == 3) {
             dpb_idx     = refPicList[0].idx[current_mv.ref_idx[0]];
             x_off       = (x0 + (current_mv.mv[0].x >> 2)) >> s->sps->log2_ctb_size;
-            y_off       = ((y0 + (current_mv.mv[0].y >> 2)) >> s->sps->log2_ctb_size)+2;
-//            ctb_addr_rs = FFMIN(y_off * s->sps->pic_width_in_ctbs + x_off, s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1);
-            ctb_addr_rs = s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1;
-            progress    = (int*)s->DPB[dpb_idx]->threadFrame.progress->data;
+            y_off       = (y0 + (current_mv.mv[0].y >> 2)) >> s->sps->log2_ctb_size;
+            ctb_addr_rs = FFMIN(y_off * s->sps->pic_width_in_ctbs + x_off, s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1);
+//            ctb_addr_rs = s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1;
+//            progress    = (int*)s->DPB[dpb_idx]->threadFrame.progress->data;
 //            av_log(s->avctx, AV_LOG_INFO, "poc_cur %d (%dx%d) : L0 : poc %d %d : wait ctb %d : (%dx%d)\n",
 //                    s->poc, x0, y0, s->DPB[dpb_idx]->poc, progress[1], ctb_addr_rs, y_off , x_off);
             ff_thread_await_progress(&s->DPB[dpb_idx]->threadFrame, ctb_addr_rs, 0);
@@ -1702,10 +1703,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         if (current_mv.pred_flag == 2 || current_mv.pred_flag == 3) {
             dpb_idx     = refPicList[1].idx[current_mv.ref_idx[1]];
             x_off       = (x0 + (current_mv.mv[1].x >> 2)) >> s->sps->log2_ctb_size;
-            y_off       = ((y0 + (current_mv.mv[1].y >> 2)) >> s->sps->log2_ctb_size)+2;
-//            ctb_addr_rs = FFMIN(y_off * s->sps->pic_width_in_ctbs + x_off, s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1);
-            ctb_addr_rs = s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1;
-            progress    = (int*)s->DPB[dpb_idx]->threadFrame.progress->data;
+            y_off       = (y0 + (current_mv.mv[1].y >> 2)) >> s->sps->log2_ctb_size;
+            ctb_addr_rs = FFMIN(y_off * s->sps->pic_width_in_ctbs + x_off, s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1);
+//            ctb_addr_rs = s->sps->pic_width_in_ctbs* s->sps->pic_height_in_ctbs-1;
+//            progress    = (int*)s->DPB[dpb_idx]->threadFrame.progress->data;
 //            av_log(s->avctx, AV_LOG_INFO, "poc_cur %d (%dx%d) : L1 : poc %d %d : wait ctb %d : (%dx%d)\n",
 //                    s->poc, x0, y0, s->DPB[dpb_idx]->poc, progress[1], ctb_addr_rs, y_off , x_off);
             ff_thread_await_progress(&s->DPB[dpb_idx]->threadFrame, ctb_addr_rs, 0);
@@ -2823,19 +2824,15 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         } else {
             ctb_addr_ts = hls_slice_data(s);
         }
-        if (s->threads_type == FF_THREAD_FRAME ) {
-            RefPicList  *refPicList = s->ref->refPicList;
-            uint8_t i, list_idx;
-            for ( list_idx = 0; list_idx < 2; list_idx++)
-                for(i = 0; i < refPicList[list_idx].numPic; i++)
-                    s->DPB[refPicList[list_idx].idx[i]]->threadCnt--;
-        }
         if (ctb_addr_ts >= (s->sps->pic_width_in_ctbs * s->sps->pic_height_in_ctbs)) {
             s->is_decoded = 1;
             if((s->pps->transquant_bypass_enable_flag || (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) && s->sps->sample_adaptive_offset_enabled_flag) {
                 restore_tqb_pixels(s);
             }
         }
+        
+        ff_hevc_thread_cnt_dec_ref(s);
+
         if (ctb_addr_ts < 0)
             return ctb_addr_ts;
         break;
@@ -3074,12 +3071,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
 
     if (!avpkt->size) {
-        if (s->threads_type == FF_THREAD_FRAME )
-            ff_thread_mutex_lock_dpb(s->avctx);
-        ret = ff_hevc_output_frame(s, data, 1, &poc_display);
-        if (s->threads_type == FF_THREAD_FRAME )
-            ff_thread_mutex_unlock_dpb(s->avctx);
-        if (ret < 0)
+        if ((ret = ff_hevc_output_frame(s, data, 1, &poc_display)) < 0)
             return ret;
 
         *got_output = ret;
@@ -3090,13 +3082,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         return ret;
     }
     if (s->is_decoded) {
-        if (s->threads_type == FF_THREAD_FRAME )
-            ff_thread_mutex_lock_dpb(s->avctx);
-        ret = ff_hevc_output_frame(s, data, 0, &poc_display);
-        if (s->threads_type == FF_THREAD_FRAME )
-            ff_thread_mutex_unlock_dpb(s->avctx);
-        if (ret < 0)
-        return ret;
+        if ((ret = ff_hevc_output_frame(s, data, 0, &poc_display)) < 0)
+            return ret;
     }
 
     *got_output = ret;
@@ -3272,9 +3259,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     else
         s->threads_type = FF_THREAD_SLICE;
     
-    if (s->threads_type == FF_THREAD_FRAME)
-        ff_thread_set_delay(s->avctx, 0);
-
     if (avctx->extradata_size > 0 && avctx->extradata)
         return decode_nal_units(s, s->avctx->extradata, s->avctx->extradata_size);
     s->width = s->height = 0;
