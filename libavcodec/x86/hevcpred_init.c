@@ -26,17 +26,15 @@ void ff_hevcpred_init_x86(HEVCPredContext *c, const int bit_depth)
 
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
-                    //  c->pred_planar[0]= pred_planar_0_8_sse; removed because too little data = bad performance
-                    //  c->pred_planar[1]= pred_planar_1_8_sse;
-                    //  c->pred_planar[2]= pred_planar_2_8_sse;
-                    //  c->pred_planar[3]= pred_planar_3_8_sse;
+                    //c->pred_planar[0]= pred_planar_0_8_sse; //removed because too little data = bad performance
+                    //c->pred_planar[1]= pred_planar_1_8_sse;
+                    //c->pred_planar[2]= pred_planar_2_8_sse;
+                    //c->pred_planar[3]= pred_planar_3_8_sse;
 
                     c->pred_angular[0]= pred_angular_0_8_sse;
                     c->pred_angular[1]= pred_angular_1_8_sse;
                     c->pred_angular[2]= pred_angular_2_8_sse;
                     c->pred_angular[3]= pred_angular_3_8_sse;
-
-
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
 

@@ -852,17 +852,11 @@ int ff_hevc_last_significant_coeff_suffix_decode(HEVCContext *s,
     return value;
 }
 
-int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int x_cg,
-                                                int y_cg, int log2_trafo_size)
+int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg)
 {
     print_cabac("significant_coeff_group_flag", 0);
-    int ctx_cg = 0;
     int inc;
 
-    if (x_cg < (1 << (log2_trafo_size - 2)) - 1)
-        ctx_cg += s->HEVClc->rc.significant_coeff_group_flag[x_cg + 1][y_cg];
-    if (y_cg < (1 << (log2_trafo_size - 2)) - 1)
-        ctx_cg += s->HEVClc->rc.significant_coeff_group_flag[x_cg][y_cg + 1];
 
     inc = FFMIN(ctx_cg, 1) + (c_idx>0 ? 2 : 0);
 
@@ -870,7 +864,7 @@ int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int x
 }
 
 int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
-                                          int log2_trafo_size, int scan_idx)
+                                          int log2_trafo_size, int scan_idx, uint8_t significant_coeff_group_flag[8][8])
 {
     print_cabac("significant_coeff_flag", 0);
     static const uint8_t ctx_idx_map[] = {
@@ -889,9 +883,9 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
         int prev_sig = 0;
 
         if (x_cg < ((1 << log2_trafo_size) - 1) >> 2)
-            prev_sig += s->HEVClc->rc.significant_coeff_group_flag[x_cg + 1][y_cg];
+            prev_sig += significant_coeff_group_flag[x_cg + 1][y_cg];
         if (y_cg < ((1 << log2_trafo_size) - 1) >> 2)
-            prev_sig += (s->HEVClc->rc.significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
+            prev_sig += (significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
 
         switch (prev_sig) {
         case 0: {
@@ -929,14 +923,14 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
 }
 
-int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx)
+int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int ctx_set)
 {
     print_cabac("coeff_abs_level_greater1_flag", 0);
 
     int inc;
 
 
-    inc = (s->HEVClc->ctx_set << 2) + s->HEVClc->greater1_ctx;
+    inc = (ctx_set << 2) + s->HEVClc->greater1_ctx;
     if (c_idx > 0)
         inc += 16;
 
@@ -952,20 +946,16 @@ int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx)
     return s->HEVClc->last_coeff_abs_level_greater1_flag;
 }
 
-int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
-                                                 int i, int n)
+int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc)
 {
     print_cabac("coeff_abs_level_greater2_flag", 0);
-    int inc;
-
-    inc = s->HEVClc->ctx_set;
     if (c_idx > 0)
         inc += 4;
 
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER2_FLAG] + inc);
 }
 
-int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int base_level, int *rc_rice_param)
+int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int base_level, int rc_rice_param)
 {
     print_cabac("coeff_abs_level_remaining", 0);
  
@@ -979,21 +969,16 @@ int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int base_level, int *rc_ri
     if (prefix == CABAC_MAX_BIN)
         av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", prefix);
     if (prefix < 3) {
-        for (i = 0; i < *rc_rice_param; i++)
+        for (i = 0; i < rc_rice_param; i++)
             suffix = (suffix << 1) | get_cabac_bypass(&s->HEVClc->cc);
-        last_coeff_abs_level_remaining = (prefix << *rc_rice_param) + suffix;
+        last_coeff_abs_level_remaining = (prefix << rc_rice_param) + suffix;
     } else {
         int prefix_minus3 = prefix - 3;
-        for (i = 0; i < prefix_minus3 + *rc_rice_param; i++)
+        for (i = 0; i < prefix_minus3 + rc_rice_param; i++)
             suffix = (suffix << 1) | get_cabac_bypass(&s->HEVClc->cc);
         last_coeff_abs_level_remaining = (((1 << prefix_minus3) + 3 - 1)
-                                              << *rc_rice_param) + suffix;
+                                              << rc_rice_param) + suffix;
     }
-
-    *rc_rice_param = FFMIN(*rc_rice_param +
-                             ((base_level + last_coeff_abs_level_remaining) >
-                              (3 * (1 << *rc_rice_param))), 4);
-
     return last_coeff_abs_level_remaining;
 }
 
