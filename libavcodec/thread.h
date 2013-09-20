@@ -102,7 +102,6 @@ void ff_thread_await_progress(ThreadFrame *f, int progress, int field);
 
 void ff_thread_mutex_lock_dpb(AVCodecContext *avctx);
 void ff_thread_mutex_unlock_dpb(AVCodecContext *avctx);
-void ff_thread_set_state(AVCodecContext *avctx);
 
 /**
  * Wrapper around get_buffer() for frame-multithreaded codecs.

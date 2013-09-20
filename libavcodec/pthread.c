@@ -721,14 +721,6 @@ void ff_thread_mutex_unlock_dpb(AVCodecContext *avctx)
     FrameThreadContext *p1 = p->parent;
     pthread_mutex_unlock(&p1->dpb_mutex);
 }
-void ff_thread_set_state(AVCodecContext *avctx)
-{
-    PerThreadContext *p = avctx->thread_opaque;
-    pthread_mutex_lock(&p->progress_mutex);
-    p->state = STATE_GET_BUFFER;
-    pthread_cond_broadcast(&p->progress_cond);
-    pthread_mutex_unlock(&p->progress_mutex);
-}
 
 void ff_thread_finish_setup(AVCodecContext *avctx) {
     PerThreadContext *p = avctx->thread_opaque;

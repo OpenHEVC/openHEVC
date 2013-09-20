@@ -2811,6 +2811,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if((s->pps->transquant_bypass_enable_flag || (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) && s->sps->sample_adaptive_offset_enabled_flag) {
                 restore_tqb_pixels(s);
             }
+            s->ref->is_decoded = 1;
             ff_hevc_thread_cnt_dec_ref(s);
         }
         
@@ -3046,28 +3047,27 @@ static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int heig
 static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                              AVPacket *avpkt)
 {
-    int ret, poc_display;
+    int ret;
     HEVCContext *s = avctx->priv_data;
     s->pts = avpkt->pts;
 
 
     if (!avpkt->size) {
-        if ((ret = ff_hevc_output_frame(s, data, 1, &poc_display)) < 0)
+        if ((ret = ff_hevc_output_frame(s, data, 1)) < 0)
             return ret;
 
         *got_output = ret;
         return 0;
     }
 
+    if ((ret = ff_hevc_output_frame(s, data, 0)) < 0)
+        return ret;
+    *got_output = ret;
+
     if ((ret = decode_nal_units(s, avpkt->data, avpkt->size)) < 0) {
         return ret;
     }
-    if (s->is_decoded) {
-        if ((ret = ff_hevc_output_frame(s, data, 0, &poc_display)) < 0)
-            return ret;
-    }
 
-    *got_output = ret;
     if (s->decode_checksum_sei && s->is_decoded) {
         AVFrame *frame = s->ref->frame;
         int cIdx;
@@ -3169,7 +3169,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     if(!avctx->internal->is_copy) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             av_frame_free(&s->DPB[i]->frame);
-            av_freep(&s->DPB[i]->threadFrame.progress);
             av_freep(&s->DPB[i]);
         }
         for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++)
@@ -3214,8 +3213,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         if (!s->DPB[i]->frame)
             return AVERROR(ENOMEM);
         s->DPB[i]->threadFrame.f        = s->DPB[i]->frame;
-        s->DPB[i]->threadFrame.owner    = s->avctx;
-        s->DPB[i]->threadFrame.progress = av_buffer_alloc(2*sizeof(int));
     }
     memset(s->vps_list, 0, sizeof(s->vps_list));
     memset(s->sps_list, 0, sizeof(s->sps_list));
@@ -3243,6 +3240,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     if (avctx->extradata_size > 0 && avctx->extradata)
         return decode_nal_units(s, s->avctx->extradata, s->avctx->extradata_size);
     s->width = s->height = 0;
+
+    avctx->internal->allocate_progress = 1;
 
     return 0;
 }
