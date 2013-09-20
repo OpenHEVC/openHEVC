@@ -753,7 +753,8 @@ typedef struct HEVCFrame {
     uint16_t sequence;
 
     ThreadFrame threadFrame;
-    int threadCnt;  
+    int threadCnt;
+    int is_decoded;
 } HEVCFrame;
 
 typedef struct Filter_data {
@@ -976,14 +977,17 @@ int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
 
 int ff_hevc_get_num_poc(HEVCContext *s);
 
+int ff_hevc_find_next_ref(HEVCContext *s, int poc);
 int ff_hevc_find_ref_idx(HEVCContext *s, int poc);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
+void ff_hevc_set_ref_pic_list(HEVCContext *s, HEVCFrame *ref);
+void ff_hevc_wait_neighbour_ctb(HEVCContext *s, MvField *current_mv, int x0, int y0);
 
 /**
  * Find next frame in output order and put a reference to it in frame.
  * @return 1 if a frame was output, 0 otherwise
  */
-int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush, int* poc_display);
+int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, int nPbH);
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv);
