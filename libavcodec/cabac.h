@@ -39,10 +39,6 @@
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
 
-extern const uint8_t ff_lps_range[64][4];
-extern const uint8_t ff_mps_state[64];
-extern const uint8_t ff_lps_state[64];
-
 typedef struct CABACContext{
     int low;
     int range;
@@ -55,6 +51,6 @@ typedef struct CABACContext{
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);
 void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size);
-void ff_init_cabac_states(CABACContext *c);
+void ff_init_cabac_states(void);
 
 #endif /* AVCODEC_CABAC_H */

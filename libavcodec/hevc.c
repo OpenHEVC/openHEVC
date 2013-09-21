@@ -1397,12 +1397,12 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0, int xBase, int yB
                 log2_cb_size, log2_trafo_size, trafo_depth, blk_idx);
 
         // TODO: store cbf_luma somewhere else
-        if (lc->tt.cbf_luma)
+//        if (lc->tt.cbf_luma)
             for (i = 0; i < (1 << log2_trafo_size); i += min_tu_size)
                 for (j = 0; j < (1 << log2_trafo_size); j += min_tu_size) {
                     int x_tu = (x0 + j) >> log2_min_tu_size;
                     int y_tu = (y0 + i) >> log2_min_tu_size;
-                    s->cbf_luma[y_tu * pic_width_in_min_tu + x_tu] = 1;
+                    s->cbf_luma[y_tu * pic_width_in_min_tu + x_tu] = lc->tt.cbf_luma;
                 }
         if (!s->sh.disable_deblocking_filter_flag) {
             if (!s->enable_parallel_tiles)
@@ -2032,6 +2032,16 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
         if (!s->sh.disable_deblocking_filter_flag) {
+            int min_tu_size = 1 << s->sps->log2_min_transform_block_size;
+            int log2_min_tu_size = s->sps->log2_min_transform_block_size;
+            int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
+            int i, j;
+            for (i = 0; i < (1 << log2_cb_size); i += min_tu_size)
+                for (j = 0; j < (1 << log2_cb_size); j += min_tu_size) {
+                    int x_tu = (x0 + j) >> log2_min_tu_size;
+                    int y_tu = (y0 + i) >> log2_min_tu_size;
+                    s->cbf_luma[y_tu * pic_width_in_min_tu + x_tu] = 0;
+                }
             if (!s->enable_parallel_tiles)
                 ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size, lc->slice_or_tiles_up_boundary, lc->slice_or_tiles_left_boundary);
             else {
@@ -2124,6 +2134,16 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                                    log2_cb_size, 0, 0);
             } else {
                 if (!s->sh.disable_deblocking_filter_flag) {
+                    int min_tu_size = 1 << s->sps->log2_min_transform_block_size;
+                    int log2_min_tu_size = s->sps->log2_min_transform_block_size;
+                    int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
+                    int i, j;
+                    for (i = 0; i < (1 << log2_cb_size); i += min_tu_size)
+                        for (j = 0; j < (1 << log2_cb_size); j += min_tu_size) {
+                            int x_tu = (x0 + j) >> log2_min_tu_size;
+                            int y_tu = (y0 + i) >> log2_min_tu_size;
+                            s->cbf_luma[y_tu * pic_width_in_min_tu + x_tu] = 0;
+                        }
                     if (!s->enable_parallel_tiles)
                         ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size, lc->slice_or_tiles_up_boundary, lc->slice_or_tiles_left_boundary);
                     else {
@@ -2760,12 +2780,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if (s->sh.first_slice_in_pic_flag) {
             int pic_width_in_min_pu  = s->sps->pic_width_in_min_pus;
             int pic_height_in_min_pu = s->sps->pic_height_in_min_pus;
-            int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
-            int pic_height_in_min_tu = s->sps->pic_height_in_min_tbs;
 
             memset(s->horizontal_bs, 0, 2 * s->bs_width * (s->bs_height + 1));
             memset(s->vertical_bs,   0, 2 * s->bs_width * (s->bs_height + 1));
-            memset(s->cbf_luma, 0 , pic_width_in_min_tu * pic_height_in_min_tu);
             memset(s->is_pcm, 0 , pic_width_in_min_pu * pic_height_in_min_pu);
             lc->start_of_tiles_x = 0;
             s->is_decoded = 0;
@@ -2802,7 +2819,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if (!lc->edge_emu_buffer)
             return AVERROR(ENOMEM);
 
-        ff_init_cabac_states(NULL);
         if(s->threads_number>1 && s->sh.num_entry_point_offsets > 0 ) {
             ctb_addr_ts = hls_slice_data_wpp(s, nal, length);
         } else {
@@ -3190,6 +3206,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     int i;
     HEVCContext *s = avctx->priv_data;
     HEVCLocalContext *lc;
+
+    ff_init_cabac_states();
 
     s->avctx = avctx;
 
