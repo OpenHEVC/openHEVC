@@ -251,12 +251,13 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->sh.size);
     av_freep(&s->sh.offset);
 
-    if(!s->DPB)
-        for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
+    for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        if(!s->DPB[i]) {
             av_freep(&s->DPB[i]->tab_mvf);
             ff_hevc_free_refPicListTab(s, s->DPB[i]);
             av_freep(&s->DPB[i]->refPicListTab);
         }
+    }
 }
 
 /* allocate arrays that depend on frame dimensions */
@@ -453,7 +454,7 @@ static int hls_slice_header(HEVCContext *s)
     }
     s->pps = s->pps_list[sh->pps_id];
 
-    if (s->sps != s->sps_list[s->pps->sps_id] || re_init) {
+    if (s->sps != s->sps_list[s->pps->sps_id] /*|| re_init*/) {
         const AVPixFmtDescriptor *desc;
         s->prev_sps_id = s->pps->sps_id; 
         s->sps = s->sps_list[s->pps->sps_id];
@@ -906,6 +907,8 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
     int last_scan_pos;
     int n_end;
     int num_coeff = 0;
+    int greater1_ctx = 1;
+
     int num_last_subset;
     int x_cg_last_sig, y_cg_last_sig;
 
@@ -916,7 +919,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
     int vshift = s->sps->vshift[c_idx];
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                            ((x0 >> hshift) << s->sps->pixel_shift)];
-    DECLARE_ALIGNED( 16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE] ) = {0};
+    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]) = {0};
     DECLARE_ALIGNED(8, uint8_t, significant_coeff_group_flag[8][8]) = {{0}};
 
     int trafo_size = 1 << log2_trafo_size;
@@ -1057,7 +1060,6 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
         break;
     }
     num_coeff++;
-
     num_last_subset = (num_coeff - 1) >> 4;
 
     for (i = num_last_subset; i >= 0; i--) {
@@ -1065,7 +1067,7 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
         int x_cg, y_cg, x_c, y_c, pos;
         int implicit_non_zero_coeff = 0;
         int64_t trans_coeff_level;
-
+        int prev_sig = 0;
         int offset = i << 4;
 
         uint8_t significant_coeff_flag_idx[16];
@@ -1099,21 +1101,28 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
         } else {
             n_end = 15;
         }
+
+
+        if (x_cg < ((1 << log2_trafo_size) - 1) >> 2)
+            prev_sig = significant_coeff_group_flag[x_cg + 1][y_cg];
+        if (y_cg < ((1 << log2_trafo_size) - 1) >> 2)
+            prev_sig += (significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
+
         for (n = n_end; n >= 0; n--) {
             GET_COORD(offset, n);
 
             if (significant_coeff_group_flag[x_cg][y_cg] &&
                 (n > 0 || implicit_non_zero_coeff == 0)) {
-                if (ff_hevc_significant_coeff_flag_decode(s, c_idx, x_c, y_c, log2_trafo_size, scan_idx, significant_coeff_group_flag) == 1) {
+                if (ff_hevc_significant_coeff_flag_decode(s, c_idx, x_c, y_c, log2_trafo_size, scan_idx, prev_sig) == 1) {
                     significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
-                    nb_significant_coeff_flag = nb_significant_coeff_flag + 1;
+                    nb_significant_coeff_flag++;
                     implicit_non_zero_coeff = 0;
                 }
             } else {
                 int last_cg = (x_c == (x_cg << 2) && y_c == (y_cg << 2));
                 if (last_cg && implicit_non_zero_coeff && significant_coeff_group_flag[x_cg][y_cg]) {
                     significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
-                    nb_significant_coeff_flag = nb_significant_coeff_flag + 1;
+                    nb_significant_coeff_flag++;
                 }
             }
         }
@@ -1134,15 +1143,22 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
             // initialize first elem of coeff_bas_level_greater1_flag
             int ctx_set = (i > 0 && c_idx == 0) ? 2 : 0;
 
-            if (!(i == num_last_subset) && s->HEVClc->greater1_ctx == 0)
+            if (!(i == num_last_subset) && greater1_ctx == 0)
                 ctx_set++;
-            s->HEVClc->greater1_ctx = 1;
+            greater1_ctx = 1;
             last_nz_pos_in_cg = significant_coeff_flag_idx[0];
 
             for (m = 0; m < (n_end > 8 ? 8 : n_end); m++) {
                 int n_idx = significant_coeff_flag_idx[m];
+                int inc = (ctx_set << 2) + greater1_ctx;
                 coeff_abs_level_greater1_flag[n_idx] =
-                    ff_hevc_coeff_abs_level_greater1_flag_decode(s, c_idx, ctx_set);
+                    ff_hevc_coeff_abs_level_greater1_flag_decode(s, c_idx, inc);
+                if (coeff_abs_level_greater1_flag[n_idx]) {
+                    greater1_ctx = 0;
+                } else if (greater1_ctx > 0 && greater1_ctx < 3) {
+                    greater1_ctx++;
+                }
+                
                 if (coeff_abs_level_greater1_flag[n_idx] &&
                     first_greater1_coeff_idx == -1)
                     first_greater1_coeff_idx = n_idx;
@@ -2510,8 +2526,6 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
                 if (!s->HEVClcList[i]->tt.cbf_cb[j] || !s->HEVClcList[i]->tt.cbf_cr[j])
                     return AVERROR(ENOMEM);
             }
-            s->HEVClcList[i]->greater1_ctx = 0;
-            s->HEVClcList[i]->last_coeff_abs_level_greater1_flag = 0;
             s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
             
             if (s->enable_parallel_tiles) {
@@ -3210,8 +3224,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->sList[0] = s;
     s->tmp_frame = av_frame_alloc();
     s->cabac_state = av_malloc(HEVC_CONTEXTS);
-    lc->greater1_ctx = 0;
-    lc->last_coeff_abs_level_greater1_flag = 0;
     if (!s->tmp_frame)
         return AVERROR(ENOMEM);
     s->max_ra = INT_MAX;

@@ -864,7 +864,7 @@ int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int c
 }
 
 int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
-                                          int log2_trafo_size, int scan_idx, uint8_t significant_coeff_group_flag[8][8])
+                                          int log2_trafo_size, int scan_idx, int prev_sig)
 {
     print_cabac("significant_coeff_flag", 0);
     static const uint8_t ctx_idx_map[] = {
@@ -880,13 +880,6 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
     } else if (log2_trafo_size == 2) {
         sig_ctx = ctx_idx_map[(y_c << 2) + x_c];
     } else {
-        int prev_sig = 0;
-
-        if (x_cg < ((1 << log2_trafo_size) - 1) >> 2)
-            prev_sig += significant_coeff_group_flag[x_cg + 1][y_cg];
-        if (y_cg < ((1 << log2_trafo_size) - 1) >> 2)
-            prev_sig += (significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
-
         switch (prev_sig) {
         case 0: {
                 int x_off = x_c & 3;
@@ -923,27 +916,14 @@ int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, in
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
 }
 
-int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int ctx_set)
+int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int inc)
 {
     print_cabac("coeff_abs_level_greater1_flag", 0);
 
-    int inc;
-
-
-    inc = (ctx_set << 2) + s->HEVClc->greater1_ctx;
     if (c_idx > 0)
         inc += 16;
 
-    s->HEVClc->last_coeff_abs_level_greater1_flag =
-        GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc);
-
-    if (s->HEVClc->last_coeff_abs_level_greater1_flag) {
-        s->HEVClc->greater1_ctx = 0;
-    } else if (s->HEVClc->greater1_ctx > 0 && s->HEVClc->greater1_ctx < 3) {
-        s->HEVClc->greater1_ctx++;
-    }
-
-    return s->HEVClc->last_coeff_abs_level_greater1_flag;
+    return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc);
 }
 
 int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc)

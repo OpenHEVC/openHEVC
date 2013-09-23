@@ -767,8 +767,6 @@ typedef struct Filter_data {
 
 typedef struct HEVCLocalContext {
     uint8_t cabac_state[HEVC_CONTEXTS];
-    int greater1_ctx;
-    int last_coeff_abs_level_greater1_flag;
     int last_coeff_abs_level_remaining;
     GetBitContext gb;
     CABACContext cc;
@@ -969,7 +967,7 @@ int ff_hevc_last_significant_coeff_suffix_decode(HEVCContext *s,
                                                  int last_significant_coeff_prefix);
 int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg);
 int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
-                                          int log2_trafo_size, int scan_idx, uint8_t significant_coeff_group_flag[8][8]);
+                                          int log2_trafo_size, int scan_idx, int prev_sig);
 int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int ctx_set);
 int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc);
 int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int base_level, int rc_rice_param);
