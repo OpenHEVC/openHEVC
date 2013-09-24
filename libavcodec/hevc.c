@@ -227,8 +227,6 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 /* free everything allocated  by pic_arrays_init() */
 static void pic_arrays_free(HEVCContext *s)
 {
-    int i;
-
     av_freep(&s->sao);
     av_freep(&s->deblock);
     av_freep(&s->split_cu_flag);
@@ -250,14 +248,7 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.size);
     av_freep(&s->sh.offset);
-
-    for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        if(!s->DPB[i]) {
-            av_freep(&s->DPB[i]->tab_mvf);
-            ff_hevc_free_refPicListTab(s, s->DPB[i]);
-            av_freep(&s->DPB[i]->refPicListTab);
-        }
-    }
+    ff_hevc_dpb_free(s);
 }
 
 /* allocate arrays that depend on frame dimensions */
@@ -275,7 +266,6 @@ static int pic_arrays_init(HEVCContext *s)
     int pic_size_in_min_pu   = pic_width_in_min_pu * pic_height_in_min_pu;
     int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
     int pic_height_in_min_tu = s->sps->pic_height_in_min_tbs;
-    int i;
 
     s->bs_width  = pic_width  >> 3;
     s->bs_height = pic_height >> 3;
@@ -312,20 +302,8 @@ static int pic_arrays_init(HEVCContext *s)
     s->vertical_bs   = av_mallocz(2 * s->bs_width * (s->bs_height + 1));
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
-    // TO DO:   This memory should be allocated even if avctx is a copy,
-    //          especially when it's not the first allocation
-    for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *f = s->DPB[i];
-        f->tab_mvf = av_malloc_array(pic_size_in_min_pu, sizeof(*f->tab_mvf));
-        if (!f->tab_mvf)
-            goto fail;
-
-        f->refPicListTab = av_mallocz_array(ctb_count, sizeof(*f->refPicListTab));
-        if (!f->refPicListTab)
-            goto fail;
-        f->ctb_count = ctb_count;
-    }
-
+    if (ff_hevc_dpb_malloc(s, pic_size_in_min_pu, ctb_count))
+        goto fail;
     return 0;
 fail:
     pic_arrays_free(s);
@@ -2035,6 +2013,9 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     }
 
     if (SAMPLE_CTB(s->skip_flag, x_cb, y_cb)) {
+
+        ff_hevc_wait_collocated_ctb(s, x0, y0);
+
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
