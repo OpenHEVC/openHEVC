@@ -38,9 +38,11 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
 
     /* open it */
     if(nb_pthreads)	{
-        av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
-//        av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
-        av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
+        if ((nb_pthreads & 256)  != 0)
+            av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
+        else
+            av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
+        av_opt_set_int(openHevcContext->c, "threads", nb_pthreads& 255, 0);
     }
     if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
@@ -145,6 +147,7 @@ void libOpenHevcSetDisableAU(OpenHevc_Handle openHevcHandle, int val)
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     av_opt_set_int(openHevcContext->c->priv_data, "disable-au", val, 0);
 }
+
 void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
