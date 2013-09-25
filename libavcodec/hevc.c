@@ -432,7 +432,7 @@ static int hls_slice_header(HEVCContext *s)
     }
     s->pps = s->pps_list[sh->pps_id];
 
-    if (s->sps != s->sps_list[s->pps->sps_id] /*|| re_init*/) {
+    if (s->sps != s->sps_list[s->pps->sps_id] || re_init) {
         const AVPixFmtDescriptor *desc;
         s->prev_sps_id = s->pps->sps_id; 
         s->sps = s->sps_list[s->pps->sps_id];
@@ -1646,8 +1646,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 hls_mvd_coding(s, x0, y0, 0);
                 mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
 
-                ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0);
-
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv, mvp_flag[0], 0);
                 current_mv.mv[0].x += lc->pu.mvd.x;
@@ -1668,8 +1666,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 }
 
                 current_mv.pred_flag += 2;
-
-                ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0);
 
                 mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
@@ -2013,9 +2009,6 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     }
 
     if (SAMPLE_CTB(s->skip_flag, x_cb, y_cb)) {
-
-        ff_hevc_wait_collocated_ctb(s, x0, y0);
-
         hls_prediction_unit(s, x0, y0, cb_size, cb_size, log2_cb_size, 0);
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
@@ -2301,6 +2294,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         ff_hevc_cabac_init(s, ctb_addr_ts);
 
         hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
+
+        ff_hevc_wait_collocated_ctb(s, x_ctb, y_ctb);
 
         s->deblock[ctb_addr_rs].disable     = s->sh.disable_deblocking_filter_flag;
         s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
@@ -2734,6 +2729,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     case NAL_RASL_N:
     case NAL_RASL_R:
         ret = hls_slice_header(s);
+
         lc->isFirstQPgroup = !s->sh.dependent_slice_segment_flag;
 
         if (ret < 0)
@@ -3109,7 +3105,6 @@ static int hevc_update_thread_context(AVCodecContext *dst, const AVCodecContext 
         h->threads_number = h1->threads_number;
         h->decode_checksum_sei = h1->decode_checksum_sei;
         h->disable_au = h1->disable_au;
-        h->temporal_layer_id = h1->temporal_layer_id;
      
         
         memcpy(h->DPB, h1->DPB, sizeof(h1->DPB));

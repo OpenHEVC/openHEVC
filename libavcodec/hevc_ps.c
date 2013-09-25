@@ -909,6 +909,11 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->entropy_coding_sync_enabled_flag = get_bits1(gb);
 
     if (pps->tiles_enabled_flag) {
+        if (s->threads_type == FF_THREAD_FRAME) {
+            av_log(s->avctx, AV_LOG_ERROR, "Frame base and tiles enabled not yet implemented\n");
+            ret = AVERROR_INVALIDDATA;
+            goto err;
+        }
         pps->num_tile_columns     = get_ue_golomb_long(gb) + 1;
         pps->num_tile_rows        = get_ue_golomb_long(gb) + 1;
         if (pps->num_tile_columns == 0 ||
