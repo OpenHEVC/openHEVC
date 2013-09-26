@@ -36,6 +36,12 @@ void ff_hevc_thread_cnt_ref(HEVCContext *s, int val)
         for ( list_idx = 0; list_idx < 2; list_idx++)
             for(i = 0; i < refPicList[list_idx].numPic; i++)
                 s->DPB[refPicList[list_idx].idx[i]]->threadCnt += val;
+        if (s->sh.slice_type == B_SLICE && s->sh.collocated_from_l0_flag == 0) {
+            s->DPB[s->ref->refPicList[1].idx[s->sh.collocated_ref_idx]]->threadCnt += val;
+        } else if (s->sh.slice_type == P_SLICE ||
+                (s->sh.slice_type == B_SLICE && s->sh.collocated_from_l0_flag == 1)) {
+            s->DPB[s->ref->refPicList[0].idx[s->sh.collocated_ref_idx]]->threadCnt += val;
+        }
         s->ref->threadCnt += val;
         s->vps->threadCnt += val;
         s->sps->threadCnt += val;
@@ -533,14 +539,11 @@ void ff_hevc_wait_neighbour_ctb(HEVCContext *s, MvField *current_mv, int x0, int
     if (s->threads_type == FF_THREAD_FRAME ) {
         int ctb_addr_rs;
         int dpb_idx;
-        int x_ctb = x0;//(x0 >> s->sps->log2_ctb_size) << s->sps->log2_ctb_size;
-        int y_ctb = y0;//(y0 >> s->sps->log2_ctb_size) << s->sps->log2_ctb_size;
-        int ctb_size = (1 << s->sps->log2_ctb_size)-1;
         if (current_mv->pred_flag == 1 || current_mv->pred_flag == 3) {
             dpb_idx     = s->ref->refPicList[0].idx[current_mv->ref_idx[0]];
             if (s->DPB[dpb_idx]->frame->buf[0]) {
-                int x_off   = ((x_ctb + (current_mv->mv[0].x >> 2) + ctb_size) >> s->sps->log2_ctb_size)+1;
-                int y_off   = ((y_ctb + (current_mv->mv[0].y >> 2) + ctb_size) >> s->sps->log2_ctb_size)+1;
+                int x_off   = ((x0 + (current_mv->mv[0].x >> 2)) >> s->sps->log2_ctb_size) + 2;
+                int y_off   = ((y0 + (current_mv->mv[0].y >> 2)) >> s->sps->log2_ctb_size) + 2;
                 ctb_addr_rs = FFMIN(y_off * s->sps->pic_width_in_ctbs + x_off, s->sps->pic_width_in_ctbs*s->sps->pic_height_in_ctbs-1);
 //                ctb_addr_rs = s->sps->pic_width_in_ctbs*s->sps->pic_height_in_ctbs-1;
 //                av_log(s->avctx, AV_LOG_INFO, "poc_cur %d (%dx%d) : L0 : poc %d: wait ctb %d : (%dx%d)\n",
@@ -551,8 +554,8 @@ void ff_hevc_wait_neighbour_ctb(HEVCContext *s, MvField *current_mv, int x0, int
         if (current_mv->pred_flag == 2 || current_mv->pred_flag == 3) {
             dpb_idx     = s->ref->refPicList[1].idx[current_mv->ref_idx[1]];
             if (s->DPB[dpb_idx]->frame->buf[0]) {
-                int x_off   = ((x_ctb + (current_mv->mv[1].x >> 2) + ctb_size) >> s->sps->log2_ctb_size)+1;
-                int y_off   = ((y_ctb + (current_mv->mv[1].y >> 2) + ctb_size) >> s->sps->log2_ctb_size)+1;
+                int x_off   = ((x0 + (current_mv->mv[1].x >> 2)) >> s->sps->log2_ctb_size) + 2;
+                int y_off   = ((y0 + (current_mv->mv[1].y >> 2)) >> s->sps->log2_ctb_size) + 2;
                 ctb_addr_rs = FFMIN(y_off * s->sps->pic_width_in_ctbs + x_off, s->sps->pic_width_in_ctbs*s->sps->pic_height_in_ctbs-1);
 //                ctb_addr_rs = s->sps->pic_width_in_ctbs*s->sps->pic_height_in_ctbs-1;
 //                av_log(s->avctx, AV_LOG_INFO, "poc_cur %d (%dx%d) : L1 : poc %d: wait ctb %d : (%dx%d)\n",
@@ -566,8 +569,8 @@ void ff_hevc_wait_collocated_ctb(HEVCContext *s, int x0, int y0)
 {
     if (s->threads_type == FF_THREAD_FRAME ) {
         int dpb_idx;
-        int x_ctb       = (x0 >> s->sps->log2_ctb_size)+1;
-        int y_ctb       = (y0 >> s->sps->log2_ctb_size)+1;
+        int x_ctb       = (x0 >> s->sps->log2_ctb_size)+2;
+        int y_ctb       = (y0 >> s->sps->log2_ctb_size)+2;
         int ctb_addr_rs = FFMIN(y_ctb * s->sps->pic_width_in_ctbs + x_ctb, s->sps->pic_width_in_ctbs*s->sps->pic_height_in_ctbs-1);
         if (s->sh.slice_type == B_SLICE && s->sh.collocated_from_l0_flag == 0) {
             dpb_idx     = s->ref->refPicList[1].idx[s->sh.collocated_ref_idx];

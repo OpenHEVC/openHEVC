@@ -64,9 +64,9 @@ static void video_decode_example(const char *filename)
     OpenHevc_Frame openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
 
-    OpenHevc_Handle openHevcHandle = libOpenHevcInit(nb_pthreads);
-    libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
+    OpenHevc_Handle openHevcHandle = libOpenHevcInit(nb_pthreads + (enable_framebase<<8));
     libOpenHevcSetDisableAU(openHevcHandle, disable_au);
+    libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
     libOpenHevcSetNoCropping(openHevcHandle, no_cropping);
     if (!openHevcHandle) {
@@ -105,7 +105,7 @@ static void video_decode_example(const char *filename)
             fflush(stdout);
             if (init == 1 ) {
                 libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
-                if (display_flags == DISPLAY_ENABLE) {
+                if (display_flags == ENABLE) {
                     Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
                 }
                 if (fout) {
@@ -119,7 +119,7 @@ static void video_decode_example(const char *filename)
                 Init_Time();
                 init = 0;
             }
-            if (display_flags == DISPLAY_ENABLE) {
+            if (display_flags == ENABLE) {
                 libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
                 libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
                 SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,

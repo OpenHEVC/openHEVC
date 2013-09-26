@@ -38,26 +38,18 @@
 #define	BADARG	(int)':'
 #define	EMSG	""
 
-#define DISPLAY_DISABLE 0
-#define DISPLAY_ENABLE  1
+#define DISABLE 0
+#define ENABLE  1
 
-#define MD5_DISABLE 0
-#define MD5_ENABLE  1
-
-// input file
-char *input_file;
-
-// deactivate display
-char display_flags;
-int check_md5_flags;
 int disable_au;
-int temporal_layer_id;
-// Activate multi-threading if possible
-int nb_pthreads;
-int no_cropping;
-
-// output file
+int check_md5_flags;
+int enable_framebase;
+char *input_file;
+char display_flags;
 char *output_file;
+int nb_pthreads;
+int temporal_layer_id;
+int no_cropping;
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);

@@ -49,11 +49,14 @@ static char *program;
 
 void print_usage() {
 	printf(usage, program);
-    printf("     -n : no display\n");
-    printf("     -c : no check md5\n");
     printf("     -a : disable AU\n");
-    printf("     -t <temporal layer id>\n");
+    printf("     -c : no check md5\n");
+    printf("     -f : enable FrameBase mode\n");
+    printf("     -i <input file>\n");
+    printf("     -n : no display\n");
+    printf("     -o <output file>\n");
     printf("     -p <number of threads> \n");
+    printf("     -t <temporal layer id>\n");
     printf("     -w : Do not apply cropping windows\n");
 }
 
@@ -126,44 +129,50 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
 	// every command line option must be followed by ':' if it takes an
 	// argument, and '::' if this argument is optional
-	const char *ostr = "i:ncahwp:o:t:";
+	const char *ostr = "acfhi:no:p:t:w";
 	int c;
-	display_flags   = DISPLAY_ENABLE;
-    check_md5_flags = MD5_ENABLE;
-    disable_au      = 0;
-    temporal_layer_id        = 7;
-    nb_pthreads     = 1;
-    output_file     = NULL;
-	program         = argv[0];
-    no_cropping     = 0;
+    disable_au        = DISABLE;
+    check_md5_flags   = ENABLE;
+    enable_framebase  = DISABLE;
+    input_file        = NULL;
+	display_flags     = ENABLE;
+    output_file       = NULL;
+    nb_pthreads       = 1;
+    temporal_layer_id = 7;
+    no_cropping       = DISABLE;
+
+    program           = argv[0];
     
 	c = getopt(argc, argv, ostr);
     
 	while (c != -1) {
         switch (c) {
+        case 'a':
+             disable_au = ENABLE;
+             break;
+        case 'c':
+            check_md5_flags = DISABLE;
+            break;
+        case 'f':
+            enable_framebase = ENABLE;
+            break;
 		case 'i':
 			input_file = strdup(optarg);
+			break;
+		case 'n':
+			display_flags = DISABLE;
 			break;
         case 'o':
             output_file = strdup(optarg);
             break;
-		case 'n':
-			display_flags = DISPLAY_DISABLE;
-			break;
-        case 'c':
-            check_md5_flags = MD5_DISABLE;
-            break;
-        case 'a':
-             disable_au = 1;
-             break;
-        case 't':
-             temporal_layer_id = atoi(optarg);
-             break;
         case 'p':
             nb_pthreads = atoi(optarg);
             break;
+        case 't':
+             temporal_layer_id = atoi(optarg);
+             break;
         case 'w':
-            no_cropping = 1;
+            no_cropping = ENABLE;
             break;
 		default:
 			print_usage();
