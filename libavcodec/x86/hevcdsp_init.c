@@ -143,6 +143,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #endif /* HAVE_ALIGNED_STACK */
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
+
+                    c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_10_sse4;
+
+                    c->transform_add[0] = ff_hevc_transform_4x4_add_10_sse4;
+
                     c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_10_sse;
                     c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_10_sse;
                     c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_10_sse;
