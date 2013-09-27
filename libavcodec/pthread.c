@@ -682,7 +682,6 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 
     if (f->owner->debug&FF_DEBUG_THREADS)
         av_log(f->owner, AV_LOG_DEBUG, "%p finished %d field %d\n", progress, n, field);
-//    av_log(f->owner, AV_LOG_INFO, "poc %d : finished %d\n", progress[1], n);
 
     pthread_mutex_lock(&p->progress_mutex);
     progress[field] = n;
@@ -701,7 +700,6 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
 
     if (f->owner->debug&FF_DEBUG_THREADS)
         av_log(f->owner, AV_LOG_DEBUG, "thread awaiting %d field %d from %p\n", n, field, progress);
-//    av_log(f->owner, AV_LOG_INFO, "poc %d : thread awaiting %d\n", progress[1], n);
 
     pthread_mutex_lock(&p->progress_mutex);
     while (progress[field] < n)

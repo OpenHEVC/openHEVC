@@ -227,8 +227,6 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 /* free everything allocated  by pic_arrays_init() */
 static void pic_arrays_free(HEVCContext *s)
 {
-    int i;
-
     av_freep(&s->sao);
     av_freep(&s->deblock);
     av_freep(&s->split_cu_flag);
@@ -250,14 +248,7 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.size);
     av_freep(&s->sh.offset);
-
-    for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        if(!s->DPB[i]) {
-            av_freep(&s->DPB[i]->tab_mvf);
-            ff_hevc_free_refPicListTab(s, s->DPB[i]);
-            av_freep(&s->DPB[i]->refPicListTab);
-        }
-    }
+    ff_hevc_dpb_free(s);
 }
 
 /* allocate arrays that depend on frame dimensions */
@@ -275,7 +266,6 @@ static int pic_arrays_init(HEVCContext *s)
     int pic_size_in_min_pu   = pic_width_in_min_pu * pic_height_in_min_pu;
     int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
     int pic_height_in_min_tu = s->sps->pic_height_in_min_tbs;
-    int i;
 
     s->bs_width  = pic_width  >> 3;
     s->bs_height = pic_height >> 3;
@@ -312,20 +302,8 @@ static int pic_arrays_init(HEVCContext *s)
     s->vertical_bs   = av_mallocz(2 * s->bs_width * (s->bs_height + 1));
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
-    // TO DO:   This memory should be allocated even if avctx is a copy,
-    //          especially when it's not the first allocation
-    for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *f = s->DPB[i];
-        f->tab_mvf = av_malloc_array(pic_size_in_min_pu, sizeof(*f->tab_mvf));
-        if (!f->tab_mvf)
-            goto fail;
-
-        f->refPicListTab = av_mallocz_array(ctb_count, sizeof(*f->refPicListTab));
-        if (!f->refPicListTab)
-            goto fail;
-        f->ctb_count = ctb_count;
-    }
-
+    if (ff_hevc_dpb_malloc(s, pic_size_in_min_pu, ctb_count))
+        goto fail;
     return 0;
 fail:
     pic_arrays_free(s);
@@ -454,7 +432,7 @@ static int hls_slice_header(HEVCContext *s)
     }
     s->pps = s->pps_list[sh->pps_id];
 
-    if (s->sps != s->sps_list[s->pps->sps_id] /*|| re_init*/) {
+    if (s->sps != s->sps_list[s->pps->sps_id] || re_init) {
         const AVPixFmtDescriptor *desc;
         s->prev_sps_id = s->pps->sps_id; 
         s->sps = s->sps_list[s->pps->sps_id];
@@ -1668,8 +1646,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 hls_mvd_coding(s, x0, y0, 0);
                 mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
 
-                ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0);
-
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv, mvp_flag[0], 0);
                 current_mv.mv[0].x += lc->pu.mvd.x;
@@ -1690,8 +1666,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                 }
 
                 current_mv.pred_flag += 2;
-
-                ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0);
 
                 mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
@@ -2321,6 +2295,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
         hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
 
+        ff_hevc_wait_collocated_ctb(s, x_ctb, y_ctb);
+
         s->deblock[ctb_addr_rs].disable     = s->sh.disable_deblocking_filter_flag;
         s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
         s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
@@ -2753,6 +2729,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     case NAL_RASL_N:
     case NAL_RASL_R:
         ret = hls_slice_header(s);
+
         lc->isFirstQPgroup = !s->sh.dependent_slice_segment_flag;
 
         if (ret < 0)
@@ -3128,7 +3105,6 @@ static int hevc_update_thread_context(AVCodecContext *dst, const AVCodecContext 
         h->threads_number = h1->threads_number;
         h->decode_checksum_sei = h1->decode_checksum_sei;
         h->disable_au = h1->disable_au;
-        h->temporal_layer_id = h1->temporal_layer_id;
      
         
         memcpy(h->DPB, h1->DPB, sizeof(h1->DPB));
