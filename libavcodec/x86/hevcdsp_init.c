@@ -158,6 +158,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                     c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_10_sse;
                     c->put_hevc_qpel[0][1] = ff_hevc_put_hevc_qpel_h_1_10_sse;
+                  //  c->put_hevc_qpel[1][0] = ff_hevc_put_hevc_qpel_v_1_10_sse;
+
+
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
