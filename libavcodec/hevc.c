@@ -220,7 +220,7 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 /**
  * Section 5.7
  */
-#define POC_DISPLAY_MD5
+//#define POC_DISPLAY_MD5
 #define WPP1 1
 #define FILTER_EN
 
@@ -3192,7 +3192,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     s->max_ra = INT_MAX;
     for (i = 0; !avctx->internal->is_copy && i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        s->DPB[i] = av_malloc(sizeof(*s->DPB[i]));
+        s->DPB[i] = av_mallocz(sizeof(*s->DPB[i]));
         if (!s->DPB[i])
             return AVERROR(ENOMEM);
         s->DPB[i]->frame = av_frame_alloc();
@@ -3210,6 +3210,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         if (!lc->tt.cbf_cb[i] || !lc->tt.cbf_cr[i])
             return AVERROR(ENOMEM);
     }
+
     s->skipped_bytes_pos_size = 1024; // initial buffer size
     s->skipped_bytes_pos = av_malloc_array(s->skipped_bytes_pos_size, sizeof(*s->skipped_bytes_pos));
     s->enable_parallel_tiles = 0;
