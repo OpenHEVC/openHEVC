@@ -254,7 +254,6 @@ static void pic_arrays_free(HEVCContext *s)
 /* allocate arrays that depend on frame dimensions */
 static int pic_arrays_init(HEVCContext *s)
 {
-    int log2_min_cb_size     = s->sps->log2_min_coding_block_size;
     int pic_width            = s->sps->pic_width_in_luma_samples;
     int pic_height           = s->sps->pic_height_in_luma_samples;
     int pic_size             = pic_width * pic_height;
@@ -2307,14 +2306,13 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
-#ifdef FILTER_EN
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
-#endif
     }
-#ifdef FILTER_EN
-    if (x_ctb + ctb_size >= s->sps->pic_width_in_luma_samples && y_ctb + ctb_size >= s->sps->pic_height_in_luma_samples)
+
+    if (x_ctb + ctb_size >= s->sps->pic_width_in_luma_samples &&
+        y_ctb + ctb_size >= s->sps->pic_height_in_luma_samples)
         ff_hevc_hls_filter(s, x_ctb, y_ctb);
-#endif
+
     return ctb_addr_ts;
 }
 
@@ -2392,9 +2390,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 #else
         avpriv_atomic_int_add_and_fetch(&s->ctb_entry_count[ctb_row],1);
 #endif
-#ifdef FILTER_EN
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
-#endif
         if (!more_data && (x_ctb+ctb_size) < s->sps->pic_width_in_luma_samples && ctb_row != s->sh.num_entry_point_offsets) {
         	avpriv_atomic_int_set(&s1->ERROR,  1);
 #if WPP_PTHREAD_MUTEX
@@ -2406,9 +2402,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         }
 
         if ((x_ctb+ctb_size) >= s->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) >= s->sps->pic_height_in_luma_samples ) {
-#ifdef FILTER_EN
             ff_hevc_hls_filter(s, x_ctb, y_ctb);
-#endif
 #if WPP_PTHREAD_MUTEX
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
 #else
@@ -2599,11 +2593,9 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
                         s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_up_boundary,
                         s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_left_boundary);
 
-#ifdef FILTER_EN
         for (y_ctb = 0; y_ctb < s->sps->pic_height_in_luma_samples; y_ctb += ctb_size)
             for (x_ctb = 0; x_ctb < s->sps->pic_width_in_luma_samples; x_ctb += ctb_size)
                 ff_hevc_hls_filter(s, x_ctb, y_ctb);
-#endif
     }
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
@@ -2777,7 +2769,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                        (52 + s->sps->qp_bd_offset)) - s->sps->qp_bd_offset;
 
         if (s->sh.first_slice_in_pic_flag) {
-#ifdef FILTER_EN
             if (s->sps->sample_adaptive_offset_enabled_flag) {
                 av_frame_unref(s->tmp_frame);
                 ret = ff_get_buffer(s->avctx, s->tmp_frame, 0);
@@ -2787,12 +2778,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 if ((ret = ff_hevc_set_new_ref(s, &s->sao_frame, s->poc))< 0)
                     return ret;
             } else {
-#endif
                 if ((ret = ff_hevc_set_new_ref(s, &s->frame, s->poc))< 0)
                     return ret;
-#ifdef FILTER_EN
             }
-#endif
         } else {
             ff_hevc_set_ref_pic_list(s, s->DPB[ff_hevc_find_next_ref(s, s->poc)]);
         }
@@ -2814,7 +2802,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             s->ref->is_decoded = 1;
             ff_hevc_thread_cnt_dec_ref(s);
         }
-        
+
         if (ctb_addr_ts < 0)
             return ctb_addr_ts;
         break;
