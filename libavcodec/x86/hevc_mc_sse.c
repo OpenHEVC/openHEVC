@@ -2694,8 +2694,8 @@ void ff_hevc_put_hevc_qpel_v_2_10_sse(int16_t *dst, ptrdiff_t dststride,
         uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
         int16_t* mcbuffer) {
     int x, y;
-    uint8_t *src = (uint8_t*) _src;
-    ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
+    uint16_t *src = (uint16_t*) _src;
+    ptrdiff_t srcstride = _srcstride / sizeof(uint16_t);
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, r0, r1, r2;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
     r1 = _mm_set_epi16(-1, 4, -11, 40, 40, -11, 4, -1);
@@ -2725,7 +2725,7 @@ void ff_hevc_put_hevc_qpel_v_2_10_sse(int16_t *dst, ptrdiff_t dststride,
                 x7 = _mm_loadl_epi64((__m128i *) &src[x+3 * srcstride]);
                 x8 = _mm_loadl_epi64((__m128i *) &src[x + 4 * srcstride]);
 
-                x1 = _mm_unpacklo_epi16(x1,r0);
+                x1 = _mm_unpacklo_epi16(x1, r0);
                 x2 = _mm_unpacklo_epi16(x2, r0);
                 x3 = _mm_unpacklo_epi16(x3, r0);
                 x4 = _mm_unpacklo_epi16(x4, r0);
@@ -2735,39 +2735,42 @@ void ff_hevc_put_hevc_qpel_v_2_10_sse(int16_t *dst, ptrdiff_t dststride,
                 x8 = _mm_unpacklo_epi16(x8, r0);
 
 
-                r1 = _mm_mullo_epi16(x1, t1);
+                r1 = _mm_mullo_epi32(x1, t1);
 
-                r1 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x2,t2));
-
-
-                r1 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x3,t3));
+                r1 = _mm_add_epi32(r1,
+                        _mm_mullo_epi32(x2,t2));
 
 
-                r1 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x4,t4));
+                r1 = _mm_add_epi32(r1,
+                        _mm_mullo_epi32(x3,t3));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x5,t5));
+                r1 = _mm_add_epi32(r1,
+                        _mm_mullo_epi32(x4,t4));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x6,t6));
+                r1 = _mm_add_epi32(r1,
+                        _mm_mullo_epi32(x5,t5));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x7,t7));
+                r1 = _mm_add_epi32(r1,
+                        _mm_mullo_epi32(x6,t6));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x8,t8));
+                r1 = _mm_add_epi32(r1,
+                        _mm_mullo_epi32(x7,t7));
 
 
+                r1 = _mm_add_epi32(r1,
+                        _mm_mullo_epi32(x8,t8));
+
+
+                r1= _mm_srli_epi32(r1,2); //bit depth - 8
+
+                r1= _mm_packs_epi32(r1,t8);
 
                 /* give results back            */
-                _mm_storel_epi64((__m128i *) &dst[x], r0);
+                _mm_storel_epi64((__m128i *) (dst+x), r1);
 
             }
             src += srcstride;
