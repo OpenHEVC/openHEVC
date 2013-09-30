@@ -28,7 +28,7 @@
 #define LOCK_DBP   if (s->threads_type == FF_THREAD_FRAME ) ff_thread_mutex_lock_dpb(s->avctx)
 #define UNLOCK_DBP if (s->threads_type == FF_THREAD_FRAME ) ff_thread_mutex_unlock_dpb(s->avctx)
 
-void ff_hevc_thread_cnt_ref(HEVCContext *s, int val)
+static void thread_cnt_ref(HEVCContext *s, int val)
 {
     if (s->threads_type == FF_THREAD_FRAME ) {
         RefPicList  *refPicList = s->ref->refPicList;
@@ -59,7 +59,7 @@ void ff_hevc_thread_cnt_ref(HEVCContext *s, int val)
 void ff_hevc_thread_cnt_dec_ref(HEVCContext *s)
 {
     LOCK_DBP;
-    ff_hevc_thread_cnt_ref(s, -1);
+    thread_cnt_ref(s, -1);
     UNLOCK_DBP;
 }
 
@@ -89,7 +89,7 @@ int ff_hevc_find_ref_idx(HEVCContext *s, int poc)
     return 0;
 }
 
-static void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref)
+static void free_refPicListTab(HEVCContext *s, HEVCFrame *ref)
 {
     int j;
     int ctb_count = ref->ctb_count;
@@ -99,30 +99,23 @@ static void ff_hevc_free_refPicListTab(HEVCContext *s, HEVCFrame *ref)
 
     for (j = ctb_count-1; j > 0; j--) {
         if (ref->refPicListTab[j] != ref->refPicListTab[j-1])
-            av_free(ref->refPicListTab[j]);
+            av_freep(&ref->refPicListTab[j]);
         ref->refPicListTab[j] = NULL;
     }
     if (ref->refPicListTab[0] != NULL) {
-        av_free(ref->refPicListTab[0]);
+        av_freep(&ref->refPicListTab[0]);
         ref->refPicListTab[0] = NULL;
     }
     ref->refPicList = NULL;
 }
 
-void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags
-#ifdef TEST_DPB
-        , int i
-#endif
-        )
+static void unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
 {
     if (frame->threadCnt == 0) {
         frame->flags &= ~flags;
         if (!frame->flags) {
-#ifdef TEST_DPB
-            printf("\t\t\t\t\t\t%d\t%d\n",i, frame->poc);
-#endif
             ff_thread_release_buffer(s->avctx, &frame->threadFrame);
-            ff_hevc_free_refPicListTab(s, frame);
+            free_refPicListTab(s, frame);
         }
     }
 }
@@ -141,11 +134,8 @@ static void update_refs(HEVCContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *frame = s->DPB[i];
         if (frame->frame->buf[0] && !used[i])
-            ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF
-#ifdef TEST_DPB
-                    , i
-#endif
-                    );
+            unref_frame(s, frame, HEVC_FRAME_FLAG_SHORT_REF |
+                                          HEVC_FRAME_FLAG_LONG_REF);
     }
 }
 
@@ -199,13 +189,9 @@ void ff_hevc_clear_refs(HEVCContext *s)
 {
     int i;
     LOCK_DBP;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        ff_hevc_unref_frame(s, s->DPB[i], HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF
-#ifdef TEST_DPB
-                , i
-#endif
-        );
-    }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+        unref_frame(s, s->DPB[i], HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF);
+
     UNLOCK_DBP;
 }
 
@@ -213,13 +199,9 @@ void ff_hevc_flush_dpb(HEVCContext *s)
 {
     int i;
     LOCK_DBP;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        ff_hevc_unref_frame(s, s->DPB[i], ~0
-#ifdef TEST_DPB
-                , i
-#endif
-        );
-    }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+        unref_frame(s, s->DPB[i], ~0);
+
     LOCK_DBP;
 }
 
@@ -244,12 +226,8 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 	        update_refs(s);
             ff_hevc_set_ref_pic_list(s, ref);
 
-#ifdef TEST_DPB
-            printf("%d\t%d\n",i, poc);
-#endif
-//            av_log(s->avctx, AV_LOG_INFO, "ff_hevc_set_new_ref : DPB[%d] : poc %d\n", i, s->DPB[i]->poc);
             ret = ff_thread_get_buffer(s->avctx, &ref->threadFrame, AV_GET_BUFFER_FLAG_REF);
-            ff_hevc_thread_cnt_ref(s, 1);
+            thread_cnt_ref(s, 1);
 	        ff_thread_finish_setup(s->avctx);
             UNLOCK_DBP;
             return ret;
@@ -273,7 +251,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
     while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = s->DPB[i];
-            if (frame->is_decoded == 1 &&(frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
+            if (frame->is_decoded == 1 && (frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
                 frame->sequence == s->seq_output) {
                 nb_output++;
                 if (frame->poc < min_poc) {
@@ -291,10 +269,6 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
         }
 
         if (nb_output) {
-#ifdef TEST_DPB
-            printf("\t\t\t%d\t%d\n", min_idx, min_poc);
-#endif
-//            av_log(s->avctx, AV_LOG_INFO, "Display : POC %d\n", min_poc);
             HEVCFrame *frame = s->DPB[min_idx];
             SPS *sps = s->sps_list[s->prev_sps_id];
             dst = out;
@@ -439,6 +413,7 @@ void ff_hevc_set_ref_poc_list(HEVCContext *s)
     LongTermRPS *long_rps    = &s->sh.long_term_rps;
     RefPicList   *refPocList = s->sh.refPocList;
     int MaxPicOrderCntLsb = 1 << s->sps->log2_max_poc_lsb;
+
     if (rps != NULL) {
         for (i = 0; i < rps->num_negative_pics; i ++) {
             if ( rps->used[i] == 1 ) {
@@ -593,12 +568,13 @@ void ff_hevc_dpb_free(HEVCContext *s)
     for (i = 0; (!s->avctx->internal->is_copy) && i < FF_ARRAY_ELEMS(s->DPB); i++) {
         if(s->DPB[i] && s->DPB[i]->threadCnt == 0) {
             av_freep(&s->DPB[i]->tab_mvf);
-            ff_hevc_free_refPicListTab(s, s->DPB[i]);
+            free_refPicListTab(s, s->DPB[i]);
             av_freep(&s->DPB[i]->refPicListTab);
         }
     }
     UNLOCK_DBP;
 }
+
 int ff_hevc_dpb_malloc(HEVCContext *s, int pic_size_in_min_pu, int ctb_count)
 {
     int i;
