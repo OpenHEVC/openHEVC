@@ -3232,8 +3232,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         return decode_nal_units(s, s->avctx->extradata, s->avctx->extradata_size);
     s->width = s->height = 0;
 
-    avctx->internal->allocate_progress = 1;
-
     return 0;
 }
 

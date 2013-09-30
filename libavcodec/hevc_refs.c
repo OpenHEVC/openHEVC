@@ -227,6 +227,15 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             ff_hevc_set_ref_pic_list(s, ref);
 
             ret = ff_thread_get_buffer(s->avctx, &ref->threadFrame, AV_GET_BUFFER_FLAG_REF);
+            if (!s->avctx->internal->allocate_progress) {
+                int *progress;
+                ref->threadFrame.progress = av_buffer_alloc(2 * sizeof(int));
+                if (!ref->threadFrame.progress) {
+                    return -1;
+                }
+                progress = (int*)ref->threadFrame.progress->data;
+                progress[0] = progress[1] = -1;
+            }
             thread_cnt_ref(s, 1);
 	        ff_thread_finish_setup(s->avctx);
             UNLOCK_DBP;
