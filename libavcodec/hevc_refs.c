@@ -135,29 +135,27 @@ static void update_refs(HEVCContext *s)
         HEVCFrame *frame = s->DPB[i];
         if (frame->frame->buf[0] && !used[i])
             unref_frame(s, frame, HEVC_FRAME_FLAG_SHORT_REF |
-                                          HEVC_FRAME_FLAG_LONG_REF);
+                    HEVC_FRAME_FLAG_LONG_REF);
     }
 }
 
-int ff_hevc_find_next_ref(HEVCContext *s, int poc)
+void ff_hevc_unref_old_refs(HEVCContext *s)
 {
-    int i;
-
-    if (!s->sh.first_slice_in_pic_flag)
-        return ff_hevc_find_ref_idx(s, poc);
-
-    update_refs(s);
-
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = s->DPB[i];
-        if (!ref->frame->buf[0]) {
-            return i;
+    int i, j;
+    int cnt_used = 0;
+    LOCK_DBP;
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+        if (s->DPB[i]->frame->buf[0])
+            cnt_used++;
+    if (cnt_used > FF_ARRAY_ELEMS(s->DPB)-2) {
+        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+            av_log(s->avctx, AV_LOG_INFO, "unref_old_refs DPB[%d] = %d\n", i , s->DPB[i]->poc);
+            unref_frame(s, s->DPB[i], ~0);
         }
     }
-    av_log(s->avctx, AV_LOG_ERROR,
-           "could not free room for POC %d\n", poc);
-    return -1;
+    UNLOCK_DBP;
 }
+
 
 static void malloc_refPicListTab(HEVCContext *s, HEVCFrame *ref)
 {
