@@ -1683,7 +1683,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
         }
     }
 
-    ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0);
+    if (ff_hevc_wait_neighbour_ctb(s, &current_mv, x0, y0) < 0)
+        return;
 
     if (current_mv.pred_flag == 1) {
         DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
@@ -2295,7 +2296,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
         hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
 
-        ff_hevc_wait_collocated_ctb(s, x_ctb, y_ctb);
+        if(ff_hevc_wait_collocated_ctb(s, x_ctb, y_ctb)<0)
+            return -1;
 
         s->deblock[ctb_addr_rs].disable     = s->sh.disable_deblocking_filter_flag;
         s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
