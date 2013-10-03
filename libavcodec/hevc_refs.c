@@ -68,16 +68,22 @@ void ff_hevc_thread_cnt_ref(HEVCContext *s, int val)
 int ff_hevc_find_ref_idx(HEVCContext *s, int poc)
 {
     int i;
-    int LtMask = (1 << s->sps->log2_max_poc_lsb) - 1;
-
+    int LtMask  = (1 << s->sps->log2_max_poc_lsb) - 1;
+    int min_poc = 0xFFFF;
+    int min_idx = -1;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = s->DPB[i];
         if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
-            if ((ref->flags & HEVC_FRAME_FLAG_LONG_REF) != 0 && (ref->poc & LtMask) == poc)
-                return i;
+            if ((ref->flags & HEVC_FRAME_FLAG_LONG_REF) != 0 && (ref->poc & LtMask) == poc) {
+                if (ref->poc < min_poc) {
+                    min_poc = ref->poc;
+                    min_idx = i;
+                }
+            }
         }
     }
-
+    if (min_idx != -1)
+        return min_idx;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = s->DPB[i];
         if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
@@ -205,7 +211,6 @@ void ff_hevc_clear_refs(HEVCContext *s)
     LOCK_DBP;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         unref_frame(s, s->DPB[i], HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF);
-
     UNLOCK_DBP;
 }
 
@@ -215,7 +220,6 @@ void ff_hevc_flush_dpb(HEVCContext *s)
     LOCK_DBP;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         unref_frame(s, s->DPB[i], ~0);
-
     LOCK_DBP;
 }
 
@@ -245,7 +249,6 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             ref->sequence   = s->seq_decode;
             ref->threadCnt  = 0;
             ref->is_decoded = 0;
-
 	        update_refs(s);
             ff_hevc_set_ref_pic_list(s, ref);
 
