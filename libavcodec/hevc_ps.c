@@ -359,6 +359,8 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         ff_thread_mutex_lock_dpb(s->avctx);
         if (s->vps_list[vps_id]->threadCnt == 0)
             av_free(s->vps_list[vps_id]);
+        else
+            s->vps_list[vps_id]->freed = 1;
         ff_thread_mutex_unlock_dpb(s->avctx);
     } else
         av_free(s->vps_list[vps_id]);
@@ -788,6 +790,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         ff_thread_mutex_lock_dpb(s->avctx);
         if (s->sps_list[sps_id]->threadCnt == 0)
             av_free(s->sps_list[sps_id]);
+        else
+            s->sps_list[sps_id]->freed = 1;
         ff_thread_mutex_unlock_dpb(s->avctx);
     } else
     	av_free(s->sps_list[sps_id]);
@@ -1151,10 +1155,11 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         ff_thread_mutex_lock_dpb(s->avctx);
         if (s->pps_list[pps_id]->threadCnt == 0)
             ff_hevc_pps_free(&s->pps_list[pps_id]);
+        else
+            s->pps_list[pps_id]->freed = 1;
         ff_thread_mutex_unlock_dpb(s->avctx);
     } else if (s->pps_list[pps_id] != NULL)
         ff_hevc_pps_free(&s->pps_list[pps_id]);
-
     s->pps_list[pps_id] = pps;
     return 0;
 

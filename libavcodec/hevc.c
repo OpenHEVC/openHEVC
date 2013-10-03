@@ -420,7 +420,6 @@ static int hls_slice_header(HEVCContext *s)
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra = INT_MAX;
         re_init = 1;
-        ff_hevc_unref_old_refs(s);
     }
     if (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
@@ -2784,6 +2783,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             }
         } else {
             ff_hevc_set_ref_pic_list(s, s->DPB[s->curr_dpb_idx]);
+            ff_hevc_thread_cnt_ref(s, 1);
         }
         if (!lc->edge_emu_buffer)
             lc->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
@@ -2801,8 +2801,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 restore_tqb_pixels(s);
             }
             s->ref->is_decoded = 1;
-            ff_hevc_thread_cnt_dec_ref(s);
         }
+        ff_hevc_thread_cnt_ref(s, -1);
 
         if (ctb_addr_ts < 0)
             return ctb_addr_ts;

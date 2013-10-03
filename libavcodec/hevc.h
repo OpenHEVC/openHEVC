@@ -278,6 +278,7 @@ typedef struct VPS {
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
     int threadCnt;
+    int freed;
 } VPS;
 typedef struct ScalingListData {
     // This is a little wasteful, since sizeID 0 only needs 8 coeffs, and size ID 3 only has 2 arrays, not 6.
@@ -379,6 +380,7 @@ typedef struct SPS {
 
     int qp_bd_offset; ///< QpBdOffsetY
     int threadCnt;
+    int freed;
 } SPS;
 
 typedef struct PPS {
@@ -449,6 +451,7 @@ typedef struct PPS {
     int *min_cb_addr_zs; ///< MinCbAddrZS
     int *min_tb_addr_zs; ///< MinTbAddrZS
     int threadCnt;
+    int freed;
 } PPS;
 
 enum SliceType {
@@ -976,7 +979,6 @@ int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
 int ff_hevc_get_num_poc(HEVCContext *s);
 
 int ff_hevc_find_ref_idx(HEVCContext *s, int poc);
-void ff_hevc_unref_old_refs(HEVCContext *s);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 void ff_hevc_set_ref_pic_list(HEVCContext *s, HEVCFrame *ref);
 void ff_hevc_wait_neighbour_ctb(HEVCContext *s, MvField *current_mv, int x0, int y0);
@@ -1001,7 +1003,7 @@ void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 void ff_hevc_pps_free(PPS **ppps);
 
 int ff_hevc_apply_window(HEVCContext *s, HEVCWindow *window);
-void ff_hevc_thread_cnt_dec_ref(HEVCContext *s);
+void ff_hevc_thread_cnt_ref(HEVCContext *s, int val);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];
