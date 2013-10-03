@@ -143,19 +143,33 @@ static void update_refs(HEVCContext *s)
 
 static int unref_old_refs(HEVCContext *s)
 {
-    int i, j;
-    int cnt_used = 0;
-    LOCK_DBP;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
-        if (s->DPB[i]->frame->buf[0])
-            cnt_used++;
-    if (cnt_used > FF_ARRAY_ELEMS(s->DPB)-2) {
+    int nb_output = 0;
+    int seq_output = 0;
+    int min_poc   = 0xFFFF;
+    int i, j, min_idx, ret;
+    uint8_t run = 1;
+    min_idx = 0;
+    while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-            av_log(s->avctx, AV_LOG_INFO, "unref_old_refs DPB[%d] = %d\n", i , s->DPB[i]->poc);
-            unref_frame(s, s->DPB[i], ~0);
+            HEVCFrame *frame = s->DPB[i];
+            if (frame->is_decoded == 1 && frame->threadCnt == 0 && frame->sequence == seq_output) {
+                nb_output++;
+                if (frame->poc < min_poc) {
+                    min_poc = frame->poc;
+                    min_idx = i;
+                }
+            }
         }
+        if (nb_output) {
+            unref_frame(s, s->DPB[min_idx], ~0);
+            return 1;
+        }
+        if (seq_output != s->seq_decode)
+            seq_output = (seq_output + 1) & 0xff;
+        else
+            run = 0;
     }
-    UNLOCK_DBP;
+    return 0;
 }
 
 
@@ -208,7 +222,16 @@ void ff_hevc_flush_dpb(HEVCContext *s)
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
     int i, ret;
+	int cnt_not_empty = 0;
     LOCK_DBP;
+	for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+    	if (s->DPB[i]->frame->buf[0]) {
+			cnt_not_empty++;
+        }
+	if (cnt_not_empty >= FF_ARRAY_ELEMS(s->DPB)-2 ) {
+    	av_log(s->avctx, AV_LOG_ERROR, "ff_hevc_set_new_ref DBP is_full\n");
+        unref_old_refs(s);
+    }
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = s->DPB[i];
         if (!ref->frame->buf[0]) {
@@ -223,7 +246,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             ref->threadCnt  = 0;
             ref->is_decoded = 0;
 
-            update_refs(s);
+	        update_refs(s);
             ff_hevc_set_ref_pic_list(s, ref);
 
             ret = ff_thread_get_buffer(s->avctx, &ref->threadFrame, AV_GET_BUFFER_FLAG_REF);
