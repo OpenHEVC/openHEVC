@@ -211,6 +211,7 @@ void ff_hevc_clear_refs(HEVCContext *s)
     LOCK_DBP;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         unref_frame(s, s->DPB[i], HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF);
+
     UNLOCK_DBP;
 }
 
@@ -220,6 +221,7 @@ void ff_hevc_flush_dpb(HEVCContext *s)
     LOCK_DBP;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         unref_frame(s, s->DPB[i], ~0);
+
     LOCK_DBP;
 }
 
@@ -228,6 +230,13 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     int i, ret;
 	int cnt_not_empty = 0;
     LOCK_DBP;
+    if (s->disable_au)
+        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+            HEVCFrame *ref = s->DPB[i];
+            if (ref->flags == HEVC_FRAME_FLAG_OUTPUT && !ref->is_decoded) {
+                ref->is_decoded = 1;
+            }
+        }
 	for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
     	if (s->DPB[i]->frame->buf[0]) {
 			cnt_not_empty++;
@@ -249,6 +258,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
             ref->sequence   = s->seq_decode;
             ref->threadCnt  = 0;
             ref->is_decoded = 0;
+
 	        update_refs(s);
             ff_hevc_set_ref_pic_list(s, ref);
 
@@ -281,8 +291,34 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
     int i, j, min_idx, ret;
     uint8_t run = 1;
     AVFrame *dst, *src;
-    min_idx = 0;
+    int img = 0;
+    int img1 = 0;
+    int st = 0;
+    int lt = 0;
+    int dpb = 0;
     LOCK_DBP;
+    min_idx = 0;
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        HEVCFrame *frame = s->DPB[i];
+        if (frame->flags & HEVC_FRAME_FLAG_OUTPUT) {
+            img++;
+            if (frame->is_decoded)
+                img1++;
+        }
+        if (frame->flags & HEVC_FRAME_FLAG_LONG_REF) {
+            lt++;
+        }
+        if (frame->flags & HEVC_FRAME_FLAG_SHORT_REF) {
+            st++;
+        }
+        if (frame->flags & (HEVC_FRAME_FLAG_OUTPUT |
+                            HEVC_FRAME_FLAG_SHORT_REF |
+                            HEVC_FRAME_FLAG_LONG_REF)) {
+            dpb++;
+        }
+    }
+    if (s->sps)
+        av_log(s->avctx, AV_LOG_DEBUG, "%d frames to output, %d st, %d lt, dpb %d", img, st, lt, dpb);
     while (run) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = s->DPB[i];

@@ -2748,7 +2748,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if ((s->nal_unit_type == NAL_RASL_R || s->nal_unit_type == NAL_RASL_N) &&
             s->poc <= s->max_ra) {
             s->is_decoded = 0;
-            break;
+            av_log(s->avctx, AV_LOG_DEBUG, "RAP with leading pictures skipped\n");
+            return 0;
         } else {
             if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
                 s->max_ra = INT_MIN;
@@ -2803,7 +2804,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if((s->pps->transquant_bypass_enable_flag || (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) && s->sps->sample_adaptive_offset_enabled_flag) {
                 restore_tqb_pixels(s);
             }
-            s->ref->is_decoded = 1;
         }
         ff_hevc_thread_cnt_ref(s, -1);
 
@@ -3034,15 +3034,12 @@ static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int heig
     av_free(buf);
 }
 
-
-
 static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                              AVPacket *avpkt)
 {
     int ret;
     HEVCContext *s = avctx->priv_data;
     s->pts = avpkt->pts;
-
 
     if (!avpkt->size) {
         if ((ret = ff_hevc_output_frame(s, data, 1)) < 0)
@@ -3057,8 +3054,15 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     *got_output = ret;
 
     if ((ret = decode_nal_units(s, avpkt->data, avpkt->size)) < 0) {
+        av_log(s->avctx, AV_LOG_DEBUG, "frame not decoded %d \n", s->poc);
+
+        if (!s->disable_au)
+            s->ref->is_decoded = 1;
+
         return ret;
     }
+    if (!s->disable_au)
+        s->ref->is_decoded = 1;
 
     if (s->decode_checksum_sei && s->is_decoded) {
         AVFrame *frame = s->ref->frame;
