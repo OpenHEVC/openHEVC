@@ -271,9 +271,9 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         int stride = s->frame->linesize[c_idx];
         int ctb_size = (1 << (s->sps->log2_ctb_size)) >> s->sps->hshift[c_idx];
         int width = FFMIN(ctb_size,
-                          (s->sps->pic_width_in_luma_samples >> s->sps->hshift[c_idx]) - x0);
+                          (s->sps->full_width >> s->sps->hshift[c_idx]) - x0);
         int height = FFMIN(ctb_size,
-                           (s->sps->pic_height_in_luma_samples >> s->sps->vshift[c_idx]) - y0);
+                           (s->sps->full_height >> s->sps->vshift[c_idx]) - y0);
 
         uint8_t *src = &s->frame->data[c_idx][y0 * stride + (x0 << s->sps->pixel_shift)];
         uint8_t *dst = &s->sao_frame->data[c_idx][y0 * stride + (x0 << s->sps->pixel_shift)];
@@ -341,11 +341,11 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
 
 
     x_end = x0+ctb_size;
-    if (x_end > s->sps->pic_width_in_luma_samples)
-        x_end = s->sps->pic_width_in_luma_samples;
+    if (x_end > s->sps->full_width)
+        x_end = s->sps->full_width;
     y_end = y0+ctb_size;
-    if (y_end > s->sps->pic_height_in_luma_samples)
-        y_end = s->sps->pic_height_in_luma_samples;
+    if (y_end > s->sps->full_height)
+        y_end = s->sps->full_height;
 
     tc_offset = cur_tc_offset;
     beta_offset = cur_beta_offset;
@@ -400,7 +400,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     }
 
     // horizontal filtering luma
-    if (x_end != s->sps->pic_width_in_luma_samples)
+    if (x_end != s->sps->full_width)
         x_end -= 8;
     for (y = y0 ? y0 : 8; y < y_end; y += 8) {
         for (x = x0 ? x0 - 8 : 0; x < x_end; x += 8) {
@@ -682,8 +682,8 @@ void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
 {
     if (y_ctb && x_ctb)
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb - ctb_size);
-    if (y_ctb && x_ctb >= (s->sps->pic_width_in_luma_samples - ctb_size))
+    if (y_ctb && x_ctb >= (s->sps->full_width - ctb_size))
         ff_hevc_hls_filter(s, x_ctb, y_ctb - ctb_size);
-    if (x_ctb && y_ctb >= (s->sps->pic_height_in_luma_samples - ctb_size))
+    if (x_ctb && y_ctb >= (s->sps->full_height - ctb_size))
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb);
 }

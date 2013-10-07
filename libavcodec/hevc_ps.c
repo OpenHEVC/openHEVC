@@ -594,10 +594,10 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     if (sps->chroma_format_idc == 3)
         sps->separate_colour_plane_flag = get_bits1(gb);
 
-    sps->pic_width_in_luma_samples  = get_ue_golomb_long(gb);
-    sps->pic_height_in_luma_samples = get_ue_golomb_long(gb);
-    if ((ret = av_image_check_size(sps->pic_width_in_luma_samples,
-                                   sps->pic_height_in_luma_samples, 0, s->avctx)) < 0)
+    sps->full_width  = get_ue_golomb_long(gb);
+    sps->full_height = get_ue_golomb_long(gb);
+    if ((ret = av_image_check_size(sps->full_width,
+                                   sps->full_height, 0, s->avctx)) < 0)
         goto err;
 
     sps->pic_conformance_flag = get_bits1(gb);
@@ -760,15 +760,15 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     // Inferred parameters
     sps->log2_ctb_size = sps->log2_min_coding_block_size
                          + sps->log2_diff_max_min_coding_block_size;
-    sps->pic_width_in_ctbs  = (sps->pic_width_in_luma_samples  + (1 << sps->log2_ctb_size) - 1) >> sps->log2_ctb_size;
-    sps->pic_height_in_ctbs = (sps->pic_height_in_luma_samples + (1 << sps->log2_ctb_size) - 1) >> sps->log2_ctb_size;
-    sps->pic_width_in_min_cbs  = sps->pic_width_in_luma_samples  >> sps->log2_min_coding_block_size;
-    sps->pic_height_in_min_cbs = sps->pic_height_in_luma_samples >> sps->log2_min_coding_block_size;
-    sps->pic_width_in_min_tbs  = sps->pic_width_in_luma_samples  >> sps->log2_min_transform_block_size;
-    sps->pic_height_in_min_tbs = sps->pic_height_in_luma_samples >> sps->log2_min_transform_block_size;
+    sps->pic_width_in_ctbs  = (sps->full_width  + (1 << sps->log2_ctb_size) - 1) >> sps->log2_ctb_size;
+    sps->pic_height_in_ctbs = (sps->full_height + (1 << sps->log2_ctb_size) - 1) >> sps->log2_ctb_size;
+    sps->pic_width_in_min_cbs  = sps->full_width  >> sps->log2_min_coding_block_size;
+    sps->pic_height_in_min_cbs = sps->full_height >> sps->log2_min_coding_block_size;
+    sps->pic_width_in_min_tbs  = sps->full_width  >> sps->log2_min_transform_block_size;
+    sps->pic_height_in_min_tbs = sps->full_height >> sps->log2_min_transform_block_size;
     sps->log2_min_pu_size      = sps->log2_min_coding_block_size - 1;
-    sps->pic_width_in_min_pus  = sps->pic_width_in_luma_samples  >> sps->log2_min_pu_size;
-    sps->pic_height_in_min_pus = sps->pic_height_in_luma_samples >> sps->log2_min_pu_size;
+    sps->pic_width_in_min_pus  = sps->full_width  >> sps->log2_min_pu_size;
+    sps->pic_height_in_min_pus = sps->full_height >> sps->log2_min_pu_size;
     sps->log2_diff_ctb_min_tb_size = sps->log2_ctb_size - sps->log2_min_transform_block_size;
 
     sps->qp_bd_offset = 6 * (sps->bit_depth - 8);
@@ -921,14 +921,14 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         pps->num_tile_columns     = get_ue_golomb_long(gb) + 1;
         pps->num_tile_rows        = get_ue_golomb_long(gb) + 1;
         if (pps->num_tile_columns == 0 ||
-            pps->num_tile_columns >= sps->pic_width_in_luma_samples) {
+            pps->num_tile_columns >= sps->full_width) {
             av_log(s->avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
                    pps->num_tile_columns - 1);
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
         if (pps->num_tile_rows == 0 ||
-            pps->num_tile_rows >= sps->pic_height_in_luma_samples) {
+            pps->num_tile_rows >= sps->full_height) {
             av_log(s->avctx, AV_LOG_ERROR, "num_tile_rows_minus1 out of range: %d\n",
                    pps->num_tile_rows - 1);
             ret = AVERROR_INVALIDDATA;

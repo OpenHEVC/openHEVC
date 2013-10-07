@@ -70,8 +70,8 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
     int N;
 
     if ((xN < 0) || (yN < 0) ||
-        (xN >= s->sps->pic_width_in_luma_samples) ||
-        (yN >= s->sps->pic_height_in_luma_samples))
+        (xN >= s->sps->full_width) ||
+        (yN >= s->sps->full_height))
         return 0;
 
     N = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_transform_block_size,
@@ -271,8 +271,8 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     yPRb = y0 + nPbH;
     if (tab_mvf &&
         y0 >> s->sps->log2_ctb_size == yPRb >> s->sps->log2_ctb_size &&
-        yPRb < s->sps->pic_height_in_luma_samples &&
-        xPRb < s->sps->pic_width_in_luma_samples) {
+        yPRb < s->sps->full_height &&
+        xPRb < s->sps->full_width) {
         xPRb = ((xPRb >> 4) << 4);
         yPRb = ((yPRb >> 4) << 4);
         xPRb_pu = xPRb >> log2_min_pu_size;
