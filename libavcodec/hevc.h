@@ -894,6 +894,10 @@ typedef struct HEVCContext {
 
     int strict_def_disp_win;
     int no_cropping;
+
+    int is_nalff;         ///< this flag is != 0 if bitstream is encapsulated
+                          ///< as a format defined in 14496-15
+    int nal_length_size;  ///< Number of bytes used for nal length (1, 2 or 4)
 } HEVCContext;
 
 enum ScanType {

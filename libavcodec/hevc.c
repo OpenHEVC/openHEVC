@@ -2940,20 +2940,32 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     const uint8_t *nal = NULL;
 
     while (length >= 4) {
+        int extract_length = 0;
+
         if (s->disable_au == 0) {
-            if (buf[2] == 0) {
-                length--;
-                buf++;
-                continue;
+            if (s->is_nalff) {
+                int i;
+                for (i = 0; i < s->nal_length_size; i++)
+                    extract_length = (extract_length << 8) | buf[i];
+                buf    += s->nal_length_size;
+                length -= s->nal_length_size;
+            } else {
+                if (buf[2] == 0) {
+                    length--;
+                    buf++;
+                    continue;
+                }
+                if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1)
+                    return AVERROR_INVALIDDATA;
+
+                buf    += 3;
+                length -= 3;
             }
-            if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1)
-                return AVERROR_INVALIDDATA;
-
-            buf    += 3;
-            length -= 3;
         }
+        if (!s->is_nalff || s->disable_au)
+            extract_length = length;
 
-        nal = extract_rbsp(s, buf, &nal_length, &consumed, length);
+        nal = extract_rbsp(s, buf, &nal_length, &consumed, extract_length);
         if (!nal)
             return AVERROR(ENOMEM);
 
@@ -3178,6 +3190,62 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     return 0;
 }
 
+static int hevc_decode_extradata(HEVCContext *s)
+{
+    AVCodecContext *avctx = s->avctx;
+    int ret;
+
+    if (avctx->extradata[0] || avctx->extradata[1] || avctx->extradata[2] > 1) {
+        /* It seems the extradata is encoded as hvcC format.
+         * Temporally, we support configurationVersion==0 until 14496-15 3rd finalized.
+         * When finalized, configurationVersion will be 1 and we can recognize hvcC by
+         * checking if avctx->extradata[0]==1 or not. */
+
+        int i, num_arrays;
+        unsigned char *p = avctx->extradata;
+
+        s->is_nalff = 1;
+
+        if (avctx->extradata_size < 23) {
+            av_log(avctx, AV_LOG_ERROR, "hvcC too short\n");
+            return AVERROR_INVALIDDATA;
+        }
+        num_arrays = *(p + 22);
+        /* nal units in the hvcC always have length coded with 2 bytes,
+         * so put a fake nal_length_size = 2 while parsing them */
+        s->nal_length_size = 2;
+        /* Decode nal units from hvcC. */
+        p += 23;
+        for (i = 0; i < num_arrays; i++) {
+            int j;
+            int type = *(p++);
+            int cnt  = AV_RB16(p);
+            p += 2;
+            for (j = 0; j < cnt; j++) {
+                int nalsize = AV_RB16(p) + 2;
+                if (p - avctx->extradata + nalsize > avctx->extradata_size)
+                    return AVERROR_INVALIDDATA;
+                ret = decode_nal_units(s, p, nalsize);
+                if (ret < 0) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Decoding nal unit %d %d from hvcC failed\n", type, i);
+                    return ret;
+                }
+                p += nalsize;
+            }
+        }
+
+        /* Now store right nal length size, that will be used to parse all other nals */
+        s->nal_length_size = (avctx->extradata[21] & 0x03) + 1;
+    } else {
+        s->is_nalff = 0;
+        ret = decode_nal_units(s, avctx->extradata, avctx->extradata_size);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 static av_cold int hevc_decode_init(AVCodecContext *avctx)
 {
     int i;
@@ -3235,9 +3303,12 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         s->threads_type = FF_THREAD_FRAME;
     else
         s->threads_type = FF_THREAD_SLICE;
-    
+    av_log(s->avctx, AV_LOG_ERROR,
+           "avctx->extradata_size %d \n", avctx->extradata_size);
+
+
     if (avctx->extradata_size > 0 && avctx->extradata)
-        return decode_nal_units(s, s->avctx->extradata, s->avctx->extradata_size);
+        return hevc_decode_extradata(s);
     s->width = s->height = 0;
 
     return 0;

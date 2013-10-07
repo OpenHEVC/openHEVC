@@ -9,6 +9,15 @@
 #include "getopt.h"
 #include <libavformat/avformat.h>
 
+
+typedef struct OpenHevcWrapperContext {
+    AVCodec *codec;
+    AVCodecContext *c;
+    AVFrame *picture;
+    AVPacket avpkt;
+    AVCodecParserContext *parser;
+} OpenHevcWrapperContext;
+
 int find_start_code (unsigned char *Buf, int zeros_in_startcode)
 {
     int i;
@@ -63,12 +72,13 @@ static void video_decode_example(const char *filename)
     float time  = 0.0;
     OpenHevc_Frame openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
+    OpenHevcWrapperContext *ost;
 
-    OpenHevc_Handle openHevcHandle = libOpenHevcInit(nb_pthreads + (enable_framebase<<8));
+    OpenHevc_Handle openHevcHandle;
+    openHevcHandle = libOpenHevcInit(nb_pthreads + (enable_framebase<<8)/*, pFormatCtx*/);
     libOpenHevcSetDisableAU(openHevcHandle, disable_au);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
-    libOpenHevcSetNoCropping(openHevcHandle, no_cropping);
     if (!openHevcHandle) {
         fprintf(stderr, "could not open OpenHevc\n");
         exit(1);
@@ -76,7 +86,8 @@ static void video_decode_example(const char *filename)
     if(disable_au == 0) {
         av_register_all();
         pFormatCtx = avformat_alloc_context();
-        file_iformat = av_find_input_format("hevc");
+//        file_iformat = av_find_input_format("hevc");
+        file_iformat = av_guess_format(NULL, filename, NULL);
 
         if(avformat_open_input(&pFormatCtx, filename, file_iformat, NULL)!=0) {
             printf("%s",filename);
@@ -93,6 +104,20 @@ static void video_decode_example(const char *filename)
     if (output_file) {
         fout = fopen(output_file, "wb");
     }
+    const size_t extra_size_alloc = pFormatCtx->streams[0]->codec->extradata_size > 0 ?
+            (pFormatCtx->streams[0]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
+
+    ost = (OpenHevcWrapperContext *)openHevcHandle;
+
+    if (extra_size_alloc)
+    {
+        ost->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
+        memcpy( ost->c->extradata, pFormatCtx->streams[0]->codec->extradata, pFormatCtx->streams[0]->codec->extradata_size);
+        ost->c->extradata_size = extra_size_alloc;
+    }
+
+    libOpenHevcStartDecoder(openHevcHandle);
+
     while(!stop) {
         if (disable_au == 0) {
             if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;

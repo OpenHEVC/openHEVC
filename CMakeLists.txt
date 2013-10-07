@@ -105,6 +105,7 @@ libavutil/time.c
 libavutil/x86/cpu.c
 gpac/modules/openhevc_dec/openHevcWrapper.c
 libavformat/allformats.c
+libavformat/avc.c
 libavformat/avio.c
 libavformat/aviobuf.c
 libavformat/concat.c
@@ -112,8 +113,12 @@ libavformat/cutils.c
 libavformat/file.c
 libavformat/format.c
 libavformat/id3v2.c
+libavformat/isom.c
 libavformat/hevcdec.c
 libavformat/metadata.c
+libavformat/mov.c
+libavformat/movenc.c
+libavformat/movenchint.c
 libavformat/options.c
 libavformat/os_support.c
 libavformat/rawdec.c
