@@ -119,6 +119,7 @@ libavformat/metadata.c
 libavformat/mov.c
 libavformat/movenc.c
 libavformat/movenchint.c
+libavformat/mpegts.c
 libavformat/options.c
 libavformat/os_support.c
 libavformat/rawdec.c

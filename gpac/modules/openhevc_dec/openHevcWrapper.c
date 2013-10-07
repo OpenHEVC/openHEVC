@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "openHevcWrapper.h"
 #include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
@@ -12,7 +13,7 @@ typedef struct OpenHevcWrapperContext {
     AVCodecParserContext *parser;
 } OpenHevcWrapperContext;
 
-OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
+OpenHevc_Handle libOpenHevcInit(int nb_pthreads/*, int extra_size_alloc, AVFormatContext *pFormatCtx*/)
 {
     /* register all the codecs */
     avcodec_register_all();
@@ -27,7 +28,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
     openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
     openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
     openHevcContext->picture = avcodec_alloc_frame();
-    
+
     
     if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
         openHevcContext->c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
@@ -44,12 +45,19 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
             av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
         av_opt_set_int(openHevcContext->c, "threads", nb_pthreads& 255, 0);
     }
+
+    return (OpenHevc_Handle) openHevcContext;
+}
+
+
+void libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
+{
+    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         return NULL;
     }
     av_opt_set_int(openHevcContext->c->priv_data, "disable-au", 0, 0);
-    return (OpenHevc_Handle) openHevcContext;
 }
 
 int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
@@ -164,10 +172,10 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     avcodec_close(openHevcContext->c);
+    av_parser_close(openHevcContext->parser);
     av_free(openHevcContext->c);
     av_free(openHevcContext->picture);
     av_free(openHevcContext);
-    av_parser_close(openHevcContext->parser);
 }
 
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle)

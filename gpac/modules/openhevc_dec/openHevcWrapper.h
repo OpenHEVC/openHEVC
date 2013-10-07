@@ -48,6 +48,7 @@ typedef struct OpenHevc_Frame_cpy
 } OpenHevc_Frame_cpy;
 
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads);
+void libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle);
 int  libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int nal_len, int64_t pts);
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);
 void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);

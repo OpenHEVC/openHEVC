@@ -61,6 +61,7 @@ void av_register_all(void)
     /* (de)muxers */
     REGISTER_DEMUXER (HEVC,             hevc);
     REGISTER_MUXDEMUX(MOV,              mov);
+    REGISTER_DEMUXER(MPEGTS,           mpegts);
 
     /* protocols */
     REGISTER_PROTOCOL(CONCAT,           concat);
