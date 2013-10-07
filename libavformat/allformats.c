@@ -62,6 +62,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (HEVC,             hevc);
     REGISTER_MUXDEMUX(MOV,              mov);
     REGISTER_DEMUXER(MPEGTS,           mpegts);
+    REGISTER_DEMUXER(MATROSKA,         matroska);
 
     /* protocols */
     REGISTER_PROTOCOL(CONCAT,           concat);

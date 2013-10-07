@@ -115,6 +115,8 @@ libavformat/format.c
 libavformat/id3v2.c
 libavformat/isom.c
 libavformat/hevcdec.c
+libavformat/matroska.c
+libavformat/matroskadec.c
 libavformat/metadata.c
 libavformat/mov.c
 libavformat/movenc.c
