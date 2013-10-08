@@ -2379,6 +2379,16 @@ void ff_hevc_put_hevc_qpel_v_1_8_sse(int16_t *dst, ptrdiff_t dststride,
         x = 0;
         x8 = _mm_setzero_si128();
         t8 = _mm_setzero_si128();
+
+        t7= _mm_set1_epi16(1);
+        t6= _mm_set1_epi16(-5);
+        t5= _mm_set1_epi16(17);
+        t4= _mm_set1_epi16(58);
+        t3= _mm_set1_epi16(-10);
+        t2= _mm_set1_epi16(4);
+        t1= _mm_set1_epi16(-1);
+        t8= _mm_setzero_si128();
+
         for (y = 0; y < height; y ++) {
             for(x=0;x<width;x+=4){
                 /* load data in register  */
@@ -2401,34 +2411,28 @@ void ff_hevc_put_hevc_qpel_v_1_8_sse(int16_t *dst, ptrdiff_t dststride,
                 x7 = _mm_unpacklo_epi8(x7, t8);
 
 
-                r0 = _mm_mullo_epi16(x1, _mm_set1_epi16(_mm_extract_epi16(r1, 0)));
+                r0 = _mm_mullo_epi16(x1, t1);
 
                 r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x2,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 1))));
-
-
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x3,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 2))));
-
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x4,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 3))));
-
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x5,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 4))));
+                        _mm_mullo_epi16(x2,t2));
 
 
                 r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x6,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 5))));
+                        _mm_mullo_epi16(x3,t3));
+
+                r0 = _mm_adds_epi16(r0,
+                        _mm_mullo_epi16(x4,t4));
+
+                r0 = _mm_adds_epi16(r0,
+                        _mm_mullo_epi16(x5,t5));
 
 
                 r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x7,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 6))));
+                        _mm_mullo_epi16(x6,t6));
+
+
+                r0 = _mm_adds_epi16(r0,
+                        _mm_mullo_epi16(x7,t7));
 
                 /* give results back            */
                 _mm_storel_epi64((__m128i *) &dst[x], r0);
@@ -2619,10 +2623,19 @@ void ff_hevc_put_hevc_qpel_v_2_8_sse(int16_t *dst, ptrdiff_t dststride,
             dst += dststride;
         }
     }else{
+        t1= _mm_set1_epi16(-1);
+        t2= _mm_set1_epi16(4);
+        t3= _mm_set1_epi16(-11);
+        t4= _mm_set1_epi16(40);
+        t5= _mm_set1_epi16(40);
+        t6= _mm_set1_epi16(-11);
+        t7= _mm_set1_epi16(4);
+        t8= _mm_set1_epi16(-1);
+        r0 = _mm_setzero_si128();
         x = 0;
         for (y = 0; y < height; y ++) {
             for(x=0;x<width;x+=4){
-                r0 = _mm_setzero_si128();
+
                 /* load data in register  */
                 x1 = _mm_loadl_epi64((__m128i *) &src[x - 3 * srcstride]);
                 x2 = _mm_loadl_epi64((__m128i *) &src[x-2 * srcstride]);
@@ -2643,45 +2656,38 @@ void ff_hevc_put_hevc_qpel_v_2_8_sse(int16_t *dst, ptrdiff_t dststride,
                 x8 = _mm_unpacklo_epi8(x8, r0);
 
 
-                r0 = _mm_mullo_epi16(x1, _mm_set1_epi16(_mm_extract_epi16(r1, 0)));
+                r2 = _mm_mullo_epi16(x1, t1);
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x2,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 1))));
-
-
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x3,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 2))));
+                r2 = _mm_adds_epi16(r2,
+                        _mm_mullo_epi16(x2,t2));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x4,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 3))));
+                r2 = _mm_adds_epi16(r2,
+                        _mm_mullo_epi16(x3,t3));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x5,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 4))));
+                r2 = _mm_adds_epi16(r2,
+                        _mm_mullo_epi16(x4,t4));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x6,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 5))));
+                r2 = _mm_adds_epi16(r2,
+                        _mm_mullo_epi16(x5,t5));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x7,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 6))));
+                r2 = _mm_adds_epi16(r2,
+                        _mm_mullo_epi16(x6,t6));
 
 
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x8,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 7))));
+                r2 = _mm_adds_epi16(r2,
+                        _mm_mullo_epi16(x7,t7));
+
+
+                r2 = _mm_adds_epi16(r2,
+                        _mm_mullo_epi16(x8,t8));
 
 
                 /* give results back            */
-                _mm_storel_epi64((__m128i *) &dst[x], r0);
+                _mm_storel_epi64((__m128i *) &dst[x], r2);
 
             }
             src += srcstride;
@@ -2779,171 +2785,7 @@ void ff_hevc_put_hevc_qpel_v_2_10_sse(int16_t *dst, ptrdiff_t dststride,
     }
 }
 
-static  void ff_hevc_put_hevc_qpel_v_3_sse(int16_t *dst, ptrdiff_t dststride,
-        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
-        int16_t* mcbuffer) {
-    int x, y;
-    uint8_t *src = (uint8_t*) _src;
-    ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r0, r1, r2;
-    __m128i t2, t3, t4, t5, t6, t7, t8;
-    r1 = _mm_set_epi16(-1, 4, -10, 58, 17, -5, 1, 0);
 
-    if(!(width & 15)){
-        for (y = 0; y < height; y++) {
-                    for (x = 0; x < width; x += 16) {
-                        /* check if memory needs to be reloaded */
-                        x1 = _mm_setzero_si128();
-                        x2 = _mm_loadu_si128((__m128i *) &src[x - 2 * srcstride]);
-                        x3 = _mm_loadu_si128((__m128i *) &src[x - srcstride]);
-                        x4 = _mm_loadu_si128((__m128i *) &src[x]);
-                        x5 = _mm_loadu_si128((__m128i *) &src[x + srcstride]);
-                        x6 = _mm_loadu_si128((__m128i *) &src[x + 2 * srcstride]);
-                        x7 = _mm_loadu_si128((__m128i *) &src[x + 3 * srcstride]);
-                        x8 = _mm_loadu_si128((__m128i *) &src[x + 4 * srcstride]);
-
-                        t2 = _mm_unpacklo_epi8(x2, x1);
-                        t3 = _mm_unpacklo_epi8(x3, x1);
-                        t4 = _mm_unpacklo_epi8(x4, x1);
-                        t5 = _mm_unpacklo_epi8(x5, x1);
-                        t6 = _mm_unpacklo_epi8(x6, x1);
-                        t7 = _mm_unpacklo_epi8(x7, x1);
-                        t8 = _mm_unpacklo_epi8(x8, x1);
-
-                        x2 = _mm_unpackhi_epi8(x2, x1);
-                        x3 = _mm_unpackhi_epi8(x3, x1);
-                        x4 = _mm_unpackhi_epi8(x4, x1);
-                        x5 = _mm_unpackhi_epi8(x5, x1);
-                        x6 = _mm_unpackhi_epi8(x6, x1);
-                        x7 = _mm_unpackhi_epi8(x7, x1);
-                        x8 = _mm_unpackhi_epi8(x8, x1);
-
-                        /* multiply by correct value : */
-                        r0 = _mm_mullo_epi16(t2,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 1)));
-                        r2 = _mm_mullo_epi16(x2,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 1)));
-
-                        r0 = _mm_adds_epi16(r0,
-                                _mm_mullo_epi16(t3,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 2))));
-                        r2 = _mm_adds_epi16(r2,
-                                _mm_mullo_epi16(x3,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 2))));
-
-                        r0 = _mm_adds_epi16(r0,
-                                _mm_mullo_epi16(t4,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 3))));
-                        r2 = _mm_adds_epi16(r2,
-                                _mm_mullo_epi16(x4,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 3))));
-
-                        r0 = _mm_adds_epi16(r0,
-                                _mm_mullo_epi16(t5,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 4))));
-                        r2 = _mm_adds_epi16(r2,
-                                _mm_mullo_epi16(x5,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 4))));
-
-                        r0 = _mm_adds_epi16(r0,
-                                _mm_mullo_epi16(t6,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 5))));
-                        r2 = _mm_adds_epi16(r2,
-                                _mm_mullo_epi16(x6,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 5))));
-
-                        r0 = _mm_adds_epi16(r0,
-                                _mm_mullo_epi16(t7,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 6))));
-                        r2 = _mm_adds_epi16(r2,
-                                _mm_mullo_epi16(x7,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 6))));
-
-                        r0 = _mm_adds_epi16(r0,
-                                _mm_mullo_epi16(t8,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 7))));
-                        r2 = _mm_adds_epi16(r2,
-                                _mm_mullo_epi16(x8,
-                                        _mm_set1_epi16(_mm_extract_epi16(r1, 7))));
-
-                        /* give results back            */
-                        _mm_store_si128((__m128i *) &dst[x],
-                                _mm_srli_epi16(r0, BIT_DEPTH - 8));
-                        _mm_store_si128((__m128i *) &dst[x + 8],
-                                _mm_srli_epi16(r2, BIT_DEPTH - 8));
-                    }
-                    src += srcstride;
-                    dst += dststride;
-                }
-    }else{
-        x = 0;
-                for (y = 0; y < height; y ++) {
-                    for(x=0;x<width;x+=4){
-                    r0 = _mm_set1_epi16(0);
-                    /* load data in register  */
-                    //x1 = _mm_setzero_si128();
-                    x2 = _mm_loadl_epi64((__m128i *) &src[x-2 * srcstride]);
-                    x3 = _mm_loadl_epi64((__m128i *) &src[x-srcstride]);
-                    x4 = _mm_loadl_epi64((__m128i *) &src[x]);
-                    x5 = _mm_loadl_epi64((__m128i *) &src[x+srcstride]);
-                    x6 = _mm_loadl_epi64((__m128i *) &src[x+2 * srcstride]);
-                    x7 = _mm_loadl_epi64((__m128i *) &src[x+3 * srcstride]);
-                    x8 = _mm_loadl_epi64((__m128i *) &src[x + 4 * srcstride]);
-
-                    x1 = _mm_unpacklo_epi8(x1,r0);
-                    x2 = _mm_unpacklo_epi8(x2, r0);
-                    x3 = _mm_unpacklo_epi8(x3, r0);
-                    x4 = _mm_unpacklo_epi8(x4, r0);
-                    x5 = _mm_unpacklo_epi8(x5, r0);
-                    x6 = _mm_unpacklo_epi8(x6, r0);
-                    x7 = _mm_unpacklo_epi8(x7, r0);
-                    x8 = _mm_unpacklo_epi8(x8, r0);
-
-
-                    r0 = _mm_mullo_epi16(x2, _mm_set1_epi16(_mm_extract_epi16(r1, 1)));
-
-
-                    r0 = _mm_adds_epi16(r0,
-                            _mm_mullo_epi16(x3,
-                                    _mm_set1_epi16(_mm_extract_epi16(r1, 2))));
-
-
-                    r0 = _mm_adds_epi16(r0,
-                            _mm_mullo_epi16(x4,
-                                    _mm_set1_epi16(_mm_extract_epi16(r1, 3))));
-
-
-                    r0 = _mm_adds_epi16(r0,
-                            _mm_mullo_epi16(x5,
-                                    _mm_set1_epi16(_mm_extract_epi16(r1, 4))));
-
-
-                    r0 = _mm_adds_epi16(r0,
-                            _mm_mullo_epi16(x6,
-                                    _mm_set1_epi16(_mm_extract_epi16(r1, 5))));
-
-
-                    r0 = _mm_adds_epi16(r0,
-                            _mm_mullo_epi16(x7,
-                                    _mm_set1_epi16(_mm_extract_epi16(r1, 6))));
-
-
-                    r0 = _mm_adds_epi16(r0,
-                            _mm_mullo_epi16(x8,
-                                    _mm_set1_epi16(_mm_extract_epi16(r1, 7))));
-
-
-                    r0 = _mm_srli_epi16(r0, BIT_DEPTH - 8);
-                    /* give results back            */
-                    _mm_storel_epi64((__m128i *) &dst[x], r0);
-
-                    }
-                    src += srcstride;
-                    dst += dststride;
-                }
-    }
-
-}
 void ff_hevc_put_hevc_qpel_v_3_8_sse(int16_t *dst, ptrdiff_t dststride,
         uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
         int16_t* mcbuffer) {
@@ -2951,7 +2793,7 @@ void ff_hevc_put_hevc_qpel_v_3_8_sse(int16_t *dst, ptrdiff_t dststride,
     uint8_t *src = (uint8_t*) _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, r0, r1, r2;
-    __m128i t2, t3, t4, t5, t6, t7, t8;
+    __m128i t1, t2, t3, t4, t5, t6, t7, t8;
     r1 = _mm_set_epi16(-1, 4, -10, 58, 17, -5, 1, 0);
 
     if(!(width & 15)){
@@ -3040,11 +2882,18 @@ void ff_hevc_put_hevc_qpel_v_3_8_sse(int16_t *dst, ptrdiff_t dststride,
         }
     }else{
         x = 0;
+        t7 = _mm_set1_epi16(-1);
+        t6 = _mm_set1_epi16(4);
+        t5 = _mm_set1_epi16(-10);
+        t4 = _mm_set1_epi16(58);
+        t3 = _mm_set1_epi16(17);
+        t2 = _mm_set1_epi16(-5);
+        t1 = _mm_set1_epi16(1);
+        t8= _mm_setzero_si128();
         for (y = 0; y < height; y ++) {
             for(x=0;x<width;x+=4){
-                r0 = _mm_set1_epi16(0);
+
                 /* load data in register  */
-                //x1 = _mm_setzero_si128();
                 x2 = _mm_loadl_epi64((__m128i *) &src[x-2 * srcstride]);
                 x3 = _mm_loadl_epi64((__m128i *) &src[x-srcstride]);
                 x4 = _mm_loadl_epi64((__m128i *) &src[x]);
@@ -3053,40 +2902,34 @@ void ff_hevc_put_hevc_qpel_v_3_8_sse(int16_t *dst, ptrdiff_t dststride,
                 x7 = _mm_loadl_epi64((__m128i *) &src[x+3 * srcstride]);
                 x8 = _mm_loadl_epi64((__m128i *) &src[x + 4 * srcstride]);
 
-                x1 = _mm_unpacklo_epi8(x1,r0);
-                x2 = _mm_unpacklo_epi8(x2, r0);
-                x3 = _mm_unpacklo_epi8(x3, r0);
-                x4 = _mm_unpacklo_epi8(x4, r0);
-                x5 = _mm_unpacklo_epi8(x5, r0);
-                x6 = _mm_unpacklo_epi8(x6, r0);
-                x7 = _mm_unpacklo_epi8(x7, r0);
-                x8 = _mm_unpacklo_epi8(x8, r0);
+                x1 = _mm_unpacklo_epi8(x1,t8);
+                x2 = _mm_unpacklo_epi8(x2, t8);
+                x3 = _mm_unpacklo_epi8(x3, t8);
+                x4 = _mm_unpacklo_epi8(x4, t8);
+                x5 = _mm_unpacklo_epi8(x5, t8);
+                x6 = _mm_unpacklo_epi8(x6, t8);
+                x7 = _mm_unpacklo_epi8(x7, t8);
+                x8 = _mm_unpacklo_epi8(x8, t8);
 
-                r0 = _mm_mullo_epi16(x2, _mm_set1_epi16(_mm_extract_epi16(r1, 1)));
-
-                r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x3,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 2))));
+                r0 = _mm_mullo_epi16(x2, t1);
 
                 r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x4,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 3))));
+                        _mm_mullo_epi16(x3,t2));
 
                 r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x5,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 4))));
+                        _mm_mullo_epi16(x4,t3));
 
                 r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x6,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 5))));
+                        _mm_mullo_epi16(x5,t4));
 
                 r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x7,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 6))));
+                        _mm_mullo_epi16(x6,t5));
 
                 r0 = _mm_adds_epi16(r0,
-                        _mm_mullo_epi16(x8,
-                                _mm_set1_epi16(_mm_extract_epi16(r1, 7))));
+                        _mm_mullo_epi16(x7,t6));
+
+                r0 = _mm_adds_epi16(r0,
+                        _mm_mullo_epi16(x8,t7));
 
                 /* give results back            */
                 _mm_storel_epi64((__m128i *) &dst[x], r0);
