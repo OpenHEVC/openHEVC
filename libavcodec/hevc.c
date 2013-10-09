@@ -2314,7 +2314,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
     if (x_ctb + ctb_size >= s->sps->pic_width_in_luma_samples &&
         y_ctb + ctb_size >= s->sps->pic_height_in_luma_samples)
-        ff_hevc_hls_filter(s, x_ctb, y_ctb);
+        ff_hevc_hls_filter(s, x_ctb, y_ctb, 1);
 
     return ctb_addr_ts;
 }
@@ -2405,7 +2405,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         }
 
         if ((x_ctb+ctb_size) >= s->sps->pic_width_in_luma_samples && (y_ctb+ctb_size) >= s->sps->pic_height_in_luma_samples ) {
-            ff_hevc_hls_filter(s, x_ctb, y_ctb);
+            ff_hevc_hls_filter(s, x_ctb, y_ctb, 1);
 #if WPP_PTHREAD_MUTEX
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
 #else
@@ -2598,7 +2598,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 
         for (y_ctb = 0; y_ctb < s->sps->pic_height_in_luma_samples; y_ctb += ctb_size)
             for (x_ctb = 0; x_ctb < s->sps->pic_width_in_luma_samples; x_ctb += ctb_size)
-                ff_hevc_hls_filter(s, x_ctb, y_ctb);
+                ff_hevc_hls_filter(s, x_ctb, y_ctb, 0);
     }
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)

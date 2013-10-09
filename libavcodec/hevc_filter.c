@@ -664,26 +664,28 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
 #undef CB
 #undef CR
 
-void ff_hevc_hls_filter(HEVCContext *s, int x, int y)
+void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int set_progress)
 {
     deblocking_filter_CTB(s, x, y);
     if (s->sps->sample_adaptive_offset_enabled_flag)
         sao_filter_CTB(s, x, y);
     if (s->threads_type == FF_THREAD_FRAME) {
-        int x_off       = x >> s->sps->log2_ctb_size;
-        int y_off       = y >> s->sps->log2_ctb_size;
-        int ctb_addr_rs = y_off * s->sps->pic_width_in_ctbs + x_off;
-//        av_log(s->avctx, AV_LOG_INFO, "poc_cur %d : end ctb %d : %dx%d\n", s->poc, ctb_addr_rs, y_off , x_off);
-        ff_thread_report_progress(&s->ref->threadFrame, ctb_addr_rs, 0);
+        if (s->pps->tiles_enabled_flag == 0 || set_progress == 1) {
+            int x_off       = x >> s->sps->log2_ctb_size;
+            int y_off       = y >> s->sps->log2_ctb_size;
+            int ctb_addr_rs = y_off * s->sps->pic_width_in_ctbs + x_off;
+          //  av_log(s->avctx, AV_LOG_INFO, "poc_cur %d : end ctb %d : %dx%d\n", s->poc, ctb_addr_rs, y_off , x_off);
+            ff_thread_report_progress(&s->ref->threadFrame, ctb_addr_rs, 0);
+        }
     }
 }
 
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
 {
     if (y_ctb && x_ctb)
-        ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb - ctb_size);
+        ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb - ctb_size, 0);
     if (y_ctb && x_ctb >= (s->sps->pic_width_in_luma_samples - ctb_size))
-        ff_hevc_hls_filter(s, x_ctb, y_ctb - ctb_size);
+        ff_hevc_hls_filter(s, x_ctb, y_ctb - ctb_size, 1);
     if (x_ctb && y_ctb >= (s->sps->pic_height_in_luma_samples - ctb_size))
-        ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb);
+        ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb, 0);
 }
