@@ -77,24 +77,48 @@ static const uint8_t diag_scan8x8_y[64] = {
     5, 4, 7, 6,
     5, 7, 6, 7,
 };
-static const uint8_t DefaultScalingListIntra[] = {
-        16, 16, 16, 16, 17, 18, 21, 24,
-		16, 16, 16, 16, 17, 19, 22, 25, 
-		16, 16, 17, 18, 20, 22, 25, 29,
-		16, 16, 18, 21, 24, 27, 31, 36,
-		17, 17, 20, 24, 30, 35, 41, 47,
-		18, 19, 22, 27, 35, 44, 54, 65,
-		21, 22, 25, 31, 41, 54, 70, 88,
-		24, 25, 29,36, 47, 65, 88, 115 };
-static const uint8_t DefaultScalingListInter[] = {
-		16, 16, 16, 16, 17, 18, 20, 24,
-		16, 16, 16, 17, 18, 20, 24, 25, 
-		16, 16, 17, 18, 20, 24, 25, 28,
-		16, 17, 18, 20, 24, 25, 28, 33,
-		17, 18, 20, 24, 25, 28, 33, 41,
-		18, 20, 24, 25, 28, 33, 41, 54,
-		20, 24, 25, 28, 33, 41, 54, 71,
-		24, 25, 28, 33, 41, 54, 71, 91};
+
+static const uint8_t default_scaling_list_intra[] = {
+    16, 16, 16, 16, 17, 18, 21, 24,
+    16, 16, 16, 16, 17, 19, 22, 25,
+    16, 16, 17, 18, 20, 22, 25, 29,
+    16, 16, 18, 21, 24, 27, 31, 36,
+    17, 17, 20, 24, 30, 35, 41, 47,
+    18, 19, 22, 27, 35, 44, 54, 65,
+    21, 22, 25, 31, 41, 54, 70, 88,
+    24, 25, 29,36, 47, 65, 88, 115
+};
+
+static const uint8_t default_scaling_list_inter[] = {
+    16, 16, 16, 16, 17, 18, 20, 24,
+    16, 16, 16, 17, 18, 20, 24, 25,
+    16, 16, 17, 18, 20, 24, 25, 28,
+    16, 17, 18, 20, 24, 25, 28, 33,
+    17, 18, 20, 24, 25, 28, 33, 41,
+    18, 20, 24, 25, 28, 33, 41, 54,
+    20, 24, 25, 28, 33, 41, 54, 71,
+    24, 25, 28, 33, 41, 54, 71, 91
+};
+
+static const AVRational vui_sar[] = {
+    { 0,   1  },
+    { 1,   1  },
+    { 12,  11 },
+    { 10,  11 },
+    { 16,  11 },
+    { 40,  33 },
+    { 24,  11 },
+    { 20,  11 },
+    { 32,  11 },
+    { 80,  33 },
+    { 18,  11 },
+    { 15,  11 },
+    { 64,  33 },
+    { 160, 99 },
+    { 4,   3  },
+    { 3,   2  },
+    { 2,   1  },
+};
 
 /**
  * Section 7.3.3.1
@@ -316,23 +340,23 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     }
 
     if (decode_profile_tier_level(s->HEVClc, &vps->ptl, vps->vps_max_sub_layers) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "error decoding profile tier level");
+        av_log(s->avctx, AV_LOG_ERROR, "Error decoding profile tier level.\n");
         goto err;
     }
     vps->vps_sub_layer_ordering_info_present_flag = get_bits1(gb);
 
     i = vps->vps_sub_layer_ordering_info_present_flag ? 0 : vps->vps_max_sub_layers - 1;
     for (; i < vps->vps_max_sub_layers; i++) {
-        vps->vps_max_dec_pic_buffering[i] = get_ue_golomb_long(gb) + 1;
-        vps->vps_num_reorder_pics[i]      = get_ue_golomb_long(gb);
-        vps->vps_max_latency_increase[i]  = get_ue_golomb_long(gb) - 1;
+        vps->vps_max_dec_pic_buffering[i] = get_ue_golomb(gb);
+        vps->vps_num_reorder_pics[i]      = get_ue_golomb(gb);
+        vps->vps_max_latency_increase[i]  = get_ue_golomb(gb);
 
-        if (vps->vps_max_dec_pic_buffering[i] > MAX_DPB_SIZE) {
+        if (vps->vps_max_dec_pic_buffering[i] >= MAX_DPB_SIZE) {
             av_log(s->avctx, AV_LOG_ERROR, "vps_max_dec_pic_buffering_minus1 out of range: %d\n",
                    vps->vps_max_dec_pic_buffering[i] - 1);
             goto err;
         }
-        if (vps->vps_num_reorder_pics[i] > vps->vps_max_dec_pic_buffering[i] - 1) {
+        if (vps->vps_num_reorder_pics[i] > vps->vps_max_dec_pic_buffering[i]) {
             av_log(s->avctx, AV_LOG_ERROR, "vps_max_num_reorder_pics out of range: %d\n",
                    vps->vps_num_reorder_pics[i]);
             goto err;
@@ -340,7 +364,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     }
 
     vps->vps_max_layer_id   = get_bits(gb, 6);
-    vps->vps_num_layer_sets = get_ue_golomb_long(gb) + 1;
+    vps->vps_num_layer_sets = get_ue_golomb(gb) + 1;
     for (i = 1; i < vps->vps_num_layer_sets; i++)
         for (j = 0; j <= vps->vps_max_layer_id; j++)
             skip_bits(gb, 1); // layer_id_included_flag[i][j]
@@ -351,8 +375,8 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         vps->vps_time_scale                      = get_bits_long(gb, 32);
         vps->vps_poc_proportional_to_timing_flag = get_bits1(gb);
         if (vps->vps_poc_proportional_to_timing_flag)
-            vps->vps_num_ticks_poc_diff_one = get_ue_golomb_long(gb) + 1;
-        vps->vps_num_hrd_parameters = get_ue_golomb_long(gb);
+            vps->vps_num_ticks_poc_diff_one = get_ue_golomb(gb) + 1;
+        vps->vps_num_hrd_parameters = get_ue_golomb(gb);
         if (vps->vps_num_hrd_parameters != 0) {
             avpriv_report_missing_feature(s->avctx, "support for vps_num_hrd_parameters != 0");
             av_free(vps);
@@ -382,16 +406,21 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
 {
     VUI *vui = &sps->vui;
     GetBitContext *gb = &s->HEVClc->gb;
+    int sar_present;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VUI\n");
 
-    vui->aspect_ratio_info_present_flag = get_bits1(gb);
-    if (vui->aspect_ratio_info_present_flag) {
-        vui->aspect_ratio_idc = get_bits(gb, 8);
-        if (vui->aspect_ratio_idc == 255) { // EXTENDED_SAR
-            vui->sar_width  = get_bits(gb, 16);
-            vui->sar_height = get_bits(gb, 16);
-        }
+    sar_present = get_bits1(gb);
+    if (sar_present) {
+        uint8_t sar_idx = get_bits(gb, 8);
+        if (sar_idx < FF_ARRAY_ELEMS(vui_sar))
+            vui->sar = vui_sar[sar_idx];
+        else if (sar_idx == 255) {
+            vui->sar.num = get_bits(gb, 16);
+            vui->sar.den = get_bits(gb, 16);
+        } else
+            av_log(s->avctx, AV_LOG_WARNING, "Unknown SAR index: %u.\n",
+                   sar_idx);
     }
 
     vui->overscan_info_present_flag = get_bits1(gb);
@@ -412,8 +441,8 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
 
     vui->chroma_loc_info_present_flag = get_bits1(gb);
     if (vui->chroma_loc_info_present_flag) {
-        vui->chroma_sample_loc_type_top_field    = get_ue_golomb_long(gb);
-        vui->chroma_sample_loc_type_bottom_field = get_ue_golomb_long(gb);
+        vui->chroma_sample_loc_type_top_field    = get_ue_golomb(gb);
+        vui->chroma_sample_loc_type_bottom_field = get_ue_golomb(gb);
     }
 
     vui->neutra_chroma_indication_flag = get_bits1(gb);
@@ -422,10 +451,11 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
 
     vui->default_display_window_flag = get_bits1(gb);
     if (vui->default_display_window_flag) {
-        vui->def_disp_win.left_offset   = get_ue_golomb_long(gb);
-        vui->def_disp_win.right_offset  = get_ue_golomb_long(gb);
-        vui->def_disp_win.top_offset    = get_ue_golomb_long(gb);
-        vui->def_disp_win.bottom_offset = get_ue_golomb_long(gb);
+        //TODO: * 2 is only valid for 420
+        vui->def_disp_win.left_offset   = get_ue_golomb(gb) * 2;
+        vui->def_disp_win.right_offset  = get_ue_golomb(gb) * 2;
+        vui->def_disp_win.top_offset    = get_ue_golomb(gb) * 2;
+        vui->def_disp_win.bottom_offset = get_ue_golomb(gb) * 2;
 
         if (s->avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
             av_log(s->avctx, AV_LOG_DEBUG,
@@ -458,7 +488,7 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         vui->vui_time_scale                      = get_bits(gb, 32);
         vui->vui_poc_proportional_to_timing_flag = get_bits1(gb);
         if (vui->vui_poc_proportional_to_timing_flag)
-            vui->vui_num_ticks_poc_diff_one_minus1 = get_ue_golomb_long(gb);
+            vui->vui_num_ticks_poc_diff_one_minus1 = get_ue_golomb(gb);
         vui->vui_hrd_parameters_present_flag = get_bits1(gb);
         if (vui->vui_hrd_parameters_present_flag)
             decode_hrd(s);
@@ -469,54 +499,65 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         vui->tiles_fixed_structure_flag              = get_bits1(gb);
         vui->motion_vectors_over_pic_boundaries_flag = get_bits1(gb);
         vui->restricted_ref_pic_lists_flag           = get_bits1(gb);
-        vui->min_spatial_segmentation_idc            = get_ue_golomb_long(gb);
-        vui->max_bytes_per_pic_denom                 = get_ue_golomb_long(gb);
-        vui->max_bits_per_min_cu_denom               = get_ue_golomb_long(gb);
-        vui->log2_max_mv_length_horizontal           = get_ue_golomb_long(gb);
-        vui->log2_max_mv_length_vertical             = get_ue_golomb_long(gb);
+        vui->min_spatial_segmentation_idc            = get_ue_golomb(gb);
+        vui->max_bytes_per_pic_denom                 = get_ue_golomb(gb);
+        vui->max_bits_per_min_cu_denom               = get_ue_golomb(gb);
+        vui->log2_max_mv_length_horizontal           = get_ue_golomb(gb);
+        vui->log2_max_mv_length_vertical             = get_ue_golomb(gb);
     }
 }
-static void set_default_scaling_list_data(ScalingListData *sld) {
+
+static void set_default_scaling_list_data(ScalingList *sl)
+{
     int matrixId;
     for(matrixId = 0; matrixId < 6; matrixId++) {
         // 4x4 default is 16   
-        memset(sld->ScalingList[0][matrixId],16,16);
-        sld->ScalingListDC[0][matrixId] = 16; // default for 16x16
-        sld->ScalingListDC[1][matrixId] = 16; // default for 32x32
+        memset(sl->sl[0][matrixId], 16, 16);
+        sl->sl_dc[0][matrixId] = 16; // default for 16x16
+        sl->sl_dc[1][matrixId] = 16; // default for 32x32
     }
-    memcpy(sld->ScalingList[1][0],DefaultScalingListIntra,64);
-    memcpy(sld->ScalingList[1][1],DefaultScalingListIntra,64);
-    memcpy(sld->ScalingList[1][2],DefaultScalingListIntra,64);
-    memcpy(sld->ScalingList[1][3],DefaultScalingListInter,64);
-    memcpy(sld->ScalingList[1][4],DefaultScalingListInter,64);
-    memcpy(sld->ScalingList[1][5],DefaultScalingListInter,64);
-    memcpy(sld->ScalingList[2][0],DefaultScalingListIntra,64);
-    memcpy(sld->ScalingList[2][1],DefaultScalingListIntra,64);
-    memcpy(sld->ScalingList[2][2],DefaultScalingListIntra,64);
-    memcpy(sld->ScalingList[2][3],DefaultScalingListInter,64);
-    memcpy(sld->ScalingList[2][4],DefaultScalingListInter,64);
-    memcpy(sld->ScalingList[2][5],DefaultScalingListInter,64);
-    memcpy(sld->ScalingList[3][0],DefaultScalingListIntra,64);
-    memcpy(sld->ScalingList[3][1],DefaultScalingListInter,64);
+    memcpy(sl->sl[1][0], default_scaling_list_intra, 64);
+    memcpy(sl->sl[1][1], default_scaling_list_intra, 64);
+    memcpy(sl->sl[1][2], default_scaling_list_intra, 64);
+    memcpy(sl->sl[1][3], default_scaling_list_inter, 64);
+    memcpy(sl->sl[1][4], default_scaling_list_inter, 64);
+    memcpy(sl->sl[1][5], default_scaling_list_inter, 64);
+    memcpy(sl->sl[2][0], default_scaling_list_intra, 64);
+    memcpy(sl->sl[2][1], default_scaling_list_intra, 64);
+    memcpy(sl->sl[2][2], default_scaling_list_intra, 64);
+    memcpy(sl->sl[2][3], default_scaling_list_inter, 64);
+    memcpy(sl->sl[2][4], default_scaling_list_inter, 64);
+    memcpy(sl->sl[2][5], default_scaling_list_inter, 64);
+    memcpy(sl->sl[3][0], default_scaling_list_intra, 64);
+    memcpy(sl->sl[3][1], default_scaling_list_inter, 64);
 }
 
-static int scaling_list_data(HEVCContext *s, ScalingListData *sld) {
+static int scaling_list_data(HEVCContext *s, ScalingList *sl)
+{
     GetBitContext *gb = &s->HEVClc->gb;
     uint8_t scaling_list_pred_mode_flag[4][6];
-    int32_t scaling_list_dc_coef_minus8[2][6];
+    int32_t scaling_list_dc_coef[2][6];
     
     int size_id, matrix_id, i, pos, delta;
 	for (size_id = 0; size_id < 4; size_id++)
 		for (matrix_id = 0; matrix_id < ((size_id == 3) ? 2 : 6); matrix_id++) {
 			scaling_list_pred_mode_flag[size_id][matrix_id] = get_bits1(gb);
 			if (!scaling_list_pred_mode_flag[size_id][matrix_id]) {
-				delta = get_ue_golomb_long(gb);
+                delta = get_ue_golomb(gb);
                 // Only need to handle non-zero delta. Zero means default, which should already be in the arrays.
-                if(delta != 0) {
+                if (delta) {
                     // Copy from previous array.
-                    memcpy(sld->ScalingList[ size_id ][ matrix_id ], sld->ScalingList[ size_id ][ matrix_id - delta], size_id > 0 ? 64 : 16);
+                    if (matrix_id - delta < 0) {
+                        av_log(s->avctx, AV_LOG_ERROR,
+                               "Invalid delta in scaling list data: %d.\n", delta);
+                        return AVERROR_INVALIDDATA;
+                    }
+
+                    memcpy(sl->sl[size_id][matrix_id],
+                           sl->sl[size_id][matrix_id - delta],
+                           size_id > 0 ? 64 : 16);
                     if(size_id > 1)
-                        sld->ScalingListDC[size_id-2][matrix_id] = sld->ScalingListDC[size_id-2][matrix_id-delta];
+                        sl->sl_dc[size_id - 2][matrix_id] = sl->sl_dc[size_id - 2][matrix_id - delta];
                 }
             } else {
                 int next_coef;
@@ -525,19 +566,19 @@ static int scaling_list_data(HEVCContext *s, ScalingListData *sld) {
                 next_coef = 8;
                 coef_num = FFMIN(64, (1  <<  (4 + (size_id  <<  1))));
                 if( size_id > 1 ) {
-                    scaling_list_dc_coef_minus8[size_id - 2][matrix_id] = get_se_golomb(gb);
-                    next_coef = scaling_list_dc_coef_minus8[size_id - 2][matrix_id] + 8;
-                    sld->ScalingListDC[ size_id - 2 ][ matrix_id ] = next_coef;
+                    scaling_list_dc_coef[size_id - 2][matrix_id] = get_se_golomb(gb) + 8;
+                    next_coef = scaling_list_dc_coef[size_id - 2][matrix_id];
+                    sl->sl_dc[size_id - 2][matrix_id] = next_coef;
                 }
                 for( i = 0; i < coef_num; i++) {
-                    if(size_id == 0) {
-                        pos = 4*diag_scan4x4_y[ i ] + diag_scan4x4_x[ i ];
-                    } else {
-                        pos = 8*diag_scan8x8_y[ i ] + diag_scan8x8_x[ i ];
-                    }
+                    if (size_id == 0)
+                        pos = 4 * diag_scan4x4_y[i] + diag_scan4x4_x[i];
+                    else
+                        pos = 8 * diag_scan8x8_y[i] + diag_scan8x8_x[i];
+
                     scaling_list_delta_coef = get_se_golomb(gb);
                     next_coef = (next_coef + scaling_list_delta_coef + 256 ) % 256;
-                    sld->ScalingList[ size_id ][ matrix_id ][ pos ] = next_coef;
+                    sl->sl[size_id][matrix_id][pos] = next_coef;
                 }
             }
 		}
@@ -886,9 +927,9 @@ err:
     return ret;
 }
 
-void ff_hevc_pps_free(PPS **ppps)
+void ff_hevc_pps_free(HEVCPPS **ppps)
 {
-    PPS *pps = *ppps;
+    HEVCPPS *pps = *ppps;
 
     if (!pps)
         return;
@@ -917,7 +958,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     int ret    = 0;
     int pps_id = 0;
 
-    PPS *pps = av_mallocz(sizeof(*pps));
+    HEVCPPS *pps = av_mallocz(sizeof(*pps));
     if (!pps)
         return AVERROR(ENOMEM);
 
@@ -933,13 +974,13 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->tc_offset                             = 0;
 
     // Coded parameters
-    pps_id = get_ue_golomb_long(gb);
+    pps_id = get_ue_golomb(gb);
     if (pps_id >= MAX_PPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", pps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    pps->sps_id = get_ue_golomb_long(gb);
+    pps->sps_id = get_ue_golomb(gb);
     if (pps->sps_id >= MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", pps->sps_id);
         ret = AVERROR_INVALIDDATA;
@@ -959,8 +1000,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     pps->cabac_init_present_flag = get_bits1(gb);
 
-    pps->num_ref_idx_l0_default_active = get_ue_golomb_long(gb) + 1;
-    pps->num_ref_idx_l1_default_active = get_ue_golomb_long(gb) + 1;
+    pps->num_ref_idx_l0_default_active = get_ue_golomb(gb) + 1;
+    pps->num_ref_idx_l1_default_active = get_ue_golomb(gb) + 1;
 
     pps->pic_init_qp_minus26 = get_se_golomb(gb);
 
@@ -970,7 +1011,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->cu_qp_delta_enabled_flag = get_bits1(gb);
     pps->diff_cu_qp_delta_depth   = 0;
     if (pps->cu_qp_delta_enabled_flag)
-        pps->diff_cu_qp_delta_depth = get_ue_golomb_long(gb);
+        pps->diff_cu_qp_delta_depth = get_ue_golomb(gb);
 
     pps->cb_qp_offset = get_se_golomb(gb);
     if (pps->cb_qp_offset < -12 || pps->cb_qp_offset > 12) {
@@ -996,8 +1037,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->entropy_coding_sync_enabled_flag = get_bits1(gb);
 
     if (pps->tiles_enabled_flag) {
-        pps->num_tile_columns     = get_ue_golomb_long(gb) + 1;
-        pps->num_tile_rows        = get_ue_golomb_long(gb) + 1;
+        pps->num_tile_columns     = get_ue_golomb(gb) + 1;
+        pps->num_tile_rows        = get_ue_golomb(gb) + 1;
         if (pps->num_tile_columns == 0 ||
             pps->num_tile_columns >= sps->full_width) {
             av_log(s->avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
@@ -1024,7 +1065,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         if (!pps->uniform_spacing_flag) {
             int sum = 0;
             for (i = 0; i < pps->num_tile_columns - 1; i++) {
-                pps->column_width[i] = get_ue_golomb_long(gb) + 1;
+                pps->column_width[i] = get_ue_golomb(gb) + 1;
                 sum += pps->column_width[i];
             }
             if (sum >= sps->ctb_width) {
@@ -1036,7 +1077,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
             sum = 0;
             for (i = 0; i < pps->num_tile_rows - 1; i++) {
-                pps->row_height[i] = get_ue_golomb_long(gb) + 1;
+                pps->row_height[i] = get_ue_golomb(gb) + 1;
                 sum += pps->row_height[i];
             }
             if (sum >= sps->ctb_height) {
@@ -1075,11 +1116,13 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     pps->pps_scaling_list_data_present_flag = get_bits1(gb);
     if (pps->pps_scaling_list_data_present_flag) {
-        set_default_scaling_list_data(&pps->scalingList);
-        scaling_list_data(s,&pps->scalingList);
+        set_default_scaling_list_data(&pps->scaling_list);
+        ret = scaling_list_data(s, &pps->scaling_list);
+        if (ret < 0)
+            goto err;
     }
     pps->lists_modification_present_flag = get_bits1(gb);
-    pps->log2_parallel_merge_level       = get_ue_golomb_long(gb) + 2;
+    pps->log2_parallel_merge_level       = get_ue_golomb(gb) + 2;
     if (pps->log2_parallel_merge_level > sps->log2_ctb_size) {
         av_log(s->avctx, AV_LOG_ERROR, "log2_parallel_merge_level_minus2 out of range: %d\n",
                pps->log2_parallel_merge_level - 2);

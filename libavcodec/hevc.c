@@ -953,13 +953,13 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
                 matrixId = 3*matrixId + c_idx;
 
             if(s->pps->pps_scaling_list_data_present_flag) {
-                scaleMatrix = s->pps->scalingList.ScalingList[log2_trafo_size-2][matrixId];
+                scaleMatrix = s->pps->scaling_list.sl[log2_trafo_size-2][matrixId];
                 if(log2_trafo_size >= 4)
-                    dcScale = s->pps->scalingList.ScalingListDC[log2_trafo_size-4][matrixId];
+                    dcScale = s->pps->scaling_list.sl_dc[log2_trafo_size-4][matrixId];
             } else {
-                scaleMatrix = s->sps->scaling_list.ScalingList[log2_trafo_size-2][matrixId];
+                scaleMatrix = s->sps->scaling_list.sl[log2_trafo_size-2][matrixId];
                 if(log2_trafo_size >= 4)
-                    dcScale = s->sps->scaling_list.ScalingListDC[log2_trafo_size-4][matrixId];
+                    dcScale = s->sps->scaling_list.sl_dc[log2_trafo_size-4][matrixId];
             }
         }
     }

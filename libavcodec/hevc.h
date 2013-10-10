@@ -195,10 +195,7 @@ typedef struct HRD {
 } HRD;
 
 typedef struct VUI {
-    int aspect_ratio_info_present_flag;
-    uint8_t aspect_ratio_idc;
-    int sar_width;
-    int sar_height;
+    AVRational sar;
 
     int overscan_info_present_flag;
     int overscan_appropriate_flag;
@@ -228,7 +225,6 @@ typedef struct VUI {
     int vui_poc_proportional_to_timing_flag;
     int vui_num_ticks_poc_diff_one_minus1;
     int vui_hrd_parameters_present_flag;
-    HRD hrd;
 
     int bitstream_restriction_flag;
     int tiles_fixed_structure_flag;
@@ -279,11 +275,12 @@ typedef struct VPS {
     int threadCnt;
     int freed;
 } VPS;
-typedef struct ScalingListData {
+
+typedef struct ScalingList {
     // This is a little wasteful, since sizeID 0 only needs 8 coeffs, and size ID 3 only has 2 arrays, not 6.
-    uint8_t ScalingList[4][6][64];
-    uint8_t ScalingListDC[2][6];
-} ScalingListData;
+    uint8_t sl[4][6][64];
+    uint8_t sl_dc[2][6];
+} ScalingList;
 
 typedef struct HEVCSPS {
     int vps_id;
@@ -310,7 +307,7 @@ typedef struct HEVCSPS {
     PTL ptl;
 
     uint8_t scaling_list_enable_flag;
-    ScalingListData scaling_list;
+    ScalingList scaling_list;
 
     int nb_st_rps;
     ShortTermRPS st_rps[MAX_SHORT_TERM_RPS_COUNT];
@@ -369,7 +366,7 @@ typedef struct HEVCSPS {
     int freed;
 } HEVCSPS;
 
-typedef struct PPS {
+typedef struct HEVCPPS {
     int sps_id; ///< seq_parameter_set_id
 
     uint8_t sign_data_hiding_flag;
@@ -412,9 +409,8 @@ typedef struct PPS {
     int tc_offset; ///< tc_offset_div2 * 2
 
     int pps_scaling_list_data_present_flag;
+    ScalingList scaling_list;
     
-    ScalingListData scalingList;
-
     uint8_t lists_modification_present_flag;
     int log2_parallel_merge_level; ///< log2_parallel_merge_level_minus2 + 2
     int num_extra_slice_header_bits;
@@ -438,7 +434,7 @@ typedef struct PPS {
     int *min_tb_addr_zs; ///< MinTbAddrZS
     int threadCnt;
     int freed;
-} PPS;
+} HEVCPPS;
 
 enum SliceType {
     B_SLICE = 0,
@@ -806,10 +802,10 @@ typedef struct HEVCContext {
     AVFrame *tmp_frame;
     VPS *vps;
     HEVCSPS *sps;
-    PPS *pps;
+    HEVCPPS *pps;
     VPS *vps_list[MAX_VPS_COUNT];
     HEVCSPS *sps_list[MAX_SPS_COUNT];
-    PPS *pps_list[MAX_PPS_COUNT];
+    HEVCPPS *pps_list[MAX_PPS_COUNT];
 
     int prev_sps_id; 
     SliceHeader sh;
@@ -990,7 +986,7 @@ int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y,  int set_progress);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 
-void ff_hevc_pps_free(PPS **ppps);
+void ff_hevc_pps_free(HEVCPPS **ppps);
 
 int ff_hevc_apply_window(HEVCContext *s, HEVCWindow *window);
 void ff_hevc_thread_cnt_ref(HEVCContext *s, int val);
