@@ -33,6 +33,8 @@
 #include "hevcdsp.h"
 
 #define MAX_DPB_SIZE 16 // A.4.1
+#define MAX_REFS 16
+
 #define MAX_NB_THREADS 16
 
 /**
@@ -74,12 +76,8 @@ enum NALUnitType {
 };
 
 typedef struct ShortTermRPS {
-    uint8_t inter_ref_pic_set_prediction_flag;
-    int num_ref_idc;
     int num_negative_pics;
-    int num_positive_pics;
     int num_delta_pocs;
-    uint8_t ref_idc[32];
     int32_t delta_poc[32];
     uint8_t used[32];
 } ShortTermRPS;
@@ -125,6 +123,7 @@ typedef struct RefPicListTab {
 
 #define MAX_TB_SIZE 32
 #define MAX_PB_SIZE 64
+#define MAX_LOG2_CTB_SIZE 6
 #define MAX_CTB_SIZE 64
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
@@ -286,102 +285,89 @@ typedef struct ScalingListData {
     uint8_t ScalingListDC[2][6];
 } ScalingListData;
 
-typedef struct SPS {
+typedef struct HEVCSPS {
     int vps_id;
-
-    int sps_max_sub_layers; ///< sps_max_sub_layers_minus1 + 1
-
-    PTL ptl;
-
     int chroma_format_idc;
     uint8_t separate_colour_plane_flag;
 
-    int full_width;
-    int full_height;
-
-    uint8_t pic_conformance_flag;
     HEVCWindow pic_conf_win;
 
-    int bit_depth; ///< bit_depth_luma_minus8 + 8
+    int bit_depth;
+    int pixel_shift;
+    enum AVPixelFormat pix_fmt;
 
+    unsigned int log2_max_poc_lsb;
     int pcm_enabled_flag;
-    struct {
-        uint8_t bit_depth; ///< pcm_bit_depth_luma_minus1 + 1
-        uint8_t bit_depth_chroma;
-        int log2_min_pcm_cb_size; ///< log2_min_pcm_coding_block_size_minus3 + 3
-        int log2_max_pcm_cb_size;
-        uint8_t loop_filter_disable_flag;
-    } pcm;
 
-    int log2_max_poc_lsb; ///< log2_max_pic_order_cnt_lsb_minus4 + 4
-    uint8_t sps_sub_layer_ordering_info_present_flag;
+    int max_sub_layers;
     struct {
         int max_dec_pic_buffering;
         int num_reorder_pics;
         int max_latency_increase;
     } temporal_layer[MAX_SUB_LAYERS];
 
-    uint8_t restricted_ref_pic_lists_flag;
+    VUI vui;
+    PTL ptl;
 
-    int log2_min_coding_block_size; ///< log2_min_coding_block_size_minus3 + 3
-    int log2_diff_max_min_coding_block_size;
-    int log2_min_transform_block_size; ///< log2_min_transform_block_size_minus2 + 2
-    int log2_max_trafo_size;
+    uint8_t scaling_list_enable_flag;
+    ScalingListData scaling_list;
 
+    int nb_st_rps;
+    ShortTermRPS st_rps[MAX_SHORT_TERM_RPS_COUNT];
+
+    uint8_t amp_enabled_flag;
+    uint8_t sao_enabled;
+
+    uint8_t long_term_ref_pics_present_flag;
+    uint16_t lt_ref_pic_poc_lsb_sps[32];
+    uint8_t used_by_curr_pic_lt_sps_flag[32];
+    uint8_t num_long_term_ref_pics_sps;
+
+    struct {
+        uint8_t bit_depth;
+        unsigned int log2_min_pcm_cb_size;
+        unsigned int log2_max_pcm_cb_size;
+        uint8_t loop_filter_disable_flag;
+    } pcm;
+    uint8_t sps_temporal_mvp_enabled_flag;
+    uint8_t sps_strong_intra_smoothing_enable_flag;
+
+    unsigned int log2_min_coding_block_size;
+    unsigned int log2_diff_max_min_coding_block_size;
+    unsigned int log2_min_transform_block_size;
+    unsigned int log2_max_trafo_size;
+    unsigned int log2_ctb_size;
+    unsigned int log2_min_pu_size;
 
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
 
-    uint8_t scaling_list_enable_flag;
-    uint8_t scaling_list_data_present_flag;
-    ScalingListData scalingList;
+    ///< display surface size
+    int output_width, output_height;
+    HEVCWindow output_window;
 
-    uint8_t deblocking_filter_in_aps_enabled_flag;
-
-    uint8_t amp_enabled_flag;
-    uint8_t sample_adaptive_offset_enabled_flag;
-
-    uint8_t temporal_id_nesting_flag;
-
-    int num_short_term_ref_pic_sets;
-    ShortTermRPS short_term_rps_list[MAX_SHORT_TERM_RPS_COUNT+1];
-
-    uint8_t long_term_ref_pics_present_flag;
-    uint8_t num_long_term_ref_pics_sps;
-    uint16_t lt_ref_pic_poc_lsb_sps[32];
-    uint8_t used_by_curr_pic_lt_sps_flag[32];
-    uint8_t sps_temporal_mvp_enabled_flag;
-    uint8_t sps_strong_intra_smoothing_enable_flag;
-
-    uint8_t vui_parameters_present_flag;
-    VUI vui;
-
-    uint8_t sps_extension_flag;
-
-    // Inferred parameters
-    int log2_ctb_size; ///< Log2CtbSize
-    int pic_width_in_ctbs; ///< PicWidthInCtbs
-    int pic_height_in_ctbs; ///< PicHeightInCtbs
-    int pic_width_in_min_cbs;
-    int pic_height_in_min_cbs;
-    int pic_width_in_min_tbs;
-    int pic_height_in_min_tbs;
-    int pic_width_in_min_pus;
-    int pic_height_in_min_pus;
+    ///< coded frame dimension in various units
+    int full_width;
+    int full_height;
+    int ctb_width;
+    int ctb_height;
+    int ctb_size;
+    int min_cb_width;
+    int min_cb_height;
+    int min_tb_width;
+    int min_tb_height;
+    int min_pu_width;
+    int min_pu_height;
 
     int log2_diff_ctb_min_tb_size;
-
-    int log2_min_pu_size;
 
     int hshift[3];
     int vshift[3];
 
-    int pixel_shift;
-
     int qp_bd_offset; ///< QpBdOffsetY
     int threadCnt;
     int freed;
-} SPS;
+} HEVCSPS;
 
 typedef struct PPS {
     int sps_id; ///< seq_parameter_set_id
@@ -819,10 +805,10 @@ typedef struct HEVCContext {
     AVFrame *sao_frame;
     AVFrame *tmp_frame;
     VPS *vps;
-    SPS *sps;
+    HEVCSPS *sps;
     PPS *pps;
     VPS *vps_list[MAX_VPS_COUNT];
-    SPS *sps_list[MAX_SPS_COUNT];
+    HEVCSPS *sps_list[MAX_SPS_COUNT];
     PPS *pps_list[MAX_PPS_COUNT];
 
     int prev_sps_id; 
@@ -906,7 +892,7 @@ enum ScanType {
     SCAN_VERT
 };
 
-int ff_hevc_decode_short_term_rps(HEVCLocalContext *s, int idx, SPS *sps);
+int ff_hevc_decode_short_term_rps(HEVCContext *s, int idx, HEVCSPS *sps);
 int ff_hevc_decode_nal_vps(HEVCContext *s);
 int ff_hevc_decode_nal_sps(HEVCContext *s);
 int ff_hevc_decode_nal_pps(HEVCContext *s);

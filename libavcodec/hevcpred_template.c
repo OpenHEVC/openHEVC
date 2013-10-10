@@ -30,7 +30,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 {
 #define IS_INTRA(x, y) (s->ref->tab_mvf[((x0+((x)<<hshift)) >> s->sps->log2_min_pu_size) + (((y0+((y)<<vshift))>> s->sps->log2_min_pu_size) * pic_width_in_min_pu)].is_intra || !s->pps->constrained_intra_pred_flag)
 #define MIN_TB_ADDR_ZS(x, y)                            \
-    s->pps->min_tb_addr_zs[(y) * s->sps->pic_width_in_min_tbs + (x)]
+    s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
 #define EXTEND_LEFT(ptr, start, length)                 \
         for (i = (start); i > (start)-(length); i--)    \
             ptr[i-1] = ptr[i]

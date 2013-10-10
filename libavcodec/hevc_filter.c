@@ -78,8 +78,8 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
     int MinCuQpDeltaSizeMask = (1 << (s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
     int xQgBase              = xBase - ( xBase & MinCuQpDeltaSizeMask );
     int yQgBase              = yBase - ( yBase & MinCuQpDeltaSizeMask );
-    int pic_width            = s->sps->pic_width_in_min_cbs;
-    int pic_height           = s->sps->pic_height_in_min_cbs;
+    int pic_width            = s->sps->min_cb_width;
+    int pic_height           = s->sps->min_cb_height;
     int x_cb                 = xQgBase >> s->sps->log2_min_coding_block_size;
     int y_cb                 = yQgBase >> s->sps->log2_min_coding_block_size;
     int availableA           = (xBase & ctb_size_mask) && (xQgBase & ctb_size_mask);
@@ -163,7 +163,7 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int l
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
     int log2_min_cb_size  = s->sps->log2_min_coding_block_size;
-    int pic_width         = s->sps->pic_width_in_min_cbs;
+    int pic_width         = s->sps->min_cb_width;
     int x                 = xC >> log2_min_cb_size;
     int y                 = yC >> log2_min_cb_size;
     return s->qp_y_tab[x + y * pic_width];
@@ -180,7 +180,7 @@ static void copy_CTB(uint8_t *dst, uint8_t *src, int width, int height, int stri
     }
 }
 
-#define CTB(tab, x, y) ((tab)[(y) * s->sps->pic_width_in_ctbs + (x)])
+#define CTB(tab, x, y) ((tab)[(y) * s->sps->ctb_width + (x)])
 
 static void sao_filter_CTB(HEVCContext *s, int x, int y)
 {
@@ -194,7 +194,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
     int x_shift = 0, y_shift = 0;
     int x_ctb = x>>s->sps->log2_ctb_size;
     int y_ctb = y>>s->sps->log2_ctb_size;
-    int ctb_addr_rs = y_ctb * s->sps->pic_width_in_ctbs + x_ctb;
+    int ctb_addr_rs = y_ctb * s->sps->ctb_width + x_ctb;
     int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     // flags indicating unfilterable edges
     uint8_t vert_edge[] = {0,0,0,0};
@@ -208,8 +208,8 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
     sao[0]     = &CTB(s->sao, x_ctb, y_ctb);
     edges[0]   = x_ctb == 0;
     edges[1]   = y_ctb == 0;
-    edges[2]   = x_ctb == (s->sps->pic_width_in_ctbs - 1);
-    edges[3]   = y_ctb == (s->sps->pic_height_in_ctbs - 1);
+    edges[2]   = x_ctb == (s->sps->ctb_width - 1);
+    edges[3]   = y_ctb == (s->sps->ctb_height - 1);
     lfase[0]   = CTB(s->filter_slice_edges, x_ctb, y_ctb);
     classes[0] = 0;
 
@@ -226,7 +226,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
     }
 
     if (!edges[1]) {
-        up_tile_edge = no_tile_filter && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->pic_width_in_ctbs]];
+        up_tile_edge = no_tile_filter && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]];
         sao[class] = &CTB(s->sao, x_ctb, y_ctb - 1);
         horiz_edge[0] = (!lfase[0] && CTB(s->tab_slice_address, x_ctb, y_ctb) != CTB(s->tab_slice_address, x_ctb, y_ctb - 1)) || up_tile_edge;
         horiz_edge[1] = horiz_edge[0];
@@ -300,8 +300,8 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 static int get_pcm(HEVCContext *s, int x, int y)
 {
     int log2_min_pu_size     = s->sps->log2_min_pu_size;
-    int pic_width_in_min_pu  = s->sps->pic_width_in_min_pus;
-    int pic_height_in_min_pu = s->sps->pic_height_in_min_pus;
+    int pic_width_in_min_pu  = s->sps->min_pu_width;
+    int pic_height_in_min_pu = s->sps->min_pu_height;
     int x_pu = x >> log2_min_pu_size;
     int y_pu = y >> log2_min_pu_size;
 
@@ -326,7 +326,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int log2_ctb_size =  s->sps->log2_ctb_size;
     int x_end, y_end;
     int ctb_size    = 1<<log2_ctb_size;
-    int ctb         = (x0 >> log2_ctb_size) + (y0 >> log2_ctb_size) * s->sps->pic_width_in_ctbs;
+    int ctb         = (x0 >> log2_ctb_size) + (y0 >> log2_ctb_size) * s->sps->ctb_width;
     int cur_tc_offset   = s->deblock[ctb].tc_offset;
     int cur_beta_offset = s->deblock[ctb].beta_offset;
     int left_tc_offset, left_beta_offset;
@@ -551,8 +551,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
     MvField *tab_mvf = s->ref->tab_mvf;
     int log2_min_pu_size = s->sps->log2_min_pu_size;
     int log2_min_tu_size = s->sps->log2_min_transform_block_size;
-    int pic_width_in_min_pu = s->sps->pic_width_in_min_pus;
-    int pic_width_in_min_tu = s->sps->pic_width_in_min_tbs;
+    int pic_width_in_min_pu = s->sps->min_pu_width;
+    int pic_width_in_min_tu = s->sps->min_tb_width;
     int bs;
     int is_intra = tab_mvf[(y0 >> log2_min_pu_size) * pic_width_in_min_pu + (x0 >> log2_min_pu_size)].is_intra;
     int i, j;
@@ -667,13 +667,13 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int set_progress)
 {
     deblocking_filter_CTB(s, x, y);
-    if (s->sps->sample_adaptive_offset_enabled_flag)
+    if (s->sps->sao_enabled)
         sao_filter_CTB(s, x, y);
     if (s->threads_type == FF_THREAD_FRAME) {
         if (s->pps->tiles_enabled_flag == 0 || set_progress == 1) {
         	int x_off       = x >> s->sps->log2_ctb_size;
         	int y_off       = y >> s->sps->log2_ctb_size;
-        	int ctb_addr_rs = y_off * s->sps->pic_width_in_ctbs + x_off;
+        	int ctb_addr_rs = y_off * s->sps->ctb_width + x_off;
 //      	  av_log(s->avctx, AV_LOG_INFO, "poc_cur %d : end ctb %d : %dx%d\n", s->poc, ctb_addr_rs, y_off , x_off);
         	ff_thread_report_progress(&s->ref->threadFrame, ctb_addr_rs, 0);
     	}

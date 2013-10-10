@@ -332,9 +332,9 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
 {
     if (s->pps->entropy_coding_sync_enabled_flag &&
-        ((ctb_addr_ts % s->sps->pic_width_in_ctbs) == 2 ||
-         (s->sps->pic_width_in_ctbs == 2 &&
-          (ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0))) {
+        ((ctb_addr_ts % s->sps->ctb_width) == 2 ||
+         (s->sps->ctb_width == 2 &&
+          (ctb_addr_ts % s->sps->ctb_width) == 0))) {
         memcpy(s->cabac_state, s->HEVClc->cabac_state, HEVC_CONTEXTS);
     }
 }
@@ -390,8 +390,8 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             cabac_init_state(s);
 
         if (!s->sh.first_slice_in_pic_flag && s->pps->entropy_coding_sync_enabled_flag) {
-            if ((ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0) {
-                if (s->sps->pic_width_in_ctbs == 1)
+            if ((ctb_addr_ts % s->sps->ctb_width) == 0) {
+                if (s->sps->ctb_width == 1)
                     cabac_init_state(s);
                 else if (s->sh.dependent_slice_segment_flag == 1)
                     load_states(s);
@@ -407,14 +407,14 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             cabac_init_state(s);
         }
         if (s->pps->entropy_coding_sync_enabled_flag) {
-            if ((ctb_addr_ts % s->sps->pic_width_in_ctbs) == 0) {
+            if ((ctb_addr_ts % s->sps->ctb_width) == 0) {
                 get_cabac_terminate(&s->HEVClc->cc);
                 if (s->threads_number == 1)
                     cabac_reinit(s->HEVClc);
                 else
                     cabac_init_decoder(s);
 
-                if (s->sps->pic_width_in_ctbs == 1)
+                if (s->sps->ctb_width == 1)
                     cabac_init_state(s);
                 else
                     load_states(s);
@@ -484,7 +484,7 @@ int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s)
 
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb)
 {
-    int pic_width_in_ctb = s->sps->pic_width_in_min_cbs;
+    int pic_width_in_ctb = s->sps->min_cb_width;
     int inc = 0;
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
@@ -541,9 +541,9 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, 
     int y_cb = y0 >> s->sps->log2_min_coding_block_size;
 
     if (s->HEVClc->ctb_left_flag || x0b)
-        depth_left = s->tab_ct_depth[(y_cb)*s->sps->pic_width_in_min_cbs + x_cb-1];
+        depth_left = s->tab_ct_depth[(y_cb)*s->sps->min_cb_width + x_cb-1];
     if (s->HEVClc->ctb_up_flag || y0b)
-        depth_top = s->tab_ct_depth[(y_cb-1)*s->sps->pic_width_in_min_cbs + x_cb];
+        depth_top = s->tab_ct_depth[(y_cb-1)*s->sps->min_cb_width + x_cb];
 
     inc += (depth_left > ct_depth);
     inc += (depth_top > ct_depth);
