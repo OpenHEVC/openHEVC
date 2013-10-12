@@ -14,7 +14,7 @@ openHEVC is an open source compliant HEVC video decoder created as a fork of Lib
 * openHEVC is located at https://github.com/OpenHEVC/openHEVC.
 * openHEVC is under LGPL license
 
-- Where is the source code of openHEVC?
+- Where is the source code of GPAC?
 --------
 - gpac is located at http://gpac.wp.mines-telecom.fr.
 - gpac is under LGPL license
@@ -22,14 +22,14 @@ openHEVC is an open source compliant HEVC video decoder created as a fork of Lib
 - How to compile openHEVC on linux from source code
 ----------
 * execute these commands
-```
+```shell
 git clone git://github.com/OpenHEVC/openHEVC.git
 git checkout hm10.0_au
 ```
 * install yasm
 * go into OpenHEVC source folder
 * execute these commands
-```
+```shell
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=RELEASE ..
@@ -47,11 +47,11 @@ sudo make install
 - How to compile gpac with openHEVC on linux
 -----------
 * Prerequisites (see http://gpac.wp.mines-telecom.fr/2011/04/20/compiling-gpac-on-ubuntu/)
-```
+```shell
 svn checkout https://gpac.svn.sourceforge.net/svnroot/gpac/trunk
 ```
 * go into gpac source folder
-```
+```shell
 ./configure 
 make
 sudo make install
@@ -69,7 +69,7 @@ sudo make install
 * use i_main, lp_main, ld_main or ra_main bitstreams from http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/
 * go into gpac source folder
 * execute these commands:
-``` shell
+```shell
 cd bin/gcc
 ./mp42ts -prog=hevc.mp4 -dst-file=test.ts
 MP4Client test.ts # to play HEVC transport streams
