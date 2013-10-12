@@ -22,6 +22,7 @@ Where is the source code of GPAC?
 How to compile openHEVC on linux from source code
 ----------
 * execute these commands
+
 ```sh
 git clone git://github.com/OpenHEVC/openHEVC.git
 git checkout hm10.0_au
@@ -29,6 +30,7 @@ git checkout hm10.0_au
 * install yasm
 * go into OpenHEVC source folder
 * execute these commands
+
 ```sh
 mkdir build
 cd build
@@ -47,10 +49,10 @@ How to test openHEVC on linux from source code
 How to compile gpac with openHEVC on linux
 -----------
 * Prerequisites (see http://gpac.wp.mines-telecom.fr/2011/04/20/compiling-gpac-on-ubuntu/)
-```sh
-svn checkout https://gpac.svn.sourceforge.net/svnroot/gpac/trunk
-```
+* `svn checkout https://gpac.svn.sourceforge.net/svnroot/gpac/trunk`
 * go into gpac source folder
+* execute these commands
+
 ```sh
 ./configure 
 make
@@ -69,6 +71,7 @@ How to embed HEVC into TS
 * use i_main, lp_main, ld_main or ra_main bitstreams from http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/
 * go into gpac source folder
 * execute these commands:
+
 ```sh
 cd bin/gcc
 ./mp42ts -prog=hevc.mp4 -dst-file=test.ts
