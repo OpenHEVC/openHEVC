@@ -270,24 +270,27 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
 
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
-    int i, ret;
-	int cnt_not_empty = 0;
+    int ret;
+    int i;
+    int cnt_not_empty = 0;
     LOCK_DBP;
-    if (s->disable_au)
+    if (s->disable_au) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *ref = s->DPB[i];
-            if (ref->flags == HEVC_FRAME_FLAG_OUTPUT && !ref->is_decoded) {
+            if (ref->flags == HEVC_FRAME_FLAG_OUTPUT && !ref->is_decoded)
                 ref->is_decoded = 1;
-            }
         }
-	for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
-    	if (s->DPB[i]->frame->buf[0]) {
-			cnt_not_empty++;
-        }
-	if (cnt_not_empty >= FF_ARRAY_ELEMS(s->DPB)-2 ) {
-    	av_log(s->avctx, AV_LOG_ERROR, "ff_hevc_set_new_ref DBP is_full\n");
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        if (s->DPB[i]->frame->buf[0])
+            cnt_not_empty++;
+    }
+    if (cnt_not_empty >= FF_ARRAY_ELEMS(s->DPB)-2 ) {
+        av_log(s->avctx, AV_LOG_ERROR, "ff_hevc_set_new_ref DBP is_full\n");
         unref_old_refs(s);
     }
+
+    /* check that this POC doesn't already exist */
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = s->DPB[i];
         if (!ref->frame->buf[0]) {
