@@ -233,20 +233,10 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         if (frame->frame->buf[0])
             continue;
 
+
         ret = ff_thread_get_buffer(s->avctx, &frame->tf, AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
             return NULL;
-
-        frame->tab_mvf_buf = av_buffer_pool_get(s->tab_mvf_pool);
-        if (!frame->tab_mvf_buf)
-            goto fail;
-        frame->tab_mvf = (MvField*)frame->tab_mvf_buf->data;
-
-        frame->rpl_tab_buf = av_buffer_pool_get(s->rpl_tab_pool);
-        if (!frame->rpl_tab_buf)
-            goto fail;
-        frame->rpl_tab   = (RefPicListTab**)frame->rpl_tab_buf->data;
-        frame->ctb_count = s->sps->ctb_width * s->sps->ctb_height;
         s->curr_dpb_idx = i;
 
         if (!s->avctx->internal->allocate_progress) {
@@ -270,6 +260,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
 
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
+    HEVCFrame *ref;
     int ret;
     int i;
     int cnt_not_empty = 0;
@@ -292,42 +283,37 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
     /* check that this POC doesn't already exist */
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *ref = s->DPB[i];
-        if (!ref->frame->buf[0]) {
-            *frame          = ref->frame;
-            s->ref          = ref;
-            s->curr_dpb_idx = i;
-            ref->poc        = poc;
-            ref->frame->pts = s->pts;
+        HEVCFrame *frame = s->DPB[i];
 
-            ref->flags      = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
-            ref->sequence   = s->seq_decode;
-            ref->threadCnt  = 0;
-            ref->is_decoded = 0;
-
-	        update_refs(s);
-            ff_hevc_set_ref_pic_list(s, ref);
-
-            ret = ff_thread_get_buffer(s->avctx, &ref->tf, AV_GET_BUFFER_FLAG_REF);
-            if (!s->avctx->internal->allocate_progress) {
-                int *progress;
-                ref->tf.progress = av_buffer_alloc(2 * sizeof(int));
-                if (!ref->tf.progress) {
-                    return -1;
-                }
-                progress = (int*)ref->tf.progress->data;
-                progress[0] = progress[1] = -1;
-            }
-            thread_cnt_ref(s, 1);
-            ff_thread_finish_setup(s->avctx);
+        if (frame->frame->buf[0] && frame->sequence == s->seq_decode &&
+                frame->poc == poc) {
+            av_log(s->avctx, AV_LOG_ERROR, "Duplicate POC in a sequence: %d.\n", poc);
             UNLOCK_DBP;
-            return ret;
+            return AVERROR_INVALIDDATA;
         }
     }
-    av_log(s->avctx, AV_LOG_ERROR,
-            "DPB is full, could not add ref with POC %d\n", poc);
+
+    update_refs(s);
+    ref = alloc_frame(s);
+    if (!ref) {
+        UNLOCK_DBP;
+        return AVERROR(ENOMEM);
+    }
+    *frame          = ref->frame;
+    s->ref          = ref;
+    ref->poc        = poc;
+    ref->frame->pts = s->pts;
+
+    ref->flags      = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
+    ref->sequence   = s->seq_decode;
+    ref->threadCnt  = 0;
+    ref->is_decoded = 0;
+
+    ff_hevc_set_ref_pic_list(s, ref);
+    thread_cnt_ref(s, 1);
+    ff_thread_finish_setup(s->avctx);
     UNLOCK_DBP;
-    return -1;
+    return 0;
 }
 
 
