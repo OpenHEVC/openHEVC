@@ -71,7 +71,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(pixel);
     pixel *src = (pixel*)s->frame->data[c_idx] + x + y * stride;
 
-    int pic_width_in_min_pu = s->sps->full_width >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_pu = s->sps->width >> s->sps->log2_min_pu_size;
 
     enum IntraPredMode mode = c_idx ? lc->pu.intra_pred_mode_c :
                               lc->tu.cur_intra_pred_mode;
@@ -89,9 +89,9 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     int cand_up          = lc->na.cand_up;
     int cand_up_right    = lc->na.cand_up_right && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs, y_tb - 1);
 
-    int bottom_left_size = (FFMIN(y0 + 2*size_in_luma, s->sps->full_height) -
+    int bottom_left_size = (FFMIN(y0 + 2*size_in_luma, s->sps->height) -
                             (y0 + size_in_luma)) >> vshift;
-    int top_right_size = (FFMIN(x0 + 2*size_in_luma, s->sps->full_width) -
+    int top_right_size = (FFMIN(x0 + 2*size_in_luma, s->sps->width) -
                           (x0 + size_in_luma)) >> hshift;
 
     if (s->pps->constrained_intra_pred_flag == 1) {
@@ -170,8 +170,8 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 
     if (s->pps->constrained_intra_pred_flag == 1) {
         if (cand_bottom_left || cand_left || cand_up_left || cand_up || cand_up_right) {
-            int size_max_x = x0 + ((2*size)<<hshift) < s->sps->full_width ? 2*size : (s->sps->full_width - x0)>>hshift;
-            int size_max_y = y0 + ((2*size)<<vshift) < s->sps->full_height ? 2*size : (s->sps->full_height - y0)>>vshift;
+            int size_max_x = x0 + ((2*size)<<hshift) < s->sps->width ? 2*size : (s->sps->width - x0)>>hshift;
+            int size_max_y = y0 + ((2*size)<<vshift) < s->sps->height ? 2*size : (s->sps->height - y0)>>vshift;
             int j = size + (cand_bottom_left? bottom_left_size: 0) -1;
             if (cand_bottom_left || cand_left || cand_up_left) {
                 while(j>-1 && !IS_INTRA(-1, j)) j--;

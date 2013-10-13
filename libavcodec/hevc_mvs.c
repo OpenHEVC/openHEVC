@@ -70,14 +70,25 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
     int N;
 
     if ((xN < 0) || (yN < 0) ||
-        (xN >= s->sps->full_width) ||
-        (yN >= s->sps->full_height))
+        (xN >= s->sps->width) ||
+        (yN >= s->sps->height))
         return 0;
 
     N = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_transform_block_size,
                        yN >> s->sps->log2_min_transform_block_size);
 
     return N <= Curr;
+}
+
+
+static int same_prediction_block(HEVCLocalContext *lc, int log2_cb_size,
+                                 int x0, int y0, int nPbW, int nPbH,
+                                 int xA1, int yA1, int partIdx)
+{
+    return !(nPbW << 1 == 1 << log2_cb_size &&
+             nPbH << 1 == 1 << log2_cb_size && partIdx == 1 &&
+             lc->cu.x + nPbW > xA1 &&
+             lc->cu.y + nPbH <= yA1);
 }
 
 /*
@@ -88,15 +99,12 @@ static int check_prediction_block_available(HEVCContext *s, int log2_cb_size,
                                             int xA1, int yA1, int partIdx)
 {
     HEVCLocalContext *lc = s->HEVClc;
-    if (lc->cu.x < xA1 &&
-        lc->cu.y < yA1 &&
+
+    if (lc->cu.x < xA1 && lc->cu.y < yA1 &&
         (lc->cu.x + (1 << log2_cb_size)) > xA1 &&
         (lc->cu.y + (1 << log2_cb_size)) > yA1)
-        return !(partIdx == 1 &&
-                 nPbW << 1 == 1 << log2_cb_size &&
-                 nPbH << 1 == 1 << log2_cb_size &&
-                 (lc->cu.x + nPbW) > xA1 &&
-                 (lc->cu.y + nPbH) <= yA1);
+        return same_prediction_block(lc, log2_cb_size, x0, y0,
+                                     nPbW, nPbH, xA1, yA1, partIdx);
     else
         return z_scan_block_avail(s, x0, y0, xA1, yA1);
 }
@@ -189,7 +197,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
         mvLXCol->y = 0;
         return 0;
     }
-    
+
     if ((temp_col.pred_flag & 1) == 0)
         return CHECK_MVSET(1);
     else if (temp_col.pred_flag == 1)
@@ -197,11 +205,11 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
     else if (temp_col.pred_flag == 3) {
         int check_diffpicount = 0;
         int i = 0;
-        for (i = 0; i < refPicList[0].numPic; i++) {
+        for (i = 0; i < refPicList[0].nb_refs; i++) {
             if (refPicList[0].list[i] > s->poc)
                 check_diffpicount++;
         }
-        for (i = 0; i < refPicList[1].numPic; i++) {
+        for (i = 0; i < refPicList[1].nb_refs; i++) {
             if (refPicList[1].list[i] > s->poc)
                 check_diffpicount++;
         }
@@ -271,8 +279,8 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     yPRb = y0 + nPbH;
     if (tab_mvf &&
         y0 >> s->sps->log2_ctb_size == yPRb >> s->sps->log2_ctb_size &&
-        yPRb < s->sps->full_height &&
-        xPRb < s->sps->full_width) {
+        yPRb < s->sps->height &&
+        xPRb < s->sps->width) {
         xPRb = ((xPRb >> 4) << 4);
         yPRb = ((yPRb >> 4) << 4);
         xPRb_pu = xPRb >> log2_min_pu_size;
@@ -300,7 +308,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 }
 
 #define AVAILABLE(cand, v) \
-    cand && !TAB_MVF_PU(v).is_intra
+    (cand && !TAB_MVF_PU(v).is_intra)
 
 /*
  * 8.5.3.1.2  Derivation process for spatial merging candidates
@@ -576,10 +584,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
      * append Zero motion vector candidates
      */
     if (s->sh.slice_type == P_SLICE)
-        numRefIdx = s->sh.num_ref_idx_l0_active;
+        numRefIdx = s->sh.nb_refs[L0];
     else // B_SLICE
-        numRefIdx = FFMIN(s->sh.num_ref_idx_l0_active,
-                          s->sh.num_ref_idx_l1_active);
+        numRefIdx = FFMIN(s->sh.nb_refs[L0],
+                          s->sh.nb_refs[L1]);
 
     while (numMergeCand < s->sh.max_num_merge_cand) {
         MvField *zerovector;
