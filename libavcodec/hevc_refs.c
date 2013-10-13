@@ -224,6 +224,50 @@ void ff_hevc_flush_dpb(HEVCContext *s)
 
     LOCK_DBP;
 }
+static HEVCFrame *alloc_frame(HEVCContext *s)
+{
+    int i, ret;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        HEVCFrame *frame = s->DPB[i];
+        if (frame->frame->buf[0])
+            continue;
+
+        ret = ff_thread_get_buffer(s->avctx, &frame->tf, AV_GET_BUFFER_FLAG_REF);
+        if (ret < 0)
+            return NULL;
+
+        frame->tab_mvf_buf = av_buffer_pool_get(s->tab_mvf_pool);
+        if (!frame->tab_mvf_buf)
+            goto fail;
+        frame->tab_mvf = (MvField*)frame->tab_mvf_buf->data;
+
+        frame->rpl_tab_buf = av_buffer_pool_get(s->rpl_tab_pool);
+        if (!frame->rpl_tab_buf)
+            goto fail;
+        frame->rpl_tab   = (RefPicListTab**)frame->rpl_tab_buf->data;
+        frame->ctb_count = s->sps->ctb_width * s->sps->ctb_height;
+        s->curr_dpb_idx = i;
+
+        if (!s->avctx->internal->allocate_progress) {
+            int *progress;
+            frame->tf.progress = av_buffer_alloc(2 * sizeof(int));
+            if (!frame->tf.progress)
+                goto fail;
+            progress = (int*)frame->tf.progress->data;
+            progress[0] = progress[1] = -1;
+        }
+
+
+        return frame;
+        fail:
+        unref_frame(s, frame, ~0);
+        return NULL;
+    }
+    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, DPB full.\n");
+    return NULL;
+}
+
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
     int i, ret;
@@ -319,7 +363,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
     }
     if (s->sps)
         av_log(s->avctx, AV_LOG_DEBUG, "%d frames to output, %d st, %d lt, dpb %d", img, st, lt, dpb);
-    while (run) {
+    do {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = s->DPB[i];
             if (frame->is_decoded == 1 && (frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
@@ -334,23 +378,21 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 
         /* wait for more frames before output */
         if (!flush && s->seq_output == s->seq_decode && s->sps &&
-                nb_output <= s->sps->temporal_layer[s->temporal_id].num_reorder_pics + 1) {
-            UNLOCK_DBP;
-            return 0;
-        }
+                nb_output <= s->sps->temporal_layer[s->temporal_id].num_reorder_pics + 1)
+            goto fail;
 
         if (nb_output) {
             HEVCFrame *frame = s->DPB[min_idx];
+            AVFrame *dst = out;
+            AVFrame *src = frame->frame;
+
             HEVCSPS *sps = s->sps_list[s->prev_sps_id];
-            dst = out;
-            src = frame->frame;
 
             frame->flags &= ~HEVC_FRAME_FLAG_OUTPUT;
             ret = av_frame_ref(dst, src);
-            if (ret < 0) {
-                UNLOCK_DBP;
-                return ret;
-            }
+            if (ret < 0)
+                goto fail;
+
             for (j = 0; j < 3; j++) {
                 int off = (sps->pic_conf_win.left_offset >> sps->hshift[j]) << sps->pixel_shift +
                         (sps->pic_conf_win.top_offset >> sps->vshift[j]) * dst->linesize[j];
@@ -366,8 +408,10 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
         if (s->seq_output != s->seq_decode)
             s->seq_output = (s->seq_output + 1) & 0xff;
         else
-            run = 0;
-    }
+            break;
+    } while (1);
+
+fail:
     UNLOCK_DBP;
     return 0;
 }

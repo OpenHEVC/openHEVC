@@ -296,6 +296,7 @@ static int pic_arrays_init(HEVCContext *s)
         goto fail;
     if (ff_hevc_dpb_malloc(s, pic_size_in_min_pu, ctb_count))
         goto fail;
+
     return 0;
 fail:
     pic_arrays_free(s);
