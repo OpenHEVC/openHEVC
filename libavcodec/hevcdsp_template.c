@@ -384,7 +384,7 @@ static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
     int shift = BIT_DEPTH - 5;
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_left_class  = sao->band_position[c_idx];
-    int init_y = 0, init_x =0;
+    int init_y = 0, init_x = 0;
 
     switch (class) {
     case 0:
@@ -419,7 +419,7 @@ static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
         offset_table[(k + sao_left_class) & 31] = sao_offset_val[k + 1];
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
+            dst[x] = av_clip_pixel(src[x] + offset_table[av_clip_pixel(src[x] >> shift)]);
         dst += stride;
         src += stride;
     }
