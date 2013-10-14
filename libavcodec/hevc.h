@@ -40,6 +40,8 @@
 #define MAX_REFS 16
 
 #define MAX_NB_THREADS 16
+#define MAX_ENTRIES 100
+#define SHIFT_CTB_WPP 2
 
 /**
  * 7.4.2.1
@@ -564,6 +566,9 @@ typedef struct SliceHeader {
 
     uint8_t slice_loop_filter_across_slices_enabled_flag;
 
+    int *entry_point_offset;
+    int * offset;
+    int * size;
     int num_entry_point_offsets;
 
     uint8_t luma_log2_weight_denom;
@@ -760,13 +765,14 @@ typedef struct HEVCContext {
     HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
     HEVCLocalContext    *HEVClc;
 
-    int                 disable_au;
+    uint8_t             threads_number;
     int                 decode_checksum_sei;
+    int                 disable_au;
 
     int                 width;
     int                 height;
 
-    uint8_t cabac_state[HEVC_CONTEXTS];
+    uint8_t *cabac_state;
 
     AVFrame *frame;
     AVFrame *sao_frame;
@@ -833,6 +839,13 @@ typedef struct HEVCContext {
      */
     uint16_t seq_decode;
     uint16_t seq_output;
+
+    int enable_parallel_tiles;
+    int wpp_err;
+    int skipped_bytes;
+    int *skipped_bytes_pos;
+    int skipped_bytes_pos_size;
+    uint8_t *data;
 
     HEVCNAL *nals;
     int nb_nals;
