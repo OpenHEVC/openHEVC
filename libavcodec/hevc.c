@@ -36,6 +36,72 @@
 #include "golomb.h"
 #include "hevc.h"
 
+#define POC_DISPLAY_MD5
+#ifdef POC_DISPLAY_MD5
+
+static void printf_ref_pic_list(HEVCContext *s)
+{
+    RefPicList  *refPicList = s->ref->refPicList;
+
+    int i, list_idx;
+    if (s->sh.slice_type == I_SLICE)
+        printf("\nPOC %4d TId: %1d ( I-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->sh.slice_qp);
+    else if (s->sh.slice_type == B_SLICE)
+        printf("\nPOC %4d TId: %1d ( B-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->sh.slice_qp);
+    else
+        printf("\nPOC %4d TId: %1d ( P-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->sh.slice_qp);
+
+    for ( list_idx = 0; list_idx < 2; list_idx++) {
+        printf("[L%d ",list_idx);
+        if (refPicList)
+            for(i = 0; i < refPicList[list_idx].nb_refs; i++)
+                printf("%d ",refPicList[list_idx].list[i]);
+        else
+            printf("O");
+        printf("] ");
+    }
+}
+
+static void display_md5(int poc, uint8_t md5[3][16])
+{
+    int i, j;
+    printf("\n[MD5:");
+    for (j = 0; j < 3; j++) {
+        printf("\n");
+        for (i = 0; i < 16; i++)
+            printf("%02x", md5[j][i]);
+    }
+    printf("\n]");
+
+}
+#endif
+
+static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (md5_in1[i] != md5_in2[i])
+            return 0;
+    return 1;
+}
+
+static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift)
+{
+    uint8_t *buf;
+    int y, x;
+    int stride_buf = width << pixel_shift;
+    buf = av_malloc(stride_buf * height);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < stride_buf; x++)
+            buf[y * stride_buf + x] = src[x];
+
+        src += stride;
+    }
+    av_md5_sum(md5, buf, stride_buf * height);
+    av_free(buf);
+}
+
 const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 2 };
 const uint8_t ff_hevc_qpel_extra_after[4]  = { 0, 3, 4, 4 };
 const uint8_t ff_hevc_qpel_extra[4]        = { 0, 6, 7, 6 };
@@ -2818,13 +2884,28 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         return ret;
 
     /* verify the SEI checksum */
-    if (avctx->err_recognition & AV_EF_CRCCHECK && s->is_decoded &&
-        s->is_md5) {
-        ret = verify_md5(s, s->ref->frame);
-        if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
-            ff_hevc_unref_frame(s, s->ref, ~0);
-            return ret;
+    if (s->decode_checksum_sei && s->is_decoded) {
+        AVFrame *frame = s->ref->frame;
+        int cIdx;
+        uint8_t md5[3][16];
+
+        calc_md5(md5[0], frame->data[0], frame->linesize[0], s->sps->width  , s->sps->height  , s->sps->pixel_shift);
+        calc_md5(md5[1], frame->data[1], frame->linesize[1], s->sps->width/2, s->sps->height/2, s->sps->pixel_shift);
+        calc_md5(md5[2], frame->data[2], frame->linesize[2], s->sps->width/2, s->sps->height/2, s->sps->pixel_shift);
+        if (s->is_md5) {
+            for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
+                if (!compare_md5(md5[cIdx], s->md5[cIdx])) {
+                     av_log(s->avctx, AV_LOG_ERROR, "Incorrect MD5 (poc: %d, plane: %d)\n", s->poc, cIdx);
+                 } else {
+                     av_log(s->avctx, AV_LOG_INFO, "Correct MD5 (poc: %d, plane: %d)\n", s->poc, cIdx);
+                 }
+            }
+            s->is_md5 = 0;
         }
+#ifdef POC_DISPLAY_MD5
+        printf_ref_pic_list(s);
+        display_md5(s->poc, md5);
+#endif
     }
     s->is_md5 = 0;
 
@@ -3114,6 +3195,8 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(HEVCContext, x)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption options[] = {
+    { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "disable-au", "disable read frame AU by AU", OFFSET(disable_au),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "strict-displaywin", "stricly apply default display window size", OFFSET(strict_def_disp_win),

@@ -756,6 +756,8 @@ typedef struct HEVCContext {
     HEVCLocalContext     HEVClc;
 
     int                 disable_au;
+    int                 decode_checksum_sei;
+
     int                 width;
     int                 height;
 
