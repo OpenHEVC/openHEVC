@@ -39,6 +39,8 @@
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
 
+#define MAX_NB_THREADS 16
+
 /**
  * 7.4.2.1
  */
@@ -753,7 +755,10 @@ typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext      *avctx;
 
-    HEVCLocalContext     HEVClc;
+    struct HEVCContext  *sList[MAX_NB_THREADS];
+
+    HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
+    HEVCLocalContext    *HEVClc;
 
     int                 disable_au;
     int                 decode_checksum_sei;
