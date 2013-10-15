@@ -2409,6 +2409,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 {
     HEVCContext *s1  = avctxt->priv_data, *s;
     HEVCLocalContext *lc;
+    
     int ctb_size    = 1<< s1->sps->log2_ctb_size;
     int more_data   = 1;
     int *ctb_row_p    = input_ctb_row;
@@ -2472,7 +2473,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
     return 0;
 }
-
+static int first;
 static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
@@ -2482,22 +2483,22 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     int startheader, cmpt = 0;
     int i, j, res = 0;
 
-    ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
-    if (s->enable_parallel_tiles)
-        s->HEVClcList[0]->save_boundary_strengths =
-            av_malloc(sizeof(FilterData) * (s->sps->min_tb_width) * (s->sps->min_tb_height));
-
-    for (i = 1; i < s->threads_number; i++) {
-        s->sList[i] = av_malloc(sizeof(HEVCContext));
-        memcpy(s->sList[i], s, sizeof(HEVCContext));
-        s->HEVClcList[i] = av_malloc(sizeof(HEVCLocalContext));
-        s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
-
+    
+    if (!first) {
+        first = 1; 
+        ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
         if (s->enable_parallel_tiles)
-            s->HEVClcList[i]->save_boundary_strengths = av_malloc(sizeof(FilterData) * (s->sps->min_tb_width) *
-                                                                         (s->sps->min_tb_height));
+            s->HEVClcList[0]->save_boundary_strengths =
+            av_malloc(sizeof(FilterData) * (s->sps->min_tb_width) * (s->sps->min_tb_height));
+        
 
-        s->sList[i]->HEVClc = s->HEVClcList[i];
+        for (i = 1; i < s->threads_number; i++) {
+            s->sList[i] = av_malloc(sizeof(HEVCContext));
+            memcpy(s->sList[i], s, sizeof(HEVCContext));
+            s->HEVClcList[i] = av_malloc(sizeof(HEVCLocalContext));
+            s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
+            s->sList[i]->HEVClc = s->HEVClcList[i];
+        }
     }
 
     offset = (lc->gb.index >> 3);
