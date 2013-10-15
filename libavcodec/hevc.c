@@ -2488,14 +2488,13 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
             av_malloc(sizeof(FilterData) * (s->sps->min_tb_width) * (s->sps->min_tb_height));
 
     for (i = 1; i < s->threads_number; i++) {
-        HEVCLocalContext *lc = s->HEVClcList[i];
         s->sList[i] = av_malloc(sizeof(HEVCContext));
         memcpy(s->sList[i], s, sizeof(HEVCContext));
-        lc = av_malloc(sizeof(HEVCLocalContext));
-        lc->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
+        s->HEVClcList[i] = av_malloc(sizeof(HEVCLocalContext));
+        s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
 
         if (s->enable_parallel_tiles)
-            lc->save_boundary_strengths = av_malloc(sizeof(FilterData) * (s->sps->min_tb_width) *
+            s->HEVClcList[i]->save_boundary_strengths = av_malloc(sizeof(FilterData) * (s->sps->min_tb_width) *
                                                                          (s->sps->min_tb_height));
 
         s->sList[i]->HEVClc = s->HEVClcList[i];
