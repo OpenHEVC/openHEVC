@@ -40,8 +40,8 @@
 #define MAX_REFS 16
 
 #define MAX_NB_THREADS 16
-#define MAX_ENTRIES 100
 #define SHIFT_CTB_WPP 2
+#define MAX_NAL 64
 
 /**
  * 7.4.2.1
@@ -859,9 +859,9 @@ typedef struct HEVCContext {
     int *skipped_bytes_pos;
     int skipped_bytes_pos_size;
     
-    int skipped_bytes_nal[32];
-    int *skipped_bytes_pos_nal[32];
-    int skipped_bytes_pos_size_nal[32];
+    int skipped_bytes_nal[MAX_NAL];
+    int *skipped_bytes_pos_nal[MAX_NAL];
+    int skipped_bytes_pos_size_nal[MAX_NAL];
     
     uint8_t *data;
 
