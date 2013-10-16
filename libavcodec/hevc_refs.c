@@ -133,6 +133,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     }
 
     ref = alloc_frame(s);
+    
     if (!ref)
         return AVERROR(ENOMEM);
 

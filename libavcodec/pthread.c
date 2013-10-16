@@ -90,13 +90,13 @@ typedef struct ThreadContext {
     int current_job;
     int done;
     
-#if WPP_PTHREAD_MUTEX
+
     int *entries;
     int entries_count;
     int thread_count;
     pthread_cond_t *progress_cond;
     pthread_mutex_t *progress_mutex;
-#endif    
+
     
 } ThreadContext;
 
@@ -238,7 +238,7 @@ static void thread_free(AVCodecContext *avctx)
     pthread_mutex_destroy(&c->current_job_lock);
     pthread_cond_destroy(&c->current_job_cond);
     pthread_cond_destroy(&c->last_job_cond);
-#if WPP_PTHREAD_MUTEX
+
     for(i=0; i < c->thread_count; i++) {
         pthread_mutex_lock(&c->progress_mutex[i]);
         pthread_cond_broadcast(&c->progress_cond[i]);
@@ -249,7 +249,7 @@ static void thread_free(AVCodecContext *avctx)
     av_free(c->progress_mutex);
     av_free(c->progress_cond);
     av_free(c->entries);
-#endif
+
     av_free(c->workers);
     av_freep(&avctx->thread_opaque);
 }
@@ -1093,7 +1093,7 @@ void ff_thread_free(AVCodecContext *avctx)
 
 
 
-#if WPP_PTHREAD_MUTEX
+
 void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n)
 {
     ThreadContext *p  = avctx->thread_opaque;
@@ -1147,4 +1147,4 @@ void ff_reset_entries(AVCodecContext *avctx)
     ThreadContext *p = avctx->thread_opaque;
     memset(p->entries, 0, p->entries_count  * sizeof(int));
 }
-#endif
+
