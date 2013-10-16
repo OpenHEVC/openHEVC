@@ -3023,35 +3023,33 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         HEVCNAL *nal;
         int extract_length = 0;
 
-        if (s->disable_au == 0) {
-            if (s->is_nalff) {
-                int i;
-                for (i = 0; i < s->nal_length_size; i++)
-                    extract_length = (extract_length << 8) | buf[i];
-                buf    += s->nal_length_size;
-                length -= s->nal_length_size;
+        if (s->is_nalff) {
+            int i;
+            for (i = 0; i < s->nal_length_size; i++)
+                extract_length = (extract_length << 8) | buf[i];
+            buf    += s->nal_length_size;
+            length -= s->nal_length_size;
 
-                if (extract_length > length) {
-                    av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto fail;
-                }
-            } else {
-                if (buf[2] == 0) {
-                    length--;
-                    buf++;
-                    continue;
-                }
-                if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
-                    ret = AVERROR_INVALIDDATA;
-                    goto fail;
-                }
-
-                buf    += 3;
-                length -= 3;
+            if (extract_length > length) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
+        } else {
+            if (buf[2] == 0) {
+                length--;
+                buf++;
+                continue;
+            }
+            if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+
+            buf    += 3;
+            length -= 3;
         }
-        if (!s->is_nalff || s->disable_au)
+        if (!s->is_nalff)
             extract_length = length;
 
         if (s->nals_allocated < s->nb_nals + 1) {
@@ -3203,8 +3201,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     s->ref = NULL;
     ret = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0) {
-        if (!s->disable_au)
-            s->ref->is_decoded = 1;
+        s->ref->is_decoded = 1;
         return ret;
     }
 
@@ -3237,8 +3234,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (s->is_decoded) {
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         s->is_decoded = 0;
-        if (!s->disable_au)
-            s->ref->is_decoded = 1;
+        s->ref->is_decoded = 1;
     }
 
     if (s->output_frame->buf[0]) {
@@ -3449,7 +3445,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->threads_number      = s0->threads_number;
     s->threads_type        = s0->threads_type;
     s->decode_checksum_sei = s0->decode_checksum_sei;
-    s->disable_au          = s0->disable_au;
 
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
@@ -3586,8 +3581,6 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption options[] = {
     { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
-        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-    { "disable-au", "disable read frame AU by AU", OFFSET(disable_au),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "strict-displaywin", "stricly apply default display window size", OFFSET(strict_def_disp_win),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
