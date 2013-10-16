@@ -255,7 +255,12 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     int i,j;
     GetBitContext *gb = &s->HEVClc->gb;
     int vps_id = 0;
-    VPS *vps;
+    HEVCVPS *vps;
+    AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
+
+    if (!vps_buf)
+        return AVERROR(ENOMEM);
+    vps = (HEVCVPS*)vps_buf->data;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VPS\n");
 
@@ -335,12 +340,22 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     }
     get_bits1(gb); /* vps_extension_flag */
 
-    av_free(s->vps_list[vps_id]);
-    s->vps_list[vps_id] = vps;
+    if (s->vps_list[vps_id] != NULL && s->threads_type == FF_THREAD_FRAME ) {
+        ff_thread_mutex_lock_dpb(s->avctx);
+        if (((HEVCVPS*)s->vps_list[vps_id]->data)->threadCnt == 0)
+            av_buffer_unref(&s->vps_list[vps_id]);
+        else
+            ((HEVCVPS*)s->vps_list[vps_id]->data)->freed = s->vps_list[vps_id];
+        ff_thread_mutex_unlock_dpb(s->avctx);
+    } else
+        av_buffer_unref(&s->vps_list[vps_id]);
+    s->vps_list[vps_id] = vps_buf;
+
+
     return 0;
 
 err:
-    av_free(vps);
+    av_buffer_unref(&vps_buf);
     return AVERROR_INVALIDDATA;
 }
 
@@ -848,7 +863,15 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 #undef DIFF
 
-    av_buffer_unref(&s->sps_list[sps_id]);
+    if (s->sps_list[sps_id] != NULL && s->threads_type == FF_THREAD_FRAME ) {
+        ff_thread_mutex_lock_dpb(s->avctx);
+        if (((HEVCSPS*)s->sps_list[sps_id]->data)->threadCnt == 0)
+            av_buffer_unref(&s->sps_list[sps_id]);
+        else
+            ((HEVCSPS*)s->sps_list[sps_id]->data)->freed = s->sps_list[sps_id];
+        ff_thread_mutex_unlock_dpb(s->avctx);
+    } else
+        av_buffer_unref(&s->sps_list[sps_id]);
     s->sps_list[sps_id] = sps_buf;
 
     if (s->avctx->debug & FF_DEBUG_BITSTREAM) {
@@ -1221,8 +1244,16 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
-    av_buffer_unref(&s->pps_list[pps_id]);
-    s->pps_list[pps_id] = pps_buf;
+    if (s->pps_list[pps_id] != NULL && s->threads_type == FF_THREAD_FRAME ) {
+         ff_thread_mutex_lock_dpb(s->avctx);
+         if (((HEVCPPS*)s->pps_list[pps_id]->data)->threadCnt == 0)
+             av_buffer_unref(&s->pps_list[pps_id]);
+         else
+             ((HEVCPPS*)s->pps_list[pps_id]->data)->freed = s->pps_list[pps_id];
+         ff_thread_mutex_unlock_dpb(s->avctx);
+     } else if (s->pps_list[pps_id] != NULL)
+         av_buffer_unref(&s->pps_list[pps_id]);
+     s->pps_list[pps_id] = pps_buf;
 
     return 0;
 

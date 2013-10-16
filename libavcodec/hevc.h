@@ -40,8 +40,8 @@
 #define MAX_REFS 16
 
 #define MAX_NB_THREADS 16
-#define MAX_ENTRIES 100
 #define SHIFT_CTB_WPP 2
+#define MAX_NAL 64
 
 /**
  * 7.4.2.1
@@ -347,7 +347,7 @@ typedef struct PTL {
     int sub_layer_level_idc[MAX_SUB_LAYERS];
 } PTL;
 
-typedef struct VPS {
+typedef struct HEVCVPS {
     uint8_t vps_temporal_id_nesting_flag;
     int vps_max_layers;
     int vps_max_sub_layers; ///< vps_max_temporal_layers_minus1 + 1
@@ -365,7 +365,10 @@ typedef struct VPS {
     uint8_t vps_poc_proportional_to_timing_flag;
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
-} VPS;
+
+    uint8_t threadCnt;
+    AVBufferRef* freed;
+} HEVCVPS;
 
 typedef struct ScalingList {
     // This is a little wasteful, since sizeID 0 only needs 8 coeffs, and size ID 3 only has 2 arrays, not 6.
@@ -450,6 +453,9 @@ typedef struct HEVCSPS {
     int vshift[3];
 
     int qp_bd_offset;
+
+    uint8_t threadCnt;
+    AVBufferRef* freed;
 } HEVCSPS;
 
 typedef struct HEVCPPS {
@@ -518,6 +524,9 @@ typedef struct HEVCPPS {
     int *tile_pos_rs; ///< TilePosRS
     int *min_cb_addr_zs; ///< MinCbAddrZS
     int *min_tb_addr_zs; ///< MinTbAddrZS
+
+    uint8_t threadCnt;
+    AVBufferRef* freed;
 } HEVCPPS;
 
 typedef struct SliceHeader {
@@ -688,6 +697,8 @@ typedef struct DBParams {
 typedef struct HEVCFrame {
     AVFrame *frame;
     ThreadFrame tf;
+    int threadCnt;
+    int is_decoded;
     int poc;
     MvField *tab_mvf;
     RefPicList *refPicList;
@@ -766,6 +777,7 @@ typedef struct HEVCContext {
     HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
     HEVCLocalContext    *HEVClc;
 
+    uint8_t             threads_type;
     uint8_t             threads_number;
     int                 decode_checksum_sei;
     int                 disable_au;
@@ -779,10 +791,10 @@ typedef struct HEVCContext {
     AVFrame *sao_frame;
     AVFrame *tmp_frame;
     AVFrame *output_frame;
-    VPS *vps;
-    const HEVCSPS *sps;
+    HEVCVPS *vps;
+    HEVCSPS *sps;
     HEVCPPS *pps;
-    VPS *vps_list[MAX_VPS_COUNT];
+    AVBufferRef *vps_list[MAX_VPS_COUNT];
     AVBufferRef *sps_list[MAX_SPS_COUNT];
     AVBufferRef *pps_list[MAX_PPS_COUNT];
 
@@ -795,7 +807,7 @@ typedef struct HEVCContext {
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
     HEVCFrame *ref;
-    HEVCFrame DPB[32];
+    HEVCFrame *DPB[32];
     int poc;
     int pocTid0;
     int slice_idx; ///< number of the slice being currently decoded
@@ -843,9 +855,15 @@ typedef struct HEVCContext {
 
     int enable_parallel_tiles;
     int wpp_err;
+    
     int skipped_bytes;
     int *skipped_bytes_pos;
     int skipped_bytes_pos_size;
+    
+    int skipped_bytes_nal[MAX_NAL];
+    int *skipped_bytes_pos_nal[MAX_NAL];
+    int skipped_bytes_pos_size_nal[MAX_NAL];
+    
     uint8_t *data;
 
     HEVCNAL *nals;
@@ -856,6 +874,8 @@ typedef struct HEVCContext {
 
     // for checking the frame checksums
     struct AVMD5 *md5_ctx;
+    
+    
     uint8_t       md5[3][16];
     uint8_t is_md5;
 
@@ -979,8 +999,6 @@ int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
-
-void ff_hevc_pps_free(HEVCPPS **ppps);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];
