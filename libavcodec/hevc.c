@@ -2407,6 +2407,43 @@ static int hls_slice_data(HEVCContext *s)
 }
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
 {
+/*    HEVCContext *s  = avctxt->priv_data;
+    int ctb_size    = 1 << s->sps->log2_ctb_size;
+    int more_data   = 1;
+    int x_ctb       = 0;
+    int y_ctb       = 0;
+    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+    
+    while (more_data && ctb_addr_ts < s->sps->ctb_size) {
+        int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+        
+        x_ctb = (ctb_addr_rs % ((s->sps->width + (ctb_size - 1)) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        y_ctb = (ctb_addr_rs / ((s->sps->width + (ctb_size - 1)) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
+        
+        ff_hevc_cabac_init(s, ctb_addr_ts);
+        
+        hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
+        
+        s->deblock[ctb_addr_rs].disable     = s->sh.disable_deblocking_filter_flag;
+        s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
+        s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+        s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
+        
+        more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
+        if (more_data < 0)
+            return more_data;
+        
+        ctb_addr_ts++;
+        ff_hevc_save_states(s, ctb_addr_ts);
+        ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
+    }
+    
+    if (x_ctb + ctb_size >= s->sps->width &&
+        y_ctb + ctb_size >= s->sps->height)
+        ff_hevc_hls_filter(s, x_ctb, y_ctb);
+    
+    return ctb_addr_ts;*/
     HEVCContext *s1  = avctxt->priv_data, *s;
     HEVCLocalContext *lc;
     
@@ -2424,16 +2461,21 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     s = s1->sList[self_id];
     lc = s->HEVClc;
 
-    if(ctb_row) {
+  /*  if(ctb_row) {
         ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row - 1], s->sh.size[ctb_row - 1]);
+        printf("offset %d size %d \n", s->sh.offset[ctb_row - 1], s->sh.size[ctb_row - 1]); 
         if (ret < 0)
             return ret;
         ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[(ctb_row)-1], s->sh.size[ctb_row - 1]);
-    }
-    printf("ctb_row %d \n", ctb_row); 
+    }*/
+//    printf("job %d ctb_row %d self_id %d \n", job, ctb_row, self_id);
+    for(int i=0; i < s->sh.num_entry_point_offsets; i++)
+        printf("%d ", s->ctb_entry_count[i]);
+    printf("\n");
     while(more_data && ctb_addr_ts < s->sps->ctb_size) {
         int x_ctb = (ctb_addr_rs % s->sps->ctb_width) << s->sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / s->sps->ctb_width) << s->sps->log2_ctb_size;
+     //   printf("x_ctb %d y_ctb %d \n", x_ctb, y_ctb);
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
 #if WPP_PTHREAD_MUTEX
         ff_thread_await_progress2(s->avctx, ctb_row, thread, SHIFT_CTB_WPP);
@@ -2513,7 +2555,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 
 
     if (!s->ctb_entry_count) {
-        first = 1;
+    
+        printf("---------------------- \n"); 
 #if WPP_PTHREAD_MUTEX
         ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
 #else
@@ -2533,7 +2576,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
             s->sList[i]->HEVClc = s->HEVClcList[i];
         }
     }
-
+    printf("s->skipped_bytes %d \n", s->skipped_bytes);
     offset = (lc->gb.index >> 3);
     for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
         if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
@@ -2583,7 +2626,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     }
 
     if (s->pps->entropy_coding_sync_enabled_flag)
-        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets+1);
     else {
         int ctb_size = 1 << s->sps->log2_ctb_size, y_ctb, x_ctb;
         for (i = 0; i < s->threads_number; i++) {
@@ -2852,7 +2895,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     default:
         av_log(s->avctx, AV_LOG_INFO, "Skipping NAL unit %d\n", s->nal_unit_type);
     }
-
+//    if(s->poc == 2)
+  //      exit(-1);
     return 0;
 }
 
