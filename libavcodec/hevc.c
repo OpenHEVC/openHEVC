@@ -2907,7 +2907,6 @@ static int extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
 {
     int i, si, di;
     uint8_t *dst;
-
     s->skipped_bytes = 0;
 #define STARTCODE_TEST                                                  \
         if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
@@ -2953,20 +2952,20 @@ static int extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
         STARTCODE_TEST;
     }
 #endif
-
+    printf("s->skipped_bytes ####mmmmmmmmmmmmmmm######## ------------------------- %d \n", s->skipped_bytes);
     if (i >= length - 1) { // no escaped 0
         nal->data = src;
         nal->size = length;
         return length;
     }
-
+    
     av_fast_malloc(&nal->rbsp_buffer, &nal->rbsp_buffer_size,
                    length + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!nal->rbsp_buffer)
         return AVERROR(ENOMEM);
 
     dst = nal->rbsp_buffer;
-
+    
     memcpy(dst, src, i);
     si = di = i;
     while (si + 2 < length) {
@@ -3000,8 +2999,10 @@ static int extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
     }
     while (si < length)
         dst[di++] = src[si++];
-nsc:
+    
 
+nsc:
+     
     memset(dst + di, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     nal->data = dst;
