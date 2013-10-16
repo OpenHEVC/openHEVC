@@ -855,15 +855,14 @@ typedef struct HEVCContext {
 
     int enable_parallel_tiles;
     int wpp_err;
-    
     int skipped_bytes;
     int *skipped_bytes_pos;
     int skipped_bytes_pos_size;
-    
+
     int skipped_bytes_nal[MAX_NAL];
     int *skipped_bytes_pos_nal[MAX_NAL];
     int skipped_bytes_pos_size_nal[MAX_NAL];
-    
+
     uint8_t *data;
 
     HEVCNAL *nals;
@@ -874,8 +873,6 @@ typedef struct HEVCContext {
 
     // for checking the frame checksums
     struct AVMD5 *md5_ctx;
-    
-    
     uint8_t       md5[3][16];
     uint8_t is_md5;
 
