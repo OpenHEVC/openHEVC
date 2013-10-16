@@ -3256,12 +3256,14 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     for (i = 1; i < s->threads_number; i++) {
         lc = s->HEVClcList[i];
-        av_freep(&lc->edge_emu_buffer);
+        if (lc) {
+            av_freep(&lc->edge_emu_buffer);
 
-        if (s->enable_parallel_tiles)
-            av_freep(&lc->save_boundary_strengths);
-        av_freep(&s->HEVClcList[i]);
-        av_freep(&s->sList[i]);
+            if (s->enable_parallel_tiles)
+                av_freep(&lc->save_boundary_strengths);
+            av_freep(&s->HEVClcList[i]);
+            av_freep(&s->sList[i]);
+        }
     }
     for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++)
         av_freep(&s->vps_list[i]);
