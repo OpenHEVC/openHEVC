@@ -870,6 +870,7 @@ typedef struct HEVCContext {
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
+    int *ctb_entry_count;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
