@@ -2490,6 +2490,45 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     return 0;
 }
 
+static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, int job, int self_id)
+{
+    HEVCContext *s = avctxt->priv_data;
+
+    HEVCLocalContext *lc;
+    int x_ctb = 0;
+    int y_ctb = 0;
+
+    int more_data = 1;
+
+    int *ctb_row_p = input_ctb_row;
+    int ctb_row = ctb_row_p[job];
+    int ctb_addr_rs = s->pps->tile_pos_rs[ctb_row];
+    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
+    s = s->sList[self_id];
+    lc = s->HEVClc;
+    if(ctb_row) {
+        init_get_bits(&lc->gb, s->data+s->sh.offset[(ctb_row)-1], s->sh.size[(ctb_row)-1]*8);
+    }
+    while (more_data) {
+        int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+        x_ctb = (ctb_addr_rs % s->sps->ctb_width) << s->sps->log2_ctb_size;
+        y_ctb = (ctb_addr_rs / s->sps->ctb_width) << s->sps->log2_ctb_size;
+        hls_decode_neighbour(s,x_ctb, y_ctb, ctb_addr_ts);
+                ff_hevc_cabac_init(s, ctb_addr_ts);
+        hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
+        s->deblock[ctb_addr_rs].disable = s->sh.disable_deblocking_filter_flag;
+        s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
+        s->deblock[ctb_addr_rs].tc_offset = s->sh.tc_offset;
+        more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
+        ctb_addr_ts++;
+        ff_hevc_save_states(s, ctb_addr_ts);
+        if (s->pps->tiles_enabled_flag && (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[ctb_addr_ts-1])) {
+            break;
+        }
+    }
+    return ctb_addr_ts;
+}
+
 static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
@@ -2570,7 +2609,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         for (i = 0; i < s->threads_number; i++) {
             s->HEVClcList[i]->nb_saved = 0;
         }
-        //        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
         // Deblocking and SAO filters
 
         for (i = 0; i < s->threads_number; i++)
