@@ -3061,17 +3061,24 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             }
             s->nals = tmp;
             memset(s->nals + s->nals_allocated, 0, (new_size - s->nals_allocated) * sizeof(*tmp));
+            av_reallocp_array(&s->skipped_bytes_nal, new_size, sizeof(*s->skipped_bytes_nal));
+            av_reallocp_array(&s->skipped_bytes_pos_size_nal, new_size, sizeof(*s->skipped_bytes_pos_size_nal));
+            av_reallocp_array(&s->skipped_bytes_pos_nal, new_size, sizeof(*s->skipped_bytes_pos_nal));
+            s->skipped_bytes_pos_size_nal[s->nals_allocated] = 1024; // initial buffer size
+            s->skipped_bytes_pos_nal[s->nals_allocated] = av_malloc_array(s->skipped_bytes_pos_size_nal[s->nals_allocated], sizeof(*s->skipped_bytes_pos));
             s->nals_allocated = new_size;
+
         }
         s->skipped_bytes_pos_size = s->skipped_bytes_pos_size_nal[s->nb_nals];
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[s->nb_nals];
-        nal = &s->nals[s->nb_nals++];
+        nal = &s->nals[s->nb_nals];
 
         consumed = extract_rbsp(s, buf, extract_length, nal);
 
-        s->skipped_bytes_nal[(s->nb_nals-1)] = s->skipped_bytes;
+        s->skipped_bytes_nal[s->nb_nals] = s->skipped_bytes;
         s->skipped_bytes_pos_size_nal[s->nb_nals] = s->skipped_bytes_pos_size;
-        s->skipped_bytes_pos_nal[s->nb_nals-1] = s->skipped_bytes_pos;
+        s->skipped_bytes_pos_nal[s->nb_nals++] = s->skipped_bytes_pos;
+
 
         if (consumed < 0) {
             ret = consumed;
@@ -3290,9 +3297,14 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&lc->edge_emu_buffer);
     av_freep(&s->md5_ctx);
 
-    for(i=0; i < FF_ARRAY_ELEMS(s->skipped_bytes_pos_nal); i++) {
+    for(i=0; i < s->nals_allocated; i++) {
         av_freep(&s->skipped_bytes_pos_nal[i]);
     }
+    av_freep(&s->skipped_bytes_pos_size_nal);
+    av_freep(&s->skipped_bytes_nal);
+    av_freep(&s->skipped_bytes_pos_nal);
+
+
 
     av_freep(&s->cabac_state);
 
@@ -3528,10 +3540,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     ret = hevc_init_context(avctx);
     if (ret < 0)
         return ret;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->skipped_bytes_pos_size_nal); i++){
-        s->skipped_bytes_pos_size_nal[i] = 1024; // initial buffer size
-        s->skipped_bytes_pos_nal[i] = av_malloc_array(s->skipped_bytes_pos_size_nal[i], sizeof(*s->skipped_bytes_pos));
-    }
 
     s->enable_parallel_tiles = 0;
 
