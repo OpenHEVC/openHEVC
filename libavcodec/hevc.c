@@ -2979,18 +2979,16 @@ static int extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                 dst[di++]  = 0;
                 si        += 3;
 
-                if (s->threads_type != FF_THREAD_FRAME ) {
-                    s->skipped_bytes++;
-                    if (s->skipped_bytes_pos_size < s->skipped_bytes) {
-                        s->skipped_bytes_pos_size *= 2;
-                        av_reallocp_array(&s->skipped_bytes_pos,
-                                s->skipped_bytes_pos_size,
-                                sizeof(*s->skipped_bytes_pos));
-                        if (!s->skipped_bytes_pos)
-                            return NULL;
-                    }
-                    s->skipped_bytes_pos[s->skipped_bytes-1] = di - 1;
+                s->skipped_bytes++;
+                if (s->skipped_bytes_pos_size < s->skipped_bytes) {
+                    s->skipped_bytes_pos_size *= 2;
+                    av_reallocp_array(&s->skipped_bytes_pos,
+                            s->skipped_bytes_pos_size,
+                            sizeof(*s->skipped_bytes_pos));
+                    if (!s->skipped_bytes_pos)
+                        return NULL;
                 }
+                s->skipped_bytes_pos[s->skipped_bytes-1] = di - 1;
                 continue;
             } else // next start code
                 goto nsc;
