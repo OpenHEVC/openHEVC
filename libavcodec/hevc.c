@@ -1977,7 +1977,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     int more_data = 1;
     int *ctb_row_p = input_ctb_row;
     int ctb_row = ctb_row_p[job];
-    int ctb_addr_rs = s->pps->tile_pos_rs[ctb_row];
+    int ctb_addr_rs = s->sh.slice_ctb_addr_rs + s->pps->tile_pos_rs[ctb_row];
     int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     s = s->sList[self_id];
     lc = s->HEVClc;
@@ -1991,7 +1991,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         y_ctb = (ctb_addr_rs / s->sps->ctb_width) << s->sps->log2_ctb_size;
 
         hls_decode_neighbour(s,x_ctb, y_ctb, ctb_addr_ts);
-                ff_hevc_cabac_init(s, ctb_addr_ts);
+        ff_hevc_cabac_init(s, ctb_addr_ts);
         hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
         s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
         s->deblock[ctb_addr_rs].tc_offset = s->sh.tc_offset;
@@ -2007,6 +2007,25 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     return ctb_addr_ts;
 }
 
+static void tiles_filters(HEVCContext *s)
+{
+    int i, j;
+    int ctb_size = 1 << s->sps->log2_ctb_size, y_ctb, x_ctb;
+    // Deblocking and SAO filters
+    for (i = 0; i < s->threads_number; i++)
+        for (j = 0; j < s->HEVClcList[i]->nb_saved; j++)
+            ff_hevc_deblocking_boundary_strengths(s,
+                                                  s->HEVClcList[i]->save_boundary_strengths[j].x,
+                                                  s->HEVClcList[i]->save_boundary_strengths[j].y,
+                                                  s->HEVClcList[i]->save_boundary_strengths[j].size,
+                                                  s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_up_boundary,
+                                                  s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_left_boundary);
+
+    for (y_ctb = 0; y_ctb < s->sps->height; y_ctb += ctb_size)
+        for (x_ctb = 0; x_ctb < s->sps->width; x_ctb += ctb_size)
+            ff_hevc_hls_filter(s, x_ctb, y_ctb);
+
+}
 static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
@@ -2085,25 +2104,11 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     if (s->pps->entropy_coding_sync_enabled_flag)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
     else {
-        int ctb_size = 1 << s->sps->log2_ctb_size, y_ctb, x_ctb;
-        for (i = 0; i < s->threads_number; i++) {
-            s->HEVClcList[i]->nb_saved = 0;
-        }
+        if (s->sh.slice_ctb_addr_rs == 0)
+            for (i = 0; i < s->threads_number; i++) {
+                s->HEVClcList[i]->nb_saved = 0;
+            }
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
-        // Deblocking and SAO filters
-
-        for (i = 0; i < s->threads_number; i++)
-            for (j = 0; j < s->HEVClcList[i]->nb_saved; j++)
-                ff_hevc_deblocking_boundary_strengths(s,
-                                                      s->HEVClcList[i]->save_boundary_strengths[j].x,
-                                                      s->HEVClcList[i]->save_boundary_strengths[j].y,
-                                                      s->HEVClcList[i]->save_boundary_strengths[j].size,
-                                                      s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_up_boundary,
-                                                      s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_left_boundary);
-
-        for (y_ctb = 0; y_ctb < s->sps->height; y_ctb += ctb_size)
-            for (x_ctb = 0; x_ctb < s->sps->width; x_ctb += ctb_size)
-                ff_hevc_hls_filter(s, x_ctb, y_ctb);
     }
     
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
@@ -2193,8 +2198,8 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
 
-    if (!lc->edge_emu_buffer)
-        lc->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * s->frame->linesize[0]);
+    av_fast_malloc(&lc->edge_emu_buffer, &lc->edge_emu_buffer_size,
+                   (MAX_PB_SIZE + 7) * s->ref->frame->linesize[0]);
     if (!lc->edge_emu_buffer) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -2555,10 +2560,11 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     }
     // parse the NAL units 
     for (i = 0; i < s->nb_nals; i++) {
+        int ret;
         s->skipped_bytes = s->skipped_bytes_nal[i];
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
 
-        int ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
+        ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING, "Error parsing NAL unit #%d.\n", i);
             if (s->avctx->err_recognition & AV_EF_EXPLODE)
@@ -2668,7 +2674,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         s->ref->is_decoded = 1;
         return ret;
     }
-
+    if (s->enable_parallel_tiles == 1)
+        tiles_filters(s);
     /* verify the SEI checksum */
     if (s->decode_checksum_sei && s->is_decoded) {
         AVFrame *frame = s->ref->frame;
@@ -2760,8 +2767,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->skipped_bytes_pos_size_nal);
     av_freep(&s->skipped_bytes_nal);
     av_freep(&s->skipped_bytes_pos_nal);
-
-
 
     av_freep(&s->cabac_state);
 
