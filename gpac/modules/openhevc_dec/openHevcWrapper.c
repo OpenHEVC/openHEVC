@@ -94,7 +94,7 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
     openHevcFrameInfo->frameRate.den  = 0;
     openHevcFrameInfo->display_picture_number = picture->display_picture_number;
     openHevcFrameInfo->flag       = 0; //progressive, interlaced, interlaced top field first, interlaced bottom field first.
-    openHevcFrameInfo->nTimeStamp = picture->pts;
+    openHevcFrameInfo->nTimeStamp = picture->pkt_pts;
 }
 
 void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
