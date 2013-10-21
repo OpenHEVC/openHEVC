@@ -89,15 +89,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel[2][0] = ff_hevc_put_hevc_qpel_v_2_8_sse;
                     c->put_hevc_qpel[3][0] = ff_hevc_put_hevc_qpel_v_3_8_sse;
 
-                    c->put_hevc_qpel[1][1] = ff_hevc_put_hevc_qpel_h_1_v_1_sse;
-                    c->put_hevc_qpel[1][2] = ff_hevc_put_hevc_qpel_h_2_v_1_sse;
-                    c->put_hevc_qpel[1][3] = ff_hevc_put_hevc_qpel_h_3_v_1_sse;
-                    c->put_hevc_qpel[2][1] = ff_hevc_put_hevc_qpel_h_1_v_2_sse;
-                    c->put_hevc_qpel[2][2] = ff_hevc_put_hevc_qpel_h_2_v_2_sse;
-                    c->put_hevc_qpel[2][3] = ff_hevc_put_hevc_qpel_h_3_v_2_sse;
-                    c->put_hevc_qpel[3][1] = ff_hevc_put_hevc_qpel_h_1_v_3_sse;
-                    c->put_hevc_qpel[3][2] = ff_hevc_put_hevc_qpel_h_2_v_3_sse;
-                    c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
+
 
 #if ARCH_X86_64
                     c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
@@ -127,6 +119,18 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->sao_band_filter[1] = ff_hevc_sao_band_filter_1_8_sse;
                 	c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
                 	c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
+
+                    c->put_hevc_qpel[1][1] = ff_hevc_put_hevc_qpel_h_1_v_1_sse;
+                    c->put_hevc_qpel[1][2] = ff_hevc_put_hevc_qpel_h_2_v_1_sse;
+                    c->put_hevc_qpel[1][3] = ff_hevc_put_hevc_qpel_h_3_v_1_sse;
+                    c->put_hevc_qpel[2][1] = ff_hevc_put_hevc_qpel_h_1_v_2_sse;
+                    c->put_hevc_qpel[2][2] = ff_hevc_put_hevc_qpel_h_2_v_2_sse;
+                    c->put_hevc_qpel[2][3] = ff_hevc_put_hevc_qpel_h_3_v_2_sse;
+                    c->put_hevc_qpel[3][1] = ff_hevc_put_hevc_qpel_h_1_v_3_sse;
+                    c->put_hevc_qpel[3][2] = ff_hevc_put_hevc_qpel_h_2_v_3_sse;
+                    c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
+
+
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
