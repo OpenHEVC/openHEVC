@@ -50,13 +50,14 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads/*, int extra_size_alloc, AVForma
 }
 
 
-void libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
+int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         return NULL;
-    }
+    } else
+        return 1;
 }
 
 int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
