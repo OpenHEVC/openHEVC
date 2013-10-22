@@ -123,10 +123,10 @@ static void video_decode_example(const char *filename)
     while(!stop) {
         if (disable_au == 0) {
             if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
-            got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, pts++);
+            got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
         } else {
             if (stop_dec == 0 && feof(f)) stop_dec = 1;
-            got_picture = libOpenHevcDecode(openHevcHandle, buf, !stop_dec ? get_next_nal(f, buf) : 0, pts++);
+            got_picture = libOpenHevcDecode(openHevcHandle, buf, !stop_dec ? get_next_nal(f, buf) : 0, packet.pts);
         }
         if (got_picture) {
             fflush(stdout);
