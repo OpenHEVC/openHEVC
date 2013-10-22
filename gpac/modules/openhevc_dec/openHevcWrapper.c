@@ -57,7 +57,6 @@ void libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
         fprintf(stderr, "could not open codec\n");
         return NULL;
     }
-    av_opt_set_int(openHevcContext->c->priv_data, "disable-au", 0, 0);
 }
 
 int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
@@ -145,15 +144,17 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
     return 1;
 }
 
+void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val)
+{
+    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    if (val == 1)
+        av_log_set_level(AV_LOG_DEBUG);
+}
+
 void libOpenHevcSetCheckMD5(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     av_opt_set_int(openHevcContext->c->priv_data, "decode-checksum", val, 0);
-}
-void libOpenHevcSetDisableAU(OpenHevc_Handle openHevcHandle, int val)
-{
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    av_opt_set_int(openHevcContext->c->priv_data, "disable-au", val, 0);
 }
 
 void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val)

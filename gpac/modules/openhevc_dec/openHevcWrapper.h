@@ -55,7 +55,7 @@ void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameIn
 int  libOpenHevcGetOutput(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame *openHevcFrame);
 int  libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame_cpy *openHevcFrame);
 void libOpenHevcSetCheckMD5(OpenHevc_Handle openHevcHandle, int val);
-void libOpenHevcSetDisableAU(OpenHevc_Handle openHevcHandle, int val);
+void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val);
 

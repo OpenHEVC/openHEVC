@@ -41,7 +41,6 @@
 #define DISABLE 0
 #define ENABLE  1
 
-int disable_au;
 int check_md5_flags;
 int enable_framebase;
 char *input_file;

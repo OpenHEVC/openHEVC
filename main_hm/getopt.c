@@ -131,7 +131,6 @@ void init_main(int argc, char *argv[]) {
 	// argument, and '::' if this argument is optional
 	const char *ostr = "acfhi:no:p:t:w";
 	int c;
-    disable_au        = DISABLE;
     check_md5_flags   = ENABLE;
     enable_framebase  = DISABLE;
     input_file        = NULL;
@@ -147,9 +146,6 @@ void init_main(int argc, char *argv[]) {
     
 	while (c != -1) {
         switch (c) {
-        case 'a':
-             disable_au = ENABLE;
-             break;
         case 'c':
             check_md5_flags = DISABLE;
             break;
