@@ -92,13 +92,6 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
         }
     }
 
-#ifdef OPEN_SHVC
-    ctx->openHevcHandle = libOpenHevcInit(ctx->nb_threads, ctx->nb_layers, 0);
-#else
-    ctx->openHevcHandle = libOpenHevcInit(ctx->nb_threads);
-#endif
-    libOpenHevcSetDebugMode(ctx->openHevcHandle, 1);
-    libOpenHevcStartDecoder(ctx->openHevcHandle);
     ctx->is_init = GF_TRUE;
 
     if (cfg) {
@@ -127,6 +120,7 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
 	return GF_OK;
 }
 
+size_t extra_size_alloc;
 
 static GF_Err HEVC_AttachStream(GF_BaseDecoder *ifcg, GF_ESD *esd)
 {
@@ -144,6 +138,23 @@ static GF_Err HEVC_AttachStream(GF_BaseDecoder *ifcg, GF_ESD *esd)
 	} else {
 		ctx->nb_threads = atoi(sOpt);
 	}
+
+    extra_size_alloc = esd->decoderConfig->decoderSpecificInfo->dataLength > 0 ?
+    (esd->decoderConfig->decoderSpecificInfo->dataLength + 8) : 0;
+
+#ifdef OPEN_SHVC
+    ctx->openHevcHandle = libOpenHevcInit(ctx->nb_threads, ctx->nb_layers, 0);
+#else
+    ctx->openHevcHandle = libOpenHevcInit(ctx->nb_threads);
+#endif
+    if (extra_size_alloc)
+    {
+        libOpenHevcCopyExtraData(ctx->openHevcHandle, esd->decoderConfig->decoderSpecificInfo->data, extra_size_alloc);
+    }
+    fprintf(stderr, "extra_size_alloc %d\n", extra_size_alloc);
+    libOpenHevcSetDebugMode(ctx->openHevcHandle, 1);
+    libOpenHevcStartDecoder(ctx->openHevcHandle);
+
 
 	/*not supported in this version*/
 	if (esd->dependsOnESID) return GF_NOT_SUPPORTED;
@@ -389,7 +400,12 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
         
 		//if (!skip && ctx->state_found)
         {
-			got_pic = libOpenHevcDecode(ctx->openHevcHandle, ptr-3, inBufferLength, 0);
+            char *ptr_tmp;
+            if (extra_size_alloc > 0)
+                ptr_tmp = ptr-4;
+            else
+                ptr_tmp = ptr-3;
+			got_pic = libOpenHevcDecode(ctx->openHevcHandle, ptr_tmp, inBufferLength, 0);
 			if (got_pic>0) {
 				nb_pics ++;
 				e = HEVC_flush_picture(ctx, outBuffer, outBufferLength);

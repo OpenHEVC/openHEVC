@@ -13,7 +13,7 @@ typedef struct OpenHevcWrapperContext {
     AVCodecParserContext *parser;
 } OpenHevcWrapperContext;
 
-OpenHevc_Handle libOpenHevcInit(int nb_pthreads/*, int extra_size_alloc, AVFormatContext *pFormatCtx*/)
+OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
 {
     /* register all the codecs */
     avcodec_register_all();
@@ -74,6 +74,16 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     }
     return got_picture;
 }
+
+void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc)
+{
+    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
+    memcpy( openHevcContext->c->extradata, extra_data, extra_size_alloc);
+    openHevcContext->c->extradata_size = extra_size_alloc;
+
+}
+
 
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {
@@ -147,7 +157,6 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
 
 void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     if (val == 1)
         av_log_set_level(AV_LOG_DEBUG);
 }

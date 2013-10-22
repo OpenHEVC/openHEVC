@@ -96,13 +96,9 @@ static void video_decode_example(const char *filename)
     const size_t extra_size_alloc = pFormatCtx->streams[0]->codec->extradata_size > 0 ?
     (pFormatCtx->streams[0]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
 
-    ost = (OpenHevcWrapperContext *)openHevcHandle;
-
     if (extra_size_alloc)
     {
-        ost->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
-        memcpy( ost->c->extradata, pFormatCtx->streams[0]->codec->extradata, pFormatCtx->streams[0]->codec->extradata_size);
-        ost->c->extradata_size = extra_size_alloc;
+        libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx->streams[0]->codec->extradata, extra_size_alloc);
     }
 
     libOpenHevcStartDecoder(openHevcHandle);
