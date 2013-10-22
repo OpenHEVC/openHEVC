@@ -110,6 +110,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
 
 #endif
+                	c->transform_skip= ff_hevc_transform_skip_8_sse;
                 	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                 	c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
                 	c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_2_8_sse;
