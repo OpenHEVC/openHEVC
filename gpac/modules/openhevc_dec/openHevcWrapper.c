@@ -13,7 +13,7 @@ typedef struct OpenHevcWrapperContext {
     AVCodecParserContext *parser;
 } OpenHevcWrapperContext;
 
-OpenHevc_Handle libOpenHevcInit(int nb_pthreads/*, int extra_size_alloc, AVFormatContext *pFormatCtx*/)
+OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
 {
     /* register all the codecs */
     avcodec_register_all();
@@ -50,14 +50,14 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads/*, int extra_size_alloc, AVForma
 }
 
 
-void libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
+int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         return NULL;
-    }
-    av_opt_set_int(openHevcContext->c->priv_data, "disable-au", 0, 0);
+    } else
+        return 1;
 }
 
 int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
@@ -74,6 +74,16 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     }
     return got_picture;
 }
+
+void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc)
+{
+    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
+    memcpy( openHevcContext->c->extradata, extra_data, extra_size_alloc);
+    openHevcContext->c->extradata_size = extra_size_alloc;
+
+}
+
 
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {
@@ -145,15 +155,16 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
     return 1;
 }
 
+void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val)
+{
+    if (val == 1)
+        av_log_set_level(AV_LOG_DEBUG);
+}
+
 void libOpenHevcSetCheckMD5(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     av_opt_set_int(openHevcContext->c->priv_data, "decode-checksum", val, 0);
-}
-void libOpenHevcSetDisableAU(OpenHevc_Handle openHevcHandle, int val)
-{
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    av_opt_set_int(openHevcContext->c->priv_data, "disable-au", val, 0);
 }
 
 void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val)

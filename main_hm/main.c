@@ -76,58 +76,37 @@ static void video_decode_example(const char *filename)
 
     OpenHevc_Handle openHevcHandle;
     openHevcHandle = libOpenHevcInit(nb_pthreads + (enable_framebase<<8)/*, pFormatCtx*/);
-    libOpenHevcSetDisableAU(openHevcHandle, disable_au);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
     if (!openHevcHandle) {
         fprintf(stderr, "could not open OpenHevc\n");
         exit(1);
     }
-    if(disable_au == 0) {
-        av_register_all();
-        pFormatCtx = avformat_alloc_context();
-//        file_iformat = av_find_input_format("hevc");
-        file_iformat = av_guess_format(NULL, filename, NULL);
+    av_register_all();
+    pFormatCtx = avformat_alloc_context();
+    file_iformat = av_guess_format(NULL, filename, NULL);
 
-        if(avformat_open_input(&pFormatCtx, filename, file_iformat, NULL)!=0) {
-            printf("%s",filename);
-            exit(1); // Couldn't open file
-        }
-    } else {
-        f = fopen(filename, "rb");
-        if (!f) {
-            fprintf(stderr, "could not open %s\n", filename);
-            exit(1); // Couldn't open file
-        }
-        buf = calloc ( 2000000, sizeof(char));
+    if(avformat_open_input(&pFormatCtx, filename, file_iformat, NULL)!=0) {
+        printf("%s",filename);
+        exit(1); // Couldn't open file
     }
     if (output_file) {
         fout = fopen(output_file, "wb");
     }
-    if (disable_au == 0) {
-        const size_t extra_size_alloc = pFormatCtx->streams[0]->codec->extradata_size > 0 ?
-            (pFormatCtx->streams[0]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
+    const size_t extra_size_alloc = pFormatCtx->streams[0]->codec->extradata_size > 0 ?
+    (pFormatCtx->streams[0]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
 
-        ost = (OpenHevcWrapperContext *)openHevcHandle;
-
-        if (extra_size_alloc)
-        {
-            ost->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
-            memcpy( ost->c->extradata, pFormatCtx->streams[0]->codec->extradata, pFormatCtx->streams[0]->codec->extradata_size);
-            ost->c->extradata_size = extra_size_alloc;
-        }
+    if (extra_size_alloc)
+    {
+        libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx->streams[0]->codec->extradata, extra_size_alloc);
     }
 
     libOpenHevcStartDecoder(openHevcHandle);
+    libOpenHevcSetDebugMode(openHevcHandle, 1);
 
     while(!stop) {
-        if (disable_au == 0) {
-            if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
-            got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
-        } else {
-            if (stop_dec == 0 && feof(f)) stop_dec = 1;
-            got_picture = libOpenHevcDecode(openHevcHandle, buf, !stop_dec ? get_next_nal(f, buf) : 0, packet.pts);
-        }
+        if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
+        got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
         if (got_picture) {
             fflush(stdout);
             if (init == 1 ) {
@@ -167,8 +146,7 @@ static void video_decode_example(const char *filename)
     CloseSDLDisplay();
     if (fout)
         fclose(fout);
-    if (disable_au == 0)
-        avformat_close_input(&pFormatCtx);
+    avformat_close_input(&pFormatCtx);
     libOpenHevcClose(openHevcHandle);
     printf("frame= %d fps= %.0f time=%.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
 }
