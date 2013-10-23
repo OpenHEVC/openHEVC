@@ -240,7 +240,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
             sao[class] = &CTB(s->sao, x_ctb - 1, y_ctb - 1);
             class++;
 
-            // Tile check here is done current CTB row/col, not above/left like you'd expect, 
+            // Tile check here is done current CTB row/col, not above/left like you'd expect,
             //but that is because the tile boundary always extends through the whole pic
             vert_edge[1] = (!lfase[1] && CTB(s->tab_slice_address, x_ctb, y_ctb - 1) != CTB(s->tab_slice_address, x_ctb - 1, y_ctb - 1)) || left_tile_edge;
             vert_edge[3] = vert_edge[1];
