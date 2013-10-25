@@ -1030,13 +1030,17 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
             ret = AVERROR(ENOMEM);
             goto err;
         }
-
+        pps->max_col_width = 0;
+        pps->max_row_height = 0;
+        
         pps->uniform_spacing_flag = get_bits1(gb);
         if (!pps->uniform_spacing_flag) {
             int sum = 0;
             for (i = 0; i < pps->num_tile_columns - 1; i++) {
                 pps->column_width[i] = get_ue_golomb_long(gb) + 1;
                 sum += pps->column_width[i];
+                if(pps->column_width[i] > pps->max_col_width)
+                    pps->max_col_width = pps->column_width[i];
             }
             if (sum >= sps->ctb_width) {
                 av_log(s->avctx, AV_LOG_ERROR, "Invalid tile widths.\n");
@@ -1044,11 +1048,15 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
                 goto err;
             }
             pps->column_width[pps->num_tile_columns - 1] = sps->ctb_width - sum;
+            if(pps->column_width[pps->num_tile_columns - 1] > pps->max_col_width)
+                pps->max_col_width = pps->column_width[pps->num_tile_columns - 1];
 
             sum = 0;
             for (i = 0; i < pps->num_tile_rows - 1; i++) {
                 pps->row_height[i] = get_ue_golomb_long(gb) + 1;
                 sum += pps->row_height[i];
+                if(pps->row_height[i] > pps->max_row_height)
+                    pps->max_row_height = pps->row_height[i];
             }
             if (sum >= sps->ctb_height) {
                 av_log(s->avctx, AV_LOG_ERROR, "Invalid tile heights.\n");
@@ -1056,6 +1064,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
                 goto err;
             }
             pps->row_height[pps->num_tile_rows - 1] = sps->ctb_height - sum;
+            if(pps->row_height[pps->num_tile_rows - 1] > pps->max_row_height)
+                pps->max_row_height = pps->row_height[pps->num_tile_rows - 1];
         }
         pps->loop_filter_across_tiles_enabled_flag = get_bits1(gb);
     }
@@ -1125,14 +1135,20 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         for (i = 0; i < pps->num_tile_columns; i++) {
             pps->column_width[i] = ((i + 1) * sps->ctb_width) / pps->num_tile_columns -
                                    (i * sps->ctb_width) / pps->num_tile_columns;
+            if(pps->column_width[i] > pps->max_col_width)
+                pps->max_col_width = pps->column_width[i];
         }
-
+        
         for (i = 0; i < pps->num_tile_rows; i++) {
             pps->row_height[i] = ((i + 1) * sps->ctb_height) / pps->num_tile_rows -
                                  (i * sps->ctb_height) / pps->num_tile_rows;
+            if(pps->row_height[i] > pps->max_row_height)
+                pps->max_row_height = pps->row_height[i];
         }
+        
     }
-
+    
+    
     pps->col_bd[0] = 0;
     for (i = 0; i < pps->num_tile_columns; i++)
         pps->col_bd[i + 1] = pps->col_bd[i] + pps->column_width[i];

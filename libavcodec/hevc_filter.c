@@ -554,6 +554,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                                            int slice_or_tiles_up_boundary, int slice_or_tiles_left_boundary)
 {
     MvField *tab_mvf      = s->ref->tab_mvf;
+    HEVCLocalContext *lc = s->HEVClc;
     int log2_min_pu_size  = s->sps->log2_min_pu_size;
     int log2_min_tu_size  = s->sps->log2_min_transform_block_size;
     int pic_width_in_min_pu = s->sps->width >> log2_min_pu_size;
@@ -562,6 +563,16 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
 
     int i, j;
     int bs;
+    if(s->enable_parallel_tiles){
+        if((s->pps->loop_filter_across_tiles_enabled_flag && (((slice_or_tiles_up_boundary &2 ) && ((y0 % (1 << s->sps->log2_ctb_size)) == 0) )  || ((slice_or_tiles_left_boundary&2) && ((x0 % (1 << s->sps->log2_ctb_size)) == 0) )))) {
+            lc->save_boundary_strengths[lc->nb_saved].x = x0;
+            lc->save_boundary_strengths[lc->nb_saved].y = y0;
+            lc->save_boundary_strengths[lc->nb_saved].size = log2_trafo_size;
+            lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_up_boundary = lc->slice_or_tiles_up_boundary;
+            lc->save_boundary_strengths[lc->nb_saved].slice_or_tiles_left_boundary = lc->slice_or_tiles_left_boundary;
+            lc->nb_saved++;
+        }
+    }
 
     if (y0 > 0 && (y0 & 7) == 0) {
         int yp_pu = (y0 - 1) >> log2_min_pu_size;
@@ -577,7 +588,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * pic_width_in_min_tu + x_tu];
             uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * pic_width_in_min_tu + x_tu];
             RefPicList* top_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 + i, y0 - 1);
-
+                            
+                
             bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, top_refPicList, 1);
             if (!s->sh.slice_loop_filter_across_slices_enabled_flag && (slice_or_tiles_up_boundary & 1) && (y0 % (1 << s->sps->log2_ctb_size)) == 0)
                 bs = 0;
@@ -585,8 +597,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 bs = 0;
             if (y0 == 0 || s->sh.disable_deblocking_filter_flag == 1)
                 bs = 0;
-            if (bs)
-                s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
+            
+                s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs ? bs:0;
         }
     }
 
@@ -611,8 +623,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, top_refPicList, 0);
                 if (s->sh.disable_deblocking_filter_flag == 1)
                     bs = 0;
-                if (bs)
-                    s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
+                
+                s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs ? bs:0;
             }
         }
 
@@ -640,8 +652,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 bs = 0;
             if (x0 == 0 || s->sh.disable_deblocking_filter_flag == 1)
                 bs = 0;
-            if (bs)
-                s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs;
+        
+            s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs? bs:0 ;
         }
     }
 
@@ -665,8 +677,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 bs = boundary_strength(s, curr, curr_cbf_luma, left, left_cbf_luma, left_refPicList, 0);
                 if (s->sh.disable_deblocking_filter_flag == 1)
                     bs = 0;
-                if (bs)
-                    s->vertical_bs[((x0 + i) >> 3) + ((y0 + j) >> 2) * s->bs_width] = bs;
+                s->vertical_bs[((x0 + i) >> 3) + ((y0 + j) >> 2) * s->bs_width] = bs ? bs:0;
             }
         }
 }

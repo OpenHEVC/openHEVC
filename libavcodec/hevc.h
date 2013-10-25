@@ -516,6 +516,8 @@ typedef struct HEVCPPS {
     int *col_bd; ///< ColBd
     int *row_bd; ///< RowBd
     int *col_idxX;
+    int max_col_width;
+    int max_row_height;
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
@@ -764,6 +766,7 @@ typedef struct HEVCLocalContext {
     DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
     FilterData *save_boundary_strengths;
     int nb_saved;
+    int tile_pos_rs;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
@@ -885,6 +888,8 @@ typedef struct HEVCContext {
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
+    int dec_id;
+    
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
