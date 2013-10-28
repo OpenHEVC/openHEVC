@@ -554,7 +554,8 @@ static void cabac_init_state(HEVCContext *s)
 
 void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
 {
-    if (ctb_addr_ts == s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]) {
+    if (ctb_addr_ts == s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs] || ctb_addr_ts == (s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]+ s->HEVClc->tile_pos_rs) ) {
+        
         cabac_init_decoder(s);
         if ((s->sh.dependent_slice_segment_flag == 0) ||
             (s->pps->tiles_enabled_flag &&
