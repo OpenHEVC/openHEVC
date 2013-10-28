@@ -146,9 +146,10 @@ static void pic_arrays_free(HEVCContext *s)
     av_buffer_pool_uninit(&s->rpl_tab_pool);
     
     s->enable_parallel_tiles = 0;
-    if((s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1) && s->threads_number>1 /*&& s->pps->entropy_coding_sync_enabled_flag*/)
-        for (i = 0; i < s->threads_number; i++)
-            av_freep(&s->HEVClcList[i]->save_boundary_strengths);
+    if(s->pps)
+        if((s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1) && s->threads_number>1 /*&& s->pps->entropy_coding_sync_enabled_flag*/)
+            for (i = 0; i < s->threads_number; i++)
+                av_freep(&s->HEVClcList[i]->save_boundary_strengths);
     
 }
 
@@ -1131,7 +1132,7 @@ static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0)
 {
     if (s->threads_type == FF_THREAD_FRAME ) {
-        int y = (mv->y >> 2) + y0 + (1<<s->sps->log2_min_coding_block_size);
+        int y = (mv->y >> 2) + y0 + (2<<s->sps->log2_min_coding_block_size);
 
         ff_thread_await_progress(&ref->tf, FFMIN(s->height, y), 0);
     }
@@ -2885,6 +2886,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->threads_number      = s0->threads_number;
     s->threads_type        = s0->threads_type;
     s->decode_checksum_sei = s0->decode_checksum_sei;
+    s->num_pic_decoded     = s0->num_pic_decoded;
 
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
@@ -2988,6 +2990,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
             s->threads_type = FF_THREAD_FRAME;
         else
             s->threads_type = FF_THREAD_SLICE;
+    s->num_pic_decoded = av_mallocz(sizeof(int));
 
     
    

@@ -693,14 +693,17 @@ typedef struct DBParams {
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
 #define HEVC_FRAME_FLAG_LONG_REF  (1 << 2)
+#define HEVC_FRAME_FLAG_UNREF     (1 << 3)
 
 typedef struct HEVCFrame {
     AVFrame *frame;
     ThreadFrame tf;
     int threadCnt;
     int is_decoded;
+    int decode_idx;
     int poc;
     MvField *tab_mvf;
+    RefPicList unRefPicList;
     RefPicList *refPicList;
     RefPicListTab **rpl_tab;
     int ctb_count;
@@ -817,6 +820,7 @@ typedef struct HEVCContext {
     int bs_height;
 
     int is_decoded;
+    int*num_pic_decoded;
 
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
@@ -989,7 +993,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
-void ff_hevc_pps_free(HEVCPPS **ppps);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

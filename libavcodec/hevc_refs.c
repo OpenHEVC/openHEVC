@@ -30,9 +30,87 @@
 #define LOCK_DBP   if (s->threads_type == FF_THREAD_FRAME ) ff_thread_mutex_lock_dpb(s->avctx)
 #define UNLOCK_DBP if (s->threads_type == FF_THREAD_FRAME ) ff_thread_mutex_unlock_dpb(s->avctx)
 
+static void set_unref_frame_list(HEVCContext *s)
+{
+    int i;
+    RefPicList *unRefPicList = &s->ref->unRefPicList;
+    unRefPicList->nb_refs = 0;
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        HEVCFrame *frame = s->DPB[i];
+        if (!frame->frame || !frame->frame->buf[0])
+            continue;
+        if (!(frame->flags & (~(HEVC_FRAME_FLAG_UNREF|HEVC_FRAME_FLAG_OUTPUT))) /*&& frame->threadCnt == 0*/) {
+            frame->flags |= HEVC_FRAME_FLAG_UNREF;
+            unRefPicList->ref[unRefPicList->nb_refs] = frame;
+            unRefPicList->list[unRefPicList->nb_refs] = frame->poc;
+            unRefPicList->nb_refs++;
+        }
+    }
+}
+
+static void unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
+{
+    int tmp_flags;
+    /* frame->frame can be NULL if context init failed */
+    if (!frame->frame || !frame->frame->buf[0])
+        return;
+
+    tmp_flags = frame->flags & (~flags);
+    if (!tmp_flags && frame->threadCnt == 0) {
+        ff_thread_release_buffer(s->avctx, &frame->tf);
+
+        av_buffer_unref(&frame->tab_mvf_buf);
+        frame->tab_mvf = NULL;
+
+        av_buffer_unref(&frame->rpl_buf);
+        av_buffer_unref(&frame->rpl_tab_buf);
+        frame->rpl_tab    = NULL;
+        frame->refPicList = NULL;
+
+        frame->collocated_ref = NULL;
+        frame->flags = 0;
+    }
+}
+
+static void release_unused_frame(HEVCContext *s)
+{
+    int i,j;
+    if (s->threads_type != FF_THREAD_FRAME ) {
+        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+            unref_frame(s, s->DPB[i], 0);
+        return;
+    }
+    // create unref_candidate list for the current reference
+    set_unref_frame_list(s);
+    // delete all unref_candidate
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        HEVCFrame  *frame1     = s->DPB[i];
+        RefPicList *unRefPicList = &s->DPB[i]->unRefPicList;
+        int frame_unused      = 1;
+        if (!frame1->frame->buf[0] || !unRefPicList || (unRefPicList->nb_refs == 0))
+            continue;
+        for (j = 0; j < FF_ARRAY_ELEMS(s->DPB); j++) {
+            HEVCFrame *frame2 = s->DPB[j];
+            if (!frame2->frame->buf[0] || frame1 == frame2)
+                continue;
+            if (frame2->decode_idx <= frame1->decode_idx && !frame2->is_decoded) {
+                frame_unused = 0;
+                break;
+            }
+        }
+        if (frame_unused == 1) {
+            for (j = 0; j < unRefPicList->nb_refs; j++)
+                if (unRefPicList->ref[j]->poc == unRefPicList->list[j])
+                    unref_frame(s, unRefPicList->ref[j], HEVC_FRAME_FLAG_UNREF);
+        }
+    }
+}
+
 void ff_hevc_thread_cnt_ref(HEVCContext *s, int val)
 {
     LOCK_DBP;
+    if (s->sh.first_slice_in_pic_flag && val == 1)
+        release_unused_frame(s);
     if (s->threads_type == FF_THREAD_FRAME ) {
         uint8_t i, list_idx;
         if (s->sh.slice_type == P_SLICE || s->sh.slice_type == B_SLICE) {
@@ -58,28 +136,6 @@ void ff_hevc_thread_cnt_ref(HEVCContext *s, int val)
         }
     }
     UNLOCK_DBP;
-}
-
-static void unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
-{
-    /* frame->frame can be NULL if context init failed */
-    if (!frame->frame || !frame->frame->buf[0])
-        return;
-
-    frame->flags &= ~flags;
-    if (!frame->flags && frame->threadCnt == 0) {
-        ff_thread_release_buffer(s->avctx, &frame->tf);
-
-        av_buffer_unref(&frame->tab_mvf_buf);
-        frame->tab_mvf = NULL;
-
-        av_buffer_unref(&frame->rpl_buf);
-        av_buffer_unref(&frame->rpl_tab_buf);
-        frame->rpl_tab    = NULL;
-        frame->refPicList = NULL;
-
-        frame->collocated_ref = NULL;
-    }
 }
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
@@ -158,7 +214,6 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
             progress = (int*)frame->tf.progress->data;
             progress[0] = progress[1] = -1;
         }
-
         return frame;
 fail:
         unref_frame(s, frame, ~0);
@@ -195,6 +250,9 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     *frame              = ref->frame;
     s->ref              = ref;
     ref->poc            = poc;
+    ref->is_decoded     = 0;
+    ref->decode_idx     = *s->num_pic_decoded;
+    *s->num_pic_decoded = (*s->num_pic_decoded + 1) & 31;
 
     ref->flags          = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
     ref->sequence       = s->seq_decode;
@@ -238,7 +296,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             int pixel_shift = !!(desc->comp[0].depth_minus1 > 7);
 
             ret = av_frame_ref(out, src);
-            unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT);
+            frame->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
             if (ret < 0) {
                 UNLOCK_DBP;
                 return ret;
@@ -362,16 +420,16 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = s->DPB[i];
-        if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
-            if ((ref->poc & LtMask) == poc)
+        if (ref->frame->buf[0] && ref->sequence == s->seq_decode && (ref->flags & HEVC_FRAME_FLAG_UNREF) == 0) {
+            if (ref->poc == poc)
 	            return ref;
 	    }
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = s->DPB[i];
-        if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
-            if (ref->poc == poc || (ref->poc & LtMask) == poc)
+        if (ref->frame->buf[0] && ref->sequence == s->seq_decode && (ref->flags & HEVC_FRAME_FLAG_UNREF) == 0) {
+            if ((ref->poc & LtMask) == poc && ref != s->ref)
 	            return ref;
 	    }
     }
@@ -410,9 +468,12 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
                 }
     }
 
-    frame->poc      = poc;
-    frame->sequence = s->seq_decode;
-    frame->flags    = 0;
+    frame->poc        = poc;
+    frame->sequence   = s->seq_decode;
+    frame->flags      = 0;
+    frame->is_decoded = 1;
+    frame->decode_idx = 0;
+
 
     if (s->threads_type == FF_THREAD_FRAME)
         ff_thread_report_progress(&frame->tf, INT_MAX, 0);
@@ -496,11 +557,6 @@ int ff_hevc_frame_rps(HEVCContext *s)
             return ret;
         }
     }
-
-    /* release any frames that are now unused */
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
-        unref_frame(s, s->DPB[i], 0);
-
     UNLOCK_DBP;
     return 0;
 }
