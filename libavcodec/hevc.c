@@ -2299,7 +2299,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     return ret;
             }
         }
-        ff_hevc_thread_cnt_ref(s, 1);
 
         if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
             ctb_addr_ts = hls_slice_data_wpp(s, nal, length);
@@ -2313,7 +2312,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 s->sps->sao_enabled)
                 restore_tqb_pixels(s);
         }
-        ff_hevc_thread_cnt_ref(s, -1);
 
         if (ctb_addr_ts < 0)
             return ctb_addr_ts;
@@ -2641,10 +2639,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     s->ref = NULL;
     ret = decode_nal_units(s, avpkt->data, avpkt->size);
-    if (ret < 0) {
-        s->ref->is_decoded = 1;
+    if (ret < 0)
         return ret;
-    }
     if (s->enable_parallel_tiles == 1)
         tiles_filters(s);
     /* verify the SEI checksum */
@@ -2676,7 +2672,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (s->is_decoded) {
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         s->is_decoded = 0;
-        s->ref->is_decoded = 1;
     }
 
     if (s->output_frame->buf[0]) {
@@ -2744,20 +2739,17 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_frame_free(&s->tmp_frame);
     av_frame_free(&s->output_frame);
 
-    if(!avctx->internal->is_copy) {
-        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-            ff_hevc_unref_frame(s, s->DPB[i], ~0);
-            av_frame_free(&s->DPB[i]->frame);
-            av_freep(&s->DPB[i]);
-        }
-
-        for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++)
-            av_buffer_unref(&s->vps_list[i]);
-        for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
-            av_buffer_unref(&s->sps_list[i]);
-        for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
-            av_buffer_unref(&s->pps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        ff_hevc_unref_frame(s, &s->DPB[i], ~0);
+        av_frame_free(&s->DPB[i].frame);
     }
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++)
+        av_buffer_unref(&s->vps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
+        av_buffer_unref(&s->sps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
+        av_buffer_unref(&s->pps_list[i]);
 
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);
@@ -2807,14 +2799,11 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     if (!s->output_frame)
         goto fail;
 
-    for (i = 0; !avctx->internal->is_copy && i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        s->DPB[i] = av_mallocz(sizeof(*s->DPB[i]));
-        if (!s->DPB[i])
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        s->DPB[i].frame = av_frame_alloc();
+        if (!s->DPB[i].frame)
             goto fail;
-        s->DPB[i]->frame = av_frame_alloc();
-        if (!s->DPB[i]->frame)
-            goto fail;
-        s->DPB[i]->tf.f = s->DPB[i]->frame;
+        s->DPB[i].tf.f = s->DPB[i].frame;
     }
 
     s->max_ra = INT_MAX;
@@ -2846,7 +2835,14 @@ static int hevc_update_thread_context(AVCodecContext *dst,
             return ret;
     }
 
-    memcpy(s->DPB, s0->DPB, sizeof(s0->DPB));
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        ff_hevc_unref_frame(s, &s->DPB[i], ~0);
+        if (s0->DPB[i].frame->buf[0]) {
+            ret = hevc_ref_frame(s, &s->DPB[i], &s0->DPB[i]);
+            if (ret < 0)
+                return ret;
+        }
+    }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++) {
         av_buffer_unref(&s->vps_list[i]);
@@ -2886,7 +2882,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->threads_number      = s0->threads_number;
     s->threads_type        = s0->threads_type;
     s->decode_checksum_sei = s0->decode_checksum_sei;
-    s->num_pic_decoded     = s0->num_pic_decoded;
 
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
@@ -2990,9 +2985,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
             s->threads_type = FF_THREAD_FRAME;
         else
             s->threads_type = FF_THREAD_SLICE;
-    s->num_pic_decoded = av_mallocz(sizeof(int));
-
-    
    
     
     for (i = 1; i < s->threads_number ; i++) {

@@ -364,9 +364,6 @@ typedef struct HEVCVPS {
     uint8_t vps_poc_proportional_to_timing_flag;
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
-
-    uint8_t threadCnt;
-    AVBufferRef* freed;
 } HEVCVPS;
 
 typedef struct ScalingList {
@@ -452,9 +449,6 @@ typedef struct HEVCSPS {
     int vshift[3];
 
     int qp_bd_offset;
-
-    uint8_t threadCnt;
-    AVBufferRef* freed;
 } HEVCSPS;
 
 typedef struct HEVCPPS {
@@ -525,9 +519,6 @@ typedef struct HEVCPPS {
     int *tile_pos_rs; ///< TilePosRS
     int *min_cb_addr_zs; ///< MinCbAddrZS
     int *min_tb_addr_zs; ///< MinTbAddrZS
-
-    uint8_t threadCnt;
-    AVBufferRef* freed;
 } HEVCPPS;
 
 typedef struct SliceHeader {
@@ -698,12 +689,8 @@ typedef struct DBParams {
 typedef struct HEVCFrame {
     AVFrame *frame;
     ThreadFrame tf;
-    int threadCnt;
-    int is_decoded;
-    int decode_idx;
     int poc;
     MvField *tab_mvf;
-    RefPicList unRefPicList;
     RefPicList *refPicList;
     RefPicListTab **rpl_tab;
     int ctb_count;
@@ -810,7 +797,7 @@ typedef struct HEVCContext {
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
     HEVCFrame *ref;
-    HEVCFrame *DPB[32];
+    HEVCFrame DPB[32];
     int poc;
     int pocTid0;
     int slice_idx; ///< number of the slice being currently decoded
@@ -820,7 +807,6 @@ typedef struct HEVCContext {
     int bs_height;
 
     int is_decoded;
-    int*num_pic_decoded;
 
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
@@ -974,8 +960,6 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags);
-
-void ff_hevc_thread_cnt_ref(HEVCContext *s, int val);
 
 void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, int nPbH);
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv);
