@@ -2524,7 +2524,7 @@ typedef struct AVCodecContext {
     int thread_type;
 #define FF_THREAD_FRAME   1 ///< Decode more than one frame at once
 #define FF_THREAD_SLICE   2 ///< Decode more than one part of a single frame at once
-
+#define FF_THREAD_FRAME_SLICE   3 ///< Decode more than one part of a single frame at once at more than one frame at once
     /**
      * Which multithreading methods are in use by the codec.
      * - encoding: Set by libavcodec.

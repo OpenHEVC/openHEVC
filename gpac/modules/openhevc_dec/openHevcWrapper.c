@@ -39,10 +39,16 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
 
     /* open it */
     if(nb_pthreads)	{
-        if ((nb_pthreads & 256)  != 0)
-            av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
+        if ((nb_pthreads & 512)  != 0){
+            av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
+        }
         else
+            if ((nb_pthreads & 256)  != 0){
+                av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
+            }
+            else
             av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
+            
         av_opt_set_int(openHevcContext->c, "threads", nb_pthreads& 255, 0);
     }
 

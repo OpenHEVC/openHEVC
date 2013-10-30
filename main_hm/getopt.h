@@ -41,8 +41,9 @@
 #define DISABLE 0
 #define ENABLE  1
 
+
 int check_md5_flags;
-int enable_framebase;
+int parallelism_mode;
 char *input_file;
 char display_flags;
 char *output_file;

@@ -51,7 +51,7 @@ void print_usage() {
 	printf(usage, program);
     printf("     -a : disable AU\n");
     printf("     -c : no check md5\n");
-    printf("     -f : enable FrameBase mode\n");
+    printf("     -f : <paralellism mode> \n");
     printf("     -i <input file>\n");
     printf("     -n : no display\n");
     printf("     -o <output file>\n");
@@ -129,10 +129,10 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
 	// every command line option must be followed by ':' if it takes an
 	// argument, and '::' if this argument is optional
-	const char *ostr = "acfhi:no:p:t:w";
+	const char *ostr = "achi:no:p:f:t:w";
 	int c;
     check_md5_flags   = ENABLE;
-    enable_framebase  = DISABLE;
+    parallelism_mode  = DISABLE;
     input_file        = NULL;
 	display_flags     = ENABLE;
     output_file       = NULL;
@@ -150,7 +150,7 @@ void init_main(int argc, char *argv[]) {
             check_md5_flags = DISABLE;
             break;
         case 'f':
-            enable_framebase = ENABLE;
+            parallelism_mode = atoi(optarg);
             break;
 		case 'i':
 			input_file = strdup(optarg);
