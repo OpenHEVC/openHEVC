@@ -2579,8 +2579,15 @@ typedef struct AVCodecContext {
      * - encoding: set by execute()
      * - decoding: set by execute()
      */
+    
     void *thread_opaque;
-
+    /**
+     * thread opaque 2 for two levels of paralellism
+     * Can be used by execute() to store some per AVCodecContext stuff.
+     * - encoding: set by execute()
+     * - decoding: set by execute()
+     */
+    void *thread_opaque2;
     /**
      * noise vs. sse weight for the nsse comparsion function
      * - encoding: Set by user.

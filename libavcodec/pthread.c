@@ -603,7 +603,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
                            AVFrame *picture, int *got_picture_ptr,
                            AVPacket *avpkt)
 {
-    FrameThreadContext *fctx = avctx->thread_opaque;
+    FrameThreadContext *fctx = avctx->thread_opaque2;
     int finished = fctx->next_finished;
     PerThreadContext *p;
     int err;
@@ -678,7 +678,7 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 
     if (!progress || progress[field] >= n) return;
 
-    p = f->owner->thread_opaque;
+    p = f->owner->thread_opaque2;
 
     if (f->owner->debug&FF_DEBUG_THREADS)
         av_log(f->owner, AV_LOG_DEBUG, "%p finished %d field %d\n", progress, n, field);
@@ -696,7 +696,7 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
 
     if (!progress || progress[field] >= n) return;
 
-    p = f->owner->thread_opaque;
+    p = f->owner->thread_opaque2;
 
     if (f->owner->debug&FF_DEBUG_THREADS)
         av_log(f->owner, AV_LOG_DEBUG, "thread awaiting %d field %d from %p\n", n, field, progress);
@@ -709,19 +709,19 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
 
 void ff_thread_mutex_lock_dpb(AVCodecContext *avctx)
 {
-    PerThreadContext   *p  = avctx->thread_opaque;
+    PerThreadContext   *p  = avctx->thread_opaque2;
     FrameThreadContext *p1 = p->parent;
     pthread_mutex_lock(&p1->dpb_mutex);
 }
 void ff_thread_mutex_unlock_dpb(AVCodecContext *avctx)
 {
-    PerThreadContext   *p  = avctx->thread_opaque;
+    PerThreadContext   *p  = avctx->thread_opaque2;
     FrameThreadContext *p1 = p->parent;
     pthread_mutex_unlock(&p1->dpb_mutex);
 }
 
 void ff_thread_finish_setup(AVCodecContext *avctx) {
-    PerThreadContext *p = avctx->thread_opaque;
+    PerThreadContext *p = avctx->thread_opaque2;
 
     if (!(avctx->active_thread_type&FF_THREAD_FRAME)) return;
 
@@ -750,7 +750,7 @@ static void park_frame_worker_threads(FrameThreadContext *fctx, int thread_count
 
 static void frame_thread_free(AVCodecContext *avctx, int thread_count)
 {
-    FrameThreadContext *fctx = avctx->thread_opaque;
+    FrameThreadContext *fctx = avctx->thread_opaque2;
     const AVCodec *codec = avctx->codec;
     int i;
 
@@ -804,7 +804,7 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
     av_freep(&fctx->threads);
     pthread_mutex_destroy(&fctx->buffer_mutex);
     pthread_mutex_destroy(&fctx->dpb_mutex);
-    av_freep(&avctx->thread_opaque);
+    av_freep(&avctx->thread_opaque2);
 }
 
 static int frame_thread_init(AVCodecContext *avctx)
@@ -830,7 +830,7 @@ static int frame_thread_init(AVCodecContext *avctx)
         return 0;
     }
 
-    avctx->thread_opaque = fctx = av_mallocz(sizeof(FrameThreadContext));
+    avctx->thread_opaque2 = fctx = av_mallocz(sizeof(FrameThreadContext));
 
     fctx->threads = av_mallocz(sizeof(PerThreadContext) * thread_count);
     pthread_mutex_init(&fctx->buffer_mutex, NULL);
@@ -856,7 +856,7 @@ static int frame_thread_init(AVCodecContext *avctx)
         }
 
         *copy = *src;
-        copy->thread_opaque = p;
+        copy->thread_opaque2 = p;
         copy->pkt = &p->avpkt;
 
         if (!i) {
@@ -902,9 +902,9 @@ error:
 void ff_thread_flush(AVCodecContext *avctx)
 {
     int i;
-    FrameThreadContext *fctx = avctx->thread_opaque;
+    FrameThreadContext *fctx = avctx->thread_opaque2;
 
-    if (!avctx->thread_opaque) return;
+    if (!avctx->thread_opaque2) return;
 
     park_frame_worker_threads(fctx, avctx->thread_count);
     if (fctx->prev_thread) {
@@ -929,7 +929,7 @@ void ff_thread_flush(AVCodecContext *avctx)
 
 int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
 {
-    PerThreadContext *p = avctx->thread_opaque;
+    PerThreadContext *p = avctx->thread_opaque2;
     int err;
 
     f->owner = avctx;
@@ -988,7 +988,7 @@ int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
 
 void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
 {
-    PerThreadContext *p = avctx->thread_opaque;
+    PerThreadContext *p = avctx->thread_opaque2;
     FrameThreadContext *fctx;
     AVFrame *dst, *tmp;
     int can_direct_free = !(avctx->active_thread_type & FF_THREAD_FRAME) ||
