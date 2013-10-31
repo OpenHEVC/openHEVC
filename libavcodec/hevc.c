@@ -2833,7 +2833,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->threads_number = avctx->thread_count;
     else
         s->threads_number = 1;
-    printf("threads_number %d \n", s->threads_number);
+   
     
     for (i = 1; i < s->threads_number ; i++) {
         
