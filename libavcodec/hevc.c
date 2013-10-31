@@ -2022,13 +2022,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     int startheader, cmpt = 0;
     int i, j, res = 0;
 
-
-
     ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
-
-       
-        
- 
+    
     offset = (lc->gb.index >> 3);
 
     for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
@@ -2835,7 +2830,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->threads_number = avctx->thread_count;
     else
         s->threads_number = 1;
-    
+    printf("threads_number %d \n", s->threads_number);
     
     for (i = 1; i < s->threads_number ; i++) {
         

@@ -972,8 +972,10 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             goto free_and_end;
         }
     }
-    if (!HAVE_THREADS && !(codec->capabilities & CODEC_CAP_AUTO_THREADS))
+    if (!HAVE_THREADS && !(codec->capabilities & CODEC_CAP_AUTO_THREADS)){
         avctx->thread_count = 1;
+        avctx->thread_count2 = 1;
+    }
 
     if (av_codec_is_encoder(avctx->codec)) {
         int i;

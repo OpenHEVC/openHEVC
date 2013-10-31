@@ -13,7 +13,7 @@ typedef struct OpenHevcWrapperContext {
     AVCodecParserContext *parser;
 } OpenHevcWrapperContext;
 
-OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
+OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int nb_pthreads2)
 {
     /* register all the codecs */
     avcodec_register_all();
@@ -38,20 +38,19 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads)
          available in the bitstream. */
 
     /* open it */
-    if(nb_pthreads)	{
-        if ((nb_pthreads & 512)  != 0){
+    if(nb_pthreads || nb_pthreads2)	{
+        if ((nb_pthreads >1)   && (nb_pthreads2 >1)){
             av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
         }
         else
-            if ((nb_pthreads & 256)  != 0){
+            if (nb_pthreads2 >1)
                 av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
-            }
             else
-            av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
+                av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
             
-        av_opt_set_int(openHevcContext->c, "threads", nb_pthreads& 255, 0);
+        av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
+        av_opt_set_int(openHevcContext->c, "threads2", nb_pthreads2, 0);
     }
-
     return (OpenHevc_Handle) openHevcContext;
 }
 

@@ -132,7 +132,7 @@ void init_main(int argc, char *argv[]) {
 	const char *ostr = "achi:no:p:f:t:w";
 	int c;
     check_md5_flags   = ENABLE;
-    parallelism_mode  = DISABLE;
+    nb_pthreads2  = 1;
     input_file        = NULL;
 	display_flags     = ENABLE;
     output_file       = NULL;
@@ -150,7 +150,7 @@ void init_main(int argc, char *argv[]) {
             check_md5_flags = DISABLE;
             break;
         case 'f':
-            parallelism_mode = atoi(optarg);
+            nb_pthreads2 = atoi(optarg);
             break;
 		case 'i':
 			input_file = strdup(optarg);

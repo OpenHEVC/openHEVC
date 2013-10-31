@@ -43,7 +43,7 @@
 
 
 int check_md5_flags;
-int parallelism_mode;
+int nb_pthreads2;
 char *input_file;
 char display_flags;
 char *output_file;

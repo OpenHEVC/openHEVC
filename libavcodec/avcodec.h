@@ -2514,6 +2514,14 @@ typedef struct AVCodecContext {
     int thread_count;
 
     /**
+     * thread count for opaque2
+     * is used to decide how many independent tasks should be passed to execute()
+     * - encoding: Set by user.
+     * - decoding: Set by user.
+     */
+    int thread_count2;
+    
+    /**
      * Which multithreading methods to use.
      * Use of FF_THREAD_FRAME will increase decoding delay by one frame per thread,
      * so clients which cannot provide future frames should not use it.
