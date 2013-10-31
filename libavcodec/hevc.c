@@ -2008,9 +2008,14 @@ static void tiles_filters(HEVCContext *s)
                                                   s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_left_boundary);
     }
     s->enable_parallel_tiles =1;
-    for (y_ctb = 0; y_ctb < s->sps->height; y_ctb += ctb_size)
+    for (y_ctb = 0; y_ctb < s->sps->height; y_ctb += ctb_size) {
         for (x_ctb = 0; x_ctb < s->sps->width; x_ctb += ctb_size)
             ff_hevc_hls_filter(s, x_ctb, y_ctb);
+        if (s->threads_type&FF_THREAD_FRAME)
+            ff_thread_report_progress(&s->ref->tf, y_ctb, 0);
+    }
+    if (s->threads_type&FF_THREAD_FRAME)
+        ff_thread_report_progress(&s->ref->tf, s->sps->height, 0);
 
 }
 static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
@@ -2814,15 +2819,13 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     s->context_initialized = 1;
     
-    if(avctx->thread_count > 1) {
-        if((avctx->active_thread_type & FF_THREAD_FRAME) && (avctx->active_thread_type & FF_THREAD_SLICE))
-            s->threads_type = FF_THREAD_FRAME_SLICE;
+    if((avctx->active_thread_type & FF_THREAD_FRAME) && (avctx->active_thread_type & FF_THREAD_SLICE))
+        s->threads_type = FF_THREAD_FRAME_SLICE;
+    else
+        if((avctx->active_thread_type & FF_THREAD_FRAME))
+            s->threads_type = FF_THREAD_FRAME;
         else
-            if((avctx->active_thread_type & FF_THREAD_FRAME))
-                s->threads_type = FF_THREAD_FRAME;
-            else
-                s->threads_type = FF_THREAD_SLICE;
-    }
+            s->threads_type = FF_THREAD_SLICE;
     
     
     s->enable_parallel_tiles = 0;
