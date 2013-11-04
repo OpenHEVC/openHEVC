@@ -1,0 +1,16 @@
+EXPORTS
+libOpenHevcClose
+libOpenHevcCopyExtraData
+libOpenHevcDecode
+libOpenHevcFlush
+libOpenHevcGetOutput
+libOpenHevcGetOutputCpy
+libOpenHevcGetPictureInfo
+libOpenHevcGetPictureSize2
+libOpenHevcInit
+libOpenHevcSetCheckMD5
+libOpenHevcSetDebugMode
+libOpenHevcSetNoCropping
+libOpenHevcSetTemporalLayer_id
+libOpenHevcStartDecoder
+libOpenHevcVersion
