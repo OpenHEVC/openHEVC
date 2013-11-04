@@ -51,7 +51,7 @@ void print_usage() {
 	printf(usage, program);
     printf("     -a : disable AU\n");
     printf("     -c : no check md5\n");
-    printf("     -f : <paralellism mode> \n");
+    printf("     -f <thread type> (1: frame, 2: slice, 3, frameslice)\n");
     printf("     -i <input file>\n");
     printf("     -n : no display\n");
     printf("     -o <output file>\n");
@@ -132,7 +132,7 @@ void init_main(int argc, char *argv[]) {
 	const char *ostr = "achi:no:p:f:t:w";
 	int c;
     check_md5_flags   = ENABLE;
-    nb_pthreads2  = 1;
+    thread_type       = 1;
     input_file        = NULL;
 	display_flags     = ENABLE;
     output_file       = NULL;
@@ -150,7 +150,7 @@ void init_main(int argc, char *argv[]) {
             check_md5_flags = DISABLE;
             break;
         case 'f':
-            nb_pthreads2 = atoi(optarg);
+            thread_type = atoi(optarg);
             break;
 		case 'i':
 			input_file = strdup(optarg);

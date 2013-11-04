@@ -1049,9 +1049,7 @@ static void validate_thread_parameters(AVCodecContext *avctx)
                                 && !(avctx->flags & CODEC_FLAG_TRUNCATED)
                                 && !(avctx->flags & CODEC_FLAG_LOW_DELAY)
                                 && !(avctx->flags2 & CODEC_FLAG2_CHUNKS);
-    if ((avctx->thread_count == 1) && (avctx->thread_count2 == 1)) {
-        avctx->active_thread_type = 0;
-    } else if(frame_threading_supported && (avctx->thread_type & FF_THREAD_FRAME) && avctx->codec->capabilities & CODEC_CAP_SLICE_THREADS &&
+    if(frame_threading_supported && (avctx->thread_type & FF_THREAD_FRAME) && avctx->codec->capabilities & CODEC_CAP_SLICE_THREADS &&
               avctx->thread_type & FF_THREAD_SLICE){
         avctx->active_thread_type = FF_THREAD_FRAME_SLICE;
     } else if (frame_threading_supported && (avctx->thread_type & FF_THREAD_FRAME)) {
@@ -1071,6 +1069,31 @@ static void validate_thread_parameters(AVCodecContext *avctx)
                avctx->thread_count, MAX_AUTO_THREADS);
 }
 
+static void compute_nb_thread_parameter(AVCodecContext *avctx)
+{
+    avctx->thread_count2 = 1;
+    if ((avctx->active_thread_type&FF_THREAD_FRAME) && (avctx->active_thread_type&FF_THREAD_SLICE)) {
+        int thread_count = avctx->thread_count != 0 ? avctx->thread_count : 1;
+        int nb_cpus = (av_cpu_count() / thread_count) + 1;
+        if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) || avctx->debug_mv)
+            nb_cpus = 1;
+        // use number of cores + 1 as thread count if there is more than one
+        if (nb_cpus > 1)
+            avctx->thread_count2 = FFMIN(nb_cpus, MAX_AUTO_THREADS);
+        else {
+            avctx->active_thread_type &= ~FF_THREAD_FRAME;
+            avctx->thread_count2 = 1;
+        }
+        if (thread_count == 1)
+            avctx->active_thread_type &= ~FF_THREAD_SLICE;
+    } else if (avctx->active_thread_type&FF_THREAD_FRAME) {
+        avctx->thread_count2 = avctx->thread_count;
+        avctx->thread_count  = 1;
+    }
+    av_log(avctx, AV_LOG_INFO, "nb threads_frame = %d, nb threads_slice %d, thread_type = %d \n",
+            avctx->thread_count2, avctx->thread_count, avctx->active_thread_type);
+}
+
 int ff_thread_init(AVCodecContext *avctx)
 {
     int ret;
@@ -1080,6 +1103,8 @@ int ff_thread_init(AVCodecContext *avctx)
 
     validate_thread_parameters(avctx);
     
+    compute_nb_thread_parameter(avctx);
+
     if (avctx->active_thread_type&FF_THREAD_FRAME)
         return frame_thread_init(avctx);
     else

@@ -75,7 +75,7 @@ static void video_decode_example(const char *filename)
     OpenHevcWrapperContext *ost;
 
     OpenHevc_Handle openHevcHandle;
-    openHevcHandle = libOpenHevcInit(nb_pthreads, nb_pthreads2/*, pFormatCtx*/);
+    openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
     if (!openHevcHandle) {
