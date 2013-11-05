@@ -1090,8 +1090,8 @@ static void compute_nb_thread_parameter(AVCodecContext *avctx)
         avctx->thread_count2 = avctx->thread_count;
         avctx->thread_count  = 1;
     }
-    av_log(avctx, AV_LOG_INFO, "nb threads_frame = %d, nb threads_slice %d, thread_type = %d \n",
-            avctx->thread_count2, avctx->thread_count, avctx->active_thread_type);
+    av_log(avctx, AV_LOG_INFO, "nb threads_frame = %d, nb threads_slice %d, thread_type = %s \n",
+           avctx->thread_count2, avctx->thread_count, avctx->active_thread_type == FF_THREAD_FRAME_SLICE ? "frameslice":(avctx->active_thread_type == FF_THREAD_FRAME?"frame":"slice"));
 }
 
 int ff_thread_init(AVCodecContext *avctx)
@@ -1138,6 +1138,7 @@ void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, in
 void ff_thread_await_progress2(AVCodecContext *avctx, int field, int thread, int shift)
 {
     ThreadContext *p  = avctx->thread_opaque;
+    
     int *entries = p->entries;
    
     if (!entries || !field) return;
@@ -1181,6 +1182,7 @@ int ff_alloc_entries(AVCodecContext *avctx, int count)
 void ff_reset_entries(AVCodecContext *avctx)
 {
     ThreadContext *p = avctx->thread_opaque;
-    memset(p->entries, 0, p->entries_count  * sizeof(int));
+    if(p)
+        memset(p->entries, 0, p->entries_count  * sizeof(int));
 }
 
