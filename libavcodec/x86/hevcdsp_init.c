@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Seppo Tomperi
+ * Copyright (c) 2013 Seppo Tomperi & Pierre-Edouard LEPERE
  *
  * This file is part of Libav.
  *
