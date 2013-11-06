@@ -146,10 +146,10 @@ static void pic_arrays_free(HEVCContext *s)
     av_buffer_pool_uninit(&s->rpl_tab_pool);
     
     s->enable_parallel_tiles = 0;
-    if(s->pps)
-        if((s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1) && s->threads_number>1 /*&& s->pps->entropy_coding_sync_enabled_flag*/)
-            for (i = 0; i < s->threads_number; i++)
-                av_freep(&s->HEVClcList[i]->save_boundary_strengths);
+
+    if(s->threads_number>1 && s->pps && (s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1))
+        for (i = 0; i < s->threads_number; i++)
+            av_freep(&s->HEVClcList[i]->save_boundary_strengths);
     
 }
 
