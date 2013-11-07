@@ -90,6 +90,10 @@ static void video_decode_example(const char *filename)
         printf("%s",filename);
         exit(1); // Couldn't open file
     }
+
+    avformat_find_stream_info(pFormatCtx, NULL);
+    av_dump_format(pFormatCtx, 1, filename, 0);
+
     if (output_file) {
         fout = fopen(output_file, "wb");
     }
@@ -117,7 +121,7 @@ static void video_decode_example(const char *filename)
                 if (fout) {
                     int nbData;
                     libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
-                    nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight;
+                    nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight * (openHevcFrameCpy.frameInfo.nBitDepth==8 ? 1 : 2);
                     openHevcFrameCpy.pvY = calloc ( nbData    , sizeof(unsigned char));
                     openHevcFrameCpy.pvU = calloc ( nbData / 4, sizeof(unsigned char));
                     openHevcFrameCpy.pvV = calloc ( nbData / 4, sizeof(unsigned char));
@@ -132,7 +136,7 @@ static void video_decode_example(const char *filename)
                         openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
             }
             if (fout) {
-                int nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight;
+                int nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight * (openHevcFrameCpy.frameInfo.nBitDepth==8 ? 1 : 2);
                 libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
                 fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , nbData    , fout);
                 fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , nbData / 4, fout);

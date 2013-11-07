@@ -1090,7 +1090,7 @@ static void compute_nb_thread_parameter(AVCodecContext *avctx)
         avctx->thread_count2 = avctx->thread_count;
         avctx->thread_count  = 1;
     }
-    av_log(avctx, AV_LOG_INFO, "nb threads_frame = %d, nb threads_slice %d, thread_type = %s \n",
+    av_log(avctx, AV_LOG_DEBUG, "nb threads_frame = %d, nb threads_slice %d, thread_type = %s \n",
            avctx->thread_count2, avctx->thread_count, avctx->active_thread_type == FF_THREAD_FRAME_SLICE ? "frameslice":(avctx->active_thread_type == FF_THREAD_FRAME?"frame":"slice"));
 }
 
