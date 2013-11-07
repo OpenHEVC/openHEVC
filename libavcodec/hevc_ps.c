@@ -272,7 +272,6 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VPS\n");
 
-    vps = av_mallocz(sizeof(*vps));
     if (!vps)
         return AVERROR(ENOMEM);
 
