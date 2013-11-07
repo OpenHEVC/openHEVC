@@ -108,7 +108,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
 
         frame->frame->top_field_first  = s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD;
         frame->frame->interlaced_frame = (s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD) || (s->picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD);
-
+        frame->frame->display_picture_number = s->poc;
         return frame;
 fail:
         ff_hevc_unref_frame(s, frame, ~0);
