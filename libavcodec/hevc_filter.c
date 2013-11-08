@@ -563,6 +563,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
 
     int i, j;
     int bs;
+  /*
     if(s->enable_parallel_tiles){
         if((s->pps->loop_filter_across_tiles_enabled_flag && (((slice_or_tiles_up_boundary &2 ) && ((y0 % (1 << s->sps->log2_ctb_size)) == 0) )  || ((slice_or_tiles_left_boundary&2) && ((x0 % (1 << s->sps->log2_ctb_size)) == 0) )))) {
             lc->save_boundary_strengths[lc->nb_saved].x = x0;
@@ -573,7 +574,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             lc->nb_saved++;
         }
     }
-
+*/
     if (y0 > 0 && (y0 & 7) == 0) {
         int yp_pu = (y0 - 1) >> log2_min_pu_size;
         int yq_pu = y0 >> log2_min_pu_size;
