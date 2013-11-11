@@ -91,20 +91,36 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
     OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
     AVFrame *picture              = openHevcContext->picture;
     openHevcFrameInfo->nYPitch    = openHevcContext->c->width;
-    openHevcFrameInfo->nUPitch    = openHevcContext->c->width>>1;
-    openHevcFrameInfo->nVPitch    = openHevcContext->c->width>>1;
 
-    openHevcFrameInfo->nBitDepth  = 8;
+    switch (picture->format) {
+    case PIX_FMT_YUV420P   :
+    case PIX_FMT_YUV420P9  :
+    case PIX_FMT_YUV420P10 :
+        openHevcFrameInfo->nUPitch    = openHevcContext->c->width>>1;
+        openHevcFrameInfo->nVPitch    = openHevcContext->c->width>>1;
+        break;
+    default :
+        openHevcFrameInfo->nUPitch    = openHevcContext->c->width>>1;
+        openHevcFrameInfo->nVPitch    = openHevcContext->c->width>>1;
+        break;
+    }
+
+    switch (picture->format) {
+    case PIX_FMT_YUV420P   : openHevcFrameInfo->nBitDepth  =  8; break;
+    case PIX_FMT_YUV420P9  : openHevcFrameInfo->nBitDepth  =  9; break;
+    case PIX_FMT_YUV420P10 : openHevcFrameInfo->nBitDepth  = 10; break;
+    default               : openHevcFrameInfo->nBitDepth  =  8; break;
+    }
 
     openHevcFrameInfo->nWidth     = openHevcContext->c->width;
     openHevcFrameInfo->nHeight    = openHevcContext->c->height;
 
     openHevcFrameInfo->sample_aspect_ratio.num = picture->sample_aspect_ratio.num;
     openHevcFrameInfo->sample_aspect_ratio.den = picture->sample_aspect_ratio.den;
-    openHevcFrameInfo->frameRate.num  = 0;
-    openHevcFrameInfo->frameRate.den  = 0;
-    openHevcFrameInfo->display_picture_number = picture->display_picture_number;
-    openHevcFrameInfo->flag       = 0; //progressive, interlaced, interlaced top field first, interlaced bottom field first.
+    openHevcFrameInfo->frameRate.num           = openHevcContext->c->time_base.den;
+    openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
+    openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
+    openHevcFrameInfo->flag       = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
     openHevcFrameInfo->nTimeStamp = picture->pkt_pts;
 }
 
@@ -138,18 +154,23 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
         unsigned char *Y = (unsigned char *) openHevcFrame->pvY;
         unsigned char *U = (unsigned char *) openHevcFrame->pvU;
         unsigned char *V = (unsigned char *) openHevcFrame->pvV;
+        int width;
+        switch (openHevcContext->picture->format) {
+        case PIX_FMT_YUV420P   : width = openHevcContext->c->width; break;
+        default               : width = openHevcContext->c->width * 2; break;
+        }
         y_offset = y_offset2 = 0;
         for(y = 0; y < openHevcContext->c->height; y++) {
-            memcpy(&Y[y_offset2], &openHevcContext->picture->data[0][y_offset], openHevcContext->c->width);
+            memcpy(&Y[y_offset2], &openHevcContext->picture->data[0][y_offset], width);
             y_offset  += openHevcContext->picture->linesize[0];
-            y_offset2 += openHevcContext->c->width;
+            y_offset2 += width;
         }
         y_offset = y_offset2 = 0;
         for(y = 0; y < openHevcContext->c->height/2; y++) {
-            memcpy(&U[y_offset2], &openHevcContext->picture->data[1][y_offset], openHevcContext->c->width/2);
-            memcpy(&V[y_offset2], &openHevcContext->picture->data[2][y_offset], openHevcContext->c->width/2);
+            memcpy(&U[y_offset2], &openHevcContext->picture->data[1][y_offset], width/2);
+            memcpy(&V[y_offset2], &openHevcContext->picture->data[2][y_offset], width/2);
             y_offset  += openHevcContext->picture->linesize[1];
-            y_offset2 += openHevcContext->c->width / 2;
+            y_offset2 += width / 2;
         }
         libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame->frameInfo);
     }

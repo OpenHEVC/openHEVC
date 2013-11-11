@@ -272,7 +272,6 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VPS\n");
 
-    vps = av_mallocz(sizeof(*vps));
     if (!vps)
         return AVERROR(ENOMEM);
 
@@ -433,10 +432,14 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
     }
 
     vui->vui_timing_info_present_flag = get_bits1(gb);
+    s->avctx->time_base.num = 1;
+    s->avctx->time_base.den = 1;
     if (vui->vui_timing_info_present_flag) {
         vui->vui_num_units_in_tick               = get_bits(gb, 32);
         vui->vui_time_scale                      = get_bits(gb, 32);
         vui->vui_poc_proportional_to_timing_flag = get_bits1(gb);
+        s->avctx->time_base.num                  = vui->vui_num_units_in_tick;
+        s->avctx->time_base.den                  = vui->vui_time_scale;
         if (vui->vui_poc_proportional_to_timing_flag)
             vui->vui_num_ticks_poc_diff_one_minus1 = get_ue_golomb_long(gb);
         vui->vui_hrd_parameters_present_flag = get_bits1(gb);

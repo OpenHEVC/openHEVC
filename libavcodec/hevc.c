@@ -146,10 +146,10 @@ static void pic_arrays_free(HEVCContext *s)
     av_buffer_pool_uninit(&s->rpl_tab_pool);
     
     s->enable_parallel_tiles = 0;
-    if(s->pps)
-        if((s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1) && s->threads_number>1 /*&& s->pps->entropy_coding_sync_enabled_flag*/)
-            for (i = 0; i < s->threads_number; i++)
-                av_freep(&s->HEVClcList[i]->save_boundary_strengths);
+
+    if(s->threads_number>1 && s->pps && (s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1))
+        for (i = 0; i < s->threads_number; i++)
+            av_freep(&s->HEVClcList[i]->save_boundary_strengths);
     
 }
 
@@ -437,6 +437,9 @@ static int hls_slice_header(HEVCContext *s)
             s->frame = s->tmp_frame;
         }
     }
+
+    s->avctx->profile = s->sps->ptl.general_profile_idc;
+    s->avctx->level   = s->sps->ptl.general_level_idc;
 
     sh->dependent_slice_segment_flag = 0;
     if (!sh->first_slice_in_pic_flag) {
@@ -1800,23 +1803,23 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb, int ctb_a
 
     if (s->pps->tiles_enabled_flag) {
         tile_left_boundary = ((x_ctb > 0) &&
-                              (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
+                              (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
         slice_left_boundary = ((x_ctb > 0) &&
-                               (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1]));
+                               (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1]));
         tile_up_boundary = ((y_ctb > 0) &&
-                            (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]]));
+                            (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]]));
         slice_up_boundary = ((y_ctb > 0) &&
-                             (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]));
+                             (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]));
     } else {
         tile_left_boundary =
-        tile_up_boundary = 1;
-        slice_left_boundary = ctb_addr_in_slice > 0;
-        slice_up_boundary = ctb_addr_in_slice >= s->sps->ctb_width;
+        tile_up_boundary = 0;
+        slice_left_boundary = ctb_addr_in_slice <= 0;
+        slice_up_boundary = ctb_addr_in_slice < s->sps->ctb_width;
     }
-    lc->slice_or_tiles_left_boundary = (!slice_left_boundary) + (!tile_left_boundary << 1);
-    lc->slice_or_tiles_up_boundary   = (!slice_up_boundary + (!tile_up_boundary << 1));
-    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) && tile_left_boundary);
-    lc->ctb_up_flag   = ((y_ctb > 0) && (ctb_addr_in_slice >= s->sps->ctb_width) && tile_up_boundary);
+    lc->slice_or_tiles_left_boundary = (slice_left_boundary) + (tile_left_boundary << 1);
+    lc->slice_or_tiles_up_boundary   = (slice_up_boundary + (tile_up_boundary << 1));
+    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) && !tile_left_boundary);
+    lc->ctb_up_flag   = ((y_ctb > 0) && (ctb_addr_in_slice >= s->sps->ctb_width) && !tile_up_boundary);
     lc->ctb_up_right_flag = ((y_ctb > 0)  && (ctb_addr_in_slice+1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - s->sps->ctb_width]]));
     lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->sps->ctb_width]]));
 }
@@ -1863,17 +1866,6 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     return ctb_addr_ts;
 }
 
-static int hls_slice_data(HEVCContext *s)
-{
-    int arg[2];
-    int ret[2];
-    
-    arg[0] = 0;
-    arg[1] = 1;
-
-    s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
-    return ret[0];
-}
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
 {
     HEVCContext *s1  = avctxt->priv_data, *s;
@@ -1994,71 +1986,146 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
 
 static void tiles_filters(HEVCContext *s)
 {
-    int i, j;
-    int ctb_size = 1 << s->sps->log2_ctb_size, y_ctb, x_ctb;
+    uint16_t ctb_size        = 1 << s->sps->log2_ctb_size;
+    uint16_t ctb_mask        = ~( ctb_size - 1);
+    int min_tu_size          = 1 << s->sps->log2_min_transform_block_size;
+    int ctb_addr_rs;
+    int x0, y0, i;
+
     // Deblocking and SAO filters
     s->enable_parallel_tiles = 0;
+/*
     for (i = 0; i < s->threads_number; i++){
-        for (j = 0; j < s->HEVClcList[i]->nb_saved; j++)
+        for (j = 0; j < s->HEVClcList[i]->nb_saved; j++) {
+            int ctb_addr_rs = (s->HEVClcList[i]->save_boundary_strengths[j].y >> s->sps->log2_ctb_size) * s->sps->ctb_width + (s->HEVClcList[i]->save_boundary_strengths[j].x >> s->sps->log2_ctb_size);
+            int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
+
+            if(s->pps->tile_id[ctb_addr_ts] != 1) {
             ff_hevc_deblocking_boundary_strengths(s,
                                                   s->HEVClcList[i]->save_boundary_strengths[j].x,
                                                   s->HEVClcList[i]->save_boundary_strengths[j].y,
                                                   s->HEVClcList[i]->save_boundary_strengths[j].size,
                                                   s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_up_boundary,
                                                   s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_left_boundary);
+            }
+        }
+    }*/
+    if(s->pps->loop_filter_across_tiles_enabled_flag) {
+#if 1
+        for (i = 1; i < s->pps->num_tile_columns; i++) {
+            ctb_addr_rs = s->pps->tile_pos_rs[i];
+            x0 = (ctb_addr_rs % s->sps->ctb_width) << s->sps->log2_ctb_size;
+            for (y0 = 0; y0 < s->sps->height; y0+=min_tu_size) {
+                //ctb_addr_rs = (y0 >> s->sps->log2_ctb_size) * s->sps->ctb_width + (x0 >> s->sps->log2_ctb_size);
+                //int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
+                //if(s->pps->tile_id[ctb_addr_ts] == 1) {
+                 //   printf("poc %d : boundary_strengths(%d, %d, %d, %d, %d)\n",
+                //            s->poc, x0, y0, s->sps->log2_min_transform_block_size, 0, 3);
+                ff_hevc_deblocking_boundary_strengths(s,
+                        x0, y0, s->sps->log2_min_transform_block_size, 0, 2);
+                //}
+            }
+        }
+        for (i = 1; i < s->pps->num_tile_rows; i++) {
+            ctb_addr_rs = s->pps->tile_pos_rs[i * s->pps->num_tile_columns];
+            y0 = (ctb_addr_rs / s->sps->ctb_width) << s->sps->log2_ctb_size;
+            for (x0 = 0; x0 < s->sps->width; x0+=min_tu_size) {
+                //ctb_addr_rs = (y0 >> s->sps->log2_ctb_size) * s->sps->ctb_width + (x0 >> s->sps->log2_ctb_size);
+                //int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
+                //if(s->pps->tile_id[ctb_addr_ts] == 1) {
+                //    printf("poc %d :2  boundary_strengths(%d, %d, %d, %d, %d)\n",
+                //            s->poc, x0, y0, s->sps->log2_min_transform_block_size, 3, 0);
+                ff_hevc_deblocking_boundary_strengths(s,
+                        x0, y0, s->sps->log2_min_transform_block_size, 2, 0);
+                //}
+            }
+        }
+#else
+        for (x0 = 0 ; x0 < s->sps->width; x0+=min_tu_size)
+            for (y0 = 0; y0 < s->sps->height; y0+=min_tu_size) {
+                ctb_addr_rs = (y0 >> s->sps->log2_ctb_size) * s->sps->ctb_width + (x0 >> s->sps->log2_ctb_size);
+                int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
+                int x_ctb = x0 & ctb_mask;
+                int y_ctb = y0 & ctb_mask;
+                uint8_t tile_left_boundary = ((x_ctb > 0) &&
+                        (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
+                uint8_t slice_left_boundary = ((x_ctb > 0) &&
+                        (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1]));
+                uint8_t tile_up_boundary = ((y_ctb > 0) &&
+                        (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]]));
+                uint8_t slice_up_boundary = ((y_ctb > 0) &&
+                        (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]));
+                uint8_t slice_or_tiles_left_boundary = slice_left_boundary + (tile_left_boundary << 1);
+                uint8_t slice_or_tiles_up_boundary   = slice_up_boundary   + (tile_up_boundary   << 1);
+
+                if( ( (slice_or_tiles_up_boundary &2 ) && (y0 == y_ctb) )  ||
+                        ( (slice_or_tiles_left_boundary&2) && (x0 == x_ctb) ) ) {
+                    //if(s->pps->tile_id[ctb_addr_ts] == 1) {
+                    //    printf("poc %d :boundary_strengths(%d, %d, %d, %d, %d)\n",
+                    //            s->poc, x0, y0, s->sps->log2_min_transform_block_size, slice_or_tiles_up_boundary, slice_or_tiles_left_boundary);
+                    ff_hevc_deblocking_boundary_strengths(s,
+                            x0,
+                            y0,
+                            s->sps->log2_min_transform_block_size,
+                            slice_or_tiles_up_boundary,
+                            slice_or_tiles_left_boundary);
+                    //}
+                }
+            }
+#endif
     }
-    s->enable_parallel_tiles =1;
-    for (y_ctb = 0; y_ctb < s->sps->height; y_ctb += ctb_size) {
-        for (x_ctb = 0; x_ctb < s->sps->width; x_ctb += ctb_size)
-            ff_hevc_hls_filter(s, x_ctb, y_ctb);
+    s->enable_parallel_tiles = 1;
+    for (y0 = 0; y0 < s->sps->height; y0 += ctb_size) {
+        for (x0 = 0; x0 < s->sps->width; x0 += ctb_size)
+            ff_hevc_hls_filter(s, x0, y0);
         if (s->threads_type&FF_THREAD_FRAME)
-            ff_thread_report_progress(&s->ref->tf, y_ctb, 0);
+            ff_thread_report_progress(&s->ref->tf, y0, 0);
     }
     if (s->threads_type&FF_THREAD_FRAME)
         ff_thread_report_progress(&s->ref->tf, s->sps->height, 0);
 
 }
-static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
+static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
     int *ret = av_malloc((s->sh.num_entry_point_offsets + 1) * sizeof(int));
     int *arg = av_malloc((s->sh.num_entry_point_offsets + 1) * sizeof(int));
-    int offset;
-    int startheader, cmpt = 0;
-    int i, j, res = 0;
+    int offset, startheader, cmpt = 0, i, j, res = 0;
 
     ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
     
-    offset = (lc->gb.index >> 3);
-
-    for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
-        if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
-            startheader--;
-            cmpt++;
-        }
-    }
-
-    for (i = 1; i < s->sh.num_entry_point_offsets; i++) {
-        offset += (s->sh.entry_point_offset[i - 1] - cmpt);
-        for (j = 0, cmpt = 0, startheader = offset
-             + s->sh.entry_point_offset[i]; j < s->skipped_bytes; j++) {
+    
+    if(s->sh.num_entry_point_offsets != 0)   {
+        offset = (lc->gb.index >> 3);
+        for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
             if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
                 startheader--;
                 cmpt++;
             }
         }
-        s->sh.size[i - 1] = s->sh.entry_point_offset[i] - cmpt;
-        s->sh.offset[i - 1] = offset;
 
-    }
-    if (s->sh.num_entry_point_offsets != 0) {
-        offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
-        s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
-        s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
-
+        for (i = 1;i < s->sh.num_entry_point_offsets; i++) {
+            offset += (s->sh.entry_point_offset[i - 1] - cmpt);
+            for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[i]; j < s->skipped_bytes; j++) {
+                if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
+                    startheader--;
+                    cmpt++;
+                }
+            }
+            s->sh.size[i - 1] = s->sh.entry_point_offset[i] - cmpt;
+            s->sh.offset[i - 1] = offset;
+        }
+    
+        if (s->sh.num_entry_point_offsets != 0) {
+            offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
+            s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
+            s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
+        }
+        avpriv_atomic_int_set(&s->wpp_err, 0);
+        ff_reset_entries(s->avctx);
     }
     s->data = nal;
-
+    
     for (i = 1; i < s->threads_number; i++) {
         s->sList[i]->HEVClc->first_qp_group = 1;
         s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
@@ -2066,26 +2133,26 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         s->sList[i]->HEVClc = s->HEVClcList[i];
     }
 
-    avpriv_atomic_int_set(&s->wpp_err, 0);
-    ff_reset_entries(s->avctx);
-
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
         arg[i] = i;
         ret[i] = 0;
     }
-
-    if (s->pps->entropy_coding_sync_enabled_flag)
-        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
-    else {
-        if (s->sh.slice_ctb_addr_rs == 0)
-            for (i = 0; i < s->threads_number; i++) {
-                s->HEVClcList[i]->nb_saved = 0;
-            }
-        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
-    }
-    
+    if (s->sh.num_entry_point_offsets == 0 || s->threads_number==1){
+        s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
+    }else
+        if (s->pps->entropy_coding_sync_enabled_flag){
+            s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
+        }   else {
+            if (s->sh.slice_ctb_addr_rs == 0)
+                for (i = 0; i < s->threads_number; i++) {
+                    s->HEVClcList[i]->nb_saved = 0;
+                }
+            
+            s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
+        }
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
         res += ret[i];
+    
     av_free(ret);
     av_free(arg);
     return res;
@@ -2303,10 +2370,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             }
         }
 
-        if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
-            ctb_addr_ts = hls_slice_data_wpp(s, nal, length);
-        else
-            ctb_addr_ts = hls_slice_data(s);
+        ctb_addr_ts = hls_slice_data(s, nal, length);
 
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
             s->is_decoded = 1;
@@ -3025,6 +3089,14 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 
 #define OFFSET(x) offsetof(HEVCContext, x)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
+
+static const AVProfile profiles[] = {
+    { FF_PROFILE_HEVC_MAIN,                 "Main"              },
+    { FF_PROFILE_HEVC_MAIN_10,              "Main10"            },
+    { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "MainStillPicture"  },
+    { FF_PROFILE_UNKNOWN },
+};
+
 static const AVOption options[] = {
     { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
@@ -3053,5 +3125,6 @@ AVCodec ff_hevc_decoder = {
     .flush                 = hevc_decode_flush,
     .update_thread_context = hevc_update_thread_context,
     .init_thread_copy      = hevc_init_thread_copy,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS,
+    .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS,
+    .profiles              = NULL_IF_CONFIG_SMALL(profiles),
 };
