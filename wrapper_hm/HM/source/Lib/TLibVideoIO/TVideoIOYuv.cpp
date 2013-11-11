@@ -338,6 +338,46 @@ static Bool writePlane(ostream& fd, Pel* src, Bool is16bit,
   return true;
 }
 
+static Bool writeField(ostream& fd, Pel* top, Pel* bottom, Bool is16bit,
+                       UInt stride,
+                       UInt width, UInt height, bool isTff)
+{
+  Int write_len = width * (is16bit ? 2 : 1)*2;
+  UChar *buf = new UChar[write_len];
+  for (Int y = 0; y < height; y++)
+  {
+    if (!is16bit)
+    {
+      for (Int x = 0; x < width; x++)
+      {
+        buf[x] = isTff ? (UChar) top[x] : (UChar) bottom[x];
+        buf[width+x] = isTff ? (UChar) bottom[x] : (UChar) top[x];
+      }
+    }
+    else
+    {
+      for (Int x = 0; x < width; x++)
+      {
+        buf[2*x] = isTff ? top[x] & 0xff : bottom[x] & 0xff;
+        buf[2*x+1] = isTff ? (top[x] >> 8) & 0xff : (bottom[x] >> 8) & 0xff;
+        
+        buf[width+2*x] = isTff ? bottom[x] & 0xff : top[x] & 0xff;
+        buf[width+2*x+1] = isTff ? (bottom[x] >> 8) & 0xff : (top[x] >> 8) & 0xff;
+      }
+    }
+    
+    fd.write(reinterpret_cast<Char*>(buf), write_len);
+    if (fd.eof() || fd.fail() )
+    {
+      delete[] buf;
+      return false;
+    }
+    top += stride;
+    bottom += stride;
+  }
+  delete[] buf;
+  return true;
+}
 /**
  * Read one Y'CbCr frame, performing any required input scaling to change
  * from the bitdepth of the input file to the internal bit-depth.
@@ -500,3 +540,109 @@ exit:
   return retval;
 }
 
+
+/**
+ * Write one Y'CbCr frame. No bit-depth conversion is performed, pcPicYuv is
+ * assumed to be at TVideoIO::m_fileBitdepth depth.
+ *
+ * @param pPicTop     input top field YUV buffer class pointer
+ * @param pPicBottom  input bottom field YUV buffer class pointer
+ * @param aiPad       source padding size, aiPad[0] = horizontal, aiPad[1] = vertical
+ * @return true for success, false in case of error
+ */
+Bool TVideoIOYuv::write( TComPicYuv* pPicTop, TComPicYuv* pPicBottom, Int cropLeft, Int cropRight, Int cropTop, Int cropBottom , bool isTff)
+{
+  // compute actual YUV frame size excluding padding size
+  Int   iStride = pPicTop->getStride();
+  UInt  width  = pPicTop->getWidth()  - cropLeft - cropRight;
+  UInt  height = pPicTop->getHeight() - cropTop  - cropBottom;
+  Bool is16bit = m_fileBitDepthY > 8 || m_fileBitDepthC > 8;
+  
+  TComPicYuv *dstPicTop = NULL;
+  TComPicYuv *dstPicBottom = NULL;
+  
+  Bool retval = true;
+  
+  if (m_bitDepthShiftY != 0 || m_bitDepthShiftC != 0)
+  {
+    dstPicTop = new TComPicYuv;
+    dstPicTop->create( pPicTop->getWidth(), pPicTop->getHeight(), 1, 1, 0 );
+    pPicTop->copyToPic(dstPicTop);
+    
+    dstPicBottom = new TComPicYuv;
+    dstPicBottom->create( pPicBottom->getWidth(), pPicBottom->getHeight(), 1, 1, 0 );
+    pPicBottom->copyToPic(dstPicBottom);
+    
+    Pel minvalY = 0;
+    Pel minvalC = 0;
+    Pel maxvalY = (1 << m_fileBitDepthY) - 1;
+    Pel maxvalC = (1 << m_fileBitDepthC) - 1;
+#if CLIP_TO_709_RANGE
+    if (-m_bitDepthShiftY < 0 && m_fileBitDepthY >= 8)
+    {
+      /* ITU-R BT.709 compliant clipping for converting say 10b to 8b */
+      minvalY = 1 << (m_fileBitDepthY - 8);
+      maxvalY = (0xff << (m_fileBitDepthY - 8)) -1;
+    }
+    if (-m_bitDepthShiftC < 0 && m_fileBitDepthC >= 8)
+    {
+      /* ITU-R BT.709 compliant clipping for converting say 10b to 8b */
+      minvalC = 1 << (m_fileBitDepthC - 8);
+      maxvalC = (0xff << (m_fileBitDepthC - 8)) -1;
+    }
+#endif
+    scalePlane(dstPicTop->getLumaAddr(), dstPicTop->getStride(), dstPicTop->getWidth(), dstPicTop->getHeight(), -m_bitDepthShiftY, minvalY, maxvalY);
+    scalePlane(dstPicTop->getCbAddr(), dstPicTop->getCStride(), dstPicTop->getWidth()>>1, dstPicTop->getHeight()>>1, -m_bitDepthShiftC, minvalC, maxvalC);
+    scalePlane(dstPicTop->getCrAddr(), dstPicTop->getCStride(), dstPicTop->getWidth()>>1, dstPicTop->getHeight()>>1, -m_bitDepthShiftC, minvalC, maxvalC);
+    
+    scalePlane(dstPicBottom->getLumaAddr(), dstPicBottom->getStride(), dstPicBottom->getWidth(), dstPicBottom->getHeight(), -m_bitDepthShiftY, minvalY, maxvalY);
+    scalePlane(dstPicBottom->getCbAddr(), dstPicBottom->getCStride(), dstPicBottom->getWidth()>>1, dstPicBottom->getHeight()>>1, -m_bitDepthShiftC, minvalC, maxvalC);
+    scalePlane(dstPicBottom->getCrAddr(), dstPicBottom->getCStride(), dstPicBottom->getWidth()>>1, dstPicBottom->getHeight()>>1, -m_bitDepthShiftC, minvalC, maxvalC);
+  }
+  else
+  {
+    dstPicTop = pPicTop;
+    dstPicBottom = pPicBottom;
+  }
+  // location of upper left pel in a plane
+  Int planeOffset = 0; //cropLeft + cropTop * iStride;
+  //Write luma
+  if (! writeField(m_cHandle, dstPicTop->getLumaAddr() + planeOffset,  dstPicBottom->getLumaAddr() + planeOffset, is16bit, iStride, width, height, isTff))
+  {
+    retval=false;
+    goto exit;
+  }
+  
+  width >>= 1;
+  height >>= 1;
+  iStride >>= 1;
+  cropLeft >>= 1;
+  cropRight >>= 1;
+  
+  planeOffset = 0; // cropLeft + cropTop * iStride;
+  
+  //Write chroma U
+  if (! writeField(m_cHandle, dstPicTop->getCbAddr() + planeOffset, dstPicBottom->getCbAddr() + planeOffset, is16bit, iStride, width, height, isTff))
+  {
+    retval=false;
+    goto exit;
+  }
+  
+  //Write chroma V
+  if (! writeField(m_cHandle, dstPicTop->getCrAddr() + planeOffset, dstPicBottom->getCrAddr() + planeOffset, is16bit, iStride, width, height, isTff))
+    
+  {
+    retval=false;
+    goto exit;
+  }
+  
+exit:
+  if (m_bitDepthShiftY != 0 || m_bitDepthShiftC != 0)
+  {
+    dstPicTop->destroy();
+    delete dstPicTop;
+    dstPicBottom->destroy();
+    delete dstPicBottom;
+  }  
+  return retval;
+}

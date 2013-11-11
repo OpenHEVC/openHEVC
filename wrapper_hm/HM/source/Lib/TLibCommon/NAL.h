@@ -66,7 +66,7 @@ struct NALUnit
   {
     return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL_R
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL_N
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TLA_R
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_R
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_N
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_R
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_N

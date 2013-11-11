@@ -37,6 +37,7 @@
 #include <string>
 #include <list>
 #include <map>
+#include <algorithm>
 #include "program_options_lite.h"
 
 using namespace std;

@@ -1926,7 +1926,7 @@ Void TComTrQuant::xRateDistOptQuant                 ( TComDataCU*               
             {
               Int64 costUp   = rdFactor * ( - deltaU[uiBlkPos] ) + rateIncUp[uiBlkPos] ;
               Int64 costDown = rdFactor * (   deltaU[uiBlkPos] ) + rateIncDown[uiBlkPos] 
-              -   ( abs(piDstCoeff[uiBlkPos])==1?((1<<15)+sigRateDelta[uiBlkPos]):0 );
+              -   ((abs(piDstCoeff[uiBlkPos]) == 1) ? sigRateDelta[uiBlkPos] : 0);
               
               if(lastCG==1 && lastNZPosInCG==n && abs(piDstCoeff[uiBlkPos])==1)
               {
@@ -2145,7 +2145,7 @@ __inline UInt TComTrQuant::xGetCodedLevel ( Double&                         rd64
   for( Int uiAbsLevel  = uiMaxAbsLevel; uiAbsLevel >= uiMinAbsLevel ; uiAbsLevel-- )
   {
     Double dErr         = Double( lLevelDouble  - ( uiAbsLevel << iQBits ) );
-    Double dCurrCost    = dErr * dErr * dTemp + xGetICRateCost( uiAbsLevel, ui16CtxNumOne, ui16CtxNumAbs, ui16AbsGoRice, c1Idx, c2Idx );
+    Double dCurrCost    = dErr * dErr * dTemp + xGetICost(xGetICRate( uiAbsLevel, ui16CtxNumOne, ui16CtxNumAbs, ui16AbsGoRice, c1Idx, c2Idx ));
     dCurrCost          += dCurrCostSig;
 
     if( dCurrCost < rd64CodedCost )
@@ -2166,15 +2166,15 @@ __inline UInt TComTrQuant::xGetCodedLevel ( Double&                         rd64
  * \param ui16AbsGoRice Rice parameter for coeff_abs_level_minus3
  * \returns cost of given absolute transform level
  */
-__inline Double TComTrQuant::xGetICRateCost  ( UInt                            uiAbsLevel,
-                                               UShort                          ui16CtxNumOne,
-                                               UShort                          ui16CtxNumAbs,
-                                               UShort                          ui16AbsGoRice
-                                            ,  UInt                            c1Idx,
-                                               UInt                            c2Idx
-                                               ) const
+__inline Int TComTrQuant::xGetICRate  ( UInt                            uiAbsLevel,
+                                        UShort                          ui16CtxNumOne,
+                                        UShort                          ui16CtxNumAbs,
+                                        UShort                          ui16AbsGoRice
+                                     ,  UInt                            c1Idx,
+                                        UInt                            c2Idx
+                                        ) const
 {
-  Double iRate = xGetIEPRate();
+  Int iRate = Int(xGetIEPRate());
   UInt baseLevel  =  (c1Idx < C1FLAG_NUMBER)? (2 + (c2Idx < C2FLAG_NUMBER)) : 1;
 
   if ( uiAbsLevel >= baseLevel )
@@ -2218,68 +2218,7 @@ __inline Double TComTrQuant::xGetICRateCost  ( UInt                            u
   }
   else
   {
-    assert (0);
-  }
-  return xGetICost( iRate );
-}
-
-__inline Int TComTrQuant::xGetICRate  ( UInt                            uiAbsLevel,
-                                       UShort                          ui16CtxNumOne,
-                                       UShort                          ui16CtxNumAbs,
-                                       UShort                          ui16AbsGoRice
-                                     , UInt                            c1Idx,
-                                       UInt                            c2Idx
-                                       ) const
-{
-  Int iRate = 0;
-  UInt baseLevel  =  (c1Idx < C1FLAG_NUMBER)? (2 + (c2Idx < C2FLAG_NUMBER)) : 1;
-
-  if ( uiAbsLevel >= baseLevel )
-  {
-    UInt uiSymbol     = uiAbsLevel - baseLevel;
-    UInt uiMaxVlc     = g_auiGoRiceRange[ ui16AbsGoRice ];
-    Bool bExpGolomb   = ( uiSymbol > uiMaxVlc );
-
-    if( bExpGolomb )
-    {
-      uiAbsLevel  = uiSymbol - uiMaxVlc;
-      Int iEGS    = 1;  for( UInt uiMax = 2; uiAbsLevel >= uiMax; uiMax <<= 1, iEGS += 2 );
-      iRate      += iEGS << 15;
-      uiSymbol    = min<UInt>( uiSymbol, ( uiMaxVlc + 1 ) );
-    }
-
-    UShort ui16PrefLen = UShort( uiSymbol >> ui16AbsGoRice ) + 1;
-    UShort ui16NumBins = min<UInt>( ui16PrefLen, g_auiGoRicePrefixLen[ ui16AbsGoRice ] ) + ui16AbsGoRice;
-
-    iRate += ui16NumBins << 15;
-
-    if (c1Idx < C1FLAG_NUMBER)
-    {
-      iRate += m_pcEstBitsSbac->m_greaterOneBits[ ui16CtxNumOne ][ 1 ];
-
-      if (c2Idx < C2FLAG_NUMBER)
-      {
-        iRate += m_pcEstBitsSbac->m_levelAbsBits[ ui16CtxNumAbs ][ 1 ];
-      }
-    }
-  }
-  else
-  if( uiAbsLevel == 0 )
-  {
-    return 0;
-  }
-  else if( uiAbsLevel == 1 )
-  {
-    iRate += m_pcEstBitsSbac->m_greaterOneBits[ ui16CtxNumOne ][ 0 ];
-  }
-  else if( uiAbsLevel == 2 )
-  {
-    iRate += m_pcEstBitsSbac->m_greaterOneBits[ ui16CtxNumOne ][ 1 ];
-    iRate += m_pcEstBitsSbac->m_levelAbsBits[ ui16CtxNumAbs ][ 0 ];
-  }
-  else
-  {
-    assert(0);
+    iRate = 0;
   }
   return iRate;
 }

@@ -73,7 +73,7 @@ _byteStreamNALUnit(
   &&     (bs.eofBeforeNBytes(32/8) || bs.peekBytes(32/8) != 0x00000001))
   {
     uint8_t leading_zero_8bits = bs.readByte();
-//    assert(leading_zero_8bits == 0);
+    assert(leading_zero_8bits == 0);
     stats.m_numLeadingZero8BitsBytes++;
   }
 
@@ -140,7 +140,7 @@ _byteStreamNALUnit(
   &&     (bs.eofBeforeNBytes(32/8) || bs.peekBytes(32/8) != 0x00000001))
   {
     uint8_t trailing_zero_8bits = bs.readByte();
-//    assert(trailing_zero_8bits == 0);
+    assert(trailing_zero_8bits == 0);
     stats.m_numTrailingZero8BitsBytes++;
   }
 }

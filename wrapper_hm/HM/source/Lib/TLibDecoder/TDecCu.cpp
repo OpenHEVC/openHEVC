@@ -542,18 +542,12 @@ TDecCu::xIntraRecChromaBlk( TComDataCU* pcCU,
   Bool  bAboveAvail = false;
   Bool  bLeftAvail  = false;
   pcCU->getPattern()->initPattern         ( pcCU, uiTrDepth, uiAbsPartIdx );
-  if (uiChromaId == 0)
-      pcCU->getPattern()->initAdiPatternChroma2( pcCU, uiAbsPartIdx, uiTrDepth,
-              m_pcPrediction->getPredicBuf       (),
-              m_pcPrediction->getPredicBufWidth  (),
-              m_pcPrediction->getPredicBufHeight (),
-              bAboveAvail, bLeftAvail );
-  else
-      pcCU->getPattern()->initAdiPatternChroma( pcCU, uiAbsPartIdx, uiTrDepth,
-              m_pcPrediction->getPredicBuf       (),
-              m_pcPrediction->getPredicBufWidth  (),
-              m_pcPrediction->getPredicBufHeight (),
-              bAboveAvail, bLeftAvail );
+
+  pcCU->getPattern()->initAdiPatternChroma( pcCU, uiAbsPartIdx, uiTrDepth,
+                                           m_pcPrediction->getPredicBuf       (),
+                                           m_pcPrediction->getPredicBufWidth  (),
+                                           m_pcPrediction->getPredicBufHeight (),
+                                           bAboveAvail, bLeftAvail );
   Int* pPatChroma   = ( uiChromaId > 0 ? pcCU->getPattern()->getAdiCrBuf( uiWidth, uiHeight, m_pcPrediction->getPredicBuf() ) : pcCU->getPattern()->getAdiCbBuf( uiWidth, uiHeight, m_pcPrediction->getPredicBuf() ) );
   
   //===== get prediction signal =====

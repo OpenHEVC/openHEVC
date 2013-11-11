@@ -71,6 +71,7 @@ public:
   
   Bool  read  ( TComPicYuv*   pPicYuv, Int aiPad[2] );     ///< read  one YUV frame with padding parameter
   Bool  write( TComPicYuv*    pPicYuv, Int confLeft=0, Int confRight=0, Int confTop=0, Int confBottom=0 );
+  Bool  write( TComPicYuv*    pPicYuv, TComPicYuv*    pPicYuv2, Int confLeft=0, Int confRight=0, Int confTop=0, Int confBottom=0  , bool isTff=false); 
   
   Bool  isEof ();                                           ///< check for end-of-file
   Bool  isFail();                                           ///< check for failure

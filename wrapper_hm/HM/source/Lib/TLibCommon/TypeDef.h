@@ -41,7 +41,10 @@
 //! \ingroup TLibCommon
 //! \{
 
-#define FIX1071 1 ///< fix for issue #1071
+#define HM_CLEANUP_SAO                  1  ///< JCTVC-N0230, 1) three SAO encoder-only software bugfixes. 2) new SAO implementation without picture quadtree, fine-grained slice legacies, and other redundancies.
+#if HM_CLEANUP_SAO  
+#define SAO_ENCODE_ALLOW_USE_PREDEBLOCK 1
+#endif
 
 #define MAX_NUM_PICS_IN_SOP           1024
 
@@ -51,13 +54,6 @@
 #define MAX_VPS_NUM_HRD_PARAMETERS                1
 #define MAX_VPS_OP_SETS_PLUS1                     1024
 #define MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1  1
-
-#define RATE_CONTROL_LAMBDA_DOMAIN                  1  ///< JCTVC-K0103, rate control by R-lambda model
-#define M0036_RC_IMPROVEMENT                        1  ///< JCTVC-M0036, improvement for R-lambda model based rate control
-#define TICKET_1090_FIX                             1
-
-#define RC_FIX                                      1  /// suggested fix for M0036
-#define RATE_CONTROL_INTRA                          1  ///< JCTVC-M0257, rate control for intra 
 
 #define MAX_CPB_CNT                     32  ///< Upper bound of (cpb_cnt_minus1 + 1)
 #define MAX_NUM_LAYER_IDS                64
@@ -76,9 +72,9 @@
   
 #define C1FLAG_NUMBER               8 // maximum number of largerThan1 flag coded in one chunk :  16 in HM5
 #define C2FLAG_NUMBER               1 // maximum number of largerThan2 flag coded in one chunk:  16 in HM5 
-
+#if !HM_CLEANUP_SAO
 #define REMOVE_SAO_LCU_ENC_CONSTRAINTS_3 1  ///< disable the encoder constraint that conditionally disable SAO for chroma for entire slice in interleaved mode
-
+#endif
 #define SAO_ENCODING_CHOICE              1  ///< I0184: picture early termination
 #if SAO_ENCODING_CHOICE
 #define SAO_ENCODING_RATE                0.75
@@ -92,11 +88,7 @@
 #define MAX_NUM_SPS                16
 #define MAX_NUM_PPS                64
 
-
-
-#define WEIGHTED_CHROMA_DISTORTION  1   ///< F386: weighting of chroma for RDO
 #define RDOQ_CHROMA_LAMBDA          1   ///< F386: weighting of chroma for RDOQ
-#define SAO_CHROMA_LAMBDA           1   ///< F386: weighting of chroma for SAO
 
 #define MIN_SCAN_POS_CROSS          4
 
@@ -110,8 +102,6 @@
 #define ARL_C_PRECISION                     7      ///< G382: 7-bit arithmetic precision
 #define LEVEL_RANGE                         30     ///< G382: max coefficient level in statistics collection
 #endif
-
-#define NS_HAD                               0
 
 #define HHI_RQT_INTRA_SPEEDUP             1           ///< tests one best mode with full rqt
 #define HHI_RQT_INTRA_SPEEDUP_MOD         0           ///< tests two best modes with full rqt
@@ -179,8 +169,6 @@
 #define AMP_MRG                               1           ///< encoder only force merge for AMP partition (no motion search for AMP)
 #endif
 
-#define SCALING_LIST_OUTPUT_RESULT    0 //JCTVC-G880/JCTVC-G1016 quantization matrices
-
 #define CABAC_INIT_PRESENT_FLAG     1
 
 // ====================================================================================================================
@@ -239,6 +227,99 @@ enum SliceConstraint
   FIXED_NUMBER_OF_TILES  = 3,          ///< slices / slice segments span an integer number of tiles
 };
 
+#if HM_CLEANUP_SAO
+enum SAOComponentIdx
+{
+  SAO_Y =0,
+  SAO_Cb,
+  SAO_Cr,
+  NUM_SAO_COMPONENTS
+};
+
+enum SAOMode //mode
+{
+  SAO_MODE_OFF = 0,
+  SAO_MODE_NEW,
+  SAO_MODE_MERGE,
+  NUM_SAO_MODES
+};
+
+enum SAOModeMergeTypes 
+{
+  SAO_MERGE_LEFT =0,
+  SAO_MERGE_ABOVE,
+  NUM_SAO_MERGE_TYPES
+};
+
+
+enum SAOModeNewTypes 
+{
+  SAO_TYPE_START_EO =0,
+  SAO_TYPE_EO_0 = SAO_TYPE_START_EO,
+  SAO_TYPE_EO_90,
+  SAO_TYPE_EO_135,
+  SAO_TYPE_EO_45,
+  
+  SAO_TYPE_START_BO,
+  SAO_TYPE_BO = SAO_TYPE_START_BO,
+
+  NUM_SAO_NEW_TYPES
+};
+#define NUM_SAO_EO_TYPES_LOG2 2
+
+enum SAOEOClasses 
+{
+  SAO_CLASS_EO_FULL_VALLEY = 0,
+  SAO_CLASS_EO_HALF_VALLEY = 1,
+  SAO_CLASS_EO_PLAIN       = 2,
+  SAO_CLASS_EO_HALF_PEAK   = 3,
+  SAO_CLASS_EO_FULL_PEAK   = 4,
+  NUM_SAO_EO_CLASSES,
+};
+
+
+#define NUM_SAO_BO_CLASSES_LOG2  5
+enum SAOBOClasses
+{
+  //SAO_CLASS_BO_BAND0 = 0,
+  //SAO_CLASS_BO_BAND1,
+  //SAO_CLASS_BO_BAND2,
+  //...
+  //SAO_CLASS_BO_BAND31,
+
+  NUM_SAO_BO_CLASSES = (1<<NUM_SAO_BO_CLASSES_LOG2),
+};
+#define MAX_NUM_SAO_CLASSES  32  //(NUM_SAO_EO_GROUPS > NUM_SAO_BO_GROUPS)?NUM_SAO_EO_GROUPS:NUM_SAO_BO_GROUPS
+
+struct SAOOffset
+{
+  Int modeIdc; //NEW, MERGE, OFF
+  Int typeIdc; //NEW: EO_0, EO_90, EO_135, EO_45, BO. MERGE: left, above
+  Int typeAuxInfo; //BO: starting band index
+  Int offset[MAX_NUM_SAO_CLASSES];
+
+  SAOOffset();
+  ~SAOOffset();
+  Void reset();
+
+  const SAOOffset& operator= (const SAOOffset& src);
+};
+
+struct SAOBlkParam
+{
+
+  SAOBlkParam();
+  ~SAOBlkParam();
+  Void reset();
+  const SAOBlkParam& operator= (const SAOBlkParam& src);
+  SAOOffset& operator[](Int compIdx){ return offsetParam[compIdx];}
+private:
+  SAOOffset offsetParam[NUM_SAO_COMPONENTS];
+
+};
+
+
+#else
 #define NUM_DOWN_PART 4
 
 enum SAOTypeLen
@@ -310,7 +391,7 @@ struct SAOParam
   Int          numCuInWidth;
   ~SAOParam();
 };
-
+#endif
 /// parameters for deblocking filter
 typedef struct _LFCUParam
 {

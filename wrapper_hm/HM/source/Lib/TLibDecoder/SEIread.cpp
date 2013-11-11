@@ -314,6 +314,7 @@ Void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
   }
 
   /* restore primary bitstream for sei_message */
+  getBitstream()->deleteFifo();
   delete getBitstream();
   setBitstream(bs);
 }

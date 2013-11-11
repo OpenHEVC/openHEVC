@@ -64,7 +64,6 @@ private:
   // access channel
   TDecEntropy*    m_pcEntropyDecoder;
   TDecCu*         m_pcCuDecoder;
-  UInt            m_uiCurrSliceIdx;
 
   TDecSbac*       m_pcBufferSbacDecoders;   ///< line to store temporary contexts, one per column of tiles.
   TDecBinCABAC*   m_pcBufferBinCABACs;

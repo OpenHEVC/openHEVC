@@ -832,9 +832,9 @@ Void TDecCavlc::parseSliceHeader (TComSlice*& rpcSlice, ParameterSetManagerDecod
     {
       READ_CODE(sps->getBitsForPOC(), uiCode, "pic_order_cnt_lsb");  
       Int iPOClsb = uiCode;
-      Int iPrevPOC = rpcSlice->getPrevPOC();
+      Int iPrevPOC = rpcSlice->getPrevTid0POC();
       Int iMaxPOClsb = 1<< sps->getBitsForPOC();
-      Int iPrevPOClsb = iPrevPOC%iMaxPOClsb;
+      Int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
       Int iPrevPOCmsb = iPrevPOC-iPrevPOClsb;
       Int iPOCmsb;
       if( ( iPOClsb  <  iPrevPOClsb ) && ( ( iPrevPOClsb - iPOClsb )  >=  ( iMaxPOClsb / 2 ) ) )
@@ -956,6 +956,12 @@ Void TDecCavlc::parseSliceHeader (TComSlice*& rpcSlice, ParameterSetManagerDecod
             rps->setPOC     (j, pocLsbLt);
             rps->setDeltaPOC(j, - rpcSlice->getPOC() + pocLsbLt);
             rps->setCheckLTMSBPresent(j,false);  
+            
+            // reset deltaPocMSBCycleLT for first LTRP from slice header if MSB not present
+            if( j == offset+(numOfLtrp-numLtrpInSPS)-1 )
+            {
+              deltaPocMSBCycleLT = 0;
+            }
           }
           prevDeltaMSB = deltaPocMSBCycleLT;
         }

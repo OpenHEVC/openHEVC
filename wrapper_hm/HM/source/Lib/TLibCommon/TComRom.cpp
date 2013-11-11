@@ -54,12 +54,11 @@ Void initROM()
   // g_aucConvertToBit[ x ]: log2(x/4), if x=4 -> 0, x=8 -> 1, x=16 -> 2, ...
   ::memset( g_aucConvertToBit,   -1, sizeof( g_aucConvertToBit ) );
   c=0;
-  for ( i=4; i<MAX_CU_SIZE; i*=2 )
+  for ( i=4; i<=MAX_CU_SIZE; i*=2 )
   {
     g_aucConvertToBit[ i ] = c;
     c++;
   }
-  g_aucConvertToBit[ i ] = c;
   
   c=2;
   for ( i=0; i<MAX_CU_DEPTH; i++ )
@@ -272,26 +271,24 @@ const Short g_as_DST_MAT_4 [4][4]=
 // ====================================================================================================================
 
 #if FAST_UDI_USE_MPM
-const UChar g_aucIntraModeNumFast[7] =
+const UChar g_aucIntraModeNumFast[MAX_CU_DEPTH] =
 {
   3,  //   2x2
   8,  //   4x4
   8,  //   8x8
   3,  //  16x16   
   3,  //  32x32   
-  3,  //  64x64   
-  3   // 128x128  
+  3   //  64x64   
 };
 #else // FAST_UDI_USE_MPM
-const UChar g_aucIntraModeNumFast[7] =
+const UChar g_aucIntraModeNumFast[MAX_CU_DEPTH] =
 {
   3,  //   2x2
   9,  //   4x4
   9,  //   8x8
   4,  //  16x16   33
   4,  //  32x32   33
-  5,  //  64x64   33
-  4   // 128x128  33
+  5   //  64x64   33
 };
 #endif // FAST_UDI_USE_MPM
 
@@ -341,17 +338,6 @@ UInt g_sigLastScanCG32x32[ 64 ];
 
 const UInt g_uiMinInGroup[ 10 ] = {0,1,2,3,4,6,8,12,16,24};
 const UInt g_uiGroupIdx[ 32 ]   = {0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9};
-
-// Rice parameters for absolute transform levels
-const UInt g_auiGoRiceRange[5] =
-{
-  7, 14, 26, 46, 78
-};
-
-const UInt g_auiGoRicePrefixLen[5] =
-{
-  8, 7, 6, 5, 4
-};
 
 Void initSigLastScan(UInt* pBuffD, UInt* pBuffH, UInt* pBuffV, Int iWidth, Int iHeight)
 {

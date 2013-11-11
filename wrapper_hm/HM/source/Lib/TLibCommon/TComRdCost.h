@@ -83,10 +83,6 @@ public:
   wpScalingParam  *wpCur;           // weithed prediction scaling parameters for current ref
   UInt            uiComp;           // uiComp = 0 (luma Y), 1 (chroma U), 2 (chroma V)
 
-#if NS_HAD
-  Bool            bUseNSHAD;
-#endif
-
   // (vertical) subsampling shift (for reducing complexity)
   // - 0 = no subsampling, 1 = even rows, 2 = every 4th, etc.
   Int   iSubShift;
@@ -103,9 +99,6 @@ public:
     DistFunc = NULL;
     iSubShift = 0;
     bitDepth = 0;
-#if NS_HAD
-    bUseNSHAD = false;
-#endif
   }
 };
 
@@ -115,8 +108,6 @@ class TComRdCost
 {
 private:
   // for distortion
-  Int                     m_iBlkWidth;
-  Int                     m_iBlkHeight;
   
 #if AMP_SAD
   FpDistFunc              m_afpDistortFunc[64]; // [eDFunc]
@@ -124,10 +115,8 @@ private:
   FpDistFunc              m_afpDistortFunc[33]; // [eDFunc]
 #endif  
   
-#if WEIGHTED_CHROMA_DISTORTION
-  Double                  m_cbDistortionWeight; 
+  Double                  m_cbDistortionWeight;
   Double                  m_crDistortionWeight; 
-#endif
   Double                  m_dLambda;
   Double                  m_sqrtLambda;
   UInt                    m_uiLambdaMotionSAD;
@@ -156,34 +145,23 @@ public:
   Double  calcRdCost  ( UInt   uiBits, UInt   uiDistortion, Bool bFlag = false, DFunc eDFunc = DF_DEFAULT );
   Double  calcRdCost64( UInt64 uiBits, UInt64 uiDistortion, Bool bFlag = false, DFunc eDFunc = DF_DEFAULT );
   
-#if WEIGHTED_CHROMA_DISTORTION
   Void    setCbDistortionWeight      ( Double cbDistortionWeight) { m_cbDistortionWeight = cbDistortionWeight; };
   Void    setCrDistortionWeight      ( Double crDistortionWeight) { m_crDistortionWeight = crDistortionWeight; };
-#endif
   Void    setLambda      ( Double dLambda );
   Void    setFrameLambda ( Double dLambda ) { m_dFrameLambda = dLambda; }
   
   Double  getSqrtLambda ()   { return m_sqrtLambda; }
 
-#if RATE_CONTROL_LAMBDA_DOMAIN
   Double  getLambda() { return m_dLambda; }
-#if M0036_RC_IMPROVEMENT
   Double  getChromaWeight () {return((m_cbDistortionWeight+m_crDistortionWeight)/2.0);}
-#endif
-#endif
   
   // Distortion Functions
   Void    init();
   
   Void    setDistParam( UInt uiBlkWidth, UInt uiBlkHeight, DFunc eDFunc, DistParam& rcDistParam );
   Void    setDistParam( TComPattern* pcPatternKey, Pel* piRefY, Int iRefStride,            DistParam& rcDistParam );
-#if NS_HAD
-  Void    setDistParam( TComPattern* pcPatternKey, Pel* piRefY, Int iRefStride, Int iStep, DistParam& rcDistParam, Bool bHADME=false, Bool bUseNSHAD=false );
-  Void    setDistParam( DistParam& rcDP, Int bitDepth, Pel* p1, Int iStride1, Pel* p2, Int iStride2, Int iWidth, Int iHeight, Bool bHadamard = false, Bool bUseNSHAD=false );
-#else
   Void    setDistParam( TComPattern* pcPatternKey, Pel* piRefY, Int iRefStride, Int iStep, DistParam& rcDistParam, Bool bHADME=false );
   Void    setDistParam( DistParam& rcDP, Int bitDepth, Pel* p1, Int iStride1, Pel* p2, Int iStride2, Int iWidth, Int iHeight, Bool bHadamard = false );
-#endif
   
   UInt    calcHAD(Int bitDepth, Pel* pi0, Int iStride0, Pel* pi1, Int iStride1, Int iWidth, Int iHeight );
   
@@ -254,21 +232,10 @@ private:
   static UInt xCalcHADs2x2      ( Pel *piOrg, Pel *piCurr, Int iStrideOrg, Int iStrideCur, Int iStep );
   static UInt xCalcHADs4x4      ( Pel *piOrg, Pel *piCurr, Int iStrideOrg, Int iStrideCur, Int iStep );
   static UInt xCalcHADs8x8      ( Pel *piOrg, Pel *piCurr, Int iStrideOrg, Int iStrideCur, Int iStep );
-#if NS_HAD
-  static UInt xCalcHADs16x4     ( Pel *piOrg, Pel *piCurr, Int iStrideOrg, Int iStrideCur, Int iStep );
-  static UInt xCalcHADs4x16     ( Pel *piOrg, Pel *piCurr, Int iStrideOrg, Int iStrideCur, Int iStep );
-#endif
   
 public:
-#if WEIGHTED_CHROMA_DISTORTION
   UInt   getDistPart(Int bitDepth, Pel* piCur, Int iCurStride,  Pel* piOrg, Int iOrgStride, UInt uiBlkWidth, UInt uiBlkHeight, TextType eText = TEXT_LUMA, DFunc eDFunc = DF_SSE );
-#else
-  UInt   getDistPart(Int bitDepth, Pel* piCur, Int iCurStride,  Pel* piOrg, Int iOrgStride, UInt uiBlkWidth, UInt uiBlkHeight, DFunc eDFunc = DF_SSE );
-#endif
 
-#if RATE_CONTROL_LAMBDA_DOMAIN && !M0036_RC_IMPROVEMENT
-  UInt   getSADPart ( Int bitDepth, Pel* pelCur, Int curStride,  Pel* pelOrg, Int orgStride, UInt width, UInt height );
-#endif
 };// END CLASS DEFINITION TComRdCost
 
 //! \}

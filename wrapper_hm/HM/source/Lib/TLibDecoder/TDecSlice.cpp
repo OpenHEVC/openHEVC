@@ -308,6 +308,43 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic*& rp
 #if ENC_DEC_TRACE
     g_bJustDoIt = g_bEncDecTraceEnable;
 #endif
+
+#if HM_CLEANUP_SAO
+    if ( pcSlice->getSPS()->getUseSAO() )
+    {
+      SAOBlkParam& saoblkParam = (rpcPic->getPicSym()->getSAOBlkParam())[iCUAddr];
+      if (pcSlice->getSaoEnabledFlag()||pcSlice->getSaoEnabledFlagChroma())
+      {
+        Bool sliceEnabled[NUM_SAO_COMPONENTS];
+        sliceEnabled[SAO_Y] = pcSlice->getSaoEnabledFlag();
+        sliceEnabled[SAO_Cb]= sliceEnabled[SAO_Cr]= pcSlice->getSaoEnabledFlagChroma();
+
+        Bool leftMergeAvail = false;
+        Bool aboveMergeAvail= false;
+
+        //merge left condition
+        Int rx = (iCUAddr % uiWidthInLCUs);
+        if(rx > 0)
+        {
+          leftMergeAvail = rpcPic->getSAOMergeAvailability(iCUAddr, iCUAddr-1);
+        }
+        //merge up condition
+        Int ry = (iCUAddr / uiWidthInLCUs);
+        if(ry > 0)
+        {
+          aboveMergeAvail = rpcPic->getSAOMergeAvailability(iCUAddr, iCUAddr-uiWidthInLCUs);
+        }
+
+        pcSbacDecoder->parseSAOBlkParam( saoblkParam, sliceEnabled, leftMergeAvail, aboveMergeAvail);
+      }
+      else 
+      {
+        saoblkParam[SAO_Y ].modeIdc = SAO_MODE_OFF;
+        saoblkParam[SAO_Cb].modeIdc = SAO_MODE_OFF;
+        saoblkParam[SAO_Cr].modeIdc = SAO_MODE_OFF;
+      }
+    }
+#else
     if ( pcSlice->getSPS()->getUseSAO() && (pcSlice->getSaoEnabledFlag()||pcSlice->getSaoEnabledFlagChroma()) )
     {
       SAOParam *saoParam = rpcPic->getPicSym()->getSaoParam();
@@ -359,6 +396,8 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic*& rp
         }
       }
     }
+#endif
+
     m_pcCuDecoder->decodeCU     ( pcCU, uiIsLast );
     m_pcCuDecoder->decompressCU ( pcCU );
     
@@ -373,7 +412,7 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic*& rp
     {
       // Parse end_of_substream_one_bit for WPP case
       UInt binVal;
-      pcSbacDecoder->parseTerminatingBit2( binVal );
+      pcSbacDecoder->parseTerminatingBit( binVal );
       assert( binVal );
     }
 
