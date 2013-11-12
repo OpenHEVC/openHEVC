@@ -714,14 +714,6 @@ typedef struct HEVCFrame {
     AVBufferRef *rpl_buf;
 } HEVCFrame;
 
-typedef struct FilterData {
-    int x;
-    int y;
-    int size;
-    int slice_or_tiles_left_boundary;
-    int slice_or_tiles_up_boundary;
-} FilterData;
-
 typedef struct HEVCNAL {
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
@@ -754,7 +746,6 @@ typedef struct HEVCLocalContext {
     PredictionUnit pu;
     NeighbourAvailable na;
     DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
-    FilterData *save_boundary_strengths;
     int nb_saved;
     int tile_pos_rs;
 } HEVCLocalContext;
@@ -970,6 +961,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH
 void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_cb_size);
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size,
                                            int slice_or_tiles_up_boundary, int slice_or_tiles_left_boundary);
+void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0);
+void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);

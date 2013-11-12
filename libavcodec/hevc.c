@@ -146,11 +146,6 @@ static void pic_arrays_free(HEVCContext *s)
     av_buffer_pool_uninit(&s->rpl_tab_pool);
     
     s->enable_parallel_tiles = 0;
-
-    if(s->threads_number>1 && s->pps && (s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1))
-        for (i = 0; i < s->threads_number; i++)
-            av_freep(&s->HEVClcList[i]->save_boundary_strengths);
-    
 }
 
 /* allocate arrays that depend on frame dimensions */
@@ -213,12 +208,6 @@ static int pic_arrays_init(HEVCContext *s)
     
     if((s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1) && s->threads_number>1 /*&& s->pps->entropy_coding_sync_enabled_flag*/){
         s->enable_parallel_tiles = 1;
-        for (i = 0; i < s->threads_number ; i++) {
-            log2_min_tu_ctb = s->sps->log2_ctb_size - s->sps->log2_min_transform_block_size;
-                s->HEVClcList[i]->save_boundary_strengths = av_malloc(sizeof(FilterData) * (s->pps->max_row_height<<log2_min_tu_ctb) * (s->pps->max_col_width<<log2_min_tu_ctb));
-               if(!s->HEVClcList[i]->save_boundary_strengths)
-                   goto fail;
-           }
     }
     
     return 0;
@@ -1987,94 +1976,30 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
 static void tiles_filters(HEVCContext *s)
 {
     uint16_t ctb_size        = 1 << s->sps->log2_ctb_size;
-    uint16_t ctb_mask        = ~( ctb_size - 1);
-    int min_tu_size          = 1 << s->sps->log2_min_transform_block_size;
+    int min_size            = 1 << s->sps->log2_min_transform_block_size;
     int ctb_addr_rs;
     int x0, y0, i;
 
     // Deblocking and SAO filters
     s->enable_parallel_tiles = 0;
-/*
-    for (i = 0; i < s->threads_number; i++){
-        for (j = 0; j < s->HEVClcList[i]->nb_saved; j++) {
-            int ctb_addr_rs = (s->HEVClcList[i]->save_boundary_strengths[j].y >> s->sps->log2_ctb_size) * s->sps->ctb_width + (s->HEVClcList[i]->save_boundary_strengths[j].x >> s->sps->log2_ctb_size);
-            int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-
-            if(s->pps->tile_id[ctb_addr_ts] != 1) {
-            ff_hevc_deblocking_boundary_strengths(s,
-                                                  s->HEVClcList[i]->save_boundary_strengths[j].x,
-                                                  s->HEVClcList[i]->save_boundary_strengths[j].y,
-                                                  s->HEVClcList[i]->save_boundary_strengths[j].size,
-                                                  s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_up_boundary,
-                                                  s->HEVClcList[i]->save_boundary_strengths[j].slice_or_tiles_left_boundary);
-            }
-        }
-    }*/
     if(s->pps->loop_filter_across_tiles_enabled_flag) {
-#if 1
         for (i = 1; i < s->pps->num_tile_columns; i++) {
             ctb_addr_rs = s->pps->tile_pos_rs[i];
             x0 = (ctb_addr_rs % s->sps->ctb_width) << s->sps->log2_ctb_size;
-            for (y0 = 0; y0 < s->sps->height; y0+=min_tu_size) {
-                //ctb_addr_rs = (y0 >> s->sps->log2_ctb_size) * s->sps->ctb_width + (x0 >> s->sps->log2_ctb_size);
-                //int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-                //if(s->pps->tile_id[ctb_addr_ts] == 1) {
-                 //   printf("poc %d : boundary_strengths(%d, %d, %d, %d, %d)\n",
-                //            s->poc, x0, y0, s->sps->log2_min_transform_block_size, 0, 3);
-                ff_hevc_deblocking_boundary_strengths(s,
-                        x0, y0, s->sps->log2_min_transform_block_size, 0, 2);
-                //}
+            for (y0 = 0; y0 < s->sps->height; y0+=min_size) {
+                ff_hevc_deblocking_boundary_strengths_v(s, x0, y0);
             }
         }
         for (i = 1; i < s->pps->num_tile_rows; i++) {
             ctb_addr_rs = s->pps->tile_pos_rs[i * s->pps->num_tile_columns];
             y0 = (ctb_addr_rs / s->sps->ctb_width) << s->sps->log2_ctb_size;
-            for (x0 = 0; x0 < s->sps->width; x0+=min_tu_size) {
-                //ctb_addr_rs = (y0 >> s->sps->log2_ctb_size) * s->sps->ctb_width + (x0 >> s->sps->log2_ctb_size);
-                //int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-                //if(s->pps->tile_id[ctb_addr_ts] == 1) {
-                //    printf("poc %d :2  boundary_strengths(%d, %d, %d, %d, %d)\n",
-                //            s->poc, x0, y0, s->sps->log2_min_transform_block_size, 3, 0);
-                ff_hevc_deblocking_boundary_strengths(s,
-                        x0, y0, s->sps->log2_min_transform_block_size, 2, 0);
-                //}
+            for (x0 = 0; x0 < s->sps->width; x0+=min_size) {
+                ff_hevc_deblocking_boundary_strengths_h(s, x0, y0);
             }
         }
-#else
-        for (x0 = 0 ; x0 < s->sps->width; x0+=min_tu_size)
-            for (y0 = 0; y0 < s->sps->height; y0+=min_tu_size) {
-                ctb_addr_rs = (y0 >> s->sps->log2_ctb_size) * s->sps->ctb_width + (x0 >> s->sps->log2_ctb_size);
-                int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-                int x_ctb = x0 & ctb_mask;
-                int y_ctb = y0 & ctb_mask;
-                uint8_t tile_left_boundary = ((x_ctb > 0) &&
-                        (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]]));
-                uint8_t slice_left_boundary = ((x_ctb > 0) &&
-                        (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1]));
-                uint8_t tile_up_boundary = ((y_ctb > 0) &&
-                        (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]]));
-                uint8_t slice_up_boundary = ((y_ctb > 0) &&
-                        (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]));
-                uint8_t slice_or_tiles_left_boundary = slice_left_boundary + (tile_left_boundary << 1);
-                uint8_t slice_or_tiles_up_boundary   = slice_up_boundary   + (tile_up_boundary   << 1);
-
-                if( ( (slice_or_tiles_up_boundary &2 ) && (y0 == y_ctb) )  ||
-                        ( (slice_or_tiles_left_boundary&2) && (x0 == x_ctb) ) ) {
-                    //if(s->pps->tile_id[ctb_addr_ts] == 1) {
-                    //    printf("poc %d :boundary_strengths(%d, %d, %d, %d, %d)\n",
-                    //            s->poc, x0, y0, s->sps->log2_min_transform_block_size, slice_or_tiles_up_boundary, slice_or_tiles_left_boundary);
-                    ff_hevc_deblocking_boundary_strengths(s,
-                            x0,
-                            y0,
-                            s->sps->log2_min_transform_block_size,
-                            slice_or_tiles_up_boundary,
-                            slice_or_tiles_left_boundary);
-                    //}
-                }
-            }
-#endif
     }
     s->enable_parallel_tiles = 1;
+
     for (y0 = 0; y0 < s->sps->height; y0 += ctb_size) {
         for (x0 = 0; x0 < s->sps->width; x0 += ctb_size)
             ff_hevc_hls_filter(s, x0, y0);
