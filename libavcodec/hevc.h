@@ -1,22 +1,22 @@
 /*
- * HEVC video Decoder
+ * HEVC video decoder
  *
  * Copyright (C) 2012 - 2013 Guillaume Martres
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -76,42 +76,43 @@
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */
 #define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->width + (x)])
-#define SAMPLE_CTB(tab, x, y) ((tab)[(y) * pic_width_in_ctb + (x)])
+#define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
 #define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
 
 #define IS_IDR(s) (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP)
 #define IS_BLA(s) (s->nal_unit_type == NAL_BLA_W_RADL || s->nal_unit_type == NAL_BLA_W_LP || \
                    s->nal_unit_type == NAL_BLA_N_LP)
+#define IS_IRAP(s) (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
 
 /**
  * Table 7-3: NAL unit type codes
  */
 enum NALUnitType {
-    NAL_TRAIL_N     =  0,
-    NAL_TRAIL_R     =  1,
-    NAL_TSA_N       =  2,
-    NAL_TSA_R       =  3,
-    NAL_STSA_N      =  4,
-    NAL_STSA_R      =  5,
-    NAL_RADL_N      =  6,
-    NAL_RADL_R      =  7,
-    NAL_RASL_N      =  8,
-    NAL_RASL_R      =  9,
-    NAL_BLA_W_LP    = 16,
-    NAL_BLA_W_RADL  = 17,
-    NAL_BLA_N_LP    = 18,
-    NAL_IDR_W_RADL  = 19,
-    NAL_IDR_N_LP    = 20,
-    NAL_CRA_NUT     = 21,
-    NAL_VPS         = 32,
-    NAL_SPS         = 33,
-    NAL_PPS         = 34,
-    NAL_AUD         = 35,
-    NAL_EOS_NUT     = 36,
-    NAL_EOB_NUT     = 37,
-    NAL_FD_NUT      = 38,
-    NAL_SEI_PREFIX  = 39,
-    NAL_SEI_SUFFIX  = 40,
+    NAL_TRAIL_N    = 0,
+    NAL_TRAIL_R    = 1,
+    NAL_TSA_N      = 2,
+    NAL_TSA_R      = 3,
+    NAL_STSA_N     = 4,
+    NAL_STSA_R     = 5,
+    NAL_RADL_N     = 6,
+    NAL_RADL_R     = 7,
+    NAL_RASL_N     = 8,
+    NAL_RASL_R     = 9,
+    NAL_BLA_W_LP   = 16,
+    NAL_BLA_W_RADL = 17,
+    NAL_BLA_N_LP   = 18,
+    NAL_IDR_W_RADL = 19,
+    NAL_IDR_N_LP   = 20,
+    NAL_CRA_NUT    = 21,
+    NAL_VPS        = 32,
+    NAL_SPS        = 33,
+    NAL_PPS        = 34,
+    NAL_AUD        = 35,
+    NAL_EOS_NUT    = 36,
+    NAL_EOB_NUT    = 37,
+    NAL_FD_NUT     = 38,
+    NAL_SEI_PREFIX = 39,
+    NAL_SEI_SUFFIX = 40,
 };
 
 enum RPSType {
@@ -367,7 +368,8 @@ typedef struct HEVCVPS {
 } HEVCVPS;
 
 typedef struct ScalingList {
-    // This is a little wasteful, since sizeID 0 only needs 8 coeffs, and size ID 3 only has 2 arrays, not 6.
+    /* This is a little wasteful, since sizeID 0 only needs 8 coeffs,
+     * and size ID 3 only has 2 arrays, not 6. */
     uint8_t sl[4][6][64];
     uint8_t sl_dc[2][6];
 } ScalingList;
@@ -424,9 +426,9 @@ typedef struct HEVCSPS {
     uint8_t sps_temporal_mvp_enabled_flag;
     uint8_t sps_strong_intra_smoothing_enable_flag;
 
-    unsigned int log2_min_coding_block_size;
+    unsigned int log2_min_cb_size;
     unsigned int log2_diff_max_min_coding_block_size;
-    unsigned int log2_min_transform_block_size;
+    unsigned int log2_min_tb_size;
     unsigned int log2_max_trafo_size;
     unsigned int log2_ctb_size;
     unsigned int log2_min_pu_size;
@@ -444,6 +446,8 @@ typedef struct HEVCSPS {
     int min_cb_height;
     int min_tb_width;
     int min_tb_height;
+    int min_pu_width;
+    int min_pu_height;
 
     int hshift[3];
     int vshift[3];
@@ -480,8 +484,8 @@ typedef struct HEVCPPS {
     uint8_t tiles_enabled_flag;
     uint8_t entropy_coding_sync_enabled_flag;
 
-    int num_tile_columns; ///< num_tile_columns_minus1 + 1
-    int num_tile_rows; ///< num_tile_rows_minus1 + 1
+    int num_tile_columns;   ///< num_tile_columns_minus1 + 1
+    int num_tile_rows;      ///< num_tile_rows_minus1 + 1
     uint8_t uniform_spacing_flag;
     uint8_t loop_filter_across_tiles_enabled_flag;
 
@@ -489,11 +493,11 @@ typedef struct HEVCPPS {
 
     uint8_t deblocking_filter_control_present_flag;
     uint8_t deblocking_filter_override_enabled_flag;
-    uint8_t pps_disable_deblocking_filter_flag;
-    int beta_offset; ///< beta_offset_div2 * 2
-    int tc_offset; ///< tc_offset_div2 * 2
+    uint8_t disable_dbf;
+    int beta_offset;    ///< beta_offset_div2 * 2
+    int tc_offset;      ///< tc_offset_div2 * 2
 
-    int pps_scaling_list_data_present_flag;
+    int scaling_list_data_present_flag;
     ScalingList scaling_list;
 
     uint8_t lists_modification_present_flag;
@@ -505,18 +509,18 @@ typedef struct HEVCPPS {
     uint8_t pps_extension_data_flag;
 
     // Inferred parameters
-    int *column_width; ///< ColumnWidth
-    int *row_height; ///< RowHeight
-    int *col_bd; ///< ColBd
-    int *row_bd; ///< RowBd
+    int *column_width;  ///< ColumnWidth
+    int *row_height;    ///< RowHeight
+    int *col_bd;        ///< ColBd
+    int *row_bd;        ///< RowBd
     int *col_idxX;
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
-    int *tile_id; ///< TileId
-    int *tile_pos_rs; ///< TilePosRS
-    int *min_cb_addr_zs; ///< MinCbAddrZS
-    int *min_tb_addr_zs; ///< MinTbAddrZS
+    int *tile_id;           ///< TileId
+    int *tile_pos_rs;       ///< TilePosRS
+    int *min_cb_addr_zs;    ///< MinCbAddrZS
+    int *min_tb_addr_zs;    ///< MinTbAddrZS
 } HEVCPPS;
 
 typedef struct SliceHeader {
@@ -540,36 +544,40 @@ typedef struct SliceHeader {
     ShortTermRPS slice_rps;
     const ShortTermRPS *short_term_rps;
     LongTermRPS long_term_rps;
-    uint8_t rpl_modification_flag[2];
     unsigned int list_entry_lx[2][32];
 
+    uint8_t rpl_modification_flag[2];
     uint8_t no_output_of_prior_pics_flag;
-
-    uint8_t slice_sample_adaptive_offset_flag[3];
-
     uint8_t slice_temporal_mvp_enabled_flag;
+
     unsigned int nb_refs[2];
 
+    uint8_t slice_sample_adaptive_offset_flag[3];
     uint8_t mvd_l1_zero_flag;
+
     uint8_t cabac_init_flag;
+    uint8_t disable_deblocking_filter_flag; ///< slice_header_disable_deblocking_filter_flag
+    uint8_t slice_loop_filter_across_slices_enabled_flag;
     uint8_t collocated_list;
+
     unsigned int collocated_ref_idx;
+
     int slice_qp_delta;
     int slice_cb_qp_offset;
     int slice_cr_qp_offset;
 
-    uint8_t disable_deblocking_filter_flag; ///< slice_header_disable_deblocking_filter_flag
-    int beta_offset; ///< beta_offset_div2 * 2
-    int tc_offset; ///< tc_offset_div2 * 2
+    int beta_offset;    ///< beta_offset_div2 * 2
+    int tc_offset;      ///< tc_offset_div2 * 2
 
     int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
 
-    uint8_t slice_loop_filter_across_slices_enabled_flag;
 
     int *entry_point_offset;
     int * offset;
     int * size;
     int num_entry_point_offsets;
+
+    int8_t slice_qp;
 
     uint8_t luma_log2_weight_denom;
     int16_t chroma_log2_weight_denom;
@@ -579,16 +587,13 @@ typedef struct SliceHeader {
     int16_t chroma_weight_l1[16][2];
     int16_t luma_weight_l1[16];
 
-
     int16_t luma_offset_l0[16];
     int16_t chroma_offset_l0[16][2];
 
     int16_t luma_offset_l1[16];
     int16_t chroma_offset_l1[16][2];
 
-    // Inferred parameters
-    int8_t slice_qp;
-    int    slice_ctb_addr_rs;
+    int slice_ctb_addr_rs;
 } SliceHeader;
 
 typedef struct CodingTree {
@@ -596,30 +601,29 @@ typedef struct CodingTree {
 } CodingTree;
 
 typedef struct CodingUnit {
-    uint8_t cu_transquant_bypass_flag;
+    int x;
+    int y;
 
-    enum PredMode pred_mode; ///< PredMode
-    enum PartMode part_mode; ///< PartMode
+    enum PredMode pred_mode;    ///< PredMode
+    enum PartMode part_mode;    ///< PartMode
+
     uint8_t rqt_root_cbf;
 
     uint8_t pcm_flag;
 
     // Inferred parameters
-    uint8_t intra_split_flag; ///< IntraSplitFlag
-    uint8_t max_trafo_depth; ///< MaxTrafoDepth
-
-    int x;
-    int y;
-
+    uint8_t intra_split_flag;   ///< IntraSplitFlag
+    uint8_t max_trafo_depth;    ///< MaxTrafoDepth
+    uint8_t cu_transquant_bypass_flag;
 } CodingUnit;
 
 typedef struct Mv {
-    int16_t x;     ///< horizontal component of motion vector
-    int16_t y;     ///< vertical component of motion vector
+    int16_t x;  ///< horizontal component of motion vector
+    int16_t y;  ///< vertical component of motion vector
 } Mv;
 
 typedef struct MvField {
-    Mv  mv[2];
+    Mv mv[2];
     int8_t ref_idx[2];
     int8_t pred_flag[2];
     uint8_t is_intra;
@@ -635,12 +639,12 @@ typedef struct NeighbourAvailable {
 } NeighbourAvailable;
 
 typedef struct PredictionUnit {
-    uint8_t merge_flag;
     int mpm_idx;
     int rem_intra_luma_pred_mode;
     uint8_t intra_pred_mode[4];
-    uint8_t intra_pred_mode_c;
     Mv mvd;
+    uint8_t merge_flag;
+    uint8_t intra_pred_mode_c;
 } PredictionUnit;
 
 typedef struct TransformTree {
@@ -656,22 +660,21 @@ typedef struct TransformUnit {
     int cu_qp_delta;
 
     // Inferred parameters;
-    uint8_t is_cu_qp_delta_coded;
     int cur_intra_pred_mode;
+    uint8_t is_cu_qp_delta_coded;
 } TransformUnit;
 
 typedef struct SAOParams {
-    uint8_t type_idx[3]; ///< sao_type_idx
+    int offset_abs[3][4];   ///< sao_offset_abs
+    int offset_sign[3][4];  ///< sao_offset_sign
 
-    int offset_abs[3][4]; ///< sao_offset_abs
-    int offset_sign[3][4]; ///< sao_offset_sign
+    int band_position[3];   ///< sao_band_position
 
-    int band_position[3]; ///< sao_band_position
+    int eo_class[3];        ///< sao_eo_class
 
-    int eo_class[3]; ///< sao_eo_class
+    int offset_val[3][5];   ///<SaoOffsetVal
 
-    // Inferred parameters
-    int offset_val[3][5]; ///<SaoOffsetVal
+    uint8_t type_idx[3];    ///< sao_type_idx
 } SAOParams;
 
 typedef struct DBParams {
@@ -682,22 +685,22 @@ typedef struct DBParams {
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
 #define HEVC_FRAME_FLAG_LONG_REF  (1 << 2)
-#define HEVC_FRAME_FLAG_UNREF     (1 << 3)
 
 typedef struct HEVCFrame {
     AVFrame *frame;
     ThreadFrame tf;
-    int poc;
     MvField *tab_mvf;
     RefPicList *refPicList;
     RefPicListTab **rpl_tab;
     int ctb_count;
+    int poc;
     struct HEVCFrame *collocated_ref;
 
-    /**
-     * A combination of HEVC_FRAME_FLAG_*
-     */
-    uint8_t flags;
+    HEVCWindow window;
+
+    AVBufferRef *tab_mvf_buf;
+    AVBufferRef *rpl_tab_buf;
+    AVBufferRef *rpl_buf;
 
     /**
      * A sequence counter, so that old frames are output first
@@ -705,31 +708,35 @@ typedef struct HEVCFrame {
      */
     uint16_t sequence;
 
-    HEVCWindow window;
-
-    AVBufferRef *tab_mvf_buf;
-    AVBufferRef *rpl_tab_buf;
-    AVBufferRef *rpl_buf;
+    /**
+     * A combination of HEVC_FRAME_FLAG_*
+     */
+    uint8_t flags;
 } HEVCFrame;
 
 typedef struct HEVCNAL {
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
-    const uint8_t *data;
+
     int size;
+    const uint8_t *data;
 } HEVCNAL;
 
 typedef struct HEVCLocalContext {
+    DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
     uint8_t cabac_state[HEVC_CONTEXTS];
+
+    uint8_t first_qp_group;
+
     GetBitContext gb;
     CABACContext cc;
     TransformTree tt;
-    TransformUnit tu;
-    uint8_t first_qp_group;
+
     int8_t qp_y;
     int8_t curr_qp_y;
-    uint8_t slice_or_tiles_left_boundary;
-    uint8_t slice_or_tiles_up_boundary;
+
+    TransformUnit tu;
+
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
     uint8_t ctb_up_right_flag;
@@ -743,8 +750,9 @@ typedef struct HEVCLocalContext {
     CodingUnit cu;
     PredictionUnit pu;
     NeighbourAvailable na;
-    DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
-    int tile_pos_rs;
+
+    uint8_t slice_or_tiles_left_boundary;
+    uint8_t slice_or_tiles_up_boundary;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
@@ -765,16 +773,23 @@ typedef struct HEVCContext {
 
     uint8_t *cabac_state;
 
+    /** 1 if the independent slice segment header was successfully parsed */
+    uint8_t slice_initialized;
+
     AVFrame *frame;
     AVFrame *sao_frame;
     AVFrame *tmp_frame;
     AVFrame *output_frame;
+
     HEVCVPS *vps;
     HEVCSPS *sps;
     HEVCPPS *pps;
     AVBufferRef *vps_list[MAX_VPS_COUNT];
     AVBufferRef *sps_list[MAX_SPS_COUNT];
     AVBufferRef *pps_list[MAX_PPS_COUNT];
+
+    AVBufferPool *tab_mvf_pool;
+    AVBufferPool *rpl_tab_pool;
 
     ///< candidate references for the current frame
     RefPicList rps[5];
@@ -813,7 +828,6 @@ typedef struct HEVCContext {
     // PU
     uint8_t *tab_ipm;
 
-
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;
 
@@ -847,28 +861,19 @@ typedef struct HEVCContext {
     int nb_nals;
     int nals_allocated;
 
-    int nuh_layer_id;
-
     // for checking the frame checksums
     struct AVMD5 *md5_ctx;
     uint8_t       md5[3][16];
     uint8_t is_md5;
 
-    /** 1 if the independent slice segment header was successfully parsed */
-    uint8_t slice_initialized;
-    int strict_def_disp_win;
-
     int context_initialized;
-    int is_nalff;         ///< this flag is != 0 if bitstream is encapsulated
-                          ///< as a format defined in 14496-15
-    int nal_length_size;  ///< Number of bytes used for nal length (1, 2 or 4)
+    int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
+                            ///< as a format defined in 14496-15
+    int apply_defdispwin;
 
-
-    AVBufferPool *tab_mvf_pool;
-    AVBufferPool *rpl_tab_pool;
-    int dec_id;
-    
     int active_seq_parameter_set_id;
+
+    int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
 
     int picture_struct;
 } HEVCContext;
@@ -879,6 +884,9 @@ int ff_hevc_decode_nal_vps(HEVCContext *s);
 int ff_hevc_decode_nal_sps(HEVCContext *s);
 int ff_hevc_decode_nal_pps(HEVCContext *s);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
+
+int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
+                         HEVCNAL *nal);
 
 /**
  * Mark all frames in DPB as unused for reference.
@@ -895,7 +903,8 @@ void ff_hevc_flush_dpb(HEVCContext *s);
  */
 int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 
-RefPicList* ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *frame, int x0, int y0);
+RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *frame,
+                                 int x0, int y0);
 
 /**
  * Construct the reference picture sets for the current frame.
@@ -917,9 +926,11 @@ int ff_hevc_sao_offset_sign_decode(HEVCContext *s);
 int ff_hevc_sao_eo_class_decode(HEVCContext *s);
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
-int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb);
+int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0,
+                             int x_cb, int y_cb);
 int ff_hevc_pred_mode_decode(HEVCContext *s);
-int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0);
+int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth,
+                                          int x0, int y0);
 int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size);
 int ff_hevc_pcm_flag_decode(HEVCContext *s);
 int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s);
@@ -952,14 +963,25 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags);
 
-void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0, int nPbW, int nPbH);
-void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv);
-void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW, int nPbH, int log2_cb_size, int part_idx, int merge_idx, MvField *mv , int mvp_lx_flag, int LX);
-void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_cb_size);
-void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size,
-                                           int slice_or_tiles_up_boundary, int slice_or_tiles_left_boundary);
-void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0, int slice_up_boundary);
-void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int slice_left_boundary);
+void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
+                                     int nPbW, int nPbH);
+void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0,
+                                int nPbW, int nPbH, int log2_cb_size,
+                                int part_idx, int merge_idx, MvField *mv);
+void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0,
+                              int nPbW, int nPbH, int log2_cb_size,
+                              int part_idx, int merge_idx,
+                              MvField *mv, int mvp_lx_flag, int LX);
+void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase,
+                     int log2_cb_size);
+void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
+                                           int log2_trafo_size,
+                                           int slice_or_tiles_up_boundary,
+                                           int slice_or_tiles_left_boundary);
+void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0,
+                                           int slice_up_boundary);
+void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0,
+                                           int slice_left_boundary);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
@@ -980,4 +1002,4 @@ extern const uint8_t ff_hevc_diag_scan4x4_y[16];
 extern const uint8_t ff_hevc_diag_scan8x8_x[64];
 extern const uint8_t ff_hevc_diag_scan8x8_y[64];
 
-#endif // AVCODEC_HEVC_H
+#endif /* AVCODEC_HEVC_H */

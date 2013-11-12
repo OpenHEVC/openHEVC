@@ -42,11 +42,11 @@ void ff_hevc_intra_pred_8_sse(HEVCContext *s, int x0, int y0, int log2_size, int
     int vshift = s->sps->vshift[c_idx];
     int size = (1 << log2_size);
     int size_in_luma = size << hshift;
-    int size_in_tbs = size_in_luma >> s->sps->log2_min_transform_block_size;
+    int size_in_tbs = size_in_luma >> s->sps->log2_min_tb_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
-    int x_tb = x0 >> s->sps->log2_min_transform_block_size;
-    int y_tb = y0 >> s->sps->log2_min_transform_block_size;
+    int x_tb = x0 >> s->sps->log2_min_tb_size;
+    int y_tb = y0 >> s->sps->log2_min_tb_size;
     int cur_tb_addr = s->pps->min_tb_addr_zs[(y_tb) * s->sps->min_tb_width + (x_tb)];
     ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(uint8_t);
     uint8_t *src = (uint8_t*)s->frame->data[c_idx] + x + y * stride;
