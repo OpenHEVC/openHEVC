@@ -91,8 +91,8 @@ static void video_decode_example(const char *filename)
         exit(1); // Couldn't open file
     }
 
-    avformat_find_stream_info(pFormatCtx, NULL);
-    av_dump_format(pFormatCtx, 1, filename, 0);
+//    avformat_find_stream_info(pFormatCtx, NULL);
+//    av_dump_format(pFormatCtx, 1, filename, 0);
 
     if (output_file) {
         fout = fopen(output_file, "wb");
