@@ -37,7 +37,6 @@
 #include "golomb.h"
 #include "hevc.h"
 
-#define TEST_SET_SPS2
 #define POC_DISPLAY_MD5
 #ifdef POC_DISPLAY_MD5
 
@@ -375,14 +374,14 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     if (sps->sao_enabled) {
         av_frame_unref(s->tmp_frame);
-        ret = ff_get_buffer(s->avctx, s->tmp_frame, 0/*AV_GET_BUFFER_FLAG_REF*/);
+        ret = ff_get_buffer(s->avctx, s->tmp_frame, AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
             goto fail;
         s->frame = s->tmp_frame;
     }
 
     s->sps = sps;
-    s->vps = s->vps_list[s->sps->vps_id]->data;
+    s->vps = (HEVCVPS*) s->vps_list[s->sps->vps_id]->data;
     return 0;
 
 fail:
@@ -422,44 +421,11 @@ static int hls_slice_header(HEVCContext *s)
 
     if (s->sps != (HEVCSPS*)s->sps_list[s->pps->sps_id]->data) {
         s->sps = (HEVCSPS*)s->sps_list[s->pps->sps_id]->data;
-#ifdef TEST_SET_SPS
-        //        ff_hevc_clear_refs(s);
+
         ret = set_sps(s, s->sps);
         if (ret < 0)
             return ret;
 
-//        s->seq_decode = (s->seq_decode + 1) & 0xff;
-//        s->max_ra     = INT_MAX;
-#else
-        s->vps = (HEVCVPS*)s->vps_list[s->sps->vps_id]->data;
-
-        pic_arrays_free(s);
-        ret = pic_arrays_init(s, s->sps);
-        if (ret < 0) {
-            s->sps = NULL;
-            return AVERROR(ENOMEM);
-        }
-
-        s->avctx->coded_width         = s->sps->width;
-        s->avctx->coded_height        = s->sps->height;
-        s->avctx->width               = s->sps->output_width;
-        s->avctx->height              = s->sps->output_height;
-        s->avctx->pix_fmt             = s->sps->pix_fmt;
-        s->avctx->sample_aspect_ratio = s->sps->vui.sar;
-        s->avctx->has_b_frames        = s->sps->temporal_layer[s->sps->max_sub_layers - 1].num_reorder_pics;
-
-        ff_hevc_pred_init(&s->hpc,     s->sps->bit_depth);
-        ff_hevc_dsp_init (&s->hevcdsp, s->sps->bit_depth);
-        ff_videodsp_init (&s->vdsp,    s->sps->bit_depth);
-
-        if (s->sps->sao_enabled) {
-            av_frame_unref(s->tmp_frame);
-            ret = ff_get_buffer(s->avctx, s->tmp_frame, 0);
-            if (ret < 0)
-                return ret;
-            s->frame = s->tmp_frame;
-        }
-#endif
         s->width  = s->sps->width;
         s->height = s->sps->height;
 
@@ -1201,13 +1167,12 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
 }
 
 static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
-                                const Mv *mv, int y0)
+                                const Mv *mv, int y0, int height)
 {
-    if (s->threads_type&FF_THREAD_FRAME ) {
-        int y = (mv->y >> 2) + y0 + (2<<s->sps->log2_min_cb_size);
+    int y = (mv->y >> 2) + y0 + height + 9;
 
-        ff_thread_await_progress(&ref->tf, FFMIN(s->height, y), 0);
-    }
+    if (s->threads_type&FF_THREAD_FRAME )
+        ff_thread_await_progress(&ref->tf, y, 0);
 }
 
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
@@ -1330,13 +1295,13 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
         if (!ref0)
             return;
-        hevc_await_progress(s, ref0, &current_mv.mv[0], y0);
+        hevc_await_progress(s, ref0, &current_mv.mv[0], y0, nPbH);
     }
     if (current_mv.pred_flag[1]) {
         ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
         if (!ref1)
             return;
-        hevc_await_progress(s, ref1, &current_mv.mv[1], y0);
+        hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
     }
 
     if (current_mv.pred_flag[0] && !current_mv.pred_flag[1]) {
@@ -1941,11 +1906,9 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     }
 
     if (x_ctb + ctb_size >= s->sps->width &&
-        y_ctb + ctb_size >= s->sps->height) {
+        y_ctb + ctb_size >= s->sps->height)
         ff_hevc_hls_filter(s, x_ctb, y_ctb);
-        if (s->threads_type&FF_THREAD_FRAME)
-            ff_thread_report_progress(&s->ref->tf, s->sps->height, 0);
-    }
+
     return ctb_addr_ts;
 }
 
@@ -2105,15 +2068,9 @@ static void tiles_filters(HEVCContext *s)
     }
     s->enable_parallel_tiles = 1;
 
-    for (y0 = 0; y0 < s->sps->height; y0 += ctb_size) {
+    for (y0 = 0; y0 < s->sps->height; y0 += ctb_size)
         for (x0 = 0; x0 < s->sps->width; x0 += ctb_size)
             ff_hevc_hls_filter(s, x0, y0);
-        if (s->threads_type&FF_THREAD_FRAME)
-            ff_thread_report_progress(&s->ref->tf, y0, 0);
-    }
-    if (s->threads_type&FF_THREAD_FRAME)
-        ff_thread_report_progress(&s->ref->tf, s->sps->height, 0);
-
 }
 
 static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
@@ -2422,8 +2379,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
 /* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
    between these functions would be nice. */
-static int extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
-                        HEVCNAL *nal)
+int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
+                         HEVCNAL *nal)
 {
     int i, si, di;
     uint8_t *dst;
@@ -2595,7 +2552,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[s->nb_nals];
         nal = &s->nals[s->nb_nals];
 
-        consumed = extract_rbsp(s, buf, extract_length, nal);
+        consumed = ff_hevc_extract_rbsp(s, buf, extract_length, nal);
 
         s->skipped_bytes_nal[s->nb_nals] = s->skipped_bytes;
         s->skipped_bytes_pos_size_nal[s->nb_nals] = s->skipped_bytes_pos_size;
@@ -2766,6 +2723,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (s->is_decoded) {
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         s->is_decoded = 0;
+        if (s->threads_type&FF_THREAD_FRAME)
+    	   ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     }
 
     if (s->output_frame->buf[0]) {
@@ -2987,11 +2946,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         }
     }
 
-#ifdef TEST_SET_SPS
-    if (s->sps != s0->sps)
-        ret = set_sps(s, s0->sps);
-#endif
-
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;
     s->pocTid0    = s0->pocTid0;
@@ -3088,6 +3042,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     ret = hevc_init_context(avctx);
     if (ret < 0)
         return ret;
+
+    s->picture_struct = 0;
 
     if (avctx->extradata_size > 0 && avctx->extradata) {
         ret = hevc_decode_extradata(s);
