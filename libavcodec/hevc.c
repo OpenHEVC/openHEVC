@@ -2084,7 +2084,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 
 
     ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
-    
+
     if(s->sh.num_entry_point_offsets != 0)   {
         offset = (lc->gb.index >> 3);
         for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
@@ -2094,9 +2094,10 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
             }
         }
 
-        for (i = 1;i < s->sh.num_entry_point_offsets; i++) {
+        for (i = 1; i < s->sh.num_entry_point_offsets; i++) {
             offset += (s->sh.entry_point_offset[i - 1] - cmpt);
-            for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[i]; j < s->skipped_bytes; j++) {
+            for (j = 0, cmpt = 0, startheader = offset
+                    + s->sh.entry_point_offset[i]; j < s->skipped_bytes; j++) {
                 if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
                     startheader--;
                     cmpt++;
@@ -2106,11 +2107,10 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
             s->sh.offset[i - 1] = offset;
         }
     
-        if (s->sh.num_entry_point_offsets != 0) {
-            offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
-            s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
-            s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
-        }
+        offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
+        s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
+        s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
+
         avpriv_atomic_int_set(&s->wpp_err, 0);
         ff_reset_entries(s->avctx);
     }
