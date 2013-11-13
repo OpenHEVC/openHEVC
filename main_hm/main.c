@@ -152,7 +152,7 @@ static void video_decode_example(const char *filename)
         fclose(fout);
     avformat_close_input(&pFormatCtx);
     libOpenHevcClose(openHevcHandle);
-    printf("frame= %d fps= %.0f time=%.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
+    printf("frame= %d fps= %.0f time= %.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
 }
 
 int main(int argc, char *argv[]) {

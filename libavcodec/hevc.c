@@ -2106,7 +2106,6 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
             s->sh.size[i - 1] = s->sh.entry_point_offset[i] - cmpt;
             s->sh.offset[i - 1] = offset;
         }
-    
         offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
         s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
         s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
@@ -2591,8 +2590,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
         }
     }
-
-    return ret;
+    if (s->enable_parallel_tiles == 1)
+        tiles_filters(s);
 fail:
     if (s->ref && (s->threads_type&FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
@@ -2692,8 +2691,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
-    if (s->enable_parallel_tiles == 1)
-        tiles_filters(s);
+
     /* verify the SEI checksum */
     if (s->decode_checksum_sei && s->is_decoded) {
         AVFrame *frame = s->ref->frame;
@@ -2723,8 +2721,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (s->is_decoded) {
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         s->is_decoded = 0;
-        if (s->threads_type&FF_THREAD_FRAME)
-    	   ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     }
 
     if (s->output_frame->buf[0]) {
