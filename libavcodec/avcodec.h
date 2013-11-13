@@ -3683,6 +3683,26 @@ typedef struct AVCodecParserContext {
      * For all other types, this is in units of AVCodecContext.time_base.
      */
     int duration;
+
+    enum AVFieldOrder field_order;
+
+    /**
+     * Indicate whether a picture is coded as a frame, top field or bottom field.
+     *
+     * For example, H.264 field_pic_flag equal to 0 corresponds to
+     * AV_PICTURE_STRUCTURE_FRAME. An H.264 picture with field_pic_flag
+     * equal to 1 and bottom_field_flag equal to 0 corresponds to
+     * AV_PICTURE_STRUCTURE_TOP_FIELD.
+     */
+    enum AVPictureStructure picture_structure;
+
+    /**
+     * Picture number incremented in presentation or output order.
+     * This field may be reinitialized at the first picture of a new sequence.
+     *
+     * For example, this corresponds to H.264 PicOrderCnt.
+     */
+    int output_picture_number;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
