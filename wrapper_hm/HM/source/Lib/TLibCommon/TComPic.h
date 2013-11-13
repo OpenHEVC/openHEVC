@@ -59,7 +59,6 @@ private:
   UInt                  m_uiTLayer;               //  Temporal layer
   Bool                  m_bUsedByCurr;            //  Used by current picture
   Bool                  m_bIsLongTerm;            //  IS long term picture
-  Bool                  m_bIsUsedAsLongTerm;      //  long term picture is used as reference before
   TComPicSym*           m_apcPicSym;              //  Symbol
   
   TComPicYuv*           m_apcPicYuv[2];           //  Texture,  0:org / 1:rec
@@ -69,18 +68,23 @@ private:
   Bool                  m_bReconstructed;
   Bool                  m_bNeededForOutput;
   UInt                  m_uiCurrSliceIdx;         // Index of current slice
+#if !HM_CLEANUP_SAO
   Int*                  m_pSliceSUMap;
   Bool*                 m_pbValidSlice;
   Int                   m_sliceGranularityForNDBFilter;
   Bool                  m_bIndependentSliceBoundaryForNDBFilter;
   Bool                  m_bIndependentTileBoundaryForNDBFilter;
   TComPicYuv*           m_pNDBFilterYuvTmp;    //!< temporary picture buffer when non-cross slice/tile boundary in-loop filtering is enabled
+#endif
   Bool                  m_bCheckLTMSB;
   
   Int                   m_numReorderPics[MAX_TLAYER];
   Window                m_conformanceWindow;
   Window                m_defaultDisplayWindow;
 
+  bool                  m_isTop;
+  bool                  m_isField;
+  
   std::vector<std::vector<TComDataCU*> > m_vSliceCUDataLink;
 
   SEIMessages  m_SEIs; ///< Any SEI messages that have been received.  If !NULL we own the object.
@@ -150,6 +154,9 @@ public:
   Window&       getConformanceWindow()  { return m_conformanceWindow; }
   Window&       getDefDisplayWindow()   { return m_defaultDisplayWindow; }
 
+#if HM_CLEANUP_SAO
+  Bool          getSAOMergeAvailability(Int currAddr, Int mergeAddr);
+#else
   Void          createNonDBFilterInfo   (std::vector<Int> sliceStartAddress, Int sliceGranularityDepth
                                         ,std::vector<Bool>* LFCrossSliceBoundary
                                         ,Int  numTiles = 1
@@ -162,6 +169,14 @@ public:
   Bool          getIndependentTileBoundaryForNDBFilter         ()             {return m_bIndependentTileBoundaryForNDBFilter; }
   TComPicYuv*   getYuvPicBufferForIndependentBoundaryProcessing()             {return m_pNDBFilterYuvTmp;}
   std::vector<TComDataCU*>& getOneSliceCUDataForNDBFilter      (Int sliceID) { return m_vSliceCUDataLink[sliceID];}
+#endif
+
+  /* field coding parameters*/
+
+   Void              setTopField(bool b)                  {m_isTop = b;}
+   bool              isTopField()                         {return m_isTop;}
+   Void              setField(bool b)                     {m_isField = b;}
+   bool              isField()                            {return m_isField;}
 
   /** transfer ownership of seis to this picture */
   void setSEIs(SEIMessages& seis) { m_SEIs = seis; }

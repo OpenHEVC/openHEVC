@@ -62,7 +62,13 @@ protected:
   Int       m_iFrameRate;                                     ///< source frame-rates (Hz)
   UInt      m_FrameSkip;                                      ///< number of skipped frames from the beginning
   Int       m_iSourceWidth;                                   ///< source width in pixel
-  Int       m_iSourceHeight;                                  ///< source height in pixel
+  Int       m_iSourceHeight;                                  ///< source height in pixel (when interlaced = field height)
+  
+  Int       m_iSourceHeightOrg;                               ///< original source height in pixel (when interlaced = frame height)
+  
+  bool      m_isField;                                        ///< enable field coding
+  bool      m_isTopFieldFirst;
+  
   Int       m_conformanceMode;
   Int       m_confLeft;
   Int       m_confRight;
@@ -140,7 +146,9 @@ protected:
   Bool      m_bUseSAO; 
   Int       m_maxNumOffsetsPerPic;                            ///< SAO maximun number of offset per picture
   Bool      m_saoLcuBoundary;                                 ///< SAO parameter estimation using non-deblocked pixels for LCU bottom and right boundary areas
+#if !HM_CLEANUP_SAO
   Bool      m_saoLcuBasedOptimization;                        ///< SAO LCU-based optimization
+#endif
   // coding tools (loop filter)
   Bool      m_bLoopFilterDisable;                             ///< flag for using deblocking filter
   Bool      m_loopFilterOffsetInPPS;                         ///< offset for deblocking filter in 0 = slice header, 1 = PPS
@@ -240,23 +248,13 @@ protected:
 
   Int       m_TMVPModeId;
   Int       m_signHideFlag;
-#if RATE_CONTROL_LAMBDA_DOMAIN
   Bool      m_RCEnableRateControl;                ///< enable rate control or not
   Int       m_RCTargetBitrate;                    ///< target bitrate when rate control is enabled
-#if M0036_RC_IMPROVEMENT
   Int       m_RCKeepHierarchicalBit;              ///< 0: equal bit allocation; 1: fixed ratio bit allocation; 2: adaptive ratio bit allocation
-#else
-  Bool      m_RCKeepHierarchicalBit;              ///< whether keeping hierarchical bit allocation structure or not
-#endif
   Bool      m_RCLCULevelRC;                       ///< true: LCU level rate control; false: picture level rate control
   Bool      m_RCUseLCUSeparateModel;              ///< use separate R-lambda model at LCU level
   Int       m_RCInitialQP;                        ///< inital QP for rate control
   Bool      m_RCForceIntraQP;                     ///< force all intra picture to use initial QP or not
-#else
-  Bool      m_enableRateCtrl;                                   ///< Flag for using rate control algorithm
-  Int       m_targetBitrate;                                 ///< target bitrate
-  Int       m_numLCUInUnit;                                  ///< Total number of LCUs in a frame should be completely divided by the NumLCUInUnit
-#endif
   Int       m_useScalingListId;                               ///< using quantization matrix
   Char*     m_scalingListFile;                                ///< quantization matrix file name
 

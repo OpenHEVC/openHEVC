@@ -1381,7 +1381,11 @@ Void TEncSbac::codeSaoTypeIdx       ( UInt uiCode)
   else
   {
     m_pcBinIf->encodeBin( 1, m_cSaoTypeIdxSCModel.get( 0, 0, 0 ) );
+#if HM_CLEANUP_SAO
+    m_pcBinIf->encodeBinEP( uiCode == 1 ? 0 : 1 );
+#else
     m_pcBinIf->encodeBinEP( uiCode <= 4 ? 1 : 0 );
+#endif
   }
 }
 /*!
@@ -1583,4 +1587,120 @@ Void  TEncSbac::loadContexts ( TEncSbac* pScr)
 {
   this->xCopyContextsFrom(pScr);
 }
+
+#if HM_CLEANUP_SAO
+Void TEncSbac::codeSAOOffsetParam(Int compIdx, SAOOffset& ctbParam, Bool sliceEnabled)
+{
+  UInt uiSymbol;
+  if(!sliceEnabled)
+  {
+    assert(ctbParam.modeIdc == SAO_MODE_OFF);
+    return;
+  }
+
+  //type
+  if(compIdx == SAO_Y || compIdx == SAO_Cb)
+  {
+    //sao_type_idx_luma or sao_type_idx_chroma
+    if(ctbParam.modeIdc == SAO_MODE_OFF)
+    {
+      uiSymbol =0;
+    }
+    else if(ctbParam.typeIdc == SAO_TYPE_BO) //BO
+    {
+      uiSymbol = 1;
+    }
+    else
+    {
+      assert(ctbParam.typeIdc < SAO_TYPE_START_BO); //EO
+      uiSymbol = 2;
+    }
+    codeSaoTypeIdx(uiSymbol); 
+  }
+
+  if(ctbParam.modeIdc == SAO_MODE_NEW)
+  {
+    Int numClasses = (ctbParam.typeIdc == SAO_TYPE_BO)?4:NUM_SAO_EO_CLASSES; 
+    Int offset[4];
+    Int k=0;
+    for(Int i=0; i< numClasses; i++)
+    {
+      if(ctbParam.typeIdc != SAO_TYPE_BO && i == SAO_CLASS_EO_PLAIN)
+      {
+        continue;
+      }
+      Int classIdx = (ctbParam.typeIdc == SAO_TYPE_BO)?(  (ctbParam.typeAuxInfo+i)% NUM_SAO_BO_CLASSES   ):i;
+      offset[k] = ctbParam.offset[classIdx];
+      k++;
+    }
+
+    for(Int i=0; i< 4; i++)
+    {
+      codeSaoMaxUvlc((offset[i]<0)?(-offset[i]):(offset[i]),  g_saoMaxOffsetQVal[compIdx] ); //sao_offset_abs
+    }
+
+
+    if(ctbParam.typeIdc == SAO_TYPE_BO)
+    {
+      for(Int i=0; i< 4; i++)
+      {
+        if(offset[i] != 0)
+        {
+          codeSAOSign((offset[i]< 0)?1:0);
+        }
+      }
+
+      codeSaoUflc(NUM_SAO_BO_CLASSES_LOG2, ctbParam.typeAuxInfo ); //sao_band_position
+    }
+    else //EO
+    {
+      if(compIdx == SAO_Y || compIdx == SAO_Cb)
+      {
+        assert(ctbParam.typeIdc - SAO_TYPE_START_EO >=0);
+        codeSaoUflc(NUM_SAO_EO_TYPES_LOG2, ctbParam.typeIdc - SAO_TYPE_START_EO ); //sao_eo_class_luma or sao_eo_class_chroma
+      }
+    }
+
+  }
+}
+
+
+Void TEncSbac::codeSAOBlkParam(SAOBlkParam& saoBlkParam
+                              , Bool* sliceEnabled
+                              , Bool leftMergeAvail
+                              , Bool aboveMergeAvail
+                              , Bool onlyEstMergeInfo // = false
+                              )
+{
+
+  Bool isLeftMerge = false;
+  Bool isAboveMerge= false;
+
+  if(leftMergeAvail)
+  {
+    isLeftMerge = ((saoBlkParam[SAO_Y].modeIdc == SAO_MODE_MERGE) && (saoBlkParam[SAO_Y].typeIdc == SAO_MERGE_LEFT));
+    codeSaoMerge( isLeftMerge?1:0  ); //sao_merge_left_flag
+  }
+
+  if( aboveMergeAvail && !isLeftMerge)
+  {
+    isAboveMerge = ((saoBlkParam[SAO_Y].modeIdc == SAO_MODE_MERGE) && (saoBlkParam[SAO_Y].typeIdc == SAO_MERGE_ABOVE)); 
+    codeSaoMerge( isAboveMerge?1:0  ); //sao_merge_left_flag
+  }
+
+  if(onlyEstMergeInfo)
+  {
+    return; //only for RDO
+  }
+
+  if(!isLeftMerge && !isAboveMerge) //not merge mode
+  {
+    for(Int compIdx=0; compIdx < NUM_SAO_COMPONENTS; compIdx++)
+    {
+      codeSAOOffsetParam(compIdx, saoBlkParam[compIdx], sliceEnabled[compIdx]);
+    }
+  }
+}
+#endif
+
 //! \}

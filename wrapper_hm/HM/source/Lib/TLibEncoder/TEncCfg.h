@@ -155,8 +155,9 @@ protected:
   Bool      m_bUseSAO;
   Int       m_maxNumOffsetsPerPic;
   Bool      m_saoLcuBoundary;
+#if !HM_CLEANUP_SAO
   Bool      m_saoLcuBasedOptimization;
-
+#endif
   //====== Lossless ========
   Bool      m_useLossless;
   //====== Motion search ========
@@ -270,23 +271,13 @@ protected:
   Char*     m_scalingListFile;          ///< quantization matrix file name
   Int       m_TMVPModeId;
   Int       m_signHideFlag;
-#if RATE_CONTROL_LAMBDA_DOMAIN
   Bool      m_RCEnableRateControl;
   Int       m_RCTargetBitrate;
-#if M0036_RC_IMPROVEMENT
   Int       m_RCKeepHierarchicalBit;
-#else
-  Bool      m_RCKeepHierarchicalBit;
-#endif
   Bool      m_RCLCULevelRC;
   Bool      m_RCUseLCUSeparateModel;
   Int       m_RCInitialQP;
   Bool      m_RCForceIntraQP;
-#else
-  Bool      m_enableRateCtrl;                                ///< Flag for using rate control algorithm
-  Int       m_targetBitrate;                                 ///< target bitrate
-  Int       m_numLCUInUnit;                                  ///< Total number of LCUs in a frame should be divided by the NumLCUInUnit
-#endif
   Bool      m_TransquantBypassEnableFlag;                     ///< transquant_bypass_enable_flag setting in PPS.
   Bool      m_CUTransquantBypassFlagValue;                    ///< if transquant_bypass_enable_flag, the fixed value to use for the per-CU cu_transquant_bypass_flag.
   TComVPS                    m_cVPS;
@@ -516,8 +507,10 @@ public:
   Int   getMaxNumOffsetsPerPic                   ()                    { return m_maxNumOffsetsPerPic; }
   Void  setSaoLcuBoundary              (Bool val)      { m_saoLcuBoundary = val; }
   Bool  getSaoLcuBoundary              ()              { return m_saoLcuBoundary; }
+#if !HM_CLEANUP_SAO
   Void  setSaoLcuBasedOptimization               (Bool val)            { m_saoLcuBasedOptimization = val; }
   Bool  getSaoLcuBasedOptimization               ()                    { return m_saoLcuBasedOptimization; }
+#endif
   Void  setLFCrossTileBoundaryFlag               ( Bool   val  )       { m_loopFilterAcrossTilesEnabledFlag = val; }
   Bool  getLFCrossTileBoundaryFlag               ()                    { return m_loopFilterAcrossTilesEnabledFlag;   }
   Void  setUniformSpacingIdr           ( Int i )           { m_iUniformSpacingIdr = i; }
@@ -657,18 +650,12 @@ public:
   Int       getTMVPModeId ()         { return m_TMVPModeId; }
   Void      setSignHideFlag( Int signHideFlag ) { m_signHideFlag = signHideFlag; }
   Int       getSignHideFlag()                    { return m_signHideFlag; }
-#if RATE_CONTROL_LAMBDA_DOMAIN
   Bool      getUseRateCtrl         ()              { return m_RCEnableRateControl;   }
   Void      setUseRateCtrl         ( Bool b )      { m_RCEnableRateControl = b;      }
   Int       getTargetBitrate       ()              { return m_RCTargetBitrate;       }
   Void      setTargetBitrate       ( Int bitrate ) { m_RCTargetBitrate  = bitrate;   }
-#if M0036_RC_IMPROVEMENT
   Int       getKeepHierBit         ()              { return m_RCKeepHierarchicalBit; }
   Void      setKeepHierBit         ( Int i )       { m_RCKeepHierarchicalBit = i;    }
-#else
-  Bool      getKeepHierBit         ()              { return m_RCKeepHierarchicalBit; }
-  Void      setKeepHierBit         ( Bool b )      { m_RCKeepHierarchicalBit = b;    }
-#endif
   Bool      getLCULevelRC          ()              { return m_RCLCULevelRC; }
   Void      setLCULevelRC          ( Bool b )      { m_RCLCULevelRC = b; }
   Bool      getUseLCUSeparateModel ()              { return m_RCUseLCUSeparateModel; }
@@ -677,14 +664,6 @@ public:
   Void      setInitialQP           ( Int QP )      { m_RCInitialQP = QP;             }
   Bool      getForceIntraQP        ()              { return m_RCForceIntraQP;        }
   Void      setForceIntraQP        ( Bool b )      { m_RCForceIntraQP = b;           }
-#else
-  Bool      getUseRateCtrl    ()                { return m_enableRateCtrl;    }
-  Void      setUseRateCtrl    (Bool flag)       { m_enableRateCtrl = flag;    }
-  Int       getTargetBitrate  ()                { return m_targetBitrate;     }
-  Void      setTargetBitrate  (Int target)      { m_targetBitrate  = target;  }
-  Int       getNumLCUInUnit   ()                { return m_numLCUInUnit;      }
-  Void      setNumLCUInUnit   (Int numLCUs)     { m_numLCUInUnit   = numLCUs; }
-#endif
   Bool      getTransquantBypassEnableFlag()           { return m_TransquantBypassEnableFlag; }
   Void      setTransquantBypassEnableFlag(Bool flag)  { m_TransquantBypassEnableFlag = flag; }
   Bool      getCUTransquantBypassFlagValue()          { return m_CUTransquantBypassFlagValue; }

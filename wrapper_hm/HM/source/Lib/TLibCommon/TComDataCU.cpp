@@ -308,7 +308,7 @@ Void TComDataCU::destroy()
     m_sliceSegmentStartCU=NULL;
   }
 }
-
+#if !HM_CLEANUP_SAO
 const NDBFBlockInfo& NDBFBlockInfo::operator= (const NDBFBlockInfo& src)
 {
   this->tileID = src.tileID;
@@ -327,7 +327,7 @@ const NDBFBlockInfo& NDBFBlockInfo::operator= (const NDBFBlockInfo& src)
   return *this;
 }
 
-
+#endif
 // ====================================================================================================================
 // Public member functions
 // ====================================================================================================================
@@ -1644,7 +1644,7 @@ Int TComDataCU::getIntraDirLumaPredictor( UInt uiAbsPartIdx, Int* uiIntraDirPred
   pcTempCU = getPUAbove( uiTempPartIdx, m_uiAbsIdxInLCU + uiAbsPartIdx, true, true );
   
   iAboveIntraDir = pcTempCU ? ( pcTempCU->isIntra( uiTempPartIdx ) ? pcTempCU->getLumaIntraDir( uiTempPartIdx ) : DC_IDX ) : DC_IDX;
-
+  
   uiPredNum = 3;
   if(iLeftIntraDir == iAboveIntraDir)
   {
@@ -3446,7 +3446,7 @@ UInt TComDataCU::getSCUAddr()
 { 
   return getPic()->getPicSym()->getInverseCUOrderMap(m_uiCUAddr)*(1<<(m_pcSlice->getSPS()->getMaxCUDepth()<<1))+m_uiAbsIdxInLCU; 
 }
-
+#if !HM_CLEANUP_SAO
 /** Set neighboring blocks availabilities for non-deblocked filtering 
  * \param numLCUInPicWidth number of LCUs in picture width
  * \param numLCUInPicHeight number of LCUs in picture height
@@ -3816,5 +3816,5 @@ Void TComDataCU::setNDBFilterBlockBorderAvailability(UInt numLCUInPicWidth, UInt
   }
 }
 
-
+#endif
 //! \}

@@ -50,7 +50,7 @@
 // Macros
 // ====================================================================================================================
 
-#define     MAX_CU_DEPTH            7                           // log2(LCUSize)
+#define     MAX_CU_DEPTH            6                           // log2(LCUSize)
 #define     MAX_CU_SIZE             (1<<(MAX_CU_DEPTH))         // maximum allowable size of CU
 #define     MIN_PU_SIZE             4
 #define     MAX_NUM_SPU_W           (MAX_CU_SIZE/MIN_PU_SIZE)   // maximum number of SPU in horizontal line
@@ -119,9 +119,6 @@ extern       UInt*  g_auiSigLastScan[ 3 ][ MAX_CU_DEPTH ];  // raster index from
 
 extern const UInt   g_uiGroupIdx[ 32 ];
 extern const UInt   g_uiMinInGroup[ 10 ];
-
-extern const UInt   g_auiGoRiceRange[5];                  //!< maximum value coded with Rice codes
-extern const UInt   g_auiGoRicePrefixLen[5];              //!< prefix length for each maximum value
   
 extern const UInt   g_sigLastScan8x8[ 3 ][ 4 ];           //!< coefficient group scan order for 8x8 TUs
 extern       UInt   g_sigLastScanCG32x32[ 64 ];
@@ -130,7 +127,7 @@ extern       UInt   g_sigLastScanCG32x32[ 64 ];
 // ADI table
 // ====================================================================================================================
 
-extern const UChar  g_aucIntraModeNumFast[7];
+extern const UChar  g_aucIntraModeNumFast[ MAX_CU_DEPTH ];
 
 // ====================================================================================================================
 // Bit-depth

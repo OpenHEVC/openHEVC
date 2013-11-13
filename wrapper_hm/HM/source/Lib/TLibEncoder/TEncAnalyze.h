@@ -115,6 +115,35 @@ public:
     fclose(pFile);
   }
   
+  Void    printOutInterlaced ( Char cDelim, Double bits )
+  {
+    Double dFps     =   m_dFrmRate; //--CFG_KDY
+    Double dScale   = dFps / 1000 / (Double)m_uiNumPic;
+    
+    printf( "\tTotal Frames |  "   "Bitrate    "  "Y-PSNR    "  "U-PSNR    "  "V-PSNR \n" );
+    //printf( "\t------------ "  " ----------"   " -------- "  " -------- "  " --------\n" );
+    printf( "\t %8d    %c"          "%12.4lf  "    "%8.4lf  "   "%8.4lf  "    "%8.4lf\n",
+           getNumPic(), cDelim,
+           bits * dScale,
+           getPsnrY() / (Double)getNumPic(),
+           getPsnrU() / (Double)getNumPic(),
+           getPsnrV() / (Double)getNumPic() );
+  }
+  
+  Void    printSummaryOutInterlaced (Int bits)
+  {
+    FILE* pFile = fopen ("summaryTotal.txt", "at");
+    Double dFps     =   m_dFrmRate; //--CFG_KDY
+    Double dScale   = dFps / 1000 / (Double)m_uiNumPic;
+    
+    fprintf(pFile, "%f\t %f\t %f\t %f\n", bits * dScale,
+            getPsnrY() / (Double)getNumPic(),
+            getPsnrU() / (Double)getNumPic(),
+            getPsnrV() / (Double)getNumPic() );
+    fclose(pFile);
+  }
+  
+  
   Void    printSummary(Char ch)
   {
     FILE* pFile = NULL;
@@ -153,6 +182,8 @@ extern TEncAnalyze             m_gcAnalyzeAll;
 extern TEncAnalyze             m_gcAnalyzeI;
 extern TEncAnalyze             m_gcAnalyzeP;
 extern TEncAnalyze             m_gcAnalyzeB;
+
+extern TEncAnalyze             m_gcAnalyzeAll_in;
 
 //! \}
 

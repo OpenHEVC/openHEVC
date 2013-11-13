@@ -52,8 +52,6 @@
 /// weighting prediction class
 class TComWeightPrediction
 {
-  wpScalingParam  m_wp0[3], m_wp1[3];
-
 public:
   TComWeightPrediction();
 

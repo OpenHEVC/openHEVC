@@ -121,7 +121,7 @@ Void readNalUnitHeader(InputNALUnit& nalu)
   }
   else
   {
-    assert( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_TLA_R
+    assert( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_TSA_R
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_TSA_N
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_STSA_R
          && nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_STSA_N );

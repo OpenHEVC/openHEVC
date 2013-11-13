@@ -60,13 +60,15 @@ TComPicSym::TComPicSym()
 ,m_apcTComSlice(NULL)
 ,m_uiNumAllocatedSlice (0)
 ,m_apcTComDataCU (NULL)
-,m_iTileBoundaryIndependenceIdr (0)
 ,m_iNumColumnsMinus1 (0)
 ,m_iNumRowsMinus1(0)
 ,m_apcTComTile(NULL)
 ,m_puiCUOrderMap(0)
 ,m_puiTileIdxMap(NULL)
 ,m_puiInverseCUOrderMap(NULL)
+#if HM_CLEANUP_SAO
+,m_saoBlkParams(NULL)
+#endif
 {};
 
 
@@ -122,7 +124,12 @@ Void TComPicSym::create  ( Int iPicWidth, Int iPicHeight, UInt uiMaxWidth, UInt 
     m_puiCUOrderMap[i] = i;
     m_puiInverseCUOrderMap[i] = i;
   }
+
+#if HM_CLEANUP_SAO
+  m_saoBlkParams = new SAOBlkParam[m_uiNumCUsInFrame];
+#else
   m_saoParam = NULL;
+#endif
 }
 
 Void TComPicSym::destroy()
@@ -162,13 +169,20 @@ Void TComPicSym::destroy()
 
   delete [] m_puiInverseCUOrderMap;
   m_puiInverseCUOrderMap = NULL;
-  
+
+#if HM_CLEANUP_SAO
+  if(m_saoBlkParams)
+  {
+    delete[] m_saoBlkParams; m_saoBlkParams = NULL;
+  }
+#else
   if (m_saoParam)
   {
     TComSampleAdaptiveOffset::freeSaoParam(m_saoParam);
     delete m_saoParam;
     m_saoParam = NULL;
   }
+#endif
 }
 
 Void TComPicSym::allocateNewSlice()
@@ -308,11 +322,122 @@ UInt TComPicSym::xCalculateNxtCUAddr( UInt uiCurrCUAddr )
   return uiNxtCUAddr;
 }
 
+
+#if HM_CLEANUP_SAO
+Void TComPicSym::deriveLoopFilterBoundaryAvailibility(Int ctu,
+                                                      Bool& isLeftAvail,
+                                                      Bool& isRightAvail,
+                                                      Bool& isAboveAvail,
+                                                      Bool& isBelowAvail,
+                                                      Bool& isAboveLeftAvail,
+                                                      Bool& isAboveRightAvail,
+                                                      Bool& isBelowLeftAvail,
+                                                      Bool& isBelowRightAvail
+                                                      )
+{
+
+  isLeftAvail      = (ctu % m_uiWidthInCU != 0);
+  isRightAvail     = (ctu % m_uiWidthInCU != m_uiWidthInCU-1);
+  isAboveAvail     = (ctu >= m_uiWidthInCU );
+  isBelowAvail     = (ctu <  m_uiNumCUsInFrame - m_uiWidthInCU);
+  isAboveLeftAvail = (isAboveAvail && isLeftAvail);
+  isAboveRightAvail= (isAboveAvail && isRightAvail);
+  isBelowLeftAvail = (isBelowAvail && isLeftAvail);
+  isBelowRightAvail= (isBelowAvail && isRightAvail);
+
+  Bool isLoopFiltAcrossTilePPS = getCU(ctu)->getSlice()->getPPS()->getLoopFilterAcrossTilesEnabledFlag();
+
+  {
+    TComDataCU* ctuCurr  = getCU(ctu);
+    TComDataCU* ctuLeft  = isLeftAvail ?getCU(ctu-1):NULL;
+    TComDataCU* ctuRight = isRightAvail?getCU(ctu+1):NULL;
+    TComDataCU* ctuAbove = isAboveAvail?getCU(ctu-m_uiWidthInCU):NULL;
+    TComDataCU* ctuBelow = isBelowAvail?getCU(ctu+m_uiWidthInCU):NULL;
+    TComDataCU* ctuAboveLeft  = isAboveLeftAvail ? getCU(ctu-m_uiWidthInCU-1):NULL;
+    TComDataCU* ctuAboveRigtht= isAboveRightAvail? getCU(ctu-m_uiWidthInCU+1):NULL;
+    TComDataCU* ctuBelowLeft  = isBelowLeftAvail ? getCU(ctu+m_uiWidthInCU-1):NULL;
+    TComDataCU* ctuBelowRight = isBelowRightAvail? getCU(ctu+m_uiWidthInCU+1):NULL;
+
+    {
+      //left
+      if(ctuLeft != NULL)
+      {
+        isLeftAvail = (ctuCurr->getSlice()->getSliceCurStartCUAddr() != ctuLeft->getSlice()->getSliceCurStartCUAddr())?ctuCurr->getSlice()->getLFCrossSliceBoundaryFlag():true;
+      }
+      //above
+      if(ctuAbove != NULL)
+      {
+        isAboveAvail = (ctuCurr->getSlice()->getSliceCurStartCUAddr() != ctuAbove->getSlice()->getSliceCurStartCUAddr())?ctuCurr->getSlice()->getLFCrossSliceBoundaryFlag():true;
+      }
+      //right
+      if(ctuRight != NULL)
+      {
+        isRightAvail = (ctuCurr->getSlice()->getSliceCurStartCUAddr() != ctuRight->getSlice()->getSliceCurStartCUAddr())?ctuRight->getSlice()->getLFCrossSliceBoundaryFlag():true;
+      }
+      //below
+      if(ctuBelow != NULL)
+      {
+        isBelowAvail = (ctuCurr->getSlice()->getSliceCurStartCUAddr() != ctuBelow->getSlice()->getSliceCurStartCUAddr())?ctuBelow->getSlice()->getLFCrossSliceBoundaryFlag():true;
+      }
+      //above-left
+      if(ctuAboveLeft != NULL)
+      {
+        isAboveLeftAvail = (ctuCurr->getSlice()->getSliceCurStartCUAddr() != ctuAboveLeft->getSlice()->getSliceCurStartCUAddr())?ctuCurr->getSlice()->getLFCrossSliceBoundaryFlag():true;
+      }
+      //below-right
+      if(ctuBelowRight != NULL)
+      {
+        isBelowRightAvail = (ctuCurr->getSlice()->getSliceCurStartCUAddr() != ctuBelowRight->getSlice()->getSliceCurStartCUAddr())?ctuBelowRight->getSlice()->getLFCrossSliceBoundaryFlag():true;
+      }
+
+
+      //above-right
+      if(ctuAboveRigtht != NULL)
+      {
+        Int curSliceStartTS  = getCUOrderMap(ctuCurr->getSlice()->getSliceCurStartCUAddr()/m_uiNumPartitions);
+        Int aboveRigthtSliceStartTS = getCUOrderMap(ctuAboveRigtht->getSlice()->getSliceCurStartCUAddr()/m_uiNumPartitions);
+
+        isAboveRightAvail = (curSliceStartTS == aboveRigthtSliceStartTS)?(true):
+          (
+          (curSliceStartTS > aboveRigthtSliceStartTS)?(ctuCurr->getSlice()->getLFCrossSliceBoundaryFlag())
+          :(ctuAboveRigtht->getSlice()->getLFCrossSliceBoundaryFlag())
+          );          
+      }
+      //below-left
+      if(ctuBelowLeft != NULL)
+      {
+        Int curSliceStartTS       = getCUOrderMap(ctuCurr->getSlice()->getSliceCurStartCUAddr()/m_uiNumPartitions);
+        Int belowLeftSliceStartTS = getCUOrderMap(ctuBelowLeft->getSlice()->getSliceCurStartCUAddr()/m_uiNumPartitions);
+
+        isBelowLeftAvail = (curSliceStartTS == belowLeftSliceStartTS)?(true):
+          (
+          (curSliceStartTS > belowLeftSliceStartTS)?(ctuCurr->getSlice()->getLFCrossSliceBoundaryFlag())
+          :(ctuBelowLeft->getSlice()->getLFCrossSliceBoundaryFlag())
+          );
+      }        
+    }
+
+    if(!isLoopFiltAcrossTilePPS)
+    {      
+      isLeftAvail      = (!isLeftAvail      ) ?false:(getTileIdxMap( ctuLeft->getAddr()         ) == getTileIdxMap( ctu ));
+      isAboveAvail     = (!isAboveAvail     ) ?false:(getTileIdxMap( ctuAbove->getAddr()        ) == getTileIdxMap( ctu ));
+      isRightAvail     = (!isRightAvail     ) ?false:(getTileIdxMap( ctuRight->getAddr()        ) == getTileIdxMap( ctu ));
+      isBelowAvail     = (!isBelowAvail     ) ?false:(getTileIdxMap( ctuBelow->getAddr()        ) == getTileIdxMap( ctu ));
+      isAboveLeftAvail = (!isAboveLeftAvail ) ?false:(getTileIdxMap( ctuAboveLeft->getAddr()    ) == getTileIdxMap( ctu ));
+      isAboveRightAvail= (!isAboveRightAvail) ?false:(getTileIdxMap( ctuAboveRigtht->getAddr()  ) == getTileIdxMap( ctu ));
+      isBelowLeftAvail = (!isBelowLeftAvail ) ?false:(getTileIdxMap( ctuBelowLeft->getAddr()    ) == getTileIdxMap( ctu ));
+      isBelowRightAvail= (!isBelowRightAvail) ?false:(getTileIdxMap( ctuBelowRight->getAddr()   ) == getTileIdxMap( ctu ));
+    }
+  }
+
+}
+#else
 Void TComPicSym::allocSaoParam(TComSampleAdaptiveOffset *sao)
 {
   m_saoParam = new SAOParam;
   sao->allocSaoParam(m_saoParam);
 }
+#endif
 
 TComTile::TComTile()
 {

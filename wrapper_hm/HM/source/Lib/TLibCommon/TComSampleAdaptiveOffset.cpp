@@ -43,6 +43,653 @@
 
 //! \ingroup TLibCommon
 //! \{
+#if HM_CLEANUP_SAO
+UInt g_saoMaxOffsetQVal[NUM_SAO_COMPONENTS]; 
+
+SAOOffset::SAOOffset()
+{ 
+  reset();
+}
+
+SAOOffset::~SAOOffset()
+{
+
+}
+
+Void SAOOffset::reset()
+{
+  modeIdc = SAO_MODE_OFF;
+  typeIdc = -1;
+  typeAuxInfo = -1;
+  ::memset(offset, 0, sizeof(Int)* MAX_NUM_SAO_CLASSES);
+}
+
+const SAOOffset& SAOOffset::operator= (const SAOOffset& src)
+{
+  modeIdc = src.modeIdc;
+  typeIdc = src.typeIdc;
+  typeAuxInfo = src.typeAuxInfo;
+  ::memcpy(offset, src.offset, sizeof(Int)* MAX_NUM_SAO_CLASSES);
+
+  return *this;
+}
+
+
+SAOBlkParam::SAOBlkParam()
+{
+  reset();
+}
+
+SAOBlkParam::~SAOBlkParam()
+{
+
+}
+
+Void SAOBlkParam::reset()
+{
+  for(Int compIdx=0; compIdx< 3; compIdx++)
+  {
+    offsetParam[compIdx].reset();
+  }
+}
+
+const SAOBlkParam& SAOBlkParam::operator= (const SAOBlkParam& src)
+{
+  for(Int compIdx=0; compIdx< 3; compIdx++)
+  {
+    offsetParam[compIdx] = src.offsetParam[compIdx];
+  }
+  return *this;
+
+}
+
+TComSampleAdaptiveOffset::TComSampleAdaptiveOffset()
+{
+  m_tempPicYuv = NULL;
+  for(Int compIdx=0; compIdx < NUM_SAO_COMPONENTS; compIdx++)
+  {
+    m_offsetClipTable[compIdx] = NULL;
+  }
+  m_signTable = NULL; 
+
+  
+  m_lineBufWidth = 0;
+  m_signLineBuf1 = NULL;
+  m_signLineBuf2 = NULL;
+}
+
+
+TComSampleAdaptiveOffset::~TComSampleAdaptiveOffset()
+{
+  destroy();
+  
+  if (m_signLineBuf1) delete[] m_signLineBuf1; m_signLineBuf1 = NULL;
+  if (m_signLineBuf2) delete[] m_signLineBuf2; m_signLineBuf2 = NULL;
+}
+
+Void TComSampleAdaptiveOffset::create( Int picWidth, Int picHeight, UInt maxCUWidth, UInt maxCUHeight, UInt maxCUDepth )
+{
+  destroy();
+
+  m_picWidth = picWidth;    
+  m_picHeight= picHeight;
+  m_maxCUWidth= maxCUWidth; 
+  m_maxCUHeight= maxCUHeight;
+
+  m_numCTUInWidth = (m_picWidth/m_maxCUWidth) + ((m_picWidth % m_maxCUWidth)?1:0);
+  m_numCTUInHeight= (m_picHeight/m_maxCUHeight) + ((m_picHeight % m_maxCUHeight)?1:0);
+  m_numCTUsPic = m_numCTUInHeight*m_numCTUInWidth;
+
+  //temporary picture buffer
+  if ( !m_tempPicYuv )
+  {
+    m_tempPicYuv = new TComPicYuv;
+    m_tempPicYuv->create( m_picWidth, m_picHeight, m_maxCUWidth, m_maxCUHeight, maxCUDepth );
+  }
+
+  //bit-depth related
+  for(Int compIdx =0; compIdx < NUM_SAO_COMPONENTS; compIdx++)
+  {
+    Int bitDepthSample = (compIdx == SAO_Y)?g_bitDepthY:g_bitDepthC;
+    m_offsetStepLog2  [compIdx] = max(bitDepthSample - MAX_SAO_TRUNCATED_BITDEPTH, 0);
+    g_saoMaxOffsetQVal[compIdx] = (1<<(min(bitDepthSample,MAX_SAO_TRUNCATED_BITDEPTH)-5))-1; //Table 9-32, inclusive
+  }
+
+  //look-up table for clipping
+  for(Int compIdx =0; compIdx < NUM_SAO_COMPONENTS; compIdx++)
+  {
+    Int bitDepthSample = (compIdx == SAO_Y)?g_bitDepthY:g_bitDepthC; //exclusive
+    Int maxSampleValue = (1<< bitDepthSample); //exclusive
+    Int maxOffsetValue = (g_saoMaxOffsetQVal[compIdx] << m_offsetStepLog2[compIdx]); 
+
+    m_offsetClipTable[compIdx] = new Int[(maxSampleValue + maxOffsetValue -1)+ (maxOffsetValue)+1 ]; //positive & negative range plus 0
+    m_offsetClip[compIdx] = &(m_offsetClipTable[compIdx][maxOffsetValue]);
+
+    //assign clipped values 
+    Int* offsetClipPtr = m_offsetClip[compIdx];
+    for(Int k=0; k< maxSampleValue; k++)
+    {
+      *(offsetClipPtr + k) = k;
+    }
+    for(Int k=0; k< maxOffsetValue; k++ )
+    {
+      *(offsetClipPtr + maxSampleValue+ k) = maxSampleValue-1;
+      *(offsetClipPtr -k -1 )              = 0;
+    }
+    if(compIdx == SAO_Y) //g_bitDepthY is always larger than or equal to g_bitDepthC
+    {
+      m_signTable = new Short[ 2*(maxSampleValue-1) + 1 ];
+      m_sign = &(m_signTable[maxSampleValue-1]);
+
+      m_sign[0] = 0;
+      for(Int k=1; k< maxSampleValue; k++)
+      {
+        m_sign[k] = 1;
+        m_sign[-k]= -1;
+      }
+    }
+  }  
+
+}
+
+Void TComSampleAdaptiveOffset::destroy()
+{
+  if ( m_tempPicYuv )
+  {
+    m_tempPicYuv->destroy();
+    delete m_tempPicYuv;
+    m_tempPicYuv = NULL;
+  }
+
+  for(Int compIdx=0; compIdx < NUM_SAO_COMPONENTS; compIdx++)
+  {
+    if(m_offsetClipTable[compIdx])
+    {
+      delete[] m_offsetClipTable[compIdx]; m_offsetClipTable[compIdx] = NULL;
+    }
+  }
+  if( m_signTable )
+  {
+    delete[] m_signTable; m_signTable = NULL;
+  }
+}
+
+Void TComSampleAdaptiveOffset::invertQuantOffsets(Int compIdx, Int typeIdc, Int typeAuxInfo, Int* dstOffsets, Int* srcOffsets)
+{
+  Int codedOffset[MAX_NUM_SAO_CLASSES];
+
+  ::memcpy(codedOffset, srcOffsets, sizeof(Int)*MAX_NUM_SAO_CLASSES);
+  ::memset(dstOffsets, 0, sizeof(Int)*MAX_NUM_SAO_CLASSES);
+
+  if(typeIdc == SAO_TYPE_START_BO)
+  {
+    for(Int i=0; i< 4; i++)
+    {
+      dstOffsets[(typeAuxInfo+ i)%NUM_SAO_BO_CLASSES] = codedOffset[(typeAuxInfo+ i)%NUM_SAO_BO_CLASSES]*(1<<m_offsetStepLog2[compIdx]);
+    }
+  }
+  else //EO
+  {
+    for(Int i=0; i< NUM_SAO_EO_CLASSES; i++)
+    {
+      dstOffsets[i] = codedOffset[i] *(1<<m_offsetStepLog2[compIdx]);
+    }
+    assert(dstOffsets[SAO_CLASS_EO_PLAIN] == 0); //keep EO plain offset as zero
+  }
+
+}
+
+Int TComSampleAdaptiveOffset::getMergeList(TComPic* pic, Int ctu, SAOBlkParam* blkParams, std::vector<SAOBlkParam*>& mergeList)
+{
+  Int ctuX = ctu % m_numCTUInWidth;
+  Int ctuY = ctu / m_numCTUInWidth;
+  Int mergedCTUPos;
+  Int numValidMergeCandidates = 0;
+
+  for(Int mergeType=0; mergeType< NUM_SAO_MERGE_TYPES; mergeType++)
+  {
+    SAOBlkParam* mergeCandidate = NULL;
+
+    switch(mergeType)
+    {
+    case SAO_MERGE_ABOVE:
+      {
+        if(ctuY > 0)
+        {
+          mergedCTUPos = ctu- m_numCTUInWidth;
+          if( pic->getSAOMergeAvailability(ctu, mergedCTUPos) )
+          {
+            mergeCandidate = &(blkParams[mergedCTUPos]);
+          }
+        }
+      }
+      break;
+    case SAO_MERGE_LEFT:
+      {
+        if(ctuX > 0)
+        {
+          mergedCTUPos = ctu- 1;
+          if( pic->getSAOMergeAvailability(ctu, mergedCTUPos) )
+          {
+            mergeCandidate = &(blkParams[mergedCTUPos]);
+          }
+        }
+      }
+      break;
+    default:
+      {
+        printf("not a supported merge type");
+        assert(0);
+        exit(-1);
+      }
+    }
+
+    mergeList.push_back(mergeCandidate);
+    if (mergeCandidate != NULL)
+    {
+      numValidMergeCandidates++;
+    }
+  }
+
+  return numValidMergeCandidates;
+}
+
+
+Void TComSampleAdaptiveOffset::reconstructBlkSAOParam(SAOBlkParam& recParam, std::vector<SAOBlkParam*>& mergeList)
+{
+  for(Int compIdx=0; compIdx< NUM_SAO_COMPONENTS; compIdx++)
+  {
+    SAOOffset& offsetParam = recParam[compIdx];
+
+    if(offsetParam.modeIdc == SAO_MODE_OFF)
+    {
+      continue;
+    }
+
+    switch(offsetParam.modeIdc)
+    {
+    case SAO_MODE_NEW:
+      {
+        invertQuantOffsets(compIdx, offsetParam.typeIdc, offsetParam.typeAuxInfo, offsetParam.offset, offsetParam.offset);
+      }
+      break;
+    case SAO_MODE_MERGE:
+      {
+        SAOBlkParam* mergeTarget = mergeList[offsetParam.typeIdc];
+        assert(mergeTarget != NULL);
+
+        offsetParam = (*mergeTarget)[compIdx];
+      }
+      break;
+    default:
+      {
+        printf("Not a supported mode");
+        assert(0);
+        exit(-1);
+      }
+    }
+  }
+}
+
+Void TComSampleAdaptiveOffset::reconstructBlkSAOParams(TComPic* pic, SAOBlkParam* saoBlkParams)
+{
+  m_picSAOEnabled[SAO_Y] = m_picSAOEnabled[SAO_Cb] = m_picSAOEnabled[SAO_Cr] = false;
+
+  for(Int ctu=0; ctu< m_numCTUsPic; ctu++)
+  {
+    std::vector<SAOBlkParam*> mergeList;
+    getMergeList(pic, ctu, saoBlkParams, mergeList);
+
+    reconstructBlkSAOParam(saoBlkParams[ctu], mergeList);
+
+    for(Int compIdx=0; compIdx< NUM_SAO_COMPONENTS; compIdx++)
+    {
+      if(saoBlkParams[ctu][compIdx].modeIdc != SAO_MODE_OFF)
+      {
+        m_picSAOEnabled[compIdx] = true;
+      }
+    }
+  }
+
+
+}
+
+
+Void TComSampleAdaptiveOffset::offsetBlock(Int compIdx, Int typeIdx, Int* offset  
+                                          , Pel* srcBlk, Pel* resBlk, Int srcStride, Int resStride,  Int width, Int height
+                                          , Bool isLeftAvail,  Bool isRightAvail, Bool isAboveAvail, Bool isBelowAvail, Bool isAboveLeftAvail, Bool isAboveRightAvail, Bool isBelowLeftAvail, Bool isBelowRightAvail)
+{
+  if(m_lineBufWidth != m_maxCUWidth)
+  {
+    m_lineBufWidth = m_maxCUWidth;
+    
+    if (m_signLineBuf1) delete[] m_signLineBuf1; m_signLineBuf1 = NULL;
+    m_signLineBuf1 = new Char[m_lineBufWidth+1];
+    
+    if (m_signLineBuf2) delete[] m_signLineBuf2; m_signLineBuf2 = NULL;
+    m_signLineBuf2 = new Char[m_lineBufWidth+1];
+  }
+
+  Int* offsetClip = m_offsetClip[compIdx];
+
+  Int x,y, startX, startY, endX, endY, edgeType;
+  Int firstLineStartX, firstLineEndX, lastLineStartX, lastLineEndX;
+  Char signLeft, signRight, signDown;
+
+  Pel* srcLine = srcBlk;
+  Pel* resLine = resBlk;
+
+  switch(typeIdx)
+  {
+  case SAO_TYPE_EO_0:
+    {
+      offset += 2;
+      startX = isLeftAvail ? 0 : 1;
+      endX   = isRightAvail ? width : (width -1);
+      for (y=0; y< height; y++)
+      {
+        signLeft = (Char)m_sign[srcLine[startX] - srcLine[startX-1]];
+        for (x=startX; x< endX; x++)
+        {
+          signRight = (Char)m_sign[srcLine[x] - srcLine[x+1]]; 
+          edgeType =  signRight + signLeft;
+          signLeft  = -signRight;
+
+          resLine[x] = offsetClip[srcLine[x] + offset[edgeType]];
+        }
+        srcLine  += srcStride;
+        resLine += resStride;
+      }
+
+    }
+    break;
+  case SAO_TYPE_EO_90:
+    {
+      offset += 2;
+      Char *signUpLine = m_signLineBuf1;
+
+      startY = isAboveAvail ? 0 : 1;
+      endY   = isBelowAvail ? height : height-1;
+      if (!isAboveAvail)
+      {
+        srcLine += srcStride;
+        resLine += resStride;
+      }
+
+      Pel* srcLineAbove= srcLine- srcStride;
+      for (x=0; x< width; x++)
+      {
+        signUpLine[x] = (Char)m_sign[srcLine[x] - srcLineAbove[x]];
+      }
+
+      Pel* srcLineBelow;
+      for (y=startY; y<endY; y++)
+      {
+        srcLineBelow= srcLine+ srcStride;
+
+        for (x=0; x< width; x++)
+        {
+          signDown  = (Char)m_sign[srcLine[x] - srcLineBelow[x]]; 
+          edgeType = signDown + signUpLine[x];
+          signUpLine[x]= -signDown;
+
+          resLine[x] = offsetClip[srcLine[x] + offset[edgeType]];
+        }
+        srcLine += srcStride;
+        resLine += resStride;
+      }
+
+    }
+    break;
+  case SAO_TYPE_EO_135:
+    {
+      offset += 2;
+      Char *signUpLine, *signDownLine, *signTmpLine;
+
+      signUpLine  = m_signLineBuf1;
+      signDownLine= m_signLineBuf2;
+
+      startX = isLeftAvail ? 0 : 1 ;
+      endX   = isRightAvail ? width : (width-1);
+
+      //prepare 2nd line's upper sign
+      Pel* srcLineBelow= srcLine+ srcStride;
+      for (x=startX; x< endX+1; x++)
+      {
+        signUpLine[x] = (Char)m_sign[srcLineBelow[x] - srcLine[x- 1]];
+      }
+
+      //1st line
+      Pel* srcLineAbove= srcLine- srcStride;
+      firstLineStartX = isAboveLeftAvail ? 0 : 1;
+      firstLineEndX   = isAboveAvail? endX: 1;
+      for(x= firstLineStartX; x< firstLineEndX; x++)
+      {
+        edgeType  =  m_sign[srcLine[x] - srcLineAbove[x- 1]] - signUpLine[x+1];
+        resLine[x] = offsetClip[srcLine[x] + offset[edgeType]];
+      }
+      srcLine  += srcStride;
+      resLine  += resStride;
+
+
+      //middle lines
+      for (y= 1; y< height-1; y++)
+      {
+        srcLineBelow= srcLine+ srcStride;
+
+        for (x=startX; x<endX; x++)
+        {
+          signDown =  (Char)m_sign[srcLine[x] - srcLineBelow[x+ 1]] ;
+          edgeType =  signDown + signUpLine[x];
+          resLine[x] = offsetClip[srcLine[x] + offset[edgeType]];
+
+          signDownLine[x+1] = -signDown; 
+        }
+        signDownLine[startX] = (Char)m_sign[srcLineBelow[startX] - srcLine[startX-1]];
+
+        signTmpLine  = signUpLine;
+        signUpLine   = signDownLine;
+        signDownLine = signTmpLine;
+
+        srcLine += srcStride;
+        resLine += resStride;
+      }
+
+      //last line
+      srcLineBelow= srcLine+ srcStride;
+      lastLineStartX = isBelowAvail ? startX : (width -1);
+      lastLineEndX   = isBelowRightAvail ? width : (width -1);
+      for(x= lastLineStartX; x< lastLineEndX; x++)
+      {
+        edgeType =  m_sign[srcLine[x] - srcLineBelow[x+ 1]] + signUpLine[x];
+        resLine[x] = offsetClip[srcLine[x] + offset[edgeType]];
+
+      }
+    }
+    break;
+  case SAO_TYPE_EO_45:
+    {
+      offset += 2;
+      Char *signUpLine = m_signLineBuf1+1;
+
+      startX = isLeftAvail ? 0 : 1;
+      endX   = isRightAvail ? width : (width -1);
+
+      //prepare 2nd line upper sign
+      Pel* srcLineBelow= srcLine+ srcStride;
+      for (x=startX-1; x< endX; x++)
+      {
+        signUpLine[x] = (Char)m_sign[srcLineBelow[x] - srcLine[x+1]];
+      }
+
+
+      //first line
+      Pel* srcLineAbove= srcLine- srcStride;
+      firstLineStartX = isAboveAvail ? startX : (width -1 );
+      firstLineEndX   = isAboveRightAvail ? width : (width-1);
+      for(x= firstLineStartX; x< firstLineEndX; x++)
+      {
+        edgeType = m_sign[srcLine[x] - srcLineAbove[x+1]] -signUpLine[x-1];
+        resLine[x] = offsetClip[srcLine[x] + offset[edgeType]];
+      }
+      srcLine += srcStride;
+      resLine += resStride;
+
+      //middle lines
+      for (y= 1; y< height-1; y++)
+      {
+        srcLineBelow= srcLine+ srcStride;
+
+        for(x= startX; x< endX; x++)
+        {
+          signDown =  (Char)m_sign[srcLine[x] - srcLineBelow[x-1]] ;
+          edgeType =  signDown + signUpLine[x];
+          resLine[x] = offsetClip[srcLine[x] + offset[edgeType]];
+          signUpLine[x-1] = -signDown; 
+        }
+        signUpLine[endX-1] = (Char)m_sign[srcLineBelow[endX-1] - srcLine[endX]];
+        srcLine  += srcStride;
+        resLine += resStride;
+      }
+
+      //last line
+      srcLineBelow= srcLine+ srcStride;
+      lastLineStartX = isBelowLeftAvail ? 0 : 1;
+      lastLineEndX   = isBelowAvail ? endX : 1;
+      for(x= lastLineStartX; x< lastLineEndX; x++)
+      {
+        edgeType = m_sign[srcLine[x] - srcLineBelow[x-1]] + signUpLine[x];
+        resLine[x] = offsetClip[srcLine[x] + offset[edgeType]];
+
+      }
+    }
+    break;
+  case SAO_TYPE_BO:
+    {
+      Int shiftBits = ((compIdx == SAO_Y)?g_bitDepthY:g_bitDepthC)- NUM_SAO_BO_CLASSES_LOG2;
+      for (y=0; y< height; y++)
+      {
+        for (x=0; x< width; x++)
+        {
+          resLine[x] = offsetClip[ srcLine[x] + offset[srcLine[x] >> shiftBits] ];
+        }
+        srcLine += srcStride;
+        resLine += resStride;
+      }
+    }
+    break;
+  default:
+    {
+      printf("Not a supported SAO types\n");
+      assert(0);
+      exit(-1);
+    }
+  }
+
+
+}
+
+Void TComSampleAdaptiveOffset::offsetCTU(Int ctu, TComPicYuv* srcYuv, TComPicYuv* resYuv, SAOBlkParam& saoblkParam, TComPic* pPic)
+{
+  Bool isLeftAvail,isRightAvail,isAboveAvail,isBelowAvail,isAboveLeftAvail,isAboveRightAvail,isBelowLeftAvail,isBelowRightAvail;
+
+  if( 
+    (saoblkParam[SAO_Y ].modeIdc == SAO_MODE_OFF) &&
+    (saoblkParam[SAO_Cb].modeIdc == SAO_MODE_OFF) &&
+    (saoblkParam[SAO_Cr].modeIdc == SAO_MODE_OFF)
+    )
+  {
+    return;
+  }
+
+  //block boundary availability
+  pPic->getPicSym()->deriveLoopFilterBoundaryAvailibility(ctu, isLeftAvail,isRightAvail,isAboveAvail,isBelowAvail,isAboveLeftAvail,isAboveRightAvail,isBelowLeftAvail,isBelowRightAvail);
+
+  Int yPos   = (ctu / m_numCTUInWidth)*m_maxCUHeight;
+  Int xPos   = (ctu % m_numCTUInWidth)*m_maxCUWidth;
+  Int height = (yPos + m_maxCUHeight > m_picHeight)?(m_picHeight- yPos):m_maxCUHeight;
+  Int width  = (xPos + m_maxCUWidth  > m_picWidth )?(m_picWidth - xPos):m_maxCUWidth;
+
+  for(Int compIdx= 0; compIdx < NUM_SAO_COMPONENTS; compIdx++)
+  {
+    SAOOffset& ctbOffset = saoblkParam[compIdx];
+
+    if(ctbOffset.modeIdc != SAO_MODE_OFF)
+    {
+      Bool isLuma     = (compIdx == SAO_Y);
+      Int  formatShift= isLuma?0:1;
+
+      Int  blkWidth   = (width  >> formatShift);
+      Int  blkHeight  = (height >> formatShift);
+      Int  blkYPos    = (yPos   >> formatShift);
+      Int  blkXPos    = (xPos   >> formatShift);
+
+      Int  srcStride = isLuma?srcYuv->getStride():srcYuv->getCStride();
+      Pel* srcBlk    = getPicBuf(srcYuv, compIdx)+ (yPos >> formatShift)*srcStride+ (xPos >> formatShift);
+
+      Int  resStride  = isLuma?resYuv->getStride():resYuv->getCStride();
+      Pel* resBlk     = getPicBuf(resYuv, compIdx)+ blkYPos*resStride+ blkXPos;
+
+      offsetBlock( compIdx, ctbOffset.typeIdc, ctbOffset.offset
+                  , srcBlk, resBlk, srcStride, resStride, blkWidth, blkHeight
+                  , isLeftAvail, isRightAvail
+                  , isAboveAvail, isBelowAvail
+                  , isAboveLeftAvail, isAboveRightAvail
+                  , isBelowLeftAvail, isBelowRightAvail
+                  );
+    }
+  } //compIdx
+
+}
+
+
+Void TComSampleAdaptiveOffset::SAOProcess(TComPic* pDecPic)
+{
+  if(!m_picSAOEnabled[SAO_Y] && !m_picSAOEnabled[SAO_Cb] && !m_picSAOEnabled[SAO_Cr])
+  {
+    return;
+  }
+  TComPicYuv* resYuv = pDecPic->getPicYuvRec();
+  TComPicYuv* srcYuv = m_tempPicYuv;
+  resYuv->copyToPic(srcYuv);
+  for(Int ctu= 0; ctu < m_numCTUsPic; ctu++)
+  {
+    offsetCTU(ctu, srcYuv, resYuv, (pDecPic->getPicSym()->getSAOBlkParam())[ctu], pDecPic);
+  } //ctu
+}
+
+
+Pel* TComSampleAdaptiveOffset::getPicBuf(TComPicYuv* pPicYuv, Int compIdx)
+{
+  Pel* pBuf = NULL;
+  switch(compIdx)
+  {
+  case SAO_Y:
+    {
+      pBuf = pPicYuv->getLumaAddr();
+    }
+    break;
+  case SAO_Cb:
+    {
+      pBuf = pPicYuv->getCbAddr();
+    }
+    break;
+  case SAO_Cr:
+    {
+      pBuf = pPicYuv->getCrAddr();
+    }
+    break;
+  default:
+    {
+      printf("Not a legal component ID for SAO\n");
+      assert(0);
+      exit(-1);
+    }
+  }
+
+  return pBuf;
+}
+#else
 
 SAOParam::~SAOParam()
 {
@@ -1363,7 +2010,7 @@ Void TComSampleAdaptiveOffset::copySaoUnit(SaoLcuParam* saoUnitDst, SaoLcuParam*
     saoUnitDst->offset[i] = saoUnitSrc->offset[i];
   }
 }
-
+#endif
 /** PCM LF disable process. 
  * \param pcPic picture (TComPic) pointer
  * \returns Void

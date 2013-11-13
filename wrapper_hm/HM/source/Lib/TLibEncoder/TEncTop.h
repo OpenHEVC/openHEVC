@@ -75,7 +75,7 @@ private:
   
   // encoder search
   TEncSearch              m_cSearch;                      ///< encoder search class
-  TEncEntropy*            m_pcEntropyCoder;                     ///< entropy encoder 
+  //TEncEntropy*            m_pcEntropyCoder;                     ///< entropy encoder
   TEncCavlc*              m_pcCavlcCoder;                       ///< CAVLC encoder  
   // coding tool
   TComTrQuant             m_cTrQuant;                     ///< transform & quantization class
@@ -127,7 +127,7 @@ protected:
   Void  xInitPPS          ();                             ///< initialize PPS from encoder options
   
   Void  xInitPPSforTiles  ();
-  Void  xInitRPS          ();                             ///< initialize PPS from encoder options
+  Void  xInitRPS          (Bool isFieldCoding);           ///< initialize PPS from encoder options
 
 public:
   TEncTop();
@@ -135,7 +135,7 @@ public:
   
   Void      create          ();
   Void      destroy         ();
-  Void      init            ();
+  Void      init            (Bool isFieldCoding);
   Void      deletePicBuffer ();
 
   Void      createWPPCoders(Int iNumSubstreams);
@@ -182,9 +182,15 @@ public:
   Void encode( Bool bEos, TComPicYuv* pcPicYuvOrg, TComList<TComPicYuv*>& rcListPicYuvRecOut,
               std::list<AccessUnit>& accessUnitsOut, Int& iNumEncoded );  
 
-  void printSummary() { m_cGOPEncoder.printOutSummary (m_uiNumAllPicCoded); }
+  /// encode several number of pictures until end-of-sequence
+  Void encode( bool bEos, TComPicYuv* pcPicYuvOrg, TComList<TComPicYuv*>& rcListPicYuvRecOut,
+              std::list<AccessUnit>& accessUnitsOut, Int& iNumEncoded, bool isTff);
+  
+  Void printSummary(bool isField) { m_cGOPEncoder.printOutSummary (m_uiNumAllPicCoded, isField); }
+  
 };
 
 //! \}
 
 #endif // __TENCTOP__
+

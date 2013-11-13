@@ -53,6 +53,114 @@
 // Class definition
 // ====================================================================================================================
 
+#if HM_CLEANUP_SAO
+enum SAOCabacStateLablesRDO //CABAC state labels
+{
+  SAO_CABACSTATE_PIC_INIT =0,
+  SAO_CABACSTATE_BLK_CUR,
+  SAO_CABACSTATE_BLK_NEXT,
+  SAO_CABACSTATE_BLK_MID,
+  SAO_CABACSTATE_BLK_TEMP,
+  NUM_SAO_CABACSTATE_LABELS
+};
+
+struct SAOStatData //data structure for SAO statistics
+{
+  Int64 diff[MAX_NUM_SAO_CLASSES];
+  Int64 count[MAX_NUM_SAO_CLASSES];
+
+  SAOStatData(){}
+  ~SAOStatData(){}
+  Void reset()
+  {
+    ::memset(diff, 0, sizeof(Int64)*MAX_NUM_SAO_CLASSES);
+    ::memset(count, 0, sizeof(Int64)*MAX_NUM_SAO_CLASSES);
+  }
+  const SAOStatData& operator=(const SAOStatData& src)
+  {
+    ::memcpy(diff, src.diff, sizeof(Int64)*MAX_NUM_SAO_CLASSES);
+    ::memcpy(count, src.count, sizeof(Int64)*MAX_NUM_SAO_CLASSES);
+    return *this;
+  }
+#if SAO_ENCODE_ALLOW_USE_PREDEBLOCK
+  const SAOStatData& operator+= (const SAOStatData& src)
+  {
+    for(Int i=0; i< MAX_NUM_SAO_CLASSES; i++)
+    {
+      diff[i] += src.diff[i];
+      count[i] += src.count[i];
+    }
+    return *this;
+  }
+#endif
+};
+
+class TEncSampleAdaptiveOffset : public TComSampleAdaptiveOffset
+{
+public:
+  TEncSampleAdaptiveOffset();
+  virtual ~TEncSampleAdaptiveOffset();
+
+  //interface
+#if SAO_ENCODE_ALLOW_USE_PREDEBLOCK
+  Void createEncData(Bool isPreDBFSamplesUsed);
+#else
+  Void createEncData();
+#endif
+  Void destroyEncData();
+  Void initRDOCabacCoder(TEncSbac* pcRDGoOnSbacCoder, TComSlice* pcSlice) ;
+  Void SAOProcess(TComPic* pPic, Bool* sliceEnabled, const Double *lambdas
+#if SAO_ENCODE_ALLOW_USE_PREDEBLOCK
+                , Bool isPreDBFSamplesUsed
+#endif
+                ); 
+public: //methods
+#if SAO_ENCODE_ALLOW_USE_PREDEBLOCK
+  Void getPreDBFStatistics(TComPic* pPic); 
+#endif
+private: //methods
+  Void getStatistics(SAOStatData*** blkStats, TComPicYuv* orgYuv, TComPicYuv* srcYuv,TComPic* pPic
+#if SAO_ENCODE_ALLOW_USE_PREDEBLOCK
+                   , Bool isCalculatePreDeblockSamples = false
+#endif
+                   );
+  Void decidePicParams(Bool* sliceEnabled, Int picTempLayer);
+  Void decideBlkParams(TComPic* pic, Bool* sliceEnabled, SAOStatData*** blkStats, TComPicYuv* srcYuv, TComPicYuv* resYuv, SAOBlkParam* reconParams, SAOBlkParam* codedParams);
+  Void getBlkStats(Int compIdx, SAOStatData* statsDataTypes, Pel* srcBlk, Pel* orgBlk, Int srcStride, Int orgStride, Int width, Int height, Bool isLeftAvail,  Bool isRightAvail, Bool isAboveAvail, Bool isBelowAvail, Bool isAboveLeftAvail, Bool isAboveRightAvail, Bool isBelowLeftAvail, Bool isBelowRightAvail
+#if SAO_ENCODE_ALLOW_USE_PREDEBLOCK
+                  , Bool isCalculatePreDeblockSamples
+#endif
+                  );
+  Void deriveModeNewRDO(Int ctu, std::vector<SAOBlkParam*>& mergeList, Bool* sliceEnabled, SAOStatData*** blkStats, SAOBlkParam& modeParam, Double& modeNormCost, TEncSbac** cabacCoderRDO, Int inCabacLabel);
+  Void deriveModeMergeRDO(Int ctu, std::vector<SAOBlkParam*>& mergeList, Bool* sliceEnabled, SAOStatData*** blkStats, SAOBlkParam& modeParam, Double& modeNormCost, TEncSbac** cabacCoderRDO, Int inCabacLabel);
+  Int64 getDistortion(Int ctu, Int compIdx, Int typeIdc, Int typeAuxInfo, Int* offsetVal, SAOStatData& statData);
+  Void deriveOffsets(Int ctu, Int compIdx, Int typeIdc, SAOStatData& statData, Int* quantOffsets, Int& typeAuxInfo);
+  inline Int64 estSaoDist(Int64 count, Int64 offset, Int64 diffSum, Int shift);
+  inline Int estIterOffset(Int typeIdx, Int classIdx, Double lambda, Int offsetInput, Int64 count, Int64 diffSum, Int shift, Int bitIncrease, Int64& bestDist, Double& bestCost, Int offsetTh );
+#if SAO_ENCODE_ALLOW_USE_PREDEBLOCK
+  Void addPreDBFStatistics(SAOStatData*** blkStats);
+#endif
+private: //members
+  //for RDO
+  TEncSbac**             m_pppcRDSbacCoder;           
+  TEncSbac*              m_pcRDGoOnSbacCoder;
+  TEncBinCABACCounter**  m_pppcBinCoderCABAC;    
+  Double                 m_labmda[NUM_SAO_COMPONENTS];
+
+  //statistics
+  SAOStatData***         m_statData; //[ctu][comp][classes]
+#if SAO_ENCODE_ALLOW_USE_PREDEBLOCK
+  SAOStatData***         m_preDBFstatData;
+#endif
+#if SAO_ENCODING_CHOICE
+  Double                 m_saoDisabledRate[NUM_SAO_COMPONENTS][MAX_TLAYER];
+#endif
+  Int                    m_skipLinesR[NUM_SAO_COMPONENTS][NUM_SAO_NEW_TYPES];
+  Int                    m_skipLinesB[NUM_SAO_COMPONENTS][NUM_SAO_NEW_TYPES];
+};
+#else
+
+
 class TEncSampleAdaptiveOffset : public TComSampleAdaptiveOffset
 {
 private:
@@ -94,14 +202,10 @@ public:
   Void startSaoEnc( TComPic* pcPic, TEncEntropy* pcEntropyCoder, TEncSbac*** pppcRDSbacCoder, TEncSbac* pcRDGoOnSbacCoder);
   Void endSaoEnc();
   Void resetStats();
-#if SAO_CHROMA_LAMBDA
 #if SAO_ENCODING_CHOICE
   Void SAOProcess(SAOParam *pcSaoParam, Double dLambda, Double dLambdaChroma, Int depth);
 #else
   Void SAOProcess(SAOParam *pcSaoParam, Double dLambda, Double dLambdaChroma);
-#endif
-#else
-  Void SAOProcess(SAOParam *pcSaoParam, Double dLambda);
 #endif
 
   Void runQuadTreeDecision(SAOQTPart *psQTPart, Int iPartIdx, Double &dCostFinal, Int iMaxLevel, Double dLambda, Int yCbCr);
@@ -130,7 +234,7 @@ public:
   Void setMaxNumOffsetsPerPic(Int iVal) {m_maxNumOffsetsPerPic = iVal; }
   Int  getMaxNumOffsetsPerPic() {return m_maxNumOffsetsPerPic; }
 };
-
+#endif
 //! \}
 
 #endif

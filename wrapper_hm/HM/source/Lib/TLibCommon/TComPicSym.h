@@ -99,7 +99,6 @@ private:
   UInt          m_uiNumAllocatedSlice;
   TComDataCU**  m_apcTComDataCU;        ///< array of CU data
   
-  Int           m_iTileBoundaryIndependenceIdr;
   Int           m_iNumColumnsMinus1; 
   Int           m_iNumRowsMinus1;
   TComTile**    m_apcTComTile;
@@ -107,7 +106,12 @@ private:
   UInt*         m_puiTileIdxMap;       //the map of the tile index relative to LCU raster scan address 
   UInt*         m_puiInverseCUOrderMap;
 
+#if HM_CLEANUP_SAO
+  SAOBlkParam *m_saoBlkParams;
+#else
   SAOParam *m_saoParam;
+#endif
+
 public:
   Void        create  ( Int iPicWidth, Int iPicHeight, UInt uiMaxWidth, UInt uiMaxHeight, UInt uiMaxDepth );
   Void        destroy ();
@@ -144,8 +148,15 @@ public:
   Void         xCreateTComTileArray();
   Void         xInitTiles();
   UInt         xCalculateNxtCUAddr( UInt uiCurrCUAddr );
+#if HM_CLEANUP_SAO
+  SAOBlkParam* getSAOBlkParam() { return m_saoBlkParams;}
+  Void deriveLoopFilterBoundaryAvailibility(Int ctu, Bool& isLeftAvail,Bool& isRightAvail,Bool& isAboveAvail,Bool& isBelowAvail,Bool& isAboveLeftAvail,Bool& isAboveRightAvail,Bool& isBelowLeftAvail,Bool& isBelowRightAvail);
+#else
   Void allocSaoParam(TComSampleAdaptiveOffset *sao);
   SAOParam *getSaoParam() { return m_saoParam; }
+#endif
+
+
 };// END CLASS DEFINITION TComPicSym
 
 //! \}

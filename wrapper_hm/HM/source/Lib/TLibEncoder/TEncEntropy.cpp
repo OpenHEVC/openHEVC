@@ -50,6 +50,7 @@ Void TEncEntropy::setEntropyCoder ( TEncEntropyIf* e, TComSlice* pcSlice )
 
 Void TEncEntropy::encodeSliceHeader ( TComSlice* pcSlice )
 {
+#if !HM_CLEANUP_SAO
   if (pcSlice->getSPS()->getUseSAO())
   {
     SAOParam *saoParam = pcSlice->getPic()->getPicSym()->getSaoParam();
@@ -58,7 +59,7 @@ Void TEncEntropy::encodeSliceHeader ( TComSlice* pcSlice )
       pcSlice->setSaoEnabledFlagChroma   (saoParam->bSaoFlag[1]);
     }
   }
-
+#endif
   m_pcEntropyCoderIf->codeSliceHeader( pcSlice );
   return;
 }
@@ -619,6 +620,7 @@ Void TEncEntropy::estimateBit (estBitsSbacStruct* pcEstBitsSbac, Int width, Int 
   m_pcEntropyCoderIf->estBit ( pcEstBitsSbac, width, height, eTType );
 }
 
+#if !HM_CLEANUP_SAO
 /** Encode SAO Offset
  * \param  saoLcuParam SAO LCU paramters
  */
@@ -711,6 +713,8 @@ Void TEncEntropy::encodeSaoUnitInterleaving(Int compIdx, Bool saoFlag, Int rx, I
     }
   }
 }
+
+#endif
 
 Int TEncEntropy::countNonZeroCoeffs( TCoeff* pcCoef, UInt uiSize )
 {
