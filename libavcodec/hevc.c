@@ -143,8 +143,6 @@ static void pic_arrays_free(HEVCContext *s)
 
     av_buffer_pool_uninit(&s->tab_mvf_pool);
     av_buffer_pool_uninit(&s->rpl_tab_pool);
-    
-    s->enable_parallel_tiles = 0;
 }
 
 /* allocate arrays that depend on frame dimensions */
@@ -198,10 +196,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
                                           av_buffer_allocz);
     if (!s->tab_mvf_pool || !s->rpl_tab_pool)
         goto fail;
-    if(s->pps)
-        if((s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1) && s->threads_number>1 /*&& s->pps->entropy_coding_sync_enabled_flag*/){
-            s->enable_parallel_tiles = 1;
-        }
     
     return 0;
 
@@ -421,20 +415,13 @@ static int hls_slice_header(HEVCContext *s)
 
     if (s->sps != (HEVCSPS*)s->sps_list[s->pps->sps_id]->data) {
         s->sps = (HEVCSPS*)s->sps_list[s->pps->sps_id]->data;
-
+        ff_hevc_clear_refs(s);
         ret = set_sps(s, s->sps);
         if (ret < 0)
             return ret;
 
-        s->width  = s->sps->width;
-        s->height = s->sps->height;
-
-        if (s->sps->chroma_format_idc == 0 || s->sps->separate_colour_plane_flag) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                    "TODO: s->sps->chroma_format_idc == 0 || "
-                    "s->sps->separate_colour_plane_flag\n");
-            return AVERROR_PATCHWELCOME;
-        }
+        s->seq_decode = (s->seq_decode + 1) & 0xff;
+        s->max_ra     = INT_MAX;
     }
 
     s->avctx->profile = s->sps->ptl.general_profile_idc;
@@ -714,6 +701,10 @@ static int hls_slice_header(HEVCContext *s)
                 }
                 sh->entry_point_offset[i] = val + 1; // +1; // +1 to get the size
             }
+            if((s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1) && s->threads_number>1)
+	            s->enable_parallel_tiles = 1;
+            else
+    	        s->enable_parallel_tiles = 0;
         } else
             s->enable_parallel_tiles = 0;
     }
@@ -1976,8 +1967,6 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         if ((x_ctb+ctb_size) >= s->sps->width && (y_ctb+ctb_size) >= s->sps->height ) {
             ff_hevc_hls_filter(s, x_ctb, y_ctb);
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
-            if (s->threads_type&FF_THREAD_FRAME)
-                ff_thread_report_progress(&s->ref->tf, s->sps->height, 0);
             return ctb_addr_ts;
         }
         ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
@@ -2941,6 +2930,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
+
+    if (s->sps != s0->sps)
+        ret = set_sps(s, s0->sps);
 
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;

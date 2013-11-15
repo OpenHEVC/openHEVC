@@ -768,9 +768,6 @@ typedef struct HEVCContext {
     uint8_t             threads_number;
     int                 decode_checksum_sei;
 
-    int                 width;
-    int                 height;
-
     uint8_t *cabac_state;
 
     /** 1 if the independent slice segment header was successfully parsed */
@@ -874,6 +871,7 @@ typedef struct HEVCContext {
     int active_seq_parameter_set_id;
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
+    int nuh_layer_id;
 
     int picture_struct;
 } HEVCContext;
