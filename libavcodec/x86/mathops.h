@@ -2,20 +2,20 @@
  * simple math operations
  * Copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at> et al
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -68,13 +68,13 @@ static av_always_inline av_const int64_t MUL64(int a, int b)
 
 #endif /* ARCH_X86_32 */
 
-#if HAVE_CMOV
+#if HAVE_I686
 /* median of 3 */
 #define mid_pred mid_pred
 static inline av_const int mid_pred(int a, int b, int c)
 {
     int i=b;
-    __asm__ volatile(
+    __asm__ (
         "cmp    %2, %1 \n\t"
         "cmovg  %1, %0 \n\t"
         "cmovg  %2, %1 \n\t"
@@ -87,9 +87,7 @@ static inline av_const int mid_pred(int a, int b, int c)
     );
     return i;
 }
-#endif
 
-#if HAVE_CMOV
 #define COPY3_IF_LT(x, y, a, b, c, d)\
 __asm__ volatile(\
     "cmpl  %0, %3       \n\t"\
@@ -99,7 +97,7 @@ __asm__ volatile(\
     : "+&r" (x), "+&r" (a), "+r" (c)\
     : "r" (y), "r" (b), "r" (d)\
 );
-#endif
+#endif /* HAVE_I686 */
 
 #define MASK_ABS(mask, level)                   \
     __asm__ ("cltd                   \n\t"      \

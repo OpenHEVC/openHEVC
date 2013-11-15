@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2013 Seppo Tomperi & Pierre-Edouard LEPERE
+ * Copyright (c) 2013 Seppo Tomperi
  *
- * This file is part of Libav.
+ * This file is part of ffmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * ffmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * ffmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with ffmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -98,7 +98,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
-#if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
                 	c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
                 	c->weighted_pred = ff_hevc_weighted_pred_8_sse;
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
@@ -109,7 +108,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_8_sse;
                 	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
 
-#endif
                 	c->transform_skip= ff_hevc_transform_skip_8_sse;
                 	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                 	c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;

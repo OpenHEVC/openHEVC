@@ -2,20 +2,20 @@
  * MMX optimized DSP utils
  * Copyright (c) 2007  Aurelien Jacobs <aurel@gnuage.org>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -129,6 +129,11 @@ void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
                 int dxx, int dxy, int dyx, int dyy,
                 int shift, int r, int width, int height);
 
+void ff_gmc_sse(uint8_t *dst, uint8_t *src,
+                int stride, int h, int ox, int oy,
+                int dxx, int dxy, int dyx, int dyy,
+                int shift, int r, int width, int height);
+
 void ff_vector_clipf_sse(float *dst, const float *src,
                          float min, float max, int len);
 
@@ -161,6 +166,10 @@ void ff_put_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
                             ptrdiff_t line_size, int h);
 void ff_put_pixels16_xy2_mmx(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
+
+
+void ff_mmx_idct(int16_t *block);
+void ff_mmxext_idct(int16_t *block);
 
 void ff_deinterlace_line_mmx(uint8_t *dst,
                              const uint8_t *lum_m4, const uint8_t *lum_m3,
