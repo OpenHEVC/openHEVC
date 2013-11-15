@@ -406,8 +406,6 @@ static void hls_upsample_h_bl_picture(AVCodecContext *avctxt, void *input_ctb_ro
 }
 #endif
 
-
-
 static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
     int ret;
@@ -2402,7 +2400,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     
     if (s->temporal_id > s->temporal_layer_id)
         return 0;
-  
 
     switch (s->nal_unit_type) {
     case NAL_VPS:
@@ -3003,7 +3000,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         goto fail;
 
     ff_dsputil_init(&s->dsp, avctx);
-    s->temporal_layer_id = 8; 
+    s->temporal_layer_id   = 8; 
     s->context_initialized = 1;
 
     if((avctx->active_thread_type & FF_THREAD_FRAME) && (avctx->active_thread_type & FF_THREAD_SLICE))
