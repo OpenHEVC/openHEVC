@@ -49,6 +49,7 @@ char display_flags;
 char *output_file;
 int nb_pthreads;
 int temporal_layer_id;
+int quality_layer_id;
 int no_cropping;
 
 // initialize APR and parse command-line options

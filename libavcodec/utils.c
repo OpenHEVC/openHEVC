@@ -561,6 +561,9 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     case AVMEDIA_TYPE_VIDEO:
         frame->width  = FFMAX(avctx->width, avctx->coded_width);
         frame->height = FFMAX(avctx->height, avctx->coded_height);
+            
+        frame->coded_width = FFMAX(avctx->width, avctx->coded_width);
+        frame->coded_height = FFMAX(avctx->height, avctx->coded_height);
         if (frame->format < 0)
             frame->format              = avctx->pix_fmt;
         if (!frame->sample_aspect_ratio.num)

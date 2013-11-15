@@ -5,6 +5,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
+#define MAX_DECODERS 2
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
     AVCodecContext *c;
@@ -13,82 +14,143 @@ typedef struct OpenHevcWrapperContext {
     AVCodecParserContext *parser;
 } OpenHevcWrapperContext;
 
+
+
+typedef struct OpenHevcWrapperContexts {
+    OpenHevcWrapperContext **wraper;
+    int nb_decoders;
+    int active_layer;
+    int set_vps; 
+} OpenHevcWrapperContexts;
+
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
 {
     /* register all the codecs */
+    int i;
+    OpenHevcWrapperContext * openHevcContext;
     avcodec_register_all();
+    OpenHevcWrapperContexts* openHevcContexts = av_mallocz(sizeof(OpenHevcWrapperContexts));
+    openHevcContexts->nb_decoders = MAX_DECODERS;
 
-    OpenHevcWrapperContext * openHevcContext = av_malloc(sizeof(OpenHevcWrapperContext));
-    av_init_packet(&openHevcContext->avpkt);
-    openHevcContext->codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
-    if (!openHevcContext->codec) {
-        fprintf(stderr, "codec not found\n");
-        return NULL;
-    }
-    openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
-    openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
-    openHevcContext->picture = avcodec_alloc_frame();
-
+    openHevcContexts->wraper = av_malloc(sizeof(OpenHevcWrapperContext*)*openHevcContexts->nb_decoders);
+    for(i=0; i < openHevcContexts->nb_decoders; i++){
+        openHevcContext = openHevcContexts->wraper[i] = av_malloc(sizeof(OpenHevcWrapperContext));
+        av_init_packet(&openHevcContext->avpkt);
+        openHevcContext->codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
+        if (!openHevcContext->codec) {
+            fprintf(stderr, "codec not found\n");
+            return NULL;
+        }
     
-    if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
-        openHevcContext->c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+        openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
+        openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
+        openHevcContext->picture = avcodec_alloc_frame();
 
-    /* For some codecs, such as msmpeg4 and mpeg4, width and height
-         MUST be initialized there because this information is not
-         available in the bitstream. */
+        if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
+            openHevcContext->c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
-    /* open it */
-    if(thread_type == 3)
-        av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
-    else if (thread_type == 2)
-        av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
-    else
-        av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
+        /* For some codecs, such as msmpeg4 and mpeg4, width and height
+            MUST be initialized there because this information is not
+            available in the bitstream. */
+
+        /*      set thread parameters    */
+        if(thread_type == 3)
+            av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
+        else if (thread_type == 2)
+            av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
+        else
+            av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
             
-    av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
+        av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
 
-    return (OpenHevc_Handle) openHevcContext;
+        /*  Set the decoder id    */
+        av_opt_set_int(openHevcContext->c->priv_data, "decoder-id", i, 0);
+    }
+    return (OpenHevc_Handle) openHevcContexts; 
 }
 
 
 int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
-        fprintf(stderr, "could not open codec\n");
-        return NULL;
-    } else
-        return 1;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    int i;
+    OpenHevcWrapperContext * openHevcContext;
+    for(i=0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
+            fprintf(stderr, "could not open codec\n");
+            return NULL;
+        }
+    }
+    return 1;
+}
+
+static int read_layer_id(const unsigned char *buff) {
+    if(buff[0] == 0 && buff[1] == 0 && buff[2] ==0)
+        return ((buff[4]&0x01)<<5) + ((buff[5]&0xF8)>>3);
+    else
+        return ((buff[3]&0x01)<<5) + ((buff[4]&0xF8)>>3);
 }
 
 int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
 {
-    int got_picture, len;
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    int got_picture, len, got_picture_tm;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    int layer_id = 0, i;
+    OpenHevcWrapperContext * openHevcContext;
+    if(au_len > 3)
+        layer_id = read_layer_id(buff);
+    if(layer_id >= openHevcContexts->nb_decoders)   {
+        fprintf(stderr, "Warning layer number %d can not be decoded (it exceeds the number of allocated decoders) \n", layer_id);
+        return -1;
+    }
+    
+    if(layer_id > openHevcContexts->active_layer)
+        return 0;
+    openHevcContext = openHevcContexts->wraper[layer_id];
     openHevcContext->avpkt.size = au_len;
     openHevcContext->avpkt.data = buff;
     openHevcContext->avpkt.pts  = pts;
     len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture, &openHevcContext->avpkt);
+    if(layer_id+1 < openHevcContexts->nb_decoders)  {
+        openHevcContexts->wraper[layer_id+1]->c->BL_frame = openHevcContexts->wraper[layer_id]->c->BL_frame;
+    }
+    if(!openHevcContexts->set_vps)   {
+        for(i=1; i < openHevcContexts->nb_decoders; i++){
+            openHevcContext = openHevcContexts->wraper[i];
+            openHevcContext->avpkt.size = au_len;
+            openHevcContext->avpkt.data = buff;
+            openHevcContext->avpkt.pts  = pts;
+            len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture_tm, &openHevcContext->avpkt);
+        }
+        openHevcContexts->set_vps = 1;
+    }
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");
         return -1;
     }
-    return got_picture;
+    if(layer_id == openHevcContexts->active_layer)  //  Display only one layer 
+        return got_picture;
+    else
+        return 0;
 }
 
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext = openHevcContexts->wraper[openHevcContexts->active_layer];
+    
     openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
     memcpy( openHevcContext->c->extradata, extra_data, extra_size_alloc);
     openHevcContext->c->extradata_size = extra_size_alloc;
-
 }
 
 
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext = openHevcContexts->wraper[openHevcContexts->active_layer];
+
     AVFrame *picture              = openHevcContext->picture;
     openHevcFrameInfo->nYPitch    = openHevcContext->c->width;
 
@@ -126,7 +188,8 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
 
 void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext = openHevcContexts->wraper[openHevcContexts->active_layer];
     libOpenHevcGetPictureInfo(openHevcHandle, openHevcFrameInfo);
     openHevcFrameInfo->nYPitch = openHevcContext->picture->linesize[0];
     openHevcFrameInfo->nUPitch = openHevcContext->picture->linesize[1];
@@ -135,7 +198,8 @@ void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameIn
 
 int libOpenHevcGetOutput(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame *openHevcFrame)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext = openHevcContexts->wraper[openHevcContexts->active_layer];
     if (got_picture) {
         openHevcFrame->pvY       = (void *) openHevcContext->picture->data[0];
         openHevcFrame->pvU       = (void *) openHevcContext->picture->data[1];
@@ -149,7 +213,8 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
 {
     int y;
     int y_offset, y_offset2;
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext = openHevcContexts->wraper[openHevcContexts->active_layer];
     if( got_picture ) {
         unsigned char *Y = (unsigned char *) openHevcFrame->pvY;
         unsigned char *U = (unsigned char *) openHevcFrame->pvU;
@@ -183,37 +248,71 @@ void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val)
         av_log_set_level(AV_LOG_DEBUG);
 }
 
+void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val)
+{
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    if(val >=0 && val < openHevcContexts->nb_decoders)
+        openHevcContexts->active_layer = val;
+    else    {
+        fprintf(stderr, "The requested layer %d can not be decoded (it exceeds the number of allocated decoders %d ) \n", val, openHevcContexts->nb_decoders);
+        openHevcContexts->active_layer = openHevcContexts->nb_decoders-1;
+    }
+}
+
 void libOpenHevcSetCheckMD5(OpenHevc_Handle openHevcHandle, int val)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    av_opt_set_int(openHevcContext->c->priv_data, "decode-checksum", val, 0);
+    int i;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext;
+    for(i=0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_int(openHevcContext->c->priv_data, "decode-checksum", val, 0);
+    }
 }
 
 void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    av_opt_set_int(openHevcContext->c->priv_data, "temporal-layer-id", val+1, 0);
+    int i;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext;
+    for(i=0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_int(openHevcContext->c->priv_data, "temporal-layer-id", val+1, 0);
+    }
+    
 }
 
 void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    av_opt_set_int(openHevcContext->c->priv_data, "no-cropping", val, 0);
+    int i;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext;
+    for(i=0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_int(openHevcContext->c->priv_data, "no-cropping", val, 0);
+    }
 }
 
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
-    avcodec_close(openHevcContext->c);
-    av_parser_close(openHevcContext->parser);
-    av_free(openHevcContext->c);
-    av_free(openHevcContext->picture);
-    av_free(openHevcContext);
+    int i; 
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext;
+    for(i =0; i < openHevcContexts->nb_decoders; i++){
+        openHevcContext = openHevcContexts->wraper[i];
+        avcodec_close(openHevcContext->c);
+        av_parser_close(openHevcContext->parser);
+        av_freep(&openHevcContext->c);
+        av_freep(&openHevcContext->picture);
+        av_freep(&openHevcContext);
+    }
+    av_freep(&openHevcContexts);
 }
 
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle)
 {
-    OpenHevcWrapperContext * openHevcContext = (OpenHevcWrapperContext *) openHevcHandle;
+    OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext * openHevcContext = openHevcContexts->wraper[openHevcContexts->active_layer];
     openHevcContext->codec->flush(openHevcContext->c);
 }
 

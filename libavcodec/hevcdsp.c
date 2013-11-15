@@ -188,6 +188,24 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
         HEVC_DSP(8);
         break;
     }
+    
+#ifdef SVC_EXTENSION
+#define HEVC_DSP_UP(depth)                                                 \
+    hevcdsp->upsample_base_layer_frame   = FUNC(upsample_base_layer_frame, depth); \
+    hevcdsp->upsample_h_base_layer_frame = FUNC(upsample_h_base_layer_frame, depth);\
+    hevcdsp->upsample_v_base_layer_frame = FUNC(upsample_v_base_layer_frame, depth);
+    switch (bit_depth) {
+    case 9:
+        HEVC_DSP_UP(9);
+        break;
+    case 10:
+        HEVC_DSP_UP(10);        
+        break;
+    default:
+        HEVC_DSP_UP(8);        
+        break;
+    }
+#endif
 
     if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);

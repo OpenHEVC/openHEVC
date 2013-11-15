@@ -58,6 +58,7 @@ void print_usage() {
     printf("     -p <number of threads> \n");
     printf("     -t <temporal layer id>\n");
     printf("     -w : Do not apply cropping windows\n");
+    printf("     -l <Quality layer id> \n");
 }
 
 /*

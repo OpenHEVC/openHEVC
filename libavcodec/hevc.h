@@ -35,6 +35,7 @@
 #include "internal.h"
 #include "thread.h"
 #include "videodsp.h"
+#include "hevc_defs.h"
 
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
@@ -256,6 +257,19 @@ enum ScanType {
     SCAN_VERT,
 };
 
+#ifdef SVC_EXTENSION
+typedef struct UpsamplInf {
+	int addXLum;
+	int addYLum;
+	int scaleXLum;
+	int scaleYLum;
+	int addXCr;
+	int addYCr;
+	int scaleXCr;
+	int scaleYCr;
+} UpsamplInf;
+#endif
+
 typedef struct ShortTermRPS {
     int num_negative_pics;
     int num_delta_pocs;
@@ -330,12 +344,21 @@ typedef struct VUI {
     int log2_max_mv_length_vertical;
 } VUI;
 
+typedef struct ProfileTierLevel {
+    int profile_space;
+    uint8_t tier_flag;
+    int profile_idc;
+    int profile_compatibility_flag[32];
+    int level_idc;
+    int progressive_source_flag;
+    int interlaced_source_flag;
+    int non_packed_constraint_flag;
+    int frame_only_constraint_flag;
+} ProfileTierLevel;
+
 typedef struct PTL {
-    int general_profile_space;
-    uint8_t general_tier_flag;
-    int general_profile_idc;
-    int general_profile_compatibility_flag[32];
-    int general_level_idc;
+    ProfileTierLevel general_PTL;
+    ProfileTierLevel sub_layer_PTL[MAX_SUB_LAYERS];
 
     uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
     uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
@@ -365,6 +388,53 @@ typedef struct HEVCVPS {
     uint8_t vps_poc_proportional_to_timing_flag;
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
+
+    int vps_extension_flag;
+#ifdef VPS_EXTENSION
+    int  avc_base_layer_flag;
+    int splitting_flag;
+    int scalability_mask[MAX_VPS_NUM_SCALABILITY_TYPES];
+    int dimension_id_len[MAX_VPS_NUM_SCALABILITY_TYPES];
+    int m_numScalabilityTypes;
+    int nuh_layer_id_present_flag;
+    int layer_id_in_nuh[MAX_VPS_LAYER_ID_PLUS1];
+    int m_layerIdInVps[MAX_VPS_LAYER_ID_PLUS1];
+    
+    int dimension_id[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_NUM_SCALABILITY_TYPES];
+#if DERIVE_LAYER_ID_LIST_VARIABLES
+    int         m_layerSetLayerIdList[MAX_VPS_LAYER_SETS_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
+    int         m_numLayerInIdList[MAX_VPS_LAYER_SETS_PLUS1];
+#endif
+#if VPS_EXTN_DIRECT_REF_LAYERS
+    unsigned int    m_numDirectRefLayers[MAX_VPS_LAYER_ID_PLUS1];
+    unsigned int    direct_dependency_flag[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
+    unsigned int    m_refLayerId[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
+#endif
+#if VPS_EXTN_PROFILE_INFO
+    unsigned int    vps_profile_present_flag[MAX_VPS_LAYER_SETS_PLUS1];    // The value with index 0 will not be used.
+    unsigned int    profile_ref[MAX_VPS_LAYER_SETS_PLUS1];    // The value with index 0 will not be used.
+    PTL**     PTLExt;
+#endif
+#if VPS_PROFILE_OUTPUT_LAYERS
+    unsigned int       vps_num_profile_tier_level;
+    int         more_output_layer_sets_than_default_flag;
+    int         num_add_output_layer_sets;
+    int         default_one_target_output_layer_flag;
+    int         profile_level_tier_idx[64];
+#endif
+    
+#if VPS_EXTN_OP_LAYER_SETS
+    
+    unsigned int       m_numOutputLayerSets;
+    unsigned int       output_layer_set_idx[MAX_VPS_LAYER_SETS_PLUS1];
+    int       output_layer_flag[MAX_VPS_LAYER_SETS_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
+#endif
+#if JCTVC_M0458_INTERLAYER_RPS_SIG
+    int       max_one_active_ref_layer_flag;
+#endif
+#endif
+
+
 } HEVCVPS;
 
 typedef struct ScalingList {
@@ -453,6 +523,12 @@ typedef struct HEVCSPS {
     int vshift[3];
 
     int qp_bd_offset;
+#if SCALED_REF_LAYER_OFFSETS
+    HEVCWindow      scaled_ref_layer_window;
+#endif
+#if REF_IDX_MFM
+    int set_mfm_enabled_flag;
+#endif
 } HEVCSPS;
 
 typedef struct HEVCPPS {
@@ -593,6 +669,19 @@ typedef struct SliceHeader {
     int16_t luma_offset_l1[16];
     int16_t chroma_offset_l1[16][2];
 
+#if REF_IDX_FRAMEWORK
+    int inter_layer_pred_enabled_flag;
+#endif
+    
+#if JCTVC_M0458_INTERLAYER_RPS_SIG
+    int     active_num_ILR_ref_idx;        //< Active inter-layer reference pictures
+    int     inter_layer_pred_layer_idc[MAX_VPS_LAYER_ID_PLUS1];
+#endif
+    
+#ifdef SVC_EXTENSION
+    int ScalingFactor[MAX_LAYERS][2];
+    int ScalingPosition[MAX_LAYERS][2];
+#endif
     int slice_ctb_addr_rs;
 } SliceHeader;
 
@@ -864,6 +953,17 @@ typedef struct HEVCContext {
     uint8_t is_md5;
 
     int context_initialized;
+
+#ifdef SVC_EXTENSION
+    AVFrame     *EL_frame;
+    short       *buffer_frame[3];
+    UpsamplInf  up_filter_inf;
+    HEVCFrame   *BL_frame;
+    HEVCFrame   *inter_layer_ref;
+#endif
+    int temporal_layer_id;
+    int nuh_layer_id;
+    int decoder_id;
     int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
     int apply_defdispwin;
@@ -871,7 +971,6 @@ typedef struct HEVCContext {
     int active_seq_parameter_set_id;
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
-    int nuh_layer_id;
 
     int picture_struct;
 } HEVCContext;
@@ -950,8 +1049,8 @@ int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx);
  * Get the number of candidate references for the current frame.
  */
 int ff_hevc_frame_nb_refs(HEVCContext *s);
-
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
+int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc);
 
 /**
  * Find next frame in output order and put a reference to it in frame.

@@ -2740,6 +2740,13 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     uint64_t vbv_delay;
+    
+    /**
+     *  The decoded picture at layer n for SHVC decoder
+     *  this frame is used by the layer (n+1) as refernce frame for inter-layer predictions 
+     */
+    void* BL_frame;
+    
 } AVCodecContext;
 
 /**

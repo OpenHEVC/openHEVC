@@ -109,6 +109,10 @@ typedef struct AVFrame {
     int width, height;
 
     /**
+     * width and height of the video frame
+     */
+    int coded_width, coded_height;
+    /**
      * number of audio samples (per channel) described by this frame
      */
     int nb_samples;

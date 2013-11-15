@@ -58,26 +58,22 @@ static void video_decode_example(const char *filename)
     AVFormatContext *pFormatCtx=NULL;
     AVInputFormat *file_iformat;
     AVPacket        packet;
-
-    FILE *f     = NULL;
     FILE *fout  = NULL;
-    unsigned char * buf;
 
     int init    = 1;
     int nbFrame = 0;
-    int pts     = 0;
     int stop    = 0;
     int stop_dec= 0;
     int got_picture;
     float time  = 0.0;
     OpenHevc_Frame openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
-    OpenHevcWrapperContext *ost;
 
     OpenHevc_Handle openHevcHandle;
     openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
+    libOpenHevcSetActiveDecoders(openHevcHandle, quality_layer_id);
     if (!openHevcHandle) {
         fprintf(stderr, "could not open OpenHevc\n");
         exit(1);
@@ -85,7 +81,7 @@ static void video_decode_example(const char *filename)
     av_register_all();
     pFormatCtx = avformat_alloc_context();
     file_iformat = av_guess_format(NULL, filename, NULL);
-
+    
     if(avformat_open_input(&pFormatCtx, filename, file_iformat, NULL)!=0) {
         printf("%s",filename);
         exit(1); // Couldn't open file
