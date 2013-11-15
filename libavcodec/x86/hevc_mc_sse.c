@@ -28,7 +28,6 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
-#if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
@@ -987,7 +986,7 @@ void ff_hevc_put_hevc_epel_h_8_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint8_t *src = (uint8_t*) _src;
     ptrdiff_t srcstride = _srcstride;
-    const int8_t *filter = epel_filters[mx - 1];
+    const int8_t *filter = ff_hevc_epel_filters[mx - 1];
     __m128i r0, bshuffle1, bshuffle2, x1, x2, x3;
     int8_t filter_0 = filter[0];
     int8_t filter_1 = filter[1];
@@ -1060,7 +1059,7 @@ void ff_hevc_put_hevc_epel_h_10_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint16_t *src = (uint16_t*) _src;
     ptrdiff_t srcstride = _srcstride>>1;
-    const int8_t *filter = epel_filters[mx - 1];
+    const int8_t *filter = ff_hevc_epel_filters[mx - 1];
     __m128i r0, bshuffle1, bshuffle2, x1, x2, x3, r1;
     int8_t filter_0 = filter[0];
     int8_t filter_1 = filter[1];
@@ -1122,7 +1121,7 @@ void ff_hevc_put_hevc_epel_v_8_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x0, x1, x2, x3, t0, t1, t2, t3, r0, f0, f1, f2, f3, r1;
     uint8_t *src = (uint8_t*) _src;
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);
-    const int8_t *filter = epel_filters[my - 1];
+    const int8_t *filter = ff_hevc_epel_filters[my - 1];
     int8_t filter_0 = filter[0];
     int8_t filter_1 = filter[1];
     int8_t filter_2 = filter[2];
@@ -1257,7 +1256,7 @@ void ff_hevc_put_hevc_epel_v_10_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x0, x1, x2, x3, t0, t1, t2, t3, r0, f0, f1, f2, f3, r1, r2, r3;
     uint16_t *src = (uint16_t*) _src;
     ptrdiff_t srcstride = _srcstride >>1;
-    const int8_t *filter = epel_filters[my - 1];
+    const int8_t *filter = ff_hevc_epel_filters[my - 1];
     int8_t filter_0 = filter[0];
     int8_t filter_1 = filter[1];
     int8_t filter_2 = filter[2];
@@ -1424,8 +1423,8 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint8_t *src = (uint8_t*) _src;
     ptrdiff_t srcstride = _srcstride;
-    const int8_t *filter_h = epel_filters[mx - 1];
-    const int8_t *filter_v = epel_filters[my - 1];
+    const int8_t *filter_h = ff_hevc_epel_filters[mx - 1];
+    const int8_t *filter_v = ff_hevc_epel_filters[my - 1];
     __m128i r0, bshuffle1, bshuffle2, x0, x1, x2, x3, t0, t1, t2, t3, f0, f1,
     f2, f3, r1, r2;
     int8_t filter_0 = filter_h[0];
@@ -1438,12 +1437,12 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
             filter_0, filter_3, filter_2, filter_1, filter_0);
     bshuffle1 = _mm_set_epi8(6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0);
 
-    src -= epel_extra_before * srcstride;
+    src -= EPEL_EXTRA_BEFORE * srcstride;
 
     // horizontal treatment
     if(!(width & 7)){
         bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5,4);
-        for (y = 0; y < height + epel_extra; y++) {
+        for (y = 0; y < height + EPEL_EXTRA; y++) {
             for (x = 0; x < width; x += 8) {
 
                 x1 = _mm_loadu_si128((__m128i *) &src[x - 1]);
@@ -1458,7 +1457,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + epel_extra_before * MAX_PB_SIZE;
+        tmp = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
 
         // vertical treatment
         f3 = _mm_set1_epi16(filter_v[3]);
@@ -1508,7 +1507,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
             dst += dststride;
         }
     }else if(!(width & 3)){
-        for (y = 0; y < height + epel_extra; y ++) {
+        for (y = 0; y < height + EPEL_EXTRA; y ++) {
             for(x=0;x<width;x+=4){
                 // load data in register
                 x1 = _mm_loadl_epi64((__m128i *) &src[x-1]);
@@ -1526,7 +1525,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + epel_extra_before * MAX_PB_SIZE;
+        tmp = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
 
         // vertical treatment
         f3 = _mm_set1_epi32(filter_v[3]);
@@ -1573,7 +1572,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
     {
         bshuffle2=_mm_set_epi32(0,0,0,-1);
 
-        for (y = 0; y < height + epel_extra; y ++) {
+        for (y = 0; y < height + EPEL_EXTRA; y ++) {
             for(x=0;x<width;x+=2){
                 // load data in register
                 x1 = _mm_loadl_epi64((__m128i *) &src[x-1]);
@@ -1590,7 +1589,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
             tmp += MAX_PB_SIZE;
         }
 
-        tmp = mcbuffer + epel_extra_before * MAX_PB_SIZE;
+        tmp = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
 
         //vertical treatment
         f3 = _mm_set1_epi32(filter_v[3]);
@@ -1642,8 +1641,8 @@ void ff_hevc_put_hevc_epel_hv_10_sse(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     uint16_t *src = (uint16_t*) _src;
     ptrdiff_t srcstride = _srcstride>>1;
-    const int8_t *filter_h = epel_filters[mx - 1];
-    const int8_t *filter_v = epel_filters[my - 1];
+    const int8_t *filter_h = ff_hevc_epel_filters[mx - 1];
+    const int8_t *filter_v = ff_hevc_epel_filters[my - 1];
     __m128i r0, bshuffle1, bshuffle2, x0, x1, x2, x3, t0, t1, t2, t3, f0, f1,
     f2, f3, r1, r2, r3;
     int8_t filter_0 = filter_h[0];
@@ -1656,7 +1655,7 @@ void ff_hevc_put_hevc_epel_hv_10_sse(int16_t *dst, ptrdiff_t dststride,
             filter_0, filter_3, filter_2, filter_1, filter_0);
     bshuffle1 = _mm_set_epi8(9,8,7,6,5,4, 3, 2,7,6,5,4, 3, 2, 1, 0);
 
-    src -= epel_extra_before * srcstride;
+    src -= EPEL_EXTRA_BEFORE * srcstride;
 
     f0 = _mm_set1_epi16(filter_v[0]);
     f1 = _mm_set1_epi16(filter_v[1]);
@@ -1667,7 +1666,7 @@ void ff_hevc_put_hevc_epel_hv_10_sse(int16_t *dst, ptrdiff_t dststride,
     /* horizontal treatment */
     if(!(width & 3)){
         bshuffle2 = _mm_set_epi8(13,12,11,10,9,8,7,6,11,10, 9,8,7,6,5, 4);
-        for (y = 0; y < height + epel_extra; y ++) {
+        for (y = 0; y < height + EPEL_EXTRA; y ++) {
             for(x=0;x<width;x+=4){
 
                 x1 = _mm_loadu_si128((__m128i *) &src[x-1]);
@@ -1688,7 +1687,7 @@ void ff_hevc_put_hevc_epel_hv_10_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + epel_extra_before * MAX_PB_SIZE;
+        tmp = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
 
         // vertical treatment
 
@@ -1733,7 +1732,7 @@ void ff_hevc_put_hevc_epel_hv_10_sse(int16_t *dst, ptrdiff_t dststride,
     }else{
         bshuffle2=_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1);
         r1= _mm_setzero_si128();
-        for (y = 0; y < height + epel_extra; y ++) {
+        for (y = 0; y < height + EPEL_EXTRA; y ++) {
             for(x=0;x<width;x+=2){
                 /* load data in register     */
                 x1 = _mm_loadu_si128((__m128i *) &src[x-1]);
@@ -1751,7 +1750,7 @@ void ff_hevc_put_hevc_epel_hv_10_sse(int16_t *dst, ptrdiff_t dststride,
             tmp += MAX_PB_SIZE;
         }
 
-        tmp = mcbuffer + epel_extra_before * MAX_PB_SIZE;
+        tmp = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
 
         /* vertical treatment */
 
@@ -1827,7 +1826,7 @@ void ff_hevc_put_hevc_qpel_pixels_8_sse(int16_t *dst, ptrdiff_t dststride,
         for (y = 0; y < height; y++) {
             for (x = 0; x < width; x += 8) {
 
-                x1 = _mm_loadu_si128((__m128i *) &src[x]);
+                x1 = _mm_loadl_epi64((__m128i *) &src[x]);
                 x2 = _mm_unpacklo_epi8(x1, x0);
                 x2 = _mm_slli_epi16(x2, 6);
                 _mm_storeu_si128((__m128i *) &dst[x], x2);
@@ -3053,13 +3052,13 @@ void ff_hevc_put_hevc_qpel_h_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[1] * srcstride;
+    src -= ff_hevc_qpel_extra_before[1] * srcstride;
     r0 = _mm_set_epi8(0, 1, -5, 17, 58, -10, 4, -1, 0, 1, -5, 17, 58, -10, 4,
             -1);
 
     /* LOAD src from memory to registers to limit memory bandwidth */
     if (!(width & 7)) {
-        for (y = 0; y < height + qpel_extra[1]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y++) {
             for (x = 0; x < width; x += 8) {
                 /* load data in register     */
                 x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);
@@ -3088,7 +3087,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -3181,7 +3180,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
         }
     } else if(!(width & 4)){
 
-        for (y = 0; y < height + qpel_extra[1]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y ++) {
             for (x = 0; x < width; x += 4) {
 
                 /* load data in register     */
@@ -3204,7 +3203,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -3282,7 +3281,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
 
     }else{
         rBuffer= _mm_set_epi32(0,0,0,-1);
-        for (y = 0; y < height + qpel_extra[1]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y ++) {
             for (x = 0; x < width; x += 2) {
 
                 /* load data in register     */
@@ -3304,7 +3303,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -3395,13 +3394,13 @@ void ff_hevc_put_hevc_qpel_h_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[2] * srcstride;
+    src -= ff_hevc_qpel_extra_before[2] * srcstride;
     r0 = _mm_set_epi8(0, 1, -5, 17, 58, -10, 4, -1, 0, 1, -5, 17, 58, -10, 4,
             -1);
 
     /* LOAD src from memory to registers to limit memory bandwidth */
     if (!(width & 7)) {
-        for (y = 0; y < height + qpel_extra[2]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y++) {
             for (x = 0; x < width; x += 8) {
                 /* load data in register     */
                 x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);
@@ -3431,7 +3430,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             tmp += MAX_PB_SIZE;
         }
 
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -3538,7 +3537,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
 
     } else if(!(width & 4)){
 
-        for (y = 0; y < height + qpel_extra[2]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y ++) {
             for (x = 0; x < width; x += 4) {
 
                 /* load data in register     */
@@ -3561,7 +3560,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -3654,7 +3653,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
 
     }else{
         rBuffer= _mm_set_epi32(0,0,0,-1);
-        for (y = 0; y < height + qpel_extra[2]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y ++) {
             for (x = 0; x < width; x += 2) {
 
                 /* load data in register     */
@@ -3676,7 +3675,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -3781,13 +3780,13 @@ void ff_hevc_put_hevc_qpel_h_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[3] * srcstride;
+    src -= ff_hevc_qpel_extra_before[3] * srcstride;
     r0 = _mm_set_epi8(0, 1, -5, 17, 58, -10, 4, -1, 0, 1, -5, 17, 58, -10, 4,
             -1);
 
     /* LOAD src from memory to registers to limit memory bandwidth */
     if (!(width & 7)) {
-        for (y = 0; y < height + qpel_extra[3]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y++) {
             for (x = 0; x < width; x += 8) {
                 /* load data in register     */
                 x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);
@@ -3816,7 +3815,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -3915,7 +3914,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
 
     } else if(!(width & 3)){
 
-        for (y = 0; y < height + qpel_extra[3]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y ++) {
             for (x = 0; x < width; x += 4) {
 
                 /* load data in register     */
@@ -3938,7 +3937,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4016,7 +4015,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
 
     }else{
         rBuffer= _mm_set_epi32(0,0,0,-1);
-        for (y = 0; y < height + qpel_extra[3]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y ++) {
             for (x = 0; x < width; x += 2) {
 
                 /* load data in register     */
@@ -4038,7 +4037,7 @@ void ff_hevc_put_hevc_qpel_h_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4128,13 +4127,13 @@ void ff_hevc_put_hevc_qpel_h_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[1] * srcstride;
+    src -= ff_hevc_qpel_extra_before[1] * srcstride;
     r0 = _mm_set_epi8(-1, 4, -11, 40, 40, -11, 4, -1, -1, 4, -11, 40, 40, -11,
             4, -1);
 
     /* LOAD src from memory to registers to limit memory bandwidth */
     if (!(width & 7)) {
-        for (y = 0; y < height + qpel_extra[1]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y++) {
             for (x = 0; x < width; x += 8) {
                 /* load data in register     */
                 x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);
@@ -4163,7 +4162,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4258,7 +4257,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
 
     } else if(!(width & 4)){
 
-        for (y = 0; y < height + qpel_extra[1]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y ++) {
             for (x = 0; x < width; x += 4) {
 
                 /* load data in register     */
@@ -4281,7 +4280,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4359,7 +4358,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
 
     }else{
         rBuffer= _mm_set_epi32(0,0,0,-1);
-        for (y = 0; y < height + qpel_extra[1]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y ++) {
             for (x = 0; x < width; x += 2) {
 
                 /* load data in register     */
@@ -4381,7 +4380,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4470,13 +4469,13 @@ void ff_hevc_put_hevc_qpel_h_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[2] * srcstride;
+    src -= ff_hevc_qpel_extra_before[2] * srcstride;
     r0 = _mm_set_epi8(-1, 4, -11, 40, 40, -11, 4, -1, -1, 4, -11, 40, 40, -11,
             4, -1);
 
     /* LOAD src from memory to registers to limit memory bandwidth */
     if (!(width & 7)) {
-        for (y = 0; y < height + qpel_extra[2]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y++) {
             for (x = 0; x < width; x += 8) {
                 /* load data in register     */
                 x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);
@@ -4505,7 +4504,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4610,7 +4609,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
 
     } else if(!(width & 4)){
 
-        for (y = 0; y < height + qpel_extra[2]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y ++) {
             for (x = 0; x < width; x += 4) {
 
                 /* load data in register     */
@@ -4633,7 +4632,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4727,7 +4726,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
 
     }else{
         rBuffer= _mm_set_epi32(0,0,0,-1);
-        for (y = 0; y < height + qpel_extra[2]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y ++) {
             for (x = 0; x < width; x += 2) {
 
                 /* load data in register     */
@@ -4749,7 +4748,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4851,12 +4850,12 @@ void ff_hevc_put_hevc_qpel_h_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[3] * srcstride;
+    src -= ff_hevc_qpel_extra_before[3] * srcstride;
     r0 = _mm_set_epi8(-1, 4, -11, 40, 40, -11, 4, -1, -1, 4, -11, 40, 40, -11,
             4, -1);
 
     if (!(width & 7)) {
-        for (y = 0; y < height + qpel_extra[3]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y++) {
             for (x = 0; x < width; x += 8) {
                 /* load data in register     */
                 x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);
@@ -4885,7 +4884,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -4983,7 +4982,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
 
     } else if(!(width & 4)){
 
-        for (y = 0; y < height + qpel_extra[3]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y ++) {
             for (x = 0; x < width; x += 4) {
 
                 /* load data in register     */
@@ -5006,7 +5005,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -5084,7 +5083,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
 
     }else{
         rBuffer= _mm_set_epi32(0,0,0,-1);
-        for (y = 0; y < height + qpel_extra[3]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y ++) {
             for (x = 0; x < width; x += 2) {
 
                 /* load data in register     */
@@ -5106,7 +5105,7 @@ void ff_hevc_put_hevc_qpel_h_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -5194,12 +5193,12 @@ void ff_hevc_put_hevc_qpel_h_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[1] * srcstride;
+    src -= ff_hevc_qpel_extra_before[1] * srcstride;
     r0 = _mm_set_epi8(-1, 4, -10, 58, 17, -5, 1, 0, 0, -1, 4, -10, 58, 17, -5, 1);
 
 
     if (!(width & 7)) {
-        for (y = 0; y < height + qpel_extra[1]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y++) {
             for (x = 0; x < width; x +=8) {
 
                 // load data in register
@@ -5223,14 +5222,13 @@ void ff_hevc_put_hevc_qpel_h_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
                 x1 = _mm_hadd_epi16(x1, x4);
                 x1 = _mm_srli_epi16(x1, BIT_DEPTH - 8);
                 // give results back
-                // _mm_maskmoveu_si128(x1,r1,(char *) (tmp+x));
                 _mm_storeu_si128((__m128i*)(tmp+x),x1);
 
             }
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -5324,7 +5322,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
 
     } else if(!(width & 3)){
 
-        for (y = 0; y < height + qpel_extra[1]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y ++) {
             for (x = 0; x < width; x +=4) {
 
                 // load data in register
@@ -5347,7 +5345,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -5425,7 +5423,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
 
     }else{
         rBuffer= _mm_set_epi32(0,0,0,-1);
-        for (y = 0; y < height + qpel_extra[1]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[1]; y ++) {
             for (x = 0; x < width; x +=2) {
 
                 // load data in register
@@ -5445,7 +5443,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[1] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[1] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -5534,12 +5532,12 @@ void ff_hevc_put_hevc_qpel_h_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[2] * srcstride;
+    src -= ff_hevc_qpel_extra_before[2] * srcstride;
     r0 = _mm_set_epi8(-1, 4, -10, 58, 17, -5, 1, 0, 0, -1, 4, -10, 58, 17, -5, 1);
 
 
     if (!(width & 7)) {
-        for (y = 0; y < height + qpel_extra[2]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y++) {
             for (x = 0; x < width; x +=8) {
 
                 // load data in register
@@ -5570,7 +5568,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -5677,7 +5675,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
 
     } else if(!(width & 3)){
 
-        for (y = 0; y < height + qpel_extra[2]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y ++) {
             for (x = 0; x < width; x +=4) {
 
                 // load data in register
@@ -5700,7 +5698,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -5794,7 +5792,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
 
     }else{
         rBuffer= _mm_set_epi32(0,0,0,-1);
-        for (y = 0; y < height + qpel_extra[2]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[2]; y ++) {
             for (x = 0; x < width; x +=2) {
 
                 // load data in register
@@ -5814,7 +5812,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
             src += srcstride;
             tmp += MAX_PB_SIZE;
         }
-        tmp = mcbuffer + qpel_extra_before[2] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[2] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         /* vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers
@@ -5922,13 +5920,13 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, rBuffer, rTemp, r0, r1;
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;
 
-    src -= qpel_extra_before[3] * srcstride;
+    src -= ff_hevc_qpel_extra_before[3] * srcstride;
     r0 = _mm_set_epi8(0,-1, 4, -10, 58, 17, -5, 1, 0, -1, 4, -10, 58, 17, -5, 1);
 
     if (!(width & 7)) {
         r0 = _mm_set_epi8(-1, 4, -10, 58, 17, -5, 1, 0, 0, -1, 4, -10, 58, 17, -5, 1);
         x2= _mm_setzero_si128();
-        for (y = 0; y < height + qpel_extra[3]; y++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y++) {
             for (x = 0; x < width; x +=8) {
 
                 // load data in register
@@ -5960,7 +5958,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
             tmp += MAX_PB_SIZE;
         }
 
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         // vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers for register calculations
@@ -6060,7 +6058,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
         x4= _mm_setzero_si128();
         r0 = _mm_set_epi8(-1, 4, -10, 58, 17, -5, 1, 0, 0, -1, 4, -10, 58, 17, -5, 1);
         x2= _mm_setzero_si128();
-        for (y = 0; y < height + qpel_extra[3]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y ++) {
             for (x = 0; x < width; x +=4) {
 
                 // load data in register
@@ -6084,7 +6082,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
             tmp += MAX_PB_SIZE;
         }
 
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         // vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers for register calculations
@@ -6165,7 +6163,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
         x2= _mm_setzero_si128();
 
 
-        for (y = 0; y < height + qpel_extra[3]; y ++) {
+        for (y = 0; y < height + ff_hevc_qpel_extra[3]; y ++) {
             for (x = 0; x < width; x +=2) {
 
                 // load data in register
@@ -6187,7 +6185,7 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
         }
 
 
-        tmp = mcbuffer + qpel_extra_before[3] * MAX_PB_SIZE;
+        tmp = mcbuffer + ff_hevc_qpel_extra_before[3] * MAX_PB_SIZE;
         srcstride = MAX_PB_SIZE;
 
         // vertical treatment on temp table : tmp contains 16 bit values, so need to use 32 bit  integers for register calculations
@@ -6267,7 +6265,4 @@ void ff_hevc_put_hevc_qpel_h_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
 
 
 }
-
-#endif
-
 
