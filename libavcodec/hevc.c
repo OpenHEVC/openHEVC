@@ -2083,7 +2083,8 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     int more_data  = 1;
     int *ctb_row_p  = input_ctb_row;
     int ctb_row     = ctb_row_p[job];
-    int ctb_addr_rs = s->sh.slice_ctb_addr_rs + s->pps->tile_pos_rs[ctb_row];
+    int tile_id     = s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]]+ctb_row;
+    int ctb_addr_rs = s->pps->tile_pos_rs[tile_id];
     int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     int ret;
     
