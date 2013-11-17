@@ -25,6 +25,7 @@
 #include "libavcodec/get_bits.h" /* required for hevcdsp.h GetBitContext */
 #include "libavcodec/hevcdsp.h"
 #include "libavcodec/x86/hevcdsp.h"
+#include "libavcodec/hevc_defs.h"
 
 
 /***********************************/
@@ -128,6 +129,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel[3][1] = ff_hevc_put_hevc_qpel_h_1_v_3_sse;
                     c->put_hevc_qpel[3][2] = ff_hevc_put_hevc_qpel_h_2_v_3_sse;
                     c->put_hevc_qpel[3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
+#ifdef SVC_EXTENSION
+                    c->upsample_base_layer_frame = ff_upsample_base_layer_frame_sse;
+                    c->upsample_h_base_layer_frame = ff_upsample_base_layer_frame_sse_h;
+                    c->upsample_v_base_layer_frame = ff_upsample_base_layer_frame_sse_v;
+#endif
 
 
                 }

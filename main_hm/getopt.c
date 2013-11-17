@@ -130,7 +130,8 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
 	// every command line option must be followed by ':' if it takes an
 	// argument, and '::' if this argument is optional
-	const char *ostr = "achi:no:p:f:t:w";
+	const char *ostr = "achi:no:p:f:t:wl:";
+
 	int c;
     check_md5_flags   = ENABLE;
     thread_type       = 1;
@@ -140,6 +141,7 @@ void init_main(int argc, char *argv[]) {
     nb_pthreads       = 1;
     temporal_layer_id = 7;
     no_cropping       = DISABLE;
+    quality_layer_id = 0; // Base layer 
 
     program           = argv[0];
     
@@ -171,6 +173,10 @@ void init_main(int argc, char *argv[]) {
         case 'w':
             no_cropping = ENABLE;
             break;
+        case 'l':
+            quality_layer_id = atoi(optarg);
+            break;
+                
 		default:
 			print_usage();
 			exit(1);
