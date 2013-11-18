@@ -86,64 +86,27 @@ int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
     return 1;
 }
 
-static int read_layer_id(const unsigned char *buff) {
-    if(buff[0] == 0 && buff[1] == 0 && buff[2] ==0 && buff[3] ==1)
-        return ((buff[4]&0x01)<<5) + ((buff[5]&0xF8)>>3);
-	else
-		if(buff[0] == 0 && buff[1] == 0 && buff[2] ==1)
-			return ((buff[3]&0x01)<<5) + ((buff[4]&0xF8)>>3);
-    	/*else
-        	return ((buff[0]&0x01)<<5) + ((buff[0]&0xF8)>>3);*/
-}
-
 int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
 {
-    int got_picture, len, got_picture_tm;
+    int got_picture[MAX_DECODERS], len, i;
     OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    int layer_id = 0, i;
     OpenHevcWrapperContext * openHevcContext;
-
-    if(au_len > 3)
-        layer_id = read_layer_id(buff);    
-	if(layer_id >= openHevcContexts->nb_decoders)   {
-        fprintf(stderr, "Warning layer number %d can not be decoded (it exceeds the number of allocated decoders) \n", layer_id);
-        return -1;
+    for(i =0; i < openHevcContexts->active_layer; i++)  {
+        got_picture[i]              = 0;
+        openHevcContext             = openHevcContexts->wraper[i];
+        openHevcContext->avpkt.size = au_len;
+        openHevcContext->avpkt.data = buff;
+        openHevcContext->avpkt.pts  = pts;
+        len                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
+                                                             &got_picture[i], &openHevcContext->avpkt);
+        if(i+1 < openHevcContexts->nb_decoders)
+            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
-    if(layer_id > openHevcContexts->active_layer)
-        return 0;
-	
-    
-   	got_picture                 = 0;
-   	openHevcContext             = openHevcContexts->wraper[layer_id];
-   	openHevcContext->avpkt.size = au_len;
-  	openHevcContext->avpkt.data = buff;
-   	openHevcContext->avpkt.pts  = pts;
-   	len                         = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, 
-                                                        &got_picture, &openHevcContext->avpkt);
-    
-    if(layer_id+1 < openHevcContexts->nb_decoders)  {
-        openHevcContexts->wraper[layer_id+1]->c->BL_frame = openHevcContexts->wraper[layer_id]->c->BL_frame;
-    }
-
-    if(!openHevcContexts->set_vps)   {
-        for(i=1; i < openHevcContexts->nb_decoders; i++) {
-            openHevcContext = openHevcContexts->wraper[i];
-            openHevcContext->avpkt.size = au_len;
-            openHevcContext->avpkt.data = buff;
-            openHevcContext->avpkt.pts  = pts;
-            len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture_tm, &openHevcContext->avpkt);
-        }
-        openHevcContexts->set_vps = 1;
-    }
-
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");
         return -1;
     }
-    if(layer_id == openHevcContexts->active_layer)  //  Display only one layer 
-        return got_picture;
-    else
-        return 0;
+    return got_picture[openHevcContexts->active_layer];
 }
 
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc)
@@ -182,7 +145,7 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
     case PIX_FMT_YUV420P   : openHevcFrameInfo->nBitDepth  =  8; break;
     case PIX_FMT_YUV420P9  : openHevcFrameInfo->nBitDepth  =  9; break;
     case PIX_FMT_YUV420P10 : openHevcFrameInfo->nBitDepth  = 10; break;
-    default               : openHevcFrameInfo->nBitDepth  =  8; break;
+    default               : openHevcFrameInfo->nBitDepth   =  8; break;
     }
 
     openHevcFrameInfo->nWidth     = openHevcContext->c->width;
