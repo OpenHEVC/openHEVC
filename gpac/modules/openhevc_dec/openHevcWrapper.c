@@ -32,7 +32,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
     avcodec_register_all();
     OpenHevcWrapperContexts* openHevcContexts = av_mallocz(sizeof(OpenHevcWrapperContexts));
     openHevcContexts->nb_decoders = MAX_DECODERS;
-
+	//openHevcContexts->active_layer = 1; 
     openHevcContexts->wraper = av_malloc(sizeof(OpenHevcWrapperContext*)*openHevcContexts->nb_decoders);
     for(i=0; i < openHevcContexts->nb_decoders; i++){
         openHevcContext = openHevcContexts->wraper[i] = av_malloc(sizeof(OpenHevcWrapperContext));
@@ -58,9 +58,9 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
         if(thread_type == 3)
             av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
         else if (thread_type == 2)
-            av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
-        else
             av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
+        else
+            av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
 
         av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
 
@@ -91,7 +91,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
 {
     int got_picture[MAX_DECODERS], len, i;
     OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    OpenHevcWrapperContext * openHevcContext;
+    OpenHevcWrapperContext * openHevcContext; 
     for(i =0; i <= openHevcContexts->active_layer; i++)  {
         got_picture[i]              = 0;
         openHevcContext             = openHevcContexts->wraper[i];
@@ -112,12 +112,15 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
 
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc)
 {
+	int i; 
     OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    OpenHevcWrapperContext * openHevcContext = openHevcContexts->wraper[openHevcContexts->active_layer];
-
-    openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
-    memcpy( openHevcContext->c->extradata, extra_data, extra_size_alloc);
-    openHevcContext->c->extradata_size = extra_size_alloc;
+	OpenHevcWrapperContext * openHevcContext; 	
+	for(i =0; i <= openHevcContexts->active_layer; i++)  {
+	    openHevcContext = openHevcContexts->wraper[i];
+    	openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
+    	memcpy( openHevcContext->c->extradata, extra_data, extra_size_alloc);
+    	openHevcContext->c->extradata_size = extra_size_alloc;
+	}
 }
 
 
@@ -235,7 +238,7 @@ void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val)
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-
+	
     if (val >= 0 && val < openHevcContexts->nb_decoders)
         openHevcContexts->active_layer = val;
     else    {
