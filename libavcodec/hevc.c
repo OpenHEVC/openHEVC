@@ -2721,7 +2721,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
         }
     }
-    if (s->pps->tiles_enabled_flag && s->threads_number!=1)
+    if (s->nuh_layer_id == s->decoder_id && s->pps->tiles_enabled_flag && s->threads_number!=1)
         tiles_filters(s);
 fail:
     if (s->ref && (s->threads_type&FF_THREAD_FRAME))
