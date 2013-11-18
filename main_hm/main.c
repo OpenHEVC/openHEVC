@@ -106,6 +106,9 @@ static void video_decode_example(const char *filename)
 
     while(!stop) {
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
+        //HEVCContext   *h  = &((HEVCParseContext *)
+  //                            pFormatCtx->P
+          //                    - >PA ->priv_data)->h;
         got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
         if (got_picture) {
             fflush(stdout);

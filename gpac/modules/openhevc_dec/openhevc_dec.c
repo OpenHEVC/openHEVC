@@ -28,10 +28,9 @@
 #include <gpac/avparse.h>
 #include <gpac/constants.h>
 #include <gpac/internal/media_dev.h>
+#include <openHevcWrapper.h>
 
-#include "openHevcWrapper.h"
 //#define OPEN_SHVC
-
 
 #if defined(WIN32) && !defined(_WIN32_WCE) && !defined(__GNUC__)
 #  pragma comment(lib, "libLibOpenHevcWrapper")
@@ -43,10 +42,10 @@ typedef struct
 	u32 width, stride, height, out_size, pixel_ar, layer, nb_threads;
 
 	Bool is_init;
-	Bool state_found;
+	Bool had_pic;
 
 	u32 nalu_size_length;
-	u32 restart_from;
+	u32 threading_type;
 	Bool direct_output, has_pic;
 
 	GF_ESD *esd;
@@ -63,7 +62,6 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
     GF_HEVCConfig *cfg = NULL;
 	ctx->ES_ID = esd->ESID;
 	ctx->width = ctx->height = ctx->out_size = 0;
-	ctx->state_found = GF_FALSE;
 	
 #ifdef OPEN_SHVC
     ctx->nb_layers = 1;
@@ -81,83 +79,85 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
             if (ar->type==GF_HEVC_NALU_SEQ_PARAM) {
                 for (j=0; j< gf_list_count(ar->nalus); j++) {
                     GF_AVCConfigSlot *sl = gf_list_get(ar->nalus, j);
-                    u16 hdr = sl->data[0] << 8 | sl->data[1]; 
-                    if (hdr & 0x1f8) {
+					HEVCState hevc;
+                    s32 idx;
+					u16 hdr = sl->data[0] << 8 | sl->data[1]; 
+					
+					idx = gf_media_hevc_read_sps(sl->data, sl->size, &hevc);
+					ctx->width = MAX(hevc.sps[idx].width, ctx->width);
+					ctx->height = MAX(hevc.sps[idx].height, ctx->height);
+
+					if (hdr & 0x1f8) {
 #ifdef OPEN_SHVC
-                        ctx->nb_layers ++;
+                        ctx->nb_layers ++; 
 #endif
                     }
                 }
             }
         }
-    }
-
-    ctx->is_init = GF_TRUE;
-
-    if (cfg) {
-		for (i=0; i< gf_list_count(cfg->param_array); i++) {
-			GF_HEVCParamArray *ar = gf_list_get(cfg->param_array, i);
-			for (j=0; j< gf_list_count(ar->nalus); j++) {
-				GF_AVCConfigSlot *sl = gf_list_get(ar->nalus, j);
-//				libOpenHevcDecode(ctx->openHevcHandle, sl->data, sl->size, 0);
-
-				if (ar->type==GF_HEVC_NALU_SEQ_PARAM) {
-					HEVCState hevc;
-					s32 idx = gf_media_hevc_read_sps(sl->data, sl->size, &hevc);
-					ctx->width = hevc.sps[idx].width;
-					ctx->height = hevc.sps[idx].height;
-				}
-			}
-		}
-		ctx->state_found = GF_TRUE;
 		gf_odf_hevc_cfg_del(cfg);
-	} else {
+    } else {
 		ctx->nalu_size_length = 0;
 	}
+    ctx->openHevcHandle = libOpenHevcInit(ctx->nb_threads, ctx->threading_type);
+#ifdef OPEN_SHVC
+	libOpenHevcSetActiveDecoders(ctx->openHevcHandle, ctx->nb_layers);
+#endif
+
+	if (esd->decoderConfig && esd->decoderConfig->decoderSpecificInfo && esd->decoderConfig->decoderSpecificInfo->data) {
+		libOpenHevcCopyExtraData(ctx->openHevcHandle, esd->decoderConfig->decoderSpecificInfo->data, esd->decoderConfig->decoderSpecificInfo->dataLength+8);
+	}
+
+#ifndef GPAC_DISABLE_LOG
+	if (gf_log_tool_level_on(GF_LOG_CODEC, GF_LOG_DEBUG) ) {	
+		libOpenHevcSetDebugMode(ctx->openHevcHandle, 1);
+	}
+#endif
+    libOpenHevcStartDecoder(ctx->openHevcHandle);
 
 	ctx->stride = ctx->width;
 	ctx->out_size = ctx->stride * ctx->height * 3 / 2;
 	return GF_OK;
 }
 
-size_t extra_size_alloc;
-
 static GF_Err HEVC_AttachStream(GF_BaseDecoder *ifcg, GF_ESD *esd)
 {
+	GF_SystemRTInfo rti;
 	const char *sOpt;
+	u32 nb_threads = 1;
 	HEVCDec *ctx = (HEVCDec*) ifcg->privateStack;
 
-	/*that's a bit crude ...*/
-	if (gf_modules_get_option((GF_BaseInterface *)ifcg, "Systems", "DrawLateFrames")==NULL)
-		gf_modules_set_option((GF_BaseInterface *)ifcg, "Systems", "DrawLateFrames", "yes");
+	if (gf_sys_get_rti(100, &rti, 0) ) {
+		nb_threads = (rti.nb_cores>1) ? rti.nb_cores-1 : 1;
+		//checkme I have perf using too many threads
+		if (nb_threads > 6)
+			nb_threads = 6;
+	}
 
 	sOpt = gf_modules_get_option((GF_BaseInterface *)ifcg, "OpenHEVC", "NumThreads");
 	if (!sOpt) {
-		gf_modules_set_option((GF_BaseInterface *)ifcg, "OpenHEVC", "NumThreads", "1");
-		ctx->nb_threads = 1;
+		char szO[100];
+		sprintf(szO, "%d", nb_threads);
+		gf_modules_set_option((GF_BaseInterface *)ifcg, "OpenHEVC", "NumThreads", szO);
+		ctx->nb_threads = nb_threads;
+		GF_LOG(GF_LOG_CODEC, GF_LOG_INFO, ("[OpenHEVC] Initializing with %d threads\n", ctx->nb_threads));
 	} else {
 		ctx->nb_threads = atoi(sOpt);
+		if (ctx->nb_threads > nb_threads) {
+			GF_LOG(GF_LOG_CODEC, GF_LOG_WARNING, ("[OpenHEVC] Initializing with %d threads but only %d available cores detected on the system\n", ctx->nb_threads, rti.nb_cores));
+		}
 	}
 
-    extra_size_alloc = esd->decoderConfig->decoderSpecificInfo->dataLength > 0 ?
-    (esd->decoderConfig->decoderSpecificInfo->dataLength + 8) : 0;
+	sOpt = gf_modules_get_option((GF_BaseInterface *)ifcg, "OpenHEVC", "ThreadingType");
+	if (sOpt && !strcmp(sOpt, "wpp")) ctx->threading_type = 2;
+	else if (sOpt && !strcmp(sOpt, "frame+wpp")) ctx->threading_type = 3;
+	else {
+		ctx->threading_type = 1;
+		if (!sOpt) gf_modules_set_option((GF_BaseInterface *)ifcg, "OpenHEVC", "ThreadingType", "frame");
+	}
 
-#ifdef OPEN_SHVC
-    ctx->openHevcHandle = libOpenHevcInit(ctx->nb_threads, ctx->nb_layers, 0);
-#else
-    ctx->openHevcHandle = libOpenHevcInit(ctx->nb_threads);
-#endif
-    if (extra_size_alloc)
-    {
-        libOpenHevcCopyExtraData(ctx->openHevcHandle, esd->decoderConfig->decoderSpecificInfo->data, extra_size_alloc);
-    }
-    fprintf(stderr, "extra_size_alloc %d\n", extra_size_alloc);
-    libOpenHevcSetDebugMode(ctx->openHevcHandle, 1);
-    libOpenHevcStartDecoder(ctx->openHevcHandle);
-
-
-	/*not supported in this version*/
-	if (esd->dependsOnESID) return GF_NOT_SUPPORTED;
+	/*once base layer is configured, nothing to do on enhancement*/
+	if (esd->dependsOnESID) return GF_OK;
 
 	ctx->esd = esd;
 	return HEVC_ConfigureStream(ctx, esd);
@@ -216,7 +216,7 @@ static GF_Err HEVC_GetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability *cap
 		capability->cap.valueInt = 1;
 		break;
 	case GF_CODEC_DIRECT_OUTPUT:
-		capability->cap.valueBool = 0;
+		capability->cap.valueBool = 1;
 		break;
 	/*not known at our level...*/
 	case GF_CODEC_CU_DURATION:
@@ -270,6 +270,7 @@ static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLe
 		ctx->stride = a_stride;
 		ctx->height = a_h;
 		ctx->out_size = ctx->stride * a_w * 3 / 2;
+		ctx->had_pic = GF_TRUE;
 		/*always force layer resize*/
 		*outBufferLength = ctx->out_size;
 		return GF_BUFFER_TOO_SMALL;
@@ -304,27 +305,11 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 {
 	GF_Err e;
 	int got_pic;
-    OpenHevc_Frame_cpy openHevcFrame;
 	HEVCDec *ctx = (HEVCDec*) ifcg->privateStack;
-	u8 *pY, *pU, *pV, *ptr;
-	u32 nb_pics=0;
-	u32 input_data_consumed = 0;
-	u32 sc_size, i, nalu_size;
-
 
 	if (!inBuffer) {
-		pY = outBuffer;
-		pU = outBuffer + ctx->stride * ctx->height;
-		pV = outBuffer + 5*ctx->stride * ctx->height/4;
-	    openHevcFrame.pvY = (void*) pY;
-	    openHevcFrame.pvU = (void*) pU;
-	    openHevcFrame.pvV = (void*) pV;
-	    *outBufferLength = 0;
-
 		if ( libOpenHevcDecode(ctx->openHevcHandle, NULL, 0, 0) ) {
-			if (libOpenHevcGetOutputCpy(ctx->openHevcHandle, 1, &openHevcFrame)) {
-				*outBufferLength = ctx->out_size;
-			}
+			return HEVC_flush_picture(ctx, outBuffer, outBufferLength);
 		}
  		return GF_OK;
 	}
@@ -341,107 +326,19 @@ static GF_Err HEVC_ProcessData(GF_MediaDecoder *ifcg,
 		return GF_BUFFER_TOO_SMALL;
 	}
 
-	nb_pics = 0;
-	if (ctx->restart_from) {
-		inBuffer += ctx->restart_from;
-		inBufferLength -= ctx->restart_from;
-		ctx->restart_from = 0;
+	*outBufferLength = 0;
 
+	if (ctx->had_pic) {
+		ctx->had_pic = 0;
+		return HEVC_flush_picture(ctx, outBuffer, outBufferLength);
+	}
+	
+	got_pic = libOpenHevcDecode(ctx->openHevcHandle, inBuffer, inBufferLength, 0);
+	if (got_pic>0) {
 		e = HEVC_flush_picture(ctx, outBuffer, outBufferLength);
 		if (e) return e;
-		nb_pics ++;
+		got_pic = 0;
 	}
-
-	got_pic = 0;
-
-	sc_size = 0;
-	nalu_size = 0;
-	ptr = inBuffer;
-	if (!ctx->nalu_size_length) {
-		u32 size = gf_media_nalu_next_start_code(inBuffer, inBufferLength, &sc_size);
-		if (sc_size) {
-			ptr += size+sc_size;
-			inBufferLength-=size+sc_size;
-		}
-	}
-
-    fprintf(stderr, "HEVC start frame %d\n", inBufferLength);
-//	while (inBufferLength)
-    {
-        Bool skip = GF_FALSE;
-        
-		if (ctx->nalu_size_length) {
-			for (i=0; i<ctx->nalu_size_length; i++) {
-				nalu_size = (nalu_size<<8) + ptr[i];
-			}
-			ptr += ctx->nalu_size_length;
-		} else {
-			nalu_size = gf_media_nalu_next_start_code(ptr, inBufferLength, &sc_size);
-		}
-
-		fprintf(stderr, "HEVC decode NAL type %d size %d\n", (ptr[0] & 0x7E) >> 1, nalu_size);
-
-/*		if (!ctx->state_found) {
-			u8 nal_type = (ptr[0] & 0x7E) >> 1;
-			switch (nal_type) {
-			case GF_HEVC_NALU_VID_PARAM:
-			case GF_HEVC_NALU_SEQ_PARAM:
-			case GF_HEVC_NALU_PIC_PARAM:
-				ctx->state_found = GF_TRUE;
-				break;
-			}
-		}
-*/
-#ifdef OPEN_SHVC
-        if ((ptr[0] << 8 | ptr[1]) & 0x1f8) {
-            skip = ctx->base_only ? GF_TRUE : GF_FALSE;
-        }
-#endif       
-        
-		//if (!skip && ctx->state_found)
-        {
-            char *ptr_tmp;
-            if (extra_size_alloc > 0)
-                ptr_tmp = ptr-4;
-            else
-                ptr_tmp = ptr-3;
-			got_pic = libOpenHevcDecode(ctx->openHevcHandle, ptr_tmp, inBufferLength, 0);
-			if (got_pic>0) {
-				nb_pics ++;
-				e = HEVC_flush_picture(ctx, outBuffer, outBufferLength);
-				if (e) {
-					if (e==GF_BUFFER_TOO_SMALL) {
-						if (ctx->nalu_size_length) {
-							ctx->restart_from = nalu_size + ctx->nalu_size_length;
-						} else {
-							ctx->restart_from = input_data_consumed + sc_size;
-						}
-					}
-					return e;
-				}
-				got_pic = 0;
-			}
-		}
-
-		ptr += inBufferLength;
-/*		if (ctx->nalu_size_length) {
-			if (inBufferLength < nalu_size + ctx->nalu_size_length) break;
-			inBufferLength -= nalu_size + ctx->nalu_size_length;
-			input_data_consumed += nalu_size + ctx->nalu_size_length;
-		} else {
-			if (!sc_size || (inBufferLength < nalu_size + sc_size)) break;
-			inBufferLength -= nalu_size + sc_size;
-			ptr += sc_size;
-			input_data_consumed += sc_size;
-		}
-*/
-	}
-    fprintf(stderr, "HEVC end frame\n");
-	if (!nb_pics && (got_pic==0)) {
-		*outBufferLength = 0;
-		return GF_OK;
-	}
-    
 	return GF_OK;
 }
 
@@ -455,12 +352,12 @@ static GF_Err HEVC_GetOutputBuffer(GF_MediaDecoder *ifcg, u16 ESID, u8 **pY_or_R
 	ctx->has_pic = GF_FALSE;
 
 	res = libOpenHevcGetOutput(ctx->openHevcHandle, 1, &openHevcFrame);
-	if (!openHevcFrame.pvY || !openHevcFrame.pvU || !openHevcFrame.pvV)
+	if ((res<=0) || !openHevcFrame.pvY || !openHevcFrame.pvU || !openHevcFrame.pvV)
 		return GF_SERVICE_ERROR;
 
-	*pY_or_RGB = * (u8 **) openHevcFrame.pvY;
-	*pU = * (u8 **) openHevcFrame.pvU;
-	*pV = * (u8 **) openHevcFrame.pvV;
+	*pY_or_RGB = (u8 *) openHevcFrame.pvY;
+	*pU = (u8 *) openHevcFrame.pvU;
+	*pV = (u8 *) openHevcFrame.pvV;
 	return GF_OK;
 }
 
@@ -475,6 +372,7 @@ static u32 HEVC_CanHandleStream(GF_BaseDecoder *dec, u32 StreamType, GF_ESD *esd
 
 	switch (esd->decoderConfig->objectTypeIndication) {
 	case GPAC_OTI_VIDEO_HEVC:
+	case GPAC_OTI_VIDEO_SHVC:
 		return GF_CODEC_SUPPORTED;
 	}
 	return GF_CODEC_NOT_SUPPORTED;

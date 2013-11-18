@@ -124,6 +124,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
 
         h->nal_unit_type = (*buf >> 1) & 0x3f;
         h->temporal_id   = (*(buf + 1) & 0x07) - 1;
+        h->nuh_layer_id  =  (((*buf)&0x01)<<5) + (((*(buf+1))&0xF8)>>3);
         if (h->nal_unit_type <= NAL_CRA_NUT) {
             // Do not walk the whole buffer just to decode slice segment header
             if (src_length > 20)

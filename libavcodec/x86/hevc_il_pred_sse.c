@@ -2,9 +2,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/get_bits.h"
-#include "libavcodec/hevcdata.h"
 #include "libavcodec/hevc.h"
-#include "libavcodec/hevcdata.h"
 #include "libavcodec/x86/hevcdsp.h"
 #include "libavcodec/hevc_up_sample_filter.h"
 #include "libavcodec/bit_depth_template.c"
@@ -13,7 +11,6 @@
 
 
 
-#if GCC_VERSION > MIN_GCC_VERSION_MC || __APPLE__
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
@@ -1332,7 +1329,6 @@ void ff_upsample_base_layer_frame_sse(struct AVFrame *FrameEL, struct AVFrame *F
     }
 
 }
-#endif
 #undef LumHor_FILTER
 #undef LumCro_FILTER
 #undef LumVer_FILTER
