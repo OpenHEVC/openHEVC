@@ -8,6 +8,7 @@ libOpenHevcGetOutputCpy
 libOpenHevcGetPictureInfo
 libOpenHevcGetPictureSize2
 libOpenHevcInit
+libOpenHevcSetActiveDecoders
 libOpenHevcSetCheckMD5
 libOpenHevcSetDebugMode
 libOpenHevcSetNoCropping
