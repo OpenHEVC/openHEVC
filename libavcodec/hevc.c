@@ -2154,6 +2154,7 @@ static void tiles_filters(HEVCContext *s)
             ctb_addr_rs = s->pps->tile_pos_rs[i];
             x0 = (ctb_addr_rs % s->sps->ctb_width) << s->sps->log2_ctb_size;
             for (y0 = 0; y0 < s->sps->height; y0+=min_size) {
+                ctb_addr_rs = (x0 >> s->sps->log2_ctb_size) + ((y0 >> s->sps->log2_ctb_size) * s->sps->ctb_width);
                 int slice_left_boundary = ((x0 > 0) &&
                                         (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1]));
                 ff_hevc_deblocking_boundary_strengths_v(s, x0, y0, !s->filter_slice_edges[ctb_addr_rs] && slice_left_boundary);
@@ -2163,6 +2164,7 @@ static void tiles_filters(HEVCContext *s)
             ctb_addr_rs = s->pps->tile_pos_rs[i * s->pps->num_tile_columns];
             y0 = (ctb_addr_rs / s->sps->ctb_width) << s->sps->log2_ctb_size;
             for (x0 = 0; x0 < s->sps->width; x0+=min_size) {
+                ctb_addr_rs = (x0 >> s->sps->log2_ctb_size) + ((y0 >> s->sps->log2_ctb_size) * s->sps->ctb_width);
                 int slice_up_boundary = ((y0 > 0) &&
                                         (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]));
                 ff_hevc_deblocking_boundary_strengths_h(s, x0, y0, !s->filter_slice_edges[ctb_addr_rs] && slice_up_boundary);
