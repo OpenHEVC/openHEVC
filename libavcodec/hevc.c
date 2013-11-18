@@ -1202,6 +1202,30 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
     ptrdiff_t src2stride = ref->linesize[2];
     int pic_width        = s->sps->width >> 1;
     int pic_height       = s->sps->height >> 1;
+    int width;
+
+    switch (block_w){
+    case 2 : width=0;
+            break;
+    case 4 : width=1;
+            break;
+    case 6 : width=0;
+            break;
+    case 8 : width=2;
+            break;
+    case 12 : width=1;
+            break;
+    case 16 : width=3;
+            break;
+    case 24 : width=2;
+            break;
+    case 32 : width=3;
+            break;
+    case 64 : width=3;
+            break;
+    default :printf("error ! unhandled width = %d\n",block_w);
+    width= 0;
+    }
 
     int mx = mv->x & 7;
     int my = mv->y & 7;
@@ -1224,7 +1248,8 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
                                  pic_width, pic_height);
 
         src1 = lc->edge_emu_buffer + offset1;
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride,
+
+        s->hevcdsp.put_hevc_epel[!!my][!!mx][width](dst1, dststride, src1, src1stride,
                                              block_w, block_h, mx, my, lc->mc_buffer);
 
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src2 - offset2, src2stride,
@@ -1233,14 +1258,14 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
                                  y_off - EPEL_EXTRA_BEFORE,
                                  pic_width, pic_height);
         src2 = lc->edge_emu_buffer + offset2;
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride,
+        s->hevcdsp.put_hevc_epel[!!my][!!mx][width](dst2, dststride, src2, src2stride,
                                              block_w, block_h, mx, my,
                                              lc->mc_buffer);
     } else {
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, src1stride,
+        s->hevcdsp.put_hevc_epel[!!my][!!mx][width](dst1, dststride, src1, src1stride,
                                              block_w, block_h, mx, my,
                                              lc->mc_buffer);
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, src2stride,
+        s->hevcdsp.put_hevc_epel[!!my][!!mx][width](dst2, dststride, src2, src2stride,
                                              block_w, block_h, mx, my,
                                              lc->mc_buffer);
     }
@@ -2723,7 +2748,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
         }
     }
-    if (s->pps->tiles_enabled_flag && s->threads_number!=1)
+    if (s->nuh_layer_id == s->decoder_id && s->pps->tiles_enabled_flag && s->threads_number!=1)
         tiles_filters(s);
 fail:
     if (s->ref && (s->threads_type&FF_THREAD_FRAME))

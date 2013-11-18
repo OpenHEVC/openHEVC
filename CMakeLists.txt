@@ -11,6 +11,7 @@ FIND_PROGRAM(YASM_EXECUTABLE yasm)
 SET(YASM_NAMES )
 
 set(YASM_NAMES
+libavcodec/x86/hevc_mc
 libavcodec/x86/hevc_deblock
 libavutil/x86/cpuid
 )

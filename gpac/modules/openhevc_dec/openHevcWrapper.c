@@ -32,7 +32,6 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
     avcodec_register_all();
     OpenHevcWrapperContexts* openHevcContexts = av_mallocz(sizeof(OpenHevcWrapperContexts));
     openHevcContexts->nb_decoders = MAX_DECODERS;
-	//openHevcContexts->active_layer = 1; 
     openHevcContexts->wraper = av_malloc(sizeof(OpenHevcWrapperContext*)*openHevcContexts->nb_decoders);
     for(i=0; i < openHevcContexts->nb_decoders; i++){
         openHevcContext = openHevcContexts->wraper[i] = av_malloc(sizeof(OpenHevcWrapperContext));
