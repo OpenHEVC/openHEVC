@@ -26,6 +26,9 @@
 #include "libavcodec/hevcdsp.h"
 #include "libavcodec/x86/hevcdsp.h"
 
+/***********************************/
+/* MC */
+void ff_put_hevc_mc_pixels_8_sse4(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, int16_t* mcbuffer);
 
 /***********************************/
 /* deblocking */
@@ -55,7 +58,7 @@ LFL_FUNCS(uint8_t,   8)
 void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int mm_flags = av_get_cpu_flags();
-
+    int i;
     if (bit_depth == 8) {
         if (EXTERNAL_MMX(mm_flags)) {
             /*if (mm_flags & AV_CPU_FLAG_CMOV)
@@ -81,7 +84,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                     c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
 
-                    c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_8_sse;
+                    c->put_hevc_qpel[0][0] = ff_put_hevc_mc_pixels_8_sse4;
                     c->put_hevc_qpel[0][1] = ff_hevc_put_hevc_qpel_h_1_8_sse;
                     c->put_hevc_qpel[0][2] = ff_hevc_put_hevc_qpel_h_2_8_sse;
                     c->put_hevc_qpel[0][3] = ff_hevc_put_hevc_qpel_h_3_8_sse;
@@ -102,12 +105,12 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->weighted_pred = ff_hevc_weighted_pred_8_sse;
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
 
-
-                	c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_8_sse;
-                	c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_8_sse;
-                	c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_8_sse;
-                	c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
-
+                	for(i = 0; i<=3;i++){
+                	c->put_hevc_epel[0][0][i] = ff_put_hevc_mc_pixels_8_sse4;
+                	c->put_hevc_epel[0][1][i] = ff_hevc_put_hevc_epel_h_8_sse;
+                	c->put_hevc_epel[1][0][i] = ff_hevc_put_hevc_epel_v_8_sse;
+                	c->put_hevc_epel[1][1][i] = ff_hevc_put_hevc_epel_hv_8_sse;
+                	}
                 	c->transform_skip= ff_hevc_transform_skip_8_sse;
                 	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                 	c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
@@ -154,10 +157,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[2] = ff_hevc_transform_16x16_add_10_sse4;
                     c->transform_add[3] = ff_hevc_transform_32x32_add_10_sse4;
 
-                    c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_10_sse;
+                    /*c->put_hevc_epel[0][0] = ff_hevc_put_hevc_epel_pixels_10_sse;
                     c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_10_sse;
                     c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_10_sse;
-                    c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_10_sse;
+                    c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_10_sse;*/
 
                     c->put_hevc_qpel[0][0] = ff_hevc_put_hevc_qpel_pixels_10_sse;
                     c->put_hevc_qpel[0][1] = ff_hevc_put_hevc_qpel_h_1_10_sse;
