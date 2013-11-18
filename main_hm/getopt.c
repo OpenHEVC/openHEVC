@@ -128,11 +128,11 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 ///////////////////////////////////////////////////////////////////////////////
 // initializes APR and parses options
 void init_main(int argc, char *argv[]) {
-    // every command line option must be followed by ':' if it takes an
-    // argument, and '::' if this argument is optional
-    const char *ostr = "achi:no:p:f:t:wl:";
-    
-    int c;
+	// every command line option must be followed by ':' if it takes an
+	// argument, and '::' if this argument is optional
+	const char *ostr = "achi:no:p:f:t:wl:";
+
+	int c;
     check_md5_flags   = ENABLE;
     thread_type       = 1;
     input_file        = NULL;
@@ -141,48 +141,48 @@ void init_main(int argc, char *argv[]) {
     nb_pthreads       = 1;
     temporal_layer_id = 7;
     no_cropping       = DISABLE;
-    quality_layer_id = 0; // Base layer
-    
+    quality_layer_id = 0; // Base layer 
+
     program           = argv[0];
     
     c = getopt(argc, argv, ostr);
     
     while (c != -1) {
         switch (c) {
-            case 'c':
-                check_md5_flags = DISABLE;
-                break;
-            case 'f':
-                thread_type = atoi(optarg);
-                break;
-            case 'i':
-                input_file = strdup(optarg);
-                break;
-            case 'n':
-                display_flags = DISABLE;
-                break;
-            case 'o':
-                output_file = strdup(optarg);
-                break;
-            case 'p':
-                nb_pthreads = atoi(optarg);
-                break;
-            case 't':
-                temporal_layer_id = atoi(optarg);
-                break;
-            case 'w':
-                no_cropping = ENABLE;
-                break;
-            case 'l':
-                quality_layer_id = atoi(optarg);
-                break;
+        case 'c':
+            check_md5_flags = DISABLE;
+            break;
+        case 'f':
+            thread_type = atoi(optarg);
+            break;
+		case 'i':
+			input_file = strdup(optarg);
+			break;
+		case 'n':
+			display_flags = DISABLE;
+			break;
+        case 'o':
+            output_file = strdup(optarg);
+            break;
+        case 'p':
+            nb_pthreads = atoi(optarg);
+            break;
+        case 't':
+             temporal_layer_id = atoi(optarg);
+             break;
+        case 'w':
+            no_cropping = ENABLE;
+            break;
+        case 'l':
+            quality_layer_id = atoi(optarg);
+            break;
                 
-            default:
-                print_usage();
-                exit(1);
-                break;
-        }
-        
-        c = getopt(argc, argv, ostr);
-    }
+		default:
+			print_usage();
+			exit(1);
+			break;
+		}
+
+		c = getopt(argc, argv, ostr);
+	}
 }
