@@ -931,7 +931,6 @@ typedef struct HEVCContext {
     uint16_t seq_decode;
     uint16_t seq_output;
 
-    int enable_parallel_tiles;
     int wpp_err;
     int skipped_bytes;
     int *skipped_bytes_pos;

@@ -795,12 +795,7 @@ static int hls_slice_header(HEVCContext *s)
                 }
                 sh->entry_point_offset[i] = val + 1; // +1; // +1 to get the size
             }
-            if((s->pps->num_tile_rows > 1 || s->pps->num_tile_columns > 1) && s->threads_number>1)
-	            s->enable_parallel_tiles = 1;
-            else
-    	        s->enable_parallel_tiles = 0;
-        } else
-            s->enable_parallel_tiles = 0;
+        }
     }
 
     if (s->pps->slice_header_extension_present_flag) {
@@ -2084,7 +2079,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     int *ctb_row_p  = input_ctb_row;
     int ctb_row     = ctb_row_p[job];
     int tile_id     = s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]]+ctb_row;
-    int ctb_addr_rs = s->pps->tile_pos_rs[tile_id];
+    int ctb_addr_rs = ctb_row == 0 ? s->sh.slice_ctb_addr_rs : s->pps->tile_pos_rs[tile_id];
     int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     int ret;
     
@@ -2129,7 +2124,6 @@ static void tiles_filters(HEVCContext *s)
     int x0, y0, i;
 
     // Deblocking and SAO filters
-    s->enable_parallel_tiles = 0;
     if(s->pps->loop_filter_across_tiles_enabled_flag) {
         for (i = 1; i < s->pps->num_tile_columns; i++) {
             ctb_addr_rs = s->pps->tile_pos_rs[i];
@@ -2150,7 +2144,6 @@ static void tiles_filters(HEVCContext *s)
             }
         }
     }
-    s->enable_parallel_tiles = 1;
 
     for (y0 = 0; y0 < s->sps->height; y0 += ctb_size)
         for (x0 = 0; x0 < s->sps->width; x0 += ctb_size)
@@ -2211,14 +2204,13 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         ret[i] = 0;
     }
 
-    if (s->sh.num_entry_point_offsets == 0 || s->threads_number==1){
+    if (s->pps->entropy_coding_sync_enabled_flag && s->threads_number!=1)
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp  , arg, ret, s->sh.num_entry_point_offsets + 1);
+    else if (s->pps->tiles_enabled_flag        && s->threads_number!=1)
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
+    else
         s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
-    } else
-        if (s->pps->entropy_coding_sync_enabled_flag){
-            s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
-        } else {
-            s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
-        }
+
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
         res += ret[i];
     av_free(ret);
@@ -2729,7 +2721,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
         }
     }
-    if (s->enable_parallel_tiles == 1)
+    if (s->pps->tiles_enabled_flag && s->threads_number!=1)
         tiles_filters(s);
 fail:
     if (s->ref && (s->threads_type&FF_THREAD_FRAME))
@@ -3012,7 +3004,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         else
             s->threads_type = FF_THREAD_SLICE;
 
-    s->enable_parallel_tiles = 0;
     if(avctx->active_thread_type & FF_THREAD_SLICE)
         s->threads_number = avctx->thread_count;
     else
