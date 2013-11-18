@@ -65,7 +65,6 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
             if (first_slice_segment_in_pic_flag) {
                 if (!pc->frame_start_found) {
                     pc->frame_start_found = 1;
-                 //   fprintf(stderr,"start_frame \n");
                 } else { // First slice of next frame found
                     pc->frame_start_found = 0;
                     return i - 5;
@@ -99,7 +98,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
     s->pict_type         = AV_PICTURE_TYPE_I;
     s->key_frame         = 0;
     s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
-    	
+
     h->avctx = avctx;
 
     if (!buf_size)

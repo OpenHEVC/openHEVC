@@ -58,9 +58,9 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
         if(thread_type == 3)
             av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
         else if (thread_type == 2)
-            av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
-        else
             av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
+        else
+            av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
 
         av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
 
@@ -91,7 +91,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
 {
     int got_picture[MAX_DECODERS], len, i;
     OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    OpenHevcWrapperContext * openHevcContext; 
+    OpenHevcWrapperContext * openHevcContext;
     for(i =0; i <= openHevcContexts->active_layer; i++)  {
         got_picture[i]              = 0;
         openHevcContext             = openHevcContexts->wraper[i];

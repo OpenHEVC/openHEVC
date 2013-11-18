@@ -30,7 +30,7 @@
 #include <gpac/internal/media_dev.h>
 #include <openHevcWrapper.h>
 
-#define OPEN_SHVC
+//#define OPEN_SHVC
 
 #if defined(WIN32) && !defined(_WIN32_WCE) && !defined(__GNUC__)
 #  pragma comment(lib, "libLibOpenHevcWrapper")
