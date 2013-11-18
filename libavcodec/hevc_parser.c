@@ -65,7 +65,7 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
             if (first_slice_segment_in_pic_flag) {
                 if (!pc->frame_start_found) {
                     pc->frame_start_found = 1;
-                    fprintf(stderr,"start_frame \n");
+                 //   fprintf(stderr,"start_frame \n");
                 } else { // First slice of next frame found
                     pc->frame_start_found = 0;
                     return i - 5;

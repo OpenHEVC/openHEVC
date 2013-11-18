@@ -78,6 +78,7 @@ int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
     OpenHevcWrapperContext * openHevcContext;
     for(i=0; i < openHevcContexts->nb_decoders; i++) {
         openHevcContext = openHevcContexts->wraper[i];
+        
         if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
             fprintf(stderr, "could not open codec\n");
             return NULL;
@@ -91,7 +92,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     int got_picture[MAX_DECODERS], len, i;
     OpenHevcWrapperContexts * openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext * openHevcContext;
-    for(i =0; i < openHevcContexts->active_layer; i++)  {
+    for(i =0; i <= openHevcContexts->active_layer; i++)  {
         got_picture[i]              = 0;
         openHevcContext             = openHevcContexts->wraper[i];
         openHevcContext->avpkt.size = au_len;
