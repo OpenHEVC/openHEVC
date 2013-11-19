@@ -2238,8 +2238,8 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
     else
         s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
 
-    for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
-        res += ret[i];
+    res = ret[s->sh.num_entry_point_offsets];
+
     av_free(ret);
     av_free(arg);
     return res;
@@ -2504,9 +2504,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
+            s->is_decoded = 1;
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
-            s->is_decoded = 1;
             if ((s->pps->transquant_bypass_enable_flag ||
                  (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) &&
                 s->sps->sao_enabled)
@@ -2750,6 +2750,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
         }
     }
+//    if (s->nuh_layer_id == s->decoder_id && s->pps->tiles_enabled_flag && s->threads_number!=1)
+//        tiles_filters(s);
 fail:
     if (s->ref && (s->threads_type&FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
