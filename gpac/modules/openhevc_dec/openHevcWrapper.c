@@ -21,7 +21,6 @@ typedef struct OpenHevcWrapperContexts {
     OpenHevcWrapperContext **wraper;
     int nb_decoders;
     int active_layer;
-    int set_vps; 
 } OpenHevcWrapperContexts;
 
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
