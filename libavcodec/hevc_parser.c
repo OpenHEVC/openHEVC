@@ -44,7 +44,7 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
     ParseContext *pc = &((HEVCParseContext *)s->priv_data)->pc;
 
     for (i = 0; i < buf_size; i++) {
-        int nut;
+        int nut, layer_id;
 
         pc->state64 = (pc->state64 << 8) | buf[i];
 
@@ -52,17 +52,19 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
             continue;
 
         nut = (pc->state64 >> 2 * 8 + 1) & 0x3F;
+        layer_id  =  (((pc->state64 >> 2 * 8) &0x01)<<5) + (((pc->state64 >> 1 * 8)&0xF8)>>3);
+        
         // Beginning of access unit
         if ((nut >= NAL_VPS && nut <= NAL_AUD) || nut == NAL_SEI_PREFIX ||
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
-            if (pc->frame_start_found) {
+            if (pc->frame_start_found && !layer_id) {
                 pc->frame_start_found = 0;
                 return i - 5;
             }
         } else if (nut <= NAL_RASL_R ||
                    (nut >= NAL_BLA_W_LP && nut <= NAL_CRA_NUT)) {
             int first_slice_segment_in_pic_flag = buf[i] >> 7;
-            if (first_slice_segment_in_pic_flag) {
+            if (first_slice_segment_in_pic_flag && !layer_id) {
                 if (!pc->frame_start_found) {
                     pc->frame_start_found = 1;
                 } else { // First slice of next frame found
@@ -72,7 +74,6 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
             }
         }
     }
-
     return END_NOT_FOUND;
 }
 

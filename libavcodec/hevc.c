@@ -2051,7 +2051,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 
         if (avpriv_atomic_int_get(&s1->wpp_err)){
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
-            return 0;
+            return ctb_addr_ts;
         }
 
         ff_hevc_cabac_init(s, ctb_addr_ts);
@@ -2064,7 +2064,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
 
         if (more_data < 0)
-            return more_data;
+            return ctb_addr_ts;
 
         ctb_addr_ts++;
 
@@ -2092,7 +2092,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     }
     ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
 
-    return 0;
+    return ctb_addr_ts;
 }
 
 static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, int job, int self_id)
@@ -2238,7 +2238,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
     else
         s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
 
-    res = ret[s->sh.num_entry_point_offsets];
+    res = ret[s->threads_number==1 ? 0:s->sh.num_entry_point_offsets];
 
     av_free(ret);
     av_free(arg);
