@@ -92,9 +92,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel[1][0] = ff_hevc_put_hevc_qpel_v_1_8_sse;
                     c->put_hevc_qpel[2][0] = ff_hevc_put_hevc_qpel_v_2_8_sse;
                     c->put_hevc_qpel[3][0] = ff_hevc_put_hevc_qpel_v_3_8_sse;
-
-
-
 #if ARCH_X86_64
                     c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
                     c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
@@ -107,10 +104,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
 
                 	for(i = 0; i<=3;i++){
-                	c->put_hevc_epel[0][0][i] = ff_put_hevc_mc_pixels_2_8_sse4;
-                	c->put_hevc_epel[0][1][i] = ff_hevc_put_hevc_epel_h_8_sse;
-                	c->put_hevc_epel[1][0][i] = ff_hevc_put_hevc_epel_v_8_sse;
-                	c->put_hevc_epel[1][1][i] = ff_hevc_put_hevc_epel_hv_8_sse;
+                        c->put_hevc_epel[0][0][i] = ff_put_hevc_mc_pixels_2_8_sse4;
+                        c->put_hevc_epel[0][1][i] = ff_hevc_put_hevc_epel_h_8_sse;
+                        c->put_hevc_epel[1][0][i] = ff_hevc_put_hevc_epel_v_8_sse;
+                        c->put_hevc_epel[1][1][i] = ff_hevc_put_hevc_epel_hv_8_sse;
                 	}
                 	c->transform_skip= ff_hevc_transform_skip_8_sse;
                 	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
@@ -155,7 +152,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #endif /* HAVE_ALIGNED_STACK */
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
-
                     c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_10_sse4;
 
                     c->transform_add[0] = ff_hevc_transform_4x4_add_10_sse4;
@@ -173,10 +169,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel[1][0] = ff_hevc_put_hevc_qpel_v_1_10_sse;
                     c->put_hevc_qpel[2][0] = ff_hevc_put_hevc_qpel_v_2_10_sse;
                     c->put_hevc_qpel[3][0] = ff_hevc_put_hevc_qpel_v_3_10_sse;
-
-
-
-
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
