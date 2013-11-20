@@ -21,7 +21,7 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-cextern hevc_epel_filters
+;cextern hevc_epel_filters
 
 epel_h_shuffle1 	DB 0
 					DB 1
@@ -180,7 +180,7 @@ mc_pixels_16_w:        ; for width
 ;4 by 4
 cglobal put_hevc_epel_h_4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
 
-	movq	m0,[hevc_epel_filters+mxq-1] ;get 4 first values of filters
+;	movq	m0,[hevc_epel_filters+mxq-1] ;get 4 first values of filters
 	pshufd	m0,m0,0					;cast 32 bit on all register
 
 
@@ -206,10 +206,10 @@ RET
 cglobal put_hevc_epel_v_4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
 
 	pxor 	m0,m0								;set zero
-	movq	m1,[hevc_epel_filters+myq-1]		;filter 0
-	movq	m2,[hevc_epel_filters+myq]			;filter 1
-	movq	m3,[hevc_epel_filters+myq+1]		;filter 2
-	movq	m4,[hevc_epel_filters+myq+2]		;filter 3
+;	movq	m1,[hevc_epel_filters+myq-1]		;filter 0
+;	movq	m2,[hevc_epel_filters+myq]			;filter 1
+;	movq	m3,[hevc_epel_filters+myq+1]		;filter 2
+;	movq	m4,[hevc_epel_filters+myq+2]		;filter 3
 
 	pshuflw	m1,m1,5				;set first 64 bits of register to 16 bit filter 0
 	pshufd	m1,m1,0							;set whole register to 16bit filter 0

@@ -29,7 +29,7 @@
 
 /***********************************/
 /* MC */
-void ff_put_hevc_epel_v_4_8_sse4(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, int16_t* mcbuffer);
+//void ff_put_hevc_epel_v_4_8_sse4(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, int16_t* mcbuffer);
 
 #define MCQ_FUNC(DIR, DEPTH, OPT)                                        \
     void ff_put_hevc_mc_pixels_ ## DIR ## _ ## DEPTH ## _ ## OPT(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, int16_t* mcbuffer);
@@ -122,11 +122,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->weighted_pred = ff_hevc_weighted_pred_8_sse;
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> branch 'hevc' of https://github.com/OpenHEVC/openHEVC.git
                 	c->put_hevc_epel[0][0][0] = ff_put_hevc_mc_pixels_2_8_sse4;
                 	c->put_hevc_epel[0][0][1] = ff_put_hevc_mc_pixels_4_8_sse4;
                 	c->put_hevc_epel[0][0][2] = ff_put_hevc_mc_pixels_8_8_sse4;
