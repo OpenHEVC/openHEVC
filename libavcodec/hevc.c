@@ -2264,7 +2264,7 @@ static int hls_nal_unit(HEVCContext *s)
         return AVERROR_INVALIDDATA;
 
     av_log(s->avctx, AV_LOG_DEBUG,
-           "nal_unit_type: %d, nuh_layer_id: %dtemporal_id: %d\n",
+           "nal_unit_type: %d, nuh_layer_id: %d temporal_id: %d\n",
            s->nal_unit_type, s->nuh_layer_id, s->temporal_id);
 
     return (s->nuh_layer_id);
@@ -2750,8 +2750,6 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
         }
     }
-//    if (s->nuh_layer_id == s->decoder_id && s->pps->tiles_enabled_flag && s->threads_number!=1)
-//        tiles_filters(s);
 fail:
     if (s->ref && (s->threads_type&FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
