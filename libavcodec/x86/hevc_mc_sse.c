@@ -987,13 +987,9 @@ void ff_hevc_put_hevc_epel_h_8_sse(int16_t *dst, ptrdiff_t dststride,
     ptrdiff_t srcstride = _srcstride;
     const int8_t *filter = ff_hevc_epel_filters[mx - 1];
     __m128i r0, bshuffle1, bshuffle2, x1, x2, x3;
-    int8_t filter_0 = filter[0];
-    int8_t filter_1 = filter[1];
-    int8_t filter_2 = filter[2];
-    int8_t filter_3 = filter[3];
-    r0 = _mm_set_epi8(filter_3, filter_2, filter_1, filter_0, filter_3,
-            filter_2, filter_1, filter_0, filter_3, filter_2, filter_1,
-            filter_0, filter_3, filter_2, filter_1, filter_0);
+    r0= _mm_loadl_epi64(filter);
+    r0= _mm_shuffle_epi32(r0,0);
+
     bshuffle1 = _mm_set_epi8(6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0);
 
 
