@@ -111,9 +111,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel[1][0] = ff_hevc_put_hevc_qpel_v_1_8_sse;
                     c->put_hevc_qpel[2][0] = ff_hevc_put_hevc_qpel_v_2_8_sse;
                     c->put_hevc_qpel[3][0] = ff_hevc_put_hevc_qpel_v_3_8_sse;
-
-
-
 #if ARCH_X86_64
                     c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
                     c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
@@ -125,6 +122,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->weighted_pred = ff_hevc_weighted_pred_8_sse;
                 	c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> branch 'hevc' of https://github.com/OpenHEVC/openHEVC.git
                 	c->put_hevc_epel[0][0][0] = ff_put_hevc_mc_pixels_2_8_sse4;
                 	c->put_hevc_epel[0][0][1] = ff_put_hevc_mc_pixels_4_8_sse4;
                 	c->put_hevc_epel[0][0][2] = ff_put_hevc_mc_pixels_8_8_sse4;
@@ -179,7 +181,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #endif /* HAVE_ALIGNED_STACK */
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
-
                     c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_10_sse4;
 
                     c->transform_add[0] = ff_hevc_transform_4x4_add_10_sse4;
@@ -199,10 +200,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel[1][0] = ff_hevc_put_hevc_qpel_v_1_10_sse;
                     c->put_hevc_qpel[2][0] = ff_hevc_put_hevc_qpel_v_2_10_sse;
                     c->put_hevc_qpel[3][0] = ff_hevc_put_hevc_qpel_v_3_10_sse;
-
-
-
-
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }

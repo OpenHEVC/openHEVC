@@ -1111,7 +1111,7 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int   stride2 = s->frame->linesize[2];
     uint8_t *dst2 = &s->frame->data[2][(y0 >> s->sps->vshift[2]) * stride2 + ((x0 >> s->sps->hshift[2]) << s->sps->pixel_shift)];
 
-    int length         = cb_size * cb_size * s->sps->pcm.bit_depth + ((cb_size * cb_size) >> 1) * s->sps->pcm.bit_depth;
+    int length         = cb_size * cb_size * s->sps->pcm.bit_depth + ((cb_size * cb_size) >> 1) * s->sps->pcm.bit_depth_chroma;
     const uint8_t *pcm = skip_bytes(&s->HEVClc->cc, (length + 7) >> 3);
     int ret;
 
@@ -2051,7 +2051,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 
         if (avpriv_atomic_int_get(&s1->wpp_err)){
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
-            return 0;
+            return ctb_addr_ts;
         }
 
         ff_hevc_cabac_init(s, ctb_addr_ts);
@@ -2064,7 +2064,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
 
         if (more_data < 0)
-            return more_data;
+            return ctb_addr_ts;
 
         ctb_addr_ts++;
 
@@ -2092,7 +2092,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     }
     ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
 
-    return 0;
+    return ctb_addr_ts;
 }
 
 static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, int job, int self_id)
@@ -2238,8 +2238,8 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
     else
         s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
 
-    for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
-        res += ret[i];
+    res = ret[s->threads_number==1 ? 0:s->sh.num_entry_point_offsets];
+
     av_free(ret);
     av_free(arg);
     return res;
@@ -2504,9 +2504,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
+            s->is_decoded = 1;
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
-            s->is_decoded = 1;
             if ((s->pps->transquant_bypass_enable_flag ||
                  (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) &&
                 s->sps->sao_enabled)
@@ -2750,6 +2750,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
         }
     }
+//    if (s->nuh_layer_id == s->decoder_id && s->pps->tiles_enabled_flag && s->threads_number!=1)
+//        tiles_filters(s);
 fail:
     if (s->ref && (s->threads_type&FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
