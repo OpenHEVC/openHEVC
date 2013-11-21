@@ -156,6 +156,8 @@ libavcodec/hevcpred.c
 libavcodec/imgconvert.c
 libavcodec/options.c
 libavcodec/parser.c
+libavcodec/pthread_slice.c
+libavcodec/pthread_frame.c
 libavcodec/pthread.c
 libavcodec/simple_idct.c
 libavcodec/utils.c

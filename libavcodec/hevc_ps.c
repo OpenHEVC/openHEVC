@@ -247,8 +247,8 @@ static int parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
     return 0;
 }
 
-
-static void decode_sublayer_hrd(HEVCContext *s, int nb_cpb, int subpic_params_present)
+static void decode_sublayer_hrd(HEVCContext *s, int nb_cpb,
+                                int subpic_params_present)
 {
     GetBitContext *gb = &s->HEVClc->gb;
     int i;
@@ -265,8 +265,8 @@ static void decode_sublayer_hrd(HEVCContext *s, int nb_cpb, int subpic_params_pr
     }
 }
 
-
-static void decode_hrd(HEVCContext *s, int common_inf_present, int max_sublayers)
+static void decode_hrd(HEVCContext *s, int common_inf_present,
+                       int max_sublayers)
 {
     GetBitContext *gb = &s->HEVClc->gb;
     int nal_params_present = 0, vcl_params_present = 0;
@@ -507,7 +507,6 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     GetBitContext *gb = &s->HEVClc->gb;
     int vps_id = 0;
     HEVCVPS *vps;
-    HEVCLocalContext *lc = s->HEVClc;
     AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
 
     if (!vps_buf)
@@ -640,10 +639,20 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         vui->video_format                    = get_bits(gb, 3);
         vui->video_full_range_flag           = get_bits1(gb);
         vui->colour_description_present_flag = get_bits1(gb);
+        if (vui->video_full_range_flag && sps->pix_fmt == AV_PIX_FMT_YUV420P)
+            sps->pix_fmt = AV_PIX_FMT_YUVJ420P;
         if (vui->colour_description_present_flag) {
             vui->colour_primaries        = get_bits(gb, 8);
             vui->transfer_characteristic = get_bits(gb, 8);
             vui->matrix_coeffs           = get_bits(gb, 8);
+
+            // Set invalid values to "unspecified"
+            if (vui->colour_primaries >= AVCOL_PRI_NB)
+                vui->colour_primaries = AVCOL_PRI_UNSPECIFIED;
+            if (vui->transfer_characteristic >= AVCOL_TRC_NB)
+                vui->transfer_characteristic = AVCOL_TRC_UNSPECIFIED;
+            if (vui->matrix_coeffs >= AVCOL_SPC_NB)
+                vui->matrix_coeffs = AVCOL_SPC_UNSPECIFIED;
         }
     }
 

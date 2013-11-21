@@ -399,7 +399,7 @@ typedef struct HEVCVPS {
     int nuh_layer_id_present_flag;
     int layer_id_in_nuh[MAX_VPS_LAYER_ID_PLUS1];
     int m_layerIdInVps[MAX_VPS_LAYER_ID_PLUS1];
-    
+
     int dimension_id[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_NUM_SCALABILITY_TYPES];
 #if DERIVE_LAYER_ID_LIST_VARIABLES
     int         m_layerSetLayerIdList[MAX_VPS_LAYER_SETS_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
@@ -422,7 +422,7 @@ typedef struct HEVCVPS {
     int         default_one_target_output_layer_flag;
     int         profile_level_tier_idx[64];
 #endif
-    
+
 #if VPS_EXTN_OP_LAYER_SETS
     
     unsigned int       m_numOutputLayerSets;
@@ -672,12 +672,12 @@ typedef struct SliceHeader {
 #if REF_IDX_FRAMEWORK
     int inter_layer_pred_enabled_flag;
 #endif
-    
+
 #if JCTVC_M0458_INTERLAYER_RPS_SIG
     int     active_num_ILR_ref_idx;        //< Active inter-layer reference pictures
     int     inter_layer_pred_layer_idc[MAX_VPS_LAYER_ID_PLUS1];
 #endif
-    
+
 #ifdef SVC_EXTENSION
     int ScalingFactor[MAX_LAYERS][2];
     int ScalingPosition[MAX_LAYERS][2];
