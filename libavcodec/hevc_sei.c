@@ -78,41 +78,58 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 static int decode_pic_timing(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
-    HEVCSPS *sps = (HEVCSPS*)s->sps_list[s->active_seq_parameter_set_id]->data;
+    HEVCSPS *sps;
 
-    if (!sps)
+    if (!s->sps_list[s->active_seq_parameter_set_id])
         return(AVERROR(ENOMEM));
-
-	if (sps->vui.frame_field_info_present_flag) {
-        int pic_struct = get_bits(gb, 4);
-        s->picture_struct = AV_PICTURE_STRUCTURE_UNKNOWN;
-        if (pic_struct == 2) {
-            av_log(s->avctx, AV_LOG_DEBUG, "BOTTOM Field\n");
-            s->picture_struct = AV_PICTURE_STRUCTURE_BOTTOM_FIELD;
-        } else if (pic_struct == 1) {
-            av_log(s->avctx, AV_LOG_DEBUG, "TOP Field\n");
-            s->picture_struct = AV_PICTURE_STRUCTURE_TOP_FIELD;
+    sps = (HEVCSPS*)s->sps_list[s->active_seq_parameter_set_id]->data;
+    s->picture_struct = AV_PICTURE_STRUCTURE_UNKNOWN;
+    if (sps->vui.frame_field_info_present_flag) {
+        s->picture_struct = get_bits(gb, 4);
+        switch(s->picture_struct) {
+        case  0 : av_log(s->avctx, AV_LOG_DEBUG, "(progressive) frame \n"); break;
+        case  1 : av_log(s->avctx, AV_LOG_DEBUG, "top field\n"); break;
+        case  2 : av_log(s->avctx, AV_LOG_DEBUG, "bottom field\n"); break;
+        case  3 : av_log(s->avctx, AV_LOG_DEBUG, "top field, bottom field, in that order\n"); break;
+        case  4 : av_log(s->avctx, AV_LOG_DEBUG, "bottom field, top field, in that order\n"); break;
+        case  5 : av_log(s->avctx, AV_LOG_DEBUG, "top field, bottom field, top field repeated, in that order\n"); break;
+        case  6 : av_log(s->avctx, AV_LOG_DEBUG, "bottom field, top field, bottom field repeated, in that order\n"); break;
+        case  7 : av_log(s->avctx, AV_LOG_DEBUG, "frame doubling\n"); break;
+        case  8 : av_log(s->avctx, AV_LOG_DEBUG, "frame tripling\n"); break;
+        case  9 : av_log(s->avctx, AV_LOG_DEBUG, "top field paired with previous bottom field in output order\n"); break;
+        case 10 : av_log(s->avctx, AV_LOG_DEBUG, "bottom field paired with previous top field in output order\n"); break;
+        case 11 : av_log(s->avctx, AV_LOG_DEBUG, "top field paired with next bottom field in output order\n"); break;
+        case 12 : av_log(s->avctx, AV_LOG_DEBUG, "bottom field paired with next top field in output order\n"); break;
         }
         get_bits(gb, 2);                   // source_scan_type
         get_bits(gb, 1);                   // duplicate_flag
-	}
+    }
     return 1;
 }
 
-static void active_parameter_sets(HEVCContext *s) {
+static int active_parameter_sets(HEVCContext *s)
+{
     GetBitContext *gb = &s->HEVClc->gb;
     int num_sps_ids_minus1;
     int i;
+    unsigned active_seq_parameter_set_id;
 
     get_bits(gb, 4); // active_video_parameter_set_id
     get_bits(gb, 1); // self_contained_cvs_flag
     get_bits(gb, 1); // num_sps_ids_minus1
     num_sps_ids_minus1 = get_ue_golomb_long(gb); // num_sps_ids_minus1
 
-    s->active_seq_parameter_set_id = get_ue_golomb_long(gb);
-    
+    active_seq_parameter_set_id = get_ue_golomb_long(gb);
+    if (active_seq_parameter_set_id >= MAX_SPS_COUNT) {
+        av_log(s->avctx, AV_LOG_ERROR, "active_parameter_set_id %d invalid\n", active_seq_parameter_set_id);
+        return AVERROR_INVALIDDATA;
+    }
+    s->active_seq_parameter_set_id = active_seq_parameter_set_id;
+
     for (i = 1; i <= num_sps_ids_minus1; i++)
         get_ue_golomb_long(gb); // active_seq_parameter_set_id[i]
+
+    return 0;
 }
 
 static int decode_nal_sei_message(HEVCContext *s)

@@ -86,6 +86,28 @@ typedef struct AVCodecInternal {
     AVFrame to_free;
 
     FramePool *pool;
+
+    void *thread_ctx;
+    void *thread_ctx_frame;
+
+    /**
+     * Current packet as passed into the decoder, to avoid having to pass the
+     * packet into every function.
+     */
+    AVPacket *pkt;
+
+    /**
+     * temporary buffer used for encoders to store their bitstream
+     */
+    uint8_t *byte_buffer;
+    unsigned int byte_buffer_size;
+
+    void *frame_thread_encoder;
+
+    /**
+     * Number of audio samples to skip at the start of the next decoded frame
+     */
+    int skip_samples;
 } AVCodecInternal;
 
 struct AVCodecDefault {

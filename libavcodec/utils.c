@@ -976,8 +976,8 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         }
     }
     if (!HAVE_THREADS && !(codec->capabilities & CODEC_CAP_AUTO_THREADS)){
-        avctx->thread_count = 1;
-        avctx->thread_count2 = 1;
+        avctx->thread_count       = 1;
+        avctx->thread_count_frame = 1;
     }
 
     if (av_codec_is_encoder(avctx->codec)) {
@@ -1526,7 +1526,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     if (avcodec_is_open(avctx)) {
         FramePool *pool = avctx->internal->pool;
         int i;
-        if (HAVE_THREADS && (avctx->thread_opaque || avctx->thread_opaque2))
+        if (HAVE_THREADS && (avctx->internal->thread_ctx || avctx->internal->thread_ctx_frame))
             ff_thread_free(avctx);
         if (avctx->codec && avctx->codec->close)
             avctx->codec->close(avctx);

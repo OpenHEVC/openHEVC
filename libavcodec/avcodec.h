@@ -2519,7 +2519,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user.
      * - decoding: Set by user.
      */
-    int thread_count2;
+    int thread_count_frame;
     
     /**
      * Which multithreading methods to use.
@@ -2589,13 +2589,7 @@ typedef struct AVCodecContext {
      */
     
     void *thread_opaque;
-    /**
-     * thread opaque 2 for two levels of paralellism
-     * Can be used by execute() to store some per AVCodecContext stuff.
-     * - encoding: set by execute()
-     * - decoding: set by execute()
-     */
-    void *thread_opaque2;
+
     /**
      * noise vs. sse weight for the nsse comparsion function
      * - encoding: Set by user.

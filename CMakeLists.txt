@@ -52,8 +52,8 @@ IF("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 #SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic -fno-tree-vectorize -mssse3 -msse4 -msse4.1")
 #SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic -fno-tree-vectorize -mssse3 -msse4 -msse4.1")
 if(MINGW)
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
-SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -arch x86_64 -m64  -DPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -arch x86_64 -m64 -fPIC  -DPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
+SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -arch x86_64 -m64 -fPIC -DPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
 else(MINGW)
 SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
 SET(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}   -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
@@ -156,6 +156,8 @@ libavcodec/hevcpred.c
 libavcodec/imgconvert.c
 libavcodec/options.c
 libavcodec/parser.c
+libavcodec/pthread_slice.c
+libavcodec/pthread_frame.c
 libavcodec/pthread.c
 libavcodec/simple_idct.c
 libavcodec/utils.c
