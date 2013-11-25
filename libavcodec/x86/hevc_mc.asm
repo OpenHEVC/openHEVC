@@ -21,7 +21,7 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-;cextern hevc_epel_filters
+cextern hevc_epel_filters
 
 epel_h_shuffle1 	DB 0
 					DB 1
@@ -59,6 +59,9 @@ INIT_XMM sse4        ; adds ff_ and _sse4 to function name
 ;        r5 : height
 ;
 ; ******************************
+
+
+
 ; 1 by 1. Can be done on any processor
 cglobal put_hevc_mc_pixels_2_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
                   mov          r6,0                        ; height
@@ -162,6 +165,47 @@ mc_pixels_16_w:        ; for width
                   cmp          r6,heightq                  ; cmp height
                   jl           mc_pixels_16_h               ; height loop
                   RET
+
+;function to call other mc_pixels functions according to width value
+cglobal put_hevc_mc_pixels_master_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+cmp  r4,8
+je  goto_mc_pixels_8_8
+cmp  r4,16
+je  goto_mc_pixels_16_8
+cmp  r4,4
+je  goto_mc_pixels_4_8
+cmp  r4,32
+je  goto_mc_pixels_16_8
+cmp  r4,12
+je  goto_mc_pixels_4_8
+cmp  r4,24
+je  goto_mc_pixels_8_8
+cmp  r4,6
+je  goto_mc_pixels_2_8
+cmp  r4,64
+je  goto_mc_pixels_16_8
+cmp  r4,2
+je  goto_mc_pixels_2_8
+
+jmp  goto_mc_pixels_2_8
+
+goto_mc_pixels_2_8:
+call put_hevc_mc_pixels_2_8
+RET
+
+goto_mc_pixels_4_8:
+call put_hevc_mc_pixels_4_8
+RET
+
+goto_mc_pixels_8_8:
+call put_hevc_mc_pixels_8_8
+RET
+
+goto_mc_pixels_16_8:
+call put_hevc_mc_pixels_16_8
+RET
+
+
 
 ; ******************************
 ; void put_hevc_epel_h_8(int16_t *dst, ptrdiff_t dststride,
