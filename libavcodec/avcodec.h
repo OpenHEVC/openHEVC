@@ -2514,14 +2514,6 @@ typedef struct AVCodecContext {
     int thread_count;
 
     /**
-     * thread count for opaque2
-     * is used to decide how many independent tasks should be passed to execute()
-     * - encoding: Set by user.
-     * - decoding: Set by user.
-     */
-    int thread_count_frame;
-    
-    /**
      * Which multithreading methods to use.
      * Use of FF_THREAD_FRAME will increase decoding delay by one frame per thread,
      * so clients which cannot provide future frames should not use it.
@@ -2532,7 +2524,7 @@ typedef struct AVCodecContext {
     int thread_type;
 #define FF_THREAD_FRAME   1 ///< Decode more than one frame at once
 #define FF_THREAD_SLICE   2 ///< Decode more than one part of a single frame at once
-#define FF_THREAD_FRAME_SLICE   3 ///< Decode more than one part of a single frame at once at more than one frame at once
+#define FF_THREAD_FRAME_SLICE   4 ///< Decode more than one part of a single frame at once at more than one frame at once
     /**
      * Which multithreading methods are in use by the codec.
      * - encoding: Set by libavcodec.
@@ -2734,7 +2726,15 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     uint64_t vbv_delay;
-    
+
+    /**
+     * thread count for opaque2
+     * is used to decide how many independent tasks should be passed to execute()
+     * - encoding: Set by user.
+     * - decoding: Set by user.
+     */
+    int thread_count_frame;
+
     /**
      *  The decoded picture at layer n for SHVC decoder
      *  this frame is used by the layer (n+1) as refernce frame for inter-layer predictions 

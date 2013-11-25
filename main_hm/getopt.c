@@ -51,7 +51,7 @@ void print_usage() {
     printf(usage, program);
     printf("     -a : disable AU\n");
     printf("     -c : no check md5\n");
-    printf("     -f <thread type> (1: frame, 2: slice, 3, frameslice)\n");
+    printf("     -f <thread type> (1: frame, 2: slice, 4: frameslice)\n");
     printf("     -i <input file>\n");
     printf("     -n : no display\n");
     printf("     -o <output file>\n");
@@ -141,7 +141,7 @@ void init_main(int argc, char *argv[]) {
     nb_pthreads       = 1;
     temporal_layer_id = 7;
     no_cropping       = DISABLE;
-    quality_layer_id = 0; // Base layer 
+    quality_layer_id  = 0; // Base layer
 
     program           = argv[0];
     
@@ -154,6 +154,10 @@ void init_main(int argc, char *argv[]) {
             break;
         case 'f':
             thread_type = atoi(optarg);
+            if (thread_type!=1 && thread_type!=2 && thread_type!=4) {
+                print_usage();
+                exit(1);
+            }
             break;
 		case 'i':
 			input_file = strdup(optarg);
@@ -168,15 +172,14 @@ void init_main(int argc, char *argv[]) {
             nb_pthreads = atoi(optarg);
             break;
         case 't':
-             temporal_layer_id = atoi(optarg);
-             break;
+            temporal_layer_id = atoi(optarg);
+            break;
         case 'w':
             no_cropping = ENABLE;
             break;
         case 'l':
             quality_layer_id = atoi(optarg);
             break;
-                
 		default:
 			print_usage();
 			exit(1);

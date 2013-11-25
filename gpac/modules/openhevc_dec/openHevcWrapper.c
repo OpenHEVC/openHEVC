@@ -1,6 +1,6 @@
 /*
  * openhevc.c wrapper to openhevc or ffmpeg
- * Copyright (c) 2012-2013 Micka‘l Raulet, Wassim Hamidouche, Gildas Cocherel, Pierre Edouard Lepere
+ * Copyright (c) 2012-2013 Mickaï¿½l Raulet, Wassim Hamidouche, Gildas Cocherel, Pierre Edouard Lepere
  *
  * This file is part of openhevc.
  *
@@ -74,12 +74,12 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
          available in the bitstream. */
 
         /*      set thread parameters    */
-        if(thread_type == 3)
-            av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
+        if(thread_type == 1)
+            av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
         else if (thread_type == 2)
             av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
         else
-            av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
+            av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
 
         av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
 

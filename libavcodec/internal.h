@@ -26,11 +26,13 @@
 
 #include <stdint.h>
 
+#include "libavutil/common.h"
 #include "libavutil/buffer.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
 #include "config.h"
+
 
 #define FF_SANE_NB_CHANNELS 63U
 
@@ -88,7 +90,6 @@ typedef struct AVCodecInternal {
     FramePool *pool;
 
     void *thread_ctx;
-    void *thread_ctx_frame;
 
     /**
      * Current packet as passed into the decoder, to avoid having to pass the
@@ -108,6 +109,9 @@ typedef struct AVCodecInternal {
      * Number of audio samples to skip at the start of the next decoded frame
      */
     int skip_samples;
+
+    void *thread_ctx_frame;
+
 } AVCodecInternal;
 
 struct AVCodecDefault {

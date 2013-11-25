@@ -3016,19 +3016,11 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     ff_dsputil_init(&s->dsp, avctx);
     s->temporal_layer_id   = 8; 
     s->context_initialized = 1;
-
-    if((avctx->active_thread_type & FF_THREAD_FRAME) && (avctx->active_thread_type & FF_THREAD_SLICE))
-        s->threads_type = FF_THREAD_FRAME_SLICE;
-    else
-        if((avctx->active_thread_type & FF_THREAD_FRAME))
-            s->threads_type = FF_THREAD_FRAME;
-        else
-            s->threads_type = FF_THREAD_SLICE;
-
+    s->threads_type        = avctx->active_thread_type;
     if(avctx->active_thread_type & FF_THREAD_SLICE)
-        s->threads_number = avctx->thread_count;
+        s->threads_number  = avctx->thread_count;
     else
-        s->threads_number = 1;
+        s->threads_number  = 1;
 
     for (i = 1; i < s->threads_number ; i++) {
         s->sList[i] = av_mallocz(sizeof(HEVCContext));
