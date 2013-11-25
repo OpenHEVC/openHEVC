@@ -204,20 +204,23 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     if (!s->tab_mvf_pool || !s->rpl_tab_pool)
         goto fail;
 #ifdef SVC_EXTENSION
-    if(s->nuh_layer_id)    {
-        int heightBL, widthBL, heightEL, widthEL; 
-        if(!s->avctx->BL_frame)    {
+    if(s->decoder_id)    {
+        int heightBL, widthBL, heightEL, widthEL;
+        // FIXME wait until the base layer frame is allocated
+        /*if(!s->avctx->BL_frame)    {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing  \n");
             goto fail;
         }
         heightBL = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_height;
-        widthBL = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_width;
+        widthBL = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_width;*/
+        heightBL  = 544;
+        widthBL   = 960;
         if(!heightBL || !widthBL)    {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing  \n");
             goto fail;
         }
-        heightEL = s->sps->height - s->sps->scaled_ref_layer_window.bottom_offset - s->sps->scaled_ref_layer_window.top_offset;
-        widthEL = s->sps->width   - s->sps->scaled_ref_layer_window.left_offset   - s->sps->scaled_ref_layer_window.right_offset;
+        heightEL = sps->height - sps->scaled_ref_layer_window.bottom_offset - sps->scaled_ref_layer_window.top_offset;
+        widthEL = sps->width   - sps->scaled_ref_layer_window.left_offset   - sps->scaled_ref_layer_window.right_offset;
         
         s->sh.ScalingFactor[s->nuh_layer_id][0] = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095);
         s->sh.ScalingFactor[s->nuh_layer_id][1] = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095);
@@ -243,9 +246,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
     }
 #endif
-
     return 0;
-
 fail:
     pic_arrays_free(s);
     return AVERROR(ENOMEM);
@@ -2245,6 +2246,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
  */
 static int hls_nal_unit(HEVCContext *s)
 {
+    int ret; 
     GetBitContext *gb = &s->HEVClc->gb;
 
     if (get_bits1(gb) != 0)
@@ -2252,16 +2254,16 @@ static int hls_nal_unit(HEVCContext *s)
 
     s->nal_unit_type = get_bits(gb, 6);
 
-    s->nuh_layer_id   = get_bits(gb, 6);
+    ret   = get_bits(gb, 6);
     s->temporal_id = get_bits(gb, 3) - 1;
     if (s->temporal_id < 0)
         return AVERROR_INVALIDDATA;
 
     av_log(s->avctx, AV_LOG_DEBUG,
            "nal_unit_type: %d, nuh_layer_id: %d temporal_id: %d\n",
-           s->nal_unit_type, s->nuh_layer_id, s->temporal_id);
+           s->nal_unit_type, ret, s->temporal_id);
 
-    return (s->nuh_layer_id);
+    return ret;
 
 }
 
@@ -2316,7 +2318,11 @@ static int hevc_frame_start(HEVCContext *s)
          *  Set the BL frame
          *  and upsample the base layer frame ans scale its MVs 
          */
- 
+
+        if (s->threads_type&FF_THREAD_FRAME){
+            ff_thread_await_il_progress(s->avctx, s->poc, &s->avctx->BL_frame);
+        }
+
         if(s->avctx->BL_frame)
              s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
         else
@@ -2414,7 +2420,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     
     if (s->temporal_id > s->temporal_layer_id)
         return 0;
-
+  
+    s->nuh_layer_id = ret;
     switch (s->nal_unit_type) {
     case NAL_VPS:
         ret = ff_hevc_decode_nal_vps(s);
@@ -2499,6 +2506,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
             s->is_decoded = 1;
+#ifdef SVC_EXTENSION
+            if (s->active_el_frame)
+                ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
+#endif
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
             if ((s->pps->transquant_bypass_enable_flag ||
@@ -2645,6 +2656,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     s->ref = NULL;
     s->eos = 0;
+    s->active_el_frame = 0; 
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
@@ -2720,8 +2732,10 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         ret = init_get_bits8(&s->HEVClc->gb, nal->data, nal->size);
         if (ret < 0)
             goto fail;
-        hls_nal_unit(s);
-
+        ret = hls_nal_unit(s);
+        if(ret == s->decoder_id+1 && s->threads_type&FF_THREAD_FRAME) {// FIXME also check the type of the nalu, it should be data nalu type
+            s->active_el_frame = 1;
+        }
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
             s->eos = 1;
@@ -3051,13 +3065,13 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         ff_hevc_unref_frame(s, &s->DPB[i], ~0);
-        if (s0->DPB[i].frame->buf[0]) {
+        if (s0->DPB[i].frame->buf[0] && &s0->DPB[i] != s0->inter_layer_ref) {
             ret = hevc_ref_frame(s, &s->DPB[i], &s0->DPB[i]);
             if (ret < 0)
                 return ret;
         }
     }
-
+    
     for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++) {
         av_buffer_unref(&s->vps_list[i]);
         if (s0->vps_list[i]) {
@@ -3085,21 +3099,21 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         }
     }
 
-    if (s->sps != s0->sps)
-        ret = set_sps(s, s0->sps);
+    
 
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;
     s->pocTid0    = s0->pocTid0;
     s->max_ra     = s0->max_ra;
-
     s->is_nalff        = s0->is_nalff;
     s->nal_length_size = s0->nal_length_size;
-
     s->threads_number      = s0->threads_number;
     s->threads_type        = s0->threads_type;
     s->decode_checksum_sei = s0->decode_checksum_sei;
-
+    s->nuh_layer_id        = s0->nuh_layer_id;
+    s->decoder_id          = s0->decoder_id;
+    if (s->sps != s0->sps)
+        ret = set_sps(s, s0->sps);
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra = INT_MAX;

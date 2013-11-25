@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include "openHevcWrapper.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/internal.h"
 #include "libavformat/avformat.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -102,6 +103,9 @@ int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
             fprintf(stderr, "could not open codec\n");
             return NULL;
         }
+    if(i+1 < openHevcContexts->nb_decoders)
+        openHevcContexts->wraper[i+1]->c->copy_opaque = openHevcContexts->wraper[i]->c->internal->thread_ctx_frame;
+   
     }
     return 1;
 }

@@ -959,6 +959,7 @@ typedef struct HEVCContext {
     UpsamplInf  up_filter_inf;
     HEVCFrame   *BL_frame;
     HEVCFrame   *inter_layer_ref;
+    int         active_el_frame;
 #endif
     int temporal_layer_id;
     int nuh_layer_id;

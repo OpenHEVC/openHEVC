@@ -47,6 +47,7 @@
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 
+#define MAX_POC      256
 /**
  * Context used by codec threads and stored in their AVCodecInternal thread_ctx_frame.
  */
@@ -119,6 +120,11 @@ typedef struct FrameThreadContext {
                                     */
 
     int die;                       ///< Set when threads should exit.
+   
+    int is_decoded[MAX_POC];
+    void* frames[MAX_POC];
+    pthread_mutex_t il_progress_mutex; ///< Mutex used to protect frame progress values and progress_cond.
+    pthread_cond_t  il_progress_cond;   ///< Used by child threads to wait for progress to change.
 } FrameThreadContext;
 
 #define THREAD_SAFE_CALLBACKS(avctx) \
@@ -507,6 +513,81 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
     pthread_mutex_unlock(&p->progress_mutex);
 }
 
+#ifdef SVC_EXTENSION
+void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in)
+{
+    PerThreadContext *p;
+    FrameThreadContext *fctx;
+    p = avxt->internal->thread_ctx_frame;
+    fctx = p->parent;
+    poc = poc & (MAX_POC-1);
+    if (avxt->debug&FF_DEBUG_THREADS)
+        av_log(avxt, AV_LOG_DEBUG, "Thead base layer decoded \n");
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    fctx->is_decoded[poc] = 1;
+    fctx->frames[poc] = in;
+    pthread_cond_broadcast(&fctx->il_progress_cond);
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+}
+
+int ff_thread_get_il_up_status(AVCodecContext *avxt, int poc)
+{
+    int res;
+    PerThreadContext *p;
+    FrameThreadContext *fctx;
+    p = avxt->internal->thread_ctx_frame;
+    fctx = p->parent;
+    poc = poc & (MAX_POC-1);
+    if (avxt->debug&FF_DEBUG_THREADS)
+        av_log(avxt, AV_LOG_DEBUG, "Thead base layer decoded \n");
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    res = fctx->is_decoded[poc];
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+    return res;
+}
+
+void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out)
+{
+    FrameThreadContext *fctx = avxt->copy_opaque;
+    poc = poc & (MAX_POC-1);
+    if (avxt->debug&FF_DEBUG_THREADS)
+        av_log(avxt, AV_LOG_DEBUG, "thread awaiting for the BL to be decoded \n");
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    while(fctx->is_decoded[poc] != 1)
+        pthread_cond_wait(&fctx->il_progress_cond, &fctx->il_progress_mutex);
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    *out = fctx->frames[poc];
+    fctx->frames[poc] = NULL;
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+}
+
+void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status)
+{
+    FrameThreadContext *fctx = avxt->copy_opaque;
+    poc = poc & (MAX_POC-1);
+    if (avxt->debug&FF_DEBUG_THREADS)
+        av_log(avxt, AV_LOG_DEBUG, "Thead base layer decoded \n");
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    fctx->is_decoded[poc] = status;
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+}
+
+void ff_thread_report_il_status2(AVCodecContext *avxt, int poc, int status)
+{
+    PerThreadContext *p;
+    FrameThreadContext *fctx;
+    p = avxt->internal->thread_ctx_frame;
+    fctx = p->parent;
+    poc = poc & (MAX_POC-1);
+    if (avxt->debug&FF_DEBUG_THREADS)
+        av_log(avxt, AV_LOG_DEBUG, "Thead base layer decoded \n");
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    fctx->is_decoded[poc] = status;
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+}
+#endif
+
 void ff_thread_finish_setup(AVCodecContext *avctx) {
     PerThreadContext *p = avctx->internal->thread_ctx_frame;
 
@@ -601,6 +682,8 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
 
     av_freep(&fctx->threads);
     pthread_mutex_destroy(&fctx->buffer_mutex);
+    pthread_mutex_destroy(&fctx->buffer_mutex);
+    pthread_mutex_destroy(&fctx->il_progress_mutex);
     av_freep(&avctx->internal->thread_ctx_frame);
 }
 
@@ -636,6 +719,10 @@ int ff_frame_thread_init(AVCodecContext *avctx)
 
     fctx->threads = av_mallocz(sizeof(PerThreadContext) * thread_count);
     pthread_mutex_init(&fctx->buffer_mutex, NULL);
+    
+    pthread_cond_init(&fctx->il_progress_cond, NULL);
+    pthread_mutex_init(&fctx->il_progress_mutex, NULL);
+    
     fctx->delaying = 1;
 
     for (i = 0; i < thread_count; i++) {
