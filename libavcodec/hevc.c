@@ -2245,6 +2245,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
  */
 static int hls_nal_unit(HEVCContext *s)
 {
+    int ret;
     GetBitContext *gb = &s->HEVClc->gb;
 
     if (get_bits1(gb) != 0)
@@ -2252,17 +2253,16 @@ static int hls_nal_unit(HEVCContext *s)
 
     s->nal_unit_type = get_bits(gb, 6);
 
-    s->nuh_layer_id   = get_bits(gb, 6);
+    ret              = get_bits(gb, 6);
     s->temporal_id = get_bits(gb, 3) - 1;
     if (s->temporal_id < 0)
         return AVERROR_INVALIDDATA;
 
     av_log(s->avctx, AV_LOG_DEBUG,
            "nal_unit_type: %d, nuh_layer_id: %d temporal_id: %d\n",
-           s->nal_unit_type, s->nuh_layer_id, s->temporal_id);
+           s->nal_unit_type, ret, s->temporal_id);
 
-    return (s->nuh_layer_id);
-
+    return ret;
 }
 
 static void restore_tqb_pixels(HEVCContext *s)
@@ -2414,7 +2414,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     
     if (s->temporal_id > s->temporal_layer_id)
         return 0;
-
+    
+    s->nuh_layer_id = ret;
+    
     switch (s->nal_unit_type) {
     case NAL_VPS:
         ret = ff_hevc_decode_nal_vps(s);
