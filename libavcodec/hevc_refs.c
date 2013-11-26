@@ -38,9 +38,8 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
     if(s->active_el_frame)
         is_up_sampled = ff_thread_get_il_up_status(s->avctx, frame->poc);
     if (!frame->flags) {
-        //  FIXME: Implement new solution not based on poc and reset the poc to zero
-        /*  if(s->exist_EL)
-         ff_thread_report_il_status2(s->avctx, frame->poc, 0);   */
+        if(s->active_el_frame)
+            ff_thread_report_il_status2(s->avctx, frame->poc, 0);
         ff_thread_release_buffer(s->avctx, &frame->tf);
 
         av_buffer_unref(&frame->tab_mvf_buf);
