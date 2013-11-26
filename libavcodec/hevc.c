@@ -207,15 +207,16 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     if(s->decoder_id)    {
         int heightBL, widthBL, heightEL, widthEL;
         // FIXME wait until the base layer frame is allocated
-        /*if(!s->avctx->BL_frame)    {
+        if (s->threads_type&FF_THREAD_FRAME){
+            ff_thread_await_il_progress(s->avctx, 0, &s->avctx->BL_frame);
+        }
+        if(!s->avctx->BL_frame)    {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing  \n");
             goto fail;
         }
         heightBL = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_height;
-        widthBL = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_width;*/
+        widthBL  = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_width;
         
-        heightBL  = 544;    // FIXME wait until these informations from the base layer are available
-        widthBL   = 960;
         if(!heightBL || !widthBL)    {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing  \n");
             goto fail;

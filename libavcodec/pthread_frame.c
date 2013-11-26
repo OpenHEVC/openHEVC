@@ -553,12 +553,12 @@ void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out)
     if (avxt->debug&FF_DEBUG_THREADS)
         av_log(avxt, AV_LOG_DEBUG, "thread awaiting for the BL to be decoded \n");
     pthread_mutex_lock(&fctx->il_progress_mutex);
-    while(fctx->is_decoded[poc] != 1)
+    while(fctx->is_decoded[poc] == 0)
         pthread_cond_wait(&fctx->il_progress_cond, &fctx->il_progress_mutex);
     pthread_mutex_unlock(&fctx->il_progress_mutex);
     pthread_mutex_lock(&fctx->il_progress_mutex);
     *out = fctx->frames[poc];
-    fctx->frames[poc] = NULL;
+//    fctx->frames[poc] = NULL;
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 
