@@ -261,7 +261,13 @@ void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val)
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-	
+    OpenHevcWrapperContext  *openHevcContext;
+    int i;
+    
+    for (i = 0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_int(openHevcContext->c->priv_data, "quality-layer-id", val, 0);
+    }
     if (val >= 0 && val < openHevcContexts->nb_decoders)
         openHevcContexts->active_layer = val;
     else    {
@@ -291,7 +297,7 @@ void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val)
 
     for (i = 0; i < openHevcContexts->nb_decoders; i++) {
         openHevcContext = openHevcContexts->wraper[i];
-        av_opt_set_int(openHevcContext->c->priv_data, "temporal-layer-id", val+1, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "temporal-layer-id", val, 0);
     }
     
 }

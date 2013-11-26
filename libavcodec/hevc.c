@@ -213,7 +213,8 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         }
         heightBL = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_height;
         widthBL = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_width;*/
-        heightBL  = 544;
+        
+        heightBL  = 544;    // FIXME wait until these informations from the base layer are available
         widthBL   = 960;
         if(!heightBL || !widthBL)    {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing  \n");
@@ -222,12 +223,13 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         heightEL = sps->height - sps->scaled_ref_layer_window.bottom_offset - sps->scaled_ref_layer_window.top_offset;
         widthEL = sps->width   - sps->scaled_ref_layer_window.left_offset   - sps->scaled_ref_layer_window.right_offset;
         
-        s->sh.ScalingFactor[s->nuh_layer_id][0] = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095);
-        s->sh.ScalingFactor[s->nuh_layer_id][1] = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095);
+        s->sh.ScalingFactor[s->nuh_layer_id][0]   = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095);
+        s->sh.ScalingFactor[s->nuh_layer_id][1]   = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095);
         s->sh.ScalingPosition[s->nuh_layer_id][0] = ((widthBL  << 16) + (widthEL  >> 1)) / widthEL;
         s->sh.ScalingPosition[s->nuh_layer_id][1] = ((heightBL << 16) + (heightEL >> 1)) / heightEL;
-        s->up_filter_inf.addXLum = ( widthEL >> 1 )  / widthEL  + ( 1 << ( 11 ) );
-        s->up_filter_inf.addYLum = ( heightEL >> 1 )  / heightEL+ ( 1 << ( 11 ) );
+        
+        s->up_filter_inf.addXLum   = ( widthEL >> 1 )  / widthEL  + ( 1 << ( 11 ) );
+        s->up_filter_inf.addYLum   = ( heightEL >> 1 )  / heightEL+ ( 1 << ( 11 ) );
         s->up_filter_inf.scaleXLum = ( ( widthBL << 16 ) + ( widthEL >> 1 ) ) / widthEL;
         s->up_filter_inf.scaleYLum = ( ( heightBL << 16 ) + ( heightEL >> 1 ) ) / heightEL;
         
@@ -236,7 +238,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         widthBL  >>= 1;
         heightBL >>= 1;
         
-        s->up_filter_inf.addXCr       =( widthEL >> 1 ) / widthEL + ( 1 << ( 11 ) );
+        s->up_filter_inf.addXCr       = ( widthEL >> 1 ) / widthEL + ( 1 << ( 11 ) );
         s->up_filter_inf.addYCr       = ( ( ( heightBL ) << ( 14 ) ) + ( heightEL >> 1 ) ) / heightEL+ ( 1 << ( 11 ) );
         s->up_filter_inf.scaleXCr     = ( ( widthBL << 16 ) + ( widthEL >> 1 ) ) / widthEL;
         s->up_filter_inf.scaleYCr     = ( ( heightBL << 16 ) + ( heightEL >> 1 ) ) / heightEL;
@@ -2418,9 +2420,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     } else if (ret != (s->decoder_id) && s->nal_unit_type != NAL_VPS)
         return 0;
     
-    if (s->temporal_id > s->temporal_layer_id)
+    if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
-  
+    
     s->nuh_layer_id = ret;
     switch (s->nal_unit_type) {
     case NAL_VPS:
@@ -2733,7 +2735,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         if (ret < 0)
             goto fail;
         ret = hls_nal_unit(s);
-        if(ret == s->decoder_id+1 && s->threads_type&FF_THREAD_FRAME) {// FIXME also check the type of the nalu, it should be data nalu type
+        if(ret == s->decoder_id+1 && s->quality_layer_id >= ret && s->threads_type&FF_THREAD_FRAME) {// FIXME also check the type of the nalu, it should be data nalu type
             s->active_el_frame = 1;
         }
         if (s->nal_unit_type == NAL_EOB_NUT ||
@@ -3028,7 +3030,8 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         goto fail;
 
     ff_dsputil_init(&s->dsp, avctx);
-    s->temporal_layer_id   = 8; 
+    s->temporal_layer_id   = 8;
+    s->quality_layer_id    = 8;
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
     if(avctx->active_thread_type & FF_THREAD_SLICE)
@@ -3250,6 +3253,8 @@ static const AVOption options[] = {
     { "decoder-id", "set the decoder id", OFFSET(decoder_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "temporal-layer-id", "set the max temporal id", OFFSET(temporal_layer_id),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
+    { "quality_layer_id", "set the max temporal id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { NULL },
 };

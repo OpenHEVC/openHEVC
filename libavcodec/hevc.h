@@ -962,6 +962,7 @@ typedef struct HEVCContext {
     int         active_el_frame;
 #endif
     int temporal_layer_id;
+    int quality_layer_id;
     int nuh_layer_id;
     int decoder_id;
     int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
