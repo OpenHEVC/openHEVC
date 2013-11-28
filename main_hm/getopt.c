@@ -128,11 +128,11 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 ///////////////////////////////////////////////////////////////////////////////
 // initializes APR and parses options
 void init_main(int argc, char *argv[]) {
-	// every command line option must be followed by ':' if it takes an
-	// argument, and '::' if this argument is optional
-	const char *ostr = "achi:no:p:f:t:wl:";
+    // every command line option must be followed by ':' if it takes an
+    // argument, and '::' if this argument is optional
+    const char *ostr = "achi:no:p:f:t:wl:";
 
-	int c;
+    int c;
     check_md5_flags   = ENABLE;
     thread_type       = 1;
     input_file        = NULL;
@@ -159,14 +159,16 @@ void init_main(int argc, char *argv[]) {
                 exit(1);
             }
             break;
-		case 'i':
-			input_file = strdup(optarg);
-			break;
-		case 'n':
-			display_flags = DISABLE;
-			break;
+        case 'i':
+            input_file = strdup(optarg);
+            break;
+        case 'n':
+            display_flags = DISABLE;
+            break;
         case 'o':
             output_file = strdup(optarg);
+            if(output_file[strlen(output_file)-4] == '.')
+                output_file[strlen(output_file)-4] = '\0';
             break;
         case 'p':
             nb_pthreads = atoi(optarg);
@@ -180,12 +182,12 @@ void init_main(int argc, char *argv[]) {
         case 'l':
             quality_layer_id = atoi(optarg);
             break;
-		default:
-			print_usage();
-			exit(1);
-			break;
-		}
+        default:
+            print_usage();
+            exit(1);
+            break;
+        }
 
-		c = getopt(argc, argv, ostr);
-	}
+        c = getopt(argc, argv, ostr);
+    }
 }
