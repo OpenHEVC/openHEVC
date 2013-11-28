@@ -265,7 +265,8 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     //bottom right collocated motion vector
     x = x0 + nPbW;
     y = y0 + nPbH;
-
+    
+    /*      FIXME   if ref is is 0 and enhancement layer: up-sample the base layer and up-scame MVs: parameters: x0, y0, nPbW, nPbH     */
     if (s->threads_type & FF_THREAD_FRAME )
         ff_thread_await_progress(&ref->tf, y, 0);
     if (tab_mvf &&

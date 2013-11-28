@@ -1273,7 +1273,7 @@ static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0, int height)
 {
     int y = (mv->y >> 2) + y0 + height + 9;
-
+    /*      FIXME   if ref is is 0 and enhancement layer: up-sample the base layer and up-scame MVsparameters: x0, y0, nPbW, nPbH      */
     if (s->threads_type & FF_THREAD_FRAME )
         ff_thread_await_progress(&ref->tf, y, 0);
 }
@@ -2975,8 +2975,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
-    
-    
     
     for (i = 1; i < s->threads_number; i++) {
         lc = s->HEVClcList[i];
