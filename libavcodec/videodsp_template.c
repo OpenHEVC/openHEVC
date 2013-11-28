@@ -24,7 +24,7 @@
 #include "hevc_up_sample_filter.h"
 #include "hevc.h"
 static void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
-                                      ptrdiff_t linesize,
+                                      ptrdiff_t linesize, ptrdiff_t linesizeb,
                                       int block_w, int block_h,
                                       int src_x, int src_y, int w, int h)
 {
@@ -60,24 +60,24 @@ static void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
     // top
     for (y = 0; y < start_y; y++) {
         memcpy(buf, src, w * sizeof(pixel));
-        buf += linesize;
+        buf += linesizeb;
     }
 
     // copy existing part
     for (; y < end_y; y++) {
         memcpy(buf, src, w * sizeof(pixel));
         src += linesize;
-        buf += linesize;
+        buf += linesizeb;
     }
 
     // bottom
     src -= linesize;
     for (; y < block_h; y++) {
         memcpy(buf, src, w * sizeof(pixel));
-        buf += linesize;
+        buf += linesizeb;
     }
 
-    buf -= block_h * linesize + start_x * sizeof(pixel);
+    buf -= block_h * linesizeb + start_x * sizeof(pixel);
     while (block_h--) {
         pixel *bufp = (pixel *) buf;
 
@@ -90,7 +90,7 @@ static void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
         for (x = end_x; x < block_w; x++) {
             bufp[x] = bufp[end_x - 1];
         }
-        buf += linesize;
+        buf += linesizeb;
     }
 }
 
