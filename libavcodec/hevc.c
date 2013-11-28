@@ -2940,8 +2940,12 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     pic_arrays_free(s);
 
-    if (lc)
+    if (lc){
         av_freep(&lc->edge_emu_buffer);
+        av_freep(&lc->edge_emu_buffer_up_h);
+        av_freep(&lc->edge_emu_buffer_up_v);
+    }
+    
     av_freep(&s->md5_ctx);
 
     for(i=0; i < s->nals_allocated; i++) {
@@ -2971,11 +2975,15 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
-
+    
+    
+    
     for (i = 1; i < s->threads_number; i++) {
         lc = s->HEVClcList[i];
         if (lc) {
             av_freep(&lc->edge_emu_buffer);
+            av_freep(&lc->edge_emu_buffer_up_h);
+            av_freep(&lc->edge_emu_buffer_up_v);
             av_freep(&s->HEVClcList[i]);
             av_freep(&s->sList[i]);
         }
@@ -3033,24 +3041,33 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->quality_layer_id    = 8;
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
+    
+    s->HEVClcList[0]->edge_emu_buffer_up_h = av_malloc((MAX_PB_SIZE + 8) * MAX_PB_SIZE * sizeof(*s->HEVClcList[0]->edge_emu_buffer_up_h));
+    s->HEVClcList[0]->edge_emu_buffer_up_v = av_malloc((MAX_PB_SIZE + 8) * MAX_PB_SIZE * sizeof(*s->HEVClcList[0]->edge_emu_buffer_up_v));
+    
     if(avctx->active_thread_type & FF_THREAD_SLICE)
         s->threads_number  = avctx->thread_count;
     else
         s->threads_number  = 1;
-
+    
+    
     for (i = 1; i < s->threads_number ; i++) {
         s->sList[i] = av_mallocz(sizeof(HEVCContext));
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
+        s->HEVClcList[i]->edge_emu_buffer_up_h = av_malloc((MAX_PB_SIZE + 8) * MAX_PB_SIZE * sizeof(*s->HEVClcList[i]->edge_emu_buffer_up_h));
+        s->HEVClcList[i]->edge_emu_buffer_up_v = av_malloc((MAX_PB_SIZE + 8) * MAX_PB_SIZE * sizeof(*s->HEVClcList[i]->edge_emu_buffer_up_v));
     }
-
     return 0;
 
 fail:
     hevc_decode_free(avctx);
     return AVERROR(ENOMEM);
 }
+
+
+
 
 static int hevc_update_thread_context(AVCodecContext *dst,
                                       const AVCodecContext *src)

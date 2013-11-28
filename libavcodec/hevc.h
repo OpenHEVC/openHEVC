@@ -834,6 +834,9 @@ typedef struct HEVCLocalContext {
     int     end_of_tiles_x;
     int     end_of_tiles_y;
     uint8_t *edge_emu_buffer;
+    uint8_t *edge_emu_buffer_up_h;
+    short   *edge_emu_buffer_up_v;
+    
     int      edge_emu_buffer_size;
     CodingTree ct;
     CodingUnit cu;
