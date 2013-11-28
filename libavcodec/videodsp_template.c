@@ -21,7 +21,8 @@
 
 #include "assert.h"
 #include "bit_depth_template.c"
-
+#include "hevc_up_sample_filter.h"
+#include "hevc.h"
 static void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
                                       ptrdiff_t linesize,
                                       int block_w, int block_h,
@@ -91,4 +92,82 @@ static void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
         }
         buf += linesize;
     }
+}
+
+static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff_t linesize,
+                                    struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
+                                    int block_w, int block_h, int src_x, int wBL, int wEL)
+{
+    int rightEndL  = wEL - Enhscal->right_offset;
+    int leftStartL = Enhscal->left_offset;
+    int x = av_clip_c(src_x, leftStartL, rightEndL);
+    int refPos16, refPos, i;
+    uint8_t *buf_tmp = buf;
+    const uint8_t *src_tmp = src;
+    
+    refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
+    refPos   = refPos16 >> 4;
+    refPos -= ((NTAPS_LUMA>>1) - 1);
+    if(refPos < 0) {
+        for(i=0; i < block_h; i++) {
+            memset(buf_tmp, src_tmp[0], -refPos);
+            memcpy(buf_tmp-refPos, src_tmp, block_w);
+            src_tmp += linesize;
+            buf_tmp += linesize;
+        }
+        return 1;
+    }
+    if(refPos+NTAPS_LUMA > wBL ){
+        buf_tmp = buf;
+        src_tmp = src;
+        for( i = 0; i < block_h ; i++ )    {
+            memcpy(buf_tmp, src_tmp, block_w-refPos);
+            memset(buf_tmp+(block_w-refPos), src_tmp[block_w-refPos-1], NTAPS_LUMA-(block_w-refPos));
+            src_tmp += linesize;
+            buf_tmp += linesize;
+        }
+        return 1;
+    }
+    return 0;
+}
+
+
+static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t linesize,
+                                    struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
+                                    int block_w, int block_h, int src_y, int hBL, int hEL)
+{
+    int topStartL  = Enhscal->top_offset;
+    int bottomEndL = hEL - Enhscal->bottom_offset;
+    int refPos16, refPos, i, j;
+    short *buf_tmp = buf;
+    const short *src_tmp = src;
+    int y = av_clip_c(src_y, topStartL, bottomEndL-1);
+    refPos16 = ((( y - topStartL )*up_info->scaleYLum + up_info->addYLum) >> 12);
+    refPos   = refPos16 >> 4;
+    refPos -= ((NTAPS_LUMA>>1) - 1);
+    if(refPos < 0)  {
+        for( i = 0; i < block_w; i++ )	{
+            for(j= 0; j<-refPos ; j++)
+                buf_tmp[j*linesize] = src_tmp[-refPos*linesize];
+            for(j= 0; j< block_h ; j++)
+                buf_tmp[(-refPos+j)*linesize] = src_tmp[(-refPos+j)*linesize];
+            //if( (i >= leftStartL) && (i <= rightEndL-2) )
+            src_tmp++;
+            buf_tmp++; 
+        }
+        return 1;
+    }
+    if(refPos+NTAPS_LUMA > hBL )    {
+        for( i = 0; i < block_w; i++ )	{   // block_w for EL
+            for(j= 0; j< block_h ; j++)
+                buf_tmp[j*linesize] = src_tmp[j*linesize];
+            for(j= 0; j<8-(hBL-refPos) ; j++)
+                buf_tmp[(hBL-refPos+j)*linesize] = src_tmp[(hBL-refPos-1)*linesize];
+            //if( (i >= leftStartL) && (i <= rightEndL-2) )
+            src_tmp++;
+            buf_tmp++;
+        }
+        return 1;
+    }
+    return 0;
 }

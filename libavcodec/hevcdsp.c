@@ -187,7 +187,10 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 #define HEVC_DSP_UP(depth)                                                 \
     hevcdsp->upsample_base_layer_frame   = FUNC(upsample_base_layer_frame, depth); \
     hevcdsp->upsample_h_base_layer_frame = FUNC(upsample_h_base_layer_frame, depth);\
-    hevcdsp->upsample_v_base_layer_frame = FUNC(upsample_v_base_layer_frame, depth);
+    hevcdsp->upsample_v_base_layer_frame = FUNC(upsample_v_base_layer_frame, depth);\
+    hevcdsp->upsample_filter_block_h = FUNC(upsample_filter_block_h, depth); \
+    hevcdsp->upsample_filter_block_v = FUNC(upsample_filter_block_v, depth);
+    
     switch (bit_depth) {
     case 9:
         HEVC_DSP_UP(9);

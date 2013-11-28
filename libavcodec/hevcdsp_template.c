@@ -26,7 +26,6 @@
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
 #include "hevc_up_sample_filter.h"
-#include "hevc.h"
 
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int size,
@@ -1400,6 +1399,57 @@ static void FUNC(upsample_v_base_layer_frame)(struct AVFrame *FrameEL, struct AV
     return;
 }
 
+
+void FUNC(upsample_filter_block_h)( short *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+                                    int block_w, int block_h, int widthEL,
+                                    const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
+    
+    int rightEndL  = widthEL - Enhscal->right_offset;
+    int leftStartL = Enhscal->left_offset;
+    int x, i, j, phase, refPos16;
+    int32_t* coeff;
+    for( i = 0; i < block_w; i++ )	{
+        x = av_clip_c(i, leftStartL, rightEndL);
+        refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
+        phase    = refPos16 & 15;
+        coeff = enabled_up_sample_filter_luma[phase];
+        for( j = 0; j < block_h ; j++ )	{
+            *dst = LumHor_FILTER(_src, coeff);
+            _src += _srcstride;
+            dst += dststride;
+        }
+    }
+}
+
+void FUNC(upsample_filter_block_v)(uint8_t *dst, ptrdiff_t dststride, short *_src, ptrdiff_t _srcstride,
+                                      int block_w, int block_h, int widthEL, int heightEL,
+                                      const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
+    int topStartL  = Enhscal->top_offset;
+    int bottomEndL = heightEL - Enhscal->bottom_offset;
+    int y, i, j, phase, refPos16;
+    int32_t* coeff;
+    const int nShift = US_FILTER_PREC*2;
+    int iOffset = 1 << (nShift - 1);
+    
+    for( j = 0; j < block_h; j++ )	{
+    	y = av_clip_c(j, topStartL, bottomEndL-1);
+    	refPos16 = ((( y - topStartL )*up_info->scaleYLum + up_info->addYLum) >> 12);
+        phase    = refPos16 & 15;
+        coeff = enabled_up_sample_filter_luma[phase];
+        for( i = 0; i < block_w; i++ )	{
+            *dst = av_clip_pixel( (LumVer_FILTER1(_src, coeff, widthEL) + iOffset) >> (nShift));
+            //if( (i >= leftStartL) && (i <= rightEndL-2) )
+            _src++;
+            dst++;
+        }
+    }
+}
+
+
+
+
+
+
 static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
 {
     int i,j, k;
@@ -1434,10 +1484,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     short *dstV1;
     short *srcV1;
     
-    int refPos16 = 0;
-    int phase    = 0;
-    int refPos   = 0;
-    int32_t* coeff = enabled_up_sample_filter_chroma[phase];
+    int refPos16, phase, refPos;
+    int32_t* coeff;
     widthEL   = FrameEL->width;  //pcUsPic->getWidth ();
     heightEL  = FrameEL->height; //pcUsPic->getHeight();
     

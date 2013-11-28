@@ -78,6 +78,14 @@ typedef struct HEVCDSPContext {
     
     void (*upsample_h_base_layer_frame)(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel);
     
+    void (*upsample_filter_block_h)( short *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+                                       int block_w, int block_h, int widthEL,
+                                       const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+    
+    void (*upsample_filter_block_v)(uint8_t *dst, ptrdiff_t dststride, short *_src, ptrdiff_t _srcstride,
+                                       int block_w, int block_h, int widthEL, int heightEL,
+                                       const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+    
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
