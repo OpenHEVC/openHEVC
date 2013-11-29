@@ -48,7 +48,7 @@ typedef struct VideoDSPContext {
      * @param h height of the source buffer
      */
     void (*emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
-                             ptrdiff_t linesize, int block_w, int block_h,
+                             ptrdiff_t linesize, ptrdiff_t linesizeb, int block_w, int block_h,
                              int src_x, int src_y, int w, int h);
 
     /**
