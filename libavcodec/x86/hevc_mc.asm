@@ -585,9 +585,9 @@ cglobal put_hevc_epel_hv_4_8, 9, 12, 0 , dst, dststride, src, srcstride, width, 
     movdqu  m0,[epel_h_shuffle1]        ; register containing shuffle1
 
     mov     r15, srcstrideq
-    imul    r15, epel_extra_before
+;    imul    r15, epel_extra_before
 ;    sub     srcq,srcstrideq                    ; src -= EPEL_EXTRA_BEFORE * srcstride
-    mov     r14,max_pb_size
+;    mov     r14,max_pb_size
     shl     r14,2                       ;double because it's used for 16bit adressing
     lea     r13,[mcbufferq]
 

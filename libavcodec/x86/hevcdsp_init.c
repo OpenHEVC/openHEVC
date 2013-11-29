@@ -85,6 +85,69 @@ void ff_hevc_put_hevc_qpel_v16_3_8_sse(int16_t *dst, ptrdiff_t dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
                                        int16_t* mcbuffer);
 
+void ff_hevc_put_hevc_qpel_h4_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h8_3_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_qpel_h4_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h8_3_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_qpel_h4_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h8_3_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_qpel_h4_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h8_1_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_qpel_h8_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h4_2_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_qpel_h8_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h4_1_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_qpel_h8_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h4_2_v_2_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_qpel_h8_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h4_2_v_3_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
+void ff_hevc_put_hevc_qpel_h8_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_h4_1_v_1_sse(int16_t *dst, ptrdiff_t dststride,
+                                        uint8_t *_src, ptrdiff_t _srcstride, int width, int height,
+                                        int16_t* mcbuffer);
+
 
 #define MCQ_FUNC(DIR, DEPTH, OPT)                                        \
     void ff_put_hevc_mc_pixels_ ## DIR ## _ ## DEPTH ## _ ## OPT(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, int16_t* mcbuffer);
@@ -124,7 +187,6 @@ LFL_FUNCS(uint8_t,   8)
 
 void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
-    int i;
     int mm_flags = av_get_cpu_flags();
 
     if (bit_depth == 8) {
@@ -195,9 +257,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_epel[0][0][2] = ff_put_hevc_mc_pixels_8_8_sse4;
                     c->put_hevc_epel[0][0][3] = ff_put_hevc_mc_pixels_16_8_sse4;*/
 
-                        c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_8_sse;
-                        c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_8_sse;
-                        c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
+                    c->put_hevc_epel[0][1] = ff_hevc_put_hevc_epel_h_8_sse;
+                    c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_8_sse;
+                    c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
 
                 	c->transform_skip= ff_hevc_transform_skip_8_sse;
                 	c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
@@ -210,15 +272,24 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 	c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
                 	c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
 
-                    c->put_hevc_qpel[0][1][1] = c->put_hevc_qpel[1][1][1] = c->put_hevc_qpel[2][1][1] = c->put_hevc_qpel[3][1][1] = c->put_hevc_qpel[4][1][1] = ff_hevc_put_hevc_qpel_h_1_v_1_sse;
-                    c->put_hevc_qpel[0][1][2] = c->put_hevc_qpel[1][1][2] = c->put_hevc_qpel[2][1][2] = c->put_hevc_qpel[3][1][2] = c->put_hevc_qpel[4][1][2] = ff_hevc_put_hevc_qpel_h_2_v_1_sse;
-                    c->put_hevc_qpel[0][1][3] = c->put_hevc_qpel[1][1][3] = c->put_hevc_qpel[2][1][3] = c->put_hevc_qpel[3][1][3] = c->put_hevc_qpel[4][1][3] = ff_hevc_put_hevc_qpel_h_3_v_1_sse;
-                    c->put_hevc_qpel[0][2][1] = c->put_hevc_qpel[1][2][1] = c->put_hevc_qpel[2][2][1] = c->put_hevc_qpel[3][2][1] = c->put_hevc_qpel[4][2][1] = ff_hevc_put_hevc_qpel_h_1_v_2_sse;
-                    c->put_hevc_qpel[0][2][2] = c->put_hevc_qpel[1][2][2] = c->put_hevc_qpel[2][2][2] = c->put_hevc_qpel[3][2][2] = c->put_hevc_qpel[4][2][2] = ff_hevc_put_hevc_qpel_h_2_v_2_sse;
-                    c->put_hevc_qpel[0][2][3] = c->put_hevc_qpel[1][2][3] = c->put_hevc_qpel[2][2][3] = c->put_hevc_qpel[3][2][3] = c->put_hevc_qpel[4][2][3] = ff_hevc_put_hevc_qpel_h_3_v_2_sse;
-                    c->put_hevc_qpel[0][3][1] = c->put_hevc_qpel[1][3][1] = c->put_hevc_qpel[2][3][1] = c->put_hevc_qpel[3][3][1] = c->put_hevc_qpel[4][3][1] = ff_hevc_put_hevc_qpel_h_1_v_3_sse;
-                    c->put_hevc_qpel[0][3][2] = c->put_hevc_qpel[1][3][2] = c->put_hevc_qpel[2][3][2] = c->put_hevc_qpel[3][3][2] = c->put_hevc_qpel[4][3][2] = ff_hevc_put_hevc_qpel_h_2_v_3_sse;
-                    c->put_hevc_qpel[0][3][3] = c->put_hevc_qpel[1][3][3] = c->put_hevc_qpel[2][3][3] = c->put_hevc_qpel[3][3][3] = c->put_hevc_qpel[4][3][3] = ff_hevc_put_hevc_qpel_h_3_v_3_sse;
+                    c->put_hevc_qpel[0][1][1] = ff_hevc_put_hevc_qpel_h4_1_v_1_sse;
+                    c->put_hevc_qpel[1][1][1] = c->put_hevc_qpel[2][1][1] = c->put_hevc_qpel[3][1][1] = c->put_hevc_qpel[4][1][1] = ff_hevc_put_hevc_qpel_h8_1_v_1_sse;
+                    c->put_hevc_qpel[0][2][2] = ff_hevc_put_hevc_qpel_h4_2_v_2_sse;
+                    c->put_hevc_qpel[1][2][2] = c->put_hevc_qpel[2][2][2] = c->put_hevc_qpel[3][2][2] = c->put_hevc_qpel[4][2][2] = ff_hevc_put_hevc_qpel_h8_2_v_2_sse;
+                    c->put_hevc_qpel[0][3][2] = ff_hevc_put_hevc_qpel_h4_2_v_3_sse;
+                    c->put_hevc_qpel[1][3][2] = c->put_hevc_qpel[2][3][2] = c->put_hevc_qpel[3][3][2] = c->put_hevc_qpel[4][3][2] = ff_hevc_put_hevc_qpel_h8_2_v_3_sse;
+                    c->put_hevc_qpel[0][2][1] = ff_hevc_put_hevc_qpel_h4_1_v_2_sse;
+                    c->put_hevc_qpel[1][2][1] = c->put_hevc_qpel[2][2][1] = c->put_hevc_qpel[3][2][1] = c->put_hevc_qpel[4][2][1] = ff_hevc_put_hevc_qpel_h8_1_v_2_sse;
+                    c->put_hevc_qpel[0][1][2] = ff_hevc_put_hevc_qpel_h4_2_v_1_sse;
+                    c->put_hevc_qpel[1][1][2] = c->put_hevc_qpel[2][1][2] = c->put_hevc_qpel[3][1][2] = c->put_hevc_qpel[4][1][2] = ff_hevc_put_hevc_qpel_h8_2_v_1_sse;
+                    c->put_hevc_qpel[0][3][1] = ff_hevc_put_hevc_qpel_h8_1_v_3_sse;
+                    c->put_hevc_qpel[1][3][1] = c->put_hevc_qpel[2][3][1] = c->put_hevc_qpel[3][3][1] = c->put_hevc_qpel[4][3][1] = ff_hevc_put_hevc_qpel_h8_1_v_3_sse;
+                    c->put_hevc_qpel[0][1][3] = ff_hevc_put_hevc_qpel_h4_3_v_1_sse;
+                    c->put_hevc_qpel[1][1][3] = c->put_hevc_qpel[2][1][3] = c->put_hevc_qpel[3][1][3] = c->put_hevc_qpel[4][1][3] = ff_hevc_put_hevc_qpel_h8_3_v_1_sse;
+                    c->put_hevc_qpel[0][2][3] = ff_hevc_put_hevc_qpel_h4_3_v_2_sse;
+                    c->put_hevc_qpel[1][2][3] = c->put_hevc_qpel[2][2][3] = c->put_hevc_qpel[3][2][3] = c->put_hevc_qpel[4][2][3] = ff_hevc_put_hevc_qpel_h8_3_v_2_sse;
+                    c->put_hevc_qpel[0][3][3] = ff_hevc_put_hevc_qpel_h4_3_v_3_sse;
+                    c->put_hevc_qpel[1][3][3] = c->put_hevc_qpel[2][3][3] = c->put_hevc_qpel[3][3][3] = c->put_hevc_qpel[4][3][3] = ff_hevc_put_hevc_qpel_h8_3_v_3_sse;
 #ifdef SVC_EXTENSION
                     c->upsample_base_layer_frame = ff_upsample_base_layer_frame_sse;
                     c->upsample_h_base_layer_frame = ff_upsample_base_layer_frame_sse_h;
