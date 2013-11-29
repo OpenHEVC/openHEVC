@@ -255,11 +255,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_epel[1][0] = ff_hevc_put_hevc_epel_v_10_sse;
                     c->put_hevc_epel[1][1] = ff_hevc_put_hevc_epel_hv_10_sse;
 
-                    c->put_hevc_qpel[0][0][0] = c->put_hevc_qpel[1][0][0] = c->put_hevc_qpel[2][0][0] = c->put_hevc_qpel[3][0][0] = c->put_hevc_qpel[4][0][0] = ff_hevc_put_hevc_qpel_pixels_10_sse;
-                    c->put_hevc_qpel[0][0][1] = c->put_hevc_qpel[1][0][1] = c->put_hevc_qpel[2][0][1] = c->put_hevc_qpel[3][0][1] = c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_h_1_10_sse;
-                    c->put_hevc_qpel[0][0][1] = c->put_hevc_qpel[1][0][1] = c->put_hevc_qpel[2][0][1] = c->put_hevc_qpel[3][0][1] = c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_v_1_10_sse;
-                    c->put_hevc_qpel[0][2][0] = c->put_hevc_qpel[1][2][0] = c->put_hevc_qpel[2][2][0] = c->put_hevc_qpel[3][2][0] = c->put_hevc_qpel[4][2][0] = ff_hevc_put_hevc_qpel_v_2_10_sse;
-                    c->put_hevc_qpel[0][3][0] = c->put_hevc_qpel[1][3][0] = c->put_hevc_qpel[2][3][0] = c->put_hevc_qpel[3][3][0] = c->put_hevc_qpel[4][3][0] = ff_hevc_put_hevc_qpel_v_3_10_sse;
+//                    c->put_hevc_qpel[0][0][0] = c->put_hevc_qpel[1][0][0] = c->put_hevc_qpel[2][0][0] = c->put_hevc_qpel[3][0][0] = c->put_hevc_qpel[4][0][0] = ff_hevc_put_hevc_qpel_pixels_10_sse;
+//                    c->put_hevc_qpel[0][0][1] = c->put_hevc_qpel[1][0][1] = c->put_hevc_qpel[2][0][1] = c->put_hevc_qpel[3][0][1] = c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_h_1_10_sse;
+//                    c->put_hevc_qpel[0][0][1] = c->put_hevc_qpel[1][0][1] = c->put_hevc_qpel[2][0][1] = c->put_hevc_qpel[3][0][1] = c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_v_1_10_sse;
+//                    c->put_hevc_qpel[0][2][0] = c->put_hevc_qpel[1][2][0] = c->put_hevc_qpel[2][2][0] = c->put_hevc_qpel[3][2][0] = c->put_hevc_qpel[4][2][0] = ff_hevc_put_hevc_qpel_v_2_10_sse;
+//                    c->put_hevc_qpel[0][3][0] = c->put_hevc_qpel[1][3][0] = c->put_hevc_qpel[2][3][0] = c->put_hevc_qpel[3][3][0] = c->put_hevc_qpel[4][3][0] = ff_hevc_put_hevc_qpel_v_3_10_sse;
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
