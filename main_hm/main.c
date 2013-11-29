@@ -110,8 +110,8 @@ static void video_decode_example(const char *filename)
     openHevcFrameCpy.pvY = NULL;
     openHevcFrameCpy.pvU = NULL;
     openHevcFrameCpy.pvV = NULL;
-    Init_Time();
 
+    Init_Time();
     while(!stop) {
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
         if (packet.stream_index == video_stream_idx || stop_dec == 1) {
