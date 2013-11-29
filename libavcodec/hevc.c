@@ -1186,16 +1186,16 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
         y_off >= pic_height - block_h - ff_hevc_qpel_extra_after[my]) {
         //srcstride = ;
         int offset      = extra_top * srcstride + (extra_left << s->sps->pixel_shift);
-        int offset_edge = extra_top * (MAX_PB_SIZE+7) + (extra_left << s->sps->pixel_shift);
+        int offset_edge = extra_top * MAX_EDGE_BUFFER_STRIDE + (extra_left << s->sps->pixel_shift);
         
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src - offset,
-                                 srcstride, MAX_PB_SIZE+7,
+                                 srcstride, MAX_EDGE_BUFFER_STRIDE,
                                  block_w + ff_hevc_qpel_extra[mx],
                                  block_h + ff_hevc_qpel_extra[my],
                                  x_off - extra_left, y_off - extra_top,
                                  pic_width, pic_height);
         src = lc->edge_emu_buffer + offset_edge;
-        srcstride = MAX_PB_SIZE+7; 
+        srcstride = MAX_EDGE_BUFFER_STRIDE; 
         
     }
     s->hevcdsp.put_hevc_qpel[my][mx](dst, dststride, src, srcstride, block_w,
@@ -1241,28 +1241,28 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         y_off >= pic_height - block_h - EPEL_EXTRA_AFTER) {
         int offset1     = EPEL_EXTRA_BEFORE * (src1stride + (1 << s->sps->pixel_shift));
         int offset2     = EPEL_EXTRA_BEFORE * (src2stride + (1 << s->sps->pixel_shift));
-        int offset_edge = EPEL_EXTRA_BEFORE * ((MAX_PB_SIZE+7) + (1 << s->sps->pixel_shift));
+        int offset_edge = EPEL_EXTRA_BEFORE * (MAX_EDGE_BUFFER_STRIDE + (1 << s->sps->pixel_shift));
         
         
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src1 - offset1,
-                                 src1stride, MAX_PB_SIZE+7,
+                                 src1stride, MAX_EDGE_BUFFER_STRIDE,
                                  block_w + EPEL_EXTRA, block_h + EPEL_EXTRA,
                                  x_off - EPEL_EXTRA_BEFORE,
                                  y_off - EPEL_EXTRA_BEFORE,
                                  pic_width, pic_height);
 
         src1 = lc->edge_emu_buffer + offset_edge;
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, MAX_PB_SIZE+7,
+        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst1, dststride, src1, MAX_EDGE_BUFFER_STRIDE,
                                              block_w, block_h, mx, my, lc->mc_buffer);
 
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src2 - offset2,
-                                 src2stride, MAX_PB_SIZE+7,
+                                 src2stride, MAX_EDGE_BUFFER_STRIDE,
                                  block_w + EPEL_EXTRA, block_h + EPEL_EXTRA,
                                  x_off - EPEL_EXTRA_BEFORE,
                                  y_off - EPEL_EXTRA_BEFORE,
                                  pic_width, pic_height);
         src2 = lc->edge_emu_buffer + offset_edge;
-        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, MAX_PB_SIZE+7,
+        s->hevcdsp.put_hevc_epel[!!my][!!mx](dst2, dststride, src2, MAX_EDGE_BUFFER_STRIDE,
                                              block_w, block_h, mx, my,
                                              lc->mc_buffer);
     } else {
@@ -3036,9 +3036,9 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
     
-    s->HEVClcList[0]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * (MAX_PB_SIZE+7) * sizeof(*s->HEVClcList[0]->edge_emu_buffer));
-    s->HEVClcList[0]->edge_emu_buffer_up_h = av_malloc((MAX_PB_SIZE + 8) * MAX_PB_SIZE * sizeof(*s->HEVClcList[0]->edge_emu_buffer_up_h));
-    s->HEVClcList[0]->edge_emu_buffer_up_v = av_malloc((MAX_PB_SIZE + 8) * MAX_PB_SIZE * sizeof(*s->HEVClcList[0]->edge_emu_buffer_up_v));
+    s->HEVClcList[0]->edge_emu_buffer = av_malloc(MAX_EDGE_BUFFER_SIZE);
+    s->HEVClcList[0]->edge_emu_buffer_up_h = av_malloc(MAX_EDGE_BUFFER_SIZE);
+    s->HEVClcList[0]->edge_emu_buffer_up_v = av_malloc(MAX_EDGE_BUFFER_SIZE * sizeof(*s->HEVClcList[0]->edge_emu_buffer_up_v));
     
     if(avctx->active_thread_type & FF_THREAD_SLICE)
         s->threads_number  = avctx->thread_count;
@@ -3051,10 +3051,9 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
-        
-        s->HEVClcList[i]->edge_emu_buffer = av_malloc((MAX_PB_SIZE + 7) * (MAX_PB_SIZE+7) * sizeof(*s->HEVClcList[i]->edge_emu_buffer));
-        s->HEVClcList[i]->edge_emu_buffer_up_h = av_malloc((MAX_PB_SIZE + 8) * MAX_PB_SIZE * sizeof(*s->HEVClcList[i]->edge_emu_buffer_up_h));
-        s->HEVClcList[i]->edge_emu_buffer_up_v = av_malloc((MAX_PB_SIZE + 8) * MAX_PB_SIZE * sizeof(*s->HEVClcList[i]->edge_emu_buffer_up_v));
+        s->HEVClcList[i]->edge_emu_buffer = av_malloc(MAX_EDGE_BUFFER_SIZE);
+        s->HEVClcList[i]->edge_emu_buffer_up_h = av_malloc(MAX_EDGE_BUFFER_SIZE);
+        s->HEVClcList[i]->edge_emu_buffer_up_v = av_malloc(MAX_EDGE_BUFFER_SIZE * sizeof(*s->HEVClcList[i]->edge_emu_buffer_up_v));
     }
     return 0;
 

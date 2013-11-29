@@ -58,6 +58,8 @@
 
 #define MAX_TB_SIZE 32
 #define MAX_PB_SIZE 64
+#define MAX_EDGE_BUFFER_SIZE    ((MAX_PB_SIZE + 8) * (MAX_PB_SIZE+8) * 2)
+#define MAX_EDGE_BUFFER_STRIDE  ((MAX_PB_SIZE+8) * 2)
 #define MAX_LOG2_CTB_SIZE 6
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
