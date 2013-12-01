@@ -30,6 +30,7 @@ struct SAOParams;
 struct SAOParams;
 struct AVFrame;
 struct UpsamplInf;
+struct HEVCWindow; 
 
 typedef struct HEVCDSPContext {
     void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,

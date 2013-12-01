@@ -266,9 +266,11 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     x = x0 + nPbW;
     y = y0 + nPbH;
 #if 0
-    if(ref == s->inter_layer_ref )
-        upsample_block_luma(s, ref0, x0, y0,nPbW, nPbH);
+    if(ref == s->inter_layer_ref ) {
+        ff_upsample_block_luma(s, ref, x0, y0, nPbW, nPbH);
+    }
 #endif
+
     if (s->threads_type & FF_THREAD_FRAME )
         ff_thread_await_progress(&ref->tf, y, 0);
     if (tab_mvf &&
