@@ -1282,6 +1282,36 @@ static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
         ff_thread_await_progress(&ref->tf, y, 0);
 }
 
+static int upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH) {
+    uint8_t *tmp  = s->BL_frame->frame->data[0];
+    short   *tmp0 = s->HEVClc->edge_emu_buffer_up_v;
+    int stride    = ref0->frame->linesize[0];
+    
+    int ret = s->vdsp.emulated_edge_up_h(
+                                         s->BL_frame->frame->data[0], s->HEVClc->edge_emu_buffer, ref0->frame->linesize[0], MAX_EDGE_BUFFER_STRIDE,
+                                         &s->sps->scaled_ref_layer_window, &s->up_filter_inf,
+                                         nPbW, nPbH , x0 , s->BL_frame->frame->coded_width, s->sps->width);
+    if( ret ) {
+        tmp = s->HEVClc->edge_emu_buffer;
+        stride = MAX_EDGE_BUFFER_STRIDE;
+    }
+    
+    s->hevcdsp.upsample_filter_block_h(
+       s->HEVClc->edge_emu_buffer_up_v, MAX_EDGE_BUFFER_STRIDE, tmp, stride,
+                                       nPbW, nPbH, s->sps->width,
+                                       up_sample_filter_luma ,&s->sps->scaled_ref_layer_window, &s->up_filter_inf );
+    ret = s->vdsp.emulated_edge_up_v(
+             s->HEVClc->edge_emu_buffer_up, s->HEVClc->edge_emu_buffer_up_v, s->inter_layer_ref->frame->linesize[0], MAX_EDGE_BUFFER_STRIDE,
+             &s->sps->scaled_ref_layer_window, &s->up_filter_inf,
+             nPbW, nPbH ,y0 , s->BL_frame->frame->coded_width, s->sps->width );
+    if( ret )
+        tmp0 = s->HEVClc->edge_emu_buffer_up;
+    
+    stride = MAX_EDGE_BUFFER_STRIDE;
+    s->vdsp.emulated_edge_up_v(s->inter_layer_ref->frame->data[0], s->inter_layer_ref->frame->linesize[0], tmp0, stride, nPbW, nPbH, s->sps->width, s->sps->height, up_sample_filter_luma ,&s->sps->scaled_ref_layer_window, &s->up_filter_inf);
+
+}
+
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                                 int nPbW, int nPbH,
                                 int log2_cb_size, int partIdx, int idx)
@@ -1402,36 +1432,23 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
         if (!ref0)
             return;
-        /*      FIXME   if ref is 0 and enhancement layer: up-sample the base layer and up-scame MVsparameters: x0, y0, nPbW, nPbH      */
-        if(ref0 == s->inter_layer_ref ){
-            //        uint8_t *buf, const uint8_t *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
-            //      struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
-            //    int block_w, int block_h, int src_x, int wBL, int wEL
-            uint8_t *tmp = s->BL_frame->frame->data[0];
-            int stride = ref0->frame->linesize[0]; 
-            int ret = s->vdsp.emulated_edge_up_h(
-                         s->BL_frame->frame->data[0], s->HEVClc->edge_emu_buffer, ref0->frame->linesize[0], MAX_EDGE_BUFFER_STRIDE,
-                         &s->sps->scaled_ref_layer_window, &s->up_filter_inf,
-                         nPbW, nPbH ,x0 , s->BL_frame->frame->coded_width, s->sps->width);
-            if(ret) {
-                tmp = s->HEVClc->edge_emu_buffer;
-                stride = MAX_EDGE_BUFFER_STRIDE;
-            }
-            s->hevcdsp.upsample_filter_block_h(
-               s->HEVClc->edge_emu_buffer_up, MAX_EDGE_BUFFER_STRIDE, tmp, stride,
-               nPbW, nPbH, s->sps->width,
-               up_sample_filter_luma ,&s->sps->scaled_ref_layer_window, &s->up_filter_inf );
-            //  up
-           // s->vdsp.emulated_edge_up_v();
-          // Down sample
-        }
+#if 0
+        if(ref0 == s->inter_layer_ref )
+            upsample_block_luma(s, ref0, x0, y0,nPbW, nPbH);
+#endif 
+        
         hevc_await_progress(s, ref0, &current_mv.mv[0], y0, nPbH);
     }
     if (current_mv.pred_flag[1]) {
         ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
         if (!ref1)
             return;
+#if 0
+        if(ref1 == s->inter_layer_ref )
+            upsample_block_luma(s, ref1, x0, y0,nPbW, nPbH);
+#endif
         hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
+        
     }
 
     if (current_mv.pred_flag[0] && !current_mv.pred_flag[1]) {
