@@ -2922,9 +2922,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     pic_arrays_free(s);
-
-    if (lc)
-        av_freep(&lc->edge_emu_buffer);
     av_freep(&s->md5_ctx);
 
     for(i=0; i < s->nals_allocated; i++) {
@@ -2958,7 +2955,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for (i = 1; i < s->threads_number; i++) {
         lc = s->HEVClcList[i];
         if (lc) {
-            av_freep(&lc->edge_emu_buffer);
             av_freep(&s->HEVClcList[i]);
             av_freep(&s->sList[i]);
         }
@@ -3015,7 +3011,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->temporal_layer_id   = 8; 
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
-    s->HEVClcList[0]->edge_emu_buffer = av_malloc(MAX_EDGE_BUFFER_SIZE);
     if(avctx->active_thread_type & FF_THREAD_SLICE)
         s->threads_number  = avctx->thread_count;
     else
@@ -3026,7 +3021,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
-        s->HEVClcList[i]->edge_emu_buffer = av_malloc(MAX_EDGE_BUFFER_SIZE);
     }
 
     return 0;
