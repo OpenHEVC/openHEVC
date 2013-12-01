@@ -2937,8 +2937,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     if (lc){
         av_freep(&lc->edge_emu_buffer);
-        av_freep(&lc->edge_emu_buffer_up_h);
-        av_freep(&lc->edge_emu_buffer_up_v);
+        av_freep(&lc->edge_emu_buffer_up);
     }
     
     av_freep(&s->md5_ctx);
@@ -2975,8 +2974,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         lc = s->HEVClcList[i];
         if (lc) {
             av_freep(&lc->edge_emu_buffer);
-            av_freep(&lc->edge_emu_buffer_up_h);
-            av_freep(&lc->edge_emu_buffer_up_v);
+            av_freep(&lc->edge_emu_buffer_up);
             av_freep(&s->HEVClcList[i]);
             av_freep(&s->sList[i]);
         }
@@ -3035,8 +3033,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
     s->HEVClcList[0]->edge_emu_buffer      = av_malloc(MAX_EDGE_BUFFER_SIZE);
-    s->HEVClcList[0]->edge_emu_buffer_up_h = av_malloc(MAX_EDGE_BUFFER_SIZE);
-    s->HEVClcList[0]->edge_emu_buffer_up_v = av_malloc(MAX_EDGE_BUFFER_SIZE * sizeof(*s->HEVClcList[0]->edge_emu_buffer_up_v));
+    s->HEVClcList[0]->edge_emu_buffer_up = av_malloc(MAX_EDGE_BUFFER_SIZE * sizeof(*s->HEVClcList[0]->edge_emu_buffer_up));
     if(avctx->active_thread_type & FF_THREAD_SLICE)
         s->threads_number  = avctx->thread_count;
     else
@@ -3049,8 +3046,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
         s->HEVClcList[i]->edge_emu_buffer = av_malloc(MAX_EDGE_BUFFER_SIZE);
-        s->HEVClcList[i]->edge_emu_buffer_up_h = av_malloc(MAX_EDGE_BUFFER_SIZE);
-        s->HEVClcList[i]->edge_emu_buffer_up_v = av_malloc(MAX_EDGE_BUFFER_SIZE * sizeof(*s->HEVClcList[i]->edge_emu_buffer_up_v));
+        s->HEVClcList[i]->edge_emu_buffer_up = av_malloc(MAX_EDGE_BUFFER_SIZE * sizeof(*s->HEVClcList[i]->edge_emu_buffer_up));
     }
     return 0;
 
