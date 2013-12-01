@@ -59,13 +59,13 @@ typedef struct VideoDSPContext {
      * @h number of lines to prefetch
      */
 
-    int (*emulated_edge_up_h)(uint8_t *buf, const uint8_t *src,
-                                 ptrdiff_t linesize, struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
-                                 int block_w, int block_h, int src_x, int wBL, int wEL);
+    int (*emulated_edge_up_h)( uint8_t *buf, const uint8_t *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
+                               struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
+                               int block_w, int block_h, int src_x, int wBL, int wEL);
     
-    int (*emulated_edge_up_v)(short *buf, const short *src,
-                                 ptrdiff_t linesize, struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
-                                 int block_w, int block_h, int src_y, int hBL, int hEL);
+    int (*emulated_edge_up_v)( short *buf, const short *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
+                               struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
+                               int block_w, int block_h, int src_y, int hBL, int hEL);
     
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;

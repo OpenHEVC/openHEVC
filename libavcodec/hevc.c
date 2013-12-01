@@ -1277,7 +1277,7 @@ static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0, int height)
 {
     int y = (mv->y >> 2) + y0 + height + 9;
-    /*      FIXME   if ref is is 0 and enhancement layer: up-sample the base layer and up-scame MVsparameters: x0, y0, nPbW, nPbH      */
+    
     if (s->threads_type & FF_THREAD_FRAME )
         ff_thread_await_progress(&ref->tf, y, 0);
 }
@@ -1402,6 +1402,29 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
         if (!ref0)
             return;
+        /*      FIXME   if ref is 0 and enhancement layer: up-sample the base layer and up-scame MVsparameters: x0, y0, nPbW, nPbH      */
+        if(ref0 == s->inter_layer_ref ){
+            //        uint8_t *buf, const uint8_t *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
+            //      struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
+            //    int block_w, int block_h, int src_x, int wBL, int wEL
+            uint8_t *tmp = s->BL_frame->frame->data[0];
+            int stride = ref0->frame->linesize[0]; 
+            int ret = s->vdsp.emulated_edge_up_h(
+                         s->BL_frame->frame->data[0], s->HEVClc->edge_emu_buffer, ref0->frame->linesize[0], MAX_EDGE_BUFFER_STRIDE,
+                         &s->sps->scaled_ref_layer_window, &s->up_filter_inf,
+                         nPbW, nPbH ,x0 , s->BL_frame->frame->coded_width, s->sps->width);
+            if(ret) {
+                tmp = s->HEVClc->edge_emu_buffer;
+                stride = MAX_EDGE_BUFFER_STRIDE;
+            }
+            s->hevcdsp.upsample_filter_block_h(
+               s->HEVClc->edge_emu_buffer_up, MAX_EDGE_BUFFER_STRIDE, tmp, stride,
+               nPbW, nPbH, s->sps->width,
+               up_sample_filter_luma ,&s->sps->scaled_ref_layer_window, &s->up_filter_inf );
+            //  up
+           // s->vdsp.emulated_edge_up_v();
+          // Down sample
+        }
         hevc_await_progress(s, ref0, &current_mv.mv[0], y0, nPbH);
     }
     if (current_mv.pred_flag[1]) {
@@ -2934,12 +2957,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     pic_arrays_free(s);
-
-    if (lc){
-        av_freep(&lc->edge_emu_buffer);
-        av_freep(&lc->edge_emu_buffer_up);
-    }
-    
     av_freep(&s->md5_ctx);
 
     for(i=0; i < s->nals_allocated; i++) {
@@ -2973,8 +2990,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for (i = 1; i < s->threads_number; i++) {
         lc = s->HEVClcList[i];
         if (lc) {
-            av_freep(&lc->edge_emu_buffer);
-            av_freep(&lc->edge_emu_buffer_up);
             av_freep(&s->HEVClcList[i]);
             av_freep(&s->sList[i]);
         }
@@ -3032,8 +3047,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->quality_layer_id    = 8;
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
-    s->HEVClcList[0]->edge_emu_buffer      = av_malloc(MAX_EDGE_BUFFER_SIZE);
-    s->HEVClcList[0]->edge_emu_buffer_up = av_malloc(MAX_EDGE_BUFFER_SIZE * sizeof(*s->HEVClcList[0]->edge_emu_buffer_up));
     if(avctx->active_thread_type & FF_THREAD_SLICE)
         s->threads_number  = avctx->thread_count;
     else
@@ -3045,8 +3058,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
-        s->HEVClcList[i]->edge_emu_buffer = av_malloc(MAX_EDGE_BUFFER_SIZE);
-        s->HEVClcList[i]->edge_emu_buffer_up = av_malloc(MAX_EDGE_BUFFER_SIZE * sizeof(*s->HEVClcList[i]->edge_emu_buffer_up));
     }
     return 0;
 

@@ -93,7 +93,7 @@ static void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
     }
 }
 
-static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff_t linesize,
+static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
                                     struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
                                     int block_w, int block_h, int src_x, int wBL, int wEL)
 {
@@ -112,10 +112,11 @@ static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff
             memset(buf_tmp, src_tmp[0], -refPos);
             memcpy(buf_tmp-refPos, src_tmp, block_w);
             src_tmp += linesize;
-            buf_tmp += linesize;
+            buf_tmp += linesizeb;
         }
         return 1;
     }
+    printf("refPos %d wBL %d \n", refPos, wBL);
     if(refPos+NTAPS_LUMA > wBL ){
         buf_tmp = buf;
         src_tmp = src;
@@ -123,7 +124,7 @@ static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff
             memcpy(buf_tmp, src_tmp, block_w-refPos);
             memset(buf_tmp+(block_w-refPos), src_tmp[block_w-refPos-1], NTAPS_LUMA-(block_w-refPos));
             src_tmp += linesize;
-            buf_tmp += linesize;
+            buf_tmp += linesizeb;
         }
         return 1;
     }
@@ -131,7 +132,7 @@ static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff
 }
 
 
-static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t linesize,
+static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
                                     struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
                                     int block_w, int block_h, int src_y, int hBL, int hEL)
 {
@@ -147,9 +148,9 @@ static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t l
     if(refPos < 0)  {
         for( i = 0; i < block_w; i++ )	{
             for(j= 0; j<-refPos ; j++)
-                buf_tmp[j*linesize] = src_tmp[-refPos*linesize];
+                buf_tmp[j*linesizeb] = src_tmp[-refPos*linesize];
             for(j= 0; j< block_h ; j++)
-                buf_tmp[(-refPos+j)*linesize] = src_tmp[(-refPos+j)*linesize];
+                buf_tmp[(-refPos+j)*linesizeb] = src_tmp[(-refPos+j)*linesize];
             //if( (i >= leftStartL) && (i <= rightEndL-2) )
             src_tmp++;
             buf_tmp++; 
@@ -159,9 +160,9 @@ static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t l
     if(refPos+NTAPS_LUMA > hBL )    {
         for( i = 0; i < block_w; i++ )	{   // block_w for EL
             for(j= 0; j< block_h ; j++)
-                buf_tmp[j*linesize] = src_tmp[j*linesize];
+                buf_tmp[j*linesizeb] = src_tmp[j*linesize];
             for(j= 0; j<8-(hBL-refPos) ; j++)
-                buf_tmp[(hBL-refPos+j)*linesize] = src_tmp[(hBL-refPos-1)*linesize];
+                buf_tmp[(hBL-refPos+j)*linesizeb] = src_tmp[(hBL-refPos-1)*linesize];
             //if( (i >= leftStartL) && (i <= rightEndL-2) )
             src_tmp++;
             buf_tmp++;
