@@ -979,74 +979,6 @@ void ff_hevc_put_hevc_epel_pixels_10_sse(int16_t *dst, ptrdiff_t dststride,
 
 }
 
-void ff_hevc_put_hevc_epel_h_8_sse(int16_t *dst, ptrdiff_t dststride,
-                                   uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx,
-                                   int my, int16_t* mcbuffer) {
-    int x, y;
-    uint8_t *src = (uint8_t*) _src;
-    ptrdiff_t srcstride = _srcstride;
-    const int8_t *filter = ff_hevc_epel_filters[mx - 1];
-    __m128i r0, bshuffle1, bshuffle2, x1, x2, x3;
-    r0= _mm_loadl_epi64((const __m128i *)filter);
-    r0= _mm_shuffle_epi32(r0,0);
-
-    bshuffle1 = _mm_set_epi8(6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0);
-
-
-    if(!(width & 7)){
-        bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5, 4);
-        for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x += 8) {
-
-                x1 = _mm_loadu_si128((__m128i *) &src[x - 1]);
-                x2 = _mm_shuffle_epi8(x1, bshuffle1);
-                x3 = _mm_shuffle_epi8(x1, bshuffle2);
-
-                /*  PMADDUBSW then PMADDW     */
-                x2 = _mm_maddubs_epi16(x2, r0);
-                x3 = _mm_maddubs_epi16(x3, r0);
-                x2 = _mm_hadd_epi16(x2, x3);
-                _mm_store_si128((__m128i *) &dst[x], x2);
-            }
-            src += srcstride;
-            dst += dststride;
-        }
-    }else if(!(width & 3)){
-
-        for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x += 4) {
-                /* load data in register     */
-                x1 = _mm_loadu_si128((__m128i *) &src[x-1]);
-                x2 = _mm_shuffle_epi8(x1, bshuffle1);
-
-                /*  PMADDUBSW then PMADDW     */
-                x2 = _mm_maddubs_epi16(x2, r0);
-                x2 = _mm_hadd_epi16(x2, _mm_setzero_si128());
-                /* give results back            */
-                _mm_storel_epi64((__m128i *) &dst[x], x2);
-            }
-            src += srcstride;
-            dst += dststride;
-        }
-    }else{
-        for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x += 2) {
-                /* load data in register     */
-                x1 = _mm_loadu_si128((__m128i *) &src[x-1]);
-                x2 = _mm_shuffle_epi8(x1, bshuffle1);
-
-                /*  PMADDUBSW then PMADDW     */
-                x2 = _mm_maddubs_epi16(x2, r0);
-                x2 = _mm_hadd_epi16(x2, _mm_setzero_si128());
-                /* give results back            */
-                _mm_maskmoveu_si128(x2,_mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1),(char *) (dst+x));
-            }
-            src += srcstride;
-            dst += dststride;
-        }
-    }
-}
-
 void ff_hevc_put_hevc_epel_h_10_sse(int16_t *dst, ptrdiff_t dststride,
                                     uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx,
                                     int my, int16_t* mcbuffer) {
@@ -1869,6 +1801,79 @@ void ff_hevc_put_hevc_qpel_h_1_10_sse(int16_t *dst, ptrdiff_t dststride,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// ff_hevc_put_hevc_epel_hX_8_sse
+////////////////////////////////////////////////////////////////////////////////
+#define EPEL_INIT_H2()                                                         \
+    const __m128i c0  = _mm_setzero_si128();                                   \
+    __m128i mask      = _mm_set_epi32(0, 0, 0, -1)
+#define EPEL_INIT_H4()                                                         \
+    const __m128i c0  = _mm_setzero_si128()
+#define EPEL_INIT_H8()                                                         \
+    __m128i bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5, 4)
+
+#define EPEL_LOAD_H2()                                                         \
+    x1 = _mm_loadu_si128((__m128i *) &src[x - 1])
+#define EPEL_LOAD_H4()                                                         \
+    EPEL_LOAD_H2()
+#define EPEL_LOAD_H8()                                                         \
+    EPEL_LOAD_H2()
+
+#define EPEL_SHUFFLE_H2()                                                      \
+    x2 = _mm_shuffle_epi8(x1, bshuffle1)
+#define EPEL_SHUFFLE_H4()                                                      \
+    EPEL_SHUFFLE_H2()
+#define EPEL_SHUFFLE_H8()                                                      \
+    EPEL_SHUFFLE_H2();                                                         \
+    x3 = _mm_shuffle_epi8(x1, bshuffle2)
+
+#define EPEL_MUL_ADD_H2()                                                      \
+    x2 = _mm_maddubs_epi16(x2, r0);                                            \
+    x2 = _mm_hadd_epi16(x2, c0)
+#define EPEL_MUL_ADD_H4()                                                      \
+    EPEL_MUL_ADD_H2()
+#define EPEL_MUL_ADD_H8()                                                      \
+    x2 = _mm_maddubs_epi16(x2, r0);                                            \
+    x3 = _mm_maddubs_epi16(x3, r0);                                            \
+    x2 = _mm_hadd_epi16(x2, x3)
+
+#define EPEL_STORE_H2()                                                        \
+    _mm_maskmoveu_si128(x2, mask,(char *) (dst+x))
+#define EPEL_STORE_H4()                                                        \
+    _mm_storel_epi64((__m128i *) &dst[x], x2)
+#define EPEL_STORE_H8()                                                        \
+    _mm_store_si128((__m128i *) &dst[x], x2)
+
+#define PUT_HEVC_EPEL_H(H)                                                     \
+void ff_hevc_put_hevc_epel_h ## H ## _8_sse (                                  \
+                                   int16_t *dst, ptrdiff_t dststride,          \
+                                   uint8_t *_src, ptrdiff_t _srcstride,        \
+                                   int width, int height,                      \
+                                   int mx, int my, int16_t* mcbuffer) {        \
+    int x, y;                                                                  \
+    uint8_t      *src        = (uint8_t*) _src;                                \
+    ptrdiff_t     srcstride  = _srcstride;                                     \
+    const int8_t *filter     = ff_hevc_epel_filters[mx - 1];                   \
+    __m128i x1, x2, x3;                                                        \
+    __m128i r0 = _mm_shuffle_epi32(_mm_loadl_epi64((const __m128i *)filter),0);\
+    __m128i bshuffle1 = _mm_set_epi8( 6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0); \
+    EPEL_INIT_H ## H();                                                        \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            EPEL_LOAD_H ## H();                                                \
+            EPEL_SHUFFLE_H ## H();                                             \
+            EPEL_MUL_ADD_H ## H();                                             \
+            EPEL_STORE_H ## H();                                               \
+        }                                                                      \
+        src += srcstride;                                                      \
+        dst += dststride;                                                      \
+    }                                                                          \
+}
+
+PUT_HEVC_EPEL_H( 2)
+PUT_HEVC_EPEL_H( 4)
+PUT_HEVC_EPEL_H( 8)
+
+////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_pixelsX_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define QPEL_LOAD_PIXEL4()                                                     \
@@ -1909,10 +1914,10 @@ void ff_hevc_put_hevc_qpel_pixels ## H ## _8_sse (                             \
                                     int width, int height,                     \
                                     int16_t* mcbuffer) {                       \
     int x, y;                                                                  \
-    uint8_t *src = (uint8_t*) _src;                                            \
+    uint8_t  *src       = (uint8_t*) _src;                                     \
     ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);                        \
+    const __m128i c0    = _mm_setzero_si128();                                 \
     __m128i x1, x2, x3, x4;                                                    \
-    __m128i c0 = _mm_setzero_si128();                                          \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
             QPEL_LOAD_PIXEL ## H();                                            \
@@ -1968,7 +1973,7 @@ PUT_HEVC_QPEL_PIXELS(16)
     x2 = _mm_maddubs_epi16(x2, r0);                                            \
     x3 = _mm_maddubs_epi16(x3, r0);                                            \
     x2 = _mm_hadd_epi16(x2, x3);                                               \
-    x2 = _mm_hadd_epi16(x2, _mm_setzero_si128())
+    x2 = _mm_hadd_epi16(x2, c0)
 
 #define QPEL_MUL_ADD_H8()                                                      \
     x2 = _mm_maddubs_epi16(x2, r0);                                            \
@@ -1992,8 +1997,9 @@ void ff_hevc_put_hevc_qpel_h ## H ##_ ## F ## _8_sse (                         \
                                     int width, int height,                     \
                                     int16_t* mcbuffer) {                       \
     int x, y;                                                                  \
-    uint8_t *src = (uint8_t*) _src;                                            \
-    ptrdiff_t srcstride = _srcstride / sizeof(uint8_t);                        \
+    uint8_t      *src       = (uint8_t*) _src;                                 \
+    ptrdiff_t     srcstride = _srcstride / sizeof(uint8_t);                    \
+    const __m128i c0        = _mm_setzero_si128();                             \
     __m128i x1, x2, x3, x4, x5, x6, x7, x8;                                    \
     QPEL_FILTER_INIT_H ## F();                                                 \
     for (y = 0; y < height; y++) {                                             \
@@ -2125,7 +2131,7 @@ PUT_HEVC_QPEL_H_F(8, 3)
     r1 = _mm_adds_epi16(r1, _mm_mullo_epi16(x8, c8))
 
 #define QPEL_MUL_ADD_V16_8()                                                   \
-    QPEL_MUL_ADD_V4_8();                                                         \
+    QPEL_MUL_ADD_V4_8();                                                       \
     r2 = _mm_mullo_epi16(t1, c1);                                              \
     r2 = _mm_adds_epi16(r2, _mm_mullo_epi16(t2, c2));                          \
     r2 = _mm_adds_epi16(r2, _mm_mullo_epi16(t3, c3));                          \
@@ -2292,6 +2298,7 @@ void ff_hevc_put_hevc_qpel_h ## H ##_ ## FH ## _v ## _ ## FV ## _sse (         \
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, r2;                            \
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;                                    \
     QPEL_FILTER_INIT_H ## FH();                                                \
+    QPEL_FILTER_INIT_HV ## H ##_V ## FV();                                     \
                                                                                \
     src -= ff_hevc_qpel_extra_before[FV] * srcstride;                          \
                                                                                \
@@ -2311,7 +2318,6 @@ void ff_hevc_put_hevc_qpel_h ## H ##_ ## FH ## _v ## _ ## FV ## _sse (         \
                                                                                \
     /* vertical treatment on temp table : tmp contains 16 bit values, */       \
     /* so need to use 32 bit  integers for register calculations      */       \
-    QPEL_FILTER_INIT_HV ## H ##_V ## FV();                                     \
                                                                                \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
