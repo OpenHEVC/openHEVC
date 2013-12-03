@@ -1,6 +1,10 @@
 #ifndef AVCODEC_X86_HEVCDSP_H
 #define AVCODEC_X86_HEVCDSP_H
 
+struct SAOParams;
+struct AVFrame;
+struct UpsamplInf;
+struct HEVCWindow;
 
 //IDCT functions
 

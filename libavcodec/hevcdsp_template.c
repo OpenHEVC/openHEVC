@@ -1437,7 +1437,7 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     int refPos16 = 0;
     int phase    = 0;
     int refPos   = 0;
-    int32_t* coeff = enabled_up_sample_filter_chroma[phase];
+    const int32_t* coeff;
     widthEL   = FrameEL->width;  //pcUsPic->getWidth ();
     heightEL  = FrameEL->height; //pcUsPic->getHeight();
     
