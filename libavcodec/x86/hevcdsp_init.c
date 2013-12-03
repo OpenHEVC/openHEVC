@@ -139,7 +139,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_epel[0][0][1] = ff_hevc_put_hevc_epel_h2_8_sse;
                     c->put_hevc_epel[1][0][1] = ff_hevc_put_hevc_epel_h4_8_sse;
                     c->put_hevc_epel[2][0][1] = c->put_hevc_epel[3][0][1] = c->put_hevc_epel[4][0][1] = ff_hevc_put_hevc_epel_h8_8_sse;
-                    c->put_hevc_epel[0][1][0] = c->put_hevc_epel[1][1][0] = c->put_hevc_epel[2][1][0] = c->put_hevc_epel[3][1][0] = c->put_hevc_epel[4][1][0] = ff_hevc_put_hevc_epel_v_8_sse;
+                    c->put_hevc_epel[0][1][0] = ff_hevc_put_hevc_epel_v2_8_sse;
+                    c->put_hevc_epel[1][1][0] = ff_hevc_put_hevc_epel_v4_8_sse;
+                    c->put_hevc_epel[2][1][0] = ff_hevc_put_hevc_epel_v8_8_sse;
+                    c->put_hevc_epel[3][1][0] = c->put_hevc_epel[4][1][0] = ff_hevc_put_hevc_epel_v16_8_sse;
                     c->put_hevc_epel[0][1][1] = c->put_hevc_epel[1][1][1] = c->put_hevc_epel[2][1][1] = c->put_hevc_epel[3][1][1] = c->put_hevc_epel[4][1][1] = ff_hevc_put_hevc_epel_hv_8_sse;
 
                     c->transform_skip     = ff_hevc_transform_skip_8_sse;
