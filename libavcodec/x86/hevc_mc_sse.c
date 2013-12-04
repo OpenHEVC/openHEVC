@@ -80,26 +80,26 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#define MUL_ADD_H_1(mul, add, src)                                             \
+#define MUL_ADD_H_1(mul, add, dst, src)                                        \
     src ## 2 = mul(src ## 2, r0);                                              \
-    src ## 2 = add(src ## 2, c0)
-#define MUL_ADD_H_2(mul, add, src)                                             \
+    dst      = add(src ## 2, c0)
+#define MUL_ADD_H_2(mul, add, dst, src)                                        \
     src ## 2 = mul(src ## 2, r0);                                              \
     src ## 3 = mul(src ## 3, r0);                                              \
     src ## 2 = add(src ## 2, src ## 3);                                        \
-    src ## 2 = add(src ## 2, c0)
-#define MUL_ADD_H_2_2(mul, add, src)                                           \
+    dst      = add(src ## 2, c0)
+#define MUL_ADD_H_2_2(mul, add, dst, src)                                      \
     src ## 2 = mul(src ## 2, r0);                                              \
     src ## 3 = mul(src ## 3, r0);                                              \
-    src ## 2 = add(src ## 2, src ## 3)
-#define MUL_ADD_H_4(mul, add, src)                                             \
+    dst      = add(src ## 2, src ## 3)
+#define MUL_ADD_H_4(mul, add, dst, src)                                        \
     src ## 2 = mul(src ## 2, r0);                                              \
     src ## 3 = mul(src ## 3, r0);                                              \
     src ## 4 = mul(src ## 4, r0);                                              \
     src ## 5 = mul(src ## 5, r0);                                              \
     src ## 2 = add(src ## 2, src ## 3);                                        \
     src ## 4 = add(src ## 4, src ## 5);                                        \
-    src ## 2 = add(src ## 2, src ## 4)
+    dst      = add(src ## 2, src ## 4)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -148,6 +148,16 @@
     dst = add(dst, mul(src ## 6, c6));                                         \
     dst = add(dst, mul(src ## 7, c7));                                         \
     dst = add(dst, mul(src ## 8, c8))
+
+#define PEL_STORE2(tab)                                                        \
+    _mm_maskmoveu_si128(r1, mask, (char *) &tab[x])
+#define PEL_STORE4(tab)                                                        \
+    _mm_storel_epi64((__m128i *) &tab[x], r1)
+#define PEL_STORE8(tab)                                                        \
+    _mm_storeu_si128((__m128i *) &tab[x], r1)
+#define PEL_STORE16(tab)                                                       \
+    _mm_storeu_si128((__m128i *) &tab[x    ], r1);                             \
+    _mm_storeu_si128((__m128i *) &tab[x + 8], r2)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1066,16 +1076,16 @@ void ff_hevc_put_hevc_qpel_h_1_10_sse(int16_t *dst, ptrdiff_t dststride,
 // ff_hevc_put_hevc_epel_hX_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define EPEL_INIT_H2()                                                         \
-    __m128i x1, x2;                                                            \
+    __m128i x1, x2, r1;                                                        \
     __m128i bshuffle1  = _mm_set_epi8( 6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0); \
     const __m128i c0   = _mm_setzero_si128();                                  \
     const __m128i mask = _mm_set_epi32(0, 0, 0, -1)
 #define EPEL_INIT_H4()                                                         \
-    __m128i x1, x2;                                                            \
+    __m128i x1, x2, r1;                                                        \
     __m128i bshuffle1  = _mm_set_epi8( 6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0); \
     const __m128i c0   = _mm_setzero_si128()
 #define EPEL_INIT_H8()                                                         \
-    __m128i x1, x2, x3;                                                        \
+    __m128i x1, x2, x3, r1;                                                    \
     __m128i bshuffle1  = _mm_set_epi8( 6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0); \
     __m128i bshuffle2  = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5, 4)
 
@@ -1094,18 +1104,11 @@ void ff_hevc_put_hevc_qpel_h_1_10_sse(int16_t *dst, ptrdiff_t dststride,
     x3 = _mm_shuffle_epi8(x1, bshuffle2)
 
 #define EPEL_MUL_ADD_H2()                                                      \
-    MUL_ADD_H_1(_mm_maddubs_epi16, _mm_hadd_epi16, x)
+    MUL_ADD_H_1(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
 #define EPEL_MUL_ADD_H4()                                                      \
-    MUL_ADD_H_1(_mm_maddubs_epi16, _mm_hadd_epi16, x)
+    MUL_ADD_H_1(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
 #define EPEL_MUL_ADD_H8()                                                      \
-    MUL_ADD_H_2_2(_mm_maddubs_epi16, _mm_hadd_epi16, x)
-
-#define EPEL_STORE_H2(tab)                                                     \
-    _mm_maskmoveu_si128(x2, mask,(char *) &tab[x])
-#define EPEL_STORE_H4(tab)                                                     \
-    _mm_storel_epi64((__m128i *) &tab[x], x2)
-#define EPEL_STORE_H8(tab)                                                     \
-    _mm_store_si128((__m128i *) &tab[x], x2)
+    MUL_ADD_H_2_2(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
 
 #define PUT_HEVC_EPEL_H(H)                                                     \
 void ff_hevc_put_hevc_epel_h ## H ## _8_sse (                                  \
@@ -1122,7 +1125,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _8_sse (                                  \
         for (x = 0; x < width; x += H) {                                       \
             EPEL_LOAD_H ## H();                                                \
             EPEL_MUL_ADD_H ## H();                                             \
-            EPEL_STORE_H ## H(dst);                                            \
+            PEL_STORE ## H(dst);                                               \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
@@ -1173,16 +1176,6 @@ PUT_HEVC_EPEL_H( 8)
     MUL_ADD_V_4(_mm_mullo_epi16, _mm_adds_epi16, r1, x);                       \
     MUL_ADD_V_4(_mm_mullo_epi16, _mm_adds_epi16, r2, t)
 
-#define EPEL_STORE_V2()                                                        \
-    _mm_maskmoveu_si128(r1, mask,(char *) &dst[x])
-#define EPEL_STORE_V4()                                                        \
-    _mm_storel_epi64((__m128i *) &dst[x    ], r1)
-#define EPEL_STORE_V8()                                                        \
-    _mm_storeu_si128((__m128i *) &dst[x    ], r1)
-#define EPEL_STORE_V16()                                                       \
-    _mm_store_si128( (__m128i *) &dst[x    ], r1);                             \
-    _mm_storeu_si128((__m128i *) &dst[x + 8], r2)
-
 #define PUT_HEVC_EPEL_V(V)                                                     \
 void ff_hevc_put_hevc_epel_v ## V ## _8_sse (                                  \
                                    int16_t *dst, ptrdiff_t dststride,          \
@@ -1200,7 +1193,7 @@ void ff_hevc_put_hevc_epel_v ## V ## _8_sse (                                  \
             EPEL_LOAD_V();                                                     \
             EPEL_UNPACK_V ## V();                                              \
             EPEL_MUL_ADD_V ## V();                                             \
-            EPEL_STORE_V ## V();                                               \
+            PEL_STORE ## V(dst);                                               \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
@@ -1275,14 +1268,7 @@ PUT_HEVC_EPEL_V(16)
     r1 = _mm_srai_epi32(r1, 14 - BIT_DEPTH);                                   \
     ADD_HV_V_4(_mm_add_epi32, r2, t);                                          \
     r2 = _mm_srai_epi32(r2, 14 - BIT_DEPTH);                                   \
-    r2 = _mm_packs_epi32(r2, r1)
-
-#define EPEL_STORE_HV_V2()                                                     \
-    _mm_maskmoveu_si128(r1, mask,(char *) &dst[x])
-#define EPEL_STORE_HV_V4()                                                     \
-    _mm_storel_epi64((__m128i *) &dst[x], r1)
-#define EPEL_STORE_HV_V8()                                                     \
-    _mm_store_si128((__m128i *) &dst[x], r2)
+    r1 = _mm_packs_epi32(r2, r1)
 
 #define PUT_HEVC_EPEL_HV(H)                                                    \
 void ff_hevc_put_hevc_epel_hv ## H ## _8_sse (                                 \
@@ -1305,7 +1291,7 @@ void ff_hevc_put_hevc_epel_hv ## H ## _8_sse (                                 \
         for(x = 0; x < width; x += H) {                                        \
             EPEL_LOAD_H ## H();                                                \
             EPEL_MUL_ADD_H ## H();                                             \
-            EPEL_STORE_H ## H(tmp);                                            \
+            PEL_STORE ## H(tmp);                                               \
         }                                                                      \
         src += srcstride;                                                      \
         tmp += MAX_PB_SIZE;                                                    \
@@ -1320,7 +1306,7 @@ void ff_hevc_put_hevc_epel_hv ## H ## _8_sse (                                 \
             EPEL_LOAD_HV_V ## H();                                             \
             EPEL_UNPACK_HV_V ## H();                                           \
             EPEL_MUL_ADD_HV_V ## H();                                          \
-            EPEL_STORE_HV_V ## H();                                            \
+            PEL_STORE ## H(dst);                                               \
         }                                                                      \
         tmp += MAX_PB_SIZE;                                                    \
         dst += dststride;                                                      \
@@ -1335,11 +1321,11 @@ PUT_HEVC_EPEL_HV( 8)
 // ff_hevc_put_hevc_qpel_pixelsX_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define QPEL_PIXEL_INIT4()                                                     \
-    __m128i x1, x2
+    __m128i x1, x2, r1
 #define QPEL_PIXEL_INIT8()                                                     \
-    __m128i x1, x2
+    __m128i x1, x2, r1
 #define QPEL_PIXEL_INIT16()                                                    \
-    __m128i x1, x2, x3
+    __m128i x1, x2, x3, r1, r2
 
 #define QPEL_LOAD_PIXEL()                                                      \
     x1 = _mm_loadu_si128((__m128i *) &src[x])
@@ -1353,20 +1339,12 @@ PUT_HEVC_EPEL_HV( 8)
     x3 = _mm_unpackhi_epi8(x1, c0)
 
 #define QPEL_SLLI_PIXEL4()                                                     \
-    x2 = _mm_slli_epi16(x2, 14 - BIT_DEPTH)
+    r1 = _mm_slli_epi16(x2, 14 - BIT_DEPTH)
 #define QPEL_SLLI_PIXEL8()                                                     \
-    x2 = _mm_slli_epi16(x2, 14 - BIT_DEPTH)
+    r1 = _mm_slli_epi16(x2, 14 - BIT_DEPTH)
 #define QPEL_SLLI_PIXEL16()                                                    \
-    x2 = _mm_slli_epi16(x2, 14 - BIT_DEPTH);                                   \
-    x3 = _mm_slli_epi16(x3, 14 - BIT_DEPTH)
-
-#define QPEL_STORE_PIXEL4()                                                    \
-    _mm_storel_epi64((__m128i *) &dst[x    ], x2)
-#define QPEL_STORE_PIXEL8()                                                    \
-    _mm_storeu_si128((__m128i *) &dst[x    ], x2)
-#define QPEL_STORE_PIXEL16()                                                   \
-    _mm_storeu_si128((__m128i *) &dst[x    ], x2);                             \
-    _mm_storeu_si128((__m128i *) &dst[x + 8], x3)
+    r1 = _mm_slli_epi16(x2, 14 - BIT_DEPTH);                                   \
+    r2 = _mm_slli_epi16(x3, 14 - BIT_DEPTH)
 
 #define PUT_HEVC_QPEL_PIXELS(H)                                                \
 void ff_hevc_put_hevc_qpel_pixels ## H ## _8_sse (                             \
@@ -1384,7 +1362,7 @@ void ff_hevc_put_hevc_qpel_pixels ## H ## _8_sse (                             \
             QPEL_LOAD_PIXEL();                                                 \
             QPEL_UNPACK_PIXEL ## H();                                          \
             QPEL_SLLI_PIXEL ## H();                                            \
-            QPEL_STORE_PIXEL ## H();                                           \
+            PEL_STORE ## H(dst);                                               \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
@@ -1399,9 +1377,9 @@ PUT_HEVC_QPEL_PIXELS(16)
 // ff_hevc_put_hevc_qpel_hX_X_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define QPEL_INIT_H4()                                                         \
-    __m128i x1, x2, x3, x4
+    __m128i x1, x2, x3, x4, r1
 #define QPEL_INIT_H8()                                                         \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1
 
 #define QPEL_FILTER_INIT_H1()                                                  \
    __m128i r0 = _mm_set_epi8(  0, 1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1)
@@ -1431,14 +1409,9 @@ PUT_HEVC_QPEL_PIXELS(16)
     x5 = _mm_unpacklo_epi64(x7, x8)
 
 #define QPEL_MUL_ADD_H4()                                                      \
-    MUL_ADD_H_2(_mm_maddubs_epi16, _mm_hadd_epi16, x)
+    MUL_ADD_H_2(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
 #define QPEL_MUL_ADD_H8()                                                      \
-    MUL_ADD_H_4(_mm_maddubs_epi16, _mm_hadd_epi16, x)
-
-#define QPEL_STORE_H4(tab)                                                     \
-    _mm_storel_epi64((__m128i *) &tab[x], x2)
-#define QPEL_STORE_H8(tab)                                                     \
-    _mm_store_si128((__m128i *) &tab[x], x2)
+    MUL_ADD_H_4(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
 
 #define PUT_HEVC_QPEL_H_F(H, F)                                                \
 void ff_hevc_put_hevc_qpel_h ## H ##_ ## F ## _8_sse (                         \
@@ -1457,7 +1430,7 @@ void ff_hevc_put_hevc_qpel_h ## H ##_ ## F ## _8_sse (                         \
             QPEL_LOAD_H ## H();                                                \
             QPEL_UNPACK_H ## H();                                              \
             QPEL_MUL_ADD_H ## H();                                             \
-            QPEL_STORE_H ## H(dst);                                            \
+            PEL_STORE ## H(dst);                                               \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
@@ -1518,12 +1491,6 @@ PUT_HEVC_QPEL_H_F(8, 3)
     r1 = _mm_srai_epi32(r1, BIT_DEPTH - 8);                                    \
     r1 = _mm_packs_epi32(r1, c0)
 
-#define QPEL_STORE_V4()                                                        \
-    _mm_storel_epi64((__m128i *) &dst[x    ], r1)
-#define QPEL_STORE_V16()                                                       \
-    _mm_store_si128((__m128i *) &dst[x    ], r1);                              \
-    _mm_store_si128((__m128i *) &dst[x + 8], r2)
-
 #define PUT_HEVC_QPEL_V_F_DEPTH(V, F, D)                                       \
 void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
                                     int16_t *dst, ptrdiff_t dststride,         \
@@ -1541,7 +1508,7 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
             QPEL_LOAD_V ## V(src);                                             \
             QPEL_UNPACK_V ## V ## _ ## D();                                    \
             QPEL_MUL_ADD_V ## V ## _ ## D();                                   \
-            QPEL_STORE_V ## V();                                               \
+            PEL_STORE ## V(dst);                                               \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
@@ -1602,11 +1569,11 @@ PUT_HEVC_QPEL_V_F_DEPTH( 4, 3, 10)
     UNPACK_HV_UNI(x8, c8, t8)
 
 #define QPEL_MUL_ADD_HV_H4()                                                   \
-    MUL_ADD_H_2(_mm_maddubs_epi16, _mm_hadd_epi16, x);                         \
-    x2 = _mm_srli_epi16(x2, BIT_DEPTH - 8)
+    MUL_ADD_H_2(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x);                     \
+    r1 = _mm_srli_epi16(r1, BIT_DEPTH - 8)
 #define QPEL_MUL_ADD_HV_H8()                                                   \
-    MUL_ADD_H_4(_mm_maddubs_epi16, _mm_hadd_epi16, x);                         \
-    x2 = _mm_srli_si128(x2, BIT_DEPTH - 8)
+    MUL_ADD_H_4(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x);                     \
+    r1 = _mm_srli_si128(r1, BIT_DEPTH - 8)
 
 #define QPEL_MUL_ADD_HV_V4()                                                   \
     MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
@@ -1621,10 +1588,7 @@ PUT_HEVC_QPEL_V_F_DEPTH( 4, 3, 10)
     r0 = _mm_srli_epi32(r0, 14- BIT_DEPTH);                                    \
     r0 = _mm_and_si128(r0, mask);                                              \
                                                                                \
-    r0 = _mm_hadd_epi16(r0, r1)
-
-#define QPEL_STORE_V8()                                                        \
-    _mm_store_si128((__m128i *) &dst[x],    r0)
+    r1 = _mm_hadd_epi16(r0, r1)
 
 #define PUT_HEVC_QPEL_HV_F(H, FH, FV)                                          \
 void ff_hevc_put_hevc_qpel_h ## H ##_ ## FH ## _v ## _ ## FV ## _sse (         \
@@ -1648,7 +1612,7 @@ void ff_hevc_put_hevc_qpel_h ## H ##_ ## FH ## _v ## _ ## FV ## _sse (         \
             QPEL_LOAD_H ## H();                                                \
             QPEL_UNPACK_H ## H();                                              \
             QPEL_MUL_ADD_HV_H ## H();                                          \
-            QPEL_STORE_H ## H(tmp);                                            \
+            PEL_STORE ## H(tmp);                                               \
         }                                                                      \
         src += srcstride;                                                      \
         tmp += MAX_PB_SIZE;                                                    \
@@ -1665,7 +1629,7 @@ void ff_hevc_put_hevc_qpel_h ## H ##_ ## FH ## _v ## _ ## FV ## _sse (         \
             QPEL_LOAD_V ## H(tmp);                                             \
             QPEL_UNPACK_HV_V ## H();                                           \
             QPEL_MUL_ADD_HV_V ## H();                                          \
-            QPEL_STORE_V ## H();                                               \
+            PEL_STORE ## H(dst);                                               \
         }                                                                      \
         tmp += MAX_PB_SIZE;                                                    \
         dst += dststride;                                                      \
