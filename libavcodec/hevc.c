@@ -1181,7 +1181,6 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
     y_off += mv->y >> 2;
     src   += y_off * srcstride + (x_off << s->sps->pixel_shift);
     uint8_t *src_ = src;
-  //  printf("%d %d %d \n",  x_off, y_off, y_off * srcstride + (x_off << s->sps->pixel_shift));
     if (x_off < extra_left || y_off < extra_top ||
         x_off >= pic_width - block_w - ff_hevc_qpel_extra_after[mx] ||
         y_off >= pic_height - block_h - ff_hevc_qpel_extra_after[my]) {
@@ -1198,14 +1197,6 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
         src = lc->edge_emu_buffer + offset_edge;
         srcstride = MAX_EDGE_BUFFER_STRIDE;
     }
-    /*for(int i =0; i <block_h ;i++){
-        src_ = src + i*srcstride;
-        for(int j =0; j <block_w; j++){
-            printf("%d ",  *src_);
-            src_++; 
-        
-        }
-    }*/
     s->hevcdsp.put_hevc_qpel[idx][my][mx](dst, dststride, src, srcstride, block_w,
                                      block_h, lc->mc_buffer);
 }
