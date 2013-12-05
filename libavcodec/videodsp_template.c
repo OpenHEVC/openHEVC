@@ -121,7 +121,7 @@ static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff
             src_tmp += linesize;
             buf_tmp += linesizeb;
         }
-        return 2;
+        return 1;
     }
     return 0;
 }
@@ -169,7 +169,7 @@ static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t l
             
             buf_tmp++;
         }
-        return 2;
+        return 1;
     }
     return 0;
 }
