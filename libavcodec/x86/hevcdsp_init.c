@@ -96,9 +96,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                     c->put_hevc_qpel[0][0][0] = ff_hevc_put_hevc_qpel_pixels4_8_sse;
                     c->put_hevc_qpel[1][0][0] = ff_hevc_put_hevc_qpel_pixels8_8_sse;
-                    c->put_hevc_qpel[2][0][0] = ff_hevc_put_hevc_qpel_pixels16_8_sse;
-                    c->put_hevc_qpel[3][0][0] = ff_hevc_put_hevc_qpel_pixels16_8_sse;
-                    c->put_hevc_qpel[4][0][0] = ff_hevc_put_hevc_qpel_pixels16_8_sse;
+                    c->put_hevc_qpel[2][0][0] = c->put_hevc_qpel[3][0][0] = c->put_hevc_qpel[4][0][0] = ff_hevc_put_hevc_qpel_pixels16_8_sse;
 
                     c->put_hevc_qpel[0][0][1] = ff_hevc_put_hevc_qpel_h4_1_8_sse;
                     c->put_hevc_qpel[1][0][1] = c->put_hevc_qpel[2][0][1] = c->put_hevc_qpel[3][0][1] = c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_h8_1_8_sse;
@@ -130,12 +128,14 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
                     c->weighted_pred         = ff_hevc_weighted_pred_8_sse;
                     c->weighted_pred_avg     = ff_hevc_weighted_pred_avg_8_sse;
-
+#if 0
                     c->put_hevc_epel[0][0][0] = c->put_hevc_epel[1][0][0] = c->put_hevc_epel[2][0][0] = c->put_hevc_epel[3][0][0] = c->put_hevc_epel[4][0][0] = ff_put_hevc_mc_pixels_master_8_sse4;
-          /*          c->put_hevc_epel[0][0][1] = ff_put_hevc_mc_pixels_4_8_sse4;
-                    c->put_hevc_epel[0][0][2] = ff_put_hevc_mc_pixels_8_8_sse4;
-                    c->put_hevc_epel[0][0][3] = ff_put_hevc_mc_pixels_16_8_sse4;*/
-
+#else
+                    c->put_hevc_epel[0][0][0] = ff_hevc_put_hevc_epel_pixels2_8_sse;
+                    c->put_hevc_epel[1][0][0] = ff_hevc_put_hevc_epel_pixels4_8_sse;
+                    c->put_hevc_epel[2][0][0] = ff_hevc_put_hevc_epel_pixels8_8_sse;
+                    c->put_hevc_epel[3][0][0] = c->put_hevc_epel[4][0][0] = ff_hevc_put_hevc_epel_pixels16_8_sse;
+#endif
                     c->put_hevc_epel[0][0][1] = ff_hevc_put_hevc_epel_h2_8_sse;
                     c->put_hevc_epel[1][0][1] = ff_hevc_put_hevc_epel_h4_8_sse;
                     c->put_hevc_epel[2][0][1] = c->put_hevc_epel[3][0][1] = c->put_hevc_epel[4][0][1] = ff_hevc_put_hevc_epel_h8_8_sse;
