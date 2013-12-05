@@ -267,7 +267,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     y = y0 + nPbH;
 #if 0
     if(ref == s->inter_layer_ref ) {
-        ff_upsample_block_luma(s, ref, x0, y0, nPbW, nPbH);
+        ff_upsample_block(s, ref, x0 , y0, nPbW, nPbH);
     }
 #endif
 

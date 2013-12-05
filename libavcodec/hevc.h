@@ -58,8 +58,8 @@
 
 #define MAX_TB_SIZE 32
 #define MAX_PB_SIZE 64
-#define MAX_EDGE_BUFFER_SIZE    ((MAX_PB_SIZE + 8) * (MAX_PB_SIZE+8) * 2)
-#define MAX_EDGE_BUFFER_STRIDE  ((MAX_PB_SIZE+8) * 2)
+#define MAX_EDGE_BUFFER_SIZE    ((MAX_PB_SIZE + 20) * (MAX_PB_SIZE+20) * 2)
+#define MAX_EDGE_BUFFER_STRIDE  ((MAX_PB_SIZE+20) * 2)
 #define MAX_LOG2_CTB_SIZE 6
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
@@ -1087,7 +1087,7 @@ int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
-void ff_upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH); 
+void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH); 
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx);

@@ -29,6 +29,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct HEVCWindow;
+struct UpsamplInf;
+
+
 typedef struct VideoDSPContext {
     /**
      * Copy a rectangular area of samples to a temporary buffer and replicate
@@ -60,12 +64,12 @@ typedef struct VideoDSPContext {
      */
 
     int (*emulated_edge_up_h)( uint8_t *buf, const uint8_t *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
-                               struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
-                               int block_w, int block_h, int src_x, int wBL, int wEL);
+                               const struct HEVCWindow *Enhscal,
+                               int block_w, int block_h, int src_x, int wBL);
     
     int (*emulated_edge_up_v)( short *buf, const short *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
-                               struct HEVCWindow *Enhscal, struct UpsamplInf *up_info,
-                               int block_w, int block_h, int src_y, int hBL, int hEL);
+                               const struct HEVCWindow *Enhscal,
+                               int block_w, int block_h, int block_h0, int src_x, int src_y, int shiftuv, int hBL, int wEL);
     
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;
