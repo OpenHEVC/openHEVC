@@ -107,13 +107,16 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel[0][0][3] = ff_hevc_put_hevc_qpel_h4_3_8_sse;
                     c->put_hevc_qpel[1][0][3] = c->put_hevc_qpel[2][0][3] = c->put_hevc_qpel[3][0][3] = c->put_hevc_qpel[4][0][3] = ff_hevc_put_hevc_qpel_h8_3_8_sse;
 
-                    c->put_hevc_qpel[0][1][0] = c->put_hevc_qpel[1][1][0] = ff_hevc_put_hevc_qpel_v4_1_8_sse;
+                    c->put_hevc_qpel[0][1][0] = ff_hevc_put_hevc_qpel_v4_1_8_sse;
+                    c->put_hevc_qpel[1][1][0] = ff_hevc_put_hevc_qpel_v8_1_8_sse;
                     c->put_hevc_qpel[2][1][0] = c->put_hevc_qpel[3][1][0] = c->put_hevc_qpel[4][1][0] = ff_hevc_put_hevc_qpel_v16_1_8_sse;
 
-                    c->put_hevc_qpel[0][2][0] = c->put_hevc_qpel[1][2][0] = ff_hevc_put_hevc_qpel_v4_2_8_sse;
+                    c->put_hevc_qpel[0][2][0] = ff_hevc_put_hevc_qpel_v4_2_8_sse;
+                    c->put_hevc_qpel[1][2][0] = ff_hevc_put_hevc_qpel_v8_2_8_sse;
                     c->put_hevc_qpel[2][2][0] = c->put_hevc_qpel[3][2][0] = c->put_hevc_qpel[4][2][0] = ff_hevc_put_hevc_qpel_v16_2_8_sse;
 
-                    c->put_hevc_qpel[0][3][0] = c->put_hevc_qpel[1][3][0] = ff_hevc_put_hevc_qpel_v4_3_8_sse;
+                    c->put_hevc_qpel[0][3][0] = ff_hevc_put_hevc_qpel_v4_3_8_sse;
+                    c->put_hevc_qpel[1][3][0] = ff_hevc_put_hevc_qpel_v8_3_8_sse;
                     c->put_hevc_qpel[2][3][0] = c->put_hevc_qpel[3][3][0] = c->put_hevc_qpel[4][3][0] = ff_hevc_put_hevc_qpel_v16_3_8_sse;
 
 
@@ -158,24 +161,24 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
                     c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
 
-                    c->put_hevc_qpel[0][1][1] = ff_hevc_put_hevc_qpel_h4_1_v_1_sse;
-                    c->put_hevc_qpel[1][1][1] = c->put_hevc_qpel[2][1][1] = c->put_hevc_qpel[3][1][1] = c->put_hevc_qpel[4][1][1] = ff_hevc_put_hevc_qpel_h8_1_v_1_sse;
-                    c->put_hevc_qpel[0][2][2] = ff_hevc_put_hevc_qpel_h4_2_v_2_sse;
-                    c->put_hevc_qpel[1][2][2] = c->put_hevc_qpel[2][2][2] = c->put_hevc_qpel[3][2][2] = c->put_hevc_qpel[4][2][2] = ff_hevc_put_hevc_qpel_h8_2_v_2_sse;
-                    c->put_hevc_qpel[0][3][2] = ff_hevc_put_hevc_qpel_h4_2_v_3_sse;
-                    c->put_hevc_qpel[1][3][2] = c->put_hevc_qpel[2][3][2] = c->put_hevc_qpel[3][3][2] = c->put_hevc_qpel[4][3][2] = ff_hevc_put_hevc_qpel_h8_2_v_3_sse;
-                    c->put_hevc_qpel[0][2][1] = ff_hevc_put_hevc_qpel_h4_1_v_2_sse;
-                    c->put_hevc_qpel[1][2][1] = c->put_hevc_qpel[2][2][1] = c->put_hevc_qpel[3][2][1] = c->put_hevc_qpel[4][2][1] = ff_hevc_put_hevc_qpel_h8_1_v_2_sse;
-                    c->put_hevc_qpel[0][1][2] = ff_hevc_put_hevc_qpel_h4_2_v_1_sse;
-                    c->put_hevc_qpel[1][1][2] = c->put_hevc_qpel[2][1][2] = c->put_hevc_qpel[3][1][2] = c->put_hevc_qpel[4][1][2] = ff_hevc_put_hevc_qpel_h8_2_v_1_sse;
-                    c->put_hevc_qpel[0][3][1] = ff_hevc_put_hevc_qpel_h8_1_v_3_sse;
-                    c->put_hevc_qpel[1][3][1] = c->put_hevc_qpel[2][3][1] = c->put_hevc_qpel[3][3][1] = c->put_hevc_qpel[4][3][1] = ff_hevc_put_hevc_qpel_h8_1_v_3_sse;
-                    c->put_hevc_qpel[0][1][3] = ff_hevc_put_hevc_qpel_h4_3_v_1_sse;
-                    c->put_hevc_qpel[1][1][3] = c->put_hevc_qpel[2][1][3] = c->put_hevc_qpel[3][1][3] = c->put_hevc_qpel[4][1][3] = ff_hevc_put_hevc_qpel_h8_3_v_1_sse;
-                    c->put_hevc_qpel[0][2][3] = ff_hevc_put_hevc_qpel_h4_3_v_2_sse;
-                    c->put_hevc_qpel[1][2][3] = c->put_hevc_qpel[2][2][3] = c->put_hevc_qpel[3][2][3] = c->put_hevc_qpel[4][2][3] = ff_hevc_put_hevc_qpel_h8_3_v_2_sse;
-                    c->put_hevc_qpel[0][3][3] = ff_hevc_put_hevc_qpel_h4_3_v_3_sse;
-                    c->put_hevc_qpel[1][3][3] = c->put_hevc_qpel[2][3][3] = c->put_hevc_qpel[3][3][3] = c->put_hevc_qpel[4][3][3] = ff_hevc_put_hevc_qpel_h8_3_v_3_sse;
+                    c->put_hevc_qpel[0][1][1] = ff_hevc_put_hevc_qpel_h4_1_v_1_8_sse;
+                    c->put_hevc_qpel[1][1][1] = c->put_hevc_qpel[2][1][1] = c->put_hevc_qpel[3][1][1] = c->put_hevc_qpel[4][1][1] = ff_hevc_put_hevc_qpel_h8_1_v_1_8_sse;
+                    c->put_hevc_qpel[0][2][2] = ff_hevc_put_hevc_qpel_h4_2_v_2_8_sse;
+                    c->put_hevc_qpel[1][2][2] = c->put_hevc_qpel[2][2][2] = c->put_hevc_qpel[3][2][2] = c->put_hevc_qpel[4][2][2] = ff_hevc_put_hevc_qpel_h8_2_v_2_8_sse;
+                    c->put_hevc_qpel[0][3][2] = ff_hevc_put_hevc_qpel_h4_2_v_3_8_sse;
+                    c->put_hevc_qpel[1][3][2] = c->put_hevc_qpel[2][3][2] = c->put_hevc_qpel[3][3][2] = c->put_hevc_qpel[4][3][2] = ff_hevc_put_hevc_qpel_h8_2_v_3_8_sse;
+                    c->put_hevc_qpel[0][2][1] = ff_hevc_put_hevc_qpel_h4_1_v_2_8_sse;
+                    c->put_hevc_qpel[1][2][1] = c->put_hevc_qpel[2][2][1] = c->put_hevc_qpel[3][2][1] = c->put_hevc_qpel[4][2][1] = ff_hevc_put_hevc_qpel_h8_1_v_2_8_sse;
+                    c->put_hevc_qpel[0][1][2] = ff_hevc_put_hevc_qpel_h4_2_v_1_8_sse;
+                    c->put_hevc_qpel[1][1][2] = c->put_hevc_qpel[2][1][2] = c->put_hevc_qpel[3][1][2] = c->put_hevc_qpel[4][1][2] = ff_hevc_put_hevc_qpel_h8_2_v_1_8_sse;
+                    c->put_hevc_qpel[0][3][1] = ff_hevc_put_hevc_qpel_h8_1_v_3_8_sse;
+                    c->put_hevc_qpel[1][3][1] = c->put_hevc_qpel[2][3][1] = c->put_hevc_qpel[3][3][1] = c->put_hevc_qpel[4][3][1] = ff_hevc_put_hevc_qpel_h8_1_v_3_8_sse;
+                    c->put_hevc_qpel[0][1][3] = ff_hevc_put_hevc_qpel_h4_3_v_1_8_sse;
+                    c->put_hevc_qpel[1][1][3] = c->put_hevc_qpel[2][1][3] = c->put_hevc_qpel[3][1][3] = c->put_hevc_qpel[4][1][3] = ff_hevc_put_hevc_qpel_h8_3_v_1_8_sse;
+                    c->put_hevc_qpel[0][2][3] = ff_hevc_put_hevc_qpel_h4_3_v_2_8_sse;
+                    c->put_hevc_qpel[1][2][3] = c->put_hevc_qpel[2][2][3] = c->put_hevc_qpel[3][2][3] = c->put_hevc_qpel[4][2][3] = ff_hevc_put_hevc_qpel_h8_3_v_2_8_sse;
+                    c->put_hevc_qpel[0][3][3] = ff_hevc_put_hevc_qpel_h4_3_v_3_8_sse;
+                    c->put_hevc_qpel[1][3][3] = c->put_hevc_qpel[2][3][3] = c->put_hevc_qpel[3][3][3] = c->put_hevc_qpel[4][3][3] = ff_hevc_put_hevc_qpel_h8_3_v_3_8_sse;
 #ifdef SVC_EXTENSION
                     c->upsample_base_layer_frame = ff_upsample_base_layer_frame_sse;
                     c->upsample_h_base_layer_frame = ff_upsample_base_layer_frame_sse_h;
@@ -220,11 +223,12 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                     c->put_hevc_qpel[0][0][0] = ff_hevc_put_hevc_qpel_pixels4_10_sse;
                     c->put_hevc_qpel[1][0][0] = c->put_hevc_qpel[2][0][0] = c->put_hevc_qpel[3][0][0] = c->put_hevc_qpel[4][0][0] = ff_hevc_put_hevc_qpel_pixels8_10_sse;
-                    c->put_hevc_qpel[0][0][1] = ff_hevc_put_hevc_qpel_h_1_10_sse;
-                    c->put_hevc_qpel[1][0][1] = c->put_hevc_qpel[2][0][1] = c->put_hevc_qpel[3][0][1] = c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_h_1_10_sse;
-//                    c->put_hevc_qpel[0][0][1] = c->put_hevc_qpel[1][0][1] = c->put_hevc_qpel[2][0][1] = c->put_hevc_qpel[3][0][1] = c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_v_1_10_sse;
-//                    c->put_hevc_qpel[0][2][0] = c->put_hevc_qpel[1][2][0] = c->put_hevc_qpel[2][2][0] = c->put_hevc_qpel[3][2][0] = c->put_hevc_qpel[4][2][0] = ff_hevc_put_hevc_qpel_v_2_10_sse;
-//                    c->put_hevc_qpel[0][3][0] = c->put_hevc_qpel[1][3][0] = c->put_hevc_qpel[2][3][0] = c->put_hevc_qpel[3][3][0] = c->put_hevc_qpel[4][3][0] = ff_hevc_put_hevc_qpel_v_3_10_sse;
+                    c->put_hevc_qpel[0][0][1] = c->put_hevc_qpel[1][0][1] = c->put_hevc_qpel[2][0][1] = c->put_hevc_qpel[3][0][1] = c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_h2_1_10_sse;
+//                    c->put_hevc_qpel[0][0][2] = c->put_hevc_qpel[1][0][2] = c->put_hevc_qpel[2][0][2] = c->put_hevc_qpel[3][0][2] = c->put_hevc_qpel[4][0][2] = ff_hevc_put_hevc_qpel_h2_2_10_sse;
+//                    c->put_hevc_qpel[0][0][3] = c->put_hevc_qpel[1][0][3] = c->put_hevc_qpel[2][0][3] = c->put_hevc_qpel[3][0][3] = c->put_hevc_qpel[4][0][3] = ff_hevc_put_hevc_qpel_h2_3_10_sse;
+//                    c->put_hevc_qpel[0][0][1] = c->put_hevc_qpel[1][1][0] = c->put_hevc_qpel[2][1][0] = c->put_hevc_qpel[3][1][0] = c->put_hevc_qpel[4][1][0] = ff_hevc_put_hevc_qpel_v4_1_10_sse;
+//                    c->put_hevc_qpel[0][2][0] = c->put_hevc_qpel[1][2][0] = c->put_hevc_qpel[2][2][0] = c->put_hevc_qpel[3][2][0] = c->put_hevc_qpel[4][2][0] = ff_hevc_put_hevc_qpel_v4_2_10_sse;
+//                    c->put_hevc_qpel[0][3][0] = c->put_hevc_qpel[1][3][0] = c->put_hevc_qpel[2][3][0] = c->put_hevc_qpel[3][3][0] = c->put_hevc_qpel[4][3][0] = ff_hevc_put_hevc_qpel_v4_3_10_sse;
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
