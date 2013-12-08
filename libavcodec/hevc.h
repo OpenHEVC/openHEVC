@@ -74,7 +74,7 @@
 #define EPEL_EXTRA_BEFORE 1
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
-
+#define ACTIVE_PU_UPSAMPLING 1
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */

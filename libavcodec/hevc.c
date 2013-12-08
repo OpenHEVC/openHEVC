@@ -1403,7 +1403,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
         if (!ref0)
             return;
-#if 0
+#if ACTIVE_PU_UPSAMPLING
         if(ref0 == s->inter_layer_ref) {
             int y = (current_mv.mv[0].y >> 2) + y0;
             int x = (current_mv.mv[0].x >> 2) + x0;
@@ -1417,7 +1417,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         if (!ref1)
             return;
         
-#if 0
+#if ACTIVE_PU_UPSAMPLING
         if(ref1 == s->inter_layer_ref ) {
             int y = (current_mv.mv[1].y >> 2) + y0;
             int x = (current_mv.mv[1].x >> 2) + x0;
@@ -2354,7 +2354,7 @@ static int hevc_frame_start(HEVCContext *s)
         
         if ((ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc)< 0))
             return ret;
-#if 1
+#if !ACTIVE_PU_UPSAMPLING
         ctb_size =  1 << s->sps->log2_ctb_size;
         cmpt   = s->sps->width;
         cmpt = (cmpt / ctb_size) + (cmpt%ctb_size ? 1:0);

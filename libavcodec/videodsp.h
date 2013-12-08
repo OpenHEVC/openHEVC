@@ -65,11 +65,11 @@ typedef struct VideoDSPContext {
 
     int (*emulated_edge_up_h)( uint8_t *buf, const uint8_t *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
                                const struct HEVCWindow *Enhscal,
-                               int block_w, int block_h, int src_x, int wBL);
+                               int block_w, int block_h, int src_x, int wBL, int shift);
     
     int (*emulated_edge_up_v)( short *buf, const short *src, ptrdiff_t linesize, ptrdiff_t linesizeb,
                                const struct HEVCWindow *Enhscal,
-                               int block_w, int block_h, int block_h0, int src_x, int src_y, int shiftuv, int hBL, int wEL);
+                               int block_w, int block_h, int src_x, int src_y, int hBL, int wEL, int shift);
     
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;

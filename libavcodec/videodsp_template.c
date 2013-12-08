@@ -95,29 +95,28 @@ static void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
 
 static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff_t linesizeb, ptrdiff_t linesize,
                                     struct HEVCWindow *Enhscal,
-                                    int block_w, int block_h, int src_x, int wBL)
+                                    int block_w, int block_h, int bl_edge_left, int bl_edge_right, int shift)
 {
-    int refPos, i;
+    int i;
     uint8_t         *buf_tmp = buf;
     const uint8_t   *src_tmp = src;
     
-    refPos                   = src_x -  ((NTAPS_LUMA>>1) );
-    if(refPos < 0) {
+    
+    if(bl_edge_left < shift) {
+    //    printf("-- Hori refPos %d %d %d \n",  bl_edge_left, shift);
         for(i=0; i < block_h; i++) {
-            memset(buf_tmp, src_tmp[-(NTAPS_LUMA>>1)-refPos], -refPos);
-            memcpy(buf_tmp-refPos, src_tmp-(NTAPS_LUMA>>1)-refPos, block_w+(NTAPS_LUMA>>1)+refPos);
+            memset(buf_tmp, src_tmp[0], shift-bl_edge_left);
+            memcpy(buf_tmp+(shift-bl_edge_left), src_tmp, block_w);
             src_tmp += linesize;
             buf_tmp += linesizeb;
         }
         return 1;
     }
-    
-    refPos   = src_x;
-    if(refPos+(NTAPS_LUMA>>1)+block_w > wBL ) {
-        src_tmp = src_tmp - (NTAPS_LUMA>>1);
+    if(bl_edge_right<(shift+1)) {
+      //  printf("Hori bl_edge_right %d %d %d \n",   bl_edge_right, shift);
         for( i = 0; i < block_h ; i++ ) {
-            memcpy(buf_tmp, src_tmp,  wBL-refPos+(NTAPS_LUMA>>1));
-            memset(buf_tmp+wBL-refPos+(NTAPS_LUMA>>1), src_tmp[(NTAPS_LUMA>>1)+wBL-refPos-1], (NTAPS_LUMA>>1));
+            memcpy(buf_tmp, src_tmp,  block_w);
+            memset(buf_tmp+block_w, src_tmp[block_w-1], shift-bl_edge_right+1);
             src_tmp += linesize;
             buf_tmp += linesizeb;
         }
@@ -129,47 +128,137 @@ static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff
 
 static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t linesizeb, ptrdiff_t linesize,
                                     struct HEVCWindow *Enhscal,
-                                    int block_w, int block_h, int block_h0, int src_x, int src_y, int shiftuv, int hBL, int wEL)
+                                    int block_w, int block_h, int src_x, int bl_edge_up, int bl_edge_bottom, int wEL, int shift)
 {
-    int rightEndL  = wEL - Enhscal->right_offset;
-    int leftStartL = Enhscal->left_offset;
-    int refPos, i, j;
+    int rightEndL  = wEL - (Enhscal->right_offset >> (shift==(MAX_EDGE_CR-1)?1:0));
+    int leftStartL = (Enhscal->left_offset>> (shift==(MAX_EDGE_CR-1)?1:0));
+    int  i, j;
+    
     
     short       *buf_tmp    = buf;
     const short *src_tmp    = src;
     
-    refPos = src_y - ((NTAPS_LUMA>>1) );
-    if(refPos < 0)  {
+    
+    
+    if(bl_edge_up < shift)  {
+     //   printf("Vertical up refPos %d %d  \n", bl_edge_up, shift);
         for( i = 0; i < block_w; i++ )	{
-            for(j= 0; j<-refPos ; j++)
-                buf_tmp[j*linesizeb] = src_tmp[-(NTAPS_LUMA>>1)+shiftuv-refPos];
+            for(j= 0; j<(shift-bl_edge_up) ; j++)
+                buf_tmp[j*linesizeb] = src_tmp[0];
             
-            for(j= 0; j< block_h+(NTAPS_LUMA>>1)+refPos ; j++)
-                buf_tmp[(-refPos+j)*linesizeb] = src_tmp[(-(NTAPS_LUMA>>1)+shiftuv-refPos+j)*linesize];
+            for(j= 0; j< block_h ; j++)
+                buf_tmp[(shift-bl_edge_up+j)*linesizeb] = src_tmp[j*linesize];
             
             if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
                 src_tmp++;
-            
             buf_tmp++; 
         }
         return 1;
     }
     
-    refPos   = src_y;
-    if((refPos+block_h0 + (NTAPS_LUMA>>1)) > hBL )    {
+    
+    if(bl_edge_bottom < (shift+1) )    {
+  //      printf("Vertical refPos down %d %d  \n",  bl_edge_bottom, shift);
+        
         for( i = 0; i < block_w; i++ )	{
-            for(j= 0; j< hBL-refPos + (NTAPS_LUMA>>1) ; j++)
+            for(j= 0; j< block_h ; j++)
                 buf_tmp[j*linesizeb] = src_tmp[j*linesize];
             
-            for(j= 0; j<(NTAPS_LUMA>>1) ; j++)
-                buf_tmp[((NTAPS_LUMA>>1)+hBL-refPos+j)*linesizeb] = src_tmp[((NTAPS_LUMA>>1)+hBL-refPos-1)*linesize];
+            for(j= 0; j< shift-bl_edge_bottom+1 ; j++)
+                buf_tmp[(block_h+j)*linesizeb] = src_tmp[(block_h-1)*linesize];
             
             if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
                 src_tmp++;
             
             buf_tmp++;
         }
-        return 1;
+        return 2;
     }
     return 0;
 }
+/*
+ static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff_t linesizeb, ptrdiff_t linesize,
+ struct HEVCWindow *Enhscal,
+ int block_w, int block_h, int src_x, int wBL, int shift)
+ {
+ int refPos, i;
+ uint8_t         *buf_tmp = buf;
+ const uint8_t   *src_tmp = src;
+ 
+ refPos                   = src_x -  ((shift>>1) );
+ if(refPos < 0) {
+ printf("Hori refPos %d %d %d \n", src_x, refPos, shift);
+ for(i=0; i < block_h; i++) {
+ memset(buf_tmp, src_tmp[-(shift>>1)-refPos], -refPos);
+ memcpy(buf_tmp-refPos, src_tmp-(shift>>1)-refPos, block_w+(shift>>1)+refPos);
+ src_tmp += linesize;
+ buf_tmp += linesizeb;
+ }
+ return 1;
+ }
+ 
+ refPos   = src_x;
+ if(refPos+(shift>>1)+block_w > wBL ) {
+ printf("Hori refPos %d %d %d \n", src_x, refPos, shift);
+ src_tmp = src_tmp - (shift>>1);
+ for( i = 0; i < block_h ; i++ ) {
+ memcpy(buf_tmp, src_tmp,  wBL-refPos+(shift>>1));
+ memset(buf_tmp+wBL-refPos+(shift>>1), src_tmp[(shift>>1)+wBL-refPos-1], (shift>>1));
+ src_tmp += linesize;
+ buf_tmp += linesizeb;
+ }
+ return 2;
+ }
+ return 0;
+ }
+ 
+ 
+ static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t linesizeb, ptrdiff_t linesize,
+ struct HEVCWindow *Enhscal,
+ int block_w, int block_h, int block_h0, int src_x, int src_y, int shiftuv, int hBL, int wEL, int shift)
+ {
+ int rightEndL  = wEL - (Enhscal->right_offset >> (shift==NTAPS_CHROMA?1:0));
+ int leftStartL = (Enhscal->left_offset>> (shift==NTAPS_CHROMA?1:0));
+ int refPos, i, j;
+ 
+ short       *buf_tmp    = buf;
+ const short *src_tmp    = src;
+ 
+ refPos = src_y - ((shift>>1) );
+ 
+ if(refPos < 0)  {
+ printf("Vertical refPos %d %d %d %d \n", src_y, refPos, shiftuv, shift);
+ for( i = 0; i < block_w; i++ )	{
+ for(j= 0; j<-refPos ; j++)
+ buf_tmp[j*linesizeb] = src_tmp[(-(shift>>1)+shiftuv-refPos)*linesize];
+ 
+ for(j= 0; j< block_h+(shift>>1)+refPos-shiftuv ; j++)
+ buf_tmp[(-refPos+j)*linesizeb] = src_tmp[(-(shift>>1)+shiftuv-refPos+j)*linesize];
+ 
+ if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
+ src_tmp++;
+ buf_tmp++;
+ }
+ return 1;
+ }
+ 
+ refPos   = src_y;
+ if((refPos+block_h0 + (shift>>1)) > hBL )    {
+ printf("Vertical refPos %d %d %d %d \n", src_y, refPos, shiftuv, shift);
+ for( i = 0; i < block_w; i++ )	{
+ for(j= 0; j< hBL-refPos + (shift>>1) ; j++)
+ buf_tmp[j*linesizeb] = src_tmp[j*linesize];
+ 
+ for(j= 0; j<(shift>>1) ; j++)
+ buf_tmp[((shift>>1)+hBL-refPos+j)*linesizeb] = src_tmp[((shift>>1)+hBL-refPos-1)*linesize];
+ 
+ if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
+ src_tmp++;
+ 
+ buf_tmp++;
+ }
+ return 2;
+ }
+ return 0;
+ }
+*/

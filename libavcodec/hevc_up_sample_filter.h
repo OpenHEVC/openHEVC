@@ -28,6 +28,12 @@
 #define NTAPS_LUMA 8
 #define NTAPS_CHROMA 4
 #define US_FILTER_PREC  6
+
+#define MAX_EDGE  4
+#define MAX_EDGE_CR  2
+#define N_SHIFT (US_FILTER_PREC*2)
+#define I_OFFSET (1 << (N_SHIFT - 1))
+
 //#endif
 #ifdef SVC_EXTENSION
 #if PHASE_DERIVATION_IN_INTEGER

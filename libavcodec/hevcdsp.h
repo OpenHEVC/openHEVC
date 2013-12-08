@@ -81,7 +81,7 @@ typedef struct HEVCDSPContext {
     
     void (*upsample_filter_block_luma_h)(
                                          short *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int x_EL, int x_BL, int y_BL, int block_w, int block_h, int widthEL,
+                                         int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                                          const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
     
     void (*upsample_filter_block_luma_v)(
@@ -91,13 +91,13 @@ typedef struct HEVCDSPContext {
     
     void (*upsample_filter_block_cr_h)(
                                        short *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int x_EL, int x_BL, int y_BL, int block_w, int block_h, int widthEL,
-                                       const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, short *buffer_frame);
+                                       int x_EL, int x_BL, int block_w, int block_h, int widthEL,
+                                       const int32_t enabled_up_sample_filter_luma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
         
     void (*upsample_filter_block_cr_v)(
                                        uint8_t *dst, ptrdiff_t dststride, short *_src, ptrdiff_t _srcstride,
                                        int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
-                                       const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, short *buffer_frame); 
+                                       const int32_t enabled_up_sample_filter_luma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
 
     

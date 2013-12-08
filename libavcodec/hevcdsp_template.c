@@ -1375,24 +1375,27 @@ static void FUNC(hevc_v_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
 #ifdef SVC_EXTENSION
 #define LumHor_FILTER(pel, coeff) \
 (pel[0]*coeff[0] + pel[1]*coeff[1] + pel[2]*coeff[2] + pel[3]*coeff[3] + pel[4]*coeff[4] + pel[5]*coeff[5] + pel[6]*coeff[6] + pel[7]*coeff[7])
-
-#define LumHor_FILTER0(pel, coeff) \
-(pel[-3]*coeff[0] + pel[-2]*coeff[1] + pel[-1]*coeff[2] + pel[0]*coeff[3] + pel[1]*coeff[4] + pel[2]*coeff[5] + pel[3]*coeff[6] + pel[4]*coeff[7])
-
 #define CroHor_FILTER(pel, coeff) \
 (pel[0]*coeff[0] + pel[1]*coeff[1] + pel[2]*coeff[2] + pel[3]*coeff[3])
-
 #define LumVer_FILTER(pel, coeff) \
 (pel[0]*coeff[0] + pel[1]*coeff[1] + pel[2]*coeff[2] + pel[3]*coeff[3] + pel[4]*coeff[4] + pel[5]*coeff[5] + pel[6]*coeff[6] + pel[7]*coeff[7])
-
 #define CroVer_FILTER(pel, coeff) \
 (pel[0]*coeff[0] + pel[1]*coeff[1] + pel[2]*coeff[2] + pel[3]*coeff[3])
-
 #define LumVer_FILTER1(pel, coeff, width) \
 (pel[0]*coeff[0] + pel[width]*coeff[1] + pel[width*2]*coeff[2] + pel[width*3]*coeff[3] + pel[width*4]*coeff[4] + pel[width*5]*coeff[5] + pel[width*6]*coeff[6] + pel[width*7]*coeff[7])
 
-#define LumVer_FILTER10(pel, coeff, width) \
+
+#define LumHor_FILTER_Block(pel, coeff) \
+(pel[-3]*coeff[0] + pel[-2]*coeff[1] + pel[-1]*coeff[2] + pel[0]*coeff[3] + pel[1]*coeff[4] + pel[2]*coeff[5] + pel[3]*coeff[6] + pel[4]*coeff[7])
+#define CroHor_FILTER_Block(pel, coeff) \
+(pel[-1]*coeff[0] + pel[0]*coeff[1] + pel[1]*coeff[2] + pel[2]*coeff[3])
+#define LumVer_FILTER_Block(pel, coeff, width) \
 (pel[-3*width]*coeff[0] + pel[-2*width]*coeff[1] + pel[-width]*coeff[2] + pel[0]*coeff[3] + pel[width]*coeff[4] + pel[2*width]*coeff[5] + pel[3*width]*coeff[6] + pel[4*width]*coeff[7])
+#define CroVer_FILTER_Block(pel, coeff, width) \
+(pel[-width]*coeff[0] + pel[0]*coeff[1] + pel[width]*coeff[2] + pel[2*width]*coeff[3])
+
+
+
 // Define the function for up-sampling
 #define CroVer_FILTER1(pel, coeff, widthEL) \
 (pel[0]*coeff[0] + pel[widthEL]*coeff[1] + pel[widthEL*2]*coeff[2] + pel[widthEL*3]*coeff[3])
@@ -1407,7 +1410,7 @@ static void FUNC(upsample_v_base_layer_frame)(struct AVFrame *FrameEL, struct AV
 
 
 void FUNC(upsample_filter_block_luma_h)( short *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                    int x_EL, int x_BL, int y_BL, int block_w, int block_h, int widthEL,
+                                    int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                                     const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
     
     
@@ -1426,13 +1429,51 @@ void FUNC(upsample_filter_block_luma_h)( short *dst, ptrdiff_t dststride, uint8_
         dst_tmp  = dst  + i;
         src_tmp  = _src + refPos;
         for( j = 0; j < block_h ; j++ ) {
-            *dst_tmp  = LumHor_FILTER0(src_tmp, coeff);
+            *dst_tmp  = LumHor_FILTER_Block(src_tmp, coeff);
             src_tmp  += _srcstride;
             dst_tmp  += dststride;
         }
     }
 }
 
+
+
+/*
+ void FUNC(upsample_filter_block_luma_h)( short *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+ int x_EL, int x_BL, int y_BL, int block_w, int block_h, int widthEL,
+ const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, short * buffer_frame) {
+ 
+ 
+ int rightEndL  = widthEL - Enhscal->right_offset;
+ int leftStartL = Enhscal->left_offset;
+ int x, i, j, phase, refPos16, refPos;
+ short *dst_tmp;
+ uint8_t * src_tmp;
+ int32_t* coeff;
+ short * srcY1;
+ for( i = 0; i < block_w; i++ )	{
+ x = av_clip_c(i+x_EL, leftStartL, rightEndL);
+ refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
+ phase    = refPos16 & 15;
+ coeff    = enabled_up_sample_filter_luma[phase];
+ refPos   = (refPos16 >> 4) - (x_BL);
+ dst_tmp  = dst  + i;
+ src_tmp  = _src + refPos;
+ srcY1 = buffer_frame + y_BL*widthEL+ x_EL+i;
+ for( j = 0; j < block_h ; j++ ) {
+ *dst_tmp  = LumHor_FILTER_Block(src_tmp, coeff);
+ if(*srcY1 != *dst_tmp)
+ printf("--- %d %d %d %d %d %d %d %d %d \n",refPos, i, j, *srcY1, *dst_tmp, src_tmp[-3], src_tmp[-2], src_tmp[-1], src_tmp[0]);
+ src_tmp  += _srcstride;
+ dst_tmp  += dststride;
+ srcY1    += widthEL;
+ }
+ }
+ }
+
+ 
+ 
+ */
 void FUNC(upsample_filter_block_luma_v)(uint8_t *dst, ptrdiff_t dststride, short *_src, ptrdiff_t _srcstride,
                                       int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                       const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
@@ -1441,14 +1482,10 @@ void FUNC(upsample_filter_block_luma_v)(uint8_t *dst, ptrdiff_t dststride, short
     int rightEndL  = widthEL - Enhscal->right_offset;
     int leftStartL = Enhscal->left_offset;
     
-    int y, i, j, phase, refPos16, refPos, x;
+    int y, i, j, phase, refPos16, refPos;
     int32_t* coeff;
     short *   src_tmp;
     uint8_t * dst_tmp;
-    short * srcY1;
-    const int nShift = US_FILTER_PREC*2;
-    int iOffset = 1 << (nShift - 1);
-    
     int refPos0 = av_clip_c(y_EL, topStartL, bottomEndL-1);
     refPos0 = ((( refPos0 - topStartL )* up_info->scaleYLum + up_info->addYLum) >> 12);
     refPos0     = (refPos0 >> 4);
@@ -1461,57 +1498,40 @@ void FUNC(upsample_filter_block_luma_v)(uint8_t *dst, ptrdiff_t dststride, short
         src_tmp = _src  + refPos  * _srcstride;
         dst_tmp =  dst  + (y_EL+j)* dststride + x_EL;
         for( i = 0; i < block_w; i++ )	{
-            *dst_tmp = av_clip_pixel( (LumVer_FILTER10(src_tmp, coeff, _srcstride) + iOffset) >> (nShift));
-            if( ((x_EL+i) >= leftStartL) && ((x_EL+i) <= rightEndL-2) ){
+            *dst_tmp = av_clip_pixel( (LumVer_FILTER_Block(src_tmp, coeff, _srcstride) + I_OFFSET) >> (N_SHIFT));
+            if( ((x_EL+i) >= leftStartL) && ((x_EL+i) <= rightEndL-2) )
                 src_tmp++;
-            }
             dst_tmp++;
         }
     }
-   
-    
-         
-     
 }
 
 void FUNC(upsample_filter_block_cr_h)( short *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                   int x_EL, int x_BL, int y_BL, int block_w, int block_h, int widthEL,
-                                   const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, short *buffer_frame) {
+                                   int x_EL, int x_BL, int block_w, int block_h, int widthEL,
+                                   const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
     
     
-    int rightEndL  = widthEL - Enhscal->right_offset;
-    int leftStartL = Enhscal->left_offset;
+    int leftStartC = Enhscal->left_offset>>1;
+    int rightEndC  = widthEL - (Enhscal->right_offset>>1);
+
     int x, i, j, phase, refPos16, refPos;
     short *dst_tmp;
     uint8_t * src_tmp;
     int32_t* coeff;
-    //int refPos0 = av_clip_c(x_EL0, leftStartL, rightEndL);
-    //refPos0 = (((refPos0 - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
-    //refPos0     = (refPos0 >> 4);
     
-    
-    //int y =   av_clip_c(y_EL0, topStartL, bottomEndL-1);
-    //refPos16 = ((( y - topStartL )* up_info->scaleYLum + up_info->addYLum) >> 12);
-    //int refPosY   = (refPos16 >> 4);
-    
-    short * srcY1;
+   
     for( i = 0; i < block_w; i++ )	{
-        x = av_clip_c(i+x_EL, leftStartL, rightEndL);
-        refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
+        x = av_clip_c(i+x_EL, leftStartC, rightEndC);
+        refPos16 = (((x - leftStartC)*up_info->scaleXCr + up_info->addXCr) >> 12);
         phase    = refPos16 & 15;
-        coeff    = enabled_up_sample_filter_luma[phase];
+        coeff    = enabled_up_sample_filter_chroma[phase];
         refPos   = (refPos16 >> 4) - (x_BL);
         dst_tmp  = dst  + i;
         src_tmp  = _src + refPos;
-        srcY1 = buffer_frame + y_BL*widthEL+ x_EL+i;
         for( j = 0; j < block_h ; j++ ) {
-            *dst_tmp  = LumHor_FILTER0(src_tmp, coeff);
-            // if(*srcY1 =! *dst_tmp)
-            //   printf("--- %d %d %d %d %d\n", (refPosY+j)*widthEL+ x_EL0+i, i, j, *srcY1, *dst_tmp);
-            src_tmp  += _srcstride;
-            dst_tmp  += dststride;
-            srcY1 += widthEL;
-            
+            *dst_tmp  = CroHor_FILTER_Block(src_tmp, coeff);
+             src_tmp  +=  _srcstride;
+            dst_tmp  +=  dststride;
         }
     }
 }
@@ -1519,50 +1539,40 @@ void FUNC(upsample_filter_block_cr_h)( short *dst, ptrdiff_t dststride, uint8_t 
 
 void FUNC(upsample_filter_block_cr_v)(uint8_t *dst, ptrdiff_t dststride, short *_src, ptrdiff_t _srcstride,
                                    int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
-                                   const int32_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, short *buffer_frame) {
-    int topStartL  = Enhscal->top_offset;
-    int bottomEndL = heightEL - Enhscal->bottom_offset;
-    int rightEndL  = widthEL - Enhscal->right_offset;
-    int leftStartL = Enhscal->left_offset;
+                                   const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
+                                    
+    int leftStartC = Enhscal->left_offset>>1;
+    int rightEndC  = widthEL - (Enhscal->right_offset>>1);
+    int topStartC  = Enhscal->top_offset>>1;
+    int bottomEndC = heightEL - (Enhscal->bottom_offset>>1);
     
-    int y, i, j, phase, refPos16, refPos, x;
+    
+    
+    int y, i, j, phase, refPos16, refPos;
     int32_t* coeff;
     short *   src_tmp;
     uint8_t * dst_tmp;
-    short * srcY1;
-    const int nShift = US_FILTER_PREC*2;
-    int iOffset = 1 << (nShift - 1);
-    
-    int refPos0 = av_clip_c(y_EL, topStartL, bottomEndL-1);
-    refPos0 = ((( refPos0 - topStartL )* up_info->scaleYLum + up_info->addYLum) >> 12);
+    int refPos0 = av_clip_c(y_EL, topStartC, bottomEndC-1);
+    refPos0 = ((( refPos0 - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12) -4;
     refPos0     = (refPos0 >> 4);
-    
     for( j = 0; j < block_h; j++ )	{
-    	y =   av_clip_c(y_EL+j, topStartL, bottomEndL-1);
-    	refPos16 = ((( y - topStartL )* up_info->scaleYLum + up_info->addYLum) >> 12);
+    	y =   av_clip_c(y_EL+j, topStartC, bottomEndC-1);
+    	refPos16 = ((( y - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12)-4;
         phase    = refPos16 & 15;
-        coeff = enabled_up_sample_filter_luma[phase];
-        refPos   = (refPos16 >> 4) -refPos0;
-        srcY1 = buffer_frame + ((refPos16 >> 4)*widthEL + x_EL);
+        coeff = enabled_up_sample_filter_chroma[phase];
+        refPos16 = (refPos16>>4);
+        refPos   = refPos16 - refPos0;
         src_tmp = _src  + refPos  * _srcstride;
-        dst_tmp =  dst  + (y_EL+j)* dststride + x_EL;
+        dst_tmp =  dst  + (y)* dststride + x_EL;
         for( i = 0; i < block_w; i++ )	{
-            *dst_tmp = av_clip_pixel( (LumVer_FILTER10(src_tmp, coeff, _srcstride) + iOffset) >> (nShift));
-            //uint8_t e = av_clip_pixel( (LumVer_FILTER10(src_tmp, coeff, _srcstride) + iOffset) >> (nShift));
-            //  if(e != *dst_tmp)
-            //    printf("++++ %d %d %d %d %d %d %d %d %d %d %d %d \n", i, j, *dst_tmp, e, src_tmp[-3*_srcstride], src_tmp[-2*_srcstride], src_tmp[-_srcstride], src_tmp[0], src_tmp[1*_srcstride], src_tmp[2*_srcstride], src_tmp[3*_srcstride], src_tmp[-4*_srcstride]);
-            
-            if( ((x_EL+i) >= leftStartL) && ((x_EL+i) <= rightEndL-2) ){
+            *dst_tmp = av_clip_pixel( (CroVer_FILTER_Block(src_tmp, coeff, _srcstride) + I_OFFSET) >> (N_SHIFT));
+            if( ((x_EL+i) >= leftStartC) && ((x_EL+i) <= rightEndC-2) )
                 src_tmp++;
-                srcY1++;
-            }
+
+            
             dst_tmp++;
         }
     }
-    
-    
-    
-    
 }
 
 
@@ -1791,8 +1801,10 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     for( j = 0; j < heightEL; j++ )	{
         int y = av_clip_c(j, topStartC, bottomEndC - 1);
         refPos16 = (((y - topStartC)*up_info->scaleYCr + up_info->addYCr) >> 12) - 4;
+        printf("j %d refPos16 %d phase %d refPos %d refPos %d \n", j, refPos16, phase, refPos, refPos - ((NTAPS_CHROMA>>1) - 1) );
         phase    = refPos16 & 15;
         refPos   = refPos16 >> 4;
+         
         coeff = enabled_up_sample_filter_chroma[phase];
         refPos -= ((NTAPS_CHROMA>>1) - 1);
         srcU1 = tempBufU  + refPos *widthEL;
@@ -1863,6 +1875,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
 #undef LumVer_FILTER
 #undef CroVer_FILTER
 #endif
+
+
 
 
 

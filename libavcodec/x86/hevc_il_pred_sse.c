@@ -511,6 +511,8 @@ void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame 
             phase    = refPos16 & 15;
             refPos   = refPos16 >> 4;
             coeff = enabled_up_sample_filter_chroma[phase];
+            //if(i == 28)
+         //   printf("j %d refPos16 %d phase %d refPos %d refPos %d \n", j, refPos16, phase, refPos, refPos - ((NTAPS_CHROMA>>1) - 1) );
             refPos -= ((NTAPS_CHROMA>>1) - 1);
             srcU1 = tempBufU  + refPos *widthEL+start;
             srcV1 = tempBufV  + refPos *widthEL+start;
@@ -563,6 +565,7 @@ void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame 
                     }else{
                         
                         for(i = start ; i < leftStartC; i++ )	{
+                            
                             
                             *dstU = av_clip_pixel( (CroVer_FILTER1(srcU1, coeff, widthEL) + iOffset) >> (nShift));
                             
@@ -708,6 +711,7 @@ void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame 
                             
                             
                             *dstV = av_clip_pixel( (CroVer_FILTER1(srcV1, coeff, widthEL) + iOffset) >> (nShift));
+                            
                             
                             if( (i >= leftStartC) && (i <= rightEndC-2) )	{
                                 srcU1++;

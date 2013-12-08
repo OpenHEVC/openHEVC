@@ -265,7 +265,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     //bottom right collocated motion vector
     x = x0 + nPbW;
     y = y0 + nPbH;
-#if 0
+#if ACTIVE_PU_UPSAMPLING
     if(ref == s->inter_layer_ref ) {
         ff_upsample_block(s, ref, x0 , y0, nPbW, nPbH);
     }
