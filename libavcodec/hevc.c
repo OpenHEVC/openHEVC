@@ -146,9 +146,13 @@ static void pic_arrays_free(HEVCContext *s)
     av_buffer_pool_uninit(&s->rpl_tab_pool);
     
 #ifdef SVC_EXTENSION
+#if !ACTIVE_PU_UPSAMPLING
     av_freep(&s->buffer_frame[0]);
     av_freep(&s->buffer_frame[1]);
     av_freep(&s->buffer_frame[2]);
+#else
+    av_freep(&s->is_upsampled);
+#endif
 #endif
 }
 
@@ -244,9 +248,15 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         s->up_filter_inf.scaleXCr     = ( ( widthBL << 16 ) + ( widthEL >> 1 ) ) / widthEL;
         s->up_filter_inf.scaleYCr     = ( ( heightBL << 16 ) + ( heightEL >> 1 ) ) / heightEL;
         
+        
+        
+#if !ACTIVE_PU_UPSAMPLING
         s->buffer_frame[0] = av_malloc(pic_size*sizeof(short));
         s->buffer_frame[1] = av_malloc((pic_size>>2)*sizeof(short));
         s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
+#else
+        s->is_upsampled = av_mallocz((width>>MIN_PB_LOG_SIZE) * (height>>MIN_PB_LOG_SIZE));
+#endif
     }
 #endif
     return 0;
@@ -2340,7 +2350,9 @@ static int hevc_frame_start(HEVCContext *s)
          *  Set the BL frame
          *  and upsample the base layer frame ans scale its MVs 
          */
-
+#if ACTIVE_PU_UPSAMPLING
+        memset (s->is_upsampled, 0, (s->sps->width>>MIN_PB_LOG_SIZE) * (s->sps->height>>MIN_PB_LOG_SIZE));
+#endif
         if (s->threads_type&FF_THREAD_FRAME){
             ff_thread_await_il_progress(s->avctx, s->poc, &s->avctx->BL_frame);
         }

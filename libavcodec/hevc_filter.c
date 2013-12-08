@@ -977,8 +977,28 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, i
     }
 }
 
+static int is_upsampled(HEVCContext *s, int x0, int y0, int nPbW, int nPbH){
+    int i, j, width = s->sps->width>>MIN_PB_LOG_SIZE;
+    for(j= (y0>>MIN_PB_LOG_SIZE); j < ((y0+nPbH)>>MIN_PB_LOG_SIZE) ; j++)
+        for(i=(x0>>MIN_PB_LOG_SIZE); i < ((x0+nPbW)>>MIN_PB_LOG_SIZE); i++)
+            if(!s->is_upsampled[j*width+i])
+                return 0;
+    return 1;
+}
+
+static void set_upsampled(HEVCContext *s, int x0, int y0, int nPbW, int nPbH){
+    int i, j, width = s->sps->width>>MIN_PB_LOG_SIZE;
+    for(j= (y0>>MIN_PB_LOG_SIZE); j < ((y0+nPbH)>>MIN_PB_LOG_SIZE) ; j++)
+        for(i=(x0>>MIN_PB_LOG_SIZE); i < ((x0+nPbW)>>MIN_PB_LOG_SIZE); i++)
+            s->is_upsampled[j*width+i] = 1;
+}
+
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH) {
-    upsample_block_luma ( s, ref0, x0   , y0   , nPbW   , nPbH    );
-    upsample_block_mc   ( s, ref0, x0>>1, y0>>1, nPbW>>1, nPbH>>1 );
+    int active = is_upsampled(s, x0   , y0   , nPbW   , nPbH);
+    if(!active) {
+        upsample_block_luma ( s, ref0, x0   , y0   , nPbW   , nPbH    );
+        upsample_block_mc   ( s, ref0, x0>>1, y0>>1, nPbW>>1, nPbH>>1 );
+    }
+    set_upsampled(s, x0   , y0   , nPbW   , nPbH);
 }
 

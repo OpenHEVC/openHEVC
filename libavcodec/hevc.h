@@ -55,6 +55,7 @@
 
 //TODO: check if this is really the maximum
 #define MAX_TRANSFORM_DEPTH 5
+#define MIN_PB_LOG_SIZE 2
 
 #define MAX_TB_SIZE 32
 #define MAX_PB_SIZE 64
@@ -74,7 +75,7 @@
 #define EPEL_EXTRA_BEFORE 1
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
-#define ACTIVE_PU_UPSAMPLING 1
+#define ACTIVE_PU_UPSAMPLING 0
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */
@@ -963,6 +964,7 @@ typedef struct HEVCContext {
     HEVCFrame   *BL_frame;
     HEVCFrame   *inter_layer_ref;
     int         active_el_frame;
+    uint8_t     *is_upsampled;   
 #endif
     int temporal_layer_id;
     int quality_layer_id;
