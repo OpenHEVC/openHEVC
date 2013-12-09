@@ -1450,9 +1450,9 @@ void FUNC(upsample_filter_block_luma_h)( int16_t *dst, ptrdiff_t dststride, uint
     int rightEndL  = widthEL - Enhscal->right_offset;
     int leftStartL = Enhscal->left_offset;
     int x, i, j, phase, refPos16, refPos;
-    int16_t *dst_tmp;
-    uint8_t * src_tmp;
-    int16_t* coeff;
+    int16_t*   dst_tmp;
+    uint8_t*   src_tmp;
+    int16_t*   coeff;
     
     for( i = 0; i < block_w; i++ )	{
         x        = av_clip_c(i+x_EL, leftStartL, rightEndL);
@@ -1514,9 +1514,9 @@ void FUNC(upsample_filter_block_cr_h)( int16_t *dst, ptrdiff_t dststride, uint8_
     int leftStartC = Enhscal->left_offset>>1;
     int rightEndC  = widthEL - (Enhscal->right_offset>>1);
     int x, i, j, phase, refPos16, refPos;
-    int16_t *dst_tmp;
-    uint8_t * src_tmp;
-    int16_t* coeff;
+    int16_t*  dst_tmp;
+    uint8_t*  src_tmp;
+    int16_t*  coeff;
     
    
     for( i = 0; i < block_w; i++ )	{
@@ -1573,7 +1573,7 @@ void FUNC(upsample_filter_block_cr_v)(uint8_t *dst, ptrdiff_t dststride, int16_t
 
 
 
-static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
+static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int16_t enabled_up_sample_filter_luma[16][8], const int16_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
 {
     int i,j, k;
     
@@ -1607,8 +1607,11 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     short *dstV1;
     short *srcV1;
     
-    int refPos16, phase, refPos;
-    int32_t* coeff;
+    int refPos16 = 0;
+    int phase    = 0;
+    int refPos   = 0;
+    const int16_t* coeff;
+
     widthEL   = FrameEL->width;  //pcUsPic->getWidth ();
     heightEL  = FrameEL->height; //pcUsPic->getHeight();
     

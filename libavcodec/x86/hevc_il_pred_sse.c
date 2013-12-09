@@ -37,7 +37,7 @@
 
 #ifdef  SVC_EXTENSION
 
-void ff_upsample_base_layer_frame_sse_h(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
+void ff_upsample_base_layer_frame_sse_h(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int16_t enabled_up_sample_filter_luma[16][8], const int16_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
 {
     
     int widthBL =  FrameBL->coded_width;
@@ -66,7 +66,7 @@ void ff_upsample_base_layer_frame_sse_h(struct AVFrame *FrameEL, struct AVFrame 
     int rightEndL  = FrameEL->width - Enhscal->right_offset;
 
     if(1 ) {
-        int32_t* coeff;
+        const int16_t* coeff;
         int i,j;
         uint8_t buffer[8];
         uint8_t *srcBufY = FrameBL->data[0]+(start*strideBL);
@@ -139,7 +139,7 @@ void ff_upsample_base_layer_frame_sse_h(struct AVFrame *FrameEL, struct AVFrame 
         
         start = channel * CTB/2;
 
-        int32_t* coeff;
+        const int16_t* coeff;
         int i,j;
         uint8_t buffer[8];
         strideBL  = FrameBL->linesize[1];
@@ -236,7 +236,7 @@ void ff_upsample_base_layer_frame_sse_h(struct AVFrame *FrameEL, struct AVFrame 
 
 
 
-void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
+void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int16_t enabled_up_sample_filter_luma[16][8], const int16_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
 {
     
     int widthBL =  FrameBL->coded_width;
@@ -272,7 +272,7 @@ void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame 
     r15= _mm_set1_epi32(iOffset);
 
     if(1) {
-        int32_t* coeff;
+        const int16_t* coeff;
         
         
         int i,j, k;
@@ -453,7 +453,7 @@ void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame 
     }
     if( 1 ) {
         
-        int32_t* coeff;
+        const int32_t* coeff;
         int i,j, k;
         
         short buffer1[8];
@@ -729,7 +729,7 @@ void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame 
 }
 
 
-void ff_upsample_base_layer_frame_sse(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
+void ff_upsample_base_layer_frame_sse(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int16_t enabled_up_sample_filter_luma[16][8], const int16_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
 {
     
     //ff_upsample_base_layer_frame_sse_h(FrameEL,FrameBL, Buffer, enabled_up_sample_filter_luma,enabled_up_sample_filter_chroma, Enhscal, up_info,  channel);
@@ -767,7 +767,7 @@ void ff_upsample_base_layer_frame_sse(struct AVFrame *FrameEL, struct AVFrame *F
    // printf("nShift %d iOffset %d \n", nShift, iOffset);
     r15= _mm_set1_epi32(iOffset);
     if(1 ) {
-        int32_t* coeff;
+        const int16_t* coeff;
       
     
         int i,j, k;
@@ -1011,7 +1011,7 @@ void ff_upsample_base_layer_frame_sse(struct AVFrame *FrameEL, struct AVFrame *F
     }
     if( 1 ) {
        
-        int32_t* coeff;
+        const int16_t* coeff;
         int i,j, k;
         uint8_t buffer[8];
         short buffer1[8];
