@@ -255,7 +255,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         s->buffer_frame[1] = av_malloc((pic_size>>2)*sizeof(short));
         s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
 #else
-        s->is_upsampled = av_mallocz((width>>MIN_PB_LOG_SIZE) * (height>>MIN_PB_LOG_SIZE));
+        s->is_upsampled = av_malloc((width>>MIN_PB_LOG_SIZE) * (height>>MIN_PB_LOG_SIZE));
 #endif
     }
 #endif
@@ -2367,7 +2367,10 @@ static int hevc_frame_start(HEVCContext *s)
         if ((ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc)< 0))
             return ret;
 #if !ACTIVE_PU_UPSAMPLING
-        ctb_size =  1 << s->sps->log2_ctb_size;
+        s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, 1);
+        
+        //upsample_v_base_layer_frame( s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, *channel);
+        /*    ctb_size =  1 << s->sps->log2_ctb_size;
         cmpt   = s->sps->width;
         cmpt = (cmpt / ctb_size) + (cmpt%ctb_size ? 1:0);
         
@@ -2390,7 +2393,7 @@ static int hevc_frame_start(HEVCContext *s)
         
         s->avctx->execute(s->avctx, (void *) hls_upsample_v_bl_picture, arg, res, cmpt, sizeof(int));
         av_free(arg);
-        av_free(res);
+        av_free(res);*/
 #endif
     }
 #endif

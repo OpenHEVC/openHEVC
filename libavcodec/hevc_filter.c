@@ -902,7 +902,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, i
    // int bl_height0  = s->BL_frame->frame->coded_height > el_height ? (s->BL_frame->frame->coded_height>>1):el_height;
 
     int bl_stride , ret, cr, bl_edge_top0;
-    short   *tmp0;
+    int16_t   *tmp0;
     
     el_edge_left  = ( MAX_EDGE -  x0 ) > 0 ?  x0:MAX_EDGE;
     el_edge_top   = ( MAX_EDGE -  y0 ) > 0 ?  y0:MAX_EDGE;
@@ -942,8 +942,6 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, i
         tmp0  = s->HEVClc->edge_emu_buffer_up_v;
         bl_stride = s->BL_frame->frame->linesize[cr];
         src = s->BL_frame->frame->data[cr]+ (bl_y-bl_edge_top)*bl_stride+(bl_x-bl_edge_left);
-         
-        
         ret = s->vdsp.emulated_edge_up_h(
                                      s->HEVClc->edge_emu_buffer, src , MAX_EDGE_BUFFER_STRIDE, bl_stride,
                                      &s->sps->scaled_ref_layer_window,
@@ -968,7 +966,6 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, i
             tmp0 = s->HEVClc->edge_emu_buffer_up;
             tmp0 += ((MAX_EDGE_CR-1)*MAX_EDGE_BUFFER_STRIDE);
         }
-    
         s->hevcdsp.upsample_filter_block_cr_v(
                                             ref0->frame->data[cr] , ref0->frame->linesize[cr], tmp0 , MAX_EDGE_BUFFER_STRIDE,
                                             el_x, el_y, nPbW + el_edge_left+el_edge_right, nPbH + el_edge_top+el_edge_bottom, el_width, el_height,
@@ -998,7 +995,8 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
     if(!active) {
         upsample_block_luma ( s, ref0, x0   , y0   , nPbW   , nPbH    );
         upsample_block_mc   ( s, ref0, x0>>1, y0>>1, nPbW>>1, nPbH>>1 );
+        set_upsampled(s, x0   , y0   , nPbW   , nPbH);
     }
-    set_upsampled(s, x0   , y0   , nPbW   , nPbH);
+    
 }
 

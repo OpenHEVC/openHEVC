@@ -75,7 +75,7 @@
 #define EPEL_EXTRA_BEFORE 1
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
-#define ACTIVE_PU_UPSAMPLING 0
+#define ACTIVE_PU_UPSAMPLING 1
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */
@@ -837,8 +837,8 @@ typedef struct HEVCLocalContext {
     int     end_of_tiles_x;
     int     end_of_tiles_y;
     uint8_t edge_emu_buffer[MAX_EDGE_BUFFER_SIZE];
-    short   edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE];
-    short   edge_emu_buffer_up[MAX_EDGE_BUFFER_SIZE];
+    int16_t   edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE];
+    int16_t   edge_emu_buffer_up[MAX_EDGE_BUFFER_SIZE];
     CodingTree ct;
     CodingUnit cu;
     PredictionUnit pu;
@@ -964,7 +964,7 @@ typedef struct HEVCContext {
     HEVCFrame   *BL_frame;
     HEVCFrame   *inter_layer_ref;
     int         active_el_frame;
-    uint8_t     *is_upsampled;   
+    uint8_t     *is_upsampled;
 #endif
     int temporal_layer_id;
     int quality_layer_id;

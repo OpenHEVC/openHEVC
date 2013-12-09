@@ -123,7 +123,7 @@ static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff
 }
 
 
-static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t linesizeb, ptrdiff_t linesize,
+static int FUNC(ff_emulated_edge_up_v)(int16_t *buf, const int16_t *src, ptrdiff_t linesizeb, ptrdiff_t linesize,
                                     struct HEVCWindow *Enhscal,
                                     int block_w, int block_h, int src_x, int bl_edge_up, int bl_edge_bottom, int wEL, int shift)
 {
@@ -132,10 +132,8 @@ static int FUNC(ff_emulated_edge_up_v)(short *buf, const short *src, ptrdiff_t l
     int  i, j;
     
     
-    short       *buf_tmp    = buf;
-    const short *src_tmp    = src;
-    
-    
+    int16_t       *buf_tmp    = buf;
+    const int16_t *src_tmp    = src;
     
     if(bl_edge_up < shift)  {
         for( i = 0; i < block_w; i++ )	{
