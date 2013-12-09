@@ -26,210 +26,215 @@ cextern hevc_epel_filters
 epel_extra_before   DB 1    ;corresponds to EPEL_EXTRA_BEFORE in hevc.h
 max_pb_size         DB 64   ;corresponds to MAX_PB_SIZE in hevc.h
 
-epel_h_shuffle1     DB 0
-                    DB 1
-                    DB 2
-                    DB 3
-                    DB 1
-                    DB 2
-                    DB 3
-                    DB 4
-                    DB 2
-                    DB 3
-                    DB 4
-                    DB 5
-                    DB 3
-                    DB 4
-                    DB 5
-                    DB 6
+epel_h_shuffle1_8   DB  0,  1,  2,  3
+                    DB  1,  2,  3,  4
+                    DB  2,  3,  4,  5
+                    DB  3,  4,  5,  6
 
-epel_h_shuffle2     DB 4
-                    DB 5
-                    DB 6
-                    DB 7
-                    DB 5
-                    DB 6
-                    DB 7
-                    DB 8
-                    DB 6
-                    DB 7
-                    DB 8
-                    DB 9
-                    DB 7
-                    DB 8
-                    DB 9
-                    DB 10
+epel_h_shuffle1_10  DB  0,  1,  2,  3,  4,  5,  6,  7
+                    DB  2,  3,  4,  5,  6,  7,  8,  9
+
+epel_h_shuffle2_10  DB  4,  5,  6,  7,  8,  9, 10, 11
+                    DB  6,  7,  8,  9, 10, 11, 12, 13
 
 SECTION .text
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+%macro LOOP_INIT 2
+    pxor             m15, m15                    ; set register at zero
+    mov              r10, 0                      ; set height counter
+%1:
+    mov               r9, 0                      ; set width counter
+%2:
+%endmacro
+
+%macro LOOP_END 7
+    add               r9, %3                     ; add 4 for width loop
+    cmp               r9, widthq                 ; cmp width
+    jl                %2                         ; width loop
+    lea              %4q, [%4q+2*%5q]           ; dst += dststride
+    lea              %6q, [%6q+  %7q]           ; src += srcstride
+    add              r10, 1
+    cmp              r10, heightq                ; cmp height
+    jl                %1                         ; height loop
+%endmacro
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+%macro EPEL_H_FILTER 1
+    movsxd           mxq, mxd                    ; extend sign
+    sub              mxq, 1
+    shl              mxq, 4                      ; multiply by 16
+    lea              r11, [hevc_epel_filters]
+%if %1 == 8
+    movq             m13, [r11+mxq]              ; get 4 first values of filters
+    pshufd           m13, m13, 0                 ; cast 32 bit on all register.
+    movdqu           m14, [epel_h_shuffle1_8]    ; register containing shuffle
+%else
+    movq             m15, [r11+mxq]              ; get 4 first values of filters
+    pxor             m13, m13
+    punpcklbw        m13, m15
+    psraw            m13, 8
+    punpcklqdq       m13, m13
+    movdqu           m14, [epel_h_shuffle1_10]   ; register containing shuffle
+    movdqu           m11, [epel_h_shuffle2_10]   ; register containing shuffle
+%endif
+%endmacro
+
+%macro EPEL_V_FILTER 1
+    pxor             m10, m10
+    movsxd           myq, myd                    ; extend sign
+    sub              myq, 1                      ; my-1
+    shl              myq, 4                      ; multiply by 16
+    lea              r11, [hevc_epel_filters]
+    movq             m12, [r11+myq]              ; filters
+    punpcklbw        m10, m12                    ; unpack to 16 bit
+    psraw            m10, 8                      ; shift for bit-sign
+%if %1 == 8
+    punpcklwd        m10, m10                    ; put double values to 32bit.
+%else
+    pxor             m15, m15
+    punpcklwd        m15, m10
+    psrad            m10, m15, 16
+%endif
+    psrldq           m11, m10, 4                 ; filter 1
+    psrldq           m12, m10, 8                 ; filter 2
+    psrldq           m13, m10, 12                ; filter 3
+    pshufd           m10, m10, 0                 ; extend 32bit to whole register
+    pshufd           m11, m11, 0
+    pshufd           m12, m12, 0
+    pshufd           m13, m13, 0
+%endmacro
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+%macro INST_SRC1_CST_2 4
+    p%1               %2, m0, %4
+    p%1               %3, m1, %4
+%endmacro
+%macro INST_SRC1_CST_4 6
+    INST_SRC1_CST_2   %1, %2, %3, %6
+    p%1               %4, m2, %6
+    p%1               %5, m3, %6
+%endmacro
+;%macro INST_SRC1_CST_8 10
+;    INST_SRC1_CST_4   %1, %2, %3, %4, %5, %10
+;    p%1               %6, m4, %10
+;    p%1               %7, m5, %10
+;    p%1               %8, m6, %10
+;    p%1               %9, m7, %10
+;%endmacro
+
+%macro MUL_ADD_H_1 2
+    p%1               m0, m13
+    p%2              m12, m0, m15
+%endmacro
+%macro MUL_ADD_H_2_2 2
+    p%1               m0, m13
+    p%1               m1, m13
+    p%2              m12, m0, m1
+%endmacro
+
+%macro MUL_ADD_V_4 6
+    p%1               %3, m10
+    p%1               %4, m11
+    p%2               %3, %4
+    p%1               %5, m12
+    p%2               %3, %5
+    p%1               %6, m13
+    p%2               %3, %6
+%endmacro
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+%macro MC_LOAD_PIXEL 0
+    movdqu            m0, [srcq+  r9  ]          ; load data from source
+%endmacro
+
+%macro EPEL_H_LOAD2 1
+%if %1 == 8
+    movdqu            m0, [srcq+  r9-1]          ; load data from source
+%else
+    movdqu            m0, [srcq+2*r9-2]          ; load data from source
+%endif
+%endmacro
+%define EPEL_H_LOAD4 EPEL_H_LOAD2
+%macro EPEL_H_LOAD8 1
+    EPEL_H_LOAD2      %1
+    psrldq            m1, m0, 4
+%endmacro
+
+%macro EPEL_V_LOAD 3
+%if %1 == 8
+    lea              r11, [%2q+  r9]
+%else
+    lea              r11, [%2q+2*r9]
+%endif
+    movdqu            m1, [r11      ]            ;load 64bit of x
+    movdqu            m3, [r11+2*%3q]            ;load 64bit of x+2*stride
+    sub              r11, %3q
+    movdqu            m0, [r11      ]            ;load 64bit of x-stride
+    movdqu            m2, [r11+2*%3q]            ;load 64bit of x+stride
+%endmacro
+
+%macro EPEL_V_LOAD_64 2
+%if %1 == 8
+    lea              r11, [%2q+  r9]
+%else
+    lea              r11, [%2q+2*r9]
+%endif
+    movdqu            m1, [r11      ]            ;load 64bit of x
+    movdqu            m3, [r11+2*64]            ;load 64bit of x+2*stride
+    sub              r11, 64
+    movdqu            m0, [r11      ]            ;load 64bit of x-stride
+    movdqu            m2, [r11+2*64]            ;load 64bit of x+stride
+%endmacro
+
+%macro PEL_STORE2 3
+    movss     [%1q+2*r9], %2
+%endmacro
+%macro PEL_STORE4 3
+    movq      [%1q+2*r9],%2
+%endmacro
+%macro PEL_STORE8 3
+    movdqu    [%1q+2*r9],%2
+%endmacro
+%macro PEL_STORE16 3
+    PEL_STORE8        %1, %2, %3
+    movdqu [%1q+2*r9+16], %3
+%endmacro
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+%macro UNPACK_SRAI16_4 5
+    p%1              m15, m0
+    psrad             %2, m15, 16
+    pxor             m15, m15
+    p%1              m15, m1
+    psrad             %3, m15, 16
+    pxor             m15, m15
+    p%1              m15, m2
+    psrad             %4, m15, 16
+    pxor             m15, m15
+    p%1              m15, m3
+    psrad             %5, m15, 16
+    pxor             m15, m15
+%endmacro
+
 %if ARCH_X86_64
-INIT_XMM sse4        ; adds ff_ and _sse4 to function name
+INIT_XMM sse4                                    ; adds ff_ and _sse4 to function name
 
 ; ******************************
-; void put_hevc_mc_pixels_8(int16_t *dst, ptrdiff_t dststride,
-;                                       uint8_t *_src, ptrdiff_t _srcstride,
-;                                       int width, int height, int mx, int my,
-;                                       int16_t* mcbuffer)
-;
-;        r0 : *dst
-;        r1 : dststride
-;        r2 : *src
-;         r3 : srcstride
-;        r4 : width
-;        r5 : height
-;
-; ******************************
-
-; 1 by 1. Can be done on any processor
-cglobal put_hevc_mc_pixels_2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height
-                  mov          r6,0                        ; height
-mc_pixels_2_h:        ; for height
-                  mov          r7, 0                       ; width
-
-mc_pixels_2_w:        ; for width
-                  mov          r9,0
-                  mov          r9b,[srcq+r7]               ; get byte
-                  shl          r9,6                        ; shift
-                  mov          [dstq+2*r7],r9w             ; store
-                  inc          r7
-                  cmp          r7, widthq                  ; cmp width
-                  jl           mc_pixels_2_w               ; width loop
-                  lea          dstq,[dstq+2*dststrideq]    ; dst += dststride
-                  lea          srcq,[srcq+srcstrideq]      ; src += srcstride
-                  add          r6,1
-                  cmp          r6,heightq                  ; cmp height
-                  jl           mc_pixels_2_h               ; height loop
-                  RET
-; 4 by 4
-cglobal put_hevc_mc_pixels_4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-                  pxor         m0,m0                       ; set register at zero
-                  mov          r6,0                        ; height
-                  mov          r9,0
-
-        ; 8 by 8
-mc_pixels_4_h:        ; for height
-                  mov          r7,0                        ; width
-
-mc_pixels_4_w:        ; for width
-                  pxor         m1,m1
-                  movq         m1,[srcq+r7]                ; load 64 bits
-                  punpcklbw    m2,m1,m0                    ; unpack to 16 bits
-                  psllw        m2,6                        ; shift left 6 bits (14 - bit depth) each 16bit element
-                  movq         [dstq+2*r7],m2              ; store 64 bits
-                  add          r7,4                        ; add 4 for width loop
-                  cmp          r7, widthq                  ; cmp width
-                  jl           mc_pixels_4_w               ; width loop
-                  lea          dstq,[dstq+2*dststrideq]    ; dst += dststride
-                  lea          srcq,[srcq+srcstrideq]      ; src += srcstride
-                  add          r6,1
-                  cmp          r6,heightq                  ; cmp height
-                  jl           mc_pixels_4_h               ; height loop
-                  RET
-
-; 8 by 8
-cglobal put_hevc_mc_pixels_8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-                  pxor         m0,m0                       ; set register at zero
-                  mov          r6,0                        ; height
-                  mov          r9,0
-
-        ; 8 by 8
-mc_pixels_8_h:        ; for height
-                  mov          r7,0                        ; width
-
-mc_pixels_8_w:        ; for width
-
-                  pxor         m1,m1
-                  movq         m1,[srcq+r7]                ; load 64 bits
-                  punpcklbw    m2,m1,m0                    ; unpack to 16 bits
-                  psllw        m2,6                        ; shift left 6 bits (14 - bit depth) each 16bit element
-                  movdqu       [dstq+2*r7],m2              ; store 128 bits
-                  add          r7,8                        ; add 8 for width loop
-                  cmp          r7, r4                      ; cmp width
-                  cmp          r7, widthq                  ; cmp width
-                  jl           mc_pixels_8_w               ; width loop
-                  lea          dstq,[dstq+2*dststrideq]    ; dst += dststride
-                  lea          srcq,[srcq+srcstrideq]      ; src += srcstride
-                  add          r6,1
-                  cmp          r6,heightq                  ; cmp height
-                  jl           mc_pixels_8_h               ; height loop
-                  RET
-
-; 16 by 16
-cglobal put_hevc_mc_pixels_16_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-                  pxor         m0,m0                   ; set register at zero
-                  mov          r6,0                        ; height
-                  mov          r9,0
-
-        ; 8 by 8
-mc_pixels_16_h:        ; for height
-                  mov          r7,0                        ; width
-
-mc_pixels_16_w:        ; for width
-
-                  pxor         m1,m1
-                  movdqu       m1,[srcq+r7]                ; load 128 bits
-                  punpcklbw    m2,m1,m0                    ; unpack low to 16 bits
-                  punpckhbw    m3,m1,m0                    ; unpack high to 16 bits
-                  psllw        m2,6                        ; shift left 6 bits (14 - bit depth) each 16bit element
-                  psllw        m3,6                        ; shift left 6 bits (14 - bit depth) each 16bit element
-                  movdqu       [dstq+2*r7],m2              ; store 128 bits
-                  movdqu       [dstq+2*r7+16],m3           ; store 128 bits
-                  add          r7,16                       ; add 16 for width loop
-                  cmp          r7, widthq                  ; cmp width
-                  jl           mc_pixels_16_w              ; width loop
-                  lea          dstq,[dstq+2*dststrideq]    ; dst += dststride
-                  lea          srcq,[srcq+srcstrideq]      ; src += srcstride
-                  add          r6,1
-                  cmp          r6,heightq                  ; cmp height
-                  jl           mc_pixels_16_h              ; height loop
-                  RET
-
-;function to call other mc_pixels functions according to width value
-cglobal put_hevc_mc_pixels_master_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-cmp  r4,8
-je  goto_mc_pixels_8_8
-cmp  r4,16
-je  goto_mc_pixels_16_8
-cmp  r4,4
-je  goto_mc_pixels_4_8
-cmp  r4,32
-je  goto_mc_pixels_16_8
-cmp  r4,12
-je  goto_mc_pixels_4_8
-cmp  r4,24
-je  goto_mc_pixels_8_8
-cmp  r4,6
-je  goto_mc_pixels_2_8
-cmp  r4,64
-je  goto_mc_pixels_16_8
-cmp  r4,2
-je  goto_mc_pixels_2_8
-
-jmp  goto_mc_pixels_2_8
-
-goto_mc_pixels_2_8:
-call put_hevc_mc_pixels_2_8
-RET
-
-goto_mc_pixels_4_8:
-call put_hevc_mc_pixels_4_8
-RET
-
-goto_mc_pixels_8_8:
-call put_hevc_mc_pixels_8_8
-RET
-
-goto_mc_pixels_16_8:
-call put_hevc_mc_pixels_16_8
-RET
-
-
-
-; ******************************
-; void put_hevc_epel_h_8(int16_t *dst, ptrdiff_t dststride,
-;                                       uint8_t *_src, ptrdiff_t _srcstride,
-;                                       int width, int height, int mx, int my,
-;                                       int16_t* mcbuffer)
+; void put_hevc_mc_pixels(int16_t *dst, ptrdiff_t dststride,
+;                         uint8_t *_src, ptrdiff_t _srcstride,
+;                         int width, int height, int mx, int my,
+;                         int16_t* mcbuffer)
 ;
 ;        r0 : *dst
 ;        r1 : dststride
@@ -239,449 +244,269 @@ RET
 ;        r5 : height
 ;
 ; ******************************
+%macro MC_PIXEL_COMPUTE2_8 0
+    punpcklbw         m1, m0, m15
+    psllw             m1, 6
+%endmacro
+%macro MC_PIXEL_COMPUTE4_8 0
+    MC_PIXEL_COMPUTE2_8
+%endmacro
+%macro MC_PIXEL_COMPUTE8_8 0
+    MC_PIXEL_COMPUTE2_8
+%endmacro
+%macro MC_PIXEL_COMPUTE16_8 0
+    MC_PIXEL_COMPUTE2_8
+    punpckhbw         m2, m0, m15
+    psllw             m2, 6
+%endmacro
 
-;8 by 8
-cglobal put_hevc_epel_h_8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
-    movdqu  m4,[epel_h_shuffle2]
-epel_h_8_h:
-    mov r8,0                            ; width counter
-epel_h_8_w:
-    movdqu   m2,[srcq+r8-1]             ; load data from source
-    pshufb  m5,m4,m0                    ; shuffle2
-    pshufb  m2,m2,m0                    ; shuffle
-    pmaddubsw   m2,m1                   ; maddubs (see SSE instruction set for details)
-    pmaddubsw   m5,m1                   ; maddubs (see SSE instruction set for details)
-    phaddw  m2,m5                       ; horizontal add
-    movdqu    [dstq+2*r8],m2              ; store data to dst
-    add     r8,4
-    cmp     r8,widthq                   ;
-    jl      epel_h_4_w
-    lea     dstq,[dstq+2*dststrideq]    ; dst += dststride
-    lea     srcq,[srcq+srcstrideq]      ; src += srcstride
-    add     r9,1
-    cmp     r9,heightq                  ; cmp height
-    jl      epel_h_4_h                  ; height loop
+%macro MC_PIXEL_COMPUTE2_10 0
+    psllw             m1, m0, 4
+%endmacro
+%define MC_PIXEL_COMPUTE4_10 MC_PIXEL_COMPUTE2_10
+%define MC_PIXEL_COMPUTE8_10 MC_PIXEL_COMPUTE2_10
 
-RET
-
-;4 by 4
-cglobal put_hevc_epel_h_4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
-
-epel_h_4_h:
-    mov r8,0                            ; width counter
-epel_h_4_w:
-    movdqu   m2,[srcq+r8-1]             ; load data from source
-    pshufb  m2,m2,m0                    ; shuffle
-    pmaddubsw   m2,m1                   ; maddubs (see SSE instruction set for details)
-    phaddw  m2,m3                       ; horizontal add
-    movq    [dstq+2*r8],m2              ; store data to dst
-    add     r8,4
-    cmp     r8,widthq                   ;
-    jl      epel_h_8_w
-    lea     dstq,[dstq+2*dststrideq]    ; dst += dststride
-    lea     srcq,[srcq+srcstrideq]      ; src += srcstride
-    add     r9,1
-    cmp     r9,heightq                  ; cmp height
-    jl      epel_h_8_h                  ; height loop
-
-RET
-
-cglobal put_hevc_epel_h_master_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
-
-    movsxd   mxq,mxd                    ; extend sign
-    pxor     m3,m3                      ; set zero
-
-    lea     r10,[hevc_epel_filters]
-    sub     mxq,1
-    shl     mxq,4                       ; multiply by 16
-    movq    m0,[r10+mxq]                ; get 4 first values of filters
-    pshufd  m1,m0,0                     ; cast 32 bit on all register.
-    movdqu   m0,[epel_h_shuffle1]       ; register containing shuffle
-    mov     r9,0                        ; height counter
-
-cmp     widthq,2
-je      goto_epel_h_4_8
-cmp     widthq,4
-je      goto_epel_h_4_8
-cmp     widthq,6
-je      goto_epel_h_4_8
-cmp     widthq,8
-je      goto_epel_h_8_8
-cmp     widthq,12
-je      goto_epel_h_4_8
-cmp     widthq,16
-je      goto_epel_h_8_8
-cmp     widthq,24
-je      goto_epel_h_8_8
-cmp     widthq,32
-je      goto_epel_h_8_8
-cmp     widthq,64
-je      goto_epel_h_8_8
-
-jmp     goto_epel_h_4_8
-
-RET
-goto_epel_h_4_8:
-call put_hevc_epel_h_4_8
-RET
-
-goto_epel_h_8_8:
-call put_hevc_epel_h_8_8
-RET
-
-;TODO : epel_h_2
+%macro PUT_HEVC_MC_PIXELS 3
+    LOOP_INIT %3_pixels_h_%1_%2, %3_pixels_v_%1_%2
+    MC_LOAD_PIXEL
+    MC_PIXEL_COMPUTE%1_%2
+    PEL_STORE%1      dst, m1, m2
+    LOOP_END %3_pixels_h_%1_%2, %3_pixels_v_%1_%2, %1, dst, dststride, src, srcstride
+    RET
+%endmacro
 
 ; ******************************
-; void put_hevc_epel_v_8(int16_t *dst, ptrdiff_t dststride,
-;                                       uint8_t *_src, ptrdiff_t _srcstride,
-;                                       int width, int height, int mx, int my,
-;                                       int16_t* mcbuffer)
+; void put_hevc_epel_h(int16_t *dst, ptrdiff_t dststride,
+;                     uint8_t *_src, ptrdiff_t _srcstride,
+;                     int width, int height, int mx, int my,
+;                     int16_t* mcbuffer)
 ;
-;        r0 : *dst
-;        r1 : dststride
-;        r2 : *src
-;        r3 : srcstride
-;        r4 : width
-;        r5 : height
+;      r0 : *dst
+;      r1 : dststride
+;      r2 : *src
+;      r3 : srcstride
+;      r4 : width
+;      r5 : height
 ;
 ; ******************************
+%macro EPEL_H_COMPUTE2_8 0
+    pshufb            m0, m0, m14                ; shuffle
+    MUL_ADD_H_1 maddubsw, haddw
+%endmacro
+%define EPEL_H_COMPUTE4_8 EPEL_H_COMPUTE2_8
+%macro EPEL_H_COMPUTE8_8 0
+    INST_SRC1_CST_2  shufb, m0, m1, m14
+    MUL_ADD_H_2_2 maddubsw, haddw
+%endmacro
 
-cglobal put_hevc_epel_v_16_8, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
-;filters and initialization is done in master
-epel_v_16_h:
-    mov r9,0                                ;set width counter
-epel_v_16_v:
-    lea  r10,[srcq+r9]
-    mov  r11,r10
-    sub  r11,srcstrideq
-    movdqu m5,[r11]           ;load 64bit of x-stride
-    movdqu m6,[r10]                       ;load 64bit of x
-    movdqu m7,[r10+srcstrideq]            ;load 64bit of x+stride
-    movdqu m8,[r10+2*srcstrideq]          ;load 64bit of x+2*stride
+%macro EPEL_H_COMPUTE2_10 0
+    pshufb             m0, m0, m14                    ; shuffle
+    MUL_ADD_H_1    maddwd, haddd
+    psrad             m12, 2
+    packssdw          m12, m15
+%endmacro
+%macro EPEL_H_COMPUTE4_10 0
+    pshufb            m1, m0, m11               ; shuffle2
+    pshufb            m0, m0, m14               ; shuffle1
+    MUL_ADD_H_2_2 maddwd, haddd
+    psrad            m12, 2
+    packssdw         m12, m15
+%endmacro
 
-    punpckhbw m9,m5,m0                         ;unpack 8bit to 16bit
-    punpckhbw m10,m6,m0                         ;unpack 8bit to 16bit
-    punpckhbw m11,m7,m0                         ;unpack 8bit to 16bit
-    punpckhbw m12,m8,m0                         ;unpack 8bit to 16bit
+%macro PUT_HEVC_EPEL_H 2
+    EPEL_H_FILTER     %2
+    LOOP_INIT  epel_h_h_%1_%2, epel_h_w_%1_%2
+    EPEL_H_LOAD%1     %2
+    EPEL_H_COMPUTE%1_%2
+    PEL_STORE%1       dst, m12, m15
+    LOOP_END   epel_h_h_%1_%2, epel_h_w_%1_%2, %1, dst, dststride, src, srcstride
+%endmacro
 
-    punpcklbw m5,m0                         ;unpack 8bit to 16bit
-    punpcklbw m6,m0                         ;unpack 8bit to 16bit
-    punpcklbw m7,m0                         ;unpack 8bit to 16bit
-    punpcklbw m8,m0                         ;unpack 8bit to 16bit
+; ******************************
+; void put_hevc_epel_v(int16_t *dst, ptrdiff_t dststride,
+;                      uint8_t *_src, ptrdiff_t _srcstride,
+;                      int width, int height, int mx, int my,
+;                      int16_t* mcbuffer)
+;
+;      r0 : *dst
+;      r1 : dststride
+;      r2 : *src
+;      r3 : srcstride
+;      r4 : width
+;      r5 : height
+;
+; ******************************
+%macro EPEL_V_COMPUTE2_8 0
+    INST_SRC1_CST_4    unpcklbw, m0, m1, m2, m3, m15
+    MUL_ADD_V_4    mullw, addsw, m0, m1, m2, m3
+%endmacro
+%define EPEL_V_COMPUTE4_8 EPEL_V_COMPUTE2_8
+%define EPEL_V_COMPUTE8_8 EPEL_V_COMPUTE2_8
+%macro EPEL_V_COMPUTE16_8 0
+    INST_SRC1_CST_4    unpckhbw, m4, m5, m6, m7, m15
+    MUL_ADD_V_4    mullw, addsw, m4, m5, m6, m7
+    EPEL_V_COMPUTE2_8
+%endmacro
 
+%macro EPEL_V_COMPUTE2_10 0
+    UNPACK_SRAI16_4   unpcklwd, m0, m1, m2, m3
+    MUL_ADD_V_4    mulld, addd, m0, m1, m2, m3
+    psrad             m0, 2
+    packssdw          m0, m15
+%endmacro
+%define EPEL_V_COMPUTE4_10 EPEL_V_COMPUTE2_10
+%macro EPEL_V_COMPUTE8_10 0
+    UNPACK_SRAI16_4   unpckhwd, m4, m5, m6, m7
+    MUL_ADD_V_4    mulld, addd, m4, m5, m6, m7
+    UNPACK_SRAI16_4   unpcklwd, m0, m1, m2, m3
+    MUL_ADD_V_4    mulld, addd, m0, m1, m2, m3
+    psrad             m0, 2
+    psrad             m4, 2
+    packssdw          m0, m4
+%endmacro
 
-    pmullw  m9,m1                           ;multiply values with filter
-    pmullw  m10,m2
-    pmullw  m11,m3
-    pmullw  m12,m4
+%macro PUT_HEVC_EPEL_V 2
+    EPEL_V_FILTER     %2
+    LOOP_INIT epel_v_h_%1_%2, epel_v_w_%1_%2
+    EPEL_V_LOAD       %2, src, srcstride
+    EPEL_V_COMPUTE%1_%2
+    PEL_STORE%1      dst, m0, m4
+    LOOP_END  epel_v_h_%1_%2, epel_v_w_%1_%2, %1, dst, dststride, src, srcstride
+%endmacro
 
-    pmullw  m5,m1                           ;multiply values with filter
-    pmullw  m6,m2
-    pmullw  m7,m3
-    pmullw  m8,m4
+; ******************************
+; void put_hevc_epel_hv(int16_t *dst, ptrdiff_t dststride,
+;                       uint8_t *_src, ptrdiff_t _srcstride,
+;                       int width, int height, int mx, int my,
+;                       int16_t* mcbuffer)
+;
+;      r0 : *dst
+;      r1 : dststride
+;      r2 : *src
+;      r3 : srcstride
+;      r4 : width
+;      r5 : height
+;      r6 : mx
+;      r7 : my
+;      r8 : mcbuffer
+;
+; ******************************
+%macro PUT_HEVC_EPEL_HV 2
+    push       mcbufferq
+    lea             srcq, [srcq-srcstrideq]      ; src += srcstride
+    EPEL_V_FILTER     %2
+    LOOP_INIT epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2
+    EPEL_H_LOAD       %2, src, srcstride
+    EPEL_H_COMPUTE%1_%2
+    PEL_STORE%1      mcbuffer, m0, m4
+    LOOP_END  epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2, %1, mcbuffer, 64, src, srcstride
 
-    paddsw  m9,m10                           ;add the different values
-    paddsw  m11,m12
-    paddsw  m9,m11
-
-    paddsw  m5,m6                           ;add the different values
-    paddsw  m7,m8
-    paddsw  m5,m7
-
-    movdqu    [dstq+2*r9],m5              ;store 128bit to dst
-    movdqu    [dstq+2*r9+16],m9           ;store 128bit to dst
-
-    add     r9,16                        ; add 16 for width loop
-    cmp     r9, widthq                  ; cmp width
-    jl      epel_v_16_v                  ; width loop
-    lea     dstq,[dstq+2*dststrideq]    ; dst += dststride
-    lea     srcq,[srcq+srcstrideq]      ; src += srcstride
-    add     r8,1
-    cmp     r8,heightq                  ; cmp height
-    jl      epel_v_16_h                  ; height loop
-
-RET
-
-
-cglobal put_hevc_epel_v_8_8, 8, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
-;filters and initialization is done in master
-epel_v_8_h:
-    mov r9,0                                ;set width counter
-epel_v_8_v:
-    lea  r10,[srcq+r9]
-    mov  r11,r10
-    sub  r11,srcstrideq
-    movq m5,[r11]           ;load 64bit of x-stride
-    movq m6,[r10]                       ;load 64bit of x
-    movq m7,[r10+srcstrideq]            ;load 64bit of x+stride
-    movq m8,[r10+2*srcstrideq]          ;load 64bit of x+2*stride
-
-    punpcklbw m5,m0                         ;unpack 8bit to 16bit
-    punpcklbw m6,m0                         ;unpack 8bit to 16bit
-    punpcklbw m7,m0                         ;unpack 8bit to 16bit
-    punpcklbw m8,m0                         ;unpack 8bit to 16bit
-
-    pmullw  m5,m1                           ;multiply values with filter
-    pmullw  m6,m2
-    pmullw  m7,m3
-    pmullw  m8,m4
-
-    paddsw  m5,m6                           ;add the different values
-    paddsw  m7,m8
-    paddsw  m5,m7
-
-    movdqu    [dstq+2*r9],m5              ;store 64bit to dst
-    add     r9,8                        ; add 4 for width loop
-    cmp     r9, widthq                  ; cmp width
-    jl      epel_v_8_v                  ; width loop
-    lea     dstq,[dstq+2*dststrideq]    ; dst += dststride
-    lea     srcq,[srcq+srcstrideq]      ; src += srcstride
-    add     r8,1
-    cmp     r8,heightq                  ; cmp height
-    jl      epel_v_8_h                  ; height loop
-
-RET
-
-cglobal put_hevc_epel_v_4_8, 8, 12, 0, dst, dststride, src, srcstride, width, height, mx, my
-
-epel_v_4_h:
-    mov r9,0                             ;set width counter
-epel_v_4_v:
-    lea     r10,[srcq+r9]
-    mov     r11,r10
-    sub     r11,srcstrideq
-    movq m5,[r11]                        ;load 64bit of x-stride
-    movq m6,[r10]                        ;load 64bit of x
-    movq m7,[r10+srcstrideq]             ;load 64bit of x+stride
-    movq m8,[r10+2*srcstrideq]           ;load 64bit of x+2*stride
-
-    punpcklbw m5,m0                      ;unpack 8bit to 16bit
-    punpcklbw m6,m0                      ;unpack 8bit to 16bit
-    punpcklbw m7,m0                      ;unpack 8bit to 16bit
-    punpcklbw m8,m0                      ;unpack 8bit to 16bit
-
-    pmullw    m5,m1                      ;multiply values with filter
-    pmullw    m6,m2
-    pmullw    m7,m3
-    pmullw    m8,m4
-
-    paddsw    m5,m6                      ;add the different values
-    paddsw    m7,m8
-    paddsw    m5,m7
-
-    movq    [dstq+2*r9],m5               ;store 64bit to dst
-    add     r9,4                         ; add 4 for width loop
-    cmp     r9, widthq                   ; cmp width
-    jl      epel_v_4_v                   ; width loop
-    lea     dstq,[dstq+2*dststrideq]     ; dst += dststride
-    lea     srcq,[srcq+srcstrideq]       ; src += srcstride
-    add     r8,1
-    cmp     r8,heightq                   ; cmp height
-    jl      epel_v_4_h                   ; height loop
-
-RET
-
-;function to call other epel_v functions according to width value
-cglobal put_hevc_epel_v_master_8, 8, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
-
-    pxor    m1,m1                               ;set zero
-    movsxd   myq,myd                           ;extend sign
-    sub    myq,1                                ;my-1
-    shl    myq,4                                ;multiply by 16
-    lea     r10,[hevc_epel_filters]
-    movq    m0,[r10+myq]                ;filters
-
-    punpcklbw   m1,m0                   ;unpack to 16 bit
-    psraw       m1,8                    ;shift for bit-sign
-    punpcklwd   m1,m1                   ;put double values to 32bit.
-    psrldq      m2,m1,4                 ;filter 1
-    psrldq      m3,m1,8                 ;filter 2
-    psrldq      m4,m1,12                ;filter 3
-    pshufd      m1,m1,0                 ;extend 32bit to whole register
-    pshufd      m2,m2,0
-    pshufd      m3,m3,0
-    pshufd      m4,m4,0
-
-    pxor m0,m0                          ;set zero
-
-    mov r8,0                                ;set height counter
-
-
-cmp  r4,8
-je  goto_epel_v_8_8
-cmp  r4,16
-je  goto_epel_v_16_8
-cmp  r4,4
-je  goto_epel_v_4_8
-cmp  r4,32
-je  goto_epel_v_16_8
-cmp  r4,12
-je  goto_epel_v_4_8
-cmp  r4,24
-je  goto_epel_v_8_8
-cmp  r4,6
-je  goto_epel_v_2_8
-cmp  r4,64
-je  goto_epel_v_16_8
-cmp  r4,2
-je  goto_epel_v_2_8
-
-jmp  goto_epel_v_2_8
-RET
-
-goto_epel_v_4_8:
-call put_hevc_epel_v_4_8
-RET
-
-goto_epel_v_8_8:
-call put_hevc_epel_v_8_8
-RET
-
-goto_epel_v_16_8:
-call put_hevc_epel_v_16_8
-RET
-
-goto_epel_v_2_8:
-call put_hevc_epel_v_4_8
-RET
-
-;TODO : put_hevc_epel_v_2_8.
+    pop         mcbufferq
+    lea         mcbufferq, [mcbufferq+64]        ; mcbufferq += EPEL_EXTRA_BEFORE * MAX_PB_SIZE
+    EPEL_V_FILTER     %2
+    LOOP_INIT epel_hv_v_h_%1_%2, epel_hv_v_w_%1_%2
+    EPEL_V_LOAD_64    %2, mcbuffer
+    EPEL_V_COMPUTE%1_%2
+    PEL_STORE%1      dst, m0, m4
+    LOOP_END  epel_hv_v_h_%1_%2, epel_hv_v_w_%1_%2, %1, dst, dststride, mcbuffer, 64
+%endmacro
 
 
 ; ******************************
-; void put_hevc_epel_hv_8(int16_t *dst, ptrdiff_t dststride,
-;                                       uint8_t *_src, ptrdiff_t _srcstride,
-;                                       int width, int height, int mx, int my,
-;                                       int16_t* mcbuffer)
-;
-;        r0 : *dst
-;        r1 : dststride
-;        r2 : *src
-;        r3 : srcstride
-;        r4 : width
-;        r5 : height
-;        r6 : mx
-;        r7 : my
-;        r8 : mcbuffer
-;
+; void put_hevc_mc_pixels(int16_t *dst, ptrdiff_t dststride,
+;                         uint8_t *_src, ptrdiff_t _srcstride,
+;                         int width, int height, int mx, int my,
+;                         int16_t* mcbuffer)
 ; ******************************
+cglobal hevc_put_hevc_epel_pixels2_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 2, 8, epel
+cglobal hevc_put_hevc_epel_pixels4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 4, 8, epel
+cglobal hevc_put_hevc_epel_pixels8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 8, 8, epel
+cglobal hevc_put_hevc_epel_pixels16_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 16, 8, epel
 
-cglobal put_hevc_epel_hv_4_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+cglobal hevc_put_hevc_epel_pixels2_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 2, 10, epel
+cglobal hevc_put_hevc_epel_pixels4_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 4, 10, epel
+cglobal hevc_put_hevc_epel_pixels8_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 8, 10, epel
 
-    movsxd   mxq,mxd                    ; extend sign
-    movsxd   myq,myd                    ; extend sign
-    movsxd   srcstrideq,srcstrided      ; extend sign
-    movsxd   dststrideq,dststrided      ; extend sign
-    movsxd   widthq,widthd              ; extend sign
-    movsxd   heightq,heightd            ; extend sign
+cglobal hevc_put_hevc_qpel_pixels4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 4, 8, qpel
+cglobal hevc_put_hevc_qpel_pixels8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 8, 8, qpel
+cglobal hevc_put_hevc_qpel_pixels16_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 16, 8, qpel
 
-    pxor     m3,m3                      ; set zero
+cglobal hevc_put_hevc_qpel_pixels4_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 4, 10, qpel
+cglobal hevc_put_hevc_qpel_pixels8_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS 8, 10, qpel
 
-    lea     r10,[hevc_epel_filters]
-    sub     mxq,1
-    shl     mxq,4                       ; multiply by 16
-    movq    m0,[r10+mxq]                ; get 4 first values of filters
-    pshufd  m1,m0,0                     ; cast 32 bit on all register.
-    movdqu  m0,[epel_h_shuffle1]        ; register containing shuffle1
+; ******************************
+; void put_hevc_epel_hX(int16_t *dst, ptrdiff_t dststride,
+;                       uint8_t *_src, ptrdiff_t _srcstride,
+;                       int width, int height, int mx, int my,
+;                       int16_t* mcbuffer)
+; ******************************
+cglobal hevc_put_hevc_epel_h2_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
+    PUT_HEVC_EPEL_H    2, 8
+    RET
+cglobal hevc_put_hevc_epel_h4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
+    PUT_HEVC_EPEL_H    4, 8
+    RET
+cglobal hevc_put_hevc_epel_h8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
+    PUT_HEVC_EPEL_H    8, 8
+    RET
 
-    mov     r15, srcstrideq
-;    imul    r15, epel_extra_before
-;    sub     srcq,srcstrideq                    ; src -= EPEL_EXTRA_BEFORE * srcstride
-;    mov     r14,max_pb_size
-    shl     r14,2                       ;double because it's used for 16bit adressing
-    lea     r13,[mcbufferq]
+cglobal hevc_put_hevc_epel_h2_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
+    PUT_HEVC_EPEL_H    2, 10
+    RET
+cglobal hevc_put_hevc_epel_h4_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
+    PUT_HEVC_EPEL_H    4, 10
+    RET
 
-    mov     r9,0                        ; height counter
+; ******************************
+; void put_hevc_epel_v(int16_t *dst, ptrdiff_t dststride,
+;                      uint8_t *_src, ptrdiff_t _srcstride,
+;                      int width, int height, int mx, int my,
+;                      int16_t* mcbuffer)
+; ******************************
+cglobal hevc_put_hevc_epel_v2_8, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    2, 8
+    RET
+cglobal hevc_put_hevc_epel_v4_8, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    4, 8
+    RET
+cglobal hevc_put_hevc_epel_v8_8, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    8, 8
+    RET
+cglobal hevc_put_hevc_epel_v16_8, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V   16, 8
+    RET
 
-epel_hv_4_h_h:
-    xor r10,r10                            ; width counter
-epel_hv_4_h_w:
-    movdqu   m2,[srcq+r10]            ; load data from source
-    pshufb  m2,m2,m0                    ; shuffle
-    pmaddubsw   m2,m1                   ; maddubs (see SSE instruction set for details)
-    phaddw  m2,m3                       ; horizontal add
-   movq    [r13+2*r10],m2            ; store data to dst
-    add     r10,4
-    cmp     r10,widthq                  ;
-    jl      epel_hv_4_h_w
-    lea     dstq,[r13+r14]              ; dst += dststride
-    lea     srcq,[srcq+srcstrideq]      ; src += srcstride
-    add     r9,1
-    cmp     r9,heightq                  ; cmp height
-    jl      epel_hv_4_h_h                  ; height loop
+cglobal hevc_put_hevc_epel_v2_10, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    2, 10
+    RET
+cglobal hevc_put_hevc_epel_v4_10, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    4, 10
+    RET
+cglobal hevc_put_hevc_epel_v8_10, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    8, 10
+    RET
 
-;end H treatment
-;    imul    r14,r15;
-    add     mcbufferq,r14               ; mcbuffer+= EPEL_EXTRA_BEFORE * MAX_PB_SIZE
-
-
-    pxor    m1,m1                               ;set zero
-    movsxd   myq,myd                           ;extend sign
-    sub    myq,1                                ;my-1
-    shl    myq,4                                ;multiply by 16
-    lea     r10,[hevc_epel_filters]
-    movq    m0,[r10+myq]                ;filters
-
-    punpcklbw   m1,m0                   ;unpack to 16 bit
-    psraw       m1,8                    ;shift for bit-sign
-    punpcklwd   m1,m1                   ;put double values to 32bit.
-    psrldq      m2,m1,4                 ;filter 1
-    psrldq      m3,m1,8                 ;filter 2
-    psrldq      m4,m1,12                ;filter 3
-    pshufd      m1,m1,0                 ;extend 32bit to whole register
-    pshufd      m2,m2,0
-    pshufd      m3,m3,0
-    pshufd      m4,m4,0
-
-    pxor m0,m0                          ;set zero
-    mov r8,0                            ;set height counter
-
-epel_hv_4_v_h:
-    mov r9,0                            ;set width counter
-epel_hv_4_v_w:
-    lea  r10,[mcbufferq+r9]
-    mov  r11,r10
-    sub  r11,srcstrideq
-;    movq m5,[r11]                       ;load 64bit of x-stride
-;    movq m6,[r10]                       ;load 64bit of x
-;    movq m7,[r10+srcstrideq]            ;load 64bit of x+stride
-;    movq m8,[r10+2*srcstrideq]          ;load 64bit of x+2*stride
-
-
-    punpcklbw   m5,m0                   ;unpack to 16 bit
-    psraw       m5,16                   ;shift for bit-sign
-    punpcklbw   m6,m0                   ;unpack to 16 bit
-    psraw       m6,16                   ;shift for bit-sign
-    punpcklbw   m7,m0                   ;unpack to 16 bit
-    psraw       m7,16                   ;shift for bit-sign
-    punpcklbw   m8,m0                   ;unpack to 16 bit
-    psraw       m8,16                   ;shift for bit-sign
-
-
-    pmulld    m5,m1                      ;multiply values with filter - SSE4.2 function
-    pmulld    m6,m2
-    pmulld    m7,m3
-    pmulld    m8,m4
-
-    paddd    m5,m6                      ;add the different values
-    paddd    m7,m8
-    paddd    m5,m7
-
-    psrld   m5,2                        ; >> BIT_DEPTH-2
-    packssdw    m5,m0                   ;back to 16bit
-    pxor    m5,m5
-
-;    movdqu    [dstq+2*r9],m5              ;store 128bit to dst
-    add     r9,4                        ; add 4 for width loop
-    cmp     r9, widthq                  ; cmp width
-    jl      epel_hv_4_v_w                  ; width loop
-    lea     dstq,[dstq+2*dststrideq]    ; dst += dststride
-    lea     srcq,[mcbufferq+r15]      ; src += srcstride
-    add     r8,1
-    cmp     r8,heightq                  ; cmp height
-    jl      epel_hv_4_v_h                  ; height loop
-
-RET
-
+; ******************************
+; void put_hevc_epel_hv(int16_t *dst, ptrdiff_t dststride,
+;                       uint8_t *_src, ptrdiff_t _srcstride,
+;                       int width, int height, int mx, int my,
+;                       int16_t* mcbuffer)
+; ******************************
+;cglobal hevc_put_hevc_epel_hv2_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+;    PUT_HEVC_EPEL_HV   2, 10
+;    RET
 
 %endif ; ARCH_X86_64
+
