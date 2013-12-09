@@ -2367,10 +2367,11 @@ static int hevc_frame_start(HEVCContext *s)
         if ((ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc)< 0))
             return ret;
 #if !ACTIVE_PU_UPSAMPLING
-        s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, 1);
+        /*  up-sampling all the frame without parallel processing and SSE optimizations */
+       // s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, 1);
         
-        //upsample_v_base_layer_frame( s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, *channel);
-        /*    ctb_size =  1 << s->sps->log2_ctb_size;
+        
+            ctb_size =  1 << s->sps->log2_ctb_size;
         cmpt   = s->sps->width;
         cmpt = (cmpt / ctb_size) + (cmpt%ctb_size ? 1:0);
         
@@ -2393,7 +2394,7 @@ static int hevc_frame_start(HEVCContext *s)
         
         s->avctx->execute(s->avctx, (void *) hls_upsample_v_bl_picture, arg, res, cmpt, sizeof(int));
         av_free(arg);
-        av_free(res);*/
+        av_free(res);
 #endif
     }
 #endif
