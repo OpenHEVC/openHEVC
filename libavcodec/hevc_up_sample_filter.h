@@ -37,7 +37,7 @@
 //#endif
 #ifdef SVC_EXTENSION
 #if PHASE_DERIVATION_IN_INTEGER
-DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_chroma[16][NTAPS_CHROMA])=
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma[16][NTAPS_CHROMA])=
 {
 #if CHROMA_UPSAMPLING
     {  0, 64,  0,  0 },
@@ -76,7 +76,7 @@ DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_chroma[16][NTAPS_CHRO
 { -1,  5, 62, -2 }
 #endif
 
-DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_luma[16][NTAPS_LUMA] )=
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_luma[16][NTAPS_LUMA] )=
 {
     {  0,   0,   0, 64,   0,   0,   0,   0 },
     { -1,  -1,  -1, -1,  -1,  -1,  -1,  -1 },
