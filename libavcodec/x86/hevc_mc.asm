@@ -54,8 +54,16 @@ SECTION .text
     add               r9, %3                     ; add 4 for width loop
     cmp               r9, widthq                 ; cmp width
     jl                %2                         ; width loop
+%ifidn %5, dststride
     lea              %4q, [%4q+2*%5q]           ; dst += dststride
+%else
+    lea              %4q, [%4q+  %5 ]           ; dst += dststride
+%endif
+%ifidn %7, srcstride
     lea              %6q, [%6q+  %7q]           ; src += srcstride
+%else
+    lea              %6q, [%6q+  %7 ]           ; src += srcstride
+%endif
     add              r10, 1
     cmp              r10, heightq                ; cmp height
     jl                %1                         ; height loop
@@ -152,8 +160,12 @@ SECTION .text
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-%macro MC_LOAD_PIXEL 0
-    movdqu            m0, [srcq+  r9  ]          ; load data from source
+%macro MC_LOAD_PIXEL 1
+%if %1 == 8
+    movdqu            m0, [srcq+  r9]            ; load data from source
+%else
+    movdqu            m0, [srcq+2*r9]            ; load data from source
+%endif
 %endmacro
 
 %macro EPEL_H_LOAD2 1
@@ -176,23 +188,16 @@ SECTION .text
     lea              r11, [%2q+2*r9]
 %endif
     movdqu            m1, [r11      ]            ;load 64bit of x
+%ifidn %3, srcstride
     movdqu            m3, [r11+2*%3q]            ;load 64bit of x+2*stride
     sub              r11, %3q
-    movdqu            m0, [r11      ]            ;load 64bit of x-stride
     movdqu            m2, [r11+2*%3q]            ;load 64bit of x+stride
-%endmacro
-
-%macro EPEL_V_LOAD_64 2
-%if %1 == 8
-    lea              r11, [%2q+  r9]
 %else
-    lea              r11, [%2q+2*r9]
+    movdqu            m3, [r11+2*%3 ]            ;load 64bit of x+2*stride
+    sub              r11, %3
+    movdqu            m2, [r11+2*%3 ]            ;load 64bit of x+stride
 %endif
-    movdqu            m1, [r11      ]            ;load 64bit of x
-    movdqu            m3, [r11+2*64]            ;load 64bit of x+2*stride
-    sub              r11, 64
     movdqu            m0, [r11      ]            ;load 64bit of x-stride
-    movdqu            m2, [r11+2*64]            ;load 64bit of x+stride
 %endmacro
 
 %macro PEL_STORE2 3
@@ -268,7 +273,7 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 
 %macro PUT_HEVC_MC_PIXELS 3
     LOOP_INIT %3_pixels_h_%1_%2, %3_pixels_v_%1_%2
-    MC_LOAD_PIXEL
+    MC_LOAD_PIXEL     %2
     MC_PIXEL_COMPUTE%1_%2
     PEL_STORE%1      dst, m1, m2
     LOOP_END %3_pixels_h_%1_%2, %3_pixels_v_%1_%2, %1, dst, dststride, src, srcstride
@@ -336,32 +341,32 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ;      r5 : height
 ;
 ; ******************************
-%macro EPEL_V_COMPUTE2_8 0
+%macro EPEL_V_COMPUTE2_8 1
     INST_SRC1_CST_4    unpcklbw, m0, m1, m2, m3, m15
     MUL_ADD_V_4    mullw, addsw, m0, m1, m2, m3
 %endmacro
 %define EPEL_V_COMPUTE4_8 EPEL_V_COMPUTE2_8
 %define EPEL_V_COMPUTE8_8 EPEL_V_COMPUTE2_8
-%macro EPEL_V_COMPUTE16_8 0
+%macro EPEL_V_COMPUTE16_8 1
     INST_SRC1_CST_4    unpckhbw, m4, m5, m6, m7, m15
     MUL_ADD_V_4    mullw, addsw, m4, m5, m6, m7
-    EPEL_V_COMPUTE2_8
+    EPEL_V_COMPUTE2_8 %1
 %endmacro
 
-%macro EPEL_V_COMPUTE2_10 0
+%macro EPEL_V_COMPUTE2_10 1
     UNPACK_SRAI16_4   unpcklwd, m0, m1, m2, m3
     MUL_ADD_V_4    mulld, addd, m0, m1, m2, m3
-    psrad             m0, 2
+    psrad             m0, %1
     packssdw          m0, m15
 %endmacro
 %define EPEL_V_COMPUTE4_10 EPEL_V_COMPUTE2_10
-%macro EPEL_V_COMPUTE8_10 0
+%macro EPEL_V_COMPUTE8_10 1
     UNPACK_SRAI16_4   unpckhwd, m4, m5, m6, m7
     MUL_ADD_V_4    mulld, addd, m4, m5, m6, m7
     UNPACK_SRAI16_4   unpcklwd, m0, m1, m2, m3
     MUL_ADD_V_4    mulld, addd, m0, m1, m2, m3
-    psrad             m0, 2
-    psrad             m4, 2
+    psrad             m0, %1
+    psrad             m4, %1
     packssdw          m0, m4
 %endmacro
 
@@ -369,7 +374,7 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
     EPEL_V_FILTER     %2
     LOOP_INIT epel_v_h_%1_%2, epel_v_w_%1_%2
     EPEL_V_LOAD       %2, src, srcstride
-    EPEL_V_COMPUTE%1_%2
+    EPEL_V_COMPUTE%1_%2 2
     PEL_STORE%1      dst, m0, m4
     LOOP_END  epel_v_h_%1_%2, epel_v_w_%1_%2, %1, dst, dststride, src, srcstride
 %endmacro
@@ -392,23 +397,27 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ;
 ; ******************************
 %macro PUT_HEVC_EPEL_HV 2
-    push       mcbufferq
-    lea             srcq, [srcq-srcstrideq]      ; src += srcstride
-    EPEL_V_FILTER     %2
-    LOOP_INIT epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2
-    EPEL_H_LOAD       %2, src, srcstride
-    EPEL_H_COMPUTE%1_%2
-    PEL_STORE%1      mcbuffer, m0, m4
-    LOOP_END  epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2, %1, mcbuffer, 64, src, srcstride
+    EPEL_H_FILTER     %2
+    sub             srcq, srcstrideq             ; src -= srcstride
+    lea              r6q, [mcbufferq]
+    add          heightq, 3
 
-    pop         mcbufferq
-    lea         mcbufferq, [mcbufferq+64]        ; mcbufferq += EPEL_EXTRA_BEFORE * MAX_PB_SIZE
-    EPEL_V_FILTER     %2
+    LOOP_INIT  epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2
+    EPEL_H_LOAD%1     %2
+    EPEL_H_COMPUTE%1_%2
+    PEL_STORE%1       r6, m12, m15
+    LOOP_END   epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2, %1, r6, 128, src, srcstride
+
+    lea        mcbufferq, [mcbufferq+128]        ; mcbufferq += EPEL_EXTRA_BEFORE * MAX_PB_SIZE
+    sub          heightq, 3
+
+    EPEL_V_FILTER     10
     LOOP_INIT epel_hv_v_h_%1_%2, epel_hv_v_w_%1_%2
-    EPEL_V_LOAD_64    %2, mcbuffer
-    EPEL_V_COMPUTE%1_%2
+    EPEL_V_LOAD       10, mcbuffer, 128
+    EPEL_V_COMPUTE%1_10 6
     PEL_STORE%1      dst, m0, m4
-    LOOP_END  epel_hv_v_h_%1_%2, epel_hv_v_w_%1_%2, %1, dst, dststride, mcbuffer, 64
+    LOOP_END  epel_hv_v_h_%1_%2, epel_hv_v_w_%1_%2, %1, dst, dststride, mcbuffer, 128
+
 %endmacro
 
 
@@ -504,9 +513,21 @@ cglobal hevc_put_hevc_epel_v8_10, 8, 12, 0 , dst, dststride, src, srcstride, wid
 ;                       int width, int height, int mx, int my,
 ;                       int16_t* mcbuffer)
 ; ******************************
-;cglobal hevc_put_hevc_epel_hv2_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
-;    PUT_HEVC_EPEL_HV   2, 10
-;    RET
+cglobal hevc_put_hevc_epel_hv2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   2, 8
+    RET
+cglobal hevc_put_hevc_epel_hv4_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   4, 8
+    RET
+cglobal hevc_put_hevc_epel_hv8_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   8, 8
+    RET
+cglobal hevc_put_hevc_epel_hv2_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   2, 10
+    RET
+cglobal hevc_put_hevc_epel_hv4_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   4, 10
+    RET
 
 %endif ; ARCH_X86_64
 
