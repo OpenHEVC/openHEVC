@@ -1275,7 +1275,7 @@ static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
                              int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
-                             int16_t *src1, ptrdiff_t srcs1tride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
                              int16_t* mcbuffer)                                \
@@ -1294,6 +1294,7 @@ static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
+	PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
@@ -1303,7 +1304,7 @@ static void FUNC(put_hevc_epel_h_w ## W)(                                      \
                              int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
-                             int16_t *src1, ptrdiff_t srcs1tride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
                              int16_t* mcbuffer)                                \
@@ -1327,6 +1328,7 @@ static void FUNC(put_hevc_epel_h_w ## W)(                                      \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
+	PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
@@ -1336,7 +1338,7 @@ static void FUNC(put_hevc_epel_v_w ## W)(                                      \
                              int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
-                             int16_t *src1, ptrdiff_t srcs1tride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
                              int16_t* mcbuffer)                                \
@@ -1360,6 +1362,7 @@ static void FUNC(put_hevc_epel_v_w ## W)(                                      \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
+	PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
@@ -1369,7 +1372,7 @@ static void FUNC(put_hevc_epel_hv_w ## W)(                                     \
                              int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
-                             int16_t *src1, ptrdiff_t srcs1tride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
                              int16_t* mcbuffer)                                \
@@ -1411,6 +1414,7 @@ static void FUNC(put_hevc_epel_hv_w ## W)(                                     \
         }                                                                      \
         buf += MAX_PB_SIZE;                                                    \
         dst += dststride;                                                      \
+	PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
