@@ -49,19 +49,27 @@ typedef struct HEVCDSPContext {
 
     void (*put_hevc_qpel[5][4][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                 int width, int height, int16_t* mcbuffer);
-    void (*put_hevc_qpel_w[5][4][4][2])(
-            uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
-            uint8_t *dst, ptrdiff_t dststride,
-            uint8_t *src, ptrdiff_t srcstride,
-            int width, int height, int16_t* mcbuffer);
+    void (*put_hevc_qpel_w[5][4][4][4])(
+            uint8_t denom,
+            int16_t wlxFlag, int16_t wl1Flag,
+            int16_t olxFlag, int16_t ol1Flag,
+            uint8_t *_dst, ptrdiff_t _dststride,
+            int16_t *src1, ptrdiff_t src1stride,
+            uint8_t *_src, ptrdiff_t _srcstride,
+            int width, int height,
+            int16_t* mcbuffer);
 
     void (*put_hevc_epel[5][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                 int width, int height, int mx, int my, int16_t* mcbuffer);
-    void (*put_hevc_epel_w[5][2][2][2])(
-            uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
-            uint8_t *dst, ptrdiff_t dststride,
-            uint8_t *src, ptrdiff_t srcstride,
-            int width, int height, int mx, int my, int16_t* mcbuffer);
+    void (*put_hevc_epel_w[5][2][2][4])(
+            uint8_t denom,
+            int16_t wlxFlag, int16_t wl1Flag,
+            int16_t olxFlag, int16_t ol1Flag,
+            uint8_t *_dst, ptrdiff_t _dststride,
+            int16_t *src1, ptrdiff_t src1stride,
+            uint8_t *_src, ptrdiff_t _srcstride,
+            int width, int height, int mx, int my,
+            int16_t* mcbuffer);
 
     void (*put_unweighted_pred)(uint8_t *dst, ptrdiff_t dststride, int16_t *src, ptrdiff_t srcstride,
                                 int width, int height);

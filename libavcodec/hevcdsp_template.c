@@ -974,6 +974,8 @@ PUT_HEVC_QPEL_HV(3, 3)
 //PUT_UNWEIGHTED_PRED_COMPUTE
 #define PUT_WEIGHTED_PRED_COMPUTE0()                                           \
     dst[x] = av_clip_pixel((tmp + offset) >> shift)
+//PUT_UNWEIGHTED_PRED_END
+#define PUT_WEIGHTED_PRED_END0()
 
 // PUT_WEIGHTED_PRED_INIT
 #define PUT_WEIGHTED_PRED_INIT1()                                              \
@@ -984,11 +986,42 @@ PUT_HEVC_QPEL_HV(3, 3)
 //PUT_WEIGHTED_PRED_COMPUTE
 #define PUT_WEIGHTED_PRED_COMPUTE1()                                           \
     dst[x] = av_clip_pixel(((tmp*wx + offset) >> shift) + ox)
+//PUT_WEIGHTED_PRED_END
+#define PUT_WEIGHTED_PRED_END1()
+
+// PUT_WEIGHTED_PRED_ARG_INIT
+#define PUT_WEIGHTED_PRED_INIT2()                                              \
+    int shift  = 14 + 1 - BIT_DEPTH;                                           \
+    int offset = 1 << (shift-1)
+//PUT_WEIGHTED_PRED_ARG_COMPUTE
+#define PUT_WEIGHTED_PRED_COMPUTE2()                                           \
+    dst[x] = av_clip_pixel((src1[x] + tmp + offset) >> shift)
+//PUT_WEIGHTED_PRED_ARG_END
+#define PUT_WEIGHTED_PRED_END2()                                               \
+    src1 += src1stride;
+
+// WEIGHTED_PRED_ARG_INIT
+#define PUT_WEIGHTED_PRED_INIT3()                                              \
+    int shift  = denom + 14 - BIT_DEPTH + 1;                                   \
+    int w0     = wlxFlag;                                                      \
+    int w1     = wl1Flag;                                                      \
+    int o0     = olxFlag << (BIT_DEPTH - 8);                                   \
+    int o1     = ol1Flag << (BIT_DEPTH - 8);                                   \
+    int offset = (o0 + o1 + 1) << (shift - 1)
+//WEIGHTED_PRED_ARG_COMPUTE
+#define PUT_WEIGHTED_PRED_COMPUTE3()                                           \
+    dst[x] = av_clip_pixel((src1[x] * w0 + tmp * w1 + offset) >> shift)
+//WEIGHTED_PRED_ARG_END
+#define PUT_WEIGHTED_PRED_END3()                                               \
+        src1 += src1stride;
 
 #define PUT_HEVC_QPEL_PIXELS_WEIGHTED(W)                                       \
 static void FUNC(put_hevc_qpel_pixels_w ## W) (                                \
-                             uint8_t denom, int16_t wlxFlag, int16_t olxFlag,  \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int16_t* mcbuffer)         \
 {                                                                              \
@@ -1006,13 +1039,17 @@ static void FUNC(put_hevc_qpel_pixels_w ## W) (                                \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
+	PUT_WEIGHTED_PRED_END## W();                                           \
     }                                                                          \
 }
 
 #define PUT_HEVC_QPEL_H_WEIGHTED(H, W)                                         \
 static void FUNC(put_hevc_qpel_h ## H ## _w ## W)(                             \
-                             uint8_t denom, int16_t wlxFlag, int16_t olxFlag,  \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int16_t* mcbuffer)         \
 {                                                                              \
@@ -1030,13 +1067,17 @@ static void FUNC(put_hevc_qpel_h ## H ## _w ## W)(                             \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
+	PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
 #define PUT_HEVC_QPEL_V_WEIGHTED(V, W)                                         \
 static void FUNC(put_hevc_qpel_v ## V ## _w ## W)(                             \
-                             uint8_t denom, int16_t wlxFlag, int16_t olxFlag,  \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int16_t* mcbuffer)         \
 {                                                                              \
@@ -1054,13 +1095,17 @@ static void FUNC(put_hevc_qpel_v ## V ## _w ## W)(                             \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
+	PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
 #define PUT_HEVC_QPEL_HV_WEIGHTED(H, V, W)                                     \
 static void FUNC(put_hevc_qpel_h ## H ## v ## V ## _w ## W)(                   \
-                             uint8_t denom, int16_t wlxFlag, int16_t olxFlag,  \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int16_t* mcbuffer)         \
 {                                                                              \
@@ -1092,41 +1137,33 @@ static void FUNC(put_hevc_qpel_h ## H ## v ## V ## _w ## W)(                   \
         }                                                                      \
         buf += MAX_PB_SIZE;                                                    \
         dst += dststride;                                                      \
+	PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
-PUT_HEVC_QPEL_PIXELS_WEIGHTED(0)
-PUT_HEVC_QPEL_PIXELS_WEIGHTED(1)
-PUT_HEVC_QPEL_H_WEIGHTED(1, 0)
-PUT_HEVC_QPEL_H_WEIGHTED(1, 1)
-PUT_HEVC_QPEL_H_WEIGHTED(2, 0)
-PUT_HEVC_QPEL_H_WEIGHTED(2, 1)
-PUT_HEVC_QPEL_H_WEIGHTED(3, 0)
-PUT_HEVC_QPEL_H_WEIGHTED(3, 1)
-PUT_HEVC_QPEL_V_WEIGHTED(1, 0)
-PUT_HEVC_QPEL_V_WEIGHTED(1, 1)
-PUT_HEVC_QPEL_V_WEIGHTED(2, 0)
-PUT_HEVC_QPEL_V_WEIGHTED(2, 1)
-PUT_HEVC_QPEL_V_WEIGHTED(3, 0)
-PUT_HEVC_QPEL_V_WEIGHTED(3, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(1, 1, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(1, 1, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(1, 2, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(1, 2, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(1, 3, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(1, 3, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(2, 1, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(2, 1, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(2, 2, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(2, 2, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(2, 3, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(2, 3, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(3, 1, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(3, 1, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(3, 2, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(3, 2, 1)
-PUT_HEVC_QPEL_HV_WEIGHTED(3, 3, 0)
-PUT_HEVC_QPEL_HV_WEIGHTED(3, 3, 1)
+#define PUT_HEVC_QPEL_FUNC(W)                                                  \
+PUT_HEVC_QPEL_PIXELS_WEIGHTED(W)                                               \
+PUT_HEVC_QPEL_H_WEIGHTED(1, W)                                                 \
+PUT_HEVC_QPEL_H_WEIGHTED(2, W)                                                 \
+PUT_HEVC_QPEL_H_WEIGHTED(3, W)                                                 \
+PUT_HEVC_QPEL_V_WEIGHTED(1, W)                                                 \
+PUT_HEVC_QPEL_V_WEIGHTED(2, W)                                                 \
+PUT_HEVC_QPEL_V_WEIGHTED(3, W)                                                 \
+PUT_HEVC_QPEL_HV_WEIGHTED(1, 1, W)                                             \
+PUT_HEVC_QPEL_HV_WEIGHTED(1, 2, W)                                             \
+PUT_HEVC_QPEL_HV_WEIGHTED(1, 3, W)                                             \
+PUT_HEVC_QPEL_HV_WEIGHTED(2, 1, W)                                             \
+PUT_HEVC_QPEL_HV_WEIGHTED(2, 2, W)                                             \
+PUT_HEVC_QPEL_HV_WEIGHTED(2, 3, W)                                             \
+PUT_HEVC_QPEL_HV_WEIGHTED(3, 1, W)                                             \
+PUT_HEVC_QPEL_HV_WEIGHTED(3, 2, W)                                             \
+PUT_HEVC_QPEL_HV_WEIGHTED(3, 3, W)
+
+PUT_HEVC_QPEL_FUNC(0)
+PUT_HEVC_QPEL_FUNC(1)
+PUT_HEVC_QPEL_FUNC(2)
+PUT_HEVC_QPEL_FUNC(3)
+
 
 #define EPEL_FILTER(src, stride)                \
     (filter_0 * src[x - stride] +               \
@@ -1234,8 +1271,11 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 }
 #define PUT_HEVC_EPEL_PIXELS_WEIGHTED(W)                                       \
 static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
-                             uint8_t denom, int16_t wlxFlag, int16_t olxFlag,  \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t srcs1tride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
                              int16_t* mcbuffer)                                \
@@ -1259,8 +1299,11 @@ static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
 
 #define PUT_HEVC_EPEL_H_WEIGHTED(W)                                            \
 static void FUNC(put_hevc_epel_h_w ## W)(                                      \
-                             uint8_t denom, int16_t wlxFlag, int16_t olxFlag,  \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t srcs1tride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
                              int16_t* mcbuffer)                                \
@@ -1289,8 +1332,11 @@ static void FUNC(put_hevc_epel_h_w ## W)(                                      \
 
 #define PUT_HEVC_EPEL_V_WEIGHTED(W)                                            \
 static void FUNC(put_hevc_epel_v_w ## W)(                                      \
-                             uint8_t denom, int16_t wlxFlag, int16_t olxFlag,  \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t srcs1tride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
                              int16_t* mcbuffer)                                \
@@ -1319,8 +1365,11 @@ static void FUNC(put_hevc_epel_v_w ## W)(                                      \
 
 #define PUT_HEVC_EPEL_HV_WEIGHTED(W)                                           \
 static void FUNC(put_hevc_epel_hv_w ## W)(                                     \
-                             uint8_t denom, int16_t wlxFlag, int16_t olxFlag,  \
-                             int16_t *_dst, ptrdiff_t _dststride,              \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag,                 \
+                             uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t srcs1tride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
                              int16_t* mcbuffer)                                \
@@ -1365,14 +1414,16 @@ static void FUNC(put_hevc_epel_hv_w ## W)(                                     \
     }                                                                          \
 }
 
-PUT_HEVC_EPEL_PIXELS_WEIGHTED(0)
-PUT_HEVC_EPEL_PIXELS_WEIGHTED(1)
-PUT_HEVC_EPEL_H_WEIGHTED(0)
-PUT_HEVC_EPEL_H_WEIGHTED(1)
-PUT_HEVC_EPEL_V_WEIGHTED(0)
-PUT_HEVC_EPEL_V_WEIGHTED(1)
-PUT_HEVC_EPEL_HV_WEIGHTED(0)
-PUT_HEVC_EPEL_HV_WEIGHTED(1)
+#define PUT_HEVC_EPEL_FUNC(W)                                                  \
+PUT_HEVC_EPEL_PIXELS_WEIGHTED(W)                                               \
+PUT_HEVC_EPEL_H_WEIGHTED(W)                                                    \
+PUT_HEVC_EPEL_V_WEIGHTED(W)                                                    \
+PUT_HEVC_EPEL_HV_WEIGHTED(W)
+
+PUT_HEVC_EPEL_FUNC(0)
+PUT_HEVC_EPEL_FUNC(1)
+PUT_HEVC_EPEL_FUNC(2)
+PUT_HEVC_EPEL_FUNC(3)
 
 static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
                                       int16_t *src, ptrdiff_t srcstride,
