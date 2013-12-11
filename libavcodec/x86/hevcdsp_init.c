@@ -30,6 +30,9 @@
 #define ASM_EN
 /***********************************/
 
+void ff_upsample_filter_block_luma_h_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int x_EL, int x_BL, int block_w, int block_h, int widthEL, const int16_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+
+
 #define MCQ_FUNC(DIR, DEPTH, OPT)                                        \
     void ff_put_hevc_mc_pixels_ ## DIR ## _ ## DEPTH ## _ ## OPT(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, int16_t* mcbuffer);
 
@@ -200,6 +203,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->upsample_base_layer_frame = ff_upsample_base_layer_frame_sse;
                     c->upsample_h_base_layer_frame = ff_upsample_base_layer_frame_sse_h;
                     c->upsample_v_base_layer_frame = ff_upsample_base_layer_frame_sse_v;
+                    c->upsample_filter_block_luma_h = ff_upsample_filter_block_luma_h_sse;
 #endif
 
 

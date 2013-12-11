@@ -1333,6 +1333,171 @@ void ff_upsample_base_layer_frame_sse(struct AVFrame *FrameEL, struct AVFrame *F
     }
 
 }
+
+#define MUL_ADD_H_2(mul, add, dst, src)                                        \
+    src ## 1 = mul(src ## 1, r0);                                              \
+    src ## 2 = mul(src ## 2, r0);                                              \
+    src ## 1 = add(src ## 1, src ## 2);                                        \
+    dst      = add(src ## 1, c0)
+#define MUL_ADD_H_2_2(mul, add, dst, src)                                      \
+    src ## 1 = mul(src ## 1, r0);                                              \
+    src ## 2 = mul(src ## 2, r0);                                              \
+    dst      = add(src ## 1, src ## 2)
+#define MUL_ADD_H_4(mul, add, dst, src)                                        \
+    src ## 1 = mul(src ## 1, r0);                                              \
+    src ## 2 = mul(src ## 2, r0);                                              \
+    src ## 3 = mul(src ## 3, r0);                                              \
+    src ## 4 = mul(src ## 4, r0);                                              \
+    src ## 1 = add(src ## 1, src ## 2);                                        \
+    src ## 3 = add(src ## 3, src ## 4);                                        \
+    dst      = add(src ## 1, src ## 3)
+
+
+#define INST_SRC1_CST_2(inst, dst, src, cst)                                   \
+    dst ## 1 = inst(src ## 1, cst);                                            \
+    dst ## 2 = inst(src ## 2, cst)
+#define INST_SRC1_CST_4(inst, dst, src, cst)                                   \
+    INST_SRC1_CST_2(inst, dst, src, cst);                                      \
+    dst ## 3 = inst(src ## 3, cst);                                            \
+    dst ## 4 = inst(src ## 4, cst)
+
+#define UPSAMPLE_LUMA_H_FILTER_8(idx)                                                    \
+    __m128i bshuffle1 = _mm_set_epi8( 8, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3, 2, 1, 0);    \
+    r0= _mm_loadl_epi64((__m128i *) coeff);                                              \
+    r0= _mm_unpacklo_epi64(x2,x2)
+
+#define QPEL_H_LOAD2()                                                         \
+    x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);                             \
+    x2 = _mm_srli_si128(x1, 2)
+#define QPEL_H_LOAD4()                                                         \
+    QPEL_H_LOAD2()
+
+#define QPEL_H_COMPUTE4_8()                                                    \
+    INST_SRC1_CST_2(_mm_shuffle_epi8, x, x , bshuffle1);                       \
+    MUL_ADD_H_2(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
+#define QPEL_H_COMPUTE8_8()                                                    \
+    INST_SRC1_CST_4(_mm_shuffle_epi8, x, x , bshuffle1);                       \
+    MUL_ADD_H_4(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
+#define QPEL_H_COMPUTE2_10()                                                   \
+    MUL_ADD_H_2(_mm_madd_epi16, _mm_hadd_epi32, r1, x);                        \
+    r1 = _mm_srai_epi32(r1, 10 - 8);                                           \
+    r1 = _mm_packs_epi32(r1, c0)
+#define QPEL_H_COMPUTE4_10()                                                   \
+    QPEL_H_COMPUTE2_10()
+#define PEL_STORE2(tab)                                                        \
+    _mm_maskmoveu_si128(r1, mask, (char *) &tab[x])
+#define PEL_STORE4(tab)                                                        \
+    _mm_storel_epi64((__m128i *) &tab[x], r1)
+#define LumHor_FILTER_Block(pel, coeff) \
+(pel[-3]*coeff[0] + pel[-2]*coeff[1] + pel[-1]*coeff[2] + pel[0]*coeff[3] + pel[1]*coeff[4] + pel[2]*coeff[5] + pel[3]*coeff[6] + pel[4]*coeff[7])
+
+
+#define SHVC_LUMA_H_FIRST()                                                              \
+        x        = av_clip_c(i+x_EL, leftStartL, rightEndL);                            \
+        refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);    \
+        phase    = refPos16 & 15;                                                       \
+        coeff    = enabled_up_sample_filter_luma[phase];                                \
+        refPos   = (refPos16 >> 4) - x_BL;                                              \
+        dst_tmp  = dst  + i;                                                            \
+        src_tmp  = _src + refPos
+
+ff_upsample_filter_block_luma_h_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+                                    int x_EL, int x_BL, int block_w, int block_h, int widthEL,
+                                    const int8_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
+
+
+    int rightEndL  = widthEL - Enhscal->right_offset;
+    int leftStartL = Enhscal->left_offset;
+    int x, i, j, phase, refPos16, refPos, refPos16_2, refPos_2, refPos_3,phase_2;
+    int16_t*   dst_tmp= dst;
+    uint8_t*   src_tmp= _src, *src_tmp1;
+    int8_t*   coeff;
+    int * temp= NULL;
+//printf("x = %d, left = %d, right=%d \n", x_EL, leftStartL, rightEndL);
+    __m128i     m0, m1, m2,m3,m4,m5, m6,m7,m8, r0,r1,r2,c0,c1,c2,c3;
+    c0= _mm_setzero_si128();
+            temp= av_malloc((block_w+16)*sizeof(int));
+            m0= _mm_set_epi16(7,6,5,4,3,2,1,0);
+            m1= _mm_set1_epi16(up_info->scaleXLum);
+            m2= _mm_set1_epi32(up_info->addXLum);
+            m3= _mm_set1_epi16(x_EL-leftStartL);
+            m4= _mm_set1_epi16(rightEndL-leftStartL);
+            m6= _mm_set1_epi16(8);
+
+    for( i = 0; i < block_w; i+=8 ){
+        m5      =   _mm_adds_epu16(m0,m3);
+        m5      =   _mm_min_epu16(m5,m4);
+        m7      =   _mm_mullo_epi16(m5,m1);
+        m5      =   _mm_mulhi_epu16(m5,m1);
+        m8      =   _mm_unpackhi_epi16(m7,m5);
+        m5      =   _mm_unpacklo_epi16(m7,m5);
+        m5      =   _mm_add_epi32(m5,m2);
+        m5      =   _mm_srli_epi32(m5,12);
+        m8      =   _mm_add_epi32(m8,m2);
+        m8      =   _mm_srli_epi32(m8,12);
+        _mm_storeu_si128((__m128i *) &temp[i],m5);
+        _mm_storeu_si128((__m128i *) &temp[i+4],m8);
+        m0      =   _mm_add_epi16(m0,m6);
+    }
+
+    for( j = 0; j < block_h ; j++ ) {
+        src_tmp  = _src+_srcstride*j;
+        dst_tmp  = dst + dststride*j;
+        refPos= 0;
+        for( i = 0; i < block_w-1; i+=2 ){
+            refPos16 = temp[i];
+            refPos16_2 = temp[i+1];
+            phase    = refPos16 & 15;
+            phase_2  = refPos16_2 & 15;
+            coeff    = enabled_up_sample_filter_luma[phase];
+            refPos   = (refPos16 >> 4) - x_BL;
+
+            c1       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16 & 15]);
+            c2       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_2 & 15]);
+            c2       = _mm_slli_si128(c2,8);
+            c1       = _mm_or_si128(c1,c2);
+
+            refPos_2   = (refPos16_2 >> 4) - x_BL;
+            refPos_3   = refPos_2 - refPos;
+
+            m0      =   _mm_loadu_si128((__m128i *) (src_tmp+ refPos - 3));
+            if(refPos_3){
+            m1      =   _mm_srli_si128(m0,1);
+            }
+            else{
+                m1  =   _mm_srli_si128(m0,0);
+            }
+            m0      =   _mm_unpacklo_epi64(m0,m1);
+
+            r0      =   _mm_maddubs_epi16(m0,c1);
+
+            r0      =   _mm_hadd_epi16(r0,c0);
+            r0      =   _mm_hadd_epi16(r0,c0);
+
+            _mm_maskmoveu_si128(r0, _mm_set_epi16(0,0,0,0,0,0,-1,-1),(char *)(dst_tmp+i));
+
+        }
+        refPos16 = temp[block_w-1];
+        phase    = refPos16 & 15;
+        coeff    = enabled_up_sample_filter_luma[phase];
+        refPos   = (refPos16 >> 4) - x_BL;
+
+        c1       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[phase]);
+
+        m0      =   _mm_loadl_epi64((__m128i *) (src_tmp+ refPos - 3));
+
+        r0      =   _mm_maddubs_epi16(m0,c1);
+
+        r0      =   _mm_hadd_epi16(r0,c0);
+        r0      =   _mm_hadd_epi16(r0,c0);
+
+//            dst_tmp[i]= _mm_extract_epi16(r0,0);
+        _mm_maskmoveu_si128(r0, _mm_set_epi16(0,0,0,0,0,0,0,-1),(char *)&dst_tmp[block_w-1]);
+
+
+    }
+    av_freep(&temp);
+}
 #undef LumHor_FILTER
 #undef LumCro_FILTER
 #undef LumVer_FILTER
