@@ -1137,7 +1137,7 @@ static void FUNC(put_hevc_qpel_h ## H ## v ## V ## _w ## W)(                   \
         }                                                                      \
         buf += MAX_PB_SIZE;                                                    \
         dst += dststride;                                                      \
-	PUT_WEIGHTED_PRED_END## W()                                            \
+        PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
