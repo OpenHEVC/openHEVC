@@ -1587,6 +1587,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         } else {
             s->hevcdsp.put_unweighted_pred(dst0, s->frame->linesize[0], tmp, tmpstride, nPbW, nPbH);
         }
+
         chroma_mc(s, tmp, tmp2, tmpstride, ref0->frame,
                   &current_mv.mv[0], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2, idx);
 

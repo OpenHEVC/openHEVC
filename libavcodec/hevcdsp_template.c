@@ -1039,7 +1039,7 @@ static void FUNC(put_hevc_qpel_pixels_w ## W) (                                \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
-	PUT_WEIGHTED_PRED_END## W();                                           \
+        PUT_WEIGHTED_PRED_END## W();                                           \
     }                                                                          \
 }
 
@@ -1067,7 +1067,7 @@ static void FUNC(put_hevc_qpel_h ## H ## _w ## W)(                             \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
-	PUT_WEIGHTED_PRED_END## W()                                            \
+        PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
@@ -1095,7 +1095,7 @@ static void FUNC(put_hevc_qpel_v ## V ## _w ## W)(                             \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
-	PUT_WEIGHTED_PRED_END## W()                                            \
+        PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
@@ -1294,7 +1294,7 @@ static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
-	PUT_WEIGHTED_PRED_END## W()                                            \
+        PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
@@ -1328,7 +1328,7 @@ static void FUNC(put_hevc_epel_h_w ## W)(                                      \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
-	PUT_WEIGHTED_PRED_END## W()                                            \
+        PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
@@ -1362,7 +1362,7 @@ static void FUNC(put_hevc_epel_v_w ## W)(                                      \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
-	PUT_WEIGHTED_PRED_END## W()                                            \
+        PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
@@ -1414,7 +1414,7 @@ static void FUNC(put_hevc_epel_hv_w ## W)(                                     \
         }                                                                      \
         buf += MAX_PB_SIZE;                                                    \
         dst += dststride;                                                      \
-	PUT_WEIGHTED_PRED_END## W()                                            \
+        PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
 }
 
