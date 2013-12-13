@@ -75,7 +75,7 @@ void ff_upsample_base_layer_frame_sse_h(struct AVFrame *FrameEL, struct AVFrame 
         uint8_t *srcY;
         short *dstY1;
         for( i = 0; i < widthEL; i++ )	{
-            int x = av_clip_c(i, leftStartL, rightEndL);
+            int x = av_clip(i, leftStartL, rightEndL);
             refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
             phase    = refPos16 & 15;
             refPos   = refPos16 >> 4;
