@@ -258,9 +258,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define WEIGHTED_INIT2()                                                       \
-    const __m128i mask = _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, -1);
+    const __m128i mask2 = _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, -1);
 #define WEIGHTED_INIT4()                                                       \
-    const __m128i mask = _mm_set_epi32(0, 0, 0, -1);
+    const __m128i mask2 = _mm_set_epi32(0, 0, 0, -1);
 #define WEIGHTED_INIT8()
 #define WEIGHTED_INIT16()
 
@@ -286,7 +286,7 @@
 
 #define WEIGHTED_STORE2()                                                      \
     r1 = _mm_packus_epi16(r1, r1);                                             \
-    _mm_maskmoveu_si128(r1, mask, (char *) &dst[x])
+    _mm_maskmoveu_si128(r1, mask2, (char *) &dst[x])
 #define WEIGHTED_STORE4()                                                      \
     WEIGHTED_STORE2()
 #define WEIGHTED_STORE8()                                                      \
@@ -363,25 +363,25 @@ void ff_hevc_put_unweighted_pred_8_sse(
 #define WEIGHTED_COMPUTE_2(reg1, reg2)                                         \
     reg1 = _mm_adds_epi16(reg1, m1);                                           \
     reg1 = _mm_adds_epi16(reg1, reg2);                                         \
-    reg1 = _mm_srai_epi16(reg1, shift2)
+    reg2 = _mm_srai_epi16(reg1, shift2)
 #define WEIGHTED_COMPUTE2_2()                                                  \
     WEIGHTED_LOAD2_1();                                                        \
-    WEIGHTED_COMPUTE_2(r1, r3)
+    WEIGHTED_COMPUTE_2(r3, r1)
 #define WEIGHTED_COMPUTE4_2()                                                  \
     WEIGHTED_LOAD4_1();                                                        \
-    WEIGHTED_COMPUTE_2(r1, r3)
+    WEIGHTED_COMPUTE_2(r3, r1)
 #define WEIGHTED_COMPUTE8_2()                                                  \
     WEIGHTED_LOAD8_1();                                                        \
-    WEIGHTED_COMPUTE_2(r1, r3)
+    WEIGHTED_COMPUTE_2(r3, r1)
 #define WEIGHTED_COMPUTE16_2()                                                 \
     WEIGHTED_LOAD16_1();                                                       \
-    WEIGHTED_COMPUTE_2(r1, r3);                                                \
-    WEIGHTED_COMPUTE_2(r2, r4)
+    WEIGHTED_COMPUTE_2(r3, r1);                                                \
+    WEIGHTED_COMPUTE_2(r4, r2)
 
 #define PUT_WEIGHTED_PRED_AVG(H)                                               \
 static void put_weighted_pred_avg ## H ## _8_sse(                              \
                                 uint8_t *dst, ptrdiff_t dststride,             \
-                                int16_t *src, int16_t *src1,                   \
+                                int16_t *src1, int16_t *src,                   \
                                 ptrdiff_t srcstride,                           \
                                 int width, int height) {                       \
     int x, y;                                                                  \
@@ -525,20 +525,20 @@ void ff_hevc_weighted_pred_8_sse(
     reg2 = _mm_add_epi32(s5, s6);                                              \
     reg1 = _mm_srai_epi32(_mm_add_epi32(reg1, m3), shift2);                    \
     reg2 = _mm_srai_epi32(_mm_add_epi32(reg2, m3), shift2);                    \
-    reg1 = _mm_packus_epi32(reg2, reg1)
+    reg2 = _mm_packus_epi32(reg2, reg1)
 #define WEIGHTED_COMPUTE2_3()                                                  \
     WEIGHTED_LOAD2_1();                                                        \
-    WEIGHTED_COMPUTE_3(r1, r3)
+    WEIGHTED_COMPUTE_3(r3, r1)
 #define WEIGHTED_COMPUTE4_3()                                                  \
     WEIGHTED_LOAD4_1();                                                        \
-    WEIGHTED_COMPUTE_3(r1, r3)
+    WEIGHTED_COMPUTE_3(r3, r1)
 #define WEIGHTED_COMPUTE8_3()                                                  \
     WEIGHTED_LOAD8_1();                                                        \
-    WEIGHTED_COMPUTE_3(r1, r3)
+    WEIGHTED_COMPUTE_3(r3, r1)
 #define WEIGHTED_COMPUTE16_3()                                                 \
     WEIGHTED_LOAD16_1();                                                       \
-    WEIGHTED_COMPUTE_3(r1, r3);                                                \
-    WEIGHTED_COMPUTE_3(r2, r4)
+    WEIGHTED_COMPUTE_3(r3, r1);                                                \
+    WEIGHTED_COMPUTE_3(r4, r2)
 
 #define WEIGHTED_PRED_AVG(H)                                                   \
 static void weighted_pred_avg ## H ## _8_sse(                                  \
@@ -546,7 +546,7 @@ static void weighted_pred_avg ## H ## _8_sse(                                  \
                                     int16_t wlxFlag, int16_t wl1Flag,          \
                                     int16_t olxFlag, int16_t ol1Flag,          \
                                     uint8_t *dst, ptrdiff_t dststride,         \
-                                    int16_t *src, int16_t *src1,               \
+                                    int16_t *src1, int16_t *src,               \
                                     ptrdiff_t srcstride,                       \
                                     int width, int height) {                   \
     int x, y;                                                                  \
@@ -1120,7 +1120,7 @@ void ff_hevc_put_hevc_epel_hv ## H ## _w ## W ## _## D ## _sse (               \
     __m128i t1, t2, t3, t4;                                                    \
     __m128i r1, r2, r3, r4;                                                    \
     const __m128i c0   = _mm_setzero_si128();                                  \
-   /* const __m128i mask = _mm_set_epi32(0, 0, 0, -1);   */                        \
+    const __m128i mask = _mm_set_epi32(0, 0, 0, -1);                           \
     int16_t *tmp       = mcbuffer;                                             \
     WEIGHTED_INIT_ ## W(H, D);                                                 \
     SRC_INIT_ ## D();                                                          \
@@ -1246,7 +1246,6 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ## _w ## W ## _## D ##
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;                                    \
     __m128i r1, r2, r3, r4;                                                    \
     const __m128i c0   = _mm_setzero_si128();                                  \
-    /*const __m128i mask = _mm_set_epi16(0, -1, 0, -1, 0, -1, 0, -1);   */         \
     int16_t *tmp       = mcbuffer;                                             \
     WEIGHTED_INIT_ ## W(H, D);                                                 \
     SRC_INIT_ ## D();                                                          \
