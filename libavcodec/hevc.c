@@ -1133,9 +1133,10 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     const uint8_t *pcm = skip_bytes(&s->HEVClc->cc, (length + 7) >> 3);
     int ret;
 
-    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                          lc->slice_or_tiles_up_boundary,
-                                          lc->slice_or_tiles_left_boundary);
+    if (!s->sh.disable_deblocking_filter_flag)
+        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
+                                              lc->slice_or_tiles_up_boundary,
+                                              lc->slice_or_tiles_left_boundary);
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
@@ -1843,7 +1844,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
                intra_pred_mode, size_in_pus);
 
         for (j = 0; j < size_in_pus; j++) {
-            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].is_intra     = 1;
+            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].is_intra = 1;
         }
     }
 
@@ -2527,7 +2528,7 @@ static int hevc_frame_start(HEVCContext *s)
     memset(s->horizontal_bs, 0, 2 * s->bs_width * (s->bs_height + 1));
     memset(s->vertical_bs,   0, 2 * s->bs_width * (s->bs_height + 1));
     memset(s->cbf_luma,      0, s->sps->min_tb_width * s->sps->min_tb_height);
-    memset(s->is_pcm,        0, s->sps->min_pu_width * s->sps->min_pu_height);
+//    memset(s->is_pcm,        0, s->sps->min_pu_width * s->sps->min_pu_height);
 
     lc->start_of_tiles_x = 0;
     s->is_decoded        = 0;

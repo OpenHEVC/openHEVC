@@ -627,8 +627,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                      (slice_or_tiles_up_boundary & 2) &&
                      (y0 % (1 << s->sps->log2_ctb_size)) == 0)
                 bs = 0;
-            if (s->sh.disable_deblocking_filter_flag == 1)
-                bs = 0;
             s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
         }
     }
@@ -654,8 +652,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 
                 bs = boundary_strength(s, curr, curr_cbf_luma,
                                        top, top_cbf_luma, top_refPicList, 0);
-                if (s->sh.disable_deblocking_filter_flag == 1)
-                    bs = 0;
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
             }
         }
@@ -688,8 +684,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                      (slice_or_tiles_left_boundary & 2) &&
                      (x0 % (1 << s->sps->log2_ctb_size)) == 0)
                 bs = 0;
-            if (s->sh.disable_deblocking_filter_flag == 1)
-                bs = 0;
             s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs;
         }
     }
@@ -715,8 +709,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 
                 bs = boundary_strength(s, curr, curr_cbf_luma,
                                        left, left_cbf_luma, left_refPicList, 0);
-                if (s->sh.disable_deblocking_filter_flag == 1)
-                    bs = 0;
                 s->vertical_bs[((x0 + i) >> 3) + ((y0 + j) >> 2) * s->bs_width] = bs;
             }
         }
