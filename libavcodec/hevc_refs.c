@@ -312,6 +312,22 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
 }
 
 #ifdef SVC_EXTENSION
+static void set_refindex_data(HEVCContext *s){
+    int list, i;
+    HEVCFrame  *refBL, *refEL;
+    refBL = s->BL_frame;
+    init_il_slice_rpl(s);
+    refEL = s->inter_layer_ref;
+    for( list=0; list < 2; list++) {
+        refEL->refPicList[list].nb_refs = refBL->refPicList[list].nb_refs;
+        for(i=0; i< refBL->refPicList->nb_refs; i++){
+            refEL->refPicList[list].list[i] = refBL->refPicList[list].list[i];
+            refEL->refPicList[list].ref[i] = find_ref_idx(s, refBL->refPicList[list].list[i]);
+            refEL->refPicList[list].isLongTerm[i] = refBL->refPicList[list].isLongTerm[i];
+        }
+    }
+}
+
 static void scale_upsampled_mv_field(AVCodecContext *avctxt, void *input_ctb_row) {
     HEVCContext *s = avctxt->priv_data;
     int xEL, yEL, xBL, yBL, list, i, j;
@@ -572,6 +588,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
 #endif
     {
         if(!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) && s->sps->set_mfm_enabled_flag)  {
+#if !ACTIVE_PU_UPSAMPLING
             int *arg, *ret, cmpt = (s->sps->height / ctb_size) + (s->sps->height%ctb_size ? 1:0);
             arg = av_malloc(cmpt*sizeof(int));
             ret = av_malloc(cmpt*sizeof(int));
@@ -580,6 +597,9 @@ int ff_hevc_frame_rps(HEVCContext *s)
             s->avctx->execute(s->avctx, (void *) scale_upsampled_mv_field, arg, ret, cmpt, sizeof(int));
             av_free(arg);
             av_free(ret);
+#else
+            set_refindex_data(s);
+#endif
             }   else    {
                 init_upsampled_mv_fields(s);
             }

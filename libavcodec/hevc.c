@@ -167,7 +167,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
                            ((height >> log2_min_cb_size) + 1);
     int ctb_count        = sps->ctb_width * sps->ctb_height;
     int min_pu_size      = sps->min_pu_width * sps->min_pu_height;
-
     s->bs_width  = width  >> 3;
     s->bs_height = height >> 3;
 
@@ -210,10 +209,9 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 #ifdef SVC_EXTENSION
     if(s->decoder_id)    {
         int heightBL, widthBL, heightEL, widthEL;
-        // FIXME wait until the base layer frame is allocated
-        if (s->threads_type&FF_THREAD_FRAME){
+        if (s->threads_type&FF_THREAD_FRAME)
             ff_thread_await_il_progress(s->avctx, 0, &s->avctx->BL_frame);
-        }
+    
         if(!s->avctx->BL_frame)    {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing  \n");
             goto fail;
@@ -255,7 +253,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         s->buffer_frame[1] = av_malloc((pic_size>>2)*sizeof(short));
         s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
 #else
-        s->is_upsampled = av_malloc((width>>MIN_PB_LOG_SIZE) * (height>>MIN_PB_LOG_SIZE));
+        s->is_upsampled = av_malloc(sps->ctb_width * sps->ctb_height);
 #endif
     }
 #endif
@@ -409,13 +407,13 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
 static void hls_upsample_v_bl_picture(AVCodecContext *avctxt, void *input_ctb_row){
     HEVCContext *s = avctxt->priv_data;
     int *channel = input_ctb_row;
-    s->hevcdsp.upsample_v_base_layer_frame( s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, *channel);
+    s->hevcdsp.upsample_v_base_layer_frame( s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma32, up_sample_filter_chroma32, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, *channel);
 
 }
 static void hls_upsample_h_bl_picture(AVCodecContext *avctxt, void *input_ctb_row){
    HEVCContext *s = avctxt->priv_data;
     int *channel = input_ctb_row;
-    s->hevcdsp.upsample_h_base_layer_frame( s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, *channel);
+    s->hevcdsp.upsample_h_base_layer_frame( s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma32, up_sample_filter_chroma32, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, *channel);
     
 }
 #endif
@@ -1287,9 +1285,16 @@ static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0, int height)
 {
     int y = (mv->y >> 2) + y0 + height + 9;
-    
     if (s->threads_type & FF_THREAD_FRAME )
         ff_thread_await_progress(&ref->tf, y, 0);
+}
+static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
+                                const Mv *mv, int y0)
+{
+    int y = (mv->y >> 2) + y0 + (1<<s->sps->log2_ctb_size)*2 + 9;
+    int bl_y = (( (y  - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
+    if (s->threads_type & FF_THREAD_FRAME )
+        ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);
 }
 
 
@@ -1417,6 +1422,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         if(ref0 == s->inter_layer_ref) {
             int y = (current_mv.mv[0].y >> 2) + y0;
             int x = (current_mv.mv[0].x >> 2) + x0;
+            hevc_await_progress_bl(s, ref0, &current_mv.mv[0], y0);
             ff_upsample_block(s, ref0, x, y, nPbW, nPbH);
         }
 #endif
@@ -1431,6 +1437,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         if(ref1 == s->inter_layer_ref ) {
             int y = (current_mv.mv[1].y >> 2) + y0;
             int x = (current_mv.mv[1].x >> 2) + x0;
+            hevc_await_progress_bl(s, ref1, &current_mv.mv[1], y0);
             ff_upsample_block(s, ref1, x, y, nPbW, nPbH);
         }
 #endif
@@ -2346,12 +2353,14 @@ static int hevc_frame_start(HEVCContext *s)
        
 #ifdef SVC_EXTENSION
     if(s->nuh_layer_id ) {
+        ctb_size =  1 << s->sps->log2_ctb_size;
         /*
          *  Set the BL frame
          *  and upsample the base layer frame ans scale its MVs 
          */
 #if ACTIVE_PU_UPSAMPLING
-        memset (s->is_upsampled, 0, (s->sps->width>>MIN_PB_LOG_SIZE) * (s->sps->height>>MIN_PB_LOG_SIZE));
+        
+        memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
         if (s->threads_type&FF_THREAD_FRAME){
             ff_thread_await_il_progress(s->avctx, s->poc, &s->avctx->BL_frame);
@@ -2367,11 +2376,10 @@ static int hevc_frame_start(HEVCContext *s)
         if ((ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc)< 0))
             return ret;
 #if !ACTIVE_PU_UPSAMPLING
-        /*  up-sampling all the frame without parallel processing and SSE optimizations */
-      //  s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, 1);
+      //    up-sampling all the frame without parallel processing and SSE optimizations */
+     //   s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, up_sample_filter_luma, up_sample_filter_chroma, &s->sps->scaled_ref_layer_window, &s->up_filter_inf, 1);
         
-       
-        ctb_size =  1 << s->sps->log2_ctb_size;
+      
         cmpt   = s->sps->width;
         cmpt = (cmpt / ctb_size) + (cmpt%ctb_size ? 1:0);
         
@@ -2410,6 +2418,11 @@ static int hevc_frame_start(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS.\n");
         goto fail;
     }
+#if ACTIVE_PU_UPSAMPLING
+    if (s->active_el_frame)
+        ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
+#endif
+    
 
     av_frame_unref(s->output_frame);
     ret = ff_hevc_output_frame(s, s->output_frame, 0);
@@ -2449,6 +2462,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
+    s->avctx->layers_size += length;
     
     s->nuh_layer_id = ret;
 
@@ -2537,8 +2551,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
             s->is_decoded = 1;
 #ifdef SVC_EXTENSION
+#if !ACTIVE_PU_UPSAMPLING
             if (s->active_el_frame)
                 ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
+#endif
 #endif
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
@@ -3224,7 +3240,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     ff_init_cabac_states();
 
     avctx->internal->allocate_progress = 1;
-
+    
+    avctx->layers_size = 0;
+    
     ret = hevc_init_context(avctx);
     if (ret < 0)
         return ret;

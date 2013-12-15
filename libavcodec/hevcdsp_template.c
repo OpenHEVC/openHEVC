@@ -1482,9 +1482,10 @@ void FUNC(upsample_filter_block_luma_v)(uint8_t *dst, ptrdiff_t dststride, int16
     int leftStartL = Enhscal->left_offset;
     
     int y, i, j, phase, refPos16, refPos;
-    int8_t* coeff;
+    int8_t  *   coeff;
+    uint8_t *   dst_tmp;
     int16_t *   src_tmp;
-    uint8_t * dst_tmp;
+    
     int refPos0 = av_clip_c(y_EL, topStartL, bottomEndL-1);
     
     refPos0     = (((( refPos0 - topStartL )* up_info->scaleYLum + up_info->addYLum) >> 12) >> 4);
@@ -1573,7 +1574,7 @@ void FUNC(upsample_filter_block_cr_v)(uint8_t *dst, ptrdiff_t dststride, int16_t
 
 
 
-static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int16_t enabled_up_sample_filter_luma[16][8], const int16_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
+static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int8_t enabled_up_sample_filter_luma[16][8], const int8_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
 {
     int i,j, k;
     
@@ -1610,7 +1611,7 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     int refPos16 = 0;
     int phase    = 0;
     int refPos   = 0;
-    const int16_t* coeff;
+    const int8_t* coeff;
 
     widthEL   = FrameEL->width;  //pcUsPic->getWidth ();
     heightEL  = FrameEL->height; //pcUsPic->getHeight();

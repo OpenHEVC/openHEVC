@@ -267,6 +267,10 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     y = y0 + nPbH;
 #if ACTIVE_PU_UPSAMPLING
     if(ref == s->inter_layer_ref ) {
+        int bl_y = y0 + (1<<s->sps->log2_ctb_size)*2 + 9;
+        bl_y = (( (bl_y  - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
+        if (s->threads_type & FF_THREAD_FRAME )
+            ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);
         ff_upsample_block(s, ref, x0 , y0, nPbW, nPbH);
     }
 #endif

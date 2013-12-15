@@ -2741,6 +2741,7 @@ typedef struct AVCodecContext {
      */
     void* BL_frame;
     void *copy_opaque;
+    int layers_size;
     
 } AVCodecContext;
 

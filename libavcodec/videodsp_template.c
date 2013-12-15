@@ -93,37 +93,31 @@ static void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
     }
 }
 
-static int FUNC(ff_emulated_edge_up_h)(uint8_t *buf, const uint8_t *src, ptrdiff_t linesizeb, ptrdiff_t linesize,
+static int FUNC(ff_emulated_edge_up_h)(uint8_t *src, ptrdiff_t linesize,
                                     struct HEVCWindow *Enhscal,
                                     int block_w, int block_h, int bl_edge_left, int bl_edge_right, int shift)
 {
     int i;
-    uint8_t         *buf_tmp = buf;
-    const uint8_t   *src_tmp = src;
+    uint8_t   *src_tmp = src;
     
     if(bl_edge_left < shift) {
         for(i=0; i < block_h; i++) {
-            memset(buf_tmp, src_tmp[0], shift-bl_edge_left);
-            memcpy(buf_tmp+(shift-bl_edge_left), src_tmp, block_w);
+            memset(src_tmp-(shift-bl_edge_left), src_tmp[0], shift-bl_edge_left);
             src_tmp += linesize;
-            buf_tmp += linesizeb;
         }
-        return 1;
+        return 0;
     }
     if(bl_edge_right<(shift+1)) {
         for( i = 0; i < block_h ; i++ ) {
-            memcpy(buf_tmp, src_tmp,  block_w);
-            memset(buf_tmp+block_w, src_tmp[block_w-1], shift-bl_edge_right+1);
+            memset(src_tmp+block_w, src_tmp[block_w-1], shift-bl_edge_right+1);
             src_tmp += linesize;
-            buf_tmp += linesizeb;
         }
-        return 1;
     }
-    return 0;
+    return 1;
 }
 
 
-static int FUNC(ff_emulated_edge_up_v)(int16_t *buf, const int16_t *src, ptrdiff_t linesizeb, ptrdiff_t linesize,
+static int FUNC(ff_emulated_edge_up_v)(int16_t *src, ptrdiff_t linesize,
                                     struct HEVCWindow *Enhscal,
                                     int block_w, int block_h, int src_x, int bl_edge_up, int bl_edge_bottom, int wEL, int shift)
 {
@@ -131,40 +125,25 @@ static int FUNC(ff_emulated_edge_up_v)(int16_t *buf, const int16_t *src, ptrdiff
     int leftStartL = (Enhscal->left_offset>> (shift==(MAX_EDGE_CR-1)?1:0));
     int  i, j;
     
-    
-    int16_t       *buf_tmp    = buf;
-    const int16_t *src_tmp    = src;
+    int16_t *src_tmp    = src;
     
     if(bl_edge_up < shift)  {
         for( i = 0; i < block_w; i++ )	{
             for(j= 0; j<(shift-bl_edge_up) ; j++)
-                buf_tmp[j*linesizeb] = src_tmp[0];
-            
-            for(j= 0; j< block_h ; j++)
-                buf_tmp[(shift-bl_edge_up+j)*linesizeb] = src_tmp[j*linesize];
-            
+                src_tmp[(-j-1)*linesize] = src_tmp[0];
             if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
                 src_tmp++;
-            buf_tmp++; 
         }
-        return 1;
+        return 0;
     }
-    
     
     if(bl_edge_bottom < (shift+1) )    {
         for( i = 0; i < block_w; i++ )	{
-            for(j= 0; j< block_h ; j++)
-                buf_tmp[j*linesizeb] = src_tmp[j*linesize];
-            
             for(j= 0; j< shift-bl_edge_bottom+1 ; j++)
-                buf_tmp[(block_h+j)*linesizeb] = src_tmp[(block_h-1)*linesize];
-            
+                src_tmp[(block_h+j)*linesize] = src_tmp[(block_h-1)*linesize];
             if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
                 src_tmp++;
-            
-            buf_tmp++;
         }
-        return 1;
     }
-    return 0;
+    return 1;
 }
