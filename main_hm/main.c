@@ -9,6 +9,50 @@
 #include "getopt.h"
 #include <libavformat/avformat.h>
 
+#ifdef WIN32
+#include <Windows.h>
+#else
+#include <sys/time.h>
+//#include <ctime>
+#endif
+
+/* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
+ * windows and linux. */
+
+static unsigned long int GetTimeMs64()
+{
+#ifdef WIN32
+    /* Windows */
+    FILETIME ft;
+    LARGE_INTEGER li;
+    
+    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
+     * to a LARGE_INTEGER structure. */
+    GetSystemTimeAsFileTime(&ft);
+    li.LowPart = ft.dwLowDateTime;
+    li.HighPart = ft.dwHighDateTime;
+    
+    uint64 ret = li.QuadPart;
+    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
+    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
+    
+    return ret;
+#else
+    /* Linux */
+    struct timeval tv;
+    
+    gettimeofday(&tv, NULL);
+    
+    unsigned long int ret = tv.tv_usec;
+    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
+    //ret /= 1000;
+    
+    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
+    ret += (tv.tv_sec * 1000000);
+    
+    return ret;
+#endif
+}
 
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
@@ -67,6 +111,7 @@ static void video_decode_example(const char *filename)
     int stop_dec= 0;
     int got_picture;
     float time  = 0.0;
+    long unsigned int time_us = 0;
     int video_stream_idx;
     char output_file2[256];
 
@@ -110,6 +155,7 @@ static void video_decode_example(const char *filename)
     openHevcFrameCpy.pvU = NULL;
     openHevcFrameCpy.pvV = NULL;
     Init_Time();
+    time_us = GetTimeMs64();
     while(!stop) {
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
         if (packet.stream_index == video_stream_idx || stop_dec == 1) {
@@ -163,6 +209,7 @@ static void video_decode_example(const char *filename)
         }
     }
     time = SDL_GetTime()/1000.0;
+    time_us = GetTimeMs64() - time_us;
     CloseSDLDisplay();
     if (fout) {
         fclose(fout);
@@ -174,7 +221,7 @@ static void video_decode_example(const char *filename)
     }
     avformat_close_input(&pFormatCtx);
     libOpenHevcClose(openHevcHandle);
-    printf("frame= %d fps= %.0f time= %.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
+    printf("frame= %d fps= %.0f time= %.2f %ld video_size= %dx%d\n", nbFrame, nbFrame/time, time, time_us, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
 }
 
 int main(int argc, char *argv[]) {

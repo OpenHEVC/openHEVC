@@ -317,11 +317,11 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
     int i;
-    printf("\n sizes = ");
+//    printf("\n sizes = ");
 
     for (i = 0; i < openHevcContexts->nb_decoders; i++){
         openHevcContext = openHevcContexts->wraper[i];
-        printf("%d  ", openHevcContext->c->layers_size);
+  //      printf("%d  ", openHevcContext->c->layers_size);
         avcodec_close(openHevcContext->c);
         av_parser_close(openHevcContext->parser);
         av_freep(&openHevcContext->c);

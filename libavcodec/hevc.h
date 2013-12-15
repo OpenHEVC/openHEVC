@@ -88,6 +88,9 @@
                    s->nal_unit_type == NAL_BLA_N_LP)
 #define IS_IRAP(s) (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
 
+unsigned long int layers_time[3];
+
+
 /**
  * Table 7-3: NAL unit type codes
  */
@@ -731,12 +734,12 @@ typedef struct NeighbourAvailable {
 } NeighbourAvailable;
 
 typedef struct PredictionUnit {
-    int mpm_idx;
-    int rem_intra_luma_pred_mode;
+    int     mpm_idx;
+    int     rem_intra_luma_pred_mode;
     uint8_t intra_pred_mode[4];
-    Mv mvd;
     uint8_t merge_flag;
     uint8_t intra_pred_mode_c;
+    Mv      mvd;
 } PredictionUnit;
 
 typedef struct TransformTree {
@@ -815,19 +818,14 @@ typedef struct HEVCNAL {
 } HEVCNAL;
 
 typedef struct HEVCLocalContext {
-    DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
+    
     uint8_t cabac_state[HEVC_CONTEXTS];
-
     uint8_t first_qp_group;
 
     GetBitContext gb;
-    CABACContext cc;
+    CABACContext  cc;
     TransformTree tt;
 
-    int8_t qp_y;
-    int8_t curr_qp_y;
-
-    TransformUnit tu;
 
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
@@ -836,15 +834,24 @@ typedef struct HEVCLocalContext {
     int     start_of_tiles_x;
     int     end_of_tiles_x;
     int     end_of_tiles_y;
-    uint8_t edge_emu_buffer[MAX_EDGE_BUFFER_SIZE];
-    int16_t   edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE];
-    CodingTree ct;
-    CodingUnit cu;
-    PredictionUnit pu;
+    
+    DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
+    DECLARE_ALIGNED(16, int16_t, edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE]);
+    DECLARE_ALIGNED(16, uint8_t, edge_emu_buffer[MAX_EDGE_BUFFER_SIZE]);
+
+    //uint8_t edge_emu_buffer[MAX_EDGE_BUFFER_SIZE];
+    //int16_t edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE];
+    
+    TransformUnit      tu;
+    CodingTree         ct;
+    CodingUnit         cu;
+    PredictionUnit     pu;
     NeighbourAvailable na;
 
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
+    int8_t qp_y;
+    int8_t curr_qp_y;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
@@ -978,6 +985,7 @@ typedef struct HEVCContext {
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
 
     int picture_struct;
+    long unsigned int dynamic_alloc; 
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,

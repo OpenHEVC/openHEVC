@@ -173,17 +173,28 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
     s->split_cu_flag = av_malloc(pic_size);
+    s->dynamic_alloc += sizeof(*s->sao);
+    s->dynamic_alloc += sizeof(*s->deblock);
+    s->dynamic_alloc += pic_size;
+    
     if (!s->sao || !s->deblock || !s->split_cu_flag)
         goto fail;
 
     s->skip_flag    = av_malloc(pic_size_in_ctb);
     s->tab_ct_depth = av_malloc(sps->min_cb_height * sps->min_cb_width);
+    s->dynamic_alloc += pic_size_in_ctb;
+    s->dynamic_alloc += (sps->min_cb_height * sps->min_cb_width);
+    
     if (!s->skip_flag || !s->tab_ct_depth)
         goto fail;
 
     s->cbf_luma = av_malloc(sps->min_tb_width * sps->min_tb_height);
     s->tab_ipm  = av_malloc(min_pu_size);
     s->is_pcm   = av_malloc(min_pu_size);
+    
+    s->dynamic_alloc += (sps->min_tb_width * sps->min_tb_height);
+    s->dynamic_alloc += min_pu_size;
+    s->dynamic_alloc += min_pu_size;
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
 
@@ -192,11 +203,18 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
                                       sizeof(*s->tab_slice_address));
     s->qp_y_tab           = av_malloc(pic_size_in_ctb *
                                       sizeof(*s->qp_y_tab));
+    s->dynamic_alloc += ctb_count;
+    s->dynamic_alloc += (pic_size_in_ctb *
+                         sizeof(*s->tab_slice_address));
+    s->dynamic_alloc += (pic_size_in_ctb *
+                         sizeof(*s->qp_y_tab));
     if (!s->qp_y_tab || !s->filter_slice_edges || !s->tab_slice_address)
         goto fail;
 
     s->horizontal_bs = av_mallocz(2 * s->bs_width * (s->bs_height + 1));
     s->vertical_bs   = av_mallocz(2 * s->bs_width * (s->bs_height + 1));
+    s->dynamic_alloc += (2 * s->bs_width * (s->bs_height + 1));
+    s->dynamic_alloc += (2 * s->bs_width * (s->bs_height + 1));
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
 
@@ -204,6 +222,9 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
                                           av_buffer_alloc);
     s->rpl_tab_pool = av_buffer_pool_init(ctb_count * sizeof(RefPicListTab),
                                           av_buffer_allocz);
+    s->dynamic_alloc += (min_pu_size * sizeof(MvField));
+    s->dynamic_alloc += (ctb_count * sizeof(RefPicListTab));
+    
     if (!s->tab_mvf_pool || !s->rpl_tab_pool)
         goto fail;
 #ifdef SVC_EXTENSION
@@ -254,8 +275,14 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
 #else
         s->is_upsampled = av_malloc(sps->ctb_width * sps->ctb_height);
+        s->dynamic_alloc += (sps->ctb_width * sps->ctb_height);
 #endif
+        
     }
+#endif
+
+#if 0
+    printf("#*# %ld #*#  %d #*# \n", s->dynamic_alloc, s->decoder_id );
 #endif
     return 0;
 fail:
@@ -2418,11 +2445,6 @@ static int hevc_frame_start(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS.\n");
         goto fail;
     }
-#if ACTIVE_PU_UPSAMPLING
-    if (s->active_el_frame)
-        ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
-#endif
-    
 
     av_frame_unref(s->output_frame);
     ret = ff_hevc_output_frame(s, s->output_frame, 0);
@@ -2439,11 +2461,46 @@ fail:
     s->ref = NULL;
     return ret;
 }
+static unsigned long int GetTimeMs64()
+{
+#ifdef WIN32
+    /* Windows */
+    FILETIME ft;
+    LARGE_INTEGER li;
+    
+    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
+     * to a LARGE_INTEGER structure. */
+    GetSystemTimeAsFileTime(&ft);
+    li.LowPart = ft.dwLowDateTime;
+    li.HighPart = ft.dwHighDateTime;
+    
+    uint64 ret = li.QuadPart;
+    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
+    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
+    
+    return ret;
+#else
+    /* Linux */
+    struct timeval tv;
+    
+    gettimeofday(&tv, NULL);
+    
+    unsigned long int ret = tv.tv_usec;
+    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
+    //ret /= 1000;
+    
+    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
+    ret += (tv.tv_sec * 1000000);
+    
+    return ret;
+#endif
+}
 
 static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb    = &lc->gb;
+    long unsigned int time_mp = 0; 
     int ctb_addr_ts, ret;
 
     ret = init_get_bits8(gb, nal, length);
@@ -2465,6 +2522,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     s->avctx->layers_size += length;
     
     s->nuh_layer_id = ret;
+    time_mp = GetTimeMs64();
 
     switch (s->nal_unit_type) {
     case NAL_VPS:
@@ -2534,7 +2592,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
             return AVERROR_INVALIDDATA;
         }
-//        printf("Layer %d is decoding poc : %d \n", s->nuh_layer_id, s->poc );
         if (!s->sh.dependent_slice_segment_flag &&
             s->sh.slice_type != I_SLICE) {
             ret = ff_hevc_slice_rpl(s);
@@ -2545,7 +2602,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     return ret;
             }
         }
-
+#if ACTIVE_PU_UPSAMPLING
+            if (s->active_el_frame)
+                ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
+#endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
@@ -2556,7 +2616,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
 #endif
 #endif
-       //     printf("Layer %d is decoded poc : %d \n", s->nuh_layer_id, s->poc );
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
             if ((s->pps->transquant_bypass_enable_flag ||
@@ -2584,7 +2643,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         av_log(s->avctx, AV_LOG_INFO,
                "Skipping NAL unit %d\n", s->nal_unit_type);
     }
-
+    layers_time[s->nuh_layer_id] +=(GetTimeMs64()-time_mp);
+    
     return 0;
 }
 
@@ -2987,6 +3047,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     pic_arrays_free(s);
     av_freep(&s->md5_ctx);
 
+#if 0
+    printf("** %ld ** %ld ** %ld ** ", layers_time[0], layers_time[1], layers_time[2]);
+#endif
+
     for(i=0; i < s->nals_allocated; i++) {
         av_freep(&s->skipped_bytes_pos_nal[i]);
     }
@@ -3036,34 +3100,42 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 {
     HEVCContext *s = avctx->priv_data;
     int i;
-
+    s->dynamic_alloc = 0;
     s->avctx = avctx;
 
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
     if (!s->HEVClc)
         goto fail;
+
+#if 0
+    printf("## %ld ## \n", sizeof(HEVCLocalContext) );
+#endif
+    
     s->HEVClcList[0] = s->HEVClc;
     s->sList[0] = s;
 
     s->cabac_state = av_malloc(HEVC_CONTEXTS);
+    s->dynamic_alloc += HEVC_CONTEXTS;
     if (!s->cabac_state)
         goto fail;
 
     s->tmp_frame = av_frame_alloc();
+    s->dynamic_alloc += sizeof(AVFrame); 
     if (!s->tmp_frame)
         goto fail;
 
     s->output_frame = av_frame_alloc();
+    s->dynamic_alloc += sizeof(AVFrame); 
     if (!s->output_frame)
         goto fail;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         s->DPB[i].frame = av_frame_alloc();
+        s->dynamic_alloc += sizeof(AVFrame); 
         if (!s->DPB[i].frame)
             goto fail;
         s->DPB[i].tf.f = s->DPB[i].frame;
     }
-
     s->max_ra = INT_MAX;
 
     s->md5_ctx = av_md5_alloc();
@@ -3087,6 +3159,9 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
     }
+#if 0
+    printf("### %ld ### \n", s->dynamic_alloc );
+#endif
     return 0;
 
 fail:
@@ -3242,8 +3317,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 
     avctx->internal->allocate_progress = 1;
     
-    avctx->layers_size = 0;
-    
+    avctx->layers_size     = 0;
     ret = hevc_init_context(avctx);
     if (ret < 0)
         return ret;

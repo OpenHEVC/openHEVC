@@ -899,8 +899,11 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
     int bl_stride =  s->BL_frame->frame->linesize[0], ret;
     int16_t *tmp0;
     
-    bPbW = ((( ctb_size - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12) >> 4;
-    bPbH = ((( ctb_size - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
+    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0:ctb_size ;
+    int ePbH = y0 + ctb_size > el_height ? el_height - y0:ctb_size;
+    
+    bPbW = ((( ePbW - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12) >> 4;
+    bPbH = ((( ePbH - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
     
     
     bl_x = (( (x0  - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12) >> 4;
@@ -924,15 +927,15 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
         src += (MAX_EDGE-1);
     tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE-1)*MAX_EDGE_BUFFER_STRIDE);
     s->hevcdsp.upsample_filter_block_luma_h( tmp0, MAX_EDGE_BUFFER_STRIDE, src, bl_stride,
-                                             x0, bl_x, ctb_size, bPbH + bl_edge_top + bl_edge_bottom, el_width,
+                                             x0, bl_x, ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
                                              up_sample_filter_luma ,&s->sps->scaled_ref_layer_window, &s->up_filter_inf);
     ret = s->vdsp.emulated_edge_up_v( tmp0, MAX_EDGE_BUFFER_STRIDE, &s->sps->scaled_ref_layer_window,
-                                      ctb_size, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top ,
+                                      ePbW, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top ,
                                       bl_edge_bottom, el_width, MAX_EDGE-1);
     if(ret)
         tmp0 += ((MAX_EDGE-1)*MAX_EDGE_BUFFER_STRIDE);
     s->hevcdsp.upsample_filter_block_luma_v( dst , ref0->frame->linesize[0], tmp0 , MAX_EDGE_BUFFER_STRIDE,
-                                             x0, y0, ctb_size, ctb_size, el_width, el_height,
+                                             x0, y0, ePbW, ePbH, el_width, el_height,
                                              up_sample_filter_luma ,&s->sps->scaled_ref_layer_window, &s->up_filter_inf);
     s->is_upsampled[(y0/ctb_size*s->sps->ctb_width)+(x0/ctb_size)] = 1;
 }
@@ -952,8 +955,12 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     int bl_stride , ret, cr, bl_edge_top0;
     int ctb_size = 1<<(s->sps->log2_ctb_size-1);
     
-    bPbW = ((( ctb_size +1  - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12) >> 4;
-    bPbH = (((( ctb_size +2 - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12)) >> 4;
+    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0:ctb_size ;
+    int ePbH = y0 + ctb_size > el_height ? el_height - y0:ctb_size;
+    
+    
+    bPbW = ((( ePbW +1  - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12) >> 4;
+    bPbH = (((( ePbH +2 - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12)) >> 4;
     
     bl_x = (((  x0 - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12)      >> 4;
     bl_y = (((( y0 - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) -4 ) >> 4;
@@ -971,7 +978,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     if((bl_height - bl_y - bPbH)> 0)
         bl_edge_bottom = MAX_EDGE_CR <(bl_height - bl_y - bPbH) ? MAX_EDGE_CR:bl_height - bl_y  - bPbH;
     
-    
+   
     for(cr=1; cr <= 2; cr++ ) {
         bl_stride = s->BL_frame->frame->linesize[cr];
         src = s->BL_frame->frame->data[cr]+ (bl_y-bl_edge_top)*bl_stride+(bl_x-bl_edge_left);
@@ -985,18 +992,18 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
         tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE_CR-1)*MAX_EDGE_BUFFER_STRIDE);
         
         s->hevcdsp.upsample_filter_block_cr_h( tmp0, MAX_EDGE_BUFFER_STRIDE, src, bl_stride,
-                                               x0, bl_x, ctb_size, bPbH + bl_edge_top + bl_edge_bottom, el_width,
+                                               x0, bl_x, ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
                                                up_sample_filter_chroma ,&s->sps->scaled_ref_layer_window, &s->up_filter_inf);
         
         ret = s->vdsp.emulated_edge_up_v( tmp0, MAX_EDGE_BUFFER_STRIDE, &s->sps->scaled_ref_layer_window,
-                                          ctb_size, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top0 , bl_edge_bottom,
+                                          ePbW, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top0 , bl_edge_bottom,
                                           el_width, MAX_EDGE_CR-1);
         
         if(ret)
             tmp0 += ((MAX_EDGE_CR-1)*MAX_EDGE_BUFFER_STRIDE);
 
         s->hevcdsp.upsample_filter_block_cr_v( ref0->frame->data[cr] , ref0->frame->linesize[cr], tmp0 , MAX_EDGE_BUFFER_STRIDE,
-                                               x0, y0, ctb_size, ctb_size, el_width, el_height,
+                                               x0, y0, ePbW, ePbH, el_width, el_height,
                                                up_sample_filter_chroma ,&s->sps->scaled_ref_layer_window, &s->up_filter_inf);
         
     }
@@ -1099,7 +1106,7 @@ static int is_upsampled(HEVCContext *s, int x0, int y0, int nPbW, int nPbH){
     return 1;
 }
 */
-static void scale_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
+static void upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
    
     int xEL, yEL, xBL, yBL, list, i, j;
     HEVCFrame  *refBL, *refEL;
@@ -1112,8 +1119,8 @@ static void scale_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
     
     refEL = s->inter_layer_ref;
     
-    for(yEL=ctb_y; yEL < ctb_y+ctb_size; yEL+=16){
-        for(xEL=ctb_x; xEL < ctb_x+ctb_size ; xEL+=16) {
+    for(yEL=ctb_y; yEL < ctb_y+ctb_size && yEL<s->sps->height; yEL+=16){
+        for(xEL=ctb_x; xEL < ctb_x+ctb_size && xEL<s->sps->width; xEL+=16) {
             int xELIndex = xEL>>2;
             int yELIndex = yEL>>2;
             
@@ -1161,47 +1168,82 @@ static void scale_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
         }
     }
 }
-
+static unsigned long int GetTimeMs64()
+{
+#ifdef WIN32
+    /* Windows */
+    FILETIME ft;
+    LARGE_INTEGER li;
+    
+    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
+     * to a LARGE_INTEGER structure. */
+    GetSystemTimeAsFileTime(&ft);
+    li.LowPart = ft.dwLowDateTime;
+    li.HighPart = ft.dwHighDateTime;
+    
+    uint64 ret = li.QuadPart;
+    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
+    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
+    
+    return ret;
+#else
+    /* Linux */
+    struct timeval tv;
+    
+    gettimeofday(&tv, NULL);
+    
+    unsigned long int ret = tv.tv_usec;
+    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
+    //ret /= 1000;
+    
+    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
+    ret += (tv.tv_sec * 1000000);
+    
+    return ret;
+#endif
+}
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH) {
     
     int ctb_size =  1<<s->sps->log2_ctb_size;
     int log2_ctb =  s->sps->log2_ctb_size;
     int ctb_x0   =  (x0 >> log2_ctb) << log2_ctb;
     int ctb_y0   =  (y0 >> log2_ctb) << log2_ctb;
+    unsigned long int time_mp = GetTimeMs64();
     
     if(  (x0 - ctb_x0) < MAX_EDGE  && ctb_x0> ctb_size &&
        !s->is_upsampled[(ctb_y0/ctb_size*s->sps->ctb_width)+((ctb_x0-ctb_size)/ctb_size)]){
-        scale_upscale_mv_block(s, ctb_x0-ctb_size      , ctb_y0); 
+        upscale_mv_block(s, ctb_x0-ctb_size      , ctb_y0);
         upsample_block_mc   ( s, ref0, (ctb_x0-ctb_size)>>1  , ctb_y0>>1 );
         upsample_block_luma ( s, ref0,  ctb_x0-ctb_size      , ctb_y0    );
     }
     
     if(  (y0 - ctb_y0) < MAX_EDGE  && ctb_y0>ctb_size &&
        !s->is_upsampled[((ctb_y0-ctb_size)/ctb_size*s->sps->ctb_width)+(ctb_x0/ctb_size)]){
-        scale_upscale_mv_block(s, ctb_x0      , ctb_y0-ctb_size);
+        upscale_mv_block(s, ctb_x0      , ctb_y0-ctb_size);
         upsample_block_mc   ( s, ref0, ctb_x0>>1, (ctb_y0-ctb_size)>>1 );
         upsample_block_luma ( s, ref0, ctb_x0   ,  ctb_y0-ctb_size     );
     }
     
     if(!s->is_upsampled[(ctb_y0/ctb_size*s->sps->ctb_width)+(ctb_x0/ctb_size)]){
-        scale_upscale_mv_block(s, ctb_x0      , ctb_y0);
-        upsample_block_luma ( s, ref0, ctb_x0   , ctb_y0    );
+        upscale_mv_block(s, ctb_x0      , ctb_y0);
         upsample_block_mc   ( s, ref0, ctb_x0>>1, ctb_y0>>1 );
+        upsample_block_luma ( s, ref0, ctb_x0   , ctb_y0    );
+        
     }
     
     if((((x0 + nPbW + MAX_EDGE) >> log2_ctb)<<log2_ctb) > ctb_x0 && ((ctb_x0+ctb_size) < s->sps->width) &&
        !s->is_upsampled[(ctb_y0/ctb_size*s->sps->ctb_width)+((ctb_x0+ctb_size)/ctb_size)]){
-        scale_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0);
+        upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0);
         upsample_block_mc   ( s,  ref0, (ctb_x0 + ctb_size)>>1,  ctb_y0>>1 );
         upsample_block_luma (  s, ref0,  ctb_x0 + ctb_size     , ctb_y0    );
     }
     
     if((((y0 + nPbH + MAX_EDGE) >> log2_ctb)<<log2_ctb) > ctb_y0 && ((ctb_y0+ctb_size) < s->sps->height) &&
        !s->is_upsampled[((ctb_y0+ctb_size)/ctb_size*s->sps->ctb_width)+(ctb_x0/ctb_size)]){
-        scale_upscale_mv_block(s, ctb_x0 , ctb_y0+ ctb_size);
+        upscale_mv_block(s, ctb_x0 , ctb_y0+ ctb_size);
         upsample_block_mc   ( s, ref0, ctb_x0>>1, (ctb_y0 + ctb_size)>>1  );
         upsample_block_luma ( s, ref0, ctb_x0   ,  ctb_y0 + ctb_size      );
    
     }
-    
+    layers_time[2] += (GetTimeMs64()-time_mp);
 }

@@ -122,7 +122,7 @@ static int FUNC(ff_emulated_edge_up_v)(int16_t *src, ptrdiff_t linesize,
                                     int block_w, int block_h, int src_x, int bl_edge_up, int bl_edge_bottom, int wEL, int shift)
 {
     int rightEndL  = wEL - (Enhscal->right_offset >> (shift==(MAX_EDGE_CR-1)?1:0));
-    int leftStartL = (Enhscal->left_offset>> (shift==(MAX_EDGE_CR-1)?1:0));
+    int leftStartL = (Enhscal->left_offset>> (shift==(MAX_EDGE_CR-1)));
     int  i, j;
     
     int16_t *src_tmp    = src;
