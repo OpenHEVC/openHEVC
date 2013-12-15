@@ -555,9 +555,6 @@ static void init_upsampled_mv_fields(HEVCContext *s) {
         }
     }
 }
-
-
-
 #endif
 
 

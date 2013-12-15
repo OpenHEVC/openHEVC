@@ -2369,7 +2369,7 @@ static int hevc_frame_start(HEVCContext *s)
         if(s->avctx->BL_frame)
              s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
         else
-            goto fail;  // TO DO: add error concealment solution when the base layer frame is missing
+            goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
 
 
         
@@ -2534,7 +2534,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
             return AVERROR_INVALIDDATA;
         }
-
+//        printf("Layer %d is decoding poc : %d \n", s->nuh_layer_id, s->poc );
         if (!s->sh.dependent_slice_segment_flag &&
             s->sh.slice_type != I_SLICE) {
             ret = ff_hevc_slice_rpl(s);
@@ -2556,6 +2556,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
 #endif
 #endif
+       //     printf("Layer %d is decoded poc : %d \n", s->nuh_layer_id, s->poc );
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
             if ((s->pps->transquant_bypass_enable_flag ||
