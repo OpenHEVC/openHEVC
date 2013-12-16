@@ -30,10 +30,10 @@
 #define ASM_EN
 /***********************************/
 
-void ff_upsample_filter_block_luma_h_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int x_EL, int x_BL, int block_w, int block_h, int widthEL, const int16_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-void ff_upsample_filter_block_cr_h_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int x_EL, int x_BL, int block_w, int block_h, int widthEL, const int8_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-void ff_upsample_filter_block_cr_v_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL, const int8_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-void ff_upsample_filter_block_luma_v_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL, const int8_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+void ff_upsample_filter_block_luma_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int x_EL, int x_BL, int block_w, int block_h, int widthEL, const int16_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+void ff_upsample_filter_block_cr_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int x_EL, int x_BL, int block_w, int block_h, int widthEL, const int8_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL, const int8_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+void ff_upsample_filter_block_luma_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL, const int8_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 #define MCQ_FUNC(DIR, DEPTH, OPT)                                        \
     void ff_put_hevc_mc_pixels_ ## DIR ## _ ## DEPTH ## _ ## OPT(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, int16_t* mcbuffer);
 
@@ -201,6 +201,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel[0][3][3] = ff_hevc_put_hevc_qpel_h4_3_v_3_8_sse;
                     c->put_hevc_qpel[1][3][3] = c->put_hevc_qpel[2][3][3] = c->put_hevc_qpel[3][3][3] = c->put_hevc_qpel[4][3][3] = ff_hevc_put_hevc_qpel_h8_3_v_3_8_sse;
 #ifdef SVC_EXTENSION
+/*
                     c->upsample_base_layer_frame     = ff_upsample_base_layer_frame_sse;
                     c->upsample_h_base_layer_frame   = ff_upsample_base_layer_frame_sse_h;
                     c->upsample_v_base_layer_frame   = ff_upsample_base_layer_frame_sse_v;
@@ -208,6 +209,16 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             //      c->upsample_filter_block_cr_h    =   ff_upsample_filter_block_cr_h_8_sse;
                //   c->upsample_filter_block_cr_v    =   ff_upsample_filter_block_cr_v_8_sse;
                 //  c->upsample_filter_block_luma_v  =   ff_upsample_filter_block_luma_v_8_sse;
+*/
+                    c->upsample_base_layer_frame = ff_upsample_base_layer_frame_sse;
+                    c->upsample_h_base_layer_frame = ff_upsample_base_layer_frame_sse_h;
+                    c->upsample_v_base_layer_frame = ff_upsample_base_layer_frame_sse_v;
+                    
+                    c->upsample_filter_block_luma_h = ff_upsample_filter_block_luma_h_8_8_sse;
+                    c->upsample_filter_block_cr_h   =   ff_upsample_filter_block_cr_h_8_8_sse;
+                //    c->upsample_filter_block_cr_v   =   ff_upsample_filter_block_cr_v_8_8_sse;
+               //     c->upsample_filter_block_luma_v   =   ff_upsample_filter_block_luma_v_8_8_sse;
+
 
 #endif
 
