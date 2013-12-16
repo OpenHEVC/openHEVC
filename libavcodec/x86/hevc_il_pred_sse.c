@@ -165,7 +165,7 @@ void ff_upsample_base_layer_frame_sse_h(struct AVFrame *FrameEL, struct AVFrame 
         
         //========== horizontal upsampling ===========
         for( i = 0; i < widthEL; i++ )	{
-            int x = av_clip_c(i, leftStartC, rightEndC - 1);
+            int x = av_clip(i, leftStartC, rightEndC - 1);
             refPos16 = (((x - leftStartC)*up_info->scaleXCr + up_info->addXCr) >> 12);
             phase    = refPos16 & 15;
             refPos   = refPos16 >> 4;
@@ -289,7 +289,7 @@ void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame 
         
         
         for( j = 0; j < heightEL; j++ )	{
-            int y = av_clip_c(j, topStartL, bottomEndL-1);
+            int y = av_clip(j, topStartL, bottomEndL-1);
             refPos16 = ((( y - topStartL )*up_info->scaleYLum + up_info->addYLum) >> 12);
             phase    = refPos16 & 15;
             refPos   = refPos16 >> 4;

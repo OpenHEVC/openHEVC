@@ -1451,7 +1451,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                            (((x) >> s->sps->hshift[c_idx]) << s->sps->pixel_shift)]
     HEVCLocalContext *lc = s->HEVClc;
     int merge_idx = 0;
-    struct MvField current_mv = {{{ 0 }}};
+    struct MvField current_mv;
 
     int min_pu_width = s->sps->min_pu_width;
 
@@ -1487,8 +1487,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         x_pu = x0 >> s->sps->log2_min_pu_size;
         y_pu = y0 >> s->sps->log2_min_pu_size;
 
-        for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-            for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+        for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+            for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
                 tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
     } else { /* MODE_INTER */
         lc->pu.merge_flag = ff_hevc_merge_flag_decode(s);
@@ -1509,6 +1509,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         } else {
             enum InterPredIdc inter_pred_idc = PRED_L0;
             ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
+            current_mv.pred_flag[0] = 0;
+            current_mv.pred_flag[1] = 0;
+            current_mv.is_intra = 0;
             if (s->sh.slice_type == B_SLICE)
                 inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, nPbW, nPbH);
 
@@ -1552,8 +1555,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             x_pu = x0 >> s->sps->log2_min_pu_size;
             y_pu = y0 >> s->sps->log2_min_pu_size;
 
-            for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-                for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+            for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+                for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
                     tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
         }
     }

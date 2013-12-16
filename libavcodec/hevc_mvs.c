@@ -123,16 +123,18 @@ static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
 // check if the mv's and refidx are the same between A and B
 static int compareMVrefidx(struct MvField A, struct MvField B)
 {
-    if (A.pred_flag[0] && A.pred_flag[1] && B.pred_flag[0] && B.pred_flag[1])
-        return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y) &&
-               MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
-
-    if (A.pred_flag[0] && !A.pred_flag[1] && B.pred_flag[0] && !B.pred_flag[1])
-        return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y);
-
-    if (!A.pred_flag[0] && A.pred_flag[1] && !B.pred_flag[0] && B.pred_flag[1])
-        return MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
-
+    int a_pf = A.pred_flag[0] + A.pred_flag[1];
+    int b_pf = B.pred_flag[0] + B.pred_flag[1];
+    if (a_pf == b_pf) {
+        if (a_pf == 2) {
+            return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y) &&
+                   MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
+        } else if (A.pred_flag[0] && B.pred_flag[0]) {
+            return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y);
+        } else if (A.pred_flag[1] && B.pred_flag[1]) {
+            return MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
+        }
+    }
     return 0;
 }
 
@@ -140,8 +142,8 @@ static av_always_inline void mv_scale(Mv *dst, Mv *src, int td, int tb)
 {
     int tx, scale_factor;
 
-    td = av_clip_int8_c(td);
-    tb = av_clip_int8_c(tb);
+    td = av_clip_int8(td);
+    tb = av_clip_int8(tb);
     tx = (0x4000 + abs(td / 2)) / td;
     scale_factor = av_clip((tb * tx + 32) >> 6, -4096, 4095);
     dst->x = av_clip_int16((scale_factor * src->x + 127 +
@@ -168,10 +170,7 @@ static int check_mvset(Mv *mvLXCol, Mv *mvCol,
     col_poc_diff = colPic - refPicList_col[listCol].list[refidxCol];
     cur_poc_diff = poc    - refPicList[X].list[refIdxLx];
 
-    if (!col_poc_diff)
-        col_poc_diff = 1;  // error resilience
-
-    if (cur_lt || col_poc_diff == cur_poc_diff) {
+    if (cur_lt || col_poc_diff == cur_poc_diff || !col_poc_diff) {
         mvLXCol->x = mvCol->x;
         mvLXCol->y = mvCol->y;
     } else {
@@ -553,7 +552,6 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
     if (mergecand_list[merge_idx].pred_flag[0] == 1 &&
         mergecand_list[merge_idx].pred_flag[1] == 1 &&
         (nPbW2 + nPbH2) == 12) {
-        mergecand_list[merge_idx].ref_idx[1]   = -1;
         mergecand_list[merge_idx].pred_flag[1] = 0;
     }
 
@@ -581,7 +579,7 @@ static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
 
     RefPicList *refPicList = s->ref->refPicList;
 
-    if (TAB_MVF(x, y).pred_flag[pred_flag_index] == 1 &&
+    if (TAB_MVF(x, y).pred_flag[pred_flag_index] &&
         refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]] == refPicList[ref_idx_curr].list[ref_idx]) {
         *mv = TAB_MVF(x, y).mv[pred_flag_index];
         return 1;
@@ -808,10 +806,5 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
             mvpcand_list[numMVPCandLX++] = mv_col;
     }
 
-    // insert zero motion vectors when the number of available candidates are less than 2
-    while (numMVPCandLX < 2)
-        mvpcand_list[numMVPCandLX++] = (Mv){ 0, 0 };
-
-    mv->mv[LX].x = mvpcand_list[mvp_lx_flag].x;
-    mv->mv[LX].y = mvpcand_list[mvp_lx_flag].y;
+    mv->mv[LX] = mvpcand_list[mvp_lx_flag];
 }
