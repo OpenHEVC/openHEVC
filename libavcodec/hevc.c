@@ -37,7 +37,7 @@
 #include "golomb.h"
 #include "hevc_up_sample_filter.h"
 #include "hevc.h"
-#include "dectime.h"
+
 
 #define POC_DISPLAY_MD5
 #ifdef POC_DISPLAY_MD5

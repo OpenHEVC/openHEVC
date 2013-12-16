@@ -30,7 +30,6 @@
 #include "hevc.h"
 #include "bit_depth_template.c"
 #include "hevc_up_sample_filter.h"
-#include "dectime.h"
 #define LUMA 0
 #define CB 1
 #define CR 2
