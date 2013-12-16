@@ -37,6 +37,7 @@
 #include "golomb.h"
 #include "hevc_up_sample_filter.h"
 #include "hevc.h"
+#include "dectime.h"
 
 #define POC_DISPLAY_MD5
 #ifdef POC_DISPLAY_MD5
@@ -282,7 +283,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 #endif
 
 #if 0
-    printf("#*# %ld #*#  %d #*# \n", s->dynamic_alloc, s->decoder_id );
+    printf("dynamic #*# %ld #*#  %d #*# \n", s->dynamic_alloc, s->decoder_id );
 #endif
     return 0;
 fail:
@@ -3047,8 +3048,11 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     pic_arrays_free(s);
     av_freep(&s->md5_ctx);
 
-#if 0
-    printf("** %ld ** %ld ** %ld ** ", layers_time[0], layers_time[1], layers_time[2]);
+#if 1
+    if(!first){
+        printf("Times %ld  %ld  %ld  ", layers_time[0], layers_time[1], layers_time[2]);
+        first = 1;
+    }
 #endif
 
     for(i=0; i < s->nals_allocated; i++) {
@@ -3108,7 +3112,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         goto fail;
 
 #if 0
-    printf("## %ld ## \n", sizeof(HEVCLocalContext) );
+    printf("static ## %ld ## \n", sizeof(HEVCLocalContext) );
 #endif
     
     s->HEVClcList[0] = s->HEVClc;

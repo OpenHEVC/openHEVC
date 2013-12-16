@@ -88,9 +88,9 @@
                    s->nal_unit_type == NAL_BLA_N_LP)
 #define IS_IRAP(s) (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
 
+
 unsigned long int layers_time[3];
-
-
+static int first; 
 /**
  * Table 7-3: NAL unit type codes
  */

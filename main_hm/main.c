@@ -16,6 +16,8 @@
 //#include <ctime>
 #endif
 
+
+
 /* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
  * windows and linux. */
 
