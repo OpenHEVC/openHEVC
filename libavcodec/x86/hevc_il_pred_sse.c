@@ -1975,6 +1975,8 @@ void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, in
     refPos0     = (((( refPos0 - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12) -4 )>>4;
 
         __m128i     m0, m1, m2,m3,m4,m5, m6,m7,m8, m9, r0,r1,r2,c0,c1,c2,c3,c4;
+        m8= _mm_set_epi32(0,0,0,-1);
+
         c0= _mm_setzero_si128();
         m9= _mm_set1_epi32(I_OFFSET);
 
@@ -2037,7 +2039,7 @@ void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, in
         m1= _mm_unpacklo_epi32(m1,m1);
 
         for(i = 0; i < leftStartC - x_EL;i+=4){
-            _mm_storel_epi64((__m128i *) &dst_tmp[i],m1);
+            _mm_maskmoveu_si128(m1, m8,(char *)&dst_tmp[i]);
         }
 
         for( i; i <= x; i+=4 )  {
@@ -2073,7 +2075,7 @@ void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, in
             m1= _mm_packus_epi32(m1,c0);
             m1= _mm_packus_epi16(m1,c0);
 
-            _mm_storel_epi64((__m128i *) &dst_tmp[i],m1);
+            _mm_maskmoveu_si128(m1, m8,(char *)&dst_tmp[i]);
 
             src_tmp+=4;
         }
@@ -2113,7 +2115,8 @@ void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, in
         m1= _mm_unpacklo_epi32(m1,m1);
 
         for(i;i<block_w;i+=4){
-            _mm_storel_epi64((__m128i *) &dst_tmp[i],m1);
+            _mm_maskmoveu_si128(m1, m8,(char *)&dst_tmp[i]);
+
         }
     }
 }
