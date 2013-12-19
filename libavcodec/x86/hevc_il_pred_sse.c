@@ -1416,7 +1416,15 @@ ff_upsample_filter_block_luma_h_2_8_sse( int16_t *dst, ptrdiff_t dststride, uint
     }
     av_freep(&temp);
 }
-
+#define UPSAMPLE_L_LOAD_H()                                                                     \
+m14       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16 & 15]);      \
+m13       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_2 & 15]);    \
+m12       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_3 & 15]);    \
+m11       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_4 & 15]);    \
+m13       = _mm_slli_si128(m13,8);                                                          \
+m14       = _mm_or_si128(m14,m13);                                                          \
+m11       = _mm_slli_si128(m11,8);                                                          \
+m12       = _mm_or_si128(m12,m11)
 
 ff_upsample_filter_block_luma_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                     int x_EL, int x_BL, int block_w, int block_h, int widthEL,
@@ -1451,26 +1459,16 @@ ff_upsample_filter_block_luma_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint
             refPos16_2 = temp[i+1];
             refPos16_3 = temp[i+2];
             refPos16_4 = temp[i+3];
-            refPos16_5 = temp[i+4];
-            refPos16_6 = temp[i+5];
-            refPos16_7 = temp[i+6];
-            refPos16_8 = temp[i+7];
 
 
             phase    = refPos16 & 15;
             coeff    = enabled_up_sample_filter_luma[phase];
+
+
+            UPSAMPLE_L_LOAD_H();
+
+
             refPos   = (refPos16 >> 4) - x_BL;
-
-            m14       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16 & 15]);
-            m13       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_2 & 15]);
-            m12       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_3 & 15]);
-            m11       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_4 & 15]);
-
-            m13       = _mm_slli_si128(m13,8);
-            m14       = _mm_or_si128(m14,m13);
-            m11       = _mm_slli_si128(m11,8);
-            m12       = _mm_or_si128(m12,m11);
-
             refPos_2   = (refPos16_2 >> 4) - x_BL;
             refPos_3   = refPos_2 - refPos;
 
@@ -1482,27 +1480,25 @@ ff_upsample_filter_block_luma_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint
                 m1  =   _mm_srli_si128(m0,0);
             }
 
-            refPos_3   = (refPos16_3 >> 4) - x_BL;
-            refPos   = refPos_3 - refPos_2;
+            refPos   = (refPos16_3 >> 4) - x_BL;
+            refPos_3   = refPos - refPos_2;
             if(refPos){
             m2      =   _mm_srli_si128(m1,1);
             }
             else{
                 m2  =   _mm_srli_si128(m1,0);
             }
-            refPos   = (refPos16_4 >> 4) - x_BL;
-            refPos_2   = refPos - refPos_3;
-            if(refPos_2){
+            refPos_2   = (refPos16_4 >> 4) - x_BL;
+            refPos_3   = refPos_2 - refPos;
+            if(refPos_3){
             m3      =   _mm_srli_si128(m2,1);
             }
             else{
                 m3  =   _mm_srli_si128(m2,0);
             }
 
-
             m0      =   _mm_unpacklo_epi64(m0,m1);
             m2      =   _mm_unpacklo_epi64(m2,m3);
-
             m10      =   _mm_maddubs_epi16(m0,m14);
             m2      =   _mm_maddubs_epi16(m2,m12);
             m10      =   _mm_hadd_epi16(m10,m2);
@@ -1517,15 +1513,6 @@ ff_upsample_filter_block_luma_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint
             refPos_3   = (refPos16 >> 4) - x_BL;
 
 
-            m14       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16 & 15]);
-            m13       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_2 & 15]);
-            m12       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_3 & 15]);
-            m11       = _mm_loadl_epi64((__m128i *)&enabled_up_sample_filter_luma[refPos16_4 & 15]);
-            m13       = _mm_slli_si128(m13,8);
-            m14       = _mm_or_si128(m14,m13);
-            m11       = _mm_slli_si128(m11,8);
-            m12       = _mm_or_si128(m12,m11);
-
             refPos_2   = refPos - refPos_3;
             if(refPos_2){
             m0      =   _mm_srli_si128(m3,1);
@@ -1533,6 +1520,9 @@ ff_upsample_filter_block_luma_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint
             else{
             m0  =   _mm_srli_si128(m3,0);
             }
+
+            UPSAMPLE_L_LOAD_H();
+
             refPos   = (refPos16 >> 4) - x_BL;
 
             refPos_2   = (refPos16_2 >> 4) - x_BL;
@@ -1949,7 +1939,54 @@ void ff_upsample_filter_block_cr_v_8_sse(uint8_t *dst, ptrdiff_t dststride, int1
 
     }
 }
+#define UPSAMPLE_CR_V_COEFF()                                      \
+c1      =   _mm_loadl_epi64((__m128i *)coeff);                      \
+c1      =   _mm_unpacklo_epi8(c0,c1);                               \
+c1      =   _mm_unpacklo_epi16(c0,c1);                              \
+c1      =   _mm_srai_epi32(c1,24);                                  \
+c2      =   _mm_srli_si128(c1,4);                                   \
+c3      =   _mm_srli_si128(c1,8);                                   \
+c4      =   _mm_srli_si128(c1,12);                                  \
+c1      =   _mm_shuffle_epi32(c1,0);                                \
+c2      =   _mm_shuffle_epi32(c2,0);                                \
+c3      =   _mm_shuffle_epi32(c3,0);                                \
+c4      =   _mm_shuffle_epi32(c4,0)
 
+#define UPSAMPLE_CR_V_LOAD()                                       \
+m1= _mm_loadl_epi64((__m128i*)(src_tmp-  _srcstride));              \
+m2= _mm_loadl_epi64((__m128i*)src_tmp);                             \
+m3= _mm_loadl_epi64((__m128i*)(src_tmp+  _srcstride));              \
+m4= _mm_loadl_epi64((__m128i*)(src_tmp+2*_srcstride))
+
+#define UPSAMPLE_COMPUTE_V_4()                                      \
+m1= _mm_unpacklo_epi16(c0,m1);                                      \
+m2= _mm_unpacklo_epi16(c0,m2);                                      \
+m3= _mm_unpacklo_epi16(c0,m3);                                      \
+m4= _mm_unpacklo_epi16(c0,m4);                                      \
+m1= _mm_srai_epi32(m1,16);                                          \
+m2= _mm_srai_epi32(m2,16);                                          \
+m3= _mm_srai_epi32(m3,16);                                          \
+m4= _mm_srai_epi32(m4,16);                                          \
+m1= _mm_mullo_epi32(m1,c1);                                         \
+m2= _mm_mullo_epi32(m2,c2);                                         \
+m3= _mm_mullo_epi32(m3,c3);                                         \
+m4= _mm_mullo_epi32(m4,c4);                                         \
+m1= _mm_add_epi32(m1,m2);                                           \
+m3= _mm_add_epi32(m3,m4);                                           \
+m1= _mm_add_epi32(m1,m3);                                           \
+m1= _mm_add_epi32(m1,m9);                                           \
+m1= _mm_srli_epi32(m1,N_SHIFT);                                     \
+m1= _mm_packus_epi32(m1,c0);                                        \
+m1= _mm_packus_epi16(m1,c0)
+
+
+#define UPSAMPLE_UNPACK_V()                                         \
+m1= _mm_unpacklo_epi8(m1,m1);                                        \
+m1= _mm_unpacklo_epi16(m1,m1);                                       \
+m1= _mm_unpacklo_epi32(m1,m1)
+
+#define UPSAMPLE_STORE_32()                                         \
+        _mm_maskmoveu_si128(m1, m8,(char *)&dst_tmp[i])
 
 void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
                                    int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
@@ -1964,6 +2001,7 @@ void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, in
     uint8_t * dst_tmp;
     int refPos0 = av_clip_c(y_EL, topStartC, bottomEndC-1);
     int x;
+    refPos0     = (((( refPos0 - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12) -4 )>>4;
     if((rightEndC-2 - x_EL) <= block_w - 1){
         x=rightEndC-2 - x_EL;
     }
@@ -1972,11 +2010,8 @@ void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, in
         x= block_w - 1;
     }
 
-    refPos0     = (((( refPos0 - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12) -4 )>>4;
-
-        __m128i     m0, m1, m2,m3,m4,m5, m6,m7,m8, m9, r0,r1,r2,c0,c1,c2,c3,c4;
+    __m128i     m0, m1, m2,m3,m4,m5, m6,m7,m8, m9, r0,r1,r2,c0,c1,c2,c3,c4;
         m8= _mm_set_epi32(0,0,0,-1);
-
         c0= _mm_setzero_si128();
         m9= _mm_set1_epi32(I_OFFSET);
 
@@ -1990,139 +2025,30 @@ void ff_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, in
         src_tmp  = _src  + refPos  * _srcstride;
         dst_tmp  =  dst  + y* dststride + x_EL;
 
-        c1      =   _mm_loadl_epi64((__m128i *)coeff);
-        c1      =   _mm_unpacklo_epi8(c0,c1);               //set to 16 bit
-        c1      =   _mm_unpacklo_epi16(c0,c1);              //set to 32b
-        c1      =   _mm_srai_epi32(c1,24);
-        c2      =   _mm_srli_si128(c1,4);
-        c3      =   _mm_srli_si128(c1,8);
-        c4      =   _mm_srli_si128(c1,12);
+        UPSAMPLE_CR_V_COEFF();
 
-        c1      =   _mm_shuffle_epi32(c1,0);                //bring to full register
-        c2      =   _mm_shuffle_epi32(c2,0);
-        c3      =   _mm_shuffle_epi32(c3,0);
-        c4      =   _mm_shuffle_epi32(c4,0);
-
-
-        m1= _mm_loadl_epi64((__m128i*)(src_tmp-  _srcstride));
-        m2= _mm_loadl_epi64((__m128i*)src_tmp);
-        m3= _mm_loadl_epi64((__m128i*)(src_tmp+  _srcstride));
-        m4= _mm_loadl_epi64((__m128i*)(src_tmp+2*_srcstride));
-
-        m1= _mm_unpacklo_epi16(c0,m1);
-        m2= _mm_unpacklo_epi16(c0,m2);
-        m3= _mm_unpacklo_epi16(c0,m3);
-        m4= _mm_unpacklo_epi16(c0,m4);
-
-        m1= _mm_srai_epi32(m1,16);
-        m2= _mm_srai_epi32(m2,16);
-        m3= _mm_srai_epi32(m3,16);
-        m4= _mm_srai_epi32(m4,16);
-
-        m1= _mm_mullo_epi32(m1,c1);
-        m2= _mm_mullo_epi32(m2,c2);
-        m3= _mm_mullo_epi32(m3,c3);
-        m4= _mm_mullo_epi32(m4,c4);
-
-        m1= _mm_add_epi32(m1,m2);
-        m3= _mm_add_epi32(m3,m4);
-        m1= _mm_add_epi32(m1,m3);
-
-        m1= _mm_add_epi32(m1,m9); //+ I_OFFSET
-
-        m1= _mm_srli_epi32(m1,N_SHIFT); //shift
-
-        m1= _mm_packus_epi32(m1,c0);
-        m1= _mm_packus_epi16(m1,c0);
-        m1= _mm_unpacklo_epi8(m1,m1);
-        m1= _mm_unpacklo_epi16(m1,m1);
-        m1= _mm_unpacklo_epi32(m1,m1);
-
+        UPSAMPLE_CR_V_LOAD();
+        UPSAMPLE_COMPUTE_V_4();
+        UPSAMPLE_UNPACK_V();
         for(i = 0; i < leftStartC - x_EL;i+=4){
-            _mm_maskmoveu_si128(m1, m8,(char *)&dst_tmp[i]);
+            UPSAMPLE_STORE_32();
         }
-
         for( i; i <= x; i+=4 )  {
-            m1= _mm_loadl_epi64((__m128i*)(src_tmp-  _srcstride));
-            m2= _mm_loadl_epi64((__m128i*)src_tmp);
-            m3= _mm_loadl_epi64((__m128i*)(src_tmp+  _srcstride));
-            m4= _mm_loadl_epi64((__m128i*)(src_tmp+2*_srcstride));
-
-            m1= _mm_unpacklo_epi16(c0,m1);
-            m2= _mm_unpacklo_epi16(c0,m2);
-            m3= _mm_unpacklo_epi16(c0,m3);
-            m4= _mm_unpacklo_epi16(c0,m4);
-
-            m1= _mm_srai_epi32(m1,16);
-            m2= _mm_srai_epi32(m2,16);
-            m3= _mm_srai_epi32(m3,16);
-            m4= _mm_srai_epi32(m4,16);
-
-            m1= _mm_mullo_epi32(m1,c1);
-            m2= _mm_mullo_epi32(m2,c2);
-            m3= _mm_mullo_epi32(m3,c3);
-            m4= _mm_mullo_epi32(m4,c4);
-
-            m1= _mm_add_epi32(m1,m2);
-            m3= _mm_add_epi32(m3,m4);
-            m1= _mm_add_epi32(m1,m3);
-
-
-            m1= _mm_add_epi32(m1,m9); //+ I_OFFSET
-
-            m1= _mm_srli_epi32(m1,N_SHIFT); //shift
-
-            m1= _mm_packus_epi32(m1,c0);
-            m1= _mm_packus_epi16(m1,c0);
-
-            _mm_maskmoveu_si128(m1, m8,(char *)&dst_tmp[i]);
-
+            UPSAMPLE_CR_V_LOAD();
+            UPSAMPLE_COMPUTE_V_4();
+            UPSAMPLE_STORE_32();
             src_tmp+=4;
         }
-
-        m1= _mm_loadl_epi64((__m128i*)(src_tmp-  _srcstride));
-        m2= _mm_loadl_epi64((__m128i*)src_tmp);
-        m3= _mm_loadl_epi64((__m128i*)(src_tmp+  _srcstride));
-        m4= _mm_loadl_epi64((__m128i*)(src_tmp+2*_srcstride));
-
-        m1= _mm_unpacklo_epi16(c0,m1);
-        m2= _mm_unpacklo_epi16(c0,m2);
-        m3= _mm_unpacklo_epi16(c0,m3);
-        m4= _mm_unpacklo_epi16(c0,m4);
-
-        m1= _mm_srai_epi32(m1,16);
-        m2= _mm_srai_epi32(m2,16);
-        m3= _mm_srai_epi32(m3,16);
-        m4= _mm_srai_epi32(m4,16);
-
-        m1= _mm_mullo_epi32(m1,c1);
-        m2= _mm_mullo_epi32(m2,c2);
-        m3= _mm_mullo_epi32(m3,c3);
-        m4= _mm_mullo_epi32(m4,c4);
-
-        m1= _mm_add_epi32(m1,m2);
-        m3= _mm_add_epi32(m3,m4);
-        m1= _mm_add_epi32(m1,m3);
-
-        m1= _mm_add_epi32(m1,m9); //+ I_OFFSET
-
-        m1= _mm_srli_epi32(m1,N_SHIFT); //shift
-
-        m1= _mm_packus_epi32(m1,c0);
-        m1= _mm_packus_epi16(m1,c0);
-        m1= _mm_unpacklo_epi8(m1,m1);
-        m1= _mm_unpacklo_epi16(m1,m1);
-        m1= _mm_unpacklo_epi32(m1,m1);
-
+        UPSAMPLE_CR_V_LOAD();
+        UPSAMPLE_COMPUTE_V_4();
+        UPSAMPLE_UNPACK_V();
         for(i;i<block_w;i+=4){
-            _mm_maskmoveu_si128(m1, m8,(char *)&dst_tmp[i]);
-
+            UPSAMPLE_STORE_32();
         }
     }
 }
 
-
-
+#if 0
 void ff_upsample_filter_block_luma_v_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
                                       int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                       const int8_t enabled_up_sample_filter_luma[16][8], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
@@ -2149,38 +2075,10 @@ void ff_upsample_filter_block_luma_v_8_sse(uint8_t *dst, ptrdiff_t dststride, in
         src_tmp  = _src  + refPos  * _srcstride;
         dst_tmp  =  dst  + (y_EL+j)* dststride + x_EL;
 
-        c1      =   _mm_loadl_epi64((__m128i *)coeff);
-        c1      =   _mm_unpacklo_epi8(c0,c1);               //set to 16 bit
-        c5      =   _mm_unpackhi_epi16(c0,c1);              //set to 32b
-        c1      =   _mm_unpacklo_epi16(c0,c1);              //set to 32b
-        c1      =   _mm_srai_epi32(c1,24);
-        c2      =   _mm_srli_si128(c1,4);
-        c3      =   _mm_srli_si128(c1,8);
-        c4      =   _mm_srli_si128(c1,12);
-        c5      =   _mm_srai_epi32(c5,24);
-        c6      =   _mm_srli_si128(c5,4);
-        c7      =   _mm_srli_si128(c5,8);
-        c8      =   _mm_srli_si128(c5,12);
-
-
-        c1      =   _mm_shuffle_epi32(c1,0);                //bring to full register
-        c2      =   _mm_shuffle_epi32(c2,0);
-        c3      =   _mm_shuffle_epi32(c3,0);
-        c4      =   _mm_shuffle_epi32(c4,0);
-        c5      =   _mm_shuffle_epi32(c5,0);
-        c6      =   _mm_shuffle_epi32(c6,0);
-        c7      =   _mm_shuffle_epi32(c7,0);
-        c8      =   _mm_shuffle_epi32(c8,0);
+        UPSAMPLE_L_COEFF();
 
         for( i = 0; i < block_w-1; i+=2 )  {
-            m1= _mm_loadl_epi64((__m128i*)(src_tmp- 3*_srcstride));
-            m2= _mm_loadl_epi64((__m128i*)(src_tmp- 2*_srcstride));
-            m3= _mm_loadl_epi64((__m128i*)(src_tmp-   _srcstride));
-            m4= _mm_loadl_epi64((__m128i*)src_tmp);
-            m5= _mm_loadl_epi64((__m128i*)(src_tmp+  _srcstride));
-            m6= _mm_loadl_epi64((__m128i*)(src_tmp+2*_srcstride));
-            m7= _mm_loadl_epi64((__m128i*)(src_tmp+3*_srcstride));
-            m8= _mm_loadl_epi64((__m128i*)(src_tmp+4*_srcstride));
+            UPSAMPLE_L_LOAD();
 
             m1= _mm_unpacklo_epi16(c0,m1);
             m2= _mm_unpacklo_epi16(c0,m2);
@@ -2240,14 +2138,7 @@ void ff_upsample_filter_block_luma_v_8_sse(uint8_t *dst, ptrdiff_t dststride, in
                         dst_tmp+=2;
 
         }
-        m1= _mm_loadl_epi64((__m128i*)(src_tmp- 3*_srcstride));
-                    m2= _mm_loadl_epi64((__m128i*)(src_tmp- 2*_srcstride));
-                    m3= _mm_loadl_epi64((__m128i*)(src_tmp-   _srcstride));
-                    m4= _mm_loadl_epi64((__m128i*)src_tmp);
-                    m5= _mm_loadl_epi64((__m128i*)(src_tmp+  _srcstride));
-                    m6= _mm_loadl_epi64((__m128i*)(src_tmp+2*_srcstride));
-                    m7= _mm_loadl_epi64((__m128i*)(src_tmp+3*_srcstride));
-                    m8= _mm_loadl_epi64((__m128i*)(src_tmp+4*_srcstride));
+        UPSAMPLE_L_LOAD();
 
                     m1= _mm_unpacklo_epi16(c0,m1);
                     m2= _mm_unpacklo_epi16(c0,m2);
@@ -2295,6 +2186,67 @@ void ff_upsample_filter_block_luma_v_8_sse(uint8_t *dst, ptrdiff_t dststride, in
                     *dst_tmp= _mm_extract_epi8(m1,0);
     }
 }
+#endif
+
+#define UNPACK_SRAI16_4(inst, dst, src)                                        \
+    dst ## 1 = _mm_srai_epi32(inst(c0, src ## 1), 16);                         \
+    dst ## 2 = _mm_srai_epi32(inst(c0, src ## 2), 16);                         \
+    dst ## 3 = _mm_srai_epi32(inst(c0, src ## 3), 16);                         \
+    dst ## 4 = _mm_srai_epi32(inst(c0, src ## 4), 16)
+#define UNPACK_SRAI16_8(inst, dst, src)                                        \
+    dst ## 1 = _mm_srai_epi32(inst(c0, src ## 1), 16);                         \
+    dst ## 2 = _mm_srai_epi32(inst(c0, src ## 2), 16);                         \
+    dst ## 3 = _mm_srai_epi32(inst(c0, src ## 3), 16);                         \
+    dst ## 4 = _mm_srai_epi32(inst(c0, src ## 4), 16);                         \
+    dst ## 5 = _mm_srai_epi32(inst(c0, src ## 5), 16);                         \
+    dst ## 6 = _mm_srai_epi32(inst(c0, src ## 6), 16);                         \
+    dst ## 7 = _mm_srai_epi32(inst(c0, src ## 7), 16);                         \
+    dst ## 8 = _mm_srai_epi32(inst(c0, src ## 8), 16)
+
+#define MUL_ADD_V_4(mul, add, dst, src, coeff1,coeff2,coeff3,coeff4)           \
+    dst = mul(src ## 1, coeff1);                                                \
+    dst = add(dst, mul(src ## 2, coeff2));                                      \
+    dst = add(dst, mul(src ## 3, coeff3));                                      \
+    dst = add(dst, mul(src ## 4, coeff4))
+
+#define UPSAMPLE_L_COEFF()                                         \
+c1      =   _mm_loadl_epi64((__m128i *)coeff);                      \
+c1      =   _mm_unpacklo_epi8(c0,c1);                               \
+c5      =   _mm_unpackhi_epi16(c0,c1);                              \
+c1      =   _mm_unpacklo_epi16(c0,c1);                              \
+c1      =   _mm_srai_epi32(c1,24);                                  \
+c2      =   _mm_srli_si128(c1,4);                                   \
+c3      =   _mm_srli_si128(c1,8);                                   \
+c4      =   _mm_srli_si128(c1,12);                                  \
+c5      =   _mm_srai_epi32(c5,24);                                  \
+c6      =   _mm_srli_si128(c5,4);                                   \
+c7      =   _mm_srli_si128(c5,8);                                   \
+c8      =   _mm_srli_si128(c5,12);                                  \
+c1      =   _mm_shuffle_epi32(c1,0);                                \
+c2      =   _mm_shuffle_epi32(c2,0);                                \
+c3      =   _mm_shuffle_epi32(c3,0);                                \
+c4      =   _mm_shuffle_epi32(c4,0);                                \
+c5      =   _mm_shuffle_epi32(c5,0);                                \
+c6      =   _mm_shuffle_epi32(c6,0);                                \
+c7      =   _mm_shuffle_epi32(c7,0);                                \
+c8      =   _mm_shuffle_epi32(c8,0)
+
+#define UPSAMPLE_L_LOAD(src1, src2, src3,src4)                                         \
+m1= _mm_loadu_si128((__m128i*)(src1));                                                  \
+m2= _mm_loadu_si128((__m128i*)(src2));                                                  \
+m3= _mm_loadu_si128((__m128i*)(src3));                                                  \
+m4= _mm_loadu_si128((__m128i*)(src4));
+
+#define UPSAMPLE_L_COMPUTE_LO_V(result,coeff1,coeff2,coeff3,coeff4)               \
+UNPACK_SRAI16_4(_mm_unpacklo_epi16, m, m);          \
+MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, result, m, coeff1,coeff2,coeff3,coeff4)
+
+
+#define UPSAMPLE_L_COMPUTE_ALL_V(resultlo,resulthi,coeff1,coeff2,coeff3,coeff4)               \
+UNPACK_SRAI16_4(_mm_unpackhi_epi16, t, m);          \
+MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, resulthi, t, coeff1,coeff2,coeff3,coeff4); \
+UPSAMPLE_L_COMPUTE_LO_V(resultlo, coeff1,coeff2,coeff3,coeff4)
+
 
 
 void ff_upsample_filter_block_luma_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
@@ -2311,7 +2263,8 @@ void ff_upsample_filter_block_luma_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, 
     int16_t *   src_tmp;
     uint8_t * dst_tmp;
     int refPos0 = av_clip_c(y_EL, topStartL, bottomEndL-1);
-    __m128i     m0, m1, m2,m3,m4,m5, m6,m7,m8, m9, r0,r1,r2,c0,c1,c2,c3,c4,c5,c6,c7,c8;
+    __m128i     m0, m1, m2,m3,m4,m5, m6,m7,m8, m9, r0,r1,r2, r3,c0,c1,c2,c3,c4,c5,c6,c7,c8;
+    __m128i     t1,t2,t3,t4;
     c0= _mm_setzero_si128();
     m9= _mm_set1_epi32(I_OFFSET);
     refPos0     = (((( refPos0 - topStartL )* up_info->scaleYLum + up_info->addYLum) >> 12) >> 4);
@@ -2333,76 +2286,16 @@ void ff_upsample_filter_block_luma_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, 
         src_tmp  = _src  + refPos  * _srcstride;
         dst_tmp  =  dst  + (y_EL+j)* dststride + x_EL;
 
-        c1      =   _mm_loadl_epi64((__m128i *)enabled_up_sample_filter_luma[refPos16 & 15]);
-        c1      =   _mm_unpacklo_epi8(c0,c1);               //set to 16 bit
-        c5      =   _mm_unpackhi_epi16(c0,c1);              //set to 32b
-        c1      =   _mm_unpacklo_epi16(c0,c1);              //set to 32b
-        c1      =   _mm_srai_epi32(c1,24);
-        c2      =   _mm_srli_si128(c1,4);
-        c3      =   _mm_srli_si128(c1,8);
-        c4      =   _mm_srli_si128(c1,12);
-        c5      =   _mm_srai_epi32(c5,24);
-        c6      =   _mm_srli_si128(c5,4);
-        c7      =   _mm_srli_si128(c5,8);
-        c8      =   _mm_srli_si128(c5,12);
+        UPSAMPLE_L_COEFF();
 
+       UPSAMPLE_L_LOAD(src_tmp- 3*_srcstride,src_tmp- 2*_srcstride,src_tmp- _srcstride,src_tmp);
+       UPSAMPLE_L_COMPUTE_LO_V(r1,c1,c2,c3,c4);
 
-        c1      =   _mm_shuffle_epi32(c1,0);                //bring to full register
-        c2      =   _mm_shuffle_epi32(c2,0);
-        c3      =   _mm_shuffle_epi32(c3,0);
-        c4      =   _mm_shuffle_epi32(c4,0);
-        c5      =   _mm_shuffle_epi32(c5,0);
-        c6      =   _mm_shuffle_epi32(c6,0);
-        c7      =   _mm_shuffle_epi32(c7,0);
-        c8      =   _mm_shuffle_epi32(c8,0);
+       UPSAMPLE_L_LOAD(src_tmp + _srcstride,src_tmp + 2*_srcstride,src_tmp +  3*_srcstride,src_tmp +  4*_srcstride);
+       UPSAMPLE_L_COMPUTE_LO_V(r0,c5,c6,c7,c8);
 
-
-        m1= _mm_loadl_epi64((__m128i*)(src_tmp- 3*_srcstride));
-        m2= _mm_loadl_epi64((__m128i*)(src_tmp- 2*_srcstride));
-        m3= _mm_loadl_epi64((__m128i*)(src_tmp-   _srcstride));
-        m4= _mm_loadl_epi64((__m128i*)src_tmp);
-        m5= _mm_loadl_epi64((__m128i*)(src_tmp+  _srcstride));
-        m6= _mm_loadl_epi64((__m128i*)(src_tmp+2*_srcstride));
-        m7= _mm_loadl_epi64((__m128i*)(src_tmp+3*_srcstride));
-        m8= _mm_loadl_epi64((__m128i*)(src_tmp+4*_srcstride));
-
-        m1= _mm_unpacklo_epi16(c0,m1);
-        m2= _mm_unpacklo_epi16(c0,m2);
-        m3= _mm_unpacklo_epi16(c0,m3);
-        m4= _mm_unpacklo_epi16(c0,m4);
-        m5= _mm_unpacklo_epi16(c0,m5);
-        m6= _mm_unpacklo_epi16(c0,m6);
-        m7= _mm_unpacklo_epi16(c0,m7);
-        m8= _mm_unpacklo_epi16(c0,m8);
-
-        m1= _mm_srai_epi32(m1,16);
-        m2= _mm_srai_epi32(m2,16);
-        m3= _mm_srai_epi32(m3,16);
-        m4= _mm_srai_epi32(m4,16);
-        m5= _mm_srai_epi32(m5,16);
-        m6= _mm_srai_epi32(m6,16);
-        m7= _mm_srai_epi32(m7,16);
-        m8= _mm_srai_epi32(m8,16);
-
-
-        m1= _mm_mullo_epi32(m1,c1);
-        m2= _mm_mullo_epi32(m2,c2);
-        m3= _mm_mullo_epi32(m3,c3);
-        m4= _mm_mullo_epi32(m4,c4);
-        m5= _mm_mullo_epi32(m5,c5);
-        m6= _mm_mullo_epi32(m6,c6);
-        m7= _mm_mullo_epi32(m7,c7);
-        m8= _mm_mullo_epi32(m8,c8);
-
-        m1= _mm_add_epi32(m1,m2);
-        m3= _mm_add_epi32(m3,m4);
-        m1= _mm_add_epi32(m1,m3);
-        m5= _mm_add_epi32(m5,m6);
-        m7= _mm_add_epi32(m7,m8);
-        m1= _mm_add_epi32(m1,m5);
-        m1= _mm_add_epi32(m1,m7);
-
-        m1= _mm_add_epi32(m1,m9); //+ I_OFFSET
+        r0= _mm_add_epi32(r0,r1);
+        m1= _mm_add_epi32(r0,m9); //+ I_OFFSET
 
         m1= _mm_srli_epi32(m1,N_SHIFT); //shift
 
@@ -2418,89 +2311,15 @@ void ff_upsample_filter_block_luma_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, 
         }
 
         for( i; i <= x; i+=8 ){
-            m1= _mm_loadu_si128((__m128i*)(src_tmp- 3*_srcstride));
-            m2= _mm_loadu_si128((__m128i*)(src_tmp- 2*_srcstride));
-            m3= _mm_loadu_si128((__m128i*)(src_tmp-   _srcstride));
-            m4= _mm_loadu_si128((__m128i*)src_tmp);
 
-            m5= _mm_unpackhi_epi16(c0,m1);
-            m6= _mm_unpackhi_epi16(c0,m2);
-            m7= _mm_unpackhi_epi16(c0,m3);
-            m8= _mm_unpackhi_epi16(c0,m4);
-            m1= _mm_unpacklo_epi16(c0,m1);
-            m2= _mm_unpacklo_epi16(c0,m2);
-            m3= _mm_unpacklo_epi16(c0,m3);
-            m4= _mm_unpacklo_epi16(c0,m4);
+            UPSAMPLE_L_LOAD(src_tmp- 3*_srcstride,src_tmp- 2*_srcstride,src_tmp- _srcstride,src_tmp);
+            UPSAMPLE_L_COMPUTE_ALL_V(r0,r1,c1,c2,c3,c4);
 
+            UPSAMPLE_L_LOAD(src_tmp + _srcstride,src_tmp + 2*_srcstride,src_tmp +  3*_srcstride,src_tmp +  4*_srcstride);
+            UPSAMPLE_L_COMPUTE_ALL_V(r2,r3,c5,c6,c7,c8);
 
-            m1= _mm_srai_epi32(m1,16);
-            m2= _mm_srai_epi32(m2,16);
-            m3= _mm_srai_epi32(m3,16);
-            m4= _mm_srai_epi32(m4,16);
-            m5= _mm_srai_epi32(m5,16);
-            m6= _mm_srai_epi32(m6,16);
-            m7= _mm_srai_epi32(m7,16);
-            m8= _mm_srai_epi32(m8,16);
-
-
-            m1= _mm_mullo_epi32(m1,c1);
-            m2= _mm_mullo_epi32(m2,c2);
-            m3= _mm_mullo_epi32(m3,c3);
-            m4= _mm_mullo_epi32(m4,c4);
-            m5= _mm_mullo_epi32(m5,c1);
-            m6= _mm_mullo_epi32(m6,c2);
-            m7= _mm_mullo_epi32(m7,c3);
-            m8= _mm_mullo_epi32(m8,c4);
-
-            m1= _mm_add_epi32(m1,m2);
-            m3= _mm_add_epi32(m3,m4);
-            r0= _mm_add_epi32(m1,m3);
-            m5= _mm_add_epi32(m5,m6);
-            m7= _mm_add_epi32(m7,m8);
-            r1= _mm_add_epi32(m5,m7);
-
-            m1= _mm_loadu_si128((__m128i*)(src_tmp+  _srcstride));
-            m2= _mm_loadu_si128((__m128i*)(src_tmp+2*_srcstride));
-            m3= _mm_loadu_si128((__m128i*)(src_tmp+3*_srcstride));
-            m4= _mm_loadu_si128((__m128i*)(src_tmp+4*_srcstride));
-
-
-            m5= _mm_unpackhi_epi16(c0,m1);
-            m6= _mm_unpackhi_epi16(c0,m2);
-            m7= _mm_unpackhi_epi16(c0,m3);
-            m8= _mm_unpackhi_epi16(c0,m4);
-            m1= _mm_unpacklo_epi16(c0,m1);
-            m2= _mm_unpacklo_epi16(c0,m2);
-            m3= _mm_unpacklo_epi16(c0,m3);
-            m4= _mm_unpacklo_epi16(c0,m4);
-
-
-            m1= _mm_srai_epi32(m1,16);
-            m2= _mm_srai_epi32(m2,16);
-            m3= _mm_srai_epi32(m3,16);
-            m4= _mm_srai_epi32(m4,16);
-            m5= _mm_srai_epi32(m5,16);
-            m6= _mm_srai_epi32(m6,16);
-            m7= _mm_srai_epi32(m7,16);
-            m8= _mm_srai_epi32(m8,16);
-
-
-            m1= _mm_mullo_epi32(m1,c5);
-            m2= _mm_mullo_epi32(m2,c6);
-            m3= _mm_mullo_epi32(m3,c7);
-            m4= _mm_mullo_epi32(m4,c8);
-            m5= _mm_mullo_epi32(m5,c5);
-            m6= _mm_mullo_epi32(m6,c6);
-            m7= _mm_mullo_epi32(m7,c7);
-            m8= _mm_mullo_epi32(m8,c8);
-
-            m1= _mm_add_epi32(m1,m2);
-            m3= _mm_add_epi32(m3,m4);
-            r0= _mm_add_epi32(r0,_mm_add_epi32(m1,m3));
-            m5= _mm_add_epi32(m5,m6);
-            m7= _mm_add_epi32(m7,m8);
-            r1= _mm_add_epi32(r1,_mm_add_epi32(m5,m7));
-
+            r0= _mm_add_epi32(r0,r2);
+            r1= _mm_add_epi32(r1,r3);
 
             r0= _mm_add_epi32(r0,m9); //+ I_OFFSET
             r1= _mm_add_epi32(r1,m9); //+ I_OFFSET
@@ -2508,58 +2327,19 @@ void ff_upsample_filter_block_luma_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, 
             r1= _mm_srli_epi32(r1,N_SHIFT); //shift
             m1= _mm_packus_epi32(r0,r1);
             m1= _mm_packus_epi16(m1,c0);
-            //dst_tmp[i]= _mm_extract_epi8(m1,0);
-            //src_tmp++;
+
             _mm_storel_epi64((__m128i *) &dst_tmp[i],m1);
             src_tmp+=8;
         }
 
-        m1= _mm_loadl_epi64((__m128i*)(src_tmp- 3*_srcstride));
-        m2= _mm_loadl_epi64((__m128i*)(src_tmp- 2*_srcstride));
-        m3= _mm_loadl_epi64((__m128i*)(src_tmp-   _srcstride));
-        m4= _mm_loadl_epi64((__m128i*)src_tmp);
-        m5= _mm_loadl_epi64((__m128i*)(src_tmp+  _srcstride));
-        m6= _mm_loadl_epi64((__m128i*)(src_tmp+2*_srcstride));
-        m7= _mm_loadl_epi64((__m128i*)(src_tmp+3*_srcstride));
-        m8= _mm_loadl_epi64((__m128i*)(src_tmp+4*_srcstride));
+        UPSAMPLE_L_LOAD(src_tmp- 3*_srcstride,src_tmp- 2*_srcstride,src_tmp- _srcstride,src_tmp);
+        UPSAMPLE_L_COMPUTE_LO_V(r1,c1,c2,c3,c4);
 
-        m1= _mm_unpacklo_epi16(c0,m1);
-        m2= _mm_unpacklo_epi16(c0,m2);
-        m3= _mm_unpacklo_epi16(c0,m3);
-        m4= _mm_unpacklo_epi16(c0,m4);
-        m5= _mm_unpacklo_epi16(c0,m5);
-        m6= _mm_unpacklo_epi16(c0,m6);
-        m7= _mm_unpacklo_epi16(c0,m7);
-        m8= _mm_unpacklo_epi16(c0,m8);
+        UPSAMPLE_L_LOAD(src_tmp + _srcstride,src_tmp + 2*_srcstride,src_tmp +  3*_srcstride,src_tmp +  4*_srcstride);
+        UPSAMPLE_L_COMPUTE_LO_V(r0,c5,c6,c7,c8);
 
-        m1= _mm_srai_epi32(m1,16);
-        m2= _mm_srai_epi32(m2,16);
-        m3= _mm_srai_epi32(m3,16);
-        m4= _mm_srai_epi32(m4,16);
-        m5= _mm_srai_epi32(m5,16);
-        m6= _mm_srai_epi32(m6,16);
-        m7= _mm_srai_epi32(m7,16);
-        m8= _mm_srai_epi32(m8,16);
-
-
-        m1= _mm_mullo_epi32(m1,c1);
-        m2= _mm_mullo_epi32(m2,c2);
-        m3= _mm_mullo_epi32(m3,c3);
-        m4= _mm_mullo_epi32(m4,c4);
-        m5= _mm_mullo_epi32(m5,c5);
-        m6= _mm_mullo_epi32(m6,c6);
-        m7= _mm_mullo_epi32(m7,c7);
-        m8= _mm_mullo_epi32(m8,c8);
-
-        m1= _mm_add_epi32(m1,m2);
-        m3= _mm_add_epi32(m3,m4);
-        m1= _mm_add_epi32(m1,m3);
-        m5= _mm_add_epi32(m5,m6);
-        m7= _mm_add_epi32(m7,m8);
-        m1= _mm_add_epi32(m1,m5);
-        m1= _mm_add_epi32(m1,m7);
-
-        m1= _mm_add_epi32(m1,m9); //+ I_OFFSET
+        r0= _mm_add_epi32(r0,r1);
+        m1= _mm_add_epi32(r0,m9); //+ I_OFFSET
 
         m1= _mm_srli_epi32(m1,N_SHIFT); //shift
 
