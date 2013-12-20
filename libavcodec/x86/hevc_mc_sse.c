@@ -984,8 +984,8 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
                                     int16_t* mcbuffer) {                       \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, r2,r3,r4;                            \
-    __m128i t1, t2, t3, t4, t5, t6, t7, t8;                                    \
+    __m128i x1, x2, x3, x4, r1, r2,r3,r4;                                      \
+    __m128i t1, t2, t3, t4;                                                    \
     const __m128i c0    = _mm_setzero_si128();                                 \
     SRC_INIT_ ## D();                                                          \
     QPEL_V_FILTER_ ## F ## _ ## D();                                           \
