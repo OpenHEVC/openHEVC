@@ -869,52 +869,25 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_vX_X_X_sse
 ////////////////////////////////////////////////////////////////////////////////
-#define QPEL_V_COMPUTE4_8()                                                    \
-    INST_SRC1_CST_8(_mm_unpacklo_epi8, x, x , c0);                             \
-    MUL_ADD_V_8(_mm_mullo_epi16, _mm_adds_epi16, r1, x)
-#define QPEL_V_COMPUTE8_8()                                                    \
-    QPEL_V_COMPUTE4_8()
-#define QPEL_V_COMPUTE16_8()                                                   \
-    INST_SRC1_CST_8(_mm_unpackhi_epi8, t, x , c0);                             \
-    MUL_ADD_V_8(_mm_mullo_epi16, _mm_adds_epi16, r2, t);                       \
-    QPEL_V_COMPUTE4_8()
-
-#define QPEL_V_COMPUTE2_10()                                                   \
-    UNPACK_SRAI16_8(_mm_unpacklo_epi16, x, x);                                 \
-    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
-    r1 = _mm_srai_epi32(r1, shift);                                            \
-    r1 = _mm_packs_epi32(r1, c0)
-#define QPEL_V_COMPUTE4_10()                                                   \
-    QPEL_V_COMPUTE2_10()
-
-#define QPEL_V_COMPUTE8_10()                                                   \
-    UNPACK_SRAI16_8(_mm_unpacklo_epi16, t, x);                                 \
-    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
-    UNPACK_SRAI16_8(_mm_unpackhi_epi16, x, x);                                 \
-    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
-    r2 = _mm_srai_epi32(r2, shift);                                            \
-    r1 = _mm_srai_epi32(r1, shift);                                            \
-    r1 = _mm_packs_epi32(r2, r1)
-
 
 #define QPEL_V_COMPUTE_FIRST4_8()                                              \
     INST_SRC1_CST_4(_mm_unpacklo_epi8, x, x , c0);                              \
     MUL_ADD_V_4(_mm_mullo_epi16, _mm_adds_epi16, r1, x)
-#define QPEL_V_COMPUTE_FIRST8_8()                                               \
+#define QPEL_V_COMPUTE_FIRST8_8()                                              \
     QPEL_V_COMPUTE_FIRST4_8()
-#define QPEL_V_COMPUTE_FIRST16_8()                                              \
+#define QPEL_V_COMPUTE_FIRST16_8()                                             \
     INST_SRC1_CST_4(_mm_unpackhi_epi8, t, x , c0);                             \
     MUL_ADD_V_4(_mm_mullo_epi16, _mm_adds_epi16, r2, t);                       \
     QPEL_V_COMPUTE_FIRST4_8()
 
 #define QPEL_V_COMPUTE_LAST4_8()                                              \
-    INST_SRC1_CST_4(_mm_unpacklo_epi8, x, x , c0);                              \
+    INST_SRC1_CST_4(_mm_unpacklo_epi8, x, x , c0);                             \
     MUL_ADD_V_LAST_4(_mm_mullo_epi16, _mm_adds_epi16, r3, x)
 #define QPEL_V_COMPUTE_LAST8_8()                                               \
     QPEL_V_COMPUTE_LAST4_8()
 #define QPEL_V_COMPUTE_LAST16_8()                                              \
     INST_SRC1_CST_4(_mm_unpackhi_epi8, t, x , c0);                             \
-    MUL_ADD_V_LAST_4(_mm_mullo_epi16, _mm_adds_epi16, r4, t);                       \
+    MUL_ADD_V_LAST_4(_mm_mullo_epi16, _mm_adds_epi16, r4, t);                  \
     QPEL_V_COMPUTE_LAST4_8()
 
 #define QPEL_V_MERGE4_8()                                                      \
@@ -926,28 +899,28 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
     r2= _mm_add_epi16(r2,r4)
 
 
-#define QPEL_V_COMPUTE_FIRST2_10()                                                   \
+#define QPEL_V_COMPUTE_FIRST2_10()                                             \
     UNPACK_SRAI16_4(_mm_unpacklo_epi16, x, x);                                 \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r1, x)
 #define QPEL_V_COMPUTE_FIRST4_10()                                             \
     QPEL_V_COMPUTE_FIRST2_10()
 
-#define QPEL_V_COMPUTE_FIRST8_10()                                                   \
+#define QPEL_V_COMPUTE_FIRST8_10()                                             \
     UNPACK_SRAI16_4(_mm_unpackhi_epi16, t, x);                                 \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
     QPEL_V_COMPUTE_FIRST2_10()
 
 
-#define QPEL_V_COMPUTE_LAST2_10()                                                   \
+#define QPEL_V_COMPUTE_LAST2_10()                                              \
     UNPACK_SRAI16_4(_mm_unpacklo_epi16, x, x);                                 \
     MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r3, x)
 
-#define QPEL_V_COMPUTE_LAST4_10()                                             \
+#define QPEL_V_COMPUTE_LAST4_10()                                              \
     QPEL_V_COMPUTE_LAST2_10()
 
-#define QPEL_V_COMPUTE_LAST8_10()                                                   \
+#define QPEL_V_COMPUTE_LAST8_10()                                              \
     UNPACK_SRAI16_4(_mm_unpackhi_epi16, t, x);                                 \
-    MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r4, t);                        \
+    MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r4, t);                   \
     QPEL_V_COMPUTE_LAST2_10()
 
 
@@ -955,11 +928,11 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
     r1= _mm_add_epi32(r1,r3);                                                  \
 r1 = _mm_srai_epi32(r1, shift);                                                \
 r1 = _mm_packs_epi32(r1, c0)
-#define QPEL_V_MERGE4_10()                                                      \
+#define QPEL_V_MERGE4_10()                                                     \
         QPEL_V_MERGE2_10()
 #define QPEL_V_MERGE8_10()                                                     \
     r1= _mm_add_epi32(r1,r3);                                                  \
-    r3= _mm_add_epi32(r2,r4);                                                   \
+    r3= _mm_add_epi32(r2,r4);                                                  \
     r1 = _mm_srai_epi32(r1, shift);                                            \
     r3 = _mm_srai_epi32(r3, shift);                                            \
     r1 = _mm_packs_epi32(r1, r3)
@@ -981,7 +954,7 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
     QPEL_V_FILTER_ ## F ## _ ## D();                                           \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            QPEL_V_LOAD_LO(src);                                                 \
+            QPEL_V_LOAD_LO(src);                                               \
             QPEL_V_COMPUTE_FIRST ## V ## _ ## D();                             \
             QPEL_V_LOAD_HI(src);                                                \
             QPEL_V_COMPUTE_LAST ## V ## _ ## D();                              \
@@ -1004,9 +977,9 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ##_ ## D ## _sse (   \
                                     int16_t* mcbuffer) {                       \
     int x, y;                                                                  \
     int shift = 14 - 8;                                                        \
-    __m128i x1, x2, x3, x4;                                    \
-    __m128i t1, t2, t3, t4;                                    \
-    __m128i r1, r2,r3,r4;                                                            \
+    __m128i x1, x2, x3, x4;                                                    \
+    __m128i t1, t2, t3, t4;                                                    \
+    __m128i r1, r2,r3,r4;                                                      \
     const __m128i c0   = _mm_setzero_si128();                                  \
     const __m128i mask = _mm_set_epi16(0, -1, 0, -1, 0, -1, 0, -1);            \
     int16_t *tmp       = mcbuffer;                                             \
@@ -1039,7 +1012,7 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ##_ ## D ## _sse (   \
             QPEL_V_COMPUTE_FIRST ## H ## _10();                                \
             QPEL_V_LOAD_HI(tmp);                                               \
             QPEL_V_COMPUTE_LAST ## H ## _10();                                 \
-            QPEL_V_MERGE ## H ## _10();                                     \
+            QPEL_V_MERGE ## H ## _10();                                        \
             PEL_STORE ## H(dst);                                               \
         }                                                                      \
         tmp += MAX_PB_SIZE;                                                    \
