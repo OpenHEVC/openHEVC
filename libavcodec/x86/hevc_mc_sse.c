@@ -1283,8 +1283,11 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _w ## W ## _## D ## _sse (       \
     QPEL_V_FILTER_ ## F ## _ ## D();                                           \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            QPEL_V_LOAD(src);                                                  \
-            QPEL_V_COMPUTE ## V ## _ ## D();                                   \
+            QPEL_V_LOAD_LO(src);                                               \
+            QPEL_V_COMPUTE_FIRST ## V ## _ ## D();                             \
+            QPEL_V_LOAD_HI(src);                                                \
+            QPEL_V_COMPUTE_LAST ## V ## _ ## D();                              \
+            QPEL_V_MERGE ## V ## _ ## D();                                     \
             WEIGHTED_COMPUTE ## V ## _ ## W();                                 \
             WEIGHTED_STORE ## V();                                             \
         }                                                                      \
@@ -1341,8 +1344,11 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ## _w ## W ## _## D ##
                                                                                \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            QPEL_V_LOAD(tmp);                                                  \
-            QPEL_V_COMPUTE ## H ## _10();                                      \
+            QPEL_V_LOAD_LO(tmp);                                               \
+            QPEL_V_COMPUTE_FIRST ## H ## _10();                                \
+            QPEL_V_LOAD_HI(tmp);                                               \
+            QPEL_V_COMPUTE_LAST ## H ## _10();                                 \
+            QPEL_V_MERGE ## H ## _10();                                        \
             WEIGHTED_COMPUTE ## H ## _ ## W();                                 \
             WEIGHTED_STORE ## H();                                             \
         }                                                                      \
