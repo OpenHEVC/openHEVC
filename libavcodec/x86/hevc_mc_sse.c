@@ -927,53 +927,43 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
 
 
 #define QPEL_V_COMPUTE_FIRST2_10()                                                   \
-    UNPACK_SRAI16_8(_mm_unpacklo_epi16, x, x);                                 \
-    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
-    r1 = _mm_srai_epi32(r1, shift);                                            \
-    r1 = _mm_packs_epi32(r1, c0)
+    UNPACK_SRAI16_4(_mm_unpacklo_epi16, x, x);                                 \
+    MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r1, x)
 #define QPEL_V_COMPUTE_FIRST4_10()                                             \
     QPEL_V_COMPUTE_FIRST2_10()
 
 #define QPEL_V_COMPUTE_FIRST8_10()                                                   \
-    UNPACK_SRAI16_8(_mm_unpacklo_epi16, t, x);                                 \
-    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
-    UNPACK_SRAI16_8(_mm_unpackhi_epi16, x, x);                                 \
-    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
-    r2 = _mm_srai_epi32(r2, shift);                                            \
-    r1 = _mm_srai_epi32(r1, shift);                                            \
-    r1 = _mm_packs_epi32(r2, r1)
+    UNPACK_SRAI16_4(_mm_unpackhi_epi16, t, x);                                 \
+    MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
+    QPEL_V_COMPUTE_FIRST2_10()
 
 
 #define QPEL_V_COMPUTE_LAST2_10()                                                   \
     UNPACK_SRAI16_4(_mm_unpacklo_epi16, x, x);                                 \
-    MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r3, x);                        \
-    r1 = _mm_srai_epi32(r1, shift);                                            \
-    r1 = _mm_packs_epi32(r1, c0)
+    MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r3, x)
+
 #define QPEL_V_COMPUTE_LAST4_10()                                             \
     QPEL_V_COMPUTE_LAST2_10()
 
 #define QPEL_V_COMPUTE_LAST8_10()                                                   \
-    UNPACK_SRAI16_4(_mm_unpacklo_epi16, t, x);                                 \
+    UNPACK_SRAI16_4(_mm_unpackhi_epi16, t, x);                                 \
     MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r4, t);                        \
-    UNPACK_SRAI16_4(_mm_unpackhi_epi16, x, x);                                 \
-    MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r3, x);                        \
-    r2 = _mm_srai_epi32(r2, shift);                                            \
-    r1 = _mm_srai_epi32(r1, shift);                                            \
-    r1 = _mm_packs_epi32(r2, r1)
+    QPEL_V_COMPUTE_LAST2_10()
 
 
 #define QPEL_V_MERGE2_10()                                                     \
-    r1= _mm_add_epi16(r1,r3);                                                  \
+    r1= _mm_add_epi32(r1,r3);                                                  \
 r1 = _mm_srai_epi32(r1, shift);                                                \
-r1 = _mm_packs_epi32(r2, r1)
+r1 = _mm_packs_epi32(r1, c0)
 #define QPEL_V_MERGE4_10()                                                      \
         QPEL_V_MERGE2_10()
 #define QPEL_V_MERGE8_10()                                                     \
-    r1= _mm_add_epi16(r1,r3);                                                  \
-    r3= _mm_add_epi16(r2,r4);                                                   \
+    r1= _mm_add_epi32(r1,r3);                                                  \
+    r3= _mm_add_epi32(r2,r4);                                                   \
     r1 = _mm_srai_epi32(r1, shift);                                            \
     r3 = _mm_srai_epi32(r3, shift);                                            \
     r1 = _mm_packs_epi32(r1, r3)
+
 
 
 #define PUT_HEVC_QPEL_V(V, F, D)                                               \
@@ -1014,9 +1004,9 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ##_ ## D ## _sse (   \
                                     int16_t* mcbuffer) {                       \
     int x, y;                                                                  \
     int shift = 14 - 8;                                                        \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8;                                    \
-    __m128i t1, t2, t3, t4, t5, t6, t7, t8;                                    \
-    __m128i r1, r2;                                                            \
+    __m128i x1, x2, x3, x4;                                    \
+    __m128i t1, t2, t3, t4;                                    \
+    __m128i r1, r2,r3,r4;                                                            \
     const __m128i c0   = _mm_setzero_si128();                                  \
     const __m128i mask = _mm_set_epi16(0, -1, 0, -1, 0, -1, 0, -1);            \
     int16_t *tmp       = mcbuffer;                                             \
@@ -1045,8 +1035,11 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ##_ ## D ## _sse (   \
                                                                                \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            QPEL_V_LOAD(tmp);                                                  \
-            QPEL_V_COMPUTE ## H ## _10();                                      \
+            QPEL_V_LOAD_LO(tmp);                                               \
+            QPEL_V_COMPUTE_FIRST ## H ## _10();                                \
+            QPEL_V_LOAD_HI(tmp);                                               \
+            QPEL_V_COMPUTE_LAST ## H ## _10();                                 \
+            QPEL_V_MERGE ## H ## _10();                                     \
             PEL_STORE ## H(dst);                                               \
         }                                                                      \
         tmp += MAX_PB_SIZE;                                                    \
