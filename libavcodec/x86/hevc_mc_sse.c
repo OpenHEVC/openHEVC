@@ -170,6 +170,18 @@
     x7 = _mm_loadu_si128((__m128i *) &tab[x + 3 * srcstride]);                 \
     x8 = _mm_loadu_si128((__m128i *) &tab[x + 4 * srcstride])
 
+#define QPEL_V_LOAD_LO(tab)                                                       \
+    x1 = _mm_loadu_si128((__m128i *) &tab[x - 3 * srcstride]);                 \
+    x2 = _mm_loadu_si128((__m128i *) &tab[x - 2 * srcstride]);                 \
+    x3 = _mm_loadu_si128((__m128i *) &tab[x -     srcstride]);                 \
+    x4 = _mm_loadu_si128((__m128i *) &tab[x                ])
+
+#define QPEL_V_LOAD_HI(tab)                                                       \
+    x1 = _mm_loadu_si128((__m128i *) &tab[x +     srcstride]);                 \
+    x2 = _mm_loadu_si128((__m128i *) &tab[x + 2 * srcstride]);                 \
+    x3 = _mm_loadu_si128((__m128i *) &tab[x + 3 * srcstride]);                 \
+    x4 = _mm_loadu_si128((__m128i *) &tab[x + 4 * srcstride])
+
 #define PEL_STORE2(tab)                                                        \
     _mm_maskmoveu_si128(r1, mask, (char *) &tab[x])
 #define PEL_STORE4(tab)                                                        \
@@ -218,6 +230,12 @@
     dst = add(dst, mul(src ## 6, c6));                                         \
     dst = add(dst, mul(src ## 7, c7));                                         \
     dst = add(dst, mul(src ## 8, c8))
+
+#define MUL_ADD_V_LAST_4(mul, add, dst, src)                                        \
+    dst = mul(src ## 1, c5);                                                   \
+    dst = add(dst, mul(src ## 2, c6));                                         \
+    dst = add(dst, mul(src ## 3, c7));                                         \
+    dst = add(dst, mul(src ## 4, c8))
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -878,6 +896,86 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
     r1 = _mm_srai_epi32(r1, shift);                                            \
     r1 = _mm_packs_epi32(r2, r1)
 
+
+#define QPEL_V_COMPUTE_FIRST4_8()                                              \
+    INST_SRC1_CST_4(_mm_unpacklo_epi8, x, x , c0);                              \
+    MUL_ADD_V_4(_mm_mullo_epi16, _mm_adds_epi16, r1, x)
+#define QPEL_V_COMPUTE_FIRST8_8()                                               \
+    QPEL_V_COMPUTE_FIRST4_8()
+#define QPEL_V_COMPUTE_FIRST16_8()                                              \
+    INST_SRC1_CST_4(_mm_unpackhi_epi8, t, x , c0);                             \
+    MUL_ADD_V_4(_mm_mullo_epi16, _mm_adds_epi16, r2, t);                       \
+    QPEL_V_COMPUTE_FIRST4_8()
+
+#define QPEL_V_COMPUTE_LAST4_8()                                              \
+    INST_SRC1_CST_4(_mm_unpacklo_epi8, x, x , c0);                              \
+    MUL_ADD_V_LAST_4(_mm_mullo_epi16, _mm_adds_epi16, r3, x)
+#define QPEL_V_COMPUTE_LAST8_8()                                               \
+    QPEL_V_COMPUTE_LAST4_8()
+#define QPEL_V_COMPUTE_LAST16_8()                                              \
+    INST_SRC1_CST_4(_mm_unpackhi_epi8, t, x , c0);                             \
+    MUL_ADD_V_LAST_4(_mm_mullo_epi16, _mm_adds_epi16, r4, t);                       \
+    QPEL_V_COMPUTE_LAST4_8()
+
+#define QPEL_V_MERGE4_8()                                                      \
+    r1= _mm_add_epi16(r1,r3)
+#define QPEL_V_MERGE8_8()                                                      \
+        QPEL_V_MERGE4_8()
+#define QPEL_V_MERGE16_8()                                                     \
+    r1= _mm_add_epi16(r1,r3);                                                  \
+    r2= _mm_add_epi16(r2,r4)
+
+
+#define QPEL_V_COMPUTE_FIRST2_10()                                                   \
+    UNPACK_SRAI16_8(_mm_unpacklo_epi16, x, x);                                 \
+    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
+    r1 = _mm_srai_epi32(r1, shift);                                            \
+    r1 = _mm_packs_epi32(r1, c0)
+#define QPEL_V_COMPUTE_FIRST4_10()                                             \
+    QPEL_V_COMPUTE_FIRST2_10()
+
+#define QPEL_V_COMPUTE_FIRST8_10()                                                   \
+    UNPACK_SRAI16_8(_mm_unpacklo_epi16, t, x);                                 \
+    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
+    UNPACK_SRAI16_8(_mm_unpackhi_epi16, x, x);                                 \
+    MUL_ADD_V_8(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
+    r2 = _mm_srai_epi32(r2, shift);                                            \
+    r1 = _mm_srai_epi32(r1, shift);                                            \
+    r1 = _mm_packs_epi32(r2, r1)
+
+
+#define QPEL_V_COMPUTE_LAST2_10()                                                   \
+    UNPACK_SRAI16_4(_mm_unpacklo_epi16, x, x);                                 \
+    MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r3, x);                        \
+    r1 = _mm_srai_epi32(r1, shift);                                            \
+    r1 = _mm_packs_epi32(r1, c0)
+#define QPEL_V_COMPUTE_LAST4_10()                                             \
+    QPEL_V_COMPUTE_LAST2_10()
+
+#define QPEL_V_COMPUTE_LAST8_10()                                                   \
+    UNPACK_SRAI16_4(_mm_unpacklo_epi16, t, x);                                 \
+    MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r4, t);                        \
+    UNPACK_SRAI16_4(_mm_unpackhi_epi16, x, x);                                 \
+    MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r3, x);                        \
+    r2 = _mm_srai_epi32(r2, shift);                                            \
+    r1 = _mm_srai_epi32(r1, shift);                                            \
+    r1 = _mm_packs_epi32(r2, r1)
+
+
+#define QPEL_V_MERGE2_10()                                                     \
+    r1= _mm_add_epi16(r1,r3);                                                  \
+r1 = _mm_srai_epi32(r1, shift);                                                \
+r1 = _mm_packs_epi32(r2, r1)
+#define QPEL_V_MERGE4_10()                                                      \
+        QPEL_V_MERGE2_10()
+#define QPEL_V_MERGE8_10()                                                     \
+    r1= _mm_add_epi16(r1,r3);                                                  \
+    r3= _mm_add_epi16(r2,r4);                                                   \
+    r1 = _mm_srai_epi32(r1, shift);                                            \
+    r3 = _mm_srai_epi32(r3, shift);                                            \
+    r1 = _mm_packs_epi32(r1, r3)
+
+
 #define PUT_HEVC_QPEL_V(V, F, D)                                               \
 void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
                                     int16_t *dst, ptrdiff_t dststride,         \
@@ -886,15 +984,18 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
                                     int16_t* mcbuffer) {                       \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, r2;                            \
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, r2,r3,r4;                            \
     __m128i t1, t2, t3, t4, t5, t6, t7, t8;                                    \
     const __m128i c0    = _mm_setzero_si128();                                 \
     SRC_INIT_ ## D();                                                          \
     QPEL_V_FILTER_ ## F ## _ ## D();                                           \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            QPEL_V_LOAD(src);                                                  \
-            QPEL_V_COMPUTE ## V ## _ ## D();                                   \
+            QPEL_V_LOAD_LO(src);                                                 \
+            QPEL_V_COMPUTE_FIRST ## V ## _ ## D();                             \
+            QPEL_V_LOAD_HI(src);                                                \
+            QPEL_V_COMPUTE_LAST ## V ## _ ## D();                              \
+            QPEL_V_MERGE ## V ## _ ## D();                                     \
             PEL_STORE ## V(dst);                                               \
         }                                                                      \
         src += srcstride;                                                      \
