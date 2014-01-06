@@ -14,6 +14,7 @@ set(YASM_NAMES
 libavcodec/x86/hevc_mc
 libavcodec/x86/hevc_deblock
 libavutil/x86/cpuid
+libavcodec/x86/videodsp
 )
 
 if(APPLE)
@@ -131,12 +132,12 @@ libavformat/url.c
 libavformat/urldecode.c
 libavcodec/x86/hevcdsp_init.c
 libavcodec/x86/hevcpred_init.c
-libavcodec/x86/hevc_dequant_sse4.c
 libavcodec/x86/hevc_idct_sse4.c
 libavcodec/x86/hevc_il_pred_sse.c
 libavcodec/x86/hevc_mc_sse.c
 libavcodec/x86/hevc_sao_sse.c
 libavcodec/x86/hevc_intra_pred_sse.c
+libavcodec/x86/videodsp_init.c
 libavcodec/allcodecs.c
 libavcodec/avpacket.c
 libavcodec/avpicture.c

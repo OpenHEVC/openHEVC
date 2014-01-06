@@ -53,8 +53,7 @@ RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *ref, int x0, int y0)
 {
     int x_cb         = x0 >> s->sps->log2_ctb_size;
     int y_cb         = y0 >> s->sps->log2_ctb_size;
-    int pic_width_cb = (s->sps->width + (1 << s->sps->log2_ctb_size) - 1) >>
-                        s->sps->log2_ctb_size;
+    int pic_width_cb = s->sps->ctb_width;
     int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
     return (RefPicList *)ref->rpl_tab[ctb_addr_ts];
 }
@@ -538,7 +537,6 @@ static void init_upsampled_mv_fields(HEVCContext *s) {
 
 int ff_hevc_frame_rps(HEVCContext *s)
 {
-    int ctb_size                  = 1<<s->sps->log2_ctb_size;
     const ShortTermRPS *short_rps = s->sh.short_term_rps;
     const LongTermRPS  *long_rps  = &s->sh.long_term_rps;
     RefPicList               *rps = s->rps;
