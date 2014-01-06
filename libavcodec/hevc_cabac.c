@@ -1056,8 +1056,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 {
 #define GET_COORD(offset, n)                                    \
     do {                                                        \
-        x_c = (scan_x_cg[offset >> 4] << 2) + scan_x_off[n];    \
-        y_c = (scan_y_cg[offset >> 4] << 2) + scan_y_off[n];    \
+        x_c = (x_cg << 2) + scan_x_off[n];    \
+        y_c = (y_cg << 2) + scan_y_off[n];    \
     } while (0)
     HEVCLocalContext *lc = s->HEVClc;
     int transform_skip_flag = 0;
@@ -1078,7 +1078,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int vshift = s->sps->vshift[c_idx];
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                           ((x0 >> hshift) << s->sps->pixel_shift)];
-    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]) = {0};
+    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]);
     DECLARE_ALIGNED(8, uint8_t, significant_coeff_group_flag[8][8]) = {{0}};
 
     int trafo_size = 1 << log2_trafo_size;
@@ -1087,6 +1087,10 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
     const uint8_t *scale_matrix;
     uint8_t dc_scale;
+
+//    s->vdsp.prefetch(dst, stride,       trafo_size);
+
+    memset(coeffs, 0, trafo_size * trafo_size * sizeof(int16_t));
 
     // Derive QP for dequant
     if (!lc->cu.cu_transquant_bypass_flag) {
@@ -1264,21 +1268,22 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         if (y_cg < ((1 << log2_trafo_size) - 1) >> 2)
             prev_sig += (significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
 
-        for (n = n_end; n >= 0; n--) {
-            GET_COORD(offset, n);
+        if (significant_coeff_group_flag[x_cg][y_cg]) {
+            for (n = n_end; n >= 0; n--) {
+                GET_COORD(offset, n);
 
-            if (significant_coeff_group_flag[x_cg][y_cg] &&
-                (n > 0 || implicit_non_zero_coeff == 0)) {
-                if (significant_coeff_flag_decode(s, c_idx, x_c, y_c, log2_trafo_size, scan_idx, prev_sig) == 1) {
-                    significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
-                    nb_significant_coeff_flag++;
-                    implicit_non_zero_coeff = 0;
-                }
-            } else {
-                int last_cg = (x_c == (x_cg << 2) && y_c == (y_cg << 2));
-                if (last_cg && implicit_non_zero_coeff && significant_coeff_group_flag[x_cg][y_cg]) {
-                    significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
-                    nb_significant_coeff_flag++;
+                if ((n > 0 || implicit_non_zero_coeff == 0)) {
+                    if (significant_coeff_flag_decode(s, c_idx, x_c, y_c, log2_trafo_size, scan_idx, prev_sig) == 1) {
+                        significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
+                        nb_significant_coeff_flag++;
+                        implicit_non_zero_coeff = 0;
+                    }
+                } else {
+                    int last_cg = (x_c == (x_cg << 2) && y_c == (y_cg << 2));
+                    if (last_cg && implicit_non_zero_coeff) {
+                        significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
+                        nb_significant_coeff_flag++;
+                    }
                 }
             }
         }
