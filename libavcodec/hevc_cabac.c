@@ -914,19 +914,19 @@ int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
         i++;                                                                    \
     return i;
 
-static av_always_inline int last_significant_coeff_x_prefix_decode(HEVCContext *s, int c_idx,
+static __declspec(noinline) int last_significant_coeff_x_prefix_decode(HEVCContext *s, int c_idx,
                                                    int log2_size)
 {
     LAST_SIG_COEFF(LAST_SIGNIFICANT_COEFF_X_PREFIX)
 }
 
-static av_always_inline int last_significant_coeff_y_prefix_decode(HEVCContext *s, int c_idx,
+static __declspec(noinline) int last_significant_coeff_y_prefix_decode(HEVCContext *s, int c_idx,
                                                    int log2_size)
 {
     LAST_SIG_COEFF(LAST_SIGNIFICANT_COEFF_Y_PREFIX)
 }
 
-static av_always_inline int last_significant_coeff_suffix_decode(HEVCContext *s,
+static __declspec(noinline) int last_significant_coeff_suffix_decode(HEVCContext *s,
                                                  int last_significant_coeff_prefix)
 {
     int i;
@@ -938,7 +938,7 @@ static av_always_inline int last_significant_coeff_suffix_decode(HEVCContext *s,
     return value;
 }
 
-static av_always_inline int significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg)
+static __declspec(noinline) int significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg)
 {
     int inc;
 
@@ -947,7 +947,7 @@ static av_always_inline int significant_coeff_group_flag_decode(HEVCContext *s, 
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_GROUP_FLAG] + inc);
 }
 
-static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
+static __declspec(noinline) int significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
                                           int log2_trafo_size, int scan_idx, int prev_sig)
 {
     static const uint8_t ctx_idx_map[] = {
@@ -998,7 +998,7 @@ static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int c_
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
 }
 
-static av_always_inline int coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int inc)
+static __declspec(noinline) int coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int inc)
 {
 
     if (c_idx > 0)
@@ -1007,7 +1007,7 @@ static av_always_inline int coeff_abs_level_greater1_flag_decode(HEVCContext *s,
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc);
 }
 
-static av_always_inline int coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc)
+static __declspec(noinline) int coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc)
 {
     if (c_idx > 0)
         inc += 4;
@@ -1015,7 +1015,7 @@ static av_always_inline int coeff_abs_level_greater2_flag_decode(HEVCContext *s,
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER2_FLAG] + inc);
 }
 
-static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int base_level, int rc_rice_param)
+static __declspec(noinline) int coeff_abs_level_remaining_decode(HEVCContext *s, int base_level, int rc_rice_param)
 {
     int prefix = 0;
     int suffix = 0;
@@ -1040,7 +1040,7 @@ static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int
     return last_coeff_abs_level_remaining;
 }
 
-static av_always_inline int coeff_sign_flag_decode(HEVCContext *s, uint8_t nb)
+static __declspec(noinline) int coeff_sign_flag_decode(HEVCContext *s, uint8_t nb)
 {
     int i;
     int ret = 0;

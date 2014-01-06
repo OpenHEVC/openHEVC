@@ -815,18 +815,25 @@ typedef struct HEVCNAL {
 
 typedef struct HEVCLocalContext {
     DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
+    GetBitContext gb;
+    CABACContext cc;
+    TransformTree tt;
+    TransformUnit tu;
+    CodingTree ct;
+    CodingUnit cu;
+    PredictionUnit pu;
+    NeighbourAvailable na;
+
+    uint8_t edge_emu_buffer[MAX_EDGE_BUFFER_SIZE];
+
     uint8_t cabac_state[HEVC_CONTEXTS];
 
     uint8_t first_qp_group;
 
-    GetBitContext gb;
-    CABACContext cc;
-    TransformTree tt;
 
     int8_t qp_y;
     int8_t curr_qp_y;
 
-    TransformUnit tu;
 
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
@@ -835,11 +842,6 @@ typedef struct HEVCLocalContext {
     int     start_of_tiles_x;
     int     end_of_tiles_x;
     int     end_of_tiles_y;
-    uint8_t edge_emu_buffer[MAX_EDGE_BUFFER_SIZE];
-    CodingTree ct;
-    CodingUnit cu;
-    PredictionUnit pu;
-    NeighbourAvailable na;
 
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
@@ -853,15 +855,7 @@ typedef struct HEVCContext {
 
     HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
     HEVCLocalContext    *HEVClc;
-
-    uint8_t             threads_type;
-    uint8_t             threads_number;
-    int                 decode_checksum_sei;
-
     uint8_t *cabac_state;
-
-    /** 1 if the independent slice segment header was successfully parsed */
-    uint8_t slice_initialized;
 
     AVFrame *frame;
     AVFrame *sao_frame;
@@ -878,12 +872,13 @@ typedef struct HEVCContext {
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
 
-    ///< candidate references for the current frame
-    RefPicList rps[5];
-
     SliceHeader sh;
     SAOParams *sao;
     DBParams *deblock;
+
+    ///< candidate references for the current frame
+    RefPicList rps[5];
+
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
     HEVCFrame *ref;
@@ -973,6 +968,13 @@ typedef struct HEVCContext {
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
 
     int picture_struct;
+
+    /** 1 if the independent slice segment header was successfully parsed */
+    uint8_t slice_initialized;
+
+    uint8_t             threads_type;
+    uint8_t             threads_number;
+    int                 decode_checksum_sei;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
@@ -1072,9 +1074,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0,
 void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase,
                      int log2_cb_size);
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
-                                           int log2_trafo_size,
-                                           int slice_or_tiles_up_boundary,
-                                           int slice_or_tiles_left_boundary);
+                                           int log2_trafo_size);
 void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0,
                                            int slice_up_boundary);
 void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0,

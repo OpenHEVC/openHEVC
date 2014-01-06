@@ -268,7 +268,6 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     __m128i r0,r1,r2,r3,r4,r5,r6,r7,r8,r9;
 
     r9= _mm_setzero_si128();
-    r8= _mm_set_epi32(0,0,0,-1);
     r2= _mm_set1_epi16(offset);
 
     r0= _mm_load_si128((__m128i*)(coeffs));
@@ -1124,8 +1123,6 @@ void ff_hevc_transform_8x8_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
     E0l = _mm_adds_epi16(E0l, m128iS7);
     E0l = _mm_packus_epi16(E0l, _mm_setzero_si128());
     _mm_storel_epi64((__m128i *) dst, E0l);
-    dst += stride;
-
 }
 
 

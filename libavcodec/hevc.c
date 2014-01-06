@@ -1106,9 +1106,7 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
                 }
         }
         if (!s->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size,
-                                                  lc->slice_or_tiles_up_boundary,
-                                                  lc->slice_or_tiles_left_boundary);
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
             if (s->pps->transquant_bypass_enable_flag &&
                 lc->cu.cu_transquant_bypass_flag)
                 set_deblocking_bypass(s, x0, y0, log2_trafo_size);
@@ -1119,7 +1117,6 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
 static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
 {
     //TODO: non-4:2:0 support
-    HEVCLocalContext *lc = s->HEVClc;
     GetBitContext gb;
     int cb_size   = 1 << log2_cb_size;
     int stride0   = s->frame->linesize[0];
@@ -1134,9 +1131,7 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int ret;
 
     if (!s->sh.disable_deblocking_filter_flag)
-        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                              lc->slice_or_tiles_up_boundary,
-                                              lc->slice_or_tiles_left_boundary);
+        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
@@ -1179,7 +1174,8 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
     x_off += mv->x >> 2;
     y_off += mv->y >> 2;
     src   += y_off * srcstride + (x_off << s->sps->pixel_shift);
-    
+
+
     if (x_off < extra_left || y_off < extra_top ||
         x_off >= pic_width - block_w - ff_hevc_qpel_extra_after[mx] ||
         y_off >= pic_height - block_h - ff_hevc_qpel_extra_after[my]) {
@@ -1848,6 +1844,8 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
 
         for (j = 0; j < size_in_pus; j++) {
             tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].is_intra = 1;
+            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].pred_flag[0] = 0;
+            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].pred_flag[1] = 0;
         }
     }
 
@@ -1924,8 +1922,9 @@ static void intra_prediction_unit_default_value(HEVCContext *s,
         size_in_pus = 1;
     for (j = 0; j < size_in_pus; j++) {
         memset(&s->tab_ipm[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
-        for (k = 0; k < size_in_pus; k++)
+        for (k = 0; k < size_in_pus; k++) {
             tab_mvf[(y_pu + j) * min_pu_width + x_pu + k].is_intra = lc->cu.pred_mode == MODE_INTRA;
+        }
     }
 }
 
@@ -1976,9 +1975,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
         if (!s->sh.disable_deblocking_filter_flag)
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                                  lc->slice_or_tiles_up_boundary,
-                                                  lc->slice_or_tiles_left_boundary);
+            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
     } else {
         if (s->sh.slice_type != I_SLICE)
             lc->cu.pred_mode = ff_hevc_pred_mode_decode(s);
@@ -2059,9 +2056,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                                    log2_cb_size, 0, 0);
             } else {
                 if (!s->sh.disable_deblocking_filter_flag)
-                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size,
-                                                          lc->slice_or_tiles_up_boundary,
-                                                          lc->slice_or_tiles_left_boundary);
+                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
             }
         }
     }

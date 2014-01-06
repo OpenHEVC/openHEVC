@@ -618,7 +618,6 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
         offset2 = _mm_set1_epi8(sao_offset_val[edge_idx[2]]);
         offset3 = _mm_set1_epi8(sao_offset_val[edge_idx[3]]);
         offset4 = _mm_set1_epi8(sao_offset_val[edge_idx[4]]);
-        x=0;
         for (y = init_y; y < height; y++) {
             for (x = init_x; x < width - 15; x += 16) {
 

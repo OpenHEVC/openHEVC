@@ -23,7 +23,7 @@
 #ifndef AVCODEC_HEVC_DEF_H
 #define AVCODEC_HEVC_DEF_H
 
-#define SVC_EXTENSION
+//#define SVC_EXTENSION
 
 #ifdef SVC_EXTENSION
     #define VPS_EXTENSION

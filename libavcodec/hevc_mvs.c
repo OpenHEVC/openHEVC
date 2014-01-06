@@ -192,17 +192,14 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
 {
     RefPicList *refPicList = s->ref->refPicList;
 
-    if (temp_col.is_intra) {
-        mvLXCol->x = 0;
-        mvLXCol->y = 0;
+    if (!temp_col.pred_flag[0] && !temp_col.pred_flag[1])
         return 0;
-    }
 
-    if (temp_col.pred_flag[0] == 0)
+    if (!temp_col.pred_flag[0])
         return CHECK_MVSET(1);
-    else if (temp_col.pred_flag[0] == 1 && temp_col.pred_flag[1] == 0)
+    else if (temp_col.pred_flag[0] && !temp_col.pred_flag[1])
         return CHECK_MVSET(0);
-    else if (temp_col.pred_flag[0] == 1 && temp_col.pred_flag[1] == 1) {
+    else if (temp_col.pred_flag[0] && temp_col.pred_flag[1]) {
         int check_diffpicount = 0;
         int i = 0;
         for (i = 0; i < refPicList[0].nb_refs; i++) {
@@ -594,18 +591,20 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
     int min_pu_width = s->sps->min_pu_width;
 
     RefPicList *refPicList = s->ref->refPicList;
-    int currIsLongTerm     = refPicList[ref_idx_curr].isLongTerm[ref_idx];
 
-    int colIsLongTerm =
-        refPicList[pred_flag_index].isLongTerm[(TAB_MVF(x, y).ref_idx[pred_flag_index])];
+    if (TAB_MVF(x, y).pred_flag[pred_flag_index]) {
+        int currIsLongTerm     = refPicList[ref_idx_curr].isLongTerm[ref_idx];
 
-    if (TAB_MVF(x, y).pred_flag[pred_flag_index] &&
-        colIsLongTerm == currIsLongTerm) {
-        *mv = TAB_MVF(x, y).mv[pred_flag_index];
-        if (!currIsLongTerm)
-            dist_scale(s, mv, min_pu_width, x, y,
-                       pred_flag_index, ref_idx_curr, ref_idx);
-        return 1;
+        int colIsLongTerm =
+            refPicList[pred_flag_index].isLongTerm[(TAB_MVF(x, y).ref_idx[pred_flag_index])];
+
+        if (colIsLongTerm == currIsLongTerm) {
+            *mv = TAB_MVF(x, y).mv[pred_flag_index];
+            if (!currIsLongTerm)
+                dist_scale(s, mv, min_pu_width, x, y,
+                           pred_flag_index, ref_idx_curr, ref_idx);
+            return 1;
+        }
     }
     return 0;
 }
@@ -651,8 +650,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int xB2_pu = 0, yB2_pu = 0;
     int is_available_b2 = 0;
     Mv mvpcand_list[2] = { { 0 } };
-    Mv mxA = { 0 };
-    Mv mxB = { 0 };
+    Mv mxA;
+    Mv mxB;
     int ref_idx_curr = 0;
     int ref_idx = 0;
     int pred_flag_index_l0;
