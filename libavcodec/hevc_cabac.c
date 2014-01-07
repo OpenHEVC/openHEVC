@@ -27,7 +27,7 @@
 #include "cabac_functions.h"
 #include "hevc.h"
 
-#define CABAC_MAX_BIN 100
+#define CABAC_MAX_BIN 32
 
 /**
  * number of bin by SyntaxElement.
@@ -984,7 +984,7 @@ static av_always_inline int coeff_abs_level_greater2_flag_decode(HEVCContext *s,
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER2_FLAG] + inc);
 }
 
-static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int base_level, int rc_rice_param)
+static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int rc_rice_param)
 {
     int prefix = 0;
     int suffix = 0;
@@ -1233,9 +1233,9 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         }
 
         if (x_cg < ((1 << log2_trafo_size) - 1) >> 2)
-            prev_sig = significant_coeff_group_flag[x_cg + 1][y_cg];
+            prev_sig = !!significant_coeff_group_flag[x_cg + 1][y_cg];
         if (y_cg < ((1 << log2_trafo_size) - 1) >> 2)
-            prev_sig += (significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
+            prev_sig += (!!significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
 
         if (significant_coeff_group_flag[x_cg][y_cg] && n_end >= 0) {
             static const uint8_t ctx_idx_map[] = {
@@ -1252,7 +1252,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             if (log2_trafo_size == 2) {
                 ctx_idx_map_p = &ctx_idx_map[0];
             } else {
-                ctx_idx_map_p = &ctx_idx_map[(FFMIN(prev_sig, 3)+1)<<4];
+                ctx_idx_map_p = &ctx_idx_map[(prev_sig + 1) << 4];
                 if (c_idx == 0 && (x_cg > 0 || y_cg > 0))
                     scf_offset += 3;
                 if (log2_trafo_size == 3) {
@@ -1264,7 +1264,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             for (n = n_end; n > 0; n--) {
                 x_c = scan_x_off[n];
                 y_c = scan_y_off[n];
-                if (significant_coeff_flag_decode(s, x_c, y_c, scf_offset, ctx_idx_map_p) == 1) {
+                if (significant_coeff_flag_decode(s, x_c, y_c, scf_offset, ctx_idx_map_p)) {
                     significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
                     nb_significant_coeff_flag++;
                     implicit_non_zero_coeff = 0;
@@ -1285,14 +1285,14 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
 
         if (n_end) {
-            int first_nz_pos_in_cg = 16;
-            int last_nz_pos_in_cg = -1;
+            int first_nz_pos_in_cg;
+            int last_nz_pos_in_cg;
             int c_rice_param = 0;
             int first_greater1_coeff_idx = -1;
-            uint8_t coeff_abs_level_greater1_flag[16] = {0};
+            uint8_t coeff_abs_level_greater1_flag[8];
             uint16_t coeff_sign_flag;
             int sum_abs = 0;
-            int sign_hidden = 0;
+            int sign_hidden;
 
             // initialize first elem of coeff_bas_level_greater1_flag
             int ctx_set = (i > 0 && c_idx == 0) ? 2 : 0;
@@ -1303,19 +1303,16 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             last_nz_pos_in_cg = significant_coeff_flag_idx[0];
 
             for (m = 0; m < (n_end > 8 ? 8 : n_end); m++) {
-                int n_idx = significant_coeff_flag_idx[m];
                 int inc = (ctx_set << 2) + greater1_ctx;
-                coeff_abs_level_greater1_flag[n_idx] =
+                coeff_abs_level_greater1_flag[m] =
                     coeff_abs_level_greater1_flag_decode(s, c_idx, inc);
-                if (coeff_abs_level_greater1_flag[n_idx]) {
+                if (coeff_abs_level_greater1_flag[m]) {
                     greater1_ctx = 0;
+                    if (first_greater1_coeff_idx == -1)
+                        first_greater1_coeff_idx = m;
                 } else if (greater1_ctx > 0 && greater1_ctx < 3) {
                     greater1_ctx++;
                 }
-
-                if (coeff_abs_level_greater1_flag[n_idx] &&
-                    first_greater1_coeff_idx == -1)
-                    first_greater1_coeff_idx = n_idx;
             }
             first_nz_pos_in_cg = significant_coeff_flag_idx[n_end - 1];
             sign_hidden = (last_nz_pos_in_cg - first_nz_pos_in_cg >= 4 &&
@@ -1333,15 +1330,22 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             for (m = 0; m < n_end; m++) {
                 n = significant_coeff_flag_idx[m];
                 GET_COORD(offset, n);
-                trans_coeff_level = 1 + coeff_abs_level_greater1_flag[n];
-                if (trans_coeff_level == ((m < 8) ?
-                                          ((n == first_greater1_coeff_idx) ? 3 : 2) : 1)) {
-                    int last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, trans_coeff_level, c_rice_param);
+                if (m < 8) {
+                    trans_coeff_level = 1 + coeff_abs_level_greater1_flag[m];
+                    if (trans_coeff_level == ((m == first_greater1_coeff_idx) ? 3 : 2)) {
+                        int last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, c_rice_param);
 
-                    trans_coeff_level += last_coeff_abs_level_remaining;
+                        trans_coeff_level += last_coeff_abs_level_remaining;
+                        if (trans_coeff_level > (3 << c_rice_param))
+                            c_rice_param = FFMIN(c_rice_param + 1, 4);
+
+                    }
+                } else {
+                    int last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, c_rice_param);
+
+                    trans_coeff_level = 1 + last_coeff_abs_level_remaining;
                     if (trans_coeff_level > (3 << c_rice_param))
                         c_rice_param = FFMIN(c_rice_param + 1, 4);
-
                 }
                 if (s->pps->sign_data_hiding_flag && sign_hidden) {
                     sum_abs += trans_coeff_level;
