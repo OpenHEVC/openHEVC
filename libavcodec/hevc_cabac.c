@@ -914,19 +914,19 @@ int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
         i++;                                                                    \
     return i;
 
-static __declspec(noinline) int last_significant_coeff_x_prefix_decode(HEVCContext *s, int c_idx,
+static av_always_inline int last_significant_coeff_x_prefix_decode(HEVCContext *s, int c_idx,
                                                    int log2_size)
 {
     LAST_SIG_COEFF(LAST_SIGNIFICANT_COEFF_X_PREFIX)
 }
 
-static __declspec(noinline) int last_significant_coeff_y_prefix_decode(HEVCContext *s, int c_idx,
+static av_always_inline int last_significant_coeff_y_prefix_decode(HEVCContext *s, int c_idx,
                                                    int log2_size)
 {
     LAST_SIG_COEFF(LAST_SIGNIFICANT_COEFF_Y_PREFIX)
 }
 
-static __declspec(noinline) int last_significant_coeff_suffix_decode(HEVCContext *s,
+static av_always_inline int last_significant_coeff_suffix_decode(HEVCContext *s,
                                                  int last_significant_coeff_prefix)
 {
     int i;
@@ -938,7 +938,7 @@ static __declspec(noinline) int last_significant_coeff_suffix_decode(HEVCContext
     return value;
 }
 
-static __declspec(noinline) int significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg)
+static av_always_inline int significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg)
 {
     int inc;
 
@@ -946,59 +946,28 @@ static __declspec(noinline) int significant_coeff_group_flag_decode(HEVCContext 
 
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_GROUP_FLAG] + inc);
 }
-
-static __declspec(noinline) int significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
-                                          int log2_trafo_size, int scan_idx, int prev_sig)
+static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int x_c, int y_c,
+                                           int offset, uint8_t *ctx_idx_map)
 {
-    static const uint8_t ctx_idx_map[] = {
-        0, 1, 4, 5, 2, 3, 4, 5, 6, 6, 8, 8, 7, 7, 8, 8
-    };
-    int x_cg = x_c >> 2;
-    int y_cg = y_c >> 2;
-    int sig_ctx;
-    int inc;
-
-    if (x_c + y_c == 0) {
-        sig_ctx = 0;
-    } else if (log2_trafo_size == 2) {
-        sig_ctx = ctx_idx_map[(y_c << 2) + x_c];
-    } else {
-        switch (prev_sig) {
-        case 0: {
-                int x_off = x_c & 3;
-                int y_off = y_c & 3;
-                sig_ctx   = ((x_off + y_off) == 0) ? 2 : ((x_off + y_off) <= 2) ? 1 : 0;
-            }
-            break;
-        case 1:
-            sig_ctx = 2 - FFMIN(y_c & 3, 2);
-            break;
-        case 2:
-            sig_ctx = 2 - FFMIN(x_c & 3, 2);
-            break;
-        default:
-            sig_ctx = 2;
-        }
-
-        if (c_idx == 0 && (x_cg > 0 || y_cg > 0))
-            sig_ctx += 3;
-
-        if (log2_trafo_size == 3) {
-            sig_ctx += (scan_idx == SCAN_DIAG) ? 9 : 15;
-        } else {
-            sig_ctx += c_idx ? 12 : 21;
-        }
-    }
-
-    if (c_idx == 0)
-        inc = sig_ctx;
-    else
-        inc = sig_ctx + 27;
-
+    int inc = ctx_idx_map[(y_c << 2) + x_c] + offset;
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
 }
 
-static __declspec(noinline) int coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int inc)
+static av_always_inline int significant_coeff_flag_decode_0(HEVCContext *s, int c_idx, int i, int offset)
+{
+    int inc;
+    if (i == 0) {
+        if (c_idx == 0)
+            inc = 0;
+        else
+            inc = 27;
+    } else {
+        inc = 2 + offset;
+    }
+    return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
+}
+
+static av_always_inline int coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int inc)
 {
 
     if (c_idx > 0)
@@ -1007,7 +976,7 @@ static __declspec(noinline) int coeff_abs_level_greater1_flag_decode(HEVCContext
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc);
 }
 
-static __declspec(noinline) int coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc)
+static av_always_inline int coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc)
 {
     if (c_idx > 0)
         inc += 4;
@@ -1015,7 +984,7 @@ static __declspec(noinline) int coeff_abs_level_greater2_flag_decode(HEVCContext
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER2_FLAG] + inc);
 }
 
-static __declspec(noinline) int coeff_abs_level_remaining_decode(HEVCContext *s, int base_level, int rc_rice_param)
+static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int base_level, int rc_rice_param)
 {
     int prefix = 0;
     int suffix = 0;
@@ -1040,7 +1009,7 @@ static __declspec(noinline) int coeff_abs_level_remaining_decode(HEVCContext *s,
     return last_coeff_abs_level_remaining;
 }
 
-static __declspec(noinline) int coeff_sign_flag_decode(HEVCContext *s, uint8_t nb)
+static av_always_inline int coeff_sign_flag_decode(HEVCContext *s, uint8_t nb)
 {
     int i;
     int ret = 0;
@@ -1056,8 +1025,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 {
 #define GET_COORD(offset, n)                                    \
     do {                                                        \
-        x_c = (x_cg << 2) + scan_x_off[n];    \
-        y_c = (y_cg << 2) + scan_y_off[n];    \
+        x_c = (x_cg << 2) + scan_x_off[n];                      \
+        y_c = (y_cg << 2) + scan_y_off[n];                      \
     } while (0)
     HEVCLocalContext *lc = s->HEVClc;
     int transform_skip_flag = 0;
@@ -1268,23 +1237,47 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         if (y_cg < ((1 << log2_trafo_size) - 1) >> 2)
             prev_sig += (significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
 
-        if (significant_coeff_group_flag[x_cg][y_cg]) {
-            for (n = n_end; n >= 0; n--) {
-                GET_COORD(offset, n);
-
-                if ((n > 0 || implicit_non_zero_coeff == 0)) {
-                    if (significant_coeff_flag_decode(s, c_idx, x_c, y_c, log2_trafo_size, scan_idx, prev_sig) == 1) {
-                        significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
-                        nb_significant_coeff_flag++;
-                        implicit_non_zero_coeff = 0;
-                    }
+        if (significant_coeff_group_flag[x_cg][y_cg] && n_end >= 0) {
+            static const uint8_t ctx_idx_map[] = {
+                0, 1, 4, 5, 2, 3, 4, 5, 6, 6, 8, 8, 7, 7, 8, 8, // log2_trafo_size == 2
+                1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, // prev_sig == 0
+                2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, // prev_sig == 1
+                2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, // prev_sig == 2
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2  // default
+            };
+            uint8_t *ctx_idx_map_p;
+            int scf_offset = 0;
+            if (c_idx != 0)
+                scf_offset = 27;
+            if (log2_trafo_size == 2) {
+                ctx_idx_map_p = &ctx_idx_map[0];
+            } else {
+                ctx_idx_map_p = &ctx_idx_map[(FFMIN(prev_sig, 3)+1)<<4];
+                if (c_idx == 0 && (x_cg > 0 || y_cg > 0))
+                    scf_offset += 3;
+                if (log2_trafo_size == 3) {
+                    scf_offset += (scan_idx == SCAN_DIAG) ? 9 : 15;
                 } else {
-                    int last_cg = (x_c == (x_cg << 2) && y_c == (y_cg << 2));
-                    if (last_cg && implicit_non_zero_coeff) {
-                        significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
-                        nb_significant_coeff_flag++;
-                    }
+                    scf_offset += c_idx ? 12 : 21;
                 }
+            }
+            for (n = n_end; n > 0; n--) {
+                x_c = scan_x_off[n];
+                y_c = scan_y_off[n];
+                if (significant_coeff_flag_decode(s, x_c, y_c, scf_offset, ctx_idx_map_p) == 1) {
+                    significant_coeff_flag_idx[nb_significant_coeff_flag] = n;
+                    nb_significant_coeff_flag++;
+                    implicit_non_zero_coeff = 0;
+                }
+            }
+            if (implicit_non_zero_coeff == 0) {
+                if (significant_coeff_flag_decode_0(s, c_idx, i, scf_offset) == 1) {
+                    significant_coeff_flag_idx[nb_significant_coeff_flag] = 0;
+                    nb_significant_coeff_flag++;
+                }
+            } else {
+                significant_coeff_flag_idx[nb_significant_coeff_flag] = 0;
+                nb_significant_coeff_flag++;
             }
         }
 
