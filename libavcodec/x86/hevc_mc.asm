@@ -37,6 +37,24 @@ epel_h_shuffle1_10  DB  0,  1,  2,  3,  4,  5,  6,  7
 epel_h_shuffle2_10  DB  4,  5,  6,  7,  8,  9, 10, 11
                     DB  6,  7,  8,  9, 10, 11, 12, 13
 
+qpel_h_shuffle1     DB  0,  1,  2,  3,  4,  5,  6,  7
+                    DB  1,  2,  3,  4,  5,  6,  7,  8
+
+qpel_h_filter1_8    DB -1,  4,-10, 58, 17, -5,  1,  0
+                    DB -1,  4,-10, 58, 17, -5,  1,  0
+
+qpel_h_filter2_8    DB -1,  4,-11, 40, 40,-11,  4, -1
+                    DB -1,  4,-11, 40, 40,-11,  4, -1
+
+qpel_h_filter3_8    DB  0,  1, -5, 17, 58,-10,  4, -1
+                    DB  0,  1, -5, 17, 58,-10,  4, -1
+
+qpel_h_filter1_10   DW -1,  4,-10, 58, 17, -5,  1,  0
+
+qpel_h_filter2_10   DW -1,  4,-11, 40, 40,-11,  4, -1
+
+qpel_h_filter3_10   DW  0,  1, -5, 17, 58,-10,  4, -1
+
 SECTION .text
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -117,6 +135,11 @@ SECTION .text
     pshufd           m13, m13, 0
 %endmacro
 
+%macro QPEL_H_FILTER 2
+    movdqu           m13, [qpel_h_filter%1_%2]
+    movdqu           m14, [qpel_h_shuffle1]    ; register containing shuffle
+%endmacro
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,6 +168,22 @@ SECTION .text
     p%1               m0, m13
     p%1               m1, m13
     p%2              m12, m0, m1
+%endmacro
+
+%macro MUL_ADD_H_2 2
+    MUL_ADD_H_2_2     %1,  %2
+    p%2              m12, m15
+%endmacro
+
+%macro MUL_ADD_H_4 2
+    p%1               m0, m13
+    p%1               m1, m13
+    p%1               m2, m13
+    p%1               m3, m13
+    p%2               m0, m1
+    p%2               m2, m3
+    p%2              m12, m0, m2
+
 %endmacro
 
 %macro MUL_ADD_V_4 6
@@ -198,6 +237,19 @@ SECTION .text
     movdqu            m2, [r11+2*%3 ]            ;load 64bit of x+stride
 %endif
     movdqu            m0, [r11      ]            ;load 64bit of x-stride
+%endmacro
+
+%macro QPEL_H_LOAD2 0
+    movdqu            m0, [srcq+  r9-3]          ; load data from source
+    psrldq            m1, m0,2
+%endmacro
+
+%define QPEL_H_LOAD4 QPEL_H_LOAD2
+
+%macro QPEL_H_LOAD8 0
+    QPEL_H_LOAD2
+    psrldq            m2, m0,4
+    psrldq            m3, m0,6
 %endmacro
 
 %macro PEL_STORE2 3
@@ -422,6 +474,48 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 
 
 ; ******************************
+; void put_hevc_qpel_h(int16_t *dst, ptrdiff_t dststride,
+;                     uint8_t *_src, ptrdiff_t _srcstride,
+;                     int width, int height, int mx, int my,
+;                     int16_t* mcbuffer)
+;
+;      r0 : *dst
+;      r1 : dststride
+;      r2 : *src
+;      r3 : srcstride
+;      r4 : width
+;      r5 : height
+;
+; ******************************
+%macro QPEL_H_COMPUTE4_8 0
+    INST_SRC1_CST_2  shufb, m0, m1, m14
+    MUL_ADD_H_2 maddubsw, haddw
+%endmacro
+%macro QPEL_H_COMPUTE8_8 0
+    INST_SRC1_CST_4  shufb, m0, m1, m2, m3, m14
+    MUL_ADD_H_4 maddubsw, haddw
+%endmacro
+
+%macro QPEL_H_COMPUTE2_10 0
+    MUL_ADD_H_2  maddubsw, haddw
+    psrad             m12, 2
+    packssdw          m12, m15
+%endmacro
+%define QPEL_H_COMPUTE4_10 QPEL_H_COMPUTE2_10
+
+
+
+%macro PUT_HEVC_QPEL_H 3
+    QPEL_H_FILTER     %2, %3
+    LOOP_INIT  qpel_h_h_%1_%2_%3, qpel_h_w_%1_%2_%3
+    QPEL_H_LOAD%1
+    QPEL_H_COMPUTE%1_%3
+    PEL_STORE%1       dst, m12, m15
+    LOOP_END   qpel_h_h_%1_%2_%3, qpel_h_w_%1_%2_%3, %1, dst, dststride, src, srcstride
+%endmacro
+
+
+; ******************************
 ; void put_hevc_mc_pixels(int16_t *dst, ptrdiff_t dststride,
 ;                         uint8_t *_src, ptrdiff_t _srcstride,
 ;                         int width, int height, int mx, int my,
@@ -527,6 +621,31 @@ cglobal hevc_put_hevc_epel_hv2_10, 9, 12, 0 , dst, dststride, src, srcstride, wi
     RET
 cglobal hevc_put_hevc_epel_hv4_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
     PUT_HEVC_EPEL_HV   4, 10
+    RET
+
+; ******************************
+; void put_hevc_qpel_hX_X_X(int16_t *dst, ptrdiff_t dststride,
+;                       uint8_t *_src, ptrdiff_t _srcstride,
+;                       int width, int height, int16_t* mcbuffer)
+; ******************************
+cglobal hevc_put_hevc_qpel_h4_1_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height
+    PUT_HEVC_QPEL_H    4, 1, 8
+    RET
+cglobal hevc_put_hevc_qpel_h4_2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height
+    PUT_HEVC_QPEL_H    4, 2, 8
+    RET
+cglobal hevc_put_hevc_qpel_h4_3_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height
+    PUT_HEVC_QPEL_H    4, 3, 8
+    RET
+
+cglobal hevc_put_hevc_qpel_h8_1_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_QPEL_H    8, 1, 8
+    RET
+cglobal hevc_put_hevc_qpel_h8_2_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_QPEL_H    8, 2, 8
+    RET
+cglobal hevc_put_hevc_qpel_h8_3_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_QPEL_H    8, 3, 8
     RET
 
 %endif ; ARCH_X86_64
