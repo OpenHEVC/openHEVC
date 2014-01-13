@@ -136,6 +136,18 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK_SSE(c->put_hevc_qpel, 2, 3, 0, qpel_v16_3 ,  8);
                     PEL_LINK_SSE(c->put_hevc_qpel, 3, 3, 0, qpel_v16_3 ,  8);
                     PEL_LINK_SSE(c->put_hevc_qpel, 4, 3, 0, qpel_v16_3 ,  8);
+#ifdef OPTI_ASM
+                    PEL_LINK(c->put_hevc_qpel, 2, 1, 0, qpel_v8_1 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 3, 1, 0, qpel_v8_1 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 4, 1, 0, qpel_v8_1 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 2, 2, 0, qpel_v8_2 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 3, 2, 0, qpel_v8_2 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 4, 2, 0, qpel_v8_2 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 2, 3, 0, qpel_v8_3 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 3, 3, 0, qpel_v8_3 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 4, 3, 0, qpel_v8_3 ,  8);
+#endif
+
 
 #if ARCH_X86_64
                     c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;

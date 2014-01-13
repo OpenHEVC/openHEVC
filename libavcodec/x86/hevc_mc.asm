@@ -827,5 +827,7 @@ cglobal hevc_put_hevc_qpel_v8_3_8, 9, 12, 0 , dst, dststride, src, srcstride, wi
     RET
 
 
+
+
 %endif ; ARCH_X86_64
 
