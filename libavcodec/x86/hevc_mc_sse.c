@@ -198,15 +198,16 @@
 #define MUL_ADD_H_1(mul, add, dst, src)                                        \
     src ## 1 = mul(src ## 1, r0);                                              \
     dst      = add(src ## 1, c0)
-#define MUL_ADD_H_2(mul, add, dst, src)                                        \
-    src ## 1 = mul(src ## 1, r0);                                              \
-    src ## 2 = mul(src ## 2, r0);                                              \
-    src ## 1 = add(src ## 1, src ## 2);                                        \
-    dst      = add(src ## 1, c0)
+
 #define MUL_ADD_H_2_2(mul, add, dst, src)                                      \
     src ## 1 = mul(src ## 1, r0);                                              \
     src ## 2 = mul(src ## 2, r0);                                              \
     dst      = add(src ## 1, src ## 2)
+
+#define MUL_ADD_H_2(mul, add, dst, src)                                        \
+    MUL_ADD_H_2_2(mul, add, dst, src);                                          \
+    dst      = add(dst, c0)
+
 #define MUL_ADD_H_4(mul, add, dst, src)                                        \
     src ## 1 = mul(src ## 1, r0);                                              \
     src ## 2 = mul(src ## 2, r0);                                              \

@@ -52,7 +52,12 @@ EPEL_PROTOTYPE_SSE(name, D)
 #endif
 
 #define QPEL_PROTOTYPE_ASM(name, D) \
-void ff_hevc_put_hevc_qpel_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer);
+void ff_hevc_put_hevc_qpel_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer); \
+void ff_hevc_put_hevc_qpel_ ## name ## _w0_ ## D ## _sse(uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer); \
+void ff_hevc_put_hevc_qpel_ ## name ## _w1_ ## D ## _sse(uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer); \
+void ff_hevc_put_hevc_qpel_ ## name ## _w2_ ## D ## _sse(uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer); \
+void ff_hevc_put_hevc_qpel_ ## name ## _w3_ ## D ## _sse(uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer)
+
 #define QPEL_PROTOTYPE_SSE(name, D) \
 void ff_hevc_put_hevc_qpel_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer); \
 void ff_hevc_put_hevc_qpel_ ## name ## _w0_ ## D ## _sse(uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer); \
@@ -137,19 +142,19 @@ QPEL_PROTOTYPE_SSE(pixels16,  8);
 QPEL_PROTOTYPE_SSE(pixels4 , 10);
 QPEL_PROTOTYPE_SSE(pixels8 , 10);
 
-QPEL_PROTOTYPE_SSE(h4_1 ,  8);
-QPEL_PROTOTYPE_SSE(h4_2 ,  8);
-QPEL_PROTOTYPE_SSE(h4_3 ,  8);
-QPEL_PROTOTYPE_SSE(h8_1 ,  8);
-QPEL_PROTOTYPE_SSE(h8_2 ,  8);
-QPEL_PROTOTYPE_SSE(h8_3 ,  8);
+QPEL_PROTOTYPE(h4_1 ,  8);
+QPEL_PROTOTYPE(h4_2 ,  8);
+QPEL_PROTOTYPE(h4_3 ,  8);
+QPEL_PROTOTYPE(h8_1 ,  8);
+QPEL_PROTOTYPE(h8_2 ,  8);
+QPEL_PROTOTYPE(h8_3 ,  8);
 
-QPEL_PROTOTYPE_SSE(v4_1 ,  8);
-QPEL_PROTOTYPE_SSE(v4_2 ,  8);
-QPEL_PROTOTYPE_SSE(v4_3 ,  8);
-QPEL_PROTOTYPE_SSE(v8_1 ,  8);
-QPEL_PROTOTYPE_SSE(v8_2 ,  8);
-QPEL_PROTOTYPE_SSE(v8_3 ,  8);
+QPEL_PROTOTYPE(v4_1 ,  8);
+QPEL_PROTOTYPE(v4_2 ,  8);
+QPEL_PROTOTYPE(v4_3 ,  8);
+QPEL_PROTOTYPE(v8_1 ,  8);
+QPEL_PROTOTYPE(v8_2 ,  8);
+QPEL_PROTOTYPE(v8_3 ,  8);
 QPEL_PROTOTYPE_SSE(v16_1,  8);
 QPEL_PROTOTYPE_SSE(v16_2,  8);
 QPEL_PROTOTYPE_SSE(v16_3,  8);
