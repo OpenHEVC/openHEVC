@@ -41,6 +41,6 @@ void ff_videodsp_init(VideoDSPContext *ctx, int bpc)
     } else {
         ctx->emulated_edge_mc = ff_emulated_edge_mc_16;
     }
- //   if (ARCH_X86)
- //       ff_videodsp_init_x86(ctx, bpc);
+    if (ARCH_X86)
+        ff_videodsp_init_x86(ctx, bpc);
 }

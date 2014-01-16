@@ -105,7 +105,7 @@ av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
 
 #if ARCH_X86_32
     if (EXTERNAL_MMX(cpu_flags) && bpc <= 8) {
-        ctx->emulated_edge_mc = emulated_edge_mc_mmx;
+//        ctx->emulated_edge_mc = emulated_edge_mc_mmx;
     }
     if (EXTERNAL_AMD3DNOW(cpu_flags)) {
         ctx->prefetch = ff_prefetch_3dnow;
@@ -115,7 +115,7 @@ av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
         ctx->prefetch = ff_prefetch_mmxext;
     }
     if (EXTERNAL_SSE(cpu_flags) && bpc <= 8) {
-        ctx->emulated_edge_mc = emulated_edge_mc_sse;
+//        ctx->emulated_edge_mc = emulated_edge_mc_sse;
     }
 #endif /* HAVE_YASM */
 }
