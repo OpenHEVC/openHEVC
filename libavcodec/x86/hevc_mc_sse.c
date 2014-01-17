@@ -982,7 +982,6 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ##_ ## D ## _sse (   \
     __m128i t1, t2, t3, t4;                                                    \
     __m128i r1, r2,r3,r4;                                                      \
     const __m128i c0   = _mm_setzero_si128();                                  \
-    const __m128i mask = _mm_set_epi16(0, -1, 0, -1, 0, -1, 0, -1);            \
     int16_t *tmp       = mcbuffer;                                             \
     SRC_INIT_ ## D();                                                          \
     QPEL_H_FILTER_ ## FH ## _ ## D();                                          \
