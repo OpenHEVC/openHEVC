@@ -135,12 +135,12 @@ EPEL_PROTOTYPE(hv4 , 10);
 ///////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////
-QPEL_PROTOTYPE_SSE(pixels4 ,  8);
-QPEL_PROTOTYPE_SSE(pixels8 ,  8);
-QPEL_PROTOTYPE_SSE(pixels16,  8);
+QPEL_PROTOTYPE(pixels4 ,  8);
+QPEL_PROTOTYPE(pixels8 ,  8);
+QPEL_PROTOTYPE(pixels16,  8);
 
-QPEL_PROTOTYPE_SSE(pixels4 , 10);
-QPEL_PROTOTYPE_SSE(pixels8 , 10);
+QPEL_PROTOTYPE(pixels4 , 10);
+QPEL_PROTOTYPE(pixels8 , 10);
 
 QPEL_PROTOTYPE(h4_1 ,  8);
 QPEL_PROTOTYPE(h4_2 ,  8);

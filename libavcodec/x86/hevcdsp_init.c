@@ -95,11 +95,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                     c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
 
-                    PEL_LINK_SSE(c->put_hevc_qpel, 0, 0, 0, qpel_pixels4 ,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 1, 0, 0, qpel_pixels8 ,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 2, 0, 0, qpel_pixels16,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 3, 0, 0, qpel_pixels16,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 0, 0, qpel_pixels16,  8);
+                    PEL_LINK(c->put_hevc_qpel, 0, 0, 0, qpel_pixels4 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 1, 0, 0, qpel_pixels8 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 2, 0, 0, qpel_pixels16,  8);
+                    PEL_LINK(c->put_hevc_qpel, 3, 0, 0, qpel_pixels16,  8);
+                    PEL_LINK(c->put_hevc_qpel, 4, 0, 0, qpel_pixels16,  8);
 
                     PEL_LINK(c->put_hevc_qpel, 0, 0, 1, qpel_h4_1  ,  8);
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 1, qpel_h8_1  ,  8);
