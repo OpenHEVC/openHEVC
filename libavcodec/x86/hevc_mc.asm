@@ -735,12 +735,12 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
     QPEL_V_FILTER     %3, 10
     LOOP_INIT qpel_hv_v_h_%1_%2_%3_%4, qpel_hv_v_w_%1_%2_%3_%4
     QPEL_V_LOAD_LO    10, mcbuffer, 128
-    QPEL_V_COMPUTE_LO%1_10 2
+    QPEL_V_COMPUTE_LO4_10 2
     QPEL_V_LOAD_HI    10, mcbuffer, 128
-    QPEL_V_COMPUTE_HI%1_10 2
-    QPEL_V_MERGE%1_10  6
-    PEL_STORE%1      dst, m0, m4
-    LOOP_END  qpel_hv_v_h_%1_%2_%3_%4, qpel_hv_v_w_%1_%2_%3_%4, %1, dst, dststride, mcbuffer, 128
+    QPEL_V_COMPUTE_HI4_10 2
+    QPEL_V_MERGE4_10  6
+    PEL_STORE4      dst, m0, m4
+    LOOP_END  qpel_hv_v_h_%1_%2_%3_%4, qpel_hv_v_w_%1_%2_%3_%4, 4, dst, dststride, mcbuffer, 128        ;forced loop to 4.
 
 %endmacro
 
@@ -940,6 +940,35 @@ cglobal hevc_put_hevc_qpel_h4_3_v_3_8, 9, 12, 0 , dst, dststride, src, srcstride
     RET
 
 
+cglobal hevc_put_hevc_qpel_h8_1_v_1_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 1, 1, 8
+    RET
+cglobal hevc_put_hevc_qpel_h8_1_v_2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 1, 2, 8
+    RET
+cglobal hevc_put_hevc_qpel_h8_1_v_3_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 1, 3, 8
+    RET
+
+cglobal hevc_put_hevc_qpel_h8_2_v_1_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 2, 1, 8
+    RET
+cglobal hevc_put_hevc_qpel_h8_2_v_2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 2, 2, 8
+    RET
+cglobal hevc_put_hevc_qpel_h8_2_v_3_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 2, 3, 8
+    RET
+
+cglobal hevc_put_hevc_qpel_h8_3_v_1_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 3, 1, 8
+    RET
+cglobal hevc_put_hevc_qpel_h8_3_v_2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 3, 2, 8
+    RET
+cglobal hevc_put_hevc_qpel_h8_3_v_3_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    8, 3, 3, 8
+    RET
 
 %endif ; ARCH_X86_64
 
