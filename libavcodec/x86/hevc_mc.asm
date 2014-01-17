@@ -23,8 +23,12 @@
 SECTION_RODATA
 cextern hevc_epel_filters
 
-epel_extra_before   DB 1    ;corresponds to EPEL_EXTRA_BEFORE in hevc.h
-max_pb_size         DB 64   ;corresponds to MAX_PB_SIZE in hevc.h
+epel_extra_before   DB  1                        ;corresponds to EPEL_EXTRA_BEFORE in hevc.h
+max_pb_size         DB  64                       ;corresponds to MAX_PB_SIZE in hevc.h
+
+qpel_extra_before   DB  0,  3,  3,  2            ;corresponds to the ff_hevc_qpel_extra_before in hevc.c
+qpel_extra          DB  0,  6,  7,  6            ;corresponds to the ff_hevc_qpel_extra in hevc.c
+qpel_extra_after    DB  0,  3,  4,  4
 
 epel_h_shuffle1_8   DB  0,  1,  2,  3
                     DB  1,  2,  3,  4
@@ -150,7 +154,8 @@ SECTION .text
     psrldq           m11, m6, 10
     psrldq           m12, m6, 12
     psrldq           m13, m6, 14
-    punpcklwd         m6, m6                    ;duplicate to 32bit
+
+    punpcklwd         m6, m6                    ; put double values to 32bit.
     punpcklwd         m7, m7
     punpcklwd         m8, m8
     punpcklwd         m9, m9
@@ -158,6 +163,18 @@ SECTION .text
     punpcklwd        m11, m11
     punpcklwd        m12, m12
     punpcklwd        m13, m13
+
+%if %2 == 10
+    psrad             m6, m6, 16
+    psrad             m7, m7, 16
+    psrad             m8, m8, 16
+    psrad             m9, m9, 16
+    psrad            m10, m10, 16
+   psrad            m11, m11, 16
+    psrad            m12, m12, 16
+    psrad            m13, m13, 16
+%endif
+
     pshufd            m6, m6, 0
     pshufd            m7, m7, 0
     pshufd            m8, m8, 0
@@ -166,6 +183,7 @@ SECTION .text
     pshufd           m11, m11, 0
     pshufd           m12, m12, 0
     pshufd           m13, m13, 0
+
 %endmacro
 
 
@@ -298,7 +316,6 @@ SECTION .text
     sub              r11, %3q
     movdqu            m1, [r11]                  ;load 64bit of x-2*stride
     sub              r11, %3q
-
 %else
     sub              r11, %3
     movdqu            m2, [r11]                  ;load 64bit of x-stride
@@ -620,52 +637,111 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ;      r5 : height
 ;
 ; ******************************
-%macro QPEL_V_COMPUTE_LO4_8 0
+%macro QPEL_V_COMPUTE_LO4_8 1
     INST_SRC1_CST_4    unpcklbw, m0, m1, m2, m3, m15
     MUL_ADD_V_LO4    mullw, addsw, m0, m1, m2, m3
     movdqu            m5, m0                     ;store intermediate result in m4
 %endmacro
 %define QPEL_V_COMPUTE_LO8_8 QPEL_V_COMPUTE_LO4_8
 
-%macro QPEL_V_COMPUTE_HI4_8 0
+%macro QPEL_V_COMPUTE_HI4_8 1
     INST_SRC1_CST_4    unpcklbw, m0, m1, m2, m3, m15
     MUL_ADD_V_4    mullw, addsw, m0, m1, m2, m3
     movdqu            m4, m0                     ;store temp result in m5
 %endmacro
 %define QPEL_V_COMPUTE_HI8_8 QPEL_V_COMPUTE_HI4_8
 
-%macro QPEL_V_MERGE4_8 0
+%macro QPEL_V_MERGE4_8 1
     paddw             m0, m4, m5                       ;merge results in m0
 %endmacro
 %define QPEL_V_MERGE8_8 QPEL_V_MERGE4_8
 
-;%macro QPEL_V_COMPUTE_LO4_10 1
-;    UNPACK_SRAI16_4   unpcklwd, m0, m1, m2, m3
-;    MUL_ADD_V_4    mulld, addd, m0, m1, m2, m3
-;    psrad             m0, %1
-;    packssdw          m0, m15
-;%endmacro
-;%macro QPEL_V_COMPUTE_LO8_10 1
-;    UNPACK_SRAI16_4   unpckhwd, m4, m5, m6, m7
-;    MUL_ADD_V_4    mulld, addd, m4, m5, m6, m7
-;    UNPACK_SRAI16_4   unpcklwd, m0, m1, m2, m3
-;    MUL_ADD_V_4    mulld, addd, m0, m1, m2, m3
-;    psrad             m0, %1
-;    psrad             m4, %1
-;    packssdw          m0, m4
-;%endmacro
+%macro QPEL_V_COMPUTE_LO4_10 1
+    UNPACK_SRAI16_4   unpcklwd, m0, m1, m2, m3
+    MUL_ADD_V_LO4  mulld, addd, m0, m1, m2, m3
+    movdqu            m5, m0
+
+%endmacro
+
+%macro QPEL_V_COMPUTE_HI4_10 1
+    UNPACK_SRAI16_4   unpcklwd, m0, m1, m2, m3
+    MUL_ADD_V_4    mulld, addd, m0, m1, m2, m3
+    movdqu            m4, m0
+%endmacro
+
+%macro QPEL_V_MERGE4_10 1
+    paddd             m0, m4, m5                       ;merge results in m0
+    psrad             m0, %1
+    packssdw          m0, m15
+%endmacro
 
 
 %macro PUT_HEVC_QPEL_V 3
     QPEL_V_FILTER     %2, %3
     LOOP_INIT qpel_v_h_%1_%2_%3, qpel_v_w_%1_%2_%3
     QPEL_V_LOAD_LO    %3, src, srcstride
-    QPEL_V_COMPUTE_LO%1_%3
+    QPEL_V_COMPUTE_LO%1_%3 2
     QPEL_V_LOAD_HI    %3, src, srcstride
-    QPEL_V_COMPUTE_HI%1_%3
-    QPEL_V_MERGE%1_%3
+    QPEL_V_COMPUTE_HI%1_%3 2
+    QPEL_V_MERGE%1_%3  0
     PEL_STORE%1      dst, m0, m4
     LOOP_END  qpel_v_h_%1_%2_%3, qpel_v_w_%1_%2_%3, %1, dst, dststride, src, srcstride
+%endmacro
+
+
+
+; ******************************
+; void put_hevc_qpel_hv(int16_t *dst, ptrdiff_t dststride,
+;                       uint8_t *_src, ptrdiff_t _srcstride,
+;                       int width, int height, int16_t* mcbuffer)
+;
+;      r0 : *dst
+;      r1 : dststride
+;      r2 : *src
+;      r3 : srcstride
+;      r4 : width
+;      r5 : height
+;      r6 : mcbuffer
+;
+; ******************************
+%macro PUT_HEVC_QPEL_HV 4
+
+    xor               r9, r9
+    mov              r9b, [ qpel_extra_before + %3 ]
+    imul              r9, srcstrideq
+    sub             srcq, r9                     ; src -= ff_hevc_qpel_extra_before[FV] * srcstride;
+    lea              r7q, [mcbufferq]
+    xor               r9, r9
+    mov              r9b, [qpel_extra + %3 ]
+    add          heightq, r9                     ; height += ff_hevc_qpel_extra[FV]
+    xor               r9, r9
+
+    QPEL_H_FILTER     %2, %4
+    LOOP_INIT  qpel_hv_h_h_%1_%2_%3_%4, qpel_hv_h_w_%1_%2_%3_%4
+    QPEL_H_LOAD%1
+    QPEL_H_COMPUTE%1_%4
+    PEL_STORE%1       r7, m12, m15
+    LOOP_END   qpel_hv_h_h_%1_%2_%3_%4, qpel_hv_h_w_%1_%2_%3_%4, %1, r7, 128, src, srcstride
+
+    xor               r9, r9
+    mov              r9b, [qpel_extra_before + %3] 
+    imul              r9, 128
+    add               mcbufferq, r9              ; mcbuffer+= + ff_hevc_qpel_extra_before[FV] * MAX_PB_SIZE;
+    xor               r9, r9
+    mov              r9b, [qpel_extra + %3 ]
+    sub          heightq, r9                     ; reset height.
+    xor               r9, r9
+
+    QPEL_V_FILTER     %3, 10
+    LOOP_INIT qpel_hv_v_h_%1_%2_%3_%4, qpel_hv_v_w_%1_%2_%3_%4
+    QPEL_V_LOAD_LO    10, mcbuffer, 128
+    QPEL_V_COMPUTE_LO%1_10 2
+    QPEL_V_LOAD_HI    10, mcbuffer, 128
+    QPEL_V_COMPUTE_HI%1_10 2
+    QPEL_V_MERGE%1_10  6
+    PEL_STORE%1      dst, m0, m4
+    LOOP_END  qpel_hv_v_h_%1_%2_%3_%4, qpel_hv_v_w_%1_%2_%3_%4, %1, dst, dststride, mcbuffer, 128
+
 %endmacro
 
 ; ******************************
@@ -801,6 +877,7 @@ cglobal hevc_put_hevc_qpel_h8_3_8, 9, 12, 0 , dst, dststride, src, srcstride,wid
     PUT_HEVC_QPEL_H    8, 3, 8
     RET
 
+
     ; ******************************
 ; void put_hevc_qpel_vX_X_X(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
@@ -826,6 +903,41 @@ cglobal hevc_put_hevc_qpel_v8_3_8, 9, 12, 0 , dst, dststride, src, srcstride, wi
     PUT_HEVC_QPEL_V    8, 3, 8
     RET
 
+
+    ; ******************************
+; void put_hevc_qpel_hX_X_v_X(int16_t *dst, ptrdiff_t dststride,
+;                       uint8_t *_src, ptrdiff_t _srcstride,
+;                       int width, int height, int16_t* mcbuffer)
+; ******************************
+cglobal hevc_put_hevc_qpel_h4_1_v_1_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 1, 1, 8
+    RET
+cglobal hevc_put_hevc_qpel_h4_1_v_2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 1, 2, 8
+    RET
+cglobal hevc_put_hevc_qpel_h4_1_v_3_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 1, 3, 8
+    RET
+
+cglobal hevc_put_hevc_qpel_h4_2_v_1_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 2, 1, 8
+    RET
+cglobal hevc_put_hevc_qpel_h4_2_v_2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 2, 2, 8
+    RET
+cglobal hevc_put_hevc_qpel_h4_2_v_3_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 2, 3, 8
+    RET
+
+cglobal hevc_put_hevc_qpel_h4_3_v_1_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 3, 1, 8
+    RET
+cglobal hevc_put_hevc_qpel_h4_3_v_2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 3, 2, 8
+    RET
+cglobal hevc_put_hevc_qpel_h4_3_v_3_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
+    PUT_HEVC_QPEL_HV    4, 3, 3, 8
+    RET
 
 
 
