@@ -1269,11 +1269,11 @@ static void luma_mc_bi_pred(HEVCContext *s,
     }
 
     s->hevcdsp.put_hevc_qpel_w[idx][my][mx][idx_w](
-            denom, wlxFlag, wl1Flag, olxFlag, ol1Flag,
             dst, dststride,
             src1, src1stride,
             src, srcstride,
-            block_w, block_h, lc->mc_buffer);
+            block_w, block_h, lc->mc_buffer,
+            denom, wlxFlag, wl1Flag, olxFlag, ol1Flag);
 }
 
 /**
@@ -1422,11 +1422,11 @@ static void chroma_mc_bi_pred(HEVCContext *s,
         srcstride = MAX_EDGE_BUFFER_STRIDE;
     }
     s->hevcdsp.put_hevc_epel_w[idx][!!my][!!mx][idx_w](
-            denom, wlxFlag, wl1Flag, olxFlag, ol1Flag,
             dst , dststride ,
             src1, src1stride,
             src , srcstride ,
-            block_w, block_h, mx, my, lc->mc_buffer);
+            block_w, block_h, mx, my, lc->mc_buffer,
+            denom, wlxFlag, wl1Flag, olxFlag, ol1Flag);
 }
 
 static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,

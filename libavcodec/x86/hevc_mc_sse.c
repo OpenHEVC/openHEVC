@@ -1043,14 +1043,13 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ##_ ## D ## _sse (   \
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_EPEL_PIXELS_W(H, D, W)                                        \
 void ff_hevc_put_hevc_epel_pixels ## H ## _w ## W ## _## D ## _sse (           \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer) {                              \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     __m128i x1, x2, x3, r1, r2, r3, r4;                                        \
     const __m128i c0    = _mm_setzero_si128();                                 \
@@ -1071,15 +1070,14 @@ void ff_hevc_put_hevc_epel_pixels ## H ## _w ## W ## _## D ## _sse (           \
 }
 
 #define PUT_HEVC_QPEL_PIXELS_W(H, D, W)                                        \
-void ff_hevc_put_hevc_qpel_pixels ## H  ## _w ## W ## _## D ## _sse (          \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
+void ff_hevc_put_hevc_qpel_pixels ## H  ## _w ## W ## _## D ## _sse (         \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height,                            \
-                             int16_t* mcbuffer) {                              \
+                             int16_t* mcbuffer,uint8_t denom,                  \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     __m128i x1, x2, x3, r1, r2, r3, r4;                                        \
     const __m128i c0    = _mm_setzero_si128();                                 \
@@ -1104,14 +1102,13 @@ void ff_hevc_put_hevc_qpel_pixels ## H  ## _w ## W ## _## D ## _sse (          \
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_EPEL_H_W(H, D, W)                                             \
 void ff_hevc_put_hevc_epel_h ## H ## _w ## W ## _## D ## _sse (                \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer) {                              \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     __m128i x1, x2, r1, r2, r3, r4;                                            \
     const __m128i c0     = _mm_setzero_si128();                                \
@@ -1137,14 +1134,13 @@ void ff_hevc_put_hevc_epel_h ## H ## _w ## W ## _## D ## _sse (                \
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_EPEL_V_W(V, D, W)                                             \
 void ff_hevc_put_hevc_epel_v ## V ## _w ## W ## _## D ## _sse (                \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer) {                              \
+                             int16_t* mcbuffer,uint8_t denom,                  \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
     __m128i x1, x2, x3, x4;                                                    \
@@ -1173,14 +1169,13 @@ void ff_hevc_put_hevc_epel_v ## V ## _w ## W ## _## D ## _sse (                \
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_EPEL_HV_W(H, D, W)                                            \
 void ff_hevc_put_hevc_epel_hv ## H ## _w ## W ## _## D ## _sse (               \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer) {                              \
+                             int16_t* mcbuffer,uint8_t denom,                  \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     int shift = 6;                                                             \
     __m128i x1, x2, x3, x4;                                                    \
@@ -1230,14 +1225,13 @@ void ff_hevc_put_hevc_epel_hv ## H ## _w ## W ## _## D ## _sse (               \
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_QPEL_H_W(H, F, D, W)                                          \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _w ## W ## _## D ## _sse (      \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height,                            \
-                             int16_t* mcbuffer) {                              \
+                             int16_t* mcbuffer,uint8_t denom,                  \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     __m128i x1, x2, x3, x4, r1, r2, r3, r4;                                    \
     const __m128i c0    = _mm_setzero_si128();                                 \
@@ -1263,14 +1257,13 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _w ## W ## _## D ## _sse (      \
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_QPEL_V_W(V, F, D, W)                                          \
 void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _w ## W ## _## D ## _sse (       \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height,                            \
-                             int16_t* mcbuffer) {                              \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
     __m128i x1, x2, x3, x4, x5, x6, x7, x8;                                    \
@@ -1302,14 +1295,13 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _w ## W ## _## D ## _sse (       \
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_QPEL_HV_W(H, FH, FV, D, W)                                    \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ## _w ## W ## _## D ## _sse ( \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height,                            \
-                             int16_t* mcbuffer) {                              \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     int shift = 14 - 8;                                                        \
     __m128i x1, x2, x3, x4, x5, x6, x7, x8;                                    \
