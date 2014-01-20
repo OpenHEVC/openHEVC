@@ -59,7 +59,8 @@ qpel_h_filter2_10   DW -1,  4,-11, 40, 40,-11,  4, -1
 
 qpel_h_filter3_10   DW  0,  1, -5, 17, 58,-10,  4, -1
 
-
+single_mask_16      DW  0,  0,  0,  0,  0,  0,  0, -1
+single_mask_32      DW  0,  0,  0,  0,  0,  0, -1, -1
 SECTION .text
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -724,7 +725,7 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
     LOOP_END   qpel_hv_h_h_%1_%2_%3_%4, qpel_hv_h_w_%1_%2_%3_%4, %1, r7, 128, src, srcstride
 
     xor               r9, r9
-    mov              r9b, [qpel_extra_before + %3] 
+    mov              r9b, [qpel_extra_before + %3]
     imul              r9, 128
     add               mcbufferq, r9              ; mcbuffer+= + ff_hevc_qpel_extra_before[FV] * MAX_PB_SIZE;
     xor               r9, r9
@@ -742,6 +743,101 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
     PEL_STORE4      dst, m0, m4
     LOOP_END  qpel_hv_v_h_%1_%2_%3_%4, qpel_hv_v_w_%1_%2_%3_%4, 4, dst, dststride, mcbuffer, 128        ;forced loop to 4.
 
+%endmacro
+
+
+; ******************************
+; void put_hevc_mc_pixels(int16_t *dst, ptrdiff_t dststride,
+;                         uint8_t *_src, ptrdiff_t _srcstride,
+;                         int width, int height, int mx, int my,
+;                         int16_t* mcbuffer, uint8_t denom,
+;                             int16_t wlxFlag, int16_t wl1Flag,
+;                             int16_t olxFlag, int16_t ol1Flag)
+;
+;        r0 : *dst
+;        r1 : dststride
+;        r2 : *src
+;        r3 : srcstride
+;        r4 : width
+;        r5 : height
+;        r6 : mx                       ;unused
+;        r7 : my                       ;unused
+;        r8 : mcbuffer                 ;unused
+;        r9 : denom
+;        r10: wlxFlag
+;        r11: wl1Flag
+;        r12: olxFlag
+;        r13: ol1Flag
+;
+; ******************************
+%macro WEIGHTED_INIT2 0
+    movdqu  m6,
+%endmacro
+
+%macro WEIGHTED_INIT_0 2
+    WEIGHTED_INIT%1
+    xor              r10,r10
+    sub              r10,13,%2
+    mov               m5,1
+    pslliw            m5,r10
+    add              r10,1                                                     ;shift
+%endmacro
+
+%macro WEIGHTED_COMPUTE_0 1
+    paddw             %1, m5
+    psraw             %1,r10
+%endmacro
+
+%define WEIGHTED_COMPUTE2_0 WEIGHTED_COMPUTE_0
+%define WEIGHTED_COMPUTE4_0 WEIGHTED_COMPUTE_0
+%define WEIGHTED_COMPUTE8_0 WEIGHTED_COMPUTE_0
+
+%macro WEIGHTED_LOAD2 2
+    movq              m1,  [%1+r9]
+%endmacro
+%define WEIGHTED_LOAD4 WEIGHTED_LOAD2
+%macro WEIGHTED_LOAD8 2
+    movq              m1,  [%1+r9]
+%endmacro
+%macro WEIGHTED_LOAD16 2
+    WEIGHTED_LOAD8 %1, %2
+    movq              m2,  [%1+r9+8]
+%endmacro
+
+%macro WEIGHTED_LOAD2_1 2
+    movq              m3,  [%1+r9]
+%endmacro
+%define WEIGHTED_LOAD4_1 WEIGHTED_LOAD2_1
+%macro WEIGHTED_LOAD8_1 2
+    movq              m3,  [%1+r9]
+%endmacro
+%macro WEIGHTED_LOAD16_1 2
+    WEIGHTED_LOAD8_1 %1, %2
+    movq              m4,  [%1+r9+8]
+%endmacro
+
+%macro WEIGHTED_STORE2 2
+    packuswb          %1, %1
+    movss     [%1q+2*r9], %2
+
+%endmacro
+%define WEIGHTED_STORE4 WEIGHTED_STORE2
+%macro WEIGHTED_STORE8 2
+
+%endmacro
+
+%macro PUT_HEVC_MC_PIXELS_W 4
+
+    LOOP_INIT %4_pixels_h_%1_w_%2_%3, %4_pixels_v_%1_w_%2_%3
+    MC_LOAD_PIXEL     %2
+    MC_PIXEL_COMPUTE%1_%2
+%if %3 == 4
+    PEL_STORE%1      dst, m1, m2
+%else
+
+%endif
+    LOOP_END %4_pixels_h_%1_w_%2_%3, %4_pixels_v_%1_w_%2_%3, %1, dst, dststride, src, srcstride
+    RET
 %endmacro
 
 ; ******************************
@@ -969,6 +1065,16 @@ cglobal hevc_put_hevc_qpel_h8_3_v_2_8, 9, 12, 0 , dst, dststride, src, srcstride
 cglobal hevc_put_hevc_qpel_h8_3_v_3_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mcbuffer
     PUT_HEVC_QPEL_HV    8, 3, 3, 8
     RET
+
+
+; ******************************
+; void put_hevc_mc_pixels_w(int16_t *dst, ptrdiff_t dststride,
+;                         uint8_t *_src, ptrdiff_t _srcstride,
+;                         int width, int height, int mx, int my,
+;                         int16_t* mcbuffer)
+; ******************************
+cglobal hevc_put_hevc_epel_pixels2_w_0_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+    PUT_HEVC_MC_PIXELS_W 2, 0, 8, epel
 
 %endif ; ARCH_X86_64
 
