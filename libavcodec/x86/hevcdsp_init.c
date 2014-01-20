@@ -130,7 +130,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_qpel, 0, 3, 0, qpel_v4_3  ,  8);
                     PEL_LINK(c->put_hevc_qpel, 1, 3, 0, qpel_v8_3  ,  8);
 
-#ifdef OPTI_ASM
+#if 1
                     PEL_LINK(c->put_hevc_qpel, 2, 1, 0, qpel_v8_1 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 3, 1, 0, qpel_v8_1 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 4, 1, 0, qpel_v8_1 ,  8);
@@ -277,7 +277,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[1] = ff_hevc_transform_8x8_add_10_sse4;
                     c->transform_add[2] = ff_hevc_transform_16x16_add_10_sse4;
                     c->transform_add[3] = ff_hevc_transform_32x32_add_10_sse4;
-#if 0
+#if 1
                     PEL_LINK(c->put_hevc_epel, 0, 0, 0, epel_pixels2 ,10);
                     PEL_LINK(c->put_hevc_epel, 1, 0, 0, epel_pixels4 ,10);
                     PEL_LINK(c->put_hevc_epel, 2, 0, 0, epel_pixels8 ,10);
