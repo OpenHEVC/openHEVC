@@ -897,33 +897,30 @@ int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
     return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }
 
-#define LAST_SIG_COEFF(elem)                                                    \
-    int i = 0;                                                                  \
-    int max = (log2_size << 1) - 1;                                             \
-    int ctx_offset, ctx_shift;                                                  \
-                                                                                \
-    if (c_idx == 0) {                                                           \
-        ctx_offset = 3 * (log2_size - 2)  + ((log2_size - 1) >> 2);             \
-        ctx_shift = (log2_size + 1) >> 2;                                       \
-    } else {                                                                    \
-        ctx_offset = 15;                                                        \
-        ctx_shift = log2_size - 2;                                              \
-    }                                                                           \
-    while (i < max &&                                                           \
-           GET_CABAC(elem_offset[elem] + (i >> ctx_shift) + ctx_offset))        \
-        i++;                                                                    \
-    return i;
-
-static av_always_inline int last_significant_coeff_x_prefix_decode(HEVCContext *s, int c_idx,
-                                                   int log2_size)
+static av_always_inline void last_significant_coeff_xy_prefix_decode(HEVCContext *s, int c_idx,
+                                                   int log2_size, int *last_scx_prefix, int *last_scy_prefix)
 {
-    LAST_SIG_COEFF(LAST_SIGNIFICANT_COEFF_X_PREFIX)
-}
+    int i = 0;
+    int max = (log2_size << 1) - 1;
+    int ctx_offset, ctx_shift;
 
-static av_always_inline int last_significant_coeff_y_prefix_decode(HEVCContext *s, int c_idx,
-                                                   int log2_size)
-{
-    LAST_SIG_COEFF(LAST_SIGNIFICANT_COEFF_Y_PREFIX)
+    if (!c_idx) {
+        ctx_offset = 3 * (log2_size - 2)  + ((log2_size - 1) >> 2);
+        ctx_shift = (log2_size + 1) >> 2;
+    } else {
+        ctx_offset = 15;
+        ctx_shift = log2_size - 2;
+    }
+    while (i < max &&
+           GET_CABAC(elem_offset[LAST_SIGNIFICANT_COEFF_X_PREFIX] + (i >> ctx_shift) + ctx_offset))
+        i++;
+    *last_scx_prefix = i;
+
+    i = 0;
+    while (i < max &&
+           GET_CABAC(elem_offset[LAST_SIGNIFICANT_COEFF_Y_PREFIX] + (i >> ctx_shift) + ctx_offset))
+        i++;
+    *last_scy_prefix = i;
 }
 
 static av_always_inline int last_significant_coeff_suffix_decode(HEVCContext *s,
@@ -1057,7 +1054,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     const uint8_t *scale_matrix;
     uint8_t dc_scale;
 
-    s->vdsp.prefetch(dst, stride,       4);
+//    s->vdsp.prefetch(dst, stride,       4);
 
     memset(coeffs, 0, trafo_size * trafo_size * sizeof(int16_t));
 
@@ -1123,10 +1120,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         transform_skip_flag = ff_hevc_transform_skip_flag_decode(s, c_idx);
     }
 
-    last_significant_coeff_x =
-        last_significant_coeff_x_prefix_decode(s, c_idx, log2_trafo_size);
-    last_significant_coeff_y =
-        last_significant_coeff_y_prefix_decode(s, c_idx, log2_trafo_size);
+    last_significant_coeff_xy_prefix_decode(s, c_idx, log2_trafo_size,
+                                           &last_significant_coeff_x, &last_significant_coeff_y);
 
     if (last_significant_coeff_x > 3) {
         int suffix = last_significant_coeff_suffix_decode(s, last_significant_coeff_x);
