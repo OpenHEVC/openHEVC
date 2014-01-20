@@ -1031,13 +1031,12 @@ PUT_HEVC_QPEL_HV(3, 3)
 
 #define PUT_HEVC_QPEL_PIXELS_WEIGHTED(W)                                       \
 static void FUNC(put_hevc_qpel_pixels_w ## W) (                                \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer)         \
+                             int width, int height, int16_t* mcbuffer,         \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel *)_src;                                       \
@@ -1059,13 +1058,12 @@ static void FUNC(put_hevc_qpel_pixels_w ## W) (                                \
 
 #define PUT_HEVC_QPEL_H_WEIGHTED(H, W)                                         \
 static void FUNC(put_hevc_qpel_h ## H ## _w ## W)(                             \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer)         \
+                             int width, int height, int16_t* mcbuffer,         \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel*)_src;                                        \
@@ -1087,13 +1085,12 @@ static void FUNC(put_hevc_qpel_h ## H ## _w ## W)(                             \
 
 #define PUT_HEVC_QPEL_V_WEIGHTED(V, W)                                         \
 static void FUNC(put_hevc_qpel_v ## V ## _w ## W)(                             \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer)         \
+                             int width, int height, int16_t* mcbuffer,         \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
+                             int16_t olxFlag, int16_t ol1Flag)                \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel*)_src;                                        \
@@ -1115,13 +1112,12 @@ static void FUNC(put_hevc_qpel_v ## V ## _w ## W)(                             \
 
 #define PUT_HEVC_QPEL_HV_WEIGHTED(H, V, W)                                     \
 static void FUNC(put_hevc_qpel_h ## H ## v ## V ## _w ## W)(                   \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer)         \
+                             int width, int height, int16_t* mcbuffer,         \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
+                             int16_t olxFlag, int16_t ol1Flag)                \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel*)_src;                                        \
@@ -1285,14 +1281,13 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
 }
 #define PUT_HEVC_EPEL_PIXELS_WEIGHTED(W)                                       \
 static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer)                                \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel *)_src;                                       \
@@ -1314,14 +1309,13 @@ static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
 
 #define PUT_HEVC_EPEL_H_WEIGHTED(W)                                            \
 static void FUNC(put_hevc_epel_h_w ## W)(                                      \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer)                                \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel *)_src;                                       \
@@ -1348,14 +1342,13 @@ static void FUNC(put_hevc_epel_h_w ## W)(                                      \
 
 #define PUT_HEVC_EPEL_V_WEIGHTED(W)                                            \
 static void FUNC(put_hevc_epel_v_w ## W)(                                      \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer)                                \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel *)_src;                                       \
@@ -1382,14 +1375,13 @@ static void FUNC(put_hevc_epel_v_w ## W)(                                      \
 
 #define PUT_HEVC_EPEL_HV_WEIGHTED(W)                                           \
 static void FUNC(put_hevc_epel_hv_w ## W)(                                     \
-                             uint8_t denom,                                    \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag,                 \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer)                                \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel *)_src;                                       \
