@@ -1057,7 +1057,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     const uint8_t *scale_matrix;
     uint8_t dc_scale;
 
-//    s->vdsp.prefetch(dst, stride,       trafo_size);
+    s->vdsp.prefetch(dst, stride,       4);
 
     memset(coeffs, 0, trafo_size * trafo_size * sizeof(int16_t));
 
