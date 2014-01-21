@@ -836,11 +836,13 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
     int shift = 6;                                                             \
     __m128i x1, x2, x3, x4;                                                    \
     __m128i t1, t2, t3, t4;                                                    \
+    __m128i y1, y2, y3, y4;                                                    \
     __m128i r1, r2;                                                            \
     const __m128i c0   = _mm_setzero_si128();                                  \
     const __m128i mask = _mm_set_epi32(0, 0, 0, -1);                           \
     int16_t *tmp       = mcbuffer;                                             \
     SRC_INIT_ ## D();                                                          \
+    uint16_t  *_dst       = (uint16_t*) dst;                                   \
     EPEL_H_FILTER_ ## D();                                                     \
     EPEL_V_FILTER_10();                                                        \
                                                                                \
@@ -859,17 +861,21 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
                                                                                \
     tmp       = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;                    \
     srcstride = MAX_PB_SIZE;                                                   \
-                                                                               \
+    src       = tmp;                                                            \
     /* vertical */                                                             \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-            EPEL_V_LOAD(tmp);                                                  \
-            EPEL_V_COMPUTE ## H  ## _10();                                     \
-            PEL_STORE ## H(dst);                                               \
-        }                                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-        dst += dststride;                                                      \
-    }                                                                          \
+        for (x = 0; x < width; x+= H) {                                                \
+            EPEL_V_LOAD3(tmp);                                                         \
+                for(y = 0; y < height; y++) {                                          \
+                    EPEL_V_SHIFT(tmp);                                                 \
+                    EPEL_V_COMPUTEB ## H ## _ ## 10();                         \
+                    PEL_STORE ## H(_dst);                                              \
+                    tmp += MAX_PB_SIZE;                                                  \
+                    _dst += dststride;                                                 \
+                }                                                                      \
+                tmp       = (uint8_t*) src;                                           \
+                _dst       = (uint16_t*) dst;                                          \
+            }                                                                          \
+                                                                          \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
