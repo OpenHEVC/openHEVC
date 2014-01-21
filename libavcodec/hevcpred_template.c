@@ -158,33 +158,33 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     }
     if (cand_bottom_left) {
         for (i = size + bottom_left_size; i < (size << 1); i++)
-            if (IS_INTRA(-1, size + bottom_left_size - 1) ||
-                !s->pps->constrained_intra_pred_flag)
+            /*if (IS_INTRA(-1, size + bottom_left_size - 1) ||
+                !s->pps->constrained_intra_pred_flag) */
                 left[i] = POS(-1, size + bottom_left_size - 1);
         for (i = size + bottom_left_size - 1; i >= size; i--)
-            if (IS_INTRA(-1, i) || !s->pps->constrained_intra_pred_flag)
+           // if (IS_INTRA(-1, i) || !s->pps->constrained_intra_pred_flag)
                 left[i] = POS(-1, i);
     }
     if (cand_left)
         for (i = size - 1; i >= 0; i--)
-            if (IS_INTRA(-1, i) || !s->pps->constrained_intra_pred_flag)
+            //if (IS_INTRA(-1, i) || !s->pps->constrained_intra_pred_flag)
                 left[i] = POS(-1, i);
     if (cand_up_left)
-        if (IS_INTRA(-1, -1) || !s->pps->constrained_intra_pred_flag) {
+        /*if (IS_INTRA(-1, -1) || !s->pps->constrained_intra_pred_flag) */{
             left[-1] = POS(-1, -1);
             top[-1]  = left[-1];
         }
     if (cand_up)
         for (i = size - 1; i >= 0; i--)
-            if (IS_INTRA(i, -1) || !s->pps->constrained_intra_pred_flag)
+            //if (IS_INTRA(i, -1) || !s->pps->constrained_intra_pred_flag)
                 top[i] = POS(i, -1);
     if (cand_up_right) {
         for (i = size + top_right_size; i < (size << 1); i++)
-            if (IS_INTRA(size + top_right_size - 1, -1) ||
-                !s->pps->constrained_intra_pred_flag)
+           /* if (IS_INTRA(size + top_right_size - 1, -1) ||
+                !s->pps->constrained_intra_pred_flag)*/
                 top[i] = POS(size + top_right_size - 1, -1);
         for (i = size + top_right_size - 1; i >= size; i--)
-            if (IS_INTRA(i, -1) || !s->pps->constrained_intra_pred_flag)
+           // if (IS_INTRA(i, -1) || !s->pps->constrained_intra_pred_flag)
                 top[i] = POS(i, -1);
     }
 
@@ -461,8 +461,8 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
     if (mode >= 18) {
         ref = top - 1;
         if (angle < 0 && last < -1) {
-            for (x = 0; x <= size; x++)
-                ref_tmp[x] = top[x - 1];
+            for (x = 0; x <= size; x+=4)
+                AV_WN4PA(&ref_tmp[x], AV_RN4PA(&top[x - 1]));
             for (x = last; x <= -1; x++)
                 ref_tmp[x] = left[-1 + ((x * inv_angle[mode - 11] + 128) >> 8)];
             ref = ref_tmp;
@@ -472,13 +472,19 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
             int idx  = ((y + 1) * angle) >> 5;
             int fact = ((y + 1) * angle) & 31;
             if (fact) {
-                for (x = 0; x < size; x++) {
+                for (x = 0; x < size; x += 4) {
                     POS(x, y) = ((32 - fact) * ref[x + idx + 1] +
                                        fact  * ref[x + idx + 2] + 16) >> 5;
+                    POS(x + 1, y) = ((32 - fact) * ref[x + 1 + idx + 1] +
+                                 fact  * ref[x + 1 + idx + 2] + 16) >> 5;
+                    POS(x + 2, y) = ((32 - fact) * ref[x + 2 + idx + 1] +
+                                     fact  * ref[x + 2 + idx + 2] + 16) >> 5;
+                    POS(x + 3, y) = ((32 - fact) * ref[x + 3 + idx + 1] +
+                                     fact  * ref[x + 3 + idx + 2] + 16) >> 5;
                 }
             } else {
-                for (x = 0; x < size; x++)
-                    POS(x, y) = ref[x + idx + 1];
+                for (x = 0; x < size; x+=4)
+                    AV_WN4PA(&POS(x, y), AV_RN4PA(&ref[x + idx + 1]));
             }
         }
         if (mode == 26 && c_idx == 0 && size < 32) {
@@ -488,8 +494,8 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
     } else {
         ref = left - 1;
         if (angle < 0 && last < -1) {
-            for (x = 0; x <= size; x++)
-                ref_tmp[x] = left[x - 1];
+            for (x = 0; x <= size; x+=4)
+                AV_WN4PA(&ref_tmp[x], AV_RN4PA(&left[x - 1]));
             for (x = last; x <= -1; x++)
                 ref_tmp[x] = top[-1 + ((x * inv_angle[mode - 11] + 128) >> 8)];
             ref = ref_tmp;
@@ -509,8 +515,12 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
             }
         }
         if (mode == 10 && c_idx == 0 && size < 32) {
-            for (x = 0; x < size; x++)
+            for (x = 0; x < size; x+=4) {
                 POS(x, 0) = av_clip_pixel(left[0] + ((top[x] - top[-1]) >> 1));
+                POS(x+1, 0) = av_clip_pixel(left[0] + ((top[x+1] - top[-1]) >> 1));
+                POS(x+2, 0) = av_clip_pixel(left[0] + ((top[x+2] - top[-1]) >> 1));
+                POS(x+3, 0) = av_clip_pixel(left[0] + ((top[x+3] - top[-1]) >> 1));
+            }
         }
     }
 }

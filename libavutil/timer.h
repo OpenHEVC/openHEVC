@@ -39,7 +39,7 @@
 #elif ARCH_PPC
 #   include "ppc/timer.h"
 #elif ARCH_X86
-//#   include "x86/timer.h"
+#   include "x86/timer.h"
 #endif
 
 #if !defined(AV_READ_TIME) && HAVE_GETHRTIME
