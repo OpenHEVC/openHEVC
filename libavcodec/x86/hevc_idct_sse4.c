@@ -685,11 +685,17 @@ void ff_hevc_transform_4x4_luma_add_10_sse4(uint8_t *_dst, int16_t *coeffs,
 #define ADD_AND_SAVE_4x10(dst, dst_stride, src)                               \
     tmp0 = _mm_loadl_epi64((__m128i *) dst);                                   \
     tmp0 = _mm_add_epi16(src, tmp0);                                           \
+    tmp1 = _mm_set1_epi16(0x03ff);                                             \
+    tmp0 = _mm_max_epi16(tmp0, _mm_setzero_si128());                                          \
+    tmp0 = _mm_min_epi16(tmp0, tmp1);                                          \
     _mm_storel_epi64((__m128i *) dst, tmp0);                                   \
     dst += dst_stride
 #define ADD_AND_SAVE_8x10(dst, dst_stride, src)                                \
     tmp0 = _mm_loadu_si128((__m128i *) dst);                                   \
     tmp0 = _mm_add_epi16(src, tmp0);                                           \
+    tmp1 = _mm_set1_epi16(0x03ff);                                             \
+    tmp0 = _mm_max_epi16(tmp0, _mm_setzero_si128());                                          \
+    tmp0 = _mm_min_epi16(tmp0, tmp1);                                          \
     _mm_storeu_si128((__m128i *) dst, tmp0);                                   \
     dst += dst_stride
 #define ASSIGN4(dst, dst_stride, src0, src1, src2, src3, assign)               \
