@@ -172,6 +172,12 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_epel, 2, 1, 1, epel_hv8, 8);
                     PEL_LINK(c->put_hevc_epel, 3, 1, 1, epel_hv8, 8);
                     PEL_LINK(c->put_hevc_epel, 4, 1, 1, epel_hv8, 8);
+
+                    c->put_hevc_epel_v_14[0] = ff_hevc_put_hevc_epel_v2_14_sse;
+                    c->put_hevc_epel_v_14[1] = ff_hevc_put_hevc_epel_v4_14_sse;
+                    c->put_hevc_epel_v_14[2] = ff_hevc_put_hevc_epel_v8_14_sse;
+                    c->put_hevc_epel_v_14[3] = ff_hevc_put_hevc_epel_v8_14_sse;
+                    c->put_hevc_epel_v_14[4] = ff_hevc_put_hevc_epel_v8_14_sse;
                     c->transform_skip     = ff_hevc_transform_skip_8_sse;
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;

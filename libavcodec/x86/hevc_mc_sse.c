@@ -47,6 +47,7 @@
     EPEL_V_FILTER(_mm_set1_epi16)
 #define EPEL_V_FILTER_10()                                                     \
     EPEL_V_FILTER(_mm_set1_epi32)
+#define EPEL_V_FILTER_14()  EPEL_V_FILTER_10()                                                    
 
 #define EPEL_H_FILTER_8()                                                      \
     __m128i bshuffle1 = _mm_set_epi8( 6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0); \
@@ -126,11 +127,13 @@
 #define SRC_INIT_10()                                                          \
     uint16_t *src       = (uint16_t*) _src;                                    \
     ptrdiff_t srcstride = _srcstride >> 1
+#define SRC_INIT_14() SRC_INIT_10()
 
 #define SRC_INIT1_8()                                                          \
         src       = (uint8_t*) _src
 #define SRC_INIT1_10()                                                         \
         src       = (uint16_t*) _src
+#define SRC_INIT1_14() SRC_INIT1_10()
 
 #define DST_INIT_8()                                                           \
     uint8_t  *dst       = (uint8_t*) _dst;                                     \
@@ -138,6 +141,7 @@
 #define DST_INIT_10()                                                          \
     uint16_t *dst       = (uint16_t*) _dst;                                    \
     ptrdiff_t dststride = _dststride >> 1
+#define DST_INIT_14() DST_INIT_10()
 
 #define MC_LOAD_PIXEL()                                                        \
     x1 = _mm_loadu_si128((__m128i *) &src[x])
@@ -647,7 +651,7 @@ void ff_hevc_put_hevc_epel_pixels ## H ## _ ## D ## _sse (                     \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my, int16_t* mcbuffer) {        \
+                                   int mx, int my) {        \
     int x, y;                                                                  \
     __m128i x1, x2, x3, r1, r2;                                                \
     const __m128i c0    = _mm_setzero_si128();                                 \
@@ -715,7 +719,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my, int16_t* mcbuffer) {        \
+                                   int mx, int my) {        \
     int x, y;                                                                  \
     __m128i x1, x2, r1;                                                        \
     const __m128i c0     = _mm_setzero_si128();                                \
@@ -792,6 +796,11 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
     r1 = _mm_srai_epi32(r1, shift);                                            \
     r1 = _mm_packs_epi32(r2, r1)
 
+#define EPEL_V_COMPUTEB2_14() EPEL_V_COMPUTEB2_10()                            
+#define EPEL_V_COMPUTEB4_14() EPEL_V_COMPUTEB2_10()
+#define EPEL_V_COMPUTEB8_14() EPEL_V_COMPUTEB8_10()
+
+
 #define EPEL_V_SHIFT(tab)                                                      \
     x1= x2;                                                                    \
     x2= x3;                                                                    \
@@ -803,7 +812,7 @@ void ff_hevc_put_hevc_epel_v ## V ## _ ## D ## _sse (                          \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my, int16_t* mcbuffer) {        \
+                                   int mx, int my) {        \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
     __m128i x1, x2, x3, x4;                                                    \
@@ -837,51 +846,8 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my, int16_t* mcbuffer) {        \
-    int x, y;                                                                  \
-    int shift = 6;                                                             \
-    __m128i x1, x2, x3, x4;                                                    \
-    __m128i t1, t2, t3, t4;                                                    \
-    __m128i y1, y2, y3, y4;                                                    \
-    __m128i r1, r2;                                                            \
-    const __m128i c0   = _mm_setzero_si128();                                  \
-    const __m128i mask = _mm_set_epi32(0, 0, 0, -1);                           \
-    int16_t *tmp       = mcbuffer;                                             \
-    int16_t *_tmp;                                                             \
-    SRC_INIT_ ## D();                                                          \
-    uint16_t  *_dst       = (uint16_t*) dst;                                   \
-    EPEL_H_FILTER_ ## D();                                                     \
-    EPEL_V_FILTER_10();                                                        \
-                                                                               \
-    src -= EPEL_EXTRA_BEFORE * srcstride;                                      \
-                                                                               \
-    /* horizontal */                                                           \
-    for (y = 0; y < height + EPEL_EXTRA; y ++) {                               \
-        for(x = 0; x < width; x += H) {                                        \
-            EPEL_H_LOAD ## H();                                                \
-            EPEL_H_COMPUTE ## H ## _ ## D();                                   \
-            PEL_STORE ## H(tmp);                                               \
-        }                                                                      \
-        src += srcstride;                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-    }                                                                          \
-                                                                               \
-    tmp       = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;                    \
-    srcstride = MAX_PB_SIZE;                                                   \
-    _tmp       = tmp;                                                            \
-    /* vertical */                                                             \
-        for (x = 0; x < width; x+= H) {                                                \
-            EPEL_V_LOAD3(tmp);                                                         \
-                for(y = 0; y < height; y++) {                                          \
-                    EPEL_V_SHIFT(tmp);                                                 \
-                    EPEL_V_COMPUTEB ## H ## _ ## 10();                         \
-                    PEL_STORE ## H(_dst);                                              \
-                    tmp += MAX_PB_SIZE;                                                  \
-                    _dst += dststride;                                                 \
-                }                                                                      \
-                tmp       = (uint16_t*) _tmp;                                           \
-                _dst       = (uint16_t*) dst;                                          \
-            }                                                                          \
+                                   int mx, int my) {        \
+                                                                        \
                                                                           \
 }
 
@@ -1469,6 +1435,12 @@ EPEL_FUNC( PUT_HEVC_EPEL_V, 16, 8)
 EPEL_FUNC( PUT_HEVC_EPEL_V,  2, 10)
 EPEL_FUNC( PUT_HEVC_EPEL_V,  4, 10)
 EPEL_FUNC( PUT_HEVC_EPEL_V,  8, 10)
+
+PUT_HEVC_EPEL_V( 2, 14)
+PUT_HEVC_EPEL_V( 4, 14)
+PUT_HEVC_EPEL_V( 8, 14)
+//EPEL_FUNC( PUT_HEVC_EPEL_V,  4, 14)
+//EPEL_FUNC( PUT_HEVC_EPEL_V,  8, 14)
 
 // ff_hevc_put_hevc_epel_hvX_X_sse
 EPEL_FUNC( PUT_HEVC_EPEL_HV,  2,  8)

@@ -1183,8 +1183,7 @@ PUT_HEVC_QPEL_FUNC(3)
 
 static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                       int width, int height, int mx, int my,
-                                       int16_t* mcbuffer)
+                                       int width, int height, int mx, int my)
 {
     int x, y;
     pixel *src          = (pixel *)_src;
@@ -1200,8 +1199,7 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my,
-                                  int16_t* mcbuffer)
+                                  int width, int height, int mx, int my)
 {
     int x, y;
     pixel *src = (pixel *)_src;
@@ -1221,8 +1219,7 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my,
-                                  int16_t* mcbuffer)
+                                  int width, int height, int mx, int my)
 {
     int x, y;
     pixel *src = (pixel *)_src;
@@ -1275,7 +1272,7 @@ static void FUNC(put_hevc_epel_t_hv)(int16_t *dst, ptrdiff_t dststride,
     _s->hevcdsp.put_hevc_epel[idx][0][1]( tmp, MAX_PB_SIZE,
                               src, _srcstride,
                               width, height + EPEL_EXTRA,
-                              mx, my, NULL);
+                              mx, my);
 
     tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
 
@@ -1288,8 +1285,7 @@ static void FUNC(put_hevc_epel_t_hv)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
-                                   int width, int height, int mx, int my,
-                                   int16_t* mcbuffer)
+                                   int width, int height, int mx, int my)
 {
     int x, y;
     pixel *src = (pixel *)_src;
