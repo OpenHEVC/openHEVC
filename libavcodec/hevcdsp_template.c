@@ -1247,7 +1247,7 @@ static void FUNC(put_hevc_epel_v_14)(int16_t *dst, ptrdiff_t dststride,
 {
     int x, y;
     int16_t *src = (int16_t *)_src;
-    ptrdiff_t srcstride = _srcstride;
+    ptrdiff_t srcstride = _srcstride / sizeof(int16_t);
     const int8_t *filter = ff_hevc_epel_filters[my - 1];
     int8_t filter_0 = filter[0];
     int8_t filter_1 = filter[1];
@@ -1265,21 +1265,22 @@ static void FUNC(put_hevc_epel_v_14)(int16_t *dst, ptrdiff_t dststride,
 static void FUNC(put_hevc_epel_t_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
                                    int width, int height, int mx, int my,
-                                   HEVCContext *s, ptrdiff_t idx)
+                                   void *s, ptrdiff_t idx)
 {
     int16_t tmp_array[(MAX_PB_SIZE + 3) * MAX_PB_SIZE];
     int16_t *tmp = tmp_array;
-
-    _src -= EPEL_EXTRA_BEFORE * _srcstride;
-    s->hevcdsp.put_hevc_epel[idx][0][1]( tmp, MAX_PB_SIZE,
-                              _src, _srcstride,
+    HEVCContext *_s= ( HEVCContext *) s;
+    uint8_t * src= (uint8_t *) _src;
+    src -= EPEL_EXTRA_BEFORE * _srcstride;
+    _s->hevcdsp.put_hevc_epel[idx][0][1]( tmp, MAX_PB_SIZE,
+                              src, _srcstride,
                               width, height + EPEL_EXTRA,
                               mx, my, NULL);
 
     tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
 
-    s->hevcdsp.put_hevc_epel_v_14[idx]( dst, dststride,
-                              tmp, MAX_PB_SIZE,
+    _s->hevcdsp.put_hevc_epel_v_14[idx]( dst, dststride,
+                              tmp, MAX_PB_SIZE<<1 ,
                               width, height,
                               mx, my);
 
