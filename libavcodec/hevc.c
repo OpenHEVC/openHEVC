@@ -1343,6 +1343,12 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         src2       = lc->edge_emu_buffer + offset_edge;
         src2stride = MAX_EDGE_BUFFER_STRIDE;
     }
+    if(!!mx && !!my)
+    {
+        s->hevcdsp.put_hevc_epel_hv(dst2, dststride, src2, src2stride,
+                    block_w, block_h, mx, my,
+                    s, idx);
+    }else
     s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
             block_w, block_h, mx, my,
             lc->mc_buffer);
