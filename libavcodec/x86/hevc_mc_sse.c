@@ -126,6 +126,12 @@
 #define SRC_INIT_10()                                                          \
     uint16_t *src       = (uint16_t*) _src;                                    \
     ptrdiff_t srcstride = _srcstride >> 1
+
+#define SRC_INIT1_8()                                                          \
+        src       = (uint8_t*) _src
+#define SRC_INIT1_10()                                                         \
+        src       = (uint16_t*) _src
+
 #define DST_INIT_8()                                                           \
     uint8_t  *dst       = (uint8_t*) _dst;                                     \
     ptrdiff_t dststride = _dststride
@@ -818,7 +824,7 @@ for (x = 0; x < width; x+= V) {                                                \
             src += srcstride;                                                  \
             _dst += dststride;                                                 \
         }                                                                      \
-        src       = (uint8_t*) _src;                                           \
+        SRC_INIT1_ ## D();                                                     \
         _dst       = (uint16_t*) dst;                                          \
     }                                                                          \
 }
@@ -841,6 +847,7 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
     const __m128i c0   = _mm_setzero_si128();                                  \
     const __m128i mask = _mm_set_epi32(0, 0, 0, -1);                           \
     int16_t *tmp       = mcbuffer;                                             \
+    int16_t *_tmp;                                                             \
     SRC_INIT_ ## D();                                                          \
     uint16_t  *_dst       = (uint16_t*) dst;                                   \
     EPEL_H_FILTER_ ## D();                                                     \
@@ -861,7 +868,7 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
                                                                                \
     tmp       = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;                    \
     srcstride = MAX_PB_SIZE;                                                   \
-    src       = tmp;                                                            \
+    _tmp       = tmp;                                                            \
     /* vertical */                                                             \
         for (x = 0; x < width; x+= H) {                                                \
             EPEL_V_LOAD3(tmp);                                                         \
@@ -872,11 +879,12 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
                     tmp += MAX_PB_SIZE;                                                  \
                     _dst += dststride;                                                 \
                 }                                                                      \
-                tmp       = (uint8_t*) src;                                           \
+                tmp       = (uint16_t*) _tmp;                                           \
                 _dst       = (uint16_t*) dst;                                          \
             }                                                                          \
                                                                           \
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_hX_X_X_sse
