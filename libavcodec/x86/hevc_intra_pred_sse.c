@@ -17,59 +17,53 @@ void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
     __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, mask, C0,C2,C3;
-    t0= _mm_set1_epi16(top[4]);
-    l0= _mm_set1_epi16(left[4]);
-    add= _mm_set1_epi16(4);
 
-    ly= _mm_loadl_epi64((__m128i*)left);            //get 16 values
-    ly= _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
+    t0   = _mm_set1_epi16(top[4]);
+    l0   = _mm_set1_epi16(left[4]);
+    add  = _mm_set1_epi16(4);
+    tmp1 = _mm_set_epi16(0,1,2,3,0,1,2,3);
+    mask = _mm_set_epi32(0,0,0,-1);
 
-    tx= _mm_loadl_epi64((__m128i*)top);             //get 16 value
-    tx= _mm_unpacklo_epi8(tx,_mm_setzero_si128());  //drop to 8 values 16 bit
-    tx= _mm_unpacklo_epi64(tx,tx);
-    tmp1= _mm_set_epi16(0,1,2,3,0,1,2,3);
-    mask= _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,-1,-1,-1,-1);
+    ly   = _mm_loadl_epi64((__m128i*)left);            //get 16 values
+    ly   = _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
+    ly   = _mm_unpacklo_epi16(ly, ly);
 
-        ly1= _mm_unpacklo_epi64(_mm_set1_epi16(_mm_extract_epi16(ly,0)),_mm_set1_epi16(_mm_extract_epi16(ly,1)));
-        ly= _mm_unpacklo_epi64(_mm_set1_epi16(_mm_extract_epi16(ly,2)),_mm_set1_epi16(_mm_extract_epi16(ly,3)));
+    tx   = _mm_loadl_epi64((__m128i*)top);             //get 16 value
+    tx   = _mm_unpacklo_epi8(tx,_mm_setzero_si128());  //drop to 8 values 16 bit
+    tx   = _mm_unpacklo_epi64(tx,tx);
 
-        c0= _mm_mullo_epi16(tmp1,ly1);
-        C0= _mm_mullo_epi16(tmp1,ly);
-        c1= _mm_mullo_epi16(_mm_set_epi16(4,3,2,1,4,3,2,1),t0);
-        c2= _mm_mullo_epi16(_mm_set_epi16(2,2,2,2,3,3,3,3),tx);
+    c1   = _mm_mullo_epi16(_mm_set_epi16(4,3,2,1,4,3,2,1),t0);
+    c1   = _mm_add_epi16(c1,add);
 
-        C2= _mm_mullo_epi16(_mm_set_epi16(0,0,0,0,1,1,1,1),tx);
-        c3= _mm_mullo_epi16(_mm_set_epi16(2,2,2,2,1,1,1,1),l0);
-        C3= _mm_mullo_epi16(_mm_set_epi16(4,4,4,4,3,3,3,3),l0);
+    ly1 = _mm_unpacklo_epi32(ly, ly);
+    c0  = _mm_mullo_epi16(tmp1,ly1);
+    c2  = _mm_mullo_epi16(_mm_set_epi16(2,2,2,2,3,3,3,3),tx);
+    c3  = _mm_mullo_epi16(_mm_set_epi16(2,2,2,2,1,1,1,1),l0);
 
-        c0= _mm_add_epi16(c0,c1);
-        c2= _mm_add_epi16(c2,c3);
-        C2= _mm_add_epi16(C2,C3);
-        C0= _mm_add_epi16(C0,c1);
-        c2= _mm_add_epi16(c2,add);
-        C2= _mm_add_epi16(C2,add);
-        c0= _mm_add_epi16(c0,c2);
-        C0= _mm_add_epi16(C0,C2);
+    ly1 = _mm_unpackhi_epi32(ly, ly);
+    C0  = _mm_mullo_epi16(tmp1,ly1);
+    C2  = _mm_mullo_epi16(_mm_set_epi16(0,0,0,0,1,1,1,1),tx);
+    C3  = _mm_mullo_epi16(_mm_set_epi16(4,4,4,4,3,3,3,3),l0);
 
-        c0= _mm_srli_epi16(c0,3);
-        C0= _mm_srli_epi16(C0,3);
+    c0  = _mm_add_epi16(c0,c1);
+    c2  = _mm_add_epi16(c2,c3);
+    c0  = _mm_add_epi16(c0,c2);
+    c0  = _mm_srli_epi16(c0,3);
 
-        c0= _mm_packus_epi16(c0,C0);
+    C0  = _mm_add_epi16(C0,c1);
+    C2  = _mm_add_epi16(C2,C3);
+    C0  = _mm_add_epi16(C0,C2);
+    C0  = _mm_srli_epi16(C0,3);
 
-        _mm_maskmoveu_si128(c0,mask,(char*)(src)); //store only 4 values
-        c0 = _mm_srli_si128(c0,4);
+    c0  = _mm_packus_epi16(c0,C0);
 
-        _mm_maskmoveu_si128(c0,mask,(char*)(src + stride)); //store only 4 values
-
-        c0 = _mm_srli_si128(c0,4);
-
-        _mm_maskmoveu_si128(c0,mask,(char*)(src + 2*stride)); //store only 4 values
-
-        c0 = _mm_srli_si128(c0,4);
-
-        _mm_maskmoveu_si128(c0,mask,(char*)(src + 3*stride)); //store only 4 values
-
-
+    _mm_maskmoveu_si128(c0,mask,(char*)(src)); //store only 4 values
+    c0  = _mm_srli_si128(c0,4);
+    _mm_maskmoveu_si128(c0,mask,(char*)(src + stride)); //store only 4 values
+    c0  = _mm_srli_si128(c0,4);
+    _mm_maskmoveu_si128(c0,mask,(char*)(src + 2*stride)); //store only 4 values
+    c0  = _mm_srli_si128(c0,4);
+    _mm_maskmoveu_si128(c0,mask,(char*)(src + 3*stride)); //store only 4 values
 
 }
 void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
@@ -80,41 +74,42 @@ void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
 
-    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2;
-    t0= _mm_set1_epi16(top[8]);
-    l0= _mm_set1_epi16(left[8]);
-    add= _mm_set1_epi16(8);
+    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1;
 
-    ly= _mm_loadl_epi64((__m128i*)left);            //get 16 values
-    ly= _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
+    t0   = _mm_set1_epi16(top[8]);
+    l0   = _mm_set1_epi16(left[8]);
+    add  = _mm_set1_epi16(8);
 
-    tx= _mm_loadl_epi64((__m128i*)top);             //get 16 values
-    tx= _mm_unpacklo_epi8(tx,_mm_setzero_si128());  //drop to 8 values 16 bit
-    tmp1= _mm_set_epi16(0,1,2,3,4,5,6,7);
-    tmp2= _mm_set_epi16(8,7,6,5,4,3,2,1);
+    ly   = _mm_loadl_epi64((__m128i*)left);            //get 16 values
+    ly   = _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
 
-    for (y = 0; y < 8; y++){
+    tx   = _mm_loadl_epi64((__m128i*)top);             //get 16 values
+    tx   = _mm_unpacklo_epi8(tx,_mm_setzero_si128());  //drop to 8 values 16 bit
 
-        ly1= _mm_set1_epi16(_mm_extract_epi16(ly,0));
+    tmp1 = _mm_set_epi16(0,1,2,3,4,5,6,7);
 
-        c0= _mm_mullo_epi16(tmp1,ly1);
-        c1= _mm_mullo_epi16(tmp2,t0);
-        c2= _mm_mullo_epi16(_mm_set1_epi16(7 - y),tx);
-        c3= _mm_mullo_epi16(_mm_set1_epi16(1+y),l0);
+    c1   = _mm_mullo_epi16(_mm_set_epi16(8,7,6,5,4,3,2,1),t0);
+    c1   = _mm_add_epi16(c1,add);
 
-        c0= _mm_add_epi16(c0,c1);
-        c2= _mm_add_epi16(c2,c3);
-        c2= _mm_add_epi16(c2,add);
-        c0= _mm_add_epi16(c0,c2);
+    for (y = 0; y < 8; y++) {
+        ly1 = _mm_unpacklo_epi16(ly , ly );
+        ly1 = _mm_unpacklo_epi32(ly1, ly1);
+        ly1 = _mm_unpacklo_epi64(ly1, ly1);
 
-        c0= _mm_srli_epi16(c0,4);
+        c0  = _mm_mullo_epi16(tmp1,ly1);
+        c2  = _mm_mullo_epi16(_mm_set1_epi16(7 - y),tx);
+        c3  = _mm_mullo_epi16(_mm_set1_epi16(1 + y),l0);
 
-        c0= _mm_packus_epi16(c0,_mm_setzero_si128());
+        c0  = _mm_add_epi16(c0,c1);
+        c2  = _mm_add_epi16(c2,c3);
+        c0  = _mm_add_epi16(c0,c2);
 
-        _mm_storel_epi64((__m128i*)(src + y*stride), c0);   //store only 8
+        c0  = _mm_srli_epi16(c0,4);
+        c0  = _mm_packus_epi16(c0,_mm_setzero_si128());
+        _mm_storel_epi64((__m128i*)(src), c0);   //store only 8
+        src+= stride;
 
-        ly= _mm_srli_si128(ly,2);
-
+        ly  = _mm_srli_si128(ly,2);
     }
 
 }
@@ -127,50 +122,53 @@ void pred_planar_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
 
-    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2, C0, C1, C2;
-    t0= _mm_set1_epi16(top[16]);
-    l0= _mm_set1_epi16(left[16]);
-    add= _mm_set1_epi16(16);
+    __m128i ly, t0, tx, tl, th, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2, C0, C1, C2;
 
-    ly= _mm_loadu_si128((__m128i*)left);            //get 16 values
+    t0   = _mm_set1_epi16(top[16]);
+    l0   = _mm_set1_epi16(left[16]);
+    add  = _mm_set1_epi16(16);
 
-    tx= _mm_loadu_si128((__m128i*)top);             //get 16 values
-    tmp1= _mm_set_epi8(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-    tmp2= _mm_set_epi8(16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1);
+    ly   = _mm_loadu_si128((__m128i*)left);            //get 16 values
+    tx   = _mm_loadu_si128((__m128i*)top);             //get 16 values
+    tl   = _mm_unpacklo_epi8(tx,_mm_setzero_si128());
+    th   = _mm_unpackhi_epi8(tx,_mm_setzero_si128());
+
+    tmp1 = _mm_set_epi16( 8, 9,10,11,12,13,14,15);
+    tmp2 = _mm_set_epi16( 0, 1, 2, 3, 4, 5, 6, 7);
+
+    c1= _mm_mullo_epi16(_mm_set_epi16( 8, 7, 6, 5, 4, 3, 2, 1),t0);
+    C1= _mm_mullo_epi16(_mm_set_epi16(16,15,14,13,12,11,10, 9),t0);
+    c1= _mm_add_epi16(c1,add);
+    C1= _mm_add_epi16(C1,add);
 
     for (y = 0; y < 16; y++){
-        ly1= _mm_set1_epi16(_mm_extract_epi8(ly,0));
+        ly1 = _mm_unpacklo_epi8(ly , _mm_setzero_si128() );
+        ly1 = _mm_unpacklo_epi16(ly1, ly1);
+        ly1 = _mm_unpacklo_epi32(ly1, ly1);
+        ly1 = _mm_unpacklo_epi64(ly1, ly1);
 
-        c0= _mm_mullo_epi16(_mm_unpacklo_epi8(tmp1,_mm_setzero_si128()),ly1);
-        C0= _mm_mullo_epi16(_mm_unpackhi_epi8(tmp1,_mm_setzero_si128()),ly1);
+        c3  = _mm_mullo_epi16(_mm_set1_epi16(1+y),l0);
 
-        c1= _mm_mullo_epi16(_mm_unpacklo_epi8(tmp2,_mm_setzero_si128()),t0);
-        C1= _mm_mullo_epi16(_mm_unpackhi_epi8(tmp2,_mm_setzero_si128()),t0);
+        c0  = _mm_mullo_epi16(tmp1, ly1);
+        c2  = _mm_mullo_epi16(_mm_set1_epi16(15 - y), tl);
+        c0  = _mm_add_epi16(c0,c1);
+        c2  = _mm_add_epi16(c2,c3);
+        c0  = _mm_add_epi16(c0,c2);
 
-        c2= _mm_mullo_epi16(_mm_set1_epi16(15 - y),_mm_unpacklo_epi8(tx,_mm_setzero_si128()));
-        C2= _mm_mullo_epi16(_mm_set1_epi16(15 - y),_mm_unpackhi_epi8(tx,_mm_setzero_si128()));
+        C0  = _mm_mullo_epi16(tmp2, ly1);
+        C2  = _mm_mullo_epi16(_mm_set1_epi16(15 - y), th);
+        C0  = _mm_add_epi16(C0,C1);
+        C2  = _mm_add_epi16(C2,c3);
+        C0  = _mm_add_epi16(C0,C2);
 
-        c3= _mm_mullo_epi16(_mm_set1_epi16(1+y),l0);
+        c0  = _mm_srli_epi16(c0,5);
+        C0  = _mm_srli_epi16(C0,5);
+        c0  = _mm_packus_epi16(c0,C0);
+        _mm_storeu_si128((__m128i*)(src), c0);
+        src+= stride;
 
-        c0= _mm_add_epi16(c0,c1);
-        c2= _mm_add_epi16(c2,c3);
-        c2= _mm_add_epi16(c2,add);
-        c0= _mm_add_epi16(c0,c2);
-
-        C0= _mm_add_epi16(C0,C1);
-        C2= _mm_add_epi16(C2,c3);
-        C2= _mm_add_epi16(C2,add);
-        C0= _mm_add_epi16(C0,C2);
-
-        c0= _mm_srli_epi16(c0,5);
-        C0= _mm_srli_epi16(C0,5);
-
-        c0= _mm_packus_epi16(c0,C0);
-
-        _mm_storeu_si128((__m128i*)(src + y*stride), c0);
-        ly= _mm_srli_si128(ly,1);
+        ly  = _mm_srli_si128(ly,1);
     }
-
 }
 
 void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
@@ -202,7 +200,6 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
         c3= _mm_mullo_epi16(_mm_set1_epi16(1+y),l0);
 
         c0= _mm_mullo_epi16(_mm_unpacklo_epi8(tmp1,_mm_setzero_si128()),ly1);
-        //printf("values check : tmp1 = %d, ly1= ");
         C0= _mm_mullo_epi16(_mm_unpackhi_epi8(tmp1,_mm_setzero_si128()),ly1);
 
         c1= _mm_mullo_epi16(_mm_unpacklo_epi8(tmp2,_mm_setzero_si128()),t0);
