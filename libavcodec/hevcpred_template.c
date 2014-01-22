@@ -41,7 +41,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
 #define EXTEND(ptr, start, length)                                             \
         for (i = start; i < (start) + (length); i+=4)                          \
-            AV_WN4PA(&ptr[i], a)
+            AV_WN4PA(&(ptr[i]), a)
 #define EXTEND_RIGHT_CIP(ptr, start, length)                                   \
         for (i = start; i < (start) + (length); i+=4)                          \
             if (!IS_INTRA(i, -1))                                              \
@@ -155,16 +155,6 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         memset(left, 128, 2 * MAX_TB_SIZE*sizeof(pixel));
         memset(top , 128, 2 * MAX_TB_SIZE*sizeof(pixel));
     }
-    if (cand_bottom_left) {
-        a = PIXEL_SPLAT_X4(POS(-1, size + bottom_left_size - 1));
-        for (i = size + bottom_left_size; i < (size << 1); i+=4)
-            AV_WN4PA(&left[i], a);
-        for (i = size ; i < size+bottom_left_size; i++)
-            left[i] = POS(-1, i);
-    }
-    if (cand_left)
-        for (i = size - 1; i >= 0; i--)
-            left[i] = POS(-1, i);
     if (cand_up_left) {
         left[-1] = POS(-1, -1);
         top[-1]  = left[-1];
@@ -180,6 +170,16 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         for (i = size ; i < size+top_right_size; i+=4)
             AV_WN4PA(&top[i], AV_RN4PA(&POS(i, -1)));
     }
+    if (cand_bottom_left) {
+        a = PIXEL_SPLAT_X4(POS(-1, size + bottom_left_size - 1));
+        for (i = size + bottom_left_size; i < (size << 1); i+=4)
+            AV_WN4PA(&left[i], a);
+        for (i = size ; i < size+bottom_left_size; i++)
+            left[i] = POS(-1, i);
+    }
+    if (cand_left)
+        for (i = 0; i < size; i++)
+            left[i] = POS(-1, i);
 
     if (s->pps->constrained_intra_pred_flag == 1) {
         if (cand_bottom_left || cand_left || cand_up_left || cand_up || cand_up_right) {
@@ -338,58 +338,44 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     }
 }
 
-static void FUNC(pred_planar_0)(uint8_t *_src, const uint8_t *_top,
-                                const uint8_t *_left,
-                                ptrdiff_t stride)
+static av_always_inline void FUNC(pred_planar)(uint8_t *_src, const uint8_t *_top,
+                              const uint8_t *_left, ptrdiff_t stride, int trafo_size)
 {
     int x, y;
     pixel *src        = (pixel *)_src;
     const pixel *top  = (const pixel *)_top;
     const pixel *left = (const pixel *)_left;
-    for (y = 0; y < 4; y++)
-        for (x = 0; x < 4; x++)
-            POS(x, y) = ((3 - x) * left[y] + (x + 1) * top[4]  +
-                         (3 - y) * top[x]  + (y + 1) * left[4] + 4) >> 3;
+    int size = 1 << trafo_size;
+    for (y = 0; y < size; y++)
+        for (x = 0; x < size; x++)
+            POS(x, y) = ((size - 1 - x) * left[y] + (x + 1) * top[size]  +
+                         (size - 1 - y) * top[x]  + (y + 1) * left[size] + size) >> (trafo_size + 1);
+}
+
+static void FUNC(pred_planar_0)(uint8_t *_src, const uint8_t *_top,
+                                const uint8_t *_left, ptrdiff_t stride)
+{
+    FUNC(pred_planar)(_src, _top, _left, stride, 2);
 }
 
 static void FUNC(pred_planar_1)(uint8_t *_src, const uint8_t *_top,
                                 const uint8_t *_left, ptrdiff_t stride)
 {
-    int x, y;
-    pixel *src        = (pixel *)_src;
-    const pixel *top  = (const pixel *)_top;
-    const pixel *left = (const pixel *)_left;
-    for (y = 0; y < 8; y++)
-        for (x = 0; x < 8; x++)
-            POS(x, y) = ((7 - x) * left[y] + (x + 1) * top[8]  +
-                         (7 - y) * top[x]  + (y + 1) * left[8] + 8) >> 4;
+    FUNC(pred_planar)(_src, _top, _left, stride, 3);
 }
 
 static void FUNC(pred_planar_2)(uint8_t *_src, const uint8_t *_top,
                                 const uint8_t *_left, ptrdiff_t stride)
 {
-    int x, y;
-    pixel *src        = (pixel *)_src;
-    const pixel *top  = (const pixel *)_top;
-    const pixel *left = (const pixel *)_left;
-    for (y = 0; y < 16; y++)
-        for (x = 0; x < 16; x++)
-            POS(x, y) = ((15 - x) * left[y] + (x + 1) * top[16]  +
-                         (15 - y) * top[x]  + (y + 1) * left[16] + 16) >> 5;
+    FUNC(pred_planar)(_src, _top, _left, stride, 4);
 }
 
 static void FUNC(pred_planar_3)(uint8_t *_src, const uint8_t *_top,
                                 const uint8_t *_left, ptrdiff_t stride)
 {
-    int x, y;
-    pixel *src        = (pixel *)_src;
-    const pixel *top  = (const pixel *)_top;
-    const pixel *left = (const pixel *)_left;
-    for (y = 0; y < 32; y++)
-        for (x = 0; x < 32; x++)
-            POS(x, y) = ((31 - x) * left[y] + (x + 1) * top[32]  +
-                         (31 - y) * top[x]  + (y + 1) * left[32] + 32) >> 6;
+    FUNC(pred_planar)(_src, _top, _left, stride, 5);
 }
+
 
 static void FUNC(pred_dc)(uint8_t *_src, const uint8_t *_top,
                           const uint8_t *_left,
@@ -443,7 +429,7 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
     };
 
     int angle = intra_pred_angle[mode - 2];
-    pixel ref_array[3 * MAX_TB_SIZE + 1];
+    pixel ref_array[3 * MAX_TB_SIZE + 4];
     pixel *ref_tmp = ref_array + size;
     const pixel *ref;
     int last = (size * angle) >> 5;
@@ -551,9 +537,6 @@ static void FUNC(pred_angular_3)(uint8_t *src, const uint8_t *top,
 #undef MVF_PU
 #undef MVF
 #undef PU
-#undef EXTEND_LEFT
-#undef EXTEND_RIGHT
-#undef EXTEND_UP
-#undef EXTEND_DOWN
+#undef EXTEND
 #undef MIN_TB_ADDR_ZS
 #undef POS
