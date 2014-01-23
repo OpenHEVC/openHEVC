@@ -236,8 +236,11 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     // Infer the unavailable samples
     if (!cand_bottom_left) {
         if (cand_left) {
-            a = PIXEL_SPLAT_X4(left[size-1]);
-            EXTEND(left, size, size);
+            // FIXME
+            // a = PIXEL_SPLAT_X4(left[size-1]);
+            // EXTEND(left, size, size);
+            for (i = size; i < 2 * size; i++)
+                left[i] = left[size-1];
         } else if (cand_up_left) {
             a = PIXEL_SPLAT_X4(left[-1]);
             EXTEND(left, 0, 2 * size);
@@ -276,8 +279,11 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         EXTEND(top, 0, size);
     }
     if (!cand_up_right) {
-        a = PIXEL_SPLAT_X4(top[size-1]);
-        EXTEND(top, size, size);
+        // FIXME
+        // a = PIXEL_SPLAT_X4(top[size-1]);
+        // EXTEND(top, size, size);
+        for (i = size; i < 2 * size; i++)
+           top[i] = top[size-1];
     }
 
     top[-1] = left[-1];

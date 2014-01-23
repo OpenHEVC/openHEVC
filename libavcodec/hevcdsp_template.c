@@ -880,7 +880,7 @@ static void FUNC(sao_edge_filter_3)(uint8_t *_dst, uint8_t *_src,
 
 static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                       int width, int height, int16_t* mcbuffer)
+                                       int width, int height)
 {
     int x, y;
     pixel *src          = (pixel *)_src;
@@ -897,8 +897,7 @@ static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
 #define PUT_HEVC_QPEL_H(H)                                                     \
 static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst,  ptrdiff_t dststride,     \
                                        uint8_t *_src, ptrdiff_t _srcstride,    \
-                                       int width, int height,                  \
-                                       int16_t* mcbuffer)                      \
+                                       int width, int height)                  \
 {                                                                              \
     int x, y;                                                                  \
     pixel *src = (pixel*)_src;                                                 \
@@ -915,8 +914,7 @@ static void FUNC(put_hevc_qpel_h ## H)(int16_t *dst,  ptrdiff_t dststride,     \
 #define PUT_HEVC_QPEL_V(V)                                                     \
 static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst,  ptrdiff_t dststride,     \
                                        uint8_t *_src, ptrdiff_t _srcstride,    \
-                                       int width, int height,                  \
-                                       int16_t* mcbuffer)                      \
+                                       int width, int height)                  \
 {                                                                              \
     int x, y;                                                                  \
     pixel *src = (pixel*)_src;                                                 \
@@ -930,38 +928,31 @@ static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst,  ptrdiff_t dststride,     \
     }                                                                          \
 }
 
+#define PUT_HEVC_QPEL_V_14(V)                                                  \
+static void FUNC(put_hevc_qpel_v_14_ ## V)(int16_t *dst,  ptrdiff_t dststride,  \
+                                       uint8_t*_src, ptrdiff_t _srcstride,    \
+                                       int width, int height)                  \
+{                                                                              \
+    int x, y;                                                                  \
+    int16_t *src = (int16_t*)_src;                                           \
+    ptrdiff_t srcstride = _srcstride / sizeof(int16_t);                      \
+                                                                               \
+    for (y = 0; y < height; y++)  {                                            \
+        for (x = 0; x < width; x++)                                            \
+            dst[x] = QPEL_FILTER_ ## V(src, srcstride) >> (14 - 8);            \
+        src += srcstride;                                                      \
+        dst += dststride;                                                      \
+    }                                                                          \
+}
+
+
 #define PUT_HEVC_QPEL_HV(H, V)                                                 \
 static void FUNC(put_hevc_qpel_h ## H ## v ## V)(int16_t *dst,                 \
                                                  ptrdiff_t dststride,          \
                                                  uint8_t *_src,                \
                                                  ptrdiff_t _srcstride,         \
-                                                 int width, int height,        \
-                                                 int16_t* mcbuffer)            \
+                                                 int width, int height)        \
 {                                                                              \
-    int x, y;                                                                  \
-    pixel *src = (pixel*)_src;                                                 \
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);                          \
-                                                                               \
-    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];                        \
-    int16_t *tmp = tmp_array;                                                  \
-                                                                               \
-    src -= ff_hevc_qpel_extra_before[V] * srcstride;                           \
-                                                                               \
-    for (y = 0; y < height + ff_hevc_qpel_extra[V]; y++) {                     \
-        for (x = 0; x < width; x++)                                            \
-            tmp[x] = QPEL_FILTER_ ## H(src, 1) >> (BIT_DEPTH - 8);             \
-        src += srcstride;                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-    }                                                                          \
-                                                                               \
-    tmp = tmp_array + ff_hevc_qpel_extra_before[V] * MAX_PB_SIZE;              \
-                                                                               \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x++)                                            \
-            dst[x] = QPEL_FILTER_ ## V(tmp, MAX_PB_SIZE) >> 6;                 \
-        tmp += MAX_PB_SIZE;                                                    \
-        dst += dststride;                                                      \
-    }                                                                          \
 }
 
 PUT_HEVC_QPEL_H(1)
@@ -979,6 +970,10 @@ PUT_HEVC_QPEL_HV(2, 3)
 PUT_HEVC_QPEL_HV(3, 1)
 PUT_HEVC_QPEL_HV(3, 2)
 PUT_HEVC_QPEL_HV(3, 3)
+
+PUT_HEVC_QPEL_V_14(1)
+PUT_HEVC_QPEL_V_14(2)
+PUT_HEVC_QPEL_V_14(3)
 
 
 // PUT_UNWEIGHTED_PRED_INIT
@@ -1175,6 +1170,29 @@ PUT_HEVC_QPEL_FUNC(2)
 PUT_HEVC_QPEL_FUNC(3)
 
 
+static void FUNC(put_hevc_qpel_t_hv)(int16_t *dst, ptrdiff_t dststride,
+                                   uint8_t *_src, ptrdiff_t _srcstride,
+                                   int width, int height, int my, int mx,
+                                   void *s, ptrdiff_t idx)
+{
+    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
+    int16_t *tmp = tmp_array;
+    HEVCContext *_s= ( HEVCContext *) s;
+    uint8_t * src= (uint8_t *) _src;
+    ptrdiff_t srcstride = _srcstride;
+    src -= ff_hevc_qpel_extra_before[my] * srcstride;
+    _s->hevcdsp.put_hevc_qpel[idx][0][mx]( tmp, MAX_PB_SIZE,
+                              src, srcstride,
+                              width, height + ff_hevc_qpel_extra[my]);
+
+    tmp = tmp_array + ff_hevc_qpel_extra_before[my] * MAX_PB_SIZE;
+
+    _s->hevcdsp.put_hevc_qpel_v_14[idx][my]( dst, dststride,
+                              (uint8_t *) tmp, MAX_PB_SIZE<<1 ,
+                              width, height);
+
+}
+
 #define EPEL_FILTER(src, stride)                \
     (filter_0 * src[x - stride] +               \
      filter_1 * src[x]          +               \
@@ -1183,8 +1201,7 @@ PUT_HEVC_QPEL_FUNC(3)
 
 static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                       int width, int height, int mx, int my,
-                                       int16_t* mcbuffer)
+                                       int width, int height, int mx, int my)
 {
     int x, y;
     pixel *src          = (pixel *)_src;
@@ -1200,8 +1217,7 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my,
-                                  int16_t* mcbuffer)
+                                  int width, int height, int mx, int my)
 {
     int x, y;
     pixel *src = (pixel *)_src;
@@ -1221,8 +1237,7 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
 
 static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my,
-                                  int16_t* mcbuffer)
+                                  int width, int height, int mx, int my)
 {
     int x, y;
     pixel *src = (pixel *)_src;
@@ -1242,7 +1257,7 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
 }
 
 static void FUNC(put_hevc_epel_v_14)(int16_t *dst, ptrdiff_t dststride,
-                                  int16_t *_src, ptrdiff_t _srcstride,
+                                  uint8_t *_src, ptrdiff_t _srcstride,
                                   int width, int height, int mx, int my)
 {
     int x, y;
@@ -1275,21 +1290,22 @@ static void FUNC(put_hevc_epel_t_hv)(int16_t *dst, ptrdiff_t dststride,
     _s->hevcdsp.put_hevc_epel[idx][0][1]( tmp, MAX_PB_SIZE,
                               src, _srcstride,
                               width, height + EPEL_EXTRA,
-                              mx, my, NULL);
+                              mx, my);
 
     tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
 
     _s->hevcdsp.put_hevc_epel_v_14[idx]( dst, dststride,
-                              tmp, MAX_PB_SIZE<<1 ,
+                                       (uint8_t *) tmp, MAX_PB_SIZE<<1 ,
                               width, height,
                               mx, my);
 
 }
 
+
+
 static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
-                                   int width, int height, int mx, int my,
-                                   int16_t* mcbuffer)
+                                   int width, int height, int mx, int my)
 {
     int x, y;
     pixel *src = (pixel *)_src;

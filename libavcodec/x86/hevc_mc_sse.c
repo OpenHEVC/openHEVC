@@ -47,6 +47,7 @@
     EPEL_V_FILTER(_mm_set1_epi16)
 #define EPEL_V_FILTER_10()                                                     \
     EPEL_V_FILTER(_mm_set1_epi32)
+#define EPEL_V_FILTER_14()  EPEL_V_FILTER_10()                                                    
 
 #define EPEL_H_FILTER_8()                                                      \
     __m128i bshuffle1 = _mm_set_epi8( 6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0); \
@@ -100,6 +101,11 @@
 #define QPEL_V_FILTER_3_10()                                                   \
     QPEL_V_FILTER_3(_mm_set1_epi32)
 
+#define QPEL_V_FILTER_1_14() QPEL_V_FILTER_1_10()
+#define QPEL_V_FILTER_2_14() QPEL_V_FILTER_2_10()
+#define QPEL_V_FILTER_3_14() QPEL_V_FILTER_3_10()
+
+
 #define QPEL_H_FILTER_1_8()                                                    \
     __m128i bshuffle1 = _mm_set_epi8( 8, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3, 2, 1, 0); \
     __m128i r0 = _mm_set_epi8(  0, 1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1)
@@ -126,11 +132,13 @@
 #define SRC_INIT_10()                                                          \
     uint16_t *src       = (uint16_t*) _src;                                    \
     ptrdiff_t srcstride = _srcstride >> 1
+#define SRC_INIT_14() SRC_INIT_10()
 
 #define SRC_INIT1_8()                                                          \
         src       = (uint8_t*) _src
 #define SRC_INIT1_10()                                                         \
         src       = (uint16_t*) _src
+#define SRC_INIT1_14() SRC_INIT1_10()
 
 #define DST_INIT_8()                                                           \
     uint8_t  *dst       = (uint8_t*) _dst;                                     \
@@ -138,6 +146,7 @@
 #define DST_INIT_10()                                                          \
     uint16_t *dst       = (uint16_t*) _dst;                                    \
     ptrdiff_t dststride = _dststride >> 1
+#define DST_INIT_14() DST_INIT_10()
 
 #define MC_LOAD_PIXEL()                                                        \
     x1 = _mm_loadu_si128((__m128i *) &src[x])
@@ -647,7 +656,7 @@ void ff_hevc_put_hevc_epel_pixels ## H ## _ ## D ## _sse (                     \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my, int16_t* mcbuffer) {        \
+                                   int mx, int my) {        \
     int x, y;                                                                  \
     __m128i x1, x2, x3, r1, r2;                                                \
     const __m128i c0    = _mm_setzero_si128();                                 \
@@ -668,8 +677,7 @@ void ff_hevc_put_hevc_epel_pixels ## H ## _ ## D ## _sse (                     \
 void ff_hevc_put_hevc_qpel_pixels ## H  ## _ ## D ## _sse (                    \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int width, int height,                     \
-                                    int16_t* mcbuffer) {                       \
+                                    int width, int height) {                   \
     int x, y;                                                                  \
     __m128i x1, x2, x3, r1, r2;                                                \
     const __m128i c0    = _mm_setzero_si128();                                 \
@@ -715,7 +723,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my, int16_t* mcbuffer) {        \
+                                   int mx, int my) {        \
     int x, y;                                                                  \
     __m128i x1, x2, r1;                                                        \
     const __m128i c0     = _mm_setzero_si128();                                \
@@ -792,6 +800,11 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
     r1 = _mm_srai_epi32(r1, shift);                                            \
     r1 = _mm_packs_epi32(r2, r1)
 
+#define EPEL_V_COMPUTEB2_14() EPEL_V_COMPUTEB2_10()                            
+#define EPEL_V_COMPUTEB4_14() EPEL_V_COMPUTEB2_10()
+#define EPEL_V_COMPUTEB8_14() EPEL_V_COMPUTEB8_10()
+
+
 #define EPEL_V_SHIFT(tab)                                                      \
     x1= x2;                                                                    \
     x2= x3;                                                                    \
@@ -803,7 +816,7 @@ void ff_hevc_put_hevc_epel_v ## V ## _ ## D ## _sse (                          \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my, int16_t* mcbuffer) {        \
+                                   int mx, int my) {        \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
     __m128i x1, x2, x3, x4;                                                    \
@@ -837,51 +850,8 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my, int16_t* mcbuffer) {        \
-    int x, y;                                                                  \
-    int shift = 6;                                                             \
-    __m128i x1, x2, x3, x4;                                                    \
-    __m128i t1, t2, t3, t4;                                                    \
-    __m128i y1, y2, y3, y4;                                                    \
-    __m128i r1, r2;                                                            \
-    const __m128i c0   = _mm_setzero_si128();                                  \
-    const __m128i mask = _mm_set_epi32(0, 0, 0, -1);                           \
-    int16_t *tmp       = mcbuffer;                                             \
-    int16_t *_tmp;                                                             \
-    SRC_INIT_ ## D();                                                          \
-    uint16_t  *_dst       = (uint16_t*) dst;                                   \
-    EPEL_H_FILTER_ ## D();                                                     \
-    EPEL_V_FILTER_10();                                                        \
-                                                                               \
-    src -= EPEL_EXTRA_BEFORE * srcstride;                                      \
-                                                                               \
-    /* horizontal */                                                           \
-    for (y = 0; y < height + EPEL_EXTRA; y ++) {                               \
-        for(x = 0; x < width; x += H) {                                        \
-            EPEL_H_LOAD ## H();                                                \
-            EPEL_H_COMPUTE ## H ## _ ## D();                                   \
-            PEL_STORE ## H(tmp);                                               \
-        }                                                                      \
-        src += srcstride;                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-    }                                                                          \
-                                                                               \
-    tmp       = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;                    \
-    srcstride = MAX_PB_SIZE;                                                   \
-    _tmp       = tmp;                                                            \
-    /* vertical */                                                             \
-        for (x = 0; x < width; x+= H) {                                                \
-            EPEL_V_LOAD3(tmp);                                                         \
-                for(y = 0; y < height; y++) {                                          \
-                    EPEL_V_SHIFT(tmp);                                                 \
-                    EPEL_V_COMPUTEB ## H ## _ ## 10();                         \
-                    PEL_STORE ## H(_dst);                                              \
-                    tmp += MAX_PB_SIZE;                                                  \
-                    _dst += dststride;                                                 \
-                }                                                                      \
-                tmp       = (uint16_t*) _tmp;                                           \
-                _dst       = (uint16_t*) dst;                                          \
-            }                                                                          \
+                                   int mx, int my) {        \
+                                                                        \
                                                                           \
 }
 
@@ -906,8 +876,7 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int width, int height,                     \
-                                    int16_t* mcbuffer) {                       \
+                                    int width, int height) {                   \
     int x, y;                                                                  \
     __m128i x1, x2, x3, x4, r1;                                                \
     const __m128i c0    = _mm_setzero_si128();                                 \
@@ -982,6 +951,13 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
     MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r4, t);                   \
     QPEL_V_COMPUTE_LAST2_10()
 
+#define QPEL_V_COMPUTE_FIRST2_14() QPEL_V_COMPUTE_FIRST2_10()
+#define QPEL_V_COMPUTE_FIRST4_14() QPEL_V_COMPUTE_FIRST4_10()
+#define QPEL_V_COMPUTE_FIRST8_14() QPEL_V_COMPUTE_FIRST8_10()
+
+#define QPEL_V_COMPUTE_LAST2_14() QPEL_V_COMPUTE_LAST2_10()
+#define QPEL_V_COMPUTE_LAST4_14() QPEL_V_COMPUTE_LAST4_10()
+#define QPEL_V_COMPUTE_LAST8_14() QPEL_V_COMPUTE_LAST8_10()
 
 #define QPEL_V_MERGE2_10()                                                     \
     r1= _mm_add_epi32(r1,r3);                                                  \
@@ -997,13 +973,15 @@ r1 = _mm_packs_epi32(r1, c0)
     r1 = _mm_packs_epi32(r1, r3)
 
 
+#define QPEL_V_MERGE2_14() QPEL_V_MERGE2_10()
+#define QPEL_V_MERGE4_14() QPEL_V_MERGE4_10()
+#define QPEL_V_MERGE8_14() QPEL_V_MERGE8_10()
 
 #define PUT_HEVC_QPEL_V(V, F, D)                                               \
 void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int width, int height,                     \
-                                    int16_t* mcbuffer) {                       \
+                                    int width, int height) {                   \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
     __m128i x1, x2, x3, x4, r1, r2,r3,r4;                                      \
@@ -1032,50 +1010,7 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ##_ ## D ## _sse (   \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int width, int height,                     \
-                                    int16_t* mcbuffer) {                       \
-    int x, y;                                                                  \
-    int shift = 14 - 8;                                                        \
-    __m128i x1, x2, x3, x4;                                                    \
-    __m128i t1, t2, t3, t4;                                                    \
-    __m128i r1, r2,r3,r4;                                                      \
-    const __m128i c0   = _mm_setzero_si128();                                  \
-    int16_t *tmp       = mcbuffer;                                             \
-    SRC_INIT_ ## D();                                                          \
-    QPEL_H_FILTER_ ## FH ## _ ## D();                                          \
-    QPEL_V_FILTER_ ## FV ## _10();                                             \
-                                                                               \
-    src -= ff_hevc_qpel_extra_before[FV] * srcstride;                          \
-                                                                               \
-    /* horizontal */                                                           \
-    for (y = 0; y < height + ff_hevc_qpel_extra[FV] ; y++) {                   \
-        for (x = 0; x < width; x += H) {                                       \
-            QPEL_H_LOAD ## H();                                                \
-            QPEL_H_COMPUTE ## H ## _ ## D();                                   \
-            PEL_STORE ## H(tmp);                                               \
-        }                                                                      \
-        src += srcstride;                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-    }                                                                          \
-                                                                               \
-    tmp       = mcbuffer + ff_hevc_qpel_extra_before[FV] * MAX_PB_SIZE;        \
-    srcstride = MAX_PB_SIZE;                                                   \
-                                                                               \
-    /* vertical treatment on temp table : tmp contains 16 bit values, */       \
-    /* so need to use 32 bit  integers for register calculations      */       \
-                                                                               \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-            QPEL_V_LOAD_LO(tmp);                                               \
-            QPEL_V_COMPUTE_FIRST ## H ## _10();                                \
-            QPEL_V_LOAD_HI(tmp);                                               \
-            QPEL_V_COMPUTE_LAST ## H ## _10();                                 \
-            QPEL_V_MERGE ## H ## _10();                                        \
-            PEL_STORE ## H(dst);                                               \
-        }                                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-        dst += dststride;                                                      \
-    }                                                                          \
+                                    int width, int height) {                   \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1470,6 +1405,12 @@ EPEL_FUNC( PUT_HEVC_EPEL_V,  2, 10)
 EPEL_FUNC( PUT_HEVC_EPEL_V,  4, 10)
 EPEL_FUNC( PUT_HEVC_EPEL_V,  8, 10)
 
+PUT_HEVC_EPEL_V( 2, 14)
+PUT_HEVC_EPEL_V( 4, 14)
+PUT_HEVC_EPEL_V( 8, 14)
+//EPEL_FUNC( PUT_HEVC_EPEL_V,  4, 14)
+//EPEL_FUNC( PUT_HEVC_EPEL_V,  8, 14)
+
 // ff_hevc_put_hevc_epel_hvX_X_sse
 EPEL_FUNC( PUT_HEVC_EPEL_HV,  2,  8)
 EPEL_FUNC( PUT_HEVC_EPEL_HV,  4,  8)
@@ -1503,6 +1444,15 @@ QPEL_FUNC( PUT_HEVC_QPEL_V,  8, 3,  8)
 QPEL_FUNC( PUT_HEVC_QPEL_V, 16, 1,  8)
 QPEL_FUNC( PUT_HEVC_QPEL_V, 16, 2,  8)
 QPEL_FUNC( PUT_HEVC_QPEL_V, 16, 3,  8)
+
+PUT_HEVC_QPEL_V( 4, 1, 14)
+PUT_HEVC_QPEL_V( 4, 2, 14)
+PUT_HEVC_QPEL_V( 4, 3, 14)
+
+PUT_HEVC_QPEL_V( 8, 1, 14)
+PUT_HEVC_QPEL_V( 8, 2, 14)
+PUT_HEVC_QPEL_V( 8, 3, 14)
+
 
 //QPEL_FUNC( PUT_HEVC_QPEL_V,  4, 1, 10)
 //QPEL_FUNC( PUT_HEVC_QPEL_V,  4, 2, 10)
