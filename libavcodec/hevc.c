@@ -1328,9 +1328,13 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         src1       = lc->edge_emu_buffer + offset_edge;
         src1stride = MAX_EDGE_BUFFER_STRIDE;
     }
+    if(!!mx && !!my)
+    {
+        s->hevcdsp.put_hevc_epel_hv(dst1, dststride, src1, src1stride,
+                    block_w, block_h, mx, my,s, idx);
+    }else
     s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst1, dststride, src1, src1stride,
-            block_w, block_h, mx, my,
-            lc->mc_buffer);
+            block_w, block_h, mx, my);
 
     if (emulated_edge_mc == 1) {
         int offset2     = EPEL_EXTRA_BEFORE * (src2stride + (1 << s->sps->pixel_shift));
@@ -1350,8 +1354,7 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
                     s, idx);
     }else
     s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
-            block_w, block_h, mx, my,
-            lc->mc_buffer);
+            block_w, block_h, mx, my);
 }
 
 static void chroma_mc_bi_pred(HEVCContext *s,
