@@ -196,11 +196,27 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->transform_add[2]       = FUNC(transform_16x16_add, depth);     \
     hevcdsp->transform_add[3]       = FUNC(transform_32x32_add, depth);     \
     hevcdsp->put_hevc_epel_hv       = FUNC(put_hevc_epel_t_hv,depth);         \
+    hevcdsp->put_hevc_qpel_hv       = FUNC(put_hevc_qpel_t_hv,depth);         \
     hevcdsp->put_hevc_epel_v_14[0]     = FUNC(put_hevc_epel_v_14,depth);    \
     hevcdsp->put_hevc_epel_v_14[1]     = FUNC(put_hevc_epel_v_14,depth);    \
     hevcdsp->put_hevc_epel_v_14[2]     = FUNC(put_hevc_epel_v_14,depth);    \
     hevcdsp->put_hevc_epel_v_14[3]     = FUNC(put_hevc_epel_v_14,depth);    \
     hevcdsp->put_hevc_epel_v_14[4]     = FUNC(put_hevc_epel_v_14,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[0][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[1][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[2][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[3][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[4][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[0][2]     = FUNC(put_hevc_qpel_v_14_2,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[1][2]     = FUNC(put_hevc_qpel_v_14_2,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[2][2]     = FUNC(put_hevc_qpel_v_14_2,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[3][2]     = FUNC(put_hevc_qpel_v_14_2,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[4][2]     = FUNC(put_hevc_qpel_v_14_2,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[0][3]     = FUNC(put_hevc_qpel_v_14_3,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[1][3]     = FUNC(put_hevc_qpel_v_14_3,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[2][3]     = FUNC(put_hevc_qpel_v_14_3,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[3][3]     = FUNC(put_hevc_qpel_v_14_3,depth);    \
+    hevcdsp->put_hevc_qpel_v_14[4][3]     = FUNC(put_hevc_qpel_v_14_3,depth);    \
                                                                             \
     hevcdsp->sao_band_filter[0] = FUNC(sao_band_filter_0, depth);           \
     hevcdsp->sao_band_filter[1] = FUNC(sao_band_filter_1, depth);           \

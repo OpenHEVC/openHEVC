@@ -31,7 +31,7 @@
 /***********************************/
 
 #define MCQ_FUNC(DIR, DEPTH, OPT)                                        \
-    void ff_put_hevc_mc_pixels_ ## DIR ## _ ## DEPTH ## _ ## OPT(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, int16_t* mcbuffer);
+    void ff_put_hevc_mc_pixels_ ## DIR ## _ ## DEPTH ## _ ## OPT(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my);
 
 #define MCQ_FUNCS(type, depth) \
    MCQ_FUNC( 2, depth, sse4)    \
@@ -140,7 +140,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_qpel, 3, 3, 0, qpel_v8_3 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 4, 3, 0, qpel_v8_3 ,  8);
 
-
 #if ARCH_X86_64
                     c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
                     c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
@@ -178,6 +177,24 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_epel_v_14[2] = ff_hevc_put_hevc_epel_v8_14_sse;
                     c->put_hevc_epel_v_14[3] = ff_hevc_put_hevc_epel_v8_14_sse;
                     c->put_hevc_epel_v_14[4] = ff_hevc_put_hevc_epel_v8_14_sse;
+
+                    c->put_hevc_qpel_v_14[0][1] = ff_hevc_put_hevc_qpel_v4_1_14_sse;
+                    c->put_hevc_qpel_v_14[1][1] = ff_hevc_put_hevc_qpel_v8_1_14_sse;
+                    c->put_hevc_qpel_v_14[2][1] = ff_hevc_put_hevc_qpel_v8_1_14_sse;
+                    c->put_hevc_qpel_v_14[3][1] = ff_hevc_put_hevc_qpel_v8_1_14_sse;
+                    c->put_hevc_qpel_v_14[4][1] = ff_hevc_put_hevc_qpel_v8_1_14_sse;
+
+                    c->put_hevc_qpel_v_14[0][2] = ff_hevc_put_hevc_qpel_v4_2_14_sse;
+                    c->put_hevc_qpel_v_14[1][2] = ff_hevc_put_hevc_qpel_v8_2_14_sse;
+                    c->put_hevc_qpel_v_14[2][2] = ff_hevc_put_hevc_qpel_v8_2_14_sse;
+                    c->put_hevc_qpel_v_14[3][2] = ff_hevc_put_hevc_qpel_v8_2_14_sse;
+                    c->put_hevc_qpel_v_14[4][2] = ff_hevc_put_hevc_qpel_v8_2_14_sse;
+
+                    c->put_hevc_qpel_v_14[0][3] = ff_hevc_put_hevc_qpel_v4_3_14_sse;
+                    c->put_hevc_qpel_v_14[1][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
+                    c->put_hevc_qpel_v_14[2][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
+                    c->put_hevc_qpel_v_14[3][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
+                    c->put_hevc_qpel_v_14[4][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
                     c->transform_skip     = ff_hevc_transform_skip_8_sse;
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
@@ -261,6 +278,30 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #endif /* HAVE_ALIGNED_STACK */
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
+
+                    c->put_hevc_epel_v_14[0] = ff_hevc_put_hevc_epel_v2_14_sse;
+                    c->put_hevc_epel_v_14[1] = ff_hevc_put_hevc_epel_v4_14_sse;
+                    c->put_hevc_epel_v_14[2] = ff_hevc_put_hevc_epel_v8_14_sse;
+                    c->put_hevc_epel_v_14[3] = ff_hevc_put_hevc_epel_v8_14_sse;
+                    c->put_hevc_epel_v_14[4] = ff_hevc_put_hevc_epel_v8_14_sse;
+
+                    c->put_hevc_qpel_v_14[0][1] = ff_hevc_put_hevc_qpel_v4_1_14_sse;
+                    c->put_hevc_qpel_v_14[1][1] = ff_hevc_put_hevc_qpel_v8_1_14_sse;
+                    c->put_hevc_qpel_v_14[2][1] = ff_hevc_put_hevc_qpel_v8_1_14_sse;
+                    c->put_hevc_qpel_v_14[3][1] = ff_hevc_put_hevc_qpel_v8_1_14_sse;
+                    c->put_hevc_qpel_v_14[4][1] = ff_hevc_put_hevc_qpel_v8_1_14_sse;
+
+                    c->put_hevc_qpel_v_14[0][2] = ff_hevc_put_hevc_qpel_v4_2_14_sse;
+                    c->put_hevc_qpel_v_14[1][2] = ff_hevc_put_hevc_qpel_v8_2_14_sse;
+                    c->put_hevc_qpel_v_14[2][2] = ff_hevc_put_hevc_qpel_v8_2_14_sse;
+                    c->put_hevc_qpel_v_14[3][2] = ff_hevc_put_hevc_qpel_v8_2_14_sse;
+                    c->put_hevc_qpel_v_14[4][2] = ff_hevc_put_hevc_qpel_v8_2_14_sse;
+
+                    c->put_hevc_qpel_v_14[0][3] = ff_hevc_put_hevc_qpel_v4_3_14_sse;
+                    c->put_hevc_qpel_v_14[1][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
+                    c->put_hevc_qpel_v_14[2][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
+                    c->put_hevc_qpel_v_14[3][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
+                    c->put_hevc_qpel_v_14[4][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
 
                     c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_10_sse4;
 

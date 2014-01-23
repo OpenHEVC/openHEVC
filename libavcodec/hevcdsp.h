@@ -49,7 +49,7 @@ typedef struct HEVCDSPContext {
 
 
     void (*put_hevc_qpel[5][4][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                int width, int height, int16_t* mcbuffer);
+                                int width, int height);
     void (*put_hevc_qpel_w[5][4][4][4])(
             uint8_t *_dst, ptrdiff_t _dststride,
             int16_t *src1, ptrdiff_t src1stride,
@@ -59,13 +59,18 @@ typedef struct HEVCDSPContext {
             int16_t wlxFlag, int16_t wl1Flag,
             int16_t olxFlag, int16_t ol1Flag);
 
+    void (*put_hevc_qpel_v_14[5][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                                int width, int height);
+
     void (*put_hevc_epel[5][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                 int width, int height, int mx, int my);
 
     void (*put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                 int width, int height, int mx, int my, void *s, ptrdiff_t idx);
+    void (*put_hevc_qpel_hv)(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                                int width, int height, int mx, int my, void *s, ptrdiff_t idx);
 
-    void (*put_hevc_epel_v_14[5])(int16_t *dst, ptrdiff_t dststride, int16_t *src, ptrdiff_t srcstride,
+    void (*put_hevc_epel_v_14[5])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                     int width, int height, int mx, int my);
 
     void (*put_hevc_epel_w[5][2][2][4])(
