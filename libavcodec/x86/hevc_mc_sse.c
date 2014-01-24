@@ -349,12 +349,43 @@
 #define WEIGHTED_STORE8_10() PEL_STORE8(dst);
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_unweighted_pred_8_sse
+//
 ////////////////////////////////////////////////////////////////////////////////
+
 #define WEIGHTED_INIT_0(H, D)                                                  \
     WEIGHTED_INIT ## H ## _ ## D()                                             \
     const int shift2 = 14 - D;                                                 \
     const __m128i m1 = _mm_set1_epi16(1 << (14 - D - 1))
+
+#define WEIGHTED_INIT_1(H, D)                                                  \
+    WEIGHTED_INIT ## H ## _ ## D()                                             \
+    const int shift2     = denom + 14 - D;                                     \
+    const __m128i add   = _mm_set1_epi32(olxFlag << (D - 8));                  \
+    const __m128i add2  = _mm_set1_epi32(1 << (shift2-1));                     \
+    const __m128i m1    = _mm_set1_epi16(wlxFlag);                             \
+    __m128i s1, s2, s3
+
+#define WEIGHTED_INIT_2(H, D)                                                  \
+    WEIGHTED_INIT ## H ## _ ## D()                                             \
+    const int shift2 = 14 + 1 - D;                                             \
+    const __m128i m1 = _mm_set1_epi16(1 << (14 - D))
+
+#define WEIGHTED_INIT_3(H, D)                                                  \
+    WEIGHTED_INIT ## H ## _ ## D()                                             \
+    const int log2Wd = denom + 14 - D;                                         \
+    const int shift2  = log2Wd + 1;                                            \
+    const int o0     = olxFlag << (D - 8);                                     \
+    const int o1     = ol1Flag << (D - 8);                                     \
+    const __m128i m1 = _mm_set1_epi16(wlxFlag);                                \
+    const __m128i m2 = _mm_set1_epi16(wl1Flag);                                \
+    const __m128i m3 = _mm_set1_epi32((o0 + o1 + 1) << log2Wd);                \
+    __m128i s1, s2, s3, s4, s5, s6
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+
 #define WEIGHTED_COMPUTE_0(reg1)                                               \
     reg1 = _mm_srai_epi16(_mm_adds_epi16(reg1, m1), shift2)
 #define WEIGHTED_COMPUTE2_0()                                                  \
@@ -367,121 +398,6 @@
     WEIGHTED_COMPUTE_0(r1);                                                    \
     WEIGHTED_COMPUTE_0(r2)
 
-#define PUT_UNWEIGHTED_PRED(H)                                                 \
-static void put_unweighted_pred ## H ## _8_sse (                               \
-                                       uint8_t *dst, ptrdiff_t dststride,      \
-                                       int16_t *src, ptrdiff_t srcstride,      \
-                                       int width, int height) {                \
-    int x, y;                                                                  \
-    __m128i r1, r2;                                                            \
-/*    WEIGHTED_INIT_0(H, BIT_DEPTH);                                         */\
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-     /*       WEIGHTED_LOAD ## H();                                              \
-            WEIGHTED_COMPUTE ## H ## _0();                                   */  \
-        }                                                                      \
-        dst += dststride;                                                      \
-        src += srcstride;                                                      \
-    }                                                                          \
-}
-//PUT_UNWEIGHTED_PRED(2)
-//PUT_UNWEIGHTED_PRED(4)
-//PUT_UNWEIGHTED_PRED(8)
-//PUT_UNWEIGHTED_PRED(16)
-/*
-void ff_hevc_put_unweighted_pred_8_sse(
-                                       uint8_t *dst, ptrdiff_t dststride,
-                                       int16_t *src, ptrdiff_t srcstride,
-                                       int width, int height) {
-    if(!(width & 15)) {
-        put_unweighted_pred16_8_sse(dst, dststride, src, srcstride, width, height);
-    } else if(!(width & 7)) {
-        put_unweighted_pred8_8_sse(dst, dststride, src, srcstride, width, height);
-    } else if(!(width & 3)) {
-        put_unweighted_pred4_8_sse(dst, dststride, src, srcstride, width, height);
-    } else {
-        put_unweighted_pred2_8_sse(dst, dststride, src, srcstride, width, height);
-    }
-}
-*/
-////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_weighted_pred_avg_8_sse
-////////////////////////////////////////////////////////////////////////////////
-#define WEIGHTED_INIT_2(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D()                                             \
-    const int shift2 = 14 + 1 - D;                                             \
-    const __m128i m1 = _mm_set1_epi16(1 << (14 - D))
-#define WEIGHTED_COMPUTE_2(reg1, reg2)                                         \
-    reg1 = _mm_adds_epi16(reg1, m1);                                           \
-    reg1 = _mm_adds_epi16(reg1, reg2);                                         \
-    reg2 = _mm_srai_epi16(reg1, shift2)
-#define WEIGHTED_COMPUTE2_2()                                                  \
-    WEIGHTED_LOAD2_1();                                                        \
-    WEIGHTED_COMPUTE_2(r3, r1)
-#define WEIGHTED_COMPUTE4_2()                                                  \
-    WEIGHTED_LOAD4_1();                                                        \
-    WEIGHTED_COMPUTE_2(r3, r1)
-#define WEIGHTED_COMPUTE8_2()                                                  \
-    WEIGHTED_LOAD8_1();                                                        \
-    WEIGHTED_COMPUTE_2(r3, r1)
-#define WEIGHTED_COMPUTE16_2()                                                 \
-    WEIGHTED_LOAD16_1();                                                       \
-    WEIGHTED_COMPUTE_2(r3, r1);                                                \
-    WEIGHTED_COMPUTE_2(r4, r2)
-
-#define PUT_WEIGHTED_PRED_AVG(H)                                               \
-static void put_weighted_pred_avg ## H ## _8_sse(                              \
-                                uint8_t *dst, ptrdiff_t dststride,             \
-                                int16_t *src1, int16_t *src,                   \
-                                ptrdiff_t srcstride,                           \
-                                int width, int height) {                       \
-    int x, y;                                                                  \
-    __m128i r1, r2, r3, r4;                                                    \
-    WEIGHTED_INIT_2(H, BIT_DEPTH);                                             \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-            WEIGHTED_LOAD ## H();                                              \
-            WEIGHTED_COMPUTE ## H ## _2();                                     \
-        }                                                                      \
-        dst  += dststride;                                                     \
-        src  += srcstride;                                                     \
-        src1 += srcstride;                                                     \
-    }                                                                          \
-}
-//PUT_WEIGHTED_PRED_AVG(2)
-//PUT_WEIGHTED_PRED_AVG(4)
-//PUT_WEIGHTED_PRED_AVG(8)
-//PUT_WEIGHTED_PRED_AVG(16)
-/*
-void ff_hevc_put_weighted_pred_avg_8_sse(
-                                        uint8_t *dst, ptrdiff_t dststride,
-                                        int16_t *src1, int16_t *src2,
-                                        ptrdiff_t srcstride,
-                                        int width, int height) {
-    if(!(width & 15))
-        put_weighted_pred_avg16_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else if(!(width & 7))
-        put_weighted_pred_avg8_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else if(!(width & 3))
-        put_weighted_pred_avg4_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else
-        put_weighted_pred_avg2_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-}*/
-
-////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_weighted_pred_8_sse
-////////////////////////////////////////////////////////////////////////////////
-#define WEIGHTED_INIT_1(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D()                                             \
-    const int shift2     = denom + 14 - D;                                     \
-    const __m128i add   = _mm_set1_epi32(olxFlag << (D - 8));                  \
-    const __m128i add2  = _mm_set1_epi32(1 << (shift2-1));                     \
-    const __m128i m1    = _mm_set1_epi16(wlxFlag);                             \
-    __m128i s1, s2, s3
 #define WEIGHTED_COMPUTE_1(reg1)                                               \
     s1   = _mm_mullo_epi16(reg1, m1);                                          \
     s2   = _mm_mulhi_epi16(reg1, m1);                                          \
@@ -504,63 +420,24 @@ void ff_hevc_put_weighted_pred_avg_8_sse(
     WEIGHTED_COMPUTE_1(r1);                                                    \
     WEIGHTED_COMPUTE_1(r2)
 
-#define WEIGHTED_PRED(H)                                                       \
-static void weighted_pred ## H ## _8_sse(                                      \
-                                    uint8_t denom,                             \
-                                    int16_t wlxFlag, int16_t olxFlag,          \
-                                    uint8_t *dst, ptrdiff_t dststride,         \
-                                    int16_t *src, ptrdiff_t srcstride,         \
-                                    int width, int height) {                   \
-    int x, y;                                                                  \
-    __m128i r1, r2;                                                            \
-    WEIGHTED_INIT_1(H, BIT_DEPTH);                                             \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-            WEIGHTED_LOAD ## H();                                              \
-            WEIGHTED_COMPUTE ## H ## _1();                                     \
-        }                                                                      \
-        dst += dststride;                                                      \
-        src += srcstride;                                                      \
-    }                                                                          \
-}
-//WEIGHTED_PRED(2)
-//WEIGHTED_PRED(4)
-//WEIGHTED_PRED(8)
-//WEIGHTED_PRED(16)
-/*
-void ff_hevc_weighted_pred_8_sse(
-                                 uint8_t denom,
-                                 int16_t wlxFlag, int16_t olxFlag,
-                                 uint8_t *dst, ptrdiff_t dststride,
-                                 int16_t *src, ptrdiff_t srcstride,
-                                 int width, int height) {
-    if(!(width & 15))
-        weighted_pred16_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else if(!(width & 7))
-        weighted_pred8_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else if(!(width & 3))
-        weighted_pred4_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else
-        weighted_pred2_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-}*/
+#define WEIGHTED_COMPUTE_2(reg1, reg2)                                         \
+    reg1 = _mm_adds_epi16(reg1, m1);                                           \
+    reg1 = _mm_adds_epi16(reg1, reg2);                                         \
+    reg2 = _mm_srai_epi16(reg1, shift2)
+#define WEIGHTED_COMPUTE2_2()                                                  \
+    WEIGHTED_LOAD2_1();                                                        \
+    WEIGHTED_COMPUTE_2(r3, r1)
+#define WEIGHTED_COMPUTE4_2()                                                  \
+    WEIGHTED_LOAD4_1();                                                        \
+    WEIGHTED_COMPUTE_2(r3, r1)
+#define WEIGHTED_COMPUTE8_2()                                                  \
+    WEIGHTED_LOAD8_1();                                                        \
+    WEIGHTED_COMPUTE_2(r3, r1)
+#define WEIGHTED_COMPUTE16_2()                                                 \
+    WEIGHTED_LOAD16_1();                                                       \
+    WEIGHTED_COMPUTE_2(r3, r1);                                                \
+    WEIGHTED_COMPUTE_2(r4, r2)
 
-////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_weighted_pred_avg_8_sse
-////////////////////////////////////////////////////////////////////////////////
-#define WEIGHTED_INIT_3(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D()                                             \
-    const int log2Wd = denom + 14 - D;                                         \
-    const int shift2  = log2Wd + 1;                                            \
-    const int o0     = olxFlag << (D - 8);                                     \
-    const int o1     = ol1Flag << (D - 8);                                     \
-    const __m128i m1 = _mm_set1_epi16(wlxFlag);                                \
-    const __m128i m2 = _mm_set1_epi16(wl1Flag);                                \
-    const __m128i m3 = _mm_set1_epi32((o0 + o1 + 1) << log2Wd);                \
-    __m128i s1, s2, s3, s4, s5, s6
 #define WEIGHTED_COMPUTE_3(reg1, reg2)                                         \
     s1   = _mm_mullo_epi16(reg1, m1);                                          \
     s2   = _mm_mulhi_epi16(reg1, m1);                                          \
@@ -588,55 +465,6 @@ void ff_hevc_weighted_pred_8_sse(
     WEIGHTED_LOAD16_1();                                                       \
     WEIGHTED_COMPUTE_3(r3, r1);                                                \
     WEIGHTED_COMPUTE_3(r4, r2)
-
-#define WEIGHTED_PRED_AVG(H)                                                   \
-static void weighted_pred_avg ## H ## _8_sse(                                  \
-                                    uint8_t denom,                             \
-                                    int16_t wlxFlag, int16_t wl1Flag,          \
-                                    int16_t olxFlag, int16_t ol1Flag,          \
-                                    uint8_t *dst, ptrdiff_t dststride,         \
-                                    int16_t *src1, int16_t *src,               \
-                                    ptrdiff_t srcstride,                       \
-                                    int width, int height) {                   \
-    int x, y;                                                                  \
-    __m128i r1, r2, r3, r4;                                                    \
- /*   WEIGHTED_INIT_3(H, BIT_DEPTH);            */                                 \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-  /*          WEIGHTED_LOAD ## H();                                              \
-            WEIGHTED_COMPUTE ## H ## _3();                                   */  \
-        }                                                                      \
-        dst  += dststride;                                                     \
-        src  += srcstride;                                                     \
-        src1 += srcstride;                                                     \
-    }                                                                          \
-}/*
-WEIGHTED_PRED_AVG(2)
-WEIGHTED_PRED_AVG(4)
-WEIGHTED_PRED_AVG(8)
-WEIGHTED_PRED_AVG(16)
-
-void ff_hevc_weighted_pred_avg_8_sse(
-                                 uint8_t denom,
-                                 int16_t wl0Flag, int16_t wl1Flag,
-                                 int16_t ol0Flag, int16_t ol1Flag,
-                                 uint8_t *dst, ptrdiff_t dststride,
-                                 int16_t *src1, int16_t *src2,
-                                 ptrdiff_t srcstride,
-                                 int width, int height) {
-    if(!(width & 15))
-        weighted_pred_avg16_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else if(!(width & 7))
-        weighted_pred_avg8_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else if(!(width & 3))
-        weighted_pred_avg4_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else
-        weighted_pred_avg2_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
