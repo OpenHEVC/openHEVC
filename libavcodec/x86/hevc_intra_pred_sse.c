@@ -399,6 +399,7 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             int fact = ((x + 1) * angle) & 31;
             if (fact) {
                 r3 = _mm_set_epi8(fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact);
+                r1 = _mm_loadl_epi64((__m128i*)(ref+idx+1));
                 ANGULAR_COMPUTE(r0, r1);
                 r0 = _mm_packus_epi16(r0, r0);
             } else {
