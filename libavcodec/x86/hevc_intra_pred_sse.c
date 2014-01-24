@@ -321,11 +321,24 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
         TRANSPOSE16x16B((&in[16*sstep_in+16]), sstep_in, (&out[16*sstep_out+16]), sstep_out);\
     } while (0)
 
-#define ANGULAR_COMPUTE(dst, src)                                               \
-    dst = _mm_shuffle_epi8(src, shuffle);                                       \
-    dst = _mm_maddubs_epi16(dst, r3);                                           \
-    dst = _mm_adds_epi16(dst, add);                                             \
+#define ANGULAR_COMPUTE(dst, src)                                              \
+    dst = _mm_shuffle_epi8(src, shuffle);                                      \
+    dst = _mm_maddubs_epi16(dst, r3);                                          \
+    dst = _mm_adds_epi16(dst, add);                                            \
     dst = _mm_srai_epi16(dst, 5)
+#define CLIP_PIXEL(src1, src2)                                                 \
+    r3  = _mm_loadu_si128((__m128i*)src1);                                     \
+    r1  = _mm_set1_epi16(src1[-1]);                                            \
+    r2  = _mm_set1_epi16(src2[0]);                                             \
+    r0  = _mm_unpacklo_epi8(r3,_mm_setzero_si128());                           \
+    r0  = _mm_subs_epi16(r0, r1);                                              \
+    r0  = _mm_srai_epi16(r0, 1);                                               \
+    r0  = _mm_add_epi16(r0, r2)
+#define CLIP_PIXEL_HI()                                                        \
+    r3  = _mm_unpackhi_epi8(r3,_mm_setzero_si128());                           \
+    r3  = _mm_subs_epi16(r3, r1);                                              \
+    r3  = _mm_srai_epi16(r3, 1);                                               \
+    r3  = _mm_add_epi16(r3, r2)
 
 void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
                           ptrdiff_t stride, int c_idx, int mode)
@@ -381,8 +394,12 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         }
         if (mode == 26 && c_idx == 0) {
             src = (uint8_t*)_src;
+            CLIP_PIXEL(left, top);
+            r0  = _mm_packus_epi16(r0, r0);
             for (y = 0; y < size; y++) {
-                src[stride * (y)] = av_clip_uint8(top[0] + ((left[y] - left[-1]) >> 1));
+                _mm_maskmoveu_si128(r0, _mm_set_epi32(0,0,0,255), (char*) src);
+                src += stride;
+                r0  = _mm_srli_si128(r0,1);
             }
         }
     } else {
@@ -409,17 +426,9 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         }
         TRANSPOSE4x4B(src_tmp, size, src, stride);
         if (mode == 10 && c_idx == 0) {
-            src = (uint8_t*)_src;
-            r0  = _mm_loadl_epi64((__m128i*)top);
-            r0  = _mm_unpacklo_epi8(r0,_mm_setzero_si128());
-            r1  = _mm_set1_epi16(top[-1]);
-            r2  = _mm_set1_epi16(left[0]);
-
-            r0  = _mm_subs_epi16(r0, r1);
-            r0  = _mm_srai_epi16(r0, 1);
-            r0  = _mm_add_epi16(r0, r2);
+            CLIP_PIXEL(top, left);
             r0  = _mm_packus_epi16(r0, r0);
-            _mm_maskmoveu_si128(r0, mask, (char*)(src));
+           _mm_maskmoveu_si128(r0, mask, (char*)(src));
         }
     }
 }
@@ -478,8 +487,13 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         }
         if (mode == 26 && c_idx == 0) {
             src = (uint8_t*)_src;
-            for (y = 0; y < size; y++)
-                src[stride * (y)] = av_clip_uint8(top[0] + ((left[y] - left[-1]) >> 1));
+            CLIP_PIXEL(left, top);
+            r0  = _mm_packus_epi16(r0, r0);
+            for (y = 0; y < size; y++) {
+                _mm_maskmoveu_si128(r0, _mm_set_epi32(0,0,0,255), (char*) src);
+                src += stride;
+                r0  = _mm_srli_si128(r0,1);
+            }
         }
     } else {
         ref = (uint8_t*) (left - 1);
@@ -491,7 +505,7 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             _mm_maskmoveu_si128(r0, mask2, (char*) ref);
         }
         for (x = 0; x < size; x++) {
-            int idx = ((x + 1) * angle) >> 5;
+            int idx  = ((x + 1) * angle) >> 5;
             int fact = ((x + 1) * angle) & 31;
             if (fact) {
                 r3 = _mm_set_epi8(fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact,fact,32-fact);
@@ -506,15 +520,8 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         }
         TRANSPOSE8x8B(src_tmp, size, src, stride);
         if (mode == 10 && c_idx == 0) {
-            r0 = _mm_loadl_epi64((__m128i*)top);
-            r0 = _mm_unpacklo_epi8(r0,_mm_setzero_si128());
-            r1 = _mm_set1_epi16(top[-1]);
-            r2 = _mm_set1_epi16(left[0]);
-
-            r0 = _mm_subs_epi16(r0, r1);
-            r0 = _mm_srai_epi16(r0, 1);
-            r0 = _mm_add_epi16(r0, r2);
-            r0 = _mm_packus_epi16(r0, r0);
+            CLIP_PIXEL(top, left);
+            r0  = _mm_packus_epi16(r0, r0);
             _mm_storel_epi64((__m128i*)src, r0);
         }
     }
@@ -577,8 +584,14 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         }
         if (mode == 26 && c_idx == 0) {
             src = (uint8_t*)_src;
-            for (y = 0; y < size; y++)
-                src[stride * (y)] = av_clip_uint8(top[0] + ((left[y] - left[-1]) >> 1));
+            CLIP_PIXEL(left, top);
+            CLIP_PIXEL_HI();
+            r0  = _mm_packus_epi16(r0, r3);
+            for (y = 0; y < size; y++) {
+                _mm_maskmoveu_si128(r0, _mm_set_epi32(0,0,0,255), (char*) src);
+                src += stride;
+                r0  = _mm_srli_si128(r0,1);
+            }
         }
     } else {
         ref = (uint8_t*) (left - 1);
@@ -609,20 +622,8 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         }
         TRANSPOSE16x16B(src_tmp, size, src, stride);
         if (mode == 10 && c_idx == 0) {
-            r0 = _mm_loadu_si128((__m128i*)top);
-            r1 = _mm_set1_epi16(top[-1]);
-            r2 = _mm_set1_epi16(left[0]);
-
-            r3 = _mm_unpackhi_epi8(r0,_mm_setzero_si128());
-            r3 = _mm_subs_epi16(r3, r1);
-            r3 = _mm_srai_epi16(r3, 1);
-            r3 = _mm_add_epi16(r3, r2);
-
-            r0 = _mm_unpacklo_epi8(r0,_mm_setzero_si128());
-            r0 = _mm_subs_epi16(r0, r1);
-            r0 = _mm_srai_epi16(r0, 1);
-            r0 = _mm_add_epi16(r0, r2);
-
+            CLIP_PIXEL(top, left);
+            CLIP_PIXEL_HI();
             r0 = _mm_packus_epi16(r0, r3);
             _mm_storeu_si128((__m128i*) src , r0);
         }
