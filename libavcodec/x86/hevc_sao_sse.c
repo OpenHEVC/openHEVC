@@ -636,8 +636,7 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
                 x2 = _mm_cmplt_epi16(r0, r3);
                 r2 = _mm_cmplt_epi16(r1, r4);
                 x2 = _mm_packs_epi16(x2, r2);
-                x1 = _mm_and_si128(x1, _mm_set1_epi8(1));
-                x1 = _mm_add_epi8(x1, x2);
+                x1 = _mm_sub_epi8(x2, x1);
 
                 r3 = _mm_unpacklo_epi8(cmp1, _mm_setzero_si128());
                 r4 = _mm_unpackhi_epi8(cmp1, _mm_setzero_si128());
@@ -648,8 +647,7 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
                 x2 = _mm_cmplt_epi16(r0, r3);
                 r2 = _mm_cmplt_epi16(r1, r4);
                 x2 = _mm_packs_epi16(x2, r2);
-                x3 = _mm_and_si128(x3, _mm_set1_epi8(1));
-                x3 = _mm_add_epi8(x3, x2);
+                x3 = _mm_sub_epi8(x2, x3);
                 x1 = _mm_add_epi8(x1, x3);
 
                 //x1 : contains -2 -> 2
@@ -854,8 +852,7 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
                 x2 = _mm_cmplt_epi16(r0, r3);
                 r2 = _mm_cmplt_epi16(r1, r4);
                 x2 = _mm_packs_epi16(x2, r2);
-                x1 = _mm_and_si128(x1, _mm_set1_epi8(1));
-                x1 = _mm_add_epi8(x1, x2);
+                x1 = _mm_sub_epi8(x2, x1);
 
                 r3 = _mm_unpacklo_epi8(cmp1, _mm_setzero_si128());
                 r4 = _mm_unpackhi_epi8(cmp1, _mm_setzero_si128());
@@ -866,8 +863,7 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
                 x2 = _mm_cmplt_epi16(r0, r3);
                 r2 = _mm_cmplt_epi16(r1, r4);
                 x2 = _mm_packs_epi16(x2, r2);
-                x3 = _mm_and_si128(x3, _mm_set1_epi8(1));
-                x3 = _mm_add_epi8(x3, x2);
+                x3 = _mm_sub_epi8(x2, x3);
                 x1 = _mm_add_epi8(x1, x3);
 
                 //x1 : contains -2 -> 2
@@ -886,8 +882,8 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
                 r2 = _mm_add_epi8(r2, r3);
                 r0 = _mm_add_epi8(r0, r4);
                 r0 = _mm_add_epi8(r0, r2);
-                r1 = _mm_unpacklo_epi8(_mm_setzero_si128(), r0);
-                r1 = _mm_srai_epi16(r1, 8);
+
+                r1 = _mm_cvtepi8_epi16(r0);
                 r2 = _mm_unpackhi_epi8(_mm_setzero_si128(), r0);
                 r2 = _mm_srai_epi16(r2, 8);
                 r3 = _mm_unpacklo_epi8(x0, _mm_setzero_si128());
@@ -1081,8 +1077,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             x2 = _mm_cmplt_epi16(r0, r3);
             r2 = _mm_cmplt_epi16(r1, r4);
             x2 = _mm_packs_epi16(x2, r2);
-            x1 = _mm_and_si128(x1, _mm_set1_epi8(1));
-            x1 = _mm_add_epi8(x1, x2);
+            x1 = _mm_sub_epi8(x2, x1);
 
             r3 = _mm_unpacklo_epi8(cmp1, _mm_setzero_si128());
             r4 = _mm_unpackhi_epi8(cmp1, _mm_setzero_si128());
@@ -1093,8 +1088,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             x2 = _mm_cmplt_epi16(r0, r3);
             r2 = _mm_cmplt_epi16(r1, r4);
             x2 = _mm_packs_epi16(x2, r2);
-            x3 = _mm_and_si128(x3, _mm_set1_epi8(1));
-            x3 = _mm_add_epi8(x3, x2);
+            x3 = _mm_sub_epi8(x2, x3);
             x1 = _mm_add_epi8(x1, x3);
 
             //x1 : contains -2 -> 2
@@ -1113,6 +1107,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             r2 = _mm_add_epi8(r2, r3);
             r0 = _mm_add_epi8(r0, r4);
             r0 = _mm_add_epi8(r0, r2);
+
             r1 = _mm_unpacklo_epi8(_mm_setzero_si128(), r0);
             r1 = _mm_srai_epi16(r1, 8);
             r2 = _mm_unpackhi_epi8(_mm_setzero_si128(), r0);
