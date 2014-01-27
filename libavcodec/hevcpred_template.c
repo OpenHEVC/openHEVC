@@ -170,16 +170,22 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         for (i = size ; i < size+top_right_size; i+=4)
             AV_WN4PA(&top[i], AV_RN4PA(&POS(i, -1)));
     }
-    if (cand_bottom_left) {
+    if (cand_left) {
+        if (mode <= 26 || log2_size == 5)
+            for (i = 0; i < size; i++)
+                left[i] = POS(-1, i);
+        else
+            left[0] = POS(-1, 0);
+    }
+
+    if (mode <= 26 || log2_size == 5)
+        if (cand_bottom_left) {
         a = PIXEL_SPLAT_X4(POS(-1, size + bottom_left_size - 1));
         for (i = size + bottom_left_size; i < (size << 1); i+=4)
             AV_WN4PA(&left[i], a);
         for (i = size ; i < size+bottom_left_size; i++)
             left[i] = POS(-1, i);
     }
-    if (cand_left)
-        for (i = 0; i < size; i++)
-            left[i] = POS(-1, i);
 
     if (s->pps->constrained_intra_pred_flag == 1) {
         if (cand_bottom_left || cand_left || cand_up_left || cand_up || cand_up_right) {
@@ -357,6 +363,7 @@ static av_always_inline void FUNC(pred_planar)(uint8_t *_src, const uint8_t *_to
             POS(x, y) = ((size - 1 - x) * left[y] + (x + 1) * top[size]  +
                          (size - 1 - y) * top[x]  + (y + 1) * left[size] + size) >> (trafo_size + 1);
 }
+
 
 static void FUNC(pred_planar_0)(uint8_t *_src, const uint8_t *_top,
                                 const uint8_t *_left, ptrdiff_t stride)

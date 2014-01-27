@@ -818,10 +818,13 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
                     r2 = _mm_add_epi8(r2, r3);
                     r0 = _mm_add_epi8(r0, r4);
                     r0 = _mm_add_epi8(r0, r2);
-                    r1 = _mm_cvtepi8_epi16(r0);
+
+                    r1 = _mm_unpacklo_epi8(_mm_setzero_si128(), r0);
+                    r1 = _mm_srai_epi16(r1, 8);
                     r2 = _mm_unpackhi_epi8(_mm_setzero_si128(), r0);
                     r2 = _mm_srai_epi16(r2, 8);
-                    r3 = _mm_cvtepu8_epi16(x0);
+                    r3 = _mm_unpacklo_epi8(x0, _mm_setzero_si128());
+                    r4 = _mm_unpackhi_epi8(x0, _mm_setzero_si128());
                     r0 = _mm_add_epi16(r1, r3);
                     r1 = _mm_add_epi16(r2, r4);
                     r0 = _mm_packus_epi16(r0, r1);
@@ -971,14 +974,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             x0 = _mm_loadu_si128((__m128i *) (src + init_x));
             x0 = _mm_add_epi8(x0, x1);
-            _mm_maskmoveu_si128(x0,
-                                _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1,
-                                             -1, -1), (char*) (dst + init_x));
-            x0 = _mm_srli_si128(x0, 6);
-            for (x = 6; x < width; x++) {
-                dst[x + init_x] = _mm_extract_epi8(x0, 0);
-                x0 = _mm_srli_si128(x0, 1);
-            }
+            _mm_maskmoveu_si128(x0, mask, (char*) (dst + init_x));
 
             init_y = 1;
         }
@@ -987,14 +983,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             x0 = _mm_loadu_si128((__m128i *) (src + init_x + y_stride));
             x0 = _mm_add_epi8(x0, x1);
-            _mm_maskmoveu_si128(x0,
-                                _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1,
-                                             -1, -1), (char*) (dst + init_x + y_stride));
-            x0 = _mm_srli_si128(x0, 6);
-            for (x = 6; x < width; x++) {
-                dst[x + init_x + y_stride] = _mm_extract_epi8(x0, 0);
-                x0 = _mm_srli_si128(x0, 1);
-            }
+            _mm_maskmoveu_si128(x0, mask, (char*) (dst + init_x + y_stride));
 
             height--;
         }
