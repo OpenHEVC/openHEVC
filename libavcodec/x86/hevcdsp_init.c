@@ -315,7 +315,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_epel, 2, 0, 0, epel_pixels8 ,10);
                     PEL_LINK(c->put_hevc_epel, 3, 0, 0, epel_pixels8 ,10);
                     PEL_LINK(c->put_hevc_epel, 4, 0, 0, epel_pixels8 ,10);
-
                     PEL_LINK(c->put_hevc_epel, 0, 0, 1, epel_h2, 10);
                     PEL_LINK(c->put_hevc_epel, 1, 0, 1, epel_h4, 10);
                     PEL_LINK(c->put_hevc_epel, 2, 0, 1, epel_h4, 10);
@@ -327,23 +326,62 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_epel, 3, 1, 0, epel_v8, 10);
                     PEL_LINK(c->put_hevc_epel, 4, 1, 0, epel_v8, 10);
 
-                    PEL_LINK(c->put_hevc_qpel, 0, 0, 0, qpel_pixels4, 10);
-                    PEL_LINK(c->put_hevc_qpel, 1, 0, 0, qpel_pixels8, 10);
-                    PEL_LINK(c->put_hevc_qpel, 2, 0, 0, qpel_pixels8, 10);
-                    PEL_LINK(c->put_hevc_qpel, 3, 0, 0, qpel_pixels8, 10);
-                    PEL_LINK(c->put_hevc_qpel, 4, 0, 0, qpel_pixels8, 10);
-
                     PEL_LINK(c->put_hevc_epel, 0, 1, 1, epel_hv2, 10);
                     PEL_LINK(c->put_hevc_epel, 1, 1, 1, epel_hv4, 10);
                     PEL_LINK(c->put_hevc_epel, 2, 1, 1, epel_hv4, 10);
                     PEL_LINK(c->put_hevc_epel, 3, 1, 1, epel_hv4, 10);
                     PEL_LINK(c->put_hevc_epel, 4, 1, 1, epel_hv4, 10);
 #if 0
-                    PEL_LINK_SSE(c->put_hevc_qpel, 0, 0, 1, qpel_v4_1  , 10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 1, 0, 1, qpel_v4_1  , 10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 2, 0, 1, qpel_v4_1  , 10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 3, 0, 1, qpel_v4_1  , 10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 0, 1, qpel_v4_1  , 10);
+                    c->put_hevc_qpel[0][0][0]= ff_hevc_put_hevc_qpel_pixels4_10_sse;
+                    c->put_hevc_qpel[1][0][0]= ff_hevc_put_hevc_qpel_pixels8_10_sse;
+                    c->put_hevc_qpel[2][0][0]= ff_hevc_put_hevc_qpel_pixels8_10_sse;
+                    c->put_hevc_qpel[3][0][0]= ff_hevc_put_hevc_qpel_pixels8_10_sse;
+                    c->put_hevc_qpel[4][0][0]= ff_hevc_put_hevc_qpel_pixels8_10_sse;
+
+                    c->put_hevc_qpel_w[0][0][0][1]= ff_hevc_put_hevc_qpel_pixels4_w1_10_sse;
+                    c->put_hevc_qpel_w[1][0][0][1]= ff_hevc_put_hevc_qpel_pixels8_w1_10_sse;
+                    c->put_hevc_qpel_w[2][0][0][1]= ff_hevc_put_hevc_qpel_pixels8_w1_10_sse;
+                    c->put_hevc_qpel_w[3][0][0][1]= ff_hevc_put_hevc_qpel_pixels8_w1_10_sse;
+                    c->put_hevc_qpel_w[4][0][0][1]= ff_hevc_put_hevc_qpel_pixels8_w1_10_sse;
+
+                    c->put_hevc_qpel_w[0][0][0][2]= ff_hevc_put_hevc_qpel_pixels4_w2_10_sse;
+                    c->put_hevc_qpel_w[1][0][0][2]= ff_hevc_put_hevc_qpel_pixels4_w2_10_sse;
+                    c->put_hevc_qpel_w[2][0][0][2]= ff_hevc_put_hevc_qpel_pixels4_w2_10_sse;
+                    c->put_hevc_qpel_w[3][0][0][2]= ff_hevc_put_hevc_qpel_pixels4_w2_10_sse;
+                    c->put_hevc_qpel_w[4][0][0][2]= ff_hevc_put_hevc_qpel_pixels4_w2_10_sse;
+
+                    c->put_hevc_qpel_w[0][0][0][3]= ff_hevc_put_hevc_qpel_pixels4_w3_10_sse;
+                    c->put_hevc_qpel_w[1][0][0][3]= ff_hevc_put_hevc_qpel_pixels8_w3_10_sse;
+                    c->put_hevc_qpel_w[2][0][0][3]= ff_hevc_put_hevc_qpel_pixels8_w3_10_sse;
+                    c->put_hevc_qpel_w[3][0][0][3]= ff_hevc_put_hevc_qpel_pixels8_w3_10_sse;
+                    c->put_hevc_qpel_w[4][0][0][3]= ff_hevc_put_hevc_qpel_pixels8_w3_10_sse;
+
+
+/*                    c->put_hevc_qpel_w[1][0][0][2]= ff_hevc_put_hevc_qpel_pixels4_w2_10_sse;
+                    c->put_hevc_qpel_w[2][0][0][3]= ff_hevc_put_hevc_qpel_pixels4_w3_10_sse;
+                    c->put_hevc_qpel_w[3][0][0][3]= ff_hevc_put_hevc_qpel_pixels4_w3_10_sse;
+                    c->put_hevc_qpel_w[4][0][0][0]= ff_hevc_put_hevc_qpel_pixels4_w0_10_sse;
+*/
+
+
+                    PEL_LINK(c->put_hevc_qpel, 0, 0, 0, qpel_pixels4, 10);
+                    PEL_LINK(c->put_hevc_qpel, 1, 0, 0, qpel_pixels4, 10);
+                    PEL_LINK(c->put_hevc_qpel, 2, 0, 0, qpel_pixels4, 10);
+                    PEL_LINK(c->put_hevc_qpel, 3, 0, 0, qpel_pixels4, 10);
+                    PEL_LINK(c->put_hevc_qpel, 4, 0, 0, qpel_pixels4, 10);
+
+
+               //     c->put_hevc_qpel[0][1][0]= ff_hevc_put_hevc_qpel_v4_1_10_sse;
+                    /*c->put_hevc_qpel_w[0][1][0][1]= ff_hevc_put_hevc_qpel_v4_1_w1_10_sse;
+                    c->put_hevc_qpel_w[0][1][0][2]= ff_hevc_put_hevc_qpel_v4_1_w2_10_sse;
+                    c->put_hevc_qpel_w[0][1][0][3]= ff_hevc_put_hevc_qpel_v4_1_w3_10_sse;
+*/
+
+                    PEL_LINK_SSE(c->put_hevc_qpel, 0, 1, 0, qpel_v4_1  , 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 1, 1, 0, qpel_v4_1  , 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 2, 1, 0, qpel_v4_1  , 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 3, 1, 0, qpel_v4_1  , 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 1, 0, qpel_v4_1  , 10);
 #endif
 //                    c->put_hevc_qpel[0][0][2] = c->put_hevc_qpel[1][0][2] = c->put_hevc_qpel[2][0][2] = c->put_hevc_qpel[3][0][2] = c->put_hevc_qpel[4][0][2] = ff_hevc_put_hevc_qpel_h2_2_10_sse;
 //                    c->put_hevc_qpel[0][0][3] = c->put_hevc_qpel[1][0][3] = c->put_hevc_qpel[2][0][3] = c->put_hevc_qpel[3][0][3] = c->put_hevc_qpel[4][0][3] = ff_hevc_put_hevc_qpel_h2_3_10_sse;
