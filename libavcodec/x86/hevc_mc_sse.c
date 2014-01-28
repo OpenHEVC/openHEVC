@@ -203,7 +203,7 @@
     x4 = _mm_loadu_si128((__m128i *) &tab[x + 4 * srcstride])
 
 #define PEL_STORE2(tab)                                                        \
-    _mm_maskmoveu_si128(r1, mask, (char *) &tab[x])
+    *((uint32_t *) &tab[x]) =_mm_cvtsi128_si32(r1)
 #define PEL_STORE4(tab)                                                        \
     _mm_storel_epi64((__m128i *) &tab[x], r1)
 #define PEL_STORE8(tab)                                                        \
@@ -340,8 +340,9 @@
 #define WEIGHTED_STORE2_8()                                                      \
     r1 = _mm_packus_epi16(r1, r1);                                             \
     _mm_maskmoveu_si128(r1, mask2, (char *) &dst[x])
-#define WEIGHTED_STORE4_8()                                                      \
-    WEIGHTED_STORE2_8()
+#define WEIGHTED_STORE4_8()                                                    \
+    r1 = _mm_packus_epi16(r1, r1);                                             \
+    *((uint32_t *) &dst[x]) =_mm_cvtsi128_si32(r1)
 #define WEIGHTED_STORE8_8()                                                      \
     r1 = _mm_packus_epi16(r1, r1);                                             \
     _mm_storel_epi64((__m128i *) &dst[x], r1)
