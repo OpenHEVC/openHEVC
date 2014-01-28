@@ -16,13 +16,12 @@ void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
     uint8_t *src = (uint8_t*)_src;
     const uint8_t *top = (const uint8_t*)_top;
     const uint8_t *left = (const uint8_t*)_left;
-    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, mask, C0,C2,C3;
+    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, C0,C2,C3;
 
     t0   = _mm_set1_epi16(top[4]);
     l0   = _mm_set1_epi16(left[4]);
     add  = _mm_set1_epi16(4);
     tmp1 = _mm_set_epi16(0,1,2,3,0,1,2,3);
-    mask = _mm_set_epi32(0,0,0,-1);
 
     ly   = _mm_loadl_epi64((__m128i*)left);            //get 16 values
     ly   = _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
@@ -57,14 +56,10 @@ void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
 
     c0  = _mm_packus_epi16(c0,C0);
 
-    _mm_maskmoveu_si128(c0,mask,(char*)(src)); //store only 4 values
-    c0  = _mm_srli_si128(c0,4);
-    _mm_maskmoveu_si128(c0,mask,(char*)(src + stride)); //store only 4 values
-    c0  = _mm_srli_si128(c0,4);
-    _mm_maskmoveu_si128(c0,mask,(char*)(src + 2*stride)); //store only 4 values
-    c0  = _mm_srli_si128(c0,4);
-    _mm_maskmoveu_si128(c0,mask,(char*)(src + 3*stride)); //store only 4 values
-
+    *((uint32_t *)src) = _mm_cvtsi128_si32(c0);
+    *((uint32_t *)(src + stride)) = _mm_extract_epi32(c0, 1);
+    *((uint32_t *)(src + 2 * stride)) = _mm_extract_epi32(c0, 2);
+    *((uint32_t *)(src + 3 * stride)) = _mm_extract_epi32(c0, 3);
 }
 void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
                                ptrdiff_t stride)
@@ -266,10 +261,10 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
         m2  = _mm_srli_si128(m0, 8);                                           \
         m3  = _mm_srli_si128(m0,12);                                           \
                                                                                \
-        _mm_maskmoveu_si128(m0, mask, (char *) &out[0*sstep_out]);             \
-        _mm_maskmoveu_si128(m1, mask, (char *) &out[1*sstep_out]);             \
-        _mm_maskmoveu_si128(m2, mask, (char *) &out[2*sstep_out]);             \
-        _mm_maskmoveu_si128(m3, mask, (char *) &out[3*sstep_out]);             \
+        *((uint32_t *) (out+0*sstep_out)) =_mm_cvtsi128_si32(m0);                 \
+        *((uint32_t *) (out+1*sstep_out)) =_mm_cvtsi128_si32(m1);                 \
+        *((uint32_t *) (out+2*sstep_out)) =_mm_cvtsi128_si32(m2);                 \
+        *((uint32_t *) (out+3*sstep_out)) =_mm_cvtsi128_si32(m3);                 \
     } while (0)
 #define TRANSPOSE8x8B(in, sstep_in, out, sstep_out)                            \
     do {                                                                       \
@@ -297,14 +292,14 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
         m12 = _mm_unpackhi_epi32(m0 , m1 );                                    \
         m13 = _mm_unpackhi_epi32(m2 , m3 );                                    \
                                                                                \
-        _mm_storel_epi64((__m128i *) &out[0*sstep_out], m10);                  \
-        _mm_storel_epi64((__m128i *) &out[1*sstep_out], _mm_srli_si128(m10,8));\
-        _mm_storel_epi64((__m128i *) &out[2*sstep_out], m12);                  \
-        _mm_storel_epi64((__m128i *) &out[3*sstep_out], _mm_srli_si128(m12,8));\
-        _mm_storel_epi64((__m128i *) &out[4*sstep_out], m11);                  \
-        _mm_storel_epi64((__m128i *) &out[5*sstep_out], _mm_srli_si128(m11,8));\
-        _mm_storel_epi64((__m128i *) &out[6*sstep_out], m13);                  \
-        _mm_storel_epi64((__m128i *) &out[7*sstep_out], _mm_srli_si128(m13,8));\
+        *((uint64_t *) &out[0*sstep_out]) =_mm_cvtsi128_si64(m10);             \
+        *((uint64_t *) &out[1*sstep_out]) =_mm_extract_epi64(m10, 1);          \
+        *((uint64_t *) &out[2*sstep_out]) =_mm_cvtsi128_si64(m12);             \
+        *((uint64_t *) &out[3*sstep_out]) =_mm_extract_epi64(m12, 1);          \
+        *((uint64_t *) &out[4*sstep_out]) =_mm_cvtsi128_si64(m11);             \
+        *((uint64_t *) &out[5*sstep_out]) =_mm_extract_epi64(m11, 1);          \
+        *((uint64_t *) &out[6*sstep_out]) =_mm_cvtsi128_si64(m13);             \
+        *((uint64_t *) &out[7*sstep_out]) =_mm_extract_epi64(m13, 1);          \
     } while (0)
 #define TRANSPOSE16x16B(in, sstep_in, out, sstep_out)                          \
     do {                                                                       \
@@ -323,6 +318,12 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
 
 #define ANGULAR_COMPUTE(dst, src)                                              \
     dst = _mm_srli_si128(src, 1);                                              \
+    dst = _mm_unpacklo_epi8(src, dst);                                         \
+    dst = _mm_maddubs_epi16(dst, r3);                                          \
+    dst = _mm_adds_epi16(dst, add);                                            \
+    dst = _mm_srai_epi16(dst, 5)
+
+#define ANGULAR_COMPUTE1(dst, src)                                              \
     dst = _mm_unpacklo_epi8(src, dst);                                         \
     dst = _mm_maddubs_epi16(dst, r3);                                          \
     dst = _mm_adds_epi16(dst, add);                                            \
@@ -356,16 +357,13 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 
     int i;
     __m128i r0, r1, r2, r3;
-    const __m128i mask    = _mm_set_epi32(0,0,0,-1);
-    const __m128i mask2   = _mm_set_epi32(0,0,255,-1);
-    const __m128i mask3   = _mm_set_epi32(0,0,0,255);
     const __m128i add     = _mm_set1_epi16(16);
     const uint8_t *src1;
     const uint8_t *src2;
     const int     size    = 4;
     uint8_t *ref, *p_src, *src;
     uint8_t  src_tmp[4*4];
-    uint8_t  ref_array[3*(4+1)];
+    uint8_t  ref_array[3*4+4];
     int      angle   = intra_pred_angle[mode-2];
     int      angle_i = angle;
     int      last    = (size * angle) >> 5;
@@ -389,21 +387,19 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         ref = ref_array + size;
         for (i = last; i <= -1; i++)
             ref[i] = src2[-1 + ((i * inv_angle[mode-11] + 128) >> 8)];
-        r0 = _mm_loadl_epi64((__m128i*)(src1-1));
-        _mm_maskmoveu_si128(r0, mask2, (char*) ref);
+        *((uint64_t *) ref)= *((uint64_t *) (src1-1));
     }
     for (i = 0; i < size; i++) {
+        __m64 _r1, _r2, _r3;
         int idx  = (angle_i) >> 5;
         int fact = (angle_i) & 31;
+        r1 = _mm_loadl_epi64((__m128i*)(ref+idx+1));
         if (fact) {
             r3 = _mm_set1_epi16((fact << 8) + (32 - fact));
-            r1 = _mm_loadu_si128((__m128i*)(ref+idx+1));
             ANGULAR_COMPUTE(r0, r1);
             r1 = _mm_packus_epi16(r0, r0);
-        } else {
-            r1 = _mm_loadl_epi64((__m128i*)(ref+idx+1));
         }
-        _mm_maskmoveu_si128(r1, mask, (char*) p_src);
+        *((uint32_t *)p_src) = _mm_cvtsi128_si32(r1);
         angle_i += angle;
         p_src   += stride;
     }
@@ -413,9 +409,8 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             CLIP_PIXEL(src2, src1);
             r0  = _mm_packus_epi16(r0, r0);
             for (i = 0; i < size; i++) {
-                _mm_maskmoveu_si128(r0, mask3, (char*) p_src);
+                *((char *) p_src) = _mm_extract_epi8(r0, i);
                 p_src += stride;
-                r0     = _mm_srli_si128(r0, 1);
             }
         }
     } else {
@@ -423,94 +418,11 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         if (mode == 10 && c_idx == 0) {
             CLIP_PIXEL(src2, src1);
             r0  = _mm_packus_epi16(r0, r0);
-            _mm_maskmoveu_si128(r0, mask, (char*) _src);
+            *((uint32_t *)_src) = _mm_cvtsi128_si32(r0);
         }
     }
 }
-#if 0
-void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
-        ptrdiff_t _stride, int c_idx, int mode)
-{
-    const int intra_pred_angle[] = {
-            32, 26, 21, 17, 13,  9,  5,  2,  0, -2, -5, -9,-13,-17,-21,-26,
-           -32,-26,-21,-17,-13, -9, -5, -2,  0,  2,  5,  9, 13, 17, 21, 26, 32
-    };
-    const int inv_angle[] = {
-            -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,
-            -630, -910, -1638, -4096
-    };
 
-    int i;
-    __m128i r0, r1, r2, r3;
-    const __m128i mask2   = _mm_set_epi32(0,255,-1,-1);
-    const __m128i mask3   = _mm_set_epi32(0,0,0,255);
-    const __m128i add     = _mm_set1_epi16(16);
-    const uint8_t *src1;
-    const uint8_t *src2;
-    const int     size    = 8;
-    uint8_t *ref, *p_src, *src;
-    uint8_t  src_tmp[8*8];
-    uint8_t  ref_array[3*(8+1)];
-    int      angle   = intra_pred_angle[mode-2];
-    int      angle_i = angle;
-    int      last    = (size * angle) >> 5;
-    int      stride;
-
-    if (mode >= 18) {
-        src1   = (const uint8_t*) _top;
-        src2   = (const uint8_t*) _left;
-        src    = (uint8_t*) _src;
-        p_src  = src;
-        stride = _stride;
-    } else {
-        src1   = (const uint8_t*) _left;
-        src2   = (const uint8_t*) _top;
-        src    = &src_tmp[0];
-        p_src  = src;
-        stride = size;
-    }
-    ref = (uint8_t*) (src1 - 1);
-    if (angle < 0 && last < -1) {
-        ref = ref_array + size;
-        for (i = last; i <= -1; i++)
-            ref[i] = src2[-1 + ((i * inv_angle[mode-11] + 128) >> 8)];
-        r0 = _mm_loadu_si128((__m128i*) (src1-1));
-        _mm_maskmoveu_si128(r0, mask2, (char*) ref);
-    }
-    for (i = 0; i < size; i++) {
-        int idx  = (angle_i) >> 5;
-        int fact = (angle_i) & 31;
-        r1 = _mm_loadu_si128((__m128i*)(ref+idx+1));
-        if (fact) {
-            r3 = _mm_set1_epi16((fact << 8) + (32 - fact));
-            ANGULAR_COMPUTE(r0, r1);
-            r1 = _mm_packus_epi16(r0, r0);
-        }
-        _mm_storel_epi64((__m128i*) p_src, r1);
-        angle_i += angle;
-        p_src   += stride;
-    }
-    if (mode >= 18) {
-        if (mode == 26 && c_idx == 0) {
-            p_src = src;
-            CLIP_PIXEL(src2, src1);
-            r0  = _mm_packus_epi16(r0, r0);
-            for (i = 0; i < size; i++) {
-                _mm_maskmoveu_si128(r0, mask3, (char*) p_src);
-                p_src += stride;
-                r0     = _mm_srli_si128(r0, 1);
-            }
-        }
-    } else {
-        TRANSPOSE8x8B(src_tmp, size, _src, _stride);
-        if (mode == 10 && c_idx == 0) {
-            CLIP_PIXEL(src2, src1);
-            r0  = _mm_packus_epi16(r0, r0);
-            _mm_storel_epi64((__m128i*)_src, r0);
-        }
-    }
-}
-#else
 void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode)
     {
@@ -526,14 +438,13 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         int i;
         __m128i r0, r1, r2, r3;
         const __m128i mask2   = _mm_set_epi32(0,255,-1,-1);
-        const __m128i mask3   = _mm_set_epi32(0,0,0,255);
         const __m128i add     = _mm_set1_epi16(16);
         const uint8_t *src1;
         const uint8_t *src2;
         const int     size    = 8;
         uint8_t *ref, *p_src, *src;
         uint8_t  src_tmp[8*8];
-        uint8_t  ref_array[3*(8+1)];
+        uint8_t  ref_array[3*8+4];
         int      angle   = intra_pred_angle[mode-2];
         int      angle_i = angle;
         int      last    = (size * angle) >> 5;
@@ -602,9 +513,8 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
                 CLIP_PIXEL(src2, src1);
                 r0  = _mm_packus_epi16(r0, r0);
                 for (i = 0; i < size; i++) {
-                    _mm_maskmoveu_si128(r0, mask3, (char*) p_src);
+                    *((char *) p_src) = _mm_extract_epi8(r0, i);
                     p_src += stride;
-                    r0     = _mm_srli_si128(r0, 1);
                 }
             }
         } else {
@@ -616,7 +526,7 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             }
         }
 }
-#endif
+
 void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
         ptrdiff_t _stride, int c_idx, int mode)
 {
@@ -631,14 +541,13 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
 
     int i;
     __m128i r0, r1, r2, r3;
-    const __m128i mask3   = _mm_set_epi32(0,0,0,255);
     const __m128i add     = _mm_set1_epi16(16);
     const uint8_t *src1;
     const uint8_t *src2;
     const int     size    = 16;
     uint8_t *ref, *p_src, *src;
     uint8_t  src_tmp[16*16];
-    uint8_t  ref_array[3*(16+1)];
+    uint8_t  ref_array[3*16+4];
     int      angle   = intra_pred_angle[mode-2];
     int      angle_i = angle;
     int      last    = (size * angle) >> 5;
@@ -689,9 +598,8 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             CLIP_PIXEL_HI();
             r0  = _mm_packus_epi16(r0, r3);
             for (i = 0; i < size; i++) {
-                _mm_maskmoveu_si128(r0, _mm_set_epi32(0,0,0,255), (char*) p_src);
+                *((char *) p_src) = _mm_extract_epi8(r0, i);
                 p_src += stride;
-                r0     = _mm_srli_si128(r0, 1);
             }
         }
     } else {
