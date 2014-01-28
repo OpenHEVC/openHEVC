@@ -1267,6 +1267,33 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
     }
 }
 
+static void FUNC(put_hevc_epel_t_hv_w)(uint8_t *dst, ptrdiff_t dststride,
+                                        int16_t *src1, ptrdiff_t src1stride,
+                                        uint8_t *_src, ptrdiff_t _srcstride,
+                                        int width, int height, int mx, int my,
+                                        uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,
+                                        int16_t olxFlag, int16_t ol1Flag,
+                                        void *s, int idx, int weight)
+{
+    int16_t tmp_array[(MAX_PB_SIZE + 3) * MAX_PB_SIZE];
+    int16_t *tmp = tmp_array;
+    HEVCContext *_s= ( HEVCContext *) s;
+    uint8_t * src= (uint8_t *) _src;
+    src -= EPEL_EXTRA_BEFORE * _srcstride;
+    _s->hevcdsp.put_hevc_epel[idx][0][1]( tmp, MAX_PB_SIZE,
+                              src, _srcstride,
+                              width, height + EPEL_EXTRA,
+                              mx, my);
+
+    tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
+
+    _s->hevcdsp.put_hevc_epel_v_w_14[idx][weight]( dst, dststride, src1, src1stride,
+                                                   (uint8_t *) tmp, MAX_PB_SIZE<<1 ,
+                                                   width, height, mx, my, NULL,
+                                                   denom, wlxFlag, wl1Flag,
+                                                   olxFlag, ol1Flag);
+
+}
 
 #define PUT_HEVC_EPEL_PIXELS_WEIGHTED(W)                                       \
 static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
@@ -1354,6 +1381,37 @@ static void FUNC(put_hevc_epel_v_w ## W)(                                      \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x++) {                                          \
             tmp = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);              \
+            PUT_WEIGHTED_PRED_COMPUTE## W();                                   \
+        }                                                                      \
+        src += srcstride;                                                      \
+        dst += dststride;                                                      \
+        PUT_WEIGHTED_PRED_END## W()                                            \
+    }                                                                          \
+}                                                                               \
+static void FUNC(put_hevc_epel_v_w ## W ## _14)(                               \
+                             uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
+                             uint8_t *_src, ptrdiff_t _srcstride,              \
+                             int width, int height, int mx, int my,            \
+                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
+{                                                                              \
+    int x, y;                                                                  \
+    int16_t    *src       = (int16_t *)_src;                                       \
+    ptrdiff_t srcstride = _srcstride / sizeof(int16_t);                          \
+    pixel    *dst       = (pixel *)_dst;                                       \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                          \
+    int16_t   tmp;                                                             \
+    PUT_WEIGHTED_PRED_INIT## W();                                              \
+    const int8_t *filter = ff_hevc_epel_filters[my - 1];                       \
+    int8_t filter_0 = filter[0];                                               \
+    int8_t filter_1 = filter[1];                                               \
+    int8_t filter_2 = filter[2];                                               \
+    int8_t filter_3 = filter[3];                                               \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x++) {                                          \
+            tmp = EPEL_FILTER(src, srcstride) >> (14 - 8);                      \
             PUT_WEIGHTED_PRED_COMPUTE## W();                                   \
         }                                                                      \
         src += srcstride;                                                      \
