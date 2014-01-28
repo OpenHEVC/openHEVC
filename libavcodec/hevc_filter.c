@@ -189,8 +189,6 @@ static void copy_CTB(uint8_t *dst, uint8_t *src,
 
 static void sao_filter_CTB(HEVCContext *s, int x, int y)
 {
-    //  TODO: This should be easily parallelizable
-    //  TODO: skip CBs when (cu_transquant_bypass_flag || (pcm_loop_filter_disable_flag && pcm_flag))
     int c_idx = 0;
     int class = 1, class_index;
     int edges[4];  // 0 left 1 top 2 right 3 bottom

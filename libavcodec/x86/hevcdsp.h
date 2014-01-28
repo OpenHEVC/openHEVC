@@ -6,7 +6,7 @@ struct AVFrame;
 struct UpsamplInf;
 struct HEVCWindow;
 
-//#define OPTI_ASM
+#define OPTI_ASM
 
 void ff_hevc_put_hevc_epel_v2_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
 void ff_hevc_put_hevc_epel_v4_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
@@ -103,13 +103,13 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_
 void ff_hevc_transform_32x32_add_10_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
 // MC functions
-/*void ff_hevc_put_unweighted_pred_8_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
+void ff_hevc_put_unweighted_pred_8_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
 
 void ff_hevc_weighted_pred_8_sse(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
 void ff_hevc_put_weighted_pred_avg_8_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src1, int16_t *src2, ptrdiff_t srcstride,int width, int height);
 
 void ff_hevc_weighted_pred_avg_8_sse(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,int16_t ol0Flag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,int16_t *src1, int16_t *src2, ptrdiff_t srcstride,int width, int height);
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,11 +171,6 @@ QPEL_PROTOTYPE(v8_3 ,  8);
 QPEL_PROTOTYPE_SSE(v16_1,  8);
 QPEL_PROTOTYPE_SSE(v16_2,  8);
 QPEL_PROTOTYPE_SSE(v16_3,  8);
-
-QPEL_PROTOTYPE_SSE(v4_1 ,  10);
-//QPEL_PROTOTYPE(v4_2 ,  10);
-//QPEL_PROTOTYPE(v4_3 ,  10);
-
 
 QPEL_PROTOTYPE(h4_1_v_1 ,  8);
 QPEL_PROTOTYPE(h4_1_v_2 ,  8);
