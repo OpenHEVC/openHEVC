@@ -1447,7 +1447,7 @@ static void chroma_mc_bi_pred(HEVCContext *s,
             dst , dststride ,
             src1, src1stride,
             src , srcstride ,
-            block_w, block_h, mx, my, lc->mc_buffer,
+            block_w, block_h, mx, my,
             denom, wlxFlag, wl1Flag, olxFlag, ol1Flag);
 }
 

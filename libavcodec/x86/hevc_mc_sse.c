@@ -311,6 +311,11 @@
 #define WEIGHTED_INIT8_10()
 #define WEIGHTED_INIT16_10()
 
+#define WEIGHTED_INIT2_14()  WEIGHTED_INIT2_10()                                                      
+#define WEIGHTED_INIT4_14()                                                       
+#define WEIGHTED_INIT8_14() 
+#define WEIGHTED_INIT16_14()
+
 
 #define WEIGHTED_LOAD2()                                                       \
     r1 = _mm_loadl_epi64((__m128i *) &src[x    ])
@@ -347,6 +352,10 @@
 #define WEIGHTED_STORE2_10() PEL_STORE2(dst);
 #define WEIGHTED_STORE4_10() PEL_STORE4(dst);
 #define WEIGHTED_STORE8_10() PEL_STORE8(dst);
+
+#define WEIGHTED_STORE2_14() PEL_STORE2(dst);
+#define WEIGHTED_STORE4_14() PEL_STORE4(dst);
+#define WEIGHTED_STORE8_14() PEL_STORE8(dst);
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -608,6 +617,10 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
     r2 = _mm_srai_epi32(r2, shift);                                            \
     r1 = _mm_srai_epi32(r1, shift);                                            \
     r1 = _mm_packs_epi32(r2, r1)
+
+#define EPEL_V_COMPUTE2_14() EPEL_V_COMPUTE2_10()
+#define EPEL_V_COMPUTE4_14() EPEL_V_COMPUTE4_10()
+#define EPEL_V_COMPUTE8_14() EPEL_V_COMPUTE8_10()
 
 #define EPEL_V_COMPUTEB2_8()                                                    \
     INST_SRC1_CST_4(_mm_unpacklo_epi8, y, x , c0);                             \
@@ -877,8 +890,7 @@ void ff_hevc_put_hevc_epel_pixels ## H ## _w ## W ## _## D ## _sse (           \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer, uint8_t denom,                 \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     __m128i x1, x2, x3, r1, r2, r3, r4;                                        \
@@ -904,8 +916,7 @@ void ff_hevc_put_hevc_qpel_pixels ## H  ## _w ## W ## _## D ## _sse (         \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height,                            \
-                             int16_t* mcbuffer,uint8_t denom,                  \
+                             int width, int height, int16_t* mcbuffer, uint8_t denom,  \
                              int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
@@ -936,8 +947,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _w ## W ## _## D ## _sse (                \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer, uint8_t denom,                 \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     __m128i x1, x2, r1, r2, r3, r4;                                            \
@@ -968,8 +978,7 @@ void ff_hevc_put_hevc_epel_v ## V ## _w ## W ## _## D ## _sse (                \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer,uint8_t denom,                  \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
@@ -993,61 +1002,40 @@ void ff_hevc_put_hevc_epel_v ## V ## _w ## W ## _## D ## _sse (                \
         WEIGHTED_END_ ## W()                                                   \
     }                                                                          \
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_epel_hvX_X_sse
-////////////////////////////////////////////////////////////////////////////////
-#define PUT_HEVC_EPEL_HV_W(H, D, W)                                            \
-void ff_hevc_put_hevc_epel_hv ## H ## _w ## W ## _## D ## _sse (               \
+#define PUT_HEVC_EPEL_V_W_14b(V, D, W)                                         \
+void ff_hevc_put_hevc_epel_v ## V ## _w ## W ## _14b_## D ## _sse (            \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer,uint8_t denom,                  \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
-    int shift = 6;                                                             \
+    int shift = 14 - 8;                                                        \
     __m128i x1, x2, x3, x4;                                                    \
     __m128i t1, t2, t3, t4;                                                    \
     __m128i r1, r2, r3, r4;                                                    \
-    const __m128i c0   = _mm_setzero_si128();                                  \
-    int16_t *tmp       = mcbuffer;                                             \
-    WEIGHTED_INIT_ ## W(H, D);                                                 \
-    SRC_INIT_ ## D();                                                          \
+    const __m128i c0    = _mm_setzero_si128();                                 \
+    WEIGHTED_INIT_ ## W(V, D);                                                 \
+    SRC_INIT_10();                                                             \
     DST_INIT_ ## D();                                                          \
-    EPEL_H_FILTER_ ## D();                                                     \
     EPEL_V_FILTER_10();                                                        \
-                                                                               \
-    src -= EPEL_EXTRA_BEFORE * srcstride;                                      \
-                                                                               \
-    /* horizontal */                                                           \
-    for (y = 0; y < height + EPEL_EXTRA; y ++) {                               \
-        for(x = 0; x < width; x += H) {                                        \
-            EPEL_H_LOAD ## H();                                                \
-            EPEL_H_COMPUTE ## H ## _ ## D();                                   \
-            PEL_STORE ## H(tmp);                                               \
+    for (y = 0; y < height; y++) {                                             \
+        for(x = 0; x < width; x += V) {                                        \
+            EPEL_V_LOAD(src);                                                  \
+            EPEL_V_COMPUTE ## V ## _10();                                      \
+            WEIGHTED_COMPUTE ## V ## _ ## W();                                 \
+            WEIGHTED_STORE ## V ## _ ## D();                                   \
         }                                                                      \
         src += srcstride;                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-    }                                                                          \
-                                                                               \
-    tmp       = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;                    \
-    srcstride = MAX_PB_SIZE;                                                   \
-                                                                               \
-    /* vertical */                                                             \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-            EPEL_V_LOAD(tmp);                                                  \
-            EPEL_V_COMPUTE ## H  ## _10();                                     \
-            WEIGHTED_COMPUTE ## H ## _ ## W();                                 \
-            WEIGHTED_STORE ## H ## _ ## D();                                   \
-        }                                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
         dst += dststride;                                                      \
         WEIGHTED_END_ ## W()                                                   \
     }                                                                          \
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// ff_hevc_put_hevc_epel_hvX_X_sse
+////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_hX_X_X_sse
@@ -1241,19 +1229,46 @@ EPEL_FUNC( PUT_HEVC_EPEL_V,  2, 10)
 EPEL_FUNC( PUT_HEVC_EPEL_V,  4, 10)
 EPEL_FUNC( PUT_HEVC_EPEL_V,  8, 10)
 
+EPEL_FUNC( PUT_HEVC_EPEL_V,  2, 14)
+EPEL_FUNC( PUT_HEVC_EPEL_V,  4, 14)
+EPEL_FUNC( PUT_HEVC_EPEL_V,  8, 14)
+/*
 PUT_HEVC_EPEL_V( 2, 14)
 PUT_HEVC_EPEL_V( 4, 14)
 PUT_HEVC_EPEL_V( 8, 14)
+*/
+PUT_HEVC_EPEL_V_W_14b(2, 8, 0)
+PUT_HEVC_EPEL_V_W_14b(4, 8, 0)
+PUT_HEVC_EPEL_V_W_14b(8, 8, 0)
+PUT_HEVC_EPEL_V_W_14b(2, 8, 1)
+PUT_HEVC_EPEL_V_W_14b(4, 8, 1)
+PUT_HEVC_EPEL_V_W_14b(8, 8, 1)
+PUT_HEVC_EPEL_V_W_14b(2, 8, 2)
+PUT_HEVC_EPEL_V_W_14b(4, 8, 2)
+PUT_HEVC_EPEL_V_W_14b(8, 8, 2)
+PUT_HEVC_EPEL_V_W_14b(2, 8, 3)
+PUT_HEVC_EPEL_V_W_14b(4, 8, 3)
+PUT_HEVC_EPEL_V_W_14b(8, 8, 3)
+
+PUT_HEVC_EPEL_V_W_14b(2, 10, 0)
+PUT_HEVC_EPEL_V_W_14b(4, 10, 0)
+PUT_HEVC_EPEL_V_W_14b(8, 10, 0)
+PUT_HEVC_EPEL_V_W_14b(2, 10, 1)
+PUT_HEVC_EPEL_V_W_14b(4, 10, 1)
+PUT_HEVC_EPEL_V_W_14b(8, 10, 1)
+PUT_HEVC_EPEL_V_W_14b(2, 10, 2)
+PUT_HEVC_EPEL_V_W_14b(4, 10, 2)
+PUT_HEVC_EPEL_V_W_14b(8, 10, 2)
+PUT_HEVC_EPEL_V_W_14b(2, 10, 3)
+PUT_HEVC_EPEL_V_W_14b(4, 10, 3)
+PUT_HEVC_EPEL_V_W_14b(8, 10, 3)
+
+
 //EPEL_FUNC( PUT_HEVC_EPEL_V,  4, 14)
 //EPEL_FUNC( PUT_HEVC_EPEL_V,  8, 14)
 
 // ff_hevc_put_hevc_epel_hvX_X_sse
-EPEL_FUNC( PUT_HEVC_EPEL_HV,  2,  8)
-EPEL_FUNC( PUT_HEVC_EPEL_HV,  4,  8)
-EPEL_FUNC( PUT_HEVC_EPEL_HV,  8,  8)
 
-EPEL_FUNC( PUT_HEVC_EPEL_HV,  2, 10)
-EPEL_FUNC( PUT_HEVC_EPEL_HV,  4, 10)
 
 // ff_hevc_put_hevc_qpel_hX_X_X_sse
 QPEL_FUNC( PUT_HEVC_QPEL_H,  4, 1,  8)
