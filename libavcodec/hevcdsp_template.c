@@ -1203,7 +1203,7 @@ static void FUNC(put_hevc_epel_v_14)(int16_t *dst, ptrdiff_t dststride,
     }
 }
 
-static void FUNC(put_hevc_epel_t_hv)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
                                    int width, int height, int mx, int my,
                                    void *s, ptrdiff_t idx)
@@ -1228,45 +1228,33 @@ static void FUNC(put_hevc_epel_t_hv)(int16_t *dst, ptrdiff_t dststride,
 }
 
 
-
-static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
-                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                   int width, int height, int mx, int my)
+static void FUNC(put_hevc_epel_hv_w)(  uint8_t *dst, ptrdiff_t dststride,
+                                        int16_t *src1, ptrdiff_t src1stride,
+                                        uint8_t *_src, ptrdiff_t _srcstride,
+                                        int width, int height, int mx, int my,
+                                        uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,
+                                        int16_t olxFlag, int16_t ol1Flag,
+                                        void *s, int idx, int weight)
 {
-    int x, y;
-    pixel *src = (pixel *)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter_h = ff_hevc_epel_filters[mx - 1];
-    const int8_t *filter_v = ff_hevc_epel_filters[my - 1];
-    int8_t filter_0 = filter_h[0];
-    int8_t filter_1 = filter_h[1];
-    int8_t filter_2 = filter_h[2];
-    int8_t filter_3 = filter_h[3];
     int16_t tmp_array[(MAX_PB_SIZE + 3) * MAX_PB_SIZE];
     int16_t *tmp = tmp_array;
-
-    src -= EPEL_EXTRA_BEFORE * srcstride;
-
-    for (y = 0; y < height + EPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
+    HEVCContext *_s= ( HEVCContext *) s;
+    uint8_t * src= (uint8_t *) _src;
+    src -= EPEL_EXTRA_BEFORE * _srcstride;
+    _s->hevcdsp.put_hevc_epel[idx][0][1]( tmp, MAX_PB_SIZE,
+                              src, _srcstride,
+                              width, height + EPEL_EXTRA,
+                              mx, my);
 
     tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter_0 = filter_v[0];
-    filter_1 = filter_v[1];
-    filter_2 = filter_v[2];
-    filter_3 = filter_v[3];
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-}
 
+    _s->hevcdsp.put_hevc_epel_v_w_14[idx][weight]( dst, dststride, src1, src1stride,
+                                                   (uint8_t *) tmp, MAX_PB_SIZE<<1 ,
+                                                   width, height, mx, my,
+                                                   denom, wlxFlag, wl1Flag,
+                                                   olxFlag, ol1Flag);
+
+}
 
 #define PUT_HEVC_EPEL_PIXELS_WEIGHTED(W)                                       \
 static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
@@ -1274,8 +1262,7 @@ static void FUNC(put_hevc_epel_pixels_w ## W)(                                 \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer, uint8_t denom,                 \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
@@ -1302,8 +1289,7 @@ static void FUNC(put_hevc_epel_h_w ## W)(                                      \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer, uint8_t denom,                 \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
@@ -1335,8 +1321,7 @@ static void FUNC(put_hevc_epel_v_w ## W)(                                      \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer, uint8_t denom,                 \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
@@ -1360,54 +1345,33 @@ static void FUNC(put_hevc_epel_v_w ## W)(                                      \
         dst += dststride;                                                      \
         PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
-}
-
-#define PUT_HEVC_EPEL_HV_WEIGHTED(W)                                           \
-static void FUNC(put_hevc_epel_hv_w ## W)(                                     \
+}                                                                               \
+static void FUNC(put_hevc_epel_v_w ## W ## _14)(                               \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
                              int width, int height, int mx, int my,            \
-                             int16_t* mcbuffer, uint8_t denom,                 \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
-    pixel    *src       = (pixel *)_src;                                       \
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);                          \
+    int16_t    *src       = (int16_t *)_src;                                   \
+    ptrdiff_t srcstride = _srcstride / sizeof(int16_t);                        \
     pixel    *dst       = (pixel *)_dst;                                       \
     ptrdiff_t dststride = _dststride / sizeof(pixel);                          \
     int16_t   tmp;                                                             \
     PUT_WEIGHTED_PRED_INIT## W();                                              \
-    const int8_t *filter_h = ff_hevc_epel_filters[mx - 1];                     \
-    const int8_t *filter_v = ff_hevc_epel_filters[my - 1];                     \
-    int8_t filter_0 = filter_h[0];                                             \
-    int8_t filter_1 = filter_h[1];                                             \
-    int8_t filter_2 = filter_h[2];                                             \
-    int8_t filter_3 = filter_h[3];                                             \
-    int16_t buf_array[(MAX_PB_SIZE + 3) * MAX_PB_SIZE];                        \
-    int16_t *buf = buf_array;                                                  \
-                                                                               \
-    src -= EPEL_EXTRA_BEFORE * srcstride;                                      \
-                                                                               \
-    for (y = 0; y < height + EPEL_EXTRA; y++) {                                \
-        for (x = 0; x < width; x++)                                            \
-            buf[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);                   \
-        src += srcstride;                                                      \
-        buf += MAX_PB_SIZE;                                                    \
-    }                                                                          \
-                                                                               \
-    buf      = buf_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;                    \
-    filter_0 = filter_v[0];                                                    \
-    filter_1 = filter_v[1];                                                    \
-    filter_2 = filter_v[2];                                                    \
-    filter_3 = filter_v[3];                                                    \
+    const int8_t *filter = ff_hevc_epel_filters[my - 1];                       \
+    int8_t filter_0 = filter[0];                                               \
+    int8_t filter_1 = filter[1];                                               \
+    int8_t filter_2 = filter[2];                                               \
+    int8_t filter_3 = filter[3];                                               \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x++) {                                          \
-            tmp = EPEL_FILTER(buf, MAX_PB_SIZE) >> 6;                          \
+            tmp = EPEL_FILTER(src, srcstride) >> (14 - 8);                     \
             PUT_WEIGHTED_PRED_COMPUTE## W();                                   \
         }                                                                      \
-        buf += MAX_PB_SIZE;                                                    \
+        src += srcstride;                                                      \
         dst += dststride;                                                      \
         PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
@@ -1416,8 +1380,7 @@ static void FUNC(put_hevc_epel_hv_w ## W)(                                     \
 #define PUT_HEVC_EPEL_FUNC(W)                                                  \
 PUT_HEVC_EPEL_PIXELS_WEIGHTED(W)                                               \
 PUT_HEVC_EPEL_H_WEIGHTED(W)                                                    \
-PUT_HEVC_EPEL_V_WEIGHTED(W)                                                    \
-PUT_HEVC_EPEL_HV_WEIGHTED(W)
+PUT_HEVC_EPEL_V_WEIGHTED(W)
 
 PUT_HEVC_EPEL_FUNC(0)
 PUT_HEVC_EPEL_FUNC(1)
