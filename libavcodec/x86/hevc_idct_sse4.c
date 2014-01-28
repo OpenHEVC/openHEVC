@@ -466,8 +466,6 @@ void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
     S0 = _mm_unpacklo_epi32(m128iTmp1, m128iTmp2);
     S8 = _mm_unpackhi_epi32(m128iTmp1, m128iTmp2);
 
-    m128iTmp2 = _mm_set_epi32(0, 0, 0, -1);   //mask to store 4 * 8bit data
-
     m128iA = _mm_loadl_epi64((__m128i *) dst);
     m128iA = _mm_unpacklo_epi8(m128iA, _mm_setzero_si128());
     m128iTmp1 = _mm_adds_epi16(S0, m128iA);	//contains first 4 values
@@ -935,8 +933,6 @@ void ff_hevc_transform_4x4_add_8_sse4(uint8_t *_dst, int16_t *coeffs,
     m128iTmp2 = _mm_unpacklo_epi16(S8, m128iD);
     S0 = _mm_unpacklo_epi32(m128iTmp1, m128iTmp2);
     S8 = _mm_unpackhi_epi32(m128iTmp1, m128iTmp2);
-
-    m128iTmp2 = _mm_set_epi32(0, 0, 0, -1);   //mask to store 4 * 8bit data
 
     m128iA = _mm_loadl_epi64((__m128i *) dst);
     m128iA = _mm_unpacklo_epi8(m128iA, _mm_setzero_si128());

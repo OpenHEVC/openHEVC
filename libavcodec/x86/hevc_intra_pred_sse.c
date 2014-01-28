@@ -467,8 +467,8 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             ref = ref_array + size;
             for (i = last; i <= -1; i++)
                 ref[i] = src2[-1 + ((i * inv_angle[mode-11] + 128) >> 8)];
-            r0 = _mm_loadu_si128((__m128i*) (src1-1));
-            _mm_maskmoveu_si128(r0, mask2, (char*) ref);
+            *((uint64_t *) ref) =  *((uint64_t *) (src1-1));
+            ref[8]=src1[7];
         }
         if (angle == 0) {
             r1 = _mm_loadu_si128((__m128i*)(ref+1));

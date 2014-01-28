@@ -339,7 +339,7 @@
 
 #define WEIGHTED_STORE2_8()                                                      \
     r1 = _mm_packus_epi16(r1, r1);                                             \
-    _mm_maskmoveu_si128(r1, mask2, (char *) &dst[x])
+    *((uint32_t *) &dst[x]) = _mm_cvtsi128_si32(r1)
 #define WEIGHTED_STORE4_8()                                                    \
     r1 = _mm_packus_epi16(r1, r1);                                             \
     *((uint32_t *) &dst[x]) =_mm_cvtsi128_si32(r1)
