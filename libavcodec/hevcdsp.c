@@ -185,9 +185,9 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 #define EPEL_V14(depth)                                                        \
     hevcdsp->put_hevc_epel_v_14[0]     = hevcdsp->put_hevc_epel_v_14[1] = hevcdsp->put_hevc_epel_v_14[2] = hevcdsp->put_hevc_epel_v_14[3] = hevcdsp->put_hevc_epel_v_14[4] = FUNC(put_hevc_epel_v_14,depth);    \
     hevcdsp->put_hevc_epel_v_w_14[0][0] = hevcdsp->put_hevc_epel_v_w_14[1][0] = hevcdsp->put_hevc_epel_v_w_14[2][0] = hevcdsp->put_hevc_epel_v_w_14[3][0] = hevcdsp->put_hevc_epel_v_w_14[4][0] = FUNC(put_hevc_epel_v_w0_14,depth);    \
-    hevcdsp->put_hevc_epel_v_w_14[0][1] = hevcdsp->put_hevc_epel_v_w_14[1][1] = hevcdsp->put_hevc_epel_v_w_14[2][1] = hevcdsp->put_hevc_epel_v_w_14[3][1] = hevcdsp->put_hevc_epel_v_w_14[4][1] = FUNC(put_hevc_epel_v_w0_14,depth);    \
-    hevcdsp->put_hevc_epel_v_w_14[0][2] = hevcdsp->put_hevc_epel_v_w_14[1][2] = hevcdsp->put_hevc_epel_v_w_14[2][2] = hevcdsp->put_hevc_epel_v_w_14[3][2] = hevcdsp->put_hevc_epel_v_w_14[4][2] = FUNC(put_hevc_epel_v_w0_14,depth);    \
-    hevcdsp->put_hevc_epel_v_w_14[0][3] = hevcdsp->put_hevc_epel_v_w_14[1][3] = hevcdsp->put_hevc_epel_v_w_14[2][3] = hevcdsp->put_hevc_epel_v_w_14[3][3] = hevcdsp->put_hevc_epel_v_w_14[4][3] = FUNC(put_hevc_epel_v_w0_14,depth)
+    hevcdsp->put_hevc_epel_v_w_14[0][1] = hevcdsp->put_hevc_epel_v_w_14[1][1] = hevcdsp->put_hevc_epel_v_w_14[2][1] = hevcdsp->put_hevc_epel_v_w_14[3][1] = hevcdsp->put_hevc_epel_v_w_14[4][1] = FUNC(put_hevc_epel_v_w1_14,depth);    \
+    hevcdsp->put_hevc_epel_v_w_14[0][2] = hevcdsp->put_hevc_epel_v_w_14[1][2] = hevcdsp->put_hevc_epel_v_w_14[2][2] = hevcdsp->put_hevc_epel_v_w_14[3][2] = hevcdsp->put_hevc_epel_v_w_14[4][2] = FUNC(put_hevc_epel_v_w2_14,depth);    \
+    hevcdsp->put_hevc_epel_v_w_14[0][3] = hevcdsp->put_hevc_epel_v_w_14[1][3] = hevcdsp->put_hevc_epel_v_w_14[2][3] = hevcdsp->put_hevc_epel_v_w_14[3][3] = hevcdsp->put_hevc_epel_v_w_14[4][3] = FUNC(put_hevc_epel_v_w3_14,depth)
 
 #define HEVC_DSP(depth)                                                     \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                 \
