@@ -400,6 +400,7 @@ void ff_hevc_sao_band_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
 
         src0 = _mm_packus_epi16(src0, src1);
 
+
         if (!chroma){
                 _mm_storel_epi64((__m128i*)dst, src0);
                 *((short *) (dst + 8)) = _mm_extract_epi16(src0, 4);
@@ -408,6 +409,7 @@ void ff_hevc_sao_band_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
                 *((uint32_t *) dst) =_mm_cvtsi128_si32(src0);
                 *((short *) (dst + 4)) = _mm_extract_epi16(src0, 2);
             }
+
         dst += stride;
         src += stride;
     }
@@ -987,6 +989,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             x0 = _mm_loadu_si128((__m128i *) (src + init_x));
             x0 = _mm_add_epi8(x0, x1);
+
         if (!chroma){
                 _mm_storel_epi64((__m128i*)(dst+ init_x), x0);
                 *((short *) (dst + 8 + init_x)) = _mm_extract_epi16(x0, 4);
@@ -996,7 +999,6 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
                 *((short *) (dst + 4 + init_x)) = _mm_extract_epi16(x0, 2);
             }
 
-
             init_y = 1;
         }
         if (borders[3]) {
@@ -1004,6 +1006,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             x0 = _mm_loadu_si128((__m128i *) (src + init_x + y_stride));
             x0 = _mm_add_epi8(x0, x1);
+
             if (!chroma){
                 _mm_storel_epi64((__m128i*)(dst + init_x + y_stride), x0);
                 *((short *) (dst + 8 + init_x + y_stride)) = _mm_extract_epi16(x0, 4);

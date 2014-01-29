@@ -257,14 +257,11 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
         __m128i m11 = _mm_unpacklo_epi8(m2, m3);                               \
                                                                                \
         m0  = _mm_unpacklo_epi16(m10, m11);                                    \
-        m1  = _mm_srli_si128(m0, 4);                                           \
-        m2  = _mm_srli_si128(m0, 8);                                           \
-        m3  = _mm_srli_si128(m0,12);                                           \
                                                                                \
-        *((uint32_t *) (out+0*sstep_out)) =_mm_cvtsi128_si32(m0);                 \
-        *((uint32_t *) (out+1*sstep_out)) =_mm_cvtsi128_si32(m1);                 \
-        *((uint32_t *) (out+2*sstep_out)) =_mm_cvtsi128_si32(m2);                 \
-        *((uint32_t *) (out+3*sstep_out)) =_mm_cvtsi128_si32(m3);                 \
+        *((uint32_t *) (out+0*sstep_out)) =_mm_cvtsi128_si32(m0);              \
+        *((uint32_t *) (out+1*sstep_out)) =_mm_extract_epi32(m0, 1);           \
+        *((uint32_t *) (out+2*sstep_out)) =_mm_extract_epi32(m0, 2);           \
+        *((uint32_t *) (out+3*sstep_out)) =_mm_extract_epi32(m0, 3);           \
     } while (0)
 #define TRANSPOSE8x8B(in, sstep_in, out, sstep_out)                            \
     do {                                                                       \
@@ -323,11 +320,12 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
     dst = _mm_adds_epi16(dst, add);                                            \
     dst = _mm_srai_epi16(dst, 5)
 
-#define ANGULAR_COMPUTE1(dst, src)                                              \
-    dst = _mm_unpacklo_epi8(src, dst);                                         \
-    dst = _mm_maddubs_epi16(dst, r3);                                          \
-    dst = _mm_adds_epi16(dst, add);                                            \
-    dst = _mm_srai_epi16(dst, 5)
+#define ANGULAR_COMPUTE64(dst, src)                                              \
+    dst = _mm_srli_si64(src, 1);                                              \
+    dst = _mm_unpacklo_pi8(src, dst);                                         \
+    dst = _mm_maddubs_pi16(dst, r3);                                          \
+    dst = _mm_adds_pi16(dst, add);                                            \
+    dst = _mm_srai_pi16(dst, 5)
 
 #define CLIP_PIXEL(src1, src2)                                                 \
     r3  = _mm_loadu_si128((__m128i*)src1);                                     \
@@ -358,12 +356,13 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
     int i;
     __m128i r0, r1, r2, r3;
     const __m128i add     = _mm_set1_epi16(16);
+    const __m64 _add     = _mm_set1_pi16(16);
     const uint8_t *src1;
     const uint8_t *src2;
     const int     size    = 4;
     uint8_t *ref, *p_src, *src;
     uint8_t  src_tmp[4*4];
-    uint8_t  ref_array[3*4+4];
+    uint8_t  ref_array[3 * 4 + 1];
     int      angle   = intra_pred_angle[mode-2];
     int      angle_i = angle;
     int      last    = (size * angle) >> 5;
@@ -387,19 +386,28 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         ref = ref_array + size;
         for (i = last; i <= -1; i++)
             ref[i] = src2[-1 + ((i * inv_angle[mode-11] + 128) >> 8)];
-        *((uint64_t *) ref)= *((uint64_t *) (src1-1));
+        *((uint32_t *) ref)= *((uint32_t *) (src1-1));
+        ref[4] = src1[3];
     }
     for (i = 0; i < size; i++) {
-        __m64 _r1, _r2, _r3;
+        __m64 _r0, _r1, _r2, _r3;
         int idx  = (angle_i) >> 5;
         int fact = (angle_i) & 31;
-        r1 = _mm_loadl_epi64((__m128i*)(ref+idx+1));
         if (fact) {
-            r3 = _mm_set1_epi16((fact << 8) + (32 - fact));
-            ANGULAR_COMPUTE(r0, r1);
-            r1 = _mm_packus_epi16(r0, r0);
+            _r1 = *((__m64*)(ref+idx+1));
+            _r3 = _mm_set1_pi16((fact << 8) + (32 - fact));
+//            ANGULAR_COMPUTE64(_r0, _r1);
+            _r0 = _mm_srli_si64(_r1, 8);
+            _r0 = _mm_unpacklo_pi8(_r1, _r0);
+            _r0 = _mm_maddubs_pi16(_r0, _r3);
+            _r0 = _mm_adds_pi16(_r0, _add);
+            _r0 = _mm_srai_pi16(_r0, 5);
+            _r1 = _mm_packs_pu16(_r0, _r0);
+            *((uint32_t *)p_src) = _mm_cvtsi64_si32(_r1);
+        } else {
+            _r1 = *((__m64*)(ref+idx+1));
+            *((uint32_t *)p_src) = _mm_cvtsi64_si32(_r1);
         }
-        *((uint32_t *)p_src) = _mm_cvtsi128_si32(r1);
         angle_i += angle;
         p_src   += stride;
     }
