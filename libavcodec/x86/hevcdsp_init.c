@@ -86,12 +86,12 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 }
                 if (EXTERNAL_SSSE3(mm_flags)) {
 
-                    c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
+                    // c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
 
-                    c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
-                    c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
-                    c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
-                    c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
+                    // c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
+                    // c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
+                    // c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
+                    // c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
 
 
                     PEL_LINK(c->put_hevc_qpel, 0, 0, 0, qpel_pixels4 ,  8);
@@ -204,16 +204,16 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_hevc_qpel_v_14[3][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
                     c->put_hevc_qpel_v_14[4][3] = ff_hevc_put_hevc_qpel_v8_3_14_sse;
 
-                    c->transform_skip     = ff_hevc_transform_skip_8_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
-                    c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_2_8_sse;
-                    c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_3_8_sse;
+                    // c->transform_skip     = ff_hevc_transform_skip_8_sse;
+                    // c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
+                    // c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
+                    // c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_2_8_sse;
+                    // c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_3_8_sse;
 
-                    c->sao_band_filter[0] = ff_hevc_sao_band_filter_0_8_sse;
-                    c->sao_band_filter[1] = ff_hevc_sao_band_filter_1_8_sse;
-                    c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
-                    c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
+                    // c->sao_band_filter[0] = ff_hevc_sao_band_filter_0_8_sse;
+                    // c->sao_band_filter[1] = ff_hevc_sao_band_filter_1_8_sse;
+                    // c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
+                    // c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
 
                     PEL_LINK(c->put_hevc_qpel, 0, 1, 1, qpel_h4_1_v_1  ,  8);
                     PEL_LINK(c->put_hevc_qpel, 1, 1, 1, qpel_h8_1_v_1  ,  8);

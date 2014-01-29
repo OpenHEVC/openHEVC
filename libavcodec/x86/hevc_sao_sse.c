@@ -400,8 +400,10 @@ void ff_hevc_sao_band_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
 
         src0 = _mm_packus_epi16(src0, src1);
 
-        for (x = 0; x < width; x++)
-            *((char *) (dst + x)) = _mm_extract_epi8(src0, x);
+        for (x = 0; x < width; x++) {
+            *((char *) (dst + x)) = _mm_extract_epi8(src0, 0);
+            src0= _mm_srli_si128(src0,1);
+        }
 
         dst += stride;
         src += stride;
@@ -493,8 +495,10 @@ void ff_hevc_sao_band_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
         src1 = _mm_add_epi16(src1, x0);
 
         src0 = _mm_packus_epi16(src0, src1);
-        for (x = 0; x < width; x++)
-            *((char *) (dst + x)) = _mm_extract_epi8(src0, x);
+        for (x = 0; x < width; x++) {
+            *((char *) (dst + x)) = _mm_extract_epi8(src0, 0);
+            src0= _mm_srli_si128(src0,1);
+        }
 
         dst += stride;
         src += stride;
@@ -566,8 +570,8 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
             x0 = _mm_add_epi8(x0, x1);
             i = 0;
             for(;x<width;x++){
-                dst[x+y_stride]=_mm_extract_epi8(x0,i);
-                i++;
+                dst[x+y_stride]=_mm_extract_epi8(x0,0);
+                x0= _mm_srli_si128(x0,1);
             }
             height--;
         }
@@ -978,8 +982,12 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             x0 = _mm_loadu_si128((__m128i *) (src + init_x));
             x0 = _mm_add_epi8(x0, x1);
-            for (x = 0; x < width; x++)
-                *((char *) (dst + init_x + x)) = _mm_extract_epi8(x0, x);
+            if (!chroma)
+                for (x = 0; x < 10; x++)
+                    *((char *) (dst + init_x + x)) = _mm_extract_epi8(x0, x);
+            else
+                for (x = 0; x < 6; x++)
+                    *((char *) (dst + init_x + x)) = _mm_extract_epi8(x0, x);
 
             init_y = 1;
         }
@@ -988,8 +996,12 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
             x1 = _mm_set1_epi8(sao_offset_val[0]);
             x0 = _mm_loadu_si128((__m128i *) (src + init_x + y_stride));
             x0 = _mm_add_epi8(x0, x1);
-            for (x = 0; x < width; x++)
-                *((char *) (dst + init_x + x + y_stride)) = _mm_extract_epi8(x0, x);
+            if (!chroma)
+                for (x = 0; x < 10; x++)
+                    *((char *) (dst + init_x + x + y_stride)) = _mm_extract_epi8(x0, x);
+            else
+                for (x = 0; x < 6; x++)
+                    *((char *) (dst + init_x + x + y_stride)) = _mm_extract_epi8(x0, x);
 
             height--;
         }
