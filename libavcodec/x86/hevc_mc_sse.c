@@ -365,7 +365,16 @@
 #define WEIGHTED_INIT_0(H, D)                                                  \
     WEIGHTED_INIT ## H ## _ ## D()                                             \
     const int shift2 = 14 - D;                                                 \
-    const __m128i m1 = _mm_set1_epi16(1 << (14 - D - 1))
+    WEIGHTED_INIT_0_ ## D()
+
+#define WEIGHTED_INIT_0_8()                                                    \
+    const __m128i m1 = _mm_set1_epi16(1 << (14 - 8 - 1))
+
+#define WEIGHTED_INIT_0_10()                                                    \
+    const __m128i m1 = _mm_set1_epi16(1 << (14 - 10 - 1))
+
+#define WEIGHTED_INIT_0_14()                                                    \
+    const __m128i m1 = _mm_setzero_si128()
 
 #define WEIGHTED_INIT_1(H, D)                                                  \
     WEIGHTED_INIT ## H ## _ ## D()                                             \
