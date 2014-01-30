@@ -1029,6 +1029,31 @@ static void FUNC(put_hevc_qpel_v ## V ## _w ## W)(                             \
         dst += dststride;                                                      \
         PUT_WEIGHTED_PRED_END## W()                                            \
     }                                                                          \
+}                                                                              \
+static void FUNC(put_hevc_qpel_v ## V ## _w ## W ## _14)(                      \
+                             uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
+                             uint8_t *_src, ptrdiff_t _srcstride,              \
+                             int width, int height, uint8_t denom,             \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
+{                                                                              \
+    int x, y;                                                                  \
+    int16_t    *src       = (int16_t*)_src;                                    \
+    ptrdiff_t srcstride = _srcstride / sizeof(int16_t);                        \
+    pixel    *dst       = (pixel *)_dst;                                       \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                          \
+    int16_t   tmp;                                                             \
+    PUT_WEIGHTED_PRED_INIT## W();                                              \
+    for (y = 0; y < height; y++)  {                                            \
+        for (x = 0; x < width; x++) {                                          \
+            tmp = QPEL_FILTER_ ## V(src, srcstride) >> (14 - 8);               \
+            PUT_WEIGHTED_PRED_COMPUTE## W();                                   \
+        }                                                                      \
+        src += srcstride;                                                      \
+        dst += dststride;                                                      \
+        PUT_WEIGHTED_PRED_END## W()                                            \
+    }                                                                          \
 }
 
 #define PUT_HEVC_QPEL_HV_WEIGHTED(H, V, W)                                     \
@@ -1118,6 +1143,35 @@ static void FUNC(put_hevc_qpel_t_hv)(int16_t *dst, ptrdiff_t dststride,
                               width, height);
 
 }
+
+static void FUNC(put_hevc_qpel_t_hv_w)(uint8_t *_dst, ptrdiff_t _dststride,
+                             int16_t *src1, ptrdiff_t src1stride,
+                             uint8_t *_src, ptrdiff_t _srcstride,
+                             int width, int height, int mx, int my,
+                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,
+                             int16_t olxFlag, int16_t ol1Flag, 
+                             HEVCDSPContext *s, int idx, int weight)
+{
+    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
+    int16_t *tmp = tmp_array;
+    HEVCContext *_s= ( HEVCContext *) s;
+    uint8_t * src= (uint8_t *) _src;
+    ptrdiff_t srcstride = _srcstride;
+    src -= ff_hevc_qpel_extra_before[my] * srcstride;
+    _s->hevcdsp.put_hevc_qpel[idx][0][mx]( tmp, MAX_PB_SIZE,
+                              src, srcstride,
+                              width, height + ff_hevc_qpel_extra[my]);
+
+    tmp = tmp_array + ff_hevc_qpel_extra_before[my] * MAX_PB_SIZE;
+
+    _s->hevcdsp.put_hevc_qpel_v_w_14[idx][my][weight]( _dst, _dststride,
+                                                       src1, src1stride,
+                                                       (uint8_t *) tmp, MAX_PB_SIZE<<1 ,
+                                                       width, height, denom, wlxFlag,
+                                                       wl1Flag, olxFlag, ol1Flag);
+
+}
+
 
 #define EPEL_FILTER(src, stride)                \
     (filter_0 * src[x - stride] +               \

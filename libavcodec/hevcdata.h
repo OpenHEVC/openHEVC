@@ -557,4 +557,9 @@ static const uint8_t betatable[52] =
     38,40,42,44,46,48,50,52,54,56,58,60,62,64                 // QP 38...51
 };
 
+
+
+
+
+
 #endif /* AVCODEC_HEVCDATA_H */

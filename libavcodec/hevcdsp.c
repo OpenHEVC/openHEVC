@@ -157,8 +157,8 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     QPEL_FUNC_H(put_hevc_qpel, put_hevc_qpel_w, 3, put_hevc_qpel_h, depth);    \
     QPEL_FUNC_V(put_hevc_qpel, put_hevc_qpel_w, 1, put_hevc_qpel_v, depth);    \
     QPEL_FUNC_V(put_hevc_qpel, put_hevc_qpel_w, 2, put_hevc_qpel_v, depth);    \
-    QPEL_FUNC_V(put_hevc_qpel, put_hevc_qpel_w, 3, put_hevc_qpel_v, depth);    \
-    QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 1, 1, put_hevc_qpel_, depth); \
+    QPEL_FUNC_V(put_hevc_qpel, put_hevc_qpel_w, 3, put_hevc_qpel_v, depth)
+/*    QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 1, 1, put_hevc_qpel_, depth); \
     QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 1, 2, put_hevc_qpel_, depth); \
     QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 1, 3, put_hevc_qpel_, depth); \
     QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 2, 1, put_hevc_qpel_, depth); \
@@ -166,7 +166,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 2, 3, put_hevc_qpel_, depth); \
     QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 3, 1, put_hevc_qpel_, depth); \
     QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 3, 2, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 3, 3, put_hevc_qpel_, depth)
+    QPEL_FUNC_HV(put_hevc_qpel, put_hevc_qpel_w, 3, 3, put_hevc_qpel_, depth)*/
 
 #undef EPEL_FUNC
 #define EPEL_FUNC(dst1, dst2, idx1, idx2, a, depth)                            \
@@ -189,6 +189,22 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->put_hevc_epel_v_w_14[0][2] = hevcdsp->put_hevc_epel_v_w_14[1][2] = hevcdsp->put_hevc_epel_v_w_14[2][2] = hevcdsp->put_hevc_epel_v_w_14[3][2] = hevcdsp->put_hevc_epel_v_w_14[4][2] = FUNC(put_hevc_epel_v_w2_14,depth);    \
     hevcdsp->put_hevc_epel_v_w_14[0][3] = hevcdsp->put_hevc_epel_v_w_14[1][3] = hevcdsp->put_hevc_epel_v_w_14[2][3] = hevcdsp->put_hevc_epel_v_w_14[3][3] = hevcdsp->put_hevc_epel_v_w_14[4][3] = FUNC(put_hevc_epel_v_w3_14,depth)
 
+
+#define QPEL_V14(depth) \
+    hevcdsp->put_hevc_qpel_v_w_14[0][1][0] = hevcdsp->put_hevc_qpel_v_w_14[1][1][0] = hevcdsp->put_hevc_qpel_v_w_14[2][1][0] = hevcdsp->put_hevc_qpel_v_w_14[3][1][0] = hevcdsp->put_hevc_qpel_v_w_14[4][1][0] = FUNC(put_hevc_qpel_v1_w0_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][2][0] = hevcdsp->put_hevc_qpel_v_w_14[1][2][0] = hevcdsp->put_hevc_qpel_v_w_14[2][2][0] = hevcdsp->put_hevc_qpel_v_w_14[3][2][0] = hevcdsp->put_hevc_qpel_v_w_14[4][2][0] = FUNC(put_hevc_qpel_v2_w0_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][3][0] = hevcdsp->put_hevc_qpel_v_w_14[1][3][0] = hevcdsp->put_hevc_qpel_v_w_14[2][3][0] = hevcdsp->put_hevc_qpel_v_w_14[3][3][0] = hevcdsp->put_hevc_qpel_v_w_14[4][3][0] = FUNC(put_hevc_qpel_v3_w0_14,depth);    \
+    hevcdsp->put_hevc_qpel_v_w_14[0][1][1] = hevcdsp->put_hevc_qpel_v_w_14[1][1][1] = hevcdsp->put_hevc_qpel_v_w_14[2][1][1] = hevcdsp->put_hevc_qpel_v_w_14[3][1][1] = hevcdsp->put_hevc_qpel_v_w_14[4][1][1] = FUNC(put_hevc_qpel_v1_w1_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][2][1] = hevcdsp->put_hevc_qpel_v_w_14[1][2][1] = hevcdsp->put_hevc_qpel_v_w_14[2][2][1] = hevcdsp->put_hevc_qpel_v_w_14[3][2][1] = hevcdsp->put_hevc_qpel_v_w_14[4][2][1] = FUNC(put_hevc_qpel_v2_w1_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][3][1] = hevcdsp->put_hevc_qpel_v_w_14[1][3][1] = hevcdsp->put_hevc_qpel_v_w_14[2][3][1] = hevcdsp->put_hevc_qpel_v_w_14[3][3][1] = hevcdsp->put_hevc_qpel_v_w_14[4][3][1] = FUNC(put_hevc_qpel_v3_w1_14,depth);  \
+    hevcdsp->put_hevc_qpel_v_w_14[0][1][2] = hevcdsp->put_hevc_qpel_v_w_14[1][1][2] = hevcdsp->put_hevc_qpel_v_w_14[2][1][2] = hevcdsp->put_hevc_qpel_v_w_14[3][1][2] = hevcdsp->put_hevc_qpel_v_w_14[4][1][2] = FUNC(put_hevc_qpel_v1_w2_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][2][2] = hevcdsp->put_hevc_qpel_v_w_14[1][2][2] = hevcdsp->put_hevc_qpel_v_w_14[2][2][2] = hevcdsp->put_hevc_qpel_v_w_14[3][2][2] = hevcdsp->put_hevc_qpel_v_w_14[4][2][2] = FUNC(put_hevc_qpel_v2_w2_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][3][2] = hevcdsp->put_hevc_qpel_v_w_14[1][3][2] = hevcdsp->put_hevc_qpel_v_w_14[2][3][2] = hevcdsp->put_hevc_qpel_v_w_14[3][3][2] = hevcdsp->put_hevc_qpel_v_w_14[4][3][2] = FUNC(put_hevc_qpel_v3_w2_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][1][3] = hevcdsp->put_hevc_qpel_v_w_14[1][1][3] = hevcdsp->put_hevc_qpel_v_w_14[2][1][3] = hevcdsp->put_hevc_qpel_v_w_14[3][1][3] = hevcdsp->put_hevc_qpel_v_w_14[4][1][3] = FUNC(put_hevc_qpel_v1_w3_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][2][3] = hevcdsp->put_hevc_qpel_v_w_14[1][2][3] = hevcdsp->put_hevc_qpel_v_w_14[2][2][3] = hevcdsp->put_hevc_qpel_v_w_14[3][2][3] = hevcdsp->put_hevc_qpel_v_w_14[4][2][3] = FUNC(put_hevc_qpel_v2_w3_14,depth); \
+    hevcdsp->put_hevc_qpel_v_w_14[0][3][3] = hevcdsp->put_hevc_qpel_v_w_14[1][3][3] = hevcdsp->put_hevc_qpel_v_w_14[2][3][3] = hevcdsp->put_hevc_qpel_v_w_14[3][3][3] = hevcdsp->put_hevc_qpel_v_w_14[4][3][3] = FUNC(put_hevc_qpel_v3_w3_14,depth);
+
+
 #define HEVC_DSP(depth)                                                     \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                 \
     hevcdsp->transquant_bypass[0]   = FUNC(transquant_bypass4x4, depth);    \
@@ -204,6 +220,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->put_hevc_epel_hv       = FUNC(put_hevc_epel_hv,depth);         \
     hevcdsp->put_hevc_epel_hv_w     = FUNC(put_hevc_epel_hv_w,depth);       \
     hevcdsp->put_hevc_qpel_hv       = FUNC(put_hevc_qpel_t_hv,depth);       \
+    hevcdsp->put_hevc_qpel_hv_w       = FUNC(put_hevc_qpel_t_hv_w,depth);       \
     EPEL_V14(depth);                                                             \
     hevcdsp->put_hevc_qpel_v_14[0][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \
     hevcdsp->put_hevc_qpel_v_14[1][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \
@@ -233,6 +250,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
                                                                             \
     QPEL_FUNCS(depth);                                                      \
     EPEL_FUNCS(depth);                                                      \
+    QPEL_V14(depth);                                                        \
                                                                             \
                                                                             \
     hevcdsp->hevc_h_loop_filter_luma     = FUNC(hevc_h_loop_filter_luma, depth);   \
@@ -274,6 +292,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     }
 #endif
 
-    if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
+//    if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 }

@@ -59,8 +59,25 @@ typedef struct HEVCDSPContext {
             int16_t wlxFlag, int16_t wl1Flag,
             int16_t olxFlag, int16_t ol1Flag);
 
+    void (*put_hevc_qpel_hv_w)(
+            uint8_t *_dst, ptrdiff_t _dststride,
+            int16_t *src1, ptrdiff_t src1stride,
+            uint8_t *_src, ptrdiff_t _srcstride,
+            int width, int height, int mx, int my,
+            uint8_t denom,
+            int16_t wlxFlag, int16_t wl1Flag,
+            int16_t olxFlag, int16_t ol1Flag,
+            void *s, int idx, int weight);
+
     void (*put_hevc_qpel_v_14[5][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                 int width, int height);
+
+    void (*put_hevc_qpel_v_w_14[5][4][4])(uint8_t *_dst, ptrdiff_t _dststride,
+            int16_t *src1, ptrdiff_t src1stride,
+            uint8_t *_src, ptrdiff_t _srcstride,
+            int width, int height, uint8_t denom,
+            int16_t wlxFlag, int16_t wl1Flag,
+            int16_t olxFlag, int16_t ol1Flag);
 
 
     void (*put_hevc_epel[5][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,

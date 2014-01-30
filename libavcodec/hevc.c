@@ -1271,7 +1271,16 @@ static void luma_mc_bi_pred(HEVCContext *s,
         src = lc->edge_emu_buffer + offset_edge;
         srcstride = MAX_EDGE_BUFFER_STRIDE;
     }
-
+    if(!!mx && !!my){
+    s->hevcdsp.put_hevc_qpel_hv_w(
+            dst, dststride,
+            src1, src1stride,
+            src, srcstride,
+            block_w, block_h, mx, my, 
+            denom, wlxFlag, 
+            wl1Flag, olxFlag, 
+            ol1Flag, s, idx, idx_w);
+    }else
     s->hevcdsp.put_hevc_qpel_w[idx][my][mx][idx_w](
             dst, dststride,
             src1, src1stride,
