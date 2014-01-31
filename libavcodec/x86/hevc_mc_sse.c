@@ -1115,6 +1115,40 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _w ## W ## _## D ## _sse (       \
         dst += dststride;                                                      \
         WEIGHTED_END_ ## W()                                                   \
     }                                                                          \
+}                                                                              
+#define PUT_HEVC_QPEL_V_14b_W(V, F, D, W)                                      \
+void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _14b_w ## W ## _## D ## _sse (   \
+                             uint8_t *_dst, ptrdiff_t _dststride,              \
+                             int16_t *src1, ptrdiff_t src1stride,              \
+                             uint8_t *_src, ptrdiff_t _srcstride,              \
+                             int width, int height,                            \
+                             uint8_t denom,                                    \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag) {               \
+    int x, y;                                                                  \
+    int shift = 14 - 8;                                                        \
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8;                                    \
+    __m128i t1, t2, t3, t4, t5, t6, t7, t8;                                    \
+    __m128i r1, r2, r3, r4;                                                    \
+    const __m128i c0    = _mm_setzero_si128();                                 \
+    WEIGHTED_INIT_ ## W(V, D);                                                 \
+    SRC_INIT_10();                                                             \
+    DST_INIT_ ## D();                                                          \
+    QPEL_V_FILTER_ ## F ## _10();                                              \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += V) {                                       \
+            QPEL_V_LOAD_LO(src);                                               \
+            QPEL_V_COMPUTE_FIRST ## V ## _10();                                \
+            QPEL_V_LOAD_HI(src);                                               \
+            QPEL_V_COMPUTE_LAST ## V ## _10();                                 \
+            QPEL_V_MERGE ## V ## _10();                                        \
+            WEIGHTED_COMPUTE ## V ## _ ## W();                                 \
+            WEIGHTED_STORE ## V ## _ ## D();                                   \
+        }                                                                      \
+        src += srcstride;                                                      \
+        dst += dststride;                                                      \
+        WEIGHTED_END_ ## W()                                                   \
+    }                                                                          \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1306,6 +1340,39 @@ QPEL_FUNC( PUT_HEVC_QPEL_V, 16, 1,  8)
 QPEL_FUNC( PUT_HEVC_QPEL_V, 16, 2,  8)
 QPEL_FUNC( PUT_HEVC_QPEL_V, 16, 3,  8)
 
+PUT_HEVC_QPEL_V_14b_W( 4, 1,  8, 0)
+PUT_HEVC_QPEL_V_14b_W( 4, 2,  8, 0)
+PUT_HEVC_QPEL_V_14b_W( 4, 3,  8, 0)
+
+PUT_HEVC_QPEL_V_14b_W( 4, 1,  8, 1)
+PUT_HEVC_QPEL_V_14b_W( 4, 2,  8, 1)
+PUT_HEVC_QPEL_V_14b_W( 4, 3,  8, 1)
+
+PUT_HEVC_QPEL_V_14b_W( 4, 1,  8, 2)
+PUT_HEVC_QPEL_V_14b_W( 4, 2,  8, 2)
+PUT_HEVC_QPEL_V_14b_W( 4, 3,  8, 2)
+
+PUT_HEVC_QPEL_V_14b_W( 4, 1,  8, 3)
+PUT_HEVC_QPEL_V_14b_W( 4, 2,  8, 3)
+PUT_HEVC_QPEL_V_14b_W( 4, 3,  8, 3)
+
+PUT_HEVC_QPEL_V_14b_W( 8, 1,  8, 0)
+PUT_HEVC_QPEL_V_14b_W( 8, 2,  8, 0)
+PUT_HEVC_QPEL_V_14b_W( 8, 3,  8, 0)
+
+PUT_HEVC_QPEL_V_14b_W( 8, 1,  8, 1)
+PUT_HEVC_QPEL_V_14b_W( 8, 2,  8, 1)
+PUT_HEVC_QPEL_V_14b_W( 8, 3,  8, 1)
+
+PUT_HEVC_QPEL_V_14b_W( 8, 1,  8, 2)
+PUT_HEVC_QPEL_V_14b_W( 8, 2,  8, 2)
+PUT_HEVC_QPEL_V_14b_W( 8, 3,  8, 2)
+
+PUT_HEVC_QPEL_V_14b_W( 8, 1,  8, 3)
+PUT_HEVC_QPEL_V_14b_W( 8, 2,  8, 3)
+PUT_HEVC_QPEL_V_14b_W( 8, 3,  8, 3)
+
+
 PUT_HEVC_QPEL_V( 4, 1, 14)
 PUT_HEVC_QPEL_V( 4, 2, 14)
 PUT_HEVC_QPEL_V( 4, 3, 14)
@@ -1320,25 +1387,7 @@ QPEL_FUNC( PUT_HEVC_QPEL_V,  4, 1, 10)
 //QPEL_FUNC( PUT_HEVC_QPEL_V,  4, 3, 10)
 
 // ff_hevc_put_hevc_qpel_hvX_X_X_sse
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 1, 1,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 1, 2,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 1, 3,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 2, 1,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 2, 2,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 2, 3,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 3, 1,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 3, 2,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  4, 3, 3,  8)
 
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 1, 1,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 1, 2,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 1, 3,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 2, 1,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 2, 2,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 2, 3,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 3, 1,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 3, 2,  8)
-QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  8, 3, 3,  8)
 
 //QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  2, 1, 1, 10)
 //QPEL_FUNC_HV( PUT_HEVC_QPEL_HV,  2, 1, 2, 10)

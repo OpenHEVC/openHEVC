@@ -42,6 +42,14 @@ PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D)
 PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D)
 #endif
 
+
+#define QPEL_V14_LINK(dst, idx1, idx2, name, D) \
+/*dst[idx1][idx2] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse; */\
+dst[idx1][idx2][0] = ff_hevc_put_hevc_ ## name ## _w0_ ## D ## _sse; \
+dst[idx1][idx2][1] = ff_hevc_put_hevc_ ## name ## _w1_ ## D ## _sse; \
+dst[idx1][idx2][2] = ff_hevc_put_hevc_ ## name ## _w2_ ## D ## _sse; \
+dst[idx1][idx2][3] = ff_hevc_put_hevc_ ## name ## _w3_ ## D ## _sse
+
 #define EPEL_PROTOTYPE_ASM(name, D) \
 void ff_hevc_put_hevc_epel_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my); \
 void ff_hevc_put_hevc_epel_ ## name ## _w0_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
@@ -86,6 +94,14 @@ void ff_hevc_put_hevc_qpel_ ## name ## _w0_ ## D ## _sse(uint8_t *_dst, ptrdiff_
 void ff_hevc_put_hevc_qpel_ ## name ## _w1_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
 void ff_hevc_put_hevc_qpel_ ## name ## _w2_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
 void ff_hevc_put_hevc_qpel_ ## name ## _w3_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int16_t* mcbuffer, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag)
+
+
+#define QPEL_V14_PROTOTYPE_SSE(name, D) \
+/*void ff_hevc_put_hevc_qpel_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height);*/ \
+void ff_hevc_put_hevc_qpel_ ## name ## _w0_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
+void ff_hevc_put_hevc_qpel_ ## name ## _w1_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
+void ff_hevc_put_hevc_qpel_ ## name ## _w2_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
+void ff_hevc_put_hevc_qpel_ ## name ## _w3_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag)
 
 #ifdef OPTI_ASM
 #define QPEL_PROTOTYPE(name, D) \
@@ -185,25 +201,15 @@ QPEL_PROTOTYPE_SSE(v16_1,  8);
 QPEL_PROTOTYPE_SSE(v16_2,  8);
 QPEL_PROTOTYPE_SSE(v16_3,  8);
 
-QPEL_PROTOTYPE(h4_1_v_1 ,  8);
-QPEL_PROTOTYPE(h4_1_v_2 ,  8);
-QPEL_PROTOTYPE(h4_1_v_3 ,  8);
-QPEL_PROTOTYPE(h4_2_v_1 ,  8);
-QPEL_PROTOTYPE(h4_2_v_2 ,  8);
-QPEL_PROTOTYPE(h4_2_v_3 ,  8);
-QPEL_PROTOTYPE(h4_3_v_1 ,  8);
-QPEL_PROTOTYPE(h4_3_v_2 ,  8);
-QPEL_PROTOTYPE(h4_3_v_3 ,  8);
 
-QPEL_PROTOTYPE(h8_1_v_1 ,  8);
-QPEL_PROTOTYPE(h8_1_v_2 ,  8);
-QPEL_PROTOTYPE(h8_1_v_3 ,  8);
-QPEL_PROTOTYPE(h8_2_v_1 ,  8);
-QPEL_PROTOTYPE(h8_2_v_2 ,  8);
-QPEL_PROTOTYPE(h8_2_v_3 ,  8);
-QPEL_PROTOTYPE(h8_3_v_1 ,  8);
-QPEL_PROTOTYPE(h8_3_v_2 ,  8);
-QPEL_PROTOTYPE(h8_3_v_3 ,  8);
+QPEL_V14_PROTOTYPE_SSE(v4_1_14b ,  8);
+QPEL_V14_PROTOTYPE_SSE(v4_2_14b ,  8);
+QPEL_V14_PROTOTYPE_SSE(v4_3_14b ,  8);
+
+QPEL_V14_PROTOTYPE_SSE(v8_1_14b ,  8);
+QPEL_V14_PROTOTYPE_SSE(v8_2_14b ,  8);
+QPEL_V14_PROTOTYPE_SSE(v8_3_14b ,  8);
+
 
 QPEL_PROTOTYPE_SSE(h2_1 , 10);
 QPEL_PROTOTYPE_SSE(h2_2 , 10);
