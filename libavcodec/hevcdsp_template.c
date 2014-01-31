@@ -1047,12 +1047,12 @@ static void FUNC(put_hevc_qpel_t_hv)(int16_t *dst, ptrdiff_t dststride,
 }
 
 static void FUNC(put_hevc_qpel_t_hv_w)(uint8_t *_dst, ptrdiff_t _dststride,
-                             int16_t *src1, ptrdiff_t src1stride,
-                             uint8_t *_src, ptrdiff_t _srcstride,
-                             int width, int height, int mx, int my,
-                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,
-                             int16_t olxFlag, int16_t ol1Flag, 
-                             HEVCDSPContext *s, int idx, int weight)
+                                       int16_t *src1, ptrdiff_t src1stride,
+                                       uint8_t *_src, ptrdiff_t _srcstride,
+                                       int width, int height, int mx, int my,
+                                       uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,
+                                       int16_t olxFlag, int16_t ol1Flag, 
+                                       void *s, int idx, int weight)
 {
     int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
     int16_t *tmp = tmp_array;
