@@ -926,7 +926,7 @@ void ff_hevc_put_hevc_qpel_pixels ## H  ## _w ## W ## _## D ## _sse (         \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer, uint8_t denom,  \
+                             int width, int height, uint8_t denom,             \
                              int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
@@ -1055,8 +1055,7 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _w ## W ## _## D ## _sse (      \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height,                            \
-                             int16_t* mcbuffer,uint8_t denom,                  \
+                             int width, int height, uint8_t denom,             \
                              int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
@@ -1087,8 +1086,7 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _w ## W ## _## D ## _sse (       \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height,                            \
-                             int16_t* mcbuffer, uint8_t denom,                 \
+                             int width, int height, uint8_t denom,             \
                              int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag) {               \
     int x, y;                                                                  \
@@ -1154,62 +1152,6 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _14b_w ## W ## _## D ## _sse (   \
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_hX_X_vX_X_sse
 ////////////////////////////////////////////////////////////////////////////////
-#define PUT_HEVC_QPEL_HV_W(H, FH, FV, D, W)                                    \
-void ff_hevc_put_hevc_qpel_h ## H ## _ ## FH ## _v_ ## FV ## _w ## W ## _## D ## _sse ( \
-                             uint8_t *_dst, ptrdiff_t _dststride,              \
-                             int16_t *src1, ptrdiff_t src1stride,              \
-                             uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height,                            \
-                             int16_t* mcbuffer, uint8_t denom,                 \
-                             int16_t wlxFlag, int16_t wl1Flag,                 \
-                             int16_t olxFlag, int16_t ol1Flag) {               \
-    int x, y;                                                                  \
-    int shift = 14 - 8;                                                        \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8;                                    \
-    __m128i t1, t2, t3, t4, t5, t6, t7, t8;                                    \
-    __m128i r1, r2, r3, r4;                                                    \
-    const __m128i c0   = _mm_setzero_si128();                                  \
-    int16_t *tmp       = mcbuffer;                                             \
-    WEIGHTED_INIT_ ## W(H, D);                                                 \
-    SRC_INIT_ ## D();                                                          \
-    DST_INIT_ ## D();                                                          \
-    QPEL_H_FILTER_ ## FH ## _ ## D();                                          \
-    QPEL_V_FILTER_ ## FV ## _10();                                             \
-                                                                               \
-    src -= ff_hevc_qpel_extra_before[FV] * srcstride;                          \
-                                                                               \
-    /* horizontal */                                                           \
-    for (y = 0; y < height + ff_hevc_qpel_extra[FV] ; y++) {                   \
-        for (x = 0; x < width; x += H) {                                       \
-            QPEL_H_LOAD ## H();                                                \
-            QPEL_H_COMPUTE ## H ## _ ## D();                                   \
-            PEL_STORE ## H(tmp);                                               \
-        }                                                                      \
-        src += srcstride;                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-    }                                                                          \
-                                                                               \
-    tmp       = mcbuffer + ff_hevc_qpel_extra_before[FV] * MAX_PB_SIZE;        \
-    srcstride = MAX_PB_SIZE;                                                   \
-                                                                               \
-    /* vertical treatment on temp table : tmp contains 16 bit values, */       \
-    /* so need to use 32 bit  integers for register calculations      */       \
-                                                                               \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-            QPEL_V_LOAD_LO(tmp);                                               \
-            QPEL_V_COMPUTE_FIRST ## H ## _10();                                \
-            QPEL_V_LOAD_HI(tmp);                                               \
-            QPEL_V_COMPUTE_LAST ## H ## _10();                                 \
-            QPEL_V_MERGE ## H ## _10();                                        \
-            WEIGHTED_COMPUTE ## H ## _ ## W();                                 \
-            WEIGHTED_STORE ## H ## _ ## D();                                   \
-        }                                                                      \
-        tmp += MAX_PB_SIZE;                                                    \
-        dst += dststride;                                                      \
-        WEIGHTED_END_ ## W()                                                   \
-    }                                                                          \
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

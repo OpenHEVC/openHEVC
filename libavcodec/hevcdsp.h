@@ -55,7 +55,7 @@ typedef struct HEVCDSPContext {
             int16_t *src1, ptrdiff_t src1stride,
             uint8_t *_src, ptrdiff_t _srcstride,
             int width, int height,
-            int16_t* mcbuffer, uint8_t denom,
+            uint8_t denom,
             int16_t wlxFlag, int16_t wl1Flag,
             int16_t olxFlag, int16_t ol1Flag);
 

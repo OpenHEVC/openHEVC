@@ -857,7 +857,7 @@ static void FUNC(put_hevc_qpel_pixels_w ## W) (                                \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer,         \
+                             int width, int height,                            \
                              uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
                              int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
@@ -884,8 +884,8 @@ static void FUNC(put_hevc_qpel_h ## H ## _w ## W)(                             \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer,         \
-                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
+                             int width, int height, uint8_t denom,             \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
@@ -911,9 +911,9 @@ static void FUNC(put_hevc_qpel_v ## V ## _w ## W)(                             \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer,         \
-                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
-                             int16_t olxFlag, int16_t ol1Flag)                \
+                             int width, int height, uint8_t denom,             \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
+                             int16_t olxFlag, int16_t ol1Flag)                 \
 {                                                                              \
     int x, y;                                                                  \
     pixel    *src       = (pixel*)_src;                                        \
@@ -963,8 +963,8 @@ static void FUNC(put_hevc_qpel_h ## H ## v ## V ## _w ## W)(                   \
                              uint8_t *_dst, ptrdiff_t _dststride,              \
                              int16_t *src1, ptrdiff_t src1stride,              \
                              uint8_t *_src, ptrdiff_t _srcstride,              \
-                             int width, int height, int16_t* mcbuffer,         \
-                             uint8_t denom, int16_t wlxFlag, int16_t wl1Flag,  \
+                             int width, int height, uint8_t denom,             \
+                             int16_t wlxFlag, int16_t wl1Flag,                 \
                              int16_t olxFlag, int16_t ol1Flag)                \
 {                                                                              \
     int x, y;                                                                  \
@@ -1023,7 +1023,7 @@ PUT_HEVC_QPEL_FUNC(2)
 PUT_HEVC_QPEL_FUNC(3)
 
 
-static void FUNC(put_hevc_qpel_t_hv)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_qpel_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
                                    int width, int height, int my, int mx,
                                    void *s, ptrdiff_t idx)
@@ -1046,7 +1046,7 @@ static void FUNC(put_hevc_qpel_t_hv)(int16_t *dst, ptrdiff_t dststride,
 
 }
 
-static void FUNC(put_hevc_qpel_t_hv_w)(uint8_t *_dst, ptrdiff_t _dststride,
+static void FUNC(put_hevc_qpel_hv_w)(uint8_t *_dst, ptrdiff_t _dststride,
                                        int16_t *src1, ptrdiff_t src1stride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
                                        int width, int height, int mx, int my,

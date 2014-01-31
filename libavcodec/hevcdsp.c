@@ -219,8 +219,8 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->transform_add[3]       = FUNC(transform_32x32_add, depth);     \
     hevcdsp->put_hevc_epel_hv       = FUNC(put_hevc_epel_hv,depth);         \
     hevcdsp->put_hevc_epel_hv_w     = FUNC(put_hevc_epel_hv_w,depth);       \
-    hevcdsp->put_hevc_qpel_hv       = FUNC(put_hevc_qpel_t_hv,depth);       \
-    hevcdsp->put_hevc_qpel_hv_w       = FUNC(put_hevc_qpel_t_hv_w,depth);       \
+    hevcdsp->put_hevc_qpel_hv       = FUNC(put_hevc_qpel_hv,depth);       \
+    hevcdsp->put_hevc_qpel_hv_w       = FUNC(put_hevc_qpel_hv_w,depth);       \
     EPEL_V14(depth);                                                             \
     hevcdsp->put_hevc_qpel_v_14[0][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \
     hevcdsp->put_hevc_qpel_v_14[1][1]     = FUNC(put_hevc_qpel_v_14_1,depth);    \

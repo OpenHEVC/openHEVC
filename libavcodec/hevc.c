@@ -1285,7 +1285,7 @@ static void luma_mc_bi_pred(HEVCContext *s,
             dst, dststride,
             src1, src1stride,
             src, srcstride,
-            block_w, block_h, lc->mc_buffer,
+            block_w, block_h,
             denom, wlxFlag, wl1Flag, olxFlag, ol1Flag);
 }
 
