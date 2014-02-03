@@ -92,6 +92,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
                     c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
 
+                    c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
 
                     PEL_LINK(c->put_hevc_qpel, 0, 0, 0, qpel_pixels4 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 0, qpel_pixels8 ,  8);
@@ -214,7 +215,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
                     c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
 
-                    QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 0, 1, qpel_v4_1_14b  ,  8);
+ /*                   QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 0, 1, qpel_v4_1_14b  ,  8);
                     QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 1, 1, qpel_v8_1_14b  ,  8);
                     QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 2, 1, qpel_v8_1_14b  ,  8);
                     QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 3, 1, qpel_v8_1_14b  ,  8);
@@ -228,7 +229,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 1, 3, qpel_v8_3_14b  ,  8);
                     QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 2, 3, qpel_v8_3_14b  ,  8);
                     QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 3, 3, qpel_v8_3_14b  ,  8);
-                    QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 4, 3, qpel_v8_3_14b  ,  8);
+                    QPEL_V14_LINK(c->put_hevc_qpel_v_w_14, 4, 3, qpel_v8_3_14b  ,  8);*/
 /*
                     PEL_LINK(c->put_hevc_qpel, 0, 1, 1, qpel_h4_2_v_1  ,  8);
                     PEL_LINK(c->put_hevc_qpel, 1, 1, 1, qpel_h8_2_v_1  ,  8);

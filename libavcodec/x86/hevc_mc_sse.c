@@ -298,15 +298,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 #define WEIGHTED_INIT2_8()                                                     \
     const __m128i mask  = _mm_set_epi32(0, 0, 0, -1);                          \
-    const __m128i mask2 = _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, -1);
+    const __m128i mask2 = _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, -1)
 #define WEIGHTED_INIT4_8()                                                     \
     const __m128i mask  = _mm_set_epi32(0, 0, 0, -1);                          \
-    const __m128i mask2 = _mm_set_epi32(0, 0, 0, -1);
+    const __m128i mask2 = _mm_set_epi32(0, 0, 0, -1)
 #define WEIGHTED_INIT8_8()
 #define WEIGHTED_INIT16_8()
 
 #define WEIGHTED_INIT2_10()                                                    \
-    const __m128i mask = _mm_set_epi32(0, 0, 0, -1);
+    const __m128i mask = _mm_set_epi32(0, 0, 0, -1)
 #define WEIGHTED_INIT4_10()                                                       
 #define WEIGHTED_INIT8_10()
 #define WEIGHTED_INIT16_10()
@@ -363,7 +363,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define WEIGHTED_INIT_0(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D()                                             \
+    WEIGHTED_INIT ## H ## _ ## D();                                             \
     const int shift2 = 14 - D;                                                 \
     WEIGHTED_INIT_0_ ## D()
 
@@ -377,7 +377,7 @@
     const __m128i m1 = _mm_setzero_si128()
 
 #define WEIGHTED_INIT_1(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D()                                             \
+    WEIGHTED_INIT ## H ## _ ## D();                                             \
     const int shift2     = denom + 14 - D;                                     \
     const __m128i add   = _mm_set1_epi32(olxFlag << (D - 8));                  \
     const __m128i add2  = _mm_set1_epi32(1 << (shift2-1));                     \
@@ -385,12 +385,12 @@
     __m128i s1, s2, s3
 
 #define WEIGHTED_INIT_2(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D()                                             \
+    WEIGHTED_INIT ## H ## _ ## D();                                             \
     const int shift2 = 14 + 1 - D;                                             \
     const __m128i m1 = _mm_set1_epi16(1 << (14 - D))
 
 #define WEIGHTED_INIT_3(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D()                                             \
+    WEIGHTED_INIT ## H ## _ ## D();                                             \
     const int log2Wd = denom + 14 - D;                                         \
     const int shift2  = log2Wd + 1;                                            \
     const int o0     = olxFlag << (D - 8);                                     \
@@ -1148,6 +1148,194 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _14b_w ## W ## _## D ## _sse (   \
         WEIGHTED_END_ ## W()                                                   \
     }                                                                          \
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+#define PUT_UNWEIGHTED_PRED(H, D)                                              \
+static void put_unweighted_pred ## H ## _ ## D ##_sse (                        \
+                                       uint8_t *dst, ptrdiff_t dststride,      \
+                                       int16_t *src, ptrdiff_t srcstride,      \
+                                       int width, int height) {                \
+    int x, y;                                                                  \
+    __m128i r1, r2;                                                            \
+    WEIGHTED_INIT_0(H, D);                                                     \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            WEIGHTED_LOAD ## H();                                              \
+            WEIGHTED_COMPUTE ## H ## _0();                                     \
+            WEIGHTED_STORE ## H ## _ ## D();                                   \
+        }                                                                      \
+        dst += dststride;                                                      \
+        src += srcstride;                                                      \
+    }                                                                          \
+}
+
+
+PUT_UNWEIGHTED_PRED(2,  8)
+PUT_UNWEIGHTED_PRED(4,  8)
+PUT_UNWEIGHTED_PRED(8,  8)
+PUT_UNWEIGHTED_PRED(16, 8)
+
+void ff_hevc_put_unweighted_pred_8_sse(
+                                       uint8_t *dst, ptrdiff_t dststride,
+                                       int16_t *src, ptrdiff_t srcstride,
+                                       int width, int height) {
+    if(!(width & 15)) {
+        put_unweighted_pred16_8_sse(dst, dststride, src, srcstride, width, height);
+    } else if(!(width & 7)) {
+        put_unweighted_pred8_8_sse(dst, dststride, src, srcstride, width, height);
+    } else if(!(width & 3)) {
+        put_unweighted_pred4_8_sse(dst, dststride, src, srcstride, width, height);
+    } else {
+        put_unweighted_pred2_8_sse(dst, dststride, src, srcstride, width, height);
+    }
+}
+
+#define PUT_WEIGHTED_PRED_AVG(H, D)                                            \
+static void put_weighted_pred_avg ## H ## _ ## D ##_sse(                              \
+                                uint8_t *dst, ptrdiff_t dststride,             \
+                                int16_t *src1, int16_t *src,                   \
+                                ptrdiff_t srcstride,                           \
+                                int width, int height) {                       \
+    int x, y;                                                                  \
+    __m128i r1, r2, r3, r4;                                                    \
+    WEIGHTED_INIT_2(H, D);                                                     \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            WEIGHTED_LOAD ## H();                                              \
+            WEIGHTED_COMPUTE ## H ## _2();                                     \
+            WEIGHTED_STORE ## H ## _ ## D();                                   \
+        }                                                                      \
+        dst  += dststride;                                                     \
+        src  += srcstride;                                                     \
+        src1 += srcstride;                                                     \
+    }                                                                          \
+}
+PUT_WEIGHTED_PRED_AVG(2,  8)
+PUT_WEIGHTED_PRED_AVG(4,  8)
+PUT_WEIGHTED_PRED_AVG(8,  8)
+PUT_WEIGHTED_PRED_AVG(16, 8)
+
+void ff_hevc_put_weighted_pred_avg_8_sse(
+                                        uint8_t *dst, ptrdiff_t dststride,
+                                        int16_t *src1, int16_t *src2,
+                                        ptrdiff_t srcstride,
+                                        int width, int height) {
+    if(!(width & 15))
+        put_weighted_pred_avg16_8_sse(dst, dststride,
+                src1, src2, srcstride, width, height);
+    else if(!(width & 7))
+        put_weighted_pred_avg8_8_sse(dst, dststride,
+                src1, src2, srcstride, width, height);
+    else if(!(width & 3))
+        put_weighted_pred_avg4_8_sse(dst, dststride,
+                src1, src2, srcstride, width, height);
+    else
+        put_weighted_pred_avg2_8_sse(dst, dststride,
+                src1, src2, srcstride, width, height);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ff_hevc_weighted_pred_8_sse
+////////////////////////////////////////////////////////////////////////////////
+
+#define WEIGHTED_PRED(H, D)                                                    \
+static void weighted_pred ## H ## _ ## D ##_sse(                                      \
+                                    uint8_t denom,                             \
+                                    int16_t wlxFlag, int16_t olxFlag,          \
+                                    uint8_t *dst, ptrdiff_t dststride,         \
+                                    int16_t *src, ptrdiff_t srcstride,         \
+                                    int width, int height) {                   \
+    int x, y;                                                                  \
+    __m128i r1, r2;                                                            \
+    WEIGHTED_INIT_1(H, D);                                             \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            WEIGHTED_LOAD ## H();                                              \
+            WEIGHTED_COMPUTE ## H ## _1();                                     \
+            WEIGHTED_STORE ## H ## _ ## D();                                   \
+        }                                                                      \
+        dst += dststride;                                                      \
+        src += srcstride;                                                      \
+    }                                                                          \
+}
+WEIGHTED_PRED(2, 8)
+WEIGHTED_PRED(4, 8)
+WEIGHTED_PRED(8, 8)
+WEIGHTED_PRED(16, 8)
+
+void ff_hevc_weighted_pred_8_sse(
+                                 uint8_t denom,
+                                 int16_t wlxFlag, int16_t olxFlag,
+                                 uint8_t *dst, ptrdiff_t dststride,
+                                 int16_t *src, ptrdiff_t srcstride,
+                                 int width, int height) {
+    if(!(width & 15))
+        weighted_pred16_8_sse(denom, wlxFlag, olxFlag,
+                dst, dststride, src, srcstride, width, height);
+    else if(!(width & 7))
+        weighted_pred8_8_sse(denom, wlxFlag, olxFlag,
+                dst, dststride, src, srcstride, width, height);
+    else if(!(width & 3))
+        weighted_pred4_8_sse(denom, wlxFlag, olxFlag,
+                dst, dststride, src, srcstride, width, height);
+    else
+        weighted_pred2_8_sse(denom, wlxFlag, olxFlag,
+                dst, dststride, src, srcstride, width, height);
+}
+
+#define WEIGHTED_PRED_AVG(H, D)                                                   \
+static void weighted_pred_avg ## H ## _ ## D ##_sse(                                  \
+                                    uint8_t denom,                             \
+                                    int16_t wlxFlag, int16_t wl1Flag,          \
+                                    int16_t olxFlag, int16_t ol1Flag,          \
+                                    uint8_t *dst, ptrdiff_t dststride,         \
+                                    int16_t *src1, int16_t *src,               \
+                                    ptrdiff_t srcstride,                       \
+                                    int width, int height) {                   \
+    int x, y;                                                                  \
+    __m128i r1, r2, r3, r4;                                                    \
+    WEIGHTED_INIT_3(H, D);                                             \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            WEIGHTED_LOAD ## H();                                              \
+            WEIGHTED_COMPUTE ## H ## _3();                                     \
+            WEIGHTED_STORE ## H ## _ ## D();                                   \
+        }                                                                      \
+        dst  += dststride;                                                     \
+        src  += srcstride;                                                     \
+        src1 += srcstride;                                                     \
+    }                                                                          \
+}
+WEIGHTED_PRED_AVG(2, 8)
+WEIGHTED_PRED_AVG(4, 8)
+WEIGHTED_PRED_AVG(8, 8)
+WEIGHTED_PRED_AVG(16, 8)
+
+void ff_hevc_weighted_pred_avg_8_sse(
+                                 uint8_t denom,
+                                 int16_t wl0Flag, int16_t wl1Flag,
+                                 int16_t ol0Flag, int16_t ol1Flag,
+                                 uint8_t *dst, ptrdiff_t dststride,
+                                 int16_t *src1, int16_t *src2,
+                                 ptrdiff_t srcstride,
+                                 int width, int height) {
+    if(!(width & 15))
+        weighted_pred_avg16_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
+                dst, dststride, src1, src2, srcstride, width, height);
+    else if(!(width & 7))
+        weighted_pred_avg8_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
+                dst, dststride, src1, src2, srcstride, width, height);
+    else if(!(width & 3))
+        weighted_pred_avg4_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
+                dst, dststride, src1, src2, srcstride, width, height);
+    else
+        weighted_pred_avg2_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
+                dst, dststride, src1, src2, srcstride, width, height);
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_hX_X_vX_X_sse
