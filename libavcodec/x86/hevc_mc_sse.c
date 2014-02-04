@@ -579,7 +579,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my) {        \
+                                   int mx, int my) {                           \
     int x, y;                                                                  \
     __m128i x1, x2, r1;                                                        \
     const __m128i c0     = _mm_setzero_si128();                                \
@@ -587,6 +587,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
     SRC_INIT_ ## D();                                                          \
     EPEL_H_FILTER_ ## D();                                                     \
     for (y = 0; y < height; y++) {                                             \
+        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             EPEL_H_LOAD ## H();                                                \
             EPEL_H_COMPUTE ## H ## _ ## D();                                   \
@@ -744,6 +745,7 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
     SRC_INIT_ ## D();                                                          \
     QPEL_H_FILTER_ ## F ## _ ## D();                                           \
     for (y = 0; y < height; y++) {                                             \
+        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             QPEL_H_LOAD ## H();                                                \
             QPEL_H_COMPUTE ## H ## _ ## D();                                   \
@@ -909,6 +911,7 @@ void ff_hevc_put_hevc_epel_pixels ## H ## _w ## W ## _## D ## _sse (           \
     SRC_INIT_ ## D();                                                          \
     DST_INIT_ ## D();                                                          \
     for (y = 0; y < height; y++) {                                             \
+        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             MC_LOAD_PIXEL();                                                   \
             MC_PIXEL_COMPUTE ## H ## _ ## D();                                 \
@@ -1161,6 +1164,7 @@ static void put_unweighted_pred ## H ## _ ## D ##_sse (                        \
     __m128i r1, r2;                                                            \
     WEIGHTED_INIT_0(H, D);                                                     \
     for (y = 0; y < height; y++) {                                             \
+        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             WEIGHTED_LOAD ## H();                                              \
             WEIGHTED_COMPUTE ## H ## _0();                                     \
@@ -1202,6 +1206,7 @@ static void put_weighted_pred_avg ## H ## _ ## D ##_sse(                        
     __m128i r1, r2, r3, r4;                                                    \
     WEIGHTED_INIT_2(H, D);                                                     \
     for (y = 0; y < height; y++) {                                             \
+        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             WEIGHTED_LOAD ## H();                                              \
             WEIGHTED_COMPUTE ## H ## _2();                                     \
@@ -1251,6 +1256,7 @@ static void weighted_pred ## H ## _ ## D ##_sse(                                
     __m128i r1, r2;                                                            \
     WEIGHTED_INIT_1(H, D);                                             \
     for (y = 0; y < height; y++) {                                             \
+        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             WEIGHTED_LOAD ## H();                                              \
             WEIGHTED_COMPUTE ## H ## _1();                                     \
@@ -1298,6 +1304,7 @@ static void weighted_pred_avg ## H ## _ ## D ##_sse(                            
     __m128i r1, r2, r3, r4;                                                    \
     WEIGHTED_INIT_3(H, D);                                             \
     for (y = 0; y < height; y++) {                                             \
+        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             WEIGHTED_LOAD ## H();                                              \
             WEIGHTED_COMPUTE ## H ## _3();                                     \
