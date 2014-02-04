@@ -175,8 +175,8 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->transform_add[1]       = FUNC(transform_8x8_add, depth);          \
     hevcdsp->transform_add[2]       = FUNC(transform_16x16_add, depth);        \
     hevcdsp->transform_add[3]       = FUNC(transform_32x32_add, depth);        \
-    /*hevcdsp->put_hevc_epel_hv       = FUNC(put_hevc_epel_hv,depth); */           \
-    /*hevcdsp->put_hevc_qpel_hv       = FUNC(put_hevc_qpel_hv,depth); */           \
+    hevcdsp->put_hevc_epel_hv       = FUNC(put_hevc_epel_hv,depth);            \
+    hevcdsp->put_hevc_qpel_hv       = FUNC(put_hevc_qpel_hv,depth);            \
                                                                                \
     hevcdsp->sao_band_filter[0] = FUNC(sao_band_filter_0, depth);              \
     hevcdsp->sao_band_filter[1] = FUNC(sao_band_filter_1, depth);              \
@@ -190,11 +190,11 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
                                                                                \
     QPEL_FUNCS(depth);                                                         \
     EPEL_FUNCS(depth);                                                         \
-    hevcdsp->put_unweighted_pred = FUNC(put_unweighted_pred, depth);           \
-    hevcdsp->put_weighted_pred_avg = FUNC(put_weighted_pred_avg, depth);       \
                                                                                \
-    hevcdsp->weighted_pred = FUNC(weighted_pred, depth);                       \
-    hevcdsp->weighted_pred_avg = FUNC(weighted_pred_avg, depth);               \
+    hevcdsp->put_unweighted_pred   = FUNC(put_unweighted_pred, depth);         \
+    hevcdsp->put_weighted_pred_avg = FUNC(put_weighted_pred_avg, depth);       \
+    hevcdsp->weighted_pred         = FUNC(weighted_pred, depth);               \
+    hevcdsp->weighted_pred_avg     = FUNC(weighted_pred_avg, depth);           \
                                                                                \
                                                                                \
     hevcdsp->hevc_h_loop_filter_luma     = FUNC(hevc_h_loop_filter_luma, depth);   \

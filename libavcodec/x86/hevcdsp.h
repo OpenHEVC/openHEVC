@@ -8,6 +8,18 @@ struct HEVCWindow;
 
 // #define OPTI_ASM
 
+void ff_hevc_put_hevc_epel_v2_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
+void ff_hevc_put_hevc_epel_v4_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
+void ff_hevc_put_hevc_epel_v8_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
+
+void ff_hevc_put_hevc_qpel_v4_1_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
+void ff_hevc_put_hevc_qpel_v4_2_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
+void ff_hevc_put_hevc_qpel_v4_3_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
+
+void ff_hevc_put_hevc_qpel_v8_1_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
+void ff_hevc_put_hevc_qpel_v8_2_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
+void ff_hevc_put_hevc_qpel_v8_3_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
+
 
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
@@ -104,10 +116,6 @@ EPEL_PROTOTYPE(v2 , 10);
 EPEL_PROTOTYPE(v4 , 10);
 EPEL_PROTOTYPE(v8 , 10);
 
-EPEL_PROTOTYPE(hv2 ,  8);
-EPEL_PROTOTYPE(hv4 ,  8);
-EPEL_PROTOTYPE(hv8 ,  8);
-
 EPEL_PROTOTYPE(hv2 , 10);
 EPEL_PROTOTYPE(hv4 , 10);
 
@@ -137,28 +145,6 @@ QPEL_PROTOTYPE(v8_3 ,  8);
 QPEL_PROTOTYPE_SSE(v16_1,  8);
 QPEL_PROTOTYPE_SSE(v16_2,  8);
 QPEL_PROTOTYPE_SSE(v16_3,  8);
-
-QPEL_PROTOTYPE(h4_1_v_1 ,  8);
-QPEL_PROTOTYPE(h4_1_v_2 ,  8);
-QPEL_PROTOTYPE(h4_1_v_3 ,  8);
-QPEL_PROTOTYPE(h4_2_v_1 ,  8);
-QPEL_PROTOTYPE(h4_2_v_2 ,  8);
-QPEL_PROTOTYPE(h4_2_v_3 ,  8);
-QPEL_PROTOTYPE(h4_3_v_1 ,  8);
-QPEL_PROTOTYPE(h4_3_v_2 ,  8);
-QPEL_PROTOTYPE(h4_3_v_3 ,  8);
-
-QPEL_PROTOTYPE(h8_1_v_1 ,  8);
-QPEL_PROTOTYPE(h8_1_v_2 ,  8);
-QPEL_PROTOTYPE(h8_1_v_3 ,  8);
-QPEL_PROTOTYPE(h8_2_v_1 ,  8);
-QPEL_PROTOTYPE(h8_2_v_2 ,  8);
-QPEL_PROTOTYPE(h8_2_v_3 ,  8);
-QPEL_PROTOTYPE(h8_3_v_1 ,  8);
-QPEL_PROTOTYPE(h8_3_v_2 ,  8);
-QPEL_PROTOTYPE(h8_3_v_3 ,  8);
-
-
 
 QPEL_PROTOTYPE_SSE(h2_1 , 10);
 QPEL_PROTOTYPE_SSE(h2_2 , 10);
