@@ -148,8 +148,23 @@
     ptrdiff_t dststride = _dststride >> 1
 #define DST_INIT_14() DST_INIT_10()
 
-#define MC_LOAD_PIXEL()                                                        \
+#define MC_LOAD_PIXEL2_8()                                                        \
+    x1 = _mm_loadl_epi64((__m128i *) &src[x])
+#define MC_LOAD_PIXEL4_8()                                                        \
+    MC_LOAD_PIXEL2_8()
+#define MC_LOAD_PIXEL8_8()                                                        \
+    MC_LOAD_PIXEL4_8()
+#define MC_LOAD_PIXEL16_8()                                                        \
     x1 = _mm_loadu_si128((__m128i *) &src[x])
+
+#define MC_LOAD_PIXEL2_10()                                                        \
+    MC_LOAD_PIXEL4_8()
+#define MC_LOAD_PIXEL4_10()                                                        \
+    MC_LOAD_PIXEL4_8()
+#define MC_LOAD_PIXEL8_10()                                                        \
+    MC_LOAD_PIXEL16_8()
+#define MC_LOAD_PIXEL16_10()                                                        \
+    MC_LOAD_PIXEL16_8()
 
 #define EPEL_H_LOAD2()                                                         \
     x1 = _mm_loadu_si128((__m128i *) &src[x - 1])
@@ -516,7 +531,7 @@ void ff_hevc_put_hevc_epel_pixels ## H ## _ ## D ## _sse (                     \
     SRC_INIT_ ## D();                                                          \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            MC_LOAD_PIXEL();                                                   \
+            MC_LOAD_PIXEL ## H ## _ ## D();                                    \
             MC_PIXEL_COMPUTE ## H ## _ ## D();                                 \
             PEL_STORE ## H(dst);                                               \
         }                                                                      \
@@ -537,7 +552,7 @@ void ff_hevc_put_hevc_qpel_pixels ## H  ## _ ## D ## _sse (                    \
     SRC_INIT_ ## D();                                                          \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            MC_LOAD_PIXEL();                                                   \
+            MC_LOAD_PIXEL ## H ## _ ## D();                                                   \
             MC_PIXEL_COMPUTE ## H ## _ ## D();                                 \
             PEL_STORE ## H(dst);                                               \
         }                                                                      \
@@ -1093,6 +1108,7 @@ PUT_HEVC_EPEL_V(  2, 8)
 PUT_HEVC_EPEL_V(  4, 8)
 PUT_HEVC_EPEL_V(  8, 8)
 PUT_HEVC_EPEL_V( 16, 8)
+
 
 PUT_HEVC_EPEL_V(  2, 10)
 PUT_HEVC_EPEL_V(  4, 10)
