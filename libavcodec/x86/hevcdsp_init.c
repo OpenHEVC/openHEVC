@@ -93,9 +93,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
 
                     c->put_unweighted_pred = ff_hevc_put_unweighted_pred_8_sse;
-                    c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
-                    c->weighted_pred = ff_hevc_weighted_pred_8_sse;
-                    c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
 
                     PEL_LINK(c->put_hevc_qpel, 0, 0, 0, qpel_pixels4 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 0, qpel_pixels8 ,  8);
@@ -146,6 +143,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
+
+                    c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
+                    c->weighted_pred = ff_hevc_weighted_pred_8_sse;
+                    c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;
 
                     PEL_LINK(c->put_hevc_epel, 0, 0, 0, epel_pixels2 , 8);
                     PEL_LINK(c->put_hevc_epel, 1, 0, 0, epel_pixels4 , 8);
