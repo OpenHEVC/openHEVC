@@ -133,7 +133,12 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 #define QPEL_FUNC_HV(dst1, idx1, idx2, a, depth)                               \
     hevcdsp->dst1[0][idx1][idx2] = hevcdsp->dst1[1][idx1][idx2] = hevcdsp->dst1[2][idx1][idx2] = hevcdsp->dst1[3][idx1][idx2] = hevcdsp->dst1[4][idx1][idx2] = a ## h ## idx2 ## v ## idx1 ## _ ## depth
 
-#undef QPEL_FUNCS
+#define QPEL_V14(depth)                                                        \
+    hevcdsp->put_hevc_qpel_v_14[0][1] = hevcdsp->put_hevc_qpel_v_14[1][1] = hevcdsp->put_hevc_qpel_v_14[2][1] = hevcdsp->put_hevc_qpel_v_14[3][1] = hevcdsp->put_hevc_qpel_v_14[4][1] = FUNC(put_hevc_qpel_v1_14,depth); \
+    hevcdsp->put_hevc_qpel_v_14[0][2] = hevcdsp->put_hevc_qpel_v_14[1][2] = hevcdsp->put_hevc_qpel_v_14[2][2] = hevcdsp->put_hevc_qpel_v_14[3][2] = hevcdsp->put_hevc_qpel_v_14[4][2] = FUNC(put_hevc_qpel_v2_14,depth); \
+    hevcdsp->put_hevc_qpel_v_14[0][3] = hevcdsp->put_hevc_qpel_v_14[1][3] = hevcdsp->put_hevc_qpel_v_14[2][3] = hevcdsp->put_hevc_qpel_v_14[3][3] = hevcdsp->put_hevc_qpel_v_14[4][3] = FUNC(put_hevc_qpel_v3_14,depth)
+
+    #undef QPEL_FUNCS
 #define QPEL_FUNCS(depth)                                                      \
     QPEL_FUNC_PIXELS(put_hevc_qpel, put_hevc_qpel_pixels, depth);              \
     QPEL_FUNC_H(put_hevc_qpel, 1, put_hevc_qpel_h, depth);                     \
@@ -141,27 +146,22 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     QPEL_FUNC_H(put_hevc_qpel, 3, put_hevc_qpel_h, depth);                     \
     QPEL_FUNC_V(put_hevc_qpel, 1, put_hevc_qpel_v, depth);                     \
     QPEL_FUNC_V(put_hevc_qpel, 2, put_hevc_qpel_v, depth);                     \
-    QPEL_FUNC_V(put_hevc_qpel, 3, put_hevc_qpel_v, depth)
-
-/*    QPEL_FUNC_HV(put_hevc_qpel, 1, 1, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, 1, 2, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, 1, 3, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, 2, 1, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, 2, 2, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, 2, 3, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, 3, 1, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, 3, 2, put_hevc_qpel_, depth); \
-    QPEL_FUNC_HV(put_hevc_qpel, 3, 3, put_hevc_qpel_, depth)*/
+    QPEL_FUNC_V(put_hevc_qpel, 3, put_hevc_qpel_v, depth);                     \
+    QPEL_V14(depth)
 
 #undef EPEL_FUNC
 #define EPEL_FUNC(dst1, idx1, idx2, a, depth)                                 \
     hevcdsp->dst1[0][idx1][idx2] = hevcdsp->dst1[1][idx1][idx2] = hevcdsp->dst1[2][idx1][idx2] = hevcdsp->dst1[3][idx1][idx2] = hevcdsp->dst1[4][idx1][idx2]    = a ## _ ## depth
 
+#define EPEL_V14(depth)                                                        \
+    hevcdsp->put_hevc_epel_v_14[0] = hevcdsp->put_hevc_epel_v_14[1] = hevcdsp->put_hevc_epel_v_14[2] = hevcdsp->put_hevc_epel_v_14[3] = hevcdsp->put_hevc_epel_v_14[4] = FUNC(put_hevc_epel_v_14,depth)
+
 #undef EPEL_FUNCS
 #define EPEL_FUNCS(depth)                                                     \
     EPEL_FUNC(put_hevc_epel, 0, 0, put_hevc_epel_pixels, depth);               \
     EPEL_FUNC(put_hevc_epel, 0, 1, put_hevc_epel_h, depth);                    \
-    EPEL_FUNC(put_hevc_epel, 1, 0, put_hevc_epel_v, depth)
+    EPEL_FUNC(put_hevc_epel, 1, 0, put_hevc_epel_v, depth);                    \
+    EPEL_V14(depth)
 
 #define HEVC_DSP(depth)                                                        \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                    \

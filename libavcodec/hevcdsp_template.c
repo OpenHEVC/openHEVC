@@ -757,7 +757,7 @@ static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst,  ptrdiff_t dststride,     \
 }
 
 #define PUT_HEVC_QPEL_V_14(V)                                                  \
-static void FUNC(put_hevc_qpel_v_14_ ## V)(int16_t *dst,  ptrdiff_t dststride,  \
+static void FUNC(put_hevc_qpel_v## V ##_14 )(int16_t *dst,  ptrdiff_t dststride,  \
                                        uint8_t*_src, ptrdiff_t _srcstride,    \
                                        int width, int height)                  \
 {                                                                              \
