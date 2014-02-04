@@ -1193,14 +1193,17 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
         srcstride = MAX_EDGE_BUFFER_STRIDE;
         
     }
+#if 0
     if(!!mx && !!my)
         s->hevcdsp.put_hevc_qpel_hv(dst, dststride, src, srcstride,
                     block_w, block_h, my, mx, s, idx);
     else
+#endif
     s->hevcdsp.put_hevc_qpel[idx][my][mx](dst, dststride, src, srcstride, block_w,
                                      block_h);
 }
 
+#ifdef NEW_LUMA_CHROMA_MC
 static void luma_mc_bi_pred(HEVCContext *s,
         uint8_t *dst, ptrdiff_t dststride,
         int16_t *src1, ptrdiff_t src1stride,
@@ -1288,6 +1291,7 @@ static void luma_mc_bi_pred(HEVCContext *s,
             block_w, block_h,
             denom, wlxFlag, wl1Flag, olxFlag, ol1Flag);
 }
+#endif
 
 /**
  * 8.5.3.2.2.2 Chroma sample interpolation process
@@ -1341,11 +1345,13 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         src1       = lc->edge_emu_buffer + offset_edge;
         src1stride = MAX_EDGE_BUFFER_STRIDE;
     }
+#if 0
     if(!!mx && !!my)
     {
         s->hevcdsp.put_hevc_epel_hv(dst1, dststride, src1, src1stride,
                     block_w, block_h, mx, my,s, idx);
     }else
+#endif
     s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst1, dststride, src1, src1stride,
             block_w, block_h, mx, my);
 
@@ -1360,16 +1366,19 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         src2       = lc->edge_emu_buffer + offset_edge;
         src2stride = MAX_EDGE_BUFFER_STRIDE;
     }
+#if 0
     if(!!mx && !!my)
     {
         s->hevcdsp.put_hevc_epel_hv(dst2, dststride, src2, src2stride,
                     block_w, block_h, mx, my,
                     s, idx);
     }else
+#endif
     s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
             block_w, block_h, mx, my);
 }
 
+#ifdef NEW_LUMA_CHROMA_MC
 static void chroma_mc_bi_pred(HEVCContext *s,
             uint8_t *dst, ptrdiff_t dststride,
             int16_t *src1, ptrdiff_t src1stride,
@@ -1459,6 +1468,7 @@ static void chroma_mc_bi_pred(HEVCContext *s,
             block_w, block_h, mx, my,
             denom, wlxFlag, wl1Flag, olxFlag, ol1Flag);
 }
+#endif
 
 static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0, int height)

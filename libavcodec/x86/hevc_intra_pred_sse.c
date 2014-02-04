@@ -416,10 +416,13 @@ void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             p_src = src;
             CLIP_PIXEL(src2, src1);
             r0  = _mm_packus_epi16(r0, r0);
-            for (i = 0; i < size; i++) {
-                *((char *) p_src) = _mm_extract_epi8(r0, i);
-                p_src += stride;
-            }
+            *((char *) p_src) = _mm_extract_epi8(r0, 0);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 1);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 2);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 3);
         }
     } else {
         TRANSPOSE4x4B(src_tmp, size, _src, _stride);
@@ -520,10 +523,21 @@ void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
                 p_src = src;
                 CLIP_PIXEL(src2, src1);
                 r0  = _mm_packus_epi16(r0, r0);
-                for (i = 0; i < size; i++) {
-                    *((char *) p_src) = _mm_extract_epi8(r0, i);
-                    p_src += stride;
-                }
+                *((char *) p_src) = _mm_extract_epi8(r0, 0);
+                p_src += stride;
+                *((char *) p_src) = _mm_extract_epi8(r0, 1);
+                p_src += stride;
+                *((char *) p_src) = _mm_extract_epi8(r0, 2);
+                p_src += stride;
+                *((char *) p_src) = _mm_extract_epi8(r0, 3);
+                p_src += stride;
+                *((char *) p_src) = _mm_extract_epi8(r0, 4);
+                p_src += stride;
+                *((char *) p_src) = _mm_extract_epi8(r0, 5);
+                p_src += stride;
+                *((char *) p_src) = _mm_extract_epi8(r0, 6);
+                p_src += stride;
+                *((char *) p_src) = _mm_extract_epi8(r0, 7);
             }
         } else {
             TRANSPOSE8x8B(src_tmp, size, _src, _stride);
@@ -605,10 +619,37 @@ void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
             CLIP_PIXEL(src2, src1);
             CLIP_PIXEL_HI();
             r0  = _mm_packus_epi16(r0, r3);
-            for (i = 0; i < size; i++) {
-                *((char *) p_src) = _mm_extract_epi8(r0, i);
-                p_src += stride;
-            }
+            *((char *) p_src) = _mm_extract_epi8(r0, 0);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 1);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 2);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 3);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 4);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 5);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 6);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 7);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 8);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0, 9);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0,10);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0,11);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0,12);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0,13);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0,14);
+            p_src += stride;
+            *((char *) p_src) = _mm_extract_epi8(r0,15);
         }
     } else {
         TRANSPOSE16x16B(src_tmp, size, _src, _stride);
