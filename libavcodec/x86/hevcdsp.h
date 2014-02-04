@@ -22,17 +22,9 @@ void ff_hevc_put_hevc_qpel_v8_3_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_
 
 
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
-dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4; \
-dst ## _w[idx1][idx2][idx3][0] = ff_hevc_put_hevc_ ## name ## _w0_ ## D ## _sse; \
-dst ## _w[idx1][idx2][idx3][1] = ff_hevc_put_hevc_ ## name ## _w1_ ## D ## _sse; \
-dst ## _w[idx1][idx2][idx3][2] = ff_hevc_put_hevc_ ## name ## _w2_ ## D ## _sse; \
-dst ## _w[idx1][idx2][idx3][3] = ff_hevc_put_hevc_ ## name ## _w3_ ## D ## _sse
+dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
 #define PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D) \
-dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse; \
-dst ## _w[idx1][idx2][idx3][0] = ff_hevc_put_hevc_ ## name ## _w0_ ## D ## _sse; \
-dst ## _w[idx1][idx2][idx3][1] = ff_hevc_put_hevc_ ## name ## _w1_ ## D ## _sse; \
-dst ## _w[idx1][idx2][idx3][2] = ff_hevc_put_hevc_ ## name ## _w2_ ## D ## _sse; \
-dst ## _w[idx1][idx2][idx3][3] = ff_hevc_put_hevc_ ## name ## _w3_ ## D ## _sse
+dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse
 
 #ifdef OPTI_ASM
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D) \
@@ -43,34 +35,12 @@ PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D)
 #endif
 
 
-#define QPEL_V14_LINK(dst, idx1, idx2, name, D) \
-/*dst[idx1][idx2] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse; */\
-dst[idx1][idx2][0] = ff_hevc_put_hevc_ ## name ## _w0_ ## D ## _sse; \
-dst[idx1][idx2][1] = ff_hevc_put_hevc_ ## name ## _w1_ ## D ## _sse; \
-dst[idx1][idx2][2] = ff_hevc_put_hevc_ ## name ## _w2_ ## D ## _sse; \
-dst[idx1][idx2][3] = ff_hevc_put_hevc_ ## name ## _w3_ ## D ## _sse
-
 #define EPEL_PROTOTYPE_ASM(name, D) \
 void ff_hevc_put_hevc_epel_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my); \
-void ff_hevc_put_hevc_epel_ ## name ## _w0_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w1_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w2_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w3_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w0_14b_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w1_14b_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w2_14b_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w3_14b_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag)
+
 
 #define EPEL_PROTOTYPE_SSE(name, D) \
 void ff_hevc_put_hevc_epel_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my); \
-void ff_hevc_put_hevc_epel_ ## name ## _w0_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w1_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w2_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w3_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w0_14b_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w1_14b_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w2_14b_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_epel_ ## name ## _w3_14b_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag)
 
 
 #ifdef OPTI_ASM
@@ -83,25 +53,11 @@ EPEL_PROTOTYPE_SSE(name, D)
 
 #define QPEL_PROTOTYPE_ASM(name, D) \
 void ff_hevc_put_hevc_qpel_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w0_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w1_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w2_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w3_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag)
+
 
 #define QPEL_PROTOTYPE_SSE(name, D) \
 void ff_hevc_put_hevc_qpel_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w0_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w1_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w2_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w3_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag)
 
-
-#define QPEL_V14_PROTOTYPE_SSE(name, D) \
-/*void ff_hevc_put_hevc_qpel_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height);*/ \
-void ff_hevc_put_hevc_qpel_ ## name ## _w0_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w1_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w2_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag); \
-void ff_hevc_put_hevc_qpel_ ## name ## _w3_ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, int16_t *src1, ptrdiff_t src1stride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, uint8_t denom, int16_t wlxFlag, int16_t wl1Flag, int16_t olxFlag, int16_t ol1Flag)
 
 #ifdef OPTI_ASM
 #define QPEL_PROTOTYPE(name, D) \
@@ -150,6 +106,8 @@ EPEL_PROTOTYPE(pixels8 , 10);
 EPEL_PROTOTYPE(h2 ,  8);
 EPEL_PROTOTYPE(h4 ,  8);
 EPEL_PROTOTYPE(h8 ,  8);
+EPEL_PROTOTYPE(h16,  8);
+EPEL_PROTOTYPE(h32,  8);
 
 EPEL_PROTOTYPE(h2 , 10);
 EPEL_PROTOTYPE(h4 , 10);
@@ -201,14 +159,6 @@ QPEL_PROTOTYPE_SSE(v16_1,  8);
 QPEL_PROTOTYPE_SSE(v16_2,  8);
 QPEL_PROTOTYPE_SSE(v16_3,  8);
 
-
-QPEL_V14_PROTOTYPE_SSE(v4_1_14b ,  8);
-QPEL_V14_PROTOTYPE_SSE(v4_2_14b ,  8);
-QPEL_V14_PROTOTYPE_SSE(v4_3_14b ,  8);
-
-QPEL_V14_PROTOTYPE_SSE(v8_1_14b ,  8);
-QPEL_V14_PROTOTYPE_SSE(v8_2_14b ,  8);
-QPEL_V14_PROTOTYPE_SSE(v8_3_14b ,  8);
 
 
 QPEL_PROTOTYPE_SSE(h2_1 , 10);
