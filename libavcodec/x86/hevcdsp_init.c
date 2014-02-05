@@ -160,6 +160,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 }
                 if (EXTERNAL_SSE4(mm_flags)) {
 
+                    c->put_hevc_epel_hv       = ff_hevc_put_hevc_epel_hv_8_sse;
+
                     c->put_weighted_pred_avg = ff_hevc_put_weighted_pred_avg_8_sse;
                     c->weighted_pred = ff_hevc_weighted_pred_8_sse;
                     c->weighted_pred_avg = ff_hevc_weighted_pred_avg_8_sse;

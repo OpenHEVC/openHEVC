@@ -20,6 +20,10 @@ void ff_hevc_put_hevc_qpel_v8_1_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_
 void ff_hevc_put_hevc_qpel_v8_2_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
 void ff_hevc_put_hevc_qpel_v8_3_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height); \
 
+void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
+                                    uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx,
+                                    int my);
+
 
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
