@@ -33,6 +33,16 @@
 
 #define BIT_DEPTH 8
 
+DECLARE_ALIGNED(16, const int16_t, ff_hevc_epel_filters_10[7][8]) = {
+    { -2, 58, 10, -2, -2, 58, 10, -2},
+    { -4, 54, 16, -2, -4, 54, 16, -2},
+    { -6, 46, 28, -4, -6, 46, 28, -4},
+    { -4, 36, 36, -4, -4, 36, 36, -4},
+    { -4, 28, 46, -6, -4, 28, 46, -6},
+    { -2, 16, 54, -4, -2, 16, 54, -4},
+    { -2, 10, 58, -2, -2, 10, 58, -2},
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,14 +61,11 @@
 
 #define EPEL_H_FILTER_8()                                                      \
     __m128i bshuffle1 = _mm_set_epi8( 6, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 0); \
-    __m128i r0        = _mm_loadl_epi64((__m128i *) &ff_hevc_epel_filters[mx - 1]);    \
-    r0                = _mm_shuffle_epi32(r0, 0)
+    __m128i r0        = _mm_loadu_si128((__m128i *) &ff_hevc_epel_filters[mx - 1]);
 #define EPEL_H_FILTER_10()                                                     \
     __m128i bshuffle1 = _mm_set_epi8( 9, 8, 7, 6, 5, 4, 3, 2, 7, 6, 5, 4, 3, 2, 1, 0); \
     __m128i bshuffle2 = _mm_set_epi8(13,12,11,10, 9, 8, 7, 6,11,10, 9, 8, 7, 6, 5, 4); \
-    __m128i r0        = _mm_loadu_si128((__m128i *) &ff_hevc_epel_filters[mx - 1]);    \
-    r0                = _mm_srai_epi16(_mm_unpacklo_epi8(c0, r0), 8);                  \
-    r0                = _mm_unpacklo_epi64(r0, r0)
+    __m128i r0        = _mm_loadu_si128((__m128i *) &ff_hevc_epel_filters_10[mx - 1])
 
 #define QPEL_V_FILTER_1(inst)                                                  \
     const __m128i c1 = inst( -1);                                              \
@@ -307,27 +314,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#define WEIGHTED_INIT2_8()                                                     \
-    const __m128i mask  = _mm_set_epi32(0, 0, 0, -1);                          \
-    const __m128i mask2 = _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, -1)
-#define WEIGHTED_INIT4_8()                                                     \
-    const __m128i mask  = _mm_set_epi32(0, 0, 0, -1);                          \
-    const __m128i mask2 = _mm_set_epi32(0, 0, 0, -1)
-#define WEIGHTED_INIT8_8()
-#define WEIGHTED_INIT16_8()
-
-#define WEIGHTED_INIT2_10()                                                    \
-    const __m128i mask = _mm_set_epi32(0, 0, 0, -1)
-#define WEIGHTED_INIT4_10()
-#define WEIGHTED_INIT8_10()
-#define WEIGHTED_INIT16_10()
-
-#define WEIGHTED_INIT2_14()  WEIGHTED_INIT2_10()
-#define WEIGHTED_INIT4_14()
-#define WEIGHTED_INIT8_14()
-#define WEIGHTED_INIT16_14()
-
-
 #define WEIGHTED_LOAD2()                                                       \
     r1 = _mm_loadl_epi64((__m128i *) &src[x    ])
 #define WEIGHTED_LOAD4()                                                       \
@@ -374,7 +360,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define WEIGHTED_INIT_0(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D();                                            \
     const int shift2 = 14 - D;                                                 \
     WEIGHTED_INIT_0_ ## D()
 
@@ -388,7 +373,6 @@
     const __m128i m1 = _mm_setzero_si128()
 
 #define WEIGHTED_INIT_1(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D();                                            \
     const int shift2    = denom + 14 - D;                                      \
     const __m128i add   = _mm_set1_epi32(olxFlag << (D - 8));                  \
     const __m128i add2  = _mm_set1_epi32(1 << (shift2-1));                     \
@@ -396,12 +380,10 @@
     __m128i s1, s2, s3
 
 #define WEIGHTED_INIT_2(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D();                                            \
     const int shift2 = 14 + 1 - D;                                             \
     const __m128i m1 = _mm_set1_epi16(1 << (14 - D))
 
 #define WEIGHTED_INIT_3(H, D)                                                  \
-    WEIGHTED_INIT ## H ## _ ## D();                                            \
     const int log2Wd = denom + 14 - D;                                         \
     const int shift2 = log2Wd + 1;                                             \
     const int o0     = olxFlag << (D - 8);                                     \
@@ -523,11 +505,10 @@ void ff_hevc_put_hevc_epel_pixels ## H ## _ ## D ## _sse (                     \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
                                    int width, int height,                      \
-                                   int mx, int my) {        \
+                                   int mx, int my) {                           \
     int x, y;                                                                  \
     __m128i x1, x2, x3, r1, r2;                                                \
     const __m128i c0    = _mm_setzero_si128();                                 \
-    const __m128i mask  = _mm_set_epi32(0, 0, 0, -1);                          \
     SRC_INIT_ ## D();                                                          \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -548,11 +529,10 @@ void ff_hevc_put_hevc_qpel_pixels ## H  ## _ ## D ## _sse (                    \
     int x, y;                                                                  \
     __m128i x1, x2, x3, r1, r2;                                                \
     const __m128i c0    = _mm_setzero_si128();                                 \
-    const __m128i mask  = _mm_set_epi32(0, 0, 0, -1);                          \
     SRC_INIT_ ## D();                                                          \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            MC_LOAD_PIXEL ## H ## _ ## D();                                                   \
+            MC_LOAD_PIXEL ## H ## _ ## D();                                    \
             MC_PIXEL_COMPUTE ## H ## _ ## D();                                 \
             PEL_STORE ## H(dst);                                               \
         }                                                                      \
@@ -563,7 +543,7 @@ void ff_hevc_put_hevc_qpel_pixels ## H  ## _ ## D ## _sse (                    \
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_epel_hX_X_sse
-////////////////////////////////////////////////////////////////////////////////   
+////////////////////////////////////////////////////////////////////////////////
 #define EPEL_H_COMPUTE2_8()                                                    \
     x1 = _mm_shuffle_epi8(x1, bshuffle1);                                      \
     MUL_ADD_H_1(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
@@ -594,7 +574,6 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
     int x, y;                                                                  \
     __m128i x1, x2, r1;                                                        \
     const __m128i c0     = _mm_setzero_si128();                                \
-    const __m128i mask   = _mm_set_epi32(0, 0, 0, -1);                         \
     SRC_INIT_ ## D();                                                          \
     EPEL_H_FILTER_ ## D();                                                     \
     for (y = 0; y < height; y++) {                                             \
@@ -696,7 +675,6 @@ void ff_hevc_put_hevc_epel_v ## V ## _ ## D ## _sse (                          \
     __m128i t1, t2, t3, t4;                                                    \
     __m128i r1, r2;                                                            \
     const __m128i c0    = _mm_setzero_si128();                                 \
-    const __m128i mask  = _mm_set_epi32(0, 0, 0, -1);                          \
     SRC_INIT_ ## D();                                                          \
     uint16_t  *_dst       = (uint16_t*) dst;                                   \
     EPEL_V_FILTER_ ## D();                                                     \
@@ -738,7 +716,6 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
     int x, y;                                                                  \
     __m128i x1, x2, x3, x4, r1;                                                \
     const __m128i c0    = _mm_setzero_si128();                                 \
-    const __m128i mask  = _mm_set_epi32(0, 0, 0, -1);                          \
     SRC_INIT_ ## D();                                                          \
     QPEL_H_FILTER_ ## F ## _ ## D();                                           \
     for (y = 0; y < height; y++) {                                             \
@@ -1109,7 +1086,6 @@ PUT_HEVC_EPEL_V(  4, 8)
 PUT_HEVC_EPEL_V(  8, 8)
 PUT_HEVC_EPEL_V( 16, 8)
 
-
 PUT_HEVC_EPEL_V(  2, 10)
 PUT_HEVC_EPEL_V(  4, 10)
 PUT_HEVC_EPEL_V(  8, 10)
@@ -1156,7 +1132,6 @@ PUT_HEVC_QPEL_V(  4, 3, 14)
 
 PUT_HEVC_QPEL_V(  8, 1, 14)
 PUT_HEVC_QPEL_V(  8, 2, 14)
-
 PUT_HEVC_QPEL_V(  8, 3, 14)
 
 void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *dst, ptrdiff_t dststride,
