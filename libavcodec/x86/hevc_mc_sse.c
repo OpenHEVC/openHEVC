@@ -1464,6 +1464,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *_dst, ptrdiff_t dststride,
     const int8_t *filter_v = ff_hevc_epel_filters[my - 1];
     __m128i r0, bshuffle1, bshuffle2, x0, x1, x2, x3, t0, t1, t2, t3, f0, f1,
     f2, f3, r1, r2;
+    __m128i xx0, xx1, xx2, xx3;
     int16_t mcbuffer[(MAX_PB_SIZE + 3) * MAX_PB_SIZE];
     int16_t *tmp = mcbuffer;
     r0 = _mm_set1_epi32(*(uint32_t*) filter_h);
@@ -1475,7 +1476,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *_dst, ptrdiff_t dststride,
     if(!(width & 7)){
         bshuffle2 = _mm_set_epi8(10, 9, 8, 7, 9, 8, 7, 6, 8, 7, 6, 5, 7, 6, 5,4);
         for (x = 0; x < width; x += 8) {
-        for (y = 0; y < height + EPEL_EXTRA; y++) {
+            for (y = 0; y < height + EPEL_EXTRA; y++) {
 
                 x1 = _mm_loadu_si128((__m128i *) &src[x - 1]);
                 x2 = _mm_shuffle_epi8(x1, bshuffle1);
@@ -1501,36 +1502,40 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *_dst, ptrdiff_t dststride,
         f0 = _mm_set1_epi16(filter_v[0]);
 
         for (x = 0; x < width; x += 8) {
-        for (y = 0; y < height; y++) {
-                x0 = _mm_load_si128((__m128i *) &tmp[x - MAX_PB_SIZE]);
-                x1 = _mm_load_si128((__m128i *) &tmp[x]);
-                x2 = _mm_load_si128((__m128i *) &tmp[x + MAX_PB_SIZE]);
+            x1 = _mm_load_si128((__m128i *) &tmp[x - MAX_PB_SIZE]);
+            x2 = _mm_load_si128((__m128i *) &tmp[x]);
+            x3 = _mm_load_si128((__m128i *) &tmp[x + MAX_PB_SIZE]);
+            for (y = 0; y < height; y++) {
+                x0 = x1;
+                x1 = x2;
+                x2 = x3;
                 x3 = _mm_load_si128((__m128i *) &tmp[x + 2 * MAX_PB_SIZE]);
 
                 r0 = _mm_mullo_epi16(x0, f0);
                 r1 = _mm_mulhi_epi16(x0, f0);
                 r2 = _mm_mullo_epi16(x1, f1);
                 t0 = _mm_unpacklo_epi16(r0, r1);
-                x0 = _mm_unpackhi_epi16(r0, r1);
+                xx0 = _mm_unpackhi_epi16(r0, r1);
                 r0 = _mm_mulhi_epi16(x1, f1);
                 r1 = _mm_mullo_epi16(x2, f2);
                 t1 = _mm_unpacklo_epi16(r2, r0);
-                x1 = _mm_unpackhi_epi16(r2, r0);
+                xx1 = _mm_unpackhi_epi16(r2, r0);
                 r2 = _mm_mulhi_epi16(x2, f2);
                 r0 = _mm_mullo_epi16(x3, f3);
                 t2 = _mm_unpacklo_epi16(r1, r2);
-                x2 = _mm_unpackhi_epi16(r1, r2);
+                xx2 = _mm_unpackhi_epi16(r1, r2);
+
                 r1 = _mm_mulhi_epi16(x3, f3);
                 t3 = _mm_unpacklo_epi16(r0, r1);
-                x3 = _mm_unpackhi_epi16(r0, r1);
+                xx3 = _mm_unpackhi_epi16(r0, r1);
 
 
                 r0 = _mm_add_epi32(t0, t1);
-                r1 = _mm_add_epi32(x0, x1);
+                r1 = _mm_add_epi32(xx0, xx1);
                 r0 = _mm_add_epi32(r0, t2);
-                r1 = _mm_add_epi32(r1, x2);
+                r1 = _mm_add_epi32(r1, xx2);
                 r0 = _mm_add_epi32(r0, t3);
-                r1 = _mm_add_epi32(r1, x3);
+                r1 = _mm_add_epi32(r1, xx3);
                 r0 = _mm_srai_epi32(r0, 6);
                 r1 = _mm_srai_epi32(r1, 6);
 
@@ -1545,7 +1550,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *_dst, ptrdiff_t dststride,
         }
     }else if(!(width & 3)){
         for(x=0;x<width;x+=4){
-        for (y = 0; y < height + EPEL_EXTRA; y ++) {
+            for (y = 0; y < height + EPEL_EXTRA; y ++) {
                 // load data in register
                 x1 = _mm_loadl_epi64((__m128i *) &src[x-1]);
 
@@ -1574,7 +1579,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *_dst, ptrdiff_t dststride,
         f0 = _mm_set1_epi32(filter_v[0]);
         r0= _mm_setzero_si128();
         for (x = 0; x < width; x += 4) {
-        for (y = 0; y < height; y++) {
+            for (y = 0; y < height; y++) {
 
                 x0 = _mm_loadl_epi64((__m128i *) &tmp[x - MAX_PB_SIZE]);
                 x1 = _mm_loadl_epi64((__m128i *) &tmp[x]);
@@ -1604,8 +1609,8 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *_dst, ptrdiff_t dststride,
                 r1= _mm_packs_epi32(r1,r0);
 
                 _mm_storel_epi64((__m128i *) &dst[x], r1);
-            tmp += MAX_PB_SIZE;
-            dst += dststride;
+                tmp += MAX_PB_SIZE;
+                dst += dststride;
             }
             tmp = mcbuffer + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
             dst = _dst;
@@ -1664,7 +1669,7 @@ void ff_hevc_put_hevc_epel_hv_8_sse(int16_t *_dst, ptrdiff_t dststride,
                 x1= _mm_mullo_epi32(x1,f1);
                 x2= _mm_mullo_epi32(x2,f2);
                 x3= _mm_mullo_epi32(x3,f3);
-                
+
                 x0= _mm_add_epi32(x0,x1);
                 x2= _mm_add_epi32(x2,x3);
                 
