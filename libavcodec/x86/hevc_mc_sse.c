@@ -270,6 +270,34 @@ static const uint8_t qpel_h_filter_3_8[16] = {  0, 1, -5, 17, 58,-10, 4, -1,  0,
     dst ## 7 = _mm_cvtepi16_epi32(src ## 7); \
     dst ## 8 = _mm_cvtepi16_epi32(src ## 8)
 
+#define CVTHI4_8_16(dst, src)              \
+    src ## 1 = _mm_unpackhi_epi64(src ## 1, c0);                               \
+    src ## 2 = _mm_unpackhi_epi64(src ## 2, c0);                               \
+    src ## 3 = _mm_unpackhi_epi64(src ## 3, c0);                               \
+    src ## 4 = _mm_unpackhi_epi64(src ## 4, c0);                               \
+    CVT4_8_16(dst, src)
+
+#define CVTHI8_8_16(dst, src)              \
+    src ## 5 = _mm_unpackhi_epi64(src ## 5, c0);                               \
+    src ## 6 = _mm_unpackhi_epi64(src ## 6, c0);                               \
+    src ## 7 = _mm_unpackhi_epi64(src ## 7, c0);                               \
+    src ## 8 = _mm_unpackhi_epi64(src ## 8, c0);                               \
+    CVT8_8_16(dst, src)
+
+
+#define CVTHI4_16_32(dst, src)              \
+    src ## 1 = _mm_unpackhi_epi64(src ## 1, c0);                               \
+    src ## 2 = _mm_unpackhi_epi64(src ## 2, c0);                               \
+    src ## 3 = _mm_unpackhi_epi64(src ## 3, c0);                               \
+    src ## 4 = _mm_unpackhi_epi64(src ## 4, c0);                               \
+    CVT4_16_32(dst, src)
+
+#define CVTHI8_16_32(dst, src)              \
+    src ## 5 = _mm_unpackhi_epi64(src ## 5, c0);                               \
+    src ## 6 = _mm_unpackhi_epi64(src ## 6, c0);                               \
+    src ## 7 = _mm_unpackhi_epi64(src ## 7, c0);                               \
+    src ## 8 = _mm_unpackhi_epi64(src ## 8, c0);                               \
+    CVT8_16_32(dst, src)
 
 #define MUL_ADD_H_1(mul, add, dst, src)                                        \
     src ## 1 = mul(src ## 1, r0);                                              \
@@ -679,7 +707,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
 #define EPEL_V_COMPUTE8_10()                                                   \
     CVT4_16_32( t, x);                                 \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
-    UNPACK_SRAI16_4(_mm_unpackhi_epi16, x, x);                                 \
+    CVTHI4_16_32( x, x);                                 \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
     r2 = _mm_srai_epi32(r2, shift);                                            \
     r1 = _mm_srai_epi32(r1, shift);                                            \
@@ -694,7 +722,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
 #define EPEL_V_COMPUTE8_14()                                                   \
     CVT4_16_32(t, x);                                                          \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
-    UNPACK_SRAI16_4(_mm_unpackhi_epi16, x, x);                                 \
+    CVTHI4_16_32(x, x);                                                        \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r1, x);                        \
     r2 = _mm_srai_epi32(r2, shift);                                            \
     r1 = _mm_srai_epi32(r1, shift);                                            \
@@ -739,7 +767,7 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
 #define EPEL_V_COMPUTEB8_14()                                                   \
     CVT4_16_32(t, x);                                                          \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
-    UNPACK_SRAI16_4(_mm_unpackhi_epi16, y, x);                                 \
+    CVTHI4_16_32(y, x);                                                        \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r1, y);                        \
     r2 = _mm_srai_epi32(r2, shift);                                            \
     r1 = _mm_srai_epi32(r1, shift);                                            \
@@ -904,7 +932,7 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
     QPEL_V_COMPUTE_FIRST2_10()
 
 #define QPEL_V_COMPUTE_FIRST8_10()                                             \
-    UNPACK_SRAI16_4(_mm_unpackhi_epi16, t, x);                                 \
+    CVTHI4_16_32(t, x);                                                        \
     MUL_ADD_V_4(_mm_mullo_epi32, _mm_add_epi32, r2, t);                        \
     QPEL_V_COMPUTE_FIRST2_10()
 
@@ -917,7 +945,7 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## F ## _ ## D ## _sse (                \
     QPEL_V_COMPUTE_LAST2_10()
 
 #define QPEL_V_COMPUTE_LAST8_10()                                              \
-    UNPACK_SRAI16_4(_mm_unpackhi_epi16, t, x);                                 \
+    CVTHI4_16_32(t, x);                                                        \
     MUL_ADD_V_LAST_4(_mm_mullo_epi32, _mm_add_epi32, r4, t);                   \
     QPEL_V_COMPUTE_LAST2_10()
 
