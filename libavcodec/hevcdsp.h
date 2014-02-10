@@ -48,23 +48,23 @@ typedef struct HEVCDSPContext {
     void (*sao_edge_filter[4])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t vert_edge, uint8_t horiz_edge, uint8_t diag_edge);
 
 
-    void (*put_hevc_qpel[5][4][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                int width, int height);
+    void (*put_hevc_qpel[5][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                                int width, int height, int mx, int my);
+
+    void (*put_hevc_qpel_v_14[5])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                                int width, int height, int mx, int my);
 
     void (*put_hevc_qpel_hv)(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                 int width, int height, int mx, int my, void *s, ptrdiff_t idx);
 
-    void (*put_hevc_qpel_v_14[5][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                int width, int height);
-
     void (*put_hevc_epel[5][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                 int width, int height, int mx, int my);
 
-    void (*put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                int width, int height, int mx, int my, void *s, ptrdiff_t idx);
-
     void (*put_hevc_epel_v_14[5])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                     int width, int height, int mx, int my);
+
+    void (*put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                                int width, int height, int mx, int my, void *s, ptrdiff_t idx);
 
     void (*put_unweighted_pred)(uint8_t *dst, ptrdiff_t dststride, int16_t *src, ptrdiff_t srcstride,
                                 int width, int height);
@@ -94,6 +94,7 @@ typedef struct HEVCDSPContext {
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
 
 extern const int8_t ff_hevc_epel_filters[7][4];
+extern const int8_t ff_hevc_qpel_filters[3][8];
 
 void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth);
 void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth);
