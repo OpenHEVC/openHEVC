@@ -212,6 +212,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_qpel, 2, 0, 0, pel_pixels8 ,10);
                     PEL_LINK(c->put_hevc_qpel, 3, 0, 0, pel_pixels8 ,10);
                     PEL_LINK(c->put_hevc_qpel, 4, 0, 0, pel_pixels8 ,10);
+#if 0
                     PEL_LINK(c->put_hevc_qpel, 0, 0, 1, epel_h4, 10);
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 1, epel_h8, 10);
                     PEL_LINK(c->put_hevc_qpel, 2, 0, 1, epel_h8, 10);
@@ -222,6 +223,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_qpel, 2, 1, 0, epel_v8, 10);
                     PEL_LINK(c->put_hevc_qpel, 3, 1, 0, epel_v8, 10);
                     PEL_LINK(c->put_hevc_qpel, 4, 1, 0, epel_v8, 10);
+#endif
                 }
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
