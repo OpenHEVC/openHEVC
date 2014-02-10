@@ -621,7 +621,7 @@ void ff_hevc_put_hevc_qpel_v ## V ##_ ## F ## _ ## D ## _sse (                 \
 #define WEIGHTED_END_0()
 
 //PUT_WEIGHTED_PRED_END
-#define WEIGHTED_END_1()mcbuffer
+#define WEIGHTED_END_1()
 
 //PUT_WEIGHTED_PRED_ARG_END
 #define WEIGHTED_END_2()                                                       \
@@ -731,7 +731,7 @@ static void weighted_pred ## H ## _ ## D ##_sse(                               \
                                     int16_t wlxFlag, int16_t olxFlag,          \
                                     uint8_t *dst, ptrdiff_t dststride,         \
                                     int16_t *src, ptrdiff_t srcstride,         \
-                                    int width, int height) {                   \mcbuffer
+                                    int width, int height) {                   \
     int x, y;                                                                  \
     __m128i r1, r2;                                                            \
     WEIGHTED_INIT_1(H, D);                                                     \
