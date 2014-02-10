@@ -756,7 +756,7 @@ void ff_hevc_weighted_pred_8_sse(
                                  int16_t wlxFlag, int16_t olxFlag,
                                  uint8_t *dst, ptrdiff_t dststride,
                                  int16_t *src, ptrdiff_t srcstride,
-                                 int width, int height) {mcbuffer
+                                 int width, int height) {
     if(!(width & 15))
         weighted_pred16_8_sse(denom, wlxFlag, olxFlag,
                 dst, dststride, src, srcstride, width, height);
