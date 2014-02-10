@@ -961,7 +961,7 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
                                    int width, int height, int mx, int my,
                                    void *s, ptrdiff_t idx)
 {
-    int16_t tmp_array[(MAX_PB_SIZE + 3) * MAX_PB_SIZE];
+    DECLARE_ALIGNED(16, int16_t, tmp_array[(MAX_PB_SIZE + 3) * MAX_PB_SIZE]);
     int16_t *tmp = tmp_array;
     HEVCContext *_s= ( HEVCContext *) s;
     uint8_t * src= (uint8_t *) _src;
