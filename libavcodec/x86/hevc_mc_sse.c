@@ -455,15 +455,6 @@ void ff_hevc_put_hevc_epel_v ## H ## _ ## D ## _sse (                          \
     x2 = _mm_add_epi16(x3, x4);                                                \
     r1 = _mm_add_epi16(x1, x2)
 
-#define QPEL_H_COMPUTE2_10()                                                   \
-    MUL_ADD_H_2(_mm_madd_epi16, _mm_hadd_epi32, r1, x);                        \
-    r1 = _mm_srai_epi32(r1, 10 - 8);                                           \
-    r1 = _mm_packs_epi32(r1, c0)
-#define QPEL_H_COMPUTE4_10()                                                   \
-    QPEL_H_COMPUTE2_10()
-#define QPEL_H_COMPUTE8_10()                                                   \
-    QPEL_H_COMPUTE4_10()
-
 #define PUT_HEVC_QPEL_H(H, D)                                                  \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \
@@ -665,7 +656,7 @@ void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _sse (                          \
 // ff_hevc_put_unweighted_pred_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_UNWEIGHTED_PRED(H, D)                                              \
-static void put_unweighted_pred ## H ## _ ## D ##_sse (                        \
+void ff_hevc_put_unweighted_pred ## H ## _ ## D ##_sse (                       \
                                        uint8_t *dst, ptrdiff_t dststride,      \
                                        int16_t *src, ptrdiff_t srcstride,      \
                                        int width, int height) {                \
@@ -690,25 +681,15 @@ PUT_UNWEIGHTED_PRED(4,  8)
 PUT_UNWEIGHTED_PRED(8,  8)
 PUT_UNWEIGHTED_PRED(16, 8)
 
-void ff_hevc_put_unweighted_pred_8_sse(
-                                       uint8_t *dst, ptrdiff_t dststride,
-                                       int16_t *src, ptrdiff_t srcstride,
-                                       int width, int height) {
-    if(!(width & 15)) {
-        put_unweighted_pred16_8_sse(dst, dststride, src, srcstride, width, height);
-    } else if(!(width & 7)) {
-        put_unweighted_pred8_8_sse(dst, dststride, src, srcstride, width, height);
-    } else if(!(width & 3)) {
-        put_unweighted_pred4_8_sse(dst, dststride, src, srcstride, width, height);
-    } else {
-        put_unweighted_pred2_8_sse(dst, dststride, src, srcstride, width, height);
-    }
-}
+PUT_UNWEIGHTED_PRED(2, 10)
+PUT_UNWEIGHTED_PRED(4, 10)
+PUT_UNWEIGHTED_PRED(8, 10)
+
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_weighted_pred_avg_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_WEIGHTED_PRED_AVG(H, D)                                            \
-static void put_weighted_pred_avg ## H ## _ ## D ##_sse(                       \
+void ff_hevc_put_weighted_pred_avg ## H ## _ ## D ##_sse(                      \
                                 uint8_t *dst, ptrdiff_t dststride,             \
                                 int16_t *src1, int16_t *src,                   \
                                 ptrdiff_t srcstride,                           \
@@ -733,30 +714,15 @@ PUT_WEIGHTED_PRED_AVG(4,  8)
 PUT_WEIGHTED_PRED_AVG(8,  8)
 PUT_WEIGHTED_PRED_AVG(16, 8)
 
-void ff_hevc_put_weighted_pred_avg_8_sse(
-                                        uint8_t *dst, ptrdiff_t dststride,
-                                        int16_t *src1, int16_t *src2,
-                                        ptrdiff_t srcstride,
-                                        int width, int height) {
-    if(!(width & 15))
-        put_weighted_pred_avg16_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else if(!(width & 7))
-        put_weighted_pred_avg8_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else if(!(width & 3))
-        put_weighted_pred_avg4_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else
-        put_weighted_pred_avg2_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-}
+PUT_WEIGHTED_PRED_AVG(2, 10)
+PUT_WEIGHTED_PRED_AVG(4, 10)
+PUT_WEIGHTED_PRED_AVG(8, 10)
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_weighted_pred_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define WEIGHTED_PRED(H, D)                                                    \
-static void weighted_pred ## H ## _ ## D ##_sse(                               \
+void ff_hevc_weighted_pred ## H ## _ ## D ##_sse(                              \
                                     uint8_t denom,                             \
                                     int16_t wlxFlag, int16_t olxFlag,          \
                                     uint8_t *dst, ptrdiff_t dststride,         \
@@ -781,30 +747,15 @@ WEIGHTED_PRED(4, 8)
 WEIGHTED_PRED(8, 8)
 WEIGHTED_PRED(16, 8)
 
-void ff_hevc_weighted_pred_8_sse(
-                                 uint8_t denom,
-                                 int16_t wlxFlag, int16_t olxFlag,
-                                 uint8_t *dst, ptrdiff_t dststride,
-                                 int16_t *src, ptrdiff_t srcstride,
-                                 int width, int height) {
-    if(!(width & 15))
-        weighted_pred16_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else if(!(width & 7))
-        weighted_pred8_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else if(!(width & 3))
-        weighted_pred4_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else
-        weighted_pred2_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-}
+WEIGHTED_PRED(2, 10)
+WEIGHTED_PRED(4, 10)
+WEIGHTED_PRED(8, 10)
+
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_weighted_pred_avg_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define WEIGHTED_PRED_AVG(H, D)                                                \
-static void weighted_pred_avg ## H ## _ ## D ##_sse(                           \
+void ff_hevc_weighted_pred_avg ## H ## _ ## D ##_sse(                          \
                                     uint8_t denom,                             \
                                     int16_t wlxFlag, int16_t wl1Flag,          \
                                     int16_t olxFlag, int16_t ol1Flag,          \
@@ -832,28 +783,9 @@ WEIGHTED_PRED_AVG(4, 8)
 WEIGHTED_PRED_AVG(8, 8)
 WEIGHTED_PRED_AVG(16, 8)
 
-void ff_hevc_weighted_pred_avg_8_sse(
-                                 uint8_t denom,
-                                 int16_t wl0Flag, int16_t wl1Flag,
-                                 int16_t ol0Flag, int16_t ol1Flag,
-                                 uint8_t *dst, ptrdiff_t dststride,
-                                 int16_t *src1, int16_t *src2,
-                                 ptrdiff_t srcstride,
-                                 int width, int height) {
-    if(!(width & 15))
-        weighted_pred_avg16_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else if(!(width & 7))
-        weighted_pred_avg8_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else if(!(width & 3))
-        weighted_pred_avg4_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else
-        weighted_pred_avg2_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-}
-
+WEIGHTED_PRED_AVG(2, 10)
+WEIGHTED_PRED_AVG(4, 10)
+WEIGHTED_PRED_AVG(8, 10)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

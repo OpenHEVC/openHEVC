@@ -66,14 +66,14 @@ typedef struct HEVCDSPContext {
     void (*put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                 int width, int height, int mx, int my, void *s, ptrdiff_t idx);
 
-    void (*put_unweighted_pred)(uint8_t *dst, ptrdiff_t dststride, int16_t *src, ptrdiff_t srcstride,
+    void (*put_unweighted_pred[6])(uint8_t *dst, ptrdiff_t dststride, int16_t *src, ptrdiff_t srcstride,
                                 int width, int height);
 
-    void (*put_weighted_pred_avg)(uint8_t *dst, ptrdiff_t dststride, int16_t *src1, int16_t *src2,
+    void (*put_weighted_pred_avg[6])(uint8_t *dst, ptrdiff_t dststride, int16_t *src1, int16_t *src2,
                                   ptrdiff_t srcstride, int width, int height);
-    void (*weighted_pred)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag, uint8_t *dst, ptrdiff_t dststride, int16_t *src,
+    void (*weighted_pred[6])(uint8_t denom, int16_t wlxFlag, int16_t olxFlag, uint8_t *dst, ptrdiff_t dststride, int16_t *src,
                                   ptrdiff_t srcstride, int width, int height);
-    void (*weighted_pred_avg)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int16_t ol0Flag, int16_t ol1Flag,
+    void (*weighted_pred_avg[6])(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int16_t ol0Flag, int16_t ol1Flag,
                                    uint8_t *dst, ptrdiff_t dststride, int16_t *src1, int16_t *src2,
                                    ptrdiff_t srcstride, int width, int height);
 
