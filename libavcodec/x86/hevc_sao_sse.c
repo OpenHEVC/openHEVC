@@ -53,7 +53,7 @@ void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     src2, src3;
 
     if (!borders[3])
-    	height -= ((4 >> chroma) + 2);
+        height -= ((4 >> chroma) + 2);
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);
 
@@ -68,117 +68,117 @@ void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     sao4 = _mm_set1_epi16(sao_offset_val[4]);
 
     for (y = 0; y < height; y++) {
-    	for (x = 0; x < width-15; x += 16) {
+        for (x = 0; x < width-15; x += 16) {
 
-    		src0 = _mm_loadu_si128((__m128i *) &src[x]);
+            src0 = _mm_loadu_si128((__m128i *) &src[x]);
 
-    		//unpack en 16 bits
-    		src1 = _mm_unpackhi_epi8(src0, _mm_setzero_si128());
-    		src0 = _mm_unpacklo_epi8(src0, _mm_setzero_si128());
+            //unpack en 16 bits
+            src1 = _mm_unpackhi_epi8(src0, _mm_setzero_si128());
+            src0 = _mm_unpacklo_epi8(src0, _mm_setzero_si128());
 
-    		src2 = _mm_srai_epi16(src0, shift);
-    		src3 = _mm_srai_epi16(src1, shift);
+            src2 = _mm_srai_epi16(src0, shift);
+            src3 = _mm_srai_epi16(src1, shift);
 
-    		x0 = _mm_cmpeq_epi16(src2, r0);
-    		x1 = _mm_cmpeq_epi16(src2, r1);
-    		x2 = _mm_cmpeq_epi16(src2, r2);
-    		x3 = _mm_cmpeq_epi16(src2, r3);
+            x0 = _mm_cmpeq_epi16(src2, r0);
+            x1 = _mm_cmpeq_epi16(src2, r1);
+            x2 = _mm_cmpeq_epi16(src2, r2);
+            x3 = _mm_cmpeq_epi16(src2, r3);
 
-    		x0 = _mm_and_si128(x0, sao1);
-    		x1 = _mm_and_si128(x1, sao2);
-    		x2 = _mm_and_si128(x2, sao3);
-    		x3 = _mm_and_si128(x3, sao4);
+            x0 = _mm_and_si128(x0, sao1);
+            x1 = _mm_and_si128(x1, sao2);
+            x2 = _mm_and_si128(x2, sao3);
+            x3 = _mm_and_si128(x3, sao4);
 
-    		x0 = _mm_or_si128(x0, x1);
-    		x2 = _mm_or_si128(x2, x3);
+            x0 = _mm_or_si128(x0, x1);
+            x2 = _mm_or_si128(x2, x3);
 
-    		x0 = _mm_or_si128(x0, x2);
+            x0 = _mm_or_si128(x0, x2);
 
-    		src0 = _mm_add_epi16(src0, x0);
+            src0 = _mm_add_epi16(src0, x0);
 
-    		x0 = _mm_cmpeq_epi16(src3, r0);
-    		x1 = _mm_cmpeq_epi16(src3, r1);
-    		x2 = _mm_cmpeq_epi16(src3, r2);
-    		x3 = _mm_cmpeq_epi16(src3, r3);
+            x0 = _mm_cmpeq_epi16(src3, r0);
+            x1 = _mm_cmpeq_epi16(src3, r1);
+            x2 = _mm_cmpeq_epi16(src3, r2);
+            x3 = _mm_cmpeq_epi16(src3, r3);
 
-    		x0 = _mm_and_si128(x0, sao1);
-    		x1 = _mm_and_si128(x1, sao2);
-    		x2 = _mm_and_si128(x2, sao3);
-    		x3 = _mm_and_si128(x3, sao4);
+            x0 = _mm_and_si128(x0, sao1);
+            x1 = _mm_and_si128(x1, sao2);
+            x2 = _mm_and_si128(x2, sao3);
+            x3 = _mm_and_si128(x3, sao4);
 
-    		x0 = _mm_or_si128(x0, x1);
-    		x2 = _mm_or_si128(x2, x3);
+            x0 = _mm_or_si128(x0, x1);
+            x2 = _mm_or_si128(x2, x3);
 
-    		x0 = _mm_or_si128(x0, x2);
+            x0 = _mm_or_si128(x0, x2);
 
-    		src1 = _mm_add_epi16(src1, x0);
+            src1 = _mm_add_epi16(src1, x0);
 
-    		src0 = _mm_packus_epi16(src0, src1);
-    		_mm_storeu_si128((__m128i *) &dst[x], src0);
+            src0 = _mm_packus_epi16(src0, src1);
+            _mm_storeu_si128((__m128i *) &dst[x], src0);
 
-    	}
+        }
 
-    	src0 = _mm_loadu_si128((__m128i *) &src[x]);
+        src0 = _mm_loadu_si128((__m128i *) &src[x]);
 
-    	//unpack en 16 bits
-    	src1 = _mm_unpackhi_epi8(src0, _mm_setzero_si128());
-    	src0 = _mm_unpacklo_epi8(src0, _mm_setzero_si128());
+        //unpack en 16 bits
+        src1 = _mm_unpackhi_epi8(src0, _mm_setzero_si128());
+        src0 = _mm_unpacklo_epi8(src0, _mm_setzero_si128());
 
-    	src2 = _mm_srai_epi16(src0, shift);
-    	src3 = _mm_srai_epi16(src1, shift);
+        src2 = _mm_srai_epi16(src0, shift);
+        src3 = _mm_srai_epi16(src1, shift);
 
-    	x0 = _mm_cmpeq_epi16(src2, r0);
-    	x1 = _mm_cmpeq_epi16(src2, r1);
-    	x2 = _mm_cmpeq_epi16(src2, r2);
-    	x3 = _mm_cmpeq_epi16(src2, r3);
+        x0 = _mm_cmpeq_epi16(src2, r0);
+        x1 = _mm_cmpeq_epi16(src2, r1);
+        x2 = _mm_cmpeq_epi16(src2, r2);
+        x3 = _mm_cmpeq_epi16(src2, r3);
 
-    	x0 = _mm_and_si128(x0, sao1);
-    	x1 = _mm_and_si128(x1, sao2);
-    	x2 = _mm_and_si128(x2, sao3);
-    	x3 = _mm_and_si128(x3, sao4);
+        x0 = _mm_and_si128(x0, sao1);
+        x1 = _mm_and_si128(x1, sao2);
+        x2 = _mm_and_si128(x2, sao3);
+        x3 = _mm_and_si128(x3, sao4);
 
-    	x0 = _mm_or_si128(x0, x1);
-    	x2 = _mm_or_si128(x2, x3);
+        x0 = _mm_or_si128(x0, x1);
+        x2 = _mm_or_si128(x2, x3);
 
-    	x0 = _mm_or_si128(x0, x2);
+        x0 = _mm_or_si128(x0, x2);
 
-    	src0 = _mm_add_epi16(src0, x0);
+        src0 = _mm_add_epi16(src0, x0);
 
-    	x0 = _mm_cmpeq_epi16(src3, r0);
-    	x1 = _mm_cmpeq_epi16(src3, r1);
-    	x2 = _mm_cmpeq_epi16(src3, r2);
-    	x3 = _mm_cmpeq_epi16(src3, r3);
+        x0 = _mm_cmpeq_epi16(src3, r0);
+        x1 = _mm_cmpeq_epi16(src3, r1);
+        x2 = _mm_cmpeq_epi16(src3, r2);
+        x3 = _mm_cmpeq_epi16(src3, r3);
 
-    	x0 = _mm_and_si128(x0, sao1);
-    	x1 = _mm_and_si128(x1, sao2);
-    	x2 = _mm_and_si128(x2, sao3);
-    	x3 = _mm_and_si128(x3, sao4);
+        x0 = _mm_and_si128(x0, sao1);
+        x1 = _mm_and_si128(x1, sao2);
+        x2 = _mm_and_si128(x2, sao3);
+        x3 = _mm_and_si128(x3, sao4);
 
-    	x0 = _mm_or_si128(x0, x1);
-    	x2 = _mm_or_si128(x2, x3);
+        x0 = _mm_or_si128(x0, x1);
+        x2 = _mm_or_si128(x2, x3);
 
-    	x0 = _mm_or_si128(x0, x2);
+        x0 = _mm_or_si128(x0, x2);
 
-    	src1 = _mm_add_epi16(src1, x0);
+        src1 = _mm_add_epi16(src1, x0);
 
-    	src0 = _mm_packus_epi16(src0, src1);
+        src0 = _mm_packus_epi16(src0, src1);
 
-    	for(;x<width;x++){
-    		dst[x]=_mm_extract_epi8(src0,0);
-    		src0= _mm_srli_si128(src0,1);
-    	}
-    	dst += stride;
-    	src += stride;
+        for(;x<width;x++){
+            dst[x]=_mm_extract_epi8(src0,0);
+            src0= _mm_srli_si128(src0,1);
+        }
+        dst += stride;
+        src += stride;
     }
 }
 
 void ff_hevc_sao_band_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
                                      ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width,
                                      int height, int c_idx) {
-	uint8_t *dst = _dst;
-	uint8_t *src = _src;
-	ptrdiff_t stride = _stride;
-	int y, x;
+    uint8_t *dst = _dst;
+    uint8_t *src = _src;
+    ptrdiff_t stride = _stride;
+    int y, x;
     int chroma = c_idx != 0;
     int shift = 3;
     int *sao_offset_val = sao->offset_val[c_idx];
@@ -330,7 +330,7 @@ void ff_hevc_sao_band_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
     src2, src3;
 
     init_x = -(8 >> chroma) - 2;
-    width = (8 >> chroma) + 2;	//width < 16
+    width = (8 >> chroma) + 2;  //width < 16
 
     if (!borders[3])
         height -= ((4 >> chroma) + 2);
@@ -427,7 +427,7 @@ void ff_hevc_sao_band_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
 
     init_y = -(4 >> chroma) - 2;
     init_x = -(8 >> chroma) - 2;
-    width = (8 >> chroma) + 2;		//width < 16
+    width = (8 >> chroma) + 2;      //width < 16
     height = (4 >> chroma) + 2;
 
     dst = dst + (init_y * _stride + init_x);
@@ -467,7 +467,7 @@ void ff_hevc_sao_band_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
         x0 = _mm_or_si128(x0, x1);
         x2 = _mm_or_si128(x2, x3);
 
-        x0 = _mm_or_si128(x0, x2);	// store results for 4 pixels
+        x0 = _mm_or_si128(x0, x2);  // store results for 4 pixels
 
         src0 = _mm_add_epi16(src0, x0);
 
@@ -484,7 +484,7 @@ void ff_hevc_sao_band_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
         x0 = _mm_or_si128(x0, x1);
         x2 = _mm_or_si128(x2, x3);
 
-        x0 = _mm_or_si128(x0, x2);	// store results for 4 pixels
+        x0 = _mm_or_si128(x0, x2);  // store results for 4 pixels
 
         src1 = _mm_add_epi16(src1, x0);
 
