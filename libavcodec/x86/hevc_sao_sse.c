@@ -327,16 +327,11 @@ void ff_hevc_sao_band_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
 
     int init_y = 0, init_x = 0;
     __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4, src0, src1,
-    src2, src3, mask;
+    src2, src3;
 
     init_x = -(8 >> chroma) - 2;
     width = (8 >> chroma) + 2;	//width < 16
-    if (!chroma)
-        mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                            -1);
-    else
-        mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1,
-                            -1);
+
     if (!borders[3])
         height -= ((4 >> chroma) + 2);
 
@@ -427,7 +422,7 @@ void ff_hevc_sao_band_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_left_class = sao->band_position[c_idx];
     __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4, src0, src1,
-    src2, src3, mask;
+    src2, src3;
     int init_y = 0, init_x = 0;
 
     init_y = -(4 >> chroma) - 2;
@@ -435,12 +430,6 @@ void ff_hevc_sao_band_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
     width = (8 >> chroma) + 2;		//width < 16
     height = (4 >> chroma) + 2;
 
-    if (!chroma)
-        mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                            -1);
-    else
-        mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1,
-                            -1);
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);
 
@@ -538,11 +527,9 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
 
     int init_x = 0, init_y = 0, width = _width, height = _height;
     __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4, cmp0,
-    cmp1, r0, r1, r2, r3, r4, mask;
+    cmp1, r0, r1, r2, r3, r4;
     int save_upper_left;
 
-    mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1,
-                        -1);
     if (!borders[3])
         height -= ((4 >> chroma) + 2);
     dst = dst + (init_y * _stride + init_x);
@@ -760,7 +747,7 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class = sao->eo_class[c_idx];
     __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4, cmp0,
-    cmp1, r0, r1, r2, r3, r4, mask;
+    cmp1, r0, r1, r2, r3, r4;
 
     const int8_t pos[4][2][2] = { { { -1, 0 }, { 1, 0 } }, // horizontal
         { { 0, -1 }, { 0, 1 } }, // vertical
@@ -775,8 +762,6 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
     init_y = -(4 >> chroma) - 2;
     height = (4 >> chroma) + 2;
 
-    mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1,
-                        -1);
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);
     init_y = init_x = 0;
@@ -956,7 +941,7 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class = sao->eo_class[c_idx];
     __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4, cmp0,
-    cmp1, r0, r1, r2, r3, r4, mask;
+    cmp1, r0, r1, r2, r3, r4;
 
     const int8_t pos[4][2][2] = { { { -1, 0 }, { 1, 0 } }, // horizontal
         { { 0, -1 }, { 0, 1 } }, // vertical
@@ -972,13 +957,6 @@ void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
     width = (8 >> chroma) + 2;
     if (!borders[3])
         height -= ((4 >> chroma) + 2);
-
-    if (!chroma)
-        mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                            -1);
-    else
-        mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1,
-                            -1);
 
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);
@@ -1123,7 +1101,7 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class = sao->eo_class[c_idx];
     __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4, cmp0,
-    cmp1, r0, r1, r2, r3, r4, mask;
+    cmp1, r0, r1, r2, r3, r4;
 
     const int8_t pos[4][2][2] = { { { -1, 0 }, { 1, 0 } }, // horizontal
         { { 0, -1 }, { 0, 1 } }, // vertical
@@ -1139,13 +1117,6 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
     init_x = -(8 >> chroma) - 2;
     width = (8 >> chroma) + 2;
     height = (4 >> chroma) + 2;
-
-    if (!chroma)
-        mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                            -1);
-    else
-        mask = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1,
-                            -1);
 
     dst = dst + (init_y * _stride + init_x);
     src = src + (init_y * _stride + init_x);

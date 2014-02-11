@@ -27,7 +27,6 @@
 #include "libavcodec/x86/hevcdsp.h"
 #include "libavcodec/hevc_defs.h"
 
-#define ASM_EN
 /***********************************/
 
 #define MCQ_FUNC(DIR, DEPTH, OPT)                                        \
