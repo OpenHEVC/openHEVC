@@ -100,12 +100,16 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters[7][4]) = {
     { -2, 10, 58, -2},
 };
 
-DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters[3][8]) = {
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters[3][16]) = {
+    { -1,  4,-10, 58, 17, -5,  1,  0, -1,  4,-10, 58, 17, -5,  1,  0},
+    { -1,  4,-11, 40, 40,-11,  4, -1, -1,  4,-11, 40, 40,-11,  4, -1},
+    {  0,  1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1}
+};
+DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_10[3][8]) = {
     { -1,  4,-10, 58, 17, -5,  1,  0},
     { -1,  4,-11, 40, 40,-11,  4, -1},
     {  0,  1, -5, 17, 58,-10,  4, -1}
 };
-
 
 #define BIT_DEPTH 8
 #include "hevcdsp_template.c"
