@@ -6,10 +6,11 @@ struct AVFrame;
 struct UpsamplInf;
 struct HEVCWindow;
 
-#define OPTI_ASM
+//#define OPTI_ASM
 
-void ff_hevc_put_hevc_epel_v2_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
-void ff_hevc_put_hevc_epel_v4_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
+void ff_hevc_put_hevc_epel_v2_14_sse4( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
+void ff_hevc_put_hevc_epel_v4_14_sse4( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
+void ff_hevc_put_hevc_epel_v8_14_sse4( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
 void ff_hevc_put_hevc_epel_v8_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
 
 void ff_hevc_put_hevc_qpel_v4_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
@@ -118,21 +119,21 @@ PEL_PROTOTYPE(epel_h2 ,  8);
 PEL_PROTOTYPE(epel_h4 ,  8);
 PEL_PROTOTYPE(epel_h8 ,  8);
 
-PEL_PROTOTYPE_SSE(epel_h2 , 10);
-PEL_PROTOTYPE_SSE(epel_h4 , 10);
-PEL_PROTOTYPE_SSE(epel_h8 , 10);
+PEL_PROTOTYPE(epel_h2 , 10);
+PEL_PROTOTYPE(epel_h4 , 10);
+PEL_PROTOTYPE(epel_h8 , 10);
 
 PEL_PROTOTYPE(epel_v2 ,  8);
 PEL_PROTOTYPE(epel_v4 ,  8);
 PEL_PROTOTYPE(epel_v8 ,  8);
 
-PEL_PROTOTYPE_SSE(epel_v2 , 10);
-PEL_PROTOTYPE_SSE(epel_v4 , 10);
-PEL_PROTOTYPE_SSE(epel_v8 , 10);
+PEL_PROTOTYPE(epel_v2 , 10);
+PEL_PROTOTYPE(epel_v4 , 10);
+PEL_PROTOTYPE(epel_v8 , 10);
 
-PEL_PROTOTYPE_SSE(epel_v2 , 14);
-PEL_PROTOTYPE_SSE(epel_v4 , 14);
-PEL_PROTOTYPE_SSE(epel_v8 , 14);
+PEL_PROTOTYPE(epel_v2 , 14);
+PEL_PROTOTYPE(epel_v4 , 14);
+PEL_PROTOTYPE(epel_v8 , 14);
 
 ///////////////////////////////////////////////////////////////////////////////
 //
