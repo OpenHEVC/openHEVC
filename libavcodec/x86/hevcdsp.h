@@ -114,9 +114,9 @@ PEL_PROTOTYPE_SSE(pel_pixels8 , 10);
 ///////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////
-PEL_PROTOTYPE_SSE(epel_h2 ,  8);
-PEL_PROTOTYPE_SSE(epel_h4 ,  8);
-PEL_PROTOTYPE_SSE(epel_h8 ,  8);
+PEL_PROTOTYPE(epel_h2 ,  8);
+PEL_PROTOTYPE(epel_h4 ,  8);
+PEL_PROTOTYPE(epel_h8 ,  8);
 
 PEL_PROTOTYPE_SSE(epel_h2 , 10);
 PEL_PROTOTYPE_SSE(epel_h4 , 10);

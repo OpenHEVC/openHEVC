@@ -306,17 +306,17 @@ SECTION .text
 %endif
     movdqu            m0, [r11      ]            ;load 128bit of x
 %ifidn %3, srcstride
-    add               r11, %3q
+    add              r11, %3q
     movdqu            m1, [r11      ]            ;load 128bit of x+stride
-    add               r11, %3q
+    add              r11, %3q
     movdqu            m2, [r11      ]            ;load 128bit of x+2*stride
-    add               r11, %3q
+    add              r11, %3q
 %else
-    add               r11, %3
+    add              r11, %3
     movdqu            m1, [r11      ]            ;load 128bit of x+stride
-    add               r11, %3
-    movdqu            m3, [r11      ]            ;load 128bit of x+2*stride
-    add               r11, %3
+    add              r11, %3
+    movdqu            m2, [r11      ]            ;load 128bit of x+2*stride
+    add              r11, %3
 %endif
     movdqu            m3, [r11      ]            ;load 128bit of x+3*stride
 
@@ -537,11 +537,12 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 %endmacro
 
 %macro PUT_HEVC_EPEL_H 2
-    EPEL_H_FILTER     %2
+    sub               srcq, 1
+    EPEL_FILTER       %2, mx
     LOOP_INIT  epel_h_h_%1_%2, epel_h_w_%1_%2
-    EPEL_H_LOAD%1     %2
-    EPEL_H_COMPUTE%1_%2
-    PEL_STORE%1       dst, m12, m15
+    EPEL_LOAD         %2, src, 1
+    EPEL_COMPUTE      %2
+    PEL_STORE%1       dst, m0, m15
     LOOP_END   epel_h_h_%1_%2, epel_h_w_%1_%2, %1, dst, dststride, src, srcstride
 %endmacro
 
@@ -999,6 +1000,16 @@ cglobal hevc_put_hevc_epel_v4_10, 8, 12, 0 , dst, dststride, src, srcstride, wid
     RET
 cglobal hevc_put_hevc_epel_v8_10, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_EPEL_V    8, 10
+    RET
+
+cglobal hevc_put_hevc_epel_v2_14, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    2, 14
+    RET
+cglobal hevc_put_hevc_epel_v4_14, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    4, 14
+    RET
+cglobal hevc_put_hevc_epel_v8_14, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_V    8, 114
     RET
 
 ; ******************************
