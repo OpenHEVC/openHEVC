@@ -208,7 +208,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[1] = ff_hevc_transform_8x8_add_10_sse4;
                     c->transform_add[2] = ff_hevc_transform_16x16_add_10_sse4;
                     c->transform_add[3] = ff_hevc_transform_32x32_add_10_sse4;
-#if 0
                     c->put_unweighted_pred[0]   = ff_hevc_put_unweighted_pred2_10_sse;
                     c->put_unweighted_pred[1]   = ff_hevc_put_unweighted_pred4_10_sse;
                     c->put_unweighted_pred[2]   = ff_hevc_put_unweighted_pred8_10_sse;
@@ -221,6 +220,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_weighted_pred_avg[3] = ff_hevc_put_weighted_pred_avg8_10_sse;
                     c->put_weighted_pred_avg[4] = ff_hevc_put_weighted_pred_avg8_10_sse;
                     c->put_weighted_pred_avg[5] = ff_hevc_put_weighted_pred_avg8_10_sse;
+#if 0
                     c->weighted_pred[0]         = ff_hevc_weighted_pred2_10_sse;
                     c->weighted_pred[1]         = ff_hevc_weighted_pred4_10_sse;
                     c->weighted_pred[2]         = ff_hevc_weighted_pred8_10_sse;
