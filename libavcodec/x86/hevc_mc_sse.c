@@ -150,7 +150,7 @@
     uint8_t *dst = (uint8_t *) _dst;
 
 
-#define WEIGHTED_INIT_0_10(v)                                                   \
+#define WEIGHTED_INIT_0_10()                                                   \
     const int dststride = _dststride / 2;                                       \
     uint16_t *dst = (uint16_t *) _dst
 
