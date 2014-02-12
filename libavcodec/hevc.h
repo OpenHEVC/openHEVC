@@ -525,10 +525,10 @@ typedef struct HEVCSPS {
     int vshift[3];
 
     int qp_bd_offset;
-#if SCALED_REF_LAYER_OFFSETS
+#ifdef SCALED_REF_LAYER_OFFSETS
     HEVCWindow      scaled_ref_layer_window;
 #endif
-#if REF_IDX_MFM
+#ifdef REF_IDX_MFM
     int set_mfm_enabled_flag;
 #endif
 } HEVCSPS;
@@ -671,11 +671,11 @@ typedef struct SliceHeader {
     int16_t luma_offset_l1[16];
     int16_t chroma_offset_l1[16][2];
 
-#if REF_IDX_FRAMEWORK
+#ifdef REF_IDX_FRAMEWORK
     int inter_layer_pred_enabled_flag;
 #endif
 
-#if JCTVC_M0458_INTERLAYER_RPS_SIG
+#ifdef JCTVC_M0458_INTERLAYER_RPS_SIG
     int     active_num_ILR_ref_idx;        //< Active inter-layer reference pictures
     int     inter_layer_pred_layer_idc[MAX_VPS_LAYER_ID_PLUS1];
 #endif

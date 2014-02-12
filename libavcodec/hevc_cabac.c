@@ -892,7 +892,7 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth)
     return GET_CABAC(elem_offset[CBF_LUMA] + !trafo_depth);
 }
 
-int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
+static int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
 {
     return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }

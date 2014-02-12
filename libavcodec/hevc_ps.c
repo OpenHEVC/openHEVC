@@ -327,7 +327,7 @@ static void decode_hrd(HEVCContext *s, int common_inf_present,
 static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     int i, j;
     GetBitContext *gb = &s->HEVClc->gb;
-#if VPS_EXTN_MASK_AND_DIM_INFO
+#ifdef VPS_EXTN_MASK_AND_DIM_INFO
     int numScalabilityTypes = 0;
     vps->avc_base_layer_flag = get_bits1(gb);
     vps->splitting_flag = get_bits1(gb);
@@ -380,8 +380,8 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     }
     
 #endif
-#if VPS_MOVE_DIR_DEPENDENCY_FLAG
-#if VPS_EXTN_DIRECT_REF_LAYERS
+#ifdef VPS_MOVE_DIR_DEPENDENCY_FLAG
+#ifdef VPS_EXTN_DIRECT_REF_LAYERS
     vps->m_numDirectRefLayers[0] = 0;
     for( i = 1; i <= vps->vps_max_layers - 1; i++)
     {
@@ -400,8 +400,8 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     }
 #endif
 #endif
-#if VPS_EXTN_PROFILE_INFO
-#if VPS_PROFILE_OUTPUT_LAYERS
+#ifdef VPS_EXTN_PROFILE_INFO
+#ifdef VPS_PROFILE_OUTPUT_LAYERS
     
     if(get_bits(gb, 10) != (vps->vps_num_layer_sets-1)) //vps_number_layer_sets_minus1
     {
@@ -420,7 +420,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
         vps->vps_profile_present_flag[i] = get_bits1(gb);
         if( !vps->vps_profile_present_flag[i] )
         {
-#if VPS_PROFILE_OUTPUT_LAYERS
+#ifdef VPS_PROFILE_OUTPUT_LAYERS
             vps->profile_ref[i] = get_bits(gb, 6)+1;
             
 #else
@@ -435,7 +435,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     }
 #endif
     
-#if VPS_PROFILE_OUTPUT_LAYERS
+#ifdef VPS_PROFILE_OUTPUT_LAYERS
     vps->more_output_layer_sets_than_default_flag = get_bits1(gb);
     int numOutputLayerSets = 0;
     if(! vps->more_output_layer_sets_than_default_flag )
@@ -495,7 +495,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
         vps->profile_level_tier_idx[i] = get_bits(gb, numBits);
     }
 #endif
-#if JCTVC_M0458_INTERLAYER_RPS_SIG
+#ifdef JCTVC_M0458_INTERLAYER_RPS_SIG
     vps->max_one_active_ref_layer_flag = get_bits1(gb);
 #endif
 }
@@ -1038,7 +1038,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps->sps_temporal_mvp_enabled_flag          = get_bits1(gb);
-#if REF_IDX_MFM
+#ifdef REF_IDX_MFM
     if(s->nuh_layer_id > 0)
         sps->set_mfm_enabled_flag = get_bits1(gb);
 #endif
@@ -1047,7 +1047,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     vui_present = get_bits1(gb);
     if (vui_present)
         decode_vui(s, sps);
-#if SCALED_REF_LAYER_OFFSETS
+#ifdef SCALED_REF_LAYER_OFFSETS
     if( s->nuh_layer_id > 0 )   {
         sps->scaled_ref_layer_window.left_offset = (get_se_golomb(gb)<<1);
         sps->scaled_ref_layer_window.top_offset = (get_se_golomb(gb)<<1);

@@ -33,47 +33,9 @@
 
 #define BIT_DEPTH 8
 
-
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#define QPEL_V_FILTER_1(D)                                                  \
-    const __m128i c1 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D( -1), _mm_set1_epi ## D(  4)); \
-    const __m128i c2 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D(-10), _mm_set1_epi ## D( 58)); \
-    const __m128i c3 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D( 17), _mm_set1_epi ## D( -5)); \
-    const __m128i c4 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D(  1), _mm_setzero_si128())
-
-#define QPEL_V_FILTER_2(D)                                                  \
-    const __m128i c1 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D( -1), _mm_set1_epi ## D(  4)); \
-    const __m128i c2 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D(-11), _mm_set1_epi ## D( 40)); \
-    const __m128i c3 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D( 40), _mm_set1_epi ## D(-11)); \
-    const __m128i c4 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D(  4), _mm_set1_epi ## D( -1));
-
-#define QPEL_V_FILTER_3(D)                                                  \
-    const __m128i c1 = _mm_unpacklo_epi ## D(_mm_setzero_si128(), _mm_set1_epi ## D(  1)); \
-    const __m128i c2 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D( -5), _mm_set1_epi ## D( 17)); \
-    const __m128i c3 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D( 58), _mm_set1_epi ## D(-10)); \
-    const __m128i c4 = _mm_unpacklo_epi ## D(_mm_set1_epi ## D(  4), _mm_set1_epi ## D( -1));
-
-#define QPEL_V_FILTER_1_8()                                                    \
-    QPEL_V_FILTER_1(8)
-#define QPEL_V_FILTER_2_8()                                                    \
-    QPEL_V_FILTER_2(8)
-#define QPEL_V_FILTER_3_8()                                                    \
-    QPEL_V_FILTER_3(8)
-#define QPEL_V_FILTER_1_10()                                                   \
-    QPEL_V_FILTER_1(16)
-#define QPEL_V_FILTER_2_10()                                                   \
-    QPEL_V_FILTER_2(16)
-#define QPEL_V_FILTER_3_10()                                                   \
-    QPEL_V_FILTER_3(16)
-
-
-#define QPEL_V_FILTER_1_14() QPEL_V_FILTER_1_10()
-#define QPEL_V_FILTER_2_14() QPEL_V_FILTER_2_10()
-#define QPEL_V_FILTER_3_14() QPEL_V_FILTER_3_10()
-
-
 #define QPEL_H_FILTER_8(filter)                                                    \
     __m128i bshuffle1_0  = _mm_set_epi8( 8, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3, 2, 1, 0); \
     __m128i bshuffle1_2  = _mm_set_epi8(10, 9, 8, 7, 6, 5, 4, 3, 9, 8, 7, 6, 5, 4, 3, 2); \
@@ -81,14 +43,14 @@
     __m128i bshuffleb1_2 = _mm_set_epi8(10, 9, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2); \
     __m128i bshuffleb1_4 = _mm_set_epi8(12,11,11,10,10, 9, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4); \
     __m128i bshuffleb1_6 = _mm_set_epi8(14,13,13,12,12,11,11,10,10, 9, 9, 8, 8, 7, 7, 6); \
-    __m128i r0           = _mm_set_epi8(  0,  1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1); \
+    __m128i r0           = _mm_loadu_si128((__m128i *) filter);                \
     c1 = _mm_unpacklo_epi8(_mm_set1_epi8(filter[0]), _mm_set1_epi8(filter[1]));\
     c2 = _mm_unpacklo_epi8(_mm_set1_epi8(filter[2]), _mm_set1_epi8(filter[3]));\
     c3 = _mm_unpacklo_epi8(_mm_set1_epi8(filter[4]), _mm_set1_epi8(filter[5]));\
     c4 = _mm_unpacklo_epi8(_mm_set1_epi8(filter[6]), _mm_set1_epi8(filter[7]))
 
 #define QPEL_H_FILTER_10(filter)                                               \
-    __m128i r0 = _mm_set_epi16(  0, 1, -5, 17, 58,-10,  4, -1);                \
+    __m128i r0 = _mm_loadu_si128((__m128i *) ff_hevc_qpel_filters_10[mx - 1]);    \
     c1 = _mm_unpacklo_epi16(_mm_set1_epi16(filter[0]), _mm_set1_epi16(filter[1]));\
     c2 = _mm_unpacklo_epi16(_mm_set1_epi16(filter[2]), _mm_set1_epi16(filter[3]));\
     c3 = _mm_unpacklo_epi16(_mm_set1_epi16(filter[4]), _mm_set1_epi16(filter[5]));\
@@ -111,33 +73,6 @@
         src       = (uint16_t*) _src
 #define SRC_INIT1_14() SRC_INIT1_10()
 
-#define DST_INIT_8()                                                           \
-    uint8_t  *dst       = (uint8_t*) _dst;                                     \
-    ptrdiff_t dststride = _dststride
-#define DST_INIT_10()                                                          \
-    uint16_t *dst       = (uint16_t*) _dst;                                    \
-    ptrdiff_t dststride = _dststride >> 1
-#define DST_INIT_14() DST_INIT_10()
-
-
-#define MC_LOAD_PIXEL()                                                        \
-    x1 = _mm_loadu_si128((__m128i *) &src[x])
-
-#define QPEL_H_LOAD()                                                          \
-    x1 = _mm_loadu_si128((__m128i *) &src[x - 3])
-
-#define QPEL_V_LOAD_LO(tab)                                                    \
-    x1 = _mm_loadu_si128((__m128i *) &tab[x - 3 * srcstride]);                 \
-    x2 = _mm_loadu_si128((__m128i *) &tab[x - 2 * srcstride]);                 \
-    x3 = _mm_loadu_si128((__m128i *) &tab[x -     srcstride]);                 \
-    x4 = _mm_loadu_si128((__m128i *) &tab[x                ])
-
-#define QPEL_V_LOAD_HI(tab)                                                    \
-    x1 = _mm_loadu_si128((__m128i *) &tab[x +     srcstride]);                 \
-    x2 = _mm_loadu_si128((__m128i *) &tab[x + 2 * srcstride]);                 \
-    x3 = _mm_loadu_si128((__m128i *) &tab[x + 3 * srcstride]);                 \
-    x4 = _mm_loadu_si128((__m128i *) &tab[x + 4 * srcstride])
-
 #define PEL_STORE2(tab)                                                        \
     *((uint32_t *) &tab[x]) = _mm_cvtsi128_si32(r1)
 #define PEL_STORE4(tab)                                                        \
@@ -151,55 +86,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#define MUL_ADD_H_1(mul, add, dst, src)                                        \
-    src ## 1 = mul(src ## 1, r0);                                              \
-    dst      = add(src ## 1, c0)
-
-#define MUL_ADD_H_2_2(mul, add, dst, src)                                      \
-    src ## 1 = mul(src ## 1, r0);                                              \
-    src ## 2 = mul(src ## 2, r0);                                              \
-    dst      = add(src ## 1, src ## 2)
-
 #define MUL_ADD_H_2(mul, add, dst, src)                                        \
-    MUL_ADD_H_2_2(mul, add, dst, src);                                         \
-    dst      = add(dst, c0)
-
-#define MUL_ADD_H_4(mul, add, dst, src)                                        \
     src ## 1 = mul(src ## 1, r0);                                              \
     src ## 2 = mul(src ## 2, r0);                                              \
-    src ## 3 = mul(src ## 3, r0);                                              \
-    src ## 4 = mul(src ## 4, r0);                                              \
-    src ## 1 = add(src ## 1, src ## 2);                                        \
-    src ## 3 = add(src ## 3, src ## 4);                                        \
-    dst      = add(src ## 1, src ## 3)
-
-#define MUL_ADD_V_4(mul, add, dst, src)                                        \
-    src ## 1 = mul(src ## 1, c1);                                              \
-    src ## 2 = mul(src ## 2, c2);                                              \
-    src ## 3 = mul(src ## 3, c3);                                              \
-    src ## 4 = mul(src ## 4, c4);                                              \
-    src ## 1 = add(src ## 1, src ## 2);                                        \
-    src ## 3 = add(src ## 3, src ## 4);                                        \
-    dst      = add(src ## 1, src ## 3)
-#define MUL_ADD_V_LAST_4(mul, add, dst, src)                                   \
-    src ## 1 = mul(src ## 1, c5);                                              \
-    src ## 2 = mul(src ## 2, c6);                                              \
-    src ## 3 = mul(src ## 3, c7);                                              \
-    src ## 4 = mul(src ## 4, c8);                                              \
-    src ## 1 = add(src ## 1, src ## 2);                                        \
-    src ## 3 = add(src ## 3, src ## 4);                                        \
-    dst      = add(src ## 1, src ## 3)
-
-////////////////////////////////////////////////////////////////////////////////
-//
-////////////////////////////////////////////////////////////////////////////////
-#define INST_SRC1_CST_2(inst, dst, src, cst)                                   \
-    dst ## 1 = inst(src ## 1, cst);                                            \
-    dst ## 2 = inst(src ## 2, cst)
-#define INST_SRC1_CST_4(inst, dst, src, cst)                                   \
-    INST_SRC1_CST_2(inst, dst, src, cst);                                      \
-    dst ## 3 = inst(src ## 3, cst);                                            \
-    dst ## 4 = inst(src ## 4, cst)
+    dst      = add(src ## 1, src ## 2);                                        \
+    dst      = add(dst, c0)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -371,6 +262,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
 ////////////////////////////////////////////////////////////////////////////////
+#define MC_LOAD_PIXEL()                                                        \
+    x1 = _mm_loadu_si128((__m128i *) &src[x])
+
 #define MC_PIXEL_COMPUTE2_8()                                                  \
     x2 = _mm_cvtepu8_epi16(x1);                                                \
     r1 = _mm_slli_epi16(x2, 14 - 8)
@@ -540,6 +434,51 @@ void ff_hevc_put_hevc_epel_v ## H ## _ ## D ## _sse (                          \
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_hX_X_sse
 ////////////////////////////////////////////////////////////////////////////////
+#define QPEL_H_LOAD()                                                          \
+    x1 = _mm_loadu_si128((__m128i *) &src[x - 3])
+
+#define QPEL_H_COMPUTE4_8()                                                    \
+    x2 = _mm_shuffle_epi8(x1, bshuffle1_2); \
+    x1 = _mm_shuffle_epi8(x1, bshuffle1_0); \
+    MUL_ADD_H_2(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
+
+#define QPEL_H_COMPUTE8_8()                                                    \
+    x2 = _mm_shuffle_epi8(x1,bshuffleb1_2);                                    \
+    x3 = _mm_shuffle_epi8(x1,bshuffleb1_4);                                    \
+    x4 = _mm_shuffle_epi8(x1,bshuffleb1_6);                                    \
+    x1 = _mm_shuffle_epi8(x1,bshuffleb1_0);                                    \
+    x2 = _mm_maddubs_epi16(x2,c2);                                             \
+    x3 = _mm_maddubs_epi16(x3,c3);                                             \
+    x1 = _mm_maddubs_epi16(x1,c1);                                             \
+    x4 = _mm_maddubs_epi16(x4,c4);                                             \
+    x1 = _mm_add_epi16(x1, x2);                                                \
+    x2 = _mm_add_epi16(x3, x4);                                                \
+    r1 = _mm_add_epi16(x1, x2)
+
+#define PUT_HEVC_QPEL_H(H, D)                                                  \
+void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
+                                    int16_t *dst, ptrdiff_t dststride,         \
+                                    uint8_t *_src, ptrdiff_t _srcstride,       \
+                                    int width, int height, int mx, int my) {   \
+    int x, y;                                                                  \
+    const int8_t *filter_h = ff_hevc_qpel_filters[mx - 1];                     \
+   __m128i x1, x2, x3, x4, r1, c1, c2, c3, c4;                                 \
+    const __m128i c0    = _mm_setzero_si128();                                 \
+    SRC_INIT_ ## D();                                                          \
+    QPEL_H_FILTER_ ## D(filter_h);                                             \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            QPEL_H_LOAD();                                                     \
+            QPEL_H_COMPUTE ## H ## _ ## D();                                   \
+            PEL_STORE ## H(dst);                                               \
+        }                                                                      \
+        src += srcstride;                                                      \
+        dst += dststride;                                                      \
+    }                                                                          \
+}
+////////////////////////////////////////////////////////////////////////////////
+// ff_hevc_put_hevc_qpel_hX_X_sse
+////////////////////////////////////////////////////////////////////////////////
 #define QPEL_FILTER_8(filter)                                                  \
     c1 = _mm_unpacklo_epi8(_mm_set1_epi8(filter[0]), _mm_set1_epi8(filter[1]));\
     c2 = _mm_unpacklo_epi8(_mm_set1_epi8(filter[2]), _mm_set1_epi8(filter[3]));\
@@ -640,57 +579,7 @@ void ff_hevc_put_hevc_epel_v ## H ## _ ## D ## _sse (                          \
 #define QPEL_MERGE4_14() QPEL_MERGE4_10()
 #define QPEL_MERGE8_14() QPEL_MERGE8_10()
 
-#define QPEL_H_COMPUTE4_8()                                                    \
-    x2 = _mm_shuffle_epi8(x1, bshuffle1_2); \
-    x1 = _mm_shuffle_epi8(x1, bshuffle1_0); \
-    MUL_ADD_H_2(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
-
-#define QPEL_H_COMPUTE8_8()                                                    \
-    x2 = _mm_shuffle_epi8(x1,bshuffleb1_2);                                    \
-    x3 = _mm_shuffle_epi8(x1,bshuffleb1_4);                                    \
-    x4 = _mm_shuffle_epi8(x1,bshuffleb1_6);                                    \
-    x1 = _mm_shuffle_epi8(x1,bshuffleb1_0);                                    \
-    x2 = _mm_maddubs_epi16(x2,c2);                                             \
-    x3 = _mm_maddubs_epi16(x3,c3);                                             \
-    x1 = _mm_maddubs_epi16(x1,c1);                                             \
-    x4 = _mm_maddubs_epi16(x4,c4);                                             \
-    x1 = _mm_add_epi16(x1, x2);                                                \
-    x2 = _mm_add_epi16(x3, x4);                                                \
-    r1 = _mm_add_epi16(x1, x2)
-
-#define QPEL_H_COMPUTE2_10()                                                   \
-    MUL_ADD_H_2(_mm_madd_epi16, _mm_hadd_epi32, r1, x);                        \
-    r1 = _mm_srai_epi32(r1, 10 - 8);                                           \
-    r1 = _mm_packs_epi32(r1, c0)
-#define QPEL_H_COMPUTE4_10()                                                   \
-    QPEL_H_COMPUTE2_10()
-#define QPEL_H_COMPUTE8_10()                                                   \
-    QPEL_H_COMPUTE4_10()
-
-#if 1
-#define PUT_HEVC_QPEL_H(H, D)                                                  \
-void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
-                                    int16_t *dst, ptrdiff_t dststride,         \
-                                    uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int width, int height, int mx, int my) {   \
-    int x, y;                                                                  \
-    const int8_t *filter_h = ff_hevc_qpel_filters[mx - 1];                     \
-   __m128i x1, x2, x3, x4, r1, c1, c2, c3, c4;                                 \
-    const __m128i c0    = _mm_setzero_si128();                                 \
-    SRC_INIT_ ## D();                                                          \
-    QPEL_H_FILTER_ ## D(filter_h);                                             \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += H) {                                       \
-            QPEL_H_LOAD();                                                     \
-            QPEL_H_COMPUTE ## H ## _ ## D();                                   \
-            PEL_STORE ## H(dst);                                               \
-        }                                                                      \
-        src += srcstride;                                                      \
-        dst += dststride;                                                      \
-    }                                                                          \
-}
-#else
-#define PUT_HEVC_QPEL_H(H, D)                                                  \
+#define PUT_HEVC_QPEL_H_10(H, D)                                               \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
@@ -715,7 +604,6 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
         dst += dststride;                                                      \
     }                                                                          \
 }
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_vX_X_X_sse
@@ -768,7 +656,7 @@ void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _sse (                          \
 // ff_hevc_put_unweighted_pred_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_UNWEIGHTED_PRED(H, D)                                              \
-static void put_unweighted_pred ## H ## _ ## D ##_sse (                        \
+void ff_hevc_put_unweighted_pred ## H ## _ ## D ##_sse (                       \
                                        uint8_t *dst, ptrdiff_t dststride,      \
                                        int16_t *src, ptrdiff_t srcstride,      \
                                        int width, int height) {                \
@@ -793,25 +681,15 @@ PUT_UNWEIGHTED_PRED(4,  8)
 PUT_UNWEIGHTED_PRED(8,  8)
 PUT_UNWEIGHTED_PRED(16, 8)
 
-void ff_hevc_put_unweighted_pred_8_sse(
-                                       uint8_t *dst, ptrdiff_t dststride,
-                                       int16_t *src, ptrdiff_t srcstride,
-                                       int width, int height) {
-    if(!(width & 15)) {
-        put_unweighted_pred16_8_sse(dst, dststride, src, srcstride, width, height);
-    } else if(!(width & 7)) {
-        put_unweighted_pred8_8_sse(dst, dststride, src, srcstride, width, height);
-    } else if(!(width & 3)) {
-        put_unweighted_pred4_8_sse(dst, dststride, src, srcstride, width, height);
-    } else {
-        put_unweighted_pred2_8_sse(dst, dststride, src, srcstride, width, height);
-    }
-}
+PUT_UNWEIGHTED_PRED(2, 10)
+PUT_UNWEIGHTED_PRED(4, 10)
+PUT_UNWEIGHTED_PRED(8, 10)
+
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_weighted_pred_avg_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_WEIGHTED_PRED_AVG(H, D)                                            \
-static void put_weighted_pred_avg ## H ## _ ## D ##_sse(                       \
+void ff_hevc_put_weighted_pred_avg ## H ## _ ## D ##_sse(                      \
                                 uint8_t *dst, ptrdiff_t dststride,             \
                                 int16_t *src1, int16_t *src,                   \
                                 ptrdiff_t srcstride,                           \
@@ -836,30 +714,15 @@ PUT_WEIGHTED_PRED_AVG(4,  8)
 PUT_WEIGHTED_PRED_AVG(8,  8)
 PUT_WEIGHTED_PRED_AVG(16, 8)
 
-void ff_hevc_put_weighted_pred_avg_8_sse(
-                                        uint8_t *dst, ptrdiff_t dststride,
-                                        int16_t *src1, int16_t *src2,
-                                        ptrdiff_t srcstride,
-                                        int width, int height) {
-    if(!(width & 15))
-        put_weighted_pred_avg16_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else if(!(width & 7))
-        put_weighted_pred_avg8_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else if(!(width & 3))
-        put_weighted_pred_avg4_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-    else
-        put_weighted_pred_avg2_8_sse(dst, dststride,
-                src1, src2, srcstride, width, height);
-}
+PUT_WEIGHTED_PRED_AVG(2, 10)
+PUT_WEIGHTED_PRED_AVG(4, 10)
+PUT_WEIGHTED_PRED_AVG(8, 10)
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_weighted_pred_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define WEIGHTED_PRED(H, D)                                                    \
-static void weighted_pred ## H ## _ ## D ##_sse(                               \
+void ff_hevc_weighted_pred ## H ## _ ## D ##_sse(                              \
                                     uint8_t denom,                             \
                                     int16_t wlxFlag, int16_t olxFlag,          \
                                     uint8_t *dst, ptrdiff_t dststride,         \
@@ -884,30 +747,15 @@ WEIGHTED_PRED(4, 8)
 WEIGHTED_PRED(8, 8)
 WEIGHTED_PRED(16, 8)
 
-void ff_hevc_weighted_pred_8_sse(
-                                 uint8_t denom,
-                                 int16_t wlxFlag, int16_t olxFlag,
-                                 uint8_t *dst, ptrdiff_t dststride,
-                                 int16_t *src, ptrdiff_t srcstride,
-                                 int width, int height) {
-    if(!(width & 15))
-        weighted_pred16_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else if(!(width & 7))
-        weighted_pred8_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else if(!(width & 3))
-        weighted_pred4_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-    else
-        weighted_pred2_8_sse(denom, wlxFlag, olxFlag,
-                dst, dststride, src, srcstride, width, height);
-}
+WEIGHTED_PRED(2, 10)
+WEIGHTED_PRED(4, 10)
+WEIGHTED_PRED(8, 10)
+
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_weighted_pred_avg_8_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define WEIGHTED_PRED_AVG(H, D)                                                \
-static void weighted_pred_avg ## H ## _ ## D ##_sse(                           \
+void ff_hevc_weighted_pred_avg ## H ## _ ## D ##_sse(                          \
                                     uint8_t denom,                             \
                                     int16_t wlxFlag, int16_t wl1Flag,          \
                                     int16_t olxFlag, int16_t ol1Flag,          \
@@ -935,28 +783,9 @@ WEIGHTED_PRED_AVG(4, 8)
 WEIGHTED_PRED_AVG(8, 8)
 WEIGHTED_PRED_AVG(16, 8)
 
-void ff_hevc_weighted_pred_avg_8_sse(
-                                 uint8_t denom,
-                                 int16_t wl0Flag, int16_t wl1Flag,
-                                 int16_t ol0Flag, int16_t ol1Flag,
-                                 uint8_t *dst, ptrdiff_t dststride,
-                                 int16_t *src1, int16_t *src2,
-                                 ptrdiff_t srcstride,
-                                 int width, int height) {
-    if(!(width & 15))
-        weighted_pred_avg16_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else if(!(width & 7))
-        weighted_pred_avg8_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else if(!(width & 3))
-        weighted_pred_avg4_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-    else
-        weighted_pred_avg2_8_sse(denom, wl0Flag, wl1Flag, ol0Flag, ol1Flag,
-                dst, dststride, src1, src2, srcstride, width, height);
-}
-
+WEIGHTED_PRED_AVG(2, 10)
+WEIGHTED_PRED_AVG(4, 10)
+WEIGHTED_PRED_AVG(8, 10)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -998,8 +827,8 @@ PUT_HEVC_EPEL_V(  8, 14)
 PUT_HEVC_QPEL_H(  4,  8)
 PUT_HEVC_QPEL_H(  8,  8)
 
-PUT_HEVC_QPEL_H(  4, 10)
-PUT_HEVC_QPEL_H(  8, 10)
+PUT_HEVC_QPEL_H_10(  4, 10)
+PUT_HEVC_QPEL_H_10(  8, 10)
 
 // ff_hevc_put_hevc_qpel_vX_X_X_sse
 PUT_HEVC_QPEL_V(  4,  8)
