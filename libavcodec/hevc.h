@@ -74,6 +74,11 @@
 #define EPEL_EXTRA_BEFORE 1
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
+#define QPEL_EXTRA_BEFORE 3
+#define QPEL_EXTRA_AFTER  4
+#define QPEL_EXTRA        7
+
+#define EDGE_EMU_BUFFER_STRIDE 80
 
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
