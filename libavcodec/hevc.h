@@ -58,8 +58,6 @@
 
 #define MAX_TB_SIZE 32
 #define MAX_PB_SIZE 64
-#define MAX_EDGE_BUFFER_SIZE    ((MAX_PB_SIZE + 8) * (MAX_PB_SIZE+8) * 2)
-#define MAX_EDGE_BUFFER_STRIDE  ((MAX_PB_SIZE+8) * 2)
 #define MAX_LOG2_CTB_SIZE 6
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
@@ -278,7 +276,7 @@ typedef struct UpsamplInf {
 #endif
 
 typedef struct ShortTermRPS {
-    int num_negative_pics;
+    unsigned int num_negative_pics;
     int num_delta_pocs;
     int32_t delta_poc[32];
     uint8_t used[32];
@@ -828,8 +826,6 @@ typedef struct HEVCLocalContext {
     PredictionUnit pu;
     NeighbourAvailable na;
 
-    uint8_t edge_emu_buffer[MAX_EDGE_BUFFER_SIZE];
-
     uint8_t cabac_state[HEVC_CONTEXTS];
 
     uint8_t first_qp_group;
@@ -846,6 +842,7 @@ typedef struct HEVCLocalContext {
     int     start_of_tiles_x;
     int     end_of_tiles_x;
     int     end_of_tiles_y;
+    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
 
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
