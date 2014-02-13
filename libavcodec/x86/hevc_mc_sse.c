@@ -142,13 +142,17 @@
 
 #define WEIGHTED_INIT_0(H, D)                                                  \
     const int shift2 = 14 - D;                                                 \
+    const __m128i m1 = _mm_set1_epi16(1 << (14 - D - 1));                      \
     WEIGHTED_INIT_0_ ## D()
 
 #define WEIGHTED_INIT_0_8()                                                    \
-    const __m128i m1 = _mm_set1_epi16(1 << (14 - 8 - 1))
+    const int dststride = _dststride;                                          \
+    uint8_t *dst = (uint8_t *) _dst;
+
 
 #define WEIGHTED_INIT_0_10()                                                   \
-    const __m128i m1 = _mm_set1_epi16(1 << (14 - 10 - 1))
+    const int dststride = _dststride / 2;                                       \
+    uint16_t *dst = (uint16_t *) _dst
 
 #define WEIGHTED_INIT_0_14()                                                   \
     const __m128i m1 = _mm_setzero_si128()
@@ -162,7 +166,8 @@
 
 #define WEIGHTED_INIT_2(H, D)                                                  \
     const int shift2 = 14 + 1 - D;                                             \
-    const __m128i m1 = _mm_set1_epi16(1 << (14 - D))
+    const __m128i m1 = _mm_set1_epi16(1 << (14 - D));                          \
+    WEIGHTED_INIT_0_ ## D()
 
 #define WEIGHTED_INIT_3(H, D)                                                  \
     const int log2Wd = denom + 14 - D;                                         \
@@ -179,17 +184,23 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#define WEIGHTED_COMPUTE_0(reg1)                                               \
+#define WEIGHTED_COMPUTE_0_8(reg1)                                            \
     reg1 = _mm_srai_epi16(_mm_adds_epi16(reg1, m1), shift2)
-#define WEIGHTED_COMPUTE2_0()                                                  \
-    WEIGHTED_COMPUTE_0(r1)
-#define WEIGHTED_COMPUTE4_0()                                                  \
-    WEIGHTED_COMPUTE_0(r1)
-#define WEIGHTED_COMPUTE8_0()                                                  \
-    WEIGHTED_COMPUTE_0(r1)
-#define WEIGHTED_COMPUTE16_0()                                                 \
-    WEIGHTED_COMPUTE_0(r1);                                                    \
-    WEIGHTED_COMPUTE_0(r2)
+
+#define WEIGHTED_COMPUTE_0_10(reg1)                                            \
+    reg1 = _mm_srai_epi16(_mm_adds_epi16(reg1, m1), shift2);                    \
+    reg1 = _mm_max_epi16(reg1, _mm_setzero_si128());                           \
+    reg1 = _mm_min_epi16(reg1, _mm_set1_epi16(0x03ff))
+
+#define WEIGHTED_COMPUTE2_0(D)                                                  \
+    WEIGHTED_COMPUTE_0_ ## D(r1)
+#define WEIGHTED_COMPUTE4_0(D)                                                  \
+    WEIGHTED_COMPUTE_0_ ## D(r1)
+#define WEIGHTED_COMPUTE8_0(D)                                                  \
+    WEIGHTED_COMPUTE_0_ ## D(r1)
+#define WEIGHTED_COMPUTE16_0(D)                                                 \
+    WEIGHTED_COMPUTE_0_ ## D(r1);                                                    \
+    WEIGHTED_COMPUTE_0_ ## D(r2)
 
 #define WEIGHTED_COMPUTE_1(reg1)                                               \
     s1   = _mm_mullo_epi16(reg1, m1);                                          \
@@ -201,6 +212,22 @@
     reg1 = _mm_add_epi32(reg1, add);                                           \
     s3   = _mm_add_epi32(s3  , add);                                           \
     reg1 = _mm_packus_epi32(reg1, s3)
+
+#define WEIGHTED_COMPUTE_1_10(reg1)                                               \
+    s1   = _mm_mullo_epi16(reg1, m1);                                          \
+    s2   = _mm_mulhi_epi16(reg1, m1);                                          \
+    s3   = _mm_unpackhi_epi16(s1, s2);                                         \
+    reg1 = _mm_unpacklo_epi16(s1, s2);                                         \
+    reg1 = _mm_srai_epi32(_mm_add_epi32(reg1, add2), shift2);                  \
+    s3   = _mm_srai_epi32(_mm_add_epi32(s3  , add2), shift2);                  \
+    reg1 = _mm_add_epi32(reg1, add);                                           \
+    reg1 = _mm_max_epi16(reg1, _mm_setzero_si128());                           \
+    reg1 = _mm_min_epi16(reg1, _mm_set1_epi16(0x03ff));                        \
+    s3   = _mm_add_epi32(s3  , add);                                           \
+    s3   = _mm_max_epi16(s3, _mm_setzero_si128());                           \
+    s3   = _mm_min_epi16(s3, _mm_set1_epi16(0x03ff));                        \
+    reg1 = _mm_packus_epi32(reg1, s3)
+
 #define WEIGHTED_COMPUTE2_1()                                                  \
     WEIGHTED_COMPUTE_1(r1)
 #define WEIGHTED_COMPUTE4_1()                                                  \
@@ -213,23 +240,30 @@
     WEIGHTED_COMPUTE_1(r1);                                                    \
     WEIGHTED_COMPUTE_1(r2)
 
-#define WEIGHTED_COMPUTE_2(reg1, reg2)                                         \
+#define WEIGHTED_COMPUTE_2_8(reg1, reg2)                                         \
     reg1 = _mm_adds_epi16(reg1, m1);                                           \
     reg1 = _mm_adds_epi16(reg1, reg2);                                         \
     reg2 = _mm_srai_epi16(reg1, shift2)
-#define WEIGHTED_COMPUTE2_2()                                                  \
+#define WEIGHTED_COMPUTE_2_10(reg1, reg2)                                      \
+    reg1 = _mm_adds_epi16(reg1, m1);                                           \
+    reg1 = _mm_adds_epi16(reg1, reg2);                                         \
+    reg2 = _mm_srai_epi16(reg1, shift2);                                       \
+    reg2 = _mm_max_epi16(reg2, _mm_setzero_si128());                           \
+    reg2 = _mm_min_epi16(reg2, _mm_set1_epi16(0x03ff))
+
+    #define WEIGHTED_COMPUTE2_2(D)                                                 \
     WEIGHTED_LOAD2_1();                                                        \
-    WEIGHTED_COMPUTE_2(r3, r1)
-#define WEIGHTED_COMPUTE4_2()                                                  \
+    WEIGHTED_COMPUTE_2_ ## D(r3, r1)
+#define WEIGHTED_COMPUTE4_2(D)                                                  \
     WEIGHTED_LOAD4_1();                                                        \
-    WEIGHTED_COMPUTE_2(r3, r1)
-#define WEIGHTED_COMPUTE8_2()                                                  \
+    WEIGHTED_COMPUTE_2_ ## D(r3, r1)
+#define WEIGHTED_COMPUTE8_2(D)                                                  \
     WEIGHTED_LOAD8_1();                                                        \
-    WEIGHTED_COMPUTE_2(r3, r1)
-#define WEIGHTED_COMPUTE16_2()                                                 \
+    WEIGHTED_COMPUTE_2_ ## D(r3, r1)
+#define WEIGHTED_COMPUTE16_2(D)                                                 \
     WEIGHTED_LOAD16_1();                                                       \
-    WEIGHTED_COMPUTE_2(r3, r1);                                                \
-    WEIGHTED_COMPUTE_2(r4, r2)
+    WEIGHTED_COMPUTE_2_ ## D(r3, r1);                                           \
+    WEIGHTED_COMPUTE_2_ ## D(r4, r2)
 
 #define WEIGHTED_COMPUTE_3(reg1, reg2)                                         \
     s1   = _mm_mullo_epi16(reg1, m1);                                          \
@@ -657,17 +691,16 @@ void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _sse (                          \
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_UNWEIGHTED_PRED(H, D)                                              \
 void ff_hevc_put_unweighted_pred ## H ## _ ## D ##_sse (                       \
-                                       uint8_t *dst, ptrdiff_t dststride,      \
+                                       uint8_t *_dst, ptrdiff_t _dststride,      \
                                        int16_t *src, ptrdiff_t srcstride,      \
                                        int width, int height) {                \
     int x, y;                                                                  \
     __m128i r1, r2;                                                            \
     WEIGHTED_INIT_0(H, D);                                                     \
     for (y = 0; y < height; y++) {                                             \
-        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             WEIGHTED_LOAD ## H();                                              \
-            WEIGHTED_COMPUTE ## H ## _0();                                     \
+            WEIGHTED_COMPUTE ## H ## _0(D);                                    \
             WEIGHTED_STORE ## H ## _ ## D();                                   \
         }                                                                      \
         dst += dststride;                                                      \
@@ -690,7 +723,7 @@ PUT_UNWEIGHTED_PRED(8, 10)
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_WEIGHTED_PRED_AVG(H, D)                                            \
 void ff_hevc_put_weighted_pred_avg ## H ## _ ## D ##_sse(                      \
-                                uint8_t *dst, ptrdiff_t dststride,             \
+                                uint8_t *_dst, ptrdiff_t _dststride,           \
                                 int16_t *src1, int16_t *src,                   \
                                 ptrdiff_t srcstride,                           \
                                 int width, int height) {                       \
@@ -698,10 +731,9 @@ void ff_hevc_put_weighted_pred_avg ## H ## _ ## D ##_sse(                      \
     __m128i r1, r2, r3, r4;                                                    \
     WEIGHTED_INIT_2(H, D);                                                     \
     for (y = 0; y < height; y++) {                                             \
-        _mm_prefetch((char *)src, _MM_HINT_T0);                                \
         for (x = 0; x < width; x += H) {                                       \
             WEIGHTED_LOAD ## H();                                              \
-            WEIGHTED_COMPUTE ## H ## _2();                                     \
+            WEIGHTED_COMPUTE ## H ## _2(D);                                    \
             WEIGHTED_STORE ## H ## _ ## D();                                   \
         }                                                                      \
         dst  += dststride;                                                     \
