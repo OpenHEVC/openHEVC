@@ -807,13 +807,13 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ;                         int width, int height, int mx, int my,
 ;                         int16_t* mcbuffer)
 ; ******************************
-cglobal hevc_put_hevc_epel_pixels2_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+cglobal hevc_put_hevc_pel_pixels2_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
     PUT_HEVC_MC_PIXELS 2, 8, epel
-cglobal hevc_put_hevc_epel_pixels4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+cglobal hevc_put_hevc_pel_pixels4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
     PUT_HEVC_MC_PIXELS 4, 8, epel
-cglobal hevc_put_hevc_epel_pixels8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+cglobal hevc_put_hevc_pel_pixels8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
     PUT_HEVC_MC_PIXELS 8, 8, epel
-cglobal hevc_put_hevc_epel_pixels16_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+cglobal hevc_put_hevc_pel_pixels16_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
     PUT_HEVC_MC_PIXELS 16, 8, epel
 
 cglobal hevc_put_hevc_epel_pixels2_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height

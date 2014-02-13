@@ -105,10 +105,10 @@ void ff_hevc_weighted_pred_avg8_10_sse(uint8_t denom, int16_t wl0Flag, int16_t w
 ///////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////
-PEL_PROTOTYPE_SSE(pel_pixels2 ,  8);
-PEL_PROTOTYPE_SSE(pel_pixels4 ,  8);
-PEL_PROTOTYPE_SSE(pel_pixels8 ,  8);
-PEL_PROTOTYPE_SSE(pel_pixels16,  8);
+PEL_PROTOTYPE(pel_pixels2 ,  8);
+PEL_PROTOTYPE(pel_pixels4 ,  8);
+PEL_PROTOTYPE(pel_pixels8 ,  8);
+PEL_PROTOTYPE(pel_pixels16,  8);
 
 PEL_PROTOTYPE_SSE(pel_pixels2 , 10);
 PEL_PROTOTYPE_SSE(pel_pixels4 , 10);
