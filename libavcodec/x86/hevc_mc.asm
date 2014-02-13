@@ -816,24 +816,13 @@ cglobal hevc_put_hevc_pel_pixels8_8, 9, 12, 0 , dst, dststride, src, srcstride,w
 cglobal hevc_put_hevc_pel_pixels16_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
     PUT_HEVC_MC_PIXELS 16, 8, epel
 
-cglobal hevc_put_hevc_epel_pixels2_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+cglobal hevc_put_hevc_pel_pixels2_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
     PUT_HEVC_MC_PIXELS 2, 10, epel
-cglobal hevc_put_hevc_epel_pixels4_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+cglobal hevc_put_hevc_pel_pixels4_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
     PUT_HEVC_MC_PIXELS 4, 10, epel
-cglobal hevc_put_hevc_epel_pixels8_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
+cglobal hevc_put_hevc_pel_pixels8_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
     PUT_HEVC_MC_PIXELS 8, 10, epel
 
-cglobal hevc_put_hevc_qpel_pixels4_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-    PUT_HEVC_MC_PIXELS 4, 8, qpel
-cglobal hevc_put_hevc_qpel_pixels8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-    PUT_HEVC_MC_PIXELS 8, 8, qpel
-cglobal hevc_put_hevc_qpel_pixels16_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-    PUT_HEVC_MC_PIXELS 16, 8, qpel
-
-cglobal hevc_put_hevc_qpel_pixels4_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-    PUT_HEVC_MC_PIXELS 4, 10, qpel
-cglobal hevc_put_hevc_qpel_pixels8_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height
-    PUT_HEVC_MC_PIXELS 8, 10, qpel
 
 ; ******************************
 ; void put_hevc_epel_hX(int16_t *dst, ptrdiff_t dststride,
