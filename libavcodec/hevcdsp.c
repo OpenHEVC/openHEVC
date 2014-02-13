@@ -105,11 +105,6 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters[3][16]) = {
     { -1,  4,-11, 40, 40,-11,  4, -1, -1,  4,-11, 40, 40,-11,  4, -1},
     {  0,  1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1}
 };
-DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_10[3][8]) = {
-    { -1,  4,-10, 58, 17, -5,  1,  0},
-    { -1,  4,-11, 40, 40,-11,  4, -1},
-    {  0,  1, -5, 17, 58,-10,  4, -1}
-};
 
 #define BIT_DEPTH 8
 #include "hevcdsp_template.c"
@@ -144,23 +139,19 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
     hevcdsp->dst1[0][idx1][idx2] = hevcdsp->dst1[1][idx1][idx2] = hevcdsp->dst1[2][idx1][idx2] = hevcdsp->dst1[3][idx1][idx2] = hevcdsp->dst1[4][idx1][idx2]    = a ## _ ## depth
 
-#undef PEL_V14
-#define PEL_V14(dst1, depth)                                                   \
-    hevcdsp->dst1[0] = hevcdsp->dst1[1] = hevcdsp->dst1[2] = hevcdsp->dst1[3] = hevcdsp->dst1[4] = FUNC(dst1, depth)
-
 #undef EPEL_FUNCS
 #define EPEL_FUNCS(depth)                                                     \
-    PEL_FUNC(put_hevc_epel, 0, 0, put_hevc_epel_pixels, depth);               \
+    PEL_FUNC(put_hevc_epel, 0, 0, put_hevc_pel_pixels, depth);                \
     PEL_FUNC(put_hevc_epel, 0, 1, put_hevc_epel_h, depth);                    \
     PEL_FUNC(put_hevc_epel, 1, 0, put_hevc_epel_v, depth);                    \
-    PEL_V14(put_hevc_epel_v_14, depth)
+    PEL_FUNC(put_hevc_epel, 1, 1, put_hevc_epel_hv, depth)
 
 #undef QPEL_FUNCS
 #define QPEL_FUNCS(depth)                                                     \
-    PEL_FUNC(put_hevc_qpel, 0, 0, put_hevc_qpel_pixels, depth);               \
+    PEL_FUNC(put_hevc_qpel, 0, 0, put_hevc_pel_pixels, depth);                \
     PEL_FUNC(put_hevc_qpel, 0, 1, put_hevc_qpel_h, depth);                    \
     PEL_FUNC(put_hevc_qpel, 1, 0, put_hevc_qpel_v, depth);                    \
-    PEL_V14(put_hevc_qpel_v_14, depth)
+    PEL_FUNC(put_hevc_qpel, 1, 1, put_hevc_qpel_hv, depth)
 
 #define HEVC_DSP(depth)                                                        \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                    \
@@ -174,8 +165,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->transform_add[1]       = FUNC(transform_8x8_add, depth);          \
     hevcdsp->transform_add[2]       = FUNC(transform_16x16_add, depth);        \
     hevcdsp->transform_add[3]       = FUNC(transform_32x32_add, depth);        \
-    hevcdsp->put_hevc_epel_hv       = FUNC(put_hevc_epel_hv,depth);            \
-    hevcdsp->put_hevc_qpel_hv       = FUNC(put_hevc_qpel_hv,depth);            \
                                                                                \
     hevcdsp->sao_band_filter[0] = FUNC(sao_band_filter_0, depth);              \
     hevcdsp->sao_band_filter[1] = FUNC(sao_band_filter_1, depth);              \
@@ -230,6 +219,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     }
 #endif
 
-    if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
+ //   if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 }

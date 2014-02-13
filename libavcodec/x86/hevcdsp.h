@@ -8,17 +8,6 @@ struct HEVCWindow;
 
 // #define OPTI_ASM
 
-void ff_hevc_put_hevc_qpel_v4_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
-void ff_hevc_put_hevc_qpel_v8_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
-
-#ifdef OPTI_ASM
-#define PEL_LINK_14(dst, idx, name, D)   \
-dst[idx] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
-#else
-#define PEL_LINK_14(dst, idx, name, D)   \
-dst[idx] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse
-#endif
-
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
 #define PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D) \
@@ -48,10 +37,10 @@ PEL_PROTOTYPE_ASM(name, D)
 PEL_PROTOTYPE_SSE(name, D)
 #endif
 
+///////////////////////////////////////////////////////////////////////////////
 //IDCT functions
-
+///////////////////////////////////////////////////////////////////////////////
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
-
 
 void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 void ff_hevc_transform_4x4_luma_add_10_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
@@ -65,7 +54,9 @@ void ff_hevc_transform_16x16_add_10_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff
 void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 void ff_hevc_transform_32x32_add_10_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
+///////////////////////////////////////////////////////////////////////////////
 // MC functions
+///////////////////////////////////////////////////////////////////////////////
 void ff_hevc_put_unweighted_pred2_8_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
 void ff_hevc_put_unweighted_pred4_8_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
 void ff_hevc_put_unweighted_pred8_8_sse(uint8_t *_dst, ptrdiff_t _dststride,int16_t *src, ptrdiff_t srcstride,int width, int height);
@@ -103,7 +94,7 @@ void ff_hevc_weighted_pred_avg4_10_sse(uint8_t denom, int16_t wl0Flag, int16_t w
 void ff_hevc_weighted_pred_avg8_10_sse(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,int16_t ol0Flag, int16_t ol1Flag, uint8_t *_dst, ptrdiff_t _dststride,int16_t *src1, int16_t *src2, ptrdiff_t srcstride,int width, int height);
 
 ///////////////////////////////////////////////////////////////////////////////
-//
+// QPEL_PIXELS EPEL_PIXELS
 ///////////////////////////////////////////////////////////////////////////////
 PEL_PROTOTYPE(pel_pixels2 ,  8);
 PEL_PROTOTYPE(pel_pixels4 ,  8);
@@ -115,7 +106,7 @@ PEL_PROTOTYPE(pel_pixels4 , 10);
 PEL_PROTOTYPE(pel_pixels8 , 10);
 
 ///////////////////////////////////////////////////////////////////////////////
-//
+// EPEL
 ///////////////////////////////////////////////////////////////////////////////
 PEL_PROTOTYPE(epel_h2 ,  8);
 PEL_PROTOTYPE(epel_h4 ,  8);
@@ -133,12 +124,15 @@ PEL_PROTOTYPE(epel_v2 , 10);
 PEL_PROTOTYPE(epel_v4 , 10);
 PEL_PROTOTYPE(epel_v8 , 10);
 
-PEL_PROTOTYPE(epel_v2 , 14);
-PEL_PROTOTYPE(epel_v4 , 14);
-PEL_PROTOTYPE(epel_v8 , 14);
+PEL_PROTOTYPE(epel_hv2,  8);
+PEL_PROTOTYPE(epel_hv4,  8);
+PEL_PROTOTYPE(epel_hv8,  8);
 
+PEL_PROTOTYPE(epel_hv2, 10);
+PEL_PROTOTYPE(epel_hv4, 10);
+PEL_PROTOTYPE(epel_hv8, 10);
 ///////////////////////////////////////////////////////////////////////////////
-//
+// QPEL
 ///////////////////////////////////////////////////////////////////////////////
 PEL_PROTOTYPE_SSE(qpel_h4 ,  8);
 PEL_PROTOTYPE_SSE(qpel_h8 ,  8);
@@ -152,11 +146,16 @@ PEL_PROTOTYPE_SSE(qpel_v8 ,  8);
 PEL_PROTOTYPE_SSE(qpel_v4 , 10);
 PEL_PROTOTYPE_SSE(qpel_v8 , 10);
 
-PEL_PROTOTYPE_SSE(qpel_v4 , 14);
-PEL_PROTOTYPE_SSE(qpel_v8 , 14);
+PEL_PROTOTYPE_SSE(qpel_hv2,  8);
+PEL_PROTOTYPE_SSE(qpel_hv4,  8);
+PEL_PROTOTYPE_SSE(qpel_hv8,  8);
 
+PEL_PROTOTYPE_SSE(qpel_hv2, 10);
+PEL_PROTOTYPE_SSE(qpel_hv4, 10);
+PEL_PROTOTYPE_SSE(qpel_hv8, 10);
+///////////////////////////////////////////////////////////////////////////////
 // SAO functions
-
+///////////////////////////////////////////////////////////////////////////////
 void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t vert_edge, uint8_t horiz_edge, uint8_t diag_edge);
 void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t vert_edge, uint8_t horiz_edge, uint8_t diag_edge);
 void ff_hevc_sao_edge_filter_2_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t vert_edge, uint8_t horiz_edge, uint8_t diag_edge);

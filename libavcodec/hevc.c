@@ -1236,11 +1236,7 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
         src = lc->edge_emu_buffer + buf_offset;
         srcstride = edge_emu_stride;
     }
-    if(!!mx && !!my)
-        s->hevcdsp.put_hevc_qpel_hv(dst, dststride, src, srcstride,
-            block_w, block_h, mx, my, s, idx);
-    else
-        s->hevcdsp.put_hevc_qpel[idx][!!my][!!mx](dst, dststride, src, srcstride, block_w,
+    s->hevcdsp.put_hevc_qpel[idx][!!my][!!mx](dst, dststride, src, srcstride, block_w,
             block_h, mx, my);
 }
 
@@ -1298,12 +1294,8 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
 
         src1 = lc->edge_emu_buffer + buf_offset1;
         src1stride = edge_emu_stride;
-        if(!!mx && !!my)
-            s->hevcdsp.put_hevc_epel_hv(dst1, dststride, src1, src1stride,
-                                        block_w, block_h, mx, my, s, idx);
-        else
-            s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst1, dststride, src1, src1stride,
-                                                      block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst1, dststride, src1, src1stride,
+                block_w, block_h, mx, my);
 
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src2 - offset2,
                                  edge_emu_stride, src2stride,
@@ -1314,24 +1306,13 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         src2 = lc->edge_emu_buffer + buf_offset2;
         src2stride = edge_emu_stride;
 
-        if(!!mx && !!my)
-            s->hevcdsp.put_hevc_epel_hv(dst2, dststride, src2, src2stride,
-                                        block_w, block_h, mx, my, s, idx);
-        else
-            s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
-                                                      block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
+                block_w, block_h, mx, my);
     } else {
-        if(!!mx && !!my) {
-            s->hevcdsp.put_hevc_epel_hv(dst1, dststride, src1, src1stride,
-                                        block_w, block_h, mx, my, s, idx);
-            s->hevcdsp.put_hevc_epel_hv(dst2, dststride, src2, src2stride,
-                                        block_w, block_h, mx, my, s, idx);
-        } else {
-            s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst1, dststride, src1, src1stride,
-                                                      block_w, block_h, mx, my);
-            s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
-                                                      block_w, block_h, mx, my);
-        }
+        s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst1, dststride, src1, src1stride,
+                block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
+                block_w, block_h, mx, my);
     }
 }
 
