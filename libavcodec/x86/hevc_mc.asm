@@ -145,7 +145,7 @@ SECTION .text
     psrad             m8, m8, 16
     psrad             m9, m9, 16
     psrad            m10, m10, 16
-   psrad            m11, m11, 16
+    psrad            m11, m11, 16
     psrad            m12, m12, 16
     psrad            m13, m13, 16
 %endif
@@ -348,11 +348,11 @@ SECTION .text
     movq      [%1q+2*r9],%2
 %endmacro
 %macro PEL_STORE8 3
-    movdqu    [%1q+2*r9],%2
+    movdqa    [%1q+2*r9],%2
 %endmacro
 %macro PEL_STORE16 3
     PEL_STORE8        %1, %2, %3
-    movdqu [%1q+2*r9+16], %3
+    movdqa [%1q+2*r9+16], %3
 %endmacro
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
