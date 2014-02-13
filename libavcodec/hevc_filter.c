@@ -507,20 +507,10 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     }
 }
 
-static int boundary_strength(HEVCContext *s, MvField *curr,
-                             uint8_t curr_cbf_luma, MvField *neigh,
-                             uint8_t neigh_cbf_luma,
-                             RefPicList *neigh_refPicList,
-                             int tu_border)
+static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
+                             RefPicList *neigh_refPicList)
 {
     int mvs = curr->pred_flag[0] + curr->pred_flag[1];
-
-    if (tu_border) {
-        if (curr->is_intra || neigh->is_intra)
-            return 2;
-        if (curr_cbf_luma || neigh_cbf_luma)
-            return 1;
-    }
 
     if (mvs == neigh->pred_flag[0] + neigh->pred_flag[1]) {
         if (mvs == 2) {
@@ -620,8 +610,12 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
                 uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
 
-                bs = boundary_strength(s, curr, curr_cbf_luma,
-                                       top, top_cbf_luma, top_refPicList, 1);
+                if (curr->is_intra || top->is_intra)
+                    bs = 2;
+                else if (curr_cbf_luma || top_cbf_luma)
+                    bs = 1;
+                else
+                    bs = boundary_strength(s, curr, top, top_refPicList);
                 s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
             }
         }
@@ -647,12 +641,15 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 int y_tu      = (y0 + i) >> log2_min_tu_size;
                 MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
                 MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
-
                 uint8_t left_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xp_tu];
                 uint8_t curr_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xq_tu];
 
-                bs = boundary_strength(s, curr, curr_cbf_luma,
-                                       left, left_cbf_luma, left_refPicList, 1);
+                if (curr->is_intra || left->is_intra)
+                    bs = 2;
+                else if (curr_cbf_luma || left_cbf_luma)
+                    bs = 1;
+                else
+                    bs = boundary_strength(s, curr, left, left_refPicList);
                 s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs;
             }
         }
@@ -666,19 +663,13 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
         for (j = 8; j < (1 << log2_trafo_size); j += 8) {
             int yp_pu = (y0 + j - 1) >> log2_min_pu_size;
             int yq_pu = (y0 + j)     >> log2_min_pu_size;
-            int yp_tu = (y0 + j - 1) >> log2_min_tu_size;
-            int yq_tu = (y0 + j)     >> log2_min_tu_size;
 
             for (i = 0; i < (1 << log2_trafo_size); i += 4) {
                 int x_pu = (x0 + i) >> log2_min_pu_size;
-                int x_tu = (x0 + i) >> log2_min_tu_size;
                 MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
                 MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
-                uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
-                uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
 
-                bs = boundary_strength(s, curr, curr_cbf_luma,
-                                       top, top_cbf_luma, refPicList, 0);
+                bs = boundary_strength(s, curr, top, refPicList);
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
             }
         }
@@ -686,20 +677,14 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
         // bs for TU internal vertical PU boundaries
         for (j = 0; j < (1 << log2_trafo_size); j += 4) {
             int y_pu = (y0 + j) >> log2_min_pu_size;
-            int y_tu = (y0 + j) >> log2_min_tu_size;
 
             for (i = 8; i < (1 << log2_trafo_size); i += 8) {
                 int xp_pu = (x0 + i - 1) >> log2_min_pu_size;
                 int xq_pu = (x0 + i)     >> log2_min_pu_size;
-                int xp_tu = (x0 + i - 1) >> log2_min_tu_size;
-                int xq_tu = (x0 + i)     >> log2_min_tu_size;
                 MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
                 MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
-                uint8_t left_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xp_tu];
-                uint8_t curr_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xq_tu];
 
-                bs = boundary_strength(s, curr, curr_cbf_luma,
-                                       left, left_cbf_luma, refPicList, 0);
+                bs = boundary_strength(s, curr, left, refPicList);
                 s->vertical_bs[((x0 + i) >> 3) + ((y0 + j) >> 2) * s->bs_width] = bs;
             }
         }
@@ -727,7 +712,12 @@ void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0, int
         uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * pic_width_in_min_tu + x_tu];
         RefPicList* top_refPicList = ff_hevc_get_ref_list(s, s->ref, x0, y0 - 1);
 
-        bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, top_refPicList, 1);
+        if (curr->is_intra || top->is_intra)
+            bs = 2;
+        else if (curr_cbf_luma || top_cbf_luma)
+            bs = 1;
+        else
+            bs = boundary_strength(s, curr, top, top_refPicList);
         if ((slice_up_boundary & 1) && (y0 % (1 << s->sps->log2_ctb_size)) == 0)
             bs = 0;
         if (s->sh.disable_deblocking_filter_flag == 1)
@@ -757,7 +747,12 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int
         uint8_t curr_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xq_tu];
         RefPicList* left_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 - 1, y0);
 
-        bs = boundary_strength(s, curr, curr_cbf_luma, left, left_cbf_luma, left_refPicList, 1);
+        if (curr->is_intra || left->is_intra)
+            bs = 2;
+        else if (curr_cbf_luma || left_cbf_luma)
+            bs = 1;
+        else
+            bs = boundary_strength(s, curr, left, left_refPicList);
         if ((slice_left_boundary & 1) && (x0 % (1 << s->sps->log2_ctb_size)) == 0)
             bs = 0;
         if (s->sh.disable_deblocking_filter_flag == 1)
