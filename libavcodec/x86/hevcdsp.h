@@ -8,14 +8,16 @@ struct HEVCWindow;
 
 //#define OPTI_ASM
 
-void ff_hevc_put_hevc_epel_v2_14_sse4( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
-void ff_hevc_put_hevc_epel_v4_14_sse4( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
-void ff_hevc_put_hevc_epel_v8_14_sse4( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
-void ff_hevc_put_hevc_epel_v8_14_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
-
 void ff_hevc_put_hevc_qpel_v4_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
 void ff_hevc_put_hevc_qpel_v8_14_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height,  int mx, int my);
 
+#ifdef OPTI_ASM
+#define PEL_LINK_14(dst, idx, name, D)   \
+dst[idx] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
+#else
+#define PEL_LINK_14(dst, idx, name, D)   \
+dst[idx] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse
+#endif
 
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4

@@ -266,13 +266,10 @@ SECTION .text
     punpcklbw         m0, m1                     ; interpolate load
     punpcklbw         m1, m2, m3                 ; interpolate load
 %else
-    movdqa            m6, m0
-    movdqa            m7, m2
-    punpckhwd         m6, m1
-    punpckhwd         m7, m3
+    punpckhwd         m6, m0, m1
+    punpckhwd         m7, m2, m3
     punpcklwd         m0, m1
-    movdqa            m1, m2
-    punpcklwd         m1, m3
+    punpcklwd         m1, m2, m3
     movdqa            m2, m6
     movdqa            m3, m7
 %endif
@@ -900,7 +897,7 @@ cglobal hevc_put_hevc_epel_v4_14, 8, 12, 0 , dst, dststride, src, srcstride, wid
     PUT_HEVC_EPEL_V    4, 14
     RET
 cglobal hevc_put_hevc_epel_v8_14, 8, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
-    PUT_HEVC_EPEL_V    8, 114
+    PUT_HEVC_EPEL_V    8, 14
     RET
 
 ; ******************************
