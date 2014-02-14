@@ -1772,6 +1772,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int y_cb             = y0 >> log2_min_cb_size;
     int x, y;
     int idx = log2_cb_size - 2;
+    int qp_block_mask = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
 
     lc->cu.x                = x0;
     lc->cu.y                = y0;
@@ -1903,6 +1904,11 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         x += min_cb_width;
     }
 
+    if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
+       ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0) {
+        lc->qPy_pred = lc->qp_y;
+    }
+
     set_ct_depth(s, x0, y0, log2_cb_size, lc->ct.depth);
 
     return 0;
@@ -1914,6 +1920,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     HEVCLocalContext *lc = s->HEVClc;
     const int cb_size    = 1 << log2_cb_size;
     int ret;
+    int qp_block_mask = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
 
     lc->ct.depth = cb_depth;
     if (x0 + cb_size <= s->sps->width  &&
@@ -1950,6 +1957,11 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
             y1 < s->sps->height) {
             return hls_coding_quadtree(s, x1, y1, log2_cb_size - 1, cb_depth + 1);
         }
+
+        if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
+            ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0)
+            lc->qPy_pred = lc->qp_y;
+
         if (more_data)
             return ((x1 + cb_size_split) < s->sps->width ||
                     (y1 + cb_size_split) < s->sps->height);
@@ -1995,7 +2007,6 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
     } else if (s->pps->tiles_enabled_flag) {
         if (ctb_addr_ts && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[ctb_addr_ts - 1]) {
             int idxX = s->pps->col_idxX[x_ctb >> s->sps->log2_ctb_size];
-            lc->start_of_tiles_x = x_ctb;
             lc->end_of_tiles_x   = x_ctb + (s->pps->column_width[idxX] << s->sps->log2_ctb_size);
             lc->first_qp_group   = 1;
         }

@@ -834,6 +834,7 @@ typedef struct HEVCLocalContext {
     int8_t qp_y;
     int8_t curr_qp_y;
 
+    int qPy_pred;
 
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
