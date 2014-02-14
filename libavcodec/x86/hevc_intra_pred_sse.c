@@ -246,6 +246,32 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
         ly= _mm_loadu_si128((__m128i*)(left+16));            //get 16 values
     }
 }
+#if ARCH_X86_64
+#define STORE8(out, sstep_out)                                                 \
+    *((uint64_t *) &out[0*sstep_out]) =_mm_cvtsi128_si64(m10);                 \
+    *((uint64_t *) &out[1*sstep_out]) =_mm_extract_epi64(m10, 1);              \
+    *((uint64_t *) &out[2*sstep_out]) =_mm_cvtsi128_si64(m12);                 \
+    *((uint64_t *) &out[3*sstep_out]) =_mm_extract_epi64(m12, 1);              \
+    *((uint64_t *) &out[4*sstep_out]) =_mm_cvtsi128_si64(m11);                 \
+    *((uint64_t *) &out[5*sstep_out]) =_mm_extract_epi64(m11, 1);              \
+    *((uint64_t *) &out[6*sstep_out]) =_mm_cvtsi128_si64(m13);                 \
+    *((uint64_t *) &out[7*sstep_out]) =_mm_extract_epi64(m13, 1)
+#else
+#define STORE8(out, sstep_out)                                                 \
+    _mm_storel_epi64((__m128i*)&out[0*sstep_out], m10);                         \
+    _mm_storel_epi64((__m128i*)&out[2*sstep_out], m12);                         \
+    _mm_storel_epi64((__m128i*)&out[4*sstep_out], m11);                         \
+    _mm_storel_epi64((__m128i*)&out[6*sstep_out], m13);                         \
+    m10 = _mm_unpackhi_epi64(m10, m10);                                        \
+    m12 = _mm_unpackhi_epi64(m12, m12);                                        \
+    m11 = _mm_unpackhi_epi64(m11, m11);                                        \
+    m13 = _mm_unpackhi_epi64(m13, m13);                                        \
+    _mm_storel_epi64((__m128i*)&out[1*sstep_out], m10);                         \
+    _mm_storel_epi64((__m128i*)&out[3*sstep_out], m12);                         \
+    _mm_storel_epi64((__m128i*)&out[5*sstep_out], m11);                         \
+    _mm_storel_epi64((__m128i*)&out[7*sstep_out], m13)
+#endif
+
 #define TRANSPOSE4x4B(in, sstep_in, out, sstep_out)                            \
     do {                                                                       \
         __m128i m0  = _mm_loadl_epi64((__m128i *) &in[0*sstep_in]);            \
@@ -289,14 +315,7 @@ void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_lef
         m12 = _mm_unpackhi_epi32(m0 , m1 );                                    \
         m13 = _mm_unpackhi_epi32(m2 , m3 );                                    \
                                                                                \
-        *((uint64_t *) &out[0*sstep_out]) =_mm_cvtsi128_si64(m10);             \
-        *((uint64_t *) &out[1*sstep_out]) =_mm_extract_epi64(m10, 1);          \
-        *((uint64_t *) &out[2*sstep_out]) =_mm_cvtsi128_si64(m12);             \
-        *((uint64_t *) &out[3*sstep_out]) =_mm_extract_epi64(m12, 1);          \
-        *((uint64_t *) &out[4*sstep_out]) =_mm_cvtsi128_si64(m11);             \
-        *((uint64_t *) &out[5*sstep_out]) =_mm_extract_epi64(m11, 1);          \
-        *((uint64_t *) &out[6*sstep_out]) =_mm_cvtsi128_si64(m13);             \
-        *((uint64_t *) &out[7*sstep_out]) =_mm_extract_epi64(m13, 1);          \
+        STORE8(out, sstep_out);                                                \
     } while (0)
 #define TRANSPOSE16x16B(in, sstep_in, out, sstep_out)                          \
     do {                                                                       \
