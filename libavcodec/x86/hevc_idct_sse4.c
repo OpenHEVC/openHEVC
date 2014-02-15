@@ -364,11 +364,11 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 ////////////////////////////////////////////////////////////////////////////////
 #define ASSIGN_EMPTY(dst, dst_stride, src)
 #define SAVE_8x16(dst, dst_stride, src)                                        \
-    _mm_storeu_si128((__m128i *) dst, src);                                    \
+    _mm_store_si128((__m128i *) dst, src);                                    \
     dst += dst_stride
 #define SAVE_8x32(dst, dst_stride, src0, src1, idx)                            \
-    _mm_storeu_si128((__m128i *) &dst[idx*dst_stride]  , src0);                \
-    _mm_storeu_si128((__m128i *) &dst[idx*dst_stride+4], src1)
+    _mm_store_si128((__m128i *) &dst[idx*dst_stride]  , src0);                \
+    _mm_store_si128((__m128i *) &dst[idx*dst_stride+4], src1)
 #define ADD_AND_SAVE_8(dst, dst_stride, src)                                   \
     tmp0 = _mm_loadl_epi64((__m128i *) dst);                                   \
     tmp0 = _mm_unpacklo_epi8(tmp0, _mm_setzero_si128());                       \
@@ -395,12 +395,12 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 #define ADD_AND_SAVE_8x10(dst, dst_stride, src)                                \
     tmp0 = _mm_loadu_si128((__m128i *) dst);                                   \
     ADD_AND_SAVE_10(dst, dst_stride, src);                                     \
-    _mm_storeu_si128((__m128i *) dst, tmp0);                                   \
+    _mm_store_si128((__m128i *) dst, tmp0);                                   \
     dst += dst_stride
 #define ADD_AND_SAVE_16x8(dst, dst_stride, src)                               \
-    tmp0 = _mm_loadu_si128((__m128i *) dst);                                   \
-    tmp2 = _mm_loadu_si128((__m128i *) src);                                   \
-    tmp3 = _mm_loadu_si128((__m128i *) &src[8]);                               \
+    tmp0 = _mm_load_si128((__m128i *) dst);                                   \
+    tmp2 = _mm_load_si128((__m128i *) src);                                   \
+    tmp3 = _mm_load_si128((__m128i *) &src[8]);                               \
     tmp1 = _mm_unpackhi_epi8(tmp0, _mm_setzero_si128());                       \
     tmp0 = _mm_unpacklo_epi8(tmp0, _mm_setzero_si128());                       \
     tmp1 = _mm_add_epi16(tmp1, tmp3);                                          \
@@ -409,10 +409,10 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     _mm_storeu_si128((__m128i *) dst, tmp0);                                   \
     dst += dst_stride
 #define ADD_AND_SAVE_16x10(dst, dst_stride, src)                               \
-    tmp0 = _mm_loadu_si128((__m128i *) dst);                                   \
-    tmp1 = _mm_loadu_si128((__m128i *) &dst[8]);                               \
-    tmp2 = _mm_loadu_si128((__m128i *) src);                                   \
-    tmp3 = _mm_loadu_si128((__m128i *) &src[8]);                               \
+    tmp0 = _mm_load_si128((__m128i *) dst);                                   \
+    tmp1 = _mm_load_si128((__m128i *) &dst[8]);                               \
+    tmp2 = _mm_load_si128((__m128i *) src);                                   \
+    tmp3 = _mm_load_si128((__m128i *) &src[8]);                               \
     tmp0 = _mm_add_epi16(tmp0, tmp2);                                          \
     tmp1 = _mm_add_epi16(tmp1, tmp3);                                          \
     tmp2 = _mm_set1_epi16(0x03ff);                                             \
@@ -420,8 +420,8 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     tmp1 = _mm_max_epi16(tmp1, _mm_setzero_si128());                           \
     tmp0 = _mm_min_epi16(tmp0, tmp2);                                          \
     tmp1 = _mm_min_epi16(tmp1, tmp2);                                          \
-    _mm_storeu_si128((__m128i *) dst, tmp0);                                   \
-    _mm_storeu_si128((__m128i *) &dst[8], tmp1);                               \
+    _mm_store_si128((__m128i *) dst, tmp0);                                   \
+    _mm_store_si128((__m128i *) &dst[8], tmp1);                               \
     dst += dst_stride
 
 #define ASSIGN2(dst, dst_stride, src0, src1, assign)                           \
