@@ -397,6 +397,32 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     ADD_AND_SAVE_10(dst, dst_stride, src);                                     \
     _mm_storeu_si128((__m128i *) dst, tmp0);                                   \
     dst += dst_stride
+#define ADD_AND_SAVE_16x8(dst, dst_stride, src)                               \
+    tmp0 = _mm_loadu_si128((__m128i *) dst);                                   \
+    tmp2 = _mm_loadu_si128((__m128i *) src);                                   \
+    tmp3 = _mm_loadu_si128((__m128i *) &src[8]);                               \
+    tmp1 = _mm_unpackhi_epi8(tmp0, _mm_setzero_si128());                       \
+    tmp0 = _mm_unpacklo_epi8(tmp0, _mm_setzero_si128());                       \
+    tmp1 = _mm_add_epi16(tmp1, tmp3);                                          \
+    tmp0 = _mm_add_epi16(tmp0, tmp2);                                          \
+    tmp0 = _mm_packus_epi16(tmp0, tmp1);                                       \
+    _mm_storeu_si128((__m128i *) dst, tmp0);                                   \
+    dst += dst_stride
+#define ADD_AND_SAVE_16x10(dst, dst_stride, src)                               \
+    tmp0 = _mm_loadu_si128((__m128i *) dst);                                   \
+    tmp1 = _mm_loadu_si128((__m128i *) &dst[8]);                               \
+    tmp2 = _mm_loadu_si128((__m128i *) src);                                   \
+    tmp3 = _mm_loadu_si128((__m128i *) &src[8]);                               \
+    tmp0 = _mm_add_epi16(tmp0, tmp2);                                          \
+    tmp1 = _mm_add_epi16(tmp1, tmp3);                                          \
+    tmp2 = _mm_set1_epi16(0x03ff);                                             \
+    tmp0 = _mm_max_epi16(tmp0, _mm_setzero_si128());                           \
+    tmp1 = _mm_max_epi16(tmp1, _mm_setzero_si128());                           \
+    tmp0 = _mm_min_epi16(tmp0, tmp2);                                          \
+    tmp1 = _mm_min_epi16(tmp1, tmp2);                                          \
+    _mm_storeu_si128((__m128i *) dst, tmp0);                                   \
+    _mm_storeu_si128((__m128i *) &dst[8], tmp1);                               \
+    dst += dst_stride
 
 #define ASSIGN2(dst, dst_stride, src0, src1, assign)                           \
     assign(dst, dst_stride, src0);                                             \
@@ -465,16 +491,6 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     e6  = _mm_load_si128((__m128i *) &in[6*sstep_in]);                         \
     e7  = _mm_load_si128((__m128i *) &in[7*sstep_in]);                         \
     TRANSPOSE8x8_16_S(out, sstep_out, e, assign)
-#define TRANSPOSE16x16_LS(out, sstep_out, in, sstep_in, assign)                \
-    TRANSPOSE8x8_16_LS((&out[0*sstep_out+0]), sstep_out, (&in[0*sstep_in+0]), sstep_in, assign);\
-    TRANSPOSE8x8_16_LS((&out[0*sstep_out+8]), sstep_out, (&in[8*sstep_in+0]), sstep_in, assign);\
-    TRANSPOSE8x8_16_LS((&out[8*sstep_out+0]), sstep_out, (&in[0*sstep_in+8]), sstep_in, assign);\
-    TRANSPOSE8x8_16_LS((&out[8*sstep_out+8]), sstep_out, (&in[8*sstep_in+8]), sstep_in, assign);
-#define TRANSPOSE32x32_LS(out, sstep_out, in, sstep_in, assign)               \
-    TRANSPOSE16x16_LS((&out[ 0*sstep_out+ 0]), sstep_out, (&in[ 0*sstep_in+ 0]), sstep_in, assign);\
-    TRANSPOSE16x16_LS((&out[ 0*sstep_out+16]), sstep_out, (&in[16*sstep_in+ 0]), sstep_in, assign);\
-    TRANSPOSE16x16_LS((&out[16*sstep_out+ 0]), sstep_out, (&in[ 0*sstep_in+16]), sstep_in, assign);\
-    TRANSPOSE16x16_LS((&out[16*sstep_out+16]), sstep_out, (&in[16*sstep_in+16]), sstep_in, assign)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -769,12 +785,13 @@ TRANSFORM_ADD(8, 10);
 #define TRANSFORM_ADD2(H, D)                                                   \
 void ff_hevc_transform_ ## H ## x ## H ## _add_ ## D ## _sse4 (                \
     uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride) {                       \
-    int i, k, add;                                                             \
+    int i, j, k, add;                                                          \
     int      shift = 7;                                                        \
     int16_t *src   = coeffs;                                                   \
     int16_t  tmp[H*H];                                                         \
     int16_t  tmp_2[H*H];                                                       \
-    int16_t *p_dst;                                                            \
+    int16_t  tmp_3[H*H];                                                       \
+    int16_t *p_dst, *p_tra = tmp_2;                                            \
     __m128i src0, src1, src2, src3;                                            \
     __m128i tmp0, tmp1, tmp2, tmp3, tmp4;                                      \
     __m128i e0, e1, e2, e3, e4, e5, e6, e7;                                    \
@@ -784,14 +801,21 @@ void ff_hevc_transform_ ## H ## x ## H ## _add_ ## D ## _sse4 (                \
             p_dst = tmp + i;                                                   \
             TR_ ## H ## _1(p_dst, H, src);                                     \
             src   += 8;                                                        \
+            for (j = 0; j < H; j+=8) {                                         \
+               TRANSPOSE8x8_16_LS((&p_tra[i*H+j]), H, (&tmp[j*H+i]), H, SAVE_8x16);\
+            }                                                                  \
         }                                                                      \
-        if (!k) {                                                              \
-            TRANSPOSE ## H ## x ## H ## _LS(tmp_2, H, tmp, H, SAVE_8x16);      \
-            src     = tmp_2;                                                   \
-            shift   = 20 - D;                                                  \
-        } else {                                                               \
-            INIT_ ## D();                                                      \
-            TRANSPOSE ## H ## x ## H ## _LS(dst, stride, tmp, H, ADD_AND_SAVE_8x ## D);\
+        src   = tmp_2;                                                         \
+        p_tra = tmp_3;                                                         \
+        shift = 20 - D;                                                        \
+    }                                                                          \
+    for (i = 0; i < H; i+=16) {                                                \
+        INIT_ ## D();                                                          \
+        src = p_tra + i;                                                       \
+        dst += i;                                                              \
+        for (k = 0; k < H; k++) {                                              \
+            ADD_AND_SAVE_16x ## D(dst, stride, src);                           \
+            src += H;                                                          \
         }                                                                      \
     }                                                                          \
 }
@@ -801,3 +825,4 @@ TRANSFORM_ADD2(16, 10);
 
 TRANSFORM_ADD2(32,  8);
 TRANSFORM_ADD2(32, 10);
+
