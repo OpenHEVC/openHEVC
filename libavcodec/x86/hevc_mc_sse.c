@@ -381,15 +381,15 @@ void ff_hevc_put_hevc_pel_pixels ## H ## _ ## D ## _sse (                      \
 // ff_hevc_put_hevc_epel_hX_X_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define SRC_INIT_H_8()                                                         \
-    uint8_t  *src       = ((uint8_t*) _src) - 1;                               \
+    uint8_t *src2, *src = ((uint8_t*) _src) - 1;                               \
     ptrdiff_t srcstride = _srcstride
 #define SRC_INIT_H_10()                                                        \
-    uint16_t *src       = ((uint16_t*) _src) - 1;                              \
-    ptrdiff_t srcstride = _srcstride >> 1
-#define EPEL_FILTER_8(idx)                                                     \
+    uint16_t *src2, *src = ((uint16_t*) _src) - 1;                              \
+    ptrdiff_t srcstride  = _srcstride >> 1
+#define EPEL_FILTER_8(f1, f2, idx)                                             \
     f1 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_sse[idx][0]);         \
     f2 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_sse[idx][1])
-#define EPEL_FILTER_10(idx)                                                    \
+#define EPEL_FILTER_10(f1, f2, idx)                                            \
     f1 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_sse_10[idx][0]);      \
     f2 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_sse_10[idx][1])
 
@@ -417,25 +417,35 @@ void ff_hevc_put_hevc_pel_pixels ## H ## _ ## D ## _sse (                      \
 #define PEL_STORE_8(tab)                                                       \
     _mm_store_si128((__m128i *) &tab[x], x1)
 
-#define EPEL_COMPUTE_8()                                                       \
-    x1 = _mm_maddubs_epi16(x1, f1);                                            \
-    x2 = _mm_maddubs_epi16(x2, f2);                                            \
-    x1 = _mm_add_epi16(x1, x2)
-#define EPEL_COMPUTE_10()                                                      \
-    x1 = _mm_madd_epi16(x1, f1);                                               \
-    t1 = _mm_madd_epi16(t1, f1);                                               \
-    x2 = _mm_madd_epi16(x2, f2);                                               \
-    t2 = _mm_madd_epi16(t2, f2);                                               \
-    x1 = _mm_add_epi32(x1, x2);                                                \
-    t1 = _mm_add_epi32(t1, t2);                                                \
-    t1 = _mm_srai_epi32(t1, shift);                                            \
-    x1 = _mm_srai_epi32(x1, shift);                                            \
-    x1 = _mm_packs_epi32(x1, t1)
+#define EPEL_COMPUTE_8(dst, f1, f2)                                            \
+    x1  = _mm_maddubs_epi16(x1, f1);                                           \
+    x2  = _mm_maddubs_epi16(x2, f2);                                           \
+    dst = _mm_add_epi16(x1, x2)
+#define EPEL_COMPUTE_10(dst, f1, f2)                                           \
+    x1  = _mm_madd_epi16(x1, f1);                                              \
+    t1  = _mm_madd_epi16(t1, f1);                                              \
+    x2  = _mm_madd_epi16(x2, f2);                                              \
+    t2  = _mm_madd_epi16(t2, f2);                                              \
+    x1  = _mm_add_epi32(x1, x2);                                               \
+    t1  = _mm_add_epi32(t1, t2);                                               \
+    t1  = _mm_srai_epi32(t1, shift);                                           \
+    x1  = _mm_srai_epi32(x1, shift);                                           \
+    dst = _mm_packs_epi32(x1, t1)
 
 
-#define EPEL_FILTER_14(idx)         EPEL_FILTER_10(idx)
-#define EPEL_LOAD_14(src, stride)   EPEL_LOAD_10(src, stride)
-#define EPEL_COMPUTE_14()           EPEL_COMPUTE_10()
+#define EPEL_FILTER_14(f1, f2, idx)     EPEL_FILTER_10(f1, f2, idx)
+#define EPEL_LOAD_14(src, stride)       EPEL_LOAD_10(src, stride)
+#define EPEL_COMPUTE_14(dst, f1, f2)                                           \
+    x1  = _mm_madd_epi16(x1, f1);                                              \
+    t1  = _mm_madd_epi16(t1, f1);                                              \
+    x2  = _mm_madd_epi16(x2, f2);                                              \
+    t2  = _mm_madd_epi16(t2, f2);                                              \
+    x1  = _mm_add_epi32(x1, x2);                                               \
+    t1  = _mm_add_epi32(t1, t2);                                               \
+    t1  = _mm_srai_epi32(t1, 6);                                               \
+    x1  = _mm_srai_epi32(x1, 6);                                               \
+    dst = _mm_packs_epi32(x1, t1)
+
 
 #define PUT_HEVC_EPEL_H(H, D)                                                  \
 void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
@@ -447,11 +457,11 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
     int shift = D - 8;                                                         \
     __m128i x1, x2, x3, x4, t1, t2, f1, f2;                                    \
     SRC_INIT_H_ ## D();                                                        \
-    EPEL_FILTER_ ## D(mx - 1);                                                 \
+    EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
             EPEL_LOAD_ ## D(src, 1);                                           \
-            EPEL_COMPUTE_ ## D();                                              \
+            EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             PEL_STORE_ ## H(dst);                                              \
         }                                                                      \
         src += srcstride;                                                      \
@@ -480,11 +490,11 @@ void ff_hevc_put_hevc_epel_v ## H ## _ ## D ## _sse (                          \
     int shift = D - 8;                                                         \
     __m128i x1, x2, x3, x4, t1, t2, f1, f2;                                    \
     SRC_INIT_V_ ## D();                                                        \
-    EPEL_FILTER_ ## D(my - 1);                                                 \
+    EPEL_FILTER_ ## D(f1, f2, my - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
             EPEL_LOAD_ ## D(src, srcstride);                                   \
-            EPEL_COMPUTE_ ## D();                                              \
+            EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             PEL_STORE_ ## H(dst);                                              \
         }                                                                      \
         src += srcstride;                                                      \
@@ -510,6 +520,53 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
     tmp    = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
     ff_hevc_put_hevc_epel_v ## H ## _14_sse(                                   \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , width, height, mx, my);\
+}
+
+#define PUT_HEVC_EPEL_HV2(H, D)                                                 \
+void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
+        int16_t *dst, ptrdiff_t dststride,                                     \
+        uint8_t *_src, ptrdiff_t _srcstride,                                   \
+        int width, int height,                                                 \
+        int mx, int my) {                                                      \
+    int x, y;                                                                  \
+    int shift = D - 8;                                                        \
+    __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;            \
+    int16_t *dst2 = dst;                                                       \
+    SRC_INIT_H_ ## D();                                                        \
+    src -= EPEL_EXTRA_BEFORE * srcstride;                                      \
+    src2 = src;                                                                \
+    EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
+    EPEL_FILTER_10(f3, f4, my - 1);                                            \
+    for (x = 0; x < width; x += H) {                                           \
+        EPEL_LOAD_ ## D(src, 1);                                               \
+        EPEL_COMPUTE_ ## D(r1, f1, f2);                                        \
+        src += srcstride;                                                      \
+        EPEL_LOAD_ ## D(src, 1);                                               \
+        EPEL_COMPUTE_ ## D(r2, f1, f2);                                        \
+        src += srcstride;                                                      \
+        EPEL_LOAD_ ## D(src, 1);                                               \
+        EPEL_COMPUTE_ ## D(r3, f1, f2);                                        \
+        src += srcstride;                                                      \
+        for (y = 0; y < height; y++) {                                         \
+            EPEL_LOAD_ ## D(src, 1);                                           \
+            EPEL_COMPUTE_ ## D(r4, f1, f2);                                    \
+            src += srcstride;                                                  \
+                                                                               \
+            t1 = _mm_unpackhi_epi16(r1, r2);                                   \
+            x1 = _mm_unpacklo_epi16(r1, r2);                                   \
+            t2 = _mm_unpackhi_epi16(r3, r4);                                   \
+            x2 = _mm_unpacklo_epi16(r3, r4);                                   \
+            EPEL_COMPUTE_14(x1, f3, f4);                                       \
+            PEL_STORE_ ## H(dst);                                              \
+            dst += dststride;                                                  \
+                                                                               \
+            r1 = r2;                                                           \
+            r2 = r3;                                                           \
+            r3 = r4;                                                           \
+        }                                                                      \
+        src = src2;                                                            \
+        dst = dst2;                                                            \
+    }                                                                          \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -937,13 +994,13 @@ static PUT_HEVC_EPEL_V(  4, 14)
 static PUT_HEVC_EPEL_V(  8, 14)
 
 // ff_hevc_put_hevc_epel_hvX_X_sse
-PUT_HEVC_EPEL_HV(  2,  8)
-PUT_HEVC_EPEL_HV(  4,  8)
-PUT_HEVC_EPEL_HV(  8,  8)
+PUT_HEVC_EPEL_HV2(  2,  8)
+PUT_HEVC_EPEL_HV2(  4,  8)
+PUT_HEVC_EPEL_HV2(  8,  8)
 
-PUT_HEVC_EPEL_HV(  2, 10)
-PUT_HEVC_EPEL_HV(  4, 10)
-PUT_HEVC_EPEL_HV(  8, 10)
+PUT_HEVC_EPEL_HV2(  2, 10)
+PUT_HEVC_EPEL_HV2(  4, 10)
+PUT_HEVC_EPEL_HV2(  8, 10)
 
 // ff_hevc_put_hevc_qpel_hX_X_X_sse
 PUT_HEVC_QPEL_H(  4,  8)
