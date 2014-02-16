@@ -1181,7 +1181,7 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
             r0 = _mm_add_epi16(r1, r3);
             r1 = _mm_add_epi16(r2, r4);
             r0 = _mm_packus_epi16(r0, r1);
-            
+
             if (!chroma){
                 _mm_storel_epi64((__m128i*)(dst + init_x + y_stride), r0);
                 *((short *) (dst + 8 + init_x + y_stride)) = _mm_extract_epi16(r0, 4);
@@ -1195,7 +1195,7 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
             y_stride_1_1 += stride;
         }
     }
-    
+
     // Restore pixels that can't be modified
     save_lower_right = !diag_edge && sao_eo_class == SAO_EO_135D;
     if(vert_edge && sao_eo_class != SAO_EO_VERT) {
@@ -1208,7 +1208,7 @@ void ff_hevc_sao_edge_filter_3_8_sse(uint8_t *_dst, uint8_t *_src,
             dst[(height-1)*stride+x] = src[(height-1)*stride+x];
         }
     }
-    if(diag_edge && sao_eo_class == SAO_EO_135D) { 
+    if(diag_edge && sao_eo_class == SAO_EO_135D) {
         dst[stride*(height-1)+width-1] = src[stride*(height-1)+width-1];
     }
 }

@@ -349,21 +349,21 @@ typedef struct VUI {
     int log2_max_mv_length_vertical;
 } VUI;
 
-typedef struct ProfileTierLevel {
-    int profile_space;
+typedef struct PTLCommon {
+    uint8_t profile_space;
     uint8_t tier_flag;
-    int profile_idc;
-    int profile_compatibility_flag[32];
-    int level_idc;
-    int progressive_source_flag;
-    int interlaced_source_flag;
-    int non_packed_constraint_flag;
-    int frame_only_constraint_flag;
-} ProfileTierLevel;
+    uint8_t profile_idc;
+    uint8_t profile_compatibility_flag[32];
+    uint8_t level_idc;
+    uint8_t progressive_source_flag;
+    uint8_t interlaced_source_flag;
+    uint8_t non_packed_constraint_flag;
+    uint8_t frame_only_constraint_flag;
+} PTLCommon;
 
 typedef struct PTL {
-    ProfileTierLevel general_PTL;
-    ProfileTierLevel sub_layer_PTL[MAX_SUB_LAYERS];
+    PTLCommon general_ptl;
+    PTLCommon sub_layer_ptl[MAX_SUB_LAYERS];
 
     uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
     uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
@@ -578,7 +578,7 @@ typedef struct HEVCPPS {
     int beta_offset;    ///< beta_offset_div2 * 2
     int tc_offset;      ///< tc_offset_div2 * 2
 
-    int scaling_list_data_present_flag;
+    uint8_t scaling_list_data_present_flag;
     ScalingList scaling_list;
 
     uint8_t lists_modification_present_flag;
@@ -590,10 +590,10 @@ typedef struct HEVCPPS {
     uint8_t pps_extension_data_flag;
 
     // Inferred parameters
-    int *column_width;  ///< ColumnWidth
-    int *row_height;    ///< RowHeight
-    int *col_bd;        ///< ColBd
-    int *row_bd;        ///< RowBd
+    unsigned int *column_width;  ///< ColumnWidth
+    unsigned int *row_height;    ///< RowHeight
+    unsigned int *col_bd;        ///< ColBd
+    unsigned int *row_bd;        ///< RowBd
     int *col_idxX;
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
@@ -605,7 +605,7 @@ typedef struct HEVCPPS {
 } HEVCPPS;
 
 typedef struct SliceHeader {
-    int pps_id;
+    unsigned int pps_id;
 
     ///< address (in raster order) of the first block in the current slice segment
     unsigned int   slice_segment_addr;
@@ -650,8 +650,7 @@ typedef struct SliceHeader {
     int beta_offset;    ///< beta_offset_div2 * 2
     int tc_offset;      ///< tc_offset_div2 * 2
 
-    int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
-
+    unsigned int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
 
     int *entry_point_offset;
     int * offset;
@@ -757,19 +756,6 @@ typedef struct TransformUnit {
     int cur_intra_pred_mode;
     uint8_t is_cu_qp_delta_coded;
 } TransformUnit;
-
-typedef struct SAOParams {
-    int offset_abs[3][4];   ///< sao_offset_abs
-    int offset_sign[3][4];  ///< sao_offset_sign
-
-    int band_position[3];   ///< sao_band_position
-
-    int eo_class[3];        ///< sao_eo_class
-
-    int offset_val[3][5];   ///<SaoOffsetVal
-
-    uint8_t type_idx[3];    ///< sao_type_idx
-} SAOParams;
 
 typedef struct DBParams {
     int beta_offset;
@@ -969,6 +955,12 @@ typedef struct HEVCContext {
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
 
+    /** frame packing arrangement variables */
+    int sei_frame_packing_present;
+    int frame_packing_arrangement_type;
+    int content_interpretation_type;
+    int quincunx_subsampling;
+
     int picture_struct;
 
     /** 1 if the independent slice segment header was successfully parsed */
@@ -1085,9 +1077,6 @@ int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
-                                 int log2_trafo_size, enum ScanType scan_idx,
-                                 int c_idx);
-void ff_hevc_hls_residual_coding_luma(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx);
 
