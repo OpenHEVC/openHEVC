@@ -74,6 +74,7 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
             }
         }
     }
+
     return END_NOT_FOUND;
 }
 

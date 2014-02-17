@@ -39,7 +39,7 @@
 typedef struct
 {
 	u16 ES_ID;
-	u32 width, stride, height, out_size, pixel_ar, layer, nb_threads;
+	u32 width, stride, height, out_size, pixel_ar, layer, nb_threads, luma_bpp, chroma_bpp;
 
 	Bool is_init;
 	Bool had_pic;
@@ -56,12 +56,14 @@ typedef struct
 #endif
 } HEVCDec;
 
+
+
 static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
 {
     u32 i, j;
     GF_HEVCConfig *cfg = NULL;
 	ctx->ES_ID = esd->ESID;
-	ctx->width = ctx->height = ctx->out_size = 0;
+	ctx->width = ctx->height = ctx->out_size = ctx->luma_bpp = ctx->chroma_bpp = 0;
 	
 #ifdef OPEN_SHVC
     ctx->nb_layers = 1;
@@ -70,7 +72,7 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
     
     
 	if (esd->decoderConfig->decoderSpecificInfo && esd->decoderConfig->decoderSpecificInfo->data) {
-        cfg = gf_odf_hevc_cfg_read(esd->decoderConfig->decoderSpecificInfo->data, esd->decoderConfig->decoderSpecificInfo->dataLength);
+        cfg = gf_odf_hevc_cfg_read(esd->decoderConfig->decoderSpecificInfo->data, esd->decoderConfig->decoderSpecificInfo->dataLength, 0);
  		if (!cfg) return GF_NON_COMPLIANT_BITSTREAM;
  		ctx->nalu_size_length = cfg->nal_unit_size;
         
@@ -86,10 +88,12 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
 					idx = gf_media_hevc_read_sps(sl->data, sl->size, &hevc);
 					ctx->width = MAX(hevc.sps[idx].width, ctx->width);
 					ctx->height = MAX(hevc.sps[idx].height, ctx->height);
+					ctx->luma_bpp = MAX(hevc.sps[idx].bit_depth_luma, ctx->luma_bpp);
+					ctx->chroma_bpp = MAX(hevc.sps[idx].bit_depth_chroma, ctx->chroma_bpp);
 
 					if (hdr & 0x1f8) {
 #ifdef OPEN_SHVC
-                        ctx->nb_layers ++; 
+                        ctx->nb_layers ++;
 #endif
                     }
                 }
@@ -115,7 +119,8 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
 #endif
     libOpenHevcStartDecoder(ctx->openHevcHandle);
 
-	ctx->stride = ctx->width;
+	
+	ctx->stride = ((ctx->luma_bpp==8) && (ctx->chroma_bpp==8)) ? ctx->width : ctx->width * 2;
 	ctx->out_size = ctx->stride * ctx->height * 3 / 2;
 	return GF_OK;
 }
@@ -127,16 +132,16 @@ static GF_Err HEVC_AttachStream(GF_BaseDecoder *ifcg, GF_ESD *esd)
 	u32 nb_threads = 1;
 	HEVCDec *ctx = (HEVCDec*) ifcg->privateStack;
 
-	if (gf_sys_get_rti(100, &rti, 0) ) {
+	if (gf_sys_get_rti(0, &rti, 0) ) {
 		nb_threads = (rti.nb_cores>1) ? rti.nb_cores-1 : 1;
-		//checkme I have perf using too many threads
-		if (nb_threads > 6)
-			nb_threads = 6;
 	}
 
 	sOpt = gf_modules_get_option((GF_BaseInterface *)ifcg, "OpenHEVC", "NumThreads");
 	if (!sOpt) {
 		char szO[100];
+		//checkme I have perf using too many threads
+		if (nb_threads > 6)
+			nb_threads = 6;
 		sprintf(szO, "%d", nb_threads);
 		gf_modules_set_option((GF_BaseInterface *)ifcg, "OpenHEVC", "NumThreads", szO);
 		ctx->nb_threads = nb_threads;
@@ -153,7 +158,7 @@ static GF_Err HEVC_AttachStream(GF_BaseDecoder *ifcg, GF_ESD *esd)
 	else if (sOpt && !strcmp(sOpt, "frame+wpp")) ctx->threading_type = 3;
 	else {
 		ctx->threading_type = 1;
-		if (!sOpt) gf_modules_set_option((GF_BaseInterface *)ifcg, "OpenHEVC", "ThreadingType", "frame");
+		if (!sOpt) gf_modules_set_option((GF_BaseInterface *)ifcg, "OpenHEVC", "ThreadingType", "frame+wpp");
 	}
 
 	/*once base layer is configured, nothing to do on enhancement*/
@@ -201,7 +206,7 @@ static GF_Err HEVC_GetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability *cap
 		capability->cap.valueInt = ctx->out_size;
 		break;
 	case GF_CODEC_PIXEL_FORMAT:
-		capability->cap.valueInt = GF_PIXEL_YV12;
+		capability->cap.valueInt = (ctx->luma_bpp==10) ? GF_PIXEL_YV12_10 : GF_PIXEL_YV12;
 		break;
 	case GF_CODEC_BUFFER_MIN:
 		capability->cap.valueInt = 1;
@@ -231,6 +236,7 @@ static GF_Err HEVC_SetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability capa
 	HEVCDec *ctx = (HEVCDec*) ifcg->privateStack;
 	switch (capability.CapCode) {
     case GF_CODEC_WAIT_RAP:
+		if (ctx->openHevcHandle)
             libOpenHevcFlush(ctx->openHevcHandle);
         return GF_OK;
 #ifdef OPEN_SHVC
@@ -254,7 +260,7 @@ static GF_Err HEVC_SetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability capa
 
 static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLength )
 {
-	unsigned int a_w, a_h, a_stride;
+	unsigned int a_w, a_h, a_stride, bit_depth;
     OpenHevc_Frame_cpy openHevcFrame;
 	u8 *pY, *pU, *pV;
 
@@ -264,13 +270,16 @@ static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLe
 	a_w      = openHevcFrame.frameInfo.nWidth;
     a_h      = openHevcFrame.frameInfo.nHeight;
     a_stride = openHevcFrame.frameInfo.nYPitch;
+	bit_depth = openHevcFrame.frameInfo.nBitDepth;
+	if ((ctx->luma_bpp>8) || (ctx->chroma_bpp>8)) a_stride *= 2;
 
-    if ((ctx->width != a_w) || (ctx->height!=a_h) || (ctx->stride != a_stride)) {
+	if ((ctx->width != a_w) || (ctx->height!=a_h) || (ctx->stride != a_stride) || (ctx->luma_bpp!= bit_depth)  || (ctx->chroma_bpp != bit_depth) ){
 		ctx->width = a_w;
 		ctx->stride = a_stride;
 		ctx->height = a_h;
 		ctx->out_size = ctx->stride * a_w * 3 / 2;
 		ctx->had_pic = GF_TRUE;
+		ctx->luma_bpp = ctx->chroma_bpp = bit_depth;
 		/*always force layer resize*/
 		*outBufferLength = ctx->out_size;
 		return GF_BUFFER_TOO_SMALL;

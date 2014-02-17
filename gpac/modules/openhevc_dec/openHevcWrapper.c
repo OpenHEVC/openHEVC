@@ -115,8 +115,8 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
         openHevcContext->avpkt.pts  = pts;
         len                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
                                                              &got_picture[i], &openHevcContext->avpkt);
-        if(i+1 < openHevcContexts->nb_decoders)
-            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
+//        if(i+1 < openHevcContexts->nb_decoders)
+//            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");

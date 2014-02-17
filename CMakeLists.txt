@@ -165,7 +165,7 @@ libavcodec/utils.c
 libavcodec/videodsp.c
 )
 
-add_subdirectory(wrapper_hm)
+#add_subdirectory(wrapper_hm)
 
 OPTION(ENABLE_STATIC "enabled static library instead of shared" OFF)
 if (ENABLE_STATIC)

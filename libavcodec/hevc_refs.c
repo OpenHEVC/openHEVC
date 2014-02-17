@@ -1,5 +1,5 @@
 /*
- * HEVC video Decoder
+ * HEVC video decoder
  *
  * Copyright (C) 2012 - 2013 Guillaume Martres
  * Copyright (C) 2012 - 2013 Gildas Cocherel
@@ -106,7 +106,6 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
 
         frame->frame->top_field_first  = s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD;
         frame->frame->interlaced_frame = (s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD) || (s->picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD);
-        frame->frame->display_picture_number = s->poc;
         return frame;
 fail:
         ff_hevc_unref_frame(s, frame, ~0);
@@ -147,7 +146,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
     return 0;
 }
-#if REF_IDX_FRAMEWORK
+#ifdef REF_IDX_FRAMEWORK
 int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
     HEVCFrame *ref;
@@ -509,7 +508,7 @@ static int add_candidate_ref(HEVCContext *s, RefPicList *list,
     return 0;
 }
 
-#if REF_IDX_FRAMEWORK
+#ifdef REF_IDX_FRAMEWORK
 static void init_upsampled_mv_fields(HEVCContext *s) {
     int i, list, pic_width_in_min_pu, pic_height_in_min_pu;
     pic_width_in_min_pu = s->sps->width >> s->sps->log2_min_pu_size;
@@ -548,10 +547,10 @@ int ff_hevc_frame_rps(HEVCContext *s)
             return 0;
     }
 
-#if REF_IDX_FRAMEWORK
-#if REF_IDX_MFM
+#ifdef REF_IDX_FRAMEWORK
+#ifdef REF_IDX_MFM
     
-#if ZERO_NUM_DIRECT_LAYERS
+#ifdef ZERO_NUM_DIRECT_LAYERS
     if( s->nuh_layer_id > 0 && s->vps->max_one_active_ref_layer_flag > 0 )
 #else
     if (s->nuh_layer_id)
@@ -630,9 +629,9 @@ int ff_hevc_frame_rps(HEVCContext *s)
 #endif
 
     
-#if REF_IDX_FRAMEWORK
+#ifdef REF_IDX_FRAMEWORK
     if(s->nuh_layer_id) {
-#if JCTVC_M0458_INTERLAYER_RPS_SIG
+#ifdef JCTVC_M0458_INTERLAYER_RPS_SIG
         for( i = 0; i < s->vps->max_one_active_ref_layer_flag; i ++) {
 #else
             for( i = 0; i < m_numILRRefIdx; i ++) {
@@ -678,7 +677,7 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
     int i;
     const ShortTermRPS *rps = s->sh.short_term_rps;
     LongTermRPS *long_rps   = &s->sh.long_term_rps;
-#if REF_IDX_FRAMEWORK
+#ifdef REF_IDX_FRAMEWORK
     if( s->sh.slice_type == I_SLICE || (s->nuh_layer_id &&
                                         (s->nal_unit_type >= NAL_BLA_W_LP) &&
                                         (s->nal_unit_type<= NAL_CRA_NUT ) ))
@@ -686,8 +685,8 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
         if (s->sh.slice_type == I_SLICE)
 #endif
         {
-#if REF_IDX_FRAMEWORK
-#if JCTVC_M0458_INTERLAYER_RPS_SIG
+#ifdef REF_IDX_FRAMEWORK
+#ifdef JCTVC_M0458_INTERLAYER_RPS_SIG
             return s->sh.active_num_ILR_ref_idx;
 #else
             return s->vps->m_numDirectRefLayers[s->layer_id];
@@ -707,9 +706,9 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
         for (i = 0; i < long_rps->nb_refs; i++)
             ret += !!long_rps->used[i];
     }
-#if REF_IDX_FRAMEWORK
+#ifdef REF_IDX_FRAMEWORK
     if(s->nuh_layer_id) {
-#if JCTVC_M0458_INTERLAYER_RPS_SIG
+#ifdef JCTVC_M0458_INTERLAYER_RPS_SIG
         for( i = 0; i < s->vps->max_one_active_ref_layer_flag; i ++) {
 #else
             for( i = 0; i < m_numILRRefIdx; i ++) {

@@ -892,7 +892,7 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth)
     return GET_CABAC(elem_offset[CBF_LUMA] + !trafo_depth);
 }
 
-int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
+static int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
 {
     return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }
@@ -953,6 +953,7 @@ static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int x_
 static av_always_inline int significant_coeff_flag_decode_0(HEVCContext *s, int c_idx, int i, int offset)
 {
     int inc;
+
     if (i == 0) {
         if (c_idx == 0)
             inc = 0;
@@ -961,6 +962,7 @@ static av_always_inline int significant_coeff_flag_decode_0(HEVCContext *s, int 
     } else {
         inc = 2 + offset;
     }
+
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
 }
 
