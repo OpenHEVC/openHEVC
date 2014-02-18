@@ -23,7 +23,6 @@
 #ifndef AVCODEC_HEVCDSP_H
 #define AVCODEC_HEVCDSP_H
 
-#include "get_bits.h"
 
 typedef struct SAOParams {
     int offset_abs[3][4];   ///< sao_offset_abs
