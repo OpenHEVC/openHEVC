@@ -30,6 +30,12 @@
 #include "hevc.h"
 #include "bit_depth_template.c"
 
+#if ARCH_X86_32
+#include <emmintrin.h>
+#include <tmmintrin.h>
+#include <smmintrin.h>
+#endif
+
 #define LUMA 0
 #define CB 1
 #define CR 2
@@ -483,6 +489,20 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
             if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
                 s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
                 neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
+#if ARCH_X86_32
+                __m128i x0, x1, x2;
+                x0 = _mm_loadl_epi64((__m128i *) neigh);
+                x1 = _mm_loadl_epi64((__m128i *) curr);
+                x2 =  _mm_shufflelo_epi16(x0, 0x4E);
+                x0 = _mm_sub_epi16(x0, x1);
+                x2 = _mm_sub_epi16(x2, x1);
+                x1 = _mm_set1_epi16(4);
+                x0 = _mm_abs_epi16(x0);
+                x2 = _mm_abs_epi16(x2);
+                x0 = _mm_cmplt_epi16(x0, x1);
+                x2 = _mm_cmplt_epi16(x2, x1);
+                return !(_mm_test_all_ones(x0) || _mm_test_all_ones(x2));
+#else
                 if ((FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
                      FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
                     (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
@@ -490,20 +510,44 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
                     return 1;
                 else
                     return 0;
+#endif
             } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
                        neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+#if ARCH_X86_32
+                __m128i x0, x1;
+                x0 = _mm_loadl_epi64((__m128i *) neigh);
+                x1 = _mm_loadl_epi64((__m128i *) curr);
+                x0 = _mm_sub_epi16(x0, x1);
+                x1 = _mm_set1_epi16(4);
+                x0 = _mm_abs_epi16(x0);
+                x0 = _mm_cmplt_epi16(x0, x1);
+                return !(_mm_test_all_ones(x0));
+#else
                 if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
                     FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
                     return 1;
                 else
                     return 0;
+#endif
             } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
                        neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+#if ARCH_X86_32
+                __m128i x0, x1, x2;
+                x0 = _mm_loadl_epi64((__m128i *) neigh);
+                x1 = _mm_loadl_epi64((__m128i *) curr);
+                x2 = _mm_shufflelo_epi16(x0, 0x4E);
+                x2 = _mm_sub_epi16(x2, x1);
+                x1 = _mm_set1_epi16(4);
+                x2 = _mm_abs_epi16(x2);
+                x2 = _mm_cmplt_epi16(x2, x1);
+                return !(_mm_test_all_ones(x2));
+#else
                 if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
                     FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
                     return 1;
                 else
                     return 0;
+#endif
             } else {
                 return 1;
             }
