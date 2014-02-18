@@ -172,13 +172,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_skip     = ff_hevc_transform_skip_8_sse;
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
-                    c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_2_8_sse;
-                    c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_3_8_sse;
-
-                    c->sao_band_filter[0] = ff_hevc_sao_band_filter_0_8_sse;
-                    c->sao_band_filter[1] = ff_hevc_sao_band_filter_1_8_sse;
-                    c->sao_band_filter[2] = ff_hevc_sao_band_filter_2_8_sse;
-                    c->sao_band_filter[3] = ff_hevc_sao_band_filter_3_8_sse;
+                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
 
 #ifdef SVC_EXTENSION
                     c->upsample_base_layer_frame = ff_upsample_base_layer_frame_sse;
