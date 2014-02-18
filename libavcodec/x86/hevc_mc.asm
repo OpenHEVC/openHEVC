@@ -328,11 +328,11 @@ SECTION .text
 
 %macro QPEL_V_LOAD 3
     xor              r11, r11
-;%if %1 == 8
+%if %1 == 8
     lea              r11, [%2q+  r9]
-;%else
-;    lea              r11, [%2q+2*r9]
-;%endif
+%else
+    lea              r11, [%2q+2*r9]
+%endif
     movdqu            m3, [r11]                  ;load x
     sub              r11, %3q
     movdqu            m2, [r11]                  ;load x-stride
@@ -342,11 +342,11 @@ SECTION .text
     movdqu            m0, [r11]                  ;load x-3*stride
 
     xor              r11, r11
-;%if %1 == 8
+%if %1 == 8
     lea              r11, [%2q+  r9]
-;%else
-;    lea              r11, [%2q+2*r9]
-;%endif
+%else
+    lea              r11, [%2q+2*r9]
+%endif
     add              r11, %3q
     movdqu            m4, [r11]                  ;load x+stride
     add              r11, %3q
@@ -355,10 +355,17 @@ SECTION .text
     movdqu            m6, [r11]                  ;load x+3*stride
     add              r11, %3q
     movdqu            m7, [r11]                  ;load x+4*stride
+%if %1 == 8
     SBUTTERFLY        bw, 0, 1, 8
     SBUTTERFLY        bw, 2, 3, 8
     SBUTTERFLY        bw, 4, 5, 8
     SBUTTERFLY        bw, 6, 7, 8
+%else
+    SBUTTERFLY        wd, 0, 1, 8
+    SBUTTERFLY        wd, 2, 3, 8
+    SBUTTERFLY        wd, 4, 5, 8
+    SBUTTERFLY        wd, 6, 7, 8
+%endif
 %endmacro
 
 %macro QPEL_V_LOAD_LO 3
@@ -1052,6 +1059,14 @@ cglobal hevc_put_hevc_qpel_v8_8, 9, 12, 0 , dst, dststride, src, srcstride, widt
 
 cglobal hevc_put_hevc_qpel_v16_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_V    16, 8
+    RET
+
+cglobal hevc_put_hevc_qpel_v4_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_QPEL_V    4, 10
+    RET
+
+cglobal hevc_put_hevc_qpel_v8_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_QPEL_V    8, 10
     RET
 
 
