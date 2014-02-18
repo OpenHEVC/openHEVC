@@ -6,7 +6,7 @@ struct AVFrame;
 struct UpsamplInf;
 struct HEVCWindow;
 
-#define OPTI_ASM
+//#define OPTI_ASM
 
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
@@ -134,8 +134,9 @@ PEL_PROTOTYPE_SSE(epel_hv8, 10);
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL
 ///////////////////////////////////////////////////////////////////////////////
-PEL_PROTOTYPE_SSE(qpel_h4 ,  8);
-PEL_PROTOTYPE_SSE(qpel_h8 ,  8);
+PEL_PROTOTYPE(qpel_h4 ,  8);
+PEL_PROTOTYPE(qpel_h8 ,  8);
+PEL_PROTOTYPE(qpel_h16 ,  8);
 
 PEL_PROTOTYPE_SSE(qpel_h4 , 10);
 PEL_PROTOTYPE_SSE(qpel_h8 , 10);
