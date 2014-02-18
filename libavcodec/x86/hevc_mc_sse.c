@@ -546,7 +546,14 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
 // ff_hevc_put_hevc_qpel_hX_X_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define QPEL_H_LOAD()                                                          \
-    x1 = _mm_loadu_si128((__m128i *) &src[x - 3])
+    x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);                             \
+    x2 = _mm_loadu_si128((__m128i *) &src[x - 2]);                             \
+    x3 = _mm_loadu_si128((__m128i *) &src[x - 1]);                             \
+    x4 = _mm_loadu_si128((__m128i *) &src[x    ]);                             \
+    x5 = _mm_loadu_si128((__m128i *) &src[x + 1]);                             \
+    x6 = _mm_loadu_si128((__m128i *) &src[x + 2]);                             \
+    x7 = _mm_loadu_si128((__m128i *) &src[x + 3]);                             \
+    x8 = _mm_loadu_si128((__m128i *) &src[x + 4])
 
 #define QPEL_H_COMPUTE4_8()                                                    \
     x2 = _mm_shuffle_epi8(x1, bshuffle1_2); \
@@ -554,10 +561,10 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
     MUL_ADD_H_2(_mm_maddubs_epi16, _mm_hadd_epi16, r1, x)
 
 #define QPEL_H_COMPUTE8_8()                                                    \
-    x2 = _mm_shuffle_epi8(x1,bshuffleb1_2);                                    \
-    x3 = _mm_shuffle_epi8(x1,bshuffleb1_4);                                    \
-    x4 = _mm_shuffle_epi8(x1,bshuffleb1_6);                                    \
-    x1 = _mm_shuffle_epi8(x1,bshuffleb1_0);                                    \
+    x1 = _mm_unpacklo_epi8(x1, x2);                                            \
+    x2 = _mm_unpacklo_epi8(x3, x4);                                            \
+    x3 = _mm_unpacklo_epi8(x5, x6);                                            \
+    x4 = _mm_unpacklo_epi8(x7, x8);                                            \
     x2 = _mm_maddubs_epi16(x2,c2);                                             \
     x3 = _mm_maddubs_epi16(x3,c3);                                             \
     x1 = _mm_maddubs_epi16(x1,c1);                                             \
@@ -566,13 +573,41 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
     x2 = _mm_add_epi16(x3, x4);                                                \
     r1 = _mm_add_epi16(x1, x2)
 
+#define QPEL_H_COMPUTE16_8()                                                   \
+    x9 = x1;                                                                   \
+    x1 = _mm_unpacklo_epi8(x9, x2);                                            \
+    x2 = _mm_unpackhi_epi8(x9, x2);                                            \
+    x9 = x3;                                                                   \
+    x3 = _mm_unpacklo_epi8(x9, x4);                                            \
+    x4 = _mm_unpackhi_epi8(x9, x4);                                            \
+    x9 = x5;                                                                   \
+    x5 = _mm_unpacklo_epi8(x9, x6);                                            \
+    x6 = _mm_unpackhi_epi8(x9, x6);                                            \
+    x9 = x7;                                                                   \
+    x7 = _mm_unpacklo_epi8(x9, x8);                                            \
+    x8 = _mm_unpackhi_epi8(x9, x8);                                            \
+    x1 = _mm_maddubs_epi16(x1,c1);                                             \
+    x3 = _mm_maddubs_epi16(x3,c2);                                             \
+    x5 = _mm_maddubs_epi16(x5,c3);                                             \
+    x7 = _mm_maddubs_epi16(x7,c4);                                             \
+    x2 = _mm_maddubs_epi16(x2,c1);                                             \
+    x4 = _mm_maddubs_epi16(x4,c2);                                             \
+    x6 = _mm_maddubs_epi16(x6,c3);                                             \
+    x8 = _mm_maddubs_epi16(x8,c4);                                             \
+    x1 = _mm_add_epi16(x1, x3);                                                \
+    x3 = _mm_add_epi16(x5, x7);                                                \
+    x2 = _mm_add_epi16(x2, x4);                                                \
+    x4 = _mm_add_epi16(x6, x8);                                                \
+    r1 = _mm_add_epi16(x1, x3);                                                \
+    r2 = _mm_add_epi16(x2, x4)
+
 #define PUT_HEVC_QPEL_H(H, D)                                                  \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
                                     int width, int height, int mx, int my) {   \
     int x, y;                                                                  \
-   __m128i x1, x2, x3, x4, r1, c1, c2, c3, c4;                                 \
+   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, r1, r2, c1, c2, c3, c4;         \
     const __m128i c0    = _mm_setzero_si128();                                 \
     SRC_INIT_ ## D();                                                          \
     QPEL_H_FILTER_ ## D(mx - 1);                                               \
@@ -946,6 +981,7 @@ PUT_HEVC_EPEL_HV(  8, 10)
 // ff_hevc_put_hevc_qpel_hX_X_X_sse
 PUT_HEVC_QPEL_H(  4,  8)
 PUT_HEVC_QPEL_H(  8,  8)
+PUT_HEVC_QPEL_H( 16,  8)
 
 PUT_HEVC_QPEL_H_10(  4, 10)
 PUT_HEVC_QPEL_H_10(  8, 10)
