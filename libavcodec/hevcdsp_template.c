@@ -285,10 +285,10 @@ TRANSFORM_ADD(32)
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
+static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride, SAOParams *sao,
                                   int *borders, int width, int height,
-                                  int c_idx, int class)
+                                  int c_idx)
 {
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
@@ -298,39 +298,9 @@ static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
     int shift  = BIT_DEPTH - 5;
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_left_class  = sao->band_position[c_idx];
-    int init_y = 0, init_x = 0;
 
     stride /= sizeof(pixel);
 
-    switch (class) {
-    case 0:
-        if (!borders[2])
-            width -= (8 >> chroma) + 2;
-        if (!borders[3])
-            height -= (4 >> chroma) + 2;
-        break;
-    case 1:
-        init_y = -(4 >> chroma) - 2;
-        if (!borders[2])
-            width -= (8 >> chroma) + 2;
-        height = (4 >> chroma) + 2;
-        break;
-    case 2:
-        init_x = -(8 >> chroma) - 2;
-        width  =  (8 >> chroma) + 2;
-        if (!borders[3])
-            height -= (4 >> chroma) + 2;
-        break;
-    case 3:
-        init_y = -(4 >> chroma) - 2;
-        init_x = -(8 >> chroma) - 2;
-        width  =  (8 >> chroma) + 2;
-        height =  (4 >> chroma) + 2;
-        break;
-    }
-
-    dst = dst + (init_y * stride + init_x);
-    src = src + (init_y * stride + init_x);
     for (k = 0; k < 4; k++)
         offset_table[(k + sao_left_class) & 31] = sao_offset_val[k + 1];
     for (y = 0; y < height; y++) {
@@ -339,42 +309,6 @@ static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
         dst += stride;
         src += stride;
     }
-}
-
-static void FUNC(sao_band_filter_0)(uint8_t *dst, uint8_t *src,
-                                    ptrdiff_t stride, SAOParams *sao,
-                                    int *borders, int width, int height,
-                                    int c_idx)
-{
-    FUNC(sao_band_filter)(dst, src, stride, sao, borders,
-                          width, height, c_idx, 0);
-}
-
-static void FUNC(sao_band_filter_1)(uint8_t *dst, uint8_t *src,
-                                    ptrdiff_t stride, SAOParams *sao,
-                                    int *borders, int width, int height,
-                                    int c_idx)
-{
-    FUNC(sao_band_filter)(dst, src, stride, sao, borders,
-                          width, height, c_idx, 1);
-}
-
-static void FUNC(sao_band_filter_2)(uint8_t *dst, uint8_t *src,
-                                    ptrdiff_t stride, SAOParams *sao,
-                                    int *borders, int width, int height,
-                                    int c_idx)
-{
-    FUNC(sao_band_filter)(dst, src, stride, sao, borders,
-                          width, height, c_idx, 2);
-}
-
-static void FUNC(sao_band_filter_3)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride, SAOParams *sao,
-                                    int *borders, int width, int height,
-                                    int c_idx)
-{
-    FUNC(sao_band_filter)(_dst, _src, stride, sao, borders,
-                          width, height, c_idx, 3);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -424,8 +358,8 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
 static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride, SAOParams *sao,
                                     int *borders, int _width, int _height,
-                                    int c_idx, uint8_t vert_edge,
-                                    uint8_t horiz_edge, uint8_t diag_edge)
+                                    int c_idx, uint8_t *vert_edge,
+                                    uint8_t *horiz_edge, uint8_t *diag_edge)
 {
     int x, y;
     pixel *dst = (pixel *)_dst;
@@ -436,15 +370,6 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     int init_x = 0, init_y = 0, width = _width, height = _height;
 
     stride /= sizeof(pixel);
-
-    if (!borders[2])
-        width -= (8 >> chroma) + 2;
-    if (!borders[3])
-        height -= (4 >> chroma) + 2;
-
-    dst = dst + (init_y * stride + init_x);
-    src = src + (init_y * stride + init_x);
-    init_y = init_x = 0;
 
     FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride, sao, width, height, c_idx, init_x, init_y);
 
@@ -483,27 +408,13 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
             height--;
         }
     }
-
-    {
-        // Restore pixels that can't be modified
-        int save_upper_left = !diag_edge && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
-        if (vert_edge && sao_eo_class != SAO_EO_VERT)
-            for (y = init_y+save_upper_left; y< height; y++)
-                dst[y*stride] = src[y*stride];
-        if(horiz_edge && sao_eo_class != SAO_EO_HORIZ)
-            for(x = init_x+save_upper_left; x<width; x++)
-                dst[x] = src[x];
-        if(diag_edge && sao_eo_class == SAO_EO_135D)
-            dst[0] = src[0];
-    }
-
 }
 
 static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride, SAOParams *sao,
                                     int *borders, int _width, int _height,
-                                    int c_idx, uint8_t vert_edge,
-                                    uint8_t horiz_edge, uint8_t diag_edge)
+                                    int c_idx, uint8_t *vert_edge,
+                                    uint8_t *horiz_edge, uint8_t *diag_edge)
 {
     int x, y;
     pixel *dst = (pixel *)_dst;
@@ -514,15 +425,6 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
     int init_x = 0, init_y = 0, width = _width, height = _height;
 
     stride /= sizeof(pixel);
-
-    init_y = -(4 >> chroma) - 2;
-    if (!borders[2])
-        width -= (8 >> chroma) + 2;
-    height = (4 >> chroma) + 2;
-
-    dst = dst + (init_y * stride + init_x);
-    src = src + (init_y * stride + init_x);
-    init_y = init_x = 0;
 
     FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride, sao, width, height, c_idx, init_x, init_y);
 
@@ -546,49 +448,6 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
             width--;
         }
     }
-
-    {
-        // Restore pixels that can't be modified
-        int save_lower_left = !diag_edge && sao_eo_class == SAO_EO_45D && !borders[0];
-        if(vert_edge && sao_eo_class != SAO_EO_VERT)
-            for(y = init_y; y< height-save_lower_left; y++)
-                dst[y*stride] = src[y*stride];
-        if(horiz_edge && sao_eo_class != SAO_EO_HORIZ)
-            for(x = init_x+save_lower_left; x<width; x++)
-                dst[(height-1)*stride+x] = src[(height-1)*stride+x];
-        if(diag_edge && sao_eo_class == SAO_EO_45D)
-            dst[stride*(height-1)] = src[stride*(height-1)];
-    }
-
-}
-
-static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx, uint8_t vert_edge,
-                                    uint8_t horiz_edge, uint8_t diag_edge)
-{
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-    pixel *src = (pixel *)_src;
-    int chroma = !!c_idx;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int sao_eo_class    = sao->eo_class[c_idx];
-    int init_x = 0, init_y = 0, width = _width, height = _height;
-
-    stride /= sizeof(pixel);
-
-    init_x = -(8 >> chroma) - 2;
-    width  =  (8 >> chroma) + 2;
-    if (!borders[3])
-        height -= (4 >> chroma) + 2;
-
-    dst = dst + (init_y * stride + init_x);
-    src = src + (init_y * stride + init_x);
-    init_y = init_x = 0;
-
-    FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride, sao, width, height, c_idx, init_x, init_y);
-
     if (sao_eo_class != SAO_EO_HORIZ) {
         if (borders[1]) {
             int offset_val = sao_offset_val[0];
@@ -606,56 +465,38 @@ static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src,
     }
 
     {
+        int save_upper_left  = !diag_edge[0] && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
+        int save_upper_right = !diag_edge[1] && sao_eo_class == SAO_EO_45D  && !borders[1] && !borders[2];
+        int save_lower_right = !diag_edge[2] && sao_eo_class == SAO_EO_135D && !borders[2] && !borders[3];
+        int save_lower_left  = !diag_edge[3] && sao_eo_class == SAO_EO_45D  && !borders[0] && !borders[3];
+
         // Restore pixels that can't be modified
-        int save_upper_right = !diag_edge && sao_eo_class == SAO_EO_45D && !borders[1];
-        if(vert_edge && sao_eo_class != SAO_EO_VERT)
-            for(y = init_y+save_upper_right; y< height; y++)
+        if(vert_edge[0] && sao_eo_class != SAO_EO_VERT) {
+            for(y = init_y+save_upper_left; y< height-save_lower_left; y++)
+                dst[y*stride] = src[y*stride];
+        }
+        if(vert_edge[1] && sao_eo_class != SAO_EO_VERT) {
+            for(y = init_y+save_upper_right; y< height-save_lower_right; y++)
                 dst[y*stride+width-1] = src[y*stride+width-1];
-        if(horiz_edge && sao_eo_class != SAO_EO_HORIZ)
-            for(x = init_x; x<width-save_upper_right; x++)
+        }
+
+        if(horiz_edge[0] && sao_eo_class != SAO_EO_HORIZ) {
+            for(x = init_x+save_upper_left; x < width-save_upper_right; x++)
                 dst[x] = src[x];
-        if(diag_edge && sao_eo_class == SAO_EO_45D)
-            dst[width-1] = src[width-1];
-    }
-}
-
-static void FUNC(sao_edge_filter_3)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx, uint8_t vert_edge,
-                                    uint8_t horiz_edge, uint8_t diag_edge)
-{
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-    pixel *src = (pixel *)_src;
-    int chroma = !!c_idx;
-    int sao_eo_class    = sao->eo_class[c_idx];
-    int init_x = 0, init_y = 0, width = _width, height = _height;
-
-    stride /= sizeof(pixel);
-
-    init_y = -(4 >> chroma) - 2;
-    init_x = -(8 >> chroma) - 2;
-    width  =  (8 >> chroma) + 2;
-    height =  (4 >> chroma) + 2;
-
-    dst    = dst + (init_y * stride + init_x);
-    src    = src + (init_y * stride + init_x);
-    init_y = init_x = 0;
-
-    FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride, sao, width, height, c_idx, init_x, init_y);
-
-    {
-        // Restore pixels that can't be modified
-        int save_lower_right = !diag_edge && sao_eo_class == SAO_EO_135D;
-        if(vert_edge && sao_eo_class != SAO_EO_VERT)
-            for(y = init_y; y< height-save_lower_right; y++)
-                dst[y*stride+width-1] = src[y*stride+width-1];
-        if(horiz_edge && sao_eo_class != SAO_EO_HORIZ)
-            for(x = init_x; x<width-save_lower_right; x++)
+        }
+        if(horiz_edge[1] && sao_eo_class != SAO_EO_HORIZ) {
+            for(x = init_x+save_lower_left; x < width-save_lower_right; x++)
                 dst[(height-1)*stride+x] = src[(height-1)*stride+x];
-        if(diag_edge && sao_eo_class == SAO_EO_135D)
+        }
+        if(diag_edge[0] && sao_eo_class == SAO_EO_135D)
+            dst[0] = src[0];
+        if(diag_edge[1] && sao_eo_class == SAO_EO_45D)
+            dst[width-1] = src[width-1];
+        if(diag_edge[2] && sao_eo_class == SAO_EO_135D)
             dst[stride*(height-1)+width-1] = src[stride*(height-1)+width-1];
+        if(diag_edge[3] && sao_eo_class == SAO_EO_45D)
+            dst[stride*(height-1)] = src[stride*(height-1)];
+
     }
 }
 
