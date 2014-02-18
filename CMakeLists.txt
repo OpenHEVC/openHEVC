@@ -199,7 +199,11 @@ endif(MINGW)
 endif()
 endif(ENABLE_EXECUTABLE)
 
-INSTALL(FILES "gpac/modules/openhevc_dec/openHevcWrapper.h" DESTINATION include)
+INSTALL(FILES
+    gpac/modules/openhevc_dec/openHevcWrapper.h
+    libavcodec/hevcdsp.h
+    libavcodec/hevcpred.h
+DESTINATION include)
 
 INSTALL(TARGETS LibOpenHevcWrapper DESTINATION lib PERMISSIONS
 OWNER_READ OWNER_WRITE OWNER_EXECUTE
