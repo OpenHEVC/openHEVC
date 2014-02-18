@@ -313,8 +313,14 @@ SECTION .text
     movdqu            m1, [srcq+  2*r9-4]
     movdqu            m2, [srcq+  2*r9-2]
     movdqu            m3, [srcq+  2*r9  ]
-    SBUTTERFLY        wd, 0, 1, 12
-    SBUTTERFLY        wd, 2, 3, 12
+    movdqu            m4, [srcq+  2*r9+2]
+    movdqu            m5, [srcq+  2*r9+4]
+    movdqu            m6, [srcq+  2*r9+6]
+    movdqu            m7, [srcq+  2*r9+8]
+    SBUTTERFLY        dq, 0, 1, 8
+    SBUTTERFLY        dq, 2, 3, 8
+    SBUTTERFLY        dq, 4, 5, 8
+    SBUTTERFLY        dq, 6, 7, 8
 %endif
 %endmacro
 
@@ -630,8 +636,26 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
     paddw             m1, m5
 %endif
 %else
+    pmaddwd           m0, m11
+    pmaddwd           m2, m12
+    pmaddwd           m4, m13
+    pmaddwd           m6, m14
+    paddd             m0, m2
+    paddd             m4, m6
+    paddd             m0, m4
+    psrad             m0, 2
 
-
+%if %1 == 8
+    pmaddwd           m1, m11
+    pmaddwd           m3, m12
+    pmaddwd           m5, m13
+    pmaddwd           m7, m14
+    paddd             m1, m3
+    paddd             m5, m7
+    paddd             m1, m5
+    psrad             m1, 2
+%endif
+    packssdw          m0, m1
 %endif
 %endmacro
 
@@ -985,6 +1009,14 @@ cglobal hevc_put_hevc_qpel_h8_8, 9, 12, 15 , dst, dststride, src, srcstride,widt
 
 cglobal hevc_put_hevc_qpel_h16_8, 9, 12, 15 , dst, dststride, src, srcstride,width,height, mx, my
     PUT_HEVC_QPEL_H    16, 8
+    RET
+
+cglobal hevc_put_hevc_qpel_h4_10, 9, 12, 15 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_QPEL_H    4, 10
+    RET
+
+cglobal hevc_put_hevc_qpel_h8_10, 9, 12, 15 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_QPEL_H    8, 10
     RET
 
     ; ******************************
