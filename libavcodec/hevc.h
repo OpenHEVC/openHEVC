@@ -205,6 +205,15 @@ enum InterPredIdc {
     PRED_BI,
 };
 
+enum PredFlag {
+    PF_L0 = 1,
+    PF_L1,
+    PF_BI,
+    PF_INTRA
+};
+
+
+
 enum IntraPredMode {
     INTRA_PLANAR = 0,
     INTRA_DC,
@@ -718,8 +727,7 @@ typedef struct Mv {
 typedef struct MvField {
     Mv mv[2];
     int8_t ref_idx[2];
-    int8_t pred_flag[2];
-    uint8_t is_intra;
+    int8_t pred_flag;
 } MvField;
 
 typedef struct NeighbourAvailable {

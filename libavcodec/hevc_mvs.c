@@ -123,15 +123,15 @@ static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
 // check if the mv's and refidx are the same between A and B
 static int compareMVrefidx(struct MvField A, struct MvField B)
 {
-    int a_pf = A.pred_flag[0] + A.pred_flag[1];
-    int b_pf = B.pred_flag[0] + B.pred_flag[1];
+    int a_pf = A.pred_flag;
+    int b_pf = B.pred_flag;
     if (a_pf == b_pf) {
-        if (a_pf == 2) {
+        if (a_pf == 3) {
             return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y) &&
                    MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
-        } else if (A.pred_flag[0] && B.pred_flag[0]) {
+        } else if (a_pf == 1) {
             return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y);
-        } else if (A.pred_flag[1] && B.pred_flag[1]) {
+        } else if (a_pf == 2) {
             return MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
         }
     }
@@ -192,14 +192,14 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
 {
     RefPicList *refPicList = s->ref->refPicList;
 
-    if (temp_col.is_intra)
+    if (temp_col.pred_flag == PF_INTRA)
         return 0;
 
-    if (!temp_col.pred_flag[0])
+    if (!(temp_col.pred_flag & 1))
         return CHECK_MVSET(1);
-    else if (temp_col.pred_flag[0] && !temp_col.pred_flag[1])
+    else if (temp_col.pred_flag == 1)
         return CHECK_MVSET(0);
-    else if (temp_col.pred_flag[0] && temp_col.pred_flag[1]) {
+    else if (temp_col.pred_flag == 3) {
         int check_diffpicount = 0;
         int i = 0;
         for (i = 0; i < refPicList[0].nb_refs; i++) {
@@ -291,7 +291,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 }
 
 #define AVAILABLE(cand, v)                                      \
-    (cand && !TAB_MVF_PU(v).is_intra)
+    (cand && !(TAB_MVF_PU(v).pred_flag == 4))
 
 #define PRED_BLOCK_AVAILABLE(v)                                 \
     check_prediction_block_available(s, log2_cb_size,           \
@@ -454,9 +454,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                                                        0, &mv_l1_col, 1) : 0;
 
         if (available_l0 || available_l1) {
-            mergecandlist[nb_merge_cand].is_intra     = 0;
-            mergecandlist[nb_merge_cand].pred_flag[0] = available_l0;
-            mergecandlist[nb_merge_cand].pred_flag[1] = available_l1;
+            mergecandlist[nb_merge_cand].pred_flag    = available_l0 + (available_l1 << 1);
             if (available_l0) {
                 mergecandlist[nb_merge_cand].mv[0]      = mv_l0_col;
                 mergecandlist[nb_merge_cand].ref_idx[0] = 0;
@@ -483,20 +481,18 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
             MvField l0_cand = mergecandlist[l0_cand_idx];
             MvField l1_cand = mergecandlist[l1_cand_idx];
 
-            if (l0_cand.pred_flag[0] && l1_cand.pred_flag[1] &&
+            if ((l0_cand.pred_flag & 1) && (l1_cand.pred_flag & 2) &&
                 (refPicList[0].list[l0_cand.ref_idx[0]] !=
                  refPicList[1].list[l1_cand.ref_idx[1]] ||
                  l0_cand.mv[0].x != l1_cand.mv[1].x ||
                  l0_cand.mv[0].y != l1_cand.mv[1].y)) {
                 mergecandlist[nb_merge_cand].ref_idx[0]   = l0_cand.ref_idx[0];
                 mergecandlist[nb_merge_cand].ref_idx[1]   = l1_cand.ref_idx[1];
-                mergecandlist[nb_merge_cand].pred_flag[0] = 1;
-                mergecandlist[nb_merge_cand].pred_flag[1] = 1;
+                mergecandlist[nb_merge_cand].pred_flag    = 3;
                 mergecandlist[nb_merge_cand].mv[0].x      = l0_cand.mv[0].x;
                 mergecandlist[nb_merge_cand].mv[0].y      = l0_cand.mv[0].y;
                 mergecandlist[nb_merge_cand].mv[1].x      = l1_cand.mv[1].x;
                 mergecandlist[nb_merge_cand].mv[1].y      = l1_cand.mv[1].y;
-                mergecandlist[nb_merge_cand].is_intra     = 0;
                 nb_merge_cand++;
             }
         }
@@ -504,13 +500,11 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     // append Zero motion vector candidates
     while (nb_merge_cand < s->sh.max_num_merge_cand) {
-        mergecandlist[nb_merge_cand].pred_flag[0] = 1;
-        mergecandlist[nb_merge_cand].pred_flag[1] = s->sh.slice_type == B_SLICE;
+        mergecandlist[nb_merge_cand].pred_flag    = 1 + ((s->sh.slice_type == B_SLICE) << 1);
         mergecandlist[nb_merge_cand].mv[0].x      = 0;
         mergecandlist[nb_merge_cand].mv[0].y      = 0;
         mergecandlist[nb_merge_cand].mv[1].x      = 0;
         mergecandlist[nb_merge_cand].mv[1].y      = 0;
-        mergecandlist[nb_merge_cand].is_intra     = 0;
         mergecandlist[nb_merge_cand].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
         mergecandlist[nb_merge_cand].ref_idx[1]   = zero_idx < nb_refs ? zero_idx : 0;
 
@@ -546,10 +540,9 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
     derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                     singleMCLFlag, part_idx, mergecand_list);
 
-    if (mergecand_list[merge_idx].pred_flag[0] == 1 &&
-        mergecand_list[merge_idx].pred_flag[1] == 1 &&
+    if (mergecand_list[merge_idx].pred_flag == 3 &&
         (nPbW2 + nPbH2) == 12) {
-        mergecand_list[merge_idx].pred_flag[1] = 0;
+        mergecand_list[merge_idx].pred_flag = 1;
     }
 
     *mv = mergecand_list[merge_idx];
@@ -580,7 +573,7 @@ static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
 
     RefPicList *refPicList = s->ref->refPicList;
 
-    if (TAB_MVF(x, y).pred_flag[pred_flag_index] &&
+    if (((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) &&
         refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]] == refPicList[ref_idx_curr].list[ref_idx]) {
         *mv = TAB_MVF(x, y).mv[pred_flag_index];
         return 1;
@@ -596,7 +589,7 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
 
     RefPicList *refPicList = s->ref->refPicList;
 
-    if (TAB_MVF(x, y).pred_flag[pred_flag_index]) {
+    if ((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) {
         int currIsLongTerm     = refPicList[ref_idx_curr].isLongTerm[ref_idx];
 
         int colIsLongTerm =
