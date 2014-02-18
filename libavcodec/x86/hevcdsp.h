@@ -141,8 +141,9 @@ PEL_PROTOTYPE(qpel_h16 ,  8);
 PEL_PROTOTYPE(qpel_h4 , 10);
 PEL_PROTOTYPE(qpel_h8 , 10);
 
-PEL_PROTOTYPE_SSE(qpel_v4 ,  8);
-PEL_PROTOTYPE_SSE(qpel_v8 ,  8);
+PEL_PROTOTYPE(qpel_v4 ,  8);
+PEL_PROTOTYPE(qpel_v8 ,  8);
+PEL_PROTOTYPE(qpel_v16 ,  8);
 
 PEL_PROTOTYPE_SSE(qpel_v4 , 10);
 PEL_PROTOTYPE_SSE(qpel_v8 , 10);
