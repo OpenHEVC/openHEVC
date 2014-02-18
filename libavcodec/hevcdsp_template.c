@@ -465,10 +465,10 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
     }
 
     {
-        int save_upper_left  = !diag_edge[0] && sao_eo_class == SAO_EO_135D;
-        int save_upper_right = !diag_edge[1] && sao_eo_class == SAO_EO_45D;
-        int save_lower_right = !diag_edge[2] && sao_eo_class == SAO_EO_135D;
-        int save_lower_left  = !diag_edge[3] && sao_eo_class == SAO_EO_45D;
+        int save_upper_left  = !diag_edge[0] && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
+        int save_upper_right = !diag_edge[1] && sao_eo_class == SAO_EO_45D  && !borders[1] && !borders[2];
+        int save_lower_right = !diag_edge[2] && sao_eo_class == SAO_EO_135D && !borders[2] && !borders[3];
+        int save_lower_left  = !diag_edge[3] && sao_eo_class == SAO_EO_45D  && !borders[0] && !borders[3];
 
         // Restore pixels that can't be modified
         if(vert_edge[0] && sao_eo_class != SAO_EO_VERT) {
