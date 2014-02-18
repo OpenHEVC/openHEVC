@@ -244,8 +244,13 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         uint8_t *src = &s->frame->data[c_idx][y0 * stride + (x0 << s->sps->pixel_shift)];
         uint8_t *dst = &s->sao_frame->data[c_idx][y0 * stride + (x0 << s->sps->pixel_shift)];
         int offset = (y_shift >> chroma) * stride + ((x_shift >> chroma) << s->sps->pixel_shift);
+        int cpy = 0;
 
-        copy_CTB(dst - offset, src - offset,
+        for (class_index = 0; class_index < class; class_index++) {
+            cpy |= !sao[class_index]->type_idx[c_idx];
+        }
+        if (cpy)
+            copy_CTB(dst - offset, src - offset,
                  (edges[2] ? width  + (x_shift >> chroma) : width)  << s->sps->pixel_shift,
                  (edges[3] ? height + (y_shift >> chroma) : height), stride);
 
