@@ -2563,10 +2563,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             s->is_decoded = 1;
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
-            if ((s->pps->transquant_bypass_enable_flag ||
+/*            if ((s->pps->transquant_bypass_enable_flag ||
                  (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) &&
                 s->sps->sao_enabled)
-                restore_tqb_pixels(s);
+                restore_tqb_pixels(s);*/
 #ifdef SVC_EXTENSION
             if(s->decoder_id > 0)
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
