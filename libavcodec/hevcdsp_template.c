@@ -364,7 +364,6 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     int x, y;
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
-    int chroma = !!c_idx;
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class    = sao->eo_class[c_idx];
     int init_x = 0, init_y = 0, width = _width, height = _height;
@@ -419,7 +418,6 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
     int x, y;
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
-    int chroma = !!c_idx;
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class    = sao->eo_class[c_idx];
     int init_x = 0, init_y = 0, width = _width, height = _height;
