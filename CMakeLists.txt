@@ -158,17 +158,17 @@ set(libfilenames
 
 #add_subdirectory(wrapper_hm)
 
-OPTION(ENABLE_STATIC "enabled static library instead of shared" OFF)
+option(ENABLE_STATIC "enabled static library instead of shared" OFF)
 
 if(ENABLE_STATIC)
     add_library (LibOpenHevcWrapper STATIC ${libfilenames} ${YASM_OBJECTS})
 else()
     add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
-endif(ENABLE_STATIC)
+endif()
 
 include_directories(. gpac/modules/openhevc_dec/)
 
-OPTION(ENABLE_EXECUTABLE "Generate the test application" ON)
+option(ENABLE_EXECUTABLE "Generate the test application" ON)
 
 if(ENABLE_EXECUTABLE)
     if(SDL_FOUND)
@@ -196,7 +196,8 @@ install(FILES
     gpac/modules/openhevc_dec/openHevcWrapper.h
     libavcodec/hevcdsp.h
     libavcodec/hevcpred.h
-DESTINATION include)
+    DESTINATION include
+)
 
 install(
     TARGETS LibOpenHevcWrapper
