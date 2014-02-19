@@ -17,14 +17,23 @@ set(YASM_NAMES
     libavcodec/x86/videodsp
 )
 
+set(COMMON_YASM_ARGS
+    -I./
+    -I ${CMAKE_CURRENT_SOURCE_DIR}
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/config.asm
+    -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/
+    -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/
+    -DPIC
+)
+
 if(APPLE)
-    set(YASM_ARGS -f macho64 -m amd64 -DPIC -DPREFIX -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+    set(YASM_ARGS -f macho64 -m amd64 -DPREFIX ${COMMON_YASM_ARGS})
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
-    set(YASM_ARGS -f elf     -m amd64 -DPIC -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+    set(YASM_ARGS -f elf     -m amd64 ${COMMON_YASM_ARGS})
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
-    set(YASM_ARGS -f elf    -DX86_32 -DPIC -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+    set(YASM_ARGS -f elf     -DX86_32 ${COMMON_YASM_ARGS})
 else()
-    set(YASM_ARGS -f win32    -m amd64 -DPIC -I ${CMAKE_CURRENT_SOURCE_DIR} -I./ -P${CMAKE_CURRENT_SOURCE_DIR}/config.asm -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/ -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/)
+    set(YASM_ARGS -f win32   -m amd64 ${COMMON_YASM_ARGS})
 endif()
 
 #compile all asm files
