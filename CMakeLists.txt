@@ -60,8 +60,6 @@ elseif(APPLE)
     set(CMAKE_C_FLAGS   "-D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -DPIC -fPIC -mssse3 -msse4 -msse4.1")
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
     set(CMAKE_C_FLAGS "-DX86_32 -DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
-elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
-    set(CMAKE_C_FLAGS "-DPIC -fPIC -Wl,-Bsymbolic -mssse3 -msse4 -msse4.1 -fno-tree-vectorize")
 endif()
 
 find_package(SDL)
