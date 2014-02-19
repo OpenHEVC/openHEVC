@@ -8,12 +8,11 @@
 #include "libavcodec/bit_depth_template.c"
 
 
-
-
-
 #include <emmintrin.h>
 #include <tmmintrin.h>
+#ifdef __SSE4_1__
 #include <smmintrin.h>
+#endif
 
 #define BIT_DEPTH 8
 

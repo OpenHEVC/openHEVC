@@ -29,7 +29,9 @@
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
+#ifdef __SSE4_1__
 #include <smmintrin.h>
+#endif
 
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters_sse[7][2][16]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},
@@ -834,6 +836,7 @@ PUT_WEIGHTED_PRED_AVG(2, 10)
 PUT_WEIGHTED_PRED_AVG(4, 10)
 PUT_WEIGHTED_PRED_AVG(8, 10)
 
+#ifdef __SSE4_1__
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_weighted_pred_8_sse
 ////////////////////////////////////////////////////////////////////////////////
@@ -865,6 +868,7 @@ WEIGHTED_PRED(16, 8)
 WEIGHTED_PRED(2, 10)
 WEIGHTED_PRED(4, 10)
 WEIGHTED_PRED(8, 10)
+#endif //__SSE4_1__
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_weighted_pred_avg_8_sse
