@@ -7,7 +7,9 @@
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
+#ifdef __SSE4_1__
 #include <smmintrin.h>
+
 
 #define BIT_DEPTH 8
 
@@ -759,3 +761,4 @@ void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_le
         TRANSPOSE32x32B(src_tmp, size, _src, _stride);
     }
 }
+#endif

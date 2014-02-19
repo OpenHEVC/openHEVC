@@ -30,7 +30,9 @@
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
+#ifdef __SSE4_1__
 #include <smmintrin.h>
+#endif
 
 #define BIT_DEPTH 8
 
@@ -109,6 +111,7 @@ void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
     }
 }
 
+#ifdef __SSE4_1__
 void ff_hevc_sao_band_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
                                      ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width,
                                      int height, int c_idx) {
@@ -154,6 +157,7 @@ void ff_hevc_sao_band_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
         src += stride;
     }
 }
+#endif // __SSE4_1__
 
 void ff_hevc_sao_band_filter_2_8_sse(uint8_t *_dst, uint8_t *_src,
                                      ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width,
