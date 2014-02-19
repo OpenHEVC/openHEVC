@@ -111,6 +111,7 @@ PEL_PROTOTYPE(pel_pixels8 , 10);
 PEL_PROTOTYPE(epel_h2 ,  8);
 PEL_PROTOTYPE(epel_h4 ,  8);
 PEL_PROTOTYPE(epel_h8 ,  8);
+PEL_PROTOTYPE(epel_h16,  8);
 
 PEL_PROTOTYPE(epel_h2 , 10);
 PEL_PROTOTYPE(epel_h4 , 10);
@@ -119,6 +120,8 @@ PEL_PROTOTYPE(epel_h8 , 10);
 PEL_PROTOTYPE(epel_v2 ,  8);
 PEL_PROTOTYPE(epel_v4 ,  8);
 PEL_PROTOTYPE(epel_v8 ,  8);
+PEL_PROTOTYPE(epel_v16,  8);
+
 
 PEL_PROTOTYPE(epel_v2 , 10);
 PEL_PROTOTYPE(epel_v4 , 10);

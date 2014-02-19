@@ -116,6 +116,34 @@ SECTION .text
     punpcklqdq       m13, m13                    ;
 %endmacro
 
+%macro EPEL_HV_FILTER 1
+    movsxd           mxq, mxd                    ; extend sign
+    movsxd           myq, myd                    ; extend sign
+    sub              mxq, 1
+    sub              myq, 1
+    shl              mxq, 2                      ; multiply by 4
+    shl              myq, 2                      ; multiply by 4
+    lea              r11, [hevc_epel_filters]
+    movq             m11, [r11 + mxq]            ; get 4 first values of H filter
+    movq             m13, [r11 + myq]
+%if %1 == 8
+    punpcklwd        m13, m13
+    punpcklwd        m11, m11
+%else
+    pmovsxbw         m13, m13
+    pmovsxbw         m11, m11
+%endif
+    punpckldq        m13, m13
+    punpckldq        m11, m11
+    movdqa           m14, m13
+    movdqa           m12, m11
+    punpckhqdq       m14, m14
+    punpckhqdq       m12, m12
+    punpcklqdq       m13, m13
+    punpcklqdq       m11, m11
+%endmacro
+
+
 %macro QPEL_H_FILTER 2
     movsxd           %2q, %2d                    ; extend sign
     sub              %2q, 1
@@ -281,15 +309,19 @@ SECTION .text
     movdqu            m3, [r11      ]            ;load 128bit of x+3*stride
 
 %if %1 == 8
-    punpcklbw         m0, m1                     ; interpolate load
-    punpcklbw         m1, m2, m3                 ; interpolate load
+    SBUTTERFLY        bw, 0, 1, 8
+    SBUTTERFLY        bw, 2, 3, 8
+;    punpcklbw         m0, m1                     ; interpolate load
+;    punpcklbw         m1, m2, m3                 ; interpolate load
 %else
-    punpckhwd         m6, m0, m1
-    punpckhwd         m7, m2, m3
-    punpcklwd         m0, m1
-    punpcklwd         m1, m2, m3
-    movdqa            m2, m6
-    movdqa            m3, m7
+    SBUTTERFLY        wd, 0, 1, 8
+    SBUTTERFLY        wd, 2, 3, 8
+;    punpckhwd         m6, m0, m1
+;    punpckhwd         m7, m2, m3
+;    punpcklwd         m0, m1
+;    punpcklwd         m1, m2, m3
+;    movdqa            m2, m6
+;    movdqa            m3, m7
 %endif
 
 %endmacro
@@ -535,8 +567,8 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 %else
     EPEL_LOAD         %2, src, 2
 %endif
-    EPEL_COMPUTE      %2
-    PEL_STORE%1       dst, m0, m15
+    EPEL_COMPUTE      %2, %1
+    PEL_STORE%1       dst, m0, m1
     LOOP_END   epel_h_h_%1_%2, epel_h_w_%1_%2, %1, dst, dststride, src, srcstride
 %endmacro
 
@@ -555,27 +587,32 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ;
 ; ******************************
 
-%macro EPEL_COMPUTE 1
+%macro EPEL_COMPUTE 2
 %if %1 == 8
     pmaddubsw         m0, m13
-    pmaddubsw         m1, m14
-    paddw             m0, m1
+    pmaddubsw         m2, m14
+    paddw             m0, m2
+%if %2 == 16
+    pmaddubsw         m1, m13
+    pmaddubsw         m3, m14
+    paddw             m1, m3
+%endif
 %else
     pmaddwd           m0, m13
-    pmaddwd           m1, m14
-    pmaddwd           m2, m13
+    pmaddwd           m2, m14
+    pmaddwd           m1, m13
     pmaddwd           m3, m14
-    paddd             m0, m1
-    paddd             m2, m3
+    paddd             m0, m2
+    paddd             m1, m3
 %if %1 == 10
     psrad             m0, 2
-    psrad             m2, 2
+    psrad             m1, 2
 %endif
 %if %1 == 14
     psrad             m0, 6
-    psrad             m2, 6
+    psrad             m1, 6
 %endif
-    packssdw          m0, m2
+    packssdw          m0, m1
 %endif
 %endmacro
 
@@ -584,8 +621,8 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
     EPEL_FILTER       %2, my
     LOOP_INIT epel_v_h_%1_%2, epel_v_w_%1_%2
     EPEL_LOAD         %2, src, srcstride
-    EPEL_COMPUTE      %2
-    PEL_STORE%1      dst, m0, m15
+    EPEL_COMPUTE      %2, %1
+    PEL_STORE%1      dst, m0, m1
     LOOP_END  epel_v_h_%1_%2, epel_v_w_%1_%2, %1, dst, dststride, src, srcstride
 %endmacro
 
@@ -603,16 +640,20 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ;      r5 : height
 ;      r6 : mx
 ;      r7 : my
-;      r8 : mcbuffer
 ;
 ; ******************************
 %macro PUT_HEVC_EPEL_HV 2
-    EPEL_H_FILTER     %2
+    EPEL_HV_FILTER     %2
+%if %2 == 8
+    sub             srcq, 1
+%else
+    sub             srcq, 2
+%endif
     sub             srcq, srcstrideq             ; src -= srcstride
-    lea              r6q, [mcbufferq]
-    add          heightq, 3
+    lea              r6q, [srcq]
+;    add          heightq, 3
 
-    LOOP_INIT  epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2
+    LOOP_HV_INIT  epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2
     EPEL_H_LOAD%1     %2
     EPEL_H_COMPUTE%1_%2
     PEL_STORE%1       r6, m12, m15
@@ -946,6 +987,9 @@ cglobal hevc_put_hevc_epel_h4_8, 9, 12, 0 , dst, dststride, src, srcstride,width
     RET
 cglobal hevc_put_hevc_epel_h8_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
     PUT_HEVC_EPEL_H    8, 8
+    RET
+    cglobal hevc_put_hevc_epel_h16_8, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
+    PUT_HEVC_EPEL_H    16, 8
     RET
 
 cglobal hevc_put_hevc_epel_h2_10, 9, 12, 0 , dst, dststride, src, srcstride,width,height,mx,my
