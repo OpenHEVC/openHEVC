@@ -11,241 +11,322 @@
 
 #define BIT_DEPTH 8
 
-void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride)
-{
-    uint8_t *src = (uint8_t*)_src;
-    const uint8_t *top = (const uint8_t*)_top;
-    const uint8_t *left = (const uint8_t*)_left;
-    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1, C0,C2,C3;
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+#define PLANAR_INIT_8()                                                        \
+    uint8_t *src = (uint8_t*)_src;                                             \
+    const uint8_t *top = (const uint8_t*)_top;                                 \
+    const uint8_t *left = (const uint8_t*)_left
+#define PLANAR_INIT_10()                                                       \
+    uint16_t *src = (uint16_t*)_src;                                            \
+    const uint16_t *top = (const uint16_t*)_top;                               \
+    const uint16_t *left = (const uint16_t*)_left
 
-    t0   = _mm_set1_epi16(top[4]);
-    l0   = _mm_set1_epi16(left[4]);
-    add  = _mm_set1_epi16(4);
-    tmp1 = _mm_set_epi16(0,1,2,3,0,1,2,3);
+#define PLANAR_COMPUTE(val, shift)                                             \
+    add = _mm_mullo_epi16(_mm_set1_epi16(1+y), l0);                            \
+    ly1 = _mm_unpacklo_epi16(ly , ly );                                        \
+    ly1 = _mm_unpacklo_epi32(ly1, ly1);                                        \
+    ly1 = _mm_unpacklo_epi64(ly1, ly1);                                        \
+    c0  = _mm_mullo_epi16(tmp1, ly1);                                          \
+    x0  = _mm_mullo_epi16(_mm_set1_epi16(val - y), tx);                        \
+    c0  = _mm_add_epi16(c0, c1);                                               \
+    x0  = _mm_add_epi16(x0, add);                                              \
+    c0  = _mm_add_epi16(c0, x0);                                               \
+    c0  = _mm_srli_epi16(c0, shift)
 
-    ly   = _mm_loadl_epi64((__m128i*)left);            //get 16 values
-    ly   = _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
-    ly   = _mm_unpacklo_epi16(ly, ly);
+#define PLANAR_COMPUTE_HI(val, shift)                                          \
+    C0  = _mm_mullo_epi16(tmp2, ly1);                                          \
+    x0  = _mm_mullo_epi16(_mm_set1_epi16(val - y), th);                        \
+    C0  = _mm_add_epi16(C0, C1);                                               \
+    x0  = _mm_add_epi16(x0, add);                                              \
+    C0  = _mm_add_epi16(C0, x0);                                               \
+    C0  = _mm_srli_epi16(C0, shift)
 
-    tx   = _mm_loadl_epi64((__m128i*)top);             //get 16 value
-    tx   = _mm_unpacklo_epi8(tx,_mm_setzero_si128());  //drop to 8 values 16 bit
-    tx   = _mm_unpacklo_epi64(tx,tx);
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+#define PLANAR_LOAD_0_8()                                                      \
+    ly   = _mm_loadl_epi64((__m128i*) left);                                   \
+    tx   = _mm_loadl_epi64((__m128i*) top);                                    \
+    ly   = _mm_unpacklo_epi8(ly, _mm_setzero_si128());                         \
+    tx   = _mm_unpacklo_epi8(tx, _mm_setzero_si128());                         \
+    ly   = _mm_unpacklo_epi16(ly, ly);                                         \
+    tx   = _mm_unpacklo_epi64(tx, tx)
+#define PLANAR_LOAD_0_10()                                                     \
+    ly   = _mm_loadl_epi64((__m128i*) left);                                   \
+    tx   = _mm_loadl_epi64((__m128i*) top);                                    \
+    ly   = _mm_unpacklo_epi16(ly, ly);                                         \
+    tx   = _mm_unpacklo_epi64(tx, tx)
 
-    c1   = _mm_mullo_epi16(_mm_set_epi16(4,3,2,1,4,3,2,1),t0);
-    c1   = _mm_add_epi16(c1,add);
+#define PLANAR_COMPUTE_0(dst , v1, v2, v3, v4)                                  \
+    dst = _mm_mullo_epi16(tmp1, ly1);                                          \
+    x0  = _mm_mullo_epi16(_mm_set_epi16(v1,v1,v1,v1,v2,v2,v2,v2), tx);         \
+    add = _mm_mullo_epi16(_mm_set_epi16(v3,v3,v3,v3,v4,v4,v4,v4), l0);         \
+    dst = _mm_add_epi16(dst, c1);                                              \
+    x0  = _mm_add_epi16(x0, add);                                              \
+    dst = _mm_add_epi16(dst, x0);                                              \
+    dst = _mm_srli_epi16(dst, 3)
 
-    ly1 = _mm_unpacklo_epi32(ly, ly);
-    c0  = _mm_mullo_epi16(tmp1,ly1);
-    c2  = _mm_mullo_epi16(_mm_set_epi16(2,2,2,2,3,3,3,3),tx);
-    c3  = _mm_mullo_epi16(_mm_set_epi16(2,2,2,2,1,1,1,1),l0);
+#define PLANAR_STORE_0_8()                                                     \
+    c0  = _mm_packus_epi16(c0,C0);                                             \
+    *((uint32_t *) src              ) = _mm_cvtsi128_si32(c0   );              \
+    *((uint32_t *)(src +     stride)) = _mm_extract_epi32(c0, 1);              \
+    *((uint32_t *)(src + 2 * stride)) = _mm_extract_epi32(c0, 2);              \
+    *((uint32_t *)(src + 3 * stride)) = _mm_extract_epi32(c0, 3)
+#define PLANAR_STORE_0_10()                                                    \
+    _mm_storel_epi64(src             , c0);                                    \
+    _mm_storel_epi64(src +     stride, _mm_unpackhi_epi64(c0, c0));            \
+    _mm_storel_epi64(src + 2 * stride, C0);                                    \
+    _mm_storel_epi64(src + 3 * stride, _mm_unpackhi_epi64(C0, C0))
 
-    ly1 = _mm_unpackhi_epi32(ly, ly);
-    C0  = _mm_mullo_epi16(tmp1,ly1);
-    C2  = _mm_mullo_epi16(_mm_set_epi16(0,0,0,0,1,1,1,1),tx);
-    C3  = _mm_mullo_epi16(_mm_set_epi16(4,4,4,4,3,3,3,3),l0);
-
-    c0  = _mm_add_epi16(c0,c1);
-    c2  = _mm_add_epi16(c2,c3);
-    c0  = _mm_add_epi16(c0,c2);
-    c0  = _mm_srli_epi16(c0,3);
-
-    C0  = _mm_add_epi16(C0,c1);
-    C2  = _mm_add_epi16(C2,C3);
-    C0  = _mm_add_epi16(C0,C2);
-    C0  = _mm_srli_epi16(C0,3);
-
-    c0  = _mm_packus_epi16(c0,C0);
-
-    *((uint32_t *)src) = _mm_cvtsi128_si32(c0);
-    *((uint32_t *)(src + stride)) = _mm_extract_epi32(c0, 1);
-    *((uint32_t *)(src + 2 * stride)) = _mm_extract_epi32(c0, 2);
-    *((uint32_t *)(src + 3 * stride)) = _mm_extract_epi32(c0, 3);
+#define PRED_PLANAR_0(D)                                                       \
+void pred_planar_0_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,           \
+        const uint8_t *_left, ptrdiff_t stride) {                              \
+    __m128i ly, l0, tx, ly1;                                                   \
+    __m128i tmp1, tmp2, add, x0, c0, c1, C0, C1;                               \
+    PLANAR_INIT_ ## D();                                                       \
+    tx   = _mm_set1_epi16(top[4]);                                             \
+    l0   = _mm_set1_epi16(left[4]);                                            \
+    add  = _mm_set1_epi16(4);                                                  \
+    tmp1 = _mm_set_epi16(0,1,2,3,0,1,2,3);                                     \
+    c1   = _mm_mullo_epi16(_mm_set_epi16(4,3,2,1,4,3,2,1), tx);                \
+    c1   = _mm_add_epi16(c1, add);                                             \
+    PLANAR_LOAD_0_ ##D();                                                      \
+                                                                               \
+    ly1 = _mm_unpacklo_epi32(ly, ly);                                          \
+    PLANAR_COMPUTE_0(c0, 2, 3, 2, 1);                                          \
+    ly1 = _mm_unpackhi_epi32(ly, ly);                                          \
+    PLANAR_COMPUTE_0(C0, 0, 1, 4, 3);                                          \
+    PLANAR_STORE_0_ ## D();                                                    \
 }
-void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
-                               ptrdiff_t stride)
-{
-    int y;
-    uint8_t *src = (uint8_t*)_src;
-    const uint8_t *top = (const uint8_t*)_top;
-    const uint8_t *left = (const uint8_t*)_left;
+PRED_PLANAR_0( 8)
+PRED_PLANAR_0(10)
 
-    __m128i ly, t0, tx, l0, add, c0,c1,c2,c3, ly1, tmp1;
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+#define PLANAR_LOAD_1_8()                                                      \
+    ly   = _mm_loadl_epi64((__m128i*)left);                                    \
+    tx   = _mm_loadl_epi64((__m128i*)top);                                     \
+    ly   = _mm_unpacklo_epi8(ly,_mm_setzero_si128());                          \
+    tx   = _mm_unpacklo_epi8(tx,_mm_setzero_si128())
+#define PLANAR_LOAD_1_10()                                                     \
+    ly   = _mm_loadu_si128((__m128i*)left);                                    \
+    tx   = _mm_loadu_si128((__m128i*)top)
 
-    t0   = _mm_set1_epi16(top[8]);
-    l0   = _mm_set1_epi16(left[8]);
-    add  = _mm_set1_epi16(8);
+#define PLANAR_COMPUTE_1()                                                     \
+    PLANAR_COMPUTE(7, 4)
 
-    ly   = _mm_loadl_epi64((__m128i*)left);            //get 16 values
-    ly   = _mm_unpacklo_epi8(ly,_mm_setzero_si128());  //drop to 8 values 16 bit
+#define PLANAR_STORE_1_8()                                                     \
+    c0  = _mm_packus_epi16(c0,_mm_setzero_si128());                            \
+    _mm_storel_epi64((__m128i*)(src), c0);                                     \
+    src+= stride;                                                              \
+    ly  = _mm_srli_si128(ly,2)
+#define PLANAR_STORE_1_10()                                                     \
+    _mm_storeu_si128((__m128i*)(src), c0);                                     \
+    src+= stride;                                                              \
+    ly  = _mm_srli_si128(ly,2)
 
-    tx   = _mm_loadl_epi64((__m128i*)top);             //get 16 values
-    tx   = _mm_unpacklo_epi8(tx,_mm_setzero_si128());  //drop to 8 values 16 bit
-
-    tmp1 = _mm_set_epi16(0,1,2,3,4,5,6,7);
-
-    c1   = _mm_mullo_epi16(_mm_set_epi16(8,7,6,5,4,3,2,1),t0);
-    c1   = _mm_add_epi16(c1,add);
-
-    for (y = 0; y < 8; y++) {
-        ly1 = _mm_unpacklo_epi16(ly , ly );
-        ly1 = _mm_unpacklo_epi32(ly1, ly1);
-        ly1 = _mm_unpacklo_epi64(ly1, ly1);
-
-        c0  = _mm_mullo_epi16(tmp1,ly1);
-        c2  = _mm_mullo_epi16(_mm_set1_epi16(7 - y),tx);
-        c3  = _mm_mullo_epi16(_mm_set1_epi16(1 + y),l0);
-
-        c0  = _mm_add_epi16(c0,c1);
-        c2  = _mm_add_epi16(c2,c3);
-        c0  = _mm_add_epi16(c0,c2);
-
-        c0  = _mm_srli_epi16(c0,4);
-        c0  = _mm_packus_epi16(c0,_mm_setzero_si128());
-        _mm_storel_epi64((__m128i*)(src), c0);   //store only 8
-        src+= stride;
-
-        ly  = _mm_srli_si128(ly,2);
-    }
-
-}
-
-void pred_planar_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
-                               ptrdiff_t stride)
-{
-    int y;
-    uint8_t *src = (uint8_t*)_src;
-    const uint8_t *top = (const uint8_t*)_top;
-    const uint8_t *left = (const uint8_t*)_left;
-
-    __m128i ly, t0, tx, tl, th, l0, add, c0,c1,c2,c3, ly1, tmp1, tmp2, C0, C1, C2;
-
-    t0   = _mm_set1_epi16(top[16]);
-    l0   = _mm_set1_epi16(left[16]);
-    add  = _mm_set1_epi16(16);
-
-    ly   = _mm_loadu_si128((__m128i*)left);            //get 16 values
-    tx   = _mm_loadu_si128((__m128i*)top);             //get 16 values
-    tl   = _mm_unpacklo_epi8(tx,_mm_setzero_si128());
-    th   = _mm_unpackhi_epi8(tx,_mm_setzero_si128());
-
-    tmp1 = _mm_set_epi16( 8, 9,10,11,12,13,14,15);
-    tmp2 = _mm_set_epi16( 0, 1, 2, 3, 4, 5, 6, 7);
-
-    c1   = _mm_mullo_epi16(_mm_set_epi16( 8, 7, 6, 5, 4, 3, 2, 1),t0);
-    C1   = _mm_mullo_epi16(_mm_set_epi16(16,15,14,13,12,11,10, 9),t0);
-    c1   = _mm_add_epi16(c1,add);
-    C1   = _mm_add_epi16(C1,add);
-
-    for (y = 0; y < 16; y++){
-        ly1 = _mm_unpacklo_epi8(ly , _mm_setzero_si128() );
-        ly1 = _mm_unpacklo_epi16(ly1, ly1);
-        ly1 = _mm_unpacklo_epi32(ly1, ly1);
-        ly1 = _mm_unpacklo_epi64(ly1, ly1);
-
-        c3  = _mm_mullo_epi16(_mm_set1_epi16(1+y),l0);
-
-        c0  = _mm_mullo_epi16(tmp1, ly1);
-        c2  = _mm_mullo_epi16(_mm_set1_epi16(15 - y), tl);
-        c0  = _mm_add_epi16(c0,c1);
-        c2  = _mm_add_epi16(c2,c3);
-        c0  = _mm_add_epi16(c0,c2);
-
-        C0  = _mm_mullo_epi16(tmp2, ly1);
-        C2  = _mm_mullo_epi16(_mm_set1_epi16(15 - y), th);
-        C0  = _mm_add_epi16(C0,C1);
-        C2  = _mm_add_epi16(C2,c3);
-        C0  = _mm_add_epi16(C0,C2);
-
-        c0  = _mm_srli_epi16(c0,5);
-        C0  = _mm_srli_epi16(C0,5);
-        c0  = _mm_packus_epi16(c0,C0);
-        _mm_storeu_si128((__m128i*)(src), c0);
-        src+= stride;
-
-        ly  = _mm_srli_si128(ly,1);
-    }
+#define PRED_PLANAR_1(D)                                                       \
+void pred_planar_1_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,           \
+        const uint8_t *_left, ptrdiff_t stride) {                              \
+    int y;                                                                     \
+    __m128i ly, l0, tx, ly1;                                                   \
+    __m128i tmp1, tmp2, add, x0, c0, c1, C0, C1;                               \
+    PLANAR_INIT_ ## D();                                                       \
+    tx   = _mm_set1_epi16(top[8]);                                             \
+    l0   = _mm_set1_epi16(left[8]);                                            \
+    add  = _mm_set1_epi16(8);                                                  \
+    tmp1 = _mm_set_epi16(0,1,2,3,4,5,6,7);                                     \
+    c1   = _mm_mullo_epi16(_mm_set_epi16(8,7,6,5,4,3,2,1), tx);                \
+    c1   = _mm_add_epi16(c1,add);                                              \
+    PLANAR_LOAD_1_ ## D();                                                     \
+    for (y = 0; y < 8; y++) {                                                  \
+        PLANAR_COMPUTE_1();                                                    \
+        PLANAR_STORE_1_ ## D();                                                \
+    }                                                                          \
 }
 
-void pred_planar_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
-                         ptrdiff_t stride)
-{
-    int y, i;
-    uint8_t *src = (uint8_t*)_src;
-    const uint8_t *top  = (const uint8_t*)_top;
-    const uint8_t *left = (const uint8_t*)_left;
+PRED_PLANAR_1( 8)
+PRED_PLANAR_1(10)
 
-    __m128i l0, ly, ly1, tx, TX, c0, c3, tmp1_lo, tmp1_hi, TMP1_LO, TMP1_HI;
-    __m128i c1_1, c1_2, C1_1, C1_2, res;
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+#define PLANAR_LOAD_2_8()                                                      \
+    ly   = _mm_loadu_si128((__m128i*) left);                                   \
+    tx   = _mm_loadu_si128((__m128i*) top);                                    \
+    lh   = _mm_unpackhi_epi8(ly,_mm_setzero_si128());                          \
+    ly   = _mm_unpacklo_epi8(ly,_mm_setzero_si128());                          \
+    th   = _mm_unpackhi_epi8(tx,_mm_setzero_si128());                          \
+    tx   = _mm_unpacklo_epi8(tx,_mm_setzero_si128())
 
+#define PLANAR_LOAD_2_10()                                                     \
+    ly   = _mm_loadu_si128((__m128i*) left);                                   \
+    lh   = _mm_loadu_si128((__m128i*)&left[8]);                                \
+    tx   = _mm_loadu_si128((__m128i*) top);                                    \
+    th   = _mm_loadu_si128((__m128i*)&top[8])
 
-    tmp1_lo = _mm_set_epi16(24,25,26,27,28,29,30,31);
-    tmp1_hi = _mm_set_epi16(16,17,18,19,20,21,22,23);
-    TMP1_LO = _mm_set_epi16( 8, 9,10,11,12,13,14,15);
-    TMP1_HI = _mm_set_epi16( 0, 1, 2, 3, 4, 5, 6, 7);
+#define PLANAR_COMPUTE_2()                                                     \
+    PLANAR_COMPUTE(15, 5)
+#define PLANAR_COMPUTE_HI_2()                                                  \
+    PLANAR_COMPUTE_HI(15, 5)
 
-    tx   = _mm_set1_epi16(top[32]);
-    c1_1 = _mm_mullo_epi16(_mm_set_epi16( 8, 7, 6, 5, 4, 3, 2, 1), tx);
-    C1_1 = _mm_mullo_epi16(_mm_set_epi16(16,15,14,13,12,11,10, 9), tx);
-    c1_2 = _mm_mullo_epi16(_mm_set_epi16(24,23,22,21,20,19,18,17), tx);
-    C1_2 = _mm_mullo_epi16(_mm_set_epi16(32,31,30,29,28,27,26,25), tx);
-    c0   = _mm_set1_epi16(32);
-    c1_1 = _mm_add_epi16(c1_1, c0);
-    C1_1 = _mm_add_epi16(C1_1, c0);
-    c1_2 = _mm_add_epi16(c1_2, c0);
-    C1_2 = _mm_add_epi16(C1_2, c0);
+#define PLANAR_STORE_2_8()                                                     \
+    c0  = _mm_packus_epi16(c0, C0);                                            \
+    _mm_storeu_si128((__m128i*) src, c0);                                      \
+    src+= stride;                                                              \
+    ly  = _mm_srli_si128(ly,2)
+#define PLANAR_STORE_2_10()                                                    \
+    _mm_storeu_si128((__m128i*) src   , c0);                                   \
+    _mm_storeu_si128((__m128i*)&src[8], C0);                                   \
+    src+= stride;                                                              \
+    ly  = _mm_srli_si128(ly,2)
 
-    l0   = _mm_set1_epi16(left[32]);
-    ly   = _mm_loadu_si128((__m128i*)left);            //get 16 values
-    tx   = _mm_loadu_si128((__m128i*)top);             //get 16 values
-    TX   = _mm_loadu_si128((__m128i*)(top + 16));
-
-    for (i = 0; i < 2; i++) {
-        for (y = 0+i*16; y < 16+i*16; y++) {
-            ly1 = _mm_unpacklo_epi8(ly , _mm_setzero_si128() );
-            ly1 = _mm_unpacklo_epi16(ly1, ly1);
-            ly1 = _mm_unpacklo_epi32(ly1, ly1);
-            ly1 = _mm_unpacklo_epi64(ly1, ly1);
-
-            c3  = _mm_mullo_epi16(_mm_set1_epi16(1+y),l0);
-
-            c0  = _mm_mullo_epi16(tmp1_lo, ly1);
-            c0  = _mm_add_epi16(c0, c1_1);
-            c0  = _mm_add_epi16(c0,   c3);
-            c0  = _mm_add_epi16(c0, _mm_mullo_epi16(_mm_set1_epi16(31 - y),_mm_unpacklo_epi8(tx,_mm_setzero_si128())));
-            res = _mm_srli_epi16(c0,  6);
-
-            c0  = _mm_mullo_epi16(tmp1_hi, ly1);
-            c0  = _mm_add_epi16(c0, C1_1);
-            c0  = _mm_add_epi16(c0,   c3);
-            c0  = _mm_add_epi16(c0, _mm_mullo_epi16(_mm_set1_epi16(31 - y),_mm_unpackhi_epi8(tx,_mm_setzero_si128())));
-            c0  = _mm_srli_epi16(c0,   6);
-
-            res = _mm_packus_epi16(res,c0);
-            _mm_storeu_si128((__m128i*) src, res);
-
-            // second half of 32
-
-            c0  = _mm_mullo_epi16(TMP1_LO, ly1);
-            c0  = _mm_add_epi16(c0, c1_2);
-            c0  = _mm_add_epi16(c0,  c3);
-            c0  = _mm_add_epi16(c0, _mm_mullo_epi16(_mm_set1_epi16(31 - y),_mm_unpacklo_epi8(TX,_mm_setzero_si128())));
-            res = _mm_srli_epi16(c0,  6);
-
-            c0  = _mm_mullo_epi16(TMP1_HI, ly1);
-            c0  = _mm_add_epi16(c0, C1_2);
-            c0  = _mm_add_epi16(c0,   c3);
-            c0  = _mm_add_epi16(c0, _mm_mullo_epi16(_mm_set1_epi16(31 - y),_mm_unpackhi_epi8(TX,_mm_setzero_si128())));
-            c0  = _mm_srli_epi16(c0,    6);
-
-            res = _mm_packus_epi16(res,c0);
-            _mm_storeu_si128((__m128i*)(src + 16), res);
-            src+= stride;
-
-            ly  = _mm_srli_si128(ly,1);
-        }
-        ly= _mm_loadu_si128((__m128i*)(left+16));            //get 16 values
-    }
+#define PRED_PLANAR_2(D)                                                       \
+void pred_planar_2_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,           \
+        const uint8_t *_left, ptrdiff_t stride) {                              \
+    int y, i;                                                                  \
+    __m128i ly, lh, l0, tx, th, ly1;                                           \
+    __m128i tmp1, tmp2, add, x0, c0, c1, C0, C1;                               \
+    PLANAR_INIT_ ## D();                                                       \
+    tx   = _mm_set1_epi16(top[16]);                                            \
+    l0   = _mm_set1_epi16(left[16]);                                           \
+    add  = _mm_set1_epi16(16);                                                 \
+    tmp1 = _mm_set_epi16( 8, 9,10,11,12,13,14,15);                             \
+    tmp2 = _mm_set_epi16( 0, 1, 2, 3, 4, 5, 6, 7);                             \
+    c1   = _mm_mullo_epi16(_mm_set_epi16( 8, 7, 6, 5, 4, 3, 2, 1), tx);        \
+    C1   = _mm_mullo_epi16(_mm_set_epi16(16,15,14,13,12,11,10, 9), tx);        \
+    c1   = _mm_add_epi16(c1, add);                                             \
+    C1   = _mm_add_epi16(C1, add);                                             \
+    PLANAR_LOAD_2_ ## D();                                                     \
+    for (i = 0; i < 2; i++) {                                                  \
+        for (y = i*8; y < i*8+8; y++) {                                        \
+            PLANAR_COMPUTE_2();                                                \
+            PLANAR_COMPUTE_HI_2();                                             \
+            PLANAR_STORE_2_ ## D();                                            \
+        }                                                                      \
+        ly = lh;                                                               \
+    }                                                                          \
 }
+
+PRED_PLANAR_2( 8)
+PRED_PLANAR_2(10)
+
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+#define PLANAR_LOAD_3_8()                                                      \
+    ly   = _mm_loadu_si128((__m128i*) left);                                   \
+    lh   = _mm_unpackhi_epi8(ly,_mm_setzero_si128());                          \
+    ly   = _mm_unpacklo_epi8(ly,_mm_setzero_si128());                          \
+    tx   = _mm_loadu_si128((__m128i*) top);                                    \
+    th   = _mm_unpackhi_epi8(tx,_mm_setzero_si128());                          \
+    tx   = _mm_unpacklo_epi8(tx,_mm_setzero_si128());                          \
+    TX   = _mm_loadu_si128((__m128i*)(top + 16));                              \
+    TH   = _mm_unpackhi_epi8(TX,_mm_setzero_si128());                          \
+    TX   = _mm_unpacklo_epi8(TX,_mm_setzero_si128())
+#define PLANAR_LOAD_3_10()                                                     \
+    ly   = _mm_loadu_si128((__m128i*) left   );                                \
+    lh   = _mm_loadu_si128((__m128i*)&left[8]);                                \
+    tx   = _mm_loadu_si128((__m128i*) top    );                                \
+    th   = _mm_loadu_si128((__m128i*)&top[ 8]);                                \
+    TX   = _mm_loadu_si128((__m128i*)&top[16]);                                \
+    TH   = _mm_loadu_si128((__m128i*)&top[24])
+
+#define PLANAR_RELOAD_3_8()                                                    \
+    ly = _mm_loadu_si128((__m128i*)(left+16));                                 \
+    lh = _mm_unpackhi_epi8(ly,_mm_setzero_si128());                            \
+    ly = _mm_unpacklo_epi8(ly,_mm_setzero_si128())
+#define PLANAR_RELOAD_3_10()                                                   \
+    ly = _mm_loadu_si128((__m128i*)&left[16]);                                 \
+    lh = _mm_loadu_si128((__m128i*)&left[24])
+
+#define PLANAR_COMPUTE_3()                                                     \
+    PLANAR_COMPUTE(31, 6)
+#define PLANAR_COMPUTE_HI_3()                                                  \
+    PLANAR_COMPUTE_HI(31, 6)
+#define PLANAR_COMPUTE_HI2_3()                                                 \
+    c0  = _mm_mullo_epi16(TMP1, ly1);                                          \
+    x0  = _mm_mullo_epi16(_mm_set1_epi16(31 - y), TX);                         \
+    c0  = _mm_add_epi16(c0, c2);                                               \
+    x0  = _mm_add_epi16(x0, add);                                              \
+    c0  = _mm_add_epi16(c0, x0);                                               \
+    c0  = _mm_srli_epi16(c0, 6)
+#define PLANAR_COMPUTE_HI3_3()                                                 \
+    C0  = _mm_mullo_epi16(TMP2, ly1);                                          \
+    x0  = _mm_mullo_epi16(_mm_set1_epi16(31 - y), TH);                         \
+    C0  = _mm_add_epi16(C0, C2);                                               \
+    x0  = _mm_add_epi16(x0, add);                                              \
+    C0  = _mm_add_epi16(C0, x0);                                               \
+    C0  = _mm_srli_epi16(C0, 6)
+
+#define PLANAR_STORE1_3_8()                                                    \
+    c0 = _mm_packus_epi16(c0, C0);                                             \
+    _mm_storeu_si128((__m128i*) src, c0)
+#define PLANAR_STORE2_3_8()                                                    \
+    c0  = _mm_packus_epi16(c0, C0);                                            \
+    _mm_storeu_si128((__m128i*) (src + 16), c0);                               \
+    src+= stride;                                                              \
+    ly  = _mm_srli_si128(ly, 2)
+
+#define PLANAR_STORE1_3_10()                                                   \
+    _mm_storeu_si128((__m128i*) src    , c0);                                  \
+    _mm_storeu_si128((__m128i*)&src[ 8], C0)
+#define PLANAR_STORE2_3_10()                                                   \
+    _mm_storeu_si128((__m128i*)&src[16], c0);                                  \
+    _mm_storeu_si128((__m128i*)&src[24], C0);                                  \
+    src+= stride;                                                              \
+    ly  = _mm_srli_si128(ly, 2)
+
+
+#define PRED_PLANAR_3(D)                                                       \
+void pred_planar_3_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,           \
+        const uint8_t *_left, ptrdiff_t stride) {                              \
+    int y, i;                                                                  \
+    __m128i l0, ly, lh, ly1, tx, th, TX, TH, tmp1, tmp2, TMP1, TMP2;           \
+    __m128i x0, c0, c1, c2, C0, C1, C2, add;                                   \
+    PLANAR_INIT_ ## D();                                                       \
+    tx   = _mm_set1_epi16(top[32]);                                            \
+    l0   = _mm_set1_epi16(left[32]);                                           \
+    add  = _mm_set1_epi16(32);                                                 \
+    tmp1 = _mm_set_epi16(24,25,26,27,28,29,30,31);                             \
+    tmp2 = _mm_set_epi16(16,17,18,19,20,21,22,23);                             \
+    TMP1 = _mm_set_epi16( 8, 9,10,11,12,13,14,15);                             \
+    TMP2 = _mm_set_epi16( 0, 1, 2, 3, 4, 5, 6, 7);                             \
+    c1   = _mm_mullo_epi16(_mm_set_epi16( 8, 7, 6, 5, 4, 3, 2, 1), tx);        \
+    C1   = _mm_mullo_epi16(_mm_set_epi16(16,15,14,13,12,11,10, 9), tx);        \
+    c2   = _mm_mullo_epi16(_mm_set_epi16(24,23,22,21,20,19,18,17), tx);        \
+    C2   = _mm_mullo_epi16(_mm_set_epi16(32,31,30,29,28,27,26,25), tx);        \
+    c1   = _mm_add_epi16(c1, add);                                             \
+    C1   = _mm_add_epi16(C1, add);                                             \
+    c2   = _mm_add_epi16(c2, add);                                             \
+    C2   = _mm_add_epi16(C2, add);                                             \
+    PLANAR_LOAD_3_ ## D();                                                     \
+    for (i = 0; i < 4; i++) {                                                  \
+        for (y = 0+i*8; y < 8+i*8; y++) {                                      \
+            PLANAR_COMPUTE_3();                                                \
+            PLANAR_COMPUTE_HI_3();                                             \
+            PLANAR_STORE1_3_ ## D();                                           \
+            PLANAR_COMPUTE_HI2_3();                                            \
+            PLANAR_COMPUTE_HI3_3();                                            \
+            PLANAR_STORE2_3_ ## D();                                           \
+        }                                                                      \
+        if (i == 0 || i == 2) {                                                \
+            ly = lh;                                                           \
+        } else {                                                               \
+            PLANAR_RELOAD_3_ ## D();                                           \
+        }                                                                      \
+    }                                                                          \
+}
+
+PRED_PLANAR_3( 8)
+PRED_PLANAR_3(10)
+
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
 #if ARCH_X86_64
 #define STORE8(out, sstep_out)                                                 \
     *((uint64_t *) &out[0*sstep_out]) =_mm_cvtsi128_si64(m10);                 \
