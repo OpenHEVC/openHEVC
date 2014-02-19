@@ -171,25 +171,32 @@ include_directories(. gpac/modules/openhevc_dec/)
 option(ENABLE_EXECUTABLE "Generate the test application" ON)
 
 if(ENABLE_EXECUTABLE)
+
+    set(LINK_LIBRARIES_LIST LibOpenHevcWrapper)
+    set(HEVC_SOURCES_FILES
+        main_hm/getopt.c
+        main_hm/main.c
+    )
+    if(MINGW)
+        list(APPEND LINK_LIBRARIES_LIST -lwinmm)
+    endif()
+
     if(SDL_FOUND)
-        set_source_files_properties(main_hm/sdl.c PROPERTIES COMPILE_FLAGS -I"${SDL_INCLUDE_DIR}")
-        add_executable(hevc main_hm/getopt.c main_hm/main.c main_hm/sdl.c)
-        if(MINGW)
-            target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY} -lwinmm)
-        else()
-            target_link_libraries(hevc LibOpenHevcWrapper ${SDL_LIBRARY})
-        endif()
+        include_directories(${SDL_INCLUDE_DIR})
+        # Build executable
+        add_executable(hevc ${HEVC_SOURCES_FILES} main_hm/sdl.c)
+        # Link executable
+        target_link_libraries(hevc ${LINK_LIBRARIES_LIST} ${SDL_LIBRARY})
     endif()
 
     if(SDL2_FOUND)
-        set_source_files_properties(main_hm/sdl2.c PROPERTIES COMPILE_FLAGS -I"${SDL2_INCLUDE_DIR}")
-        add_executable(hevc_sdl2 main_hm/getopt.c main_hm/main.c main_hm/sdl2.c)
-        if(MINGW)
-            target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY} -lwinmm)
-        else()
-            target_link_libraries(hevc_sdl2 LibOpenHevcWrapper ${SDL2_LIBRARY} )
-        endif()
+        include_directories(${SDL2_INCLUDE_DIR})
+        # Build executable
+        add_executable(hevc_sdl2 ${HEVC_SOURCES_FILES} main_hm/sdl2.c)
+        # Link executable
+        target_link_libraries(hevc_sdl2 ${LINK_LIBRARIES_LIST} ${SDL2_LIBRARY})
     endif()
+
 endif()
 
 install(FILES
