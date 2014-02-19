@@ -6,7 +6,7 @@ struct AVFrame;
 struct UpsamplInf;
 struct HEVCWindow;
 
-//#define OPTI_ASM
+#define OPTI_ASM
 
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
@@ -111,6 +111,7 @@ PEL_PROTOTYPE(pel_pixels8 , 10);
 PEL_PROTOTYPE(epel_h2 ,  8);
 PEL_PROTOTYPE(epel_h4 ,  8);
 PEL_PROTOTYPE(epel_h8 ,  8);
+PEL_PROTOTYPE(epel_h16,  8);
 
 PEL_PROTOTYPE(epel_h2 , 10);
 PEL_PROTOTYPE(epel_h4 , 10);
@@ -119,6 +120,8 @@ PEL_PROTOTYPE(epel_h8 , 10);
 PEL_PROTOTYPE(epel_v2 ,  8);
 PEL_PROTOTYPE(epel_v4 ,  8);
 PEL_PROTOTYPE(epel_v8 ,  8);
+PEL_PROTOTYPE(epel_v16,  8);
+
 
 PEL_PROTOTYPE(epel_v2 , 10);
 PEL_PROTOTYPE(epel_v4 , 10);
@@ -160,8 +163,11 @@ PEL_PROTOTYPE_SSE(qpel_hv8, 10);
 ///////////////////////////////////////////////////////////////////////////////
 void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
 void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
+void ff_hevc_sao_edge_filter_0_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
+void ff_hevc_sao_edge_filter_1_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
 
 void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
+void ff_hevc_sao_band_filter_0_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 
 //#ifdef SVC_EXTENSION
 void ff_upsample_base_layer_frame_sse(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel);

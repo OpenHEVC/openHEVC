@@ -1103,3 +1103,21 @@ PUT_HEVC_QPEL_HV(  8,  8)
 
 PUT_HEVC_QPEL_HV(  4, 10)
 PUT_HEVC_QPEL_HV(  8, 10)
+
+
+
+void ff_hevc_put_hevc_epel_h16_8_sse(
+        int16_t *dst, ptrdiff_t dststride,
+        uint8_t *_src, ptrdiff_t _srcstride,
+        int width, int height,
+        int mx, int my) {
+    ff_hevc_put_hevc_epel_h8_8_sse (dst, dststride, _src, _srcstride, width, height, mx, my);
+}
+
+void ff_hevc_put_hevc_epel_v16_8_sse(
+        int16_t *dst, ptrdiff_t dststride,
+        uint8_t *_src, ptrdiff_t _srcstride,
+        int width, int height,
+        int mx, int my) {
+    ff_hevc_put_hevc_epel_v8_8_sse (dst, dststride, _src, _srcstride, width, height, mx, my);
+}
