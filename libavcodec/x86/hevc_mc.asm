@@ -116,7 +116,7 @@ SECTION .text
     punpcklqdq       m13, m13                    ;
 %endmacro
 
-%macro EPEL_HV_FILTER 1
+%macro EPEL_HV_FILTER 0
     movsxd           mxq, mxd                    ; extend sign
     movsxd           myq, myd                    ; extend sign
     sub              mxq, 1
@@ -292,36 +292,24 @@ SECTION .text
 %else
     lea              r11, [%2q+2*r9]
 %endif
-    movdqu            m0, [r11      ]            ;load 128bit of x
+    movdqu            m0, [r11     ]            ;load 128bit of x
 %ifidn %3, srcstride
-    add              r11, %3q
-    movdqu            m1, [r11      ]            ;load 128bit of x+stride
-    add              r11, %3q
-    movdqu            m2, [r11      ]            ;load 128bit of x+2*stride
-    add              r11, %3q
+    lea              r8q, [%3q*3]
+    movdqu            m1, [r11+  %3q]            ;load 128bit of x+stride
+    movdqu            m2, [r11+2*%3q]            ;load 128bit of x+2*stride
+    movdqu            m3, [r11+r8  ]            ;load 128bit of x+2*stride
 %else
-    add              r11, %3
-    movdqu            m1, [r11      ]            ;load 128bit of x+stride
-    add              r11, %3
-    movdqu            m2, [r11      ]            ;load 128bit of x+2*stride
-    add              r11, %3
+    movdqu            m1, [r11+  %3]            ;load 128bit of x+stride
+    movdqu            m2, [r11+2*%3]            ;load 128bit of x+2*stride
+    movdqu            m3, [r11+3*%3]            ;load 128bit of x+3*stride
 %endif
-    movdqu            m3, [r11      ]            ;load 128bit of x+3*stride
 
 %if %1 == 8
     SBUTTERFLY        bw, 0, 1, 8
     SBUTTERFLY        bw, 2, 3, 8
-;    punpcklbw         m0, m1                     ; interpolate load
-;    punpcklbw         m1, m2, m3                 ; interpolate load
 %else
     SBUTTERFLY        wd, 0, 1, 8
     SBUTTERFLY        wd, 2, 3, 8
-;    punpckhwd         m6, m0, m1
-;    punpckhwd         m7, m2, m3
-;    punpcklwd         m0, m1
-;    punpcklwd         m1, m2, m3
-;    movdqa            m2, m6
-;    movdqa            m3, m7
 %endif
 
 %endmacro
@@ -365,28 +353,17 @@ SECTION .text
 %else
     lea              r11, [%2q+2*r9]
 %endif
-    movdqu            m3, [r11]                  ;load x
-    sub              r11, %3q
-    movdqu            m2, [r11]                  ;load x-stride
-    sub              r11, %3q
-    movdqu            m1, [r11]                  ;load x-2*stride
-    sub              r11, %3q
-    movdqu            m0, [r11]                  ;load x-3*stride
-
-    xor              r11, r11
-%if %1 == 8
-    lea              r11, [%2q+  r9]
-%else
-    lea              r11, [%2q+2*r9]
-%endif
-    add              r11, %3q
-    movdqu            m4, [r11]                  ;load x+stride
-    add              r11, %3q
-    movdqu            m5, [r11]                  ;load x+2*stride
-    add              r11, %3q
-    movdqu            m6, [r11]                  ;load x+3*stride
-    add              r11, %3q
-    movdqu            m7, [r11]                  ;load x+4*stride
+    lea               r8q, [%3q*3]
+    mov               r12q, r11q
+    sub               r12q, r8
+    movdqu            m0, [r12]                            ;load x- 3*srcstride
+    movdqu            m1, [r12+%3q]                        ;load x- 2*srcstride
+    movdqu            m2, [r12+2*%3q]                      ;load x-srcstride
+    movdqu            m3, [r11]                            ;load x
+    movdqu            m4, [r11+  %3q]                      ;load x+stride
+    movdqu            m5, [r11+2*%3q]                      ;load x+2*stride
+    movdqu            m6, [r11+r8]                         ;load x+3*stride
+    movdqu            m7, [r11+4*%3q]                      ;load x+4*stride
 %if %1 == 8
     SBUTTERFLY        bw, 0, 1, 8
     SBUTTERFLY        bw, 2, 3, 8
@@ -643,7 +620,7 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ;
 ; ******************************
 %macro PUT_HEVC_EPEL_HV 2
-    EPEL_HV_FILTER     %2
+    EPEL_HV_FILTER
 %if %2 == 8
     sub             srcq, 1
 %else
@@ -1068,23 +1045,23 @@ cglobal hevc_put_hevc_epel_v8_14, 8, 12, 0 , dst, dststride, src, srcstride, wid
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
 ;                       int width, int height, int mx, int my)
 ; ******************************
-cglobal hevc_put_hevc_qpel_h4_8, 9, 12, 15 , dst, dststride, src, srcstride, width, height, mx, my
+cglobal hevc_put_hevc_qpel_h4_8, 9, 14, 15 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_H    4, 8
     RET
 
-cglobal hevc_put_hevc_qpel_h8_8, 9, 12, 15 , dst, dststride, src, srcstride,width,height, mx, my
+cglobal hevc_put_hevc_qpel_h8_8, 9, 14, 15 , dst, dststride, src, srcstride,width,height, mx, my
     PUT_HEVC_QPEL_H    8, 8
     RET
 
-cglobal hevc_put_hevc_qpel_h16_8, 9, 12, 15 , dst, dststride, src, srcstride,width,height, mx, my
+cglobal hevc_put_hevc_qpel_h16_8, 9, 14, 15 , dst, dststride, src, srcstride,width,height, mx, my
     PUT_HEVC_QPEL_H    16, 8
     RET
 
-cglobal hevc_put_hevc_qpel_h4_10, 9, 12, 15 , dst, dststride, src, srcstride, width, height, mx, my
+cglobal hevc_put_hevc_qpel_h4_10, 9, 14, 15 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_H    4, 10
     RET
 
-cglobal hevc_put_hevc_qpel_h8_10, 9, 12, 15 , dst, dststride, src, srcstride, width, height, mx, my
+cglobal hevc_put_hevc_qpel_h8_10, 9, 14, 15 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_H    8, 10
     RET
 
@@ -1093,23 +1070,23 @@ cglobal hevc_put_hevc_qpel_h8_10, 9, 12, 15 , dst, dststride, src, srcstride, wi
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
 ;                       int width, int height, int16_t* mcbuffer)
 ; ******************************
-cglobal hevc_put_hevc_qpel_v4_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+cglobal hevc_put_hevc_qpel_v4_8, 9, 14, 0 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_V    4, 8
     RET
 
-cglobal hevc_put_hevc_qpel_v8_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+cglobal hevc_put_hevc_qpel_v8_8, 9, 14, 0 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_V    8, 8
     RET
 
-cglobal hevc_put_hevc_qpel_v16_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+cglobal hevc_put_hevc_qpel_v16_8, 9, 14, 0 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_V    16, 8
     RET
 
-cglobal hevc_put_hevc_qpel_v4_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+cglobal hevc_put_hevc_qpel_v4_10, 9, 14, 0 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_V    4, 10
     RET
 
-cglobal hevc_put_hevc_qpel_v8_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my
+cglobal hevc_put_hevc_qpel_v8_10, 9, 14, 0 , dst, dststride, src, srcstride, width, height, mx, my
     PUT_HEVC_QPEL_V    8, 10
     RET
 
