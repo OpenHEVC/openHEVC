@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.8)
 project (libavHM)
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/MyCMakeScripts")
 
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 message("DEBUG: CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
@@ -19,10 +19,10 @@ set(YASM_NAMES
 
 set(COMMON_YASM_ARGS
     -I./
-    -I ${CMAKE_CURRENT_SOURCE_DIR}
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/config.asm
-    -I ${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/
-    -I ${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/
+    -I "${CMAKE_CURRENT_SOURCE_DIR}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/config.asm"
+    -I "${CMAKE_CURRENT_SOURCE_DIR}/libavfilter/x86/"
+    -I "${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/"
     -DPIC
 )
 
@@ -38,21 +38,16 @@ endif()
 
 #compile all asm files
 foreach(src ${YASM_NAMES})
-    set(YASM_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${src}.asm)
-    set(YASM_OBJ ${CMAKE_CURRENT_SOURCE_DIR}/${src}.o)
+    set(YASM_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${src}.asm")
+    set(YASM_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/${src}.o")
     add_custom_command(
         OUTPUT ${YASM_OBJ}
-        COMMAND ${YASM_EXECUTABLE}
+        COMMAND "${YASM_EXECUTABLE}"
         ARGS ${YASM_ARGS} -o ${YASM_OBJ} ${YASM_SRC}
         DEPENDS ${YASM_SRC}
     )
     set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
 endforeach()
-
-if(NOT ((CMAKE_BUILD_TYPE STREQUAL "DEBUG") OR (CMAKE_BUILD_TYPE STREQUAL "RELEASE")))
-    message(FATAL_ERROR "Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.\nFor example: cmake -DCMAKE_BUILD_TYPE=RELEASE")
-endif()
-
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
     if(MINGW)
@@ -182,19 +177,20 @@ if(ENABLE_EXECUTABLE)
     endif()
 
     if(SDL_FOUND)
-        include_directories(${SDL_INCLUDE_DIR})
+        include_directories("${SDL_INCLUDE_DIR}")
         # Build executable
         add_executable(hevc ${HEVC_SOURCES_FILES} main_hm/sdl.c)
         # Link executable
         target_link_libraries(hevc ${LINK_LIBRARIES_LIST} ${SDL_LIBRARY})
+        message("${LINK_LIBRARIES_LIST} ${SDL_LIBRARY}")
     endif()
 
     if(SDL2_FOUND)
-        include_directories(${SDL2_INCLUDE_DIR})
+        include_directories("${SDL2_INCLUDE_DIR}")
         # Build executable
         add_executable(hevc_sdl2 ${HEVC_SOURCES_FILES} main_hm/sdl2.c)
         # Link executable
-        target_link_libraries(hevc_sdl2 ${LINK_LIBRARIES_LIST} ${SDL2_LIBRARY})
+        target_link_libraries(hevc_sdl2 ${LINK_LIBRARIES_LIST} "${SDL2_LIBRARY}")
     endif()
 
 endif()
