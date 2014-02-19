@@ -182,7 +182,6 @@ if(ENABLE_EXECUTABLE)
         add_executable(hevc ${HEVC_SOURCES_FILES} main_hm/sdl.c)
         # Link executable
         target_link_libraries(hevc ${LINK_LIBRARIES_LIST} ${SDL_LIBRARY})
-        message("${LINK_LIBRARIES_LIST} ${SDL_LIBRARY}")
     endif()
 
     if(SDL2_FOUND)
@@ -190,7 +189,7 @@ if(ENABLE_EXECUTABLE)
         # Build executable
         add_executable(hevc_sdl2 ${HEVC_SOURCES_FILES} main_hm/sdl2.c)
         # Link executable
-        target_link_libraries(hevc_sdl2 ${LINK_LIBRARIES_LIST} "${SDL2_LIBRARY}")
+        target_link_libraries(hevc_sdl2 ${LINK_LIBRARIES_LIST} ${SDL2_LIBRARY})
     endif()
 
 endif()
