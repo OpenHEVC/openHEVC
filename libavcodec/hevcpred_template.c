@@ -148,7 +148,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             int max = FFMIN(size_in_luma_pu, s->sps->min_pu_width - x_right_pu);
             cand_up_right = 0;
             for (i = 0; i < max; i+=2)
-                cand_up_right |= (MVF(x_right_pu + i, y_top_pu).pred_flag == 4);
+                cand_up_right |= (MVF(x_right_pu + i, y_top_pu).pred_flag == PF_INTRA);
         }
         memset(left, 128, 2 * MAX_TB_SIZE*sizeof(pixel));
         memset(top , 128, 2 * MAX_TB_SIZE*sizeof(pixel));
