@@ -94,6 +94,60 @@ SECTION .text
     jl                %1                         ; height loop
 %endmacro
 
+%macro LOOP_EPEL_HV_INIT 4
+    pxor             m15, m15                    ; set register at zero
+    mov               r9, 0                      ; set width counter
+%1:
+    mov              r10, 0                      ; set height counter
+;first 3 H calculus
+%if %3 == 8
+    EPEL_LOAD         %3, mx, 1
+%else
+    EPEL_LOAD         %3, mx, 2
+%endif
+    EPEL_COMPUTE      %3, %4
+    SWAP              m4, m0
+    lea              mxq, [mxq + srcstrideq]
+%if %3 == 8
+    EPEL_LOAD         %3, mx, 1
+%else
+    EPEL_LOAD         %3, mx, 2
+%endif
+    EPEL_COMPUTE      %3, %4
+    SWAP              m5, m0
+    lea              mxq, [mxq + srcstrideq]
+%if %3 == 8
+    EPEL_LOAD         %3, mx, 1
+%else
+    EPEL_LOAD         %3, mx, 2
+%endif
+    EPEL_COMPUTE      %3, %4
+    SWAP              m6, m0
+    lea              mxq, [mxq + srcstrideq]
+%2:
+%endmacro
+
+%macro LOOP_HV_END 9
+;    %ifidn %5, dststride
+    lea              %8q, [%8q+2*%5q]            ; dst += dststride
+;%else
+;    lea             %8q, [%8q+  %5 ]            ; dst += dststride
+;%endif
+;%ifidn %7, srcstride
+    lea              %9q, [%9q+  %7q]            ; src += srcstride
+;%else
+;    lea             %9q, [%9q+  %7 ]            ; src += srcstride
+;%endif
+    inc              r10                         ; add 1 for height loop
+    cmp              r10, heightq                ; cmp height
+    jl                %2                         ; height loop
+    add               r9, %3                     ; add width
+    lea              %8q,[%4q]                   ; dst = dst2
+    lea              %9q,[%6q]                   ; src = src2
+    cmp               r9, widthq                 ; cmp width
+    jl                %1                         ; weight loop
+%endmacro
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,7 +170,7 @@ SECTION .text
     punpcklqdq       m13, m13                    ;
 %endmacro
 
-%macro EPEL_HV_FILTER 0
+%macro EPEL_HV_FILTER 1
     movsxd           mxq, mxd                    ; extend sign
     movsxd           myq, myd                    ; extend sign
     sub              mxq, 1
@@ -124,11 +178,11 @@ SECTION .text
     shl              mxq, 2                      ; multiply by 4
     shl              myq, 2                      ; multiply by 4
     lea              r11, [hevc_epel_filters]
-    movq             m11, [r11 + mxq]            ; get 4 first values of H filter
-    movq             m13, [r11 + myq]
+    movq             m13, [r11 + mxq]            ; get 4 first values of H filter
+    movq             m11, [r11 + myq]
 %if %1 == 8
     punpcklwd        m13, m13
-    punpcklwd        m11, m11
+    pmovsxbw         m11, m11                    ; need 16bit filters for V
 %else
     pmovsxbw         m13, m13
     pmovsxbw         m11, m11
@@ -137,10 +191,10 @@ SECTION .text
     punpckldq        m11, m11
     movdqa           m14, m13
     movdqa           m12, m11
-    punpckhqdq       m14, m14
-    punpckhqdq       m12, m12
-    punpcklqdq       m13, m13
-    punpcklqdq       m11, m11
+    punpckhqdq       m14, m14                    ;H
+    punpckhqdq       m12, m12                    ;V
+    punpcklqdq       m13, m13                    ;H
+    punpcklqdq       m11, m11                    ;V
 %endmacro
 
 
@@ -305,11 +359,11 @@ SECTION .text
 %endif
 
 %if %1 == 8
-    SBUTTERFLY        bw, 0, 1, 8
-    SBUTTERFLY        bw, 2, 3, 8
+    SBUTTERFLY        bw, 0, 1, 10
+    SBUTTERFLY        bw, 2, 3, 10
 %else
-    SBUTTERFLY        wd, 0, 1, 8
-    SBUTTERFLY        wd, 2, 3, 8
+    SBUTTERFLY        wd, 0, 1, 10
+    SBUTTERFLY        wd, 2, 3, 10
 %endif
 
 %endmacro
@@ -324,10 +378,10 @@ SECTION .text
     movdqu            m5, [srcq+  r9+2]
     movdqu            m6, [srcq+  r9+3]
     movdqu            m7, [srcq+  r9+4]
-    SBUTTERFLY        wd, 0, 1, 8
-    SBUTTERFLY        wd, 2, 3, 8
-    SBUTTERFLY        wd, 4, 5, 8
-    SBUTTERFLY        wd, 6, 7, 8
+    SBUTTERFLY        wd, 0, 1, 10
+    SBUTTERFLY        wd, 2, 3, 10
+    SBUTTERFLY        wd, 4, 5, 10
+    SBUTTERFLY        wd, 6, 7, 10
 %else
     movdqu            m0, [srcq+  2*r9-6]          ; load data from source
     movdqu            m1, [srcq+  2*r9-4]
@@ -337,10 +391,10 @@ SECTION .text
     movdqu            m5, [srcq+  2*r9+4]
     movdqu            m6, [srcq+  2*r9+6]
     movdqu            m7, [srcq+  2*r9+8]
-    SBUTTERFLY        dq, 0, 1, 8
-    SBUTTERFLY        dq, 2, 3, 8
-    SBUTTERFLY        dq, 4, 5, 8
-    SBUTTERFLY        dq, 6, 7, 8
+    SBUTTERFLY        dq, 0, 1, 10
+    SBUTTERFLY        dq, 2, 3, 10
+    SBUTTERFLY        dq, 4, 5, 10
+    SBUTTERFLY        dq, 6, 7, 10
 %endif
 %endmacro
 
@@ -593,6 +647,19 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 %endif
 %endmacro
 
+%macro EPEL_COMPUTE_14 0
+    pmaddwd           m0, m11
+    pmaddwd           m1, m11
+    pmaddwd           m2, m12
+    pmaddwd           m3, m12
+    paddd             m0, m2
+    paddd             m1, m3
+    psrad             m0, 6
+    psrad             m1, 6
+    packssdw          m0, m1
+%endmacro
+
+
 %macro PUT_HEVC_EPEL_V 2
     sub               srcq, srcstrideq
     EPEL_FILTER       %2, my
@@ -606,8 +673,7 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ; ******************************
 ; void put_hevc_epel_hv(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my,
-;                       int16_t* mcbuffer)
+;                       int width, int height, int mx, int my)
 ;
 ;      r0 : *dst
 ;      r1 : dststride
@@ -620,31 +686,41 @@ INIT_XMM sse4                                    ; adds ff_ and _sse4 to functio
 ;
 ; ******************************
 %macro PUT_HEVC_EPEL_HV 2
-    EPEL_HV_FILTER
+    EPEL_HV_FILTER %2          ; H on m11 and m12. V on m13, m14
 %if %2 == 8
     sub             srcq, 1
 %else
     sub             srcq, 2
 %endif
+    xor               mxq, mxq
+    xor               myq, myq
     sub             srcq, srcstrideq             ; src -= srcstride
-    lea              r6q, [srcq]
-;    add          heightq, 3
+    lea              mxq, [srcq]
+    lea              myq, [dstq]
 
-    LOOP_HV_INIT  epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2
-    EPEL_H_LOAD%1     %2
-    EPEL_H_COMPUTE%1_%2
-    PEL_STORE%1       r6, m12, m15
-    LOOP_END   epel_hv_h_h_%1_%2, epel_hv_h_w_%1_%2, %1, r6, 128, src, srcstride
+    LOOP_EPEL_HV_INIT  epel_hv_w_%1_%2, epel_hv_h_%1_%2, %2, %1
+%if %2 == 8
+    EPEL_LOAD         %2, mx, 1
+%else
+    EPEL_LOAD         %2, mx, 2
+%endif
+    EPEL_COMPUTE      %2, %1
+    SWAP              m7, m0
 
-    lea        mcbufferq, [mcbufferq+128]        ; mcbufferq += EPEL_EXTRA_BEFORE * MAX_PB_SIZE
-    sub          heightq, 3
+    punpcklwd         m0, m4, m5
+    punpckhwd         m1, m4, m5
+    punpcklwd         m2, m6, m7
+    punpckhwd         m3, m6, m7
 
-    EPEL_V_FILTER     10
-    LOOP_INIT epel_hv_v_h_%1_%2, epel_hv_v_w_%1_%2
-    EPEL_V_LOAD       10, mcbuffer, 128
-    EPEL_V_COMPUTE%1_10 6
-    PEL_STORE%1      dst, m0, m4
-    LOOP_END  epel_hv_v_h_%1_%2, epel_hv_v_w_%1_%2, %1, dst, dststride, mcbuffer, 128
+    EPEL_COMPUTE_14
+
+    PEL_STORE%1       my, m0, m15
+
+    movdqa               m4, m5
+    movdqa               m5, m6
+    movdqa               m6, m7
+
+    LOOP_HV_END   epel_hv_w_%1_%2, epel_hv_h_%1_%2, %1, dst, dststride, src, srcstride, my, mx
 
 %endmacro
 
@@ -1024,21 +1100,25 @@ cglobal hevc_put_hevc_epel_v8_14, 8, 12, 0 , dst, dststride, src, srcstride, wid
 ;                       int width, int height, int mx, int my,
 ;                       int16_t* mcbuffer)
 ; ******************************
-;cglobal hevc_put_hevc_epel_hv2_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
-;    PUT_HEVC_EPEL_HV   2, 8
-;    RET
-;cglobal hevc_put_hevc_epel_hv4_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
-;    PUT_HEVC_EPEL_HV   4, 8
-;    RET
-;cglobal hevc_put_hevc_epel_hv8_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
-;    PUT_HEVC_EPEL_HV   8, 8
-;    RET
-;cglobal hevc_put_hevc_epel_hv2_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
-;    PUT_HEVC_EPEL_HV   2, 10
-;    RET
-;cglobal hevc_put_hevc_epel_hv4_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
-;    PUT_HEVC_EPEL_HV   4, 10
-;    RET
+cglobal hevc_put_hevc_epel_hv2_8, 8, 12, 12 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_HV   2, 8
+    RET
+cglobal hevc_put_hevc_epel_hv4_8, 8, 15, 12 , dst, dststride, src, srcstride, width, height, mx, my
+    PUT_HEVC_EPEL_HV   4, 8
+    RET
+cglobal hevc_put_hevc_epel_hv8_8, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   8, 8
+    RET
+cglobal hevc_put_hevc_epel_hv2_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   2, 10
+    RET
+cglobal hevc_put_hevc_epel_hv4_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   4, 10
+    RET
+
+cglobal hevc_put_hevc_epel_hv8_10, 9, 12, 0 , dst, dststride, src, srcstride, width, height, mx, my, mcbuffer
+    PUT_HEVC_EPEL_HV   8, 10
+    RET
 
 ; ******************************
 ; void put_hevc_qpel_hX_X_X(int16_t *dst, ptrdiff_t dststride,
