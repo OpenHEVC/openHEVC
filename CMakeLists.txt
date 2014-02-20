@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8)
-project (libavHM)
+project (openHEVC)
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
@@ -164,8 +164,6 @@ libavcodec/simple_idct.c
 libavcodec/utils.c
 libavcodec/videodsp.c
 )
-
-#add_subdirectory(wrapper_hm)
 
 OPTION(ENABLE_STATIC "enabled static library instead of shared" OFF)
 if (ENABLE_STATIC)

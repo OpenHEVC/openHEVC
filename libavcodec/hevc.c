@@ -2333,33 +2333,6 @@ static int hls_nal_unit(HEVCContext *s)
     return (s->nuh_layer_id);
 }
 
-static void restore_tqb_pixels(HEVCContext *s)
-{
-    int min_pu_size = 1 << s->sps->log2_min_pu_size;
-    int x, y, c_idx;
-
-    for (c_idx = 0; c_idx < 3; c_idx++) {
-        ptrdiff_t stride = s->frame->linesize[c_idx];
-        int hshift       = s->sps->hshift[c_idx];
-        int vshift       = s->sps->vshift[c_idx];
-        for (y = 0; y < s->sps->min_pu_height; y++) {
-            for (x = 0; x < s->sps->min_pu_width; x++) {
-                if (s->is_pcm[y * s->sps->min_pu_width + x]) {
-                    int n;
-                    int len      = min_pu_size >> hshift;
-                    uint8_t *src = &s->frame->data[c_idx][((y << s->sps->log2_min_pu_size) >> vshift) * stride + (((x << s->sps->log2_min_pu_size) >> hshift) << s->sps->pixel_shift)];
-                    uint8_t *dst = &s->sao_frame->data[c_idx][((y << s->sps->log2_min_pu_size) >> vshift) * stride + (((x << s->sps->log2_min_pu_size) >> hshift) << s->sps->pixel_shift)];
-                    for (n = 0; n < (min_pu_size >> vshift); n++) {
-                        memcpy(dst, src, len);
-                        src += stride;
-                        dst += stride;
-                    }
-                }
-            }
-        }
-    }
-}
-
 static int hevc_frame_start(HEVCContext *s)
 {
     HEVCLocalContext *lc = s->HEVClc;
@@ -2562,10 +2535,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             s->is_decoded = 1;
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
-            if ((s->pps->transquant_bypass_enable_flag ||
-                 (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) &&
-                s->sps->sao_enabled)
-                restore_tqb_pixels(s);
 #ifdef SVC_EXTENSION
             if(s->decoder_id > 0)
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
