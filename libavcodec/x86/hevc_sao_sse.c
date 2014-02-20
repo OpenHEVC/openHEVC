@@ -35,6 +35,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
+#define SAO_BAND_INIT_8()                                                      \
+    uint8_t  *dst       = _dst;                                                \
+    uint8_t  *src       = _src;                                                \
+    ptrdiff_t stride    = _stride
+#define SAO_BAND_INIT_10()                                                     \
+    uint16_t  *dst      = (uint16_t *) _dst;                                   \
+    uint16_t *src       = (uint16_t *) _src;                                   \
+    ptrdiff_t stride    = _stride >> 1
 #define SAO_BAND_FILTER_INIT()                                                 \
     r0   = _mm_set1_epi16((sao_left_class    ) & 31);                          \
     r1   = _mm_set1_epi16((sao_left_class + 1) & 31);                          \
@@ -45,13 +53,21 @@
     sao3 = _mm_set1_epi16(sao_offset_val[3]);                                  \
     sao4 = _mm_set1_epi16(sao_offset_val[4])
 
-#define SAO_BAND_FILTER_LOAD_8(x)                                              \
+#define SAO_BAND_FILTER_LOAD8_8(x)                                             \
+    src0 = _mm_loadl_epi64((__m128i *) &src[x]);                               \
+    src0 = _mm_unpacklo_epi8(src0, _mm_setzero_si128());                       \
+    src2 = _mm_srai_epi16(src0, shift)
+#define SAO_BAND_FILTER_LOAD16_8(x)                                            \
     src0 = _mm_loadu_si128((__m128i *) &src[x]);                               \
     src1 = _mm_unpackhi_epi8(src0, _mm_setzero_si128());                       \
     src0 = _mm_unpacklo_epi8(src0, _mm_setzero_si128());                       \
     src3 = _mm_srai_epi16(src1, shift);                                        \
     src2 = _mm_srai_epi16(src0, shift)
-#define SAO_BAND_FILTER_LOAD_10(x)                                             \
+
+#define SAO_BAND_FILTER_LOAD8_10(x)                                            \
+    src0 = _mm_loadu_si128((__m128i *) &src[x  ]);                             \
+    src2 = _mm_srai_epi16(src0, shift)
+#define SAO_BAND_FILTER_LOAD16_10(x)                                           \
     src0 = _mm_loadu_si128((__m128i *) &src[x  ]);                             \
     src1 = _mm_loadu_si128((__m128i *) &src[x+8]);                             \
     src3 = _mm_srai_epi16(src1, shift);                                        \
@@ -71,60 +87,75 @@
     x0  = _mm_or_si128(x0, x2);                                                \
     dst = _mm_add_epi16(dst, x0)
 
+#define SAO_BAND_FILTER_COMPUTE8()                                             \
+    SAO_BAND_FILTER_COMPUTE(src0, src2)
+#define SAO_BAND_FILTER_COMPUTE16()                                            \
+    SAO_BAND_FILTER_COMPUTE(src1, src3);                                       \
+    SAO_BAND_FILTER_COMPUTE(src0, src2)
+
+#define SAO_BAND_FILTER_STORE8_8()                                             \
+    src0 = _mm_packus_epi16(src0, src0);                                       \
+    _mm_storel_epi64((__m128i *) &dst[x], src0)
+#define SAO_BAND_FILTER_STORE16_8()                                            \
+    src0 = _mm_packus_epi16(src0, src1);                                       \
+    _mm_storeu_si128((__m128i *) &dst[x], src0);
+
+#define SAO_BAND_FILTER_STORE8_10()                                            \
+    _mm_store_si128((__m128i *) &dst[x  ], src0)
+#define SAO_BAND_FILTER_STORE16_10()                                           \
+    _mm_store_si128((__m128i *) &dst[x  ], src0);                              \
+    _mm_store_si128((__m128i *) &dst[x+8], src1);
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
+#define SAO_BAND_FILTER(W, D)                                                  \
+static av_always_inline void ff_hevc_sao_band_filter_## W ##_ ## D ##_sse(     \
+        uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,\
+        int *borders, int width, int height, int c_idx) {                      \
+    int y, x;                                                                  \
+    int  shift          = D - 5;                                               \
+    int *sao_offset_val = sao->offset_val[c_idx];                              \
+    int  sao_left_class = sao->band_position[c_idx];                           \
+    __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4;            \
+    __m128i src0, src1, src2, src3;                                            \
+    SAO_BAND_INIT_ ## D();                                                     \
+    SAO_BAND_FILTER_INIT();                                                    \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += W) {                                       \
+            SAO_BAND_FILTER_LOAD ## W ## _ ##D(x);                             \
+            SAO_BAND_FILTER_COMPUTE ## W();                                    \
+            SAO_BAND_FILTER_STORE ## W ## _ ##D();                             \
+        }                                                                      \
+        dst += stride;                                                         \
+        src += stride;                                                         \
+    }                                                                          \
+}
+SAO_BAND_FILTER( 8, 8)
+SAO_BAND_FILTER(16, 8)
+
+SAO_BAND_FILTER( 8, 10)
+SAO_BAND_FILTER(16, 10)
+
 void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
                                      ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width,
                                      int height, int c_idx) {
-    int y, x;
-    uint8_t  *dst       = _dst;
-    uint8_t  *src       = _src;
-    ptrdiff_t stride    = _stride;
-    int  shift          = 3;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int  sao_left_class = sao->band_position[c_idx];
-    __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4;
-    __m128i src0, src1, src2, src3;
-
-    SAO_BAND_FILTER_INIT();
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x += 16) {
-            SAO_BAND_FILTER_LOAD_8(x);
-            SAO_BAND_FILTER_COMPUTE(src1, src3);
-            SAO_BAND_FILTER_COMPUTE(src0, src2);
-            src0 = _mm_packus_epi16(src0, src1);
-            _mm_storeu_si128((__m128i *) &dst[x], src0);
-        }
-        dst += stride;
-        src += stride;
-    }
+    if (width == 8)
+        ff_hevc_sao_band_filter_8_8_sse(_dst, _src, _stride, sao,
+                borders, width, height, c_idx);
+    else
+        ff_hevc_sao_band_filter_16_8_sse(_dst, _src, _stride, sao,
+                borders, width, height, c_idx);
 }
+
 void ff_hevc_sao_band_filter_0_10_sse(uint8_t *_dst, uint8_t *_src,
                                      ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width,
                                      int height, int c_idx) {
-    int y, x;
-    uint16_t  *dst      = (uint16_t *) _dst;
-    uint16_t *src       = (uint16_t *) _src;
-    ptrdiff_t stride    = _stride >> 1;
-    int  shift          = 5;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int  sao_left_class = sao->band_position[c_idx];
-    __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4;
-    __m128i src0, src1, src2, src3;
-
-    SAO_BAND_FILTER_INIT();
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x += 16) {
-            SAO_BAND_FILTER_LOAD_10(x);
-            SAO_BAND_FILTER_COMPUTE(src1, src3);
-            SAO_BAND_FILTER_COMPUTE(src0, src2);
-            _mm_store_si128((__m128i *) &dst[x  ], src0);
-            _mm_store_si128((__m128i *) &dst[x+8], src1);
-        }
-        dst += stride;
-        src += stride;
-    }
+    if (width == 8)
+        ff_hevc_sao_band_filter_8_10_sse(_dst, _src, _stride, sao,
+                borders, width, height, c_idx);
+    else
+        ff_hevc_sao_band_filter_16_10_sse(_dst, _src, _stride, sao,
+                borders, width, height, c_idx);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -206,20 +237,20 @@ static av_always_inline void ff_hevc_sao_edge_filter_8_sse(uint8_t *_dst, uint8_
     if (sao_eo_class != SAO_EO_HORIZ) {
         if (borders[1]) {
             x1 = _mm_set1_epi8(sao_offset_val[0]);
-            for (x = 0; x < width; x += 16) {
-                x0 = _mm_loadu_si128((__m128i *) (src + x));
+            for (x = 0; x < width; x += 8) {
+                x0 = _mm_loadl_epi64((__m128i *) (src + x));
                 x0 = _mm_add_epi8(x0, x1);
-                _mm_storeu_si128((__m128i *) (dst + x), x0);
+                _mm_storel_epi64((__m128i *) (dst + x), x0);
             }
             init_y = 1;
         }
         if (borders[3]) {
             int y_stride = stride * (_height - 1);
             x1 = _mm_set1_epi8(sao_offset_val[0]);
-            for (x = 0; x < width; x += 16) {
-                x0 = _mm_loadu_si128((__m128i *) (src + x + y_stride));
+            for (x = 0; x < width; x += 8) {
+                x0 = _mm_loadl_epi64((__m128i *) (src + x + y_stride));
                 x0 = _mm_add_epi8(x0, x1);
-                _mm_storeu_si128((__m128i *) (dst + x + y_stride), x0);
+                _mm_storel_epi64((__m128i *) (dst + x + y_stride), x0);
             }
             height--;
         }
@@ -240,10 +271,10 @@ static av_always_inline void ff_hevc_sao_edge_filter_8_sse(uint8_t *_dst, uint8_
             }
         } else {
             for (y = init_y; y < height; y++) {
-                for (x = 0; x < width; x += 4) {
+                for (x = 0; x < width; x += 8) {
                     SAO_EDGE_FILTER_LOAD_8(x);
                     SAO_EDGE_FILTER_COMPUTE_8();
-                    *((uint32_t *) (dst + x + y_stride)) = _mm_cvtsi128_si32(r0);
+                    _mm_storel_epi64((__m128i *) (dst + x + y_stride), r0);
                 }
                 y_stride     += stride;
                 y_stride_0_1 += stride;
