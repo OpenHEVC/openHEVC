@@ -262,17 +262,17 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                     edges, width,
                     height, c_idx);
             restore_tqb_pixels(s, x, y, width, height, c_idx);
-            sao->type_idx[c_idx] = SAO_APPLED;
+            sao->type_idx[c_idx] = SAO_APPLIED;
             //STOP_TIMER("sao_band_filter");
             break;
         }
         case SAO_EDGE:
         {
             //START_TIMER;
-            uint8_t left_pixels = (CTB(s->sao, x_ctb-1, y_ctb).type_idx[c_idx] != SAO_APPLED) && !edges[0];
+            uint8_t left_pixels = (CTB(s->sao, x_ctb-1, y_ctb).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
             if (!edges[1]) {
-                uint8_t top_left  = (CTB(s->sao, x_ctb-1, y_ctb-1).type_idx[c_idx] != SAO_APPLED) && !edges[0];
-                uint8_t top_right = (CTB(s->sao, x_ctb+1, y_ctb-1).type_idx[c_idx] != SAO_APPLED) && !edges[2];
+                uint8_t top_left  = (CTB(s->sao, x_ctb-1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
+                uint8_t top_right = (CTB(s->sao, x_ctb+1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED) && !edges[2];
                 if (CTB(s->sao, x_ctb  , y_ctb-1).type_idx[c_idx] == 0)
                     memcpy( dst - stride - (top_left << s->sps->pixel_shift),
                             src - stride - (top_left << s->sps->pixel_shift),
@@ -289,7 +289,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                 }
             }
             if (!edges[3]) {                                                                // bottom and bottom right
-                uint8_t bottom_left = (CTB(s->sao, x_ctb-1, y_ctb+1).type_idx[c_idx] != SAO_APPLED) && !edges[0];
+                uint8_t bottom_left = (CTB(s->sao, x_ctb-1, y_ctb+1).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
                 memcpy( dst + height * stride - (bottom_left << s->sps->pixel_shift),
                         src + height * stride - (bottom_left << s->sps->pixel_shift),
                         (width + 1 + bottom_left) << s->sps->pixel_shift);
@@ -306,7 +306,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                     horiz_edge,
                     diag_edge);
             restore_tqb_pixels(s, x, y, width, height, c_idx);
-            sao->type_idx[c_idx] = SAO_APPLED;
+            sao->type_idx[c_idx] = SAO_APPLIED;
             //STOP_TIMER("sao_edge_filter");
             break;
         }
