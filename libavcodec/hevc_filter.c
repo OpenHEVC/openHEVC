@@ -30,7 +30,7 @@
 #include "hevc.h"
 #include "bit_depth_template.c"
 
-#if ARCH_X86_32
+#if ARCH_X86_64
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
@@ -486,105 +486,100 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
 static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
                              RefPicList *neigh_refPicList)
 {
-    int mvs = (curr->pred_flag & 1) + ((curr->pred_flag & 2) >> 1);
-    int mvsn = (neigh->pred_flag & 1) + ((neigh->pred_flag & 2) >> 1);
-
-    if (mvs == mvsn) {
-        if (mvs == 2) {
-            // same L0 and L1
-            if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
-                s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
-                neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
-#if ARCH_X86_32
-                __m128i x0, x1, x2;
-                x0 = _mm_loadl_epi64((__m128i *) neigh);
-                x1 = _mm_loadl_epi64((__m128i *) curr);
-                x2 =  _mm_shufflelo_epi16(x0, 0x4E);
-                x0 = _mm_sub_epi16(x0, x1);
-                x2 = _mm_sub_epi16(x2, x1);
-                x1 = _mm_set1_epi16(4);
-                x0 = _mm_abs_epi16(x0);
-                x2 = _mm_abs_epi16(x2);
-                x0 = _mm_cmplt_epi16(x0, x1);
-                x2 = _mm_cmplt_epi16(x2, x1);
-                return !(_mm_test_all_ones(x0) || _mm_test_all_ones(x2));
+    if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
+        // same L0 and L1
+        if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
+            s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
+            neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
+#if ARCH_X86_64
+            __m128i x0, x1, x2;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x2 =  _mm_shufflelo_epi16(x0, 0x4E);
+            x0 = _mm_sub_epi16(x0, x1);
+            x2 = _mm_sub_epi16(x2, x1);
+            x1 = _mm_set1_epi16(4);
+            x0 = _mm_abs_epi16(x0);
+            x2 = _mm_abs_epi16(x2);
+            x0 = _mm_cmplt_epi16(x0, x1);
+            x2 = _mm_cmplt_epi16(x2, x1);
+            return !(_mm_test_all_ones(x0) || _mm_test_all_ones(x2));
 #else
-                if ((FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
-                     FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
-                    (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
-                     FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
-                    return 1;
-                else
-                    return 0;
-#endif
-            } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                       neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
-#if ARCH_X86_32
-                __m128i x0, x1;
-                x0 = _mm_loadl_epi64((__m128i *) neigh);
-                x1 = _mm_loadl_epi64((__m128i *) curr);
-                x0 = _mm_sub_epi16(x0, x1);
-                x1 = _mm_set1_epi16(4);
-                x0 = _mm_abs_epi16(x0);
-                x0 = _mm_cmplt_epi16(x0, x1);
-                return !(_mm_test_all_ones(x0));
-#else
-                if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
-                    FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
-                    return 1;
-                else
-                    return 0;
-#endif
-            } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                       neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
-#if ARCH_X86_32
-                __m128i x0, x1, x2;
-                x0 = _mm_loadl_epi64((__m128i *) neigh);
-                x1 = _mm_loadl_epi64((__m128i *) curr);
-                x2 = _mm_shufflelo_epi16(x0, 0x4E);
-                x2 = _mm_sub_epi16(x2, x1);
-                x1 = _mm_set1_epi16(4);
-                x2 = _mm_abs_epi16(x2);
-                x2 = _mm_cmplt_epi16(x2, x1);
-                return !(_mm_test_all_ones(x2));
-#else
-                if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
-                    FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
-                    return 1;
-                else
-                    return 0;
-#endif
-            } else {
+            if ((FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
+                 FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
+                (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
+                 FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
                 return 1;
-            }
-        } else { // 1 MV
-            Mv A, B;
-            int ref_A, ref_B;
-
-            if (curr->pred_flag & 1) {
-                A     = curr->mv[0];
-                ref_A = s->ref->refPicList[0].list[curr->ref_idx[0]];
-            } else {
-                A     = curr->mv[1];
-                ref_A = s->ref->refPicList[1].list[curr->ref_idx[1]];
-            }
-
-            if (neigh->pred_flag & 1) {
-                B     = neigh->mv[0];
-                ref_B = neigh_refPicList[0].list[neigh->ref_idx[0]];
-            } else {
-                B     = neigh->mv[1];
-                ref_B = neigh_refPicList[1].list[neigh->ref_idx[1]];
-            }
-
-            if (ref_A == ref_B) {
-                if (FFABS(A.x - B.x) >= 4 || FFABS(A.y - B.y) >= 4)
-                    return 1;
-                else
-                    return 0;
-            } else
+            else
+                return 0;
+#endif
+        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+#if ARCH_X86_64
+            __m128i x0, x1;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x0 = _mm_sub_epi16(x0, x1);
+            x1 = _mm_set1_epi16(4);
+            x0 = _mm_abs_epi16(x0);
+            x0 = _mm_cmplt_epi16(x0, x1);
+            return !(_mm_test_all_ones(x0));
+#else
+            if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
+                FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
                 return 1;
+            else
+                return 0;
+#endif
+        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+#if ARCH_X86_64
+            __m128i x0, x1, x2;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x2 = _mm_shufflelo_epi16(x0, 0x4E);
+            x2 = _mm_sub_epi16(x2, x1);
+            x1 = _mm_set1_epi16(4);
+            x2 = _mm_abs_epi16(x2);
+            x2 = _mm_cmplt_epi16(x2, x1);
+            return !(_mm_test_all_ones(x2));
+#else
+            if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
+                FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
+                return 1;
+            else
+                return 0;
+#endif
+        } else {
+            return 1;
         }
+    } else if ((curr->pred_flag != PF_BI) && (neigh->pred_flag != PF_BI)){ // 1 MV
+        Mv A, B;
+        int ref_A, ref_B;
+
+        if (curr->pred_flag & 1) {
+            A     = curr->mv[0];
+            ref_A = s->ref->refPicList[0].list[curr->ref_idx[0]];
+        } else {
+            A     = curr->mv[1];
+            ref_A = s->ref->refPicList[1].list[curr->ref_idx[1]];
+        }
+
+        if (neigh->pred_flag & 1) {
+            B     = neigh->mv[0];
+            ref_B = neigh_refPicList[0].list[neigh->ref_idx[0]];
+        } else {
+            B     = neigh->mv[1];
+            ref_B = neigh_refPicList[1].list[neigh->ref_idx[1]];
+        }
+
+        if (ref_A == ref_B) {
+            if (FFABS(A.x - B.x) >= 4 || FFABS(A.y - B.y) >= 4)
+                return 1;
+            else
+                return 0;
+        } else
+            return 1;
     }
 
     return 1;

@@ -206,10 +206,10 @@ enum InterPredIdc {
 };
 
 enum PredFlag {
-    PF_L0 = 1,
+    PF_INTRA = 0,
+    PF_L0,
     PF_L1,
     PF_BI,
-    PF_INTRA
 };
 
 
