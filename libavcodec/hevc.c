@@ -448,7 +448,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         ret = ff_get_buffer(s->avctx, s->tmp_frame, AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
             goto fail;
-        s->frame = s->tmp_frame;
+        s->sao_frame = s->tmp_frame;
     }
 
     s->sps = sps;
@@ -2397,8 +2397,7 @@ static int hevc_frame_start(HEVCContext *s)
     }
 #endif
     
-    ret = ff_hevc_set_new_ref(s, s->sps->sao_enabled ? &s->sao_frame : &s->frame,
-                              s->poc);
+    ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
     if (ret < 0)
         goto fail;
    

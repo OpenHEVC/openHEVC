@@ -247,6 +247,7 @@ enum SAOType {
     SAO_NOT_APPLIED = 0,
     SAO_BAND,
     SAO_EDGE,
+    SAO_APPLED
 };
 
 enum SAOEOClass {
