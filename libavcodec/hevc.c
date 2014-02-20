@@ -38,6 +38,71 @@
 #include "hevc_up_sample_filter.h"
 #include "hevc.h"
 
+#define POC_DISPLAY_MD5
+#ifdef POC_DISPLAY_MD5
+
+static void printf_ref_pic_list(HEVCContext *s)
+{
+    RefPicList  *refPicList = s->ref->refPicList;
+
+    int i, list_idx;
+    if (s->sh.slice_type == I_SLICE)
+        printf("\nPOC %4d TId: %1d QId: %1d ( I-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id, s->sh.slice_qp);
+    else if (s->sh.slice_type == B_SLICE)
+        printf("\nPOC %4d TId: %1d QId: %1d ( B-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id, s->sh.slice_qp);
+    else
+        printf("\nPOC %4d TId: %1d QId: %1d ( P-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id,  s->sh.slice_qp);
+
+    for ( list_idx = 0; list_idx < 2; list_idx++) {
+        printf("[L%d ",list_idx);
+        if (refPicList)
+            for(i = 0; i < refPicList[list_idx].nb_refs; i++)
+                printf("%d ",refPicList[list_idx].list[i]);
+        else
+            printf("O");
+        printf("] ");
+    }
+}
+
+static void display_md5(int poc, uint8_t md5[3][16])
+{
+    int i, j;
+    printf("\n[MD5:");
+    for (j = 0; j < 3; j++) {
+        printf("\n");
+        for (i = 0; i < 16; i++)
+            printf("%02x", md5[j][i]);
+    }
+    printf("\n]");
+
+}
+#endif
+
+static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (md5_in1[i] != md5_in2[i])
+            return 0;
+    return 1;
+}
+
+static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift)
+{
+    uint8_t *buf;
+    int y, x;
+    int stride_buf = width << pixel_shift;
+    buf = av_malloc(stride_buf * height);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < stride_buf; x++)
+            buf[y * stride_buf + x] = src[x];
+
+        src += stride;
+    }
+    av_md5_sum(md5, buf, stride_buf * height);
+    av_free(buf);
+}
 
 const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 2 };
 const uint8_t ff_hevc_qpel_extra_after[4]  = { 0, 3, 4, 4 };
