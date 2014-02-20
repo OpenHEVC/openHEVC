@@ -782,20 +782,21 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 {
     deblocking_filter_CTB(s, x, y);
     if (s->sps->sao_enabled) {
+        int x_end = x >= s->sps->width  - ctb_size;
+        int y_end = y >= s->sps->height - ctb_size;
         if (y && x)
             sao_filter_CTB(s, x - ctb_size, y - ctb_size);
-        if (x && y >= s->sps->height - ctb_size)
+        if (x && y_end)
             sao_filter_CTB(s, x - ctb_size, y);
-        if (y && x >= s->sps->width - ctb_size) {
+        if (y && x_end) {
             sao_filter_CTB(s, x, y - ctb_size);
-            if (y >= s->sps->height - ctb_size) {
-                sao_filter_CTB(s, x , y);
-                if (s->threads_type & FF_THREAD_FRAME )
-                    ff_thread_report_progress(&s->ref->tf, y, 0);
-            } else {
-                if (s->threads_type & FF_THREAD_FRAME )
-                    ff_thread_report_progress(&s->ref->tf, y - ctb_size, 0);
-            }
+            if (s->threads_type & FF_THREAD_FRAME )
+                ff_thread_report_progress(&s->ref->tf, y - ctb_size, 0);
+        }
+        if (x_end && y_end) {
+            sao_filter_CTB(s, x , y);
+            if (s->threads_type & FF_THREAD_FRAME )
+                ff_thread_report_progress(&s->ref->tf, y, 0);
         }
     } else {
         if (y && x >= s->sps->width - ctb_size)
@@ -806,10 +807,12 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
 {
+    int x_end = x_ctb >= s->sps->width  - ctb_size;
+    int y_end = y_ctb >= s->sps->height - ctb_size;
     if (y_ctb && x_ctb)
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb - ctb_size, ctb_size);
-    if (y_ctb && x_ctb >= s->sps->width - ctb_size)
+    if (y_ctb && x_end)
         ff_hevc_hls_filter(s, x_ctb, y_ctb - ctb_size, ctb_size);
-    if (x_ctb && y_ctb >= s->sps->height - ctb_size)
+    if (x_ctb && y_end)
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb, ctb_size);
 }
