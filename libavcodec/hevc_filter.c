@@ -30,7 +30,7 @@
 #include "hevc.h"
 #include "bit_depth_template.c"
 
-#if ARCH_X86_32
+#if ARCH_X86_64
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
@@ -262,17 +262,17 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                     edges, width,
                     height, c_idx);
             restore_tqb_pixels(s, x, y, width, height, c_idx);
-            sao->type_idx[c_idx] = SAO_APPLED;
+            sao->type_idx[c_idx] = SAO_APPLIED;
             //STOP_TIMER("sao_band_filter");
             break;
         }
         case SAO_EDGE:
         {
             //START_TIMER;
-            uint8_t left_pixels = (CTB(s->sao, x_ctb-1, y_ctb).type_idx[c_idx] != SAO_APPLED) && !edges[0];
+            uint8_t left_pixels = (CTB(s->sao, x_ctb-1, y_ctb).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
             if (!edges[1]) {
-                uint8_t top_left  = (CTB(s->sao, x_ctb-1, y_ctb-1).type_idx[c_idx] != SAO_APPLED) && !edges[0];
-                uint8_t top_right = (CTB(s->sao, x_ctb+1, y_ctb-1).type_idx[c_idx] != SAO_APPLED) && !edges[2];
+                uint8_t top_left  = (CTB(s->sao, x_ctb-1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
+                uint8_t top_right = (CTB(s->sao, x_ctb+1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED) && !edges[2];
                 if (CTB(s->sao, x_ctb  , y_ctb-1).type_idx[c_idx] == 0)
                     memcpy( dst - stride - (top_left << s->sps->pixel_shift),
                             src - stride - (top_left << s->sps->pixel_shift),
@@ -289,7 +289,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                 }
             }
             if (!edges[3]) {                                                                // bottom and bottom right
-                uint8_t bottom_left = (CTB(s->sao, x_ctb-1, y_ctb+1).type_idx[c_idx] != SAO_APPLED) && !edges[0];
+                uint8_t bottom_left = (CTB(s->sao, x_ctb-1, y_ctb+1).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
                 memcpy( dst + height * stride - (bottom_left << s->sps->pixel_shift),
                         src + height * stride - (bottom_left << s->sps->pixel_shift),
                         (width + 1 + bottom_left) << s->sps->pixel_shift);
@@ -306,7 +306,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                     horiz_edge,
                     diag_edge);
             restore_tqb_pixels(s, x, y, width, height, c_idx);
-            sao->type_idx[c_idx] = SAO_APPLED;
+            sao->type_idx[c_idx] = SAO_APPLIED;
             //STOP_TIMER("sao_edge_filter");
             break;
         }
@@ -510,104 +510,100 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
 static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
                              RefPicList *neigh_refPicList)
 {
-    int mvs = curr->pred_flag[0] + curr->pred_flag[1];
-
-    if (mvs == neigh->pred_flag[0] + neigh->pred_flag[1]) {
-        if (mvs == 2) {
-            // same L0 and L1
-            if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
-                s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
-                neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
-#if ARCH_X86_32
-                __m128i x0, x1, x2;
-                x0 = _mm_loadl_epi64((__m128i *) neigh);
-                x1 = _mm_loadl_epi64((__m128i *) curr);
-                x2 =  _mm_shufflelo_epi16(x0, 0x4E);
-                x0 = _mm_sub_epi16(x0, x1);
-                x2 = _mm_sub_epi16(x2, x1);
-                x1 = _mm_set1_epi16(4);
-                x0 = _mm_abs_epi16(x0);
-                x2 = _mm_abs_epi16(x2);
-                x0 = _mm_cmplt_epi16(x0, x1);
-                x2 = _mm_cmplt_epi16(x2, x1);
-                return !(_mm_test_all_ones(x0) || _mm_test_all_ones(x2));
+    if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
+        // same L0 and L1
+        if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
+            s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
+            neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
+#if ARCH_X86_64
+            __m128i x0, x1, x2;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x2 =  _mm_shufflelo_epi16(x0, 0x4E);
+            x0 = _mm_sub_epi16(x0, x1);
+            x2 = _mm_sub_epi16(x2, x1);
+            x1 = _mm_set1_epi16(4);
+            x0 = _mm_abs_epi16(x0);
+            x2 = _mm_abs_epi16(x2);
+            x0 = _mm_cmplt_epi16(x0, x1);
+            x2 = _mm_cmplt_epi16(x2, x1);
+            return !(_mm_test_all_ones(x0) || _mm_test_all_ones(x2));
 #else
-                if ((FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
-                     FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
-                    (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
-                     FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
-                    return 1;
-                else
-                    return 0;
-#endif
-            } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                       neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
-#if ARCH_X86_32
-                __m128i x0, x1;
-                x0 = _mm_loadl_epi64((__m128i *) neigh);
-                x1 = _mm_loadl_epi64((__m128i *) curr);
-                x0 = _mm_sub_epi16(x0, x1);
-                x1 = _mm_set1_epi16(4);
-                x0 = _mm_abs_epi16(x0);
-                x0 = _mm_cmplt_epi16(x0, x1);
-                return !(_mm_test_all_ones(x0));
-#else
-                if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
-                    FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
-                    return 1;
-                else
-                    return 0;
-#endif
-            } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                       neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
-#if ARCH_X86_32
-                __m128i x0, x1, x2;
-                x0 = _mm_loadl_epi64((__m128i *) neigh);
-                x1 = _mm_loadl_epi64((__m128i *) curr);
-                x2 = _mm_shufflelo_epi16(x0, 0x4E);
-                x2 = _mm_sub_epi16(x2, x1);
-                x1 = _mm_set1_epi16(4);
-                x2 = _mm_abs_epi16(x2);
-                x2 = _mm_cmplt_epi16(x2, x1);
-                return !(_mm_test_all_ones(x2));
-#else
-                if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
-                    FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
-                    return 1;
-                else
-                    return 0;
-#endif
-            } else {
+            if ((FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
+                 FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
+                (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
+                 FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
                 return 1;
-            }
-        } else { // 1 MV
-            Mv A, B;
-            int ref_A, ref_B;
-
-            if (curr->pred_flag[0]) {
-                A     = curr->mv[0];
-                ref_A = s->ref->refPicList[0].list[curr->ref_idx[0]];
-            } else {
-                A     = curr->mv[1];
-                ref_A = s->ref->refPicList[1].list[curr->ref_idx[1]];
-            }
-
-            if (neigh->pred_flag[0]) {
-                B     = neigh->mv[0];
-                ref_B = neigh_refPicList[0].list[neigh->ref_idx[0]];
-            } else {
-                B     = neigh->mv[1];
-                ref_B = neigh_refPicList[1].list[neigh->ref_idx[1]];
-            }
-
-            if (ref_A == ref_B) {
-                if (FFABS(A.x - B.x) >= 4 || FFABS(A.y - B.y) >= 4)
-                    return 1;
-                else
-                    return 0;
-            } else
+            else
+                return 0;
+#endif
+        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+#if ARCH_X86_64
+            __m128i x0, x1;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x0 = _mm_sub_epi16(x0, x1);
+            x1 = _mm_set1_epi16(4);
+            x0 = _mm_abs_epi16(x0);
+            x0 = _mm_cmplt_epi16(x0, x1);
+            return !(_mm_test_all_ones(x0));
+#else
+            if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
+                FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
                 return 1;
+            else
+                return 0;
+#endif
+        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+#if ARCH_X86_64
+            __m128i x0, x1, x2;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x2 = _mm_shufflelo_epi16(x0, 0x4E);
+            x2 = _mm_sub_epi16(x2, x1);
+            x1 = _mm_set1_epi16(4);
+            x2 = _mm_abs_epi16(x2);
+            x2 = _mm_cmplt_epi16(x2, x1);
+            return !(_mm_test_all_ones(x2));
+#else
+            if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
+                FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
+                return 1;
+            else
+                return 0;
+#endif
+        } else {
+            return 1;
         }
+    } else if ((curr->pred_flag != PF_BI) && (neigh->pred_flag != PF_BI)){ // 1 MV
+        Mv A, B;
+        int ref_A, ref_B;
+
+        if (curr->pred_flag & 1) {
+            A     = curr->mv[0];
+            ref_A = s->ref->refPicList[0].list[curr->ref_idx[0]];
+        } else {
+            A     = curr->mv[1];
+            ref_A = s->ref->refPicList[1].list[curr->ref_idx[1]];
+        }
+
+        if (neigh->pred_flag & 1) {
+            B     = neigh->mv[0];
+            ref_B = neigh_refPicList[0].list[neigh->ref_idx[0]];
+        } else {
+            B     = neigh->mv[1];
+            ref_B = neigh_refPicList[1].list[neigh->ref_idx[1]];
+        }
+
+        if (ref_A == ref_B) {
+            if (FFABS(A.x - B.x) >= 4 || FFABS(A.y - B.y) >= 4)
+                return 1;
+            else
+                return 0;
+        } else
+            return 1;
     }
 
     return 1;
@@ -623,7 +619,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
     int min_pu_width     = s->sps->min_pu_width;
     int min_tu_width     = s->sps->min_tb_width;
     int is_intra = tab_mvf[(y0 >> log2_min_pu_size) * min_pu_width +
-                           (x0 >> log2_min_pu_size)].is_intra;
+                           (x0 >> log2_min_pu_size)].pred_flag == PF_INTRA;
     int i, j, bs;
 
     if (y0 > 0 && (y0 & 7) == 0) {
@@ -648,7 +644,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
                 uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
 
-                if (curr->is_intra || top->is_intra)
+                if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA)
                     bs = 2;
                 else if (curr_cbf_luma || top_cbf_luma)
                     bs = 1;
@@ -682,7 +678,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 uint8_t left_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xp_tu];
                 uint8_t curr_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xq_tu];
 
-                if (curr->is_intra || left->is_intra)
+                if (curr->pred_flag == PF_INTRA || left->pred_flag == PF_INTRA)
                     bs = 2;
                 else if (curr_cbf_luma || left_cbf_luma)
                     bs = 1;
@@ -750,7 +746,7 @@ void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0, int
         uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * pic_width_in_min_tu + x_tu];
         RefPicList* top_refPicList = ff_hevc_get_ref_list(s, s->ref, x0, y0 - 1);
 
-        if (curr->is_intra || top->is_intra)
+        if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA)
             bs = 2;
         else if (curr_cbf_luma || top_cbf_luma)
             bs = 1;
@@ -785,7 +781,7 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int
         uint8_t curr_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xq_tu];
         RefPicList* left_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 - 1, y0);
 
-        if (curr->is_intra || left->is_intra)
+        if (curr->pred_flag == PF_INTRA || left->pred_flag == PF_INTRA)
             bs = 2;
         else if (curr_cbf_luma || left_cbf_luma)
             bs = 1;
