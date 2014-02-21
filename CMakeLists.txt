@@ -5,6 +5,14 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 message("DEBUG: CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 
+# Configure build type (Release when no one is selected)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+    set(BUILDTYPE_MSG "Release (set by default)")
+else()
+    set(BUILDTYPE_MSG "${CMAKE_BUILD_TYPE}")
+endif()
+
 #find asm compiler
 find_program(YASM_EXECUTABLE yasm)
 
