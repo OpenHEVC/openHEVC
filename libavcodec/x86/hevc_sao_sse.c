@@ -35,11 +35,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#define SAO_BAND_INIT_8()                                                      \
+#define SAO_INIT_8()                                                           \
     uint8_t  *dst       = _dst;                                                \
     uint8_t  *src       = _src;                                                \
     ptrdiff_t stride    = _stride
-#define SAO_BAND_INIT_10()                                                     \
+#define SAO_INIT_10()                                                          \
     uint16_t  *dst      = (uint16_t *) _dst;                                   \
     uint16_t *src       = (uint16_t *) _src;                                   \
     ptrdiff_t stride    = _stride >> 1
@@ -53,63 +53,38 @@
     sao3 = _mm_set1_epi16(sao_offset_val[3]);                                  \
     sao4 = _mm_set1_epi16(sao_offset_val[4])
 
-#define SAO_BAND_FILTER_LOAD8_8(x)                                             \
+#define SAO_BAND_FILTER_LOAD_8(x)                                              \
     src0 = _mm_loadl_epi64((__m128i *) &src[x]);                               \
     src0 = _mm_unpacklo_epi8(src0, _mm_setzero_si128());                       \
     src2 = _mm_srai_epi16(src0, shift)
-#define SAO_BAND_FILTER_LOAD16_8(x)                                            \
-    src0 = _mm_loadu_si128((__m128i *) &src[x]);                               \
-    src1 = _mm_unpackhi_epi8(src0, _mm_setzero_si128());                       \
-    src0 = _mm_unpacklo_epi8(src0, _mm_setzero_si128());                       \
-    src3 = _mm_srai_epi16(src1, shift);                                        \
+#define SAO_BAND_FILTER_LOAD_10(x)                                             \
+    src0 = _mm_load_si128((__m128i *) &src[x]);                                \
     src2 = _mm_srai_epi16(src0, shift)
 
-#define SAO_BAND_FILTER_LOAD8_10(x)                                            \
-    src0 = _mm_loadu_si128((__m128i *) &src[x  ]);                             \
-    src2 = _mm_srai_epi16(src0, shift)
-#define SAO_BAND_FILTER_LOAD16_10(x)                                           \
-    src0 = _mm_loadu_si128((__m128i *) &src[x  ]);                             \
-    src1 = _mm_loadu_si128((__m128i *) &src[x+8]);                             \
-    src3 = _mm_srai_epi16(src1, shift);                                        \
-    src2 = _mm_srai_epi16(src0, shift)
+#define SAO_BAND_FILTER_COMPUTE()                                              \
+    x0   = _mm_cmpeq_epi16(src2, r0);                                          \
+    x1   = _mm_cmpeq_epi16(src2, r1);                                          \
+    x2   = _mm_cmpeq_epi16(src2, r2);                                          \
+    x3   = _mm_cmpeq_epi16(src2, r3);                                          \
+    x0   = _mm_and_si128(x0, sao1);                                            \
+    x1   = _mm_and_si128(x1, sao2);                                            \
+    x2   = _mm_and_si128(x2, sao3);                                            \
+    x3   = _mm_and_si128(x3, sao4);                                            \
+    x0   = _mm_or_si128(x0, x1);                                               \
+    x2   = _mm_or_si128(x2, x3);                                               \
+    x0   = _mm_or_si128(x0, x2);                                               \
+    src0 = _mm_add_epi16(src0, x0)
 
-#define SAO_BAND_FILTER_COMPUTE(dst, src)                                      \
-    x0  = _mm_cmpeq_epi16(src, r0);                                            \
-    x1  = _mm_cmpeq_epi16(src, r1);                                            \
-    x2  = _mm_cmpeq_epi16(src, r2);                                            \
-    x3  = _mm_cmpeq_epi16(src, r3);                                            \
-    x0  = _mm_and_si128(x0, sao1);                                             \
-    x1  = _mm_and_si128(x1, sao2);                                             \
-    x2  = _mm_and_si128(x2, sao3);                                             \
-    x3  = _mm_and_si128(x3, sao4);                                             \
-    x0  = _mm_or_si128(x0, x1);                                                \
-    x2  = _mm_or_si128(x2, x3);                                                \
-    x0  = _mm_or_si128(x0, x2);                                                \
-    dst = _mm_add_epi16(dst, x0)
-
-#define SAO_BAND_FILTER_COMPUTE8()                                             \
-    SAO_BAND_FILTER_COMPUTE(src0, src2)
-#define SAO_BAND_FILTER_COMPUTE16()                                            \
-    SAO_BAND_FILTER_COMPUTE(src1, src3);                                       \
-    SAO_BAND_FILTER_COMPUTE(src0, src2)
-
-#define SAO_BAND_FILTER_STORE8_8()                                             \
+#define SAO_BAND_FILTER_STORE_8()                                              \
     src0 = _mm_packus_epi16(src0, src0);                                       \
     _mm_storel_epi64((__m128i *) &dst[x], src0)
-#define SAO_BAND_FILTER_STORE16_8()                                            \
-    src0 = _mm_packus_epi16(src0, src1);                                       \
-    _mm_storeu_si128((__m128i *) &dst[x], src0);
-
-#define SAO_BAND_FILTER_STORE8_10()                                            \
+#define SAO_BAND_FILTER_STORE_10()                                             \
     _mm_store_si128((__m128i *) &dst[x  ], src0)
-#define SAO_BAND_FILTER_STORE16_10()                                           \
-    _mm_store_si128((__m128i *) &dst[x  ], src0);                              \
-    _mm_store_si128((__m128i *) &dst[x+8], src1);
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define SAO_BAND_FILTER(W, D)                                                  \
-static av_always_inline void ff_hevc_sao_band_filter_## W ##_ ## D ##_sse(     \
+void ff_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
         uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,\
         int *borders, int width, int height, int c_idx) {                      \
     int y, x;                                                                  \
@@ -118,264 +93,25 @@ static av_always_inline void ff_hevc_sao_band_filter_## W ##_ ## D ##_sse(     \
     int  sao_left_class = sao->band_position[c_idx];                           \
     __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4;            \
     __m128i src0, src1, src2, src3;                                            \
-    SAO_BAND_INIT_ ## D();                                                     \
+    SAO_INIT_ ## D();                                                          \
     SAO_BAND_FILTER_INIT();                                                    \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += W) {                                       \
-            SAO_BAND_FILTER_LOAD ## W ## _ ##D(x);                             \
-            SAO_BAND_FILTER_COMPUTE ## W();                                    \
-            SAO_BAND_FILTER_STORE ## W ## _ ##D();                             \
+            SAO_BAND_FILTER_LOAD_ ##D(x);                                      \
+            SAO_BAND_FILTER_COMPUTE();                                         \
+            SAO_BAND_FILTER_STORE_ ##D();                                      \
         }                                                                      \
         dst += stride;                                                         \
         src += stride;                                                         \
     }                                                                          \
 }
-SAO_BAND_FILTER( 8, 8)
-SAO_BAND_FILTER(16, 8)
-
+SAO_BAND_FILTER( 8,  8)
 SAO_BAND_FILTER( 8, 10)
-SAO_BAND_FILTER(16, 10)
-
-void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width,
-                                     int height, int c_idx) {
-    if (width == 8)
-        ff_hevc_sao_band_filter_8_8_sse(_dst, _src, _stride, sao,
-                borders, width, height, c_idx);
-    else
-        ff_hevc_sao_band_filter_16_8_sse(_dst, _src, _stride, sao,
-                borders, width, height, c_idx);
-}
-
-void ff_hevc_sao_band_filter_0_10_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width,
-                                     int height, int c_idx) {
-    if (width == 8)
-        ff_hevc_sao_band_filter_8_10_sse(_dst, _src, _stride, sao,
-                borders, width, height, c_idx);
-    else
-        ff_hevc_sao_band_filter_16_10_sse(_dst, _src, _stride, sao,
-                borders, width, height, c_idx);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#define SAO_EDGE_FILTER_INIT_8()                                               \
-    int y_stride = init_y * stride;                                            \
-    int pos_0_0 = pos[sao_eo_class][0][0];                                     \
-    int pos_0_1 = pos[sao_eo_class][0][1];                                     \
-    int pos_1_0 = pos[sao_eo_class][1][0];                                     \
-    int pos_1_1 = pos[sao_eo_class][1][1];                                     \
-    int y_stride_0_1 = (init_y + pos_0_1) * stride + pos_0_0;                  \
-    int y_stride_1_1 = (init_y + pos_1_1) * stride + pos_1_0;                  \
-    offset0 = _mm_set1_epi8(sao_offset_val[edge_idx[0]]);                      \
-    offset1 = _mm_set1_epi8(sao_offset_val[edge_idx[1]]);                      \
-    offset2 = _mm_set1_epi8(sao_offset_val[edge_idx[2]]);                      \
-    offset3 = _mm_set1_epi8(sao_offset_val[edge_idx[3]]);                      \
-    offset4 = _mm_set1_epi8(sao_offset_val[edge_idx[4]])
-#define SAO_EDGE_FILTER_LOAD_8(x)                                              \
-    x0   = _mm_loadu_si128((__m128i *) (src + x + y_stride));                  \
-    cmp0 = _mm_loadu_si128((__m128i *) (src + x + y_stride_0_1));              \
-    cmp1 = _mm_loadu_si128((__m128i *) (src + x + y_stride_1_1));              \
-    r2   = _mm_min_epu8(x0, cmp0);                                             \
-    x1   = _mm_cmpeq_epi8(cmp0, r2);                                           \
-    x2   = _mm_cmpeq_epi8(x0, r2);                                             \
-    x1   = _mm_sub_epi8(x2, x1);                                               \
-    r2   = _mm_min_epu8(x0, cmp1);                                             \
-    x3   = _mm_cmpeq_epi8(cmp1, r2);                                           \
-    x2   = _mm_cmpeq_epi8(x0, r2);                                             \
-    x3   = _mm_sub_epi8(x2, x3);                                               \
-    x1   = _mm_add_epi8(x1, x3)
-#define SAO_EDGE_FILTER_COMPUTE_8()                                            \
-    r0 = _mm_cmpeq_epi8(x1, _mm_set1_epi8(-2));                                \
-    r1 = _mm_cmpeq_epi8(x1, _mm_set1_epi8(-1));                                \
-    r2 = _mm_cmpeq_epi8(x1, _mm_set1_epi8(0));                                 \
-    r3 = _mm_cmpeq_epi8(x1, _mm_set1_epi8(1));                                 \
-    r4 = _mm_cmpeq_epi8(x1, _mm_set1_epi8(2));                                 \
-    r0 = _mm_and_si128(r0, offset0);                                           \
-    r1 = _mm_and_si128(r1, offset1);                                           \
-    r2 = _mm_and_si128(r2, offset2);                                           \
-    r3 = _mm_and_si128(r3, offset3);                                           \
-    r4 = _mm_and_si128(r4, offset4);                                           \
-    r0 = _mm_add_epi8(r0, r1);                                                 \
-    r2 = _mm_add_epi8(r2, r3);                                                 \
-    r0 = _mm_add_epi8(r0, r4);                                                 \
-    r0 = _mm_add_epi8(r0, r2);                                                 \
-    r1 = _mm_unpacklo_epi8(_mm_setzero_si128(), r0);                           \
-    r1 = _mm_srai_epi16(r1, 8);                                                \
-    r2 = _mm_unpackhi_epi8(_mm_setzero_si128(), r0);                           \
-    r2 = _mm_srai_epi16(r2, 8);                                                \
-    r3 = _mm_unpacklo_epi8(x0, _mm_setzero_si128());                           \
-    r4 = _mm_unpackhi_epi8(x0, _mm_setzero_si128());                           \
-    r0 = _mm_add_epi16(r1, r3);                                                \
-    r1 = _mm_add_epi16(r2, r4);                                                \
-    r0 = _mm_packus_epi16(r0, r1)
-
-////////////////////////////////////////////////////////////////////////////////
-//
-////////////////////////////////////////////////////////////////////////////////
-static av_always_inline void ff_hevc_sao_edge_filter_8_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,
-                                     int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge) {
-    int x, y;
-    uint8_t *dst        = _dst;
-    uint8_t *src        = _src;
-    ptrdiff_t stride    = _stride;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int  sao_eo_class   = sao->eo_class[c_idx];
-    const uint8_t edge_idx[]  = { 1, 2, 0, 3, 4 };
-    const int8_t pos[4][2][2] = { { { -1, 0 }, { 1, 0 } }, // horizontal
-        { { 0, -1 }, { 0, 1 } }, // vertical
-        { { -1, -1 }, { 1, 1 } }, // 45 degree
-        { { 1, -1 }, { -1, 1 } }, // 135 degree
-    };
-    int init_y = 0, width = _width, height = _height;
-    __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4;
-    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
-
-    if (sao_eo_class != SAO_EO_HORIZ) {
-        if (borders[1]) {
-            x1 = _mm_set1_epi8(sao_offset_val[0]);
-            for (x = 0; x < width; x += 8) {
-                x0 = _mm_loadl_epi64((__m128i *) (src + x));
-                x0 = _mm_add_epi8(x0, x1);
-                _mm_storel_epi64((__m128i *) (dst + x), x0);
-            }
-            init_y = 1;
-        }
-        if (borders[3]) {
-            int y_stride = stride * (_height - 1);
-            x1 = _mm_set1_epi8(sao_offset_val[0]);
-            for (x = 0; x < width; x += 8) {
-                x0 = _mm_loadl_epi64((__m128i *) (src + x + y_stride));
-                x0 = _mm_add_epi8(x0, x1);
-                _mm_storel_epi64((__m128i *) (dst + x + y_stride), x0);
-            }
-            height--;
-        }
-    }
-
-    {
-        SAO_EDGE_FILTER_INIT_8();
-        if (!(width & 15)) {
-            for (y = init_y; y < height; y++) {
-                for (x = 0; x < width; x += 16) {
-                    SAO_EDGE_FILTER_LOAD_8(x);
-                    SAO_EDGE_FILTER_COMPUTE_8();
-                    _mm_store_si128((__m128i *) (dst + x + y_stride), r0);
-                }
-                y_stride     += stride;
-                y_stride_0_1 += stride;
-                y_stride_1_1 += stride;
-            }
-        } else {
-            for (y = init_y; y < height; y++) {
-                for (x = 0; x < width; x += 8) {
-                    SAO_EDGE_FILTER_LOAD_8(x);
-                    SAO_EDGE_FILTER_COMPUTE_8();
-                    _mm_storel_epi64((__m128i *) (dst + x + y_stride), r0);
-                }
-                y_stride     += stride;
-                y_stride_0_1 += stride;
-                y_stride_1_1 += stride;
-            }
-        }
-    }
-
-    if (sao_eo_class != SAO_EO_VERT) {
-        if (borders[0]) {
-            int offset_val = sao_offset_val[0];
-            int y_stride = 0;
-            for (y = 0; y < height; y++) {
-                dst[y_stride] = av_clip_uint8(src[y_stride] + offset_val);
-                y_stride     += stride;
-            }
-        }
-        if (borders[2]) {
-            int offset_val = sao_offset_val[0];
-            int x_stride = _width - 1;
-            for (x = 0; x < height; x++) {
-                dst[x_stride] = av_clip_uint8(src[x_stride] + offset_val);
-                x_stride     += stride;
-            }
-            width--;
-        }
-    }
-}
-void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,
-                                     int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge) {
-    ff_hevc_sao_edge_filter_8_sse(_dst, _src, _stride, sao, borders, _width, _height,
-            c_idx, vert_edge, horiz_edge, diag_edge);
-
-}
-void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,
-                                     int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge) {
-    int x, y;
-    uint8_t *dst        = _dst;
-    uint8_t *src        = _src;
-    ptrdiff_t stride    = _stride;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int  sao_eo_class   = sao->eo_class[c_idx];
-    int init_x = 0, init_y = 0, width = _width, height = _height;
-    int save_upper_left  = !diag_edge[0] && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
-    int save_upper_right = !diag_edge[1] && sao_eo_class == SAO_EO_45D  && !borders[1] && !borders[2];
-    int save_lower_right = !diag_edge[2] && sao_eo_class == SAO_EO_135D && !borders[2] && !borders[3];
-    int save_lower_left  = !diag_edge[3] && sao_eo_class == SAO_EO_45D  && !borders[0] && !borders[3];
-
-    ff_hevc_sao_edge_filter_8_sse(_dst, _src, _stride, sao, borders, _width, _height,
-            c_idx, vert_edge, horiz_edge, diag_edge);
-
-    if (sao_eo_class != SAO_EO_HORIZ) {
-        if (borders[1]) {
-            init_y = 1;
-        }
-        if (borders[3]) {
-            height--;
-        }
-    }
-    if (sao_eo_class != SAO_EO_VERT) {
-        if (borders[0]) {
-            init_x = 1;
-        }
-        if (borders[2]) {
-            width--;
-        }
-    }
-
-    // Restore pixels that can't be modified
-    if(vert_edge[0] && sao_eo_class != SAO_EO_VERT) {
-        for(y = init_y+save_upper_left; y< height-save_lower_left; y++)
-            dst[y*stride] = src[y*stride];
-    }
-    if(vert_edge[1] && sao_eo_class != SAO_EO_VERT) {
-        for(y = init_y+save_upper_right; y< height-save_lower_right; y++)
-            dst[y*stride+width-1] = src[y*stride+width-1];
-    }
-
-    if(horiz_edge[0] && sao_eo_class != SAO_EO_HORIZ) {
-        for(x = init_x+save_upper_left; x < width-save_upper_right; x++)
-            dst[x] = src[x];
-    }
-    if(horiz_edge[1] && sao_eo_class != SAO_EO_HORIZ) {
-        for(x = init_x+save_lower_left; x < width-save_lower_right; x++)
-            dst[(height-1)*stride+x] = src[(height-1)*stride+x];
-    }
-    if(diag_edge[0] && sao_eo_class == SAO_EO_135D)
-        dst[0] = src[0];
-    if(diag_edge[1] && sao_eo_class == SAO_EO_45D)
-        dst[width-1] = src[width-1];
-    if(diag_edge[2] && sao_eo_class == SAO_EO_135D)
-        dst[stride*(height-1)+width-1] = src[stride*(height-1)+width-1];
-    if(diag_edge[3] && sao_eo_class == SAO_EO_45D)
-        dst[stride*(height-1)] = src[stride*(height-1)];
-}
-////////////////////////////////////////////////////////////////////////////////
-//
-////////////////////////////////////////////////////////////////////////////////
-#define SAO_EDGE_FILTER_INIT_10()                                              \
+#define SAO_EDGE_FILTER_INIT()                                                 \
     int y_stride = init_y * stride;                                            \
     int pos_0_0 = pos[sao_eo_class][0][0];                                     \
     int pos_0_1 = pos[sao_eo_class][0][1];                                     \
@@ -388,20 +124,29 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
     offset2 = _mm_set1_epi16(sao_offset_val[edge_idx[2]]);                     \
     offset3 = _mm_set1_epi16(sao_offset_val[edge_idx[3]]);                     \
     offset4 = _mm_set1_epi16(sao_offset_val[edge_idx[4]])
-#define SAO_EDGE_FILTER_LOAD_10(x)                                             \
+
+#define SAO_EDGE_FILTER_LOAD_8()                                               \
+    x0   = _mm_loadl_epi64((__m128i *) (src + x + y_stride));                  \
+    cmp0 = _mm_loadl_epi64((__m128i *) (src + x + y_stride_0_1));              \
+    cmp1 = _mm_loadl_epi64((__m128i *) (src + x + y_stride_1_1));              \
+    x0   = _mm_unpacklo_epi8(x0  , _mm_setzero_si128());                       \
+    cmp0 = _mm_unpacklo_epi8(cmp0, _mm_setzero_si128());                       \
+    cmp1 = _mm_unpacklo_epi8(cmp1, _mm_setzero_si128())
+#define SAO_EDGE_FILTER_LOAD_10()                                              \
     x0   = _mm_loadu_si128((__m128i *) (src + x + y_stride));                  \
     cmp0 = _mm_loadu_si128((__m128i *) (src + x + y_stride_0_1));              \
     cmp1 = _mm_loadu_si128((__m128i *) (src + x + y_stride_1_1));              \
-    r2   = _mm_min_epu16(x0, cmp0);                                            \
-    x1   = _mm_cmpeq_epi16(cmp0, r2);                                          \
-    x2   = _mm_cmpeq_epi16(x0, r2);                                            \
-    x1   = _mm_sub_epi16(x2, x1);                                              \
-    r2   = _mm_min_epu16(x0, cmp1);                                            \
-    x3   = _mm_cmpeq_epi16(cmp1, r2);                                          \
-    x2   = _mm_cmpeq_epi16(x0, r2);                                            \
-    x3   = _mm_sub_epi16(x2, x3);                                              \
-    x1   = _mm_add_epi16(x1, x3)
-#define SAO_EDGE_FILTER_COMPUTE_10()                                           \
+
+#define SAO_EDGE_FILTER_COMPUTE()                                              \
+    r2 = _mm_min_epu16(x0, cmp0);                                              \
+    x1 = _mm_cmpeq_epi16(cmp0, r2);                                            \
+    x2 = _mm_cmpeq_epi16(x0, r2);                                              \
+    x1 = _mm_sub_epi16(x2, x1);                                                \
+    r2 = _mm_min_epu16(x0, cmp1);                                              \
+    x3 = _mm_cmpeq_epi16(cmp1, r2);                                            \
+    x2 = _mm_cmpeq_epi16(x0, r2);                                              \
+    x3 = _mm_sub_epi16(x2, x3);                                                \
+    x1 = _mm_add_epi16(x1, x3);                                                \
     r0 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-2));                              \
     r1 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-1));                              \
     r2 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(0));                               \
@@ -416,170 +161,161 @@ void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
     r2 = _mm_add_epi16(r2, r3);                                                \
     r0 = _mm_add_epi16(r0, r4);                                                \
     r0 = _mm_add_epi16(r0, r2);                                                \
-    r0 = _mm_add_epi16(r0, x0);                                                \
+    r0 = _mm_add_epi16(r0, x0)
+
+#define SAO_EDGE_FILTER_STORE_8()                                              \
+    r0 = _mm_packus_epi16(r0, r0);                                             \
+    _mm_storel_epi64((__m128i *) (dst + x + y_stride), r0)
+#define SAO_EDGE_FILTER_STORE_10()                                             \
     r1 = _mm_set1_epi16(0x03ff);                                               \
     r0 = _mm_max_epi16(r0, _mm_setzero_si128());                               \
-    r0 = _mm_min_epi16(r0, r1)
+    r0 = _mm_min_epi16(r0, r1);                                                \
+    _mm_storeu_si128((__m128i *) (dst + x + y_stride), r0)
 
+#define SAO_EDGE_FILTER_BORDER_LOOP_8(incr)                                    \
+    x1 = _mm_set1_epi8(sao_offset_val[0]);                                     \
+    for (x = 0; x < width; x += 8) {                                           \
+        x0 = _mm_loadl_epi64((__m128i *) (src + incr));                        \
+        x0 = _mm_add_epi8(x0, x1);                                             \
+        _mm_storel_epi64((__m128i *) (dst + incr), x0);                        \
+    }
+#define SAO_EDGE_FILTER_BORDER_LOOP_10(incr)                                   \
+    x1 = _mm_set1_epi8(sao_offset_val[0]);                                     \
+    for (x = 0; x < width; x += 8) {                                           \
+        x0 = _mm_loadu_si128((__m128i *) (src + incr));                        \
+        x0 = _mm_add_epi16(x0, x1);                                            \
+        _mm_storeu_si128((__m128i *) (dst + incr), x0);                        \
+    }
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-static av_always_inline void ff_hevc_sao_edge_filter_10_sse(uint8_t *_dst, uint8_t *_src,
-        ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,
-        int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge) {
-    int x, y;
-    uint16_t  *dst      = (uint16_t *) _dst;
-    uint16_t *src       = (uint16_t *) _src;
-    ptrdiff_t stride    = _stride >> 1;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int  sao_eo_class   = sao->eo_class[c_idx];
-    const uint8_t edge_idx[]  = { 1, 2, 0, 3, 4 };
-    const int8_t pos[4][2][2] = { { { -1, 0 }, { 1, 0 } }, // horizontal
-        { { 0, -1 }, { 0, 1 } }, // vertical
-        { { -1, -1 }, { 1, 1 } }, // 45 degree
-        { { 1, -1 }, { -1, 1 } }, // 135 degree
-    };
-    int init_x = 0, init_y = 0, width = _width, height = _height;
-    __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4;
-    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
-
-    if (sao_eo_class != SAO_EO_HORIZ) {
-        if (borders[1]) {
-            x1 = _mm_set1_epi16(sao_offset_val[0]);
-            for (x = 0; x < width; x += 8) {
-                x0 = _mm_load_si128((__m128i *) (src + x));
-                x0 = _mm_add_epi16(x0, x1);
-                _mm_store_si128((__m128i *) (dst + x), x0);
-            }
-            init_y = 1;
-        }
-        if (borders[3]) {
-            int y_stride = stride * (_height - 1);
-            x1 = _mm_set1_epi16(sao_offset_val[0]);
-            for (x = 0; x < width; x += 8) {
-                x0 = _mm_load_si128((__m128i *) (src + x + y_stride));
-                x0 = _mm_add_epi16(x0, x1);
-                _mm_store_si128((__m128i *) (dst + x + y_stride), x0);
-            }
-            height--;
-        }
-    }
-
-    {
-        SAO_EDGE_FILTER_INIT_10();
-        if (!(width & 7)) {
-            for (y = init_y; y < height; y++) {
-                for (x = 0; x < width; x += 8) {
-                    SAO_EDGE_FILTER_LOAD_10(x);
-                    SAO_EDGE_FILTER_COMPUTE_10();
-                    _mm_store_si128((__m128i *) (dst + x + y_stride), r0);
-                }
-                y_stride     += stride;
-                y_stride_0_1 += stride;
-                y_stride_1_1 += stride;
-            }
-        } else {
-            for (y = init_y; y < height; y++) {
-                for (x = 0; x < width; x += 4) {
-                    SAO_EDGE_FILTER_LOAD_10(x);
-                    SAO_EDGE_FILTER_COMPUTE_10();
-                    _mm_storel_epi64((__m128i *) (dst + x + y_stride), r0);
-                }
-                y_stride     += stride;
-                y_stride_0_1 += stride;
-                y_stride_1_1 += stride;
-            }
-        }
-    }
-
-    if (sao_eo_class != SAO_EO_VERT) {
-        if (borders[0]) {
-            int offset_val = sao_offset_val[0];
-            int y_stride = 0;
-            for (y = 0; y < height; y++) {
-                dst[y_stride] = av_clip_uintp2(src[y_stride] + offset_val, 10);
-                y_stride     += stride;
-            }
-            init_x = 1;
-        }
-        if (borders[2]) {
-            int offset_val = sao_offset_val[0];
-            int x_stride = _width - 1;
-            for (x = 0; x < height; x++) {
-                dst[x_stride] = av_clip_uintp2(src[x_stride] + offset_val, 10);
-                x_stride     += stride;
-            }
-            width--;
-        }
-    }
+#define SAO_EDGE_FILTER(D)                                                     \
+static av_always_inline void ff_hevc_sao_edge_filter_ ## D ##_sse(             \
+        uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,\
+        int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge,  \
+        uint8_t *horiz_edge, uint8_t *diag_edge) {                             \
+    int x, y;                                                                  \
+    int *sao_offset_val = sao->offset_val[c_idx];                              \
+    int  sao_eo_class   = sao->eo_class[c_idx];                                \
+    const uint8_t edge_idx[]  = { 1, 2, 0, 3, 4 };                             \
+    const int8_t pos[4][2][2] = {                                              \
+        { {-1, 0}, { 1, 0} }, /* horizontal */                                 \
+        { { 0,-1}, { 0, 1} }, /* vertical   */                                 \
+        { {-1,-1}, { 1, 1} }, /* 45 degree  */                                 \
+        { { 1,-1}, {-1, 1} }, /* 135 degree */                                 \
+    };                                                                         \
+    int init_y = 0, width = _width, height = _height;                          \
+    __m128i x0, x1, x2, x3, offset0, offset1, offset2, offset3, offset4;       \
+    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;                                    \
+    SAO_INIT_ ## D();                                                          \
+    if (sao_eo_class != SAO_EO_HORIZ) {                                        \
+        if (borders[1]) {                                                      \
+            SAO_EDGE_FILTER_BORDER_LOOP_ ## D(x);                              \
+            init_y = 1;                                                        \
+        }                                                                      \
+        if (borders[3]) {                                                      \
+            int y_stride = stride * (_height - 1);                             \
+            SAO_EDGE_FILTER_BORDER_LOOP_ ## D(x + y_stride);                   \
+            height--;                                                          \
+        }                                                                      \
+    }                                                                          \
+    {                                                                          \
+        SAO_EDGE_FILTER_INIT();                                                \
+        for (y = init_y; y < height; y++) {                                    \
+            for (x = 0; x < width; x += 8) {                                   \
+                SAO_EDGE_FILTER_LOAD_ ## D();                                  \
+                SAO_EDGE_FILTER_COMPUTE();                                     \
+                SAO_EDGE_FILTER_STORE_ ## D();                                 \
+            }                                                                  \
+            y_stride     += stride;                                            \
+            y_stride_0_1 += stride;                                            \
+            y_stride_1_1 += stride;                                            \
+        }                                                                      \
+    }                                                                          \
+    if (sao_eo_class != SAO_EO_VERT) {                                         \
+        if (borders[0]) {                                                      \
+            int idx        = 0;                                                \
+            int offset_val = sao_offset_val[0];                                \
+            for (y = 0; y < height; y++) {                                     \
+                dst[idx] = av_clip_uintp2(src[idx] + offset_val, D);           \
+                idx     += stride;                                             \
+            }                                                                  \
+        }                                                                      \
+        if (borders[2]) {                                                      \
+            int idx        = _width - 1;                                       \
+            int offset_val = sao_offset_val[0];                                \
+            for (y = 0; y < height; y++) {                                     \
+                dst[idx] = av_clip_uintp2(src[idx] + offset_val, D);           \
+                idx     += stride;                                             \
+            }                                                                  \
+        }                                                                      \
+    }                                                                          \
 }
 
-void ff_hevc_sao_edge_filter_0_10_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,
-                                     int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge) {
-    ff_hevc_sao_edge_filter_10_sse(_dst, _src, _stride, sao, borders, _width, _height,
-            c_idx, vert_edge, horiz_edge, diag_edge);
+SAO_EDGE_FILTER( 8)
+SAO_EDGE_FILTER(10)
+
+#define SAO_EDGE_FILTER_0(D)                                                   \
+void ff_hevc_sao_edge_filter_0_ ## D ##_sse(uint8_t *_dst, uint8_t *_src,      \
+        ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,    \
+        int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge,       \
+        uint8_t *diag_edge) {                                                  \
+    ff_hevc_sao_edge_filter_ ## D ##_sse(_dst, _src, _stride, sao, borders,    \
+            _width, _height, c_idx, vert_edge, horiz_edge, diag_edge);         \
 }
-void ff_hevc_sao_edge_filter_1_10_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,
-                                     int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge) {
-    int x, y;
-    uint16_t  *dst      = (uint16_t *) _dst;
-    uint16_t *src       = (uint16_t *) _src;
-    ptrdiff_t stride    = _stride >> 1;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int  sao_eo_class   = sao->eo_class[c_idx];
-    int init_x = 0, init_y = 0, width = _width, height = _height;
-    int save_upper_left  = !diag_edge[0] && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
-    int save_upper_right = !diag_edge[1] && sao_eo_class == SAO_EO_45D  && !borders[1] && !borders[2];
-    int save_lower_right = !diag_edge[2] && sao_eo_class == SAO_EO_135D && !borders[2] && !borders[3];
-    int save_lower_left  = !diag_edge[3] && sao_eo_class == SAO_EO_45D  && !borders[0] && !borders[3];
-
-    ff_hevc_sao_edge_filter_10_sse(_dst, _src, _stride, sao, borders, _width, _height,
-            c_idx, vert_edge, horiz_edge, diag_edge);
-
-    if (sao_eo_class != SAO_EO_HORIZ) {
-        if (borders[1]) {
-            init_y = 1;
-        }
-        if (borders[3]) {
-            height--;
-        }
-    }
-    if (sao_eo_class != SAO_EO_VERT) {
-        if (borders[0]) {
-            init_x = 1;
-        }
-        if (borders[2]) {
-            width--;
-        }
-    }
-
-    // Restore pixels that can't be modified
-    if(vert_edge[0] && sao_eo_class != SAO_EO_VERT) {
-        for(y = init_y+save_upper_left; y< height-save_lower_left; y++)
-            dst[y*stride] = src[y*stride];
-    }
-    if(vert_edge[1] && sao_eo_class != SAO_EO_VERT) {
-        for(y = init_y+save_upper_right; y< height-save_lower_right; y++)
-            dst[y*stride+width-1] = src[y*stride+width-1];
-    }
-
-    if(horiz_edge[0] && sao_eo_class != SAO_EO_HORIZ) {
-        for(x = init_x+save_upper_left; x < width-save_upper_right; x++)
-            dst[x] = src[x];
-    }
-    if(horiz_edge[1] && sao_eo_class != SAO_EO_HORIZ) {
-        for(x = init_x+save_lower_left; x < width-save_lower_right; x++)
-            dst[(height-1)*stride+x] = src[(height-1)*stride+x];
-    }
-    if(diag_edge[0] && sao_eo_class == SAO_EO_135D)
-        dst[0] = src[0];
-    if(diag_edge[1] && sao_eo_class == SAO_EO_45D)
-        dst[width-1] = src[width-1];
-    if(diag_edge[2] && sao_eo_class == SAO_EO_135D)
-        dst[stride*(height-1)+width-1] = src[stride*(height-1)+width-1];
-    if(diag_edge[3] && sao_eo_class == SAO_EO_45D)
-        dst[stride*(height-1)] = src[stride*(height-1)];
+#define SAO_EDGE_FILTER_1(D)                                                   \
+void ff_hevc_sao_edge_filter_1_ ## D ##_sse(uint8_t *_dst, uint8_t *_src,      \
+        ptrdiff_t _stride, struct SAOParams *sao, int *borders, int _width,    \
+        int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge,       \
+        uint8_t *diag_edge) {                                                  \
+    int x, y;                                                                  \
+    int *sao_offset_val = sao->offset_val[c_idx];                              \
+    int  sao_eo_class   = sao->eo_class[c_idx];                                \
+    int init_x = 0, init_y = 0, width = _width, height = _height;              \
+    int save_upper_left  = !diag_edge[0] && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];\
+    int save_upper_right = !diag_edge[1] && sao_eo_class == SAO_EO_45D  && !borders[1] && !borders[2];\
+    int save_lower_right = !diag_edge[2] && sao_eo_class == SAO_EO_135D && !borders[2] && !borders[3];\
+    int save_lower_left  = !diag_edge[3] && sao_eo_class == SAO_EO_45D  && !borders[0] && !borders[3];\
+    SAO_INIT_ ## D();                                                          \
+    ff_hevc_sao_edge_filter_ ## D ##_sse(_dst, _src, _stride, sao, borders,    \
+            _width, _height, c_idx, vert_edge, horiz_edge, diag_edge);         \
+    if (sao_eo_class != SAO_EO_HORIZ) {                                        \
+        if (borders[1])                                                        \
+            init_y = 1;                                                        \
+        if (borders[3])                                                        \
+            height--;                                                          \
+    }                                                                          \
+    if (sao_eo_class != SAO_EO_VERT) {                                         \
+        if (borders[0])                                                        \
+            init_x = 1;                                                        \
+        if (borders[2])                                                        \
+            width--;                                                           \
+    }                                                                          \
+    /* Restore pixels that can't be modified */                                \
+    if(vert_edge[0] && sao_eo_class != SAO_EO_VERT)                            \
+        for(y = init_y + save_upper_left; y < height - save_lower_left; y++)   \
+            dst[y * stride] = src[y * stride];                                 \
+    if(vert_edge[1] && sao_eo_class != SAO_EO_VERT)                            \
+        for(y = init_y + save_upper_right; y < height - save_lower_right; y++) \
+            dst[y*stride + width - 1] = src[y * stride + width - 1];           \
+    if(horiz_edge[0] && sao_eo_class != SAO_EO_HORIZ)                          \
+        for(x = init_x + save_upper_left; x < width - save_upper_right; x++)   \
+            dst[x] = src[x];                                                   \
+    if(horiz_edge[1] && sao_eo_class != SAO_EO_HORIZ)                          \
+        for(x = init_x + save_lower_left; x < width - save_lower_right; x++)   \
+            dst[(height - 1) * stride + x] = src[(height - 1) * stride + x];   \
+    if(diag_edge[0] && sao_eo_class == SAO_EO_135D)                            \
+        dst[0] = src[0];                                                       \
+    if(diag_edge[1] && sao_eo_class == SAO_EO_45D)                             \
+        dst[width - 1] = src[width - 1];                                       \
+    if(diag_edge[2] && sao_eo_class == SAO_EO_135D)                            \
+        dst[stride*(height-1) + width-1] = src[stride * (height-1) + width-1]; \
+    if(diag_edge[3] && sao_eo_class == SAO_EO_45D)                             \
+        dst[stride * (height - 1)] = src[stride * (height - 1)];               \
 }
 
+SAO_EDGE_FILTER_0( 8)
+SAO_EDGE_FILTER_1( 8)
+
+SAO_EDGE_FILTER_0(10)
+SAO_EDGE_FILTER_1(10)
