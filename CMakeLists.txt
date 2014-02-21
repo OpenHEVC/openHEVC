@@ -18,10 +18,10 @@ find_program(YASM_EXECUTABLE yasm)
 
 #define asm sources
 set(YASM_NAMES
-    libavcodec/x86/hevc_mc
-    libavcodec/x86/hevc_deblock
-    libavutil/x86/cpuid
-    libavcodec/x86/videodsp
+    libavcodec/x86/hevc_mc.asm
+    libavcodec/x86/hevc_deblock.asm
+    libavutil/x86/cpuid.asm
+    libavcodec/x86/videodsp.asm
 )
 
 set(COMMON_YASM_ARGS
@@ -44,9 +44,10 @@ else()
 endif()
 
 #compile all asm files
-foreach(src ${YASM_NAMES})
-    set(YASM_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${src}.asm")
-    set(YASM_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/${src}.o")
+foreach(_asm_file ${YASM_NAMES})
+    set(YASM_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${_asm_file}")
+    get_filename_component(BASENAME ${YASM_SRC} NAME_WE)
+    set(YASM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/${BASENAME}.o")
     add_custom_command(
         OUTPUT ${YASM_OBJ}
         COMMAND "${YASM_EXECUTABLE}"
