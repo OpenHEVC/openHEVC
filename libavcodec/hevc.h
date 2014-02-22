@@ -462,6 +462,7 @@ typedef struct ScalingList {
 typedef struct HEVCSPS {
     int vps_id;
     int chroma_format_idc;
+    int chroma_array_type;
     uint8_t separate_colour_plane_flag;
 
     ///< output (i.e. cropped) values
@@ -520,6 +521,8 @@ typedef struct HEVCSPS {
 
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
+
+    int intra_smoothing_disabled_flag;
 
     ///< coded frame dimension in various units
     int width;

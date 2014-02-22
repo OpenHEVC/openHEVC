@@ -454,7 +454,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                                                        0, &mv_l1_col, 1) : 0;
 
         if (available_l0 || available_l1) {
-            mergecandlist[nb_merge_cand].pred_flag    = available_l0 + (available_l1 << 1);
+            mergecandlist[nb_merge_cand].pred_flag = available_l0 + (available_l1 << 1);
             if (available_l0) {
                 mergecandlist[nb_merge_cand].mv[0]      = mv_l0_col;
                 mergecandlist[nb_merge_cand].ref_idx[0] = 0;
