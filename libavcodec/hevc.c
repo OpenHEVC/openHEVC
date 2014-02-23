@@ -1756,7 +1756,7 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0,
             for (j = 0; j < side; j++) {
                 chroma_mode = ff_hevc_intra_chroma_pred_mode_decode(s);
                 if (chroma_mode != 4) {
-                    if (lc->pu.intra_pred_mode[0] == intra_chroma_table[chroma_mode])
+                    if (lc->pu.intra_pred_mode[2 * i + j] == intra_chroma_table[chroma_mode])
                         lc->pu.intra_pred_mode_c[2 * i + j] = 34;
                     else
                         lc->pu.intra_pred_mode_c[2 * i + j] = intra_chroma_table[chroma_mode];
