@@ -83,7 +83,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 
     int min_pu_width = s->sps->min_pu_width;
 
-    enum IntraPredMode mode = c_idx ? lc->pu.intra_pred_mode_c :
+    enum IntraPredMode mode = c_idx ? lc->tu.cur_intra_pred_mode_c :
                               lc->tu.cur_intra_pred_mode;
     pixel4 a;
     pixel left_array[2 * MAX_TB_SIZE + 1];
@@ -307,8 +307,8 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     top[-1] = left[-1];
 
     // Filtering process
-    //(!intraReferenceSmoothingDisabled) && (isLuma(chType) || (chFmt == CHROMA_444)
-    if (c_idx == 0 && mode != INTRA_DC && size != 4 && !s->sps->intra_smoothing_disabled_flag) {
+    if (c_idx == 0 && mode != INTRA_DC && size != 4 &&
+        !s->sps->intra_smoothing_disabled_flag && s->sps->chroma_format_idc !=3) {
         int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
         int min_dist_vert_hor = FFMIN(FFABS((int)(mode - 26U)),
                                       FFABS((int)(mode - 10U)));

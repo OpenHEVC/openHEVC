@@ -749,7 +749,7 @@ typedef struct PredictionUnit {
     uint8_t intra_pred_mode[4];
     Mv mvd;
     uint8_t merge_flag;
-    uint8_t intra_pred_mode_c;
+    uint8_t intra_pred_mode_c[4];
 } PredictionUnit;
 
 typedef struct TransformTree {
@@ -766,6 +766,7 @@ typedef struct TransformUnit {
 
     // Inferred parameters;
     int cur_intra_pred_mode;
+    int cur_intra_pred_mode_c;
     uint8_t is_cu_qp_delta_coded;
 } TransformUnit;
 
