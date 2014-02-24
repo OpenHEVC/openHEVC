@@ -890,7 +890,7 @@ void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,   \
 
 PRED_ANGULAR( 4, 8)
 PRED_ANGULAR( 8, 8)
-//PRED_ANGULAR(16, 8)
+PRED_ANGULAR(16, 8)
 PRED_ANGULAR(32, 8)
 
 PRED_ANGULAR( 4,10)
@@ -898,52 +898,6 @@ PRED_ANGULAR( 8,10)
 PRED_ANGULAR(16,10)
 PRED_ANGULAR(32,10)
 
-void pred_angular_16_8_sse(uint8_t *_src, const uint8_t *_top,
-        const uint8_t *_left, ptrdiff_t _stride, int c_idx, int mode) {
-    const int intra_pred_angle[] = {
-         32, 26, 21, 17, 13,  9,  5,  2,  0, -2, -5, -9,-13,-17,-21,-26,
-        -32,-26,-21,-17,-13, -9, -5, -2,  0,  2,  5,  9, 13, 17, 21, 26, 32
-    };
-    const int inv_angle[] = {
-        -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,
-        -630, -910, -1638, -4096
-    };
-    int i, x, y;
-    __m128i r0, r1, r2, r3, r4;
-    int            angle   = intra_pred_angle[mode-2];
-    int            angle_i = angle;
-    int            last    = (16 * angle) >> 5;
-    int            stride;
-    PRED_ANGULAR_INIT_8(16);
-    if (angle < 0 && last < -1) {
-        ref = ref_array + 16;
-        for (y = last; y <= -1; y++)
-            ref[y] = src2[-1 + ((y * inv_angle[mode-11] + 128) >> 8)];
-         PRED_ANGULAR_STORE1_16_8();
-    }
-    for (y = 0; y < 16; y++) {
-        int idx  = (angle_i) >> 5;
-        int fact = (angle_i) & 31;
-        if (fact) {
-            ANGULAR_COMPUTE16_8();
-        } else {
-            ANGULAR_COMPUTE_ELSE16_8();
-        }
-        angle_i += angle;
-        p_src   += stride;
-    }
-    if (mode >= 18) {
-        if (mode == 26 && c_idx == 0) {
-            CLIP_PIXEL1_16_8();
-        }
-    } else {
-        TRANSPOSE16x16_8(src_tmp, 16, p_out, _stride);
-
-        if (mode == 10 && c_idx == 0) {
-            CLIP_PIXEL2_16_8();
-        }
-    }
-}
 void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_4_8_sse(_src, _top, _left, _stride, c_idx, mode);
