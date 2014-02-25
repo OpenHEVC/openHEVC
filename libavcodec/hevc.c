@@ -1763,7 +1763,6 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0,
                 } else {
                     lc->pu.intra_pred_mode_c[2 * i + j] = lc->pu.intra_pred_mode[2 * i + j];
                 }
-                printf("lc->pu.intra_pred_mode_c[2 * i + j] %d\n", lc->pu.intra_pred_mode_c[2 * i + j]);
             }
         }
     } else if (s->sps->chroma_array_type  !=  0) {
