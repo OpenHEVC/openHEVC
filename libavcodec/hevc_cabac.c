@@ -1248,13 +1248,21 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 ctx_idx_map_p = &ctx_idx_map[0];
             } else {
                 ctx_idx_map_p = &ctx_idx_map[(prev_sig + 1) << 4];
-                if (c_idx == 0 && (x_cg > 0 || y_cg > 0))
-                    scf_offset += 3;
-                if (log2_trafo_size == 3) {
-                    scf_offset += (scan_idx == SCAN_DIAG) ? 9 : 15;
+                if (c_idx == 0) {
+                    if ((x_cg > 0 || y_cg > 0))
+                        scf_offset += 3;
+                    if (log2_trafo_size == 3) {
+                        scf_offset += (scan_idx == SCAN_DIAG) ? 9 : 15;
+                    } else {
+                        scf_offset += 21;
+                    }
                 } else {
-                    scf_offset += c_idx ? 12 : 21;
+                    if (log2_trafo_size == 3)
+                        scf_offset += 9;
+                    else
+                        scf_offset += 12;
                 }
+
             }
             for (n = n_end; n > 0; n--) {
                 x_c = scan_x_off[n];

@@ -1106,7 +1106,7 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
                                lc->tt.inter_split_flag;
     }
 
-    if (log2_trafo_size > 2 && s->sps->chroma_array_type) {
+    if (log2_trafo_size > 2 || s->sps->chroma_array_type == 3) {
         if (trafo_depth == 0 ||
             SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth - 1], xBase, yBase)) {
             SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) =
@@ -1763,6 +1763,7 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0,
                 } else {
                     lc->pu.intra_pred_mode_c[2 * i + j] = lc->pu.intra_pred_mode[2 * i + j];
                 }
+                printf("lc->pu.intra_pred_mode_c[2 * i + j] %d\n", lc->pu.intra_pred_mode_c[2 * i + j]);
             }
         }
     } else if (s->sps->chroma_array_type  !=  0) {
