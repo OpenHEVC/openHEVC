@@ -2921,12 +2921,13 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     /* verify the SEI checksum */
     if (s->decode_checksum_sei && s->is_decoded) {
         AVFrame *frame = s->ref->frame;
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
         int cIdx;
         uint8_t md5[3][16];
 
         calc_md5(md5[0], frame->data[0], frame->linesize[0], s->sps->width  , s->sps->height  , s->sps->pixel_shift);
-        calc_md5(md5[1], frame->data[1], frame->linesize[1], s->sps->width/2, s->sps->height/2, s->sps->pixel_shift);
-        calc_md5(md5[2], frame->data[2], frame->linesize[2], s->sps->width/2, s->sps->height/2, s->sps->pixel_shift);
+        calc_md5(md5[1], frame->data[1], frame->linesize[1], s->sps->width >> desc->log2_chroma_w, s->sps->height >> desc->log2_chroma_h, s->sps->pixel_shift);
+        calc_md5(md5[2], frame->data[2], frame->linesize[2], s->sps->width >> desc->log2_chroma_w, s->sps->height >> desc->log2_chroma_h, s->sps->pixel_shift);
         if (s->is_md5) {
             for( cIdx = 0; cIdx < ((s->sps->chroma_array_type == 0) ? 1 : 3); cIdx++ ) {
                 if (!compare_md5(md5[cIdx], s->md5[cIdx])) {
