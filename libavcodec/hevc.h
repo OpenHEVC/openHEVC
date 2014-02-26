@@ -274,14 +274,14 @@ enum ScanType {
 
 #ifdef SVC_EXTENSION
 typedef struct UpsamplInf {
-	int addXLum;
-	int addYLum;
-	int scaleXLum;
-	int scaleYLum;
-	int addXCr;
-	int addYCr;
-	int scaleXCr;
-	int scaleYCr;
+    int addXLum;
+    int addYLum;
+    int scaleXLum;
+    int scaleYLum;
+    int addXCr;
+    int addYCr;
+    int scaleXCr;
+    int scaleYCr;
 } UpsamplInf;
 #endif
 
@@ -460,7 +460,7 @@ typedef struct ScalingList {
 } ScalingList;
 
 typedef struct HEVCSPS {
-    int vps_id;
+    unsigned vps_id;
     int chroma_format_idc;
     uint8_t separate_colour_plane_flag;
 
@@ -547,7 +547,7 @@ typedef struct HEVCSPS {
 } HEVCSPS;
 
 typedef struct HEVCPPS {
-    int sps_id; ///< seq_parameter_set_id
+    unsigned sps_id; ///< seq_parameter_set_id
 
     uint8_t sign_data_hiding_flag;
 

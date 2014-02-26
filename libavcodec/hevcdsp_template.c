@@ -26,7 +26,6 @@
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
 #include "hevc_up_sample_filter.h"
-#include "hevc.h"
 
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int size,
@@ -54,7 +53,7 @@ static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs,
 
     for (y = 0; y < 4; y++) {
         for (x = 0; x < 4; x++) {
-            dst[x] += *coeffs;
+            dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
@@ -71,7 +70,7 @@ static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs,
 
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x++) {
-            dst[x] += *coeffs;
+            dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
@@ -88,7 +87,7 @@ static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs,
 
     for (y = 0; y < 16; y++) {
         for (x = 0; x < 16; x++) {
-            dst[x] += *coeffs;
+            dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
@@ -105,7 +104,7 @@ static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs,
 
     for (y = 0; y < 32; y++) {
         for (x = 0; x < 32; x++) {
-            dst[x] += *coeffs;
+            dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
@@ -294,7 +293,6 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
     pixel *src = (pixel *)_src;
     int offset_table[32] = { 0 };
     int k, y, x;
-    int chroma = !!c_idx;
     int shift  = BIT_DEPTH - 5;
     int *sao_offset_val = sao->offset_val[c_idx];
     int sao_left_class  = sao->band_position[c_idx];
@@ -305,7 +303,7 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
         offset_table[(k + sao_left_class) & 31] = sao_offset_val[k + 1];
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(src[x] + offset_table[av_clip_pixel(src[x] >> shift)]);
+            dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
         dst += stride;
         src += stride;
     }
@@ -822,7 +820,7 @@ static void FUNC(hevc_loop_filter_luma)(uint8_t *_pix,
         const int no_p = _no_p[j];
         const int no_q = _no_q[j];
 
-        if (d0 + d3 >= beta /*|| tc <= 0*/) {
+        if (d0 + d3 >= beta) {
             pix += 4 * ystride;
             continue;
         } else {

@@ -29,7 +29,6 @@
 #include "golomb.h"
 #include "hevc.h"
 #include "bit_depth_template.c"
-
 #if ARCH_X86_64
 #include <emmintrin.h>
 #include <tmmintrin.h>

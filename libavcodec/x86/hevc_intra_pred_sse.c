@@ -842,7 +842,7 @@ PRED_PLANAR_3(10)
 
 
 #define PRED_ANGULAR(W, D)                                                     \
-void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,   \
+static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,   \
         const uint8_t *_left, ptrdiff_t _stride, int c_idx, int mode) {        \
     const int intra_pred_angle[] = {                                           \
          32, 26, 21, 17, 13,  9,  5,  2,  0, -2, -5, -9,-13,-17,-21,-26,       \

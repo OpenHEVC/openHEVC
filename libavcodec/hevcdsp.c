@@ -123,7 +123,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 #undef FUNC
 #define FUNC(a, depth) a ## _ ## depth
 
-
 #undef WEIGHTED_FUNC
 #define WEIGHTED_FUNC(dst1, a, depth)                                   \
     hevcdsp->dst1[0] = hevcdsp->dst1[1] = hevcdsp->dst1[2] = hevcdsp->dst1[3] = hevcdsp->dst1[4] = hevcdsp->dst1[5] = a ## _ ## depth
