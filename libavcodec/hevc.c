@@ -2529,17 +2529,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     case NAL_RADL_R:
     case NAL_RASL_N:
     case NAL_RASL_R:
-#if 1
-    {
-        int loss_rate = 10;
-        int var = (rand()%100);
-        if( var < loss_rate && (s->nal_unit_type != NAL_VPS) && (s->nal_unit_type != NAL_SPS) && (s->nal_unit_type != NAL_PPS))
-            get_bits(gb, 3);
-            
-            //  Packet loss
-            //return 0;
-    }
-#endif
         ret = hls_slice_header(s);
         if (ret < 0)
             return ret;
