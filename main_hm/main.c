@@ -9,6 +9,9 @@
 #include "getopt.h"
 #include <libavformat/avformat.h>
 
+/* Globlal variables from openHevcWrapper.c */
+extern unsigned long frameclk;
+extern unsigned long accum;
 
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
@@ -115,9 +118,11 @@ static void video_decode_example(const char *filename)
     while(!stop) {
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
         if (packet.stream_index == video_stream_idx || stop_dec == 1) {
+        	printf("\nDecoding frame %d...", nbFrame);
             got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
             if (got_picture > 0) {
                 fflush(stdout);
+            	printf("\nFrame %d decoded in %lu clks, accumulated: %lu clks\n", nbFrame, frameclk, accum);
                 libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
                 if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
                     width  = openHevcFrame.frameInfo.nWidth;

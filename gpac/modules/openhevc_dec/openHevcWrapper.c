@@ -24,6 +24,8 @@
 #include "libavformat/avformat.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "C:/ti/bios_5_42_01_09/packages/ti/bios/include/std.h"
+#include "C:/ti/bios_5_42_01_09/packages/ti/bios/include/clk.h"
 
 #define MAX_DECODERS 2
 #define ACTIVE_NAL
@@ -41,6 +43,18 @@ typedef struct OpenHevcWrapperContexts {
     int active_layer;
     int set_vps;
 } OpenHevcWrapperContexts;
+
+unsigned long frameclk = 0;
+unsigned long accum = 0;
+
+static unsigned int decana_getclk(unsigned int end, unsigned int ini) {
+	if (end > ini)
+		return end - ini;
+	else {
+		//printf("Timer overflow corrected!\n");
+		return 0xFFFFFFFF - ini + end + 1;
+	}
+}
 
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
 {
@@ -107,14 +121,20 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     int got_picture[MAX_DECODERS], len, i;
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
+    unsigned int ini = 0;
+    unsigned int end = 0;
     for(i =0; i <= openHevcContexts->active_layer; i++)  {
         got_picture[i]              = 0;
         openHevcContext             = openHevcContexts->wraper[i];
         openHevcContext->avpkt.size = au_len;
         openHevcContext->avpkt.data = buff;
         openHevcContext->avpkt.pts  = pts;
+        ini = CLK_gethtime();
         len                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
                                                              &got_picture[i], &openHevcContext->avpkt);
+        end = CLK_gethtime();
+        frameclk = decana_getclk(end, ini);
+        accum += frameclk;
 //        if(i+1 < openHevcContexts->nb_decoders)
 //            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
