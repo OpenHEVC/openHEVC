@@ -1485,6 +1485,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     if (current_mv.pred_flag == PF_L0) {
         DECLARE_ALIGNED(16, int16_t,  tmp[MAX_PB_SIZE * MAX_PB_SIZE]);
         DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
+        ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
+
+        if (!ref0)
+            return;
 
         luma_mc(s, tmp, tmpstride, ref0->frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH, idx);
@@ -1521,6 +1525,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     } else if (current_mv.pred_flag == PF_L1) {
         DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
         DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
+        ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
 
         if (!ref1)
             return;
@@ -1561,8 +1566,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
         DECLARE_ALIGNED(16, int16_t, tmp3[MAX_PB_SIZE * MAX_PB_SIZE]);
         DECLARE_ALIGNED(16, int16_t, tmp4[MAX_PB_SIZE * MAX_PB_SIZE]);
-        HEVCFrame *ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
-        HEVCFrame *ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
+        ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
+        ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
 
         if (!ref0 || !ref1)
             return;
