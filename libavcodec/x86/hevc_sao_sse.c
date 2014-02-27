@@ -92,7 +92,7 @@ void ff_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
     int *sao_offset_val = sao->offset_val[c_idx];                              \
     int  sao_left_class = sao->band_position[c_idx];                           \
     __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4;            \
-    __m128i src0, src1, src2, src3;                                            \
+    __m128i src0, src2;                                                        \
     SAO_INIT_ ## D();                                                          \
     SAO_BAND_FILTER_INIT();                                                    \
     for (y = 0; y < height; y++) {                                             \
@@ -270,7 +270,6 @@ void ff_hevc_sao_edge_filter_1_ ## D ##_sse(uint8_t *_dst, uint8_t *_src,      \
         int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge,       \
         uint8_t *diag_edge) {                                                  \
     int x, y;                                                                  \
-    int *sao_offset_val = sao->offset_val[c_idx];                              \
     int  sao_eo_class   = sao->eo_class[c_idx];                                \
     int init_x = 0, init_y = 0, width = _width, height = _height;              \
     int save_upper_left  = !diag_edge[0] && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];\

@@ -83,7 +83,7 @@
 void pred_planar_0_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,           \
         const uint8_t *_left, ptrdiff_t stride) {                              \
     __m128i ly, l0, tx, ly1;                                                   \
-    __m128i tmp1, tmp2, add, x0, c0, c1, C0, C1;                               \
+    __m128i tmp1, add, x0, c0, c1, C0;                                         \
     PLANAR_INIT_ ## D();                                                       \
     tx   = _mm_set1_epi16(top[4]);                                             \
     l0   = _mm_set1_epi16(left[4]);                                            \
@@ -132,7 +132,7 @@ void pred_planar_1_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,           \
         const uint8_t *_left, ptrdiff_t stride) {                              \
     int y;                                                                     \
     __m128i ly, l0, tx, ly1;                                                   \
-    __m128i tmp1, tmp2, add, x0, c0, c1, C0, C1;                               \
+    __m128i tmp1, add, x0, c0, c1;                                             \
     PLANAR_INIT_ ## D();                                                       \
     tx   = _mm_set1_epi16(top[8]);                                             \
     l0   = _mm_set1_epi16(left[8]);                                            \
@@ -840,6 +840,26 @@ PRED_PLANAR_3(10)
     _mm_store_si128((__m128i *) (&ref[24]), r0);                               \
     ref[32] = src1[31]
 
+#define PRED_ANGULAR_WAR()                                                     \
+    int y;                                                                     \
+    __m128i r0, r1, r3
+
+#define PRED_ANGULAR_WAR4_8()                                                  \
+    PRED_ANGULAR_WAR();                                                        \
+    __m128i r2
+#define PRED_ANGULAR_WAR8_8()                                                  \
+    PRED_ANGULAR_WAR4_8();                                                       \
+    int x
+#define PRED_ANGULAR_WAR16_8()                                                 \
+    PRED_ANGULAR_WAR8_8()
+#define PRED_ANGULAR_WAR32_8()                                                 \
+    PRED_ANGULAR_WAR();                                                        \
+    int x
+
+#define PRED_ANGULAR_WAR4_10()    PRED_ANGULAR_WAR8_8()
+#define PRED_ANGULAR_WAR8_10()    PRED_ANGULAR_WAR8_8()
+#define PRED_ANGULAR_WAR16_10()   PRED_ANGULAR_WAR16_8()
+#define PRED_ANGULAR_WAR32_10()   PRED_ANGULAR_WAR32_8()
 
 #define PRED_ANGULAR(W, D)                                                     \
 static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,   \
@@ -852,8 +872,7 @@ static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src, 
         -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,    \
         -630, -910, -1638, -4096                                               \
     };                                                                         \
-    int x, y;                                                                  \
-    __m128i r0, r1, r2, r3, r4;                                                \
+    PRED_ANGULAR_WAR ## W ## _ ## D();                                         \
     int            angle   = intra_pred_angle[mode-2];                         \
     int            angle_i = angle;                                            \
     int            last    = (W * angle) >> 5;                                 \
