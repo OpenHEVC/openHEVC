@@ -22,14 +22,15 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
-#include <fcntl.h>
+#include "dsp/fcntl.h"
+#include <file.h>
 #if HAVE_IO_H
 #include <io.h>
 #endif
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <sys/stat.h>
+//#include <sys/stat.h>
 #include <stdlib.h>
 #include "os_support.h"
 #include "url.h"
@@ -75,7 +76,7 @@ static int file_get_handle(URLContext *h)
 
 static int file_check(URLContext *h, int mask)
 {
-    struct stat st;
+    /*struct stat st;
     int ret = stat(h->filename, &st);
     if (ret < 0)
         return AVERROR(errno);
@@ -83,7 +84,8 @@ static int file_check(URLContext *h, int mask)
     ret |= st.st_mode&S_IRUSR ? mask&AVIO_FLAG_READ  : 0;
     ret |= st.st_mode&S_IWUSR ? mask&AVIO_FLAG_WRITE : 0;
 
-    return ret;
+    return ret;*/
+	return 0;
 }
 
 #if CONFIG_FILE_PROTOCOL
@@ -123,12 +125,12 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
     FileContext *c = h->priv_data;
     int64_t ret;
 
-    if (whence == AVSEEK_SIZE) {
+    /*if (whence == AVSEEK_SIZE) {
         struct stat st;
 
         ret = fstat(c->fd, &st);
         return ret < 0 ? AVERROR(errno) : st.st_size;
-    }
+    }*/
 
     ret = lseek(c->fd, pos, whence);
 

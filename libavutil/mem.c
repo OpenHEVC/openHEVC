@@ -37,6 +37,7 @@
 #include "avutil.h"
 #include "intreadwrite.h"
 #include "mem.h"
+#include "dsp/errno.h"
 
 #ifdef MALLOC_PREFIX
 

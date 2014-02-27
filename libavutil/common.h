@@ -37,6 +37,7 @@
 #include "attributes.h"
 #include "libavutil/avconfig.h"
 #include "libavutil/internal.h"
+#include "dsp/errno.h"
 
 #if AV_HAVE_BIGENDIAN
 #   define AV_NE(be, le) (be)

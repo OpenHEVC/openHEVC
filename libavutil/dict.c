@@ -25,6 +25,7 @@
 #include "dict.h"
 #include "internal.h"
 #include "mem.h"
+#include "dsp/errno.h"
 
 struct AVDictionary {
     int count;

@@ -42,15 +42,15 @@
 #define ENABLE  1
 
 
-int check_md5_flags;
-int thread_type;
-char *input_file;
-char display_flags;
-char *output_file;
-int nb_pthreads;
-int temporal_layer_id;
-int quality_layer_id;
-int no_cropping;
+extern int check_md5_flags;
+extern int thread_type;
+extern char *input_file;
+extern char display_flags;
+extern char *output_file;
+extern int nb_pthreads;
+extern int temporal_layer_id;
+extern int quality_layer_id;
+extern int no_cropping;
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);

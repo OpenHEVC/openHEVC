@@ -29,7 +29,7 @@
 
 #include "config.h"
 
-#include <sys/stat.h>
+//#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
 #  include <fcntl.h>
@@ -46,7 +46,7 @@
 #endif
 #define mkdir(a, b) _mkdir(a)
 #else
-#include <sys/stat.h>
+//#include <sys/stat.h>
 #endif
 
 static inline int is_dos_path(const char *path)

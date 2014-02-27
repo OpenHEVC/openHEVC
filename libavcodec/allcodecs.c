@@ -66,7 +66,7 @@
 
 void avcodec_register_all(void)
 {
-    static int initialized;
+    static int initialized = 0;
 
     if (initialized)
         return;

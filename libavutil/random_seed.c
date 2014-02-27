@@ -27,7 +27,7 @@
 #include <windows.h>
 #include <wincrypt.h>
 #endif
-#include <fcntl.h>
+#include "dsp/fcntl.h"
 #include <math.h>
 #include <time.h>
 #include "timer.h"

@@ -24,6 +24,8 @@
 #include "url.h"
 #include "version.h"
 
+extern URLProtocol ff_file_protocol;
+
 #define REGISTER_MUXER(X, x)                                            \
     {                                                                   \
         extern AVOutputFormat ff_##x##_muxer;                           \
@@ -50,7 +52,7 @@
 
 void av_register_all(void)
 {
-    static int initialized;
+    static int initialized = 0;
 
     if (initialized)
         return;

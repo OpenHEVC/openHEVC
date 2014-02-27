@@ -25,6 +25,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
 #include "url.h"
+#include "dsp/errno.h"
 
 #define AV_CAT_SEPARATOR "|"
 

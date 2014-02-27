@@ -74,6 +74,7 @@ static void video_decode_example(const char *filename)
     OpenHevc_Frame_cpy openHevcFrameCpy;
     OpenHevc_Handle    openHevcHandle;
 
+    av_log_set_level(AV_LOG_DEBUG);
     openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
@@ -111,7 +112,6 @@ static void video_decode_example(const char *filename)
     openHevcFrameCpy.pvU = NULL;
     openHevcFrameCpy.pvV = NULL;
 
-    Init_Time();
     while(!stop) {
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
         if (packet.stream_index == video_stream_idx || stop_dec == 1) {
@@ -129,9 +129,6 @@ static void video_decode_example(const char *filename)
                         fout = fopen(output_file2, "wb");
                     }
 
-                    if (display_flags == ENABLE) {
-                        Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
-                    }
                     if (fout) {
                         int nbData;
                         libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
@@ -146,12 +143,7 @@ static void video_decode_example(const char *filename)
                         openHevcFrameCpy.pvV = calloc ( nbData / 4, sizeof(unsigned char));
                     }
                 }
-                if (display_flags == ENABLE) {
-                    libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
-                    libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
-                    SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
-                            openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
-                }
+
                 if (fout) {
                     int nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight * (openHevcFrameCpy.frameInfo.nBitDepth==8 ? 1 : 2);
                     libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
@@ -164,8 +156,7 @@ static void video_decode_example(const char *filename)
                 stop = 1;
         }
     }
-    time = SDL_GetTime()/1000.0;
-    CloseSDLDisplay();
+
     if (fout) {
         fclose(fout);
         if(openHevcFrameCpy.pvY) {
@@ -180,7 +171,11 @@ static void video_decode_example(const char *filename)
 }
 
 int main(int argc, char *argv[]) {
-    init_main(argc, argv);
+	int c = 5;
+	char *v[5] = {"hevc","-i","D:/downloads/BasketballPass_416x240_50_qp37.bin","-o","D:/test.yuv"};
+
+    //init_main(argc, argv);
+    init_main(c, v);
     video_decode_example(input_file);
     return 0;
 }

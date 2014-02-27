@@ -44,8 +44,27 @@ optopt,                        /* character checked for validity */
 optreset;                /* reset getopt */
 char *optarg;                /* argument associated with option */
 
+int check_md5_flags;
+int thread_type;
+char *input_file;
+char display_flags;
+char *output_file;
+int nb_pthreads;
+int temporal_layer_id;
+int quality_layer_id;
+int no_cropping;
+
 static const char *usage = "%s: -i <file> [-n]\n";
 static char *program;
+
+static char *strdup (const char *s) {
+	size_t len = strlen (s) + 1;
+	void *new = malloc (len);
+
+	if (new == NULL)
+		return NULL;
+	return (char *) memcpy (new, s, len);
+}
 
 void print_usage() {
     printf(usage, program);

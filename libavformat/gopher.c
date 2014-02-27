@@ -25,7 +25,9 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
+#if CONFIG_NETWORK
 #include "network.h"
+#endif
 #include "url.h"
 
 typedef struct {

@@ -33,6 +33,7 @@
 
 #include "libavutil/time.h"
 #include "error.h"
+#include "dsp/errno.h"
 
 int64_t av_gettime(void)
 {

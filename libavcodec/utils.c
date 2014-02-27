@@ -50,9 +50,9 @@
 #include <float.h>
 
 static int volatile entangled_thread_counter = 0;
-static int (*lockmgr_cb)(void **mutex, enum AVLockOp op);
-static void *codec_mutex;
-static void *avformat_mutex;
+static int (*lockmgr_cb)(void **mutex, enum AVLockOp op) = NULL;
+static void *codec_mutex = NULL;
+static void *avformat_mutex = NULL;
 
 #define attribute_align_arg
 
@@ -2021,9 +2021,27 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
 }
 
 #if !HAVE_THREADS
+
 int ff_thread_init(AVCodecContext *s)
 {
     return -1;
+}
+
+int ff_alloc_entries(AVCodecContext *avctx, int count)
+{
+    return 0;
+}
+
+void ff_reset_entries(AVCodecContext *avctx)
+{
+}
+
+void ff_thread_await_progress2(AVCodecContext *avctx, int field, int thread, int shift)
+{
+}
+
+void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n)
+{
 }
 
 #endif

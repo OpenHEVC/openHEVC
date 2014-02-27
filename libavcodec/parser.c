@@ -24,6 +24,9 @@
 
 #include "parser.h"
 #include "libavutil/mem.h"
+#include "config.h"
+#include "dsp/errno.h"
+
 
 static AVCodecParser *av_first_parser = NULL;
 
