@@ -26,6 +26,7 @@
 #include "libavutil/opt.h"
 #include "C:/ti/bios_5_42_01_09/packages/ti/bios/include/std.h"
 #include "C:/ti/bios_5_42_01_09/packages/ti/bios/include/clk.h"
+#include "decana.h"
 
 #define MAX_DECODERS 2
 #define ACTIVE_NAL
@@ -46,15 +47,6 @@ typedef struct OpenHevcWrapperContexts {
 
 unsigned long frameclk = 0;
 unsigned long accum = 0;
-
-static unsigned int decana_getclk(unsigned int end, unsigned int ini) {
-	if (end > ini)
-		return end - ini;
-	else {
-		//printf("Timer overflow corrected!\n");
-		return 0xFFFFFFFF - ini + end + 1;
-	}
-}
 
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
 {

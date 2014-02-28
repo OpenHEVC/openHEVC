@@ -6,7 +6,7 @@
 //
 //
 
-//#define DECANA 1
+#define DECANA 1
 #include "openHevcWrapper.h"
 #include "getopt.h"
 #include <libavformat/avformat.h>
@@ -186,7 +186,7 @@ static void video_decode_example(const char *filename)
 
 int main(int argc, char *argv[]) {
 #ifdef DECANA
-	decana_init(&decana, "C:/jpc/jpcano/automate/.SWAPFILE");
+	decana_init(&decana, "D:/automate/.SWAPFILE");
 	printf("Decoding: %s\n", decana.bitstream);
 	video_decode_example(decana.bitstream);
 #else
