@@ -5,9 +5,15 @@
 //  Created by Mickaël Raulet on 11/10/12.
 //
 //
+
+//#define DECANA 1
 #include "openHevcWrapper.h"
 #include "getopt.h"
 #include <libavformat/avformat.h>
+#ifdef DECANA
+#include "decana.h"
+TDecana decana;
+#endif
 
 /* Globlal variables from openHevcWrapper.c */
 extern unsigned long frameclk;
@@ -133,7 +139,6 @@ static void video_decode_example(const char *filename)
                         sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
                         fout = fopen(output_file2, "wb");
                     }
-
                     if (fout) {
                         int nbData;
                         libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
@@ -148,7 +153,6 @@ static void video_decode_example(const char *filename)
                         openHevcFrameCpy.pvV = calloc ( nbData / 4, sizeof(unsigned char));
                     }
                 }
-
                 if (fout) {
                     int nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight * (openHevcFrameCpy.frameInfo.nBitDepth==8 ? 1 : 2);
                     libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
@@ -157,11 +161,16 @@ static void video_decode_example(const char *filename)
                     fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , nbData / 4, fout);
                 }
                 nbFrame++;
+#ifdef DECANA
+                if (nbFrame == decana.frames) {
+                	decana_writeresult(decana, accum);
+                    exit(0);
+                }
+#endif
             } else  if (stop_dec==1 && nbFrame)
                 stop = 1;
         }
     }
-
     if (fout) {
         fclose(fout);
         if(openHevcFrameCpy.pvY) {
@@ -176,12 +185,17 @@ static void video_decode_example(const char *filename)
 }
 
 int main(int argc, char *argv[]) {
+#ifdef DECANA
+	decana_init(&decana, "C:/jpc/jpcano/automate/.SWAPFILE");
+	printf("Decoding: %s\n", decana.bitstream);
+	video_decode_example(decana.bitstream);
+#else
 	int c = 5;
 	char *v[5] = {"hevc","-i","D:/downloads/BasketballPass_416x240_50_qp37.bin","-o","D:/test.yuv"};
-
-    //init_main(argc, argv);
-    init_main(c, v);
-    video_decode_example(input_file);
+	//init_main(argc, argv);
+	init_main(c, v);
+	video_decode_example(input_file);
+#endif
     return 0;
 }
 
