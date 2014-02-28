@@ -2168,6 +2168,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
         if (more_data < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
+            avpriv_atomic_int_set(&s1->wpp_err,  1);
+            ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
             return more_data;
         }
 
@@ -2299,7 +2301,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 
     ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
 
-    if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0) {
+    if (s->sh.num_entry_point_offsets > 0) {
         offset = (lc->gb.index >> 3);
         for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
             if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
@@ -2324,10 +2326,17 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
         s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
 
+        if(s->sh.offset[i - 1]+s->sh.size[i - 1] > length) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "hls_slice_data:  packet length < image size : %d < %d\n",
+                   length, s->sh.offset[i - 1]+s->sh.size[i - 1]);
+            return AVERROR_INVALIDDATA;
+        }
+
         avpriv_atomic_int_set(&s->wpp_err, 0);
         ff_reset_entries(s->avctx);
     }
-    s->data = (uint8_t *) nal;
+    s->data = nal;
 
     for (i = 1; i < s->threads_number; i++) {
         s->sList[i]->HEVClc->first_qp_group = 1;
@@ -3311,9 +3320,9 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 
 static const AVProfile profiles[] = {
-    { FF_PROFILE_HEVC_MAIN,                 "Main"              },
-    { FF_PROFILE_HEVC_MAIN_10,              "Main10"            },
-    { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "MainStillPicture"  },
+    { FF_PROFILE_HEVC_MAIN,                 "Main"                },
+    { FF_PROFILE_HEVC_MAIN_10,              "Main 10"             },
+    { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "Main Still Picture"  },
     { FF_PROFILE_UNKNOWN },
 };
 
