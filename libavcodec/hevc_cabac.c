@@ -1085,12 +1085,19 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 offset = s->pps->cr_qp_offset + s->sh.slice_cr_qp_offset;
 
             qp_i = av_clip(qp_y + offset, - s->sps->qp_bd_offset, 57);
-            if (qp_i < 30)
-                qp = qp_i;
-            else if (qp_i > 43)
-                qp = qp_i - 6;
-            else
-                qp = qp_c[qp_i - 30];
+            if (s->sps->chroma_array_type == 1) {
+                if (qp_i < 30)
+                    qp = qp_i;
+                else if (qp_i > 43)
+                    qp = qp_i - 6;
+                else
+                    qp = qp_c[qp_i - 30];
+            } else {
+                if (qp_i > 51)
+                    qp = 51;
+                else
+                    qp = qp_i;
+            }
 
             qp += s->sps->qp_bd_offset;
         }

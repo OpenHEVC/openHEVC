@@ -270,7 +270,102 @@ static void FUNC(transform_##H ##x ##H ##_add)(                                \
 
 TRANSFORM_ADD( 4)
 TRANSFORM_ADD( 8)
-TRANSFORM_ADD(16)
+//TRANSFORM_ADD(16)
+static void FUNC(transform_16x16_add)(                                
+                                      uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride) {                       
+    int i;                                                                     
+    pixel    *dst    = (pixel *)_dst;                                          
+    int      stride  = _stride/sizeof(pixel);                                  
+    int      shift   = 7;                                                      
+    int      add     = 1 << (shift - 1);                                       
+    int16_t *src     = coeffs;                                                 
+    
+    for (i = 0; i < 16; i++) {                                                  
+        do {                                                                       
+            int i, j;                                                              
+            int e_16[8];                                                           
+            int o_16[8] = { 0 };                                                   
+            for (i = 0; i < 8; i++)                                                
+                for (j = 1; j < 16; j += 2)                                        
+                    o_16[i] += transform[2 * j][i] * src[j * 16];               
+            do {                                                                       
+                int i, j;                                                              
+                int e_8[4];                                                            
+                int o_8[4] = { 0 };                                                    
+                for (i = 0; i < 4; i++)                                                
+                    for (j = 1; j < 8; j += 2)                                         
+                        o_8[i] += transform[4 * j][i] * src[j * 2 * 16];                
+                do {                                                                       
+                    const int e0 = 64 * src[0 * 2 * 2 * 16] + 64 * src[2 * 2 * 2 * 16];              
+                    const int e1 = 64 * src[0 * 2 * 2 * 16] - 64 * src[2 * 2 * 2 * 16];              
+                    const int o0 = 83 * src[1 * 2 * 2 * 16] + 36 * src[3 * 2 * 2 * 16];              
+                    const int o1 = 36 * src[1 * 2 * 2 * 16] - 83 * src[3 * 2 * 2 * 16];              
+                    
+                    (e_8[0 * 1]) = (e0 + o0);                                       
+                    (e_8[1 * 1]) = (e1 + o1);                                       
+                    (e_8[2 * 1]) = (e1 - o1);                                       
+                    (e_8[3 * 1]) = (e0 - o0);                                       
+                } while (0);                                     
+                
+                for (i = 0; i < 4; i++) {                                              
+                    (e_16[i * 1]) = (e_8[i] + o_8[i]);                           
+                    (e_16[(7 - i) * 1]) = (e_8[i] - o_8[i]);                     
+                }                                                                      
+            } while (0);                                    
+            
+            for (i = 0; i < 8; i++) {                                              
+                (src[i * 16]) = av_clip_int16(((e_16[i] + o_16[i]) + add) >> shift);                         
+                (src[(15 - i) * 16]) = av_clip_int16(((e_16[i] - o_16[i]) + add) >> shift);                  
+            }                                                                      
+        } while (0);                                       
+        src++;                                                                 
+    }                                                                          
+    
+    shift   = 20 - BIT_DEPTH;                                                  
+    add     = 1 << (shift - 1);                                                
+    for (i = 0; i < 16; i++) {                                                  
+        do {                                                                       
+            int i, j;                                                              
+            int e_16[8];                                                           
+            int o_16[8] = { 0 };                                                   
+            for (i = 0; i < 8; i++)                                                
+                for (j = 1; j < 16; j += 2)                                        
+                    o_16[i] += transform[2 * j][i] * coeffs[j * 1];               
+            do {                                                                       
+                int i, j;                                                              
+                int e_8[4];                                                            
+                int o_8[4] = { 0 };                                                    
+                for (i = 0; i < 4; i++)                                                
+                    for (j = 1; j < 8; j += 2)                                         
+                        o_8[i] += transform[4 * j][i] * coeffs[j * 2 * 1];                
+                do {                                                                       
+                    const int e0 = 64 * coeffs[0 * 2 * 2 * 1] + 64 * coeffs[2 * 2 * 2 * 1];              
+                    const int e1 = 64 * coeffs[0 * 2 * 2 * 1] - 64 * coeffs[2 * 2 * 2 * 1];              
+                    const int o0 = 83 * coeffs[1 * 2 * 2 * 1] + 36 * coeffs[3 * 2 * 2 * 1];              
+                    const int o1 = 36 * coeffs[1 * 2 * 2 * 1] - 83 * coeffs[3 * 2 * 2 * 1];              
+                    
+                    (e_8[0 * 1]) = (e0 + o0);                                       
+                    (e_8[1 * 1]) = (e1 + o1);                                       
+                    (e_8[2 * 1]) = (e1 - o1);                                       
+                    (e_8[3 * 1]) = (e0 - o0);                                       
+                } while (0);                                     
+                
+                for (i = 0; i < 4; i++) {                                              
+                    (e_16[i * 1]) = (e_8[i] + o_8[i]);                           
+                    (e_16[(7 - i) * 1]) = (e_8[i] - o_8[i]);                     
+                }                                                                      
+            } while (0);                                    
+            
+            for (i = 0; i < 8; i++) {
+//                printf("%d, %d\n", dst[i * 1], av_clip_int16(((e_16[i] + o_16[i]) + add) >> shift));
+                (dst[i * 1]) = av_clip_pixel((dst[i * 1]) + av_clip_int16(((e_16[i] + o_16[i]) + add) >> shift));                         
+                (dst[(15 - i) * 1]) = av_clip_pixel((dst[(15 - i) * 1]) + av_clip_int16(((e_16[i] - o_16[i]) + add) >> shift));                  
+            }                                                                      
+        } while (0);                            
+        coeffs += 16;                                                           
+        dst    += stride;                                                      
+    }                                                                          
+}
 TRANSFORM_ADD(32)
 
 #undef TR_4
@@ -924,6 +1019,7 @@ static void FUNC(hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride,
                 P0 = av_clip_pixel(p0 + delta0);
             if (!no_q)
                 Q0 = av_clip_pixel(q0 - delta0);
+
             pix += ystride;
         }
     }
