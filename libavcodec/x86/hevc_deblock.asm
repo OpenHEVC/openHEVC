@@ -26,6 +26,8 @@
 
 SECTION_RODATA
 
+pw_pixel_max: times 8 dw ((1 << 10)-1)
+
 SECTION .text
 INIT_XMM sse2
 
@@ -34,12 +36,9 @@ INIT_XMM sse2
     [base], [base+stride], [base+stride*2], [base3], \
     [base3+stride], [base3+stride*2], [base3+stride3], [base3+stride*4]
 
-%define PASS8ROWS(base, base3, stride, stride3, offset) \
-    PASS8ROWS(base+offset, base3+offset, stride, stride3)
-
 ; in: 8 rows of 4 bytes in %4..%11
 ; out: 4 rows of 8 words in m0..m3
-%macro TRANSPOSE4x8_LOAD 8
+%macro TRANSPOSE4x8B_LOAD 8
     movd       m0, %1
     movd       m2, %2
     movd       m1, %3
@@ -48,7 +47,6 @@ INIT_XMM sse2
     punpcklbw  m0, m2
     punpcklbw  m1, m3
     punpcklwd  m0, m1
-
 
     movd       m4, %5
     movd       m6, %6
@@ -65,7 +63,7 @@ INIT_XMM sse2
     movdqa     m1, m0
     movdqa     m3, m2
 
-    pxor m5, m5
+    pxor       m5, m5
     punpcklbw  m0, m5
     punpckhbw  m1, m5
     punpcklbw  m2, m5
@@ -105,9 +103,82 @@ INIT_XMM sse2
     movd       %8, m6
 %endmacro
 
+; in: 8 rows of 4 words in %4..%11
+; out: 4 rows of 8 words in m0..m3
+%macro TRANSPOSE4x8W_LOAD 8
+    movq        m0, %1
+    movq        m2, %2
+    movq        m1, %3
+    movq        m3, %4
+
+    punpcklwd   m0, m2
+    punpcklwd   m1, m3
+    movdqa      m2, m0
+    punpckldq   m0, m1
+    punpckhdq   m2, m1
+
+    movq        m4, %5
+    movq        m6, %6
+    movq        m5, %7
+    movq        m7, %8
+
+    punpcklwd   m4, m6
+    punpcklwd   m5, m7
+    movdqa      m6, m4
+    punpckldq   m4, m5
+    punpckhdq   m6, m5
+
+    movdqa      m1, m0
+    punpcklqdq  m0, m4
+    punpckhqdq  m1, m4
+    movdqa      m3, m2
+    punpcklqdq  m2, m6
+    punpckhqdq  m3, m6
+
+%endmacro
+
+; in: 4 rows of 8 words in m0..m3
+; out: 8 rows of 4 words in %1..%8
+%macro TRANSPOSE8x4W_STORE 8
+    pxor        m5, m5; zeros reg
+    CLIPW       m0, m5, [pw_pixel_max]
+    CLIPW       m1, m5, [pw_pixel_max]
+    CLIPW       m2, m5, [pw_pixel_max]
+    CLIPW       m3, m5, [pw_pixel_max]
+
+    movdqa      m4, m0
+    movdqa      m5, m2
+
+    punpcklwd   m0, m1
+    punpcklwd   m2, m3
+    movdqa      m6, m0
+    punpckldq   m0, m2
+    punpckhdq   m6, m2
+
+    movq        %1, m0
+    punpckhqdq  m0, m0
+    movq        %2, m0
+    movq        %3, m6
+    punpckhqdq  m6, m6
+    movq        %4, m6
+
+    punpckhwd   m4, m1
+    punpckhwd   m5, m3
+    movdqa      m6, m4
+    punpckldq   m4, m5
+    punpckhdq   m6, m5
+
+    movq        %5, m4
+    punpckhqdq  m4, m4
+    movq        %6, m4
+    movq        %7, m6
+    punpckhqdq  m6, m6
+    movq        %8, m6
+%endmacro
+
 ; in: 8 rows of 8 bytes in %1..%8
 ; out: 8 rows of 8 words in m0..m7
-%macro TRANSPOSE8x8_LOAD 8
+%macro TRANSPOSE8x8B_LOAD 8
     movq       m7, %1
     movq       m2, %2
     movq       m1, %3
@@ -161,22 +232,6 @@ INIT_XMM sse2
 ; in: 8 rows of 8 words in m0..m8
 ; out: 8 rows of 8 bytes in %1..%8
 %macro TRANSPOSE8x8B_STORE 8
-
-    movdqa m13, m11
-    movd   r9, m13;
-    and    r9, 0xffff; 1dq3
-    pshufd m13, m13, 0x39
-    movd   r10, m13;
-    shr    r10, 16; 1dq0
-    add    r9, r10 ; 1dq0 + 1dq3
-    pshufd m13, m13, 0x39
-    movd   r10, m13;
-    and    r10, 0xffff; 0dq3
-    pshufd m13, m13, 0x39
-    movd   r11, m13;
-    shr    r11, 16; 0dq0
-    add    r10, r11; 0dq0 + 0dq3
-
     packuswb   m0, m0
     packuswb   m1, m1
     packuswb   m2, m2
@@ -193,7 +248,6 @@ INIT_XMM sse2
     punpcklwd m0, m2
     punpckhwd m8, m2
 
-
     punpcklbw m4, m5
     punpcklbw m6, m7
 
@@ -202,8 +256,8 @@ INIT_XMM sse2
     punpckhwd m9, m6
 
     movdqa     m10, m0
-    punpckldq  m0, m4;   0, 1
-    punpckhdq   m10, m4; 2, 3
+    punpckldq   m0, m4;   0, 1
+    punpckhdq  m10, m4; 2, 3
 
     movdqa     m11, m8
     punpckldq  m11, m9;  4, 5
@@ -222,7 +276,101 @@ INIT_XMM sse2
     movq       %8, m8
 %endmacro
 
+; in: 8 rows of 8 words in m0..m7
+; out: 8 rows of 8 words in m0..m7
+%macro TRANSPOSE8x8W 0
+    movdqa       m8, m0
+    movdqa       m9, m2
+    movdqa      m10, m4
+    movdqa      m11, m6
 
+    punpcklwd    m0, m1
+    punpcklwd    m2, m3
+    punpcklwd    m4, m5
+    punpcklwd    m6, m7
+    punpckhwd    m8, m1
+    punpckhwd    m9, m3
+    punpckhwd   m10, m5
+    punpckhwd   m11, m7
+
+    movdqa       m3, m0
+    movdqa       m1, m4
+    punpckldq    m0, m2
+    punpckldq    m4, m6
+    punpckhdq    m3, m2
+    punpckhdq    m1, m6
+
+    movdqa       m5, m8
+    movdqa       m7, m10
+    punpckldq    m5, m9
+    punpckldq   m10, m11
+    punpckhdq    m8, m9
+    punpckhdq    m7, m11
+
+    movdqa       m6, m0
+    movdqa       m2, m3
+    punpcklqdq   m0, m4
+    punpckhqdq   m6, m4
+    punpcklqdq   m2, m1
+    punpckhqdq   m3, m1
+    movdqa       m1, m6
+
+    movdqa       m4, m5
+    movdqa       m6, m8
+    punpcklqdq   m4, m10
+    punpckhqdq   m5, m10
+    punpcklqdq   m6, m7
+    punpckhqdq   m8, m7
+    movdqa       m7, m8
+%endmacro
+
+; in: 8 rows of 8 words in %1..%8
+; out: 8 rows of 8 words in m0..m7
+%macro TRANSPOSE8x8W_LOAD 8
+    movdqu     m0, %1
+    movdqu     m1, %2
+    movdqu     m2, %3
+    movdqu     m3, %4
+    movdqu     m4, %5
+    movdqu     m5, %6
+    movdqu     m6, %7
+    movdqu     m7, %8
+    TRANSPOSE8x8W
+%endmacro
+
+; in: 8 rows of 8 words in m0..m8
+; out: 8 rows of 8 words in %1..%8
+%macro TRANSPOSE8x8W_STORE 8
+    TRANSPOSE8x8W
+
+    pxor       m8, m8
+    CLIPW      m0, m8, [pw_pixel_max]
+    CLIPW      m1, m8, [pw_pixel_max]
+    CLIPW      m2, m8, [pw_pixel_max]
+    CLIPW      m3, m8, [pw_pixel_max]
+    CLIPW      m4, m8, [pw_pixel_max]
+    CLIPW      m5, m8, [pw_pixel_max]
+    CLIPW      m6, m8, [pw_pixel_max]
+    CLIPW      m7, m8, [pw_pixel_max]
+
+    movdqu     %1, m0
+    movdqu     %2, m1
+    movdqu     %3, m2
+    movdqu     %4, m3
+    movdqu     %5, m4
+    movdqu     %6, m5
+    movdqu     %7, m6
+    movdqu     %8, m7
+%endmacro
+
+%macro SHIFT_LEFT_PARAM 1
+    mov    r7,[%1]
+    mov    r8,[%1+4]
+    shl    r7, 2
+    shl    r8, 2
+    mov    [%1], r7
+    mov    [%1+4], r8
+%endmacro
 
 ; in: %2 clobbered
 ; out: %1
@@ -248,7 +396,7 @@ INIT_XMM sse2
 
 ALIGN 16
 ; input in m0 ... m3 and tcs in r2. Output in m1 and m2
-ff_hevc_chroma_deblock_body:
+%macro CHROMA_DEBLOCK_BODY 1
     movdqa    m4, m2; temp copy of q0
     movdqa    m5, m0; temp copy of p1
     psubw     m4, m1; q0 - p0
@@ -274,11 +422,14 @@ ff_hevc_chroma_deblock_body:
     paddw     m5, m7; +4
     psraw     m5, 3; >> 3
 
+    psllw     m4, %1-8; << (BIT_DEPTH - 8)
+    psllw     m6, %1-8; << (BIT_DEPTH - 8)
     pmaxsw    m5, m4
     pminsw    m5, m6
     paddw     m1, m5; p0 + delta0
     psubw     m2, m5; q0 - delta0
-    ret
+%endmacro
+
 %if ARCH_X86_64
 INIT_XMM ssse3
 ALIGN 16
@@ -668,9 +819,19 @@ cglobal hevc_v_loop_filter_chroma_8, 3, 6, 8
     lea    r5, [3*r1]
     mov    r4, r0
     add    r0, r5
-    TRANSPOSE4x8_LOAD  PASS8ROWS(r4, r0, r1, r5)
-    call ff_hevc_chroma_deblock_body
+    TRANSPOSE4x8B_LOAD  PASS8ROWS(r4, r0, r1, r5)
+    CHROMA_DEBLOCK_BODY 8
     TRANSPOSE8x4B_STORE PASS8ROWS(r4, r0, r1, r5)
+    RET
+
+cglobal hevc_v_loop_filter_chroma_10, 3, 6, 8
+    sub    r0, 4
+    lea    r5, [3*r1]
+    mov    r4, r0
+    add    r0, r5
+    TRANSPOSE4x8W_LOAD  PASS8ROWS(r4, r0, r1, r5)
+    CHROMA_DEBLOCK_BODY 10
+    TRANSPOSE8x4W_STORE PASS8ROWS(r4, r0, r1, r5)
     RET
 
 ;-----------------------------------------------------------------------------
@@ -689,12 +850,29 @@ cglobal hevc_h_loop_filter_chroma_8, 3, 6, 8
     punpcklbw m1, m5
     punpcklbw m2, m5
     punpcklbw m3, m5
-    call ff_hevc_chroma_deblock_body
+    CHROMA_DEBLOCK_BODY 8
     packuswb m1, m1 ; p0' packed in bytes on low quadword
     packuswb m2, m2 ; q0' packed in bytes on low quadword
     movq [r5+r1], m1
     movq [r0], m2
     RET
+
+cglobal hevc_h_loop_filter_chroma_10, 3, 6, 8
+    mov         r5, r0; pix
+    sub         r5, r1
+    sub         r5, r1
+    movdqu      m0, [r5];    p1
+    movdqu      m1, [r5+r1]; p0
+    movdqu      m2, [r0];    q0
+    movdqu      m3, [r0+r1]; q1
+    CHROMA_DEBLOCK_BODY 10
+    pxor        m5, m5; zeros reg
+    CLIPW       m1, m5, [pw_pixel_max]
+    CLIPW       m2, m5, [pw_pixel_max]
+    movdqu [r5+r1], m1
+    movdqu    [r0], m2
+    RET
+
 %if ARCH_X86_64
 INIT_XMM ssse3
 ;-----------------------------------------------------------------------------
@@ -705,12 +883,27 @@ cglobal hevc_v_loop_filter_luma_8, 4, 15, 16
     lea    r5, [3*r1]
     mov    r6, r0
     add    r0, r5
-    TRANSPOSE8x8_LOAD  PASS8ROWS(r6, r0, r1, r5)
+    TRANSPOSE8x8B_LOAD  PASS8ROWS(r6, r0, r1, r5)
     call ff_hevc_luma_deblock_body
-    cmp r4, 1
-    je bypassvluma
+    cmp    r4, 1
+    je bypassvluma_8
     TRANSPOSE8x8B_STORE PASS8ROWS(r6, r0, r1, r5)
-bypassvluma:
+bypassvluma_8:
+    RET
+
+cglobal hevc_v_loop_filter_luma_10, 4, 15, 16
+    sub    r0, 8
+    lea    r5, [3*r1]
+    mov    r6, r0
+    add    r0, r5
+    TRANSPOSE8x8W_LOAD  PASS8ROWS(r6, r0, r1, r5)
+    SHIFT_LEFT_PARAM r2
+    SHIFT_LEFT_PARAM r3
+    call ff_hevc_luma_deblock_body
+    cmp    r4, 1
+    je bypassvluma_10
+    TRANSPOSE8x8W_STORE PASS8ROWS(r6, r0, r1, r5)
+bypassvluma_10:
     RET
 
 ;-----------------------------------------------------------------------------
@@ -739,8 +932,8 @@ cglobal hevc_h_loop_filter_luma_8, 4, 15, 16
     punpcklbw m6, m8
     punpcklbw m7, m8
     call ff_hevc_luma_deblock_body
-    cmp r4, 1
-    je bypasshluma
+    cmp       r4, 1
+    je bypasshluma_8
     packuswb m1, m1; p2
     packuswb m2, m2; p1
     packuswb m3, m3; p0
@@ -753,6 +946,40 @@ cglobal hevc_h_loop_filter_luma_8, 4, 15, 16
     movq     [r0],      m4;  q0
     movq     [r0+r1],   m5;  q1
     movq     [r0+2*r1], m6;  q2
-bypasshluma:
+bypasshluma_8:
+    RET
+
+cglobal hevc_h_loop_filter_luma_10, 4, 15, 16
+    lea           r6, [3*r1]
+    mov           r5, r0
+    sub           r5, r6
+    sub           r5, r1
+    movdqu        m0, [r5];       p3
+    movdqu        m1, [r5+r1];    p2
+    movdqu        m2, [r5+2*r1];  p1
+    movdqu        m3, [r5+r6];    p0
+    movdqu        m4, [r0];       q0
+    movdqu        m5, [r0+r1];    q1
+    movdqu        m6, [r0+2*r1];  q2
+    movdqu        m7, [r0+r6];    q3
+    SHIFT_LEFT_PARAM r2
+    SHIFT_LEFT_PARAM r3
+    call ff_hevc_luma_deblock_body
+    cmp           r4, 1
+    je bypasshluma_10
+    pxor          m8, m8; zeros reg
+    CLIPW         m1, m8, [pw_pixel_max]
+    CLIPW         m2, m8, [pw_pixel_max]
+    CLIPW         m3, m8, [pw_pixel_max]
+    CLIPW         m4, m8, [pw_pixel_max]
+    CLIPW         m5, m8, [pw_pixel_max]
+    CLIPW         m6, m8, [pw_pixel_max]
+    movdqu   [r5+r1], m1;  p2
+    movdqu [r5+2*r1], m2;  p1
+    movdqu   [r5+r6], m3;  p0
+    movdqu      [r0], m4;  q0
+    movdqu   [r0+r1], m5;  q1
+    movdqu [r0+2*r1], m6;  q2
+bypasshluma_10:
     RET
 %endif
