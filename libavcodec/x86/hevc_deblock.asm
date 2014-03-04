@@ -26,6 +26,8 @@
 
 SECTION_RODATA
 
+pw_pixel_max: times 8 dw ((1 << 10)-1)
+
 SECTION .text
 INIT_XMM sse2
 
@@ -34,12 +36,9 @@ INIT_XMM sse2
     [base], [base+stride], [base+stride*2], [base3], \
     [base3+stride], [base3+stride*2], [base3+stride3], [base3+stride*4]
 
-%define PASS8ROWS(base, base3, stride, stride3, offset) \
-    PASS8ROWS(base+offset, base3+offset, stride, stride3)
-
 ; in: 8 rows of 4 bytes in %4..%11
 ; out: 4 rows of 8 words in m0..m3
-%macro TRANSPOSE4x8_LOAD 8
+%macro TRANSPOSE4x8B_LOAD 8
     movd       m0, %1
     movd       m2, %2
     movd       m1, %3
@@ -48,7 +47,6 @@ INIT_XMM sse2
     punpcklbw  m0, m2
     punpcklbw  m1, m3
     punpcklwd  m0, m1
-
 
     movd       m4, %5
     movd       m6, %6
@@ -65,7 +63,7 @@ INIT_XMM sse2
     movdqa     m1, m0
     movdqa     m3, m2
 
-    pxor m5, m5
+    pxor       m5, m5
     punpcklbw  m0, m5
     punpckhbw  m1, m5
     punpcklbw  m2, m5
@@ -103,6 +101,79 @@ INIT_XMM sse2
     movd       %7, m6
     pshufd     m6, m6, 0x39
     movd       %8, m6
+%endmacro
+
+; in: 8 rows of 4 words in %4..%11
+; out: 4 rows of 8 words in m0..m3
+%macro TRANSPOSE4x8W_LOAD 8
+    movq        m0, %1
+    movq        m2, %2
+    movq        m1, %3
+    movq        m3, %4
+
+    punpcklwd   m0, m2
+    punpcklwd   m1, m3
+    movdqa      m2, m0
+    punpckldq   m0, m1
+    punpckhdq   m2, m1
+
+    movq        m4, %5
+    movq        m6, %6
+    movq        m5, %7
+    movq        m7, %8
+
+    punpcklwd   m4, m6
+    punpcklwd   m5, m7
+    movdqa      m6, m4
+    punpckldq   m4, m5
+    punpckhdq   m6, m5
+
+    movdqa      m1, m0
+    punpcklqdq  m0, m4
+    punpckhqdq  m1, m4
+    movdqa      m3, m2
+    punpcklqdq  m2, m6
+    punpckhqdq  m3, m6
+
+%endmacro
+
+; in: 4 rows of 8 words in m0..m3
+; out: 8 rows of 4 words in %1..%8
+%macro TRANSPOSE8x4W_STORE 8
+    pxor        m5, m5; zeros reg
+    CLIPW       m0, m5, [pw_pixel_max]
+    CLIPW       m1, m5, [pw_pixel_max]
+    CLIPW       m2, m5, [pw_pixel_max]
+    CLIPW       m3, m5, [pw_pixel_max]
+
+    movdqa      m4, m0
+    movdqa      m5, m2
+
+    punpcklwd   m0, m1
+    punpcklwd   m2, m3
+    movdqa      m6, m0
+    punpckldq   m0, m2
+    punpckhdq   m6, m2
+
+    movq        %1, m0
+    punpckhqdq  m0, m0
+    movq        %2, m0
+    movq        %3, m6
+    punpckhqdq  m6, m6
+    movq        %4, m6
+
+    punpckhwd   m4, m1
+    punpckhwd   m5, m3
+    movdqa      m6, m4
+    punpckldq   m4, m5
+    punpckhdq   m6, m5
+
+    movq        %5, m4
+    punpckhqdq  m4, m4
+    movq        %6, m4
+    movq        %7, m6
+    punpckhqdq  m6, m6
+    movq        %8, m6
 %endmacro
 
 ; in: 8 rows of 8 bytes in %1..%8
@@ -248,7 +319,7 @@ INIT_XMM sse2
 
 ALIGN 16
 ; input in m0 ... m3 and tcs in r2. Output in m1 and m2
-ff_hevc_chroma_deblock_body:
+%macro CHROMA_DEBLOCK_BODY 1
     movdqa    m4, m2; temp copy of q0
     movdqa    m5, m0; temp copy of p1
     psubw     m4, m1; q0 - p0
@@ -274,11 +345,14 @@ ff_hevc_chroma_deblock_body:
     paddw     m5, m7; +4
     psraw     m5, 3; >> 3
 
+    psllw     m4, %1-8; << (BIT_DEPTH - 8)
+    psllw     m6, %1-8; << (BIT_DEPTH - 8)
     pmaxsw    m5, m4
     pminsw    m5, m6
     paddw     m1, m5; p0 + delta0
     psubw     m2, m5; q0 - delta0
-    ret
+%endmacro
+
 %if ARCH_X86_64
 INIT_XMM ssse3
 ALIGN 16
@@ -668,9 +742,19 @@ cglobal hevc_v_loop_filter_chroma_8, 3, 6, 8
     lea    r5, [3*r1]
     mov    r4, r0
     add    r0, r5
-    TRANSPOSE4x8_LOAD  PASS8ROWS(r4, r0, r1, r5)
-    call ff_hevc_chroma_deblock_body
+    TRANSPOSE4x8B_LOAD  PASS8ROWS(r4, r0, r1, r5)
+    CHROMA_DEBLOCK_BODY 8
     TRANSPOSE8x4B_STORE PASS8ROWS(r4, r0, r1, r5)
+    RET
+
+cglobal hevc_v_loop_filter_chroma_10, 3, 6, 8
+    sub    r0, 4
+    lea    r5, [3*r1]
+    mov    r4, r0
+    add    r0, r5
+    TRANSPOSE4x8W_LOAD  PASS8ROWS(r4, r0, r1, r5)
+    CHROMA_DEBLOCK_BODY 10
+    TRANSPOSE8x4W_STORE PASS8ROWS(r4, r0, r1, r5)
     RET
 
 ;-----------------------------------------------------------------------------
@@ -689,12 +773,29 @@ cglobal hevc_h_loop_filter_chroma_8, 3, 6, 8
     punpcklbw m1, m5
     punpcklbw m2, m5
     punpcklbw m3, m5
-    call ff_hevc_chroma_deblock_body
+    CHROMA_DEBLOCK_BODY 8
     packuswb m1, m1 ; p0' packed in bytes on low quadword
     packuswb m2, m2 ; q0' packed in bytes on low quadword
     movq [r5+r1], m1
     movq [r0], m2
     RET
+
+cglobal hevc_h_loop_filter_chroma_10, 3, 6, 8
+    mov         r5, r0; pix
+    sub         r5, r1
+    sub         r5, r1
+    movdqu      m0, [r5];    p1
+    movdqu      m1, [r5+r1]; p0
+    movdqu      m2, [r0];    q0
+    movdqu      m3, [r0+r1]; q1
+    CHROMA_DEBLOCK_BODY 10
+    pxor        m5, m5; zeros reg
+    CLIPW       m1, m5, [pw_pixel_max]
+    CLIPW       m2, m5, [pw_pixel_max]
+    movdqu [r5+r1], m1
+    movdqu    [r0], m2
+    RET
+
 %if ARCH_X86_64
 INIT_XMM ssse3
 ;-----------------------------------------------------------------------------
