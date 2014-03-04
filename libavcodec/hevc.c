@@ -2919,6 +2919,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 {
     int ret;
     HEVCContext *s = avctx->priv_data;
+    extern char *input_file;
+    FILE *md5log;
 
     if (!avpkt->size) {
         ret = ff_hevc_output_frame(s, data, 1);
@@ -2947,6 +2949,13 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             for( cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++ ) {
                 if (!compare_md5(md5[cIdx], s->md5[cIdx])) {
                      av_log(s->avctx, AV_LOG_ERROR, "Incorrect MD5 (poc: %d, plane: %d)\n", s->poc, cIdx);
+                     md5log = fopen ("D:/md5log.txt" , "a");
+                     if (md5log == NULL) {
+                     	printf("It is not possible to open md5 log file\n");
+                     	exit(-1);
+                     }
+                    fprintf(md5log, "Incorrect MD5 (file: %s, poc: %d, plane: %d)\n", input_file, s->poc, cIdx);
+                    fclose(md5log);
                  } else {
                      av_log(s->avctx, AV_LOG_INFO, "Correct MD5 (poc: %d, plane: %d)\n", s->poc, cIdx);
                  }

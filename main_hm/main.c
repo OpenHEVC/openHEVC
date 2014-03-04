@@ -6,7 +6,6 @@
 //
 //
 
-#define DECANA 1
 #include "openHevcWrapper.h"
 #include "getopt.h"
 #include <libavformat/avformat.h>
