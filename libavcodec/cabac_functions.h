@@ -33,7 +33,7 @@
 #include "config.h"
 #ifndef X86_32
 #if ARCH_X86
-//#   include "x86/cabac.h"
+#   include "x86/cabac.h"
 #endif
 #endif
 
