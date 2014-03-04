@@ -33,7 +33,7 @@
 #include "config.h"
 #ifndef X86_32
 #if ARCH_X86
-#   include "x86/cabac.h"
+//#   include "x86/cabac.h"
 #endif
 #endif
 
@@ -122,9 +122,12 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
         refill2(c);
-//    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-//            c->range, c->low>>17, bit  );
-    return bit;
+/*    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
+            c->range, c->low>>17, bit  );
+    if (c->range  == 274 && (c->low >> 17) == 137)
+        //274 codIOffset := 137
+        printf("");
+*/    return bit;
 }
 #endif
 
