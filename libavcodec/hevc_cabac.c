@@ -944,7 +944,7 @@ static av_always_inline int significant_coeff_group_flag_decode(HEVCContext *s, 
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_GROUP_FLAG] + inc);
 }
 static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int x_c, int y_c,
-                                           int offset, uint8_t *ctx_idx_map)
+                                           int offset, const uint8_t *ctx_idx_map)
 {
     int inc = ctx_idx_map[(y_c << 2) + x_c] + offset;
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
@@ -1247,7 +1247,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, // prev_sig == 2
                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2  // default
             };
-            uint8_t *ctx_idx_map_p;
+            const uint8_t *ctx_idx_map_p;
             int scf_offset = 0;
             if (c_idx != 0)
                 scf_offset = 27;
