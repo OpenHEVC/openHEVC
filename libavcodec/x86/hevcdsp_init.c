@@ -58,13 +58,10 @@ LFC_FUNC(v, depth, sse2)
 LFL_FUNC(h, depth, ssse3)  \
 LFL_FUNC(v, depth, ssse3)
 
-
 LFC_FUNCS(uint8_t,   8)
 LFC_FUNCS(uint8_t,  10)
 LFL_FUNCS(uint8_t,   8)
-
-//LF_FUNCS(uint16_t, 10)
-
+LFL_FUNCS(uint8_t,  10)
 
 void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
@@ -201,6 +198,12 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #if HAVE_ALIGNED_STACK
                     /*stuff that requires aligned stack */
 #endif /* HAVE_ALIGNED_STACK */
+                }
+                if (EXTERNAL_SSSE3(mm_flags)) {
+#if ARCH_X86_64
+                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
+                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
+#endif
                 }
 #ifdef __SSE4_1__
                 if (EXTERNAL_SSE4(mm_flags)) {
