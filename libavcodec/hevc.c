@@ -959,12 +959,20 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
             ff_hevc_set_neighbour_available(s, x0, y0, trafo_size, trafo_size);
             s->hpc.intra_pred(s, x0, y0, log2_trafo_size - s->sps->hshift[1], 1);
             s->hpc.intra_pred(s, x0, y0, log2_trafo_size - s->sps->hshift[1], 2);
+            if (s->sps->chroma_array_type == 2) {
+                s->hpc.intra_pred(s, x0, y0 + (1 << log2_trafo_size_c), log2_trafo_size_c, 1);
+                s->hpc.intra_pred(s, x0, y0 + (1 << log2_trafo_size_c), log2_trafo_size_c, 2);
+            }
         } else if (blk_idx == 3) {
             trafo_size = trafo_size << s->sps->hshift[1];
             ff_hevc_set_neighbour_available(s, xBase, yBase,
                                             trafo_size, trafo_size);
             s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 1);
             s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 2);
+            if (s->sps->chroma_array_type == 2) {
+                s->hpc.intra_pred(s, xBase, yBase + (1 << log2_trafo_size_c), log2_trafo_size, 1);
+                s->hpc.intra_pred(s, xBase, yBase + (1 << log2_trafo_size_c), log2_trafo_size, 2);
+            }
         }
     }
 
@@ -1111,7 +1119,7 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
             SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth - 1], xBase, yBase)) {
             SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) =
                 ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
-            if (s->sps->chroma_format_idc == 2 && ! split_transform_flag)
+            if (s->sps->chroma_format_idc == 2 /*&& ! split_transform_flag*/)
                 SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0 +  (1  <<  (log2_trafo_size - 1))) =
                     ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
         }
@@ -1120,7 +1128,7 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
             SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth - 1], xBase, yBase)) {
             SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) =
                 ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
-            if (s->sps->chroma_format_idc == 2 && ! split_transform_flag)
+            if (s->sps->chroma_format_idc == 2 /*&& ! split_transform_flag*/)
                 SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0 +  (1  <<  (log2_trafo_size - 1))) =
                     ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
         }
@@ -1293,12 +1301,12 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
     ptrdiff_t src2stride = ref->linesize[2];
     int pic_width        = s->sps->width >> s->sps->vshift[1];
     int pic_height       = s->sps->height >> s->sps->hshift[1];
+    int shift = (s->sps->chroma_array_type == 3) ? 2 : 3;
+    int mx = mv->x & ((1 << shift) - 1);
+    int my = mv->y & ((1 << shift) - 1);
 
-    int mx = mv->x & 7;
-    int my = mv->y & 7;
-
-    x_off += mv->x >> 3;
-    y_off += mv->y >> 3;
+    x_off += mv->x >> shift;
+    y_off += mv->y >> shift;
     src1  += y_off * src1stride + (x_off << s->sps->pixel_shift);
     src2  += y_off * src2stride + (x_off << s->sps->pixel_shift);
 
@@ -1763,7 +1771,7 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0,
         }
     }
 
-    if(s->sps->chroma_array_type  ==  3) {
+    if (s->sps->chroma_array_type  ==  3) {
         for (i = 0; i < side; i++) {
             for (j = 0; j < side; j++) {
                 chroma_mode = ff_hevc_intra_chroma_pred_mode_decode(s);
@@ -1776,6 +1784,21 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0,
                     lc->pu.intra_pred_mode_c[2 * i + j] = lc->pu.intra_pred_mode[2 * i + j];
                 }
             }
+        }
+    } else if (s->sps->chroma_array_type == 2) {
+        chroma_mode = ff_hevc_intra_chroma_pred_mode_decode(s);
+        if (chroma_mode != 4) {
+            if (lc->pu.intra_pred_mode[0] == intra_chroma_table[chroma_mode])
+                lc->pu.intra_pred_mode_c[0] = 34;
+            else
+                lc->pu.intra_pred_mode_c[0] = intra_chroma_table[chroma_mode];
+        } else {
+            lc->pu.intra_pred_mode_c[0] = lc->pu.intra_pred_mode[0];
+        }
+        if (lc->pu.intra_pred_mode_c[0] > 2 && lc->pu.intra_pred_mode_c[0] < 6) {
+            lc->pu.intra_pred_mode_c[0] = 2;
+        } else if (lc->pu.intra_pred_mode_c[0] >= 6) {
+            lc->pu.intra_pred_mode_c[0] -= 3;
         }
     } else if (s->sps->chroma_array_type  !=  0) {
         chroma_mode = ff_hevc_intra_chroma_pred_mode_decode(s);
