@@ -102,7 +102,7 @@ int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
         openHevcContext = openHevcContexts->wraper[i];
         if (avcodec_open2(openHevcContext->c, openHevcContext->codec, NULL) < 0) {
             fprintf(stderr, "could not open codec\n");
-            return NULL;
+            return -1;
         }
     }
     return 1;
@@ -119,7 +119,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
         got_picture[i]              = 0;
         openHevcContext             = openHevcContexts->wraper[i];
         openHevcContext->avpkt.size = au_len;
-        openHevcContext->avpkt.data = buff;
+        openHevcContext->avpkt.data = (uint8_t *) buff;
         openHevcContext->avpkt.pts  = pts;
         ini = CLK_gethtime();
         len                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
@@ -129,10 +129,10 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
         accum += frameclk;
 //        if(i+1 < openHevcContexts->nb_decoders)
 //            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
-    }
-    if (len < 0) {
-        fprintf(stderr, "Error while decoding frame \n");
-        return -1;
+        if (len < 0) {
+            fprintf(stderr, "Error while decoding frame \n");
+            return -1;
+        }
     }
     return got_picture[openHevcContexts->active_layer];
 }
@@ -326,6 +326,7 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
         av_freep(&openHevcContext->picture);
         av_freep(&openHevcContext);
     }
+    av_freep(&openHevcContexts->wraper);
     av_freep(&openHevcContexts);
 }
 

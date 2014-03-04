@@ -93,7 +93,7 @@ static void video_decode_example(const char *filename)
     }
     av_register_all();
     pFormatCtx = avformat_alloc_context();
-    file_iformat = av_guess_format(NULL, filename, NULL);
+    file_iformat = (AVInputFormat *) av_guess_format(NULL, filename, NULL);
     
     if(avformat_open_input(&pFormatCtx, filename, file_iformat, NULL)!=0) {
         printf("%s",filename);
