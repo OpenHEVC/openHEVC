@@ -1269,7 +1269,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     else
                         scf_offset += 12;
                 }
-
             }
             for (n = n_end; n > 0; n--) {
                 x_c = scan_x_off[n];

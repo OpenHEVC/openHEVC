@@ -178,7 +178,6 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 #define WEIGHTED_STORE8_8()                                                    \
     r1 = _mm_packus_epi16(r1, r1);                                             \
     _mm_storel_epi64((__m128i *) &dst[x], r1)
-
 #define WEIGHTED_STORE16_8()                                                   \
     r1 = _mm_packus_epi16(r1, r2);                                             \
     _mm_store_si128((__m128i *) &dst[x], r1)
@@ -572,7 +571,6 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
     x1 = _mm_add_epi16(x1, x2);                                                \
     x2 = _mm_add_epi16(x3, x4);                                                \
     r1 = _mm_add_epi16(x1, x2)
-
 
 #define QPEL_H_COMPUTE4_10()                                                   \
     x1 = _mm_unpacklo_epi16(x1, x2);                                           \

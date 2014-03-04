@@ -29,7 +29,6 @@
 #include "golomb.h"
 #include "hevc.h"
 #include "bit_depth_template.c"
-
 #if ARCH_X86_64
 #include <emmintrin.h>
 #include <tmmintrin.h>
@@ -273,10 +272,10 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         case SAO_EDGE:
         {
             //START_TIMER;
-            uint8_t left_pixels = (CTB(s->sao, x_ctb-1, y_ctb).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
+            uint8_t left_pixels = !edges[0] && (CTB(s->sao, x_ctb-1, y_ctb).type_idx[c_idx] != SAO_APPLIED);
             if (!edges[1]) {
-                uint8_t top_left  = (CTB(s->sao, x_ctb-1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
-                uint8_t top_right = (CTB(s->sao, x_ctb+1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED) && !edges[2];
+                uint8_t top_left  = !edges[0] && (CTB(s->sao, x_ctb-1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED);
+                uint8_t top_right = !edges[2] && (CTB(s->sao, x_ctb+1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED);
                 if (CTB(s->sao, x_ctb  , y_ctb-1).type_idx[c_idx] == 0)
                     memcpy( dst - stride - (top_left << s->sps->pixel_shift),
                             src - stride - (top_left << s->sps->pixel_shift),
@@ -293,7 +292,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                 }
             }
             if (!edges[3]) {                                                                // bottom and bottom right
-                uint8_t bottom_left = (CTB(s->sao, x_ctb-1, y_ctb+1).type_idx[c_idx] != SAO_APPLIED) && !edges[0];
+                uint8_t bottom_left = !edges[0] && (CTB(s->sao, x_ctb-1, y_ctb+1).type_idx[c_idx] != SAO_APPLIED);
                 memcpy( dst + height * stride - (bottom_left << s->sps->pixel_shift),
                         src + height * stride - (bottom_left << s->sps->pixel_shift),
                         (width + 1 + bottom_left) << s->sps->pixel_shift);

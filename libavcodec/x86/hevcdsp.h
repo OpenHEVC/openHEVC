@@ -122,7 +122,6 @@ PEL_PROTOTYPE(epel_v4 ,  8);
 PEL_PROTOTYPE(epel_v8 ,  8);
 PEL_PROTOTYPE(epel_v16,  8);
 
-
 PEL_PROTOTYPE(epel_v2 , 10);
 PEL_PROTOTYPE(epel_v4 , 10);
 PEL_PROTOTYPE(epel_v8 , 10);
@@ -139,7 +138,7 @@ PEL_PROTOTYPE(epel_hv8, 10);
 ///////////////////////////////////////////////////////////////////////////////
 PEL_PROTOTYPE(qpel_h4 ,  8);
 PEL_PROTOTYPE(qpel_h8 ,  8);
-PEL_PROTOTYPE(qpel_h16 ,  8);
+PEL_PROTOTYPE(qpel_h16,  8);
 
 PEL_PROTOTYPE(qpel_h4 , 10);
 PEL_PROTOTYPE(qpel_h8 , 10);

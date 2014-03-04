@@ -274,14 +274,14 @@ enum ScanType {
 
 #ifdef SVC_EXTENSION
 typedef struct UpsamplInf {
-	int addXLum;
-	int addYLum;
-	int scaleXLum;
-	int scaleYLum;
-	int addXCr;
-	int addYCr;
-	int scaleXCr;
-	int scaleYCr;
+    int addXLum;
+    int addYLum;
+    int scaleXLum;
+    int scaleYLum;
+    int addXCr;
+    int addYCr;
+    int scaleXCr;
+    int scaleYCr;
 } UpsamplInf;
 #endif
 
@@ -460,7 +460,7 @@ typedef struct ScalingList {
 } ScalingList;
 
 typedef struct HEVCSPS {
-    int vps_id;
+    unsigned vps_id;
     int chroma_format_idc;
     int chroma_array_type;
     uint8_t separate_colour_plane_flag;
@@ -550,7 +550,7 @@ typedef struct HEVCSPS {
 } HEVCSPS;
 
 typedef struct HEVCPPS {
-    int sps_id; ///< seq_parameter_set_id
+    unsigned sps_id; ///< seq_parameter_set_id
 
     uint8_t sign_data_hiding_flag;
 
@@ -839,9 +839,9 @@ typedef struct HEVCLocalContext {
     uint8_t ctb_up_flag;
     uint8_t ctb_up_right_flag;
     uint8_t ctb_up_left_flag;
-    int     start_of_tiles_x;
     int     end_of_tiles_x;
     int     end_of_tiles_y;
+    /* +7 is for subpixel interpolation, *2 for high bit depths */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
 
     uint8_t slice_or_tiles_left_boundary;
@@ -850,7 +850,7 @@ typedef struct HEVCLocalContext {
 
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
-    AVCodecContext      *avctx;
+    AVCodecContext *avctx;
 
     struct HEVCContext  *sList[MAX_NB_THREADS];
 
@@ -863,9 +863,9 @@ typedef struct HEVCContext {
     AVFrame *tmp_frame;
     AVFrame *output_frame;
 
-    HEVCVPS *vps;
+    const HEVCVPS *vps;
     const HEVCSPS *sps;
-    HEVCPPS *pps;
+    const HEVCPPS *pps;
     AVBufferRef *vps_list[MAX_VPS_COUNT];
     AVBufferRef *sps_list[MAX_SPS_COUNT];
     AVBufferRef *pps_list[MAX_PPS_COUNT];
@@ -942,13 +942,17 @@ typedef struct HEVCContext {
     HEVCNAL *nals;
     int nb_nals;
     int nals_allocated;
+    // type of the first VCL NAL of the current frame
+    enum NALUnitType first_nal_type;
 
     // for checking the frame checksums
     struct AVMD5 *md5_ctx;
     uint8_t       md5[3][16];
     uint8_t is_md5;
 
-    int context_initialized;
+    uint8_t context_initialized;
+    uint8_t is_nalff;       ///< this flag is != 0 if bitstream is encapsulated
+                            ///< as a format defined in 14496-15
 
 #ifdef SVC_EXTENSION
     AVFrame     *EL_frame;
@@ -958,15 +962,13 @@ typedef struct HEVCContext {
     HEVCFrame   *inter_layer_ref;
 #endif
     int temporal_layer_id;
-    int nuh_layer_id;
     int decoder_id;
-    int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
-                            ///< as a format defined in 14496-15
     int apply_defdispwin;
 
     int active_seq_parameter_set_id;
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
+    int nuh_layer_id;
 
     /** frame packing arrangement variables */
     int sei_frame_packing_present;
@@ -979,9 +981,9 @@ typedef struct HEVCContext {
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
 
-    uint8_t             threads_type;
-    uint8_t             threads_number;
-    int                 decode_checksum_sei;
+    uint8_t threads_type;
+    uint8_t threads_number;
+    int     decode_checksum_sei;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
