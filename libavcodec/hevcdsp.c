@@ -165,6 +165,10 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->transform_add[2]       = FUNC(transform_16x16_add, depth);        \
     hevcdsp->transform_add[3]       = FUNC(transform_32x32_add, depth);        \
                                                                                \
+    hevcdsp->transform_dc_add[0]    = FUNC(transform_4x4_dc_add, depth);       \
+    hevcdsp->transform_dc_add[1]    = FUNC(transform_8x8_dc_add, depth);       \
+    hevcdsp->transform_dc_add[2]    = FUNC(transform_16x16_dc_add, depth);     \
+    hevcdsp->transform_dc_add[3]    = FUNC(transform_32x32_dc_add, depth);     \
     hevcdsp->sao_band_filter    = FUNC(sao_band_filter_0, depth);              \
     hevcdsp->sao_edge_filter[0] = FUNC(sao_edge_filter_0, depth);              \
     hevcdsp->sao_edge_filter[1] = FUNC(sao_edge_filter_1, depth);              \

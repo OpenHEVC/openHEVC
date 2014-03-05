@@ -1404,8 +1404,14 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             s->hevcdsp.transform_skip(dst, coeffs, stride);
         else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2)
             s->hevcdsp.transform_4x4_luma_add(dst, coeffs, stride);
-        else
-            s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
+        else{
+            int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
+            if (max_xy == 0)
+                s->hevcdsp.transform_dc_add[log2_trafo_size-2](dst, coeffs, stride);
+            else {
+                s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
+            }
+        }
     }
 }
 
