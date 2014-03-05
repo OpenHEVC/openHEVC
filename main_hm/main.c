@@ -64,7 +64,6 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
 static void video_decode_example(const char *filename)
 {
     AVFormatContext *pFormatCtx=NULL;
-    AVInputFormat *file_iformat;
     AVPacket        packet;
 
     FILE *fout  = NULL;
@@ -93,9 +92,8 @@ static void video_decode_example(const char *filename)
     }
     av_register_all();
     pFormatCtx = avformat_alloc_context();
-    file_iformat = (AVInputFormat *) av_guess_format(NULL, filename, NULL);
-    
-    if(avformat_open_input(&pFormatCtx, filename, file_iformat, NULL)!=0) {
+
+    if(avformat_open_input(&pFormatCtx, filename, NULL, NULL)!=0) {
         printf("%s",filename);
         exit(1); // Couldn't open file
     }
@@ -166,9 +164,12 @@ static void video_decode_example(const char *filename)
                     exit(0);
                 }
 #endif
-            } else  if (stop_dec==1 && nbFrame)
+            } else {
+                if (stop_dec==1 && nbFrame)
                 stop = 1;
+            }
         }
+        av_free_packet(&packet);
     }
     if (fout) {
         fclose(fout);
