@@ -39,7 +39,7 @@ typedef struct SAOParams {
 
 typedef struct HEVCDSPContext {
     void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
-                    GetBitContext *gb, int pcm_bit_depth);
+                    struct GetBitContext *gb, int pcm_bit_depth);
 
     void (*transquant_bypass[4])(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
