@@ -29,9 +29,7 @@
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
-#ifdef __SSE4_1__
 #include <smmintrin.h>
-#endif
 
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters_sse[7][2][16]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},

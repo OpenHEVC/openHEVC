@@ -25,7 +25,6 @@ void ff_hevcpred_init_x86(HEVCPredContext *c, const int bit_depth)
                 if (EXTERNAL_SSSE3(mm_flags)) {
 
                 }
-#ifdef __SSE4_1__
                 if (EXTERNAL_SSE4(mm_flags)) {
                      c->pred_planar[0]= pred_planar_0_8_sse;
                      c->pred_planar[1]= pred_planar_1_8_sse;
@@ -37,7 +36,6 @@ void ff_hevcpred_init_x86(HEVCPredContext *c, const int bit_depth)
                      c->pred_angular[2]= pred_angular_2_8_sse;
                      c->pred_angular[3]= pred_angular_3_8_sse;
                 }
-#endif // __SSE4_1__
                 if (EXTERNAL_AVX(mm_flags)) {
 
                 }

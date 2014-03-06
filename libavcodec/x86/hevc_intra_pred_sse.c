@@ -7,7 +7,6 @@
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
-#ifdef __SSE4_1__
 #include <smmintrin.h>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -950,4 +949,3 @@ void pred_angular_3_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_l
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_32_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-#endif

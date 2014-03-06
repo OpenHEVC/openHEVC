@@ -8,9 +8,8 @@
 
 #include <emmintrin.h>
 #include <tmmintrin.h>
-#ifdef __SSE4_1__
 #include <smmintrin.h>
-#endif
+
 
 DECLARE_ALIGNED(16, static const int16_t, transform4x4_luma[8][8] )=
 {
@@ -299,7 +298,7 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 
     *((uint32_t *)(dst)) = _mm_cvtsi128_si32(r3);
     dst+=stride;
-#ifdef __SSE4_1__
+#if 1
     *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 1);
     dst+=stride;
     *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 2);
