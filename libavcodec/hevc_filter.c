@@ -29,12 +29,15 @@
 #include "golomb.h"
 #include "hevc.h"
 #include "bit_depth_template.c"
-#if ARCH_X86_64
+
+#ifdef __SSE2__
 #include <emmintrin.h>
+#endif
+#ifdef __SSSE3__
 #include <tmmintrin.h>
+#endif
 #ifdef __SSE4_1__
 #include <smmintrin.h>
-#endif
 #endif
 
 #define LUMA 0

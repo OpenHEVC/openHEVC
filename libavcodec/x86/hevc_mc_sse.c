@@ -27,8 +27,12 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
+#ifdef __SSE2__
 #include <emmintrin.h>
+#endif
+#ifdef __SSSE3__
 #include <tmmintrin.h>
+#endif
 #ifdef __SSE4_1__
 #include <smmintrin.h>
 #endif
@@ -1147,6 +1151,7 @@ PUT_HEVC_PEL_PIXELS(  8, 8)
 PUT_HEVC_PEL_PIXELS( 16, 8)
 #endif //__SSE4_1__
 
+#ifdef __SSSE3__
 PUT_HEVC_PEL_PIXELS(  2, 10)
 PUT_HEVC_PEL_PIXELS(  4, 10)
 PUT_HEVC_PEL_PIXELS(  8, 10)
@@ -1221,3 +1226,4 @@ void ff_hevc_put_hevc_epel_v16_8_sse(
         int mx, int my) {
     ff_hevc_put_hevc_epel_v8_8_sse (dst, dststride, _src, _srcstride, width, height, mx, my);
 }
+#endif //__SSSE3__
