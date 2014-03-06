@@ -57,13 +57,13 @@ unsigned avformat_version(void)
 
 const char *avformat_configuration(void)
 {
-    return LIBAV_CONFIGURATION;
+    return 0;
 }
 
 const char *avformat_license(void)
 {
 #define LICENSE_PREFIX "libavformat license: "
-    return LICENSE_PREFIX LIBAV_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return LICENSE_PREFIX  + sizeof(LICENSE_PREFIX) - 1;
 }
 
 /* an arbitrarily chosen "sane" max packet size -- 50M */

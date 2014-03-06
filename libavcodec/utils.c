@@ -1792,13 +1792,13 @@ unsigned avcodec_version(void)
 
 const char *avcodec_configuration(void)
 {
-    return LIBAV_CONFIGURATION;
+    return 0;
 }
 
 const char *avcodec_license(void)
 {
 #define LICENSE_PREFIX "libavcodec license: "
-    return LICENSE_PREFIX LIBAV_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return LICENSE_PREFIX  + sizeof(LICENSE_PREFIX) - 1;
 }
 
 void avcodec_flush_buffers(AVCodecContext *avctx)
