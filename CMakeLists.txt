@@ -120,6 +120,8 @@ set(libfilenames
     libavformat/rawdec.c
     libavformat/utils.c
     libavformat/url.c
+    libavformat/snprintf.c
+    libavformat/strtod.c
     libavformat/urldecode.c
     libavcodec/x86/hevcdsp_init.c
     libavcodec/x86/hevcpred_init.c
