@@ -58,10 +58,12 @@ LFC_FUNC(v, depth, sse2)
 LFL_FUNC(h, depth, ssse3)  \
 LFL_FUNC(v, depth, ssse3)
 
+
 LFC_FUNCS(uint8_t,   8)
-LFC_FUNCS(uint8_t,  10)
 LFL_FUNCS(uint8_t,   8)
-LFL_FUNCS(uint8_t,  10)
+
+//LF_FUNCS(uint16_t, 10)
+
 
 void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
@@ -78,12 +80,12 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #endif /* ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL */
 
                 if (EXTERNAL_SSE2(mm_flags)) {
-                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
-                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
+                   /* c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
+                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;*/
                 }
                 if (EXTERNAL_SSSE3(mm_flags)) {
 
-                    c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
+                   /* c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
                     c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
                     c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
                     c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
@@ -112,11 +114,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK_SSE(c->put_hevc_qpel, 1, 1, 1, qpel_hv8,  8);
                     PEL_LINK_SSE(c->put_hevc_qpel, 2, 1, 1, qpel_hv8,  8);
                     PEL_LINK_SSE(c->put_hevc_qpel, 3, 1, 1, qpel_hv8,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 1, 1, qpel_hv8,  8);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 1, 1, qpel_hv8,  8);*/
 
 #if ARCH_X86_64
-                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
-                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
+                   /* c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
+                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;*/
 #endif
                 }
 #ifdef __SSE4_1__
@@ -193,17 +195,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #if ARCH_X86_32
 #endif /* ARCH_X86_32 */
                 if (EXTERNAL_SSE2(mm_flags)) {
-                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
-                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
 #if HAVE_ALIGNED_STACK
                     /*stuff that requires aligned stack */
 #endif /* HAVE_ALIGNED_STACK */
-                }
-                if (EXTERNAL_SSSE3(mm_flags)) {
-#if ARCH_X86_64
-                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
-                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
-#endif
                 }
 #ifdef __SSE4_1__
                 if (EXTERNAL_SSE4(mm_flags)) {
