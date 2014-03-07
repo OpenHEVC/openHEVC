@@ -55,7 +55,7 @@ unsigned int decana_getclk(unsigned int end, unsigned int ini) {
 	if (end > ini)
 		return end - ini;
 	else {
-		printf("Timer overflow corrected!\n");
+		//printf("Timer overflow corrected!\n");
 		return 0xFFFFFFFF - ini + end + 1;
 	}
 }
