@@ -1295,8 +1295,8 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
     int pic_width        = s->sps->width >> 1;
     int pic_height       = s->sps->height >> 1;
 
-    int mx = mv->x & 7;
-    int my = mv->y & 7;
+    intptr_t mx = mv->x & 7;
+    intptr_t my = mv->y & 7;
 
     x_off += mv->x >> 3;
     y_off += mv->y >> 3;

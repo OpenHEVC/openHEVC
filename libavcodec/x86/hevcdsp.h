@@ -23,10 +23,10 @@ PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D)
 
 
 #define PEL_PROTOTYPE_ASM(name, D) \
-void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, int mx, int my,int width)
+void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width)
 
 #define PEL_PROTOTYPE_SSE(name, D) \
-void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, int mx, int my,int width)
+void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width)
 
 
 #ifdef OPTI_ASM
@@ -230,6 +230,11 @@ PEL_PROTOTYPE_SSE(qpel_hv24, 10);
 PEL_PROTOTYPE_SSE(qpel_hv32, 10);
 PEL_PROTOTYPE_SSE(qpel_hv48, 10);
 PEL_PROTOTYPE_SSE(qpel_hv64, 10);
+
+
+/* ASM wrapper */
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // SAO functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -246,5 +251,8 @@ void ff_upsample_base_layer_frame_sse(struct AVFrame *FrameEL, struct AVFrame *F
 void ff_upsample_base_layer_frame_sse_v(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel);
 void ff_upsample_base_layer_frame_sse_h(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const int32_t enabled_up_sample_filter_luma[16][8], const int32_t enabled_up_sample_filter_chroma[16][4], struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel);
 //#endif
+
+
+
 
 #endif // AVCODEC_X86_HEVCDSP_H
