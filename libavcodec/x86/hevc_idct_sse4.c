@@ -950,9 +950,9 @@ TRANSFORM_ADD2(32, 10);
 void ff_hevc_transform_ ## H ## x ## H ## _dc_add_ ## D ## _sse4 (             \
     uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride) {                       \
     int i, j;                                                                  \
-    int shift = 7;                                                             \
+    int shift = 14 - D;                                                        \
     int add   = 1 << (shift - 1);                                              \
-    int coeff = (coeffs[0] + add) >> shift;                                    \
+    int coeff = (((coeffs[0] + 1) >> 1) + add) >> shift;                       \
     INIT_ ## D();                                                              \
     __m128i src, add1;                                                         \
     add1 = _mm_set1_epi16(coeff);                                              \

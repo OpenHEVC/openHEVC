@@ -272,9 +272,9 @@ static void FUNC(transform_##H ##x ##H ##_dc_add)(                             \
     int i, j;                                                                  \
     pixel    *dst    = (pixel *)_dst;                                          \
     int      stride  = _stride/sizeof(pixel);                                  \
-    int      shift   = 7;                                                      \
+    int      shift   = 14 - BIT_DEPTH;                                         \
     int      add     = 1 << (shift - 1);                                       \
-    int coeff = (coeffs[0] + add) >> shift;                                    \
+    int      coeff   = (((coeffs[0] + 1) >> 1) + add) >> shift;                \
                                                                                \
     for (j = 0; j < H; j++) {                                                  \
         for (i = 0; i < H; i++) {                                              \
