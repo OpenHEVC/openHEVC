@@ -1209,7 +1209,106 @@ PUT_HEVC_QPEL_HV(  8,  8)
 PUT_HEVC_QPEL_HV(  4, 10)
 PUT_HEVC_QPEL_HV(  8, 10)
 
+#define mc_red_func(name, bitd, step, W) \
+void ff_hevc_put_hevc_##name##W##_##bitd##_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, int mx, int my, int width) \
+{ \
+    ff_hevc_put_hevc_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, height, mx, my, width);   \
+}
 
+mc_red_func(pel_pixels, 8, 2,  6);
+mc_red_func(pel_pixels, 8, 4, 12);
+mc_red_func(pel_pixels, 8, 8, 24);
+mc_red_func(pel_pixels, 8,16, 32);
+mc_red_func(pel_pixels, 8,16, 48);
+mc_red_func(pel_pixels, 8,16, 64);
+
+mc_red_func(pel_pixels,10, 2,  6);
+mc_red_func(pel_pixels,10, 4, 12);
+mc_red_func(pel_pixels,10, 8, 16);
+mc_red_func(pel_pixels,10, 8, 24);
+mc_red_func(pel_pixels,10, 8, 32);
+mc_red_func(pel_pixels,10, 8, 48);
+mc_red_func(pel_pixels,10, 8, 64);
+
+mc_red_func(qpel_h, 8, 4, 12);
+mc_red_func(qpel_h, 8, 8, 24);
+mc_red_func(qpel_h, 8,16, 32);
+mc_red_func(qpel_h, 8,16, 48);
+mc_red_func(qpel_h, 8,16, 64);
+
+mc_red_func(qpel_h,10, 4, 12);
+mc_red_func(qpel_h,10, 8, 16);
+mc_red_func(qpel_h,10, 8, 24);
+mc_red_func(qpel_h,10, 8, 32);
+mc_red_func(qpel_h,10, 8, 48);
+mc_red_func(qpel_h,10, 8, 64);
+
+mc_red_func(qpel_v, 8, 4, 12);
+mc_red_func(qpel_v, 8, 8, 24);
+mc_red_func(qpel_v, 8,16, 32);
+mc_red_func(qpel_v, 8,16, 48);
+mc_red_func(qpel_v, 8,16, 64);
+
+mc_red_func(qpel_v,10, 4, 12);
+mc_red_func(qpel_v,10, 8, 16);
+mc_red_func(qpel_v,10, 8, 24);
+mc_red_func(qpel_v,10, 8, 32);
+mc_red_func(qpel_v,10, 8, 48);
+mc_red_func(qpel_v,10, 8, 64);
+
+mc_red_func(qpel_hv, 8, 4, 12);
+mc_red_func(qpel_hv, 8, 8, 16);
+mc_red_func(qpel_hv, 8, 8, 24);
+mc_red_func(qpel_hv, 8, 8, 32);
+mc_red_func(qpel_hv, 8, 8, 48);
+mc_red_func(qpel_hv, 8, 8, 64);
+
+mc_red_func(qpel_hv,10, 4, 12);
+mc_red_func(qpel_hv,10, 8, 16);
+mc_red_func(qpel_hv,10, 8, 24);
+mc_red_func(qpel_hv,10, 8, 32);
+mc_red_func(qpel_hv,10, 8, 48);
+mc_red_func(qpel_hv,10, 8, 64);
+
+mc_red_func(epel_h, 8, 4, 12);
+mc_red_func(epel_h, 8, 8, 24);
+mc_red_func(epel_h, 8,16, 32);
+mc_red_func(epel_h, 8,16, 48);
+mc_red_func(epel_h, 8,16, 64);
+
+mc_red_func(epel_h,10, 4, 12);
+mc_red_func(epel_h,10, 8, 16);
+mc_red_func(epel_h,10, 8, 24);
+mc_red_func(epel_h,10, 8, 32);
+mc_red_func(epel_h,10, 8, 48);
+mc_red_func(epel_h,10, 8, 64);
+
+mc_red_func(epel_v, 8, 4, 12);
+mc_red_func(epel_v, 8, 8, 24);
+mc_red_func(epel_v, 8,16, 32);
+mc_red_func(epel_v, 8,16, 48);
+mc_red_func(epel_v, 8,16, 64);
+
+mc_red_func(epel_v,10, 4, 12);
+mc_red_func(epel_v,10, 8, 16);
+mc_red_func(epel_v,10, 8, 24);
+mc_red_func(epel_v,10, 8, 32);
+mc_red_func(epel_v,10, 8, 48);
+mc_red_func(epel_v,10, 8, 64);
+
+mc_red_func(epel_hv, 8, 4, 12);
+mc_red_func(epel_hv, 8, 8, 16);
+mc_red_func(epel_hv, 8, 8, 24);
+mc_red_func(epel_hv, 8, 8, 32);
+mc_red_func(epel_hv, 8, 8, 48);
+mc_red_func(epel_hv, 8, 8, 64);
+
+mc_red_func(epel_hv,10, 4, 12);
+mc_red_func(epel_hv,10, 8, 16);
+mc_red_func(epel_hv,10, 8, 24);
+mc_red_func(epel_hv,10, 8, 32);
+mc_red_func(epel_hv,10, 8, 48);
+mc_red_func(epel_hv,10, 8, 64);
 
 void ff_hevc_put_hevc_epel_h16_8_sse(
         int16_t *dst, ptrdiff_t dststride,
@@ -1226,4 +1325,6 @@ void ff_hevc_put_hevc_epel_v16_8_sse(
         int mx, int my, int width) {
     ff_hevc_put_hevc_epel_v8_8_sse (dst, dststride, _src, _srcstride, height, mx, my, width);
 }
+
+
 #endif //__SSSE3__
