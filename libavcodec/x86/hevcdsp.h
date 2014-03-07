@@ -23,10 +23,10 @@ PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D)
 
 
 #define PEL_PROTOTYPE_ASM(name, D) \
-void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride,int width, int height, int mx, int my)
+void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, int mx, int my,int width)
 
 #define PEL_PROTOTYPE_SSE(name, D) \
-void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int width, int height, int mx, int my)
+void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, int mx, int my,int width)
 
 
 #ifdef OPTI_ASM
