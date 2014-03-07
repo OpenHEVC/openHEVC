@@ -13,6 +13,8 @@ add_definitions(
     #-Dstrtod=avpriv_strtod
     -Dinline=__inline
     -Drestrict=__restrict
+	-D__SSE4_1__=1
+	-D__SSSE3__=1
     #/arch:SSE2
     #-I"${CMAKE_CURRENT_SOURCE_DIR}"
     #-I"${CMAKE_CURRENT_BINARY_DIR}"
@@ -77,7 +79,7 @@ foreach(_asm_file ${YASM_NAMES})
         ARGS ${YASM_ARGS} -o ${YASM_OBJ} ${YASM_SRC}
         DEPENDS ${YASM_SRC}
     )
-    #set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
+    set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
 endforeach()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
