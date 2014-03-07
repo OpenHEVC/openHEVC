@@ -63,6 +63,89 @@ LFC_FUNCS(uint8_t,  10)
 LFL_FUNCS(uint8_t,   8)
 LFL_FUNCS(uint8_t,  10)
 
+
+#define mc_rep_func(name, bitd, step, W) \
+void ff_hevc_put_hevc_##name##W##_##bitd##_sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width) \
+{ \
+    int i;  \
+    uint8_t *src;   \
+    uint16_t *_dst; \
+    for(i=0; i < W ; i+= step ){    \
+        src= _src+(i*((bitd+7)/8));            \
+        _dst= dst+i;                        \
+    ff_hevc_put_hevc_##name##step##_##bitd##_sse4(_dst, dststride, src, _srcstride, height, mx, my, width);   \
+    }   \
+}
+
+mc_rep_func(pel_pixels, 8, 16, 64);
+mc_rep_func(pel_pixels, 8, 16, 48);
+mc_rep_func(pel_pixels, 8, 16, 32);
+
+mc_rep_func(pel_pixels,10,  8, 64);
+mc_rep_func(pel_pixels,10,  8, 48);
+mc_rep_func(pel_pixels,10,  8, 32);
+mc_rep_func(pel_pixels,10,  8, 24);
+mc_rep_func(pel_pixels,10,  8, 16);
+
+mc_rep_func(epel_h, 8, 16, 64);
+mc_rep_func(epel_h, 8, 16, 48);
+mc_rep_func(epel_h, 8, 16, 32);
+
+mc_rep_func(epel_h,10,  8, 64);
+mc_rep_func(epel_h,10,  8, 48);
+mc_rep_func(epel_h,10,  8, 32);
+mc_rep_func(epel_h,10,  8, 24);
+mc_rep_func(epel_h,10,  8, 16);
+
+
+mc_rep_func(epel_v, 8, 16, 64);
+mc_rep_func(epel_v, 8, 16, 48);
+mc_rep_func(epel_v, 8, 16, 32);
+
+mc_rep_func(epel_v,10,  8, 64);
+mc_rep_func(epel_v,10,  8, 48);
+mc_rep_func(epel_v,10,  8, 32);
+mc_rep_func(epel_v,10,  8, 24);
+mc_rep_func(epel_v,10,  8, 16);
+
+mc_rep_func(epel_hv, 8,  8, 64);
+mc_rep_func(epel_hv, 8,  8, 48);
+mc_rep_func(epel_hv, 8,  8, 32);
+mc_rep_func(epel_hv, 8,  8, 24);
+mc_rep_func(epel_hv, 8,  8, 16);
+
+mc_rep_func(epel_hv,10,  8, 64);
+mc_rep_func(epel_hv,10,  8, 48);
+mc_rep_func(epel_hv,10,  8, 32);
+mc_rep_func(epel_hv,10,  8, 24);
+mc_rep_func(epel_hv,10,  8, 16);
+
+
+mc_rep_func(qpel_h, 8, 16, 64);
+mc_rep_func(qpel_h, 8, 16, 48);
+mc_rep_func(qpel_h, 8, 16, 32);
+
+mc_rep_func(qpel_h,10,  8, 64);
+mc_rep_func(qpel_h,10,  8, 48);
+mc_rep_func(qpel_h,10,  8, 32);
+mc_rep_func(qpel_h,10,  8, 24);
+mc_rep_func(qpel_h,10,  8, 16);
+
+
+mc_rep_func(qpel_v, 8, 16, 64);
+mc_rep_func(qpel_v, 8, 16, 48);
+mc_rep_func(qpel_v, 8, 16, 32);
+
+mc_rep_func(qpel_v,10,  8, 64);
+mc_rep_func(qpel_v,10,  8, 48);
+mc_rep_func(qpel_v,10,  8, 32);
+mc_rep_func(qpel_v,10,  8, 24);
+mc_rep_func(qpel_v,10,  8, 16);
+
+
+
+
+
 void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int mm_flags = av_get_cpu_flags();
@@ -77,10 +160,13 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 /* MMEXT optimizations */
 #endif /* ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL */
 
+#ifdef __SSE2__
                 if (EXTERNAL_SSE2(mm_flags)) {
                     c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
                     c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
                 }
+#endif //__SSE2__
+#ifdef __SSSE3__
                 if (EXTERNAL_SSSE3(mm_flags)) {
 
                     c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
@@ -102,27 +188,38 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_weighted_pred_avg[5] = ff_hevc_put_weighted_pred_avg16_8_sse;
 
 
-                    PEL_LINK(c->put_hevc_qpel, 0, 0, 1, qpel_h4 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 1, 0, 1, qpel_h8 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 2, 0, 1, qpel_h16 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 3, 0, 1, qpel_h16 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 4, 0, 1, qpel_h16 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 0, 1, 0, qpel_v4 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 1, 1, 0, qpel_v8 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 2, 1, 0, qpel_v16 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 3, 1, 0, qpel_v16 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 4, 1, 0, qpel_v16 ,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 0, 1, 1, qpel_hv4,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 1, 1, 1, qpel_hv8,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 2, 1, 1, qpel_hv8,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 3, 1, 1, qpel_hv8,  8);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 1, 1, qpel_hv8,  8);
+                    PEL_LINK(c->put_hevc_qpel, 1, 0, 1, qpel_h4 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 3, 0, 1, qpel_h8 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 4, 0, 1, qpel_h12,  8);
+                    PEL_LINK(c->put_hevc_qpel, 5, 0, 1, qpel_h16,  8);
+                    PEL_LINK(c->put_hevc_qpel, 6, 0, 1, qpel_h24,  8);
+                    PEL_LINK(c->put_hevc_qpel, 7, 0, 1, qpel_h32,  8);
+                    PEL_LINK(c->put_hevc_qpel, 8, 0, 1, qpel_h48,  8);
+                    PEL_LINK(c->put_hevc_qpel, 9, 0, 1, qpel_h64,  8);
+                    PEL_LINK(c->put_hevc_qpel, 1, 1, 0, qpel_v4 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 3, 1, 0, qpel_v8 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 4, 1, 0, qpel_v12,  8);
+                    PEL_LINK(c->put_hevc_qpel, 5, 1, 0, qpel_v16,  8);
+                    PEL_LINK(c->put_hevc_qpel, 6, 1, 0, qpel_v24,  8);
+                    PEL_LINK(c->put_hevc_qpel, 7, 1, 0, qpel_v32,  8);
+                    PEL_LINK(c->put_hevc_qpel, 8, 1, 0, qpel_v48,  8);
+                    PEL_LINK(c->put_hevc_qpel, 9, 1, 0, qpel_v64,  8);
+
+                    PEL_LINK_SSE(c->put_hevc_qpel, 1, 1, 1, qpel_hv4 ,  8);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 3, 1, 1, qpel_hv8 ,  8);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 1, 1, qpel_hv12,  8);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 5, 1, 1, qpel_hv16,  8);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 6, 1, 1, qpel_hv24,  8);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 7, 1, 1, qpel_hv32,  8);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 8, 1, 1, qpel_hv48,  8);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 9, 1, 1, qpel_hv64,  8);
 
 #if ARCH_X86_64
                     c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
                     c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
 #endif
                 }
+#endif //__SSSE3__
 #ifdef __SSE4_1__
 
                 if (EXTERNAL_SSE4(mm_flags)) {
@@ -145,33 +242,48 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->put_unweighted_pred[3]   = ff_hevc_put_unweighted_pred16_8_sse;
                     c->put_unweighted_pred[4]   = ff_hevc_put_unweighted_pred16_8_sse;
                     c->put_unweighted_pred[5]   = ff_hevc_put_unweighted_pred16_8_sse;
+                    PEL_LINK(c->put_hevc_qpel, 1, 0, 0, pel_pixels4 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 3, 0, 0, pel_pixels8 ,  8);
+                    PEL_LINK(c->put_hevc_qpel, 4, 0, 0, pel_pixels12,  8);
+                    PEL_LINK(c->put_hevc_qpel, 5, 0, 0, pel_pixels16,  8);
+                    PEL_LINK(c->put_hevc_qpel, 6, 0, 0, pel_pixels24,  8);
+                    PEL_LINK(c->put_hevc_qpel, 7, 0, 0, pel_pixels32,  8);
+                    PEL_LINK(c->put_hevc_qpel, 8, 0, 0, pel_pixels48,  8);
+                    PEL_LINK(c->put_hevc_qpel, 9, 0, 0, pel_pixels64,  8);
 
-                    PEL_LINK(c->put_hevc_qpel, 0, 0, 0, pel_pixels4 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 1, 0, 0, pel_pixels8 ,  8);
-                    PEL_LINK(c->put_hevc_qpel, 2, 0, 0, pel_pixels16,  8);
-                    PEL_LINK(c->put_hevc_qpel, 3, 0, 0, pel_pixels16,  8);
-                    PEL_LINK(c->put_hevc_qpel, 4, 0, 0, pel_pixels16,  8);
+                    PEL_LINK(c->put_hevc_epel, 1, 0, 0, pel_pixels4 ,  8);
+                    PEL_LINK(c->put_hevc_epel, 3, 0, 0, pel_pixels8 ,  8);
+                    PEL_LINK(c->put_hevc_epel, 4, 0, 0, pel_pixels12,  8);
+                    PEL_LINK(c->put_hevc_epel, 5, 0, 0, pel_pixels16,  8);
+                    PEL_LINK(c->put_hevc_epel, 6, 0, 0, pel_pixels24,  8);
+                    PEL_LINK(c->put_hevc_epel, 7, 0, 0, pel_pixels32,  8);
+                    PEL_LINK(c->put_hevc_epel, 8, 0, 0, pel_pixels48,  8);
+                    PEL_LINK(c->put_hevc_epel, 9, 0, 0, pel_pixels64,  8);
+                    PEL_LINK(c->put_hevc_epel, 1, 0, 1, epel_h4 ,  8);
+                    PEL_LINK(c->put_hevc_epel, 3, 0, 1, epel_h8 ,  8);
+                    PEL_LINK(c->put_hevc_epel, 4, 0, 1, epel_h12,  8);
+                    PEL_LINK(c->put_hevc_epel, 5, 0, 1, epel_h16,  8);
+                    PEL_LINK(c->put_hevc_epel, 6, 0, 1, epel_h24,  8);
+                    PEL_LINK(c->put_hevc_epel, 7, 0, 1, epel_h32,  8);
+                    PEL_LINK(c->put_hevc_epel, 8, 0, 1, epel_h48,  8);
+                    PEL_LINK(c->put_hevc_epel, 9, 0, 1, epel_h64,  8);
+                    PEL_LINK(c->put_hevc_epel, 1, 1, 0, epel_v4 ,  8);
+                    PEL_LINK(c->put_hevc_epel, 3, 1, 0, epel_v8 ,  8);
+                    PEL_LINK(c->put_hevc_epel, 4, 1, 0, epel_v12,  8);
+                    PEL_LINK(c->put_hevc_epel, 5, 1, 0, epel_v16,  8);
+                    PEL_LINK(c->put_hevc_epel, 6, 1, 0, epel_v24,  8);
+                    PEL_LINK(c->put_hevc_epel, 7, 1, 0, epel_v32,  8);
+                    PEL_LINK(c->put_hevc_epel, 8, 1, 0, epel_v48,  8);
+                    PEL_LINK(c->put_hevc_epel, 9, 1, 0, epel_v64,  8);
 
-                    PEL_LINK(c->put_hevc_epel, 0, 0, 0, pel_pixels2 , 8);
-                    PEL_LINK(c->put_hevc_epel, 1, 0, 0, pel_pixels4 , 8);
-                    PEL_LINK(c->put_hevc_epel, 2, 0, 0, pel_pixels8 , 8);
-                    PEL_LINK(c->put_hevc_epel, 3, 0, 0, pel_pixels16, 8);
-                    PEL_LINK(c->put_hevc_epel, 4, 0, 0, pel_pixels16, 8);
-                    PEL_LINK(c->put_hevc_epel, 0, 0, 1, epel_h2,  8);
-                    PEL_LINK(c->put_hevc_epel, 1, 0, 1, epel_h4,  8);
-                    PEL_LINK(c->put_hevc_epel, 2, 0, 1, epel_h8,  8);
-                    PEL_LINK(c->put_hevc_epel, 3, 0, 1, epel_h16,  8);
-                    PEL_LINK(c->put_hevc_epel, 4, 0, 1, epel_h16,  8);
-                    PEL_LINK(c->put_hevc_epel, 0, 1, 0, epel_v2,  8);
-                    PEL_LINK(c->put_hevc_epel, 1, 1, 0, epel_v4,  8);
-                    PEL_LINK(c->put_hevc_epel, 2, 1, 0, epel_v8,  8);
-                    PEL_LINK(c->put_hevc_epel, 3, 1, 0, epel_v16,  8);
-                    PEL_LINK(c->put_hevc_epel, 4, 1, 0, epel_v16,  8);
-                    PEL_LINK(c->put_hevc_epel, 0, 1, 1, epel_hv2, 8);
-                    PEL_LINK(c->put_hevc_epel, 1, 1, 1, epel_hv4, 8);
-                    PEL_LINK(c->put_hevc_epel, 2, 1, 1, epel_hv8, 8);
-                    PEL_LINK(c->put_hevc_epel, 3, 1, 1, epel_hv8, 8);
-                    PEL_LINK(c->put_hevc_epel, 4, 1, 1, epel_hv8, 8);
+                    PEL_LINK(c->put_hevc_epel, 1, 1, 1, epel_hv4 ,  8);
+                    PEL_LINK(c->put_hevc_epel, 3, 1, 1, epel_hv8 ,  8);
+                    PEL_LINK(c->put_hevc_epel, 4, 1, 1, epel_hv12,  8);
+                    PEL_LINK(c->put_hevc_epel, 5, 1, 1, epel_hv16,  8);
+                    PEL_LINK(c->put_hevc_epel, 6, 1, 1, epel_hv24,  8);
+                    PEL_LINK(c->put_hevc_epel, 7, 1, 1, epel_hv32,  8);
+                    PEL_LINK(c->put_hevc_epel, 8, 1, 1, epel_hv48,  8);
+                    PEL_LINK(c->put_hevc_epel, 9, 1, 1, epel_hv64,  8);
 
                     c->transform_skip     = ff_hevc_transform_skip_8_sse;
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
@@ -196,6 +308,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (EXTERNAL_MMXEXT(mm_flags)) {
 #if ARCH_X86_32
 #endif /* ARCH_X86_32 */
+#ifdef __SSE2__
                 if (EXTERNAL_SSE2(mm_flags)) {
                     c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
                     c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
@@ -203,12 +316,15 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     /*stuff that requires aligned stack */
 #endif /* HAVE_ALIGNED_STACK */
                 }
+#endif /* __SSE2__ */
+#ifdef __SSSE3__
                 if (EXTERNAL_SSSE3(mm_flags)) {
 #if ARCH_X86_64
                     c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
                     c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
 #endif
                 }
+#endif //__SSSE3__
 #ifdef __SSE4_1__
                 if (EXTERNAL_SSE4(mm_flags)) {
                     c->transform_4x4_luma_add   = ff_hevc_transform_4x4_luma_add_10_sse4;
@@ -247,47 +363,71 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->weighted_pred_avg[4]     = ff_hevc_weighted_pred_avg8_10_sse;
                     c->weighted_pred_avg[5]     = ff_hevc_weighted_pred_avg8_10_sse;
 
-                    PEL_LINK(c->put_hevc_epel, 0, 0, 0, pel_pixels2 ,10);
-                    PEL_LINK(c->put_hevc_epel, 1, 0, 0, pel_pixels4 ,10);
-                    PEL_LINK(c->put_hevc_epel, 2, 0, 0, pel_pixels8 ,10);
-                    PEL_LINK(c->put_hevc_epel, 3, 0, 0, pel_pixels8 ,10);
-                    PEL_LINK(c->put_hevc_epel, 4, 0, 0, pel_pixels8 ,10);
-                    PEL_LINK(c->put_hevc_epel, 0, 0, 1, epel_h2,  10);
-                    PEL_LINK(c->put_hevc_epel, 1, 0, 1, epel_h4,  10);
-                    PEL_LINK(c->put_hevc_epel, 2, 0, 1, epel_h8,  10);
-                    PEL_LINK(c->put_hevc_epel, 3, 0, 1, epel_h8,  10);
-                    PEL_LINK(c->put_hevc_epel, 4, 0, 1, epel_h8,  10);
-                    PEL_LINK(c->put_hevc_epel, 0, 1, 0, epel_v2,  10);
-                    PEL_LINK(c->put_hevc_epel, 1, 1, 0, epel_v4,  10);
-                    PEL_LINK(c->put_hevc_epel, 2, 1, 0, epel_v8,  10);
-                    PEL_LINK(c->put_hevc_epel, 3, 1, 0, epel_v8,  10);
-                    PEL_LINK(c->put_hevc_epel, 4, 1, 0, epel_v8,  10);
-                    PEL_LINK(c->put_hevc_epel, 0, 1, 1, epel_hv2, 10);
-                    PEL_LINK(c->put_hevc_epel, 1, 1, 1, epel_hv4, 10);
-                    PEL_LINK(c->put_hevc_epel, 2, 1, 1, epel_hv8, 10);
-                    PEL_LINK(c->put_hevc_epel, 3, 1, 1, epel_hv8, 10);
-                    PEL_LINK(c->put_hevc_epel, 4, 1, 1, epel_hv8, 10);
+                    PEL_LINK(c->put_hevc_epel, 1, 0, 0, pel_pixels4 , 10);
+                    PEL_LINK(c->put_hevc_epel, 3, 0, 0, pel_pixels8 , 10);
+                    PEL_LINK(c->put_hevc_epel, 4, 0, 0, pel_pixels12, 10);
+                    PEL_LINK(c->put_hevc_epel, 5, 0, 0, pel_pixels16, 10);
+                    PEL_LINK(c->put_hevc_epel, 6, 0, 0, pel_pixels24, 10);
+                    PEL_LINK(c->put_hevc_epel, 7, 0, 0, pel_pixels32, 10);
+                    PEL_LINK(c->put_hevc_epel, 8, 0, 0, pel_pixels48, 10);
+                    PEL_LINK(c->put_hevc_epel, 9, 0, 0, pel_pixels64, 10);
+                    PEL_LINK(c->put_hevc_epel, 1, 0, 1, epel_h4 , 10);
+                    PEL_LINK(c->put_hevc_epel, 3, 0, 1, epel_h8 , 10);
+                    PEL_LINK(c->put_hevc_epel, 4, 0, 1, epel_h12, 10);
+                    PEL_LINK(c->put_hevc_epel, 5, 0, 1, epel_h16, 10);
+                    PEL_LINK(c->put_hevc_epel, 6, 0, 1, epel_h24, 10);
+                    PEL_LINK(c->put_hevc_epel, 7, 0, 1, epel_h32, 10);
+                    PEL_LINK(c->put_hevc_epel, 8, 0, 1, epel_h48, 10);
+                    PEL_LINK(c->put_hevc_epel, 9, 0, 1, epel_h64, 10);
+                    PEL_LINK(c->put_hevc_epel, 1, 1, 0, epel_v4 , 10);
+                    PEL_LINK(c->put_hevc_epel, 3, 1, 0, epel_v8 , 10);
+                    PEL_LINK(c->put_hevc_epel, 4, 1, 0, epel_v12, 10);
+                    PEL_LINK(c->put_hevc_epel, 5, 1, 0, epel_v16, 10);
+                    PEL_LINK(c->put_hevc_epel, 6, 1, 0, epel_v24, 10);
+                    PEL_LINK(c->put_hevc_epel, 7, 1, 0, epel_v32, 10);
+                    PEL_LINK(c->put_hevc_epel, 8, 1, 0, epel_v48, 10);
+                    PEL_LINK(c->put_hevc_epel, 9, 1, 0, epel_v64, 10);
+                    PEL_LINK(c->put_hevc_epel, 1, 1, 1, epel_hv4 , 10);
+                    PEL_LINK(c->put_hevc_epel, 3, 1, 1, epel_hv8 , 10);
+                    PEL_LINK(c->put_hevc_epel, 4, 1, 1, epel_hv12, 10);
+                    PEL_LINK(c->put_hevc_epel, 5, 1, 1, epel_hv16, 10);
+                    PEL_LINK(c->put_hevc_epel, 6, 1, 1, epel_hv24, 10);
+                    PEL_LINK(c->put_hevc_epel, 7, 1, 1, epel_hv32, 10);
+                    PEL_LINK(c->put_hevc_epel, 8, 1, 1, epel_hv48, 10);
+                    PEL_LINK(c->put_hevc_epel, 9, 1, 1, epel_hv64, 10);
 
-                    PEL_LINK(c->put_hevc_qpel, 0, 0, 0, pel_pixels4 ,10);
-                    PEL_LINK(c->put_hevc_qpel, 1, 0, 0, pel_pixels8 ,10);
-                    PEL_LINK(c->put_hevc_qpel, 2, 0, 0, pel_pixels8 ,10);
-                    PEL_LINK(c->put_hevc_qpel, 3, 0, 0, pel_pixels8 ,10);
-                    PEL_LINK(c->put_hevc_qpel, 4, 0, 0, pel_pixels8 ,10);
-                    PEL_LINK(c->put_hevc_qpel, 0, 0, 1, qpel_h4,  10);
-                    PEL_LINK(c->put_hevc_qpel, 1, 0, 1, qpel_h8,  10);
-                    PEL_LINK(c->put_hevc_qpel, 2, 0, 1, qpel_h8,  10);
-                    PEL_LINK(c->put_hevc_qpel, 3, 0, 1, qpel_h8,  10);
-                    PEL_LINK(c->put_hevc_qpel, 4, 0, 1, qpel_h8,  10);
-                    PEL_LINK(c->put_hevc_qpel, 0, 1, 0, qpel_v4,  10);
-                    PEL_LINK(c->put_hevc_qpel, 1, 1, 0, qpel_v8,  10);
-                    PEL_LINK(c->put_hevc_qpel, 2, 1, 0, qpel_v8,  10);
-                    PEL_LINK(c->put_hevc_qpel, 3, 1, 0, qpel_v8,  10);
-                    PEL_LINK(c->put_hevc_qpel, 4, 1, 0, qpel_v8,  10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 0, 1, 1, qpel_hv4, 10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 1, 1, 1, qpel_hv8, 10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 2, 1, 1, qpel_hv8, 10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 3, 1, 1, qpel_hv8, 10);
-                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 1, 1, qpel_hv8, 10);
+                    PEL_LINK(c->put_hevc_qpel, 1, 0, 0, pel_pixels4 , 10);
+                    PEL_LINK(c->put_hevc_qpel, 3, 0, 0, pel_pixels8 , 10);
+                    PEL_LINK(c->put_hevc_qpel, 4, 0, 0, pel_pixels12, 10);
+                    PEL_LINK(c->put_hevc_qpel, 5, 0, 0, pel_pixels16, 10);
+                    PEL_LINK(c->put_hevc_qpel, 6, 0, 0, pel_pixels24, 10);
+                    PEL_LINK(c->put_hevc_qpel, 7, 0, 0, pel_pixels32, 10);
+                    PEL_LINK(c->put_hevc_qpel, 8, 0, 0, pel_pixels48, 10);
+                    PEL_LINK(c->put_hevc_qpel, 9, 0, 0, pel_pixels64, 10);
+                    PEL_LINK(c->put_hevc_qpel, 1, 0, 1, qpel_h4 , 10);
+                    PEL_LINK(c->put_hevc_qpel, 3, 0, 1, qpel_h8 , 10);
+                    PEL_LINK(c->put_hevc_qpel, 4, 0, 1, qpel_h12, 10);
+                    PEL_LINK(c->put_hevc_qpel, 5, 0, 1, qpel_h16, 10);
+                    PEL_LINK(c->put_hevc_qpel, 6, 0, 1, qpel_h24, 10);
+                    PEL_LINK(c->put_hevc_qpel, 7, 0, 1, qpel_h32, 10);
+                    PEL_LINK(c->put_hevc_qpel, 8, 0, 1, qpel_h48, 10);
+                    PEL_LINK(c->put_hevc_qpel, 9, 0, 1, qpel_h64, 10);
+                    PEL_LINK(c->put_hevc_qpel, 1, 1, 0, qpel_v4 , 10);
+                    PEL_LINK(c->put_hevc_qpel, 3, 1, 0, qpel_v8 , 10);
+                    PEL_LINK(c->put_hevc_qpel, 4, 1, 0, qpel_v12, 10);
+                    PEL_LINK(c->put_hevc_qpel, 5, 1, 0, qpel_v16, 10);
+                    PEL_LINK(c->put_hevc_qpel, 6, 1, 0, qpel_v24, 10);
+                    PEL_LINK(c->put_hevc_qpel, 7, 1, 0, qpel_v32, 10);
+                    PEL_LINK(c->put_hevc_qpel, 8, 1, 0, qpel_v48, 10);
+                    PEL_LINK(c->put_hevc_qpel, 9, 1, 0, qpel_v64, 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 1, 1, 1, qpel_hv4 , 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 3, 1, 1, qpel_hv8 , 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 4, 1, 1, qpel_hv12, 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 5, 1, 1, qpel_hv16, 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 6, 1, 1, qpel_hv24, 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 7, 1, 1, qpel_hv32, 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 8, 1, 1, qpel_hv48, 10);
+                    PEL_LINK_SSE(c->put_hevc_qpel, 9, 1, 1, qpel_hv64, 10);
 
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;

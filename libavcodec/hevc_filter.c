@@ -29,9 +29,14 @@
 #include "golomb.h"
 #include "hevc.h"
 #include "bit_depth_template.c"
-#if ARCH_X86_64
+
+#ifdef __SSE2__
 #include <emmintrin.h>
+#endif
+#ifdef __SSSE3__
 #include <tmmintrin.h>
+#endif
+#ifdef __SSE4_1__
 #include <smmintrin.h>
 #endif
 
@@ -527,7 +532,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
         if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
             s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
             neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
-#if ARCH_X86_64
+#if __SSE4_1__
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -551,7 +556,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 #endif
         } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
                    neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
-#if ARCH_X86_64
+#if __SSE4_1__
             __m128i x0, x1;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -569,7 +574,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 #endif
         } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
                    neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
-#if ARCH_X86_64
+#if __SSE4_1__
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);

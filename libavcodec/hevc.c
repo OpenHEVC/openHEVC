@@ -41,6 +41,8 @@
 #define POC_DISPLAY_MD5
 #ifdef POC_DISPLAY_MD5
 
+uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
+
 static void printf_ref_pic_list(HEVCContext *s)
 {
     RefPicList  *refPicList = s->ref->refPicList;
@@ -1299,8 +1301,8 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
         src = lc->edge_emu_buffer + buf_offset;
         srcstride = edge_emu_stride;
     }
-    s->hevcdsp.put_hevc_qpel[idx][!!my][!!mx](dst, dststride, src, srcstride, block_w,
-                                     block_h, mx, my);
+    s->hevcdsp.put_hevc_qpel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst, dststride, src, srcstride,
+                                     block_h, mx, my, block_w);
 }
 
 /**
@@ -1329,8 +1331,8 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
     int pic_width        = s->sps->width >> s->sps->vshift[1];
     int pic_height       = s->sps->height >> s->sps->hshift[1];
     int shift = (s->sps->chroma_array_type == 3) ? 2 : 3;
-    int mx = mv->x & ((1 << shift) - 1);
-    int my = mv->y & ((1 << shift) - 1);
+    intptr_t mx = mv->x & ((1 << shift) - 1);
+    intptr_t my = mv->y & ((1 << shift) - 1);
 
     x_off += mv->x >> shift;
     y_off += mv->y >> shift;
@@ -1357,8 +1359,8 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
 
         src1 = lc->edge_emu_buffer + buf_offset1;
         src1stride = edge_emu_stride;
-        s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst1, dststride, src1, src1stride,
-                                             block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst1, dststride, src1, src1stride,
+                                                  block_h, mx, my, block_w);
 
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src2 - offset2,
                                  edge_emu_stride, src2stride,
@@ -1369,13 +1371,13 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         src2 = lc->edge_emu_buffer + buf_offset2;
         src2stride = edge_emu_stride;
 
-        s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
-                                             block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst2, dststride, src2, src2stride,
+                                                  block_h, mx, my, block_w);
     } else {
-        s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst1, dststride, src1, src1stride,
-                                             block_w, block_h, mx, my);
-        s->hevcdsp.put_hevc_epel[idx][!!my][!!mx](dst2, dststride, src2, src2stride,
-                                             block_w, block_h, mx, my);
+        s->hevcdsp.put_hevc_epel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst1, dststride, src1, src1stride,
+                                                  block_h, mx, my, block_w);
+        s->hevcdsp.put_hevc_epel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst2, dststride, src2, src2stride,
+                                                  block_h, mx, my, block_w);
     }
 }
 

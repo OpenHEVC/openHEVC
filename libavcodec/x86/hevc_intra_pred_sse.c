@@ -5,8 +5,12 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcpred.h"
 
+#ifdef __SSE2__
 #include <emmintrin.h>
+#endif
+#ifdef __SSSE3__
 #include <tmmintrin.h>
+#endif
 #ifdef __SSE4_1__
 #include <smmintrin.h>
 

@@ -5,9 +5,12 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
-
+#ifdef __SSE2__
 #include <emmintrin.h>
+#endif
+#ifdef __SSSE3__
 #include <tmmintrin.h>
+#endif
 #ifdef __SSE4_1__
 #include <smmintrin.h>
 #endif
@@ -258,6 +261,7 @@ DECLARE_ALIGNED(16, static const int16_t, transform32x32[8][16][8] )=
 #define shift_1st 7
 #define add_1st (1 << (shift_1st - 1))
 
+#ifdef __SSE4_1__
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
 {
     uint8_t *dst = (uint8_t*)_dst;
@@ -299,14 +303,13 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 
     *((uint32_t *)(dst)) = _mm_cvtsi128_si32(r3);
     dst+=stride;
-#ifdef __SSE4_1__
     *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 1);
     dst+=stride;
     *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 2);
     dst+=stride;
     *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 3);
-#endif //__SSE4_1__
 }
+#endif //__SSE4_1__
 
 ////////////////////////////////////////////////////////////////////////////////
 //
