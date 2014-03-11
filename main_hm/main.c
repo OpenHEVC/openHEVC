@@ -186,12 +186,18 @@ static void video_decode_example(const char *filename)
 
 int main(int argc, char *argv[]) {
 #ifdef DECANA
+	int c = 3;
 	decana_init(&decana, "D:/automate/.SWAPFILE");
 	printf("Decoding: %s\n", decana.bitstream);
-	video_decode_example(decana.bitstream);
+	char *v[3] = {"hevc","-i",decana.bitstream};
+	init_main(c, v);
+	video_decode_example(input_file);
 #else
-	int c = 5;
-	char *v[5] = {"hevc","-i","D:/downloads/BasketballPass_416x240_50_qp37.bin","-o","D:/test.yuv"};
+	int c = 3;
+	//char *v[5] = {"hevc","-i","D:/downloads/BasketballPass_416x240_50_qp32.bin","-o","D:/test.yuv"};
+	//char *v[5] = {"hevc","-i","D:/automate/bitstreams/ld_main/BQSquare_416x240_60_qp32.bin","-o","D:/test.yuv"};
+	//char *v[5] = {"hevc","-i","D:/automate/avconv/AMP_B_Samsung_4.bit","-o","D:/test.yuv"};
+	char *v[3] = {"hevc","-i","D:/automate/avconv/TMVP_A_MS_3.bit"};
 	//init_main(argc, argv);
 	init_main(c, v);
 	video_decode_example(input_file);
