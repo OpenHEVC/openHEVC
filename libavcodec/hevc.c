@@ -37,6 +37,10 @@
 #include "golomb.h"
 #include "hevc_up_sample_filter.h"
 #include "hevc.h"
+#ifdef MD5_NAL_WRITE
+#include <string.h>
+#include <stdio.h>
+#endif
 
 #define POC_DISPLAY_MD5
 #ifdef POC_DISPLAY_MD5
@@ -2944,6 +2948,42 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
+
+//#define MD5_NAL_WRITE
+#ifdef MD5_NAL_WRITE
+    if (s->is_decoded) {
+    	AVFrame *frame = s->ref->frame;
+        int cIdx, i;
+        uint8_t md5[3][16];
+        FILE *f;
+        char *filename;
+        int len;
+
+        calc_md5(md5[0], frame->data[0], frame->linesize[0], s->sps->width  , s->sps->height  , s->sps->pixel_shift);
+        calc_md5(md5[1], frame->data[1], frame->linesize[1], s->sps->width/2, s->sps->height/2, s->sps->pixel_shift);
+        calc_md5(md5[2], frame->data[2], frame->linesize[2], s->sps->width/2, s->sps->height/2, s->sps->pixel_shift);
+
+        len = strlen(input_file);
+        filename = (char*)malloc(len + 1);
+        strcpy(filename, input_file);
+        strcpy(filename + len - 3, "md5");
+
+        f = fopen(filename , "a");
+        if (f == NULL) {
+        	printf("It is not possible to open md5 write file.\n");
+        	exit(-1);
+        }
+
+        for(cIdx = 0; cIdx < 3; cIdx++) {
+        	for(i = 0; i < 16; i++) {
+        		fprintf(f, "%d", md5[cIdx][i]);
+        	}
+        	fprintf(f, "\n");
+        }
+        fclose(f);
+        free(filename);
+    }
+#endif
 
     /* verify the SEI checksum */
     if (s->decode_checksum_sei && s->is_decoded) {
