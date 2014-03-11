@@ -36,8 +36,13 @@
 #define ARCH_TILEPRO 0
 #define ARCH_TOMI 0
 #define ARCH_X86 1
-#define ARCH_X86_32 0
-#define ARCH_X86_64 1
+#if __is_x64__
+	#define ARCH_X86_32 0
+	#define ARCH_X86_64 1
+#else
+	#define ARCH_X86_32 1
+	#define ARCH_X86_64 0
+#endif
 #define HAVE_ARMV5TE 0
 #define HAVE_ARMV6 0
 #define HAVE_ARMV6T2 0
@@ -124,7 +129,11 @@
 #define HAVE_MIPSDSPR2_INLINE 0
 #define HAVE_INLINE_ASM 0
 #define HAVE_SYMVER 0
-#define HAVE_YASM 1
+#ifdef __SSE4_1__
+	#define HAVE_YASM 1
+#else 
+	#define HAVE_YASM 0
+#endif
 #define HAVE_BIGENDIAN 0
 #define HAVE_FAST_UNALIGNED 1
 #define HAVE_INCOMPATIBLE_LIBAV_ABI 0

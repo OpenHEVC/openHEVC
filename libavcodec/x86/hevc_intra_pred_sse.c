@@ -4,7 +4,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcpred.h"
-
+#if __SSE4_1__
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
@@ -949,3 +949,4 @@ void pred_angular_3_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_l
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_32_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
+#endif

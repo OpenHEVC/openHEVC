@@ -5,30 +5,18 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 message("DEBUG: CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 add_definitions(
-    #-nologo
-    #-I.
-    #-I./
     -Dsnprintf=avpriv_snprintf
     -Dvsnprintf=avpriv_vsnprintf
-    #-Dstrtod=avpriv_strtod
     -Dinline=__inline
     -Drestrict=__restrict
-	-D__SSE4_1__=1
-	-D__SSSE3__=1
-    #/arch:SSE2
-    #-I"${CMAKE_CURRENT_SOURCE_DIR}"
-    #-I"${CMAKE_CURRENT_BINARY_DIR}"
-    #-D_ISOC99_SOURCE
-    #-D_FILE_OFFSET_BITS=64
-    #-D_LARGEFILE_SOURCE
-    #-D_WIN32_WINNT=0x0502
-    #-D_USE_MATH_DEFINES
-    #-D_CRT_SECURE_NO_WARNINGS
-    #-Dstrtoll=strtoi64
-    #-DHAVE_AV_CONFIG_H
-    #-FIstdlib.h
-    #-showIncludes
 )
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    #architecture = x64
+	add_definitions(-D__SSE4_1__=1 -D__SSSE3__=1 -D__SSE2__=1 -D__is_x64__=1)
+else()
+    #architecture = x86
+endif()
 
 # Configure build type (Release when no one is selected)
 if(NOT CMAKE_BUILD_TYPE)
@@ -79,7 +67,12 @@ foreach(_asm_file ${YASM_NAMES})
         ARGS ${YASM_ARGS} -o ${YASM_OBJ} ${YASM_SRC}
         DEPENDS ${YASM_SRC}
     )
-    set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+		#architecture = x64
+		set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
+	else()
+		#architecture = x86
+	endif()
 endforeach()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
