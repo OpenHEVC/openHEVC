@@ -23,6 +23,8 @@
 #ifndef AVCODEC_HEVCDSP_H
 #define AVCODEC_HEVCDSP_H
 
+/*DECLARE_ALIGNED(16, int16_t,  mcbuf[MAX_PB_SIZE * MAX_PB_SIZE]);
+int mcbufstride = MAX_PB_SIZE;*/
 
 typedef struct SAOParams {
     int offset_abs[3][4];   ///< sao_offset_abs
@@ -53,13 +55,19 @@ typedef struct HEVCDSPContext {
 
     void (*sao_edge_filter[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
 
-
     void (*put_hevc_qpel[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                    int height, intptr_t mx, intptr_t my, int width);
+    void (*put_hevc_qpel_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                                   int width, int height, intptr_t mx, intptr_t my, int denom, int weight_flag, int wx, int ox);
 
     void (*put_hevc_epel[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                    int height, intptr_t mx, intptr_t my, int width);
 
+    void (*put_hevc_epel_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+                                      int width, int height, intptr_t mx, intptr_t my, int denom, int weight_flag, int wx, int ox);
+    void (*put_hevc_epel_bi[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src0, ptrdiff_t _src0stride, uint8_t *_src1, ptrdiff_t _src1stride,
+                                      int width, int height, intptr_t mx0, intptr_t my0, intptr_t mx1, intptr_t my1, int denom, int weight_flag, int wx0, int ox0,
+                                      int wx1, int ox1);
     void (*put_unweighted_pred[6])(uint8_t *dst, ptrdiff_t dststride, int16_t *src, ptrdiff_t srcstride,
                                 int width, int height);
 
