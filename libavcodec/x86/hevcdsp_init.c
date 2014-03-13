@@ -306,8 +306,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #endif /* ARCH_X86_32 */
 #ifdef __SSE2__
                 if (EXTERNAL_SSE2(mm_flags)) {
-                    //c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
-                    //c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
+                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
+                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
 #if HAVE_ALIGNED_STACK
                     /*stuff that requires aligned stack */
 #endif /* HAVE_ALIGNED_STACK */
@@ -316,8 +316,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #ifdef __SSSE3__
                 if (EXTERNAL_SSSE3(mm_flags)) {
 #if ARCH_X86_64
-                    //c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
-                    //c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
+                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
+                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
 #endif
                 }
 #endif //__SSSE3__
