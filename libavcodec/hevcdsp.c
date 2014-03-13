@@ -123,17 +123,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 #undef FUNC
 #define FUNC(a, depth) a ## _ ## depth
 
-#undef WEIGHTED_FUNC
-#define WEIGHTED_FUNC(dst1, a, depth)                                   \
-    hevcdsp->dst1[0] = hevcdsp->dst1[1] = hevcdsp->dst1[2] = hevcdsp->dst1[3] = hevcdsp->dst1[4] = hevcdsp->dst1[5] = a ## _ ## depth
-
-#undef WEIGHTED_FUNCS
-#define WEIGHTED_FUNCS(depth)                                                  \
-    WEIGHTED_FUNC(put_unweighted_pred, put_unweighted_pred, depth);            \
-    WEIGHTED_FUNC(put_weighted_pred_avg, put_weighted_pred_avg, depth);        \
-    WEIGHTED_FUNC(weighted_pred, weighted_pred, depth);                        \
-    WEIGHTED_FUNC(weighted_pred_avg, weighted_pred_avg, depth)
-
 #undef PEL_FUNC
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
     for(i = 0 ; i < 10 ; i++)                                                  \
@@ -222,7 +211,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     EPEL_FUNCS(depth);                                                         \
     EPEL_UNI_FUNCS(depth);                                                     \
     EPEL_BI_FUNCS(depth);                                                      \
-    WEIGHTED_FUNCS(depth);                                                     \
                                                                                \
     hevcdsp->hevc_h_loop_filter_luma     = FUNC(hevc_h_loop_filter_luma, depth);   \
     hevcdsp->hevc_v_loop_filter_luma     = FUNC(hevc_v_loop_filter_luma, depth);   \

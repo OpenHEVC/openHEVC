@@ -176,14 +176,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
 
 
-                    c->put_weighted_pred_avg[0] = ff_hevc_put_weighted_pred_avg2_8_sse;
-                    c->put_weighted_pred_avg[1] = ff_hevc_put_weighted_pred_avg4_8_sse;
-                    c->put_weighted_pred_avg[2] = ff_hevc_put_weighted_pred_avg8_8_sse;
-                    c->put_weighted_pred_avg[3] = ff_hevc_put_weighted_pred_avg16_8_sse;
-                    c->put_weighted_pred_avg[4] = ff_hevc_put_weighted_pred_avg16_8_sse;
-                    c->put_weighted_pred_avg[5] = ff_hevc_put_weighted_pred_avg16_8_sse;
-
-
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 1, qpel_h4 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 3, 0, 1, qpel_h8 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 4, 0, 1, qpel_h12,  8);
@@ -219,25 +211,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #ifdef __SSE4_1__
 
                 if (EXTERNAL_SSE4(mm_flags)) {
-                    c->weighted_pred[0]         = ff_hevc_weighted_pred2_8_sse;
-                    c->weighted_pred[1]         = ff_hevc_weighted_pred4_8_sse;
-                    c->weighted_pred[2]         = ff_hevc_weighted_pred8_8_sse;
-                    c->weighted_pred[3]         = ff_hevc_weighted_pred16_8_sse;
-                    c->weighted_pred[4]         = ff_hevc_weighted_pred16_8_sse;
-                    c->weighted_pred[5]         = ff_hevc_weighted_pred16_8_sse;
-                    c->weighted_pred_avg[0]     = ff_hevc_weighted_pred_avg2_8_sse;
-                    c->weighted_pred_avg[1]     = ff_hevc_weighted_pred_avg4_8_sse;
-                    c->weighted_pred_avg[2]     = ff_hevc_weighted_pred_avg8_8_sse;
-                    c->weighted_pred_avg[3]     = ff_hevc_weighted_pred_avg16_8_sse;
-                    c->weighted_pred_avg[4]     = ff_hevc_weighted_pred_avg16_8_sse;
-                    c->weighted_pred_avg[5]     = ff_hevc_weighted_pred_avg16_8_sse;
-
-                    c->put_unweighted_pred[0]   = ff_hevc_put_unweighted_pred2_8_sse;
-                    c->put_unweighted_pred[1]   = ff_hevc_put_unweighted_pred4_8_sse;
-                    c->put_unweighted_pred[2]   = ff_hevc_put_unweighted_pred8_8_sse;
-                    c->put_unweighted_pred[3]   = ff_hevc_put_unweighted_pred16_8_sse;
-                    c->put_unweighted_pred[4]   = ff_hevc_put_unweighted_pred16_8_sse;
-                    c->put_unweighted_pred[5]   = ff_hevc_put_unweighted_pred16_8_sse;
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 0, pel_pixels4 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 3, 0, 0, pel_pixels8 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 4, 0, 0, pel_pixels12,  8);
@@ -328,31 +301,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[1]         = ff_hevc_transform_8x8_add_10_sse4;
                     c->transform_add[2]         = ff_hevc_transform_16x16_add_10_sse4;
                     c->transform_add[3]         = ff_hevc_transform_32x32_add_10_sse4;
-
-                    c->put_unweighted_pred[0]   = ff_hevc_put_unweighted_pred2_10_sse;
-                    c->put_unweighted_pred[1]   = ff_hevc_put_unweighted_pred4_10_sse;
-                    c->put_unweighted_pred[2]   = ff_hevc_put_unweighted_pred8_10_sse;
-                    c->put_unweighted_pred[3]   = ff_hevc_put_unweighted_pred8_10_sse;
-                    c->put_unweighted_pred[4]   = ff_hevc_put_unweighted_pred8_10_sse;
-                    c->put_unweighted_pred[5]   = ff_hevc_put_unweighted_pred8_10_sse;
-                    c->put_weighted_pred_avg[0] = ff_hevc_put_weighted_pred_avg2_10_sse;
-                    c->put_weighted_pred_avg[1] = ff_hevc_put_weighted_pred_avg4_10_sse;
-                    c->put_weighted_pred_avg[2] = ff_hevc_put_weighted_pred_avg8_10_sse;
-                    c->put_weighted_pred_avg[3] = ff_hevc_put_weighted_pred_avg8_10_sse;
-                    c->put_weighted_pred_avg[4] = ff_hevc_put_weighted_pred_avg8_10_sse;
-                    c->put_weighted_pred_avg[5] = ff_hevc_put_weighted_pred_avg8_10_sse;
-                    c->weighted_pred[0]         = ff_hevc_weighted_pred2_10_sse;
-                    c->weighted_pred[1]         = ff_hevc_weighted_pred4_10_sse;
-                    c->weighted_pred[2]         = ff_hevc_weighted_pred8_10_sse;
-                    c->weighted_pred[3]         = ff_hevc_weighted_pred8_10_sse;
-                    c->weighted_pred[4]         = ff_hevc_weighted_pred8_10_sse;
-                    c->weighted_pred[5]         = ff_hevc_weighted_pred8_10_sse;
-                    c->weighted_pred_avg[0]     = ff_hevc_weighted_pred_avg2_10_sse;
-                    c->weighted_pred_avg[1]     = ff_hevc_weighted_pred_avg4_10_sse;
-                    c->weighted_pred_avg[2]     = ff_hevc_weighted_pred_avg8_10_sse;
-                    c->weighted_pred_avg[3]     = ff_hevc_weighted_pred_avg8_10_sse;
-                    c->weighted_pred_avg[4]     = ff_hevc_weighted_pred_avg8_10_sse;
-                    c->weighted_pred_avg[5]     = ff_hevc_weighted_pred_avg8_10_sse;
 
                     PEL_LINK(c->put_hevc_epel, 1, 0, 0, pel_pixels4 , 10);
                     PEL_LINK(c->put_hevc_epel, 3, 0, 0, pel_pixels8 , 10);

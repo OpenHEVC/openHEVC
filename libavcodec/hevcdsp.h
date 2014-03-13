@@ -83,16 +83,6 @@ typedef struct HEVCDSPContext {
                                        int16_t *src2, ptrdiff_t src2stride,
                                        int width, int height, intptr_t mx, intptr_t my,
                                        int denom, int wx0, int ox0, int wx1, int ox1);
-    void (*put_unweighted_pred[6])(uint8_t *dst, ptrdiff_t dststride, int16_t *src, ptrdiff_t srcstride,
-                                int width, int height);
-
-    void (*put_weighted_pred_avg[6])(uint8_t *dst, ptrdiff_t dststride, int16_t *src1, int16_t *src2,
-                                  ptrdiff_t srcstride, int width, int height);
-    void (*weighted_pred[6])(uint8_t denom, int16_t wlxFlag, int16_t olxFlag, uint8_t *dst, ptrdiff_t dststride, int16_t *src,
-                                  ptrdiff_t srcstride, int width, int height);
-    void (*weighted_pred_avg[6])(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag, int16_t ol0Flag, int16_t ol1Flag,
-                                   uint8_t *dst, ptrdiff_t dststride, int16_t *src1, int16_t *src2,
-                                   ptrdiff_t srcstride, int width, int height);
 
     void (*hevc_h_loop_filter_luma)(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
     void (*hevc_v_loop_filter_luma)(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
