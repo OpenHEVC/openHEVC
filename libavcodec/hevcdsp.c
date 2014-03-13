@@ -155,6 +155,13 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     PEL_FUNC(put_hevc_epel_uni, 1, 0, put_hevc_epel_uni_v, depth);            \
     PEL_FUNC(put_hevc_epel_uni, 1, 1, put_hevc_epel_uni_hv, depth)
 
+#undef EPEL_BI_FUNCS
+#define EPEL_BI_FUNCS(depth)                                                \
+    PEL_FUNC(put_hevc_epel_bi, 0, 0, put_hevc_pel_bi_pixels, depth);        \
+    PEL_FUNC(put_hevc_epel_bi, 0, 1, put_hevc_epel_bi_h, depth);            \
+    PEL_FUNC(put_hevc_epel_bi, 1, 0, put_hevc_epel_bi_v, depth);            \
+    PEL_FUNC(put_hevc_epel_bi, 1, 1, put_hevc_epel_bi_hv, depth)
+
 #undef QPEL_FUNCS
 #define QPEL_FUNCS(depth)                                                     \
     PEL_FUNC(put_hevc_qpel, 0, 0, put_hevc_pel_pixels, depth);                \
@@ -169,6 +176,12 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     PEL_FUNC(put_hevc_qpel_uni, 1, 0, put_hevc_qpel_uni_v, depth);            \
     PEL_FUNC(put_hevc_qpel_uni, 1, 1, put_hevc_qpel_uni_hv, depth)
 
+#undef QPEL_BI_FUNCS
+#define QPEL_BI_FUNCS(depth)                                                 \
+    PEL_FUNC(put_hevc_qpel_bi, 0, 0, put_hevc_pel_bi_pixels, depth);        \
+    PEL_FUNC(put_hevc_qpel_bi, 0, 1, put_hevc_qpel_bi_h, depth);            \
+    PEL_FUNC(put_hevc_qpel_bi, 1, 0, put_hevc_qpel_bi_v, depth);            \
+    PEL_FUNC(put_hevc_qpel_bi, 1, 1, put_hevc_qpel_bi_hv, depth)
 
 #define HEVC_DSP(depth)                                                        \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                    \
@@ -188,9 +201,11 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->sao_edge_filter[1] = FUNC(sao_edge_filter_1, depth);              \
                                                                                \
     QPEL_FUNCS(depth);                                                         \
-    QPEL_UNI_FUNCS(depth);                                                         \
+    QPEL_UNI_FUNCS(depth);                                                     \
+    QPEL_BI_FUNCS(depth);                                                     \
     EPEL_FUNCS(depth);                                                         \
     EPEL_UNI_FUNCS(depth);                                                     \
+    EPEL_BI_FUNCS(depth);                                                      \
     WEIGHTED_FUNCS(depth);                                                     \
                                                                                \
     hevcdsp->hevc_h_loop_filter_luma     = FUNC(hevc_h_loop_filter_luma, depth);   \
