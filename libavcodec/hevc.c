@@ -260,6 +260,7 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb)
     uint8_t chroma_weight_l1_flag[16];
 
     s->sh.luma_log2_weight_denom = get_ue_golomb_long(gb);
+    s->sh.chroma_log2_weight_denom = 0;
     if (s->sps->chroma_format_idc != 0) {
         int delta = get_se_golomb(gb);
         s->sh.chroma_log2_weight_denom = av_clip(s->sh.luma_log2_weight_denom + delta, 0, 7);
@@ -1236,7 +1237,7 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
 static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
                         AVFrame *ref, const Mv *mv, int x_off, int y_off,
-                        int block_w, int block_h, int idx, int luma_weight, int luma_offset)
+                        int block_w, int block_h, int luma_weight, int luma_offset)
 {
     HEVCLocalContext *lc = s->HEVClc;
     uint8_t *src         = ref->data[0];
@@ -1247,6 +1248,7 @@ static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
     int my         = mv->y & 3;
     int weight_flag = (s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
                       (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag);
+    int idx = ff_hevc_pel_weight[block_w];
 
     x_off += mv->x >> 2;
     y_off += mv->y >> 2;
@@ -1269,9 +1271,13 @@ static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
         srcstride = edge_emu_stride;
     }
 
-    s->hevcdsp.put_hevc_qpel_uni[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst, dststride, src, srcstride,
-                                 block_w, block_h, mx, my,
-                                 s->sh.luma_log2_weight_denom, weight_flag, luma_weight, luma_offset);
+    if (!weight_flag)
+        s->hevcdsp.put_hevc_qpel_uni[idx][!!my][!!mx](dst, dststride, src, srcstride,
+                                                                              block_w, block_h, mx, my);
+    else
+        s->hevcdsp.put_hevc_qpel_uni_w[idx][!!my][!!mx](dst, dststride, src, srcstride,
+                                                                              block_w, block_h, mx, my,
+                                                                              s->sh.luma_log2_weight_denom, luma_weight, luma_offset);
 }
 
 static void luma_mc_bi(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
@@ -1338,12 +1344,17 @@ static void luma_mc_bi(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
 
     s->hevcdsp.put_hevc_qpel[idx][!!my0][!!mx0](tmp, tmpstride, src0, src0stride,
                                                 block_h, mx0, my0, block_w);
-    s->hevcdsp.put_hevc_qpel_bi[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, tmpstride,
-                                                   block_w, block_h, mx1, my1, s->sh.luma_log2_weight_denom, weight_flag,
-                                                   s->sh.luma_weight_l0[current_mv->ref_idx[0]],
-                                                   s->sh.luma_weight_l1[current_mv->ref_idx[1]],
-                                                   s->sh.luma_offset_l0[current_mv->ref_idx[0]],
-                                                   s->sh.luma_offset_l1[current_mv->ref_idx[1]]);
+    if (!weight_flag)
+        s->hevcdsp.put_hevc_qpel_bi[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, tmpstride,
+                                                       block_w, block_h, mx1, my1);
+    else
+        s->hevcdsp.put_hevc_qpel_bi_w[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, tmpstride,
+                                                         block_w, block_h, mx1, my1, s->sh.luma_log2_weight_denom,
+                                                         s->sh.luma_weight_l0[current_mv->ref_idx[0]],
+                                                         s->sh.luma_weight_l1[current_mv->ref_idx[1]],
+                                                         s->sh.luma_offset_l0[current_mv->ref_idx[0]],
+                                                         s->sh.luma_offset_l1[current_mv->ref_idx[1]]);
+
 }
 
 /**
@@ -1395,10 +1406,14 @@ static void chroma_mc_uni(HEVCContext *s, uint8_t *dst0,
         src0 = lc->edge_emu_buffer + buf_offset0;
         srcstride = edge_emu_stride;
     }
-    s->hevcdsp.put_hevc_epel_uni[idx][!!my][!!mx](dst0, dststride, src0, srcstride,
-                                                  block_w, block_h, mx, my, s->sh.chroma_log2_weight_denom,
-                                                  weight_flag, s->sh.chroma_weight_l0[current_mv->ref_idx[reflist]][cidx],
-                                                  s->sh.chroma_offset_l0[current_mv->ref_idx[reflist]][cidx]);
+    if (!weight_flag)
+        s->hevcdsp.put_hevc_epel_uni[idx][!!my][!!mx](dst0, dststride, src0, srcstride,
+                                                  block_w, block_h, mx, my);
+    else
+        s->hevcdsp.put_hevc_epel_uni_w[idx][!!my][!!mx](dst0, dststride, src0, srcstride,
+                                                        block_w, block_h, mx, my, s->sh.chroma_log2_weight_denom,
+                                                        s->sh.chroma_weight_l0[current_mv->ref_idx[reflist]][cidx],
+                                                        s->sh.chroma_offset_l0[current_mv->ref_idx[reflist]][cidx]);
 }
 
 static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVFrame *ref0, AVFrame *ref1,
@@ -1471,14 +1486,19 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
 
     s->hevcdsp.put_hevc_epel[idx][!!my0][!!mx0](tmp, tmpstride, src1, src1stride,
                                                 block_h, mx0, my0, block_w);
-    s->hevcdsp.put_hevc_epel_bi[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
-                                                   src2, src2stride, tmp, tmpstride,
-                                                   block_w, block_h, mx1, my1,
-                                                   s->sh.chroma_log2_weight_denom, weight_flag,
-                                                   s->sh.chroma_weight_l0[current_mv->ref_idx[0]][cidx],
-                                                   s->sh.chroma_weight_l1[current_mv->ref_idx[1]][cidx],
-                                                   s->sh.chroma_offset_l0[current_mv->ref_idx[0]][cidx],
-                                                   s->sh.chroma_offset_l1[current_mv->ref_idx[1]][cidx]);
+    if (!weight_flag)
+        s->hevcdsp.put_hevc_epel_bi[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
+                                                       src2, src2stride, tmp, tmpstride,
+                                                       block_w, block_h, mx1, my1);
+    else
+        s->hevcdsp.put_hevc_epel_bi_w[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
+                                                         src2, src2stride, tmp, tmpstride,
+                                                         block_w, block_h, mx1, my1,
+                                                         s->sh.chroma_log2_weight_denom,
+                                                         s->sh.chroma_weight_l0[current_mv->ref_idx[0]][cidx],
+                                                         s->sh.chroma_weight_l1[current_mv->ref_idx[1]][cidx],
+                                                         s->sh.chroma_offset_l0[current_mv->ref_idx[0]][cidx],
+                                                         s->sh.chroma_offset_l1[current_mv->ref_idx[1]][cidx]);
 }
 
 static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
@@ -1624,7 +1644,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             return;
 
         luma_mc_uni(s, dst0, s->frame->linesize[0], ref0->frame,
-                    &current_mv.mv[0], x0, y0, nPbW, nPbH, idx,
+                    &current_mv.mv[0], x0, y0, nPbW, nPbH,
                     s->sh.luma_weight_l0[current_mv.ref_idx[0]],
                     s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
 
@@ -1640,7 +1660,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             return;
 
         luma_mc_uni(s, dst0, s->frame->linesize[0], ref1->frame,
-                    &current_mv.mv[1], x0, y0, nPbW, nPbH, idx,
+                    &current_mv.mv[1], x0, y0, nPbW, nPbH,
                     s->sh.luma_weight_l1[current_mv.ref_idx[1]],
                     s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
 
