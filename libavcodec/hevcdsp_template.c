@@ -1045,7 +1045,7 @@ static void FUNC(put_hevc_epel_uni_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8
     }
 }
 
-static void FUNC(put_hevc_epel_bi_h)(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                       int16_t *src2, ptrdiff_t src2stride,
                                       int width, int height, intptr_t mx, intptr_t my,
                                       int denom, int weight_flag, int wx0, int wx1, int ox0, int ox1)
@@ -1053,6 +1053,8 @@ static void FUNC(put_hevc_epel_bi_h)(uint8_t *dst, ptrdiff_t dststride, uint8_t 
     int x, y;
     pixel *src = (pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
+    pixel *dst          = (pixel *)_dst;
+    ptrdiff_t dststride = _dststride / sizeof(pixel);
     const int8_t *filter = ff_hevc_epel_filters[mx - 1];
     int shift = 14 + 1 - BIT_DEPTH;
     int log2Wd = denom + shift - 1;
@@ -1121,7 +1123,7 @@ static void FUNC(put_hevc_epel_uni_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8
     }
 }
 
-static void FUNC(put_hevc_epel_bi_v)(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                       int16_t *src2, ptrdiff_t src2stride,
                                       int width, int height, intptr_t mx, intptr_t my,
                                       int denom, int weight_flag, int wx0, int wx1, int ox0, int ox1)
@@ -1130,6 +1132,8 @@ static void FUNC(put_hevc_epel_bi_v)(uint8_t *dst, ptrdiff_t dststride, uint8_t 
     pixel *src = (pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     const int8_t *filter = ff_hevc_epel_filters[my - 1];
+    pixel *dst          = (pixel *)_dst;
+    ptrdiff_t dststride = _dststride / sizeof(pixel);
     int shift = 14 + 1 - BIT_DEPTH;
     int log2Wd = denom + shift - 1;
 #if BIT_DEPTH < 14
@@ -1208,7 +1212,7 @@ static void FUNC(put_hevc_epel_uni_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint
     }
 }
 
-static void FUNC(put_hevc_epel_bi_hv)(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                       int16_t *src2, ptrdiff_t src2stride,
                                       int width, int height, intptr_t mx, intptr_t my,
                                       int denom, int weight_flag, int wx0, int wx1, int ox0, int ox1)
@@ -1216,6 +1220,8 @@ static void FUNC(put_hevc_epel_bi_hv)(uint8_t *dst, ptrdiff_t dststride, uint8_t
     int x, y;
     pixel *src = (pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
+    pixel *dst          = (pixel *)_dst;
+    ptrdiff_t dststride = _dststride / sizeof(pixel);
     const int8_t *filter = ff_hevc_epel_filters[mx - 1];
     int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];
     int16_t *tmp = tmp_array;
