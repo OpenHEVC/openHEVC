@@ -27,9 +27,15 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
+#ifdef __SSE2__
 #include <emmintrin.h>
+#endif
+#ifdef __SSSE3__
 #include <tmmintrin.h>
+#endif
+#ifdef __SSE4_1__
 #include <smmintrin.h>
+#endif
 
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters_sse[7][2][16]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},
@@ -363,8 +369,8 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 void ff_hevc_put_hevc_pel_pixels ## H ## _ ## D ## _sse (                      \
                                    int16_t *dst, ptrdiff_t dststride,          \
                                    uint8_t *_src, ptrdiff_t _srcstride,        \
-                                   int width, int height,                      \
-                                   int mx, int my) {                           \
+                                   int height,                      \
+                                   intptr_t mx, intptr_t my, int width) {                           \
     int x, y;                                                                  \
     PUT_HEVC_PEL_PIXELS_VAR ## H ## _ ## D();                                  \
     SRC_INIT_ ## D();                                                          \
@@ -458,8 +464,8 @@ void ff_hevc_put_hevc_pel_pixels ## H ## _ ## D ## _sse (                      \
 void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
         int16_t *dst, ptrdiff_t dststride,                                     \
         uint8_t *_src, ptrdiff_t _srcstride,                                   \
-        int width, int height,                                                 \
-        int mx, int my) {                                                      \
+        int height,                                                 \
+        intptr_t mx, intptr_t my, int width) {                                                      \
     int x, y;                                                                  \
     PUT_HEVC_EPEL_H_VAR ## H ## _ ## D();                                      \
     SRC_INIT_H_ ## D();                                                        \
@@ -498,8 +504,8 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
 void ff_hevc_put_hevc_epel_v ## H ## _ ## D ## _sse (                          \
         int16_t *dst, ptrdiff_t dststride,                                     \
         uint8_t *_src, ptrdiff_t _srcstride,                                   \
-        int width, int height,                                                 \
-        int mx, int my) {                                                      \
+        int height,                                                 \
+        intptr_t mx, intptr_t my, int width) {                                                      \
     int x, y;                                                                  \
     PUT_HEVC_EPEL_V_VAR ## H ## _ ## D();                                     \
     SRC_INIT_V_ ## D();                                                        \
@@ -529,8 +535,8 @@ void ff_hevc_put_hevc_epel_v ## H ## _ ## D ## _sse (                          \
 void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
         int16_t *dst, ptrdiff_t dststride,                                     \
         uint8_t *_src, ptrdiff_t _srcstride,                                   \
-        int width, int height,                                                 \
-        int mx, int my) {                                                      \
+        int height,                                                 \
+        intptr_t mx, intptr_t my, int width) {                                                      \
     int x, y;                                                                  \
     __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;            \
     int16_t *dst2 = dst;                                                       \
@@ -732,7 +738,7 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int width, int height, int mx, int my) {   \
+                                    int height, intptr_t mx, intptr_t my, int width) {   \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_H_VAR ## H ## _ ## D();                                      \
     SRC_INIT_ ## D();                                                          \
@@ -887,7 +893,7 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int width, int height, int mx, int my) {   \
+                                    int height, intptr_t mx, intptr_t my, int width) {   \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
     PUT_HEVC_QPEL_H_10_VAR ## H ## _ ## D();                                   \
@@ -929,7 +935,7 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
 void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _sse (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int width, int height, int mx, int my) {   \
+                                    int height, intptr_t mx, intptr_t my, int width) {   \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_V_VAR ## V ## _ ## D();                                      \
     SRC_INIT_ ## D();                                                          \
@@ -952,17 +958,17 @@ void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _sse (                          \
 void ff_hevc_put_hevc_qpel_hv ## H ## _ ## D ## _sse (                         \
         int16_t *dst, ptrdiff_t dststride,                                     \
         uint8_t *_src, ptrdiff_t _srcstride,                                   \
-        int width, int height,                                                 \
-        int mx, int my) {                                                      \
+        int height,                                                 \
+        intptr_t mx, intptr_t my, int width) {                                                      \
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];               \
     int16_t *tmp = tmp_array;                                                  \
     SRC_INIT_ ## D();                                                          \
     src -= QPEL_EXTRA_BEFORE * srcstride;                                      \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse(                            \
-        tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, width, height + QPEL_EXTRA, mx, my); \
+        tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
     ff_hevc_put_hevc_qpel_v ## H ## _14_sse(                                   \
-        dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , width, height, mx, my);\
+        dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, mx, my, width);\
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1132,6 +1138,7 @@ WEIGHTED_PRED_AVG(16, 8)
 WEIGHTED_PRED_AVG(2, 10)
 WEIGHTED_PRED_AVG(4, 10)
 WEIGHTED_PRED_AVG(8, 10)
+#endif //__SSE4_1__
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1139,12 +1146,14 @@ WEIGHTED_PRED_AVG(8, 10)
 ////////////////////////////////////////////////////////////////////////////////
 
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
+#ifdef __SSE4_1__
 PUT_HEVC_PEL_PIXELS(  2, 8)
 PUT_HEVC_PEL_PIXELS(  4, 8)
 PUT_HEVC_PEL_PIXELS(  8, 8)
 PUT_HEVC_PEL_PIXELS( 16, 8)
 #endif //__SSE4_1__
 
+#ifdef __SSSE3__
 PUT_HEVC_PEL_PIXELS(  2, 10)
 PUT_HEVC_PEL_PIXELS(  4, 10)
 PUT_HEVC_PEL_PIXELS(  8, 10)
@@ -1201,21 +1210,114 @@ PUT_HEVC_QPEL_HV(  8,  8)
 
 PUT_HEVC_QPEL_HV(  4, 10)
 PUT_HEVC_QPEL_HV(  8, 10)
+#endif //__SSSE3__
 
-
-
-void ff_hevc_put_hevc_epel_h16_8_sse(
-        int16_t *dst, ptrdiff_t dststride,
-        uint8_t *_src, ptrdiff_t _srcstride,
-        int width, int height,
-        int mx, int my) {
-    ff_hevc_put_hevc_epel_h8_8_sse (dst, dststride, _src, _srcstride, width, height, mx, my);
+#define mc_red_func(name, bitd, step, W) \
+void ff_hevc_put_hevc_##name##W##_##bitd##_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width) \
+{ \
+    ff_hevc_put_hevc_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, height, mx, my, width);   \
 }
 
-void ff_hevc_put_hevc_epel_v16_8_sse(
-        int16_t *dst, ptrdiff_t dststride,
-        uint8_t *_src, ptrdiff_t _srcstride,
-        int width, int height,
-        int mx, int my) {
-    ff_hevc_put_hevc_epel_v8_8_sse (dst, dststride, _src, _srcstride, width, height, mx, my);
-}
+
+#ifdef __SSE4_1__
+mc_red_func(pel_pixels, 8, 2,  6);
+mc_red_func(pel_pixels, 8, 4, 12);
+mc_red_func(pel_pixels, 8, 8, 24);
+mc_red_func(pel_pixels, 8,16, 32);
+mc_red_func(pel_pixels, 8,16, 48);
+mc_red_func(pel_pixels, 8,16, 64);
+#endif //__SSE4_1__
+
+#ifdef __SSSE3__
+mc_red_func(pel_pixels,10, 2,  6);
+mc_red_func(pel_pixels,10, 4, 12);
+mc_red_func(pel_pixels,10, 8, 16);
+mc_red_func(pel_pixels,10, 8, 24);
+mc_red_func(pel_pixels,10, 8, 32);
+mc_red_func(pel_pixels,10, 8, 48);
+mc_red_func(pel_pixels,10, 8, 64);
+
+mc_red_func(qpel_h, 8, 4, 12);
+mc_red_func(qpel_h, 8, 8, 24);
+mc_red_func(qpel_h, 8,16, 32);
+mc_red_func(qpel_h, 8,16, 48);
+mc_red_func(qpel_h, 8,16, 64);
+
+mc_red_func(qpel_h,10, 4, 12);
+mc_red_func(qpel_h,10, 8, 16);
+mc_red_func(qpel_h,10, 8, 24);
+mc_red_func(qpel_h,10, 8, 32);
+mc_red_func(qpel_h,10, 8, 48);
+mc_red_func(qpel_h,10, 8, 64);
+
+mc_red_func(qpel_v, 8, 4, 12);
+mc_red_func(qpel_v, 8, 8, 24);
+mc_red_func(qpel_v, 8,16, 32);
+mc_red_func(qpel_v, 8,16, 48);
+mc_red_func(qpel_v, 8,16, 64);
+
+mc_red_func(qpel_v,10, 4, 12);
+mc_red_func(qpel_v,10, 8, 16);
+mc_red_func(qpel_v,10, 8, 24);
+mc_red_func(qpel_v,10, 8, 32);
+mc_red_func(qpel_v,10, 8, 48);
+mc_red_func(qpel_v,10, 8, 64);
+
+mc_red_func(qpel_hv, 8, 4, 12);
+mc_red_func(qpel_hv, 8, 8, 16);
+mc_red_func(qpel_hv, 8, 8, 24);
+mc_red_func(qpel_hv, 8, 8, 32);
+mc_red_func(qpel_hv, 8, 8, 48);
+mc_red_func(qpel_hv, 8, 8, 64);
+
+mc_red_func(qpel_hv,10, 4, 12);
+mc_red_func(qpel_hv,10, 8, 16);
+mc_red_func(qpel_hv,10, 8, 24);
+mc_red_func(qpel_hv,10, 8, 32);
+mc_red_func(qpel_hv,10, 8, 48);
+mc_red_func(qpel_hv,10, 8, 64);
+
+mc_red_func(epel_h, 8, 4, 12);
+mc_red_func(epel_h, 8, 8, 16);
+mc_red_func(epel_h, 8, 8, 24);
+mc_red_func(epel_h, 8, 8, 32);
+mc_red_func(epel_h, 8, 8, 48);
+mc_red_func(epel_h, 8, 8, 64);
+
+mc_red_func(epel_h,10, 4, 12);
+mc_red_func(epel_h,10, 8, 16);
+mc_red_func(epel_h,10, 8, 24);
+mc_red_func(epel_h,10, 8, 32);
+mc_red_func(epel_h,10, 8, 48);
+mc_red_func(epel_h,10, 8, 64);
+
+mc_red_func(epel_v, 8, 4, 12);
+mc_red_func(epel_v, 8, 8, 16);
+mc_red_func(epel_v, 8, 8, 24);
+mc_red_func(epel_v, 8, 8, 32);
+mc_red_func(epel_v, 8, 8, 48);
+mc_red_func(epel_v, 8, 8, 64);
+
+mc_red_func(epel_v,10, 4, 12);
+mc_red_func(epel_v,10, 8, 16);
+mc_red_func(epel_v,10, 8, 24);
+mc_red_func(epel_v,10, 8, 32);
+mc_red_func(epel_v,10, 8, 48);
+mc_red_func(epel_v,10, 8, 64);
+
+mc_red_func(epel_hv, 8, 4, 12);
+mc_red_func(epel_hv, 8, 8, 16);
+mc_red_func(epel_hv, 8, 8, 24);
+mc_red_func(epel_hv, 8, 8, 32);
+mc_red_func(epel_hv, 8, 8, 48);
+mc_red_func(epel_hv, 8, 8, 64);
+
+mc_red_func(epel_hv,10, 4, 12);
+mc_red_func(epel_hv,10, 8, 16);
+mc_red_func(epel_hv,10, 8, 24);
+mc_red_func(epel_hv,10, 8, 32);
+mc_red_func(epel_hv,10, 8, 48);
+mc_red_func(epel_hv,10, 8, 64);
+#endif //__SSSE3__
+
+

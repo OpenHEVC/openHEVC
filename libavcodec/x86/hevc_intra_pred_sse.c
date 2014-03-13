@@ -4,9 +4,14 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcpred.h"
-#if __SSE4_1__
+
+#ifdef __SSE2__
 #include <emmintrin.h>
+#endif
+#ifdef __SSSE3__
 #include <tmmintrin.h>
+#endif
+#ifdef __SSE4_1__
 #include <smmintrin.h>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,7 +152,7 @@ void pred_planar_1_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,           \
 }
 
 PRED_PLANAR_1( 8)
-//PRED_PLANAR_1(10)
+PRED_PLANAR_1(10)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -757,7 +762,6 @@ PRED_PLANAR_3(10)
     const __m128i  add     = _mm_set1_epi16(16);                               \
     uint8_t       *ref, *p_src, *src, *p_out;                                  \
     uint8_t        src_tmp[W*W];                                               \
-    uint8_t        ref_array[3 * W + 4];                                       \
     if (mode >= 18) {                                                          \
         src1   = (const uint8_t*) _top;                                        \
         src2   = (const uint8_t*) _left;                                       \
@@ -779,7 +783,6 @@ PRED_PLANAR_3(10)
     const __m128i  add     = _mm_set1_epi32(16);                               \
     uint16_t       *ref, *p_src, *src, *p_out;                                 \
     uint16_t        src_tmp[W*W];                                              \
-    uint16_t        ref_array[3 * W + 4];                                      \
     if (mode >= 18) {                                                          \
         src1   = (const uint16_t*) _top;                                       \
         src2   = (const uint16_t*) _left;                                      \
@@ -795,49 +798,6 @@ PRED_PLANAR_3(10)
     }                                                                          \
     p_out  = (uint16_t*) _src;                                                 \
     ref = (uint16_t*) (src1 - 1)
-
-#define PRED_ANGULAR_STORE1_4_8()                                              \
-    *((uint32_t *) ref) = *((uint32_t *) (src1-1));                            \
-    ref[4] = src1[3]
-#define PRED_ANGULAR_STORE1_8_8()                                              \
-    r0 = _mm_loadl_epi64((__m128i*) (src1-1));                                 \
-    _mm_storel_epi64((__m128i *) ref, r0);                                     \
-    ref[8] = src1[7]
-#define PRED_ANGULAR_STORE1_16_8()                                             \
-    r0 = _mm_loadu_si128((__m128i*) (src1-1));                                 \
-    _mm_storeu_si128((__m128i *) ref, r0);                                     \
-    ref[16] = src1[15]
-#define PRED_ANGULAR_STORE1_32_8()                                             \
-    r0 = _mm_loadu_si128((__m128i*) (src1-1));                                 \
-    _mm_store_si128((__m128i *) ref, r0);                                      \
-    r0 = _mm_loadu_si128((__m128i*) (src1+15));                                \
-    _mm_store_si128((__m128i *) (ref + 16), r0);                               \
-    ref[32] = src1[31]
-
-#define PRED_ANGULAR_STORE1_4_10()                                             \
-    r0 = _mm_loadl_epi64((__m128i*) (&src1[-1]));                              \
-    _mm_storel_epi64((__m128i *) ref, r0);                                     \
-    ref[4] = src1[3]
-#define PRED_ANGULAR_STORE1_8_10()                                             \
-    r0 = _mm_loadu_si128((__m128i*) (&src1[-1]));                              \
-    _mm_store_si128((__m128i *) ref, r0);                                      \
-    ref[8] = src1[7]
-#define PRED_ANGULAR_STORE1_16_10()                                            \
-    r0 = _mm_loadu_si128((__m128i*) (&src1[-1]));                              \
-    _mm_store_si128((__m128i *) ref, r0);                                      \
-    r0 = _mm_loadu_si128((__m128i*) (&src1[7]));                               \
-    _mm_store_si128((__m128i *) (&ref[8]), r0);                                \
-    ref[16] = src1[15]
-#define PRED_ANGULAR_STORE1_32_10()                                            \
-    r0 = _mm_loadu_si128((__m128i*) (&src1[-1]));                              \
-    _mm_store_si128((__m128i *) ref, r0);                                      \
-    r0 = _mm_loadu_si128((__m128i*) (&src1[7]));                               \
-    _mm_store_si128((__m128i *) (&ref[ 8]), r0);                               \
-    r0 = _mm_loadu_si128((__m128i*) (&src1[15]));                              \
-    _mm_store_si128((__m128i *) (&ref[16]), r0);                               \
-    r0 = _mm_loadu_si128((__m128i*) (&src1[23]));                              \
-    _mm_store_si128((__m128i *) (&ref[24]), r0);                               \
-    ref[32] = src1[31]
 
 #define PRED_ANGULAR_WAR()                                                     \
     int y;                                                                     \
@@ -861,8 +821,8 @@ PRED_PLANAR_3(10)
 #define PRED_ANGULAR_WAR32_10()   PRED_ANGULAR_WAR32_8()
 
 #define PRED_ANGULAR(W, D)                                                     \
-static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src, const uint8_t *_top,   \
-        const uint8_t *_left, ptrdiff_t _stride, int c_idx, int mode) {        \
+static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src,\
+        uint8_t *_top, uint8_t *_left, ptrdiff_t _stride, int c_idx, int mode) {\
     const int intra_pred_angle[] = {                                           \
          32, 26, 21, 17, 13,  9,  5,  2,  0, -2, -5, -9,-13,-17,-21,-26,       \
         -32,-26,-21,-17,-13, -9, -5, -2,  0,  2,  5,  9, 13, 17, 21, 26, 32    \
@@ -878,10 +838,8 @@ static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src, 
     int            stride;                                                     \
     PRED_ANGULAR_INIT_ ## D(W);                                                \
     if (angle < 0 && last < -1) {                                              \
-        ref = ref_array + W;                                                   \
         for (y = last; y <= -1; y++)                                           \
             ref[y] = src2[-1 + ((y * inv_angle[mode-11] + 128) >> 8)];         \
-         PRED_ANGULAR_STORE1_ ## W ## _ ## D();                                \
     }                                                                          \
     for (y = 0; y < W; y++) {                                                  \
         int idx  = (angle_i) >> 5;                                             \
@@ -916,36 +874,36 @@ PRED_ANGULAR( 8,10)
 PRED_ANGULAR(16,10)
 PRED_ANGULAR(32,10)
 
-void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+void pred_angular_0_8_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_4_8_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+void pred_angular_1_8_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
         ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_8_8_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+void pred_angular_2_8_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
         ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_16_8_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+void pred_angular_3_8_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
         ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_32_8_sse(_src, _top, _left, _stride, c_idx, mode);
 }
 
-void pred_angular_0_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+void pred_angular_0_10_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_4_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_1_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+void pred_angular_1_10_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_8_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_2_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+void pred_angular_2_10_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_16_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_3_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
+void pred_angular_3_10_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_32_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }

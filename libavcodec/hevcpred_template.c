@@ -41,11 +41,11 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
 #define EXTEND(ptr, start, length)                                             \
         for (i = start; i < (start) + (length); i += 4)                          \
-            AV_WN4PA(&(ptr[i]), a)
+            AV_WN4P(&(ptr[i]), a)
 #define EXTEND_RIGHT_CIP(ptr, start, length)                                   \
         for (i = start; i < (start) + (length); i += 4)                          \
             if (!IS_INTRA(i, -1))                                              \
-                AV_WN4PA(&ptr[i], a);                                          \
+                AV_WN4P(&ptr[i], a);                                          \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i+3])
 #define EXTEND_LEFT_CIP(ptr, start, length) \
@@ -55,13 +55,13 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 #define EXTEND_UP_CIP(ptr, start, length)                                      \
         for (i = (start); i > (start) - (length); i -= 4)                        \
             if (!IS_INTRA(-1, i - 3))                                          \
-                AV_WN4PA(&ptr[i - 3], a);                                        \
+                AV_WN4P(&ptr[i - 3], a);                                        \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i - 3])
 #define EXTEND_DOWN_CIP(ptr, start, length)                                   \
         for (i = start; i < (start) + (length); i += 4)                          \
             if (!IS_INTRA(-1, i))                                              \
-                AV_WN4PA(&ptr[i], a);                                          \
+                AV_WN4P(&ptr[i], a);                                          \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i + 3])
 
@@ -159,14 +159,14 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     }
     if (cand_up)
         for (i = 0; i <size; i+=4)
-            AV_WN4PA(&top[i], AV_RN4PA(&POS(i, -1)));
+            AV_WN4P(&top[i], AV_RN4P(&POS(i, -1)));
 
     if (cand_up_right) {
         a = PIXEL_SPLAT_X4(POS(size + top_right_size - 1, -1));
         for (i = size + top_right_size; i < (size << 1); i += 4)
-            AV_WN4PA(&top[i], a);
+            AV_WN4P(&top[i], a);
         for (i = size ; i < size+top_right_size; i+=4)
-            AV_WN4PA(&top[i], AV_RN4PA(&POS(i, -1)));
+            AV_WN4P(&top[i], AV_RN4P(&POS(i, -1)));
     }
     if (cand_left)
         for (i = 0; i < size; i++)
@@ -176,7 +176,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             left[i] = POS(-1, i);
         a = PIXEL_SPLAT_X4(POS(-1, size + bottom_left_size - 1));
         for (i = size + bottom_left_size; i < (size << 1); i+=4)
-            AV_WN4PA(&left[i], a);
+            AV_WN4P(&left[i], a);
     }
 
     if (s->pps->constrained_intra_pred_flag == 1) {
@@ -420,7 +420,7 @@ static void FUNC(pred_dc)(uint8_t *_src, const uint8_t *_top,
 
     for (i = 0; i < size; i++)
         for (j = 0; j < size; j+=4)
-            AV_WN4PA(&POS(j, i), a);
+            AV_WN4P(&POS(j, i), a);
 
     if (c_idx == 0 && size < 32) {
         POS(0, 0) = (left[0] + 2 * dc + top[0] + 2) >> 2;
@@ -478,7 +478,7 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
                 }
             } else {
                 for (x = 0; x < size; x += 4)
-                    AV_WN4PA(&POS(x, y), AV_RN4PA(&ref[x + idx + 1]));
+                    AV_WN4P(&POS(x, y), AV_RN4P(&ref[x + idx + 1]));
             }
         }
         if (mode == 26 && c_idx == 0 && size < 32) {
