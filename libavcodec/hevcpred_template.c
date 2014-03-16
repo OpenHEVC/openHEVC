@@ -70,8 +70,10 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     int hshift = s->sps->hshift[c_idx];
     int vshift = s->sps->vshift[c_idx];
     int size = (1 << log2_size);
-    int size_in_luma = size << hshift;
-    int size_in_tbs = size_in_luma >> s->sps->log2_min_tb_size;
+    int size_in_luma_h = size << hshift;
+    int size_in_tbs_h = size_in_luma_h >> s->sps->log2_min_tb_size;
+    int size_in_luma_v = size << vshift;
+    int size_in_tbs_v = size_in_luma_v >> s->sps->log2_min_tb_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
     int x_tb = x0 >> s->sps->log2_min_tb_size;
@@ -96,27 +98,28 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     pixel *filtered_left = filtered_left_array + size + 1;
     pixel *filtered_top  = filtered_top_array  + size + 1;
 
-    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs);
+    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs_v);
     int cand_left        = lc->na.cand_left;
     int cand_up_left     = lc->na.cand_up_left;
     int cand_up          = lc->na.cand_up;
-    int cand_up_right    = lc->na.cand_up_right && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs, y_tb - 1);
+    int cand_up_right    = lc->na.cand_up_right && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs_h, y_tb - 1);
 
-    int bottom_left_size = (FFMIN(y0 + 2 * size_in_luma, s->sps->height) -
-                            (y0 + size_in_luma)) >> vshift;
-    int top_right_size   = (FFMIN(x0 + 2 * size_in_luma, s->sps->width) -
-                            (x0 + size_in_luma)) >> hshift;
-
+    int bottom_left_size = (FFMIN(y0 + 2 * size_in_luma_v, s->sps->height) -
+                            (y0 + size_in_luma_v)) >> vshift;
+    int top_right_size   = (FFMIN(x0 + 2 * size_in_luma_h, s->sps->width) -
+                            (x0 + size_in_luma_h)) >> hshift;
     if (s->pps->constrained_intra_pred_flag == 1) {
-        int size_in_luma_pu = PU(size_in_luma);
+        int size_in_luma_pu_v = PU(size_in_luma_v);
+        int size_in_luma_pu_h = PU(size_in_luma_h);
         int on_pu_edge_x    = !(x0 & ((1 << s->sps->log2_min_pu_size) - 1));
         int on_pu_edge_y    = !(y0 & ((1 << s->sps->log2_min_pu_size) - 1));
-        if (!size_in_luma_pu)
-            size_in_luma_pu++;
+        if (!size_in_luma_pu_h) {
+            size_in_luma_pu_h++;
+        }
         if (cand_bottom_left == 1 && on_pu_edge_x) {
             int x_left_pu   = PU(x0 - 1);
-            int y_bottom_pu = PU(y0 + size_in_luma);
-            int max = FFMIN(size_in_luma_pu, s->sps->min_pu_height - y_bottom_pu);
+            int y_bottom_pu = PU(y0 + size_in_luma_v);
+            int max = FFMIN(size_in_luma_pu_v, s->sps->min_pu_height - y_bottom_pu);
             cand_bottom_left = 0;
             for (i = 0; i < max; i+=2)
                 cand_bottom_left |= (MVF(x_left_pu, y_bottom_pu + i).pred_flag == PF_INTRA);
@@ -124,7 +127,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         if (cand_left == 1 && on_pu_edge_x) {
             int x_left_pu   = PU(x0 - 1);
             int y_left_pu   = PU(y0);
-            int max = FFMIN(size_in_luma_pu, s->sps->min_pu_height - y_left_pu);
+            int max = FFMIN(size_in_luma_pu_v, s->sps->min_pu_height - y_left_pu);
             cand_left = 0;
             for (i = 0; i < max; i+=2)
                 cand_left |= (MVF(x_left_pu, y_left_pu + i).pred_flag == PF_INTRA);
@@ -137,15 +140,15 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         if (cand_up == 1 && on_pu_edge_y) {
             int x_top_pu    = PU(x0);
             int y_top_pu    = PU(y0 - 1);
-            int max = FFMIN(size_in_luma_pu, s->sps->min_pu_width - x_top_pu);
+            int max = FFMIN(size_in_luma_pu_h, s->sps->min_pu_width - x_top_pu);
             cand_up = 0;
             for (i = 0; i < max; i+=2)
                 cand_up |= (MVF(x_top_pu + i, y_top_pu).pred_flag == PF_INTRA);
         }
         if (cand_up_right == 1 && on_pu_edge_y) {
             int y_top_pu    = PU(y0 - 1);
-            int x_right_pu  = PU(x0 + size_in_luma);
-            int max = FFMIN(size_in_luma_pu, s->sps->min_pu_width - x_right_pu);
+            int x_right_pu  = PU(x0 + size_in_luma_h);
+            int max = FFMIN(size_in_luma_pu_h, s->sps->min_pu_width - x_right_pu);
             cand_up_right = 0;
             for (i = 0; i < max; i+=2)
                 cand_up_right |= (MVF(x_right_pu + i, y_top_pu).pred_flag == PF_INTRA);
