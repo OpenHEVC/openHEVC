@@ -944,7 +944,7 @@ static av_always_inline int significant_coeff_group_flag_decode(HEVCContext *s, 
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_GROUP_FLAG] + inc);
 }
 static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int x_c, int y_c,
-                                           int offset, uint8_t *ctx_idx_map)
+                                           int offset, const uint8_t *ctx_idx_map)
 {
     int inc = ctx_idx_map[(y_c << 2) + x_c] + offset;
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
@@ -1085,12 +1085,19 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 offset = s->pps->cr_qp_offset + s->sh.slice_cr_qp_offset;
 
             qp_i = av_clip(qp_y + offset, - s->sps->qp_bd_offset, 57);
-            if (qp_i < 30)
-                qp = qp_i;
-            else if (qp_i > 43)
-                qp = qp_i - 6;
-            else
-                qp = qp_c[qp_i - 30];
+            if (s->sps->chroma_array_type == 1) {
+                if (qp_i < 30)
+                    qp = qp_i;
+                else if (qp_i > 43)
+                    qp = qp_i - 6;
+                else
+                    qp = qp_c[qp_i - 30];
+            } else {
+                if (qp_i > 51)
+                    qp = 51;
+                else
+                    qp = qp_i;
+            }
 
             qp += s->sps->qp_bd_offset;
         }
@@ -1245,7 +1252,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, // prev_sig == 2
                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2  // default
             };
-            uint8_t *ctx_idx_map_p;
+            const uint8_t *ctx_idx_map_p;
             int scf_offset = 0;
             if (c_idx != 0)
                 scf_offset = 27;
@@ -1254,18 +1261,18 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             } else {
                 ctx_idx_map_p = (uint8_t*) &ctx_idx_map[(prev_sig + 1) << 4];
                 if (c_idx == 0) {
-                     if ((x_cg > 0 || y_cg > 0))
-                         scf_offset += 3;
-                     if (log2_trafo_size == 3) {
-                         scf_offset += (scan_idx == SCAN_DIAG) ? 9 : 15;
-                     } else {
-                         scf_offset += 21;
-                     }
+                    if ((x_cg > 0 || y_cg > 0))
+                        scf_offset += 3;
+                    if (log2_trafo_size == 3) {
+                        scf_offset += (scan_idx == SCAN_DIAG) ? 9 : 15;
+                    } else {
+                        scf_offset += 21;
+                    }
                 } else {
-                     if (log2_trafo_size == 3)
-                          scf_offset += 9;
-                      else
-                          scf_offset += 12;
+                    if (log2_trafo_size == 3)
+                        scf_offset += 9;
+                    else
+                        scf_offset += 12;
                 }
             }
             for (n = n_end; n > 0; n--) {
@@ -1397,8 +1404,14 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             s->hevcdsp.transform_skip(dst, coeffs, stride);
         else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2)
             s->hevcdsp.transform_4x4_luma_add(dst, coeffs, stride);
-        else
-            s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
+        else{
+            int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
+            if (max_xy == 0)
+                s->hevcdsp.transform_dc_add[log2_trafo_size-2](dst, coeffs, stride);
+            else {
+                s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
+            }
+        }
     }
 }
 

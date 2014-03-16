@@ -6,7 +6,7 @@ struct AVFrame;
 struct UpsamplInf;
 struct HEVCWindow;
 
-//#define OPTI_ASM
+#define OPTI_ASM
 
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
@@ -53,6 +53,16 @@ void ff_hevc_transform_16x16_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_
 void ff_hevc_transform_16x16_add_10_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 void ff_hevc_transform_32x32_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 void ff_hevc_transform_32x32_add_10_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+
+void ff_hevc_transform_4x4_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_8x8_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_16x16_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_32x32_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
+void ff_hevc_transform_4x4_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_8x8_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_16x16_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_32x32_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
 ///////////////////////////////////////////////////////////////////////////////
 // MC functions

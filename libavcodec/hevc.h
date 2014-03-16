@@ -84,6 +84,7 @@
 #define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->width + (x)])
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
 #define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
+#define SAMPLE_CBF2(tab, x, y) ((tab)[(y) * MAX_CU_SIZE +  (x)])
 
 #define IS_IDR(s) (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP)
 #define IS_BLA(s) (s->nal_unit_type == NAL_BLA_W_RADL || s->nal_unit_type == NAL_BLA_W_LP || \
@@ -462,6 +463,7 @@ typedef struct ScalingList {
 typedef struct HEVCSPS {
     unsigned vps_id;
     int chroma_format_idc;
+    int chroma_array_type;
     uint8_t separate_colour_plane_flag;
 
     ///< output (i.e. cropped) values
@@ -520,6 +522,8 @@ typedef struct HEVCSPS {
 
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
+
+    int intra_smoothing_disabled_flag;
 
     ///< coded frame dimension in various units
     int width;
@@ -746,7 +750,7 @@ typedef struct PredictionUnit {
     uint8_t intra_pred_mode[4];
     Mv mvd;
     uint8_t merge_flag;
-    uint8_t intra_pred_mode_c;
+    uint8_t intra_pred_mode_c[4];
 } PredictionUnit;
 
 typedef struct TransformTree {
@@ -763,6 +767,7 @@ typedef struct TransformUnit {
 
     // Inferred parameters;
     int cur_intra_pred_mode;
+    int cur_intra_pred_mode_c;
     uint8_t is_cu_qp_delta_coded;
 } TransformUnit;
 

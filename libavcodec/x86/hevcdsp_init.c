@@ -64,6 +64,8 @@ LFL_FUNCS(uint8_t,   8)
 LFL_FUNCS(uint8_t,  10)
 
 
+#ifdef OPTI_ASM
+
 #define mc_rep_func(name, bitd, step, W) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width) \
 { \
@@ -76,7 +78,6 @@ void ff_hevc_put_hevc_##name##W##_##bitd##_sse4(int16_t *dst, ptrdiff_t dststrid
     ff_hevc_put_hevc_##name##step##_##bitd##_sse4(_dst, dststride, src, _srcstride, height, mx, my, width);   \
     }   \
 }
-
 mc_rep_func(pel_pixels, 8, 16, 64);
 mc_rep_func(pel_pixels, 8, 16, 48);
 mc_rep_func(pel_pixels, 8, 16, 32);
@@ -141,7 +142,7 @@ mc_rep_func(qpel_v,10,  8, 48);
 mc_rep_func(qpel_v,10,  8, 32);
 mc_rep_func(qpel_v,10,  8, 24);
 mc_rep_func(qpel_v,10,  8, 16);
-
+#endif
 
 
 
@@ -175,6 +176,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
                     c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
 
+                    c->transform_dc_add[0] = ff_hevc_transform_4x4_dc_add_8_sse4;
+                    c->transform_dc_add[1] = ff_hevc_transform_8x8_dc_add_8_sse4;
+                    c->transform_dc_add[2] = ff_hevc_transform_16x16_dc_add_8_sse4;
+                    c->transform_dc_add[3] = ff_hevc_transform_32x32_dc_add_8_sse4;
 
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 1, qpel_h4 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 3, 0, 1, qpel_h8 ,  8);
