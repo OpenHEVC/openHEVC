@@ -1138,6 +1138,7 @@ WEIGHTED_PRED_AVG(16, 8)
 WEIGHTED_PRED_AVG(2, 10)
 WEIGHTED_PRED_AVG(4, 10)
 WEIGHTED_PRED_AVG(8, 10)
+#endif //__SSE4_1__
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1145,6 +1146,7 @@ WEIGHTED_PRED_AVG(8, 10)
 ////////////////////////////////////////////////////////////////////////////////
 
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
+#ifdef __SSE4_1__
 PUT_HEVC_PEL_PIXELS(  2, 8)
 PUT_HEVC_PEL_PIXELS(  4, 8)
 PUT_HEVC_PEL_PIXELS(  8, 8)
@@ -1208,6 +1210,7 @@ PUT_HEVC_QPEL_HV(  8,  8)
 
 PUT_HEVC_QPEL_HV(  4, 10)
 PUT_HEVC_QPEL_HV(  8, 10)
+#endif //__SSSE3__
 
 #define mc_red_func(name, bitd, step, W) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width) \
@@ -1215,13 +1218,17 @@ void ff_hevc_put_hevc_##name##W##_##bitd##_sse(int16_t *dst, ptrdiff_t dststride
     ff_hevc_put_hevc_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, height, mx, my, width);   \
 }
 
+
+#ifdef __SSE4_1__
 mc_red_func(pel_pixels, 8, 2,  6);
 mc_red_func(pel_pixels, 8, 4, 12);
 mc_red_func(pel_pixels, 8, 8, 24);
 mc_red_func(pel_pixels, 8,16, 32);
 mc_red_func(pel_pixels, 8,16, 48);
 mc_red_func(pel_pixels, 8,16, 64);
+#endif //__SSE4_1__
 
+#ifdef __SSSE3__
 mc_red_func(pel_pixels,10, 2,  6);
 mc_red_func(pel_pixels,10, 4, 12);
 mc_red_func(pel_pixels,10, 8, 16);
@@ -1311,5 +1318,6 @@ mc_red_func(epel_hv,10, 8, 24);
 mc_red_func(epel_hv,10, 8, 32);
 mc_red_func(epel_hv,10, 8, 48);
 mc_red_func(epel_hv,10, 8, 64);
-
 #endif //__SSSE3__
+
+
