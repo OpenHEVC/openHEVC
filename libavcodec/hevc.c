@@ -1377,13 +1377,15 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
     ptrdiff_t src2stride = ref->linesize[2];
     int pic_width        = s->sps->width >> s->sps->hshift[1];
     int pic_height       = s->sps->height >> s->sps->vshift[1];
-    int hshift = 2 + s->sps->hshift[1];
-    int vshift = 2 + s->sps->vshift[1];
-    intptr_t mx = mv->x & ((1 << hshift) - 1);
-    intptr_t my = mv->y & ((1 << vshift) - 1);
+    int hshift = s->sps->hshift[1];
+    int vshift = s->sps->vshift[1];
+    intptr_t mx = mv->x & ((1 << (2 + hshift)) - 1);
+    intptr_t my = mv->y & ((1 << (2 + vshift)) - 1);
+    intptr_t _mx = mx << (1 - hshift);
+    intptr_t _my = my << (1 - vshift);
 
-    x_off += mv->x >> hshift;
-    y_off += mv->y >> vshift;
+    x_off += mv->x >> (2 + hshift);
+    y_off += mv->y >> (2 + vshift);
     src1  += y_off * src1stride + (x_off << s->sps->pixel_shift);
     src2  += y_off * src2stride + (x_off << s->sps->pixel_shift);
 
@@ -1408,7 +1410,7 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         src1 = lc->edge_emu_buffer + buf_offset1;
         src1stride = edge_emu_stride;
         s->hevcdsp.put_hevc_epel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst1, dststride, src1, src1stride,
-                                                  block_h, mx, my, block_w);
+                                                  block_h, _mx, _my, block_w);
 
         s->vdsp.emulated_edge_mc(lc->edge_emu_buffer, src2 - offset2,
                                  edge_emu_stride, src2stride,
@@ -1420,12 +1422,12 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
         src2stride = edge_emu_stride;
 
         s->hevcdsp.put_hevc_epel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst2, dststride, src2, src2stride,
-                                                  block_h, mx, my, block_w);
+                                                  block_h, _mx, _my, block_w);
     } else {
         s->hevcdsp.put_hevc_epel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst1, dststride, src1, src1stride,
-                                                  block_h, mx, my, block_w);
+                                                  block_h, _mx, _my, block_w);
         s->hevcdsp.put_hevc_epel[ff_hevc_pel_weight[block_w]][!!my][!!mx](dst2, dststride, src2, src2stride,
-                                                  block_h, mx, my, block_w);
+                                                  block_h, _mx, _my, block_w);
     }
 }
 
@@ -1575,7 +1577,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         int y0_c = y0 >> s->sps->vshift[1];
         int nPbW_c = nPbW >> s->sps->hshift[1];
         int nPbH_c = nPbH >> s->sps->vshift[1];
-
         luma_mc(s, tmp, tmpstride, ref0->frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH, idx);
 
