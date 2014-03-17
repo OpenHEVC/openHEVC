@@ -485,7 +485,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 if (x < 0) {
                     bs0 = 0;
                     bs1 = s->horizontal_bs[(x + (4 * h) + y * s->bs_width) >> 2];
-                } else if (x >= x_end - 8) {
+                } else if (x >= x_end - 4 * h) {
                     bs0 = s->horizontal_bs[(x +           y * s->bs_width) >> 2];
                     bs1 = 0;
                 } else {

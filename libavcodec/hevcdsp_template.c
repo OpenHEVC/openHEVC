@@ -1039,7 +1039,6 @@ static void FUNC(hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride,
                 P0 = av_clip_pixel(p0 + delta0);
             if (!no_q)
                 Q0 = av_clip_pixel(q0 - delta0);
-
             pix += ystride;
         }
     }
