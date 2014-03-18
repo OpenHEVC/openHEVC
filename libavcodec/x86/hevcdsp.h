@@ -11,7 +11,8 @@ struct HEVCWindow;
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
 #define PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D) \
-dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse
+dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse; \
+dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _sse
 
 #ifdef OPTI_ASM
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D) \

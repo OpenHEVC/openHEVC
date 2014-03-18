@@ -1080,138 +1080,97 @@ void ff_hevc_put_hevc_bi_qpel_hv ## H ## _ ## D ## _sse (                      \
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+#define GEN_FUNC(FUNC, H, D)                                                   \
+PUT_HEVC_ ## FUNC(H,D)                                                         \
+PUT_HEVC_BI_ ## FUNC(H,D)
 
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
 #ifdef __SSE4_1__
-PUT_HEVC_PEL_PIXELS(  2, 8)
-PUT_HEVC_PEL_PIXELS(  4, 8)
-PUT_HEVC_PEL_PIXELS(  8, 8)
-PUT_HEVC_PEL_PIXELS( 16, 8)
-
-PUT_HEVC_BI_PEL_PIXELS(  2, 8)
-PUT_HEVC_BI_PEL_PIXELS(  4, 8)
-PUT_HEVC_BI_PEL_PIXELS(  8, 8)
-PUT_HEVC_BI_PEL_PIXELS( 16, 8)
-
+GEN_FUNC(PEL_PIXELS,  2, 8)
+GEN_FUNC(PEL_PIXELS,  4, 8)
+GEN_FUNC(PEL_PIXELS,  8, 8)
+GEN_FUNC(PEL_PIXELS, 16, 8)
 #endif //__SSE4_1__
 
 #ifdef __SSSE3__
-PUT_HEVC_PEL_PIXELS(  2, 10)
-PUT_HEVC_PEL_PIXELS(  4, 10)
-PUT_HEVC_PEL_PIXELS(  8, 10)
-
-PUT_HEVC_BI_PEL_PIXELS(  2, 10)
-PUT_HEVC_BI_PEL_PIXELS(  4, 10)
-PUT_HEVC_BI_PEL_PIXELS(  8, 10)
+GEN_FUNC(PEL_PIXELS,  2, 10)
+GEN_FUNC(PEL_PIXELS,  4, 10)
+GEN_FUNC(PEL_PIXELS,  8, 10)
 
 // ff_hevc_put_hevc_epel_hX_X_sse
-PUT_HEVC_EPEL_H(  2,  8)
-PUT_HEVC_EPEL_H(  4,  8)
-PUT_HEVC_EPEL_H(  8,  8)
+GEN_FUNC(EPEL_H,  2,  8)
+GEN_FUNC(EPEL_H,  4,  8)
+GEN_FUNC(EPEL_H,  8,  8)
 
-PUT_HEVC_EPEL_H(  2, 10)
-PUT_HEVC_EPEL_H(  4, 10)
-PUT_HEVC_EPEL_H(  8, 10)
-
-PUT_HEVC_BI_EPEL_H(  2,  8)
-PUT_HEVC_BI_EPEL_H(  4,  8)
-PUT_HEVC_BI_EPEL_H(  8,  8)
-
-PUT_HEVC_BI_EPEL_H(  2, 10)
-PUT_HEVC_BI_EPEL_H(  4, 10)
-PUT_HEVC_BI_EPEL_H(  8, 10)
+GEN_FUNC(EPEL_H,  2, 10)
+GEN_FUNC(EPEL_H,  4, 10)
+GEN_FUNC(EPEL_H,  8, 10)
 
 // ff_hevc_put_hevc_epel_vX_X_sse
-PUT_HEVC_EPEL_V(  2,  8)
-PUT_HEVC_EPEL_V(  4,  8)
-PUT_HEVC_EPEL_V(  8,  8)
+GEN_FUNC(EPEL_V,  2,  8)
+GEN_FUNC(EPEL_V,  4,  8)
+GEN_FUNC(EPEL_V,  8,  8)
 
-PUT_HEVC_EPEL_V(  2, 10)
-PUT_HEVC_EPEL_V(  4, 10)
-PUT_HEVC_EPEL_V(  8, 10)
-
-PUT_HEVC_BI_EPEL_V(  2,  8)
-PUT_HEVC_BI_EPEL_V(  4,  8)
-PUT_HEVC_BI_EPEL_V(  8,  8)
-
-PUT_HEVC_BI_EPEL_V(  2, 10)
-PUT_HEVC_BI_EPEL_V(  4, 10)
-PUT_HEVC_BI_EPEL_V(  8, 10)
+GEN_FUNC(EPEL_V,  2, 10)
+GEN_FUNC(EPEL_V,  4, 10)
+GEN_FUNC(EPEL_V,  8, 10)
 
 // ff_hevc_put_hevc_epel_hvX_X_sse
-PUT_HEVC_EPEL_HV(  2,  8)
-PUT_HEVC_EPEL_HV(  4,  8)
-PUT_HEVC_EPEL_HV(  8,  8)
+GEN_FUNC(EPEL_HV,  2,  8)
+GEN_FUNC(EPEL_HV,  4,  8)
+GEN_FUNC(EPEL_HV,  8,  8)
 
-PUT_HEVC_EPEL_HV(  2, 10)
-PUT_HEVC_EPEL_HV(  4, 10)
-PUT_HEVC_EPEL_HV(  8, 10)
+GEN_FUNC(EPEL_HV,  2, 10)
+GEN_FUNC(EPEL_HV,  4, 10)
+GEN_FUNC(EPEL_HV,  8, 10)
 
-PUT_HEVC_BI_EPEL_HV(  2,  8)
-PUT_HEVC_BI_EPEL_HV(  4,  8)
-PUT_HEVC_BI_EPEL_HV(  8,  8)
-
-PUT_HEVC_BI_EPEL_HV(  2, 10)
-PUT_HEVC_BI_EPEL_HV(  4, 10)
-PUT_HEVC_BI_EPEL_HV(  8, 10)
 // ff_hevc_put_hevc_qpel_hX_X_X_sse
-PUT_HEVC_QPEL_H(  4,  8)
-PUT_HEVC_QPEL_H(  8,  8)
-PUT_HEVC_QPEL_H( 16,  8)
+GEN_FUNC(QPEL_H,  4,  8)
+GEN_FUNC(QPEL_H,  8,  8)
+GEN_FUNC(QPEL_H, 16,  8)
 
-PUT_HEVC_QPEL_H_10(  4, 10)
-PUT_HEVC_QPEL_H_10(  8, 10)
-
-PUT_HEVC_BI_QPEL_H(  4,  8)
-PUT_HEVC_BI_QPEL_H(  8,  8)
-PUT_HEVC_BI_QPEL_H( 16,  8)
-
-PUT_HEVC_BI_QPEL_H_10(  4, 10)
-PUT_HEVC_BI_QPEL_H_10(  8, 10)
+GEN_FUNC(QPEL_H_10,  4, 10)
+GEN_FUNC(QPEL_H_10,  8, 10)
 
 // ff_hevc_put_hevc_qpel_vX_X_X_sse
-PUT_HEVC_QPEL_V(  4,  8)
-PUT_HEVC_QPEL_V(  8,  8)
-PUT_HEVC_QPEL_V( 16,  8)
+GEN_FUNC(QPEL_V,  4,  8)
+GEN_FUNC(QPEL_V,  8,  8)
+GEN_FUNC(QPEL_V, 16,  8)
 
-PUT_HEVC_QPEL_V(  4, 10)
-PUT_HEVC_QPEL_V(  8, 10)
+GEN_FUNC(QPEL_V,  4, 10)
+GEN_FUNC(QPEL_V,  8, 10)
 
 static PUT_HEVC_QPEL_V(  4, 14)
 static PUT_HEVC_QPEL_V(  8, 14)
-
-PUT_HEVC_BI_QPEL_V(  4,  8)
-PUT_HEVC_BI_QPEL_V(  8,  8)
-PUT_HEVC_BI_QPEL_V( 16,  8)
-
-PUT_HEVC_BI_QPEL_V(  4, 10)
-PUT_HEVC_BI_QPEL_V(  8, 10)
-
 static PUT_HEVC_BI_QPEL_V14(  4,  8)
 static PUT_HEVC_BI_QPEL_V14(  8,  8)
 static PUT_HEVC_BI_QPEL_V14(  4, 10)
 static PUT_HEVC_BI_QPEL_V14(  8, 10)
 
 // ff_hevc_put_hevc_qpel_hvX_X_sse
-PUT_HEVC_QPEL_HV(  4,  8)
-PUT_HEVC_QPEL_HV(  8,  8)
+GEN_FUNC(QPEL_HV,  4,  8)
+GEN_FUNC(QPEL_HV,  8,  8)
 
-PUT_HEVC_QPEL_HV(  4, 10)
-PUT_HEVC_QPEL_HV(  8, 10)
+GEN_FUNC(QPEL_HV,  4, 10)
+GEN_FUNC(QPEL_HV,  8, 10)
 
-PUT_HEVC_BI_QPEL_HV(  4,  8)
-PUT_HEVC_BI_QPEL_HV(  8,  8)
-
-PUT_HEVC_BI_QPEL_HV(  4, 10)
-PUT_HEVC_BI_QPEL_HV(  8, 10)
 #endif //__SSSE3__
 
-#define mc_red_func(name, bitd, step, W) \
-void ff_hevc_put_hevc_##name##W##_##bitd##_sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width) \
-{ \
-    ff_hevc_put_hevc_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, height, mx, my, width);   \
+#define mc_red_func(name, bitd, step, W)                                                                    \
+void ff_hevc_put_hevc_##name##W##_##bitd##_sse(                                                            \
+                                int16_t *dst, ptrdiff_t dststride,                                           \
+                                uint8_t *_src, ptrdiff_t _srcstride,                                         \
+                                int height, intptr_t mx, intptr_t my, int width) {                          \
+    ff_hevc_put_hevc_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, height, mx, my, width);  \
+}                                                                                                           \
+void ff_hevc_put_hevc_bi_##name##W##_##bitd##_sse(                                                          \
+                                uint8_t *dst, ptrdiff_t dststride,                                          \
+                                uint8_t *_src, ptrdiff_t _srcstride,                                        \
+                                int16_t *src2, ptrdiff_t src2stride,                                        \
+                                int width, int height,                                                     \
+                                intptr_t mx, intptr_t my) {                                                 \
+    ff_hevc_put_hevc_bi_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, src2, src2stride, width, height, mx, my);   \
 }
-
 
 #ifdef __SSE4_1__
 mc_red_func(pel_pixels, 8, 2,  6);
