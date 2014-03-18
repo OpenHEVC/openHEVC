@@ -216,6 +216,14 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #ifdef __SSE4_1__
 
                 if (EXTERNAL_SSE4(mm_flags)) {
+                    PEL_LINK(c->put_hevc_qpel_bi, 1, 0, 0, bi_pel_pixels4 ,  8);
+                    PEL_LINK(c->put_hevc_qpel_bi, 3, 0, 0, bi_pel_pixels8 ,  8);
+                    PEL_LINK(c->put_hevc_qpel_bi, 5, 0, 0, bi_pel_pixels16,  8);
+
+                    PEL_LINK(c->put_hevc_epel_bi, 1, 0, 0, bi_pel_pixels4 ,  8);
+                    PEL_LINK(c->put_hevc_epel_bi, 3, 0, 0, bi_pel_pixels8 ,  8);
+                    PEL_LINK(c->put_hevc_epel_bi, 5, 0, 0, bi_pel_pixels16,  8);
+
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 0, pel_pixels4 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 3, 0, 0, pel_pixels8 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 4, 0, 0, pel_pixels12,  8);
@@ -306,6 +314,11 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[1]         = ff_hevc_transform_8x8_add_10_sse4;
                     c->transform_add[2]         = ff_hevc_transform_16x16_add_10_sse4;
                     c->transform_add[3]         = ff_hevc_transform_32x32_add_10_sse4;
+
+                    PEL_LINK(c->put_hevc_epel_bi, 1, 0, 0, bi_pel_pixels4 , 10);
+                    PEL_LINK(c->put_hevc_epel_bi, 3, 0, 0, bi_pel_pixels8 , 10);
+                    PEL_LINK(c->put_hevc_qpel_bi, 1, 0, 0, bi_pel_pixels4 , 10);
+                    PEL_LINK(c->put_hevc_qpel_bi, 3, 0, 0, bi_pel_pixels8 , 10);
 
                     PEL_LINK(c->put_hevc_epel, 1, 0, 0, pel_pixels4 , 10);
                     PEL_LINK(c->put_hevc_epel, 3, 0, 0, pel_pixels8 , 10);

@@ -142,6 +142,95 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     src ## 2 = mul(src ## 2, r0);                                              \
     dst      = add(src ## 1, src ## 2);                                        \
     dst      = add(dst, c0)
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+#define WEIGHTED_LOAD2_1()                                                     \
+    __m128i r1 = _mm_loadl_epi64((__m128i *) &src2[x    ])
+#define WEIGHTED_LOAD4_1()                                                     \
+    WEIGHTED_LOAD2_1()
+#define WEIGHTED_LOAD8_1()                                                     \
+    __m128i r1 = _mm_load_si128((__m128i *) &src2[x    ])
+#define WEIGHTED_LOAD16_1()                                                    \
+    WEIGHTED_LOAD8_1();                                                        \
+    __m128i r2 = _mm_load_si128((__m128i *) &src2[x + 8])
+
+#define WEIGHTED_STORE2_8()                                                    \
+    x1 = _mm_packus_epi16(x1, x1);                                             \
+    *((short *) (dst + x)) = _mm_extract_epi16(x1, 0)
+#define WEIGHTED_STORE4_8()                                                    \
+    x1 = _mm_packus_epi16(x1, x1);                                             \
+    PEL_STORE_2(dst)
+#define WEIGHTED_STORE8_8()                                                    \
+    x1 = _mm_packus_epi16(x1, x1);                                             \
+    PEL_STORE_4(dst)
+#define WEIGHTED_STORE16_8()                                                   \
+    x1 = _mm_packus_epi16(x1, x2);                                             \
+    PEL_STORE_8(dst)
+
+#define WEIGHTED_STORE2_10()                                                   \
+    x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    PEL_STORE_2(dst)
+#define WEIGHTED_STORE4_10()                                                   \
+    x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    PEL_STORE_4(dst);
+#define WEIGHTED_STORE8_10()                                                   \
+    x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    PEL_STORE_8(dst);
+#define WEIGHTED_STORE16_10()                                                  \
+    x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    x2 = _mm_max_epi16(x2, _mm_setzero_si128());                               \
+    x2 = _mm_min_epi16(x2, _mm_set1_epi16(0x03ff));                            \
+    PEL_STORE_16(dst);
+
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+#define WEIGHTED_INIT_8()                                                      \
+    const int dststride  = _dststride;                                         \
+    uint8_t *dst = (uint8_t *) _dst
+
+#define WEIGHTED_INIT_10()                                                     \
+    const int dststride  = _dststride >> 1;                                    \
+    uint16_t *dst = (uint16_t *) _dst
+
+#define UNI_UNWEIGHTED_INIT(D)                                                 \
+    const int shift2    = 14 - D;                                              \
+    const __m128i offset = _mm_set1_epi16(1 << (shift2 - 1));                  \
+    WEIGHTED_INIT_ ## D()
+#define BI_UNWEIGHTED_INIT(D)                                                  \
+    const __m128i offset = _mm_set1_epi16(1 << D);                             \
+    WEIGHTED_INIT_ ## D()
+#define UNI_WEIGHTED_INIT(D)                                                   \
+    const int shift2  = denom + 14 - D;                                        \
+    const __m128i ox  = _mm_set1_epi16(_ox << (D - 8));                        \
+    const __m128i wx  = _mm_set1_epi16(_wx);                                   \
+    const __m128i offset = _mm_set1_epi16(1 << (shift2 - 1));                  \
+    WEIGHTED_INIT_ ## D(1)
+#define BI_WEIGHTED_INIT(D)                                                    \
+    const int log2Wd  = denom + 14 - D;                                        \
+    const int shift2  = log2Wd + 1;                                            \
+    const __m128i ox0 = _mm_set1_epi16(_ox0 << (D - 8));                       \
+    const __m128i ox1 = _mm_set1_epi16(_ox1 << (D - 8));                       \
+    const __m128i wx0 = _mm_set1_epi16(_wx0);                                  \
+    const __m128i wx1 = _mm_set1_epi16(_wx1);                                  \
+    const __m128i offset = _mm_set1_epi16( (((_ox0 + _ox1) << (D - 8)) + 1) << (shift2 - 1));\
+    WEIGHTED_INIT_ ## D()
+
+#define BI_UNWEIGHTED_COMPUTE2(H)                                              \
+    WEIGHTED_LOAD ## H ## _1();                                                \
+    x1 = _mm_adds_epi16(x1, r1);                                               \
+    x1 = _mm_mulhrs_epi16(x1, offset)
+#define BI_UNWEIGHTED_COMPUTE4(H)     BI_UNWEIGHTED_COMPUTE2(H)
+#define BI_UNWEIGHTED_COMPUTE8(H)     BI_UNWEIGHTED_COMPUTE2(H)
+#define BI_UNWEIGHTED_COMPUTE16(H)                                             \
+    BI_UNWEIGHTED_COMPUTE2(H);                                                 \
+    x2 = _mm_adds_epi16(x2, r2);                                               \
+    x2 = _mm_mulhrs_epi16(x2, offset)
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
@@ -198,6 +287,30 @@ void ff_hevc_put_hevc_pel_pixels ## H ## _ ## D ## _sse (                      \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
+    }                                                                          \
+}
+
+#define PUT_HEVC_BI_PEL_PIXELS(H, D)                                           \
+void ff_hevc_put_hevc_bi_pel_pixels ## H ## _ ## D ## _sse (                   \
+                                        uint8_t *_dst, ptrdiff_t _dststride,   \
+                                        uint8_t *_src, ptrdiff_t _srcstride,   \
+                                        int16_t *src2, ptrdiff_t src2stride,   \
+                                        int width, int height,                 \
+                                        intptr_t mx, intptr_t my) {            \
+    int x, y;                                                                  \
+    PUT_HEVC_PEL_PIXELS_VAR ## H ## _ ## D();                                  \
+    SRC_INIT_ ## D();                                                          \
+    BI_UNWEIGHTED_INIT(D);                                                     \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            MC_LOAD_PIXEL();                                                   \
+            MC_PIXEL_COMPUTE ## H ## _ ## D();                                 \
+            BI_UNWEIGHTED_COMPUTE ## H(H);                                     \
+            WEIGHTED_STORE ## H ## _ ## D();                                   \
+        }                                                                      \
+        src  += srcstride;                                                     \
+        src2 += src2stride;                                                    \
+        dst  += dststride;                                                     \
     }                                                                          \
 }
 
@@ -740,12 +853,22 @@ PUT_HEVC_PEL_PIXELS(  2, 8)
 PUT_HEVC_PEL_PIXELS(  4, 8)
 PUT_HEVC_PEL_PIXELS(  8, 8)
 PUT_HEVC_PEL_PIXELS( 16, 8)
+
+PUT_HEVC_BI_PEL_PIXELS(  2, 8)
+PUT_HEVC_BI_PEL_PIXELS(  4, 8)
+PUT_HEVC_BI_PEL_PIXELS(  8, 8)
+PUT_HEVC_BI_PEL_PIXELS( 16, 8)
+
 #endif //__SSE4_1__
 
 #ifdef __SSSE3__
 PUT_HEVC_PEL_PIXELS(  2, 10)
 PUT_HEVC_PEL_PIXELS(  4, 10)
 PUT_HEVC_PEL_PIXELS(  8, 10)
+
+PUT_HEVC_BI_PEL_PIXELS(  2, 10)
+PUT_HEVC_BI_PEL_PIXELS(  4, 10)
+PUT_HEVC_BI_PEL_PIXELS(  8, 10)
 
 // ff_hevc_put_hevc_epel_hX_X_sse
 PUT_HEVC_EPEL_H(  2,  8)
