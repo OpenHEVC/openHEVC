@@ -734,6 +734,31 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
     }                                                                          \
 }
 
+#define PUT_HEVC_BI_QPEL_H(H, D)                                               \
+void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _sse (                       \
+                                        uint8_t *_dst, ptrdiff_t _dststride,   \
+                                        uint8_t *_src, ptrdiff_t _srcstride,   \
+                                        int16_t *src2, ptrdiff_t src2stride,   \
+                                        int width, int height,                 \
+                                        intptr_t mx, intptr_t my) {            \
+    int x, y;                                                                  \
+    PUT_HEVC_QPEL_H_VAR ## H ## _ ## D();                                      \
+    SRC_INIT_ ## D();                                                          \
+    BI_UNWEIGHTED_INIT(D);                                                     \
+    QPEL_H_FILTER_ ## D(mx - 1);                                               \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            QPEL_H_LOAD();                                                     \
+            QPEL_H_COMPUTE ## H ## _ ## D();                                   \
+            BI_UNWEIGHTED_COMPUTE ## H(H);                                     \
+            WEIGHTED_STORE ## H ## _ ## D();                                   \
+        }                                                                      \
+        src  += srcstride;                                                     \
+        src2 += src2stride;                                                    \
+        dst  += dststride;                                                     \
+    }                                                                          \
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_hX_X_sse
 ////////////////////////////////////////////////////////////////////////////////
@@ -893,6 +918,35 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
     }                                                                          \
 }
 
+#define PUT_HEVC_BI_QPEL_H_10(H, D)                                            \
+void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _sse (                       \
+                                        uint8_t *_dst, ptrdiff_t _dststride,   \
+                                        uint8_t *_src, ptrdiff_t _srcstride,   \
+                                        int16_t *src2, ptrdiff_t src2stride,   \
+                                        int width, int height,                 \
+                                        intptr_t mx, intptr_t my) {            \
+    int x, y;                                                                  \
+    int shift = D - 8;                                                         \
+    PUT_HEVC_QPEL_H_10_VAR ## H ## _ ## D();                                   \
+    SRC_INIT_ ## D();                                                          \
+    BI_UNWEIGHTED_INIT(D);                                                     \
+    QPEL_FILTER_ ## D(mx - 1);                                                 \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            QPEL_LOAD_LO ## H ## _ ## D(src, 1);                               \
+            QPEL_COMPUTE ## H ## _ ## D(r1, r2, c1, c2);                       \
+            QPEL_LOAD_HI ## H ## _ ## D(src, 1);                               \
+            QPEL_COMPUTE ## H ## _ ## D(r3, r4, c3, c4);                       \
+            QPEL_MERGE ## H ## _ ## D();                                       \
+            BI_UNWEIGHTED_COMPUTE ## H(H);                                     \
+            WEIGHTED_STORE ## H ## _ ## D();                                   \
+        }                                                                      \
+        src  += srcstride;                                                     \
+        src2 += src2stride;                                                    \
+        dst  += dststride;                                                     \
+    }                                                                          \
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_vX_X_X_sse
 ////////////////////////////////////////////////////////////////////////////////
@@ -902,10 +956,10 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
 #define PUT_HEVC_QPEL_V_VAR16_8()                                              \
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, r1, r2, c1, c2, c3, c4
 
-#define PUT_HEVC_QPEL_V_VAR4_10()                                           \
+#define PUT_HEVC_QPEL_V_VAR4_10()                                              \
     const __m128i c0    = _mm_setzero_si128();                                 \
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, c1, c2, c3, c4
-#define PUT_HEVC_QPEL_V_VAR8_10()                                           \
+#define PUT_HEVC_QPEL_V_VAR8_10()                                              \
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, r1, r2, c1, c2, c3, c4
 
 #define PUT_HEVC_QPEL_V_VAR4_14()     PUT_HEVC_QPEL_V_VAR4_10()
@@ -928,6 +982,31 @@ void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _sse (                          \
         }                                                                      \
         src += srcstride;                                                      \
         dst += dststride;                                                      \
+    }                                                                          \
+}
+
+#define PUT_HEVC_BI_QPEL_V(V, D)                                               \
+void ff_hevc_put_hevc_bi_qpel_v ## V ## _ ## D ## _sse (                       \
+                                        uint8_t *_dst, ptrdiff_t _dststride,   \
+                                        uint8_t *_src, ptrdiff_t _srcstride,   \
+                                        int16_t *src2, ptrdiff_t src2stride,   \
+                                        int width, int height,                 \
+                                        intptr_t mx, intptr_t my) {            \
+    int x, y;                                                                  \
+    PUT_HEVC_QPEL_V_VAR ## V ## _ ## D();                                      \
+    SRC_INIT_ ## D();                                                          \
+    BI_UNWEIGHTED_INIT(D);                                                     \
+    QPEL_FILTER_ ## D(my - 1);                                                 \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += V) {                                       \
+            QPEL_V_LOAD();                                                     \
+            QPEL_H_COMPUTE ## V ## _ ## D();                                   \
+            BI_UNWEIGHTED_COMPUTE ## V(V);                                     \
+            WEIGHTED_STORE ## V ## _ ## D();                                   \
+        }                                                                      \
+        src  += srcstride;                                                     \
+        src2 += src2stride;                                                    \
+        dst  += dststride;                                                     \
     }                                                                          \
 }
 
@@ -1037,6 +1116,13 @@ PUT_HEVC_QPEL_H( 16,  8)
 PUT_HEVC_QPEL_H_10(  4, 10)
 PUT_HEVC_QPEL_H_10(  8, 10)
 
+PUT_HEVC_BI_QPEL_H(  4,  8)
+PUT_HEVC_BI_QPEL_H(  8,  8)
+PUT_HEVC_BI_QPEL_H( 16,  8)
+
+PUT_HEVC_BI_QPEL_H_10(  4, 10)
+PUT_HEVC_BI_QPEL_H_10(  8, 10)
+
 // ff_hevc_put_hevc_qpel_vX_X_X_sse
 PUT_HEVC_QPEL_V(  4,  8)
 PUT_HEVC_QPEL_V(  8,  8)
@@ -1047,6 +1133,13 @@ PUT_HEVC_QPEL_V(  8, 10)
 
 static PUT_HEVC_QPEL_V(  4, 14)
 static PUT_HEVC_QPEL_V(  8, 14)
+
+PUT_HEVC_BI_QPEL_V(  4,  8)
+PUT_HEVC_BI_QPEL_V(  8,  8)
+PUT_HEVC_BI_QPEL_V( 16,  8)
+
+PUT_HEVC_BI_QPEL_V(  4, 10)
+PUT_HEVC_BI_QPEL_V(  8, 10)
 
 // ff_hevc_put_hevc_qpel_hvX_X_sse
 PUT_HEVC_QPEL_HV(  4,  8)
