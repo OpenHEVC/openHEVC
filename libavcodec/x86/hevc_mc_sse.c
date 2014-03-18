@@ -394,6 +394,30 @@ void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
     }                                                                          \
 }
 
+#define PUT_HEVC_BI_EPEL_H(H, D)                                               \
+void ff_hevc_put_hevc_bi_epel_h ## H ## _ ## D ## _sse (                       \
+                                        uint8_t *_dst, ptrdiff_t _dststride,   \
+                                        uint8_t *_src, ptrdiff_t _srcstride,   \
+                                        int16_t *src2, ptrdiff_t src2stride,   \
+                                        int width, int height,                 \
+                                        intptr_t mx, intptr_t my) {            \
+    int x, y;                                                                  \
+    PUT_HEVC_EPEL_H_VAR ## H ## _ ## D();                                      \
+    SRC_INIT_H_ ## D();                                                        \
+    BI_UNWEIGHTED_INIT(D);                                                     \
+    EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
+    for (y = 0; y < height; y++) {                                             \
+        for (x = 0; x < width; x += H) {                                       \
+            EPEL_LOAD_ ## D(src, 1);                                           \
+            EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
+            BI_UNWEIGHTED_COMPUTE ## H(H);                                     \
+            WEIGHTED_STORE ## H ## _ ## D();                                   \
+        }                                                                      \
+        src  += srcstride;                                                     \
+        src2 += src2stride;                                                    \
+        dst  += dststride;                                                     \
+    }                                                                          \
+}
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_epel_vX_X_sse
 ////////////////////////////////////////////////////////////////////////////////
@@ -878,6 +902,14 @@ PUT_HEVC_EPEL_H(  8,  8)
 PUT_HEVC_EPEL_H(  2, 10)
 PUT_HEVC_EPEL_H(  4, 10)
 PUT_HEVC_EPEL_H(  8, 10)
+
+PUT_HEVC_BI_EPEL_H(  2,  8)
+PUT_HEVC_BI_EPEL_H(  4,  8)
+PUT_HEVC_BI_EPEL_H(  8,  8)
+
+PUT_HEVC_BI_EPEL_H(  2, 10)
+PUT_HEVC_BI_EPEL_H(  4, 10)
+PUT_HEVC_BI_EPEL_H(  8, 10)
 
 // ff_hevc_put_hevc_epel_vX_X_sse
 PUT_HEVC_EPEL_V(  2,  8)
