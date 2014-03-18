@@ -13,5 +13,6 @@ libOpenHevcSetCheckMD5
 libOpenHevcSetDebugMode
 libOpenHevcSetNoCropping
 libOpenHevcSetTemporalLayer_id
+libOpenHevcSetViewLayers
 libOpenHevcStartDecoder
 libOpenHevcVersion
