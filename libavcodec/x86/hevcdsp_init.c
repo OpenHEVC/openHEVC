@@ -228,6 +228,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_epel_bi, 3, 0, 1, bi_epel_h8 ,  8);
                     PEL_LINK(c->put_hevc_epel_bi, 1, 1, 0, bi_epel_v4 ,  8);
                     PEL_LINK(c->put_hevc_epel_bi, 3, 1, 0, bi_epel_v8 ,  8);
+                    PEL_LINK(c->put_hevc_epel_bi, 1, 1, 1, bi_epel_hv4 ,  8);
+                    PEL_LINK(c->put_hevc_epel_bi, 3, 1, 1, bi_epel_hv8 ,  8);
 
                     PEL_LINK(c->put_hevc_qpel, 1, 0, 0, pel_pixels4 ,  8);
                     PEL_LINK(c->put_hevc_qpel, 3, 0, 0, pel_pixels8 ,  8);
@@ -328,8 +330,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
                     PEL_LINK(c->put_hevc_epel_bi, 1, 0, 1, bi_epel_h4 ,  10);
                     PEL_LINK(c->put_hevc_epel_bi, 3, 0, 1, bi_epel_h8 ,  10);
-                    PEL_LINK(c->put_hevc_epel_bi, 1, 1, 0, bi_epel_v4 , 10);
-                    PEL_LINK(c->put_hevc_epel_bi, 3, 1, 0, bi_epel_v8 , 10);
+                    PEL_LINK(c->put_hevc_epel_bi, 1, 1, 0, bi_epel_v4 ,  10);
+                    PEL_LINK(c->put_hevc_epel_bi, 3, 1, 0, bi_epel_v8 ,  10);
+                    PEL_LINK(c->put_hevc_epel_bi, 1, 1, 1, bi_epel_hv4 , 10);
+                    PEL_LINK(c->put_hevc_epel_bi, 3, 1, 1, bi_epel_hv8 , 10);
 
 
                     PEL_LINK(c->put_hevc_epel, 1, 0, 0, pel_pixels4 , 10);
