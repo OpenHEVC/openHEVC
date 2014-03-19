@@ -13,7 +13,8 @@ dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
 #define PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse; \
 dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _sse; \
-dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse
+dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse; \
+dst ## _uni_w[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _sse
 
 #ifdef OPTI_ASM
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D) \
@@ -30,7 +31,8 @@ void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststr
 #define PEL_PROTOTYPE_SSE(name, D) \
 void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
 void ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int width, int height, intptr_t mx, intptr_t my); \
-void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, intptr_t mx, intptr_t my)
+void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, intptr_t mx, intptr_t my); \
+void ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int width, int height, intptr_t mx, intptr_t my, int denom, int wx, int ox)
 
 
 #ifdef OPTI_ASM
