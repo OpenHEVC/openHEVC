@@ -1,6 +1,7 @@
 /*
  * Provide SSE MC functions for HEVC decoding
  * Copyright (c) 2013 Pierre-Edouard LEPERE
+ * Copyright (c) 2014 Gildas COCHEREL
  *
  * This file is part of FFmpeg.
  *
@@ -18,7 +19,6 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
 
 #include "config.h"
 #include "libavutil/avassert.h"
@@ -113,11 +113,18 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 ////////////////////////////////////////////////////////////////////////////////
 #define SRC_INIT_8()                                                           \
     uint8_t  *src       = (uint8_t*) _src;                                     \
-    ptrdiff_t srcstride = _srcstride
+    const int srcstride = _srcstride
 #define SRC_INIT_10()                                                          \
     uint16_t *src       = (uint16_t*) _src;                                    \
-    ptrdiff_t srcstride = _srcstride >> 1
+    const int srcstride = _srcstride >> 1
 #define SRC_INIT_14() SRC_INIT_10()
+#define DST_INIT_8()                                                           \
+    uint8_t *dst        = (uint8_t *) _dst;                                    \
+    const int dststride = _dststride
+#define DST_INIT_10()                                                          \
+    uint16_t *dst       = (uint16_t *) _dst;                                   \
+    const int dststride = _dststride >> 1
+#define DST_INIT_14() DST_INIT_10()
 
 #define SRC_INIT1_8()                                                          \
         src       = (uint8_t*) _src
@@ -193,37 +200,28 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#define WEIGHTED_INIT_8()                                                      \
-    const int dststride  = _dststride;                                         \
-    uint8_t *dst = (uint8_t *) _dst
-
-#define WEIGHTED_INIT_10()                                                     \
-    const int dststride  = _dststride >> 1;                                    \
-    uint16_t *dst = (uint16_t *) _dst
-#define WEIGHTED_INIT_14()  WEIGHTED_INIT_10()
-
 #define UNI_UNWEIGHTED_INIT(D)                                                 \
-    const int shift2    = 14 - D;                                              \
+    const int shift2     = 14 - D;                                             \
     const __m128i offset = _mm_set1_epi16(1 << (shift2 - 1));                  \
-    WEIGHTED_INIT_ ## D()
+    DST_INIT_ ## D()
 #define BI_UNWEIGHTED_INIT(D)                                                  \
     const __m128i offset = _mm_set1_epi16(1 << D);                             \
-    WEIGHTED_INIT_ ## D()
+    DST_INIT_ ## D()
 #define UNI_WEIGHTED_INIT(D)                                                   \
-    const int shift2  = denom + 14 - D;                                        \
-    const __m128i ox  = _mm_set1_epi16(_ox << (D - 8));                        \
-    const __m128i wx  = _mm_set1_epi16(_wx);                                   \
+    const int shift2     = denom + 14 - D;                                     \
+    const __m128i ox     = _mm_set1_epi16(_ox << (D - 8));                     \
+    const __m128i wx     = _mm_set1_epi16(_wx);                                \
     const __m128i offset = _mm_set1_epi16(1 << (shift2 - 1));                  \
-    WEIGHTED_INIT_ ## D(1)
+    DST_INIT_ ## D()
 #define BI_WEIGHTED_INIT(D)                                                    \
-    const int log2Wd  = denom + 14 - D;                                        \
-    const int shift2  = log2Wd + 1;                                            \
-    const __m128i ox0 = _mm_set1_epi16(_ox0 << (D - 8));                       \
-    const __m128i ox1 = _mm_set1_epi16(_ox1 << (D - 8));                       \
-    const __m128i wx0 = _mm_set1_epi16(_wx0);                                  \
-    const __m128i wx1 = _mm_set1_epi16(_wx1);                                  \
+    const int log2Wd     = denom + 14 - D;                                     \
+    const int shift2     = log2Wd + 1;                                         \
+    const __m128i ox0    = _mm_set1_epi16(_ox0 << (D - 8));                    \
+    const __m128i ox1    = _mm_set1_epi16(_ox1 << (D - 8));                    \
+    const __m128i wx0    = _mm_set1_epi16(_wx0);                               \
+    const __m128i wx1    = _mm_set1_epi16(_wx1);                               \
     const __m128i offset = _mm_set1_epi16( (((_ox0 + _ox1) << (D - 8)) + 1) << (shift2 - 1));\
-    WEIGHTED_INIT_ ## D()
+    DST_INIT_ ## D()
 
 #define UNI_UNWEIGHTED_COMPUTE2(H)                                             \
     x1 = _mm_adds_epi16(x1, offset);                                           \
@@ -337,7 +335,7 @@ void ff_hevc_put_hevc_uni_pel_pixels ## H ## _ ## D ## _sse (                  \
                                         intptr_t mx, intptr_t my) {            \
     int y;                                                                     \
     SRC_INIT_ ## D();                                                          \
-    WEIGHTED_INIT_ ## D();                                                     \
+    DST_INIT_ ## D();                                                          \
     for (y = 0; y < height; y++) {                                             \
         memcpy(dst, src, width * ((D+7) / 8));                                 \
         src  += srcstride;                                                     \
