@@ -201,8 +201,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define UNI_UNWEIGHTED_INIT(D)                                                 \
-    const int shift2     = 14 - D;                                             \
-    const __m128i offset = _mm_set1_epi16(1 << (shift2 - 1));                  \
+    const __m128i offset = _mm_set1_epi16(1 << (D + 1));                       \
     DST_INIT_ ## D()
 #define BI_UNWEIGHTED_INIT(D)                                                  \
     const __m128i offset = _mm_set1_epi16(1 << D);                             \
@@ -224,14 +223,12 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     DST_INIT_ ## D()
 
 #define UNI_UNWEIGHTED_COMPUTE2(H)                                             \
-    x1 = _mm_adds_epi16(x1, offset);                                           \
-    x1 = _mm_srai_epi16(x1, shift2)
+    x1 = _mm_mulhrs_epi16(x1, offset)
 #define UNI_UNWEIGHTED_COMPUTE4(H)      UNI_UNWEIGHTED_COMPUTE2(H)
 #define UNI_UNWEIGHTED_COMPUTE8(H)      UNI_UNWEIGHTED_COMPUTE2(H)
 #define UNI_UNWEIGHTED_COMPUTE16(H)                                            \
     UNI_UNWEIGHTED_COMPUTE2(H);                                                \
-    x2 = _mm_adds_epi16(x2, offset);                                           \
-    x2 = _mm_srai_epi16(x2, shift2)
+    x2 = _mm_mulhrs_epi16(x2, offset)
 
 #define BI_UNWEIGHTED_COMPUTE2(H)                                              \
     WEIGHTED_LOAD ## H ## _1();                                                \
