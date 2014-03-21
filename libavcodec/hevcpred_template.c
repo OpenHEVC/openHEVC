@@ -304,41 +304,42 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     top[-1] = left[-1];
 
     // Filtering process
-    if (c_idx == 0 && mode != INTRA_DC && size != 4 &&
-        !s->sps->intra_smoothing_disabled_flag && s->sps->chroma_format_idc !=3) {
-        int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
-        int min_dist_vert_hor = FFMIN(FFABS((int)(mode - 26U)),
-                                      FFABS((int)(mode - 10U)));
-        if (min_dist_vert_hor > intra_hor_ver_dist_thresh[log2_size - 3]) {
-            int threshold = 1 << (BIT_DEPTH - 5);
-            if (s->sps->sps_strong_intra_smoothing_enable_flag &&
-                log2_size == 5 &&
-                FFABS(top[-1]  + top[63]  - 2 * top[31])  < threshold &&
-                FFABS(left[-1] + left[63] - 2 * left[31]) < threshold) {
-                // We can't just overwrite values in top because it could be
-                // a pointer into src
-                filtered_top[-1] = top[-1];
-                filtered_top[63] = top[63];
-                for (i = 0; i < 63; i++)
-                    filtered_top[i] = ((64 - (i + 1)) * top[-1] +
-                                             (i + 1)  * top[63] + 32) >> 6;
-                for (i = 0; i < 63; i++)
-                    left[i] = ((64 - (i + 1)) * left[-1] +
-                                     (i + 1)  * left[63] + 32) >> 6;
-                top = filtered_top;
-            } else {
-                filtered_left[2 * size - 1] = left[2 * size - 1];
-                filtered_top[2 * size - 1]  = top[2 * size - 1];
-                for (i = 2 * size - 2; i >= 0; i--)
-                    filtered_left[i] = (left[i + 1] + 2 * left[i] +
-                                        left[i - 1] + 2) >> 2;
-                filtered_top[-1]  =
-                filtered_left[-1] = (left[0] + 2 * left[-1] + top[0] + 2) >> 2;
-                for (i = 2 * size - 2; i >= 0; i--)
-                    filtered_top[i] = (top[i + 1] + 2 * top[i] +
-                                       top[i - 1] + 2) >> 2;
-                left = filtered_left;
-                top  = filtered_top;
+    if (!s->sps->intra_smoothing_disabled_flag && size != 4 && (c_idx == 0  || s->sps->chroma_array_type == 3)) {
+        if (mode != INTRA_DC){
+            int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
+            int min_dist_vert_hor = FFMIN(FFABS((int)(mode - 26U)),
+                                          FFABS((int)(mode - 10U)));
+            if (min_dist_vert_hor > intra_hor_ver_dist_thresh[log2_size - 3]) {
+                int threshold = 1 << (BIT_DEPTH - 5);
+                if (s->sps->sps_strong_intra_smoothing_enable_flag && c_idx == 0 &&
+                    log2_size == 5 &&
+                    FFABS(top[-1]  + top[63]  - 2 * top[31])  < threshold &&
+                    FFABS(left[-1] + left[63] - 2 * left[31]) < threshold) {
+                    // We can't just overwrite values in top because it could be
+                    // a pointer into src
+                    filtered_top[-1] = top[-1];
+                    filtered_top[63] = top[63];
+                    for (i = 0; i < 63; i++)
+                        filtered_top[i] = ((64 - (i + 1)) * top[-1] +
+                                           (i + 1)  * top[63] + 32) >> 6;
+                    for (i = 0; i < 63; i++)
+                        left[i] = ((64 - (i + 1)) * left[-1] +
+                                   (i + 1)  * left[63] + 32) >> 6;
+                    top = filtered_top;
+                } else {
+                    filtered_left[2 * size - 1] = left[2 * size - 1];
+                    filtered_top[2 * size - 1]  = top[2 * size - 1];
+                    for (i = 2 * size - 2; i >= 0; i--)
+                        filtered_left[i] = (left[i + 1] + 2 * left[i] +
+                                            left[i - 1] + 2) >> 2;
+                    filtered_top[-1]  =
+                    filtered_left[-1] = (left[0] + 2 * left[-1] + top[0] + 2) >> 2;
+                    for (i = 2 * size - 2; i >= 0; i--)
+                        filtered_top[i] = (top[i + 1] + 2 * top[i] +
+                                           top[i - 1] + 2) >> 2;
+                    left = filtered_left;
+                    top  = filtered_top;
+                }
             }
         }
     }

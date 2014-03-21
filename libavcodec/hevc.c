@@ -1466,13 +1466,15 @@ static void chroma_mc_uni(HEVCContext *s, uint8_t *dst0,
     int weight_flag = (s->sh.slice_type == P_SLICE && s->pps->weighted_pred_flag) ||
                         (s->sh.slice_type == B_SLICE && s->pps->weighted_bipred_flag);
     int idx = ff_hevc_pel_weight[block_w];
-    int hshift = 2 + s->sps->hshift[1];
-    int vshift = 2 + s->sps->vshift[1];
-    intptr_t mx = mv->x & ((1 << hshift) - 1);
-    intptr_t my = mv->y & ((1 << vshift) - 1);
-    x_off += mv->x >> hshift;
-    y_off += mv->y >> vshift;
+    int hshift = s->sps->hshift[1];
+    int vshift = s->sps->vshift[1];
+    intptr_t mx = mv->x & ((1 << (2 + hshift)) - 1);
+    intptr_t my = mv->y & ((1 << (2 + vshift)) - 1);
+    x_off += mv->x >> (2 + hshift);
+    y_off += mv->y >> (2 + vshift);
     src0  += y_off * srcstride + (x_off << s->sps->pixel_shift);
+    intptr_t _mx = mx << (1 - hshift);
+    intptr_t _my = my << (1 - vshift);
 
     if (x_off < EPEL_EXTRA_BEFORE || y_off < EPEL_EXTRA_AFTER ||
         x_off >= pic_width - block_w - EPEL_EXTRA_AFTER ||
@@ -1493,11 +1495,11 @@ static void chroma_mc_uni(HEVCContext *s, uint8_t *dst0,
     }
     if (!weight_flag)
         s->hevcdsp.put_hevc_epel_uni[idx][!!my][!!mx](dst0, dststride, src0, srcstride,
-                                                  block_h, mx, my, block_w);
+                                                  block_h, _mx, _my, block_w);
     else
         s->hevcdsp.put_hevc_epel_uni_w[idx][!!my][!!mx](dst0, dststride, src0, srcstride,
                                                         block_h, s->sh.chroma_log2_weight_denom,
-                                                        chroma_weight, chroma_offset, mx, my, block_w);
+                                                        chroma_weight, chroma_offset, _mx, _my, block_w);
 }
 
 static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVFrame *ref0, AVFrame *ref1,
@@ -1516,18 +1518,22 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
     int pic_height       = s->sps->height >> s->sps->vshift[1];
     Mv *mv0              = &current_mv->mv[0];
     Mv *mv1              = &current_mv->mv[1];
-    int hshift = 2 + s->sps->hshift[1];
-    int vshift = 2 + s->sps->vshift[1];
+    int hshift = s->sps->hshift[1];
+    int vshift = s->sps->vshift[1];
 
-    intptr_t mx0 = mv0->x & ((1 << hshift) - 1);
-    intptr_t my0 = mv0->y & ((1 << vshift) - 1);
-    intptr_t mx1 = mv1->x & ((1 << hshift) - 1);
-    intptr_t my1 = mv1->y & ((1 << vshift) - 1);
+    intptr_t mx0 = mv0->x & ((1 << (2 + hshift)) - 1);
+    intptr_t my0 = mv0->y & ((1 << (2 + vshift)) - 1);
+    intptr_t mx1 = mv1->x & ((1 << (2 + hshift)) - 1);
+    intptr_t my1 = mv1->y & ((1 << (2 + vshift)) - 1);
+    intptr_t _mx0 = mx0 << (1 - hshift);
+    intptr_t _my0 = my0 << (1 - vshift);
+    intptr_t _mx1 = mx1 << (1 - hshift);
+    intptr_t _my1 = my1 << (1 - vshift);
 
-    int x_off0 = x_off + (mv0->x >> hshift);
-    int y_off0 = y_off + (mv0->y >> vshift);
-    int x_off1 = x_off + (mv1->x >> hshift);
-    int y_off1 = y_off + (mv1->y >> vshift);
+    int x_off0 = x_off + (mv0->x >> (2 + hshift));
+    int y_off0 = y_off + (mv0->y >> (2 + vshift));
+    int x_off1 = x_off + (mv1->x >> (2 + hshift));
+    int y_off1 = y_off + (mv1->y >> (2 + vshift));
     int idx = ff_hevc_pel_weight[block_w];
     src1  += y_off0 * src1stride + (x_off0 << s->sps->pixel_shift);
     src2  += y_off1 * src2stride + (x_off1 << s->sps->pixel_shift);
@@ -1571,15 +1577,15 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
     }
 
     s->hevcdsp.put_hevc_epel[idx][!!my0][!!mx0](tmp, tmpstride, src1, src1stride,
-                                                block_h, mx0, my0, block_w);
+                                                block_h, _mx0, _my0, block_w);
     if (!weight_flag)
         s->hevcdsp.put_hevc_epel_bi[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
                                                        src2, src2stride, tmp, tmpstride,
-                                                       block_w, block_h, mx1, my1);
+                                                       block_w, block_h, _mx1, _my1);
     else
         s->hevcdsp.put_hevc_epel_bi_w[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
                                                          src2, src2stride, tmp, tmpstride,
-                                                         block_w, block_h, mx1, my1,
+                                                         block_w, block_h, _mx1, _my1,
                                                          s->sh.chroma_log2_weight_denom,
                                                          s->sh.chroma_weight_l0[current_mv->ref_idx[0]][cidx],
                                                          s->sh.chroma_weight_l1[current_mv->ref_idx[1]][cidx],
