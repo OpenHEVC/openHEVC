@@ -38,12 +38,12 @@ typedef struct SAOParams {
 } SAOParams;
 
 typedef struct HEVCDSPContext {
-    void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
+    void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int width, int height,
                     struct GetBitContext *gb, int pcm_bit_depth);
 
     void (*transquant_bypass[4])(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-    void (*transform_skip)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+    void (*transform_skip[2])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
     void (*transform_4x4_luma_add)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 

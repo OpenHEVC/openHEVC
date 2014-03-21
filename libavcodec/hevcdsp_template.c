@@ -27,7 +27,7 @@
 #include "hevcdsp.h"
 
 
-static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int size,
+static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height,
                           GetBitContext *gb, int pcm_bit_depth)
 {
     int x, y;
@@ -35,8 +35,8 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int size,
 
     stride /= sizeof(pixel);
 
-    for (y = 0; y < size; y++) {
-        for (x = 0; x < size; x++)
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++)
             dst[x] = get_bits(gb, pcm_bit_depth) << (BIT_DEPTH - pcm_bit_depth);
         dst += stride;
     }
@@ -130,6 +130,28 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs,
         dst += stride;
     }
 }
+
+static void FUNC(transform_skip_rot)(uint8_t *_dst, int16_t *coeffs,
+                                 ptrdiff_t stride)
+{
+    pixel *dst = (pixel *)_dst;
+    int shift  = 13 - BIT_DEPTH;
+#if BIT_DEPTH <= 13
+    int offset = 1 << (shift - 1);
+#else
+    int offset = 0;
+#endif
+    int x, y;
+
+    stride /= sizeof(pixel);
+
+    for (y = 0; y < 4 * 4; y += 4) {
+        for (x = 0; x < 4; x++)
+            dst[x] = av_clip_pixel(dst[x] + ((coeffs[15 - x - y] + offset) >> shift));
+        dst += stride;
+    }
+}
+
 
 #define SET(dst, x)   (dst) = (x)
 #define SCALE(dst, x) (dst) = av_clip_int16(((x) + add) >> shift)

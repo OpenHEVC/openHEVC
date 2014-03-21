@@ -285,7 +285,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     PEL_LINK(c->put_hevc_epel, 8, 1, 1, epel_hv48,  8);
                     PEL_LINK(c->put_hevc_epel, 9, 1, 1, epel_hv64,  8);
 
-                    c->transform_skip     = ff_hevc_transform_skip_8_sse;
+                    c->transform_skip[0]     = ff_hevc_transform_skip_8_sse;
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
                     c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;

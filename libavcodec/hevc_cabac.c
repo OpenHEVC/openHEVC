@@ -1400,11 +1400,14 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     if (lc->cu.cu_transquant_bypass_flag) {
         s->hevcdsp.transquant_bypass[log2_trafo_size-2](dst, coeffs, stride);
     } else {
-        if (transform_skip_flag)
-            s->hevcdsp.transform_skip(dst, coeffs, stride);
-        else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2)
+        if (transform_skip_flag) {
+            int rot = s->sps->transform_skip_rotation_enabled_flag &&
+                      log2_trafo_size == 2 &&
+                      lc->cu.pred_mode == MODE_INTRA;
+            s->hevcdsp.transform_skip[!!rot](dst, coeffs, stride);
+        } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2)
             s->hevcdsp.transform_4x4_luma_add(dst, coeffs, stride);
-        else{
+        else {
             int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
             if (max_xy == 0)
                 s->hevcdsp.transform_dc_add[log2_trafo_size-2](dst, coeffs, stride);

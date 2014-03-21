@@ -305,7 +305,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 
     // Filtering process
     if (!s->sps->intra_smoothing_disabled_flag && (c_idx == 0  || s->sps->chroma_array_type == 3)) {
-        if (mode != INTRA_DC){
+        if (mode != INTRA_DC && size != 4){
             int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
             int min_dist_vert_hor = FFMIN(FFABS((int)(mode - 26U)),
                                           FFABS((int)(mode - 10U)));
