@@ -201,9 +201,9 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
     int ctb_addr_ts          = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     SAOParams *sao           = &CTB(s->sao, x_ctb, y_ctb);
     // flags indicating unfilterable edges
-    uint8_t vert_edge[]      = { 0, 0};
-    uint8_t horiz_edge[]     = { 0, 0};
-    uint8_t diag_edge[]      = { 0, 0, 0, 0};
+    uint8_t vert_edge[]      = { 0, 0 };
+    uint8_t horiz_edge[]     = { 0, 0 };
+    uint8_t diag_edge[]      = { 0, 0, 0, 0 };
     uint8_t lfase            = CTB(s->filter_slice_edges, x_ctb, y_ctb);
     uint8_t no_tile_filter   = s->pps->tiles_enabled_flag &&
                                !s->pps->loop_filter_across_tiles_enabled_flag;
@@ -253,9 +253,10 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         int x0       = x >> s->sps->hshift[c_idx];
         int y0       = y >> s->sps->vshift[c_idx];
         int stride   = s->frame->linesize[c_idx];
-        int ctb_size = (1 << (s->sps->log2_ctb_size)) >> s->sps->hshift[c_idx];
-        int width    = FFMIN(ctb_size, (s->sps->width  >> s->sps->hshift[c_idx]) - x0);
-        int height   = FFMIN(ctb_size, (s->sps->height >> s->sps->vshift[c_idx]) - y0);
+        int ctb_size_h = (1 << (s->sps->log2_ctb_size)) >> s->sps->hshift[c_idx];
+        int ctb_size_v = (1 << (s->sps->log2_ctb_size)) >> s->sps->vshift[c_idx];
+        int width    = FFMIN(ctb_size_h, (s->sps->width  >> s->sps->hshift[c_idx]) - x0);
+        int height   = FFMIN(ctb_size_v, (s->sps->height >> s->sps->vshift[c_idx]) - y0);
         uint8_t *src = &s->frame->data[c_idx][y0 * stride + (x0 << s->sps->pixel_shift)];
         uint8_t *dst = &s->sao_frame->data[c_idx][y0 * stride + (x0 << s->sps->pixel_shift)];
 
@@ -344,7 +345,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     uint8_t no_p[2] = { 0 };
     uint8_t no_q[2] = { 0 };
 
-    int log2_ctb_size = s->sps->log2_ctb_size;
+    int log2_ctb_size   = s->sps->log2_ctb_size;
     int x_end, y_end;
     int ctb_size        = 1 << log2_ctb_size;
     int ctb             = (x0 >> log2_ctb_size) +
@@ -489,7 +490,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     bs0 = s->horizontal_bs[(x +           y * s->bs_width) >> 2];
                     bs1 = 0;
                 } else {
-                    bs0 = s->horizontal_bs[(x + y           * s->bs_width) >> 2];
+                    bs0 = s->horizontal_bs[(x           + y * s->bs_width) >> 2];
                     bs1 = s->horizontal_bs[(x + (4 * h) + y * s->bs_width) >> 2];
                 }
 
