@@ -1286,8 +1286,8 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     uint8_t *dst2 = &s->frame->data[2][(y0 >> s->sps->vshift[2]) * stride2 + ((x0 >> s->sps->hshift[2]) << s->sps->pixel_shift)];
 
     int length         = cb_size * cb_size * s->sps->pcm.bit_depth +
-                         (((cb_size >> s->sps->vshift[1]) * (cb_size >> s->sps->vshift[1])) +
-                          ((cb_size >> s->sps->vshift[2]) * (cb_size >> s->sps->vshift[2]))) *
+                         (((cb_size >> s->sps->hshift[1]) * (cb_size >> s->sps->vshift[1])) +
+                          ((cb_size >> s->sps->hshift[2]) * (cb_size >> s->sps->vshift[2]))) *
                           s->sps->pcm.bit_depth_chroma;
     const uint8_t *pcm = skip_bytes(&s->HEVClc->cc, (length + 7) >> 3);
     int ret;
