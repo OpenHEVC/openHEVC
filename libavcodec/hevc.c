@@ -1429,7 +1429,7 @@ static void luma_mc_bi(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
                                                 block_h, mx0, my0, block_w);
     if (!weight_flag)
         s->hevcdsp.put_hevc_qpel_bi[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, tmpstride,
-                                                       block_w, block_h, mx1, my1);
+                                                       block_h, mx1, my1, block_w);
     else
         s->hevcdsp.put_hevc_qpel_bi_w[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, tmpstride,
                                                          block_w, block_h, mx1, my1, s->sh.luma_log2_weight_denom,
@@ -1581,7 +1581,7 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
     if (!weight_flag)
         s->hevcdsp.put_hevc_epel_bi[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
                                                        src2, src2stride, tmp, tmpstride,
-                                                       block_w, block_h, _mx1, _my1);
+                                                       block_h, _mx1, _my1, block_w);
     else
         s->hevcdsp.put_hevc_epel_bi_w[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
                                                          src2, src2stride, tmp, tmpstride,

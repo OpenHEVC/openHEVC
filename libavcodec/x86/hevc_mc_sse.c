@@ -373,8 +373,8 @@ void ff_hevc_put_hevc_bi_pel_pixels ## H ## _ ## D ## _sse (                   \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     PUT_HEVC_PEL_PIXELS_VAR ## H ## _ ## D();                                  \
     SRC_INIT_ ## D();                                                          \
@@ -541,8 +541,8 @@ void ff_hevc_put_hevc_bi_epel_h ## H ## _ ## D ## _sse (                       \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     PUT_HEVC_EPEL_H_VAR ## H ## _ ## D();                                      \
     SRC_INIT_H_ ## D();                                                        \
@@ -678,8 +678,8 @@ void ff_hevc_put_hevc_bi_epel_v ## H ## _ ## D ## _sse (                       \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     PUT_HEVC_EPEL_V_VAR ## H ## _ ## D();                                      \
     SRC_INIT_V_ ## D();                                                        \
@@ -841,8 +841,8 @@ void ff_hevc_put_hevc_bi_epel_hv ## H ## _ ## D ## _sse (                      \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;            \
     BI_UNWEIGHTED_INIT(D);                                                     \
@@ -1173,8 +1173,8 @@ void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _sse (                       \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_H_VAR ## H ## _ ## D();                                      \
     SRC_INIT_ ## D();                                                          \
@@ -1430,8 +1430,8 @@ void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _sse (                       \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     int shift = D - 8;                                                         \
     PUT_HEVC_QPEL_H_10_VAR ## H ## _ ## D();                                   \
@@ -1582,8 +1582,8 @@ void ff_hevc_put_hevc_bi_qpel_v ## V ## _ ## D ## _sse (                       \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_V_VAR ## V ## _ ## D();                                      \
     SRC_INIT_ ## D();                                                          \
@@ -1680,8 +1680,8 @@ void ff_hevc_put_hevc_bi_qpel_v ## V ## _14_ ## D ## _sse (                    \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_V_VAR ## V ## _14();                                         \
     SRC_INIT_14();                                                             \
@@ -1797,8 +1797,8 @@ void ff_hevc_put_hevc_bi_qpel_hv ## H ## _ ## D ## _sse (                      \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
-                                        int width, int height,                 \
-                                        intptr_t mx, intptr_t my) {            \
+                                        int height,                 \
+                                        intptr_t mx, intptr_t my, int width) { \
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];               \
     int16_t *tmp = tmp_array;                                                  \
     SRC_INIT_ ## D();                                                          \
@@ -1807,7 +1807,7 @@ void ff_hevc_put_hevc_bi_qpel_hv ## H ## _ ## D ## _sse (                      \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
     ff_hevc_put_hevc_bi_qpel_v ## H ## _14_ ## D ## _sse(                      \
-        dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , src2, src2stride, width, height, mx, my);\
+        dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , src2, src2stride, height, mx, my, width);\
 }
 
 #define PUT_HEVC_UNI_QPEL_HV(H, D)                                             \
@@ -1965,9 +1965,9 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_sse(                              
                                 uint8_t *dst, ptrdiff_t dststride,                                          \
                                 uint8_t *_src, ptrdiff_t _srcstride,                                        \
                                 int16_t *src2, ptrdiff_t src2stride,                                        \
-                                int width, int height,                                                      \
-                                intptr_t mx, intptr_t my) {                                                 \
-    ff_hevc_put_hevc_bi_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, src2, src2stride, width, height, mx, my);\
+                                int height,                                                      \
+                                intptr_t mx, intptr_t my, int width) {                                                 \
+    ff_hevc_put_hevc_bi_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, src2, src2stride, height, mx, my, width);\
 }                                                                                                           \
 void ff_hevc_put_hevc_uni_##name##W##_##bitd##_sse(                                                         \
                                 uint8_t *dst, ptrdiff_t dststride,                                          \
