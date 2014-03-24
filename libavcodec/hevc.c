@@ -1470,11 +1470,11 @@ static void chroma_mc_uni(HEVCContext *s, uint8_t *dst0,
     int vshift = s->sps->vshift[1];
     intptr_t mx = mv->x & ((1 << (2 + hshift)) - 1);
     intptr_t my = mv->y & ((1 << (2 + vshift)) - 1);
+    intptr_t _mx = mx << (1 - hshift);
+    intptr_t _my = my << (1 - vshift);
     x_off += mv->x >> (2 + hshift);
     y_off += mv->y >> (2 + vshift);
     src0  += y_off * srcstride + (x_off << s->sps->pixel_shift);
-    intptr_t _mx = mx << (1 - hshift);
-    intptr_t _my = my << (1 - vshift);
 
     if (x_off < EPEL_EXTRA_BEFORE || y_off < EPEL_EXTRA_AFTER ||
         x_off >= pic_width - block_w - EPEL_EXTRA_AFTER ||
