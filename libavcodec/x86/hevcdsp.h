@@ -194,23 +194,23 @@ PEL_PROTOTYPE(qpel_v32, 10);
 PEL_PROTOTYPE(qpel_v48, 10);
 PEL_PROTOTYPE(qpel_v64, 10);
 
-PEL_PROTOTYPE_SSE(qpel_hv4 ,  8);
-PEL_PROTOTYPE_SSE(qpel_hv8 ,  8);
-PEL_PROTOTYPE_SSE(qpel_hv12,  8);
-PEL_PROTOTYPE_SSE(qpel_hv16,  8);
-PEL_PROTOTYPE_SSE(qpel_hv24,  8);
-PEL_PROTOTYPE_SSE(qpel_hv32,  8);
-PEL_PROTOTYPE_SSE(qpel_hv48,  8);
-PEL_PROTOTYPE_SSE(qpel_hv64,  8);
+PEL_PROTOTYPE(qpel_hv4 ,  8);
+PEL_PROTOTYPE(qpel_hv8 ,  8);
+PEL_PROTOTYPE(qpel_hv12,  8);
+PEL_PROTOTYPE(qpel_hv16,  8);
+PEL_PROTOTYPE(qpel_hv24,  8);
+PEL_PROTOTYPE(qpel_hv32,  8);
+PEL_PROTOTYPE(qpel_hv48,  8);
+PEL_PROTOTYPE(qpel_hv64,  8);
 
-PEL_PROTOTYPE_SSE(qpel_hv4 , 10);
-PEL_PROTOTYPE_SSE(qpel_hv8 , 10);
-PEL_PROTOTYPE_SSE(qpel_hv12, 10);
-PEL_PROTOTYPE_SSE(qpel_hv16, 10);
-PEL_PROTOTYPE_SSE(qpel_hv24, 10);
-PEL_PROTOTYPE_SSE(qpel_hv32, 10);
-PEL_PROTOTYPE_SSE(qpel_hv48, 10);
-PEL_PROTOTYPE_SSE(qpel_hv64, 10);
+PEL_PROTOTYPE(qpel_hv4 , 10);
+PEL_PROTOTYPE(qpel_hv8 , 10);
+PEL_PROTOTYPE(qpel_hv12, 10);
+PEL_PROTOTYPE(qpel_hv16, 10);
+PEL_PROTOTYPE(qpel_hv24, 10);
+PEL_PROTOTYPE(qpel_hv32, 10);
+PEL_PROTOTYPE(qpel_hv48, 10);
+PEL_PROTOTYPE(qpel_hv64, 10);
 
 
 /* ASM wrapper */
