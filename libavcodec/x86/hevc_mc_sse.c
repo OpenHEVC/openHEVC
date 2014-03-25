@@ -1993,6 +1993,7 @@ void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_sse(                     \
     ff_hevc_put_hevc_bi_w_##name##step##_##bitd##_sse(dst, dststride, _src, _srcstride, src2, src2stride, height, denom, wx0, wx1, ox0, ox1, mx, my, width);\
 }
 
+
 #ifdef __SSE4_1__
 mc_red_func(pel_pixels, 8, 2,  6);
 mc_red_func(pel_pixels, 8, 4, 12);

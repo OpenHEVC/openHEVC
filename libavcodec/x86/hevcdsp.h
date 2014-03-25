@@ -9,7 +9,9 @@ struct HEVCWindow;
 //#define OPTI_ASM
 
 #define PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D) \
+dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse4; \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4
+
 #define PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse; \
 dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _sse; \
@@ -20,6 +22,10 @@ dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _ss
 #ifdef OPTI_ASM
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D) \
 PEL_LINK_ASM(dst, idx1, idx2, idx3, name, D)
+
+#define PEL_LINK_UNI(dst, idx1, idx2, idx3, name, D) \
+dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse4
+
 #else
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D) \
 PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D)
@@ -27,7 +33,12 @@ PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D)
 
 
 #define PEL_PROTOTYPE_ASM(name, D) \
+void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse4(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
 void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width)
+
+#define PEL_PROTOTYPE_UNI(name, D) \
+void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse4(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
+
 
 #define PEL_PROTOTYPE_SSE(name, D) \
 void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
@@ -74,143 +85,71 @@ void ff_hevc_transform_32x32_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdi
 ///////////////////////////////////////////////////////////////////////////////
 // MC functions
 ///////////////////////////////////////////////////////////////////////////////
+#ifdef OPTI_ASM
+#define EPEL_PROTOTYPES(fname, bitd) \
+        PEL_PROTOTYPE(fname##4,  bitd); \
+        PEL_PROTOTYPE(fname##6,  bitd); \
+        PEL_PROTOTYPE(fname##8,  bitd); \
+        PEL_PROTOTYPE(fname##12, bitd); \
+        PEL_PROTOTYPE(fname##16, bitd); \
+        PEL_PROTOTYPE(fname##24, bitd); \
+        PEL_PROTOTYPE(fname##32, bitd); \
+        PEL_PROTOTYPE(fname##48, bitd); \
+        PEL_PROTOTYPE(fname##64, bitd)
+
+#else
+#define EPEL_PROTOTYPES(fname, bitd) \
+        PEL_PROTOTYPE(fname##4,  bitd); \
+        PEL_PROTOTYPE(fname##8,  bitd); \
+        PEL_PROTOTYPE(fname##12, bitd); \
+        PEL_PROTOTYPE(fname##16, bitd); \
+        PEL_PROTOTYPE(fname##24, bitd); \
+        PEL_PROTOTYPE(fname##32, bitd); \
+        PEL_PROTOTYPE(fname##48, bitd); \
+        PEL_PROTOTYPE(fname##64, bitd)
+
+#endif
+
+#define QPEL_PROTOTYPES(fname, bitd) \
+        PEL_PROTOTYPE(fname##4,  bitd); \
+        PEL_PROTOTYPE(fname##8,  bitd); \
+        PEL_PROTOTYPE(fname##12, bitd); \
+        PEL_PROTOTYPE(fname##16, bitd); \
+        PEL_PROTOTYPE(fname##24, bitd); \
+        PEL_PROTOTYPE(fname##32, bitd); \
+        PEL_PROTOTYPE(fname##48, bitd); \
+        PEL_PROTOTYPE(fname##64, bitd)
+
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL_PIXELS EPEL_PIXELS
 ///////////////////////////////////////////////////////////////////////////////
-PEL_PROTOTYPE(pel_pixels2 ,  8);
-PEL_PROTOTYPE(pel_pixels4 ,  8);
-PEL_PROTOTYPE(pel_pixels6 ,  8);
-PEL_PROTOTYPE(pel_pixels8 ,  8);
-PEL_PROTOTYPE(pel_pixels12,  8);
-PEL_PROTOTYPE(pel_pixels16,  8);
-PEL_PROTOTYPE(pel_pixels24,  8);
-PEL_PROTOTYPE(pel_pixels32,  8);
-PEL_PROTOTYPE(pel_pixels48,  8);
-PEL_PROTOTYPE(pel_pixels64,  8);
+EPEL_PROTOTYPES(pel_pixels ,  8);
+EPEL_PROTOTYPES(pel_pixels , 10);
 
-PEL_PROTOTYPE(pel_pixels2 , 10);
-PEL_PROTOTYPE(pel_pixels4 , 10);
-PEL_PROTOTYPE(pel_pixels6 , 10);
-PEL_PROTOTYPE(pel_pixels8 , 10);
-PEL_PROTOTYPE(pel_pixels12, 10);
-PEL_PROTOTYPE(pel_pixels16, 10);
-PEL_PROTOTYPE(pel_pixels24, 10);
-PEL_PROTOTYPE(pel_pixels32, 10);
-PEL_PROTOTYPE(pel_pixels48, 10);
-PEL_PROTOTYPE(pel_pixels64, 10);
 
 ///////////////////////////////////////////////////////////////////////////////
 // EPEL
 ///////////////////////////////////////////////////////////////////////////////
-PEL_PROTOTYPE(epel_h4 ,  8);
-PEL_PROTOTYPE(epel_h8 ,  8);
-PEL_PROTOTYPE(epel_h12,  8);
-PEL_PROTOTYPE(epel_h16,  8);
-PEL_PROTOTYPE(epel_h24,  8);
-PEL_PROTOTYPE(epel_h32,  8);
-PEL_PROTOTYPE(epel_h48,  8);
-PEL_PROTOTYPE(epel_h64,  8);
+EPEL_PROTOTYPES(epel_h ,  8);
+EPEL_PROTOTYPES(epel_h , 10);
 
-PEL_PROTOTYPE(epel_h4 , 10);
-PEL_PROTOTYPE(epel_h8 , 10);
-PEL_PROTOTYPE(epel_h12, 10);
-PEL_PROTOTYPE(epel_h16, 10);
-PEL_PROTOTYPE(epel_h24, 10);
-PEL_PROTOTYPE(epel_h32, 10);
-PEL_PROTOTYPE(epel_h48, 10);
-PEL_PROTOTYPE(epel_h64, 10);
+EPEL_PROTOTYPES(epel_v ,  8);
+EPEL_PROTOTYPES(epel_v , 10);
 
-PEL_PROTOTYPE(epel_v4 ,  8);
-PEL_PROTOTYPE(epel_v8 ,  8);
-PEL_PROTOTYPE(epel_v12,  8);
-PEL_PROTOTYPE(epel_v16,  8);
-PEL_PROTOTYPE(epel_v24,  8);
-PEL_PROTOTYPE(epel_v32,  8);
-PEL_PROTOTYPE(epel_v48,  8);
-PEL_PROTOTYPE(epel_v64,  8);
+EPEL_PROTOTYPES(epel_hv ,  8);
+EPEL_PROTOTYPES(epel_hv , 10);
 
-PEL_PROTOTYPE(epel_v4 , 10);
-PEL_PROTOTYPE(epel_v8 , 10);
-PEL_PROTOTYPE(epel_v12, 10);
-PEL_PROTOTYPE(epel_v16, 10);
-PEL_PROTOTYPE(epel_v24, 10);
-PEL_PROTOTYPE(epel_v32, 10);
-PEL_PROTOTYPE(epel_v48, 10);
-PEL_PROTOTYPE(epel_v64, 10);
-
-PEL_PROTOTYPE(epel_hv4 ,  8);
-PEL_PROTOTYPE(epel_hv8 ,  8);
-PEL_PROTOTYPE(epel_hv12,  8);
-PEL_PROTOTYPE(epel_hv16,  8);
-PEL_PROTOTYPE(epel_hv24,  8);
-PEL_PROTOTYPE(epel_hv32,  8);
-PEL_PROTOTYPE(epel_hv48,  8);
-PEL_PROTOTYPE(epel_hv64,  8);
-
-PEL_PROTOTYPE(epel_hv4 , 10);
-PEL_PROTOTYPE(epel_hv8 , 10);
-PEL_PROTOTYPE(epel_hv12, 10);
-PEL_PROTOTYPE(epel_hv16, 10);
-PEL_PROTOTYPE(epel_hv24, 10);
-PEL_PROTOTYPE(epel_hv32, 10);
-PEL_PROTOTYPE(epel_hv48, 10);
-PEL_PROTOTYPE(epel_hv64, 10);
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL
 ///////////////////////////////////////////////////////////////////////////////
-PEL_PROTOTYPE(qpel_h4 ,  8);
-PEL_PROTOTYPE(qpel_h8 ,  8);
-PEL_PROTOTYPE(qpel_h12,  8);
-PEL_PROTOTYPE(qpel_h16,  8);
-PEL_PROTOTYPE(qpel_h24,  8);
-PEL_PROTOTYPE(qpel_h32,  8);
-PEL_PROTOTYPE(qpel_h48,  8);
-PEL_PROTOTYPE(qpel_h64,  8);
+QPEL_PROTOTYPES(qpel_h ,  8);
+QPEL_PROTOTYPES(qpel_h , 10);
 
-PEL_PROTOTYPE(qpel_h4 , 10);
-PEL_PROTOTYPE(qpel_h8 , 10);
-PEL_PROTOTYPE(qpel_h12, 10);
-PEL_PROTOTYPE(qpel_h16, 10);
-PEL_PROTOTYPE(qpel_h24, 10);
-PEL_PROTOTYPE(qpel_h32, 10);
-PEL_PROTOTYPE(qpel_h48, 10);
-PEL_PROTOTYPE(qpel_h64, 10);
+QPEL_PROTOTYPES(qpel_v,  8);
+QPEL_PROTOTYPES(qpel_v, 10);
 
-PEL_PROTOTYPE(qpel_v4 ,  8);
-PEL_PROTOTYPE(qpel_v8 ,  8);
-PEL_PROTOTYPE(qpel_v12,  8);
-PEL_PROTOTYPE(qpel_v16,  8);
-PEL_PROTOTYPE(qpel_v24,  8);
-PEL_PROTOTYPE(qpel_v32,  8);
-PEL_PROTOTYPE(qpel_v48,  8);
-PEL_PROTOTYPE(qpel_v64,  8);
-
-PEL_PROTOTYPE(qpel_v4 , 10);
-PEL_PROTOTYPE(qpel_v8 , 10);
-PEL_PROTOTYPE(qpel_v12, 10);
-PEL_PROTOTYPE(qpel_v16, 10);
-PEL_PROTOTYPE(qpel_v24, 10);
-PEL_PROTOTYPE(qpel_v32, 10);
-PEL_PROTOTYPE(qpel_v48, 10);
-PEL_PROTOTYPE(qpel_v64, 10);
-
-PEL_PROTOTYPE(qpel_hv4 ,  8);
-PEL_PROTOTYPE(qpel_hv8 ,  8);
-PEL_PROTOTYPE(qpel_hv12,  8);
-PEL_PROTOTYPE(qpel_hv16,  8);
-PEL_PROTOTYPE(qpel_hv24,  8);
-PEL_PROTOTYPE(qpel_hv32,  8);
-PEL_PROTOTYPE(qpel_hv48,  8);
-PEL_PROTOTYPE(qpel_hv64,  8);
-
-PEL_PROTOTYPE(qpel_hv4 , 10);
-PEL_PROTOTYPE(qpel_hv8 , 10);
-PEL_PROTOTYPE(qpel_hv12, 10);
-PEL_PROTOTYPE(qpel_hv16, 10);
-PEL_PROTOTYPE(qpel_hv24, 10);
-PEL_PROTOTYPE(qpel_hv32, 10);
-PEL_PROTOTYPE(qpel_hv48, 10);
-PEL_PROTOTYPE(qpel_hv64, 10);
+QPEL_PROTOTYPES(qpel_hv,  8);
+QPEL_PROTOTYPES(qpel_hv, 10);
 
 
 /* ASM wrapper */
