@@ -73,6 +73,11 @@ static void video_decode_example(const char *filename)
     OpenHevc_Frame_cpy openHevcFrameCpy;
     OpenHevc_Handle    openHevcHandle;
 
+    if (filename == NULL) {
+        printf("No input file specified.\nSpecify it with: -i <filename>\n");
+        exit(1);
+    }
+
     openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);

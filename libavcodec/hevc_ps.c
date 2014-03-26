@@ -529,8 +529,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     vps->vps_temporal_id_nesting_flag = get_bits1(gb);
 
     if (get_bits(gb, 16) != 0xffff) { // vps_reserved_ffff_16bits
-        av_log(s->avctx, AV_LOG_ERROR, "vps_reserved_ffff_16bits is not 0xffff\n");
-        goto err;
+        av_log(s->avctx, AV_LOG_INFO, "vps_reserved_ffff_16bits is not 0xffff\n");
     }
 
     if (vps->vps_max_sub_layers > MAX_SUB_LAYERS) {
@@ -999,6 +998,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->amp_enabled_flag = get_bits1(gb);
     sps->sao_enabled      = get_bits1(gb);
+    if (sps->sao_enabled)
+        av_log(s->avctx, AV_LOG_DEBUG, "SAO enabled\n");
 
     sps->pcm_enabled_flag = get_bits1(gb);
     if (sps->pcm_enabled_flag) {
@@ -1288,7 +1289,12 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->tiles_enabled_flag               = get_bits1(gb);
     pps->entropy_coding_sync_enabled_flag = get_bits1(gb);
 
+    if (pps->entropy_coding_sync_enabled_flag)
+        av_log(s->avctx, AV_LOG_DEBUG, "WPP enabled\n");
+
+
     if (pps->tiles_enabled_flag) {
+        av_log(s->avctx, AV_LOG_DEBUG, "Tiles enabled\n");
         pps->num_tile_columns = get_ue_golomb_long(gb) + 1;
         pps->num_tile_rows    = get_ue_golomb_long(gb) + 1;
         if (pps->num_tile_columns == 0 ||
