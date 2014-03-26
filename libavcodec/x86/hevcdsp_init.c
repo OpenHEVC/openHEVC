@@ -77,10 +77,26 @@ void ff_hevc_put_hevc_uni_##name##W##_##bitd##_sse4(uint8_t *dst, ptrdiff_t dsts
     ff_hevc_put_hevc_uni_##name##step##_##bitd##_sse4(_dst, dststride, src, _srcstride, height, mx, my, width);   \
     }   \
 }
+#define mc_rep_bi_func(name, bitd, step, W) \
+void ff_hevc_put_hevc_bi_##name##W##_##bitd##_sse4(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t* src2, ptrdiff_t _src2stride, int height, intptr_t mx, intptr_t my, int width) \
+{ \
+    int i;  \
+    uint8_t *src;   \
+    uint8_t *_dst; \
+    uint16_t *_src2; \
+    for(i=0; i < W ; i+= step ){    \
+        src= _src+(i*((bitd+7)/8));            \
+        _dst= dst+(i*((bitd+7)/8));                        \
+        _src2= src2+i;                                     \
+    ff_hevc_put_hevc_bi_##name##step##_##bitd##_sse4(_dst, dststride, src, _srcstride, _src2, _src2stride, height, mx, my, width);   \
+    }   \
+}
 
 #define mc_rep_funcs(name, bitd, step, W)        \
     mc_rep_func(name, bitd, step, W);            \
-    mc_rep_uni_func(name, bitd, step, W)
+    mc_rep_uni_func(name, bitd, step, W);        \
+    mc_rep_bi_func(name, bitd, step, W)
+
 
 
 mc_rep_funcs(pel_pixels, 8, 16, 64);
@@ -246,6 +262,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #ifdef __SSE4_1__
 
                 if (EXTERNAL_SSE4(mm_flags)) {
+
+
 
                     EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels,  8);
                     EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,      8);
