@@ -166,7 +166,6 @@ mc_rep_funcs(qpel_hv,10,  4, 12);
 
 #endif
 
-#ifdef OPTI_ASM
 #define EPEL_LINKS(pointer, my, mx, fname, bitd) \
         PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd ); \
         PEL_LINK(pointer, 2, my , mx , fname##6 ,  bitd ); \
@@ -177,19 +176,6 @@ mc_rep_funcs(qpel_hv,10,  4, 12);
         PEL_LINK(pointer, 7, my , mx , fname##32,  bitd ); \
         PEL_LINK(pointer, 8, my , mx , fname##48,  bitd ); \
         PEL_LINK(pointer, 9, my , mx , fname##64,  bitd )
-
-#else
-#define EPEL_LINKS(pointer, my, mx, fname, bitd) \
-        PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd ); \
-        PEL_LINK(pointer, 3, my , mx , fname##8 ,  bitd ); \
-        PEL_LINK(pointer, 4, my , mx , fname##12,  bitd ); \
-        PEL_LINK(pointer, 5, my , mx , fname##16,  bitd ); \
-        PEL_LINK(pointer, 6, my , mx , fname##24,  bitd ); \
-        PEL_LINK(pointer, 7, my , mx , fname##32,  bitd ); \
-        PEL_LINK(pointer, 8, my , mx , fname##48,  bitd ); \
-        PEL_LINK(pointer, 9, my , mx , fname##64,  bitd )
-
-#endif
 #define QPEL_LINKS(pointer, my, mx, fname, bitd) \
         PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd ); \
         PEL_LINK(pointer, 3, my , mx , fname##8 ,  bitd ); \
