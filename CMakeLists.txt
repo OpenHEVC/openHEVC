@@ -83,7 +83,6 @@ find_package(SDL)
 find_package(SDL2)
 
 set(libfilenames
-    libavutil/aes.c
     libavutil/avstring.c
     libavutil/atomic.c
     libavutil/base64.c
@@ -91,19 +90,18 @@ set(libfilenames
     libavutil/buffer.c
     libavutil/channel_layout.c
     libavutil/cpu.c
+    libavutil/crc.c
     libavutil/des.c
     libavutil/dict.c
     libavutil/error.c
     libavutil/eval.c
     libavutil/file_open.c
     libavutil/frame.c
-    libavutil/hmac.c
     libavutil/imgutils.c
     libavutil/intmath.c
     libavutil/log.c
     libavutil/log2_tab.c
     libavutil/mathematics.c
-    libavutil/crc.c
     libavutil/md5.c
     libavutil/mem.c
     libavutil/opt.c
@@ -114,21 +112,14 @@ set(libfilenames
     libavutil/rc4.c
     libavutil/samplefmt.c
     libavutil/sha.c
-    libavutil/sha512.c
     libavutil/time.c
     libavutil/timecode.c
     libavutil/utils.c
     libavutil/x86/cpu.c
     gpac/modules/openhevc_dec/openHevcWrapper.c
     libavformat/allformats.c
-    libavformat/avc.c
     libavformat/avio.c
     libavformat/aviobuf.c
-    libavformat/avlanguage.c
-    libavformat/asf.c
-    libavformat/asfcrypt.c
-    libavformat/asfdec.c
-    libavformat/concat.c
     libavformat/cutils.c
     libavformat/file.c
     libavformat/format.c
@@ -141,45 +132,15 @@ set(libfilenames
     libavformat/metadata.c
     libavformat/mov.c
     libavformat/mov_chan.c
-    libavformat/movenc.c
-    libavformat/movenchint.c
     libavformat/mpegts.c
     libavformat/mux.c
     libavformat/options.c
     libavformat/os_support.c
     libavformat/rawdec.c
-    libavformat/rdt.c
     libavformat/riffdec.c
     libavformat/riff.c
-    libavformat/rm.c
-    libavformat/rmdec.c
     libavformat/rmsipr.c
-    libavformat/rtp.c
-    libavformat/rtpdec.c
-    libavformat/rtpdec_amr.c
-    libavformat/rtpdec_asf.c
-    libavformat/rtpdec_g726.c
-    libavformat/rtpdec_h263.c
-    libavformat/rtpdec_h263_rfc2190.c
-    libavformat/rtpdec_h264.c
-    libavformat/rtpdec_ilbc.c
-    libavformat/rtpdec_jpeg.c
-    libavformat/rtpdec_latm.c
-    libavformat/rtpdec_mpeg4.c
-    libavformat/rtpdec_mpeg12.c
-    libavformat/rtpdec_mpegts.c
-    libavformat/rtpdec_qcelp.c
-    libavformat/rtpdec_qdm2.c
-    libavformat/rtpdec_qt.c
-    libavformat/rtpdec_svq3.c
-    libavformat/rtpdec_vp8.c
-    libavformat/rtpdec_xiph.c
-    libavformat/rtpenc_chain.c
-    libavformat/rtsp.c
-    libavformat/srtp.c
     libavformat/utils.c
-    libavformat/url.c
-    libavformat/urldecode.c
     libavcodec/x86/constants.c
     libavcodec/x86/dct_init.c
     libavcodec/x86/dsputil_init.c
@@ -233,8 +194,6 @@ set(libfilenames
     libavcodec/jrevdct.c
     libavcodec/mathtables.c
     libavcodec/mdct_template.c
-    libavcodec/mjpeg.c
-    libavcodec/mjpega_dump_header_bsf.c
     libavcodec/mpegaudiodata.c
     libavcodec/mpeg4audio.c
     libavcodec/imgconvert.c
