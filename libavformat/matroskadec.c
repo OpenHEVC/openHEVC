@@ -42,7 +42,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
-//#include "libavutil/lzo.h"
+#include "libavutil/lzo.h"
 #include "libavutil/dict.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
