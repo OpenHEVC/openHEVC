@@ -22,7 +22,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "videodsp.h"
-#include "config.h"
 
 #define BIT_DEPTH 8
 #include "videodsp_template.c"

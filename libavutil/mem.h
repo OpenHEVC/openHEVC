@@ -32,16 +32,7 @@
 #include "attributes.h"
 #include "error.h"
 #include "avutil.h"
-
-#ifndef FF_MEMORY_POISON
-#define FF_MEMORY_POISON 0x2a
-#endif
-
-#ifndef MAKE_ACCESSORS
-#define MAKE_ACCESSORS(str, name, type, field) \
-    type av_##name##_get_##field(const str *s) { return s->field; } \
-    void av_##name##_set_##field(str *s, type v) { s->field = v; }
-#endif
+#include "internal.h"
 
 /**
  * @addtogroup lavu_mem

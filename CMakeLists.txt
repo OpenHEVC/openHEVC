@@ -101,6 +101,7 @@ set(libfilenames
     libavutil/imgutils.c
     libavutil/intmath.c
     libavutil/log.c
+    libavutil/log2_tab.c
     libavutil/mathematics.c
     libavutil/crc.c
     libavutil/md5.c

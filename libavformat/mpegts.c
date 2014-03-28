@@ -2573,7 +2573,7 @@ void ff_mpegts_parse_close(MpegTSContext *ts)
     mpegts_free(ts);
     av_free(ts);
 }
-#if 0
+
 AVInputFormat ff_mpegts_demuxer = {
     .name           = "mpegts",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-TS (MPEG-2 Transport Stream)"),
@@ -2586,6 +2586,7 @@ AVInputFormat ff_mpegts_demuxer = {
     .flags          = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
     .priv_class     = &mpegts_class,
 };
+
 AVInputFormat ff_mpegtsraw_demuxer = {
     .name           = "mpegtsraw",
     .long_name      = NULL_IF_CONFIG_SMALL("raw MPEG-TS (MPEG-2 Transport Stream)"),
@@ -2597,4 +2598,3 @@ AVInputFormat ff_mpegtsraw_demuxer = {
     .flags          = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
     .priv_class     = &mpegtsraw_class,
 };
-#endif

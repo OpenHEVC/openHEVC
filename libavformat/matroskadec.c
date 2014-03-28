@@ -44,6 +44,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lzo.h"
+#include "libavutil/intmath.h"
 
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
@@ -56,17 +57,6 @@
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "rmsipr.h"
-
-const uint8_t ff_log2_tab[256]={
-        0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
-        6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-        6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
-};
 
 typedef enum {
     EBML_NONE,
@@ -1560,12 +1550,6 @@ static int matroska_aac_profile(char *codec_id)
 
 static int matroska_aac_sri(int samplerate)
 {
-    /* XXX: make sure to update the copies in the different encoders if you change
-     * this table */
-    const int avpriv_mpeg4audio_sample_rates[16] = {
-        96000, 88200, 64000, 48000, 44100, 32000,
-        24000, 22050, 16000, 12000, 11025, 8000, 7350
-    };
     int sri;
 
     for (sri = 0; sri < FF_ARRAY_ELEMS(avpriv_mpeg4audio_sample_rates); sri++)
@@ -2999,7 +2983,6 @@ static int matroska_read_close(AVFormatContext *s)
     return 0;
 }
 
-#if 0
 AVInputFormat ff_matroska_demuxer = {
     .name           = "matroska,webm",
     .long_name      = NULL_IF_CONFIG_SMALL("Matroska / WebM"),
@@ -3010,4 +2993,3 @@ AVInputFormat ff_matroska_demuxer = {
     .read_close     = matroska_read_close,
     .read_seek      = matroska_read_seek,
 };
-#endif
