@@ -4,6 +4,20 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 message("DEBUG: CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
+if(WIN32)
+add_definitions(
+    -Dsnprintf=avpriv_snprintf
+    -Dvsnprintf=avpriv_vsnprintf
+    -Dinline=__inline
+    -Drestrict=__restrict
+)
+endif()
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    #architecture = x64
+    add_definitions(-D__SSE4_1__=1 -D__SSSE3__=1 -D__SSE2__=1 -D__is_x64__=1)
+else()
+    #architecture = x86
+endif()
 
 # Configure build type (Release when no one is selected)
 if(NOT CMAKE_BUILD_TYPE)
@@ -19,6 +33,7 @@ find_program(YASM_EXECUTABLE yasm)
 #define asm sources
 set(YASM_NAMES
     libavutil/x86/cpuid.asm
+    libavutil/x86/emms.asm
     libavcodec/x86/dct32.asm
     libavcodec/x86/deinterlace.asm
     libavcodec/x86/dsputil.asm
@@ -64,7 +79,12 @@ foreach(_asm_file ${YASM_NAMES})
         ARGS ${YASM_ARGS} -o ${YASM_OBJ} ${YASM_SRC}
         DEPENDS ${YASM_SRC}
     )
-    set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        #architecture = x64
+        set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
+    else()
+        #architecture = x86
+    endif()
 endforeach()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
@@ -151,6 +171,8 @@ set(libfilenames
     libavcodec/x86/fpel_mmx.c
     libavcodec/x86/rnd_mmx.c
     libavcodec/x86/h264_qpel.c
+    libavformat/snprintf.c
+    libavformat/strtod.c
     libavcodec/x86/hevcdsp_init.c
     libavcodec/x86/hevcpred_init.c
     libavcodec/x86/hevc_idct_sse4.c
@@ -210,8 +232,11 @@ set(libfilenames
     libavcodec/videodsp.c
 )
 
-option(ENABLE_STATIC "enabled static library instead of shared" OFF)
-
+if(WIN32)
+    option(ENABLE_STATIC "enabled static library instead of shared" ON)
+else()
+    option(ENABLE_STATIC "enabled static library instead of shared" OFF)
+endif()
 if(ENABLE_STATIC)
     add_library (LibOpenHevcWrapper STATIC ${libfilenames} ${YASM_OBJECTS})
 else()

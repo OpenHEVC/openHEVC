@@ -197,5 +197,5 @@ int i = 0;
         break;
     }
     if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
-    if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
+    //if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 }

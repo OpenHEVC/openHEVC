@@ -695,6 +695,8 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
     if (EXTERNAL_SSE4(cpu_flags))
         dsputil_init_sse4(c, avctx, cpu_flags);
 
+#if !defined(WIN32)
     if (CONFIG_ENCODERS)
         ff_dsputilenc_init_mmx(c, avctx);
+#endif
 }

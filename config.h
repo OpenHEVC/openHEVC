@@ -8,7 +8,11 @@
 #define AVCONV_DATADIR "/usr/local/share/ffmpeg"
 #define CC_IDENT "gcc 4.6 (Ubuntu/Linaro 4.6.4-1ubuntu1~12.04)"
 #define av_restrict
+#if defined(WIN32)
+#define EXTERN_ASM 
+#else
 #define EXTERN_ASM _
+#endif
 #define BUILDSUF ""
 #define SLIBSUF ".dylib"
 #ifdef __APPLE_CC__
@@ -131,6 +135,16 @@
 #define HAVE_AVX2_INLINE 1
 #define HAVE_FMA3_INLINE 0
 #define HAVE_FMA4_INLINE 1
+#if defined(WIN32)
+#define HAVE_MMX_INLINE 0
+#define HAVE_MMXEXT_INLINE 0
+#define HAVE_SSE_INLINE 0
+#define HAVE_SSE2_INLINE 0
+#define HAVE_SSE3_INLINE 0
+#define HAVE_SSE4_INLINE 0
+#define HAVE_SSE42_INLINE 0
+#define HAVE_SSSE3_INLINE 0
+#else
 #define HAVE_MMX_INLINE 1
 #define HAVE_MMXEXT_INLINE 1
 #define HAVE_SSE_INLINE 1
@@ -139,6 +153,7 @@
 #define HAVE_SSE4_INLINE 1
 #define HAVE_SSE42_INLINE 1
 #define HAVE_SSSE3_INLINE 1
+#endif
 #define HAVE_XOP_INLINE 0
 #define HAVE_CPUNOP_INLINE 0
 #define HAVE_I686_INLINE 0
@@ -149,20 +164,24 @@
 #define HAVE_MIPS32R2_INLINE 0
 #define HAVE_MIPSDSPR1_INLINE 0
 #define HAVE_MIPSDSPR2_INLINE 0
+#if defined(WIN32)
+#define HAVE_INLINE_ASM 0
+#else
 #define HAVE_INLINE_ASM 1
+#endif
 #define HAVE_SYMVER 0
 #define HAVE_YASM 1
 #define HAVE_BIGENDIAN 0
 #define HAVE_FAST_UNALIGNED 1
 #define HAVE_INCOMPATIBLE_LIBAV_ABI 0
 #define HAVE_INCOMPATIBLE_FORK_ABI 0
-#ifdef __MINGW32__
+#if defined(WIN32)
 #define HAVE_PTHREADS 0
 #define HAVE_W32THREADS 1
 #define HAVE_OS2THREADS 0
-#define HAVE_ATOMICS_GCC 1
+#define HAVE_ATOMICS_GCC 0
 #define HAVE_ATOMICS_SUNCC 0
-#define HAVE_ATOMICS_WIN32 0
+#define HAVE_ATOMICS_WIN32 1
 #else
 #define HAVE_PTHREADS 1
 #define HAVE_W32THREADS 0
@@ -226,7 +245,11 @@
 #define HAVE_DIRECT_H 0
 #define HAVE_DLFCN_H 1
 #define HAVE_DLOPEN 1
+#if defined(WIN32)
+#define HAVE_DOS_PATHS 1
+#else
 #define HAVE_DOS_PATHS 0
+#endif
 #define HAVE_DXVA_H 0
 #define HAVE_EBP_AVAILABLE 1
 #define HAVE_EBX_AVAILABLE 1
@@ -234,7 +257,11 @@
 #define HAVE_FAST_64BIT 1
 #define HAVE_FAST_CLZ 1
 #define HAVE_FAST_CMOV 1
+#if defined(WIN32)
+#define HAVE_FCNTL 0
+#else
 #define HAVE_FCNTL 1
+#endif
 #define HAVE_FORK 1
 #define HAVE_GETADDRINFO 1
 #define HAVE_GETHRTIME 0
@@ -249,7 +276,11 @@
 #define HAVE_GETSYSTEMTIMEASFILETIME 0
 #define HAVE_GETRUSAGE 1
 #define HAVE_GETSERVBYPORT 1
+#if defined(WIN32)
+#define HAVE_GETTIMEOFDAY 0
+#else
 #define HAVE_GETTIMEOFDAY 1
+#endif
 #define HAVE_GLOB 0
 #define HAVE_GLXGETPROCADDRESS 0
 #define HAVE_GNU_AS 0
@@ -276,7 +307,11 @@
 #define HAVE_MEMALIGN 0
 #define HAVE_MEMORYBARRIER 0
 #define HAVE_MKSTEMP 1
+#if defined(WIN32)
+#define HAVE_MM_EMPTY 0
+#else
 #define HAVE_MM_EMPTY 1
+#endif
 #define HAVE_MMAP 1
 #define HAVE_MPROTECT 1
 #define HAVE_MSVCRT 0
@@ -293,7 +328,11 @@
 #define HAVE_SNDIO_H 0
 #define HAVE_SOCKLEN_T 1
 #define HAVE_SOUNDCARD_H 0
+#if defined(WIN32)
+#define HAVE_STRERROR_R 0
+#else
 #define HAVE_STRERROR_R 1
+#endif
 #define HAVE_STRPTIME 0
 #define HAVE_STRTOK_R 1
 #define HAVE_STRUCT_ADDRINFO 1
@@ -309,7 +348,11 @@
 #define HAVE_SYMVER_ASM_LABEL 0
 #define HAVE_SYMVER_GNU_ASM 0
 #define HAVE_SYNC_VAL_COMPARE_AND_SWAP 1
+#if defined(WIN32)
+#define HAVE_SYSCONF 0
+#else
 #define HAVE_SYSCONF 1
+#endif
 #define HAVE_SYSCTL 0
 #define HAVE_SYS_MMAN_H 1
 #define HAVE_SYS_PARAM_H 1
@@ -319,11 +362,16 @@
 #define HAVE_SYS_TIME_H 1
 #define HAVE_SYS_VIDEOIO_H 0
 #define HAVE_THREADS 1
+#if defined(WIN32)
+#define HAVE_UNISTD_H 0
+#define HAVE_USLEEP 0
+#else
 #define HAVE_UNISTD_H 1
 #define HAVE_USLEEP 1
+#endif
 #define HAVE_VFP_ARGS 0
 #define HAVE_VIRTUALALLOC 0
-#ifdef __MINGW32__
+#if defined(WIN32)
 #define HAVE_WINDOWS_H 1
 #else
 #define HAVE_WINDOWS_H 0
