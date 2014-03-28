@@ -1,20 +1,20 @@
 /*
  * copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -32,6 +32,7 @@
 #    define AV_GCC_VERSION_AT_LEAST(x,y) 0
 #endif
 
+#ifndef av_always_inline
 #if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define av_always_inline __attribute__((always_inline)) inline
 #elif defined(_MSC_VER)
@@ -39,9 +40,20 @@
 #else
 #    define av_always_inline inline
 #endif
+#endif
+
+#ifndef av_extern_inline
+#if defined(__ICL) && __ICL >= 1210 || defined(__GNUC_STDC_INLINE__)
+#    define av_extern_inline extern inline
+#else
+#    define av_extern_inline inline
+#endif
+#endif
 
 #if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define av_noinline __attribute__((noinline))
+#elif defined(_MSC_VER)
+#    define av_noinline __declspec(noinline)
 #else
 #    define av_noinline
 #endif
@@ -64,7 +76,7 @@
 #    define av_cold
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(4,1)
+#if AV_GCC_VERSION_AT_LEAST(4,1) && !defined(__llvm__)
 #    define av_flatten __attribute__((flatten))
 #else
 #    define av_flatten
@@ -72,9 +84,35 @@
 
 #if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define attribute_deprecated __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#    define attribute_deprecated __declspec(deprecated)
 #else
 #    define attribute_deprecated
 #endif
+
+/**
+ * Disable warnings about deprecated features
+ * This is useful for sections of code kept for backward compatibility and
+ * scheduled for removal.
+ */
+#ifndef AV_NOWARN_DEPRECATED
+#if AV_GCC_VERSION_AT_LEAST(4,6)
+#    define AV_NOWARN_DEPRECATED(code) \
+        _Pragma("GCC diagnostic push") \
+        _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") \
+        code \
+        _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+#    define AV_NOWARN_DEPRECATED(code) \
+        __pragma(warning(push)) \
+        __pragma(warning(disable : 4996)) \
+        code; \
+        __pragma(warning(pop))
+#else
+#    define AV_NOWARN_DEPRECATED(code) code
+#endif
+#endif
+
 
 #if defined(__GNUC__)
 #    define av_unused __attribute__((unused))
@@ -99,7 +137,7 @@
 #   define av_alias
 #endif
 
-#if defined(__GNUC__) && !defined(__ICC)
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
 #    define av_uninit(x) x=x
 #else
 #    define av_uninit(x) x

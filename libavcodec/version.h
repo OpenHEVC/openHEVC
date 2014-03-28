@@ -1,19 +1,19 @@
 /*
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -26,9 +26,11 @@
  * Libavcodec version macros.
  */
 
-#define LIBAVCODEC_VERSION_MAJOR 54
-#define LIBAVCODEC_VERSION_MINOR 41
-#define LIBAVCODEC_VERSION_MICRO  0
+#include "libavutil/version.h"
+
+#define LIBAVCODEC_VERSION_MAJOR 55
+#define LIBAVCODEC_VERSION_MINOR  52
+#define LIBAVCODEC_VERSION_MICRO 102
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -47,58 +49,97 @@
  */
 
 #ifndef FF_API_REQUEST_CHANNELS
-#define FF_API_REQUEST_CHANNELS (LIBAVCODEC_VERSION_MAJOR < 55)
+#define FF_API_REQUEST_CHANNELS (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_OLD_DECODE_AUDIO
-#define FF_API_OLD_DECODE_AUDIO (LIBAVCODEC_VERSION_MAJOR < 55)
+#define FF_API_OLD_DECODE_AUDIO (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_OLD_ENCODE_AUDIO
-#define FF_API_OLD_ENCODE_AUDIO (LIBAVCODEC_VERSION_MAJOR < 55)
+#define FF_API_OLD_ENCODE_AUDIO (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_OLD_ENCODE_VIDEO
-#define FF_API_OLD_ENCODE_VIDEO (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_MPV_GLOBAL_OPTS
-#define FF_API_MPV_GLOBAL_OPTS  (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_COLOR_TABLE_ID
-#define FF_API_COLOR_TABLE_ID   (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_INTER_THRESHOLD
-#define FF_API_INTER_THRESHOLD  (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_SUB_ID
-#define FF_API_SUB_ID           (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_DSP_MASK
-#define FF_API_DSP_MASK         (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_FIND_BEST_PIX_FMT
-#define FF_API_FIND_BEST_PIX_FMT (LIBAVCODEC_VERSION_MAJOR < 55)
+#define FF_API_OLD_ENCODE_VIDEO (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_CODEC_ID
-#define FF_API_CODEC_ID          (LIBAVCODEC_VERSION_MAJOR < 55)
+#define FF_API_CODEC_ID          (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
-#ifndef FF_API_VDA_ASYNC
-#define FF_API_VDA_ASYNC         (LIBAVCODEC_VERSION_MAJOR < 55)
+#ifndef FF_API_AUDIO_CONVERT
+#define FF_API_AUDIO_CONVERT     (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_AVCODEC_RESAMPLE
-#define FF_API_AVCODEC_RESAMPLE  (LIBAVCODEC_VERSION_MAJOR < 55)
+#define FF_API_AVCODEC_RESAMPLE  FF_API_AUDIO_CONVERT
 #endif
-#ifndef FF_API_LIBMPEG2
-#define FF_API_LIBMPEG2          (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_MMI
-#define FF_API_MMI               (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_SNOW
-#define FF_API_SNOW              (LIBAVCODEC_VERSION_MAJOR < 55)
+#ifndef FF_API_DEINTERLACE
+#define FF_API_DEINTERLACE       (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_DESTRUCT_PACKET
 #define FF_API_DESTRUCT_PACKET   (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 #ifndef FF_API_GET_BUFFER
 #define FF_API_GET_BUFFER        (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_MISSING_SAMPLE
+#define FF_API_MISSING_SAMPLE    (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_LOWRES
+#define FF_API_LOWRES            (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_CAP_VDPAU
+#define FF_API_CAP_VDPAU         (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_BUFS_VDPAU
+#define FF_API_BUFS_VDPAU        (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_VOXWARE
+#define FF_API_VOXWARE           (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_SET_DIMENSIONS
+#define FF_API_SET_DIMENSIONS    (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_DEBUG_MV
+#define FF_API_DEBUG_MV          (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_AC_VLC
+#define FF_API_AC_VLC            (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_OLD_MSMPEG4
+#define FF_API_OLD_MSMPEG4       (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_ASPECT_EXTENDED
+#define FF_API_ASPECT_EXTENDED   (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_THREAD_OPAQUE
+#define FF_API_THREAD_OPAQUE     (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_CODEC_PKT
+#define FF_API_CODEC_PKT         (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_ARCH_ALPHA
+#define FF_API_ARCH_ALPHA        (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_XVMC
+#define FF_API_XVMC              (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_ERROR_RATE
+#define FF_API_ERROR_RATE        (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_QSCALE_TYPE
+#define FF_API_QSCALE_TYPE       (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_MB_TYPE
+#define FF_API_MB_TYPE           (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_MAX_BFRAMES
+#define FF_API_MAX_BFRAMES       (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_FAST_MALLOC
+#define FF_API_FAST_MALLOC       (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_NEG_LINESIZES
+#define FF_API_NEG_LINESIZES     (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_EMU_EDGE
+#define FF_API_EMU_EDGE          (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 
 #endif /* AVCODEC_VERSION_H */

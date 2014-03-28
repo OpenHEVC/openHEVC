@@ -1,18 +1,18 @@
 /*
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -30,6 +30,36 @@
 #include "log.h"
 #include "random_seed.h"
 #include "parseutils.h"
+
+#ifdef TEST
+
+#define av_get_random_seed av_get_random_seed_deterministic
+static uint32_t av_get_random_seed_deterministic(void);
+
+#define time(t) 1331972053
+
+#endif
+
+int av_parse_ratio(AVRational *q, const char *str, int max,
+                   int log_offset, void *log_ctx)
+{
+    char c;
+    int ret;
+
+    if (sscanf(str, "%d:%d%c", &q->num, &q->den, &c) != 2) {
+        double d;
+        ret = av_expr_parse_and_eval(&d, str, NULL, NULL,
+                                     NULL, NULL, NULL, NULL,
+                                     NULL, log_offset, log_ctx);
+        if (ret < 0)
+            return ret;
+        *q = av_d2q(d, max);
+    } else {
+        av_reduce(&q->num, &q->den, q->num, q->den, max);
+    }
+
+    return 0;
+}
 
 typedef struct {
     const char *abbr;
@@ -79,6 +109,18 @@ static const VideoSizeAbbr video_size_abbrs[] = {
     { "hd480",     852, 480 },
     { "hd720",    1280, 720 },
     { "hd1080",   1920,1080 },
+    { "2k",       2048,1080 }, /* Digital Cinema System Specification */
+    { "2kflat",   1998,1080 },
+    { "2kscope",  2048, 858 },
+    { "4k",       4096,2160 }, /* Digital Cinema System Specification */
+    { "4kflat",   3996,2160 },
+    { "4kscope",  4096,1716 },
+    { "nhd",       640,360  },
+    { "hqvga",     240,160  },
+    { "wqvga",     400,240  },
+    { "fwqvga",    432,240  },
+    { "hvga",      480,320  },
+    { "qhd",       960,540  },
 };
 
 static const VideoRateAbbr video_rate_abbrs[]= {
@@ -96,7 +138,7 @@ int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
     int n = FF_ARRAY_ELEMS(video_size_abbrs);
-    char *p;
+    const char *p;
     int width = 0, height = 0;
 
     for (i = 0; i < n; i++) {
@@ -107,10 +149,14 @@ int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
         }
     }
     if (i == n) {
-        width = strtol(str, &p, 10);
+        width = strtol(str, (void*)&p, 10);
         if (*p)
             p++;
-        height = strtol(p, &p, 10);
+        height = strtol(p, (void*)&p, 10);
+
+        /* trailing extraneous data detected, like in 123x345foobar */
+        if (*p)
+            return AVERROR(EINVAL);
     }
     if (width <= 0 || height <= 0)
         return AVERROR(EINVAL);
@@ -123,7 +169,6 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
 {
     int i, ret;
     int n = FF_ARRAY_ELEMS(video_rate_abbrs);
-    double res;
 
     /* First, we check our abbreviation table */
     for (i = 0; i < n; ++i)
@@ -133,10 +178,8 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
         }
 
     /* Then, we try to parse it as fraction */
-    if ((ret = av_expr_parse_and_eval(&res, arg, NULL, NULL, NULL, NULL, NULL, NULL,
-                                      NULL, 0, NULL)) < 0)
+    if ((ret = av_parse_ratio_quiet(rate, arg, 1001000)) < 0)
         return ret;
-    *rate = av_d2q(res, 1001000);
     if (rate->num <= 0 || rate->den <= 0)
         return AVERROR(EINVAL);
     return 0;
@@ -147,7 +190,7 @@ typedef struct {
     uint8_t     rgb_color[3];    ///< RGB values for the color
 } ColorEntry;
 
-static ColorEntry color_table[] = {
+static const ColorEntry color_table[] = {
     { "AliceBlue",            { 0xF0, 0xF8, 0xFF } },
     { "AntiqueWhite",         { 0xFA, 0xEB, 0xD7 } },
     { "Aqua",                 { 0x00, 0xFF, 0xFF } },
@@ -215,8 +258,8 @@ static ColorEntry color_table[] = {
     { "LightCoral",           { 0xF0, 0x80, 0x80 } },
     { "LightCyan",            { 0xE0, 0xFF, 0xFF } },
     { "LightGoldenRodYellow", { 0xFA, 0xFA, 0xD2 } },
-    { "LightGrey",            { 0xD3, 0xD3, 0xD3 } },
     { "LightGreen",           { 0x90, 0xEE, 0x90 } },
+    { "LightGrey",            { 0xD3, 0xD3, 0xD3 } },
     { "LightPink",            { 0xFF, 0xB6, 0xC1 } },
     { "LightSalmon",          { 0xFF, 0xA0, 0x7A } },
     { "LightSeaGreen",        { 0x20, 0xB2, 0xAA } },
@@ -319,11 +362,11 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
     rgba_color[3] = 255;
 
     if (!av_strcasecmp(color_string2, "random") || !av_strcasecmp(color_string2, "bikeshed")) {
- //       int rgba = av_get_random_seed();
- //       rgba_color[0] = rgba >> 24;
- //       rgba_color[1] = rgba >> 16;
- //       rgba_color[2] = rgba >> 8;
- //       rgba_color[3] = rgba;
+        int rgba = av_get_random_seed();
+        rgba_color[0] = rgba >> 24;
+        rgba_color[1] = rgba >> 16;
+        rgba_color[2] = rgba >> 8;
+        rgba_color[3] = rgba;
     } else if (hex_offset ||
                strspn(color_string2, "0123456789ABCDEFabcdef") == len) {
         char *tail;
@@ -359,7 +402,11 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
         if (!strncmp(alpha_string, "0x", 2)) {
             alpha = strtoul(alpha_string, &tail, 16);
         } else {
-            alpha = 255 * strtod(alpha_string, &tail);
+            double norm_alpha = strtod(alpha_string, &tail);
+            if (norm_alpha < 0.0 || norm_alpha > 1.0)
+                alpha = 256;
+            else
+                alpha = 255 * norm_alpha;
         }
 
         if (tail == alpha_string || *tail || alpha > 255 || alpha < 0) {
@@ -371,6 +418,20 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
     }
 
     return 0;
+}
+
+const char *av_get_known_color_name(int color_idx, const uint8_t **rgbp)
+{
+    const ColorEntry *color;
+
+    if ((unsigned)color_idx >= FF_ARRAY_ELEMS(color_table))
+        return NULL;
+
+    color = &color_table[color_idx];
+    if (rgbp)
+        *rgbp = color->rgb_color;
+
+    return color->name;
 }
 
 /* get a positive number between n_min and n_max, for a maximum length
@@ -399,19 +460,26 @@ static int date_get_num(const char **pp,
     return val;
 }
 
-static const char *small_strptime(const char *p, const char *fmt, struct tm *dt)
+char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
 {
     int c, val;
 
     for(;;) {
+        /* consume time string until a non whitespace char is found */
+        while (av_isspace(*fmt)) {
+            while (av_isspace(*p))
+                p++;
+            fmt++;
+        }
         c = *fmt++;
         if (c == '\0') {
-            return p;
+            return (char *)p;
         } else if (c == '%') {
             c = *fmt++;
             switch(c) {
             case 'H':
-                val = date_get_num(&p, 0, 23, 2);
+            case 'J':
+                val = date_get_num(&p, 0, c == 'H' ? 23 : INT_MAX, 2);
                 if (val == -1)
                     return NULL;
                 dt->tm_hour = val;
@@ -471,7 +539,7 @@ time_t av_timegm(struct tm *tm)
         y--;
     }
 
-    t = 86400 *
+    t = 86400LL *
         (d + (153 * m - 457) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 719469);
 
     t += 3600 * tm->tm_hour + 60 * tm->tm_min + tm->tm_sec;
@@ -481,9 +549,11 @@ time_t av_timegm(struct tm *tm)
 
 int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 {
-    const char *p;
+    const char *p, *q;
     int64_t t;
+    time_t now;
     struct tm dt = { 0 };
+    int today = 0, negative = 0, microseconds = 0;
     int i;
     static const char * const date_fmt[] = {
         "%Y-%m-%d",
@@ -493,58 +563,41 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         "%H:%M:%S",
         "%H%M%S",
     };
-    const char *q;
-    int is_utc, len;
-    char lastch;
-    int negative = 0;
-
-    time_t now = time(0);
-
-    len = strlen(timestr);
-    if (len > 0)
-        lastch = timestr[len - 1];
-    else
-        lastch = '\0';
-    is_utc = (lastch == 'z' || lastch == 'Z');
 
     p = timestr;
     q = NULL;
+    *timeval = INT64_MIN;
     if (!duration) {
-        if (!av_strncasecmp(timestr, "now", len)) {
+        now = time(0);
+
+        if (!av_strcasecmp(timestr, "now")) {
             *timeval = (int64_t) now * 1000000;
             return 0;
         }
 
         /* parse the year-month-day part */
         for (i = 0; i < FF_ARRAY_ELEMS(date_fmt); i++) {
-            q = small_strptime(p, date_fmt[i], &dt);
-            if (q) {
+            q = av_small_strptime(p, date_fmt[i], &dt);
+            if (q)
                 break;
-            }
         }
 
         /* if the year-month-day part is missing, then take the
          * current year-month-day time */
         if (!q) {
-            if (is_utc) {
-                dt = *gmtime(&now);
-            } else {
-                dt = *localtime(&now);
-            }
-            dt.tm_hour = dt.tm_min = dt.tm_sec = 0;
-        } else {
-            p = q;
+            today = 1;
+            q = p;
         }
+        p = q;
 
         if (*p == 'T' || *p == 't' || *p == ' ')
             p++;
 
         /* parse the hour-minute-second part */
         for (i = 0; i < FF_ARRAY_ELEMS(time_fmt); i++) {
-            q = small_strptime(p, time_fmt[i], &dt);
-            if (q) {
+            q = av_small_strptime(p, time_fmt[i], &dt);
+            if (q)
                 break;
-            }
         }
     } else {
         /* parse timestr as a duration */
@@ -553,50 +606,62 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
             ++p;
         }
         /* parse timestr as HH:MM:SS */
-        q = small_strptime(p, time_fmt[0], &dt);
+        q = av_small_strptime(p, "%J:%M:%S", &dt);
         if (!q) {
+            /* parse timestr as MM:SS */
+            q = av_small_strptime(p, "%M:%S", &dt);
+            dt.tm_hour = 0;
+        }
+        if (!q) {
+            char *o;
             /* parse timestr as S+ */
-            dt.tm_sec = strtol(p, (char **)&q, 10);
-            if (q == p) {
-                /* the parsing didn't succeed */
-                *timeval = INT64_MIN;
+            dt.tm_sec = strtol(p, &o, 10);
+            if (o == p) /* the parsing didn't succeed */
                 return AVERROR(EINVAL);
-            }
             dt.tm_min = 0;
             dt.tm_hour = 0;
+            q = o;
         }
     }
 
     /* Now we have all the fields that we can get */
-    if (!q) {
-        *timeval = INT64_MIN;
+    if (!q)
         return AVERROR(EINVAL);
+
+    /* parse the .m... part */
+    if (*q == '.') {
+        int n;
+        q++;
+        for (n = 100000; n >= 1; n /= 10, q++) {
+            if (!av_isdigit(*q))
+                break;
+            microseconds += n * (*q - '0');
+        }
+        while (av_isdigit(*q))
+            q++;
     }
 
     if (duration) {
         t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
     } else {
-        dt.tm_isdst = -1;       /* unknown */
-        if (is_utc) {
-            t = av_timegm(&dt);
-        } else {
-            t = mktime(&dt);
+        int is_utc = *q == 'Z' || *q == 'z';
+        q += is_utc;
+        if (today) { /* fill in today's date */
+            struct tm dt2 = is_utc ? *gmtime(&now) : *localtime(&now);
+            dt2.tm_hour = dt.tm_hour;
+            dt2.tm_min  = dt.tm_min;
+            dt2.tm_sec  = dt.tm_sec;
+            dt = dt2;
         }
+        t = is_utc ? av_timegm(&dt) : mktime(&dt);
     }
+
+    /* Check that we are at the end of the string */
+    if (*q)
+        return AVERROR(EINVAL);
 
     t *= 1000000;
-
-    /* parse the .m... part */
-    if (*q == '.') {
-        int val, n;
-        q++;
-        for (val = 0, n = 100000; n >= 1; n /= 10, q++) {
-            if (!av_isdigit(*q))
-                break;
-            val += n * (*q - '0');
-        }
-        t += val;
-    }
+    t += microseconds;
     *timeval = negative ? -t : t;
     return 0;
 }
@@ -641,6 +706,13 @@ int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info
 }
 
 #ifdef TEST
+
+static uint32_t randomv = MKTAG('L','A','V','U');
+
+static uint32_t av_get_random_seed_deterministic(void)
+{
+    return randomv = randomv * 1664525 + 1013904223;
+}
 
 int main(void)
 {
@@ -689,6 +761,8 @@ int main(void)
         int i;
         uint8_t rgba[4];
         static const char *const color_names[] = {
+            "bikeshed",
+            "RaNdOm",
             "foo",
             "red",
             "Red ",
@@ -731,6 +805,84 @@ int main(void)
             if (av_parse_color(rgba, color_names[i], -1, NULL) >= 0)
                 printf("%s -> R(%d) G(%d) B(%d) A(%d)\n",
                        color_names[i], rgba[0], rgba[1], rgba[2], rgba[3]);
+            else
+                printf("%s -> error\n", color_names[i]);
+        }
+    }
+
+    printf("\nTesting av_small_strptime()\n");
+    {
+        int i;
+        struct tm tm = { 0 };
+        struct fmt_timespec_entry {
+            const char *fmt, *timespec;
+        } fmt_timespec_entries[] = {
+            { "%Y-%m-%d",                    "2012-12-21" },
+            { "%Y - %m - %d",                "2012-12-21" },
+            { "%Y-%m-%d %H:%M:%S",           "2012-12-21 20:12:21" },
+            { "  %Y - %m - %d %H : %M : %S", "   2012 - 12 -  21   20 : 12 : 21" },
+        };
+
+        av_log_set_level(AV_LOG_DEBUG);
+        for (i = 0;  i < FF_ARRAY_ELEMS(fmt_timespec_entries); i++) {
+            char *p;
+            struct fmt_timespec_entry *e = &fmt_timespec_entries[i];
+            printf("fmt:'%s' spec:'%s' -> ", e->fmt, e->timespec);
+            p = av_small_strptime(e->timespec, e->fmt, &tm);
+            if (p) {
+                printf("%04d-%02d-%2d %02d:%02d:%02d\n",
+                       1900+tm.tm_year, tm.tm_mon+1, tm.tm_mday,
+                       tm.tm_hour, tm.tm_min, tm.tm_sec);
+            } else {
+                printf("error\n");
+            }
+        }
+    }
+
+    printf("\nTesting av_parse_time()\n");
+    {
+        int i;
+        int64_t tv;
+        time_t tvi;
+        struct tm *tm;
+        static char tzstr[] = "TZ=CET-1";
+        static const char * const time_string[] = {
+            "now",
+            "12:35:46",
+            "2000-12-20 0:02:47.5z",
+            "2000-12-20T010247.6",
+        };
+        static const char * const duration_string[] = {
+            "2:34:56.79",
+            "-1:23:45.67",
+            "42.1729",
+            "-1729.42",
+            "12:34",
+        };
+
+        av_log_set_level(AV_LOG_DEBUG);
+        putenv(tzstr);
+        printf("(now is 2012-03-17 09:14:13 +0100, local time is UTC+1)\n");
+        for (i = 0;  i < FF_ARRAY_ELEMS(time_string); i++) {
+            printf("%-24s -> ", time_string[i]);
+            if (av_parse_time(&tv, time_string[i], 0)) {
+                printf("error\n");
+            } else {
+                tvi = tv / 1000000;
+                tm = gmtime(&tvi);
+                printf("%14"PRIi64".%06d = %04d-%02d-%02dT%02d:%02d:%02dZ\n",
+                       tv / 1000000, (int)(tv % 1000000),
+                       tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                       tm->tm_hour, tm->tm_min, tm->tm_sec);
+            }
+        }
+        for (i = 0;  i < FF_ARRAY_ELEMS(duration_string); i++) {
+            printf("%-24s -> ", duration_string[i]);
+            if (av_parse_time(&tv, duration_string[i], 1)) {
+                printf("error\n");
+            } else {
+                printf("%+21"PRIi64"\n", tv);
+            }
         }
     }
 

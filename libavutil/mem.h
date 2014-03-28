@@ -1,20 +1,20 @@
 /*
  * copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -30,7 +30,18 @@
 #include <stdint.h>
 
 #include "attributes.h"
+#include "error.h"
 #include "avutil.h"
+
+#ifndef FF_MEMORY_POISON
+#define FF_MEMORY_POISON 0x2a
+#endif
+
+#ifndef MAKE_ACCESSORS
+#define MAKE_ACCESSORS(str, name, type, field) \
+    type av_##name##_get_##field(const str *s) { return s->field; } \
+    void av_##name##_set_##field(str *s, type v) { s->field = v; }
+#endif
 
 /**
  * @addtogroup lavu_mem
@@ -38,7 +49,7 @@
  */
 
 
-#if defined(__ICC) && __ICC < 1200 || defined(__SUNPRO_C)
+#if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
 #elif defined(__TI_COMPILER_VERSION__)
@@ -91,7 +102,7 @@ void *av_malloc(size_t size) av_malloc_attrib av_alloc_size(1);
  */
 av_alloc_size(1, 2) static inline void *av_malloc_array(size_t nmemb, size_t size)
 {
-    if (size <= 0 || nmemb >= INT_MAX / size)
+    if (!size || nmemb >= INT_MAX / size)
         return NULL;
     return av_malloc(nmemb * size);
 }
@@ -115,6 +126,16 @@ av_alloc_size(1, 2) static inline void *av_malloc_array(size_t nmemb, size_t siz
  * @see av_fast_realloc()
  */
 void *av_realloc(void *ptr, size_t size) av_alloc_size(2);
+
+/**
+ * Allocate or reallocate a block of memory.
+ * This function does the same thing as av_realloc, except:
+ * - It takes two arguments and checks the result of the multiplication for
+ *   integer overflow.
+ * - It frees the input block in case of failure, thus avoiding the memory
+ *   leak with the classic "buf = realloc(buf); if (!buf) return -1;".
+ */
+void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
 
 /**
  * Allocate or reallocate a block of memory.
@@ -194,6 +215,18 @@ void av_free(void *ptr);
 void *av_mallocz(size_t size) av_malloc_attrib av_alloc_size(1);
 
 /**
+ * Allocate a block of nmemb * size bytes with alignment suitable for all
+ * memory accesses (including vectors if available on the CPU) and
+ * zero all the bytes of the block.
+ * The allocation will fail if nmemb * size is greater than or equal
+ * to INT_MAX.
+ * @param nmemb
+ * @param size
+ * @return Pointer to the allocated block, NULL if it cannot be allocated.
+ */
+void *av_calloc(size_t nmemb, size_t size) av_malloc_attrib;
+
+/**
  * Allocate a block of size * nmemb bytes with av_mallocz().
  * @param nmemb Number of elements
  * @param size Size of the single element
@@ -204,7 +237,7 @@ void *av_mallocz(size_t size) av_malloc_attrib av_alloc_size(1);
  */
 av_alloc_size(1, 2) static inline void *av_mallocz_array(size_t nmemb, size_t size)
 {
-    if (size <= 0 || nmemb >= INT_MAX / size)
+    if (!size || nmemb >= INT_MAX / size)
         return NULL;
     return av_mallocz(nmemb * size);
 }
@@ -218,6 +251,14 @@ av_alloc_size(1, 2) static inline void *av_mallocz_array(size_t nmemb, size_t si
 char *av_strdup(const char *s) av_malloc_attrib;
 
 /**
+ * Duplicate the buffer p.
+ * @param p buffer to be duplicated
+ * @return Pointer to a newly allocated buffer containing a
+ * copy of p or NULL if the buffer cannot be allocated.
+ */
+void *av_memdup(const void *p, size_t size);
+
+/**
  * Free a memory block which has been allocated with av_malloc(z)() or
  * av_realloc() and set the pointer pointing to it to NULL.
  * @param ptr Pointer to the pointer to the memory block which should
@@ -227,15 +268,103 @@ char *av_strdup(const char *s) av_malloc_attrib;
 void av_freep(void *ptr);
 
 /**
+ * Add an element to a dynamic array.
+ *
+ * The array to grow is supposed to be an array of pointers to
+ * structures, and the element to add must be a pointer to an already
+ * allocated structure.
+ *
+ * The array is reallocated when its size reaches powers of 2.
+ * Therefore, the amortized cost of adding an element is constant.
+ *
+ * In case of success, the pointer to the array is updated in order to
+ * point to the new grown array, and the number pointed to by nb_ptr
+ * is incremented.
+ * In case of failure, the array is freed, *tab_ptr is set to NULL and
+ * *nb_ptr is set to 0.
+ *
+ * @param tab_ptr pointer to the array to grow
+ * @param nb_ptr  pointer to the number of elements in the array
+ * @param elem    element to add
+ * @see av_dynarray2_add()
+ */
+void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem);
+
+/**
+ * Add an element of size elem_size to a dynamic array.
+ *
+ * The array is reallocated when its number of elements reaches powers of 2.
+ * Therefore, the amortized cost of adding an element is constant.
+ *
+ * In case of success, the pointer to the array is updated in order to
+ * point to the new grown array, and the number pointed to by nb_ptr
+ * is incremented.
+ * In case of failure, the array is freed, *tab_ptr is set to NULL and
+ * *nb_ptr is set to 0.
+ *
+ * @param tab_ptr   pointer to the array to grow
+ * @param nb_ptr    pointer to the number of elements in the array
+ * @param elem_size size in bytes of the elements in the array
+ * @param elem_data pointer to the data of the element to add. If NULL, the space of
+ *                  the new added element is not filled.
+ * @return          pointer to the data of the element to copy in the new allocated space.
+ *                  If NULL, the new allocated space is left uninitialized."
+ * @see av_dynarray_add()
+ */
+void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
+                       const uint8_t *elem_data);
+
+/**
+ * Multiply two size_t values checking for overflow.
+ * @return  0 if success, AVERROR(EINVAL) if overflow.
+ */
+static inline int av_size_mult(size_t a, size_t b, size_t *r)
+{
+    size_t t = a * b;
+    /* Hack inspired from glibc: only try the division if nelem and elsize
+     * are both greater than sqrt(SIZE_MAX). */
+    if ((a | b) >= ((size_t)1 << (sizeof(size_t) * 4)) && a && t / a != b)
+        return AVERROR(EINVAL);
+    *r = t;
+    return 0;
+}
+
+/**
+ * Set the maximum size that may me allocated in one block.
+ */
+void av_max_alloc(size_t max);
+
+/**
  * deliberately overlapping memcpy implementation
  * @param dst destination buffer
- * @param back how many bytes back we start (the initial size of the overlapping window)
+ * @param back how many bytes back we start (the initial size of the overlapping window), must be > 0
  * @param cnt number of bytes to copy, must be >= 0
  *
  * cnt > back is valid, this will copy the bytes we just copied,
  * thus creating a repeating pattern with a period length of back.
  */
 void av_memcpy_backptr(uint8_t *dst, int back, int cnt);
+
+/**
+ * Reallocate the given block if it is not large enough, otherwise do nothing.
+ *
+ * @see av_realloc
+ */
+void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size);
+
+/**
+ * Allocate a buffer, reusing the given one if large enough.
+ *
+ * Contrary to av_fast_realloc the current buffer contents might not be
+ * preserved and on error the old buffer is freed, thus no special
+ * handling to avoid memleaks is necessary.
+ *
+ * @param ptr pointer to pointer to already allocated buffer, overwritten with pointer to new buffer
+ * @param size size of the buffer *ptr points to
+ * @param min_size minimum size of *ptr buffer after returning, *ptr will be NULL and
+ *                 *size 0 if an error occurred.
+ */
+void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
 
 /**
  * @}

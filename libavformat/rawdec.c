@@ -3,20 +3,20 @@
  * Copyright (c) 2001 Fabrice Bellard
  * Copyright (c) 2005 Alex Beregszaszi
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/avassert.h"
 
 #define RAW_PACKET_SIZE 1024
 
@@ -45,12 +46,8 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0) {
         av_free_packet(pkt);
         return ret;
-    } else if (ret < size) {
-        /* initialize end of packet for partial reads to avoid reading
-         * uninitialized data on allowed overreads */
-        memset(pkt->data + ret, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     }
-    pkt->size = ret;
+    av_shrink_packet(pkt, ret);
     return ret;
 }
 
@@ -61,7 +58,7 @@ int ff_raw_audio_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = s->iformat->raw_codec_id;
-    st->need_parsing = AVSTREAM_PARSE_FULL;
+    st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     st->start_time = 0;
     /* the parameters will be extracted from the compressed bitstream */
 
@@ -73,7 +70,6 @@ int ff_raw_video_read_header(AVFormatContext *s)
 {
     AVStream *st;
     FFRawVideoDemuxerContext *s1 = s->priv_data;
-    AVRational framerate;
     int ret = 0;
 
 
@@ -85,18 +81,24 @@ int ff_raw_video_read_header(AVFormatContext *s)
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = s->iformat->raw_codec_id;
-    st->need_parsing = AVSTREAM_PARSE_FULL;
+    st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
-    if ((ret = av_parse_video_rate(&framerate, s1->framerate)) < 0) {
-        av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s1->framerate);
-        goto fail;
-    }
-
-    st->avg_frame_rate = framerate;
-    avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
+    st->codec->time_base = av_inv_q(s1->framerate);
+    avpriv_set_pts_info(st, 64, 1, 1200000);
 
 fail:
     return ret;
+}
+
+static int ff_raw_data_read_header(AVFormatContext *s)
+{
+    AVStream *st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+    st->codec->codec_type = AVMEDIA_TYPE_DATA;
+    st->codec->codec_id = s->iformat->raw_codec_id;
+    st->start_time = 0;
+    return 0;
 }
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
@@ -104,9 +106,19 @@ fail:
 #define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 const AVOption ff_rawvideo_options[] = {
-    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC},
+    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC},
     { NULL },
 };
+
+#if CONFIG_DATA_DEMUXER
+AVInputFormat ff_data_demuxer = {
+    .name           = "data",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw data"),
+    .read_header    = ff_raw_data_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
+    .raw_codec_id   = AV_CODEC_ID_NONE,
+};
+#endif
 
 #if CONFIG_LATM_DEMUXER
 AVInputFormat ff_latm_demuxer = {
@@ -121,7 +133,7 @@ AVInputFormat ff_latm_demuxer = {
 #endif
 
 #if CONFIG_MJPEG_DEMUXER
-FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", NULL, "mjpg,mjpeg", AV_CODEC_ID_MJPEG)
+FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", NULL, "mjpg,mjpeg,mpo", AV_CODEC_ID_MJPEG)
 #endif
 
 #if CONFIG_MLP_DEMUXER

@@ -2,20 +2,20 @@
  * Common code between the AC-3 and E-AC-3 decoders
  * Copyright (c) 2007 Bartlomiej Wolowiec <bartek.wolowiec@gmail.com>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -79,15 +79,29 @@ typedef struct AC3DecodeContext {
     int bit_rate;                           ///< stream bit rate, in bits-per-second
     int sample_rate;                        ///< sample frequency, in Hz
     int num_blocks;                         ///< number of audio blocks
+    int bitstream_id;                       ///< bitstream id                           (bsid)
     int bitstream_mode;                     ///< bitstream mode                         (bsmod)
     int channel_mode;                       ///< channel mode                           (acmod)
-    int channel_layout;                     ///< channel layout
     int lfe_on;                             ///< lfe channel in use
     int channel_map;                        ///< custom channel map
+    int preferred_downmix;                  ///< Preferred 2-channel downmix mode       (dmixmod)
     int center_mix_level;                   ///< Center mix level index
+    int center_mix_level_ltrt;              ///< Center mix level index for Lt/Rt       (ltrtcmixlev)
     int surround_mix_level;                 ///< Surround mix level index
+    int surround_mix_level_ltrt;            ///< Surround mix level index for Lt/Rt     (ltrtsurmixlev)
+    int lfe_mix_level_exists;               ///< indicates if lfemixlevcod is specified (lfemixlevcode)
+    int lfe_mix_level;                      ///< LFE mix level index                    (lfemixlevcod)
     int eac3;                               ///< indicates if current frame is E-AC-3
+    int dolby_surround_mode;                ///< dolby surround mode                    (dsurmod)
+    int dolby_surround_ex_mode;             ///< dolby surround ex mode                 (dsurexmod)
+    int dolby_headphone_mode;               ///< dolby headphone mode                   (dheadphonmod)
 ///@}
+
+    int preferred_stereo_downmix;
+    float ltrt_center_mix_level;
+    float ltrt_surround_mix_level;
+    float loro_center_mix_level;
+    float loro_surround_mix_level;
 
 ///@name Frame syntax parameters
     int snr_offset_strategy;                ///< SNR offset strategy                    (snroffststr)
@@ -203,7 +217,7 @@ typedef struct AC3DecodeContext {
     float *dlyptr[AC3_MAX_CHANNELS];
 
 ///@name Aligned arrays
-    DECLARE_ALIGNED(16, int,   fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];       ///< fixed-point transform coefficients
+    DECLARE_ALIGNED(16, int32_t, fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];     ///< fixed-point transform coefficients
     DECLARE_ALIGNED(32, float, transform_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< transform coefficients
     DECLARE_ALIGNED(32, float, delay)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];             ///< delay - added to the next block
     DECLARE_ALIGNED(32, float, window)[AC3_BLOCK_SIZE];                              ///< window coefficients

@@ -53,8 +53,8 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
     start_x = FFMAX(0, -src_x);
     end_y = FFMIN(block_h, h-src_y);
     end_x = FFMIN(block_w, w-src_x);
-    // av_assert2(start_y < end_y && block_h);
-    // av_assert2(start_x < end_x && block_w);
+    av_assert2(start_y < end_y && block_h);
+    av_assert2(start_x < end_x && block_w);
 
     w    = end_x - start_x;
     src += start_y * src_linesize + start_x * sizeof(pixel);
