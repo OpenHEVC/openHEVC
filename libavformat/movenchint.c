@@ -2,20 +2,20 @@
  * MOV, 3GP, MP4 muxer RTP hinting
  * Copyright (c) 2010 Martin Storsjo
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -43,11 +43,11 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     track->enc->codec_type = AVMEDIA_TYPE_DATA;
     track->enc->codec_tag  = track->tag;
 
-/*    ret = ff_rtp_chain_mux_open(&track->rtp_ctx, s, src_st, NULL,
+    ret = ff_rtp_chain_mux_open(&track->rtp_ctx, s, src_st, NULL,
                                 RTP_MAX_PACKET_SIZE, src_index);
     if (ret < 0)
         goto fail;
-*/
+
     /* Copy the RTP AVStream timebase back to the hint AVStream */
     track->timescale = track->rtp_ctx->streams[0]->time_base.den;
 
@@ -105,10 +105,10 @@ static void sample_queue_push(HintSampleQueue *queue, uint8_t *data, int size,
         return;
     if (!queue->samples || queue->len >= queue->size) {
         HintSample *samples;
-        queue->size += 10;
-        samples = av_realloc(queue->samples, sizeof(HintSample)*queue->size);
+        samples = av_realloc_array(queue->samples, queue->size + 10, sizeof(HintSample));
         if (!samples)
             return;
+        queue->size += 10;
         queue->samples = samples;
     }
     queue->samples[queue->len].data = data;
@@ -422,7 +422,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
         sample_queue_push(&trk->sample_queue, pkt->data, pkt->size, sample);
 
     /* Feed the packet to the RTP muxer */
-//    ff_write_chained(rtp_ctx, 0, pkt, s);
+    ff_write_chained(rtp_ctx, 0, pkt, s);
 
     /* Fetch the output from the RTP muxer, open a new output buffer
      * for next time. */
@@ -466,9 +466,9 @@ void ff_mov_close_hinting(MOVTrack *track)
     if (!rtp_ctx)
         return;
     if (rtp_ctx->pb) {
-//        av_write_trailer(rtp_ctx);
-//        avio_close_dyn_buf(rtp_ctx->pb, &ptr);
-//        av_free(ptr);
+        av_write_trailer(rtp_ctx);
+        avio_close_dyn_buf(rtp_ctx->pb, &ptr);
+        av_free(ptr);
     }
     avformat_free_context(rtp_ctx);
 }

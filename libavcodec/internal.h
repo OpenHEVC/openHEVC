@@ -1,18 +1,18 @@
 /*
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -26,13 +26,12 @@
 
 #include <stdint.h>
 
-#include "libavutil/common.h"
 #include "libavutil/buffer.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
 #include "config.h"
-
 
 #define FF_SANE_NB_CHANNELS 63U
 
@@ -79,13 +78,21 @@ typedef struct AVCodecInternal {
      */
     int allocate_progress;
 
+#if FF_API_OLD_ENCODE_AUDIO
+    /**
+     * Internal sample count used by avcodec_encode_audio() to fabricate pts.
+     * Can be removed along with avcodec_encode_audio().
+     */
+    int64_t sample_count;
+#endif
+
     /**
      * An audio frame with less than required samples has been submitted and
      * padded with silence. Reject all subsequent frames.
      */
     int last_audio_frame;
 
-    AVFrame to_free;
+    AVFrame *to_free;
 
     FramePool *pool;
 
@@ -111,7 +118,6 @@ typedef struct AVCodecInternal {
     int skip_samples;
 
     void *thread_ctx_frame;
-
 } AVCodecInternal;
 
 struct AVCodecDefault {
@@ -123,11 +129,10 @@ struct AVCodecDefault {
  * Return the hardware accelerated codec for codec codec_id and
  * pixel format pix_fmt.
  *
- * @param codec_id the codec to match
- * @param pix_fmt the pixel format to match
+ * @param avctx The codec context containing the codec_id and pixel format.
  * @return the hardware accelerated codec, or NULL if none was found.
  */
-AVHWAccel *ff_find_hwaccel(enum AVCodecID codec_id, enum AVPixelFormat pix_fmt);
+AVHWAccel *ff_find_hwaccel(AVCodecContext *avctx);
 
 /**
  * Return the index into tab at which {a,b} match elements {[0],[1]} of tab.
@@ -136,6 +141,18 @@ AVHWAccel *ff_find_hwaccel(enum AVCodecID codec_id, enum AVPixelFormat pix_fmt);
 int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b);
 
 unsigned int avpriv_toupper4(unsigned int x);
+
+/**
+ * does needed setup of pkt_pts/pos and such for (re)get_buffer();
+ */
+int ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
+
+
+void avpriv_color_frame(AVFrame *frame, const int color[4]);
+
+extern volatile int ff_avcodec_locked;
+int ff_lock_avcodec(AVCodecContext *log_ctx);
+int ff_unlock_avcodec(void);
 
 int avpriv_lock_avformat(void);
 int avpriv_unlock_avformat(void);
@@ -154,6 +171,7 @@ int avpriv_unlock_avformat(void);
  * ensure the output packet data is large enough, whether provided by the user
  * or allocated in this function.
  *
+ * @param avctx   the AVCodecContext of the encoder
  * @param avpkt   the AVPacket
  *                If avpkt->data is already set, avpkt->size is checked
  *                to ensure it is large enough.
@@ -163,6 +181,8 @@ int avpriv_unlock_avformat(void);
  * @param size    the minimum required packet size
  * @return        0 on success, negative error code on failure
  */
+int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
+
 int ff_alloc_packet(AVPacket *avpkt, int size);
 
 /**
@@ -171,6 +191,8 @@ int ff_alloc_packet(AVPacket *avpkt, int size);
 static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
                                                         int64_t samples)
 {
+    if(samples == AV_NOPTS_VALUE)
+        return AV_NOPTS_VALUE;
     return av_rescale_q(samples, (AVRational){ 1, avctx->sample_rate },
                         avctx->time_base);
 }
@@ -188,8 +210,41 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
  */
 int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame);
 
-const uint8_t *avpriv_find_start_code(const uint8_t *restrict p,
+int ff_thread_can_start_frame(AVCodecContext *avctx);
+
+int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
+
+/**
+ * Call avcodec_open2 recursively by decrementing counter, unlocking mutex,
+ * calling the function and then restoring again. Assumes the mutex is
+ * already locked
+ */
+int ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
+
+/**
+ * Call avcodec_close recursively, counterpart to avcodec_open2_recursive.
+ */
+int ff_codec_close_recursive(AVCodecContext *avctx);
+
+/**
+ * Finalize buf into extradata and set its size appropriately.
+ */
+int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf);
+
+const uint8_t *avpriv_find_start_code(const uint8_t *p,
                                       const uint8_t *end,
-                                      uint32_t *restrict state);
+                                      uint32_t *state);
+
+/**
+ * Check that the provided frame dimensions are valid and set them on the codec
+ * context.
+ */
+int ff_set_dimensions(AVCodecContext *s, int width, int height);
+
+/**
+ * Add or update AV_FRAME_DATA_MATRIXENCODING side data.
+ */
+int ff_side_data_update_matrix_encoding(AVFrame *frame,
+                                        enum AVMatrixEncoding matrix_encoding);
 
 #endif /* AVCODEC_INTERNAL_H */

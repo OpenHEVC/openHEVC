@@ -1,18 +1,18 @@
 /*
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -122,7 +122,17 @@ int av_buffer_is_writable(const AVBufferRef *buf)
     if (buf->buffer->flags & AV_BUFFER_FLAG_READONLY)
         return 0;
 
-    return avpriv_atomic_int_add_and_fetch(&buf->buffer->refcount, 0) == 1;
+    return avpriv_atomic_int_get(&buf->buffer->refcount) == 1;
+}
+
+void *av_buffer_get_opaque(const AVBufferRef *buf)
+{
+    return buf->buffer->opaque;
+}
+
+int av_buffer_get_ref_count(const AVBufferRef *buf)
+{
+    return buf->buffer->refcount;
 }
 
 int av_buffer_make_writable(AVBufferRef **pbuf)
@@ -239,14 +249,14 @@ void av_buffer_pool_uninit(AVBufferPool **ppool)
 /* remove the whole buffer list from the pool and return it */
 static BufferPoolEntry *get_pool(AVBufferPool *pool)
 {
-    BufferPoolEntry *cur = NULL, *last = NULL;
+    BufferPoolEntry *cur = *(void * volatile *)&pool->pool, *last = NULL;
 
-    do {
-        FFSWAP(BufferPoolEntry*, cur, last);
+    while (cur != last) {
+        last = cur;
         cur = avpriv_atomic_ptr_cas((void * volatile *)&pool->pool, last, NULL);
         if (!cur)
             return NULL;
-    } while (cur != last);
+    }
 
     return cur;
 }
@@ -263,7 +273,7 @@ static void add_to_pool(BufferPoolEntry *buf)
     while (end->next)
         end = end->next;
 
-    while ((cur = avpriv_atomic_ptr_cas((void * volatile *)&pool->pool, NULL, buf))) {
+    while (avpriv_atomic_ptr_cas((void * volatile *)&pool->pool, NULL, buf)) {
         /* pool is not empty, retrieve it and append it to our list */
         cur = get_pool(pool);
         end->next = cur;
@@ -276,6 +286,10 @@ static void pool_release_buffer(void *opaque, uint8_t *data)
 {
     BufferPoolEntry *buf = opaque;
     AVBufferPool *pool = buf->pool;
+
+    if(CONFIG_MEMORY_POISONING)
+        memset(buf->data, FF_MEMORY_POISON, pool->size);
+
     add_to_pool(buf);
     if (!avpriv_atomic_int_add_and_fetch(&pool->refcount, -1))
         buffer_pool_free(pool);
@@ -307,6 +321,7 @@ static AVBufferRef *pool_alloc_buffer(AVBufferPool *pool)
     ret->buffer->free   = pool_release_buffer;
 
     avpriv_atomic_int_add_and_fetch(&pool->refcount, 1);
+    avpriv_atomic_int_add_and_fetch(&pool->nb_allocated, 1);
 
     return ret;
 }
@@ -318,6 +333,12 @@ AVBufferRef *av_buffer_pool_get(AVBufferPool *pool)
 
     /* check whether the pool is empty */
     buf = get_pool(pool);
+    if (!buf && pool->refcount <= pool->nb_allocated) {
+        av_log(NULL, AV_LOG_DEBUG, "Pool race dectected, spining to avoid overallocation and eventual OOM\n");
+        while (!buf && avpriv_atomic_int_get(&pool->refcount) <= avpriv_atomic_int_get(&pool->nb_allocated))
+            buf = get_pool(pool);
+    }
+
     if (!buf)
         return pool_alloc_buffer(pool);
 

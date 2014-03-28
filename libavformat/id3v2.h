@@ -2,20 +2,20 @@
  * ID3v2 header parser
  * Copyright (c) 2003 Fabrice Bellard
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -73,6 +73,12 @@ typedef struct ID3v2ExtraMetaAPIC {
     enum AVCodecID id;
 } ID3v2ExtraMetaAPIC;
 
+typedef struct ID3v2ExtraMetaPRIV {
+    uint8_t *owner;
+    uint8_t *data;
+    uint32_t datasize;
+} ID3v2ExtraMetaPRIV;
+
 /**
  * Detect ID3v2 Header.
  * @param buf   must be ID3v2_HEADER_SIZE byte long
@@ -89,7 +95,21 @@ int ff_id3v2_match(const uint8_t *buf, const char *magic);
 int ff_id3v2_tag_len(const uint8_t *buf);
 
 /**
- * Read an ID3v2 tag, including supported extra metadata
+ * Read an ID3v2 tag into specified dictionary and retrieve supported extra metadata.
+ *
+ * Chapters are not currently read by this variant.
+ *
+ * @param metadata Parsed metadata is stored here
+ * @param extra_meta If not NULL, extra metadata is parsed into a list of
+ * ID3v2ExtraMeta structs and *extra_meta points to the head of the list
+ */
+void ff_id3v2_read_dict(AVIOContext *pb, AVDictionary **metadata, const char *magic, ID3v2ExtraMeta **extra_meta);
+
+/**
+ * Read an ID3v2 tag, including supported extra metadata and chapters.
+ *
+ * Data is read from and stored to AVFormatContext.
+ *
  * @param extra_meta If not NULL, extra metadata is parsed into a list of
  * ID3v2ExtraMeta structs and *extra_meta points to the head of the list
  */
@@ -114,7 +134,7 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
 /**
  * Finalize an opened ID3v2 tag.
  */
-void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb);
+void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb, int padding_bytes);
 
 /**
  * Write an ID3v2 tag containing all global metadata from s.

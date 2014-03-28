@@ -2,20 +2,20 @@
  * rational numbers
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -46,6 +46,17 @@ typedef struct AVRational{
 } AVRational;
 
 /**
+ * Create a rational.
+ * Useful for compilers that do not support compound literals.
+ * @note  The return value is not reduced.
+ */
+static inline AVRational av_make_q(int num, int den)
+{
+    AVRational r = { num, den };
+    return r;
+}
+
+/**
  * Compare two rationals.
  * @param a first rational
  * @param b second rational
@@ -55,7 +66,7 @@ typedef struct AVRational{
 static inline int av_cmp_q(AVRational a, AVRational b){
     const int64_t tmp= a.num * (int64_t)b.den - b.num * (int64_t)a.den;
 
-    if(tmp) return ((tmp ^ a.den ^ b.den)>>63)|1;
+    if(tmp) return (int)((tmp ^ a.den ^ b.den)>>63)|1;
     else if(b.den && a.den) return 0;
     else if(a.num && b.num) return (a.num>>31) - (b.num>>31);
     else                    return INT_MIN;

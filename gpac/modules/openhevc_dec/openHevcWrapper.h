@@ -82,7 +82,7 @@ void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val);
-
+void libOpenHevcSetViewLayers(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle);
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);

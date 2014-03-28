@@ -3,20 +3,20 @@
  * (c)1997-99 by H. Dietz and R. Fisher
  * Converted to C and improved by Fabrice Bellard.
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -26,6 +26,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
+#include "libavutil/cpu_internal.h"
 
 #if HAVE_YASM
 
@@ -130,11 +131,27 @@ int ff_get_cpu_flags_x86(void)
         if ((ecx & 0x18000000) == 0x18000000) {
             /* Check for OS support */
             xgetbv(0, eax, edx);
-            if ((eax & 0x6) == 0x6)
+            if ((eax & 0x6) == 0x6) {
                 rval |= AV_CPU_FLAG_AVX;
+                if (ecx & 0x00001000)
+                    rval |= AV_CPU_FLAG_FMA3;
+            }
         }
 #endif /* HAVE_AVX */
 #endif /* HAVE_SSE */
+    }
+    if (max_std_level >= 7) {
+        cpuid(7, eax, ebx, ecx, edx);
+#if HAVE_AVX2
+        if (ebx & 0x00000020)
+            rval |= AV_CPU_FLAG_AVX2;
+#endif /* HAVE_AVX2 */
+        /* BMI1/2 don't need OS support */
+        if (ebx & 0x00000008) {
+            rval |= AV_CPU_FLAG_BMI1;
+            if (ebx & 0x00000100)
+                rval |= AV_CPU_FLAG_BMI2;
+        }
     }
 
     cpuid(0x80000000, max_ext_level, ebx, ecx, edx);

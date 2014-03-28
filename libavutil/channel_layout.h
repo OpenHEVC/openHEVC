@@ -2,20 +2,20 @@
  * Copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2008 Peter Ross
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -36,6 +36,14 @@
 
 /**
  * @defgroup channel_masks Audio channel masks
+ *
+ * A channel layout is a 64-bits integer with a bit set for every channel.
+ * The number of bits set must be equal to the number of channels.
+ * The value 0 means that the channel layout is not known.
+ * @note this data structure is not powerful enough to handle channels
+ * combinations that have the same channel multiple times, such as
+ * dual-mono.
+ *
  * @{
  */
 #define AV_CH_FRONT_LEFT             0x00000001
@@ -106,6 +114,10 @@ enum AVMatrixEncoding {
     AV_MATRIX_ENCODING_NONE,
     AV_MATRIX_ENCODING_DOLBY,
     AV_MATRIX_ENCODING_DPLII,
+    AV_MATRIX_ENCODING_DPLIIX,
+    AV_MATRIX_ENCODING_DPLIIZ,
+    AV_MATRIX_ENCODING_DOLBYEX,
+    AV_MATRIX_ENCODING_DOLBYHEADPHONE,
     AV_MATRIX_ENCODING_NB
 };
 
@@ -128,7 +140,12 @@ enum AVMatrixEncoding {
  * - a channel layout mask, in hexadecimal starting with "0x" (see the
  *   AV_CH_* macros).
  *
- * Example: "stereo+FC" = "2+FC" = "2c+1c" = "0x7"
+ * @warning Starting from the next major bump the trailing character
+ * 'c' to specify a number of channels will be required, while a
+ * channel layout mask could also be specified as a decimal number
+ * (if and only if not followed by "c").
+ *
+ * Example: "stereo+FC" = "2c+FC" = "2c+1c" = "0x7"
  */
 uint64_t av_get_channel_layout(const char *name);
 
@@ -141,6 +158,12 @@ uint64_t av_get_channel_layout(const char *name);
  */
 void av_get_channel_layout_string(char *buf, int buf_size, int nb_channels, uint64_t channel_layout);
 
+struct AVBPrint;
+/**
+ * Append a description of a channel layout to a bprint buffer.
+ */
+void av_bprint_channel_layout(struct AVBPrint *bp, int nb_channels, uint64_t channel_layout);
+
 /**
  * Return the number of channels in the channel layout.
  */
@@ -149,7 +172,7 @@ int av_get_channel_layout_nb_channels(uint64_t channel_layout);
 /**
  * Return default channel layout for a given number of channels.
  */
-uint64_t av_get_default_channel_layout(int nb_channels);
+int64_t av_get_default_channel_layout(int nb_channels);
 
 /**
  * Get the index of a channel in channel_layout.
@@ -174,6 +197,26 @@ uint64_t av_channel_layout_extract_channel(uint64_t channel_layout, int index);
  * @return channel name on success, NULL on error.
  */
 const char *av_get_channel_name(uint64_t channel);
+
+/**
+ * Get the description of a given channel.
+ *
+ * @param channel  a channel layout with a single channel
+ * @return  channel description on success, NULL on error
+ */
+const char *av_get_channel_description(uint64_t channel);
+
+/**
+ * Get the value and name of a standard channel layout.
+ *
+ * @param[in]  index   index in an internal list, starting at 0
+ * @param[out] layout  channel layout mask
+ * @param[out] name    name of the layout
+ * @return  0  if the layout exists,
+ *          <0 if index is beyond the limits
+ */
+int av_get_standard_channel_layout(unsigned index, uint64_t *layout,
+                                   const char **name);
 
 /**
  * @}

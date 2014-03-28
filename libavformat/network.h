@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2007 The Libav Project
+ * Copyright (c) 2007 The FFmpeg Project
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -27,6 +27,7 @@
 #include "config.h"
 #include "libavutil/error.h"
 #include "os_support.h"
+#include "avio.h"
 #include "url.h"
 
 #if HAVE_UNISTD_H
@@ -61,7 +62,7 @@ int ff_neterrno(void);
 #include <netdb.h>
 
 #define ff_neterrno() AVERROR(errno)
-#endif
+#endif /* HAVE_WINSOCK2_H */
 
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -82,6 +83,18 @@ void ff_tls_deinit(void);
 
 int ff_network_wait_fd(int fd, int write);
 
+/**
+ * This works similarly to ff_network_wait_fd, but waits up to 'timeout' microseconds
+ * Uses ff_network_wait_fd in a loop
+ *
+ * @fd Socket descriptor
+ * @write Set 1 to wait for socket able to be read, 0 to be written
+ * @timeout Timeout interval, in microseconds. Actual precision is 100000 mcs, due to ff_network_wait_fd usage
+ * @param int_cb Interrupt callback, is checked before each ff_network_wait_fd call
+ * @return 0 if data can be read/written, AVERROR(ETIMEDOUT) if timeout expired, or negative error code
+ */
+int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb);
+
 int ff_inet_aton (const char * str, struct in_addr * add);
 
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
@@ -91,12 +104,12 @@ struct sockaddr_storage {
     uint8_t ss_family;
 #else
     uint16_t ss_family;
-#endif
+#endif /* HAVE_STRUCT_SOCKADDR_SA_LEN */
     char ss_pad1[6];
     int64_t ss_align;
     char ss_pad2[112];
 };
-#endif
+#endif /* !HAVE_STRUCT_SOCKADDR_STORAGE */
 
 #if !HAVE_STRUCT_ADDRINFO
 struct addrinfo {
@@ -109,7 +122,7 @@ struct addrinfo {
     char *ai_canonname;
     struct addrinfo *ai_next;
 };
-#endif
+#endif /* !HAVE_STRUCT_ADDRINFO */
 
 /* getaddrinfo constants */
 #ifndef EAI_AGAIN
@@ -182,12 +195,13 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
 #define getaddrinfo ff_getaddrinfo
 #define freeaddrinfo ff_freeaddrinfo
 #define getnameinfo ff_getnameinfo
-#endif
+#endif /* !HAVE_GETADDRINFO */
+
 #if !HAVE_GETADDRINFO || HAVE_WINSOCK2_H
 const char *ff_gai_strerror(int ecode);
 #undef gai_strerror
 #define gai_strerror ff_gai_strerror
-#endif
+#endif /* !HAVE_GETADDRINFO || HAVE_WINSOCK2_H */
 
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
@@ -238,12 +252,17 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
  * @param timeout  Polling timeout in milliseconds.
  * @param h        URLContext providing interrupt check
  *                 callback and logging context.
+ * @param will_try_next Whether the caller will try to connect to another
+ *                 address for the same host name, affecting the form of
+ *                 logged errors.
  * @return         0 on success, AVERROR on failure.
  */
 int ff_listen_connect(int fd, const struct sockaddr *addr,
                       socklen_t addrlen, int timeout,
-                      URLContext *h);
+                      URLContext *h, int will_try_next);
 
 int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
+
+int ff_socket(int domain, int type, int protocol);
 
 #endif /* AVFORMAT_NETWORK_H */
