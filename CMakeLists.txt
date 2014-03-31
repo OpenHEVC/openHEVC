@@ -4,19 +4,20 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 message("DEBUG: CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
+
 if(WIN32)
-add_definitions(
-    -Dsnprintf=avpriv_snprintf
-    -Dvsnprintf=avpriv_vsnprintf
-    -Dinline=__inline
-    -Drestrict=__restrict
-)
-endif()
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    #architecture = x64
-    add_definitions(-D__SSE4_1__=1 -D__SSSE3__=1 -D__SSE2__=1 -D__is_x64__=1)
-else()
-    #architecture = x86
+    add_definitions(
+        -Dsnprintf=avpriv_snprintf
+        -Dvsnprintf=avpriv_vsnprintf
+        -Dinline=__inline
+        -Drestrict=__restrict
+    )
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        #architecture = x64
+        add_definitions(-D__SSE4_1__=1 -D__SSSE3__=1 -D__SSE2__=1 -D__is_x64__=1)
+    else()
+        #architecture = x86
+    endif()
 endif()
 
 # Configure build type (Release when no one is selected)
