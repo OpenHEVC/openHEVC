@@ -1302,6 +1302,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (!HAVE_THREADS)
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
+#if !defined(WIN32)
     if (CONFIG_FRAME_THREAD_ENCODER) {
         ff_unlock_avcodec(); //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
         ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
@@ -1309,7 +1310,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         if (ret < 0)
             goto free_and_end;
     }
-
+#endif
     if (HAVE_THREADS
         && !(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
         ret = ff_thread_init(avctx);
@@ -1872,9 +1873,11 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     *got_packet_ptr = 0;
 
+#if !defined(WIN32)
     if(CONFIG_FRAME_THREAD_ENCODER &&
        avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))
         return ff_thread_video_encode_frame(avctx, avpkt, frame, got_packet_ptr);
+#endif
 
     if ((avctx->flags&CODEC_FLAG_PASS1) && avctx->stats_out)
         avctx->stats_out[0] = '\0';
@@ -2596,12 +2599,14 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     if (avcodec_is_open(avctx)) {
         FramePool *pool = avctx->internal->pool;
         int i;
+#if !defined(WIN32)
         if (CONFIG_FRAME_THREAD_ENCODER &&
             avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
             ff_unlock_avcodec();
             ff_frame_thread_encoder_free(avctx);
             ff_lock_avcodec(avctx);
         }
+#endif
         if (HAVE_THREADS && (avctx->internal->thread_ctx || avctx->internal->thread_ctx_frame))
             ff_thread_free(avctx);
         if (avctx->codec && avctx->codec->close)
