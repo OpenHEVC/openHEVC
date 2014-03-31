@@ -171,8 +171,6 @@ set(libfilenames
     libavcodec/x86/fpel_mmx.c
     libavcodec/x86/rnd_mmx.c
     libavcodec/x86/h264_qpel.c
-    libavformat/snprintf.c
-    libavformat/strtod.c
     libavcodec/x86/hevcdsp_init.c
     libavcodec/x86/hevcpred_init.c
     libavcodec/x86/hevc_idct_sse4.c
@@ -231,6 +229,12 @@ set(libfilenames
     libavcodec/utils.c
     libavcodec/videodsp.c
 )
+if(WIN32)
+list(APPEND libfilenames
+    compat/strtod.c
+    compat/msvcrt/snprintf.c
+)
+endif()
 
 if(WIN32)
     option(ENABLE_STATIC "enabled static library instead of shared" ON)
