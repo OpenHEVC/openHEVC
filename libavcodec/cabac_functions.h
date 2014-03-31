@@ -2,20 +2,20 @@
  * H.26L/H.264/AVC/JVT/14496-10/... encoder/decoder
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -31,10 +31,9 @@
 
 #include "cabac.h"
 #include "config.h"
-#ifndef X86_32
+
 #if ARCH_X86
 #   include "x86/cabac.h"
-#endif
 #endif
 
 extern uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
@@ -43,26 +42,6 @@ static uint8_t * const ff_h264_lps_range = ff_h264_cabac_tables + H264_LPS_RANGE
 static uint8_t * const ff_h264_mlps_state = ff_h264_cabac_tables + H264_MLPS_STATE_OFFSET;
 static uint8_t * const ff_h264_last_coeff_flag_offset_8x8 = ff_h264_cabac_tables + H264_LAST_COEFF_FLAG_OFFSET_8x8_OFFSET;
 
-/**
- * Skip @p n bytes and reset the decoder.
- * @return the address of the first skipped byte or NULL if there's less than @p n bytes left
- */
-static av_unused const uint8_t* skip_bytes(CABACContext *c, int n) {
-    const uint8_t *ptr = c->bytestream;
-
-    if (c->low & 0x1)
-        ptr--;
-#if CABAC_BITS == 16
-    if (c->low & 0x1FF)
-        ptr--;
-#endif
-    if ((int) (c->bytestream_end - ptr) < n)
-        return NULL;
-    ff_init_cabac_decoder(c, ptr + n, c->bytestream_end - ptr);
-
-    return ptr;
-}
-
 static void refill(CABACContext *c){
 #if CABAC_BITS == 16
         c->low+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
@@ -70,7 +49,9 @@ static void refill(CABACContext *c){
         c->low+= c->bytestream[0]<<1;
 #endif
     c->low -= CABAC_MASK;
+#if !UNCHECKED_BITSTREAM_READER
     if (c->bytestream < c->bytestream_end)
+#endif
         c->bytestream += CABAC_BITS / 8;
 }
 
@@ -98,7 +79,9 @@ static void refill2(CABACContext *c){
 #endif
 
     c->low += x<<i;
+#if !UNCHECKED_BITSTREAM_READER
     if (c->bytestream < c->bytestream_end)
+#endif
         c->bytestream += CABAC_BITS/8;
 }
 
@@ -122,8 +105,6 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
         refill2(c);
-//    printf( "codIRange := %d codIOffset := %d binVal := %d\n",
-//            c->range, c->low>>17, bit  );
     return bit;
 }
 #endif
@@ -135,6 +116,7 @@ static int av_noinline av_unused get_cabac_noinline(CABACContext *c, uint8_t * c
 static int av_unused get_cabac(CABACContext *c, uint8_t * const state){
     return get_cabac_inline(c,state);
 }
+
 #ifndef get_cabac_bypass
 static int av_unused get_cabac_bypass(CABACContext *c){
     int range;
@@ -182,6 +164,26 @@ static int av_unused get_cabac_terminate(CABACContext *c){
     }else{
         return c->bytestream - c->bytestream_start;
     }
+}
+
+/**
+ * Skip @p n bytes and reset the decoder.
+ * @return the address of the first skipped byte or NULL if there's less than @p n bytes left
+ */
+static av_unused const uint8_t* skip_bytes(CABACContext *c, int n) {
+    const uint8_t *ptr = c->bytestream;
+
+    if (c->low & 0x1)
+        ptr--;
+#if CABAC_BITS == 16
+    if (c->low & 0x1FF)
+        ptr--;
+#endif
+    if ((int) (c->bytestream_end - ptr) < n)
+        return NULL;
+    ff_init_cabac_decoder(c, ptr + n, c->bytestream_end - ptr - n);
+
+    return ptr;
 }
 
 #endif /* AVCODEC_CABAC_FUNCTIONS_H */

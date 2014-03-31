@@ -1,19 +1,19 @@
 /*
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -78,15 +78,26 @@ static av_always_inline void ffio_wfourcc(AVIOContext *pb, const uint8_t *s)
  * @param s The read-only AVIOContext to rewind
  * @param buf The probe buffer containing the first buf_size bytes of the file
  * @param buf_size The size of buf
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size);
+int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char **buf, int buf_size);
 
 uint64_t ffio_read_varlen(AVIOContext *bc);
 
 /** @warning must be called before any I/O */
 int ffio_set_buf_size(AVIOContext *s, int buf_size);
+
+/**
+ * Ensures that the requested seekback buffer size will be available
+ *
+ * Will ensure that when reading sequentially up to buf_size, seeking
+ * within the current pos and pos+buf_size is possible.
+ * Once the stream position moves outside this window this gurantee is lost.
+ */
+int ffio_ensure_seekback(AVIOContext *s, int buf_size);
+
+int ffio_limit(AVIOContext *s, int size);
 
 void ffio_init_checksum(AVIOContext *s,
                         unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
@@ -114,7 +125,7 @@ int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
  *
  * @param s Used to return the pointer to the created AVIOContext.
  * In case of failure the pointed to value is set to NULL.
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffio_fdopen(AVIOContext **s, URLContext *h);

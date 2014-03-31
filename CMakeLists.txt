@@ -4,6 +4,20 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 message("DEBUG: CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
+if(WIN32)
+add_definitions(
+    -Dsnprintf=avpriv_snprintf
+    -Dvsnprintf=avpriv_vsnprintf
+    -Dinline=__inline
+    -Drestrict=__restrict
+)
+endif()
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    #architecture = x64
+    add_definitions(-D__SSE4_1__=1 -D__SSSE3__=1 -D__SSE2__=1 -D__is_x64__=1)
+else()
+    #architecture = x86
+endif()
 
 # Configure build type (Release when no one is selected)
 if(NOT CMAKE_BUILD_TYPE)
@@ -18,9 +32,20 @@ find_program(YASM_EXECUTABLE yasm)
 
 #define asm sources
 set(YASM_NAMES
+    libavutil/x86/cpuid.asm
+    libavutil/x86/emms.asm
+    libavcodec/x86/dct32.asm
+    libavcodec/x86/deinterlace.asm
+    libavcodec/x86/dsputil.asm
+    libavcodec/x86/fft.asm
+    libavcodec/x86/fpel.asm
+    libavcodec/x86/h264_qpel_8bit.asm
+    libavcodec/x86/h264_qpel_10bit.asm
     libavcodec/x86/hevc_mc.asm
     libavcodec/x86/hevc_deblock.asm
-    libavutil/x86/cpuid.asm
+    libavcodec/x86/hpeldsp.asm
+    libavcodec/x86/mpeg4qpel.asm
+    libavcodec/x86/qpel.asm
     libavcodec/x86/videodsp.asm
 )
 
@@ -54,7 +79,12 @@ foreach(_asm_file ${YASM_NAMES})
         ARGS ${YASM_ARGS} -o ${YASM_OBJ} ${YASM_SRC}
         DEPENDS ${YASM_SRC}
     )
-    set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        #architecture = x64
+        set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
+    else()
+        #architecture = x86
+    endif()
 endforeach()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
@@ -73,19 +103,25 @@ find_package(SDL)
 find_package(SDL2)
 
 set(libfilenames
-    libavutil/audioconvert.c
     libavutil/avstring.c
     libavutil/atomic.c
     libavutil/base64.c
+    libavutil/bprint.c
     libavutil/buffer.c
+    libavutil/channel_layout.c
     libavutil/cpu.c
+    libavutil/crc.c
+    libavutil/des.c
     libavutil/dict.c
+    libavutil/error.c
     libavutil/eval.c
+    libavutil/file_open.c
     libavutil/frame.c
     libavutil/imgutils.c
+    libavutil/intmath.c
     libavutil/log.c
+    libavutil/log2_tab.c
     libavutil/mathematics.c
-    libavutil/crc.c
     libavutil/md5.c
     libavutil/mem.c
     libavutil/opt.c
@@ -93,18 +129,21 @@ set(libfilenames
     libavutil/pixdesc.c
     libavutil/rational.c
     libavutil/random_seed.c
+    libavutil/rc4.c
     libavutil/samplefmt.c
+    libavutil/sha.c
     libavutil/time.c
+    libavutil/timecode.c
+    libavutil/utils.c
     libavutil/x86/cpu.c
     gpac/modules/openhevc_dec/openHevcWrapper.c
     libavformat/allformats.c
-    libavformat/avc.c
     libavformat/avio.c
     libavformat/aviobuf.c
-    libavformat/concat.c
     libavformat/cutils.c
     libavformat/file.c
     libavformat/format.c
+    libavformat/id3v1.c
     libavformat/id3v2.c
     libavformat/isom.c
     libavformat/hevcdec.c
@@ -112,15 +151,26 @@ set(libfilenames
     libavformat/matroskadec.c
     libavformat/metadata.c
     libavformat/mov.c
-    libavformat/movenc.c
-    libavformat/movenchint.c
+    libavformat/mov_chan.c
     libavformat/mpegts.c
+    libavformat/mux.c
     libavformat/options.c
     libavformat/os_support.c
     libavformat/rawdec.c
+    libavformat/riffdec.c
+    libavformat/riff.c
+    libavformat/rmsipr.c
     libavformat/utils.c
-    libavformat/url.c
-    libavformat/urldecode.c
+    libavcodec/x86/constants.c
+    libavcodec/x86/dct_init.c
+    libavcodec/x86/dsputil_init.c
+    libavcodec/x86/dsputil_mmx.c
+    libavcodec/x86/dsputil_x86.c
+    libavcodec/x86/fdct.c
+    libavcodec/x86/fft_init.c
+    libavcodec/x86/fpel_mmx.c
+    libavcodec/x86/rnd_mmx.c
+    libavcodec/x86/h264_qpel.c
     libavcodec/x86/hevcdsp_init.c
     libavcodec/x86/hevcpred_init.c
     libavcodec/x86/hevc_idct_sse4.c
@@ -128,12 +178,27 @@ set(libfilenames
     libavcodec/x86/hevc_mc_sse.c
     libavcodec/x86/hevc_sao_sse.c
     libavcodec/x86/hevc_intra_pred_sse.c
+    libavcodec/x86/hpeldsp_init.c
+    libavcodec/x86/hpeldsp_mmx.c
+    libavcodec/x86/idct_mmx_xvid.c
+    libavcodec/x86/idct_sse2_xvid.c
+    libavcodec/x86/simple_idct.c
     libavcodec/x86/videodsp_init.c
+    libavcodec/ac3tab.c
     libavcodec/allcodecs.c
+    libavcodec/avfft.c
     libavcodec/avpacket.c
     libavcodec/avpicture.c
+    libavcodec/bitstream.c
+    libavcodec/bitstream_filter.c
     libavcodec/cabac.c
+    libavcodec/codec_desc.c
+    libavcodec/dct.c
+    libavcodec/dct32_float.c
+    libavcodec/dct32_template.c
     libavcodec/dsputil.c
+    libavcodec/faanidct.c
+    libavcodec/fft_template.c
     libavcodec/golomb.c
     libavcodec/hevc_cabac.c
     libavcodec/hevc_mvs.c
@@ -145,19 +210,37 @@ set(libfilenames
     libavcodec/hevc.c
     libavcodec/hevcdsp.c
     libavcodec/hevcpred.c
+    libavcodec/hpeldsp.c
+    libavcodec/jrevdct.c
+    libavcodec/mathtables.c
+    libavcodec/mdct_template.c
+    libavcodec/mpegaudiodata.c
+    libavcodec/mpeg4audio.c
     libavcodec/imgconvert.c
     libavcodec/options.c
     libavcodec/parser.c
     libavcodec/pthread_slice.c
     libavcodec/pthread_frame.c
     libavcodec/pthread.c
+    libavcodec/raw.c
+    libavcodec/rawdec.c
+    libavcodec/rdft.c
     libavcodec/simple_idct.c
     libavcodec/utils.c
     libavcodec/videodsp.c
 )
+if(WIN32)
+list(APPEND libfilenames
+    compat/strtod.c
+    compat/msvcrt/snprintf.c
+)
+endif()
 
-option(ENABLE_STATIC "enabled static library instead of shared" OFF)
-
+if(WIN32)
+    option(ENABLE_STATIC "enabled static library instead of shared" ON)
+else()
+    option(ENABLE_STATIC "enabled static library instead of shared" OFF)
+endif()
 if(ENABLE_STATIC)
     add_library (LibOpenHevcWrapper STATIC ${libfilenames} ${YASM_OBJECTS})
 else()

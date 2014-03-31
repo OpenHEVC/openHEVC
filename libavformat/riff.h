@@ -2,20 +2,20 @@
  * RIFF common functions and data
  * copyright (c) 2000 Fabrice Bellard
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -34,7 +34,6 @@
 #include "metadata.h"
 
 extern const AVMetadataConv ff_riff_info_conv[];
-extern const char ff_riff_tags[][5];
 
 int64_t ff_start_tag(AVIOContext *pb, const char *tag);
 void ff_end_tag(AVIOContext *pb, int64_t start);
@@ -44,14 +43,14 @@ void ff_end_tag(AVIOContext *pb, int64_t start);
  * bits_per_encoded_sample fields. Does not read extradata.
  * @return codec tag
  */
-int ff_get_bmp_header(AVIOContext *pb, AVStream *st);
+int ff_get_bmp_header(AVIOContext *pb, AVStream *st, unsigned *esize);
 
-void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf);
+void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf, int ignore_extradata);
 int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc);
 enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps);
 int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size);
 
-extern const AVCodecTag ff_codec_bmp_tags[];
+extern const AVCodecTag ff_codec_bmp_tags[]; // exposed through avformat_get_riff_video_tags()
 extern const AVCodecTag ff_codec_wav_tags[];
 
 void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
@@ -92,10 +91,9 @@ static av_always_inline int ff_guidcmp(const void *g1, const void *g2)
     return memcmp(g1, g2, sizeof(ff_asf_guid));
 }
 
-static av_always_inline int ff_get_guid(AVIOContext *s, ff_asf_guid *g)
-{
-    return avio_read(s, *g, sizeof(*g));
-}
+int ff_get_guid(AVIOContext *s, ff_asf_guid *g);
+void ff_put_guid(AVIOContext *s, const ff_asf_guid *g);
+const ff_asf_guid *get_codec_guid(enum AVCodecID id, const AVCodecGuid *av_guid);
 
 enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid);
 

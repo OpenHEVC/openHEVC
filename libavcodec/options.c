@@ -2,20 +2,20 @@
  * Copyright (c) 2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -67,25 +67,43 @@ static const AVClass *codec_child_class_next(const AVClass *prev)
     return NULL;
 }
 
+static AVClassCategory get_category(void *ptr)
+{
+    AVCodecContext* avctx = ptr;
+    if(avctx->codec && avctx->codec->decode) return AV_CLASS_CATEGORY_DECODER;
+    else                                     return AV_CLASS_CATEGORY_ENCODER;
+}
+
 static const AVClass av_codec_context_class = {
     .class_name              = "AVCodecContext",
     .item_name               = context_to_name,
-    .option                  = options,
+    .option                  = avcodec_options,
     .version                 = LIBAVUTIL_VERSION_INT,
     .log_level_offset_offset = offsetof(AVCodecContext, log_level_offset),
     .child_next              = codec_child_next,
     .child_class_next        = codec_child_class_next,
+    .category                = AV_CLASS_CATEGORY_ENCODER,
+    .get_category            = get_category,
 };
 
 int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
 {
+    int flags=0;
     memset(s, 0, sizeof(AVCodecContext));
 
     s->av_class = &av_codec_context_class;
 
     s->codec_type = codec ? codec->type : AVMEDIA_TYPE_UNKNOWN;
-    s->codec      = codec;
-    av_opt_set_defaults(s);
+    if (codec)
+        s->codec_id = codec->id;
+
+    if(s->codec_type == AVMEDIA_TYPE_AUDIO)
+        flags= AV_OPT_FLAG_AUDIO_PARAM;
+    else if(s->codec_type == AVMEDIA_TYPE_VIDEO)
+        flags= AV_OPT_FLAG_VIDEO_PARAM;
+    else if(s->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        flags= AV_OPT_FLAG_SUBTITLE_PARAM;
+    av_opt_set_defaults2(s, flags, flags);
 
     s->time_base           = (AVRational){0,1};
     s->get_buffer2         = avcodec_default_get_buffer2;
@@ -95,6 +113,7 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     s->sample_aspect_ratio = (AVRational){0,1};
     s->pix_fmt             = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
+    s->timecode_frame_start = -1;
 
     s->reordered_opaque    = AV_NOPTS_VALUE;
     if(codec && codec->priv_data_size){
@@ -143,6 +162,10 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
                src, dest);
         return AVERROR(EINVAL);
     }
+
+    av_opt_free(dest);
+    av_free(dest->priv_data);
+
     memcpy(dest, src, sizeof(*dest));
 
     /* set values specific to opened codecs back to their default state */
@@ -150,7 +173,6 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->codec           = NULL;
     dest->slice_offset    = NULL;
     dest->hwaccel         = NULL;
-    dest->thread_opaque   = NULL;
     dest->internal        = NULL;
 
     /* reallocate values that should be allocated separately */
@@ -179,6 +201,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     alloc_and_copy_or_fail(intra_matrix, 64 * sizeof(int16_t), 0);
     alloc_and_copy_or_fail(inter_matrix, 64 * sizeof(int16_t), 0);
     alloc_and_copy_or_fail(rc_override,  src->rc_override_count * sizeof(*src->rc_override), 0);
+    alloc_and_copy_or_fail(subtitle_header, src->subtitle_header_size, 1);
 #undef alloc_and_copy_or_fail
 
     return 0;
@@ -195,4 +218,56 @@ fail:
 const AVClass *avcodec_get_class(void)
 {
     return &av_codec_context_class;
+}
+
+#define FOFFSET(x) offsetof(AVFrame,x)
+
+static const AVOption frame_options[]={
+{"best_effort_timestamp", "", FOFFSET(best_effort_timestamp), AV_OPT_TYPE_INT64, {.i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, 0},
+{"pkt_pos", "", FOFFSET(pkt_pos), AV_OPT_TYPE_INT64, {.i64 = -1 }, INT64_MIN, INT64_MAX, 0},
+{"pkt_size", "", FOFFSET(pkt_size), AV_OPT_TYPE_INT64, {.i64 = -1 }, INT64_MIN, INT64_MAX, 0},
+{"sample_aspect_ratio", "", FOFFSET(sample_aspect_ratio), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, 0, INT_MAX, 0},
+{"width", "", FOFFSET(width), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"height", "", FOFFSET(height), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"format", "", FOFFSET(format), AV_OPT_TYPE_INT, {.i64 = -1 }, 0, INT_MAX, 0},
+{"channel_layout", "", FOFFSET(channel_layout), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, 0},
+{"sample_rate", "", FOFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{NULL},
+};
+
+static const AVClass av_frame_class = {
+    .class_name              = "AVFrame",
+    .item_name               = NULL,
+    .option                  = frame_options,
+    .version                 = LIBAVUTIL_VERSION_INT,
+};
+
+const AVClass *avcodec_get_frame_class(void)
+{
+    return &av_frame_class;
+}
+
+#define SROFFSET(x) offsetof(AVSubtitleRect,x)
+
+static const AVOption subtitle_rect_options[]={
+{"x", "", SROFFSET(x), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"y", "", SROFFSET(y), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"w", "", SROFFSET(w), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"h", "", SROFFSET(h), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"type", "", SROFFSET(type), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"flags", "", SROFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, 0, 1, 0, "flags"},
+{"forced", "", SROFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, 0, 1, 0},
+{NULL},
+};
+
+static const AVClass av_subtitle_rect_class = {
+    .class_name             = "AVSubtitleRect",
+    .item_name              = NULL,
+    .option                 = subtitle_rect_options,
+    .version                = LIBAVUTIL_VERSION_INT,
+};
+
+const AVClass *avcodec_get_subtitle_rect_class(void)
+{
+    return &av_subtitle_rect_class;
 }
