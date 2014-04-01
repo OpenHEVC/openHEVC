@@ -114,6 +114,10 @@ openhevc_files := \
     libavcodec/simple_idct.c \
     libavcodec/utils.c \
     libavcodec/videodsp.c \
+    libavcodec/arm/hevcdsp_init_arm.c \
+    libavcodec/arm/hevcdsp_deblock_neon.S \
+    libavcodec/arm/hevcdsp_idct_neon.S \
+    libavcodec/arm/hevcdsp_qpel_neon.S \
     main_hm/getopt.c \
     main_hm/main.c
 
