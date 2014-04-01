@@ -99,6 +99,7 @@ elseif(APPLE)
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
     set(CMAKE_C_FLAGS "-DX86_32 -DPIC -fPIC -Wl,-Bsymbolic -march=native -fno-tree-vectorize")
 endif()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SDL")
 
 find_package(SDL)
 find_package(SDL2)
@@ -248,7 +249,7 @@ else()
     add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
 endif()
 
-include_directories(. gpac/modules/openhevc_dec/)
+include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
 
 option(ENABLE_EXECUTABLE "Generate the test application" ON)
 
