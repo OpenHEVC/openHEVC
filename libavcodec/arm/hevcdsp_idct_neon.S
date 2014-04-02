@@ -98,7 +98,6 @@ tr16:
 .endm
 
 
-.globl ff_hevc_transform_4x4_add_neon_8
 function ff_hevc_transform_4x4_add_neon_8, export=1
         vpush       {d8-d15}
         vld1.16     {q14, q15}, [r1,:128]  // coeffs
@@ -292,7 +291,6 @@ endfunc
         vst1.8      {\dtmp}, [r0], r2
 .endm
 
-.globl ff_hevc_transform_8x8_add_neon_8
 function ff_hevc_transform_8x8_add_neon_8, export=1
         mov    r0, r0
         mov    r0, r0

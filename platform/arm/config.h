@@ -7,7 +7,7 @@
 #define av_restrict
 #define restrict
 #define EXTERN_PREFIX "_"
-#define EXTERN_ASM _
+#define EXTERN_ASM
 #define BUILDSUF ""
 #define SLIBSUF ".dylib"
 #define HAVE_MMX2 HAVE_MMXEXT

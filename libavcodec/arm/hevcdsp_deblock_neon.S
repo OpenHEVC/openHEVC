@@ -290,7 +290,6 @@ ready_\@:
         vqmovun.s16 d30, q15
 .endm
 
-.globl ff_hevc_v_loop_filter_luma_neon
 function ff_hevc_v_loop_filter_luma_neon, export=1
         hevc_loop_filter_luma_start
         push     {r5-r11}
@@ -321,7 +320,6 @@ function ff_hevc_v_loop_filter_luma_neon, export=1
         bx lr
 endfunc
 
-.globl ff_hevc_h_loop_filter_luma_neon
 function ff_hevc_h_loop_filter_luma_neon, export=1
         hevc_loop_filter_luma_start
         push     {r5-r11}
@@ -350,7 +348,6 @@ bypasswrite:
         bx lr
 endfunc
 
-.globl ff_hevc_v_loop_filter_chroma_neon
 function ff_hevc_v_loop_filter_chroma_neon, export=1
         hevc_loop_filter_chroma_start
         sub      r0, #4
@@ -377,7 +374,6 @@ function ff_hevc_v_loop_filter_chroma_neon, export=1
         bx       lr
 endfunc
 
-.globl ff_hevc_h_loop_filter_chroma_neon
 function ff_hevc_h_loop_filter_chroma_neon, export=1
         hevc_loop_filter_chroma_start
         sub      r0, r0, r1, lsl #1

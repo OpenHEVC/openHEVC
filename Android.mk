@@ -115,9 +115,21 @@ openhevc_files := \
     libavcodec/utils.c \
     libavcodec/videodsp.c \
     libavcodec/arm/hevcdsp_init_arm.c \
+    libavutil/arm/asm.S \
     libavcodec/arm/hevcdsp_deblock_neon.S \
     libavcodec/arm/hevcdsp_idct_neon.S \
     libavcodec/arm/hevcdsp_qpel_neon.S \
+    libavcodec/arm/dsputil_init_arm.c \
+    libavcodec/arm/dsputil_init_armv6.c \
+    libavcodec/arm/dsputil_init_neon.c \
+    libavcodec/arm/dsputil_neon.S \
+    libavcodec/arm/simple_idct_neon.S \
+    libavcodec/arm/simple_idct_arm.S \
+    libavcodec/arm/simple_idct_armv6.S \
+    libavcodec/arm/dsputil_arm.S \
+    libavcodec/arm/dsputil_armv6.S \
+    libavcodec/arm/jrevdct_arm.S \
+    libavcodec/arm/int_neon.S \
     main_hm/getopt.c \
     main_hm/main.c
 
