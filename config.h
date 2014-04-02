@@ -8,11 +8,6 @@
 #define AVCONV_DATADIR "/usr/local/share/ffmpeg"
 #define CC_IDENT "gcc 4.6 (Ubuntu/Linaro 4.6.4-1ubuntu1~12.04)"
 #define av_restrict
-#if defined(WIN32)
-#define EXTERN_ASM 
-#else
-#define EXTERN_ASM _
-#endif
 #define BUILDSUF ""
 #define SLIBSUF ".dylib"
 #ifdef __APPLE_CC__
@@ -36,7 +31,7 @@
 #define HAVE_MMX2 HAVE_MMXEXT
 #define ARCH_AARCH64 0
 #define ARCH_ALPHA 0
-#define ARCH_ARM 0
+#define ARCH_ARM 1
 #define ARCH_AVR32 0
 #define ARCH_AVR32_AP 0
 #define ARCH_AVR32_UC 0
@@ -55,22 +50,35 @@
 #define ARCH_TILEGX 0
 #define ARCH_TILEPRO 0
 #define ARCH_TOMI 0
-#define ARCH_X86 1
-#ifdef X86_32
-#define ARCH_X86_32 1
-#define ARCH_X86_64 0
+#define ARCH_X86 0
+#if ARCH_X86
+    #ifdef X86_32
+        #define ARCH_X86_32 1
+        #define ARCH_X86_64 0
+    #else
+        #define ARCH_X86_32 0
+        #define ARCH_X86_64 1
+    #endif
 #else
-#define ARCH_X86_32 0
-#define ARCH_X86_64 1
+    #define ARCH_X86_32 0
+    #define ARCH_X86_64 0
 #endif
+#if ARCH_ARM
+#define HAVE_ARMV5TE 0
+#define HAVE_ARMV6 0
+#define HAVE_ARMV6T2 0
+#define HAVE_NEON 1
+#else
 #define HAVE_ARMV5TE 0
 #define HAVE_ARMV6 0
 #define HAVE_ARMV6T2 0
 #define HAVE_NEON 0
+#endif
 #define HAVE_VFP 0
 #define HAVE_VFPV3 0
 #define HAVE_AMD3DNOW 0
 #define HAVE_AMD3DNOWEXT 0
+#if ARCH_X86
 #define HAVE_AVX 1
 #define HAVE_AVX2 1
 #define HAVE_FMA3 0
@@ -83,6 +91,20 @@
 #define HAVE_SSE4 1
 #define HAVE_SSE42 1
 #define HAVE_SSSE3 1
+#else
+#define HAVE_AVX 0
+#define HAVE_AVX2 0
+#define HAVE_FMA3 0
+#define HAVE_FMA4 0
+#define HAVE_MMX 0
+#define HAVE_MMXEXT 0
+#define HAVE_SSE 0
+#define HAVE_SSE2 0
+#define HAVE_SSE3 0
+#define HAVE_SSE4 0
+#define HAVE_SSE42 0
+#define HAVE_SSSE3 0
+#endif
 #define HAVE_XOP 0
 #define HAVE_CPUNOP 0
 #define HAVE_I686 0
@@ -101,6 +123,7 @@
 #define HAVE_VFPV3_EXTERNAL 0
 #define HAVE_AMD3DNOW_EXTERNAL 0
 #define HAVE_AMD3DNOWEXT_EXTERNAL 0
+#if ARCH_X86
 #define HAVE_AVX_EXTERNAL 1
 #define HAVE_AVX2_EXTERNAL 1
 #define HAVE_FMA3_EXTERNAL 0
@@ -113,6 +136,20 @@
 #define HAVE_SSE4_EXTERNAL 1
 #define HAVE_SSE42_EXTERNAL 1
 #define HAVE_SSSE3_EXTERNAL 1
+#else
+#define HAVE_AVX_EXTERNAL 0
+#define HAVE_AVX2_EXTERNAL 0
+#define HAVE_FMA3_EXTERNAL 0
+#define HAVE_FMA4_EXTERNAL 0
+#define HAVE_MMX_EXTERNAL 0
+#define HAVE_MMXEXT_EXTERNAL 0
+#define HAVE_SSE_EXTERNAL 0
+#define HAVE_SSE2_EXTERNAL 0
+#define HAVE_SSE3_EXTERNAL 0
+#define HAVE_SSE4_EXTERNAL 0
+#define HAVE_SSE42_EXTERNAL 0
+#define HAVE_SSSE3_EXTERNAL 0
+#endif
 #define HAVE_XOP_EXTERNAL 0
 #define HAVE_CPUNOP_EXTERNAL 0
 #define HAVE_I686_EXTERNAL 0
@@ -135,24 +172,35 @@
 #define HAVE_AVX2_INLINE 1
 #define HAVE_FMA3_INLINE 0
 #define HAVE_FMA4_INLINE 1
-#if defined(WIN32)
-#define HAVE_MMX_INLINE 0
-#define HAVE_MMXEXT_INLINE 0
-#define HAVE_SSE_INLINE 0
-#define HAVE_SSE2_INLINE 0
-#define HAVE_SSE3_INLINE 0
-#define HAVE_SSE4_INLINE 0
-#define HAVE_SSE42_INLINE 0
-#define HAVE_SSSE3_INLINE 0
+#if ARCH_X86
+    #if defined(WIN32)
+        #define HAVE_MMX_INLINE 0
+        #define HAVE_MMXEXT_INLINE 0
+        #define HAVE_SSE_INLINE 0
+        #define HAVE_SSE2_INLINE 0
+        #define HAVE_SSE3_INLINE 0
+        #define HAVE_SSE4_INLINE 0
+        #define HAVE_SSE42_INLINE 0
+        #define HAVE_SSSE3_INLINE 0
+    #else
+        #define HAVE_MMX_INLINE 1
+        #define HAVE_MMXEXT_INLINE 1
+        #define HAVE_SSE_INLINE 1
+        #define HAVE_SSE2_INLINE 1
+        #define HAVE_SSE3_INLINE 1
+        #define HAVE_SSE4_INLINE 1
+        #define HAVE_SSE42_INLINE 1
+        #define HAVE_SSSE3_INLINE 1
+    #endif
 #else
-#define HAVE_MMX_INLINE 1
-#define HAVE_MMXEXT_INLINE 1
-#define HAVE_SSE_INLINE 1
-#define HAVE_SSE2_INLINE 1
-#define HAVE_SSE3_INLINE 1
-#define HAVE_SSE4_INLINE 1
-#define HAVE_SSE42_INLINE 1
-#define HAVE_SSSE3_INLINE 1
+    #define HAVE_MMX_INLINE 0
+    #define HAVE_MMXEXT_INLINE 0
+    #define HAVE_SSE_INLINE 0
+    #define HAVE_SSE2_INLINE 0
+    #define HAVE_SSE3_INLINE 0
+    #define HAVE_SSE4_INLINE 0
+    #define HAVE_SSE42_INLINE 0
+    #define HAVE_SSSE3_INLINE 0
 #endif
 #define HAVE_XOP_INLINE 0
 #define HAVE_CPUNOP_INLINE 0
@@ -254,7 +302,7 @@
 #define HAVE_EBP_AVAILABLE 1
 #define HAVE_EBX_AVAILABLE 1
 #define HAVE_ES2_GL_H 0
-#define HAVE_FAST_64BIT 1
+#define HAVE_FAST_64BIT 0
 #define HAVE_FAST_CLZ 1
 #define HAVE_FAST_CMOV 1
 #if defined(WIN32)
@@ -439,10 +487,18 @@
 #define CONFIG_AVPLAY 0
 #define CONFIG_AVPROBE 1
 #define CONFIG_AVSERVER 1
+#if ARCH_X86
 #define CONFIG_DCT 1
+#else
+#define CONFIG_DCT 0
+#endif
 #define CONFIG_DOC 0
 #define CONFIG_ERROR_RESILIENCE 1
+#if ARCH_X86
 #define CONFIG_FFT 1
+#else
+#define CONFIG_FFT 0
+#endif
 #define CONFIG_FTRAPV 0
 #define CONFIG_GPL 0
 #define CONFIG_GRAY 0
@@ -1707,3 +1763,4 @@
 #define CONFIG_LIBRTMPTE_PROTOCOL 0
 #define CONFIG_LIBSSH_PROTOCOL 0
 #endif /* FFMPEG_CONFIG_H */
+
