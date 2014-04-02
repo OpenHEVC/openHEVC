@@ -112,9 +112,9 @@ epel_coeffs:
 
 function ff_hevc_put_epel_h_neon_8, export=1
         push   {r4-r8}
-        ldr    r5, [sp, #20] // width
-        ldr    r4, [sp, #24] // height
-        ldr    r7, [sp, #28] // mx
+        ldr    r4, [sp, #20] // height
+        ldr    r7, [sp, #24] // mx
+        ldr    r5, [sp, #32] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -135,7 +135,7 @@ function ff_hevc_put_epel_h_neon_8, export=1
         pld [r2]
         vextin_d4
         epel_filter_16b
-        vst1.16    q12, [r0], r1
+        vst1.16    {q12}, [r0], r1
         bne 8b
         subs    r5, #8
         beq  99f
@@ -172,9 +172,9 @@ endfunc
 
 function ff_hevc_put_epel_v_neon_8, export=1
         push   {r4-r8}
-        ldr    r5, [sp, #20] // width
-        ldr    r4, [sp, #24] // height
-        ldr    r7, [sp, #32] // my
+        ldr    r4, [sp, #20] // height
+        ldr    r7, [sp, #28] // my
+        ldr    r5, [sp, #32] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -202,7 +202,7 @@ function ff_hevc_put_epel_v_neon_8, export=1
         vld1.8    {d19}, [r2], r3
         subs r4, #1
         epel_filter_16b
-        vst1.16    q12, [r0], r1
+        vst1.16    {q12}, [r0], r1
         vmov d16, d17
         vmov d17, d18
         vmov d18, d19
@@ -248,10 +248,10 @@ endfunc
 
 function ff_hevc_put_epel_hv_neon_8, export=1
         push   {r4-r8}
-        ldr    r5, [sp, #20] // width
-        ldr    r4, [sp, #24] // height
-        ldr    r6, [sp, #28] // mx
-        ldr    r7, [sp, #32] // my
+        ldr    r4, [sp, #20] // height
+        ldr    r6, [sp, #24] // mx
+        ldr    r7, [sp, #28] // my
+        ldr    r5, [sp, #32] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -287,7 +287,7 @@ function ff_hevc_put_epel_hv_neon_8, export=1
         epel_filter_16b q15
         subs r4, #1
         epel_filter_32b
-        vst1.16    q3, [r0], r1
+        vst1.16    {q3}, [r0], r1
         vmov q12, q13
         vmov q13, q14
         vmov q14, q15

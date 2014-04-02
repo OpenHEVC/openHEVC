@@ -119,6 +119,7 @@ openhevc_files := \
     libavcodec/arm/hevcdsp_deblock_neon.S \
     libavcodec/arm/hevcdsp_idct_neon.S \
     libavcodec/arm/hevcdsp_qpel_neon.S \
+    libavcodec/arm/hevcdsp_epel_neon.S \
     libavcodec/arm/dsputil_init_arm.c \
     libavcodec/arm/dsputil_init_armv6.c \
     libavcodec/arm/dsputil_init_neon.c \
