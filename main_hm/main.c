@@ -167,6 +167,8 @@ static void video_decode_example(const char *filename)
                     fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , nbData / 4, fout);
                 }
                 nbFrame++;
+                if (nbFrame == num_frames)
+                    stop = 1;
             } else {
                 if (stop_dec==1 && nbFrame)
                 stop = 1;
