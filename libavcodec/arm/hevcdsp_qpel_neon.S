@@ -968,23 +968,22 @@ halt:
 
 function ff_hevc_put_qpel_uw_pixels_neon_8, export=1
         push   {r4-r9}
+        ldr    r5, [sp, #24] // width
+        ldr    r4, [sp, #28] // height
+        ldr    r8, [sp, #32] // src2
+        ldr    r9, [sp, #36] // src2stride
         vpush {d8-d15}
-        ldr    r7, [sp, #16] // srcstride
-        ldr    r5, [sp, #20] // width
-        ldr    r4, [sp, #24] // height
-        ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #28] // src2stride
         cmp    r8, #0
         bne    2f
 1:      subs r4, #1
-        vld1.8     {d0}, [r2], r7
+        vld1.8     {d0}, [r2], r3
         vst1.8      d0, [r0], r1
         bne 1b
         vpop {d8-d15}
         pop   {r4-r9}
         bx lr
 2:      subs  r4, #1
-        vld1.8         {d0}, [r2], r7
+        vld1.8         {d0}, [r2], r3
         vld1.16        {q1}, [r8], r9
         vshll.u8       q0, d0, #6
         vqadd.s16      q0, q1
