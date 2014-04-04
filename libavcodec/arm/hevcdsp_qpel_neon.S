@@ -249,8 +249,8 @@
 
 .macro  hevc_put_qpel_vX_neon_8 filter
         push   {r4, r5, r6, r7}
-        ldr    r5, [sp, #16] // width
-        ldr    r4, [sp, #20] // height
+        ldr    r4, [sp, #16] // height
+        ldr    r5, [sp, #20] // width
         vpush {d8-d15}
         sub       r2, r2, r3, lsl #1
         sub       r2, r3
@@ -394,8 +394,9 @@ endfunc
 
 .macro hevc_put_qpel_hX_neon_8 filter
         push     {r4, r5, r6, r7}
-        ldr       r5, [sp, #16] // width
-        ldr       r4, [sp, #20] // height
+        ldr    r4, [sp, #16] // height
+        ldr    r5, [sp, #20] // width
+
         vpush    {d8-d15}
         sub       r2, #4
         lsl       r1, #1
@@ -540,8 +541,9 @@ endfunc
 
 .macro hevc_put_qpel_hXvY_neon_8 filterh filterv
         push   {r4, r5, r6, r7}
-        ldr    r5, [sp, #16] // width
-        ldr    r4, [sp, #20] // height
+        ldr    r4, [sp, #16] // height
+        ldr    r5, [sp, #20] // width
+
         vpush {d8-d15}
         sub       r2, #4
         sub       r2, r2, r3, lsl #1
@@ -788,8 +790,8 @@ function ff_hevc_put_pixels_neon_8, export=1
         pld    [r2]
         push   {r4, r5, r6}
         pld    [r2, r3]
-        ldr    r5, [sp, #12] // width
-        ldr    r4, [sp, #16] // height
+        ldr    r4, [sp, #12] // height
+        ldr    r5, [sp, #24] // width
 
         lsl    r1, #1
         cmp    r5, #2
