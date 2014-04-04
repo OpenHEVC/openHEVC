@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
+ * Copyright (C) 2012 Ronald S. Bultje
  *
  * This file is part of FFmpeg.
  *
@@ -18,17 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ARM_DSPUTIL_ARM_H
-#define AVCODEC_ARM_DSPUTIL_ARM_H
+#include "libavutil/attributes.h"
+#include "libavutil/arm/cpu.h"
+#include "libavcodec/videodsp.h"
+#include "videodsp_arm.h"
 
-#include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
+void ff_prefetch_arm(uint8_t *mem, ptrdiff_t stride, int h);
 
-void ff_dsputil_init_armv5te(DSPContext *c, AVCodecContext *avctx,
-                             unsigned high_bit_depth);
-void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx,
-                           unsigned high_bit_depth);
-void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx,
-                          unsigned high_bit_depth);
-
-#endif /* AVCODEC_ARM_DSPUTIL_ARM_H */
+av_cold void ff_videodsp_init_armv5te(VideoDSPContext *ctx, int bpc)
+{
+#if HAVE_ARMV5TE_EXTERNAL
+    ctx->prefetch = ff_prefetch_arm;
+#endif
+}

@@ -117,6 +117,7 @@ elseif(APPLE)
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
     set(CMAKE_C_FLAGS "-DX86_32 -DPIC -fPIC -Wl,-Bsymbolic -march=native -fno-tree-vectorize")
 endif()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SDL")
 
 find_package(SDL)
 find_package(SDL2)
@@ -234,6 +235,12 @@ list(APPEND libfilenames
     libavcodec/arm/dsputil_neon.S
     libavcodec/arm/fft_init_arm.c
     libavcodec/arm/fft_neon.S
+    libavcodec/arm/hevcdsp_init_arm.c
+    libavcodec/arm/hevcdsp_deblock_neon.S
+    #libavcodec/arm/hevcdsp_idct_neon.S
+    libavcodec/arm/hevcdsp_init_arm.c
+    libavcodec/arm/hevcdsp_qpel_neon.S
+    libavcodec/arm/hevcdsp_epel_neon.S
     libavcodec/arm/hpeldsp_arm.S
     libavcodec/arm/hpeldsp_init_arm.c
     libavcodec/arm/hpeldsp_init_neon.c
@@ -294,7 +301,7 @@ else()
     add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
 endif()
 
-include_directories(. gpac/modules/openhevc_dec/)
+include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
 
 option(ENABLE_EXECUTABLE "Generate the test application" ON)
 
