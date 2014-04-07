@@ -6,20 +6,20 @@
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Holger Lubitz <holger@lubitz.org>
 ;*
-;* This file is part of Libav.
+;* This file is part of FFmpeg.
 ;*
-;* Libav is free software; you can redistribute it and/or
+;* FFmpeg is free software; you can redistribute it and/or
 ;* modify it under the terms of the GNU Lesser General Public
 ;* License as published by the Free Software Foundation; either
 ;* version 2.1 of the License, or (at your option) any later version.
 ;*
-;* Libav is distributed in the hope that it will be useful,
+;* FFmpeg is distributed in the hope that it will be useful,
 ;* but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ;* Lesser General Public License for more details.
 ;*
 ;* You should have received a copy of the GNU Lesser General Public
-;* License along with Libav; if not, write to the Free Software
+;* License along with FFmpeg; if not, write to the Free Software
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
@@ -664,4 +664,36 @@
     punpcklwd    %1, %1
     psrad        %1, 16
 %endif
+%endmacro
+
+%macro PMA_EMU 4
+    %macro %1 5-8 %2, %3, %4
+        %if cpuflag(xop)
+            v%6 %1, %2, %3, %4
+        %elifidn %1, %4
+            %7 %5, %2, %3
+            %8 %1, %4, %5
+        %else
+            %7 %1, %2, %3
+            %8 %1, %4
+        %endif
+    %endmacro
+%endmacro
+
+PMA_EMU  PMACSWW,  pmacsww,  pmullw, paddw
+PMA_EMU  PMACSDD,  pmacsdd,  pmulld, paddd ; sse4 emulation
+PMA_EMU PMACSDQL, pmacsdql,  pmuldq, paddq ; sse4 emulation
+PMA_EMU PMADCSWD, pmadcswd, pmaddwd, paddd
+
+; Wrapper for non-FMA version of fmaddps
+%macro FMULADD_PS 5
+    %if cpuflag(fma3) || cpuflag(fma4)
+        fmaddps %1, %2, %3, %4
+    %elifidn %1, %4
+        mulps   %5, %2, %3
+        addps   %1, %4, %5
+    %else
+        mulps   %1, %2, %3
+        addps   %1, %4
+    %endif
 %endmacro

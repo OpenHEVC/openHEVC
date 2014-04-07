@@ -1,18 +1,18 @@
 /*
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -24,7 +24,7 @@
 #include <string.h>
 
 typedef struct SampleFmtInfo {
-    const char *name;
+    char name[8];
     int bits;
     int planar;
     enum AVSampleFormat altform; ///< planar<->packed alternative form
@@ -59,6 +59,15 @@ enum AVSampleFormat av_get_sample_fmt(const char *name)
         if (!strcmp(sample_fmt_info[i].name, name))
             return i;
     return AV_SAMPLE_FMT_NONE;
+}
+
+enum AVSampleFormat av_get_alt_sample_fmt(enum AVSampleFormat sample_fmt, int planar)
+{
+    if (sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB)
+        return AV_SAMPLE_FMT_NONE;
+    if (sample_fmt_info[sample_fmt].planar == planar)
+        return sample_fmt;
+    return sample_fmt_info[sample_fmt].altform;
 }
 
 enum AVSampleFormat av_get_packed_sample_fmt(enum AVSampleFormat sample_fmt)
@@ -98,6 +107,14 @@ int av_get_bytes_per_sample(enum AVSampleFormat sample_fmt)
         0 : sample_fmt_info[sample_fmt].bits >> 3;
 }
 
+#if FF_API_GET_BITS_PER_SAMPLE_FMT
+int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt)
+{
+    return sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB ?
+        0 : sample_fmt_info[sample_fmt].bits;
+}
+#endif
+
 int av_sample_fmt_is_planar(enum AVSampleFormat sample_fmt)
 {
      if (sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB)
@@ -118,6 +135,8 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
 
     /* auto-select alignment if not specified */
     if (!align) {
+        if (nb_samples > INT_MAX - 31)
+            return AVERROR(EINVAL);
         align = 1;
         nb_samples = FFALIGN(nb_samples, 32);
     }
@@ -147,14 +166,18 @@ int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
     if (buf_size < 0)
         return buf_size;
 
-    audio_data[0] = buf;
+    audio_data[0] = (uint8_t *)buf;
     for (ch = 1; planar && ch < nb_channels; ch++)
         audio_data[ch] = audio_data[ch-1] + line_size;
 
     if (linesize)
         *linesize = line_size;
 
+#if FF_API_SAMPLES_UTILS_RETURN_ZERO
     return 0;
+#else
+    return buf_size;
+#endif
 }
 
 int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
@@ -179,7 +202,26 @@ int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
 
     av_samples_set_silence(audio_data, 0, nb_samples, nb_channels, sample_fmt);
 
+#if FF_API_SAMPLES_UTILS_RETURN_ZERO
     return 0;
+#else
+    return size;
+#endif
+}
+
+int av_samples_alloc_array_and_samples(uint8_t ***audio_data, int *linesize, int nb_channels,
+                                       int nb_samples, enum AVSampleFormat sample_fmt, int align)
+{
+    int ret, nb_planes = av_sample_fmt_is_planar(sample_fmt) ? nb_channels : 1;
+
+    *audio_data = av_calloc(nb_planes, sizeof(**audio_data));
+    if (!*audio_data)
+        return AVERROR(ENOMEM);
+    ret = av_samples_alloc(*audio_data, linesize, nb_channels,
+                           nb_samples, sample_fmt, align);
+    if (ret < 0)
+        av_freep(audio_data);
+    return ret;
 }
 
 int av_samples_copy(uint8_t **dst, uint8_t * const *src, int dst_offset,
@@ -195,8 +237,13 @@ int av_samples_copy(uint8_t **dst, uint8_t * const *src, int dst_offset,
     dst_offset *= block_align;
     src_offset *= block_align;
 
-    for (i = 0; i < planes; i++)
-        memcpy(dst[i] + dst_offset, src[i] + src_offset, data_size);
+    if((dst[0] < src[0] ? src[0] - dst[0] : dst[0] - src[0]) >= data_size) {
+        for (i = 0; i < planes; i++)
+            memcpy(dst[i] + dst_offset, src[i] + src_offset, data_size);
+    } else {
+        for (i = 0; i < planes; i++)
+            memmove(dst[i] + dst_offset, src[i] + src_offset, data_size);
+    }
 
     return 0;
 }

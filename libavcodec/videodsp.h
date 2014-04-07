@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2012 Ronald S. Bultje
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -29,15 +29,28 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define EMULATED_EDGE(depth) \
+void ff_emulated_edge_mc_ ## depth(uint8_t *dst, const uint8_t *src, \
+                                   ptrdiff_t dst_stride, ptrdiff_t src_stride, \
+                                   int block_w, int block_h,\
+                                   int src_x, int src_y, int w, int h);
+
+EMULATED_EDGE(8)
+EMULATED_EDGE(16)
+
 typedef struct VideoDSPContext {
     /**
      * Copy a rectangular area of samples to a temporary buffer and replicate
      * the border samples.
      *
-     * @param buf destination buffer
+     * @param dst destination buffer
+     * @param dst_stride number of bytes between 2 vertically adjacent samples
+     *                   in destination buffer
      * @param src source buffer
-     * @param linesize number of bytes between 2 vertically adjacent samples
-     *                 in both the source and destination buffers
+     * @param dst_linesize number of bytes between 2 vertically adjacent
+     *                     samples in the destination buffer
+     * @param src_linesize number of bytes between 2 vertically adjacent
+     *                     samples in both the source buffer
      * @param block_w width of block
      * @param block_h height of block
      * @param src_x x coordinate of the top left sample of the block in the
@@ -47,16 +60,18 @@ typedef struct VideoDSPContext {
      * @param w width of the source buffer
      * @param h height of the source buffer
      */
-    void (*emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
-                             ptrdiff_t linesize, ptrdiff_t linesizeb, int block_w, int block_h,
+    void (*emulated_edge_mc)(uint8_t *dst, const uint8_t *src,
+                             ptrdiff_t dst_linesize,
+                             ptrdiff_t src_linesize,
+                             int block_w, int block_h,
                              int src_x, int src_y, int w, int h);
 
     /**
      * Prefetch memory into cache (if supported by hardware).
      *
-     * @buf pointer to buffer to prefetch memory from
-     * @stride distance between two lines of buf (in bytes)
-     * @h number of lines to prefetch
+     * @param buf    pointer to buffer to prefetch memory from
+     * @param stride distance between two lines of buf (in bytes)
+     * @param h      number of lines to prefetch
      */
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;

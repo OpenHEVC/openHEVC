@@ -73,6 +73,11 @@ static void video_decode_example(const char *filename)
     OpenHevc_Frame_cpy openHevcFrameCpy;
     OpenHevc_Handle    openHevcHandle;
 
+    if (filename == NULL) {
+        printf("No input file specified.\nSpecify it with: -i <filename>\n");
+        exit(1);
+    }
+
     openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
@@ -108,8 +113,9 @@ static void video_decode_example(const char *filename)
     openHevcFrameCpy.pvY = NULL;
     openHevcFrameCpy.pvU = NULL;
     openHevcFrameCpy.pvV = NULL;
-
+#if USE_SDL
     Init_Time();
+#endif
     while(!stop) {
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
         if (packet.stream_index == video_stream_idx || stop_dec == 1) {
@@ -126,10 +132,11 @@ static void video_decode_example(const char *filename)
                         sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
                         fout = fopen(output_file2, "wb");
                     }
-
+#if USE_SDL
                     if (display_flags == ENABLE) {
                         Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
                     }
+#endif
                     if (fout) {
                         int nbData;
                         libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
@@ -144,12 +151,14 @@ static void video_decode_example(const char *filename)
                         openHevcFrameCpy.pvV = calloc ( nbData / 4, sizeof(unsigned char));
                     }
                 }
+#if USE_SDL
                 if (display_flags == ENABLE) {
                     libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
                     libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
                     SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
                             openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
                 }
+#endif
                 if (fout) {
                     int nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight * (openHevcFrameCpy.frameInfo.nBitDepth==8 ? 1 : 2);
                     libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
@@ -158,6 +167,8 @@ static void video_decode_example(const char *filename)
                     fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , nbData / 4, fout);
                 }
                 nbFrame++;
+                if (nbFrame == num_frames)
+                    stop = 1;
             } else {
                 if (stop_dec==1 && nbFrame)
                 stop = 1;
@@ -165,8 +176,10 @@ static void video_decode_example(const char *filename)
         }
         av_free_packet(&packet);
     }
+#if USE_SDL
     time = SDL_GetTime()/1000.0;
     CloseSDLDisplay();
+#endif
     if (fout) {
         fclose(fout);
         if(openHevcFrameCpy.pvY) {
@@ -177,7 +190,9 @@ static void video_decode_example(const char *filename)
     }
     avformat_close_input(&pFormatCtx);
     libOpenHevcClose(openHevcHandle);
+#if USE_SDL
     printf("frame= %d fps= %.0f time= %.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
+#endif
 }
 
 int main(int argc, char *argv[]) {

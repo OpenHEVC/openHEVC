@@ -59,6 +59,7 @@ void print_usage() {
     printf("     -t <temporal layer id>\n");
     printf("     -w : Do not apply cropping windows\n");
     printf("     -l <Quality layer id> \n");
+    printf("     -s <num> Stop after num frames \n");
 }
 
 /*
@@ -130,7 +131,7 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
     // every command line option must be followed by ':' if it takes an
     // argument, and '::' if this argument is optional
-    const char *ostr = "achi:no:p:f:t:wl:";
+    const char *ostr = "achi:no:p:f:s:t:wl:";
 
     int c;
     check_md5_flags   = ENABLE;
@@ -142,6 +143,7 @@ void init_main(int argc, char *argv[]) {
     temporal_layer_id = 7;
     no_cropping       = DISABLE;
     quality_layer_id  = 0; // Base layer
+    num_frames        = 0;
 
     program           = argv[0];
     
@@ -181,6 +183,9 @@ void init_main(int argc, char *argv[]) {
             break;
         case 'l':
             quality_layer_id = atoi(optarg);
+            break;
+        case 's':
+            num_frames = atoi(optarg);
             break;
         default:
             print_usage();

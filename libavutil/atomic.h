@@ -1,20 +1,20 @@
 /*
  * Copyright (c) 2012 Ronald S. Bultje <rsbultje@gmail.com>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -23,12 +23,16 @@
 
 #include "config.h"
 
+#if HAVE_ATOMICS_NATIVE
+
 #if HAVE_ATOMICS_GCC
 #include "atomic_gcc.h"
 #elif HAVE_ATOMICS_WIN32
 #include "atomic_win32.h"
 #elif HAVE_ATOMICS_SUNCC
 #include "atomic_suncc.h"
+#endif
+
 #else
 
 /**
@@ -70,5 +74,6 @@ int avpriv_atomic_int_add_and_fetch(volatile int *ptr, int inc);
  */
 void *avpriv_atomic_ptr_cas(void * volatile *ptr, void *oldval, void *newval);
 
-#endif /* HAVE_MEMORYBARRIER */
+#endif /* HAVE_ATOMICS_NATIVE */
+
 #endif /* AVUTIL_ATOMIC_H */

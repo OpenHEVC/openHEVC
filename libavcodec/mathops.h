@@ -3,20 +3,20 @@
  * Copyright (c) 2001, 2002 Fabrice Bellard
  * Copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at> et al
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #ifndef AVCODEC_MATHOPS_H
@@ -195,15 +195,6 @@ if ((y) < (x)) {\
 #   define FASTDIV(a,b) ((uint32_t)((((uint64_t)a) * ff_inverse[b]) >> 32))
 #endif /* FASTDIV */
 
-#ifndef MOD_UNLIKELY
-#   define MOD_UNLIKELY(modulus, dividend, divisor, prev_dividend) \
-    do { \
-        if ((prev_dividend) == 0 || (dividend) - (prev_dividend) != (divisor)) \
-            (modulus) = (dividend) % (divisor); \
-        (prev_dividend) = (dividend); \
-    } while (0)
-#endif
-
 static inline av_const unsigned int ff_sqrt(unsigned int a)
 {
     unsigned int b;
@@ -222,6 +213,16 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
     }
 
     return b - (a < b * b);
+}
+
+static inline int8_t ff_u8_to_s8(uint8_t a)
+{
+    union {
+        uint8_t u8;
+        int8_t  s8;
+    } b;
+    b.u8 = a;
+    return b.s8;
 }
 
 #endif /* AVCODEC_MATHOPS_H */

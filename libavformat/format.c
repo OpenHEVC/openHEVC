@@ -2,25 +2,26 @@
  * Format register and lookup
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "avformat.h"
 #include "internal.h"
+#include "libavutil/atomic.h"
 #include "libavutil/avstring.h"
 
 /**
@@ -31,6 +32,9 @@
 static AVInputFormat *first_iformat = NULL;
 /** head of registered output format linked list */
 static AVOutputFormat *first_oformat = NULL;
+
+static AVInputFormat **last_iformat = &first_iformat;
+static AVOutputFormat **last_oformat = &first_oformat;
 
 AVInputFormat *av_iformat_next(AVInputFormat *f)
 {
@@ -50,24 +54,22 @@ AVOutputFormat *av_oformat_next(AVOutputFormat *f)
 
 void av_register_input_format(AVInputFormat *format)
 {
-    AVInputFormat **p = &first_iformat;
+    AVInputFormat **p = last_iformat;
 
-    while (*p != NULL)
-        p = &(*p)->next;
-
-    *p = format;
     format->next = NULL;
+    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
+        p = &(*p)->next;
+    last_iformat = &format->next;
 }
 
 void av_register_output_format(AVOutputFormat *format)
 {
-    AVOutputFormat **p = &first_oformat;
+    AVOutputFormat **p = last_oformat;
 
-    while (*p != NULL)
-        p = &(*p)->next;
-
-    *p = format;
     format->next = NULL;
+    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
+        p = &(*p)->next;
+    last_oformat = &format->next;
 }
 
 int av_match_ext(const char *filename, const char *extensions)
@@ -134,7 +136,7 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
     score_max = 0;
     while ((fmt = av_oformat_next(fmt))) {
         score = 0;
-        if (fmt->name && short_name && !av_strcasecmp(fmt->name, short_name))
+        if (fmt->name && short_name && match_format(short_name, fmt->name))
             score += 100;
         if (fmt->mime_type && mime_type && !strcmp(fmt->mime_type, mime_type))
             score += 10;
@@ -154,6 +156,10 @@ enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                               const char *filename, const char *mime_type,
                               enum AVMediaType type)
 {
+    if (!strcmp(fmt->name, "segment") || !strcmp(fmt->name, "ssegment")) {
+        fmt = av_guess_format(NULL, filename, NULL);
+    }
+
     if (type == AVMEDIA_TYPE_VIDEO) {
         enum AVCodecID codec_id = AV_CODEC_ID_NONE;
 

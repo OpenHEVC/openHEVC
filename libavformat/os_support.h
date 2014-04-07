@@ -2,20 +2,20 @@
  * various OS-feature replacement utilities
  * copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -33,8 +33,17 @@
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
 #  include <fcntl.h>
+#  ifdef lseek
+#   undef lseek
+#  endif
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
+#  ifdef stat
+#   undef stat
+#  endif
 #  define stat _stati64
+#  ifdef fstat
+#   undef fstat
+#  endif
 #  define fstat(f,s) _fstati64((f), (s))
 #endif /* defined(__MINGW32__) && !defined(__MINGW32CE__) */
 
@@ -45,8 +54,6 @@
 #include <io.h>
 #endif
 #define mkdir(a, b) _mkdir(a)
-#else
-#include <sys/stat.h>
 #endif
 
 static inline int is_dos_path(const char *path)
@@ -75,11 +82,6 @@ static inline int is_dos_path(const char *path)
 #ifndef S_IWUSR
 #define S_IWUSR S_IWRITE
 #endif
-#endif
-
-#if defined(_WIN32) && !defined(__MINGW32CE__)
-int ff_win32_open(const char *filename, int oflag, int pmode);
-#define open ff_win32_open
 #endif
 
 #if CONFIG_NETWORK

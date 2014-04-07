@@ -8,20 +8,20 @@
  * Raw DV format
  * Copyright (c) 2002 Fabrice Bellard
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -33,7 +33,7 @@
 typedef struct DVDemuxContext DVDemuxContext;
 DVDemuxContext* avpriv_dv_init_demux(AVFormatContext* s);
 int avpriv_dv_get_packet(DVDemuxContext*, AVPacket *);
-int avpriv_dv_produce_packet(DVDemuxContext*, AVPacket*, uint8_t*, int);
+int avpriv_dv_produce_packet(DVDemuxContext*, AVPacket*, uint8_t*, int, int64_t);
 void ff_dv_offset_reset(DVDemuxContext *c, int64_t frame_offset);
 
 typedef struct DVMuxContext DVMuxContext;

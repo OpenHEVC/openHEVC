@@ -1,20 +1,20 @@
 /*
  * copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -37,11 +37,13 @@
 #include "config.h"
 #include "attributes.h"
 #include "timer.h"
+#include "cpu.h"
 #include "dict.h"
+#include "version.h"
 
-//#if ARCH_X86
-//#   include "x86/emms.h"
-//#endif
+#if ARCH_X86
+#   include "x86/emms.h"
+#endif
 
 #ifndef emms_c
 #   define emms_c()
@@ -62,8 +64,16 @@
 #endif
 
 #if HAVE_PRAGMA_DEPRECATED
-#    define FF_DISABLE_DEPRECATION_WARNINGS _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
-#    define FF_ENABLE_DEPRECATION_WARNINGS  _Pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")
+#    if defined(__ICL) || defined (__INTEL_COMPILER)
+#        define FF_DISABLE_DEPRECATION_WARNINGS __pragma(warning(push)) __pragma(warning(disable:1478))
+#        define FF_ENABLE_DEPRECATION_WARNINGS  __pragma(warning(pop))
+#    elif defined(_MSC_VER)
+#        define FF_DISABLE_DEPRECATION_WARNINGS __pragma(warning(push)) __pragma(warning(disable:4996))
+#        define FF_ENABLE_DEPRECATION_WARNINGS  __pragma(warning(pop))
+#    else
+#        define FF_DISABLE_DEPRECATION_WARNINGS _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#        define FF_ENABLE_DEPRECATION_WARNINGS  _Pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")
+#    endif
 #else
 #    define FF_DISABLE_DEPRECATION_WARNINGS
 #    define FF_ENABLE_DEPRECATION_WARNINGS
@@ -72,6 +82,12 @@
 #ifndef INT_BIT
 #    define INT_BIT (CHAR_BIT * sizeof(int))
 #endif
+
+#define FF_MEMORY_POISON 0x2a
+
+#define MAKE_ACCESSORS(str, name, type, field) \
+    type av_##name##_get_##field(const str *s) { return s->field; } \
+    void av_##name##_set_##field(str *s, type v) { s->field = v; }
 
 // Some broken preprocessors need a second expansion
 // to be forced to tokenize __VA_ARGS__
@@ -119,7 +135,7 @@
 
 #include "libm.h"
 
-#if defined(_MSC_VER) && !CONFIG_SHARED
+#if defined(_MSC_VER)
 #pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_strtod")
 #pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_snprintf")
 #endif
@@ -135,12 +151,11 @@
 #   define NULL_IF_CONFIG_SMALL(x) x
 #endif
 
-
 /**
  * Define a function with only the non-default version specified.
  *
  * On systems with ELF shared libraries, all symbols exported from
- * Libav libraries are tagged with the name and major version of the
+ * FFmpeg libraries are tagged with the name and major version of the
  * library to which they belong.  If a function is moved from one
  * library to another, a wrapper must be retained in the original
  * location to preserve binary compatibility.
@@ -195,5 +210,18 @@ void avpriv_report_missing_feature(void *avc,
  */
 void avpriv_request_sample(void *avc,
                            const char *msg, ...) av_printf_format(2, 3);
+
+#if HAVE_LIBC_MSVCRT
+#define avpriv_open ff_open
+#endif
+
+/**
+ * A wrapper for open() setting O_CLOEXEC.
+ */
+int avpriv_open(const char *filename, int flags, ...);
+
+#if FF_API_GET_CHANNEL_LAYOUT_COMPAT
+uint64_t ff_get_channel_layout(const char *name, int compat);
+#endif
 
 #endif /* AVUTIL_INTERNAL_H */

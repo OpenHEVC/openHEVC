@@ -1,19 +1,19 @@
 /*
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -48,6 +48,7 @@ typedef struct URLContext {
     int is_streamed;            /**< true if streamed (no seek possible), default = false */
     int is_connected;
     AVIOInterruptCB interrupt_callback;
+    int64_t rw_timeout;         /**< maximum time to wait for (network) read/write operation completion, in mcs */
 } URLContext;
 
 typedef struct URLProtocol {
@@ -100,7 +101,7 @@ typedef struct URLProtocol {
  * is to be opened
  * @param int_cb interrupt callback to use for the URLContext, may be
  * NULL
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_alloc(URLContext **puc, const char *filename, int flags,
@@ -129,7 +130,7 @@ int ffurl_connect(URLContext *uc, AVDictionary **options);
  * @param options  A dictionary filled with protocol-private options. On return
  * this parameter will be destroyed and replaced with a dict containing options
  * that were not found. May be NULL.
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_open(URLContext **puc, const char *filename, int flags,
@@ -181,11 +182,12 @@ int64_t ffurl_seek(URLContext *h, int64_t pos, int whence);
 
 /**
  * Close the resource accessed by the URLContext h, and free the
- * memory used by it.
+ * memory used by it. Also set the URLContext pointer to NULL.
  *
  * @return a negative value if an error condition occurred, 0
  * otherwise
  */
+int ffurl_closep(URLContext **h);
 int ffurl_close(URLContext *h);
 
 /**
@@ -224,10 +226,8 @@ int ffurl_shutdown(URLContext *h, int flags);
 
 /**
  * Register the URLProtocol protocol.
- *
- * @param size the size of the URLProtocol struct referenced
  */
-int ffurl_register_protocol(URLProtocol *protocol, int size);
+int ffurl_register_protocol(URLProtocol *protocol);
 
 /**
  * Check if the user has requested to interrup a blocking function
@@ -271,7 +271,7 @@ int ff_url_join(char *str, int size, const char *proto,
                 const char *authorization, const char *hostname,
                 int port, const char *fmt, ...) av_printf_format(7, 8);
 
-/*
+/**
  * Convert a relative url into an absolute url, given a base url.
  *
  * @param buf the buffer where output absolute url is written
