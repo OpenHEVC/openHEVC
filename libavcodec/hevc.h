@@ -721,6 +721,8 @@ typedef struct HEVCSPS {
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
 
+    int transform_skip_rotation_enabled_flag;
+    int transform_skip_context_enabled_flag;
     int intra_smoothing_disabled_flag;
 
     ///< coded frame dimension in various units
