@@ -1,6 +1,6 @@
 /*
  * openhevc.h wrapper to openhevc or ffmpeg
- * Copyright (c) 2012-2013 Micka‘l Raulet, Wassim Hamidouche, Gildas Cocherel, Pierre Edouard Lepere
+ * Copyright (c) 2012-2013 Mickaï¿½l Raulet, Wassim Hamidouche, Gildas Cocherel, Pierre Edouard Lepere
  *
  * This file is part of openhevc.
  *

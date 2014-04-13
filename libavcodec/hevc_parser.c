@@ -168,6 +168,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
         case NAL_IDR_W_RADL:
         case NAL_IDR_N_LP:
         case NAL_CRA_NUT:
+            av_log(h->avctx, AV_LOG_DEBUG, "parsing NALU %d\n", h->decoder_id);
             sh->first_slice_in_pic_flag = get_bits1(gb);
             s->picture_structure = h->picture_struct;
             s->field_order = h->picture_struct;

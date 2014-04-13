@@ -10,6 +10,57 @@
 #include <libavformat/avformat.h>
 
 
+#define TIME2
+
+#ifdef TIME2
+#ifdef WIN32
+#include <Windows.h>
+#else
+#include <sys/time.h>
+//#include <ctime>
+#endif
+#define FRAME_CONCEALMENT   0
+
+
+/* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
+ * windows and linux. */
+
+static unsigned long int GetTimeMs64()
+{
+#ifdef WIN32
+    /* Windows */
+    FILETIME ft;
+    LARGE_INTEGER li;
+    
+    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
+     * to a LARGE_INTEGER structure. */
+    GetSystemTimeAsFileTime(&ft);
+    li.LowPart = ft.dwLowDateTime;
+    li.HighPart = ft.dwHighDateTime;
+    
+    uint64 ret = li.QuadPart;
+    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
+    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
+    
+    return ret;
+#else
+    /* Linux */
+    struct timeval tv;
+    
+    gettimeofday(&tv, NULL);
+    
+    unsigned long int ret = tv.tv_usec;
+    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
+    //ret /= 1000;
+    
+    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
+    ret += (tv.tv_sec * 1000000);
+    
+    return ret;
+#endif
+}
+#endif
+
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
     AVCodecContext *c;
@@ -52,12 +103,26 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
     fseek (inpf, - 4 + info2, SEEK_CUR);
     return pos - 4 + info2;
 }
+typedef struct Info {
+    int NbFrame;
+    int Poc;
+    int Tid;
+    int Qid;
+    int type;
+    int size;
+} Info;
 
 static void video_decode_example(const char *filename)
 {
     AVFormatContext *pFormatCtx=NULL;
     AVPacket        packet;
-
+#if FRAME_CONCEALMENT
+    FILE *fin_loss = NULL, *fin1 = NULL;
+    Info info;
+    Info info_loss;
+    char filename0[1024];
+    int is_received = 1;
+#endif
     FILE *fout  = NULL;
     int width   = -1;
     int height  = -1;
@@ -66,6 +131,9 @@ static void video_decode_example(const char *filename)
     int stop_dec= 0;
     int got_picture;
     float time  = 0.0;
+#ifdef TIME2
+    long unsigned int time_us = 0;
+#endif
     int video_stream_idx;
     char output_file2[256];
 
@@ -80,8 +148,7 @@ static void video_decode_example(const char *filename)
 
     openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
-    libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
-    libOpenHevcSetActiveDecoders(openHevcHandle, quality_layer_id);
+
     if (!openHevcHandle) {
         fprintf(stderr, "could not open OpenHevc\n");
         exit(1);
@@ -109,17 +176,48 @@ static void video_decode_example(const char *filename)
 
     libOpenHevcSetDebugMode(openHevcHandle, 0);
     libOpenHevcStartDecoder(openHevcHandle);
-
     openHevcFrameCpy.pvY = NULL;
     openHevcFrameCpy.pvU = NULL;
     openHevcFrameCpy.pvV = NULL;
 #if USE_SDL
     Init_Time();
 #endif
+#ifdef TIME2
+    time_us = GetTimeMs64();
+#endif
+   
+    libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
+    libOpenHevcSetActiveDecoders(openHevcHandle, quality_layer_id);
+    libOpenHevcSetViewLayers(openHevcHandle, quality_layer_id);
+#if FRAME_CONCEALMENT
+    fin_loss = fopen( "/Users/wassim/Softwares/shvc_transmission/parser/hevc_parser/BascketBall_Loss.txt", "rb");
+    fin1 = fopen( "/Users/wassim/Softwares/shvc_transmission/parser/hevc_parser/BascketBall.txt", "rb");
+    sprintf(filename0, "%s \n", "Nbframe  Poc Tid  Qid  NalType Length");
+    fread ( filename0, strlen(filename), 1, fin_loss);
+    fread ( filename0, strlen(filename), 1, fin1);
+#endif
+
     while(!stop) {
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
+#if FRAME_CONCEALMENT
+        // Get the corresponding frame in the trace
+        if(is_received)
+            fscanf(fin_loss, "%d    %d    %d    %d    %d        %d \n", &info_loss.NbFrame, &info_loss.Poc, &info_loss.Tid, &info_loss.Qid, &info_loss.type, &info_loss.size);
+        fscanf(fin1, "%d    %d    %d    %d    %d        %d \n", &info.NbFrame, &info.Poc, &info.Tid, &info.Qid, &info.type, &info.size);
+        if(info_loss.NbFrame == info.NbFrame)
+            is_received = 1;
+        else
+            is_received = 0;
+#endif
         if (packet.stream_index == video_stream_idx || stop_dec == 1) {
+#if FRAME_CONCEALMENT
+            if(is_received)
+                got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
+            else
+                got_picture = libOpenHevcDecode(openHevcHandle, NULL,  0, packet.pts);
+#else
             got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
+#endif
             if (got_picture > 0) {
                 fflush(stdout);
                 libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
@@ -178,6 +276,9 @@ static void video_decode_example(const char *filename)
     }
 #if USE_SDL
     time = SDL_GetTime()/1000.0;
+#ifdef TIME2
+    time_us = GetTimeMs64() - time_us;
+#endif
     CloseSDLDisplay();
 #endif
     if (fout) {
@@ -191,7 +292,11 @@ static void video_decode_example(const char *filename)
     avformat_close_input(&pFormatCtx);
     libOpenHevcClose(openHevcHandle);
 #if USE_SDL
+#ifdef TIME2
+    printf("frame= %d fps= %.0f time= %ld video_size= %dx%d\n", nbFrame, nbFrame/time, time_us, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
+#else
     printf("frame= %d fps= %.0f time= %.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
+#endif
 #endif
 }
 

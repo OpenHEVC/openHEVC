@@ -3009,7 +3009,9 @@ typedef struct AVCodecContext {
      *  The decoded picture at layer n for SHVC decoder
      *  this frame is used by the layer (n+1) as refernce frame for inter-layer predictions 
      */
-    void* BL_frame;
+    void*  BL_frame;
+    void * BL_avcontext;
+    int layers_size;
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);

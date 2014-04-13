@@ -23,8 +23,101 @@
 #ifndef AVCODEC_HEVCDSP_H
 #define AVCODEC_HEVCDSP_H
 
-/*DECLARE_ALIGNED(16, int16_t,  mcbuf[MAX_PB_SIZE * MAX_PB_SIZE]);
-int mcbufstride = MAX_PB_SIZE;*/
+struct AVFrame;
+struct UpsamplInf;
+struct HEVCWindow;
+//#ifdef SVC_EXTENSION
+#define NTAPS_LUMA 8
+#define NTAPS_CHROMA 4
+#define US_FILTER_PREC  6
+
+#define MAX_EDGE  4
+#define MAX_EDGE_CR  2
+#define N_SHIFT (20-8)
+#define I_OFFSET (1 << (N_SHIFT - 1))
+
+
+
+
+/*      Upsampling filters      */
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma[16][4])=
+{
+    {  0,  64,   0,  0},
+    { -2,  62,   4,  0},
+    { -2,  58,  10, -2},
+    { -4,  56,  14, -2},
+    { -4,  54,  16, -2},
+    { -6,  52,  20, -2},
+    { -6,  46,  28, -4},
+    { -4,  42,  30, -4},
+    { -4,  36,  36, -4},
+    { -4,  30,  42, -4},
+    { -4,  28,  46, -6},
+    { -2,  20,  52, -6},
+    { -2,  16,  54, -4},
+    { -2,  14,  56, -4},
+    { -2,  10,  58, -2},
+    {  0,   4,  62, -2}
+};
+
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_luma[16][8] )=
+{
+    {  0,  0,   0,  64,   0,   0,  0,  0},
+    {  0,  1,  -3,  63,   4,  -2,  1,  0},
+    { -1,  2,  -5,  62,   8,  -3,  1,  0},
+    { -1,  3,  -8,  60,  13,  -4,  1,  0},
+    { -1,  4, -10,  58,  17,  -5,  1,  0},
+    { -1,  4, -11,  52,  26,  -8,  3, -1},
+    { -1,  3,  -9,  47,  31, -10,  4, -1},
+    { -1,  4, -11,  45,  34, -10,  4, -1},
+    { -1,  4, -11,  40,  40, -11,  4, -1},
+    { -1,  4, -10,  34,  45, -11,  4, -1},
+    { -1,  4, -10,  31,  47,  -9,  3, -1},
+    { -1,  3,  -8,  26,  52, -11,  4, -1},
+    {  0,  1,  -5,  17,  58, -10,  4, -1},
+    {  0,  1,  -4,  13,  60,  -8,  3, -1},
+    {  0,  1,  -3,   8,  62,  -5,  2, -1},
+    {  0,  1,  -2,   4,  63,  -3,  1,  0}
+};
+
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_luma_x2[2][8] )= /*0 , 8 */
+{
+    {  0,  0,   0,  64,   0,   0,  0,  0},
+    { -1,  4, -11,  40,  40, -11,  4, -1}
+};
+
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_luma_x1_5[3][8] )= /* 0, 11, 5 */
+{
+    {  0,  0,   0,  64,   0,   0,  0,  0},
+    { -1,  3,  -8,  26,  52, -11,  4, -1},
+    { -1,  4, -11,  52,  26,  -8,  3, -1}
+};
+
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x1_5[3][4])= /* 0, 11, 5 */
+{
+    {  0,  64,   0,  0},
+    { -2,  20,  52, -6},
+    { -6,  52,  20, -2}
+};
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_x1_5chroma[3][4])=
+{
+    {  0,   4,  62, -2},
+    { -4,  30,  42, -4},
+    { -4,  54,  16, -2}
+};
+
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x2[2][4])=
+{
+    {  0,  64,   0,  0},
+    { -4,  36,  36, -4}
+};
+
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x2_v[2][4])=
+{
+        { -2,  10,  58, -2},
+        { -6,  46,  28, -4},
+};
+//#endif
 
 typedef struct SAOParams {
     int offset_abs[3][4];   ///< sao_offset_abs
@@ -94,6 +187,24 @@ typedef struct HEVCDSPContext {
     void (*hevc_v_loop_filter_luma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
     void (*hevc_h_loop_filter_chroma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
     void (*hevc_v_loop_filter_chroma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+
+    void (*upsample_base_layer_frame)  (struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel);
+    void (*upsample_filter_block_luma_h[3])(
+                                         int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+                                         int x_EL, int x_BL, int block_w, int block_h, int widthEL,
+                                         const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+    void (*upsample_filter_block_luma_v[3])(
+                                         uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+                                         int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
+                                         const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+void (*upsample_filter_block_cr_h[3])(
+                                       int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+                                       int x_EL, int x_BL, int block_w, int block_h, int widthEL,
+                                       const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+void (*upsample_filter_block_cr_v[3])(
+                                       uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+                                       int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
+                                       const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
