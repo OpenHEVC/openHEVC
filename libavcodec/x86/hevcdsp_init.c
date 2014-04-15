@@ -92,6 +92,7 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_sse4(uint8_t *dst, ptrdiff_t dstst
     }   \
 }
 
+
 #define mc_rep_funcs(name, bitd, step, W)        \
     mc_rep_func(name, bitd, step, W);            \
     mc_rep_uni_func(name, bitd, step, W);        \
@@ -179,7 +180,60 @@ mc_rep_funcs(qpel_hv,10,  8, 16);
 mc_rep_funcs(qpel_hv,10,  4, 12);
 
 
+#define mc_rep_uni_w(bitd, step, W) \
+void ff_hevc_put_hevc_uni_w##W##_##bitd##_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, \
+                                                      int denom,  int _wx, int _ox) \
+{ \
+    int i;  \
+    int16_t *src;   \
+    uint8_t *_dst; \
+    for(i=0; i < W ; i+= step ){    \
+        src= _src+i;            \
+        _dst= dst+(i*((bitd+7)/8));                        \
+    ff_hevc_put_hevc_uni_w##step##_##bitd##_sse4(_dst, dststride, src, _srcstride, height, denom, _wx, _ox);   \
+    }   \
+}
 
+mc_rep_uni_w(8, 4, 12);
+mc_rep_uni_w(8, 8, 16);
+mc_rep_uni_w(8, 8, 24);
+mc_rep_uni_w(8, 8, 32);
+mc_rep_uni_w(8, 8, 48);
+mc_rep_uni_w(8, 8, 64);
+
+#define mc_uni_w_func(name, bitd, W) \
+void ff_hevc_put_hevc_uni_w_##name##W##_##bitd##_sse4(                         \
+                                                        uint8_t *_dst, ptrdiff_t _dststride,       \
+                                                        uint8_t *_src, ptrdiff_t _srcstride,       \
+                                                        int height, int denom,                     \
+                                                        int _wx, int _ox,                          \
+                                                        intptr_t mx, intptr_t my, int width)       \
+{ \
+    LOCAL_ALIGNED_16(int16_t, temp, [71 * 64]);                                \
+    ff_hevc_put_hevc_##name##W##_##bitd##_sse4(temp, 64, _src, _srcstride, height, mx, my, width);   \
+    ff_hevc_put_hevc_uni_w##W##_##bitd##_sse4(_dst, _dststride, temp, 64, height, denom, _wx, _ox); \
+}
+#define mc_uni_w_funcs(name, bitd)          \
+        mc_uni_w_func(name, bitd, 4);    \
+        mc_uni_w_func(name, bitd, 8);    \
+        mc_uni_w_func(name, bitd, 12);   \
+        mc_uni_w_func(name, bitd, 16);   \
+        mc_uni_w_func(name, bitd, 24);   \
+        mc_uni_w_func(name, bitd, 32);   \
+        mc_uni_w_func(name, bitd, 48);   \
+        mc_uni_w_func(name, bitd, 64)
+
+mc_uni_w_funcs(pel_pixels, 8);
+mc_uni_w_func(pel_pixels, 8, 6);
+mc_uni_w_funcs(epel_h, 8);
+mc_uni_w_func(epel_h, 8, 6);
+mc_uni_w_funcs(epel_v, 8);
+mc_uni_w_func(epel_v, 8, 6);
+mc_uni_w_funcs(epel_hv, 8);
+mc_uni_w_func(epel_hv, 8, 6);
+mc_uni_w_funcs(qpel_h, 8);
+mc_uni_w_funcs(qpel_v, 8);
+mc_uni_w_funcs(qpel_hv, 8);
 #endif
 
 #define EPEL_LINKS(pointer, my, mx, fname, bitd) \
@@ -201,6 +255,17 @@ mc_rep_funcs(qpel_hv,10,  4, 12);
         PEL_LINK(pointer, 7, my , mx , fname##32,  bitd ); \
         PEL_LINK(pointer, 8, my , mx , fname##48,  bitd ); \
         PEL_LINK(pointer, 9, my , mx , fname##64,  bitd )
+
+#define EPEL_LINKS_SSE(pointer, my, mx, fname, bitd) \
+        PEL_LINK_SSE(pointer, 1, my , mx , fname##4 ,  bitd ); \
+        PEL_LINK_SSE(pointer, 2, my , mx , fname##6 ,  bitd ); \
+        PEL_LINK_SSE(pointer, 3, my , mx , fname##8 ,  bitd ); \
+        PEL_LINK_SSE(pointer, 4, my , mx , fname##12,  bitd ); \
+        PEL_LINK_SSE(pointer, 5, my , mx , fname##16,  bitd ); \
+        PEL_LINK_SSE(pointer, 6, my , mx , fname##24,  bitd ); \
+        PEL_LINK_SSE(pointer, 7, my , mx , fname##32,  bitd ); \
+        PEL_LINK_SSE(pointer, 8, my , mx , fname##48,  bitd ); \
+        PEL_LINK_SSE(pointer, 9, my , mx , fname##64,  bitd )
 
 
 void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
@@ -260,6 +325,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     8);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8);
+
 
                     c->transform_skip     = ff_hevc_transform_skip_8_sse;
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
