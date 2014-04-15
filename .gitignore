@@ -5,7 +5,6 @@
 
 # Build directories
 /build*/
-bin/
 
 # Eclipse projects files
 .project

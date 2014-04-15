@@ -194,7 +194,8 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->transquant_bypass[1]   = FUNC(transquant_bypass8x8, depth);       \
     hevcdsp->transquant_bypass[2]   = FUNC(transquant_bypass16x16, depth);     \
     hevcdsp->transquant_bypass[3]   = FUNC(transquant_bypass32x32, depth);     \
-    hevcdsp->transform_skip         = FUNC(transform_skip, depth);             \
+    hevcdsp->transform_skip[0]      = FUNC(transform_skip, depth);             \
+    hevcdsp->transform_skip[1]      = FUNC(transform_skip_rot, depth);         \
     hevcdsp->transform_4x4_luma_add = FUNC(transform_4x4_luma_add, depth);     \
     hevcdsp->transform_add[0]       = FUNC(transform_4x4_add, depth);          \
     hevcdsp->transform_add[1]       = FUNC(transform_8x8_add, depth);          \
@@ -236,6 +237,35 @@ int i = 0;
         HEVC_DSP(8);
         break;
     }
+
+#ifdef SVC_EXTENSION
+#define HEVC_DSP_UP(depth)                                                 \
+    hevcdsp->upsample_base_layer_frame       = FUNC(upsample_base_layer_frame, depth); \
+    hevcdsp->upsample_filter_block_luma_h[0] = FUNC(upsample_filter_block_luma_h_all, depth); \
+    hevcdsp->upsample_filter_block_luma_h[1] = FUNC(upsample_filter_block_luma_h_x2, depth); \
+    hevcdsp->upsample_filter_block_luma_h[2] = FUNC(upsample_filter_block_luma_h_x1_5, depth); \
+    hevcdsp->upsample_filter_block_luma_v[0] = FUNC(upsample_filter_block_luma_v_all, depth); \
+    hevcdsp->upsample_filter_block_luma_v[1] = FUNC(upsample_filter_block_luma_v_x2, depth); \
+    hevcdsp->upsample_filter_block_luma_v[2] = FUNC(upsample_filter_block_luma_v_x1_5, depth); \
+    hevcdsp->upsample_filter_block_cr_h[0]   = FUNC(upsample_filter_block_cr_h_all, depth); \
+    hevcdsp->upsample_filter_block_cr_h[1]   = FUNC(upsample_filter_block_cr_h_x2, depth); \
+    hevcdsp->upsample_filter_block_cr_h[2]   = FUNC(upsample_filter_block_cr_h_x1_5, depth); \
+    hevcdsp->upsample_filter_block_cr_v[0]   = FUNC(upsample_filter_block_cr_v_all, depth); \
+    hevcdsp->upsample_filter_block_cr_v[1]   = FUNC(upsample_filter_block_cr_v_x2, depth); \
+    hevcdsp->upsample_filter_block_cr_v[2]   = FUNC(upsample_filter_block_cr_v_x1_5, depth); \
+    
+    switch (bit_depth) {
+    case 9:
+        HEVC_DSP_UP(9);
+        break;
+    case 10:
+        HEVC_DSP_UP(10);        
+        break;
+    default:
+        HEVC_DSP_UP(8);        
+        break;
+    }
+#endif
     if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 }

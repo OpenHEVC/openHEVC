@@ -327,18 +327,31 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8);
 
 
-                    c->transform_skip     = ff_hevc_transform_skip_8_sse;
+                    c->transform_skip[0]  = ff_hevc_transform_skip_8_sse;
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
                     c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
 
 #ifdef SVC_EXTENSION
-                    c->upsample_base_layer_frame = ff_upsample_base_layer_frame_sse;
-                    c->upsample_h_base_layer_frame = ff_upsample_base_layer_frame_sse_h;
-                    c->upsample_v_base_layer_frame = ff_upsample_base_layer_frame_sse_v;
+    c->upsample_filter_block_luma_h[1] = ff_upsample_filter_block_luma_h_x2_sse;
+    c->upsample_filter_block_cr_h[1] = ff_upsample_filter_block_cr_h_x2_sse;
+    c->upsample_filter_block_luma_v[1] = ff_upsample_filter_block_luma_v_x2_sse;
+    c->upsample_filter_block_cr_v[1] = ff_upsample_filter_block_cr_v_x2_sse;
+
+    c->upsample_filter_block_luma_h[2] = ff_upsample_filter_block_luma_h_x1_5_sse;
+    c->upsample_filter_block_cr_h[2] = ff_upsample_filter_block_cr_h_x1_5_sse;
+    c->upsample_filter_block_luma_v[2] = ff_upsample_filter_block_luma_v_x1_5_sse;
+    c->upsample_filter_block_cr_v[2] = ff_upsample_filter_block_cr_v_x1_5_sse;
+
+/*
+c->upsample_filter_block_luma_h[0] = ff_upsample_filter_block_luma_h_all_sse;
+c->upsample_filter_block_cr_h[0] = ff_upsample_filter_block_cr_h_all_sse;
+c->upsample_filter_block_luma_v[0] = ff_upsample_filter_block_luma_v_all_sse;
+c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
+*/
+
+
 #endif
-
-
                 }
 #endif //__SSE4_1__
                 if (EXTERNAL_AVX(mm_flags)) {
