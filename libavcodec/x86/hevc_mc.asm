@@ -538,7 +538,7 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 7, 7, 6, dst, dststride, src, srcstrid
 ; ******************************
 
 
-%macro HEVC_PUT_HEVC_EPEL_H 2
+%macro HEVC_PUT_HEVC_EPEL 2
 cglobal hevc_put_hevc_epel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
     EPEL_FILTER       %2, mx
@@ -579,7 +579,6 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 8, 8, 15, dst, dststride, src, srcstride, 
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
-%endmacro
 
 ; ******************************
 ; void put_hevc_epel_v(int16_t *dst, ptrdiff_t dststride,
@@ -588,7 +587,6 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 8, 8, 15, dst, dststride, src, srcstride, 
 ;                      int16_t* mcbuffer)
 ; ******************************
 
-%macro HEVC_PUT_HEVC_EPEL_V 2
 cglobal hevc_put_hevc_epel_v%1_%2, 7, 8, 15 , dst, dststride, src, srcstride, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
     sub             srcq, srcstrideq
@@ -764,7 +762,7 @@ cglobal hevc_put_hevc_bi_epel_hv%1_%2, 9, 11, 16, dst, dststride, src, srcstride
 ;                       int width, int height, int mx, int my)
 ; ******************************
 
-%macro HEVC_PUT_HEVC_QPEL_H 2
+%macro HEVC_PUT_HEVC_QPEL 2
 cglobal hevc_put_hevc_qpel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride, height, mx, rfilter
     QPEL_FILTER       %2, mx
 .loop
@@ -806,7 +804,6 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 8, 9, 16 , dst, dststride, src, srcstride,
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
-%endmacro
 
 
 ; ******************************
@@ -815,7 +812,6 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 8, 9, 16 , dst, dststride, src, srcstride,
 ;                       int width, int height, int mx, int my)
 ; ******************************
 
-%macro HEVC_PUT_HEVC_QPEL_V 2
 cglobal hevc_put_hevc_qpel_v%1_%2, 7, 14, 15 , dst, dststride, src, srcstride, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
     QPEL_FILTER       %2, my
@@ -1201,30 +1197,17 @@ HEVC_PUT_HEVC_PEL_PIXELS 6, 10
 HEVC_PUT_HEVC_PEL_PIXELS 8, 10
 
 
-HEVC_PUT_HEVC_EPEL_H 2,  8
-HEVC_PUT_HEVC_EPEL_H 4,  8
-HEVC_PUT_HEVC_EPEL_H 6,  8
-HEVC_PUT_HEVC_EPEL_H 8,  8
-HEVC_PUT_HEVC_EPEL_H 12, 8
-HEVC_PUT_HEVC_EPEL_H 16, 8
+HEVC_PUT_HEVC_EPEL 2,  8
+HEVC_PUT_HEVC_EPEL 4,  8
+HEVC_PUT_HEVC_EPEL 6,  8
+HEVC_PUT_HEVC_EPEL 8,  8
+HEVC_PUT_HEVC_EPEL 12, 8
+HEVC_PUT_HEVC_EPEL 16, 8
 
-HEVC_PUT_HEVC_EPEL_H 2, 10
-HEVC_PUT_HEVC_EPEL_H 4, 10
-HEVC_PUT_HEVC_EPEL_H 6, 10
-HEVC_PUT_HEVC_EPEL_H 8, 10
-
-
-HEVC_PUT_HEVC_EPEL_V 2,  8
-HEVC_PUT_HEVC_EPEL_V 4,  8
-HEVC_PUT_HEVC_EPEL_V 6,  8
-HEVC_PUT_HEVC_EPEL_V 8,  8
-HEVC_PUT_HEVC_EPEL_V 12, 8
-HEVC_PUT_HEVC_EPEL_V 16, 8
-
-HEVC_PUT_HEVC_EPEL_V 2, 10
-HEVC_PUT_HEVC_EPEL_V 4, 10
-HEVC_PUT_HEVC_EPEL_V 6, 10
-HEVC_PUT_HEVC_EPEL_V 8, 10
+HEVC_PUT_HEVC_EPEL 2, 10
+HEVC_PUT_HEVC_EPEL 4, 10
+HEVC_PUT_HEVC_EPEL 6, 10
+HEVC_PUT_HEVC_EPEL 8, 10
 
 
 HEVC_PUT_HEVC_EPEL_HV 2,  8
@@ -1238,22 +1221,13 @@ HEVC_PUT_HEVC_EPEL_HV 6, 10
 HEVC_PUT_HEVC_EPEL_HV 8, 10
 
 
-HEVC_PUT_HEVC_QPEL_H 4,  8
-HEVC_PUT_HEVC_QPEL_H 8,  8
-HEVC_PUT_HEVC_QPEL_H 12, 8
-HEVC_PUT_HEVC_QPEL_H 16, 8
+HEVC_PUT_HEVC_QPEL 4,  8
+HEVC_PUT_HEVC_QPEL 8,  8
+HEVC_PUT_HEVC_QPEL 12, 8
+HEVC_PUT_HEVC_QPEL 16, 8
 
-HEVC_PUT_HEVC_QPEL_H 4, 10
-HEVC_PUT_HEVC_QPEL_H 8, 10
-
-
-HEVC_PUT_HEVC_QPEL_V 4,  8
-HEVC_PUT_HEVC_QPEL_V 8,  8
-HEVC_PUT_HEVC_QPEL_V 12, 8
-HEVC_PUT_HEVC_QPEL_V 16, 8
-
-HEVC_PUT_HEVC_QPEL_V 4, 10
-HEVC_PUT_HEVC_QPEL_V 8, 10
+HEVC_PUT_HEVC_QPEL 4, 10
+HEVC_PUT_HEVC_QPEL 8, 10
 
 HEVC_PUT_HEVC_QPEL_HV 2, 8
 HEVC_PUT_HEVC_QPEL_HV 4, 8
