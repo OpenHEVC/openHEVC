@@ -483,45 +483,6 @@ QPEL_TABLE 10, 4, w, sse4
 %endif
 %endmacro
 
-%macro UNI_W_COMPUTE 9 ; width, bitd, srcl, wx, offset, shift, ox, tmp1, tmp2;
-    pmulhw            %8, %3, %4
-    pmullw            %3, %4
-    punpckhwd         %9, %3, %8
-    punpcklwd         %3, %8
-    paddd             %3, %5
-    paddd             %9, %5
-    psrad             %3, %6
-    psrad             %9, %6
-    paddd             %3, %7
-    paddd             %9, %7
-    packssdw          %3, %9
-%if %2 == 8
-    packuswb          %3, %3
-%else
-    pminsw            %3, [max_pixels_%2]
-    pmaxsw            %3, [zero]
-%if %1 > 8
-    pminsw            %4, [max_pixels_%2]
-    pmaxsw            %4, [zero]
-%endif
-%endif
-%endmacro
-
-%macro W_INIT 5 ;wx, ox, shift, offset, bitd
-    lea          shiftd, [denomd+14-%5]          ; shift = 14 - bitd + denom
-    shl             oxd, %5-8                    ; ox << (bitd - 8)
-    movd             %1, wxd
-    movd             %2, oxd
-    movd             %3, shiftd
-    punpcklwd        %1, %1
-    pshufd           %3, %3, 0
-    pshufd           %2, %2, 0
-    movdqa           %4, [one_per_32]
-    pshufd           %1, %1, 0
-    pslld            %4, %3
-    psrld            %4, [one_per_32]      ; offset = 1 << (shift - 1)
-%endmacro
-
 INIT_XMM sse4                                    ; adds ff_ and _sse4 to function name
 ; ******************************
 ; void put_hevc_mc_pixels(int16_t *dst, ptrdiff_t dststride,
@@ -1131,8 +1092,8 @@ cglobal hevc_put_hevc_bi_qpel_hv%1_%2, 9, 11, 16, dst, dststride, src, srcstride
     RET
 %endmacro
 
-%macro UNI_W 2
-cglobal hevc_put_hevc_uni_w%1_%2, 8, 10, 11, dst, dststride, src, srcstride, height, denom, wx, ox, shift, temp
+%macro WEIGHTING_FUNCS 2
+cglobal hevc_put_hevc_uni_w%1_%2, 8, 10, 11, dst, dststride, src, srcstride, height, denom, wx, ox, shift
     lea          shiftd, [denomd+14-%2]          ; shift = 14 - bitd + denom
     shl             oxd, %2-8                    ; ox << (bitd - 8)
     movd             m2, wxd        ; WX
@@ -1141,12 +1102,12 @@ cglobal hevc_put_hevc_uni_w%1_%2, 8, 10, 11, dst, dststride, src, srcstride, hei
     punpcklwd        m2, m2
     pshufd           m3, m3, 0
     pshufd           m2, m2, 0
-    sub             shiftd, 1
-    movd            m6, shiftd
+    sub          shiftd, 1
+    movd             m6, shiftd
     movdqu           m5, [one_per_32]
     pslld            m5, m6
 .loop
-   SIMPLE_LOAD       %1, 10, srcq, m0
+   SIMPLE_LOAD        %1, 10, srcq, m0
     pmulhw            m6, m0, m2
     pmullw            m0, m2
     punpckhwd         m1, m0, m6
@@ -1169,12 +1130,62 @@ cglobal hevc_put_hevc_uni_w%1_%2, 8, 10, 11, dst, dststride, src, srcstride, hei
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
     RET
+
+cglobal hevc_put_hevc_bi_w%1_%2, 12, 14, 14, dst, dststride, src, srcstride, src2, src2stride, height, denom, wx0, wx1, ox0, ox1, shift, temp
+    shl             ox0d, %2-8                    ; ox << (bitd - 8)
+    shl             ox1d, %2-8                    ; ox << (bitd - 8)
+    lea           shiftd, [denomd+14-%2]          ; shift = 14 - bitd + denom
+    movd              m2, wx0d        ; WX0
+    movd              m3, wx1d        ; WX1
+    punpcklwd         m2, m2
+    punpcklwd         m3, m3
+    pshufd            m2, m2, 0
+    pshufd            m3, m3, 0
+    add             ox0d, ox1d
+    add             ox0d, 1
+    movd              m4, ox0d         ; offset
+    pshufd            m4, m4, 0
+    movd              m5, shiftd       ; shift
+    pslld             m4, m5
+    add           shiftd, 1
+    movd              m5, shiftd       ; shift
+
+.loop
+   SIMPLE_LOAD        %1, 10, srcq,  m0
+   SIMPLE_LOAD        %1, 10, src2q, m10
+    pmulhw            m6, m0, m3
+    pmullw            m0, m3
+    pmulhw            m7, m10, m2
+    pmullw           m10, m2
+    punpckhwd         m1, m0, m6
+    punpcklwd         m0, m6
+    punpckhwd        m11, m10, m7
+    punpcklwd        m10, m7
+    paddd             m0, m10
+    paddd             m1, m11
+    paddd             m0, m4
+    paddd             m1, m4
+    psrad             m0, m5
+    psrad             m1, m5
+    packusdw          m0, m1
+%if %2 == 8
+    packuswb          m0, m0
+%else
+    pminsw            m0, [max_pixels_%2]
+%endif
+    PEL_%2STORE%1   dstq, m0, m1
+    lea             dstq, [dstq+dststrideq]      ; dst += dststride
+    lea             srcq, [srcq+2*srcstrideq]      ; src += srcstride
+    lea            src2q, [src2q+2*src2strideq]      ; src2 += srcstride
+    dec          heightd                         ; cmp height
+    jnz               .loop                      ; height loop
+    RET
 %endmacro
 
-UNI_W 2, 8
-UNI_W 4, 8
-UNI_W 6, 8
-UNI_W 8, 8
+WEIGHTING_FUNCS 2, 8
+WEIGHTING_FUNCS 4, 8
+WEIGHTING_FUNCS 6, 8
+WEIGHTING_FUNCS 8, 8
 
 
 HEVC_PUT_HEVC_PEL_PIXELS  2, 8

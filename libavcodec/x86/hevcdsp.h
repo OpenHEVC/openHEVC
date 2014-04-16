@@ -13,7 +13,7 @@ dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4; \
 dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _sse4; \
 dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse4; \
 dst ## _uni_w[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _sse4; \
-dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _sse
+dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _sse4
 
 #define PEL_LINK_SSE(dst, idx1, idx2, idx3, name, D) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _sse; \
@@ -36,7 +36,7 @@ void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse4(int16_t *dst, ptrdiff_t dststr
 void ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _sse4(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, intptr_t mx, intptr_t my, int width); \
 void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse4(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
 void ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _sse4(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width); \
-void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
+void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _sse4(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 
 #define PEL_PROTOTYPE_SSE(name, D) \
 void ff_hevc_put_hevc_ ## name ## _ ## D ## _sse(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
@@ -103,17 +103,6 @@ void ff_hevc_transform_32x32_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdi
         PEL_PROTOTYPE(fname##32, bitd); \
         PEL_PROTOTYPE(fname##48, bitd); \
         PEL_PROTOTYPE(fname##64, bitd)
-
-#define EPEL_PROTOTYPES_SSE(fname, bitd) \
-        PEL_PROTOTYPE_SSE(fname##4,  bitd); \
-        PEL_PROTOTYPE_SSE(fname##6,  bitd); \
-        PEL_PROTOTYPE_SSE(fname##8,  bitd); \
-        PEL_PROTOTYPE_SSE(fname##12, bitd); \
-        PEL_PROTOTYPE_SSE(fname##16, bitd); \
-        PEL_PROTOTYPE_SSE(fname##24, bitd); \
-        PEL_PROTOTYPE_SSE(fname##32, bitd); \
-        PEL_PROTOTYPE_SSE(fname##48, bitd); \
-        PEL_PROTOTYPE_SSE(fname##64, bitd)
 
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL_PIXELS EPEL_PIXELS
