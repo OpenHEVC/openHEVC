@@ -104,6 +104,8 @@ DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_luma_x1_5_v_sse[9][8]
     {   0,  64,   0,  64,   0,  64,   0,  64 }
 };
 
+#if HAVE_SSE
+
 void ff_upsample_filter_block_luma_h_all_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
             int x_EL, int x_BL, int block_w, int block_h, int widthEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info){
@@ -591,3 +593,4 @@ void ff_upsample_filter_block_cr_v_x1_5_sse(uint8_t *_dst, ptrdiff_t dststride, 
         dst += dststride;
     }
 }
+#endif //HAVE_SSE
