@@ -51,7 +51,7 @@ LFL_FUNCS(uint8_t,   8)
 LFL_FUNCS(uint8_t,  10)
 
 
-#ifdef OPTI_ASM
+#if !ARCH_X86_32 && defined(OPTI_ASM)
 
 #define mc_rep_func(name, bitd, step, W) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_sse4(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width) \
