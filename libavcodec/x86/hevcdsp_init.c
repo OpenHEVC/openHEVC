@@ -95,7 +95,7 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dsts
         src  = _src + (i * ((bitd + 7) / 8));                                                                   \
         dst  = _dst + (i * ((bitd + 7) / 8));                                                                   \
         src2 = _src2 + i;                                                                                       \
-        ff_hevc_put_hevc_bi_##name##step##_##bitd##_sse4(dst, dststride, src, _srcstride, _src2,                \
+        ff_hevc_put_hevc_bi_##name##step##_##bitd##_sse4(dst, dststride, src, _srcstride, src2,                 \
                                                          _src2stride, height, mx, my, width);                   \
     }                                                                                                           \
 }
