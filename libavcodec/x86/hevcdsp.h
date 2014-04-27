@@ -104,6 +104,16 @@ void ff_hevc_transform_32x32_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdi
         PEL_PROTOTYPE(fname##48, bitd); \
         PEL_PROTOTYPE(fname##64, bitd)
 
+#define QPEL_PROTOTYPES_SSE(fname, bitd) \
+PEL_PROTOTYPE_SSE(fname##4,  bitd); \
+PEL_PROTOTYPE_SSE(fname##8,  bitd); \
+PEL_PROTOTYPE_SSE(fname##12, bitd); \
+PEL_PROTOTYPE_SSE(fname##16, bitd); \
+PEL_PROTOTYPE_SSE(fname##24, bitd); \
+PEL_PROTOTYPE_SSE(fname##32, bitd); \
+PEL_PROTOTYPE_SSE(fname##48, bitd); \
+PEL_PROTOTYPE_SSE(fname##64, bitd)
+
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL_PIXELS EPEL_PIXELS
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,9 +136,11 @@ EPEL_PROTOTYPES(epel_hv , 10);
 ///////////////////////////////////////////////////////////////////////////////
 QPEL_PROTOTYPES(qpel_h ,  8);
 QPEL_PROTOTYPES(qpel_h , 10);
+QPEL_PROTOTYPES_SSE(qpel_h , 10);
 
 QPEL_PROTOTYPES(qpel_v,  8);
 QPEL_PROTOTYPES(qpel_v, 10);
+QPEL_PROTOTYPES_SSE(qpel_v, 10);
 
 QPEL_PROTOTYPES(qpel_hv,  8);
 QPEL_PROTOTYPES(qpel_hv, 10);
