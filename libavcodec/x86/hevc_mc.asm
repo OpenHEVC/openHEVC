@@ -359,7 +359,7 @@ QPEL_TABLE 10, 4, w, sse4
 %if %1 == 8
     pmaddubsw         m0, %3   ;x1*c1+x2*c2
     pmaddubsw         m2, %4   ;x3*c3+x4*c4
-    paddw             m0, m2    
+    paddw             m0, m2
 %if %2 > 8
     pmaddubsw         m1, %3
     pmaddubsw         m3, %4
@@ -374,7 +374,7 @@ QPEL_TABLE 10, 4, w, sse4
     pmaddwd           m3, %4
     paddd             m1, m3
 %endif
-    psrad             m0, %1-8 
+    psrad             m0, %1-8
     psrad             m1, %1-8
     packssdw          m0, m1
 %endif
@@ -1183,6 +1183,10 @@ WEIGHTING_FUNCS 4, 8
 WEIGHTING_FUNCS 6, 8
 WEIGHTING_FUNCS 8, 8
 
+WEIGHTING_FUNCS 2, 10
+WEIGHTING_FUNCS 4, 10
+WEIGHTING_FUNCS 6, 10
+WEIGHTING_FUNCS 8, 10
 
 HEVC_PUT_HEVC_PEL_PIXELS  2, 8
 HEVC_PUT_HEVC_PEL_PIXELS  4, 8
