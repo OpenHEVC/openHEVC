@@ -1921,14 +1921,10 @@ GEN_FUNC(PEL_PIXELS,  4, 8)
 GEN_FUNC(PEL_PIXELS,  6, 8)
 GEN_FUNC(PEL_PIXELS,  8, 8)
 GEN_FUNC(PEL_PIXELS, 16, 8)
-#endif //HAVE_SSE4
-
-#if HAVE_SSSE3
 GEN_FUNC(PEL_PIXELS,  2, 10)
 GEN_FUNC(PEL_PIXELS,  4, 10)
 GEN_FUNC(PEL_PIXELS,  6, 10)
 GEN_FUNC(PEL_PIXELS,  8, 10)
-
 // ff_hevc_put_hevc_epel_hX_X_sse
 GEN_FUNC(EPEL_H,  2,  8)
 GEN_FUNC(EPEL_H,  4,  8)
@@ -2128,6 +2124,6 @@ mc_red_func(epel_hv,10, 8, 32);
 mc_red_func(epel_hv,10, 8, 48);
 mc_red_func(epel_hv,10, 8, 64);
 
-#endif //HAVE_SSSE3
+#endif //HAVE_SSE4
 
 

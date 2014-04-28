@@ -407,7 +407,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #endif
                 }
 #endif //HAVE_SSSE3
-#if HAVE_SSE42
+#if HAVE_SSE4
 
                 if (EXTERNAL_SSE4(mm_flags)) {
 
@@ -474,7 +474,7 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 #endif
                 }
 #endif //HAVE_SSSE3
-#if HAVE_SSE42
+#if HAVE_SSE4
                 if (EXTERNAL_SSE4(mm_flags)) {
                     c->transform_4x4_luma_add   = ff_hevc_transform_4x4_luma_add_10_sse4;
                     c->transform_add[0]         = ff_hevc_transform_4x4_add_10_sse4;
@@ -496,7 +496,7 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
                     c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
                 }
-#endif //HAVE_SSE42
+#endif
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
             }
