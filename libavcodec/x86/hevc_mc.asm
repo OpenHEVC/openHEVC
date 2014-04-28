@@ -781,7 +781,10 @@ cglobal hevc_put_hevc_uni_qpel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride
 .loop
     QPEL_H_LOAD       %2, srcq, %1, 10
     QPEL_COMPUTE      %1, %2
-    UNI_COMPUTE       %1, %2, m0, m1, [pw_%2]
+%if %2 > 8
+    packssdw          m0, m1
+%endif
+    UNI_COMPUTE       %1, %2, m0, m1, m9
     PEL_%2STORE%1   dstq, m0, m1
     lea             dstq, [dstq+dststrideq]      ; dst += dststride
     lea             srcq, [srcq+srcstrideq]      ; src += srcstride
@@ -795,6 +798,9 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 8, 9, 16 , dst, dststride, src, srcstride,
 .loop
     QPEL_H_LOAD       %2, srcq, %1, 10
     QPEL_COMPUTE      %1, %2
+%if %2 > 8
+    packssdw          m0, m1
+%endif
     SIMPLE_BILOAD     %1, src2q, m10, m11
     BI_COMPUTE        %1, %2, m0, m1, m10, m11, m9
     PEL_%2STORE%1   dstq, m0, m1
@@ -851,6 +857,9 @@ cglobal hevc_put_hevc_bi_qpel_v%1_%2, 9, 14, 16 , dst, dststride, src, srcstride
     SIMPLE_BILOAD     %1, src2q, m10, m11
     QPEL_V_LOAD       %2, srcq, srcstride, %1
     QPEL_COMPUTE      %1, %2
+%if %2 > 8
+    packssdw          m0, m1
+%endif
     BI_COMPUTE        %1, %2, m0, m1, m10, m11, m9
     PEL_%2STORE%1   dstq, m0, m1
     lea             dstq, [dstq+dststrideq]      ; dst += dststride

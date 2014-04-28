@@ -364,15 +364,6 @@ mc_bi_w_funcs(qpel_hv, 10);
         PEL_LINK(pointer, 8, my , mx , fname##48,  bitd ); \
         PEL_LINK(pointer, 9, my , mx , fname##64,  bitd )
 
-#define QPEL_LINKS_TMP(pointer, my, mx, fname, bitd)           \
-PEL_LINK_SSE(pointer, 1, my , mx , fname##4 ,  bitd ); \
-PEL_LINK_SSE(pointer, 3, my , mx , fname##8 ,  bitd ); \
-PEL_LINK_SSE(pointer, 4, my , mx , fname##12,  bitd ); \
-PEL_LINK_SSE(pointer, 5, my , mx , fname##16,  bitd ); \
-PEL_LINK_SSE(pointer, 6, my , mx , fname##24,  bitd ); \
-PEL_LINK_SSE(pointer, 7, my , mx , fname##32,  bitd ); \
-PEL_LINK_SSE(pointer, 8, my , mx , fname##48,  bitd ); \
-PEL_LINK_SSE(pointer, 9, my , mx , fname##64,  bitd )
 
 void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
@@ -483,7 +474,7 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 #endif
                 }
 #endif //__SSSE3__
-#ifdef __SSE4_1__
+#if __SSE4_1__
                 if (EXTERNAL_SSE4(mm_flags)) {
                     c->transform_4x4_luma_add   = ff_hevc_transform_4x4_luma_add_10_sse4;
                     c->transform_add[0]         = ff_hevc_transform_4x4_add_10_sse4;
@@ -497,8 +488,8 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,    10);
 
                     QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 10);
-                    QPEL_LINKS_TMP(c->put_hevc_qpel, 0, 1, qpel_h,     10);
-                    QPEL_LINKS_TMP(c->put_hevc_qpel, 1, 0, qpel_v,     10);
+                    QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     10);
+                    QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10);
 
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
