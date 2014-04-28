@@ -542,6 +542,15 @@ fail:
     return ret;
 }
 
+static int is_sps_exist(HEVCContext *s, const HEVCSPS* last_sps) {
+    int i;
+    for( i = 0; i < MAX_SPS_COUNT; i++)
+        if(s->sps_list[i])
+            if (last_sps == (HEVCSPS*)s->sps_list[i]->data)
+                return 1;
+    return 0;
+}
+
 static int hls_slice_header(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -588,9 +597,12 @@ static int hls_slice_header(HEVCContext *s)
     if (s->sps != (HEVCSPS*)s->sps_list[s->pps->sps_id]->data) {
         const HEVCSPS* last_sps = s->sps;
         s->sps = (HEVCSPS*)s->sps_list[s->pps->sps_id]->data;
-        if(last_sps) {
-            if (s->sps->width !=  last_sps->width || s->sps->height != last_sps->height ||
-                s->sps->temporal_layer[s->sps->max_sub_layers - 1].max_dec_pic_buffering != last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
+        if( last_sps ) {
+            if( is_sps_exist(s, last_sps) ) {
+                if (s->sps->width !=  last_sps->width || s->sps->height != last_sps->height ||
+                        s->sps->temporal_layer[s->sps->max_sub_layers - 1].max_dec_pic_buffering != last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
+                    sh->no_output_of_prior_pics_flag = 0;
+            } else
                 sh->no_output_of_prior_pics_flag = 0;
         }
         ff_hevc_clear_refs(s);
