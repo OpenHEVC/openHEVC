@@ -33,7 +33,7 @@
 #if HAVE_SSSE3
 #include <tmmintrin.h>
 #endif
-#if HAVE_SSE41
+#if HAVE_SSE42
 #include <smmintrin.h>
 #endif
 
@@ -1915,7 +1915,7 @@ static PUT_HEVC_BI_W_ ## FUNC ##14(H, 8)                                       \
 static PUT_HEVC_BI_W_ ## FUNC ##14(H,10)
 
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
-#if HAVE_SSE41
+#if HAVE_SSE42
 GEN_FUNC(PEL_PIXELS,  2, 8)
 GEN_FUNC(PEL_PIXELS,  4, 8)
 GEN_FUNC(PEL_PIXELS,  6, 8)

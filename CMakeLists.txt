@@ -5,11 +5,6 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 message("DEBUG: CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 
-include(OptimizeForArchitecture)
-OptimizeForArchitecture()
-
-configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
-
 if(WIN32)
     add_definitions(
         -Dsnprintf=avpriv_snprintf
@@ -17,6 +12,12 @@ if(WIN32)
         -Dinline=__inline
         -Drestrict=__restrict
     )
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        #architecture = x64
+        add_definitions(-D__SSE4_1__=1 -D__SSSE3__=1 -D__SSE2__=1 -D__is_x64__=1)
+    else()
+        #architecture = x86
+    endif()
 endif()
 
 # Configure build type (Release when no one is selected)
@@ -28,9 +29,10 @@ else()
 endif()
 
 #find asm compiler
-find_program(YASM_EXECUTABLE yasm)
+find_package(Yasm)
 
 #define asm sources
+if(YASM_FOUND)
 set(YASM_NAMES
     libavutil/x86/cpuid.asm
     libavutil/x86/emms.asm
@@ -86,6 +88,7 @@ foreach(_asm_file ${YASM_NAMES})
         #architecture = x86
     endif()
 endforeach()
+endif(YASM_FOUND)
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
     if(MINGW)
@@ -301,11 +304,11 @@ install(
         WORLD_READ WORLD_EXECUTE
 )
 
-# uninstall target
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/uninstall_target.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/uninstall_target.cmake"
     IMMEDIATE @ONLY)
 
+# uninstall target
 add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall_target.cmake)

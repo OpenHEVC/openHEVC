@@ -34,7 +34,7 @@
 #if HAVE_SSSE3
 #include <tmmintrin.h>
 #endif
-#if HAVE_SSE41
+#if HAVE_SSE42
 #include <smmintrin.h>
 #endif
 
@@ -116,7 +116,7 @@ SAO_BAND_FILTER( 8,  8)
 SAO_BAND_FILTER( 8, 10)
 #endif // HAVE_SSSE3
 
-#if HAVE_SSE41
+#if HAVE_SSE42
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////

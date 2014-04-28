@@ -11,7 +11,7 @@
 #if HAVE_SSSE3
 #include <tmmintrin.h>
 #endif
-#if HAVE_SSE41
+#if HAVE_SSE42
 #include <smmintrin.h>
 #endif
 
@@ -261,7 +261,7 @@ DECLARE_ALIGNED(16, static const int16_t, transform32x32[8][16][8] )=
 #define shift_1st 7
 #define add_1st (1 << (shift_1st - 1))
 
-#if HAVE_SSE41
+#if HAVE_SSE42
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
 {
     uint8_t *dst = (uint8_t*)_dst;
