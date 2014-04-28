@@ -28,13 +28,13 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
-#ifdef __SSE2__
+#if HAVE_SSE2
 #include <emmintrin.h>
 #endif
-#ifdef __SSSE3__
+#if HAVE_SSSE3
 #include <tmmintrin.h>
 #endif
-#ifdef __SSE4_1__
+#if HAVE_SSE42
 #include <smmintrin.h>
 #endif
 
@@ -196,7 +196,7 @@ SAO_BAND_FILTER( 8, 10)
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#ifdef __SSE4_1__
+#if HAVE_SSE42
 #define SAO_EDGE_FILTER(D)                                                     \
 static av_always_inline void ff_hevc_sao_edge_filter_ ## D ##_sse(             \
         uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,\
@@ -326,4 +326,4 @@ SAO_EDGE_FILTER_1( 8)
 
 SAO_EDGE_FILTER_0(10)
 SAO_EDGE_FILTER_1(10)
-#endif //__SSE4_1__
+#endif //HAVE_SSE42

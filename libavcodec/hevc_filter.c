@@ -30,13 +30,13 @@
 #include "hevc.h"
 #include "bit_depth_template.c"
 
-#ifdef __SSE2__
+#if HAVE_SSE2
 #include <emmintrin.h>
 #endif
-#ifdef __SSSE3__
+#if HAVE_SSSE3
 #include <tmmintrin.h>
 #endif
-#ifdef __SSE4_1__
+#if HAVE_SSE42
 #include <smmintrin.h>
 #endif
 
@@ -529,7 +529,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
         if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
             s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
             neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
-#if __SSE4_1__
+#if HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -553,7 +553,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 #endif
         } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
                    neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
-#if __SSE4_1__
+#if HAVE_SSE42
             __m128i x0, x1;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -571,7 +571,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 #endif
         } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
                    neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
-#if __SSE4_1__
+#if HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);

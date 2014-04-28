@@ -6,13 +6,13 @@
 #include "libavcodec/x86/hevcdsp.h"
 #include "libavcodec/bit_depth_template.c"
 
-#ifdef __SSE2__
+#if HAVE_SSE2
 #include <emmintrin.h>
 #endif
-#ifdef __SSSE3__
+#if HAVE_SSSE3
 #include <tmmintrin.h>
 #endif
-#ifdef __SSE4_1__
+#if HAVE_SSE42
 #include <smmintrin.h>
 #endif
 
@@ -104,7 +104,7 @@ DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_luma_x1_5_v_sse[9][8]
     {   0,  64,   0,  64,   0,  64,   0,  64 }
 };
 
-#if HAVE_SSE
+#if HAVE_SSE42
 
 void ff_upsample_filter_block_luma_h_all_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
             int x_EL, int x_BL, int block_w, int block_h, int widthEL,
@@ -593,4 +593,4 @@ void ff_upsample_filter_block_cr_v_x1_5_sse(uint8_t *_dst, ptrdiff_t dststride, 
         dst += dststride;
     }
 }
-#endif //HAVE_SSE
+#endif //HAVE_SSE42

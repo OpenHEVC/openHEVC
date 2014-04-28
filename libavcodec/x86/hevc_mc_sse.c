@@ -27,13 +27,13 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
-#ifdef __SSE2__
+#if HAVE_SSE2
 #include <emmintrin.h>
 #endif
-#ifdef __SSSE3__
+#if HAVE_SSSE3
 #include <tmmintrin.h>
 #endif
-#ifdef __SSE4_1__
+#if HAVE_SSE42
 #include <smmintrin.h>
 #endif
 

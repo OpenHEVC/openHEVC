@@ -379,13 +379,13 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 /* MMEXT optimizations */
 #endif /* ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL */
 
-#ifdef __SSE2__
+#if HAVE_SSE2
                 if (EXTERNAL_SSE2(mm_flags)) {
                     c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
                     c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
                 }
-#endif //__SSE2__
-#ifdef __SSSE3__
+#endif //HAVE_SSE2
+#if HAVE_SSSE3
                 if (EXTERNAL_SSSE3(mm_flags)) {
 
                     c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
@@ -406,8 +406,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
 #endif
                 }
-#endif //__SSSE3__
-#ifdef __SSE4_1__
+#endif //HAVE_SSSE3
+#if HAVE_SSE42
 
                 if (EXTERNAL_SSE4(mm_flags)) {
 
@@ -447,7 +447,7 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 
 #endif
                 }
-#endif //__SSE4_1__
+#endif //HAVE_SSE42
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
             }
@@ -457,7 +457,7 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
             if (EXTERNAL_MMXEXT(mm_flags)) {
 #if ARCH_X86_32
 #endif /* ARCH_X86_32 */
-#ifdef __SSE2__
+#if HAVE_SSE2
                 if (EXTERNAL_SSE2(mm_flags)) {
 //                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
 //                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
@@ -465,16 +465,16 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     /*stuff that requires aligned stack */
 #endif /* HAVE_ALIGNED_STACK */
                 }
-#endif /* __SSE2__ */
-#ifdef __SSSE3__
+#endif // HAVE_SSE2
+#if HAVE_SSSE3
                 if (EXTERNAL_SSSE3(mm_flags)) {
 #if ARCH_X86_64
 //                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
 //                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
 #endif
                 }
-#endif //__SSSE3__
-#if __SSE4_1__
+#endif //HAVE_SSSE3
+#if HAVE_SSE42
                 if (EXTERNAL_SSE4(mm_flags)) {
                     c->transform_4x4_luma_add   = ff_hevc_transform_4x4_luma_add_10_sse4;
                     c->transform_add[0]         = ff_hevc_transform_4x4_add_10_sse4;
@@ -496,7 +496,7 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
                     c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
                 }
-#endif //__SSE4_1__
+#endif //HAVE_SSE42
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
             }
