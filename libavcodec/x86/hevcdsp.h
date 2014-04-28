@@ -45,6 +45,25 @@ void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _sse(uint8_t *_dst, ptrdiff_t _d
 void ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width); \
 void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _sse(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 
+
+#define WEIGHTING_PROTOTYPE(width, bitd) \
+void ff_hevc_put_hevc_uni_w##width##_##bitd##_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox); \
+void ff_hevc_put_hevc_bi_w##width##_##bitd##_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)
+
+
+#define WEIGHTING_PROTOTYPES(bitd) \
+		WEIGHTING_PROTOTYPE(2, bitd); \
+		WEIGHTING_PROTOTYPE(4, bitd); \
+		WEIGHTING_PROTOTYPE(6, bitd); \
+		WEIGHTING_PROTOTYPE(8, bitd); \
+		WEIGHTING_PROTOTYPE(12, bitd); \
+		WEIGHTING_PROTOTYPE(16, bitd); \
+		WEIGHTING_PROTOTYPE(24, bitd); \
+		WEIGHTING_PROTOTYPE(32, bitd); \
+		WEIGHTING_PROTOTYPE(48, bitd); \
+		WEIGHTING_PROTOTYPE(64, bitd)
+
+
 #ifdef OPTI_ASM
 #define PEL_PROTOTYPE(name, D) \
 PEL_PROTOTYPE_ASM(name, D)
@@ -134,49 +153,8 @@ QPEL_PROTOTYPES(qpel_v, 10);
 QPEL_PROTOTYPES(qpel_hv,  8);
 QPEL_PROTOTYPES(qpel_hv, 10);
 
-void ff_hevc_put_hevc_uni_w2_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w4_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w6_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w8_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w12_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w16_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w24_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w32_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w48_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w64_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-
-void ff_hevc_put_hevc_bi_w2_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w4_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w6_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w8_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w12_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w16_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w24_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w32_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w48_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w64_8_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-
-void ff_hevc_put_hevc_uni_w2_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w4_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w6_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w8_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w12_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w16_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w24_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w32_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w48_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-void ff_hevc_put_hevc_uni_w64_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox);
-
-void ff_hevc_put_hevc_bi_w2_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w4_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w6_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w8_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w12_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w16_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w24_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w32_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w48_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
-void ff_hevc_put_hevc_bi_w64_10_sse4(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1);
+WEIGHTING_PROTOTYPES(8);
+WEIGHTING_PROTOTYPES(11);
 
 /* ASM wrapper */
 
