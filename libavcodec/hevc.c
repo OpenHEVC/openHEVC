@@ -590,7 +590,6 @@ static int hls_slice_header(HEVCContext *s)
     if (!sh->first_slice_in_pic_flag &&
         s->pps != (HEVCPPS*)s->pps_list[sh->pps_id]->data) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
-        return AVERROR_INVALIDDATA;
     }
     s->pps = (HEVCPPS*)s->pps_list[sh->pps_id]->data;
 
