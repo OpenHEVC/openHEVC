@@ -174,7 +174,7 @@ static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int cpu_flags)
 
 static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int cpu_flags)
 {
-#if HAVE_MMXEXT_EXTERNAL
+#if HAVE_MMXEXT_EXTERNAL && HAVE_YASM
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_mmxext;
     c->put_pixels_tab[0][2] = put_pixels16_y2_mmxext;
 

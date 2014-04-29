@@ -559,7 +559,7 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     }
 #endif /* HAVE_MMXEXT_INLINE */
 
-#if HAVE_MMXEXT_EXTERNAL
+#if HAVE_MMXEXT_EXTERNAL && HAVE_YASM
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
     SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
 
