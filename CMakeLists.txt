@@ -3,10 +3,40 @@ project (openHEVC)
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
 message("DEBUG: CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
-message("DEBUG: CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
+message("DEBUG: CMAKE_SYSTEM_NAME      = ${CMAKE_SYSTEM_NAME}")
 
+macro (my_check_function_exists arg result)
+  check_function_exists(${arg} ${result})
+  if(${result} STREQUAL "")
+    set(${result} 0)
+  endif()
+endmacro (my_check_function_exists)
+
+macro (my_check_include_files arg result)
+  check_include_files(${arg} ${result})
+  if(${result} STREQUAL "")
+    set(${result} 0)
+  endif()
+endmacro (my_check_include_files)
+
+include(CheckFunctionExists)
+include(CheckIncludeFiles)
 include(OptimizeForArchitecture)
+
 OptimizeForArchitecture()
+
+my_check_function_exists(GetProcessAffinityMask GETPROCESSAFFINITYMASK_FOUND)
+my_check_function_exists(gettimeofday           GETTIMEOFDAY_FOUND)
+my_check_function_exists(sched_getaffinity      SCHED_GETAFFINITY_FOUND)
+my_check_function_exists(strerror_r             STRERROR_R_FOUND)
+my_check_function_exists(sysconf                SYSCONF_FOUND)
+my_check_function_exists(usleep                 USLEEP_FOUND)
+
+my_check_include_files(fcntl.h                  FCNTL_H_FOUND)
+my_check_include_files(pthread.h                PTHREADS_FOUND)
+my_check_include_files(unistd.h                 UNISTD_H_FOUND)
+my_check_include_files(windows.h                WINDOWS_H_FOUND)
+
 
 configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
 
