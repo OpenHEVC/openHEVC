@@ -110,12 +110,7 @@ foreach(_asm_file ${YASM_NAMES})
         ARGS ${YASM_ARGS} -o ${YASM_OBJ} ${YASM_SRC}
         DEPENDS ${YASM_SRC}
     )
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        #architecture = x64
-        set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
-    else()
-        #architecture = x86
-    endif()
+    set(YASM_OBJECTS ${YASM_OBJECTS} ${YASM_OBJ})
 endforeach()
 endif(YASM_FOUND)
 
