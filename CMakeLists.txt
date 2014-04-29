@@ -37,6 +37,9 @@ my_check_include_files(pthread.h                PTHREADS_FOUND)
 my_check_include_files(unistd.h                 UNISTD_H_FOUND)
 my_check_include_files(windows.h                WINDOWS_H_FOUND)
 
+#find asm compiler
+find_package(Yasm)
+set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ${_force})
 
 configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
 
@@ -56,10 +59,6 @@ if(NOT CMAKE_BUILD_TYPE)
 else()
     set(BUILDTYPE_MSG "${CMAKE_BUILD_TYPE}")
 endif()
-
-#find asm compiler
-find_package(Yasm)
-
 
 #define asm sources
 if(YASM_FOUND)
@@ -119,8 +118,6 @@ foreach(_asm_file ${YASM_NAMES})
     endif()
 endforeach()
 endif(YASM_FOUND)
-
-set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ${_force})
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
     if(MINGW)
