@@ -311,6 +311,7 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 }
 #endif //HAVE_SSE42
 
+#if HAVE_SSSE3
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -973,3 +974,4 @@ TRANSFORM_DC_ADD( 4,10)
 TRANSFORM_DC_ADD( 8,10)
 TRANSFORM_DC_ADD(16,10)
 TRANSFORM_DC_ADD(32,10)
+#endif

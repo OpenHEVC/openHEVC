@@ -58,9 +58,11 @@ else()
 endif()
 
 #find asm compiler
-find_program(YASM_EXECUTABLE yasm)
+find_package(Yasm)
+
 
 #define asm sources
+if(YASM_FOUND)
 set(YASM_NAMES
     libavutil/x86/cpuid.asm
     libavutil/x86/emms.asm
@@ -116,6 +118,9 @@ foreach(_asm_file ${YASM_NAMES})
         #architecture = x86
     endif()
 endforeach()
+endif(YASM_FOUND)
+
+set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ${_force})
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
     if(MINGW)
@@ -331,11 +336,11 @@ install(
         WORLD_READ WORLD_EXECUTE
 )
 
-# uninstall target
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/uninstall_target.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/uninstall_target.cmake"
     IMMEDIATE @ONLY)
 
+# uninstall target
 add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall_target.cmake)

@@ -496,7 +496,7 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
                     c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
                 }
-#endif //HAVE_SSE42
+#endif
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
             }

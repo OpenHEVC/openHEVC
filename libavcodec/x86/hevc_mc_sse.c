@@ -1915,20 +1915,16 @@ static PUT_HEVC_BI_W_ ## FUNC ##14(H, 8)                                       \
 static PUT_HEVC_BI_W_ ## FUNC ##14(H,10)
 
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
-#if HAVE_SSE4
+#if HAVE_SSE42
 GEN_FUNC(PEL_PIXELS,  2, 8)
 GEN_FUNC(PEL_PIXELS,  4, 8)
 GEN_FUNC(PEL_PIXELS,  6, 8)
 GEN_FUNC(PEL_PIXELS,  8, 8)
 GEN_FUNC(PEL_PIXELS, 16, 8)
-#endif //HAVE_SSE4
-
-#if HAVE_SSSE3
 GEN_FUNC(PEL_PIXELS,  2, 10)
 GEN_FUNC(PEL_PIXELS,  4, 10)
 GEN_FUNC(PEL_PIXELS,  6, 10)
 GEN_FUNC(PEL_PIXELS,  8, 10)
-
 // ff_hevc_put_hevc_epel_hX_X_sse
 GEN_FUNC(EPEL_H,  2,  8)
 GEN_FUNC(EPEL_H,  4,  8)
@@ -1988,8 +1984,6 @@ GEN_FUNC(QPEL_HV,  8,  8)
 GEN_FUNC(QPEL_HV,  4, 10)
 GEN_FUNC(QPEL_HV,  8, 10)
 
-#endif //HAVE_SSSE3
-
 #define mc_red_func(name, bitd, step, W)                                                                    \
 void ff_hevc_put_hevc_##name##W##_##bitd##_sse(                                                             \
                                 int16_t *dst, ptrdiff_t dststride,                                          \
@@ -2030,15 +2024,12 @@ void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_sse(                     \
 }
 
 
-#if HAVE_SSE4
 mc_red_func(pel_pixels, 8, 4, 12);
 mc_red_func(pel_pixels, 8, 8, 24);
 mc_red_func(pel_pixels, 8,16, 32);
 mc_red_func(pel_pixels, 8,16, 48);
 mc_red_func(pel_pixels, 8,16, 64);
-#endif //HAVE_SSE4
 
-#if HAVE_SSSE3
 mc_red_func(pel_pixels,10, 4, 12);
 mc_red_func(pel_pixels,10, 8, 16);
 mc_red_func(pel_pixels,10, 8, 24);
@@ -2128,6 +2119,6 @@ mc_red_func(epel_hv,10, 8, 32);
 mc_red_func(epel_hv,10, 8, 48);
 mc_red_func(epel_hv,10, 8, 64);
 
-#endif //HAVE_SSSE3
+#endif //HAVE_SSE4
 
 
