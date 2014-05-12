@@ -53,8 +53,8 @@ LFL_FUNCS(uint8_t,  10)
 
 #if !ARCH_X86_32 && defined(OPTI_ASM)
 
-#define mc_rep_func(name, bitd, step, W) \
-void ff_hevc_put_hevc_##name##W##_##bitd##_sse4(int16_t *_dst, ptrdiff_t dststride,                             \
+#define mc_rep_func(name, bitd, step, W, opt) \
+void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststride,                            \
                                                 uint8_t *_src, ptrdiff_t _srcstride, int height,                \
                                                 intptr_t mx, intptr_t my, int width)                            \
 {                                                                                                               \
@@ -64,11 +64,11 @@ void ff_hevc_put_hevc_##name##W##_##bitd##_sse4(int16_t *_dst, ptrdiff_t dststri
     for (i = 0; i < W; i += step) {                                                                             \
         src  = _src + (i * ((bitd + 7) / 8));                                                                   \
         dst = _dst + i;                                                                                         \
-        ff_hevc_put_hevc_##name##step##_##bitd##_sse4(dst, dststride, src, _srcstride, height, mx, my, width);  \
+        ff_hevc_put_hevc_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride, height, mx, my, width); \
     }                                                                                                           \
 }
-#define mc_rep_uni_func(name, bitd, step, W) \
-void ff_hevc_put_hevc_uni_##name##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dststride,                         \
+#define mc_rep_uni_func(name, bitd, step, W, opt) \
+void ff_hevc_put_hevc_uni_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride,                        \
                                                     uint8_t *_src, ptrdiff_t _srcstride, int height,            \
                                                     intptr_t mx, intptr_t my, int width)                        \
 {                                                                                                               \
@@ -78,12 +78,12 @@ void ff_hevc_put_hevc_uni_##name##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dst
     for (i = 0; i < W; i += step) {                                                                             \
         src = _src + (i * ((bitd + 7) / 8));                                                                    \
         dst = _dst + (i * ((bitd + 7) / 8));                                                                    \
-        ff_hevc_put_hevc_uni_##name##step##_##bitd##_sse4(dst, dststride, src, _srcstride,                      \
+        ff_hevc_put_hevc_uni_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride,                     \
                                                           height, mx, my, width);                               \
     }                                                                                                           \
 }
-#define mc_rep_bi_func(name, bitd, step, W) \
-void ff_hevc_put_hevc_bi_##name##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dststride, uint8_t *_src,           \
+#define mc_rep_bi_func(name, bitd, step, W, opt) \
+void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, uint8_t *_src,          \
                                                    ptrdiff_t _srcstride, int16_t* _src2, ptrdiff_t _src2stride, \
                                                    int height, intptr_t mx, intptr_t my, int width)             \
 {                                                                                                               \
@@ -95,100 +95,100 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dsts
         src  = _src + (i * ((bitd + 7) / 8));                                                                   \
         dst  = _dst + (i * ((bitd + 7) / 8));                                                                   \
         src2 = _src2 + i;                                                                                       \
-        ff_hevc_put_hevc_bi_##name##step##_##bitd##_sse4(dst, dststride, src, _srcstride, src2,                 \
+        ff_hevc_put_hevc_bi_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride, src2,                \
                                                          _src2stride, height, mx, my, width);                   \
     }                                                                                                           \
 }
 
-#define mc_rep_funcs(name, bitd, step, W)        \
-    mc_rep_func(name, bitd, step, W);            \
-    mc_rep_uni_func(name, bitd, step, W);        \
-    mc_rep_bi_func(name, bitd, step, W)
+#define mc_rep_funcs(name, bitd, step, W, opt)        \
+    mc_rep_func(name, bitd, step, W, opt);            \
+    mc_rep_uni_func(name, bitd, step, W, opt);        \
+    mc_rep_bi_func(name, bitd, step, W, opt)
 
 
 
-mc_rep_funcs(pel_pixels, 8, 16, 64);
-mc_rep_funcs(pel_pixels, 8, 16, 48);
-mc_rep_funcs(pel_pixels, 8, 16, 32);
-mc_rep_funcs(pel_pixels, 8,  8, 24);
+mc_rep_funcs(pel_pixels, 8, 16, 64, sse4);
+mc_rep_funcs(pel_pixels, 8, 16, 48, sse4);
+mc_rep_funcs(pel_pixels, 8, 16, 32, sse4);
+mc_rep_funcs(pel_pixels, 8,  8, 24, sse4);
 
-mc_rep_funcs(pel_pixels,10,  8, 64);
-mc_rep_funcs(pel_pixels,10,  8, 48);
-mc_rep_funcs(pel_pixels,10,  8, 32);
-mc_rep_funcs(pel_pixels,10,  8, 24);
-mc_rep_funcs(pel_pixels,10,  8, 16);
-mc_rep_funcs(pel_pixels,10,  4, 12);
+mc_rep_funcs(pel_pixels,10,  8, 64, sse4);
+mc_rep_funcs(pel_pixels,10,  8, 48, sse4);
+mc_rep_funcs(pel_pixels,10,  8, 32, sse4);
+mc_rep_funcs(pel_pixels,10,  8, 24, sse4);
+mc_rep_funcs(pel_pixels,10,  8, 16, sse4);
+mc_rep_funcs(pel_pixels,10,  4, 12, sse4);
 
-mc_rep_funcs(epel_h, 8, 16, 64);
-mc_rep_funcs(epel_h, 8, 16, 48);
-mc_rep_funcs(epel_h, 8, 16, 32);
-mc_rep_funcs(epel_h, 8,  8, 24);
-mc_rep_funcs(epel_h,10,  8, 64);
-mc_rep_funcs(epel_h,10,  8, 48);
-mc_rep_funcs(epel_h,10,  8, 32);
-mc_rep_funcs(epel_h,10,  8, 24);
-mc_rep_funcs(epel_h,10,  8, 16);
-mc_rep_funcs(epel_h,10,  4, 12);
-mc_rep_funcs(epel_v, 8, 16, 64);
-mc_rep_funcs(epel_v, 8, 16, 48);
-mc_rep_funcs(epel_v, 8, 16, 32);
-mc_rep_funcs(epel_v, 8,  8, 24);
-mc_rep_funcs(epel_v,10,  8, 64);
-mc_rep_funcs(epel_v,10,  8, 48);
-mc_rep_funcs(epel_v,10,  8, 32);
-mc_rep_funcs(epel_v,10,  8, 24);
-mc_rep_funcs(epel_v,10,  8, 16);
-mc_rep_funcs(epel_v,10,  4, 12);
-mc_rep_funcs(epel_hv, 8,  8, 64);
-mc_rep_funcs(epel_hv, 8,  8, 48);
-mc_rep_funcs(epel_hv, 8,  8, 32);
-mc_rep_funcs(epel_hv, 8,  8, 24);
-mc_rep_funcs(epel_hv, 8,  8, 16);
-mc_rep_funcs(epel_hv, 8,  4, 12);
-mc_rep_funcs(epel_hv,10,  8, 64);
-mc_rep_funcs(epel_hv,10,  8, 48);
-mc_rep_funcs(epel_hv,10,  8, 32);
-mc_rep_funcs(epel_hv,10,  8, 24);
-mc_rep_funcs(epel_hv,10,  8, 16);
-mc_rep_funcs(epel_hv,10,  4, 12);
-
-
-mc_rep_funcs(qpel_h, 8, 16, 64);
-mc_rep_funcs(qpel_h, 8, 16, 48);
-mc_rep_funcs(qpel_h, 8, 16, 32);
-mc_rep_funcs(qpel_h, 8,  8, 24);
-mc_rep_funcs(qpel_h,10,  8, 64);
-mc_rep_funcs(qpel_h,10,  8, 48);
-mc_rep_funcs(qpel_h,10,  8, 32);
-mc_rep_funcs(qpel_h,10,  8, 24);
-mc_rep_funcs(qpel_h,10,  8, 16);
-mc_rep_funcs(qpel_h,10,  4, 12);
-mc_rep_funcs(qpel_v, 8, 16, 64);
-mc_rep_funcs(qpel_v, 8, 16, 48);
-mc_rep_funcs(qpel_v, 8, 16, 32);
-mc_rep_funcs(qpel_v, 8,  8, 24);
-mc_rep_funcs(qpel_v,10,  8, 64);
-mc_rep_funcs(qpel_v,10,  8, 48);
-mc_rep_funcs(qpel_v,10,  8, 32);
-mc_rep_funcs(qpel_v,10,  8, 24);
-mc_rep_funcs(qpel_v,10,  8, 16);
-mc_rep_funcs(qpel_v,10,  4, 12);
-mc_rep_funcs(qpel_hv, 8,  8, 64);
-mc_rep_funcs(qpel_hv, 8,  8, 48);
-mc_rep_funcs(qpel_hv, 8,  8, 32);
-mc_rep_funcs(qpel_hv, 8,  8, 24);
-mc_rep_funcs(qpel_hv, 8,  8, 16);
-mc_rep_funcs(qpel_hv, 8,  4, 12);
-mc_rep_funcs(qpel_hv,10,  8, 64);
-mc_rep_funcs(qpel_hv,10,  8, 48);
-mc_rep_funcs(qpel_hv,10,  8, 32);
-mc_rep_funcs(qpel_hv,10,  8, 24);
-mc_rep_funcs(qpel_hv,10,  8, 16);
-mc_rep_funcs(qpel_hv,10,  4, 12);
+mc_rep_funcs(epel_h, 8, 16, 64, sse4);
+mc_rep_funcs(epel_h, 8, 16, 48, sse4);
+mc_rep_funcs(epel_h, 8, 16, 32, sse4);
+mc_rep_funcs(epel_h, 8,  8, 24, sse4);
+mc_rep_funcs(epel_h,10,  8, 64, sse4);
+mc_rep_funcs(epel_h,10,  8, 48, sse4);
+mc_rep_funcs(epel_h,10,  8, 32, sse4);
+mc_rep_funcs(epel_h,10,  8, 24, sse4);
+mc_rep_funcs(epel_h,10,  8, 16, sse4);
+mc_rep_funcs(epel_h,10,  4, 12, sse4);
+mc_rep_funcs(epel_v, 8, 16, 64, sse4);
+mc_rep_funcs(epel_v, 8, 16, 48, sse4);
+mc_rep_funcs(epel_v, 8, 16, 32, sse4);
+mc_rep_funcs(epel_v, 8,  8, 24, sse4);
+mc_rep_funcs(epel_v,10,  8, 64, sse4);
+mc_rep_funcs(epel_v,10,  8, 48, sse4);
+mc_rep_funcs(epel_v,10,  8, 32, sse4);
+mc_rep_funcs(epel_v,10,  8, 24, sse4);
+mc_rep_funcs(epel_v,10,  8, 16, sse4);
+mc_rep_funcs(epel_v,10,  4, 12, sse4);
+mc_rep_funcs(epel_hv, 8,  8, 64, sse4);
+mc_rep_funcs(epel_hv, 8,  8, 48, sse4);
+mc_rep_funcs(epel_hv, 8,  8, 32, sse4);
+mc_rep_funcs(epel_hv, 8,  8, 24, sse4);
+mc_rep_funcs(epel_hv, 8,  8, 16, sse4);
+mc_rep_funcs(epel_hv, 8,  4, 12, sse4);
+mc_rep_funcs(epel_hv,10,  8, 64, sse4);
+mc_rep_funcs(epel_hv,10,  8, 48, sse4);
+mc_rep_funcs(epel_hv,10,  8, 32, sse4);
+mc_rep_funcs(epel_hv,10,  8, 24, sse4);
+mc_rep_funcs(epel_hv,10,  8, 16, sse4);
+mc_rep_funcs(epel_hv,10,  4, 12, sse4);
 
 
-#define mc_rep_uni_w(bitd, step, W) \
-void ff_hevc_put_hevc_uni_w##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, \
+mc_rep_funcs(qpel_h, 8, 16, 64, sse4);
+mc_rep_funcs(qpel_h, 8, 16, 48, sse4);
+mc_rep_funcs(qpel_h, 8, 16, 32, sse4);
+mc_rep_funcs(qpel_h, 8,  8, 24, sse4);
+mc_rep_funcs(qpel_h,10,  8, 64, sse4);
+mc_rep_funcs(qpel_h,10,  8, 48, sse4);
+mc_rep_funcs(qpel_h,10,  8, 32, sse4);
+mc_rep_funcs(qpel_h,10,  8, 24, sse4);
+mc_rep_funcs(qpel_h,10,  8, 16, sse4);
+mc_rep_funcs(qpel_h,10,  4, 12, sse4);
+mc_rep_funcs(qpel_v, 8, 16, 64, sse4);
+mc_rep_funcs(qpel_v, 8, 16, 48, sse4);
+mc_rep_funcs(qpel_v, 8, 16, 32, sse4);
+mc_rep_funcs(qpel_v, 8,  8, 24, sse4);
+mc_rep_funcs(qpel_v,10,  8, 64, sse4);
+mc_rep_funcs(qpel_v,10,  8, 48, sse4);
+mc_rep_funcs(qpel_v,10,  8, 32, sse4);
+mc_rep_funcs(qpel_v,10,  8, 24, sse4);
+mc_rep_funcs(qpel_v,10,  8, 16, sse4);
+mc_rep_funcs(qpel_v,10,  4, 12, sse4);
+mc_rep_funcs(qpel_hv, 8,  8, 64, sse4);
+mc_rep_funcs(qpel_hv, 8,  8, 48, sse4);
+mc_rep_funcs(qpel_hv, 8,  8, 32, sse4);
+mc_rep_funcs(qpel_hv, 8,  8, 24, sse4);
+mc_rep_funcs(qpel_hv, 8,  8, 16, sse4);
+mc_rep_funcs(qpel_hv, 8,  4, 12, sse4);
+mc_rep_funcs(qpel_hv,10,  8, 64, sse4);
+mc_rep_funcs(qpel_hv,10,  8, 48, sse4);
+mc_rep_funcs(qpel_hv,10,  8, 32, sse4);
+mc_rep_funcs(qpel_hv,10,  8, 24, sse4);
+mc_rep_funcs(qpel_hv,10,  8, 16, sse4);
+mc_rep_funcs(qpel_hv,10,  4, 12, sse4);
+
+
+#define mc_rep_uni_w(bitd, step, W, opt) \
+void ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,\
                                                int height, int denom,  int _wx, int _ox)                                \
 {                                                                                                                       \
     int i;                                                                                                              \
@@ -197,27 +197,27 @@ void ff_hevc_put_hevc_uni_w##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dststrid
     for (i = 0; i < W; i += step) {                                                                                     \
         src= _src + i;                                                                                                  \
         dst= _dst + (i * ((bitd + 7) / 8));                                                                             \
-        ff_hevc_put_hevc_uni_w##step##_##bitd##_sse4(dst, dststride, src, _srcstride,                                   \
+        ff_hevc_put_hevc_uni_w##step##_##bitd##_##opt(dst, dststride, src, _srcstride,                                  \
                                                      height, denom, _wx, _ox);                                          \
     }                                                                                                                   \
 }
 
-mc_rep_uni_w(8, 6, 12);
-mc_rep_uni_w(8, 8, 16);
-mc_rep_uni_w(8, 8, 24);
-mc_rep_uni_w(8, 8, 32);
-mc_rep_uni_w(8, 8, 48);
-mc_rep_uni_w(8, 8, 64);
+mc_rep_uni_w(8, 6, 12, sse4);
+mc_rep_uni_w(8, 8, 16, sse4);
+mc_rep_uni_w(8, 8, 24, sse4);
+mc_rep_uni_w(8, 8, 32, sse4);
+mc_rep_uni_w(8, 8, 48, sse4);
+mc_rep_uni_w(8, 8, 64, sse4);
 
-mc_rep_uni_w(10, 6, 12);
-mc_rep_uni_w(10, 8, 16);
-mc_rep_uni_w(10, 8, 24);
-mc_rep_uni_w(10, 8, 32);
-mc_rep_uni_w(10, 8, 48);
-mc_rep_uni_w(10, 8, 64);
+mc_rep_uni_w(10, 6, 12, sse4);
+mc_rep_uni_w(10, 8, 16, sse4);
+mc_rep_uni_w(10, 8, 24, sse4);
+mc_rep_uni_w(10, 8, 32, sse4);
+mc_rep_uni_w(10, 8, 48, sse4);
+mc_rep_uni_w(10, 8, 64, sse4);
 
-#define mc_rep_bi_w(bitd, step, W) \
-void ff_hevc_put_hevc_bi_w##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,  \
+#define mc_rep_bi_w(bitd, step, W, opt) \
+void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, \
                                               int16_t *_src2, ptrdiff_t _src2stride, int height,                        \
                                               int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)                      \
 {                                                                                                                       \
@@ -229,73 +229,73 @@ void ff_hevc_put_hevc_bi_w##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t dststride
         src  = _src  + i;                                                                                               \
         src2 = _src2 + i;                                                                                               \
         dst  = _dst  + (i * ((bitd + 7) / 8));                                                                          \
-        ff_hevc_put_hevc_bi_w##step##_##bitd##_sse4(dst, dststride, src, _srcstride, src2, _src2stride,                 \
+        ff_hevc_put_hevc_bi_w##step##_##bitd##_##opt(dst, dststride, src, _srcstride, src2, _src2stride,                \
                                                     height, denom, _wx0, _wx1, _ox0, _ox1);                             \
     }                                                                                                                   \
 }
 
-mc_rep_bi_w(8, 6, 12);
-mc_rep_bi_w(8, 8, 16);
-mc_rep_bi_w(8, 8, 24);
-mc_rep_bi_w(8, 8, 32);
-mc_rep_bi_w(8, 8, 48);
-mc_rep_bi_w(8, 8, 64);
+mc_rep_bi_w(8, 6, 12, sse4);
+mc_rep_bi_w(8, 8, 16, sse4);
+mc_rep_bi_w(8, 8, 24, sse4);
+mc_rep_bi_w(8, 8, 32, sse4);
+mc_rep_bi_w(8, 8, 48, sse4);
+mc_rep_bi_w(8, 8, 64, sse4);
 
-mc_rep_bi_w(10, 6, 12);
-mc_rep_bi_w(10, 8, 16);
-mc_rep_bi_w(10, 8, 24);
-mc_rep_bi_w(10, 8, 32);
-mc_rep_bi_w(10, 8, 48);
-mc_rep_bi_w(10, 8, 64);
+mc_rep_bi_w(10, 6, 12, sse4);
+mc_rep_bi_w(10, 8, 16, sse4);
+mc_rep_bi_w(10, 8, 24, sse4);
+mc_rep_bi_w(10, 8, 32, sse4);
+mc_rep_bi_w(10, 8, 48, sse4);
+mc_rep_bi_w(10, 8, 64, sse4);
 
-#define mc_uni_w_func(name, bitd, W) \
-void ff_hevc_put_hevc_uni_w_##name##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t _dststride,          \
+#define mc_uni_w_func(name, bitd, W, opt) \
+void ff_hevc_put_hevc_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,         \
                                                       uint8_t *_src, ptrdiff_t _srcstride,          \
                                                       int height, int denom,                        \
                                                       int _wx, int _ox,                             \
                                                       intptr_t mx, intptr_t my, int width)          \
 {                                                                                                   \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * 64]);                                                     \
-    ff_hevc_put_hevc_##name##W##_##bitd##_sse4(temp, 64, _src, _srcstride, height, mx, my, width);  \
-    ff_hevc_put_hevc_uni_w##W##_##bitd##_sse4(_dst, _dststride, temp, 64, height, denom, _wx, _ox); \
+    ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, 64, _src, _srcstride, height, mx, my, width); \
+    ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, 64, height, denom, _wx, _ox);\
 }
-#define mc_uni_w_funcs(name, bitd)       \
-        mc_uni_w_func(name, bitd, 4);    \
-        mc_uni_w_func(name, bitd, 8);    \
-        mc_uni_w_func(name, bitd, 12);   \
-        mc_uni_w_func(name, bitd, 16);   \
-        mc_uni_w_func(name, bitd, 24);   \
-        mc_uni_w_func(name, bitd, 32);   \
-        mc_uni_w_func(name, bitd, 48);   \
-        mc_uni_w_func(name, bitd, 64)
+#define mc_uni_w_funcs(name, bitd, opt)       \
+        mc_uni_w_func(name, bitd, 4, opt);    \
+        mc_uni_w_func(name, bitd, 8, opt);    \
+        mc_uni_w_func(name, bitd, 12, opt);   \
+        mc_uni_w_func(name, bitd, 16, opt);   \
+        mc_uni_w_func(name, bitd, 24, opt);   \
+        mc_uni_w_func(name, bitd, 32, opt);   \
+        mc_uni_w_func(name, bitd, 48, opt);   \
+        mc_uni_w_func(name, bitd, 64, opt)
 
-mc_uni_w_funcs(pel_pixels, 8);
-mc_uni_w_func(pel_pixels, 8, 6);
-mc_uni_w_funcs(epel_h, 8);
-mc_uni_w_func(epel_h, 8, 6);
-mc_uni_w_funcs(epel_v, 8);
-mc_uni_w_func(epel_v, 8, 6);
-mc_uni_w_funcs(epel_hv, 8);
-mc_uni_w_func(epel_hv, 8, 6);
-mc_uni_w_funcs(qpel_h, 8);
-mc_uni_w_funcs(qpel_v, 8);
-mc_uni_w_funcs(qpel_hv, 8);
+mc_uni_w_funcs(pel_pixels, 8, sse4);
+mc_uni_w_func(pel_pixels, 8, 6, sse4);
+mc_uni_w_funcs(epel_h, 8, sse4);
+mc_uni_w_func(epel_h, 8, 6, sse4);
+mc_uni_w_funcs(epel_v, 8, sse4);
+mc_uni_w_func(epel_v, 8, 6, sse4);
+mc_uni_w_funcs(epel_hv, 8, sse4);
+mc_uni_w_func(epel_hv, 8, 6, sse4);
+mc_uni_w_funcs(qpel_h, 8, sse4);
+mc_uni_w_funcs(qpel_v, 8, sse4);
+mc_uni_w_funcs(qpel_hv, 8, sse4);
 
-mc_uni_w_funcs(pel_pixels, 10);
-mc_uni_w_func(pel_pixels, 10, 6);
-mc_uni_w_funcs(epel_h, 10);
-mc_uni_w_func(epel_h, 10, 6);
-mc_uni_w_funcs(epel_v, 10);
-mc_uni_w_func(epel_v, 10, 6);
-mc_uni_w_funcs(epel_hv, 10);
-mc_uni_w_func(epel_hv, 10, 6);
-mc_uni_w_funcs(qpel_h, 10);
-mc_uni_w_funcs(qpel_v, 10);
-mc_uni_w_funcs(qpel_hv, 10);
+mc_uni_w_funcs(pel_pixels, 10, sse4);
+mc_uni_w_func(pel_pixels, 10, 6, sse4);
+mc_uni_w_funcs(epel_h, 10, sse4);
+mc_uni_w_func(epel_h, 10, 6, sse4);
+mc_uni_w_funcs(epel_v, 10, sse4);
+mc_uni_w_func(epel_v, 10, 6, sse4);
+mc_uni_w_funcs(epel_hv, 10, sse4);
+mc_uni_w_func(epel_hv, 10, 6, sse4);
+mc_uni_w_funcs(qpel_h, 10, sse4);
+mc_uni_w_funcs(qpel_v, 10, sse4);
+mc_uni_w_funcs(qpel_hv, 10, sse4);
 
 
-#define mc_bi_w_func(name, bitd, W) \
-void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t _dststride,            \
+#define mc_bi_w_func(name, bitd, W, opt) \
+void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,           \
                                                      uint8_t *_src, ptrdiff_t _srcstride,            \
                                                      int16_t *_src2, ptrdiff_t _src2stride,          \
                                                      int height, int denom,                          \
@@ -303,44 +303,44 @@ void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_sse4(uint8_t *_dst, ptrdiff_t _d
                                                      intptr_t mx, intptr_t my, int width)            \
 {                                                                                                    \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * 64]);                                                      \
-    ff_hevc_put_hevc_##name##W##_##bitd##_sse4(temp, 64, _src, _srcstride, height, mx, my, width);   \
-    ff_hevc_put_hevc_bi_w##W##_##bitd##_sse4(_dst, _dststride, temp, 64, _src2, _src2stride,         \
+    ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, 64, _src, _srcstride, height, mx, my, width);  \
+    ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, 64, _src2, _src2stride,        \
                                              height, denom, _wx0, _wx1, _ox0, _ox1);                 \
 }
 
-#define mc_bi_w_funcs(name, bitd)       \
-        mc_bi_w_func(name, bitd, 4);    \
-        mc_bi_w_func(name, bitd, 8);    \
-        mc_bi_w_func(name, bitd, 12);   \
-        mc_bi_w_func(name, bitd, 16);   \
-        mc_bi_w_func(name, bitd, 24);   \
-        mc_bi_w_func(name, bitd, 32);   \
-        mc_bi_w_func(name, bitd, 48);   \
-        mc_bi_w_func(name, bitd, 64)
+#define mc_bi_w_funcs(name, bitd, opt)       \
+        mc_bi_w_func(name, bitd, 4, opt);    \
+        mc_bi_w_func(name, bitd, 8, opt);    \
+        mc_bi_w_func(name, bitd, 12, opt);   \
+        mc_bi_w_func(name, bitd, 16, opt);   \
+        mc_bi_w_func(name, bitd, 24, opt);   \
+        mc_bi_w_func(name, bitd, 32, opt);   \
+        mc_bi_w_func(name, bitd, 48, opt);   \
+        mc_bi_w_func(name, bitd, 64, opt)
 
-mc_bi_w_funcs(pel_pixels, 8);
-mc_bi_w_func(pel_pixels, 8, 6);
-mc_bi_w_funcs(epel_h, 8);
-mc_bi_w_func(epel_h, 8, 6);
-mc_bi_w_funcs(epel_v, 8);
-mc_bi_w_func(epel_v, 8, 6);
-mc_bi_w_funcs(epel_hv, 8);
-mc_bi_w_func(epel_hv, 8, 6);
-mc_bi_w_funcs(qpel_h, 8);
-mc_bi_w_funcs(qpel_v, 8);
-mc_bi_w_funcs(qpel_hv, 8);
+mc_bi_w_funcs(pel_pixels, 8, sse4);
+mc_bi_w_func(pel_pixels, 8, 6, sse4);
+mc_bi_w_funcs(epel_h, 8, sse4);
+mc_bi_w_func(epel_h, 8, 6, sse4);
+mc_bi_w_funcs(epel_v, 8, sse4);
+mc_bi_w_func(epel_v, 8, 6, sse4);
+mc_bi_w_funcs(epel_hv, 8, sse4);
+mc_bi_w_func(epel_hv, 8, 6, sse4);
+mc_bi_w_funcs(qpel_h, 8, sse4);
+mc_bi_w_funcs(qpel_v, 8, sse4);
+mc_bi_w_funcs(qpel_hv, 8, sse4);
 
-mc_bi_w_funcs(pel_pixels, 10);
-mc_bi_w_func(pel_pixels, 10, 6);
-mc_bi_w_funcs(epel_h, 10);
-mc_bi_w_func(epel_h, 10, 6);
-mc_bi_w_funcs(epel_v, 10);
-mc_bi_w_func(epel_v, 10, 6);
-mc_bi_w_funcs(epel_hv, 10);
-mc_bi_w_func(epel_hv, 10, 6);
-mc_bi_w_funcs(qpel_h, 10);
-mc_bi_w_funcs(qpel_v, 10);
-mc_bi_w_funcs(qpel_hv, 10);
+mc_bi_w_funcs(pel_pixels, 10, sse4);
+mc_bi_w_func(pel_pixels, 10, 6, sse4);
+mc_bi_w_funcs(epel_h, 10, sse4);
+mc_bi_w_func(epel_h, 10, 6, sse4);
+mc_bi_w_funcs(epel_v, 10, sse4);
+mc_bi_w_func(epel_v, 10, 6, sse4);
+mc_bi_w_funcs(epel_hv, 10, sse4);
+mc_bi_w_func(epel_hv, 10, 6, sse4);
+mc_bi_w_funcs(qpel_h, 10, sse4);
+mc_bi_w_funcs(qpel_v, 10, sse4);
+mc_bi_w_funcs(qpel_hv, 10, sse4);
 
 #endif
 
