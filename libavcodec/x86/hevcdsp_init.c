@@ -459,8 +459,8 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 #endif /* ARCH_X86_32 */
 #if HAVE_SSE2
                 if (EXTERNAL_SSE2(mm_flags)) {
-//                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
-//                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
+                    c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
+                    c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
 #if HAVE_ALIGNED_STACK
                     /*stuff that requires aligned stack */
 #endif /* HAVE_ALIGNED_STACK */
@@ -469,8 +469,8 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 #if HAVE_SSSE3
                 if (EXTERNAL_SSSE3(mm_flags)) {
 #if ARCH_X86_64
-//                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
-//                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
+                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
+                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
 #endif
                 }
 #endif //HAVE_SSSE3
