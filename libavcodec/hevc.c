@@ -3427,6 +3427,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 #endif
     }
     s->is_md5 = 0;
+    if (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
+        s->ref->frame->key_frame = 1;
+
 
     if (s->is_decoded) {
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);

@@ -100,7 +100,7 @@ static void get_frame_defaults(AVFrame *frame)
     av_frame_set_pkt_duration         (frame, 0);
     av_frame_set_pkt_pos              (frame, -1);
     av_frame_set_pkt_size             (frame, -1);
-    frame->key_frame           = 1;
+    frame->key_frame           = 0;
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
     frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
