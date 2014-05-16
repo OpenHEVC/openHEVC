@@ -402,8 +402,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
 
 #if ARCH_X86_64
-                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
-                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
+//                    c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
+//                    c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
 #endif
                 }
 #endif //HAVE_SSSE3
