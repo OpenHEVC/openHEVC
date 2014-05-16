@@ -572,7 +572,7 @@ static int hls_slice_header(HEVCContext *s)
             ff_hevc_clear_refs(s);
     }
     sh->no_output_of_prior_pics_flag = 0;
-    if (IS_IRAP(s)) {
+    if (s->nal_unit_type >= 16 && s->nal_unit_type <= 23) {
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
         print_cabac("no_output_of_prior_pics_flag", sh->no_output_of_prior_pics_flag);
     }
@@ -3427,8 +3427,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 #endif
     }
     s->is_md5 = 0;
+    if (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
+        s->ref->frame->key_frame = 1;
 
-    s->ref->frame->key_frame = IS_IRAP(s);
 
     if (s->is_decoded) {
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
