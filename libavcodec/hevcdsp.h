@@ -2,6 +2,8 @@
  * HEVC video decoder
  *
  * Copyright (C) 2012 - 2013 Guillaume Martres
+ * Copyright (C) 2013 - 2014 Pierre-Edouard Lepere
+ *
  *
  * This file is part of FFmpeg.
  *
@@ -133,7 +135,7 @@ typedef struct SAOParams {
 } SAOParams;
 
 typedef struct HEVCDSPContext {
-    void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int size,
+    void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int width, int height,
                     struct GetBitContext *gb, int pcm_bit_depth);
 
     void (*transquant_bypass[4])(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
