@@ -212,7 +212,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
                                                                                \
     QPEL_FUNCS(depth);                                                         \
     QPEL_UNI_FUNCS(depth);                                                     \
-    QPEL_BI_FUNCS(depth);                                                     \
+    QPEL_BI_FUNCS(depth);                                                      \
     EPEL_FUNCS(depth);                                                         \
     EPEL_UNI_FUNCS(depth);                                                     \
     EPEL_BI_FUNCS(depth);                                                      \
@@ -226,6 +226,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->hevc_h_loop_filter_chroma_c = FUNC(hevc_h_loop_filter_chroma, depth); \
     hevcdsp->hevc_v_loop_filter_chroma_c = FUNC(hevc_v_loop_filter_chroma, depth)
 int i = 0;
+
     switch (bit_depth) {
     case 9:
         HEVC_DSP(9);
