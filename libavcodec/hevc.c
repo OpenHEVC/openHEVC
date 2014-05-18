@@ -1973,6 +1973,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             int y = (current_mv.mv[0].y >> 2) + y0;
             int x = (current_mv.mv[0].x >> 2) + x0;
             hevc_await_progress_bl(s, ref0, &current_mv.mv[0], y0);
+
+            if (!s->BL_frame->frame->data[0])
+                return;
+
             ff_upsample_block(s, ref0, x, y, nPbW, nPbH);
         }
 #endif
@@ -1987,6 +1991,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             int y = (current_mv.mv[1].y >> 2) + y0;
             int x = (current_mv.mv[1].x >> 2) + x0;
             hevc_await_progress_bl(s, ref1, &current_mv.mv[1], y0);
+
+            if (!s->BL_frame->frame->data[0])
+                return;
+
             ff_upsample_block(s, ref1, x, y, nPbW, nPbH);
         }
 #endif

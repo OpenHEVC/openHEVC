@@ -268,6 +268,8 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
             bl_y = (( (bl_y  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
             ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);
         }
+        if (!s->BL_frame->frame->data[0])
+            return AVERROR_INVALIDDATA;
         ff_upsample_block(s, ref, x0 , y0, nPbW, nPbH);
     }
 #endif
