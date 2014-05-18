@@ -527,7 +527,6 @@ void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in) {
     - Set the status to 1.
     - This operation is signaled at the parent the frame-based thread.
 */
-
     PerThreadContext *p;
     FrameThreadContext *fctx;
     p = avxt->internal->thread_ctx_frame;
@@ -571,19 +570,18 @@ void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out)
      - Get the reference of the reference picture picture from lower layer decoder.
      
      */
-    
+
     FrameThreadContext *fctx = ((AVCodecContext *)avxt->BL_avcontext)->internal->thread_ctx_frame;
     poc = poc & (MAX_POC-1);
     if (avxt->debug&FF_DEBUG_THREADS)
         av_log(avxt, AV_LOG_DEBUG, "thread awaiting for the BL to be decoded \n");
     pthread_mutex_lock(&fctx->il_progress_mutex);
-    while(fctx->is_decoded[poc] == 0)
+    while(fctx->is_decoded[poc] == 0 || fctx->is_decoded[poc] == 2)
         pthread_cond_wait(&fctx->il_progress_cond, &fctx->il_progress_mutex);
     pthread_mutex_unlock(&fctx->il_progress_mutex);
     pthread_mutex_lock(&fctx->il_progress_mutex);
     *out = fctx->frames[poc];
     pthread_mutex_unlock(&fctx->il_progress_mutex);
-
 }
 
 void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status)

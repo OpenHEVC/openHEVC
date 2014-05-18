@@ -2874,8 +2874,10 @@ static int hevc_frame_start(HEVCContext *s)
         
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
-        if (s->threads_type&FF_THREAD_FRAME)
+        if (s->threads_type&FF_THREAD_FRAME) {
             ff_thread_await_il_progress(s->avctx, s->poc, &s->avctx->BL_frame);
+            ff_thread_report_il_status(s->avctx, s->poc, 2);
+        }
 
         if(s->avctx->BL_frame != NULL)
 
@@ -3052,7 +3054,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
                 s->max_ra = INT_MIN;
         }
-
         if (s->sh.first_slice_in_pic_flag) {
             ret = hevc_frame_start(s);
             if (ret < 0)
@@ -3078,7 +3079,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
              }
         }
 #if ACTIVE_PU_UPSAMPLING
-        if (s->active_el_frame)
+//        if (s->active_el_frame)
+        if ( !s->decoder_id && (s->threads_type&FF_THREAD_FRAME) )
             ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
@@ -3096,7 +3098,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 #ifdef SVC_EXTENSION
             if(s->decoder_id > 0) {
                 if(s->threads_type&FF_THREAD_FRAME)
-                    ff_thread_report_il_status(s->avctx, s->poc, 2);
+                    ff_thread_report_il_status(s->avctx, s->poc, 3);
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
             }
 #endif
@@ -3323,7 +3325,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         ret = hls_nal_unit(s);
         if(ret == s->decoder_id+1 && s->quality_layer_id >= ret && s->threads_type&FF_THREAD_FRAME) {// FIXME also check the type of the nalu, it should be data nalu type
-            s->active_el_frame = 1;
+//            s->active_el_frame = 1;
         }
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
