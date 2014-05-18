@@ -27,18 +27,15 @@
 #include "thread.h"
 #include "hevc.h"
 
-void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
-{
-    int is_up_sampled = 3;
-    /* frame->frame can be NULL if context init failed */
+void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
+    int is_up_sampled = 2;
     if (!frame->frame || !frame->frame->buf[0])
         return;
-
     frame->flags &= ~flags;
-    if (!s->decoder_id && (s->threads_type&FF_THREAD_FRAME))
+    if (frame->active_el_frame)
         is_up_sampled = ff_thread_get_il_up_status(s->avctx, frame->poc);
-    if (!frame->flags && ( (is_up_sampled == 3 ) || (is_up_sampled == 1) )) {
-    	if (!s->decoder_id && (s->threads_type&FF_THREAD_FRAME))
+    if (!frame->flags && is_up_sampled == 2 ) {
+        if (frame->active_el_frame)
             ff_thread_report_il_status2(s->avctx, frame->poc, 0);
         ff_thread_release_buffer(s->avctx, &frame->tf);
         av_buffer_unref(&frame->tab_mvf_buf);
@@ -48,7 +45,7 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
         av_buffer_unref(&frame->rpl_tab_buf);
         frame->rpl_tab    = NULL;
         frame->refPicList = NULL;
-
+        frame->active_el_frame = 0;
         frame->collocated_ref = NULL;
     }
 }
@@ -69,6 +66,7 @@ void ff_hevc_unref_frame1(HEVCContext *s, HEVCFrame *frame, int flags)
         frame->rpl_tab    = NULL;
         frame->refPicList = NULL;
         frame->collocated_ref = NULL;
+        frame->active_el_frame = 0;
     }
 }
 
@@ -161,7 +159,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
     *frame = ref->frame;
     s->ref = ref;
-
+    ref->active_el_frame = 0;
     ref->poc      = poc;
     ref->flags    = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
     if (s->sh.pic_output_flag == 0)
@@ -199,10 +197,10 @@ int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc)
     ref->flags          = HEVC_FRAME_FLAG_LONG_REF;
     ref->sequence       = s->seq_decode;
     ref->window         = s->sps->output_window;
-   
+    ref->active_el_frame = 0;
     if (s->threads_type & FF_THREAD_FRAME)
         ff_thread_report_progress(&s->inter_layer_ref->tf, INT_MAX, 0);
-    
+
     return 0;
 }
 #endif
@@ -582,9 +580,11 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     frame->flags                = 0;
 #endif
 
-    if (s->threads_type & FF_THREAD_FRAME)
+    if (s->threads_type & FF_THREAD_FRAME) {
+     //   if ( !s->decoder_id )
+       //     ff_thread_report_il_progress(s->avctx, frame->poc,frame);
         ff_thread_report_progress(&frame->tf, INT_MAX, 0);
-
+    }
     return frame;
 }
 
@@ -658,8 +658,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
 #endif
             }   else    {
                 init_upsampled_mv_fields(s);
-                if(s->threads_type&FF_THREAD_FRAME)
-                    ff_thread_report_il_status(s->avctx, s->poc, 3);
+                if(s->ref->active_el_frame)
+                   ff_thread_report_il_status(s->avctx, s->poc, 2);
             }
 #endif
         }

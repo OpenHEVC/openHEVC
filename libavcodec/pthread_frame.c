@@ -255,6 +255,8 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
 {
 #define copy_fields(s, e) memcpy(&dst->s, &src->s, (char*)&dst->e - (char*)&dst->s);
     dst->flags          = src->flags;
+    dst->quality_id = src->quality_id;
+
 
     dst->draw_horiz_band= src->draw_horiz_band;
     dst->get_buffer2    = src->get_buffer2;
@@ -561,8 +563,7 @@ int ff_thread_get_il_up_status(AVCodecContext *avxt, int poc)
     return res;
 }
 
-void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out)
-{
+void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out) {
     /*
      - Wait untill the lower layer picture used for inter-layer reference picture is either allocated or decoded
      - The condition is that the $is_decoded$ variable of the corresponding poc is diffetent from 0.
@@ -570,18 +571,20 @@ void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out)
      - Get the reference of the reference picture picture from lower layer decoder.
      
      */
-
     FrameThreadContext *fctx = ((AVCodecContext *)avxt->BL_avcontext)->internal->thread_ctx_frame;
     poc = poc & (MAX_POC-1);
+//    printf("ff_thread_await_il_progress %d  %d \n", fctx->is_decoded[poc], poc);
     if (avxt->debug&FF_DEBUG_THREADS)
         av_log(avxt, AV_LOG_DEBUG, "thread awaiting for the BL to be decoded \n");
     pthread_mutex_lock(&fctx->il_progress_mutex);
-    while(fctx->is_decoded[poc] == 0 || fctx->is_decoded[poc] == 2)
+    while( fctx->is_decoded[poc] == 0 )
         pthread_cond_wait(&fctx->il_progress_cond, &fctx->il_progress_mutex);
     pthread_mutex_unlock(&fctx->il_progress_mutex);
     pthread_mutex_lock(&fctx->il_progress_mutex);
     *out = fctx->frames[poc];
     pthread_mutex_unlock(&fctx->il_progress_mutex);
+//    printf("ff_thread_await_il_progress ----- %p \n", *out);
+
 }
 
 void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status)
@@ -602,13 +605,13 @@ void ff_thread_report_il_status2(AVCodecContext *avxt, int poc, int status)
 {
     /*
     - Called by the lower layer decoder to report the new status of the picture as removed
-     
     */
     PerThreadContext *p;
     FrameThreadContext *fctx;
     p = avxt->internal->thread_ctx_frame;
     fctx = p->parent;
     poc = poc & (MAX_POC-1);
+   // printf("ff_thread_report_il_status2 %d \n", poc);
     if (avxt->debug&FF_DEBUG_THREADS)
         av_log(avxt, AV_LOG_DEBUG, "Thead base layer decoded \n");
     pthread_mutex_lock(&fctx->il_progress_mutex);
@@ -638,7 +641,6 @@ void ff_thread_finish_setup(AVCodecContext *avctx) {
 static void park_frame_worker_threads(FrameThreadContext *fctx, int thread_count)
 {
     int i;
-
     for (i = 0; i < thread_count; i++) {
         PerThreadContext *p = &fctx->threads[i];
 

@@ -3011,6 +3011,7 @@ typedef struct AVCodecContext {
      */
     void*  BL_frame;
     void * BL_avcontext;
+    int quality_id;
     int layers_size;
 } AVCodecContext;
 

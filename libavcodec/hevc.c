@@ -2875,30 +2875,26 @@ static int hevc_frame_start(HEVCContext *s)
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
         if (s->threads_type&FF_THREAD_FRAME) {
+            s->avctx->BL_frame = NULL;
             ff_thread_await_il_progress(s->avctx, s->poc, &s->avctx->BL_frame);
-            ff_thread_report_il_status(s->avctx, s->poc, 2);
         }
-
         if(s->avctx->BL_frame != NULL)
-
              s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
         else
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
-
-
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
-        if (ret< 0)
+        if ( ret< 0 )
             goto fail;
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
     s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
        #endif
     }
 #endif
-
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
+    s->ref->active_el_frame = s->active_el_frame;
+
     if (ret < 0)
         goto fail;
-
     s->avctx->BL_frame = s->ref;
     ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
@@ -3033,19 +3029,22 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     }
 #endif
     ret = hls_slice_header(s);
+
+ #if 0
     if (ret == -10)
         return 0;
+#endif
+
     if (ret < 0)
         return ret;
-        if (s->max_ra == INT_MAX) {
-            if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
-                s->max_ra = s->poc;
-            } else {
-                if (IS_IDR(s))
-                    s->max_ra = INT_MIN;
-            }
+    if (s->max_ra == INT_MAX) {
+        if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
+            s->max_ra = s->poc;
+        } else {
+            if (IS_IDR(s))
+                s->max_ra = INT_MIN;
         }
-
+    }
         if ((s->nal_unit_type == NAL_RASL_R || s->nal_unit_type == NAL_RASL_N) &&
             s->poc <= s->max_ra) {
             s->is_decoded = 0;
@@ -3079,8 +3078,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
              }
         }
 #if ACTIVE_PU_UPSAMPLING
-//        if (s->active_el_frame)
-        if ( !s->decoder_id && (s->threads_type&FF_THREAD_FRAME) )
+        if (s->ref->active_el_frame)
             ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
@@ -3090,15 +3088,15 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 tiles_filters(s);
 #ifdef SVC_EXTENSION
 #if !ACTIVE_PU_UPSAMPLING
-            if (s->active_el_frame)
+            if (s->ref->active_el_frame)
                 ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
 #endif
 #endif
 
 #ifdef SVC_EXTENSION
             if(s->decoder_id > 0) {
-                if(s->threads_type&FF_THREAD_FRAME)
-                    ff_thread_report_il_status(s->avctx, s->poc, 3);
+                if(s->ref->active_el_frame)
+                    ff_thread_report_il_status(s->avctx, s->poc, 2);
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
             }
 #endif
@@ -3324,9 +3322,9 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         if (ret < 0)
             goto fail;
         ret = hls_nal_unit(s);
-        if(ret == s->decoder_id+1 && s->quality_layer_id >= ret && s->threads_type&FF_THREAD_FRAME) {// FIXME also check the type of the nalu, it should be data nalu type
-//            s->active_el_frame = 1;
-        }
+        if((ret == s->decoder_id+1) && s->avctx->quality_id >= ret && (s->threads_type&FF_THREAD_FRAME)) // FIXME also check the type of the nalu, it should be data nalu type
+            s->active_el_frame = 1;
+
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
             s->eos = 1;
@@ -3445,6 +3443,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     }
 
     s->ref = NULL;
+//    s->avctx->quality_id = avctx->quality_id;
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
