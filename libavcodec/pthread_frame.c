@@ -255,9 +255,7 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
 {
 #define copy_fields(s, e) memcpy(&dst->s, &src->s, (char*)&dst->e - (char*)&dst->s);
     dst->flags          = src->flags;
-    dst->quality_id = src->quality_id;
-
-
+    dst->quality_id     = src->quality_id;
     dst->draw_horiz_band= src->draw_horiz_band;
     dst->get_buffer2    = src->get_buffer2;
 #if FF_API_GET_BUFFER

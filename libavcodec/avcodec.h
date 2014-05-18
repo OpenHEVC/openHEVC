@@ -3010,6 +3010,7 @@ typedef struct AVCodecContext {
      *  this frame is used by the layer (n+1) as refernce frame for inter-layer predictions 
      */
     void*  BL_frame;
+    int 	quality_id;
     void * BL_avcontext;
     int quality_id;
     int layers_size;

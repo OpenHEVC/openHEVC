@@ -3330,7 +3330,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         if (ret < 0)
             goto fail;
         ret = hls_nal_unit(s);
-        if((ret == s->decoder_id+1) && s->avctx->quality_id >= ret && (s->threads_type&FF_THREAD_FRAME)) // FIXME also check the type of the nalu, it should be data nalu type
+        if(ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->threads_type&FF_THREAD_FRAME) {// FIXME also check the type of the nalu, it should be data nalu type
             s->active_el_frame = 1;
 
         if (s->nal_unit_type == NAL_EOB_NUT ||
