@@ -1973,8 +1973,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             int y = (current_mv.mv[0].y >> 2) + y0;
             int x = (current_mv.mv[0].x >> 2) + x0;
             hevc_await_progress_bl(s, ref0, &current_mv.mv[0], y0);
+
             if (!s->BL_frame->frame->data[0])
                 return;
+
             ff_upsample_block(s, ref0, x, y, nPbW, nPbH);
         }
 #endif
@@ -1989,8 +1991,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             int y = (current_mv.mv[1].y >> 2) + y0;
             int x = (current_mv.mv[1].x >> 2) + x0;
             hevc_await_progress_bl(s, ref1, &current_mv.mv[1], y0);
+
             if (!s->BL_frame->frame->data[0])
                 return;
+
             ff_upsample_block(s, ref1, x, y, nPbW, nPbH);
         }
 #endif
@@ -2895,10 +2899,10 @@ static int hevc_frame_start(HEVCContext *s)
     }
 #endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
+    s->ref->active_el_frame = s->active_el_frame;
 
     if (ret < 0)
         goto fail;
-    s->ref->active_el_frame = s->active_el_frame;
     s->avctx->BL_frame = s->ref;
     ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
@@ -3328,7 +3332,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         ret = hls_nal_unit(s);
         if((ret == s->decoder_id+1) && s->avctx->quality_id >= ret && (s->threads_type&FF_THREAD_FRAME)) // FIXME also check the type of the nalu, it should be data nalu type
             s->active_el_frame = 1;
-        }
+
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
             s->eos = 1;
@@ -3692,7 +3696,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        ff_hevc_unref_frame(s, &s->DPB[i], ~0);
+        ff_hevc_unref_frame1(s, &s->DPB[i], ~0);
         if (s0->DPB[i].frame->buf[0] && &s0->DPB[i] != s0->inter_layer_ref ) {
             ret = hevc_ref_frame(s, &s->DPB[i], &s0->DPB[i]);
             if (ret < 0)
