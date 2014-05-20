@@ -3090,6 +3090,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
              }
         }
 #if ACTIVE_PU_UPSAMPLING
+        if(!s->decoder_id && (s->threads_type&FF_THREAD_FRAME))
+            ff_thread_report_last_Tid(s->avctx, s->pocTid0);
         if (s->ref->active_el_frame)
             ff_thread_report_il_progress(s->avctx, s->poc, s->ref, s->pocTid0);
 #endif
