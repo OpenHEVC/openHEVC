@@ -73,6 +73,8 @@ macro(AutodetectHostArchitecture)
          # Any recent Intel CPU except NetBurst
          if(_cpu_model EQUAL 70)
             set(TARGET_ARCHITECTURE "haswell")
+         elseif(_cpu_model EQUAL 69)
+            set(TARGET_ARCHITECTURE "haswell")
          elseif(_cpu_model EQUAL 62)
             set(TARGET_ARCHITECTURE "ivy-bridge")
          elseif(_cpu_model EQUAL 58)
