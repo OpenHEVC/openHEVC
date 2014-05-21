@@ -85,6 +85,8 @@ void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetViewLayers(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle);
+void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId);
+
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 
 #ifdef __cplusplus

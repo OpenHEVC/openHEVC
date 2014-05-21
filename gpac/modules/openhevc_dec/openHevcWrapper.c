@@ -361,6 +361,14 @@ void libOpenHevcFlush(OpenHevc_Handle openHevcHandle)
     openHevcContext->codec->flush(openHevcContext->c);
 }
 
+void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[decoderId];
+
+    openHevcContext->codec->flush(openHevcContext->c);
+}
+
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle)
 {
     return "OpenHEVC v"NV_VERSION;
