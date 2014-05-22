@@ -143,16 +143,21 @@
 #define HAVE_MMX_INLINE 0
 #define HAVE_MMXEXT_INLINE 0
 #define HAVE_SSE_INLINE 0
+#define HAVE_SSE2_INLINE    0
+#define HAVE_SSE3_INLINE    0
+#define HAVE_SSE4_INLINE    0
+#define HAVE_SSE42_INLINE   0
+#define HAVE_SSSE3_INLINE   0
 #else
 #define HAVE_MMX_INLINE     ARCH_X86
 #define HAVE_MMXEXT_INLINE  ARCH_X86_64
 #define HAVE_SSE_INLINE     ARCH_X86_64
-#endif
 #define HAVE_SSE2_INLINE    @USE_SSE2@
 #define HAVE_SSE3_INLINE    @USE_SSE3@
 #define HAVE_SSE4_INLINE    @USE_SSE4_1@
 #define HAVE_SSE42_INLINE   @USE_SSE4_2@
 #define HAVE_SSSE3_INLINE   @USE_SSSE3@
+#endif
 #define HAVE_XOP_INLINE 0
 #define HAVE_CPUNOP_INLINE 0
 #define HAVE_I686_INLINE 0
@@ -245,8 +250,10 @@
 #define HAVE_DLOPEN 1
 #if defined(WIN32)
 #define HAVE_DOS_PATHS 1
+#define HAVE_FCNTL 0
 #else
 #define HAVE_DOS_PATHS 0
+#define HAVE_FCNTL @FCNTL_H_FOUND@
 #endif
 #define HAVE_DXVA_H 0
 #define HAVE_EBP_AVAILABLE ARCH_X86_64
@@ -255,7 +262,6 @@
 #define HAVE_FAST_64BIT 1
 #define HAVE_FAST_CLZ 1
 #define HAVE_FAST_CMOV 1
-#define HAVE_FCNTL @FCNTL_H_FOUND@
 #define HAVE_FORK 1
 #define HAVE_GETADDRINFO 1
 #define HAVE_GETHRTIME 0
