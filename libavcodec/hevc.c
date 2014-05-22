@@ -726,6 +726,8 @@ static int hls_slice_header(HEVCContext *s)
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             print_cabac("pic_order_cnt_lsb", sh->pic_order_cnt_lsb);
+            if(s->decoder_id>0 && (s->threads_type&FF_THREAD_FRAME))
+                s->pocTid0 = ff_thread_get_last_Tid(s->avctx);
             poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
             if (!sh->first_slice_in_pic_flag && poc != s->poc) {
                 av_log(s->avctx, AV_LOG_WARNING,
@@ -2882,8 +2884,7 @@ static int hevc_frame_start(HEVCContext *s)
         
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
-        if (s->threads_type&FF_THREAD_FRAME) {
-            s->avctx->BL_frame = NULL;
+        if (s->threads_type&FF_THREAD_FRAME){
             ff_thread_await_il_progress(s->avctx, s->poc, &s->avctx->BL_frame);
         }
         if(s->avctx->BL_frame != NULL)
@@ -2893,6 +2894,7 @@ static int hevc_frame_start(HEVCContext *s)
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if ( ret< 0 )
             goto fail;
+
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
     s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
        #endif
@@ -2902,6 +2904,7 @@ static int hevc_frame_start(HEVCContext *s)
 
     if (ret < 0)
         goto fail;
+
     s->ref->active_el_frame = s->active_el_frame;
     s->avctx->BL_frame = s->ref;
     ret = ff_hevc_frame_rps(s);
@@ -2983,6 +2986,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
+    s->nuh_layer_id = ret;
     s->avctx->layers_size += length;
     
     s->nuh_layer_id = ret;
@@ -3087,7 +3091,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 #if ACTIVE_PU_UPSAMPLING
         if (s->ref->active_el_frame)
-            ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
+            ff_thread_report_il_progress(s->avctx, s->poc, s->ref, s->pocTid0);
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
@@ -3096,8 +3100,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 tiles_filters(s);
 #ifdef SVC_EXTENSION
 #if !ACTIVE_PU_UPSAMPLING
-            if (s->ref->active_el_frame)
-                ff_thread_report_il_progress(s->avctx, s->poc, s->ref);
+            if (s->active_el_frame)
+                ff_thread_report_il_progress(s->avctx, s->poc, s->ref, s->pocTid0);
 #endif
 #endif
 
@@ -3338,13 +3342,11 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         buf    += consumed;
         length -= consumed;
     }
-
     /* parse the NAL units */
     for (i = 0; i < s->nb_nals; i++) {
         int ret;
         s->skipped_bytes = s->skipped_bytes_nal[i];
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
-
         ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
@@ -3523,7 +3525,7 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
     dst->window     = src->window;
     dst->flags      = src->flags;
     dst->sequence   = src->sequence;
-
+//    dst->active_el_frame   = src->active_el_frame;
     return 0;
 fail:
     ff_hevc_unref_frame(s, dst, ~0);

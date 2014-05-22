@@ -121,6 +121,7 @@ typedef struct FrameThreadContext {
 
     int die;                       ///< Set when threads should exit.
     int is_decoded[MAX_POC];
+    int last_Tid;
     void* frames[MAX_POC];
     pthread_mutex_t il_progress_mutex; ///< Mutex used to protect frame progress values and progress_cond.
     pthread_cond_t  il_progress_cond;   ///< Used by child threads to wait for progress to change.
@@ -522,7 +523,7 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
 }
 
 #ifdef SVC_EXTENSION
-void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in) {
+void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in, int last_Tid) {
 /*
     - Called by the  lower layer decoder to report that the frame used as reference at upper layers
       is either decoded or allocated in the frame-based.
@@ -538,9 +539,24 @@ void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in) {
         av_log(avxt, AV_LOG_DEBUG, "Thread base layer decoded \n");
     pthread_mutex_lock(&fctx->il_progress_mutex);
     fctx->is_decoded[poc] = 1;
+    fctx->last_Tid        = last_Tid;
     fctx->frames[poc]     = in;
     pthread_cond_broadcast(&fctx->il_progress_cond);
     pthread_mutex_unlock(&fctx->il_progress_mutex);
+}
+
+int ff_thread_get_last_Tid(AVCodecContext *avxt) {
+    /*
+     - Get the status of the lower layer picture used as reference for inter-layer prediction.
+     */
+    int res;
+    FrameThreadContext *fctx = ((AVCodecContext *)avxt->BL_avcontext)->internal->thread_ctx_frame;
+    if (avxt->debug&FF_DEBUG_THREADS)
+        av_log(avxt, AV_LOG_DEBUG, "Thead base layer decoded \n");
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    res = fctx->last_Tid;
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+    return res;
 }
 
 int ff_thread_get_il_up_status(AVCodecContext *avxt, int poc)
@@ -561,7 +577,6 @@ int ff_thread_get_il_up_status(AVCodecContext *avxt, int poc)
     pthread_mutex_unlock(&fctx->il_progress_mutex);
     return res;
 }
-
 void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out) {
     /*
      - Wait untill the lower layer picture used for inter-layer reference picture is either allocated or decoded
