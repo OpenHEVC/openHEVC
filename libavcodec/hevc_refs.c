@@ -32,10 +32,8 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
     if (!frame->frame || !frame->frame->buf[0])
         return;
     frame->flags &= ~flags;
-    if(frame->active_el_frame){
+    if(frame->active_el_frame)
         is_up_sampled = ff_thread_get_il_up_status(s->avctx, frame->poc);
-    //	printf("Decoder id %d %d \n", s->decoder_id, is_up_sampled);
-    }
     if (!frame->flags && is_up_sampled == 2) {
         if(frame->active_el_frame)
             ff_thread_report_il_status2(s->avctx, frame->poc, 0);
@@ -48,26 +46,6 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
         frame->rpl_tab    = NULL;
         frame->refPicList = NULL;
         frame->collocated_ref = NULL;
-    }
-}
-
-void ff_hevc_unref_frame1(HEVCContext *s, HEVCFrame *frame, int flags)
-{
-
-    /* frame->frame can be NULL if context init failed */
-    if (!frame->frame || !frame->frame->buf[0])
-        return;
-    frame->flags &= ~flags;
-    if (!frame->flags) {
-        ff_thread_release_buffer(s->avctx, &frame->tf);
-        av_buffer_unref(&frame->tab_mvf_buf);
-        frame->tab_mvf = NULL;
-        av_buffer_unref(&frame->rpl_buf);
-        av_buffer_unref(&frame->rpl_tab_buf);
-        frame->rpl_tab    = NULL;
-        frame->refPicList = NULL;
-        frame->collocated_ref = NULL;
-//        frame->active_el_frame = 0;
     }
 }
 
