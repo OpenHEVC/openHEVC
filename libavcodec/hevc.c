@@ -2899,10 +2899,10 @@ static int hevc_frame_start(HEVCContext *s)
     }
 #endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
-    s->ref->active_el_frame = s->active_el_frame;
 
     if (ret < 0)
         goto fail;
+    s->ref->active_el_frame = s->active_el_frame;
     s->avctx->BL_frame = s->ref;
     ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
@@ -3696,7 +3696,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        ff_hevc_unref_frame1(s, &s->DPB[i], ~0);
+        ff_hevc_unref_frame(s, &s->DPB[i], ~0);
         if (s0->DPB[i].frame->buf[0] && &s0->DPB[i] != s0->inter_layer_ref ) {
             ret = hevc_ref_frame(s, &s->DPB[i], &s0->DPB[i]);
             if (ret < 0)
