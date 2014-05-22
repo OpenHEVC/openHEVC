@@ -637,7 +637,7 @@ TRANSFORM_LUMA_ADD( 10);
     dst3 = _mm_sub_epi32(tmp0, tmp2)
 #define COMPUTE4x4_LO()                                                        \
     COMPUTE4x4(e0, e1, e2, e3)
-#define COMPUTE4x4_HI(dst)                                                     \
+#define COMPUTE4x4_HI()                                                        \
     COMPUTE4x4(e7, e6, e5, e4)
 
 #define TR_4(dst, dst_stride, in, sstep, load, assign)                         \
@@ -953,7 +953,7 @@ TRANSFORM_ADD2(32, 10);
 #define TRANSFORM_DC_ADD(H, D)                                                 \
 void ff_hevc_transform_ ## H ## x ## H ## _dc_add_ ## D ## _sse4 (             \
     uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride) {                       \
-    int i, j;                                                                  \
+    int j;                                                                     \
     int shift = 14 - D;                                                        \
     int add   = 1 << (shift - 1);                                              \
     int coeff = (((coeffs[0] + 1) >> 1) + add) >> shift;                       \
