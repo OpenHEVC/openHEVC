@@ -3330,7 +3330,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         if (ret < 0)
             goto fail;
         ret = hls_nal_unit(s);
-        if(ret == s->decoder_id+1 && s->avctx->quality_id >= ret && (s->threads_type&FF_THREAD_FRAME)) // FIXME also check the type of the nalu, it should be data nalu type
+        if(!s->active_el_frame && ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) // FIXME also check the type of the nalu, it should be data nalu type
             s->active_el_frame = 1;
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
@@ -3708,7 +3708,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
-
     for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++) {
         av_buffer_unref(&s->sps_list[i]);
         if (s0->sps_list[i]) {
@@ -3804,7 +3803,6 @@ static int hevc_decode_extradata(HEVCContext *s)
                 bytestream2_skip(&gb, nalsize);
             }
         }
-
         /* Now store right nal length size, that will be used to parse
          * all other nals */
         s->nal_length_size = nal_len_size;
