@@ -24,6 +24,9 @@
 
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
+#ifdef WIN32
+#include <windows.h>
+#endif // WIN32
 #include <minwindef.h>
 #include "cabac_functions.h"
 #include "golomb.h"
