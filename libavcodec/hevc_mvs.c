@@ -252,7 +252,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 
     HEVCFrame *ref = s->ref->collocated_ref;
 
-    if (!ref)
+    if (!ref || !ref->frame->data[0])
         return 0;
 
     tab_mvf = ref->tab_mvf;

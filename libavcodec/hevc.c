@@ -3109,7 +3109,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
 #ifdef SVC_EXTENSION
             if(s->decoder_id > 0) {
-                if(s->ref->active_el_frame)
+                if(s->threads_type&FF_THREAD_FRAME)
                     ff_thread_report_il_status(s->avctx, s->poc, 2);
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
             }

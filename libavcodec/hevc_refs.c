@@ -138,7 +138,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
     *frame = ref->frame;
     s->ref = ref;
-    ref->active_el_frame = 0;
+
     ref->poc      = poc;
     ref->flags    = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
     if (s->sh.pic_output_flag == 0)
@@ -637,8 +637,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
 #endif
             }   else    {
                 init_upsampled_mv_fields(s);
-                if(s->ref->active_el_frame)
-                   ff_thread_report_il_status(s->avctx, s->poc, 2);
+                if(s->threads_type&FF_THREAD_FRAME)
+                    ff_thread_report_il_status(s->avctx, s->poc, 2);
             }
 #endif
         }
