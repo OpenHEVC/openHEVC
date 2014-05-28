@@ -52,6 +52,19 @@ Most people will not need to use this and should use the libav HEVC decoder avai
 <li>H2B2VS</li>
 <li>AUSTRAL</li>
 </ul><h2>
+<a name="what-does-openhevc-support" class="anchor" href="#what-does-openhevc-support"><span class="octicon octicon-link"></span></a>What does openHEVC support?</h2>
+
+<ul>
+<li>Main Profile (all conformance bitstream except BUMPING)</li>
+<li>Main 10 Profile (except different combination of luma/chroma bitwidth)</li>
+<li>Range extension (4:2:2/4:4:4)
+
+<ul>
+<li>Bitstream aligned with April 2014 HEVC standard</li>
+</ul>
+</li>
+<li>support of SHM4.1 bitstreams</li>
+</ul><h2>
 <a name="where-is-the-source-code-of-openhevc" class="anchor" href="#where-is-the-source-code-of-openhevc"><span class="octicon octicon-link"></span></a>Where is the source code of openHEVC?</h2>
 
 <ul>
@@ -93,6 +106,13 @@ sudo make install
 <li>with SDL: <code>cd build; ./hevc -i name_of_annexB_bitstream.(bit,bin,265)</code>
 </li>
 <li>with SDL2: <code>cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)</code>
+
+<ul>
+<li>add <code>-n</code> to remove the display </li>
+<li>add <code>-l layer</code> with <code>layer</code> a number to select the layer in a SHVC bitstream </li>
+<li>add <code>-f xx</code> with <code>xx</code> to select frame-based (<code>0</code>), wpp/tiles (<code>1</code>) or combination of frame-based and wpp (<code>4</code>)</li>
+<li>add <code>-p</code> to select the number of threads when -f is activated</li>
+</ul>
 </li>
 </ul><h2>
 <a name="how-to-compile-gpac-with-openhevc-on-linux" class="anchor" href="#how-to-compile-gpac-with-openhevc-on-linux"><span class="octicon octicon-link"></span></a>How to compile gpac with openHEVC on linux</h2>
