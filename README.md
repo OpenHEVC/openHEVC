@@ -11,11 +11,18 @@ openHEVC in combination with GPAC is used in 3 research projects:
 
 What does openHEVC support?
 --------
-* Main Profile (all conformance bitstream except BUMPING)
+* Main Profile (all conformance bitstreams except BUMPING)
 * Main 10 Profile (except different combination of luma/chroma bitwidth)
 * Range extension (4:2:2/4:4:4)
-  - Bitstream aligned with April 2014 HEVC standard
+  + Bitstream aligned with April 2014 HEVC standard
 * support of SHM4.1 bitstreams
+
+What is the compiling infrastructure?
+--------
+* MSVC2013
+* gcc
+* clang
+
 
 Where is the source code of openHEVC?
 --------
@@ -54,10 +61,10 @@ How to test openHEVC on linux from source code
 * go into source folder of openHEVC
 * with SDL: `cd build; ./hevc -i name_of_annexB_bitstream.(bit,bin,265)`
 * with SDL2: `cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)`
-  - add `-n` to remove the display 
-  - add `-l layer` with `layer` a number to select the layer in a SHVC bitstream 
-  - add `-f xx` with `xx` to select frame-based (`0`), wpp/tiles (`1`) or combination of frame-based and wpp (`4`)
-  - add `-p` to select the number of threads when -f is activated
+  + add `-n` to remove the display 
+  + add `-l layer` with `layer` a number to select the layer in a SHVC bitstream 
+  + add `-f xx` with `xx` to select frame-based (`0`), wpp/tiles (`1`) or combination of frame-based and wpp (`4`)
+  + add `-p` to select the number of threads when -f is activated
 
 How to compile gpac with openHEVC on linux
 -----------
