@@ -3,6 +3,7 @@ libOpenHevcClose
 libOpenHevcCopyExtraData
 libOpenHevcDecode
 libOpenHevcFlush
+libOpenHevcFlushSVC
 libOpenHevcGetOutput
 libOpenHevcGetOutputCpy
 libOpenHevcGetPictureInfo

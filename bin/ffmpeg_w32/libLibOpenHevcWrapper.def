@@ -3,6 +3,7 @@ libOpenHevcClose
 libOpenHevcCopyExtraData
 libOpenHevcDecode
 libOpenHevcFlush
+libOpenHevcFlushSVC
 libOpenHevcGetOutput
 libOpenHevcGetOutputCpy
 libOpenHevcGetPictureInfo
@@ -13,5 +14,6 @@ libOpenHevcSetCheckMD5
 libOpenHevcSetDebugMode
 libOpenHevcSetNoCropping
 libOpenHevcSetTemporalLayer_id
+libOpenHevcSetViewLayers
 libOpenHevcStartDecoder
 libOpenHevcVersion

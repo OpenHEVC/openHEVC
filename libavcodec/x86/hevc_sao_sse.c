@@ -86,6 +86,8 @@
     src0 = _mm_packus_epi16(src0, src0);                                       \
     _mm_storel_epi64((__m128i *) &dst[x], src0)
 #define SAO_BAND_FILTER_STORE_10()                                             \
+    src0 = _mm_max_epi16(src0, _mm_setzero_si128());                           \
+    src0 = _mm_min_epi16(src0, _mm_set1_epi16(0x03ff));                         \
     _mm_store_si128((__m128i *) &dst[x  ], src0)
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -114,6 +116,7 @@ void ff_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
 }
 SAO_BAND_FILTER( 8,  8)
 SAO_BAND_FILTER( 8, 10)
+
 #endif // HAVE_SSSE3
 
 #if HAVE_SSE42
