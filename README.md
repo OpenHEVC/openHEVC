@@ -2,7 +2,7 @@ openHEVC
 ========
 
 openHEVC is a fork of Libav with only the files needed to decode HEVC content, it was created for research purposes.
-Most people will not need to use this and should use the libav HEVC decoder available at https://github.com/OpenHEVC/libav instead (see https://libav.org/documentation.html for documentation).
+Most people will not need to use this and should use the libav HEVC decoder available at https://github.com/OpenHEVC/ffmpeg instead (see https://ffmpeg.org/documentation.html for documentation).
 
 openHEVC in combination with GPAC is used in 3 research projects:
 * 4EVER
@@ -12,7 +12,8 @@ openHEVC in combination with GPAC is used in 3 research projects:
 Where is the source code of openHEVC?
 --------
 * openHEVC is located at https://github.com/OpenHEVC/openHEVC.
-* openHEVC is under LGPL license
+* openHEVC is under LGPL2.1 license
+* reusing ffmpeg runtime for multithreading
 
 Where is the source code of GPAC?
 --------
@@ -25,7 +26,7 @@ How to compile openHEVC on linux from source code
 
 ```sh
 git clone git://github.com/OpenHEVC/openHEVC.git
-git checkout hevc
+git checkout hevc_rext
 ```
 * install yasm
 * go into OpenHEVC source folder
@@ -97,3 +98,11 @@ openHEVC contributors
 -----------
 * see http://gpac.wp.mines-telecom.fr/about/
 
+Publications
+-----------
+* Conferences:
+  + Hamidouche W., Raulet M., Déforges O, « Real time SHVC decoder: Implementation and complexity analysis », dans ICIP 2014 – IEEE International Conference on Image Processing
+
+  + Hamidouche W., Raulet M., Déforges O., « Parallel SHVC Decoder: Implementation and Analysis », ICME 2014 – IEEE International Conference on Multimedia and Expo.
+
+  + Hamidouche W., Raulet M., Déforges O., « Multi-core software architecture for the scalable HEVC decoder »,  dans ICASSP 2014 – IEEE International Conference on Acoustics, Speech, and Signal Processing
