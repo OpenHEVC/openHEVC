@@ -847,8 +847,6 @@ int ff_frame_thread_init(AVCodecContext *avctx)
             goto error;
     }
 
-    avctx->debug|=FF_DEBUG_THREADS;
-
     return 0;
 
 error:
