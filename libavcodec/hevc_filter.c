@@ -348,7 +348,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     uint8_t no_p[2] = { 0 };
     uint8_t no_q[2] = { 0 };
 
-    int log2_ctb_size   = s->sps->log2_ctb_size;
+    int log2_ctb_size = s->sps->log2_ctb_size;
     int x_end, y_end;
     int ctb_size        = 1 << log2_ctb_size;
     int ctb             = (x0 >> log2_ctb_size) +
@@ -388,8 +388,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 const int qp0 = (get_qPy(s, x - 1, y)     + get_qPy(s, x, y)     + 1) >> 1;
                 const int qp1 = (get_qPy(s, x - 1, y + 4) + get_qPy(s, x, y + 4) + 1) >> 1;
 
-                beta[0] = betatable[av_clip(qp0 + (beta_offset >> 1 << 1), 0, MAX_QP)];
-                beta[1] = betatable[av_clip(qp1 + (beta_offset >> 1 << 1), 0, MAX_QP)];
+                beta[0] = betatable[av_clip(qp0 + beta_offset, 0, MAX_QP)];
+                beta[1] = betatable[av_clip(qp1 + beta_offset, 0, MAX_QP)];
                 tc[0]   = bs0 ? TC_CALC(qp0, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp1, bs1) : 0;
                 src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift)];
@@ -456,8 +456,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 tc_offset   = x >= x0 ? cur_tc_offset : left_tc_offset;
                 beta_offset = x >= x0 ? cur_beta_offset : left_beta_offset;
 
-                beta[0] = betatable[av_clip(qp0 + (beta_offset >> 1 << 1), 0, MAX_QP)];
-                beta[1] = betatable[av_clip(qp1 + (beta_offset >> 1 << 1), 0, MAX_QP)];
+                beta[0] = betatable[av_clip(qp0 + beta_offset, 0, MAX_QP)];
+                beta[1] = betatable[av_clip(qp1 + beta_offset, 0, MAX_QP)];
                 tc[0]   = bs0 ? TC_CALC(qp0, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp1, bs1) : 0;
                 src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift)];
@@ -513,11 +513,10 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                         s->hevcdsp.hevc_h_loop_filter_chroma_c(src,
                                                                s->frame->linesize[chroma],
                                                                c_tc, no_p, no_q);
-                    } else {
+                    } else
                         s->hevcdsp.hevc_h_loop_filter_chroma(src,
                                                              s->frame->linesize[chroma],
                                                              c_tc, no_p, no_q);
-                    }
                 }
             }
         }
@@ -876,6 +875,9 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
     int ePbW = x0 + ctb_size > el_width  ? el_width  - x0:ctb_size ;
     int ePbH = y0 + ctb_size > el_height ? el_height - y0:ctb_size;
 
+    if (!dst)
+        return;
+
     if(s->up_filter_inf.idx == SNR){ /* x1 quality (SNR) scalability */
         copy_block (s->BL_frame->frame->data[0] + y0*bl_stride+x0, ref0->frame->data[0] + y0*el_stride+x0, bl_stride, el_stride, ePbH, ePbW );
     } else {    /* spatial scalability */
@@ -941,6 +943,9 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     int ePbH = y0 + ctb_size > el_height ? el_height - y0:ctb_size;
     int bl_stride = s->BL_frame->frame->linesize[1];
     int el_stride = ref0->frame->linesize[1];
+
+    if (!ref0->frame->data[0])
+        return;
 
     if(s->up_filter_inf.idx == SNR) {
         for(cr=1; cr <= 2; cr++ )
