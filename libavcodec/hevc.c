@@ -1719,8 +1719,6 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
     int x_off1 = x_off + (mv1->x >> (2 + hshift));
     int y_off1 = y_off + (mv1->y >> (2 + vshift));
     int idx = ff_hevc_pel_weight[block_w];
-    if (!ref0->data[0] || !ref1->data[0])
-        return;
 
     src1  += y_off0 * src1stride + (int)((unsigned)x_off0 << s->sps->pixel_shift);
     src2  += y_off1 * src2stride + (int)((unsigned)x_off1 << s->sps->pixel_shift);
@@ -1922,9 +1920,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             int x = (current_mv.mv[0].x >> 2) + x0;
             hevc_await_progress_bl(s, ref0, &current_mv.mv[0], y0);
 
-            if (!s->BL_frame->frame->data[0])
-                return;
-
             ff_upsample_block(s, ref0, x, y, nPbW, nPbH);
         }
 #endif
@@ -1939,9 +1934,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             int y = (current_mv.mv[1].y >> 2) + y0;
             int x = (current_mv.mv[1].x >> 2) + x0;
             hevc_await_progress_bl(s, ref1, &current_mv.mv[1], y0);
-
-            if (!s->BL_frame->frame->data[0])
-                return;
 
             ff_upsample_block(s, ref1, x, y, nPbW, nPbH);
         }
@@ -3072,7 +3064,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 s->max_ra = INT_MIN;
         }
         if (s->sh.first_slice_in_pic_flag) {
-            av_log(s->avctx, AV_LOG_ERROR, "start frame %d, %d\n", s->decoder_id, s->poc);
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
@@ -3118,8 +3109,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if(s->decoder_id > 0) {
                 if(s->threads_type&FF_THREAD_FRAME)
                     ff_thread_report_il_status(s->avctx, s->poc, 2);
-                av_log(s->avctx, AV_LOG_ERROR,
-                       "unref_frame %d\n", s->inter_layer_ref->poc);
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
             }
 #endif
