@@ -70,6 +70,7 @@ void ff_hevc_clear_refs(HEVCContext *s)
 void ff_hevc_flush_dpb(HEVCContext *s)
 {
     int i;
+    av_log(s->avctx, AV_LOG_ERROR, "flush, decoder_%d.\n", s->decoder_id);
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         ff_hevc_unref_frame(s, &s->DPB[i], ~0);
 }
@@ -111,7 +112,7 @@ fail:
         ff_hevc_unref_frame(s, frame, ~0);
         return NULL;
     }
-    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, DPB full.\n");
+    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, DPB full, decoder_%d.\n", s->decoder_id);
     return NULL;
 }
 
@@ -170,9 +171,9 @@ int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc)
         return AVERROR(ENOMEM);
     
     *frame              = ref->frame;
-    s->inter_layer_ref              = ref;
+    s->inter_layer_ref  = ref;
     ref->poc            = poc;
-    
+
     ref->flags          = HEVC_FRAME_FLAG_LONG_REF;
     ref->sequence       = s->seq_decode;
     ref->window         = s->sps->output_window;
@@ -620,10 +621,10 @@ int ff_hevc_frame_rps(HEVCContext *s)
     if (s->nuh_layer_id)
 #endif
     {
-        if(!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) && s->sps->set_mfm_enabled_flag)  {
+        if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) && s->sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
             int *arg, *ret, cmpt = (s->sps->height / ctb_size) + (s->sps->height%ctb_size ? 1:0);
-            
+
             arg = av_malloc(cmpt*sizeof(int));
             ret = av_malloc(cmpt*sizeof(int));
             for(i=0; i < cmpt; i++)
@@ -635,13 +636,13 @@ int ff_hevc_frame_rps(HEVCContext *s)
 #else
             set_refindex_data(s);
 #endif
-            }   else    {
-                init_upsampled_mv_fields(s);
-                if(s->threads_type&FF_THREAD_FRAME)
-                    ff_thread_report_il_status(s->avctx, s->poc, 2);
-            }
-#endif
+        } else {
+            init_upsampled_mv_fields(s);
+            if(s->threads_type&FF_THREAD_FRAME)
+                ff_thread_report_il_status(s->avctx, s->poc, 2);
         }
+#endif
+    }
 #endif
     /* clear the reference flags on all frames except the current one */
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {

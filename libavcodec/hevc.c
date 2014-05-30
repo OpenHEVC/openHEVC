@@ -2841,6 +2841,7 @@ static int hevc_frame_start(HEVCContext *s)
         widthBL  = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_width;
         if(!heightBL || !widthBL)    {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing -- \n");
+            ret = AVERROR(ENOMEM);
             goto fail;
         }
         HEVCWindow scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->m_refLayerId[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
@@ -2886,7 +2887,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (s->pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
 #ifdef SVC_EXTENSION
-    if(s->nuh_layer_id ) {
+    if (s->nuh_layer_id) {
         ctb_size =  1 << s->sps->log2_ctb_size;
 #if ACTIVE_PU_UPSAMPLING
         
@@ -2897,12 +2898,12 @@ static int hevc_frame_start(HEVCContext *s)
         else
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
-        if ( ret< 0 )
+        if (ret < 0)
             goto fail;
 
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
-    s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
-       #endif
+        s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
+#endif
     }
 #endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
@@ -3036,32 +3037,32 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     case NAL_RASL_N:
     case NAL_RASL_R:
 #if 0
-    {
-        int loss_rate = 10;
-        int var = (rand()%100);
-        if( var < loss_rate && (s->nal_unit_type != NAL_VPS) && (s->nal_unit_type != NAL_SPS) && (s->nal_unit_type != NAL_PPS))
-            get_bits(gb, 3);
+        {
+            int loss_rate = 10;
+            int var = (rand()%100);
+            if( var < loss_rate && (s->nal_unit_type != NAL_VPS) && (s->nal_unit_type != NAL_SPS) && (s->nal_unit_type != NAL_PPS))
+                get_bits(gb, 3);
             //  Packet loss
             //return 0;
-    }
-#endif
-    ret = hls_slice_header(s);
-
- #if 0
-    if (ret == -10)
-        return 0;
-#endif
-
-    if (ret < 0)
-        return ret;
-    if (s->max_ra == INT_MAX) {
-        if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
-            s->max_ra = s->poc;
-        } else {
-            if (IS_IDR(s))
-                s->max_ra = INT_MIN;
         }
-    }
+#endif
+        ret = hls_slice_header(s);
+
+#if 0
+        if (ret == -10)
+            return 0;
+#endif
+
+        if (ret < 0)
+            return ret;
+        if (s->max_ra == INT_MAX) {
+            if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
+                    s->max_ra = s->poc;
+            } else {
+                if (IS_IDR(s))
+                    s->max_ra = INT_MIN;
+            }
+        }
         if ((s->nal_unit_type == NAL_RASL_R || s->nal_unit_type == NAL_RASL_N) &&
             s->poc <= s->max_ra) {
             s->is_decoded = 0;
@@ -3071,6 +3072,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 s->max_ra = INT_MIN;
         }
         if (s->sh.first_slice_in_pic_flag) {
+            av_log(s->avctx, AV_LOG_ERROR, "start frame %d, %d\n", s->decoder_id, s->poc);
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
@@ -3116,6 +3118,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if(s->decoder_id > 0) {
                 if(s->threads_type&FF_THREAD_FRAME)
                     ff_thread_report_il_status(s->avctx, s->poc, 2);
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "unref_frame %d\n", s->inter_layer_ref->poc);
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
             }
 #endif
@@ -3699,8 +3703,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         if (ret < 0)
             return ret;
     }
-    av_log(s->avctx, AV_LOG_ERROR,
-            "hevc_update_thread_context %d\n", s->decoder_id);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         ff_hevc_unref_frame(s, &s->DPB[i], ~0);
@@ -3710,8 +3712,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return ret;
         }
     }
-    av_log(s->avctx, AV_LOG_ERROR,
-           "hevc_update_thread_context2 %d\n", s->decoder_id);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++) {
         av_buffer_unref(&s->vps_list[i]);
