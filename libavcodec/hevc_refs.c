@@ -32,7 +32,7 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
     if (!frame->frame || !frame->frame->buf[0])
         return;
     frame->flags &= ~flags;
-    if(frame->active_el_frame)
+    if (frame->active_el_frame)
         is_up_sampled = ff_thread_get_il_up_status(s->avctx, frame->poc);
     if (!frame->flags && is_up_sampled == 2) {
         if(frame->active_el_frame)

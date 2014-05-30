@@ -160,6 +160,7 @@ set(libfilenames
     libavutil/rc4.c
     libavutil/samplefmt.c
     libavutil/sha.c
+    libavutil/stereo3d.c
     libavutil/time.c
     libavutil/timecode.c
     libavutil/utils.c

@@ -53,7 +53,7 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
 
         nut = (pc->state64 >> 2 * 8 + 1) & 0x3F;
         layer_id  =  (((pc->state64 >> 2 * 8) &0x01)<<5) + (((pc->state64 >> 1 * 8)&0xF8)>>3);
-        
+
         // Beginning of access unit
         if ((nut >= NAL_VPS && nut <= NAL_AUD) || nut == NAL_SEI_PREFIX ||
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {

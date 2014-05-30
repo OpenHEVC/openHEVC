@@ -1269,14 +1269,14 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         print_cabac("aspect_ratio_idc", sar_idx);
         if (sar_idx < FF_ARRAY_ELEMS(vui_sar))
             vui->sar = vui_sar[sar_idx];
-        else if(sar_idx == 255) {
-                vui->sar.num = get_bits(gb, 16);
-                vui->sar.den = get_bits(gb, 16);
-                print_cabac("sar_width", vui->sar.num);
-                print_cabac("sar_height",  vui->sar.den);
-            } else
-                av_log(s->avctx, AV_LOG_WARNING,
-                       "Unknown SAR index: %u.\n", sar_idx);
+        else if (sar_idx == 255) {
+            vui->sar.num = get_bits(gb, 16);
+            vui->sar.den = get_bits(gb, 16);
+            print_cabac("sar_width", vui->sar.num);
+            print_cabac("sar_height",  vui->sar.den);
+        } else
+            av_log(s->avctx, AV_LOG_WARNING,
+                   "Unknown SAR index: %u.\n", sar_idx);
     }
 
     vui->overscan_info_present_flag = get_bits1(gb);
@@ -1572,7 +1572,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->m_bTemporalIdNestingFlag = vps->vps_temporal_id_nesting_flag;
     }
 
-    if ( s->nuh_layer_id == 0)
+    if (s->nuh_layer_id == 0)
         parse_ptl(s, &sps->ptl, sps->max_sub_layers);
     sps_id = get_ue_golomb_long(gb);
     print_cabac("sps_seq_parameter_set_id", sps_id);
@@ -1581,13 +1581,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    if(s->nuh_layer_id > 0){
+    if (s->nuh_layer_id > 0) {
         sps->m_updateRepFormatFlag = get_bits1(gb);
         print_cabac("update_rep_format_flag", sps->m_updateRepFormatFlag);
     } else {
         sps->m_updateRepFormatFlag = 1;
     }
-    if(s->nuh_layer_id == 0) {
+    if (s->nuh_layer_id == 0) {
         sps->chroma_format_idc = get_ue_golomb_long(gb);
         print_cabac("chroma_format_idc", sps->chroma_format_idc);
         if (!(sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2 || sps->chroma_format_idc == 3)) {
@@ -1611,7 +1611,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         if ((ret = av_image_check_size(sps->width,
                 sps->height, 0, s->avctx)) < 0)
             goto err;
-    } else if(sps->m_updateRepFormatFlag){
+    } else if (sps->m_updateRepFormatFlag) {
         sps->chroma_array_type = sps->chroma_format_idc = 0;
         sps->m_updateRepFormatIndex = get_bits(gb, 8);
         print_cabac("update_rep_format_index", sps->m_updateRepFormatIndex);
@@ -1802,7 +1802,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps->m_inferScalingListFlag =  get_bits1(gb);
             print_cabac("sps_infer_scaling_list_flag\n", sps->m_inferScalingListFlag);
         }
-        if(sps->m_inferScalingListFlag) {
+        if (sps->m_inferScalingListFlag) {
             sps->m_scalingListRefLayerId = get_ue_golomb_long(gb);
             print_cabac("sps_scaling_list_ref_layer_id\n", sps->m_scalingListRefLayerId);
             sps->scaling_list_enable_flag = 0;
