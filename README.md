@@ -130,5 +130,5 @@ Publications
   
   + J. Le Feuvre, J.-M. Thiesse, M. Parmentier, M. Raulet and Ch. Daguet, Ultra high definition HEVC DASH data set, ACM MMSys, Singapore, March 2014, pp. 7-12.
   
-  + M. Raulet, G. Cocherel, H. Wassim, J. Le Feuvre, J. Gorin, S. Kervadec and J. Viéron, HEVC Live end to end demonstration, MMSP, Pula, Italia, October 2013. 
+  + M. Raulet, G. Cocherel, W. Hamidouche, J. Le Feuvre, J. Gorin, S. Kervadec and J. Viéron, HEVC Live end to end demonstration, MMSP, Pula, Italia, October 2013. 
   
