@@ -123,5 +123,12 @@ Publications
   + Hamidouche W., Raulet M., Déforges O, « Real time SHVC decoder: Implementation and complexity analysis », dans ICIP 2014 – IEEE International Conference on Image Processing
 
   + Hamidouche W., Raulet M., Déforges O., « Parallel SHVC Decoder: Implementation and Analysis », ICME 2014 – IEEE International Conference on Multimedia and Expo.
+  
+  + Hamidouche W., Cocherel G. , Le Feuvre J., Raulet M. and Déforges O. , "4K Real-time video streaming with SHVC decoder and GPAC player", ICME 2014 – IEEE International Conference on Multimedia and Expo.
 
-  + Hamidouche W., Raulet M., Déforges O., « Multi-core software architecture for the scalable HEVC decoder »,  dans ICASSP 2014 – IEEE International Conference on Acoustics, Speech, and Signal Processing
+  + Hamidouche W., Raulet M., Déforges O., « Multi-core software architecture for the scalable HEVC decoder »,  dans ICASSP 2014 – IEEE International Conference on Acoustics, Speech, and Signal Processing.
+  
+  + J. Le Feuvre, J.-M. Thiesse, M. Parmentier, M. Raulet and Ch. Daguet, Ultra high definition HEVC DASH data set, ACM MMSys, Singapore, March 2014, pp. 7-12.
+  
+  + M. Raulet, G. Cocherel, H. Wassim, J. Le Feuvre, J. Gorin, S. Kervadec and J. Viéron, HEVC Live end to end demonstration, MMSP, Pula, Italia, October 2013. 
+  
