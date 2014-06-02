@@ -775,6 +775,7 @@ void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0, int
         s->horizontal_bs[(x0 + y0 * s->bs_width) >> 2] =  bs;
     }
 }
+
 void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int slice_left_boundary)
 {
     MvField *tab_mvf        = s->ref->tab_mvf;

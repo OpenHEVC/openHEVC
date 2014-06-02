@@ -200,14 +200,14 @@ typedef struct HEVCDSPContext {
                                          uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
                                          int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                          const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-void (*upsample_filter_block_cr_h[3])(
-                                       int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int x_EL, int x_BL, int block_w, int block_h, int widthEL,
-                                       const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-void (*upsample_filter_block_cr_v[3])(
-                                       uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
-                                       int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
-                                       const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+    void (*upsample_filter_block_cr_h[3])(
+                                           int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+                                           int x_EL, int x_BL, int block_w, int block_h, int widthEL,
+                                           const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+    void (*upsample_filter_block_cr_v[3])(
+                                           uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+                                           int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
+                                           const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);

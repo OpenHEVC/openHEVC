@@ -85,7 +85,6 @@
 
 #define EDGE_EMU_BUFFER_STRIDE 80
 
-
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */
@@ -94,10 +93,10 @@
 #define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
 #define SAMPLE_CBF2(tab, x, y) ((tab)[(y) * MAX_CU_SIZE +  (x)])
 
-#define IS_IDR(s) (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP)
-#define IS_BLA(s) (s->nal_unit_type == NAL_BLA_W_RADL || s->nal_unit_type == NAL_BLA_W_LP || \
-                   s->nal_unit_type == NAL_BLA_N_LP)
-#define IS_IRAP(s) (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
+#define IS_IDR(s) ((s)->nal_unit_type == NAL_IDR_W_RADL || (s)->nal_unit_type == NAL_IDR_N_LP)
+#define IS_BLA(s) ((s)->nal_unit_type == NAL_BLA_W_RADL || (s)->nal_unit_type == NAL_BLA_W_LP || \
+                   (s)->nal_unit_type == NAL_BLA_N_LP)
+#define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
 
 unsigned long int layers_time[3];
 
@@ -757,7 +756,7 @@ typedef struct HEVCSPS {
 } HEVCSPS;
 
 typedef struct HEVCPPS {
-    unsigned sps_id; ///< seq_parameter_set_id
+    unsigned int sps_id; ///< seq_parameter_set_id
 
     uint8_t sign_data_hiding_flag;
 
@@ -1044,7 +1043,9 @@ typedef struct HEVCLocalContext {
     NeighbourAvailable  na;
 
     uint8_t cabac_state[HEVC_CONTEXTS];
+
     uint8_t first_qp_group;
+
 
     int8_t qp_y;
     int8_t curr_qp_y;
@@ -1295,7 +1296,6 @@ int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc);
 int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags);
-
 
 void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
                                      int nPbW, int nPbH);
