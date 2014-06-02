@@ -43,6 +43,13 @@ set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the 
 
 configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
 
+if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
+	enable_language(ASM)
+	add_definitions(
+		-DEXTERN_ASM=
+	)
+endif()
+
 if(WIN32)
     add_definitions(
         -Dsnprintf=avpriv_snprintf
@@ -51,7 +58,6 @@ if(WIN32)
         -Drestrict=__restrict
     )
 endif()
-
 # Configure build type (Release when no one is selected)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -61,6 +67,7 @@ else()
 endif()
 
 #define asm sources
+if(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
 if(YASM_FOUND)
 set(YASM_NAMES
     libavutil/x86/cpuid.asm
@@ -79,7 +86,9 @@ set(YASM_NAMES
     libavcodec/x86/qpel.asm
     libavcodec/x86/videodsp.asm
 )
+endif()
 
+if(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
 set(COMMON_YASM_ARGS
     -I./
     -I "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -88,6 +97,7 @@ set(COMMON_YASM_ARGS
     -I "${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/"
     -DPIC
 )
+endif()
 
 if(APPLE)
     set(YASM_ARGS -f macho64 -m amd64 -DPREFIX ${COMMON_YASM_ARGS})
@@ -164,7 +174,6 @@ set(libfilenames
     libavutil/time.c
     libavutil/timecode.c
     libavutil/utils.c
-    libavutil/x86/cpu.c
     gpac/modules/openhevc_dec/openHevcWrapper.c
     libavformat/allformats.c
     libavformat/avio.c
@@ -190,29 +199,6 @@ set(libfilenames
     libavformat/riff.c
     libavformat/rmsipr.c
     libavformat/utils.c
-    libavcodec/x86/constants.c
-    libavcodec/x86/dct_init.c
-    libavcodec/x86/dsputil_init.c
-    libavcodec/x86/dsputil_mmx.c
-    libavcodec/x86/dsputil_x86.c
-    libavcodec/x86/fdct.c
-    libavcodec/x86/fft_init.c
-    libavcodec/x86/fpel_mmx.c
-    libavcodec/x86/rnd_mmx.c
-    libavcodec/x86/h264_qpel.c
-    libavcodec/x86/hevcdsp_init.c
-    libavcodec/x86/hevcpred_init.c
-    libavcodec/x86/hevc_idct_sse4.c
-    libavcodec/x86/hevc_il_pred_sse.c
-    libavcodec/x86/hevc_mc_sse.c
-    libavcodec/x86/hevc_sao_sse.c
-    libavcodec/x86/hevc_intra_pred_sse.c
-    libavcodec/x86/hpeldsp_init.c
-    libavcodec/x86/hpeldsp_mmx.c
-    libavcodec/x86/idct_mmx_xvid.c
-    libavcodec/x86/idct_sse2_xvid.c
-    libavcodec/x86/simple_idct.c
-    libavcodec/x86/videodsp_init.c
     libavcodec/ac3tab.c
     libavcodec/allcodecs.c
     libavcodec/avfft.c
@@ -258,6 +244,62 @@ set(libfilenames
     libavcodec/utils.c
     libavcodec/videodsp.c
 )
+if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
+list(APPEND libfilenames
+    libavutil/arm/cpu.c
+    libavutil/arm/asm.S
+    libavcodec/arm/dsputil_arm.S
+    libavcodec/arm/dsputil_init_arm.c
+    libavcodec/arm/dsputil_init_neon.c
+    libavcodec/arm/dsputil_neon.S
+    libavcodec/arm/fft_init_arm.c
+    libavcodec/arm/fft_neon.S
+    libavcodec/arm/hevcdsp_init_arm.c
+    libavcodec/arm/hevcdsp_deblock_neon.S
+    #libavcodec/arm/hevcdsp_idct_neon.S
+    libavcodec/arm/hevcdsp_init_arm.c
+    libavcodec/arm/hevcdsp_qpel_neon.S
+    libavcodec/arm/hevcdsp_epel_neon.S
+    libavcodec/arm/hpeldsp_arm.S
+    libavcodec/arm/hpeldsp_init_arm.c
+    libavcodec/arm/hpeldsp_init_neon.c
+    libavcodec/arm/hpeldsp_neon.S
+    libavcodec/arm/int_neon.S
+    libavcodec/arm/jrevdct_arm.S
+    libavcodec/arm/mdct_neon.S
+    libavcodec/arm/rdft_neon.S
+    libavcodec/arm/simple_idct_arm.S
+    libavcodec/arm/simple_idct_neon.S
+    libavcodec/arm/videodsp_init_arm.c
+)
+else()
+list(APPEND libfilenames
+    libavutil/x86/cpu.c
+    libavcodec/x86/constants.c
+    libavcodec/x86/dct_init.c
+    libavcodec/x86/dsputil_init.c
+    libavcodec/x86/dsputil_mmx.c
+    libavcodec/x86/dsputil_x86.c
+    libavcodec/x86/fdct.c
+    libavcodec/x86/fft_init.c
+    libavcodec/x86/fpel_mmx.c
+    libavcodec/x86/rnd_mmx.c
+    libavcodec/x86/h264_qpel.c
+    libavcodec/x86/hevcdsp_init.c
+    libavcodec/x86/hevcpred_init.c
+    libavcodec/x86/hevc_idct_sse4.c
+    libavcodec/x86/hevc_il_pred_sse.c
+    libavcodec/x86/hevc_mc_sse.c
+    libavcodec/x86/hevc_sao_sse.c
+    libavcodec/x86/hevc_intra_pred_sse.c
+    libavcodec/x86/hpeldsp_init.c
+    libavcodec/x86/hpeldsp_mmx.c
+    libavcodec/x86/idct_mmx_xvid.c
+    libavcodec/x86/idct_sse2_xvid.c
+    libavcodec/x86/simple_idct.c
+    libavcodec/x86/videodsp_init.c
+)
+endif()
 if(WIN32)
 list(APPEND libfilenames
     compat/strtod.c

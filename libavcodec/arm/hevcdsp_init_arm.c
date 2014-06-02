@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
@@ -183,8 +184,9 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
        /* c->put_hevc_epel[1][0]         = ff_hevc_put_epel_v_neon_8;
         c->put_hevc_epel[0][1]         = ff_hevc_put_epel_h_neon_8;
         c->put_hevc_epel[1][1]         = ff_hevc_put_epel_hv_neon_8;*/
-        c->transform_add[0]            = ff_hevc_transform_4x4_add_neon_8;
-        c->transform_add[1]            = ff_hevc_transform_8x8_add_neon_8;
+	//Fixme compilation error in transform optimizations
+        /* c->transform_add[0]            = ff_hevc_transform_4x4_add_neon_8;
+        c->transform_add[1]            = ff_hevc_transform_8x8_add_neon_8; */
         //c->transform_add[2]            = ff_hevc_transform_16x16_add_neon_8;
     }
 #endif // HAVE_NEON
