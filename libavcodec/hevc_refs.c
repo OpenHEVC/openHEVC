@@ -201,6 +201,16 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             }
         }
 
+        if (s->sh.no_output_of_prior_pics_flag == 1) {
+            for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+                HEVCFrame *frame = &s->DPB[i];
+                if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) && frame->poc != s->poc &&
+                        frame->sequence == s->seq_output) {
+                    frame->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
+                }
+            }
+        }
+
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
             if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
@@ -540,7 +550,6 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
             memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
                    frame->frame->buf[i]->size);
     } else {
-
         for (i = 0; frame->frame->data[i]; i++)
             for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
                 for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
@@ -561,8 +570,6 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
 #endif
 
     if (s->threads_type & FF_THREAD_FRAME) {
-     //   if ( !s->decoder_id )
-       //     ff_thread_report_il_progress(s->avctx, frame->poc,frame);
         ff_thread_report_progress(&frame->tf, INT_MAX, 0);
     }
     return frame;
