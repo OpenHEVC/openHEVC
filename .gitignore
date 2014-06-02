@@ -13,3 +13,4 @@
 # QtCreator projects files
 *.user
 *.user.*
+/config.h
