@@ -43,6 +43,12 @@ const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12
 
 #define POC_DISPLAY_MD5
 
+static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift);
+static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
+static void display_md5(int poc, uint8_t md5[3][16]);
+static void printf_ref_pic_list(HEVCContext *s);
+
+
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -2771,9 +2777,11 @@ static int set_side_data(HEVCContext *s)
 static int hevc_frame_start(HEVCContext *s)
 {
     HEVCLocalContext *lc = s->HEVClc;
-    int ret=0, ctb_size;
+    int ctb_size;
     int pic_size_in_ctb  = ((s->sps->width  >> s->sps->log2_min_cb_size) + 1) *
                            ((s->sps->height >> s->sps->log2_min_cb_size) + 1);
+    int ret;
+    AVFrame *cur_frame;
     av_log(s->avctx, AV_LOG_DEBUG, "frame start %d\n", s->decoder_id);
 
 
@@ -2848,7 +2856,6 @@ static int hevc_frame_start(HEVCContext *s)
                 }
     }
 
-
     if (s->pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
 #ifdef SVC_EXTENSION
@@ -2888,8 +2895,10 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
 
-    av_frame_unref(s->output_frame);
+    cur_frame = s->sps->sao_enabled ? s->sao_frame : s->frame;
+    cur_frame->pict_type = 3 - s->sh.slice_type;
 
+    av_frame_unref(s->output_frame);
     ret = ff_hevc_output_frame(s, s->output_frame, 0);
     if (ret < 0)
         goto fail;
@@ -3024,6 +3033,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
         if (ret < 0)
             return ret;
+
         if (s->max_ra == INT_MAX) {
             if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
                 s->max_ra = s->poc;
@@ -3075,6 +3085,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             ff_thread_report_il_progress(s->avctx, s->poc, s->ref, s->pocTid0);
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
+
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
             s->is_decoded = 1;
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
@@ -3320,14 +3331,17 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
             s->eos = 1;
+
         buf    += consumed;
         length -= consumed;
     }
+
     /* parse the NAL units */
     for (i = 0; i < s->nb_nals; i++) {
         int ret;
         s->skipped_bytes = s->skipped_bytes_nal[i];
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
+
         ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
@@ -3339,6 +3353,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
+
     return ret;
 }
 
@@ -3415,72 +3430,6 @@ static int verify_md5(HEVCContext *s, AVFrame *frame)
     return 0;
 }
 
-#ifdef POC_DISPLAY_MD5
-
-
-static void printf_ref_pic_list(HEVCContext *s)
-{
-    RefPicList  *refPicList = s->ref->refPicList;
-
-    int i, list_idx;
-    if (s->sh.slice_type == I_SLICE)
-        printf("\nPOC %4d TId: %1d QId: %1d ( I-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id, s->sh.slice_qp);
-    else if (s->sh.slice_type == B_SLICE)
-        printf("\nPOC %4d TId: %1d QId: %1d ( B-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id, s->sh.slice_qp);
-    else
-        printf("\nPOC %4d TId: %1d QId: %1d ( P-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id,  s->sh.slice_qp);
-
-    for ( list_idx = 0; list_idx < 2; list_idx++) {
-        printf("[L%d ",list_idx);
-        if (refPicList)
-            for(i = 0; i < refPicList[list_idx].nb_refs; i++)
-                printf("%d ",refPicList[list_idx].list[i]);
-        else
-            printf("O");
-        printf("] ");
-    }
-}
-
-static void display_md5(int poc, uint8_t md5[3][16])
-{
-    int i, j;
-    printf("\n[MD5:");
-    for (j = 0; j < 3; j++) {
-        printf("\n");
-        for (i = 0; i < 16; i++)
-            printf("%02x", md5[j][i]);
-    }
-    printf("\n]");
-
-}
-#endif
-
-static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        if (md5_in1[i] != md5_in2[i])
-            return 0;
-    return 1;
-}
-
-static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift)
-{
-    uint8_t *buf;
-    int y, x;
-    int stride_buf = width << pixel_shift;
-    buf = av_malloc(stride_buf * height);
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < stride_buf; x++)
-            buf[y * stride_buf + x] = src[x];
-
-        src += stride;
-    }
-    av_md5_sum(md5, buf, stride_buf * height);
-    av_free(buf);
-}
-
 static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                              AVPacket *avpkt)
 {
@@ -3497,7 +3446,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     }
 
     s->ref = NULL;
-//    s->avctx->quality_id = avctx->quality_id;
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
@@ -3528,7 +3476,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 #endif
     }
     s->is_md5 = 0;
-
 
     if (s->is_decoded) {
         s->ref->frame->key_frame = IS_IRAP(s);
@@ -3572,7 +3519,7 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
     dst->window     = src->window;
     dst->flags      = src->flags;
     dst->sequence   = src->sequence;
-//    dst->active_el_frame   = src->active_el_frame;
+
     return 0;
 fail:
     ff_hevc_unref_frame(s, dst, ~0);
@@ -3708,6 +3655,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->threads_number  = avctx->thread_count;
     else
         s->threads_number  = 1;
+    s->eos = 0;
 
     for (i = 1; i < s->threads_number ; i++) {
         s->sList[i] = av_mallocz(sizeof(HEVCContext));
@@ -3757,6 +3705,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
+
     for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++) {
         av_buffer_unref(&s->sps_list[i]);
         if (s0->sps_list[i]) {
@@ -3959,3 +3908,71 @@ AVCodec ff_hevc_decoder = {
                              CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS,
     .profiles              = NULL_IF_CONFIG_SMALL(profiles),
 };
+
+
+#ifdef POC_DISPLAY_MD5
+
+
+static void printf_ref_pic_list(HEVCContext *s)
+{
+    RefPicList  *refPicList = s->ref->refPicList;
+
+    int i, list_idx;
+    if (s->sh.slice_type == I_SLICE)
+        printf("\nPOC %4d TId: %1d QId: %1d ( I-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id, s->sh.slice_qp);
+    else if (s->sh.slice_type == B_SLICE)
+        printf("\nPOC %4d TId: %1d QId: %1d ( B-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id, s->sh.slice_qp);
+    else
+        printf("\nPOC %4d TId: %1d QId: %1d ( P-SLICE, QP%3d ) ", s->poc, s->temporal_id, s->nuh_layer_id,  s->sh.slice_qp);
+
+    for ( list_idx = 0; list_idx < 2; list_idx++) {
+        printf("[L%d ",list_idx);
+        if (refPicList)
+            for(i = 0; i < refPicList[list_idx].nb_refs; i++)
+                printf("%d ",refPicList[list_idx].list[i]);
+        else
+            printf("O");
+        printf("] ");
+    }
+}
+
+static void display_md5(int poc, uint8_t md5[3][16])
+{
+    int i, j;
+    printf("\n[MD5:");
+    for (j = 0; j < 3; j++) {
+        printf("\n");
+        for (i = 0; i < 16; i++)
+            printf("%02x", md5[j][i]);
+    }
+    printf("\n]");
+
+}
+#endif
+
+static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (md5_in1[i] != md5_in2[i])
+            return 0;
+    return 1;
+}
+
+static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift)
+{
+    uint8_t *buf;
+    int y, x;
+    int stride_buf = width << pixel_shift;
+    buf = av_malloc(stride_buf * height);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < stride_buf; x++)
+            buf[y * stride_buf + x] = src[x];
+
+        src += stride;
+    }
+    av_md5_sum(md5, buf, stride_buf * height);
+    av_free(buf);
+}
+
