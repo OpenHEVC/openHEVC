@@ -1137,6 +1137,12 @@ typedef struct HEVCContext {
     // CTB-level flags affecting loop filter operation
     uint8_t *filter_slice_edges;
 
+    int last_significant_coeff_x[2][3][MAX_TRANSFORM_DEPTH*4];
+    int last_significant_coeff_y[2][3][MAX_TRANSFORM_DEPTH*4];
+    int transform_skip_flag[2][3][MAX_TRANSFORM_DEPTH*4];
+    DECLARE_ALIGNED(16, int16_t, residual_coeffs[2][3][MAX_TRANSFORM_DEPTH*4][MAX_TB_SIZE * MAX_TB_SIZE]);
+    uint8_t residual_idx;
+
     /** used on BE to byteswap the lines for checksumming */
     uint8_t *checksum_buf;
     int      checksum_buf_size;
