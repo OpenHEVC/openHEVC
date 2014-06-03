@@ -112,7 +112,7 @@ QPEL_TABLE 10, 4, w, sse4
 %endif
 %endmacro
 
-%macro EPEL_FILTER 2                             ; bit depth, filter index
+%macro EPEL_FILTER 2-4                            ; bit depth, filter index
 %ifdef PIC
     lea         rfilterq, [hevc_epel_filters_sse4_%1]
 %else
@@ -120,8 +120,13 @@ QPEL_TABLE 10, 4, w, sse4
 %endif
     sub              %2q, 1
     shl              %2q, 5                      ; multiply by 32
+%if %0 == 2
     movdqa           m14, [rfilterq + %2q]        ; get 2 first values of filters
     movdqa           m15, [rfilterq + %2q+16]     ; get 2 last values of filters
+%else
+    movdqa           %3, [rfilterq + %2q]        ; get 2 first values of filters
+    movdqa           %4, [rfilterq + %2q+16]     ; get 2 last values of filters
+%endif
 %endmacro
 
 %macro EPEL_HV_FILTER 1
@@ -374,8 +379,10 @@ QPEL_TABLE 10, 4, w, sse4
     pmaddwd           m3, %4
     paddd             m1, m3
 %endif
+%if %1 != 8
     psrad             m0, %1-8
     psrad             m1, %1-8
+%endif
     packssdw          m0, m1
 %endif
 %endmacro
@@ -403,7 +410,9 @@ QPEL_TABLE 10, 4, w, sse4
     paddd             m0, m2
     paddd             m4, m6
     paddd             m0, m4
+%if %2 != 8
     psrad             m0, %2-8
+%endif
 %if %1 > 4
     pmaddwd           m1, [rfilterq + %3q*8   ]
     pmaddwd           m3, [rfilterq + %3q*8+16]
@@ -412,7 +421,9 @@ QPEL_TABLE 10, 4, w, sse4
     paddd             m1, m3
     paddd             m5, m7
     paddd             m1, m5
+%if %2 != 8
     psrad             m1, %2-8
+%endif
 %endif
     p%4               m0, m1
 %endif
@@ -444,7 +455,9 @@ QPEL_TABLE 10, 4, w, sse4
     paddd             m0, m2
     paddd             m4, m6
     paddd             m0, m4
+%if %2 != 8
     psrad             m0, %2-8
+%endif
 %if %1 > 4
     pmaddwd           m1, m12
     pmaddwd           m3, m13
@@ -453,7 +466,9 @@ QPEL_TABLE 10, 4, w, sse4
     paddd             m1, m3
     paddd             m5, m7
     paddd             m1, m5
+%if %2 != 8
     psrad             m1, %2-8
+%endif
 %endif
 %endif
 %endmacro
@@ -539,24 +554,24 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 7, 7, 6, dst, dststride, src, srcstrid
 
 
 %macro HEVC_PUT_HEVC_EPEL 2
-cglobal hevc_put_hevc_epel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride, height, mx, rfilter
+cglobal hevc_put_hevc_epel_h%1_%2, 6, 7, 6, dst, dststride, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
-    EPEL_FILTER       %2, mx
+    EPEL_FILTER       %2, mx, m4, m5
 .loop
     EPEL_LOAD         %2, srcq-%%stride, %%stride, %1
-    EPEL_COMPUTE      %2, %1, m14, m15
+    EPEL_COMPUTE      %2, %1, m4, m5
     PEL_10STORE%1      dstq, m0, m1
     LOOP_END         dst, dststride, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride, height, mx, rfilter
+cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 7, dst, dststride, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
-    movdqa            m9, [pw_%2]
-    EPEL_FILTER       %2, mx
+    movdqa            m6, [pw_%2]
+    EPEL_FILTER       %2, mx, m4, m5
 .loop
     EPEL_LOAD         %2, srcq-%%stride, %%stride, %1
-    EPEL_COMPUTE      %2, %1, m14, m15
-    UNI_COMPUTE       %1, %2, m0, m1, m9
+    EPEL_COMPUTE      %2, %1, m4, m5
+    UNI_COMPUTE       %1, %2, m0, m1, m6
     PEL_%2STORE%1   dstq, m0, m1
     lea             dstq, [dstq+dststrideq]      ; dst += dststride
     lea             srcq, [srcq+srcstrideq]      ; src += srcstride
@@ -564,14 +579,14 @@ cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_hevc_bi_epel_h%1_%2, 8, 8, 15, dst, dststride, src, srcstride, src2, src2stride,height, mx, rfilter
-    movdqa            m9, [pw_bi_%2]
-    EPEL_FILTER       %2, mx
+cglobal hevc_put_hevc_bi_epel_h%1_%2, 8, 9, 7, dst, dststride, src, srcstride, src2, src2stride,height, mx, rfilter
+    movdqa            m6, [pw_bi_%2]
+    EPEL_FILTER       %2, mx, m4, m5
 .loop
     EPEL_LOAD         %2, srcq-%%stride, %%stride, %1
-    EPEL_COMPUTE      %2, %1, m14, m15
+    EPEL_COMPUTE      %2, %1, m4, m5
     SIMPLE_BILOAD     %1, src2q, m2, m3
-    BI_COMPUTE        %1, %2, m0, m1, m2, m3, m9
+    BI_COMPUTE        %1, %2, m0, m1, m2, m3, m6
     PEL_%2STORE%1   dstq, m0, m1
     lea             dstq, [dstq+dststrideq]      ; dst += dststride
     lea             srcq, [srcq+srcstrideq]      ; src += srcstride
@@ -587,26 +602,26 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 8, 8, 15, dst, dststride, src, srcstride, 
 ;                      int16_t* mcbuffer)
 ; ******************************
 
-cglobal hevc_put_hevc_epel_v%1_%2, 7, 8, 15 , dst, dststride, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_epel_v%1_%2, 7, 8, 6, dst, dststride, src, srcstride, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
     sub             srcq, srcstrideq
-    EPEL_FILTER       %2, my
+    EPEL_FILTER       %2, my, m4, m5
 .loop
     EPEL_LOAD         %2, srcq, srcstride, %1
-    EPEL_COMPUTE      %2, %1, m14, m15
+    EPEL_COMPUTE      %2, %1, m4, m5
     PEL_10STORE%1     dstq, m0, m1
     LOOP_END          dst, dststride, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_v%1_%2, 7, 8, 15 , dst, dststride, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_uni_epel_v%1_%2, 7, 8, 7, dst, dststride, src, srcstride, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
-    movdqa            m9, [pw_%2]
+    movdqa            m6, [pw_%2]
     sub             srcq, srcstrideq
-    EPEL_FILTER       %2, my
+    EPEL_FILTER       %2, my, m4, m5
 .loop
     EPEL_LOAD         %2, srcq, srcstride, %1
-    EPEL_COMPUTE      %2, %1, m14, m15
-    UNI_COMPUTE       %1, %2, m0, m1, m9
+    EPEL_COMPUTE      %2, %1, m4, m5
+    UNI_COMPUTE       %1, %2, m0, m1, m6
     PEL_%2STORE%1   dstq, m0, m1
     lea             dstq, [dstq+dststrideq]      ; dst += dststride
     lea             srcq, [srcq+srcstrideq]      ; src += srcstride
@@ -615,16 +630,16 @@ cglobal hevc_put_hevc_uni_epel_v%1_%2, 7, 8, 15 , dst, dststride, src, srcstride
     RET
 
 
-cglobal hevc_put_hevc_bi_epel_v%1_%2, 9, 10, 15, dst, dststride, src, srcstride, src2, src2stride,height, r3src, my, rfilter
+cglobal hevc_put_hevc_bi_epel_v%1_%2, 9, 10, 7, dst, dststride, src, srcstride, src2, src2stride,height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
-    movdqa            m9, [pw_bi_%2]
+    movdqa            m6, [pw_bi_%2]
     sub             srcq, srcstrideq
-    EPEL_FILTER       %2, my
+    EPEL_FILTER       %2, my, m4, m5
 .loop
     EPEL_LOAD         %2, srcq, srcstride, %1
-    EPEL_COMPUTE      %2, %1, m14, m15
+    EPEL_COMPUTE      %2, %1, m4, m5
     SIMPLE_BILOAD     %1, src2q, m2, m3
-    BI_COMPUTE        %1, %2, m0, m1, m2, m3, m9
+    BI_COMPUTE        %1, %2, m0, m1, m2, m3, m6
     PEL_%2STORE%1   dstq, m0, m1
     lea             dstq, [dstq+dststrideq]      ; dst += dststride
     lea             srcq, [srcq+srcstrideq]      ; src += srcstride
@@ -1098,19 +1113,32 @@ cglobal hevc_put_hevc_bi_qpel_hv%1_%2, 9, 11, 16, dst, dststride, src, srcstride
 %endmacro
 
 %macro WEIGHTING_FUNCS 2
-cglobal hevc_put_hevc_uni_w%1_%2, 8, 10, 11, dst, dststride, src, srcstride, height, denom, wx, ox, shift
-    lea          shiftd, [denomd+14-%2]          ; shift = 14 - bitd + denom
-    shl             oxd, %2-8                    ; ox << (bitd - 8)
-    movd             m2, wxd        ; WX
-    movd             m3, oxd        ; OX
-    movd             m4, shiftd     ; shift
+%if WIN64 || ARCH_X86_32
+cglobal hevc_put_hevc_uni_w%1_%2, 4, 5, 7, dst, dststride, src, srcstride, height, denom, wx, ox
+    mov             r4d, denomm
+%define SHIFT  r4d
+%else
+cglobal hevc_put_hevc_uni_w%1_%2, 6, 6, 7, dst, dststride, src, srcstride, height, denom, wx, ox
+%define SHIFT  denomd
+%endif
+    lea           SHIFT, [SHIFT+14-%2]          ; shift = 14 - bitd + denom
+    movd             m2, wxm        ; WX
+    movd             m4, SHIFT      ; shift
     punpcklwd        m2, m2
-    pshufd           m3, m3, 0
-    pshufd           m2, m2, 0
-    sub          shiftd, 1
-    movd             m6, shiftd
+    dec           SHIFT
     movdqu           m5, [one_per_32]
+    movd             m6, SHIFT
+    pshufd           m2, m2, 0
+    mov           SHIFT, oxm
     pslld            m5, m6
+%if %2 != 8
+    shl           SHIFT, %2-8       ; ox << (bitd - 8)
+%endif
+    movd             m3, SHIFT      ; OX
+    pshufd           m3, m3, 0
+%if WIN64 || ARCH_X86_32
+    mov           SHIFT, heightm
+%endif
 .loop
    SIMPLE_LOAD        %1, 10, srcq, m0
     pmulhw            m6, m0, m2
@@ -1136,38 +1164,42 @@ cglobal hevc_put_hevc_uni_w%1_%2, 8, 10, 11, dst, dststride, src, srcstride, hei
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_hevc_bi_w%1_%2, 12, 14, 14, dst, dststride, src, srcstride, src2, src2stride, height, denom, wx0, wx1, ox0, ox1, shift, temp
-    shl             ox0d, %2-8                    ; ox << (bitd - 8)
-    shl             ox1d, %2-8                    ; ox << (bitd - 8)
-    lea           shiftd, [denomd+14-%2]          ; shift = 14 - bitd + denom
-    movd              m2, wx0d        ; WX0
-    movd              m3, wx1d        ; WX1
+cglobal hevc_put_hevc_bi_w%1_%2, 6, 7, 10, dst, dststride, src, srcstride, src2, src2stride, height, denom, wx0, wx1, ox0, ox1
+    mov              r6d, denomm
+    movd              m2, wx0m         ; WX0
+    lea              r6d, [r6d+14-%2]  ; shift = 14 - bitd + denom
+    movd              m3, wx1m         ; WX1
+    movd              m0, r6d          ; shift
     punpcklwd         m2, m2
+    inc              r6d
     punpcklwd         m3, m3
+    movd              m5, r6d          ; shift+1
     pshufd            m2, m2, 0
+    mov              r6d, ox0m
     pshufd            m3, m3, 0
-    add             ox0d, ox1d
-    add             ox0d, 1
-    movd              m4, ox0d         ; offset
+    add              r6d, ox1m
+%if %2 != 8
+    shl              r6d, %2-8         ; ox << (bitd - 8)
+%endif
+    inc              r6d
+    movd              m4, r6d          ; offset
     pshufd            m4, m4, 0
-    movd              m5, shiftd       ; shift
-    pslld             m4, m5
-    add           shiftd, 1
-    movd              m5, shiftd       ; shift
+    mov              r6d, heightm
+    pslld             m4, m0
 
 .loop
    SIMPLE_LOAD        %1, 10, srcq,  m0
-   SIMPLE_LOAD        %1, 10, src2q, m10
+   SIMPLE_LOAD        %1, 10, src2q, m8
     pmulhw            m6, m0, m3
     pmullw            m0, m3
-    pmulhw            m7, m10, m2
-    pmullw           m10, m2
+    pmulhw            m7, m8, m2
+    pmullw            m8, m2
     punpckhwd         m1, m0, m6
     punpcklwd         m0, m6
-    punpckhwd        m11, m10, m7
-    punpcklwd        m10, m7
-    paddd             m0, m10
-    paddd             m1, m11
+    punpckhwd         m9, m8, m7
+    punpcklwd         m8, m7
+    paddd             m0, m8
+    paddd             m1, m9
     paddd             m0, m4
     paddd             m1, m4
     psrad             m0, m5
@@ -1182,7 +1214,7 @@ cglobal hevc_put_hevc_bi_w%1_%2, 12, 14, 14, dst, dststride, src, srcstride, src
     lea             dstq, [dstq+dststrideq]      ; dst += dststride
     lea             srcq, [srcq+2*srcstrideq]      ; src += srcstride
     lea            src2q, [src2q+2*src2strideq]      ; src2 += srcstride
-    dec          heightd                         ; cmp height
+    dec              r6d                         ; cmp height
     jnz               .loop                      ; height loop
     RET
 %endmacro

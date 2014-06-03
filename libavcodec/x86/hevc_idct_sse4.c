@@ -1,7 +1,6 @@
 #include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
-//#include "libavcodec/get_bits.h"
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
@@ -637,7 +636,7 @@ TRANSFORM_LUMA_ADD( 10);
     dst3 = _mm_sub_epi32(tmp0, tmp2)
 #define COMPUTE4x4_LO()                                                        \
     COMPUTE4x4(e0, e1, e2, e3)
-#define COMPUTE4x4_HI()                                                        \
+#define COMPUTE4x4_HI(dst)                                                     \
     COMPUTE4x4(e7, e6, e5, e4)
 
 #define TR_4(dst, dst_stride, in, sstep, load, assign)                         \

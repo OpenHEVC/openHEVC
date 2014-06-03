@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013 Seppo Tomperi
+ * Copyright (c) 2013 - 2014 Pierre-Edouard Lepere
  *
  * This file is part of ffmpeg.
  *
@@ -49,7 +50,6 @@ LFC_FUNCS(uint8_t,   8)
 LFC_FUNCS(uint8_t,  10)
 LFL_FUNCS(uint8_t,   8)
 LFL_FUNCS(uint8_t,  10)
-
 
 #if !ARCH_X86_32 && defined(OPTI_ASM)
 

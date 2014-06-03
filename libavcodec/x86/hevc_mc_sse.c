@@ -37,6 +37,7 @@
 #include <smmintrin.h>
 #endif
 
+#ifndef OPTI_ASM
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters_sse[7][2][16]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},
       { 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2} },
@@ -2145,4 +2146,5 @@ mc_red_func(epel_hv,10, 8, 64);
 
 #endif //HAVE_SSE4
 
+#endif //OPTI_ASM
 
