@@ -1,6 +1,5 @@
 /*
- * MMX-optimized avg/put pixel routines
- *
+ * Raw FLAC picture parser
  * Copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -20,33 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stddef.h>
-#include <stdint.h>
+#ifndef AVFORMAT_FLAC_PICTURE_H
+#define AVFORMAT_FLAC_PICTURE_H
 
-#include "config.h"
-#include "dsputil_x86.h"
+#include "avformat.h"
 
-#if HAVE_MMX_INLINE
+#define RETURN_ERROR(code) do { ret = (code); goto fail; } while (0)
 
-void ff_avg_pixels8_x2_mmx(uint8_t *block, const uint8_t *pixels,
-                           ptrdiff_t line_size, int h)
-{
-    MOVQ_BFE(mm6);
-    JUMPALIGN();
-    do {
-        __asm__ volatile(
-            "movq  %1, %%mm0            \n\t"
-            "movq  1%1, %%mm1           \n\t"
-            "movq  %0, %%mm3            \n\t"
-            PAVGB_MMX(%%mm0, %%mm1, %%mm2, %%mm6)
-            PAVGB_MMX(%%mm3, %%mm2, %%mm0, %%mm6)
-            "movq  %%mm0, %0            \n\t"
-            :"+m"(*block)
-            :"m"(*pixels)
-            :"memory");
-        pixels += line_size;
-        block += line_size;
-    } while (--h);
-}
+int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size);
 
-#endif /* HAVE_MMX_INLINE */
+#endif /* AVFORMAT_FLAC_PICTURE_H */

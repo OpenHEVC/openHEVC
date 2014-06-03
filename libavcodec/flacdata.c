@@ -1,4 +1,7 @@
 /*
+ * FLAC data
+ * Copyright (c) 2003 Alex Beregszaszi
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,20 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-#include "dsputil_x86.h"
+#include "internal.h"
 
-#if HAVE_INLINE_ASM
+const int ff_flac_sample_rate_table[16] =
+{ 0,
+  88200, 176400, 192000,
+  8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
+  0, 0, 0, 0 };
 
-#define DEF(x, y) ff_ ## x ## _ ## y ## _mmx
-#define SET_RND  MOVQ_WTWO
-#define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX(a, b, c, d, e, f)
-#define PAVGB(a, b, c, e)               PAVGB_MMX(a, b, c, e)
-#define STATIC
-
-#include "rnd_template.c"
-
-PIXELS16(, ff_avg, , _xy2, _mmx)
-PIXELS16(, ff_put, , _xy2, _mmx)
-
-#endif /* HAVE_INLINE_ASM */
+const int32_t ff_flac_blocksize_table[16] = {
+     0,    192, 576<<0, 576<<1, 576<<2, 576<<3,      0,      0,
+256<<0, 256<<1, 256<<2, 256<<3, 256<<4, 256<<5, 256<<6, 256<<7
+};

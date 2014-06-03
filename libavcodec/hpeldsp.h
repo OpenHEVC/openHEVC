@@ -30,7 +30,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "config.h"
 
 /* add and put pixel (decoding) */
 // blocksizes for hpel_pixels_func are 8x4,8x8 16x8 16x16
@@ -100,7 +99,6 @@ void ff_hpeldsp_init_alpha(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_arm(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_bfin(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_ppc(HpelDSPContext *c, int flags);
-void ff_hpeldsp_init_vis(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags);
 
 #endif /* AVCODEC_HPELDSP_H */

@@ -41,10 +41,12 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
         av_buffer_unref(&frame->tab_mvf_buf);
         frame->tab_mvf = NULL;
         frame->active_el_frame = 0;
+
         av_buffer_unref(&frame->rpl_buf);
         av_buffer_unref(&frame->rpl_tab_buf);
         frame->rpl_tab    = NULL;
         frame->refPicList = NULL;
+
         frame->collocated_ref = NULL;
     }
 }
