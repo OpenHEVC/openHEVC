@@ -585,6 +585,10 @@ static int add_candidate_ref(HEVCContext *s, RefPicList *list,
         return AVERROR_INVALIDDATA;
 
     if (!ref) {
+        if (s->decoder_id) {
+            return AVERROR(ENOMEM);
+        }
+
         ref = generate_missing_ref(s, poc);
         if (!ref)
             return AVERROR(ENOMEM);
