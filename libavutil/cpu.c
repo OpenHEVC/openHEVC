@@ -19,7 +19,7 @@
 #include <stdint.h>
 
 #include "cpu.h"
-//#include "cpu_internal.h"
+#include "cpu_internal.h"
 #include "config.h"
 #include "opt.h"
 #include "common.h"
@@ -47,6 +47,26 @@
 static int flags, checked;
 
 void av_force_cpu_flags(int arg){
+    if (   (arg & ( AV_CPU_FLAG_3DNOW    |
+                    AV_CPU_FLAG_3DNOWEXT |
+                    AV_CPU_FLAG_SSE      |
+                    AV_CPU_FLAG_SSE2     |
+                    AV_CPU_FLAG_SSE2SLOW |
+                    AV_CPU_FLAG_SSE3     |
+                    AV_CPU_FLAG_SSE3SLOW |
+                    AV_CPU_FLAG_SSSE3    |
+                    AV_CPU_FLAG_SSE4     |
+                    AV_CPU_FLAG_SSE42    |
+                    AV_CPU_FLAG_AVX      |
+                    AV_CPU_FLAG_XOP      |
+                    AV_CPU_FLAG_FMA3     |
+                    AV_CPU_FLAG_FMA4     |
+                    AV_CPU_FLAG_AVX2     ))
+        && !(arg & AV_CPU_FLAG_MMX)) {
+        av_log(NULL, AV_LOG_WARNING, "MMX implied by specified flags\n");
+        arg |= AV_CPU_FLAG_MMX;
+    }
+
     flags   = arg;
     checked = arg != -1;
 }
@@ -55,14 +75,13 @@ int av_get_cpu_flags(void)
 {
     if (checked)
         return flags;
-#if !defined(WIN32)
+
     if (ARCH_AARCH64)
         flags = ff_get_cpu_flags_aarch64();
     if (ARCH_ARM)
         flags = ff_get_cpu_flags_arm();
     if (ARCH_PPC)
         flags = ff_get_cpu_flags_ppc();
-#endif
     if (ARCH_X86)
         flags = ff_get_cpu_flags_x86();
 
@@ -131,6 +150,7 @@ int av_parse_cpu_flags(const char *s)
         { "vfpv3",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFPV3    },    .unit = "flags" },
         { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
 #elif ARCH_AARCH64
+        { "armv8",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV8    },    .unit = "flags" },
         { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
         { "vfp",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP      },    .unit = "flags" },
 #endif
@@ -264,6 +284,7 @@ static const struct {
     const char *name;
 } cpu_flag_tab[] = {
 #if   ARCH_AARCH64
+    { AV_CPU_FLAG_ARMV8,     "armv8"      },
     { AV_CPU_FLAG_NEON,      "neon"       },
     { AV_CPU_FLAG_VFP,       "vfp"        },
 #elif ARCH_ARM

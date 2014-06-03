@@ -192,6 +192,16 @@ typedef struct AVClass {
  */
 
 /**
+ * Sets additional colors for extended debugging sessions.
+ * @code
+   av_log(ctx, AV_LOG_DEBUG|AV_LOG_C(134), "Message in purple\n");
+   @endcode
+ * Requires 256color terminal support. Uses outside debugging is not
+ * recommended.
+ */
+#define AV_LOG_C(x) (x << 8)
+
+/**
  * Send the specified message to the log if the level is less than or equal
  * to the current av_log_level. By default, all logging messages are sent to
  * stderr. This behavior can be altered by setting a different logging callback
@@ -311,7 +321,17 @@ void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
  * call av_log(NULL, AV_LOG_QUIET, "%s", ""); at the end
  */
 #define AV_LOG_SKIP_REPEATED 1
+
+/**
+ * Include the log severity in messages originating from codecs.
+ *
+ * Results in messages such as:
+ * [rawvideo @ 0xDEADBEEF] [error] encode did not produce valid pts
+ */
+#define AV_LOG_PRINT_LEVEL 2
+
 void av_log_set_flags(int arg);
+int av_log_get_flags(void);
 
 /**
  * @}

@@ -190,7 +190,7 @@ do {                                         \
     } while (0)
 
 /* Makes duplicates of data, side_data, but does not copy any other fields */
-static int copy_packet_data(AVPacket *pkt, AVPacket *src, int dup)
+static int copy_packet_data(AVPacket *pkt, const AVPacket *src, int dup)
 {
     pkt->data      = NULL;
     pkt->side_data = NULL;
@@ -220,7 +220,7 @@ failed_alloc:
     return AVERROR(ENOMEM);
 }
 
-int av_copy_packet_side_data(AVPacket *pkt, AVPacket *src)
+int av_copy_packet_side_data(AVPacket *pkt, const AVPacket *src)
 {
     if (src->side_data_elems) {
         int i;
@@ -262,7 +262,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
-int av_copy_packet(AVPacket *dst, AVPacket *src)
+int av_copy_packet(AVPacket *dst, const AVPacket *src)
 {
     *dst = *src;
     return copy_packet_data(dst, src, 0);
@@ -394,7 +394,7 @@ int av_packet_split_side_data(AVPacket *pkt){
             p-= size+5;
         }
 
-        pkt->side_data = av_malloc(i * sizeof(*pkt->side_data));
+        pkt->side_data = av_malloc_array(i, sizeof(*pkt->side_data));
         if (!pkt->side_data)
             return AVERROR(ENOMEM);
 
@@ -507,7 +507,6 @@ int av_packet_copy_props(AVPacket *dst, const AVPacket *src)
     dst->convergence_duration = src->convergence_duration;
     dst->flags                = src->flags;
     dst->stream_index         = src->stream_index;
-    dst->side_data_elems      = src->side_data_elems;
 
     for (i = 0; i < src->side_data_elems; i++) {
          enum AVPacketSideDataType type = src->side_data[i].type;
@@ -534,7 +533,7 @@ void av_packet_unref(AVPacket *pkt)
     pkt->size = 0;
 }
 
-int av_packet_ref(AVPacket *dst, AVPacket *src)
+int av_packet_ref(AVPacket *dst, const AVPacket *src)
 {
     int ret;
 

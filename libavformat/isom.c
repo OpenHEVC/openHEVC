@@ -26,6 +26,8 @@
 #include "isom.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
+#include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 
 /* http://www.mp4ra.org */
 /* ordered by muxing preference */
@@ -33,6 +35,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { AV_CODEC_ID_MOV_TEXT    , 0x08 },
     { AV_CODEC_ID_MPEG4       , 0x20 },
     { AV_CODEC_ID_H264        , 0x21 },
+    { AV_CODEC_ID_HEVC        , 0x23 },
     { AV_CODEC_ID_AAC         , 0x40 },
     { AV_CODEC_ID_MP4ALS      , 0x40 }, /* 14496-3 ALS */
     { AV_CODEC_ID_MPEG2VIDEO  , 0x61 }, /* MPEG2 Main */
@@ -80,7 +83,7 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_RAWVIDEO, MKTAG('A', 'B', 'G', 'R') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', '1', '6', 'g') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', '4', '8', 'r') },
-    { AV_CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'b', 'g') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'b', 'g') }, /* BOXX */
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'r', 'g') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'y', 'v') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('N', 'O', '1', '6') },
@@ -151,8 +154,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
 
     { AV_CODEC_ID_RAWVIDEO, MKTAG('W', 'R', 'A', 'W') },
 
-    { AV_CODEC_ID_HEVC, MKTAG('h', 'v', 'c', '1') }, /* HEVC/H.265 which indicates parameter sets shall not be in ES */
     { AV_CODEC_ID_HEVC, MKTAG('h', 'e', 'v', '1') }, /* HEVC/H.265 which indicates parameter sets may be in ES */
+    { AV_CODEC_ID_HEVC, MKTAG('h', 'v', 'c', '1') }, /* HEVC/H.265 which indicates parameter sets shall not be in ES */
 
     { AV_CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') }, /* AVC-1/H.264 */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '5', 'p') }, /* AVC-Intra  50M 720p24/30/60 */
@@ -167,12 +170,12 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '1', '3') }, /* AVC-Intra 100M 1080p24/30/60 */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '1', '5') }, /* AVC-Intra 100M 1080i50 */
     { AV_CODEC_ID_H264, MKTAG('a', 'i', '1', '6') }, /* AVC-Intra 100M 1080i60 */
-    { AV_CODEC_ID_H264, MKTAG('a', 'i', 'v', 'x') }, /* XAVC 4:2:2 10bit */
     { AV_CODEC_ID_H264, MKTAG('A', 'V', 'i', 'n') }, /* AVC-Intra with implicit SPS/PPS */
+    { AV_CODEC_ID_H264, MKTAG('a', 'i', 'v', 'x') }, /* XAVC 4:2:2 10bit */
 
+    { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', '1', 'v', ' ') },
     { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', '1', 'v', '1') }, /* Apple MPEG-1 Camcorder */
     { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'e', 'g') }, /* MPEG */
-    { AV_CODEC_ID_MPEG1VIDEO, MKTAG('m', '1', 'v', ' ') },
     { AV_CODEC_ID_MPEG2VIDEO, MKTAG('m', '2', 'v', '1') }, /* Apple MPEG-2 Camcorder */
     { AV_CODEC_ID_MPEG2VIDEO, MKTAG('h', 'd', 'v', '1') }, /* MPEG2 HDV 720p30 */
     { AV_CODEC_ID_MPEG2VIDEO, MKTAG('h', 'd', 'v', '2') }, /* MPEG2 HDV 1080i60 */
@@ -300,7 +303,7 @@ const AVCodecTag ff_codec_movaudio_tags[] = {
     { AV_CODEC_ID_QDM2,            MKTAG('Q', 'D', 'M', '2') },
     { AV_CODEC_ID_QDMC,            MKTAG('Q', 'D', 'M', 'C') },
     { AV_CODEC_ID_SPEEX,           MKTAG('s', 'p', 'e', 'x') }, /* Flash Media Server */
-    { AV_CODEC_ID_SPEEX,           MKTAG('S', 'P', 'X', 'N') },
+    { AV_CODEC_ID_SPEEX,           MKTAG('S', 'P', 'X', 'N') }, /* ZygoAudio (quality 10 mode) */
     { AV_CODEC_ID_WMAV2,           MKTAG('W', 'M', 'A', '2') },
     { AV_CODEC_ID_EVRC,            MKTAG('s', 'e', 'v', 'c') }, /* 3GPP2 */
     { AV_CODEC_ID_SMV,             MKTAG('s', 's', 'm', 'v') }, /* 3GPP2 */
@@ -438,6 +441,7 @@ static const AVCodecTag mp4_audio_types[] = {
 
 int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext *pb)
 {
+    enum AVCodecID codec_id;
     int len, tag;
     int ret;
     int object_type_id = avio_r8(pb);
@@ -451,7 +455,9 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
         return -1;
     }
 
-    st->codec->codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
+    codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
+    if (codec_id)
+        st->codec->codec_id= codec_id;
     av_dlog(fc, "esds object type id 0x%02x\n", object_type_id);
     len = ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4DecSpecificDescrTag) {

@@ -406,57 +406,57 @@ static void setNumRefLayers(HEVCVPS *vps, int currLayerId)
 #endif
 
 #if REPN_FORMAT_IN_VPS
-static void parseRepFormat ( RepFormat *repFormat, GetBitContext *gb)
+static void parseRepFormat( RepFormat *rep_format, GetBitContext *gb)
 {
     print_cabac(" --- parse RepFormat  --- ", 0);
 #if REPN_FORMAT_CONTROL_FLAG
-    repFormat->m_chromaAndBitDepthVpsPresentFlag = get_bits1(gb);
+    rep_format->m_chromaAndBitDepthVpsPresentFlag = get_bits1(gb);
     print_cabac("chroma_and_bit_depth_vps_present_flag", repFormat->m_chromaAndBitDepthVpsPresentFlag);
-    repFormat->m_picWidthVpsInLumaSamples = get_bits(gb, 16);
+    rep_format->m_picWidthVpsInLumaSamples = get_bits(gb, 16);
     print_cabac("pic_width_in_luma_samples", repFormat->m_picWidthVpsInLumaSamples);
-    repFormat->m_picHeightVpsInLumaSamples = get_bits(gb, 16);;
+    rep_format->m_picHeightVpsInLumaSamples = get_bits(gb, 16);;
     print_cabac("pic_height_in_luma_samples", repFormat->m_picHeightVpsInLumaSamples);
-    if( repFormat->m_chromaAndBitDepthVpsPresentFlag )
+    if (rep_format->m_chromaAndBitDepthVpsPresentFlag)
     {
 #if AUXILIARY_PICTURES
 
-        repFormat->m_chromaFormatVpsIdc = get_bits(gb, 2);
+        rep_format->m_chromaFormatVpsIdc = get_bits(gb, 2);
         print_cabac("chroma_format_idc", repFormat->m_chromaFormatVpsIdc);
 #else
         repFormat->m_picHeightVpsInLumaSamples = get_bits(gb, 2);
         print_cabac("chroma_format_idc", repFormat->m_chromaFormatVpsIdc);
 #endif
 
-        if( repFormat->m_chromaFormatVpsIdc == 3 ) {
-            repFormat->m_separateColourPlaneVpsFlag = get_bits1(gb);
+        if (rep_format->m_chromaFormatVpsIdc == 3) {
+            rep_format->m_separateColourPlaneVpsFlag = get_bits1(gb);
             print_cabac("separate_colour_plane_flag", repFormat->m_separateColourPlaneVpsFlag);
         }
 
-        repFormat->m_bitDepthVpsLuma =   get_bits(gb, 4) + 8;
+        rep_format->m_bitDepthVpsLuma =   get_bits(gb, 4) + 8;
         print_cabac("bit_depth_luma_minus8", repFormat->m_bitDepthVpsLuma-8);
-        repFormat->m_bitDepthVpsChroma = get_bits(gb, 4) + 8;
+        rep_format->m_bitDepthVpsChroma = get_bits(gb, 4) + 8;
         print_cabac("bit_depth_chroma_minus8", repFormat->m_bitDepthVpsChroma-8);
     }
 #else
 #if AUXILIARY_PICTURES
-    repFormat->m_chromaFormatVpsIdc = get_bits(gb, 2);
+    rep_format->m_chromaFormatVpsIdc = get_bits(gb, 2);
     print_cabac("chroma_format_idc", repFormat->m_chromaFormatVpsIdc);
 #else
-    repFormat->m_chromaFormatVpsIdc = get_bits(gb, 2);
+    rep_format->m_chromaFormatVpsIdc = get_bits(gb, 2);
     print_cabac("chroma_format_idc", repFormat->m_chromaFormatVpsIdc);
 #endif
 
-    if( repFormat->m_chromaFormatVpsIdc == 3 ) {
-        repFormat->m_separateColourPlaneVpsFlag = get_bits1(gb);
+    if( rep_format->m_chromaFormatVpsIdc == 3 ) {
+        rep_format->m_separateColourPlaneVpsFlag = get_bits1(gb);
         print_cabac("separate_colour_plane_flag", repFormat->m_separateColourPlaneVpsFlag);
     }
 
-    repFormat->m_picWidthVpsInLumaSamples =  get_bits(gb, 16);
+    rep_format->m_picWidthVpsInLumaSamples =  get_bits(gb, 16);
     print_cabac("pic_width_in_luma_samples", repFormat->m_picWidthVpsInLumaSamples);
 
-    repFormat->m_picHeightVpsInLumaSamples = get_bits(gb, 16);
-    repFormat->m_bitDepthVpsLuma   = get_bits(gb, 4);
-    repFormat->m_bitDepthVpsChroma = get_bits(gb, 4);
+    rep_format->m_picHeightVpsInLumaSamples = get_bits(gb, 16);
+    rep_format->m_bitDepthVpsLuma   = get_bits(gb, 4);
+    rep_format->m_bitDepthVpsChroma = get_bits(gb, 4);
     print_cabac("pic_height_in_luma_samples", repFormat->m_picHeightVpsInLumaSamples);
     print_cabac("bit_depth_luma_minus8", repFormat->m_bitDepthVpsLuma);
     print_cabac("bit_depth_chroma_minus8", repFormat->m_bitDepthVpsChroma );
@@ -752,7 +752,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
         if(vps->nuh_layer_id_present_flag )    {
             vps->layer_id_in_nuh[i] = get_bits(gb, 6);
             print_cabac("layer_id_in_nuh", vps->layer_id_in_nuh[i]); 
-        } else 
+        } else
             vps->layer_id_in_nuh[i] = i;
         vps->m_layerIdInVps[vps->layer_id_in_nuh[i]] = i;
         for(j = 0; j < numScalabilityTypes; j++)    {
@@ -802,8 +802,8 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
             vps->m_maxTSLayerMinus1[i] = get_bits(gb, 3);
             print_cabac("sub_layers_vps_max_minus1[i]", vps->m_maxTSLayerMinus1[i]);
         }
-    }   else    {
-        for( i = 0; i < vps->vps_max_layers - 1; i++)   {
+    } else {
+        for (i = 0; i < vps->vps_max_layers - 1; i++) {
             vps->m_maxTSLayerMinus1[i] = vps->vps_max_sub_layers - 1;
         }
     }
@@ -817,8 +817,8 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     if (vps->m_maxTidRefPresentFlag) {
         for(i = 0; i < vps->vps_max_layers - 1; i++) {
 #if O0225_MAX_TID_FOR_REF_LAYERS
-            for( j = i+1; j <= vps->vps_max_layers - 1; j++) {
-                if( vps->m_directDependencyFlag[j][i] ) {
+            for (j = i+1; j <= vps->vps_max_layers - 1; j++) {
+                if (vps->m_directDependencyFlag[j][i]) {
                     vps->m_maxTidIlRefPicsPlus1[i][j] =  get_bits(gb, 3);
                     print_cabac("max_tid_il_ref_pics_plus1 %d", vps->m_maxTidIlRefPicsPlus1[i][j]);
                 }
@@ -831,10 +831,10 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
 #endif
 #endif
         }
-    }   else  {
-        for(i = 0; i < vps->vps_max_layers - 1; i++)    {
+    } else {
+        for (i = 0; i < vps->vps_max_layers - 1; i++) {
 #if O0225_MAX_TID_FOR_REF_LAYERS
-            for( j = i+1; j <= vps->vps_max_layers - 1; j++)    {
+            for (j = i+1; j <= vps->vps_max_layers - 1; j++) {
                 vps->m_maxTidIlRefPicsPlus1[i][j] = 7;
             }
 #else
@@ -843,10 +843,10 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
         }
     }
 #else
-    for(i = 0; i < vps->vps_max_layers - 1; i++)    {
+    for (i = 0; i < vps->vps_max_layers - 1; i++) {
 #if O0225_MAX_TID_FOR_REF_LAYERS
-        for( j = i+1; j <= vps->vps_max_layers - 1; j++)    {
-            if(vps->m_directDependencyFlag[j][i])   {
+        for (j = i+1; j <= vps->vps_max_layers - 1; j++) {
+            if (vps->m_directDependencyFlag[j][i]) {
                 vps->m_maxTidIlRefPicsPlus1[i][j] =  get_bits(gb, 3);
                 print_cabac("max_tid_il_ref_pics_plus1", vps->m_maxTidIlRefPicsPlus1[i][j]);
             }
@@ -854,7 +854,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
 #else
         vps->m_maxTidIlRefPicsPlus1[i] =  get_bits(gb, 3);
         print_cabac("max_tid_il_ref_pics_plus1", vps->m_maxTidIlRefPicsPlus1[i]);
-#endif   
+#endif
     }
 #endif
 #endif
@@ -1212,32 +1212,9 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     if(vps->vps_extension_flag){ // vps_extension_flag
         align_get_bits(gb);
         parse_vps_extension(s, vps);
-        //parseVPSExtension(pcVPS);
-
-        /*if(get_bits1(gb))//READ_FLAG( uiCode, "vps_entension2_flag" );
-        {
-            while ( xMoreRbspData() )
-            {
-
-                get_bits1(gb); //READ_FLAG( uiCode, "vps_extension_data_flag");
-            }
-        }*/
-    }
-#else
-    /*  while ( xMoreRbspData() )
-    {
-         get_bits1(gb); //READ_FLAG( uiCode, "vps_extension_data_flag");
-    }*/
-#endif
-
-    /*#else
-
-#ifdef VPS_EXTENSION
-    if(vps->vps_extension_flag){ // vps_extension_flag
-        parse_vps_extension(s, vps);
     }
 #endif
-#endif*/
+
     if (s->vps_list[vps_id] &&
         !memcmp(s->vps_list[vps_id]->data, vps_buf->data, vps_buf->size)) {
         av_buffer_unref(&vps_buf);

@@ -77,20 +77,21 @@ typedef struct VideoDSPContext {
      * @param h      number of lines to prefetch
      */
 
-    int (*emulated_edge_up_h)( uint8_t *src, ptrdiff_t linesize,
-                               const struct HEVCWindow *Enhscal,
-                               int block_w, int block_h, int src_x, int wBL, int shift);
-    
-    int (*emulated_edge_up_v)( int16_t *src, ptrdiff_t linesize,
-                               const struct HEVCWindow *Enhscal,
-                               int block_w, int block_h, int src_x, int src_y, int hBL, int wEL, int shift);
-    
+    int (*emulated_edge_up_h)(uint8_t *src, ptrdiff_t linesize,
+                              const struct HEVCWindow *Enhscal,
+                              int block_w, int block_h, int src_x, int wBL, int shift);
+
+    int (*emulated_edge_up_v)(int16_t *src, ptrdiff_t linesize,
+                              const struct HEVCWindow *Enhscal,
+                              int block_w, int block_h, int src_x, int src_y, int hBL, int wEL, int shift);
+
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;
 
 void ff_videodsp_init(VideoDSPContext *ctx, int bpc);
 
 /* for internal use only (i.e. called by ff_videodsp_init() */
+void ff_videodsp_init_aarch64(VideoDSPContext *ctx, int bpc);
 void ff_videodsp_init_arm(VideoDSPContext *ctx, int bpc);
 void ff_videodsp_init_ppc(VideoDSPContext *ctx, int bpc);
 void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc);

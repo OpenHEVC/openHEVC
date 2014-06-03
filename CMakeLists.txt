@@ -82,8 +82,8 @@ set(YASM_NAMES
     libavcodec/x86/hevc_mc.asm
     libavcodec/x86/hevc_deblock.asm
     libavcodec/x86/hpeldsp.asm
-    libavcodec/x86/mpeg4qpel.asm
     libavcodec/x86/qpel.asm
+    libavcodec/x86/qpeldsp.asm
     libavcodec/x86/videodsp.asm
 )
 endif()
@@ -151,6 +151,7 @@ set(libfilenames
     libavutil/crc.c
     libavutil/des.c
     libavutil/dict.c
+    libavutil/display.c
     libavutil/error.c
     libavutil/eval.c
     libavutil/file_open.c
@@ -180,6 +181,7 @@ set(libfilenames
     libavformat/aviobuf.c
     libavformat/cutils.c
     libavformat/file.c
+    libavformat/flac_picture.c
     libavformat/format.c
     libavformat/id3v1.c
     libavformat/id3v2.c
@@ -192,13 +194,26 @@ set(libfilenames
     libavformat/mov_chan.c
     libavformat/mpegts.c
     libavformat/mux.c
+    libavformat/oggdec.c
+    libavformat/oggparsecelt.c
+    libavformat/oggparsedirac.c
+    libavformat/oggparseflac.c
+    libavformat/oggparseogm.c
+    libavformat/oggparseopus.c
+    libavformat/oggparseskeleton.c
+    libavformat/oggparsespeex.c
+    libavformat/oggparsetheora.c
+    libavformat/oggparsevorbis.c
+    libavformat/oggparsevp8.c
     libavformat/options.c
     libavformat/os_support.c
     libavformat/rawdec.c
+    libavformat/replaygain.c
     libavformat/riffdec.c
     libavformat/riff.c
     libavformat/rmsipr.c
     libavformat/utils.c
+    libavformat/vorbiscomment.c
     libavcodec/ac3tab.c
     libavcodec/allcodecs.c
     libavcodec/avfft.c
@@ -211,9 +226,12 @@ set(libfilenames
     libavcodec/dct.c
     libavcodec/dct32_float.c
     libavcodec/dct32_template.c
+    libavcodec/dirac.c
     libavcodec/dsputil.c
     libavcodec/faanidct.c
     libavcodec/fft_template.c
+    libavcodec/flac.c
+    libavcodec/flacdata.c
     libavcodec/golomb.c
     libavcodec/hevc_cabac.c
     libavcodec/hevc_mvs.c
@@ -230,6 +248,7 @@ set(libfilenames
     libavcodec/mathtables.c
     libavcodec/mdct_template.c
     libavcodec/mpegaudiodata.c
+    libavcodec/mpeg12data.c
     libavcodec/mpeg4audio.c
     libavcodec/imgconvert.c
     libavcodec/options.c
@@ -237,12 +256,15 @@ set(libfilenames
     libavcodec/pthread_slice.c
     libavcodec/pthread_frame.c
     libavcodec/pthread.c
+    libavcodec/qpeldsp.c
     libavcodec/raw.c
     libavcodec/rawdec.c
     libavcodec/rdft.c
     libavcodec/simple_idct.c
     libavcodec/utils.c
     libavcodec/videodsp.c
+    libavcodec/vorbis_parser.c
+    libavcodec/xiph.c
 )
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 list(APPEND libfilenames
@@ -256,7 +278,7 @@ list(APPEND libfilenames
     libavcodec/arm/fft_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_deblock_neon.S
-    #libavcodec/arm/hevcdsp_idct_neon.S
+#    libavcodec/arm/hevcdsp_idct_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_qpel_neon.S
     libavcodec/arm/hevcdsp_epel_neon.S
@@ -279,11 +301,8 @@ list(APPEND libfilenames
     libavcodec/x86/dct_init.c
     libavcodec/x86/dsputil_init.c
     libavcodec/x86/dsputil_mmx.c
-    libavcodec/x86/dsputil_x86.c
     libavcodec/x86/fdct.c
     libavcodec/x86/fft_init.c
-    libavcodec/x86/fpel_mmx.c
-    libavcodec/x86/rnd_mmx.c
     libavcodec/x86/h264_qpel.c
     libavcodec/x86/hevcdsp_init.c
     libavcodec/x86/hevcpred_init.c
@@ -293,9 +312,9 @@ list(APPEND libfilenames
     libavcodec/x86/hevc_sao_sse.c
     libavcodec/x86/hevc_intra_pred_sse.c
     libavcodec/x86/hpeldsp_init.c
-    libavcodec/x86/hpeldsp_mmx.c
     libavcodec/x86/idct_mmx_xvid.c
     libavcodec/x86/idct_sse2_xvid.c
+    libavcodec/x86/qpeldsp_init.c
     libavcodec/x86/simple_idct.c
     libavcodec/x86/videodsp_init.c
 )
