@@ -1018,6 +1018,7 @@ typedef struct HEVCFrame {
      */
     uint8_t flags;
     uint8_t active_el_frame;
+    uint8_t prv_active_el_frame;
 #if FRAME_CONCEALMENT
     uint8_t is_concealment_frame;
 #endif
@@ -1104,6 +1105,7 @@ typedef struct HEVCContext {
     HEVCFrame *ref;
     HEVCFrame DPB[32];
     int poc;
+    int poc_id;
     int pocTid0;
     int slice_idx; ///< number of the slice being currently decoded
     int eos;       ///< current packet contains an EOS/EOB NAL
@@ -1119,6 +1121,7 @@ typedef struct HEVCContext {
     VideoDSPContext vdsp;
     DSPContext dsp;
     int8_t *qp_y_tab;
+    uint8_t *split_cu_flag;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
 
@@ -1179,6 +1182,7 @@ typedef struct HEVCContext {
     UpsamplInf  up_filter_inf;
     HEVCFrame   *BL_frame;
     HEVCFrame   *inter_layer_ref;
+    int         prv_active_el_frame;
     int         active_el_frame;
     uint8_t     *is_upsampled;
 #endif

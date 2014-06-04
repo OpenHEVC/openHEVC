@@ -287,7 +287,7 @@ void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val)
 void libOpenHevcSetViewLayers(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    openHevcContexts->set_display = 1;
+    //openHevcContexts->set_display = 1;
     if (val >= 0 && val < openHevcContexts->nb_decoders)
         openHevcContexts->display_layer = val;
     else {

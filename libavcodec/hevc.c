@@ -2868,6 +2868,15 @@ static int hevc_frame_start(HEVCContext *s)
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
+        if(!s->BL_frame->prv_active_el_frame) {
+            s->max_ra = INT_MAX;
+            av_log(s->avctx, AV_LOG_ERROR, "s->BL_frame->prv_active_el_frame %d \n",s->BL_frame->prv_active_el_frame);
+        
+            if( !IS_IDR(s) ){
+                ret = -1; 
+                goto fail;
+            }
+        }
 
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
         s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
@@ -2883,7 +2892,7 @@ static int hevc_frame_start(HEVCContext *s)
     s->avctx->BL_frame = s->ref;
     ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS.\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS. decoder_id %d \n", s->decoder_id);
         goto fail;
     }
 
@@ -2906,6 +2915,11 @@ static int hevc_frame_start(HEVCContext *s)
 fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
+    if (s->decoder_id) {
+        if(s->threads_type&FF_THREAD_FRAME)
+            ff_thread_report_il_status(s->avctx, s->poc, 2);
+        ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
+    }
     s->ref = NULL;
     return ret;
 }
@@ -3033,6 +3047,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if (s->max_ra == INT_MAX) {
             if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
                 s->max_ra = s->poc;
+                av_log(s->avctx, AV_LOG_WARNING,
+                       "max_ra equal to s->max_ra %d \n", s->max_ra);
             } else {
                 if (IS_IDR(s))
                     s->max_ra = INT_MIN;
@@ -3042,7 +3058,14 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if ((s->nal_unit_type == NAL_RASL_R || s->nal_unit_type == NAL_RASL_N) &&
             s->poc <= s->max_ra) {
             s->is_decoded = 0;
-            break;
+            if( s->decoder_id ) {
+                av_log(s->avctx, AV_LOG_WARNING,
+                       "Nal type %d s->max_ra %d \n", s->nal_unit_type,  s->max_ra);
+                return 0; 
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            } else
+                return 0;
         } else {
             if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
                 s->max_ra = INT_MIN;
@@ -3077,8 +3100,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 #if ACTIVE_PU_UPSAMPLING
         if(!s->decoder_id && (s->threads_type&FF_THREAD_FRAME))
             ff_thread_report_last_Tid(s->avctx, s->pocTid0);
+        s->ref->prv_active_el_frame = s->prv_active_el_frame;
         if (s->ref->active_el_frame)
             ff_thread_report_il_progress(s->avctx, s->poc, s->ref, s->pocTid0);
+        s->prv_active_el_frame = s->ref->active_el_frame;
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -3244,7 +3269,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->ref = NULL;
     s->last_eos = s->eos;
     s->eos = 0;
-    s->active_el_frame = 0; 
+    s->active_el_frame = 0;
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
@@ -3345,11 +3370,21 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         }
     }
-
+    if (s->ref && (s->threads_type & FF_THREAD_FRAME))
+        ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
+    if (s->decoder_id) {
+        if(s->threads_type&FF_THREAD_FRAME)
+            ff_thread_report_il_status(s->avctx, s->poc, 2);
+    }
+    return ret;
 fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
-
+    if (s->decoder_id) {
+        s->max_ra = INT_MAX;
+        if(s->threads_type&FF_THREAD_FRAME)
+            ff_thread_report_il_status(s->avctx, s->poc, 2);
+    }
     return ret;
 }
 
@@ -3644,6 +3679,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     s->temporal_layer_id   = 8;
     s->quality_layer_id    = 8;
+    s->prv_active_el_frame = 1;
 
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
