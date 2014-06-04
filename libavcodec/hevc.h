@@ -1119,7 +1119,6 @@ typedef struct HEVCContext {
     VideoDSPContext vdsp;
     DSPContext dsp;
     int8_t *qp_y_tab;
-    uint8_t *split_cu_flag;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
 
