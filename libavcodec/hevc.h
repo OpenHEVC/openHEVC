@@ -915,6 +915,13 @@ typedef struct SliceHeader {
 
 typedef struct CodingTree {
     int depth; ///< ctDepth
+    int split_cu_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int end_of_slice_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+
+    enum PredMode pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PredMode
+    enum PartMode part_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PartMode
+    uint8_t rqt_root_cbf[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t pcm_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } CodingTree;
 
 typedef struct CodingUnit {
@@ -1126,7 +1133,6 @@ typedef struct HEVCContext {
     VideoDSPContext vdsp;
     DSPContext dsp;
     int8_t *qp_y_tab;
-    uint8_t *split_cu_flag;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
 

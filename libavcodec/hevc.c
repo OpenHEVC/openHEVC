@@ -64,7 +64,6 @@ static void pic_arrays_free(HEVCContext *s)
 {
     av_freep(&s->sao);
     av_freep(&s->deblock);
-    av_freep(&s->split_cu_flag);
 
     av_freep(&s->skip_flag);
     av_freep(&s->tab_ct_depth);
@@ -122,12 +121,11 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
-    s->split_cu_flag = av_malloc(pic_size);
     s->dynamic_alloc += sizeof(*s->sao);
     s->dynamic_alloc += sizeof(*s->deblock);
     s->dynamic_alloc += pic_size;
 
-    if (!s->sao || !s->deblock || !s->split_cu_flag)
+    if (!s->sao || !s->deblock)
         goto fail;
 
     s->skip_flag    = av_malloc(pic_size_in_ctb);
@@ -2892,7 +2890,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     return 0;
 }
 
-static int hls_coding_unit_cabac(HEVCContext *s, int x0, int y0, int log2_cb_size)
+static int hls_coding_unit_cabac(HEVCContext *s, int x0, int y0, int log2_cb_size, int cb_depth)
 {
     int cb_size          = 1 << log2_cb_size;
     HEVCLocalContext *lc = s->HEVClc;
@@ -2936,6 +2934,7 @@ static int hls_coding_unit_cabac(HEVCContext *s, int x0, int y0, int log2_cb_siz
 
     if (SAMPLE_CTB(s->skip_flag, x_cb, y_cb)) {
         hls_prediction_unit_cabac(s, x0, y0, cb_size, cb_size, log2_cb_size, 0, idx);
+        intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
     } else {
         if (s->sh.slice_type != I_SLICE)
             lc->cu.pred_mode = ff_hevc_pred_mode_decode(s);
@@ -2964,6 +2963,7 @@ static int hls_coding_unit_cabac(HEVCContext *s, int x0, int y0, int log2_cb_siz
                 intra_prediction_unit(s, x0, y0, log2_cb_size);
             }
         } else {
+            intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
             switch (lc->cu.part_mode) {
             case PART_2Nx2N:
                 hls_prediction_unit_cabac(s, x0, y0, cb_size, cb_size, log2_cb_size, 0, idx);
@@ -3020,10 +3020,30 @@ static int hls_coding_unit_cabac(HEVCContext *s, int x0, int y0, int log2_cb_siz
         }
     }
 
+    if (s->pps->cu_qp_delta_enabled_flag && lc->tu.is_cu_qp_delta_coded == 0)
+        ff_hevc_set_qPy(s, x0, y0, x0, y0, log2_cb_size);
+
+    x = y_cb * min_cb_width + x_cb;
+    for (y = 0; y < length; y++) {
+        memset(&s->qp_y_tab[x], lc->qp_y, length);
+        x += min_cb_width;
+    }
+
+    if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
+       ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0) {
+        lc->qPy_pred = lc->qp_y;
+    }
+
+    set_ct_depth(s, x0, y0, log2_cb_size, lc->ct.depth);
+
+    SAMPLE_CBF(lc->ct.pred_mode[cb_depth], x0, y0)                 = lc->cu.pred_mode;
+    SAMPLE_CBF(lc->ct.part_mode[cb_depth], x0, y0)                 = lc->cu.part_mode;
+    SAMPLE_CBF(lc->ct.rqt_root_cbf[cb_depth], x0, y0)              = lc->cu.rqt_root_cbf;
+    SAMPLE_CBF(lc->ct.pcm_flag[cb_depth], x0, y0)                  = lc->cu.pcm_flag;
     return 0;
 }
 
-static int hls_coding_unit_compute(HEVCContext *s, int x0, int y0, int log2_cb_size)
+static int hls_coding_unit_compute(HEVCContext *s, int x0, int y0, int log2_cb_size, int cb_depth)
 {
     int cb_size          = 1 << log2_cb_size;
     HEVCLocalContext *lc = s->HEVClc;
@@ -3035,16 +3055,18 @@ static int hls_coding_unit_compute(HEVCContext *s, int x0, int y0, int log2_cb_s
     int idx              = log2_cb_size - 2;
     int qp_block_mask    = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
     int x, y, ret;
+    lc->cu.pred_mode                 = SAMPLE_CBF(lc->ct.pred_mode[cb_depth], x0, y0);
+    lc->cu.part_mode                 = SAMPLE_CBF(lc->ct.part_mode[cb_depth], x0, y0);
+    lc->cu.rqt_root_cbf              = SAMPLE_CBF(lc->ct.rqt_root_cbf[cb_depth], x0, y0);
+    lc->cu.pcm_flag                  = SAMPLE_CBF(lc->ct.pcm_flag[cb_depth], x0, y0);
 
     if (SAMPLE_CTB(s->skip_flag, x_cb, y_cb)) {
         hls_prediction_unit_compute(s, x0, y0, cb_size, cb_size, log2_cb_size, 0, idx);
-        intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
         if (!s->sh.disable_deblocking_filter_flag)
             ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
     } else {
         if (lc->cu.pred_mode != MODE_INTRA) {
-            intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
             switch (lc->cu.part_mode) {
             case PART_2Nx2N:
                 hls_prediction_unit_compute(s, x0, y0, cb_size, cb_size, log2_cb_size, 0, idx);
@@ -3098,30 +3120,14 @@ static int hls_coding_unit_compute(HEVCContext *s, int x0, int y0, int log2_cb_s
         }
     }
 
-    if (s->pps->cu_qp_delta_enabled_flag && lc->tu.is_cu_qp_delta_coded == 0)
-        ff_hevc_set_qPy(s, x0, y0, x0, y0, log2_cb_size);
-
-    x = y_cb * min_cb_width + x_cb;
-    for (y = 0; y < length; y++) {
-        memset(&s->qp_y_tab[x], lc->qp_y, length);
-        x += min_cb_width;
-    }
-
-    if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
-       ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0) {
-        lc->qPy_pred = lc->qp_y;
-    }
-
-    set_ct_depth(s, x0, y0, log2_cb_size, lc->ct.depth);
-
     return 0;
 }
 
-static int hls_coding_unit2(HEVCContext *s, int x0, int y0, int log2_cb_size)
+static int hls_coding_unit2(HEVCContext *s, int x0, int y0, int log2_cb_size, int cb_depth)
 {
 #if 1
-    hls_coding_unit_cabac(s, x0, y0, log2_cb_size);
-    return hls_coding_unit_compute(s, x0, y0, log2_cb_size);
+    hls_coding_unit_cabac(s, x0, y0, log2_cb_size, cb_depth);
+    return hls_coding_unit_compute(s, x0, y0, log2_cb_size, cb_depth);
 #else
     return hls_coding_unit(s, x0, y0, log2_cb_size);
 #endif
@@ -3134,16 +3140,15 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     const int cb_size    = 1 << log2_cb_size;
     int ret;
     int qp_block_mask = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
+    int split_cu_flag;
 
     lc->ct.depth = cb_depth;
     if (x0 + cb_size <= s->sps->width  &&
         y0 + cb_size <= s->sps->height &&
         log2_cb_size > s->sps->log2_min_cb_size) {
-        SAMPLE(s->split_cu_flag, x0, y0) =
-            ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
+        split_cu_flag = ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
     } else {
-        SAMPLE(s->split_cu_flag, x0, y0) =
-            (log2_cb_size > s->sps->log2_min_cb_size);
+        split_cu_flag = (log2_cb_size > s->sps->log2_min_cb_size);
     }
     if (s->pps->cu_qp_delta_enabled_flag &&
         log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth) {
@@ -3151,7 +3156,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
         lc->tu.cu_qp_delta          = 0;
     }
 
-    if (SAMPLE(s->split_cu_flag, x0, y0)) {
+    if (split_cu_flag) {
         const int cb_size_split = cb_size >> 1;
         const int x1 = x0 + cb_size_split;
         const int y1 = y0 + cb_size_split;
@@ -3189,14 +3194,12 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
         else
             return 0;
     } else {
-        ret = hls_coding_unit2(s, x0, y0, log2_cb_size);
+        ret = hls_coding_unit2(s, x0, y0, log2_cb_size, cb_depth);
         if (ret < 0)
             return ret;
-        if ((!((x0 + cb_size) %
-               (1 << (s->sps->log2_ctb_size))) ||
+        if ((!((x0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
              (x0 + cb_size >= s->sps->width)) &&
-            (!((y0 + cb_size) %
-               (1 << (s->sps->log2_ctb_size))) ||
+            (!((y0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
              (y0 + cb_size >= s->sps->height))) {
             int end_of_slice_flag = ff_hevc_end_of_slice_flag_decode(s);
             return !end_of_slice_flag;
@@ -3208,6 +3211,139 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     return 0;
 }
 
+static int hls_coding_quadtree_cabac(HEVCContext *s, int x0, int y0,
+                               int log2_cb_size, int cb_depth)
+{
+    HEVCLocalContext *lc = s->HEVClc;
+    const int cb_size    = 1 << log2_cb_size;
+    int ret;
+    int qp_block_mask = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
+
+    lc->ct.depth = cb_depth;
+    if (x0 + cb_size <= s->sps->width  &&
+        y0 + cb_size <= s->sps->height &&
+        log2_cb_size > s->sps->log2_min_cb_size) {
+        SAMPLE_CBF(lc->ct.split_cu_flag[cb_depth], x0, y0) =
+            ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
+    } else {
+        SAMPLE_CBF(lc->ct.split_cu_flag[cb_depth], x0, y0) =
+            (log2_cb_size > s->sps->log2_min_cb_size);
+    }
+    if (s->pps->cu_qp_delta_enabled_flag &&
+        log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth) {
+        lc->tu.is_cu_qp_delta_coded = 0;
+        lc->tu.cu_qp_delta          = 0;
+    }
+
+    if (SAMPLE_CBF(lc->ct.split_cu_flag[cb_depth], x0, y0)) {
+        const int cb_size_split = cb_size >> 1;
+        const int x1 = x0 + cb_size_split;
+        const int y1 = y0 + cb_size_split;
+        int more_data;
+        more_data = hls_coding_quadtree_cabac(s, x0, y0, log2_cb_size - 1, cb_depth + 1);
+        if (more_data < 0)
+            return more_data;
+        if (more_data && x1 < s->sps->width) {
+            more_data = hls_coding_quadtree_cabac(s, x1, y0, log2_cb_size - 1, cb_depth + 1);
+            if (more_data < 0)
+                return more_data;
+        }
+        if (more_data && y1 < s->sps->height) {
+            more_data = hls_coding_quadtree_cabac(s, x0, y1, log2_cb_size - 1, cb_depth + 1);
+            if (more_data < 0)
+                return more_data;
+        }
+        if (more_data && x1 < s->sps->width && y1 < s->sps->height) {
+            more_data = hls_coding_quadtree_cabac(s, x1, y1, log2_cb_size - 1, cb_depth + 1);
+            if (more_data < 0)
+                return more_data;
+        }
+        if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
+            ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0)
+            lc->qPy_pred = lc->qp_y;
+
+        if (more_data)
+            return ((x1 + cb_size_split) < s->sps->width ||
+                    (y1 + cb_size_split) < s->sps->height);
+        else
+            return 0;
+    } else {
+        ret = hls_coding_unit_cabac(s, x0, y0, log2_cb_size, cb_depth);
+        if (ret < 0)
+            return ret;
+        if ((!((x0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
+             (x0 + cb_size >= s->sps->width)) &&
+            (!((y0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
+             (y0 + cb_size >= s->sps->height))) {
+            SAMPLE_CBF(lc->ct.end_of_slice_flag[cb_depth], x0, y0) = ff_hevc_end_of_slice_flag_decode(s);
+        }
+        return 1;
+    }
+
+    return 0;
+}
+
+static int hls_coding_quadtree_compute(HEVCContext *s, int x0, int y0,
+                               int log2_cb_size, int cb_depth)
+{
+    HEVCLocalContext *lc = s->HEVClc;
+    const int cb_size    = 1 << log2_cb_size;
+    int ret;
+
+    if (SAMPLE_CBF(lc->ct.split_cu_flag[cb_depth], x0, y0)) {
+        const int cb_size_split = cb_size >> 1;
+        const int x1 = x0 + cb_size_split;
+        const int y1 = y0 + cb_size_split;
+        int more_data;
+        more_data = hls_coding_quadtree_compute(s, x0, y0, log2_cb_size - 1, cb_depth + 1);
+        if (more_data < 0)
+            return more_data;
+        if (more_data && x1 < s->sps->width) {
+            more_data = hls_coding_quadtree_compute(s, x1, y0, log2_cb_size - 1, cb_depth + 1);
+            if (more_data < 0)
+                return more_data;
+        }
+        if (more_data && y1 < s->sps->height) {
+            more_data = hls_coding_quadtree_compute(s, x0, y1, log2_cb_size - 1, cb_depth + 1);
+            if (more_data < 0)
+                return more_data;
+        }
+        if (more_data && x1 < s->sps->width && y1 < s->sps->height) {
+            more_data = hls_coding_quadtree_compute(s, x1, y1, log2_cb_size - 1, cb_depth + 1);
+            if (more_data < 0)
+                return more_data;
+        }
+        if (more_data)
+            return ((x1 + cb_size_split) < s->sps->width ||
+                    (y1 + cb_size_split) < s->sps->height);
+        else
+            return 0;
+    } else {
+        ret = hls_coding_unit_compute(s, x0, y0, log2_cb_size, cb_depth);
+        if (ret < 0)
+            return ret;
+        if ((!((x0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
+             (x0 + cb_size >= s->sps->width)) &&
+            (!((y0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
+             (y0 + cb_size >= s->sps->height))) {
+            return !SAMPLE_CBF(lc->ct.end_of_slice_flag[cb_depth], x0, y0);
+        } else {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+static int hls_coding_quadtree2(HEVCContext *s, int x0, int y0,
+                               int log2_cb_size, int cb_depth)
+{
+#if 1
+    hls_coding_quadtree_cabac(s, x0, y0, log2_cb_size, cb_depth);
+    return hls_coding_quadtree_compute(s, x0, y0, log2_cb_size, cb_depth);
+#else
+    return hls_coding_quadtree(s, x0, y0, log2_cb_size, cb_depth);
+#endif
+}
 static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
                                  int ctb_addr_ts)
 {
@@ -3297,7 +3433,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
 
-        more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
+        more_data = hls_coding_quadtree2(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
         if (more_data < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
             return more_data;
