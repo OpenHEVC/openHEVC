@@ -21,36 +21,27 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-add_8:                  dw 32
-add_10:                 dw  8
+
 max_pixels_10:          times 8  dw ((1 << 10)-1)
 
 SECTION .text
 
-INIT_XMM sse2
-
 %macro TRANSFORM_DC_ADD 2
-cglobal hevc_put_transform%1x%1_dc_add_%2, 4, 6, 4, dst, coeffs, stride, col_limit, temp
-    xor            tempw, tempw
+cglobal hevc_put_transform%1x%1_dc_add_%2, 3, 4, 4, dst, coeffs, stride, temp
     mov            tempw, [coeffsq]
     add            tempw, 1
     sar            tempw, 1
-    add            tempw, [add_%2]
+    add            tempw, (1 << 13-%2)
     sar            tempw, 14-%2
     movd              m0, tempd
-    punpcklwd         m0, m0
-    pshufd            m0, m0, 0
+    SPLATW            m0, m0, 0
     pxor              m1, m1
-    xor            tempq, tempq
     mov            tempd, %1
 .loop
-    pxor              m2, m2
-%if %1 == 2 || (%2 == 8 && %1 <= 4)
-    movd              m2, [dstq]                                               ; load data from source
-%elif %1 == 4 || (%2 == 8 && %1 <= 8)
-    movq              m2, [dstq]                                               ; load data from source
+%if (%2 == 8 && %1 <= 8)
+    movh              m2, [dstq]
 %else
-    movdqu            m2, [dstq]                                               ; load data from source
+    movu              m2, [dstq]
 %endif
 %if %2 == 8
 %if %1 > 8
@@ -65,26 +56,27 @@ cglobal hevc_put_transform%1x%1_dc_add_%2, 4, 6, 4, dst, coeffs, stride, col_lim
 %if %2 == 8
     packuswb          m2, m3
 %else
-  ;  CLIPW             m2, m1, [max_pixels_10]                  @TODO fix seg fault when enabled
+    CLIPW             m2, m1, [max_pixels_%2]
 %endif
-%if %1 == 2 || (%2 == 8 && %1 <= 4)
-    movd          [dstq], m2
-%elif %1 == 4 || (%2 == 8 && %1 <= 8)
-    movq          [dstq], m2
+%if (%2 == 8 && %1 <= 8)
+    movh          [dstq], m2
 %else
-    movdqu        [dstq], m2
+    movu          [dstq], m2
 %endif
-    lea             dstq, [dstq+strideq]      ; dst += dststride
+    lea             dstq, [dstq+strideq]
     dec            tempd
     jnz                 .loop                 ; height loop
     RET
 %endmacro
 
+INIT_XMM sse2
 
-TRANSFORM_DC_ADD 4, 8
 TRANSFORM_DC_ADD 8, 8
 TRANSFORM_DC_ADD 16, 8
 
-
-TRANSFORM_DC_ADD 4, 10
 TRANSFORM_DC_ADD 8, 10
+
+INIT_MMX mmx
+
+TRANSFORM_DC_ADD 4, 8
+TRANSFORM_DC_ADD 4, 10
