@@ -82,7 +82,7 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
 }
 
 static int same_prediction_block(HEVCLocalContext *lc, int log2_cb_size,
-                                 int x0, int y0, int nPbW, int nPbH,
+                                 int nPbW, int nPbH,
                                  int xA1, int yA1, int partIdx)
 {
     return !(nPbW << 1 == 1 << log2_cb_size &&
@@ -103,7 +103,7 @@ static int check_prediction_block_available(HEVCContext *s, int log2_cb_size,
     if (lc->cu.x < xA1 && lc->cu.y < yA1 &&
         (lc->cu.x + (1 << log2_cb_size)) > xA1 &&
         (lc->cu.y + (1 << log2_cb_size)) > yA1)
-        return same_prediction_block(lc, log2_cb_size, x0, y0,
+        return same_prediction_block(lc, log2_cb_size,
                                      nPbW, nPbH, xA1, yA1, partIdx);
     else
         return z_scan_block_avail(s, x0, y0, xA1, yA1);
