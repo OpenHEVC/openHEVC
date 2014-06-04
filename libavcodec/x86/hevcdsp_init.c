@@ -51,7 +51,34 @@ LFC_FUNCS(uint8_t,  10)
 LFL_FUNCS(uint8_t,   8)
 LFL_FUNCS(uint8_t,  10)
 
+
 #if !ARCH_X86_32 && defined(OPTI_ASM)
+void ff_hevc_put_transform32x32_dc_add_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+{
+    	ff_hevc_put_transform16x16_dc_add_8_sse2(dst, coeffs, stride);
+        ff_hevc_put_transform16x16_dc_add_8_sse2(dst+16, coeffs, stride);
+        ff_hevc_put_transform16x16_dc_add_8_sse2(dst+16*stride, coeffs, stride);
+        ff_hevc_put_transform16x16_dc_add_8_sse2(dst+16*stride+16, coeffs, stride);
+
+}
+
+void ff_hevc_put_transform16x16_dc_add_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+{
+    	ff_hevc_put_transform8x8_dc_add_10_sse2(dst, coeffs, stride);
+        ff_hevc_put_transform8x8_dc_add_10_sse2(dst+16, coeffs, stride);
+        ff_hevc_put_transform8x8_dc_add_10_sse2(dst+8*stride, coeffs, stride);
+        ff_hevc_put_transform8x8_dc_add_10_sse2(dst+8*stride+16, coeffs, stride);
+
+}
+
+void ff_hevc_put_transform32x32_dc_add_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+{
+    	ff_hevc_put_transform16x16_dc_add_10_sse2(dst, coeffs, stride);
+        ff_hevc_put_transform16x16_dc_add_10_sse2(dst+32, coeffs, stride);
+        ff_hevc_put_transform16x16_dc_add_10_sse2(dst+16*stride, coeffs, stride);
+        ff_hevc_put_transform16x16_dc_add_10_sse2(dst+16*stride+32, coeffs, stride);
+
+}
 
 #define mc_rep_func(name, bitd, step, W, opt) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststride,                            \
@@ -152,7 +179,6 @@ mc_rep_funcs(epel_hv,10,  8, 24, sse4);
 mc_rep_funcs(epel_hv,10,  8, 16, sse4);
 mc_rep_funcs(epel_hv,10,  4, 12, sse4);
 
-
 mc_rep_funcs(qpel_h, 8, 16, 64, sse4);
 mc_rep_funcs(qpel_h, 8, 16, 48, sse4);
 mc_rep_funcs(qpel_h, 8, 16, 32, sse4);
@@ -185,7 +211,6 @@ mc_rep_funcs(qpel_hv,10,  8, 32, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 24, sse4);
 mc_rep_funcs(qpel_hv,10,  8, 16, sse4);
 mc_rep_funcs(qpel_hv,10,  4, 12, sse4);
-
 
 #define mc_rep_uni_w(bitd, step, W, opt) \
 void ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,\
@@ -259,6 +284,7 @@ void ff_hevc_put_hevc_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t 
     ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, 64, _src, _srcstride, height, mx, my, width); \
     ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, 64, height, denom, _wx, _ox);\
 }
+
 #define mc_uni_w_funcs(name, bitd, opt)       \
         mc_uni_w_func(name, bitd, 4, opt);    \
         mc_uni_w_func(name, bitd, 8, opt);    \
@@ -342,7 +368,9 @@ mc_bi_w_funcs(qpel_h, 10, sse4);
 mc_bi_w_funcs(qpel_v, 10, sse4);
 mc_bi_w_funcs(qpel_hv, 10, sse4);
 
+
 #endif
+
 
 #define EPEL_LINKS(pointer, my, mx, fname, bitd, opt)           \
         PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd, opt ); \
@@ -378,11 +406,19 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #if ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL
                 /* MMEXT optimizations */
 #endif /* ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL */
+#ifdef OPTI_ASM
+                c->transform_dc_add[0]    =  ff_hevc_put_transform4x4_dc_add_8_mmx;
+#endif
 
 #if HAVE_SSE2
                 if (EXTERNAL_SSE2(mm_flags)) {
                     c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
                     c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
+#ifdef OPTI_ASM
+                    c->transform_dc_add[1]    =  ff_hevc_put_transform8x8_dc_add_8_sse2;
+                    c->transform_dc_add[2]    =  ff_hevc_put_transform16x16_dc_add_8_sse2;
+                    c->transform_dc_add[3]    =  ff_hevc_put_transform32x32_dc_add_8_sse2;
+#endif
                 }
 #endif //HAVE_SSE2
 #if HAVE_SSSE3
@@ -393,12 +429,12 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
                     c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
                     c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
-
+#ifndef OPTI_ASM
                     c->transform_dc_add[0] = ff_hevc_transform_4x4_dc_add_8_sse4;
                     c->transform_dc_add[1] = ff_hevc_transform_8x8_dc_add_8_sse4;
                     c->transform_dc_add[2] = ff_hevc_transform_16x16_dc_add_8_sse4;
                     c->transform_dc_add[3] = ff_hevc_transform_32x32_dc_add_8_sse4;
-
+#endif
 
 
 #if ARCH_X86_64
@@ -457,10 +493,19 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
             if (EXTERNAL_MMXEXT(mm_flags)) {
 #if ARCH_X86_32
 #endif /* ARCH_X86_32 */
+#ifdef OPTI_ASM
+                c->transform_dc_add[0]    =  ff_hevc_put_transform4x4_dc_add_10_mmx;
+#endif
 #if HAVE_SSE2
                 if (EXTERNAL_SSE2(mm_flags)) {
                     c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
                     c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
+
+#ifdef OPTI_ASM
+                    c->transform_dc_add[1]    =  ff_hevc_put_transform8x8_dc_add_10_sse2;
+                    c->transform_dc_add[2]    =  ff_hevc_put_transform16x16_dc_add_10_sse2;
+                    c->transform_dc_add[3]    =  ff_hevc_put_transform32x32_dc_add_10_sse2;
+#endif
 #if HAVE_ALIGNED_STACK
                     /*stuff that requires aligned stack */
 #endif /* HAVE_ALIGNED_STACK */
