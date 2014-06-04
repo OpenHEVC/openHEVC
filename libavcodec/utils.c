@@ -880,6 +880,8 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
         if (frame->width <= 0 || frame->height <= 0) {
             frame->width  = FFMAX(avctx->width,  FF_CEIL_RSHIFT(avctx->coded_width,  avctx->lowres));
             frame->height = FFMAX(avctx->height, FF_CEIL_RSHIFT(avctx->coded_height, avctx->lowres));
+            frame->coded_width = FFMAX(avctx->width, avctx->coded_width);
+            frame->coded_height = FFMAX(avctx->height, avctx->coded_height);
             override_dimensions = 0;
         }
     }
