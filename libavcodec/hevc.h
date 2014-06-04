@@ -90,8 +90,7 @@
  */
 #define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->width + (x)])
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
-#define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
-#define SAMPLE_CBF2(tab, x, y) ((tab)[(y) * MAX_CU_SIZE +  (x)])
+#define SAMPLE_CBF(tab, x, y) ((tab)[((y) & (MAX_CU_SIZE-1)) * MAX_CU_SIZE + ((x) & (MAX_CU_SIZE-1))])
 
 #define IS_IDR(s) ((s)->nal_unit_type == NAL_IDR_W_RADL || (s)->nal_unit_type == NAL_IDR_N_LP)
 #define IS_BLA(s) ((s)->nal_unit_type == NAL_BLA_W_RADL || (s)->nal_unit_type == NAL_BLA_W_LP || \
@@ -967,10 +966,10 @@ typedef struct PredictionUnit {
 typedef struct TransformTree {
     uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t cbf_luma;
-
-    // Inferred parameters
-    uint8_t inter_split_flag;
+    uint8_t cbf_luma[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t split_transform_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int cur_intra_pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int cur_intra_pred_mode_c[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } TransformTree;
 
 typedef struct TransformUnit {
@@ -981,6 +980,13 @@ typedef struct TransformUnit {
     int cur_intra_pred_mode_c;
     uint8_t is_cu_qp_delta_coded;
 } TransformUnit;
+
+typedef struct ResidualCoding {
+    int last_significant_coeff_x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int last_significant_coeff_y[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int transform_skip_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE]);
+} ResidualCoding;
 
 typedef struct DBParams {
     int beta_offset;
@@ -1037,6 +1043,7 @@ typedef struct HEVCLocalContext {
     CABACContext        cc;
     TransformTree       tt;
     TransformUnit       tu;
+    ResidualCoding      rc[3];
     CodingTree          ct;
     CodingUnit          cu;
     PredictionUnit      pu;
@@ -1137,10 +1144,6 @@ typedef struct HEVCContext {
     // CTB-level flags affecting loop filter operation
     uint8_t *filter_slice_edges;
 
-    int last_significant_coeff_x[2][3][MAX_TRANSFORM_DEPTH*4];
-    int last_significant_coeff_y[2][3][MAX_TRANSFORM_DEPTH*4];
-    int transform_skip_flag[2][3][MAX_TRANSFORM_DEPTH*4];
-    DECLARE_ALIGNED(16, int16_t, residual_coeffs[2][3][MAX_TRANSFORM_DEPTH*4][MAX_TB_SIZE * MAX_TB_SIZE]);
     uint8_t residual_idx;
 
     /** used on BE to byteswap the lines for checksumming */
