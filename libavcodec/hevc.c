@@ -426,21 +426,9 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         const int   phaseX = phaseAlignFlag   << 1;
         const int   phaseY = phaseAlignFlag   << 1;
 
-        /*if (s->threads_type&FF_THREAD_FRAME){
-            ff_thread_await_il_progress(s->avctx, s->poc, &s->avctx->BL_frame);
-        }*/
-        /*if(!s->avctx->BL_frame)    {
-            av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing -- \n");
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }*/
-        //heightBL = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_height;
-        //widthBL  = ((HEVCFrame*)s->avctx->BL_frame)->frame->coded_width;
 
         heightBL = s->vps->m_vpsRepFormat[0].m_picHeightVpsInLumaSamples;
         widthBL  = s->vps->m_vpsRepFormat[0].m_picWidthVpsInLumaSamples;
-
-        printf("SPS -------- heightBL %d widthBL %d \n", heightBL, widthBL);
         if(!heightBL || !widthBL)    {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing -- \n");
             ret = AVERROR(ENOMEM);
