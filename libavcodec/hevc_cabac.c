@@ -1064,7 +1064,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6,  6,  6,
             7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10,
         };
-        int qp_y = lc->qp_y;
+        int qp_y = s->HEVClc->ca.qp_y;
 
         if (c_idx == 0) {
             qp = qp_y + s->sps->qp_bd_offset;
@@ -1494,7 +1494,7 @@ void ff_hevc_hls_residual_coding_cabac(HEVCContext *s, int x0, int y0,
             3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6,  6,  6,
             7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10,
         };
-        int qp_y = lc->qp_y;
+        int qp_y = s->HEVClc->ca.qp_y;
 
         if (c_idx == 0) {
             qp = qp_y + s->sps->qp_bd_offset;

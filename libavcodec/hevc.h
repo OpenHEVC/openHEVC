@@ -1049,6 +1049,8 @@ typedef struct HEVCLocalContextCabac {
     GetBitContext       gb;
     CABACContext        cc;
     uint8_t cabac_state[HEVC_CONTEXTS];
+    int8_t  qp_y;
+    int     qPy_pred;
 } HEVCLocalContextCabac;
 
 typedef struct HEVCLocalContextCompute {
@@ -1067,7 +1069,6 @@ typedef struct HEVCLocalContextCommon {
     PredictionUnit      pu;
     NeighbourAvailable  na;
 
-    int8_t  qp_y;
     uint8_t first_qp_group;
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
@@ -1075,7 +1076,6 @@ typedef struct HEVCLocalContextCommon {
     uint8_t ctb_up_left_flag;
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
-    int     qPy_pred;
     int     end_of_tiles_x;
     int     end_of_tiles_y;
 } HEVCLocalContextCommon;

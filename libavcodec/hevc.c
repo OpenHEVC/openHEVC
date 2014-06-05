@@ -960,7 +960,7 @@ static int hls_slice_header(HEVCContext *s)
     s->HEVClc->cm[0].first_qp_group = !s->sh.dependent_slice_segment_flag;
 
     if (!s->pps->cu_qp_delta_enabled_flag)
-        s->HEVClc->cm[0].qp_y = s->sh.slice_qp;
+        s->HEVClc->ca.qp_y = s->sh.slice_qp;
 
     s->slice_initialized = 1;
 
@@ -2876,13 +2876,13 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
     x = y_cb * min_cb_width + x_cb;
     for (y = 0; y < length; y++) {
-        memset(&s->qp_y_tab[x], lc->qp_y, length);
+        memset(&s->qp_y_tab[x], s->HEVClc->ca.qp_y, length);
         x += min_cb_width;
     }
 
     if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
        ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0) {
-        lc->qPy_pred = lc->qp_y;
+        s->HEVClc->ca.qPy_pred = s->HEVClc->ca.qp_y;
     }
 
     set_ct_depth(s, x0, y0, log2_cb_size, lc->ct.depth);
@@ -3025,13 +3025,13 @@ static int hls_coding_unit_cabac(HEVCContext *s, int x0, int y0, int log2_cb_siz
 
     x = y_cb * min_cb_width + x_cb;
     for (y = 0; y < length; y++) {
-        memset(&s->qp_y_tab[x], lc->qp_y, length);
+        memset(&s->qp_y_tab[x], s->HEVClc->ca.qp_y, length);
         x += min_cb_width;
     }
 
     if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
        ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0) {
-        lc->qPy_pred = lc->qp_y;
+        s->HEVClc->ca.qPy_pred = s->HEVClc->ca.qp_y;
     }
 
     set_ct_depth(s, x0, y0, log2_cb_size, lc->ct.depth);
@@ -3186,7 +3186,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
 
         if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
             ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0)
-            lc->qPy_pred = lc->qp_y;
+            s->HEVClc->ca.qPy_pred = s->HEVClc->ca.qp_y;
 
         if (more_data)
             return ((x1 + cb_size_split) < s->sps->width ||
@@ -3260,7 +3260,7 @@ static int hls_coding_quadtree_cabac(HEVCContext *s, int x0, int y0,
         }
         if(((x0 + (1<<log2_cb_size)) & qp_block_mask) == 0 &&
             ((y0 + (1<<log2_cb_size)) & qp_block_mask) == 0)
-            lc->qPy_pred = lc->qp_y;
+            s->HEVClc->ca.qPy_pred = s->HEVClc->ca.qp_y;
 
         if (more_data)
             return ((x1 + cb_size_split) < s->sps->width ||
@@ -3767,7 +3767,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 
     for (i = 1; i < s->threads_number; i++) {
         s->sList[i]->HEVClc->cm[0].first_qp_group = 1;
-        s->sList[i]->HEVClc->cm[0].qp_y = s->sList[0]->HEVClc->cm[0].qp_y;
+        s->sList[i]->HEVClc->ca.qp_y = s->sList[0]->HEVClc->ca.qp_y;
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
     }
