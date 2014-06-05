@@ -71,7 +71,7 @@ do {                                  \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i + 3])
 
-    HEVCLocalContext *lc = s->HEVClc;
+    HEVCLocalContextCommon *lc = s->HEVClc->cm_co;
     int i;
     int hshift = s->sps->hshift[c_idx];
     int vshift = s->sps->vshift[c_idx];

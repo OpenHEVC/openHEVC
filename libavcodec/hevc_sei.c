@@ -31,7 +31,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
     uint8_t hash_type;
     //uint16_t picture_crc;
     //uint32_t picture_checksum;
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     hash_type = get_bits(gb, 8);
 
     for (cIdx = 0; cIdx < 3/*((s->sps->chroma_format_idc == 0) ? 1 : 3)*/; cIdx++) {
@@ -51,7 +51,7 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
 
 static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
 
     get_ue_golomb(gb);                  // frame_packing_arrangement_id
     s->sei_frame_packing_present = !get_bits1(gb);
@@ -76,7 +76,7 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 
 static int decode_pic_timing(HEVCContext *s)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     HEVCSPS *sps;
 
     if (!s->sps_list[s->active_seq_parameter_set_id])
@@ -108,7 +108,7 @@ static int decode_pic_timing(HEVCContext *s)
 
 static int active_parameter_sets(HEVCContext *s)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     int num_sps_ids_minus1;
     int i;
     unsigned active_seq_parameter_set_id;
@@ -133,7 +133,7 @@ static int active_parameter_sets(HEVCContext *s)
 
 static int decode_nal_sei_message(HEVCContext *s)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
 
     int payload_type = 0;
     int payload_size = 0;
@@ -194,6 +194,6 @@ int ff_hevc_decode_nal_sei(HEVCContext *s)
         ret = decode_nal_sei_message(s);
         if (ret < 0)
             return(AVERROR(ENOMEM));
-    } while (more_rbsp_data(&s->HEVClc->gb));
+    } while (more_rbsp_data(&s->HEVClc->ca.gb));
     return 1;
 }

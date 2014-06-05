@@ -915,30 +915,14 @@ typedef struct SliceHeader {
 
 typedef struct CodingTree {
     int depth; ///< ctDepth
-} CodingTree;
-
-typedef struct ResidualCoding {
-    int last_significant_coeff_x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int last_significant_coeff_y[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int transform_skip_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE]);
-} ResidualCoding;
-
-typedef struct CabacStruct {
-    ResidualCoding      rc[3];
-    uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t cbf_luma[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t split_transform_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t rqt_root_cbf[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t pcm_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int cur_intra_pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int cur_intra_pred_mode_c[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     int split_cu_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     int end_of_slice_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+
     enum PredMode pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PredMode
     enum PartMode part_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PartMode
-} CabacStruct;
+    uint8_t rqt_root_cbf[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t pcm_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+} CodingTree;
 
 typedef struct CodingUnit {
     int x;
@@ -986,6 +970,15 @@ typedef struct PredictionUnit {
     uint8_t intra_pred_mode_c[4];
 } PredictionUnit;
 
+typedef struct TransformTree {
+    uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_luma[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t split_transform_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int cur_intra_pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int cur_intra_pred_mode_c[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+} TransformTree;
+
 typedef struct TransformUnit {
     int cu_qp_delta;
 
@@ -994,6 +987,13 @@ typedef struct TransformUnit {
     int cur_intra_pred_mode_c;
     uint8_t is_cu_qp_delta_coded;
 } TransformUnit;
+
+typedef struct ResidualCoding {
+    int last_significant_coeff_x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int last_significant_coeff_y[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int transform_skip_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE]);
+} ResidualCoding;
 
 typedef struct DBParams {
     int beta_offset;
@@ -1045,40 +1045,47 @@ typedef struct HEVCNAL {
     const uint8_t *data;
 } HEVCNAL;
 
-typedef struct HEVCLocalContext {
+typedef struct HEVCLocalContextCabac {
     GetBitContext       gb;
     CABACContext        cc;
-    TransformUnit       tu;
-    CodingTree          ct;
-    CodingUnit          cu;
-    PredictionUnit      pu;
-    NeighbourAvailable  na;
-    CabacStruct        *cs1;
-    CabacStruct        *cs2;
-
     uint8_t cabac_state[HEVC_CONTEXTS];
+} HEVCLocalContextCabac;
 
-    uint8_t first_qp_group;
-
-
-    int8_t qp_y;
-    int8_t curr_qp_y;
-
-    int qPy_pred;
-
-    uint8_t ctb_left_flag;
-    uint8_t ctb_up_flag;
-    uint8_t ctb_up_right_flag;
-    uint8_t ctb_up_left_flag;
-    int     end_of_tiles_x;
-    int     end_of_tiles_y;
+typedef struct HEVCLocalContextCompute {
     /* +7 is for subpixel interpolation, *2 for high bit depths */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer2)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
     DECLARE_ALIGNED(16, int16_t, edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE]);
+} HEVCLocalContextCompute;
 
+typedef struct HEVCLocalContextCommon {
+    TransformTree       tt;
+    TransformUnit       tu;
+    ResidualCoding      rc[3];
+    CodingTree          ct;
+    CodingUnit          cu;
+    PredictionUnit      pu;
+    NeighbourAvailable  na;
+
+    int8_t  qp_y;
+    uint8_t first_qp_group;
+    uint8_t ctb_left_flag;
+    uint8_t ctb_up_flag;
+    uint8_t ctb_up_right_flag;
+    uint8_t ctb_up_left_flag;
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
+    int     qPy_pred;
+    int     end_of_tiles_x;
+    int     end_of_tiles_y;
+} HEVCLocalContextCommon;
+
+typedef struct HEVCLocalContext {
+    HEVCLocalContextCabac   ca;
+    HEVCLocalContextCompute co;
+    HEVCLocalContextCommon  cm[2];
+    HEVCLocalContextCommon *cm_ca;
+    HEVCLocalContextCommon *cm_co;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
@@ -1149,9 +1156,6 @@ typedef struct HEVCContext {
 
     // CTB-level flags affecting loop filter operation
     uint8_t *filter_slice_edges;
-
-    CabacStruct cs[2];
-    uint8_t residual_idx;
 
     /** used on BE to byteswap the lines for checksumming */
     uint8_t *checksum_buf;

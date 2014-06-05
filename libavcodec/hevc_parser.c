@@ -90,7 +90,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
                       const uint8_t *buf, int buf_size)
 {
     HEVCContext   *h  = &((HEVCParseContext *)s->priv_data)->h;
-    GetBitContext *gb = &h->HEVClc->gb;
+    GetBitContext *gb = &h->HEVClc->ca.gb;
     SliceHeader   *sh = &h->sh;
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;

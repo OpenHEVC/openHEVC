@@ -80,7 +80,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
     int k  = 0;
     int i;
 
-    GetBitContext *gb = &lc->gb;
+    GetBitContext *gb = &lc->ca.gb;
 
     if (rps != sps->st_rps && sps->nb_st_rps)
         rps_predict = get_bits1(gb);
@@ -196,7 +196,7 @@ static void decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
 {
     int i;
     HEVCLocalContext *lc = s->HEVClc;
-    GetBitContext *gb = &lc->gb;
+    GetBitContext *gb = &lc->ca.gb;
     print_cabac(" --- parse tier level --- ", s->nuh_layer_id);
     ptl->profile_space = get_bits(gb, 2);
     ptl->tier_flag     = get_bits1(gb);
@@ -236,7 +236,7 @@ static void parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
 {
     int i;
     HEVCLocalContext *lc = s->HEVClc;
-    GetBitContext *gb = &lc->gb;
+    GetBitContext *gb = &lc->ca.gb;
 
     print_cabac(" --- parse ptl --- ", s->nuh_layer_id);
     decode_profile_tier_level(s, &ptl->general_ptl);
@@ -267,7 +267,7 @@ static void parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
 static void decode_sublayer_hrd(HEVCContext *s, unsigned int nb_cpb,
                                 int subpic_params_present)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     int i;
 
     for (i = 0; i < nb_cpb; i++) {
@@ -285,7 +285,7 @@ static void decode_sublayer_hrd(HEVCContext *s, unsigned int nb_cpb,
 static void decode_hrd(HEVCContext *s, int common_inf_present,
                        int max_sublayers)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     int nal_params_present = 0, vcl_params_present = 0;
     int subpic_params_present = 0;
     int i;
@@ -711,7 +711,7 @@ static void parseVPSVUI(GetBitContext *gb, HEVCVPS *vps)
 
 static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     int i, j, k;
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     print_cabac(" \n --- parse vps extention  --- \n ", s->nuh_layer_id);
 
 #if VPS_EXTN_MASK_AND_DIM_INFO
@@ -1095,7 +1095,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
 int ff_hevc_decode_nal_vps(HEVCContext *s)
 {
     int i,j;
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     int vps_id = 0;
     HEVCVPS *vps;
     AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
@@ -1233,7 +1233,7 @@ err:
 static void decode_vui(HEVCContext *s, HEVCSPS *sps)
 {
     VUI *vui          = &sps->vui;
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     int sar_present;
 
     print_cabac("\n ---  parse vui  --- \n", s->nuh_layer_id);
@@ -1412,7 +1412,7 @@ static void set_default_scaling_list_data(ScalingList *sl)
 
 static int scaling_list_data(HEVCContext *s, ScalingList *sl)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     uint8_t scaling_list_pred_mode_flag[4][6];
     int32_t scaling_list_dc_coef[2][6];
     int size_id, matrix_id, i, pos;
@@ -1470,7 +1470,7 @@ static int scaling_list_data(HEVCContext *s, ScalingList *sl)
 #if SPS_EXTENSION
 static void parseSPSExtension( HEVCContext *s, HEVCSPS *sps )
 {
-    GetBitContext *gb = &s->HEVClc->gb ;
+    GetBitContext *gb = &s->HEVClc->ca.gb ;
     int i;
     int inter_view = get_bits1(gb);
     print_cabac("inter_view_mv_vert_constraint_flag",  inter_view);
@@ -1499,7 +1499,7 @@ static void parseSPSExtension( HEVCContext *s, HEVCSPS *sps )
 int ff_hevc_decode_nal_sps(HEVCContext *s)
 {
     const AVPixFmtDescriptor *desc;
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     int ret    = 0;
     int sps_id = 0;
     int log2_diff_max_min_transform_block_size;
@@ -2023,7 +2023,7 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
 
 int ff_hevc_decode_nal_pps(HEVCContext *s)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
+    GetBitContext *gb = &s->HEVClc->ca.gb;
     HEVCSPS      *sps = NULL;
     int pic_area_in_ctbs, pic_area_in_min_cbs, pic_area_in_min_tbs;
     int log2_diff_ctb_min_tb_size;
