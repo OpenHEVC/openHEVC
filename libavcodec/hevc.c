@@ -666,8 +666,8 @@ static int hls_slice_header(HEVCContext *s)
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             print_cabac("pic_order_cnt_lsb", sh->pic_order_cnt_lsb);
-            if(s->decoder_id>0 && (s->threads_type&FF_THREAD_FRAME))
-                s->pocTid0 = ff_thread_get_last_Tid(s->avctx);
+            //if(s->decoder_id>0 && (s->threads_type&FF_THREAD_FRAME))
+              //  s->pocTid0 = ff_thread_get_last_Tid(s->avctx);
             poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
             if (!sh->first_slice_in_pic_flag && poc != s->poc) {
                 av_log(s->avctx, AV_LOG_WARNING,
@@ -2855,8 +2855,10 @@ static int hevc_frame_start(HEVCContext *s)
 #if ACTIVE_PU_UPSAMPLING
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
-        if (s->threads_type&FF_THREAD_FRAME)
+        if (s->threads_type&FF_THREAD_FRAME){
+           // printf("Call ff_thread_await_il_progress s->poc_id %d \n", s->poc_id);
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
+        }
 
         if(s->avctx->BL_frame != NULL)
              s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
@@ -3095,11 +3097,11 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
 #if ACTIVE_PU_UPSAMPLING
-        if(!s->decoder_id && (s->threads_type&FF_THREAD_FRAME))
-            ff_thread_report_last_Tid(s->avctx, s->pocTid0);
+       // if(!s->decoder_id && (s->threads_type&FF_THREAD_FRAME))
+         //   ff_thread_report_last_Tid(s->avctx, s->pocTid0);
        // s->ref->prv_active_el_frame = s->prv_active_el_frame;
         if (s->ref->active_el_frame)
-            ff_thread_report_il_progress(s->avctx, s->poc, s->ref, s->pocTid0);
+            ff_thread_report_il_progress(s->avctx, s->poc_id, s->ref);
      //   s->prv_active_el_frame = s->ref->active_el_frame;
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
@@ -3111,7 +3113,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 #ifdef SVC_EXTENSION
 #if !ACTIVE_PU_UPSAMPLING
             if (s->active_el_frame)
-                ff_thread_report_il_progress(s->avctx, s->poc_id, s->ref, s->pocTid0);
+                ff_thread_report_il_progress(s->avctx, s->poc_id, s->ref);
 #endif
 #endif
 
@@ -3348,8 +3350,10 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             s->active_el_frame = 1;
             s->poc_id ++;
         }
-        if(s->decoder_id && ret == s->decoder_id == ret && s->nal_unit_type <= NAL_CRA_NUT)
+        if(s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= NAL_CRA_NUT) {
             s->poc_id++;
+            
+        }
 
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
@@ -3358,7 +3362,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         buf    += consumed;
         length -= consumed;
     }
-
+  //  printf("Decoder id %d poc_id %d \n", s->decoder_id, s->poc_id);
+    
     /* parse the NAL units */
     for (i = 0; i < s->nb_nals; i++) {
         int ret;
