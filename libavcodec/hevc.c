@@ -3055,19 +3055,18 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             } else {
                 if (IS_IDR(s))
                     s->max_ra = INT_MIN;
+                else if( s->decoder_id ) {
+                    av_log(s->avctx, AV_LOG_WARNING,
+                           "Nal type %d s->max_ra %d \n", s->nal_unit_type,  s->max_ra);
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
             }
         }
 
         if ((s->nal_unit_type == NAL_RASL_R || s->nal_unit_type == NAL_RASL_N) &&
             s->poc <= s->max_ra) {
             s->is_decoded = 0;
-            /*if( s->decoder_id ) {
-                av_log(s->avctx, AV_LOG_WARNING,
-                       "Nal type %d s->max_ra %d \n", s->nal_unit_type,  s->max_ra);
-                return 0; 
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            } else*/
                 return 0;
         } else {
             if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
@@ -3482,7 +3481,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         ret = ff_hevc_output_frame(s, data, 1);
         if (ret < 0)
             return ret;
-
+        if (s->decoder_id)
+            s->max_ra = INT_MAX;
         *got_output = ret;
         return 0;
     }
