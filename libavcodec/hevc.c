@@ -3057,13 +3057,13 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         if ((s->nal_unit_type == NAL_RASL_R || s->nal_unit_type == NAL_RASL_N) &&
             s->poc <= s->max_ra) {
             s->is_decoded = 0;
-            if( s->decoder_id ) {
+            /*if( s->decoder_id ) {
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Nal type %d s->max_ra %d \n", s->nal_unit_type,  s->max_ra);
                 return 0; 
                 ret = AVERROR(ENOMEM);
                 goto fail;
-            } else
+            } else*/
                 return 0;
         } else {
             if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
@@ -3388,7 +3388,7 @@ fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
-        s->max_ra = INT_MAX;
+       // s->max_ra = INT_MAX;
         if(s->threads_type&FF_THREAD_FRAME)
             ff_thread_report_il_status(s->avctx, s->poc, 2);
     }
