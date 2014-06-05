@@ -38,10 +38,9 @@ static const uint8_t l0_l1_cand_idx[12][2] = {
     { 3, 2, },
 };
 
-void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
+void ff_hevc_set_neighbour_available(HEVCContext *s, HEVCLocalContextCommon *lc, int x0, int y0,
                                      int nPbW, int nPbH)
 {
-    HEVCLocalContextCommon *lc = s->HEVClc->cm_co;
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
@@ -545,7 +544,7 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
         part_idx      = 0;
     }
 
-    ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
+    ff_hevc_set_neighbour_available(s, lc, x0, y0, nPbW, nPbH);
     derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                     singleMCLFlag, part_idx, mergecand_list);
 
@@ -628,7 +627,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                               int merge_idx, MvField *mv,
                               int mvp_lx_flag, int LX)
 {
-    HEVCLocalContextCommon *lc = s->HEVClc->cm_co;
+    HEVCLocalContextCommon *lc = s->HEVClc->cm_ca;
     MvField *tab_mvf = s->ref->tab_mvf;
     int isScaledFlag_L0 = 0;
     int availableFlagLXA0 = 0;

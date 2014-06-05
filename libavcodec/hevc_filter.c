@@ -91,7 +91,8 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
 static int get_qPy_pred(HEVCContext *s, int xC, int yC,
                         int xBase, int yBase, int log2_cb_size)
 {
-    HEVCLocalContextCommon *lc = s->HEVClc->cm_ca;
+    HEVCLocalContextCommon *lc    =  s->HEVClc->cm_ca;
+    HEVCLocalContextCabac  *lc_ca = &s->HEVClc->ca;
     int ctb_size_mask        = (1 << s->sps->log2_ctb_size) - 1;
     int MinCuQpDeltaSizeMask = (1 << (s->sps->log2_ctb_size -
                                       s->pps->diff_cu_qp_delta_depth)) - 1;
@@ -107,8 +108,8 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC,
     int qPy_pred, qPy_a, qPy_b;
 
     // qPy_pred
-    if (lc->first_qp_group || (!xQgBase && !yQgBase)) {
-        lc->first_qp_group = !lc->tu.is_cu_qp_delta_coded;
+    if (lc_ca->first_qp_group || (!xQgBase && !yQgBase)) {
+        lc_ca->first_qp_group = !lc_ca->tu.is_cu_qp_delta_coded;
         qPy_pred = s->sh.slice_qp;
     } else {
         qPy_pred = s->HEVClc->ca.qPy_pred;
@@ -132,12 +133,12 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC,
 void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC,
                      int xBase, int yBase, int log2_cb_size)
 {
-    HEVCLocalContextCommon *lc = s->HEVClc->cm_ca;
+    HEVCLocalContextCabac *lc_ca = &s->HEVClc->ca;
     int qp_y = get_qPy_pred(s, xC, yC, xBase, yBase, log2_cb_size);
 
-    if (lc->tu.cu_qp_delta != 0) {
+    if (lc_ca->tu.cu_qp_delta != 0) {
         int off = s->sps->qp_bd_offset;
-        s->HEVClc->ca.qp_y = FFUMOD(qp_y + lc->tu.cu_qp_delta + 52 + 2 * off,
+        s->HEVClc->ca.qp_y = FFUMOD(qp_y + lc_ca->tu.cu_qp_delta + 52 + 2 * off,
                                  52 + off) - off;
     } else
         s->HEVClc->ca.qp_y = qp_y;

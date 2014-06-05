@@ -817,7 +817,7 @@ int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH)
 {
     if (nPbW + nPbH == 12)
         return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
-    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + s->HEVClc->cm_ca->ct.depth))
+    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + s->HEVClc->ca.ct.depth))
         return PRED_BI;
 
     return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
@@ -1871,7 +1871,6 @@ void ff_hevc_hls_residual_coding_compute(HEVCContext *s, int x0, int y0,
     for (i = 0; i < trafo_size; i++) {
         memcpy(&coeffs[i * trafo_size], &SAMPLE_CBF(lc->rc[c_idx].coeffs[trafo_depth], x0, (y0+i)), trafo_size *(sizeof(int16_t)));
     }
-
     if (lc->cu.cu_transquant_bypass_flag) {
         s->hevcdsp.transquant_bypass[log2_trafo_size-2](dst, coeffs, stride);
     } else {
@@ -1904,7 +1903,7 @@ void ff_hevc_hls_residual_coding_compute(HEVCContext *s, int x0, int y0,
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
 {
-    HEVCLocalContextCommon *lc = s->HEVClc->cm_ca;
+    HEVCLocalContextCabac *lc_ca = &s->HEVClc->ca;
     int x = abs_mvd_greater0_flag_decode(s);
     int y = abs_mvd_greater0_flag_decode(s);
 
@@ -1914,15 +1913,15 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
         y += abs_mvd_greater1_flag_decode(s);
 
     switch (x) {
-    case 2: lc->pu.mvd.x = mvd_decode(s);           break;
-    case 1: lc->pu.mvd.x = mvd_sign_flag_decode(s); break;
-    case 0: lc->pu.mvd.x = 0;                       break;
+    case 2: lc_ca->pu.mvd.x = mvd_decode(s);           break;
+    case 1: lc_ca->pu.mvd.x = mvd_sign_flag_decode(s); break;
+    case 0: lc_ca->pu.mvd.x = 0;                       break;
     }
 
     switch (y) {
-    case 2: lc->pu.mvd.y = mvd_decode(s);           break;
-    case 1: lc->pu.mvd.y = mvd_sign_flag_decode(s); break;
-    case 0: lc->pu.mvd.y = 0;                       break;
+    case 2: lc_ca->pu.mvd.y = mvd_decode(s);           break;
+    case 1: lc_ca->pu.mvd.y = mvd_sign_flag_decode(s); break;
+    case 0: lc_ca->pu.mvd.y = 0;                       break;
     }
 }
 

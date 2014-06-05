@@ -913,16 +913,24 @@ typedef struct SliceHeader {
     int slice_ctb_addr_rs;
 } SliceHeader;
 
-typedef struct CodingTree {
+typedef struct CodingTreeCabac {
     int depth; ///< ctDepth
+} CodingTreeCabac;
+
+typedef struct CodingTree {
     int split_cu_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int end_of_slice_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 
     enum PredMode pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PredMode
     enum PartMode part_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PartMode
     uint8_t rqt_root_cbf[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t pcm_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } CodingTree;
+
+typedef struct CodingUnitCabac {
+    // Inferred parameters
+    uint8_t intra_split_flag;   ///< IntraSplitFlag
+    uint8_t max_trafo_depth;    ///< MaxTrafoDepth
+} CodingUnitCabac;
 
 typedef struct CodingUnit {
     int x;
@@ -932,12 +940,9 @@ typedef struct CodingUnit {
     enum PartMode part_mode;    ///< PartMode
 
     uint8_t rqt_root_cbf;
-
     uint8_t pcm_flag;
 
     // Inferred parameters
-    uint8_t intra_split_flag;   ///< IntraSplitFlag
-    uint8_t max_trafo_depth;    ///< MaxTrafoDepth
     uint8_t cu_transquant_bypass_flag;
 } CodingUnit;
 
@@ -961,14 +966,14 @@ typedef struct NeighbourAvailable {
     int cand_up_right_sap;
 } NeighbourAvailable;
 
-typedef struct PredictionUnit {
+typedef struct PredictionUnitCabac {
     int mpm_idx;
     int rem_intra_luma_pred_mode;
     uint8_t intra_pred_mode[4];
     Mv mvd;
     uint8_t merge_flag;
     uint8_t intra_pred_mode_c[4];
-} PredictionUnit;
+} PredictionUnitCabac;
 
 typedef struct TransformTree {
     uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
@@ -979,13 +984,14 @@ typedef struct TransformTree {
     int cur_intra_pred_mode_c[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } TransformTree;
 
-typedef struct TransformUnit {
+typedef struct TransformUnitCabac {
     int cu_qp_delta;
+    uint8_t is_cu_qp_delta_coded;
+} TransformUnitCabac;
 
-    // Inferred parameters;
+typedef struct TransformUnit {
     int cur_intra_pred_mode;
     int cur_intra_pred_mode_c;
-    uint8_t is_cu_qp_delta_coded;
 } TransformUnit;
 
 typedef struct ResidualCoding {
@@ -1048,9 +1054,14 @@ typedef struct HEVCNAL {
 typedef struct HEVCLocalContextCabac {
     GetBitContext       gb;
     CABACContext        cc;
+    TransformUnitCabac  tu;
+    CodingTreeCabac     ct;
+    CodingUnitCabac     cu;
+    PredictionUnitCabac pu;
     uint8_t cabac_state[HEVC_CONTEXTS];
     int8_t  qp_y;
     int     qPy_pred;
+    uint8_t first_qp_group;
 } HEVCLocalContextCabac;
 
 typedef struct HEVCLocalContextCompute {
@@ -1066,10 +1077,8 @@ typedef struct HEVCLocalContextCommon {
     ResidualCoding      rc[3];
     CodingTree          ct;
     CodingUnit          cu;
-    PredictionUnit      pu;
     NeighbourAvailable  na;
 
-    uint8_t first_qp_group;
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
     uint8_t ctb_up_right_flag;
@@ -1317,7 +1326,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags);
 
-void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
+void ff_hevc_set_neighbour_available(HEVCContext *s, HEVCLocalContextCommon *lc, int x0, int y0,
                                      int nPbW, int nPbH);
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0,
                                 int nPbW, int nPbH, int log2_cb_size,
