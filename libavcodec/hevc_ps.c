@@ -241,7 +241,7 @@ static void parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
     print_cabac(" --- parse ptl --- ", s->nuh_layer_id);
     decode_profile_tier_level(s, &ptl->general_ptl);
     ptl->general_ptl.level_idc = get_bits(gb, 8);
-    print_cabac("general_level_idc", ptl->general_PTL.level_idc);
+    print_cabac("general_level_idc", ptl->general_ptl.level_idc);
 
     for (i = 0; i < max_num_sub_layers - 1; i++) {
         ptl->sub_layer_profile_present_flag[i] = get_bits1(gb);
@@ -411,17 +411,17 @@ static void parseRepFormat( RepFormat *rep_format, GetBitContext *gb)
     print_cabac(" --- parse RepFormat  --- ", 0);
 #if REPN_FORMAT_CONTROL_FLAG
     rep_format->m_chromaAndBitDepthVpsPresentFlag = get_bits1(gb);
-    print_cabac("chroma_and_bit_depth_vps_present_flag", repFormat->m_chromaAndBitDepthVpsPresentFlag);
+    print_cabac("chroma_and_bit_depth_vps_present_flag", rep_format->m_chromaAndBitDepthVpsPresentFlag);
     rep_format->m_picWidthVpsInLumaSamples = get_bits(gb, 16);
-    print_cabac("pic_width_in_luma_samples", repFormat->m_picWidthVpsInLumaSamples);
+    print_cabac("pic_width_in_luma_samples", rep_format->m_picWidthVpsInLumaSamples);
     rep_format->m_picHeightVpsInLumaSamples = get_bits(gb, 16);;
-    print_cabac("pic_height_in_luma_samples", repFormat->m_picHeightVpsInLumaSamples);
+    print_cabac("pic_height_in_luma_samples", rep_format->m_picHeightVpsInLumaSamples);
     if (rep_format->m_chromaAndBitDepthVpsPresentFlag)
     {
 #if AUXILIARY_PICTURES
 
         rep_format->m_chromaFormatVpsIdc = get_bits(gb, 2);
-        print_cabac("chroma_format_idc", repFormat->m_chromaFormatVpsIdc);
+        print_cabac("chroma_format_idc", rep_format->m_chromaFormatVpsIdc);
 #else
         repFormat->m_picHeightVpsInLumaSamples = get_bits(gb, 2);
         print_cabac("chroma_format_idc", repFormat->m_chromaFormatVpsIdc);
@@ -429,13 +429,13 @@ static void parseRepFormat( RepFormat *rep_format, GetBitContext *gb)
 
         if (rep_format->m_chromaFormatVpsIdc == 3) {
             rep_format->m_separateColourPlaneVpsFlag = get_bits1(gb);
-            print_cabac("separate_colour_plane_flag", repFormat->m_separateColourPlaneVpsFlag);
+            print_cabac("separate_colour_plane_flag", rep_format->m_separateColourPlaneVpsFlag);
         }
 
         rep_format->m_bitDepthVpsLuma =   get_bits(gb, 4) + 8;
-        print_cabac("bit_depth_luma_minus8", repFormat->m_bitDepthVpsLuma-8);
+        print_cabac("bit_depth_luma_minus8", rep_format->m_bitDepthVpsLuma-8);
         rep_format->m_bitDepthVpsChroma = get_bits(gb, 4) + 8;
-        print_cabac("bit_depth_chroma_minus8", repFormat->m_bitDepthVpsChroma-8);
+        print_cabac("bit_depth_chroma_minus8", rep_format->m_bitDepthVpsChroma-8);
     }
 #else
 #if AUXILIARY_PICTURES
@@ -1510,7 +1510,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     HEVCVPS *vps;
     AVBufferRef *sps_buf = av_buffer_allocz(sizeof(*sps));
 
-    if (!sps_buf)
+    if ( !sps_buf )
         return AVERROR(ENOMEM);
     sps = (HEVCSPS*)sps_buf->data;
     sps->chroma_array_type = sps->chroma_format_idc = 1; //FIXME shouldn't it be passing from BL
@@ -1541,7 +1541,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
-
         sps->m_bTemporalIdNestingFlag = get_bits1(gb); // temporal_id_nesting_flag
         print_cabac("sps_temporal_id_nesting_flag", sps->m_bTemporalIdNestingFlag);
     } else {
@@ -1552,6 +1551,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     if (s->nuh_layer_id == 0)
         parse_ptl(s, &sps->ptl, sps->max_sub_layers);
     sps_id = get_ue_golomb_long(gb);
+
     print_cabac("sps_seq_parameter_set_id", sps_id);
     if (sps_id >= MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", sps_id);
@@ -1583,6 +1583,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
         sps->width  = get_ue_golomb_long(gb);
         sps->height = get_ue_golomb_long(gb);
+
         print_cabac("pic_width_in_luma_samples", sps->width);
         print_cabac("pic_height_in_luma_samples", sps->height);
         if ((ret = av_image_check_size(sps->width,
@@ -1601,6 +1602,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->pic_conf_win.right_offset  = get_ue_golomb_long(gb) * 2;
         sps->pic_conf_win.top_offset    = get_ue_golomb_long(gb) * 2;
         sps->pic_conf_win.bottom_offset = get_ue_golomb_long(gb) * 2;
+
         print_cabac("conf_win_left_offset", sps->pic_conf_win.left_offset);
         print_cabac("conf_win_right_offset", sps->pic_conf_win.right_offset);
         print_cabac("conf_win_top_offset", sps->pic_conf_win.top_offset );
@@ -1994,7 +1996,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         av_buffer_unref(&s->sps_list[sps_id]);
         s->sps_list[sps_id] = sps_buf;
     }
-
     return 0;
 
 err:

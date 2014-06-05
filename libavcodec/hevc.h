@@ -1018,7 +1018,8 @@ typedef struct HEVCFrame {
      */
     uint8_t flags;
     uint8_t active_el_frame;
-    uint8_t prv_active_el_frame;
+    int poc_id;
+  //  uint8_t prv_active_el_frame;
 #if FRAME_CONCEALMENT
     uint8_t is_concealment_frame;
 #endif
@@ -1181,7 +1182,7 @@ typedef struct HEVCContext {
     UpsamplInf  up_filter_inf;
     HEVCFrame   *BL_frame;
     HEVCFrame   *inter_layer_ref;
-    int         prv_active_el_frame;
+    //int         prv_active_el_frame;
     int         active_el_frame;
     uint8_t     *is_upsampled;
 #endif

@@ -425,12 +425,17 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         const int phaseAlignFlag = ((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->m_phaseAlignFlag;
         const int   phaseX = phaseAlignFlag   << 1;
         const int   phaseY = phaseAlignFlag   << 1;
-
-
-        heightBL = s->vps->m_vpsRepFormat[0].m_picHeightVpsInLumaSamples;
-        widthBL  = s->vps->m_vpsRepFormat[0].m_picWidthVpsInLumaSamples;
-        if(!heightBL || !widthBL)    {
-            av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing -- \n");
+        HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
+        if(bl_sps) {
+            heightBL = bl_sps->height - bl_sps->output_window.bottom_offset - bl_sps->output_window.top_offset;
+            widthBL  = bl_sps->width  - bl_sps->output_window.left_offset - bl_sps->output_window.right_offset;
+        } else {
+            av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        if(!heightBL || !widthBL) {
+            av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing heightBL: %d widthBL: %d \n", heightBL, widthBL);
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -467,12 +472,10 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
                     s->up_filter_inf.idx = X1_5;
                 else {
                     s->up_filter_inf.idx = DEFAULT;
-                    av_log(s->avctx, AV_LOG_INFO, "DEFAULT mode: SSE optimizations are not implemented for spatial scalability with a ratio different from x2 and x1.5 \n");
+                    av_log(s->avctx, AV_LOG_INFO, "DEFAULT mode: SSE optimizations are not implemented for spatial scalability with a ratio different from x2 and x1.5 widthBL %d heightBL %d \n", widthBL<<1, heightBL<<1);
                 }
     }
-
     return 0;
-
 fail:
     pic_arrays_free(s);
     s->sps = NULL;
@@ -2850,11 +2853,10 @@ static int hevc_frame_start(HEVCContext *s)
     if (s->nuh_layer_id) {
         ctb_size =  1 << s->sps->log2_ctb_size;
 #if ACTIVE_PU_UPSAMPLING
-        
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
         if (s->threads_type&FF_THREAD_FRAME)
-            ff_thread_await_il_progress(s->avctx, s->poc, &s->avctx->BL_frame);
+            ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
 
         if(s->avctx->BL_frame != NULL)
              s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
@@ -2863,7 +2865,7 @@ static int hevc_frame_start(HEVCContext *s)
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
-        if(!s->BL_frame->prv_active_el_frame) {
+        /*if(!s->BL_frame->prv_active_el_frame) {
             s->max_ra = INT_MAX;
             av_log(s->avctx, AV_LOG_ERROR, "s->BL_frame->prv_active_el_frame %d \n",s->BL_frame->prv_active_el_frame);
         
@@ -2871,7 +2873,7 @@ static int hevc_frame_start(HEVCContext *s)
                 ret = -1; 
                 goto fail;
             }
-        }
+        }*/
 
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
         s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
@@ -2879,7 +2881,7 @@ static int hevc_frame_start(HEVCContext *s)
     }
 #endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
-
+    s->ref->poc_id = s->poc_id;
     if (ret < 0)
         goto fail;
 
@@ -2912,7 +2914,7 @@ fail:
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
         if(s->threads_type&FF_THREAD_FRAME)
-            ff_thread_report_il_status(s->avctx, s->poc, 2);
+            ff_thread_report_il_status(s->avctx, s->poc_id, 2);
         ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
     }
     s->ref = NULL;
@@ -2970,7 +2972,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                s->nal_unit_type);
         goto fail;
-    } else if (ret != (s->decoder_id) && s->nal_unit_type != NAL_VPS)
+    } else if (ret != (s->decoder_id) && (s->nal_unit_type != NAL_VPS && (s->nal_unit_type != NAL_SPS) /*&& s->nal_unit_type != NAL_PPS*/))
         return 0;
 
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
@@ -3095,10 +3097,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 #if ACTIVE_PU_UPSAMPLING
         if(!s->decoder_id && (s->threads_type&FF_THREAD_FRAME))
             ff_thread_report_last_Tid(s->avctx, s->pocTid0);
-        s->ref->prv_active_el_frame = s->prv_active_el_frame;
+       // s->ref->prv_active_el_frame = s->prv_active_el_frame;
         if (s->ref->active_el_frame)
             ff_thread_report_il_progress(s->avctx, s->poc, s->ref, s->pocTid0);
-        s->prv_active_el_frame = s->ref->active_el_frame;
+     //   s->prv_active_el_frame = s->ref->active_el_frame;
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -3109,14 +3111,14 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 #ifdef SVC_EXTENSION
 #if !ACTIVE_PU_UPSAMPLING
             if (s->active_el_frame)
-                ff_thread_report_il_progress(s->avctx, s->poc, s->ref, s->pocTid0);
+                ff_thread_report_il_progress(s->avctx, s->poc_id, s->ref, s->pocTid0);
 #endif
 #endif
 
 #ifdef SVC_EXTENSION
             if(s->decoder_id > 0) {
                 if(s->threads_type&FF_THREAD_FRAME)
-                    ff_thread_report_il_status(s->avctx, s->poc, 2);
+                    ff_thread_report_il_status(s->avctx, s->poc_id, 2);
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
             }
 #endif
@@ -3342,8 +3344,13 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         if (ret < 0)
             goto fail;
         ret = hls_nal_unit(s);
-        if(!s->active_el_frame && ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) // FIXME also check the type of the nalu, it should be data nalu type
+        if(!s->active_el_frame && ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)){ // FIXME also check the type of the nalu, it should be data nalu type
             s->active_el_frame = 1;
+            s->poc_id ++;
+        }
+        if(s->decoder_id && ret == s->decoder_id == ret && s->nal_unit_type <= NAL_CRA_NUT)
+            s->poc_id++;
+
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
             s->eos = 1;
@@ -3369,7 +3376,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
         if(s->threads_type&FF_THREAD_FRAME)
-            ff_thread_report_il_status(s->avctx, s->poc, 2);
+            ff_thread_report_il_status(s->avctx, s->poc_id, 2);
     }
     return ret;
 fail:
@@ -3674,7 +3681,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     s->temporal_layer_id   = 8;
     s->quality_layer_id    = 8;
-    s->prv_active_el_frame = 1;
+//    s->prv_active_el_frame = 1;
 
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
@@ -3765,6 +3772,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->temporal_layer_id    = s0->temporal_layer_id;
     s->quality_layer_id     = s0->quality_layer_id;
     s->decode_checksum_sei  = s0->decode_checksum_sei;
+    s->poc_id               = s0->poc_id;
 
     if (s->sps != s0->sps)
         ret = set_sps(s, s0->sps);
