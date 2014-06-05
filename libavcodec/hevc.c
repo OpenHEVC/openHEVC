@@ -3276,11 +3276,11 @@ static int hls_coding_quadtree_cabac(HEVCContext *s, int x0, int y0,
             (!((y0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
              (y0 + cb_size >= s->sps->height))) {
             SAMPLE_CBF(lc->cs1->end_of_slice_flag[cb_depth], x0, y0) = ff_hevc_end_of_slice_flag_decode(s);
+            return !SAMPLE_CBF(lc->cs1->end_of_slice_flag[cb_depth], x0, y0);
+        } else {
+            return 1;
         }
-        return 1;
     }
-
-    return 0;
 }
 
 static int hls_coding_quadtree_compute(HEVCContext *s, int x0, int y0,
@@ -3331,9 +3331,8 @@ static int hls_coding_quadtree_compute(HEVCContext *s, int x0, int y0,
             return 1;
         }
     }
-
-    return 0;
 }
+
 static int hls_coding_quadtree2(HEVCContext *s, int x0, int y0,
                                int log2_cb_size, int cb_depth)
 {
@@ -3445,6 +3444,104 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         ff_hevc_save_states(s, ctb_addr_ts);
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
     }
+
+    if (x_ctb + ctb_size >= s->sps->width &&
+        y_ctb + ctb_size >= s->sps->height)
+        ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
+
+    return ctb_addr_ts;
+}
+
+static int hls_decode_entry_cabac(HEVCContext *s, int ctb_addr_ts, int ctb_size)
+{
+    int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+    int x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+    int y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+    int more_data;
+    hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
+
+    ff_hevc_cabac_init(s, ctb_addr_ts);
+
+    hls_sao_param(s, x_ctb >> s->sps->log2_ctb_size, y_ctb >> s->sps->log2_ctb_size);
+
+    s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
+    s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+    s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
+
+    more_data = hls_coding_quadtree_cabac(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
+    if (more_data >= 0) {
+        ff_hevc_save_states(s, ctb_addr_ts+1);
+    }
+    return more_data;
+}
+
+static int hls_decode_entry_compute(HEVCContext *s, int ctb_addr_ts, int ctb_size)
+{
+    int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+    int x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+    int y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+    int more_data;
+//    hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
+
+    more_data = hls_coding_quadtree_compute(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
+    if (more_data < 0) {
+        s->tab_slice_address[ctb_addr_rs] = -1;
+    } else {
+        ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
+    }
+    return more_data;
+}
+
+static int hls_decode_entry2(AVCodecContext *avctxt, void *isFilterThread)
+{
+    HEVCContext *s  = avctxt->priv_data;
+    int ctb_size    = 1 << s->sps->log2_ctb_size;
+    int more_data1  = 1;
+    int more_data2  = 1;
+    int x_ctb       = 0;
+    int y_ctb       = 0;
+    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+    int ctb_addr_rs;
+    CabacStruct *cs_tmp;
+
+    if (!ctb_addr_ts && s->sh.dependent_slice_segment_flag) {
+        av_log(s->avctx, AV_LOG_ERROR, "Impossible initial tile.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (s->sh.dependent_slice_segment_flag) {
+        int prev_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
+        if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
+            av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    s->HEVClc->cs1 = &s->cs[0];
+    s->HEVClc->cs2 = &s->cs[0];
+//    s->HEVClc->cs2 = &s->cs[1];
+//    more_data1 = hls_decode_entry_cabac(s, ctb_addr_ts, ctb_size);
+//    ctb_addr_ts++;
+    while (more_data1 && ctb_addr_ts < s->sps->ctb_size) {
+        cs_tmp         = s->HEVClc->cs1;
+        s->HEVClc->cs1 = s->HEVClc->cs2;
+        s->HEVClc->cs2 = cs_tmp;
+        more_data1     = hls_decode_entry_cabac(s, ctb_addr_ts, ctb_size);
+        more_data2     = hls_decode_entry_compute(s, ctb_addr_ts, ctb_size);
+//        more_data2     = hls_decode_entry_compute(s, ctb_addr_ts-1, ctb_size);
+        ctb_addr_ts++;
+        if (more_data1 < 0)
+            return more_data1;
+        if (more_data2 < 0)
+            return more_data2;
+    }
+//    more_data2 = hls_decode_entry_compute(s, ctb_addr_ts, ctb_size);
+//    if (more_data2 < 0)
+//        return more_data2;
+
+    ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts-1];
+    x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+    y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
 
     if (x_ctb + ctb_size >= s->sps->width &&
         y_ctb + ctb_size >= s->sps->height)
@@ -3687,7 +3784,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
     else if (s->pps->tiles_enabled_flag        && s->threads_number!=1)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
     else
-        s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
+        s->avctx->execute(s->avctx, hls_decode_entry2, arg, ret , 1, sizeof(int));
 
     res = ret[s->threads_number==1 ? 0:s->sh.num_entry_point_offsets];
 
