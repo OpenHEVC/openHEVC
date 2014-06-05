@@ -2864,6 +2864,7 @@ static int hevc_frame_start(HEVCContext *s)
              s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
         else
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
+        s->poc = s->BL_frame->poc;
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
@@ -3362,7 +3363,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         buf    += consumed;
         length -= consumed;
     }
-  //  printf("Decoder id %d poc_id %d \n", s->decoder_id, s->poc_id);
+ //   printf("Decoder id %d poc_id %d \n", s->decoder_id, s->poc_id);
     
     /* parse the NAL units */
     for (i = 0; i < s->nb_nals; i++) {
