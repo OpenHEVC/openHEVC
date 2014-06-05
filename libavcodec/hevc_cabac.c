@@ -1845,11 +1845,11 @@ void ff_hevc_hls_residual_coding_cabac(HEVCContext *s, int x0, int y0,
         }
     }
     for (i = 0; i < trafo_size; i++) {
-        memcpy(&SAMPLE_CBF(lc->rc[c_idx].coeffs[trafo_depth], x0, (y0+i)), &coeffs[i * trafo_size], trafo_size *(sizeof(int16_t)));
+        memcpy(&SAMPLE_CBF(lc->cs1->rc[c_idx].coeffs[trafo_depth], x0, (y0+i)), &coeffs[i * trafo_size], trafo_size *(sizeof(int16_t)));
     }
-    SAMPLE_CBF(lc->rc[c_idx].last_significant_coeff_x[trafo_depth], x0, y0) = last_significant_coeff_x;
-    SAMPLE_CBF(lc->rc[c_idx].last_significant_coeff_y[trafo_depth], x0, y0) = last_significant_coeff_y;
-    SAMPLE_CBF(lc->rc[c_idx].transform_skip_flag[trafo_depth], x0, y0)      = transform_skip_flag;
+    SAMPLE_CBF(lc->cs1->rc[c_idx].last_significant_coeff_x[trafo_depth], x0, y0) = last_significant_coeff_x;
+    SAMPLE_CBF(lc->cs1->rc[c_idx].last_significant_coeff_y[trafo_depth], x0, y0) = last_significant_coeff_y;
+    SAMPLE_CBF(lc->cs1->rc[c_idx].transform_skip_flag[trafo_depth], x0, y0)      = transform_skip_flag;
 }
 
 void ff_hevc_hls_residual_coding_compute(HEVCContext *s, int x0, int y0,
@@ -1865,11 +1865,11 @@ void ff_hevc_hls_residual_coding_compute(HEVCContext *s, int x0, int y0,
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                           ((x0 >> hshift) << s->sps->pixel_shift)];
     DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]);
-    int last_significant_coeff_x = SAMPLE_CBF(lc->rc[c_idx].last_significant_coeff_x[trafo_depth], x0, y0);
-    int last_significant_coeff_y = SAMPLE_CBF(lc->rc[c_idx].last_significant_coeff_y[trafo_depth], x0, y0);
-    int transform_skip_flag      = SAMPLE_CBF(lc->rc[c_idx].transform_skip_flag[trafo_depth], x0, y0);
+    int last_significant_coeff_x = SAMPLE_CBF(lc->cs2->rc[c_idx].last_significant_coeff_x[trafo_depth], x0, y0);
+    int last_significant_coeff_y = SAMPLE_CBF(lc->cs2->rc[c_idx].last_significant_coeff_y[trafo_depth], x0, y0);
+    int transform_skip_flag      = SAMPLE_CBF(lc->cs2->rc[c_idx].transform_skip_flag[trafo_depth], x0, y0);
     for (i = 0; i < trafo_size; i++) {
-        memcpy(&coeffs[i * trafo_size], &SAMPLE_CBF(lc->rc[c_idx].coeffs[trafo_depth], x0, (y0+i)), trafo_size *(sizeof(int16_t)));
+        memcpy(&coeffs[i * trafo_size], &SAMPLE_CBF(lc->cs2->rc[c_idx].coeffs[trafo_depth], x0, (y0+i)), trafo_size *(sizeof(int16_t)));
     }
 
     if (lc->cu.cu_transquant_bypass_flag) {
