@@ -517,6 +517,8 @@ static int hls_slice_header(HEVCContext *s)
     if (IS_IRAP(s)) {
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
         print_cabac("no_output_of_prior_pics_flag", sh->no_output_of_prior_pics_flag);
+        if (s->decoder_id)
+            av_log(s->avctx, AV_LOG_ERROR, "IRAP %d\n", s->nal_unit_type);
     }
 
     if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
@@ -2918,7 +2920,8 @@ fail:
     if (s->decoder_id) {
         if(s->threads_type&FF_THREAD_FRAME)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
-        ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
+        if (s->inter_layer_ref)
+            ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
     }
     s->ref = NULL;
     return ret;
@@ -3391,7 +3394,7 @@ fail:
     if (s->decoder_id) {
        // s->max_ra = INT_MAX;
         if(s->threads_type&FF_THREAD_FRAME)
-            ff_thread_report_il_status(s->avctx, s->poc, 2);
+            ff_thread_report_il_status(s->avctx, s->poc_id, 2);
     }
     return ret;
 }

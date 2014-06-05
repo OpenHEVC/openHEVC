@@ -285,19 +285,21 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 static int init_slice_rpl(HEVCContext *s)
 {
     HEVCFrame *frame = s->ref;
-    int ctb_count    = frame->ctb_count;
-    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
-    int i;
+    if (frame) {
+        int ctb_count    = frame->ctb_count;
+        int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
+        int i;
 
-    if (s->slice_idx >= frame->rpl_buf->size / sizeof(RefPicListTab))
-        return AVERROR_INVALIDDATA;
+        if (s->slice_idx >= frame->rpl_buf->size / sizeof(RefPicListTab))
+            return AVERROR_INVALIDDATA;
 
-    for (i = ctb_addr_ts; i < ctb_count; i++)
-        frame->rpl_tab[i] = (RefPicListTab *)frame->rpl_buf->data + s->slice_idx;
+        for (i = ctb_addr_ts; i < ctb_count; i++)
+            frame->rpl_tab[i] = (RefPicListTab *)frame->rpl_buf->data + s->slice_idx;
 
-    frame->refPicList = (RefPicList *)frame->rpl_tab[ctb_addr_ts];
-
-    return 0;
+        frame->refPicList = (RefPicList *)frame->rpl_tab[ctb_addr_ts];
+        return 0;
+    }
+    return AVERROR_INVALIDDATA;
 }
 #ifdef SVC_EXTENSION
 static int init_il_slice_rpl(HEVCContext *s)
