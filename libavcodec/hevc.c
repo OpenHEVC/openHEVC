@@ -1803,6 +1803,49 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     return 0;
 }
 
+static int hls_pcm_sample_cabac(HEVCContext *s, int x0, int y0, int log2_cb_size)
+{
+    //TODO: non-4:2:0 support
+    GetBitContext gb;
+    int cb_size   = 1 << log2_cb_size;
+    int stride0   = s->frame->linesize[0];
+    uint8_t *dst0 = &s->frame->data[0][y0 * stride0 + (x0 << s->sps->pixel_shift)];
+    int   stride1 = s->frame->linesize[1];
+    uint8_t *dst1 = &s->frame->data[1][(y0 >> s->sps->vshift[1]) * stride1 + ((x0 >> s->sps->hshift[1]) << s->sps->pixel_shift)];
+    int   stride2 = s->frame->linesize[2];
+    uint8_t *dst2 = &s->frame->data[2][(y0 >> s->sps->vshift[2]) * stride2 + ((x0 >> s->sps->hshift[2]) << s->sps->pixel_shift)];
+
+    int length         = cb_size * cb_size * s->sps->pcm.bit_depth +
+                         (((cb_size >> s->sps->hshift[1]) * (cb_size >> s->sps->vshift[1])) +
+                          ((cb_size >> s->sps->hshift[2]) * (cb_size >> s->sps->vshift[2]))) *
+                          s->sps->pcm.bit_depth_chroma;
+    const uint8_t *pcm = skip_bytes(&s->HEVClc->ca.cc, (length + 7) >> 3);
+    int ret;
+
+    ret = init_get_bits(&gb, pcm, length);
+    if (ret < 0)
+        return ret;
+
+    s->hevcdsp.put_pcm(dst0, stride0, cb_size, cb_size,     &gb, s->sps->pcm.bit_depth);
+    s->hevcdsp.put_pcm(dst1, stride1,
+                       cb_size >> s->sps->hshift[1],
+                       cb_size >> s->sps->vshift[1],
+                       &gb, s->sps->pcm.bit_depth_chroma);
+    s->hevcdsp.put_pcm(dst2, stride2,
+                       cb_size >> s->sps->hshift[2],
+                       cb_size >> s->sps->vshift[2],
+                       &gb, s->sps->pcm.bit_depth_chroma);
+    return 0;
+}
+
+static int hls_pcm_sample_compute(HEVCContext *s, int x0, int y0, int log2_cb_size)
+{
+    if (!s->sh.disable_deblocking_filter_flag)
+        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+
+    return 0;
+}
+
 /**
  * 8.5.3.2.2.1 Luma sample unidirectional interpolation process
  *
@@ -2953,7 +2996,7 @@ static int hls_coding_unit_cabac(HEVCContext *s, int x0, int y0, int log2_cb_siz
             }
             if (lc->cu.pcm_flag) {
                 intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
-                ret = hls_pcm_sample(s, x0, y0, log2_cb_size);
+                ret = hls_pcm_sample_cabac(s, x0, y0, log2_cb_size);
                 if (s->sps->pcm.loop_filter_disable_flag)
                     set_deblocking_bypass(s, x0, y0, log2_cb_size);
 
@@ -3066,7 +3109,13 @@ static int hls_coding_unit_compute(HEVCContext *s, int x0, int y0, int log2_cb_s
         if (!s->sh.disable_deblocking_filter_flag)
             ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
     } else {
-        if (lc->cu.pred_mode != MODE_INTRA) {
+        if (lc->cu.pred_mode == MODE_INTRA) {
+            if (lc->cu.pcm_flag) {
+                ret = hls_pcm_sample_compute(s, x0, y0, log2_cb_size);
+                if (s->sps->pcm.loop_filter_disable_flag)
+                    set_deblocking_bypass(s, x0, y0, log2_cb_size);
+            }
+        } else {
             switch (lc->cu.part_mode) {
             case PART_2Nx2N:
                 hls_prediction_unit_compute(s, x0, y0, cb_size, cb_size, log2_cb_size, 0, idx);
@@ -3515,27 +3564,26 @@ static int hls_decode_entry2(AVCodecContext *avctxt, void *isFilterThread)
         }
     }
 
+    s->HEVClc->cm[1].first_qp_group = s->HEVClc->cm[0].first_qp_group;
     s->HEVClc->cm_ca = &s->HEVClc->cm[0];
     s->HEVClc->cm_co = &s->HEVClc->cm[0];
-//    s->HEVClc->cm_co = &s->HEVClc->cm[1];
-//    more_data1 = hls_decode_entry_cabac(s, ctb_addr_ts, ctb_size);
-//    ctb_addr_ts++;
+    more_data1 = hls_decode_entry_cabac(s, ctb_addr_ts, ctb_size);
+    ctb_addr_ts++;
     while (more_data1 && ctb_addr_ts < s->sps->ctb_size) {
         cm_tmp           = s->HEVClc->cm_ca;
         s->HEVClc->cm_ca = s->HEVClc->cm_co;
         s->HEVClc->cm_co = cm_tmp;
+        more_data2       = hls_decode_entry_compute(s, ctb_addr_ts-1, ctb_size);
         more_data1       = hls_decode_entry_cabac(s, ctb_addr_ts, ctb_size);
-        more_data2       = hls_decode_entry_compute(s, ctb_addr_ts, ctb_size);
-//        more_data2         = hls_decode_entry_compute(s, ctb_addr_ts-1, ctb_size);
         ctb_addr_ts++;
         if (more_data1 < 0)
             return more_data1;
         if (more_data2 < 0)
             return more_data2;
     }
-//    more_data2 = hls_decode_entry_compute(s, ctb_addr_ts, ctb_size);
-//    if (more_data2 < 0)
-//        return more_data2;
+    more_data2 = hls_decode_entry_compute(s, ctb_addr_ts-1, ctb_size);
+    if (more_data2 < 0)
+        return more_data2;
 
     ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts-1];
     x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
