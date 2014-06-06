@@ -87,7 +87,8 @@ set(YASM_NAMES
     libavcodec/x86/qpeldsp.asm
     libavcodec/x86/videodsp.asm
 )
-endif()
+endif(YASM_FOUND)
+endif(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
 
 if(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
 set(COMMON_YASM_ARGS
@@ -98,8 +99,9 @@ set(COMMON_YASM_ARGS
     -I "${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/"
     -DPIC
 )
-endif()
+endif(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
 
+if(YASM_FOUND)
 if(APPLE)
     set(YASM_ARGS -f macho64 -m amd64 -DPREFIX ${COMMON_YASM_ARGS})
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
