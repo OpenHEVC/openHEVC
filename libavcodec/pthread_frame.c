@@ -524,7 +524,6 @@ void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in) {
     p = avxt->internal->thread_ctx_frame;
     fctx = p->parent;
     poc = poc & (MAX_POC-1);
-   // printf("ff_thread_report_il_progress %d \n", poc);
     if (avxt->debug&FF_DEBUG_THREADS)
         av_log(avxt, AV_LOG_DEBUG, "ff_thread_report_il_progress %d\n", poc);
     pthread_mutex_lock(&fctx->il_progress_mutex);
@@ -534,31 +533,6 @@ void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in) {
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 
-/*void ff_thread_report_last_Tid(AVCodecContext *avxt, int last_Tid) {
-    PerThreadContext *p;
-    FrameThreadContext *fctx;
-    p = avxt->internal->thread_ctx_frame;
-    fctx = p->parent;
-    if (avxt->debug&FF_DEBUG_THREADS)
-        av_log(avxt, AV_LOG_DEBUG, "ff_thread_report_last_Tid %d\n", last_Tid);
-    pthread_mutex_lock(&fctx->il_progress_mutex);
-    fctx->last_Tid        = last_Tid;
-    pthread_cond_broadcast(&fctx->il_progress_cond);
-    pthread_mutex_unlock(&fctx->il_progress_mutex);
-}*/
-/*
-int ff_thread_get_last_Tid(AVCodecContext *avxt) {
-
-    int res;
-    FrameThreadContext *fctx = ((AVCodecContext *)avxt->BL_avcontext)->internal->thread_ctx_frame;
-    if (avxt->debug&FF_DEBUG_THREADS)
-        av_log(avxt, AV_LOG_DEBUG, "ff_thread_get_last_Tid %d\n", fctx->last_Tid);
-    pthread_mutex_lock(&fctx->il_progress_mutex);
-    res = fctx->last_Tid;
-    pthread_mutex_unlock(&fctx->il_progress_mutex);
-    return res;
-}
-*/
 int ff_thread_get_il_up_status(AVCodecContext *avxt, int poc)
 {
     /*
@@ -577,6 +551,7 @@ int ff_thread_get_il_up_status(AVCodecContext *avxt, int poc)
     pthread_mutex_unlock(&fctx->il_progress_mutex);
     return res;
 }
+
 void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out) {
     /*
      - Wait untill the lower layer picture used for inter-layer reference picture is either allocated or decoded
@@ -589,7 +564,6 @@ void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out) {
     poc = poc & (MAX_POC-1);
     if (avxt->debug&FF_DEBUG_THREADS)
         av_log(avxt, AV_LOG_DEBUG, "ff_thread_await_il_progress %d \n", poc);
-//    printf("ff_thread_await_il_progress %d \n", poc);
     pthread_mutex_lock(&fctx->il_progress_mutex);
     while(fctx->is_decoded[poc] == 0)
         pthread_cond_wait(&fctx->il_progress_cond, &fctx->il_progress_mutex);

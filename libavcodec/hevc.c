@@ -3099,12 +3099,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
 #if ACTIVE_PU_UPSAMPLING
-       // if(!s->decoder_id && (s->threads_type&FF_THREAD_FRAME))
-         //   ff_thread_report_last_Tid(s->avctx, s->pocTid0);
-       // s->ref->prv_active_el_frame = s->prv_active_el_frame;
         if (s->ref->active_el_frame)
             ff_thread_report_il_progress(s->avctx, s->poc_id, s->ref);
-     //   s->prv_active_el_frame = s->ref->active_el_frame;
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -3379,18 +3375,10 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         }
     }
-    if (s->ref && (s->threads_type & FF_THREAD_FRAME))
-        ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
-    if (s->decoder_id) {
-        if(s->threads_type&FF_THREAD_FRAME)
-            ff_thread_report_il_status(s->avctx, s->poc_id, 2);
-    }
-    return ret;
 fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
-       // s->max_ra = INT_MAX;
         if(s->threads_type&FF_THREAD_FRAME)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
     }
