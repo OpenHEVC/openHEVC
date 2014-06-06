@@ -41,21 +41,22 @@ static const uint8_t l0_l1_cand_idx[12][2] = {
 void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
                                      int nPbW, int nPbH)
 {
-    HEVCLocalContextCommon *lc = s->HEVClc->cm_co;
+    HEVCLocalContextCommon  *lc    =  s->HEVClc->cm_co;
+    HEVCLocalContextCompute *lc_co = &s->HEVClc->co;
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    lc->na.cand_up       = (lc->ctb_up_flag   || y0b);
-    lc->na.cand_left     = (lc->ctb_left_flag || x0b);
-    lc->na.cand_up_left  = (!x0b && !y0b) ? lc->ctb_up_left_flag : lc->na.cand_left && lc->na.cand_up;
+    lc->na.cand_up       = (lc_co->ctb_up_flag   || y0b);
+    lc->na.cand_left     = (lc_co->ctb_left_flag || x0b);
+    lc->na.cand_up_left  = (!x0b && !y0b) ? lc_co->ctb_up_left_flag : lc->na.cand_left && lc->na.cand_up;
     lc->na.cand_up_right_sap =
             ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)) ?
-                    lc->ctb_up_right_flag && !y0b : lc->na.cand_up;
+                    lc_co->ctb_up_right_flag && !y0b : lc->na.cand_up;
     lc->na.cand_up_right =
             ((x0b + nPbW) == (1 << s->sps->log2_ctb_size) ?
-                    lc->ctb_up_right_flag && !y0b : lc->na.cand_up )
-                     && (x0 + nPbW) < lc->end_of_tiles_x;
-    lc->na.cand_bottom_left = ((y0 + nPbH) >= lc->end_of_tiles_y) ? 0 : lc->na.cand_left;
+                    lc_co->ctb_up_right_flag && !y0b : lc->na.cand_up )
+                     && (x0 + nPbW) < lc_co->end_of_tiles_x;
+    lc->na.cand_bottom_left = ((y0 + nPbH) >= lc_co->end_of_tiles_y) ? 0 : lc->na.cand_left;
 }
 
 /*
@@ -628,7 +629,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                               int merge_idx, MvField *mv,
                               int mvp_lx_flag, int LX)
 {
-    HEVCLocalContextCommon *lc = s->HEVClc->cm_co;
+    HEVCLocalContextCommon  *lc    =  s->HEVClc->cm_co;
+    HEVCLocalContextCompute *lc_co = &s->HEVClc->co;
     MvField *tab_mvf = s->ref->tab_mvf;
     int isScaledFlag_L0 = 0;
     int availableFlagLXA0 = 0;
@@ -665,15 +667,15 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int cand_up = (lc->ctb_up_flag || y0b);
-    int cand_left = (lc->ctb_left_flag || x0b);
+    int cand_up = (lc_co->ctb_up_flag || y0b);
+    int cand_left = (lc_co->ctb_left_flag || x0b);
     int cand_up_left =
-            (!x0b && !y0b) ? lc->ctb_up_left_flag : cand_left && cand_up;
+            (!x0b && !y0b) ? lc_co->ctb_up_left_flag : cand_left && cand_up;
     int cand_up_right =
             (x0b + nPbW == (1 << s->sps->log2_ctb_size) ||
-             x0  + nPbW >= lc->end_of_tiles_x) ? lc->ctb_up_right_flag && !y0b
+             x0  + nPbW >= lc_co->end_of_tiles_x) ? lc_co->ctb_up_right_flag && !y0b
                                                : cand_up;
-    int cand_bottom_left = (y0 + nPbH >= lc->end_of_tiles_y) ? 0 : cand_left;
+    int cand_bottom_left = (y0 + nPbH >= lc_co->end_of_tiles_y) ? 0 : cand_left;
 
     ref_idx_curr       = LX;
     ref_idx            = mv->ref_idx[LX];

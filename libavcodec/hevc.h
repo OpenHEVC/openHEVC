@@ -1080,10 +1080,20 @@ typedef struct HEVCLocalContextCabac {
     int8_t  qp_y;
     int     qPy_pred;
     uint8_t first_qp_group;
+    uint8_t ctb_left_flag;
+    uint8_t ctb_up_flag;
 } HEVCLocalContextCabac;
 
 typedef struct HEVCLocalContextCompute {
     TransformUnitCompute tu;
+    uint8_t ctb_left_flag;
+    uint8_t ctb_up_flag;
+    uint8_t ctb_up_right_flag;
+    uint8_t ctb_up_left_flag;
+    uint8_t slice_or_tiles_left_boundary;
+    uint8_t slice_or_tiles_up_boundary;
+    int     end_of_tiles_x;
+    int     end_of_tiles_y;
     /* +7 is for subpixel interpolation, *2 for high bit depths */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer2)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
@@ -1097,15 +1107,6 @@ typedef struct HEVCLocalContextCommon {
     CodingUnit          cu;
     PredictionUnit      pu;
     NeighbourAvailable  na;
-
-    uint8_t ctb_left_flag;
-    uint8_t ctb_up_flag;
-    uint8_t ctb_up_right_flag;
-    uint8_t ctb_up_left_flag;
-    uint8_t slice_or_tiles_left_boundary;
-    uint8_t slice_or_tiles_up_boundary;
-    int     end_of_tiles_x;
-    int     end_of_tiles_y;
 } HEVCLocalContextCommon;
 
 typedef struct HEVCLocalContext {
