@@ -307,7 +307,7 @@ list(APPEND libfilenames
     libavcodec/x86/h264_qpel.c
     libavcodec/x86/hevcdsp_init.c
     libavcodec/x86/hevcpred_init.c
-    libavcodec/x86/hevc_idct_sse4.c
+    libavcodec/x86/hevc_idct_sse.c
     libavcodec/x86/hevc_il_pred_sse.c
     libavcodec/x86/hevc_mc_sse.c
     libavcodec/x86/hevc_sao_sse.c
