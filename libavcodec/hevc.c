@@ -3058,8 +3058,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 else if( s->decoder_id ) {
                     av_log(s->avctx, AV_LOG_WARNING,
                            "Nal type %d s->max_ra %d \n", s->nal_unit_type,  s->max_ra);
-                    ret = AVERROR(ENOMEM);
-                    goto fail;
+                    break;
                 }
             }
         }

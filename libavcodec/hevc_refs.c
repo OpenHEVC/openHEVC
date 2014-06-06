@@ -650,7 +650,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
         } else {
             init_upsampled_mv_fields(s);
             if(s->threads_type&FF_THREAD_FRAME)
-                ff_thread_report_il_status(s->avctx, s->poc, 2);
+                ff_thread_report_il_status(s->avctx, s->poc_id, 2);
         }
 #endif
     }
