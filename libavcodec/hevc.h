@@ -975,6 +975,12 @@ typedef struct PredictionUnitCabac {
     uint8_t intra_pred_mode_c[4];
 } PredictionUnitCabac;
 
+typedef struct TransformTreeCabac {
+    uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_luma[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+} TransformTreeCabac;
+
 typedef struct TransformTree {
     uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
@@ -987,12 +993,14 @@ typedef struct TransformTree {
 typedef struct TransformUnitCabac {
     int cu_qp_delta;
     uint8_t is_cu_qp_delta_coded;
-} TransformUnitCabac;
-
-typedef struct TransformUnit {
     int cur_intra_pred_mode;
     int cur_intra_pred_mode_c;
-} TransformUnit;
+} TransformUnitCabac;
+
+typedef struct TransformUnitCompute {
+    int cur_intra_pred_mode;
+    int cur_intra_pred_mode_c;
+} TransformUnitCompute;
 
 typedef struct ResidualCoding {
     int last_significant_coeff_x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
@@ -1054,6 +1062,7 @@ typedef struct HEVCNAL {
 typedef struct HEVCLocalContextCabac {
     GetBitContext       gb;
     CABACContext        cc;
+    TransformTreeCabac  tt;
     TransformUnitCabac  tu;
     CodingTreeCabac     ct;
     CodingUnitCabac     cu;
@@ -1065,6 +1074,7 @@ typedef struct HEVCLocalContextCabac {
 } HEVCLocalContextCabac;
 
 typedef struct HEVCLocalContextCompute {
+    TransformUnitCompute tu;
     /* +7 is for subpixel interpolation, *2 for high bit depths */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer2)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
@@ -1073,7 +1083,6 @@ typedef struct HEVCLocalContextCompute {
 
 typedef struct HEVCLocalContextCommon {
     TransformTree       tt;
-    TransformUnit       tu;
     ResidualCoding      rc[3];
     CodingTree          ct;
     CodingUnit          cu;

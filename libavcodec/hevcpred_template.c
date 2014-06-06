@@ -71,7 +71,8 @@ do {                                  \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i + 3])
 
-    HEVCLocalContextCommon *lc = s->HEVClc->cm_co;
+    HEVCLocalContextCommon  *lc    =  s->HEVClc->cm_co;
+    HEVCLocalContextCompute *lc_co = &s->HEVClc->co;
     int i;
     int hshift = s->sps->hshift[c_idx];
     int vshift = s->sps->vshift[c_idx];
@@ -91,8 +92,8 @@ do {                                  \
 
     int min_pu_width = s->sps->min_pu_width;
 
-    enum IntraPredMode mode = c_idx ? lc->tu.cur_intra_pred_mode_c :
-                              lc->tu.cur_intra_pred_mode;
+    enum IntraPredMode mode = c_idx ? lc_co->tu.cur_intra_pred_mode_c :
+            lc_co->tu.cur_intra_pred_mode;
     pixel4 a;
     pixel  left_array[2 * MAX_TB_SIZE + 1];
     pixel  filtered_left_array[2 * MAX_TB_SIZE + 1];
