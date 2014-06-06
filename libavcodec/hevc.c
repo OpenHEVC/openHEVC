@@ -668,8 +668,6 @@ static int hls_slice_header(HEVCContext *s)
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             print_cabac("pic_order_cnt_lsb", sh->pic_order_cnt_lsb);
-            //if(s->decoder_id>0 && (s->threads_type&FF_THREAD_FRAME))
-              //  s->pocTid0 = ff_thread_get_last_Tid(s->avctx);
             poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
             if (!sh->first_slice_in_pic_flag && poc != s->poc) {
                 av_log(s->avctx, AV_LOG_WARNING,
@@ -2862,7 +2860,7 @@ static int hevc_frame_start(HEVCContext *s)
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
         }
 
-        if(s->avctx->BL_frame != NULL)
+        if(s->avctx->BL_frame)
              s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
         else
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
@@ -2870,15 +2868,6 @@ static int hevc_frame_start(HEVCContext *s)
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
-        /*if(!s->BL_frame->prv_active_el_frame) {
-            s->max_ra = INT_MAX;
-            av_log(s->avctx, AV_LOG_ERROR, "s->BL_frame->prv_active_el_frame %d \n",s->BL_frame->prv_active_el_frame);
-        
-            if( !IS_IDR(s) ){
-                ret = -1; 
-                goto fail;
-            }
-        }*/
 
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
         s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
@@ -3468,8 +3457,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         ret = ff_hevc_output_frame(s, data, 1);
         if (ret < 0)
             return ret;
-        if (s->decoder_id)
+        if (s->decoder_id) {
+            av_log(s->avctx, AV_LOG_ERROR, "flush poc %d\n", s->poc);
             s->max_ra = INT_MAX;
+        }
         *got_output = ret;
         return 0;
     }
@@ -3677,7 +3668,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     s->temporal_layer_id   = 8;
     s->quality_layer_id    = 8;
-//    s->prv_active_el_frame = 1;
 
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
