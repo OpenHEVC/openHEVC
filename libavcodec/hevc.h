@@ -919,11 +919,13 @@ typedef struct CodingTreeCabac {
 
 typedef struct CodingTree {
     int split_cu_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-
+    int x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int y[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     enum PredMode pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PredMode
     enum PartMode part_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PartMode
     uint8_t rqt_root_cbf[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t pcm_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cu_transquant_bypass_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } CodingTree;
 
 typedef struct CodingUnitCabac {
@@ -955,6 +957,10 @@ typedef struct MvField {
     Mv mv[2];
     int8_t ref_idx[2];
     int8_t pred_flag;
+    uint8_t merge_flag;
+    int mvp_flag[2];
+    int merge_idx;
+    enum InterPredIdc inter_pred_idc;
 } MvField;
 
 typedef struct NeighbourAvailable {
@@ -970,10 +976,13 @@ typedef struct PredictionUnitCabac {
     int mpm_idx;
     int rem_intra_luma_pred_mode;
     uint8_t intra_pred_mode[4];
-    Mv mvd;
-    uint8_t merge_flag;
     uint8_t intra_pred_mode_c[4];
+    Mv mvd;
 } PredictionUnitCabac;
+
+typedef struct PredictionUnit {
+    uint8_t merge_flag;
+} PredictionUnit;
 
 typedef struct TransformTreeCabac {
     uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
@@ -1086,6 +1095,7 @@ typedef struct HEVCLocalContextCommon {
     ResidualCoding      rc[3];
     CodingTree          ct;
     CodingUnit          cu;
+    PredictionUnit      pu;
     NeighbourAvailable  na;
 
     uint8_t ctb_left_flag;
@@ -1335,7 +1345,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags);
 
-void ff_hevc_set_neighbour_available(HEVCContext *s, HEVCLocalContextCommon *lc, int x0, int y0,
+void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
                                      int nPbW, int nPbH);
 void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0,
                                 int nPbW, int nPbH, int log2_cb_size,
