@@ -336,7 +336,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     x1 = _mm_loadu_si128((__m128i *) &src[x])
 
 #define MC_PIXEL_COMPUTE2_8()                                                  \
-    x1 = _mm_cvtepu8_epi16(x1);                                                \
+    x1 = _mm_unpacklo_epi8(x1, c0);                                            \
     x1 = _mm_slli_epi16(x1, 14 - 8)
 #define MC_PIXEL_COMPUTE4_8()                                                  \
     MC_PIXEL_COMPUTE2_8()
@@ -359,7 +359,9 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     MC_PIXEL_COMPUTE2_10()
 
 #define PUT_HEVC_PEL_PIXELS_VAR2_8()                                           \
-    __m128i x1, x2
+    __m128i x1, x2;                                                            \
+    __m128i c0 = _mm_setzero_si128()
+
 #define PUT_HEVC_PEL_PIXELS_VAR4_8()  PUT_HEVC_PEL_PIXELS_VAR2_8()
 #define PUT_HEVC_PEL_PIXELS_VAR6_8()  PUT_HEVC_PEL_PIXELS_VAR2_8()
 #define PUT_HEVC_PEL_PIXELS_VAR8_8()  PUT_HEVC_PEL_PIXELS_VAR2_8()
