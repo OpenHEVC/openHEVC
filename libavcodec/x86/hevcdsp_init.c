@@ -414,6 +414,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 if (EXTERNAL_SSE2(mm_flags)) {
                     c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
                     c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
+
+                    c->transform_skip[0]  = ff_hevc_transform_skip_8_sse;
                     c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
                     c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
                     c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
@@ -457,7 +459,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
 
-                    c->transform_skip[0]  = ff_hevc_transform_skip_8_sse;
                     c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
                     c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
 

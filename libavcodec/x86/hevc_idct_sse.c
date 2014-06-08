@@ -234,7 +234,7 @@ DECLARE_ALIGNED(16, static const int16_t, transform32x32[8][16][8] )=
 #define shift_1st 7
 #define add_1st (1 << (shift_1st - 1))
 
-#if HAVE_SSE42
+#if HAVE_SSE2
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
 {
     uint8_t *dst = (uint8_t*)_dst;
@@ -276,15 +276,13 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 
     *((uint32_t *)(dst)) = _mm_cvtsi128_si32(r3);
     dst+=stride;
-    *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 1);
+    *((uint32_t *)(dst)) = _mm_cvtsi128_si32(_mm_srli_si128(r3, 4));
     dst+=stride;
-    *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 2);
+    *((uint32_t *)(dst)) = _mm_cvtsi128_si32(_mm_srli_si128(r3, 8));
     dst+=stride;
-    *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 3);
+    *((uint32_t *)(dst)) = _mm_cvtsi128_si32(_mm_srli_si128(r3, 12));
 }
-#endif //HAVE_SSE42
 
-#if HAVE_SSE2
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
