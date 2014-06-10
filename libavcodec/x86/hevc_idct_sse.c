@@ -7,12 +7,6 @@
 #if HAVE_SSE2
 #include <emmintrin.h>
 #endif
-#if HAVE_SSSE3
-#include <tmmintrin.h>
-#endif
-#if HAVE_SSE42
-#include <smmintrin.h>
-#endif
 
 DECLARE_ALIGNED(16, static const int16_t, transform4x4_luma[8][8] )=
 {
