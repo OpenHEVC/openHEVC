@@ -15,11 +15,24 @@
 #include <smmintrin.h>
 #endif
 
+#if HAVE_SSE42
+#define _MM_PACKUS_EPI32 _mm_packus_epi32
+#else
+static av_always_inline __m128i _MM_PACKUS_EPI32( __m128i a, __m128i b )
+{
+     a = _mm_slli_epi32 (a, 16);
+     a = _mm_srai_epi32 (a, 16);
+     b = _mm_slli_epi32 (b, 16);
+     b = _mm_srai_epi32 (b, 16);
+     a = _mm_packs_epi32 (a, b);
+    return a;
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#if HAVE_SSE42
+#if HAVE_SSE2
 #define PLANAR_INIT_8()                                                        \
     uint8_t *src = (uint8_t*)_src;                                             \
     const uint8_t *top = (const uint8_t*)_top;                                 \
@@ -335,17 +348,6 @@ PRED_PLANAR_3(10)
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#if ARCH_X86_64
-#define STORE8(out, sstep_out)                                                 \
-    *((uint64_t *) &out[0*sstep_out]) =_mm_cvtsi128_si64(m10);                 \
-    *((uint64_t *) &out[1*sstep_out]) =_mm_extract_epi64(m10, 1);              \
-    *((uint64_t *) &out[2*sstep_out]) =_mm_cvtsi128_si64(m12);                 \
-    *((uint64_t *) &out[3*sstep_out]) =_mm_extract_epi64(m12, 1);              \
-    *((uint64_t *) &out[4*sstep_out]) =_mm_cvtsi128_si64(m11);                 \
-    *((uint64_t *) &out[5*sstep_out]) =_mm_extract_epi64(m11, 1);              \
-    *((uint64_t *) &out[6*sstep_out]) =_mm_cvtsi128_si64(m13);                 \
-    *((uint64_t *) &out[7*sstep_out]) =_mm_extract_epi64(m13, 1)
-#else
 #define STORE8(out, sstep_out)                                                 \
     _mm_storel_epi64((__m128i*)&out[0*sstep_out], m10);                        \
     _mm_storel_epi64((__m128i*)&out[2*sstep_out], m12);                        \
@@ -359,7 +361,7 @@ PRED_PLANAR_3(10)
     _mm_storel_epi64((__m128i*)&out[3*sstep_out], m12);                        \
     _mm_storel_epi64((__m128i*)&out[5*sstep_out], m11);                        \
     _mm_storel_epi64((__m128i*)&out[7*sstep_out], m13)
-#endif
+
 #define STORE16(out, sstep_out)                                                \
     _mm_storeu_si128((__m128i *) &out[0*sstep_out], m0);                       \
     _mm_storeu_si128((__m128i *) &out[1*sstep_out], m1);                       \
@@ -639,7 +641,7 @@ PRED_PLANAR_3(10)
         r1 = _mm_madd_epi16(r1, r3);                                           \
         r1 = _mm_add_epi32(r1, add);                                           \
         r1 = _mm_srai_epi32(r1, 5);                                            \
-        r1 = _mm_packus_epi32(r1, r1);                                         \
+        r1 = _MM_PACKUS_EPI32(r1, r1);                                         \
         _mm_storel_epi64((__m128i *) &p_src[x], r1);                           \
     }
 #define ANGULAR_COMPUTE4_10()    ANGULAR_COMPUTE_10( 4)
