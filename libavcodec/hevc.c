@@ -1104,7 +1104,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 lc_ca->tu.cur_intra_pred_mode <= 14) {
                 scan_idx = SCAN_VERT;
             } else if (lc_ca->tu.cur_intra_pred_mode >= 22 &&
-                    lc_ca->tu.cur_intra_pred_mode <= 30) {
+                       lc_ca->tu.cur_intra_pred_mode <= 30) {
                 scan_idx = SCAN_HORIZ;
             }
 
@@ -1112,7 +1112,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 lc_ca->tu.cur_intra_pred_mode_c <= 14) {
                 scan_idx_c = SCAN_VERT;
             } else if (lc_ca->tu.cur_intra_pred_mode_c >= 22 &&
-                    lc_ca->tu.cur_intra_pred_mode_c <= 30) {
+                       lc_ca->tu.cur_intra_pred_mode_c <= 30) {
                 scan_idx_c = SCAN_HORIZ;
             }
         }
@@ -3309,7 +3309,8 @@ static int hls_coding_quadtree_cabac(HEVCContext *s, int x0, int y0,
              (x0 + cb_size >= s->sps->width)) &&
             (!((y0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
              (y0 + cb_size >= s->sps->height))) {
-            return !ff_hevc_end_of_slice_flag_decode(s);
+            SAMPLE_CBF(lc->ct.end_of_slice_flag[cb_depth], x0, y0) = !ff_hevc_end_of_slice_flag_decode(s);
+            return SAMPLE_CBF(lc->ct.end_of_slice_flag[cb_depth], x0, y0);
         } else {
             return 1;
         }
@@ -3355,7 +3356,14 @@ static int hls_coding_quadtree_compute(HEVCContext *s, int x0, int y0,
         ret = hls_coding_unit_compute(s, x0, y0, log2_cb_size, cb_depth);
         if (ret < 0)
             return ret;
-        return 1;
+        if ((!((x0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
+             (x0 + cb_size >= s->sps->width)) &&
+            (!((y0 + cb_size) % (1 << (s->sps->log2_ctb_size))) ||
+             (y0 + cb_size >= s->sps->height))) {
+            return SAMPLE_CBF(lc->ct.end_of_slice_flag[cb_depth], x0, y0);
+        } else {
+            return 1;
+        }
     }
 }
 
@@ -3558,6 +3566,7 @@ static int hls_coding_entry_cabac(HEVCContext *s, int ctb_addr_ts, int ctb_size)
     int x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
     int y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
     int more_data;
+    s->HEVClc->cm_ca = &s->HEVClc->cm[ctb_addr_ts & (NB_THREADS_CABAC-1)];
     hls_decode_neighbour_cabac(s, x_ctb, y_ctb, ctb_addr_ts);
 
     ff_hevc_cabac_init(s, ctb_addr_ts);
@@ -3581,6 +3590,7 @@ static int hls_coding_entry_compute(HEVCContext *s, int ctb_addr_ts, int ctb_siz
     int x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
     int y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
     int more_data;
+    s->HEVClc->cm_co = &s->HEVClc->cm[ctb_addr_ts & (NB_THREADS_CABAC-1)];
     hls_decode_neighbour_compute(s, x_ctb, y_ctb, ctb_addr_ts);
     more_data = hls_coding_quadtree_compute(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
     if (more_data < 0) {
@@ -3591,77 +3601,53 @@ static int hls_coding_entry_compute(HEVCContext *s, int ctb_addr_ts, int ctb_siz
     return more_data;
 }
 
-static int hls_coding_entry(AVCodecContext *avctxt, void *ctb_addr_ts_in, int job, int self_id)
+static int hls_decode_entry2(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
 {
     HEVCContext *s  = avctxt->priv_data;
     int ctb_size    = 1 << s->sps->log2_ctb_size;
-    int *ctb_addr_ts_p = ctb_addr_ts_in;
-    int ctb_addr_ts = ctb_addr_ts_p[job];
-    if (job == 0)
-        return hls_coding_entry_cabac(s, ctb_addr_ts, ctb_size);
-    else
-        return hls_coding_entry_compute(s, ctb_addr_ts, ctb_size);
-}
-
-static int hls_decode_entry2(AVCodecContext *avctxt, void *isFilterThread)
-{
-    HEVCContext *s  = avctxt->priv_data;
-    int ctb_size    = 1 << s->sps->log2_ctb_size;
+    int more_data   = 1;
     int x_ctb       = 0;
     int y_ctb       = 0;
+    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
     int ctb_addr_rs;
-    HEVCLocalContextCommon *cm_tmp;
-    int ctb_addr_ts[2];
-    int more_data[2];
-    more_data[0]   = more_data[1] = 1;
-    ctb_addr_ts[0] = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+    int (*func)(HEVCContext *s, int ctb_addr_ts, int ctb_size);
 
-    if (!ctb_addr_ts[0] && s->sh.dependent_slice_segment_flag) {
+    if (!ctb_addr_ts && s->sh.dependent_slice_segment_flag) {
         av_log(s->avctx, AV_LOG_ERROR, "Impossible initial tile.\n");
         return AVERROR_INVALIDDATA;
     }
 
     if (s->sh.dependent_slice_segment_flag) {
-        int prev_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts[0] - 1];
+        int prev_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
         if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
             av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
             return AVERROR_INVALIDDATA;
         }
     }
+    if (!job)
+        func = &hls_coding_entry_cabac;
+    else
+        func = &hls_coding_entry_compute;
 
-    s->HEVClc->cm_ca = &s->HEVClc->cm[0];
-    s->HEVClc->cm_co = &s->HEVClc->cm[1];
-    more_data[0]     = hls_coding_entry_cabac(s, ctb_addr_ts[0], ctb_size);
-    cm_tmp           = s->HEVClc->cm_ca;
-    s->HEVClc->cm_ca = s->HEVClc->cm_co;
-    s->HEVClc->cm_co = cm_tmp;
-    ctb_addr_ts[1]   = ctb_addr_ts[0];
-    ctb_addr_ts[0]++;
-    while (more_data[0] && ctb_addr_ts[0] < s->sps->ctb_size) {
-        s->avctx->execute2(s->avctx, (void *) hls_coding_entry , ctb_addr_ts, more_data, 2);
-        cm_tmp           = s->HEVClc->cm_ca;
-        s->HEVClc->cm_ca = s->HEVClc->cm_co;
-        s->HEVClc->cm_co = cm_tmp;
-        ctb_addr_ts[1]   = ctb_addr_ts[0];
-        ctb_addr_ts[0]++;
-        if (more_data[0] < 0)
-            return more_data[0];
-        if (more_data[1] < 0)
-            return more_data[1];
+    while(more_data && ctb_addr_ts < s->sps->ctb_size) {
+        ff_thread_await_progress3(s->avctx, job, NB_THREADS_CABAC-1);
+        more_data = func(s, ctb_addr_ts, ctb_size);
+        ctb_addr_ts++;
+        ff_thread_report_progress3(s->avctx, job);
+        if (more_data < 0)
+            return more_data;
     }
-    more_data[1] = hls_coding_entry_compute(s, ctb_addr_ts[1], ctb_size);
-    if (more_data[1] < 0)
-        return more_data[1];
 
-    ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts[1]];
-    x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-    y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+    if (job) {
+        ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts-1];
+        x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        if (x_ctb + ctb_size >= s->sps->width &&
+                y_ctb + ctb_size >= s->sps->height)
+            ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
+    }
 
-    if (x_ctb + ctb_size >= s->sps->width &&
-        y_ctb + ctb_size >= s->sps->height)
-        ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
-
-    return ctb_addr_ts[0];
+    return ctb_addr_ts;
 }
 
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
@@ -3897,8 +3883,15 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp  , arg, ret, s->sh.num_entry_point_offsets + 1);
     else if (s->pps->tiles_enabled_flag        && s->threads_number!=1)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
-    else
-        s->avctx->execute(s->avctx, hls_decode_entry2, arg, ret , 1, sizeof(int));
+    else if (s->threads_number!=1) {
+        ff_reset_entries(s->avctx);
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry2  , arg, ret, 2);
+        res = ret[1];
+        av_free(ret);
+        av_free(arg);
+        return res;
+    } else
+        s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
 
     res = ret[s->threads_number==1 ? 0:s->sh.num_entry_point_offsets];
 

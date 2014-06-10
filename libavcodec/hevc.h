@@ -41,6 +41,7 @@
 #define MAX_REFS 16
 
 #define MAX_NB_THREADS 16
+#define NB_THREADS_CABAC 8
 #define SHIFT_CTB_WPP 2
 
 /**
@@ -926,6 +927,7 @@ typedef struct CodingTree {
     uint8_t rqt_root_cbf[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t pcm_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cu_transquant_bypass_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int end_of_slice_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } CodingTree;
 
 typedef struct CodingUnitCabac {
@@ -1112,7 +1114,7 @@ typedef struct HEVCLocalContextCommon {
 typedef struct HEVCLocalContext {
     HEVCLocalContextCabac   ca;
     HEVCLocalContextCompute co;
-    HEVCLocalContextCommon  cm[2];
+    HEVCLocalContextCommon  cm[NB_THREADS_CABAC];
     HEVCLocalContextCommon *cm_ca;
     HEVCLocalContextCommon *cm_co;
 } HEVCLocalContext;

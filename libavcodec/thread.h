@@ -150,5 +150,7 @@ int ff_alloc_entries(AVCodecContext *avctx, int count);
 void ff_reset_entries(AVCodecContext *avctx);
 void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n);
 void ff_thread_await_progress2(AVCodecContext *avctx,  int field, int thread, int shift);
+void ff_thread_report_progress3(AVCodecContext *avctx, int thread);
+void ff_thread_await_progress3(AVCodecContext *avctx,  int thread, int max_diff);
 
 #endif /* AVCODEC_THREAD_H */
