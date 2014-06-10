@@ -452,8 +452,6 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         s->up_filter_inf.addXLum   = (( phaseX * s->up_filter_inf.scaleXLum + 2 ) >> 2 )+ ( 1 << 11 );
         s->up_filter_inf.addYLum   = (( phaseY * s->up_filter_inf.scaleYLum + 2 ) >> 2 )+ ( 1 << 11 );
 
-        widthEL  >>= 1;
-        heightEL >>= 1;
         widthBL  >>= 1;
         heightBL >>= 1;
 
@@ -2829,7 +2827,6 @@ static int set_side_data(HEVCContext *s)
 static int hevc_frame_start(HEVCContext *s)
 {
     HEVCLocalContext *lc = s->HEVClc;
-    int ctb_size;
     int pic_size_in_ctb  = ((s->sps->width  >> s->sps->log2_min_cb_size) + 1) *
                            ((s->sps->height >> s->sps->log2_min_cb_size) + 1);
     int ret;
@@ -2851,7 +2848,6 @@ static int hevc_frame_start(HEVCContext *s)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
 #ifdef SVC_EXTENSION
     if (s->nuh_layer_id) {
-        ctb_size =  1 << s->sps->log2_ctb_size;
 #if ACTIVE_PU_UPSAMPLING
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
@@ -2875,9 +2871,9 @@ static int hevc_frame_start(HEVCContext *s)
     }
 #endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
-    s->ref->poc_id = s->poc_id;
     if (ret < 0)
         goto fail;
+    s->ref->poc_id = s->poc_id;
 
     s->ref->active_el_frame = s->active_el_frame;
     s->avctx->BL_frame = s->ref;
@@ -3458,7 +3454,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         if (ret < 0)
             return ret;
         if (s->decoder_id) {
-            av_log(s->avctx, AV_LOG_ERROR, "flush poc %d\n", s->poc);
+            // av_log(s->avctx, AV_LOG_ERROR, "flush poc %d\n", s->poc);
             s->max_ra = INT_MAX;
         }
         *got_output = ret;
