@@ -3674,6 +3674,9 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[(ctb_row)-1], s->sh.size[ctb_row - 1]);
     }
 
+    s->HEVClc->cm_ca = &s->HEVClc->cm[0];
+    s->HEVClc->cm_co = &s->HEVClc->cm[0];
+
     while(more_data && ctb_addr_ts < s->sps->ctb_size) {
         int x_ctb = (ctb_addr_rs % s->sps->ctb_width) << s->sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / s->sps->ctb_width) << s->sps->log2_ctb_size;
@@ -3753,6 +3756,10 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         if (ret < 0)
             return ret;
     }
+
+    s->HEVClc->cm_ca = &s->HEVClc->cm[0];
+    s->HEVClc->cm_co = &s->HEVClc->cm[0];
+
     while (more_data) {
 
         ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
@@ -3885,7 +3892,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
     else if (s->threads_number!=1) {
         ff_reset_entries(s->avctx);
-        s->avctx->execute2(s->avctx, (void *) hls_decode_entry2  , arg, ret, 2);
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry2, arg, ret, 2);
         res = ret[1];
         av_free(ret);
         av_free(arg);
