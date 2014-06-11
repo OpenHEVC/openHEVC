@@ -2885,7 +2885,7 @@ static int hevc_frame_start(HEVCContext *s)
 #if ACTIVE_PU_UPSAMPLING
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
-        if (s->threads_type&FF_THREAD_FRAME){
+        if (s->active_bl_frame){
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
         }
 
@@ -2932,7 +2932,7 @@ fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
-        if(s->threads_type&FF_THREAD_FRAME)
+        if(s->active_bl_frame)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
         if (s->inter_layer_ref)
             ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
@@ -3306,7 +3306,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->last_eos = s->eos;
     s->eos = 0;
     s->active_el_frame = 0;
-    int flag = 0; 
+    s->active_bl_frame = 0; 
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
@@ -3388,11 +3388,10 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             s->active_el_frame = 1;
             s->poc_id ++;
         }
-        if(!flag && s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= NAL_CRA_NUT) {
+        if(!s->active_bl_frame && s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->poc_id++;
-            flag=1;
+            s->active_bl_frame=1;
         }
-
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
             s->eos = 1;
@@ -3401,6 +3400,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         length -= consumed;
     }
     /* parse the NAL units */
+
     for (i = 0; i < s->nb_nals; i++) {
         int ret;
         s->skipped_bytes = s->skipped_bytes_nal[i];
@@ -3417,7 +3417,7 @@ fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
-        if(s->threads_type&FF_THREAD_FRAME)
+        if(s->active_bl_frame)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
     }
     return ret;
