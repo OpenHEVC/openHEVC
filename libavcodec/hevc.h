@@ -1017,7 +1017,6 @@ typedef struct HEVCFrame {
      * A combination of HEVC_FRAME_FLAG_*
      */
     uint8_t flags;
-    int poc_id;
   //  uint8_t prv_active_el_frame;
 #if FRAME_CONCEALMENT
     uint8_t is_concealment_frame;
