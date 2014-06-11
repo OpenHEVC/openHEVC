@@ -32,7 +32,7 @@ static av_always_inline __m128i _MM_PACKUS_EPI32( __m128i a, __m128i b )
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-#if HAVE_SSE2
+#if HAVE_SSE42
 #define PLANAR_INIT_8()                                                        \
     uint8_t *src = (uint8_t*)_src;                                             \
     const uint8_t *top = (const uint8_t*)_top;                                 \
@@ -50,17 +50,17 @@ static av_always_inline __m128i _MM_PACKUS_EPI32( __m128i a, __m128i b )
     c0  = _mm_mullo_epi16(tmp1, ly1);                                          \
     x0  = _mm_mullo_epi16(_mm_set1_epi16(val - y), tx);                        \
     c0  = _mm_add_epi16(c0, c1);                                               \
+    x0  = _mm_add_epi16(x0, c0);                                               \
     x0  = _mm_add_epi16(x0, add);                                              \
-    c0  = _mm_add_epi16(c0, x0);                                               \
-    c0  = _mm_srli_epi16(c0, shift)
+    c0  = _mm_srli_epi16(x0, shift)
 
 #define PLANAR_COMPUTE_HI(val, shift)                                          \
     C0  = _mm_mullo_epi16(tmp2, ly1);                                          \
     x0  = _mm_mullo_epi16(_mm_set1_epi16(val - y), th);                        \
     C0  = _mm_add_epi16(C0, C1);                                               \
+    x0  = _mm_add_epi16(x0, C0);                                               \
     x0  = _mm_add_epi16(x0, add);                                              \
-    C0  = _mm_add_epi16(C0, x0);                                               \
-    C0  = _mm_srli_epi16(C0, shift)
+    C0  = _mm_srli_epi16(x0, shift)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -270,16 +270,16 @@ PRED_PLANAR_2(10)
     c0  = _mm_mullo_epi16(TMP1, ly1);                                          \
     x0  = _mm_mullo_epi16(_mm_set1_epi16(31 - y), TX);                         \
     c0  = _mm_add_epi16(c0, c2);                                               \
+    x0  = _mm_add_epi16(x0, c0);                                               \
     x0  = _mm_add_epi16(x0, add);                                              \
-    c0  = _mm_add_epi16(c0, x0);                                               \
-    c0  = _mm_srli_epi16(c0, 6)
+    c0  = _mm_srli_epi16(x0, 6)
 #define PLANAR_COMPUTE_HI3_3()                                                 \
     C0  = _mm_mullo_epi16(TMP2, ly1);                                          \
     x0  = _mm_mullo_epi16(_mm_set1_epi16(31 - y), TH);                         \
     C0  = _mm_add_epi16(C0, C2);                                               \
+    x0  = _mm_add_epi16(x0, C0);                                               \
     x0  = _mm_add_epi16(x0, add);                                              \
-    C0  = _mm_add_epi16(C0, x0);                                               \
-    C0  = _mm_srli_epi16(C0, 6)
+    C0  = _mm_srli_epi16(x0, 6)
 
 #define PLANAR_STORE1_3_8()                                                    \
     c0 = _mm_packus_epi16(c0, C0);                                             \
@@ -504,8 +504,7 @@ PRED_PLANAR_3(10)
         r0 = _mm_srli_si128(r1, 1);                                            \
         r1 = _mm_unpacklo_epi8(r1, r0);                                        \
         r1 = _mm_maddubs_epi16(r1, r3);                                        \
-        r1 = _mm_add_epi16(r1, add);                                           \
-        r1 = _mm_srai_epi16(r1, 5);                                            \
+        r1 = _mm_mulhrs_epi16(r1, _mm_set1_epi16(1024));                                           \
         r1 = _mm_packus_epi16(r1, r1);                                         \
         _mm_storel_epi64((__m128i *) &p_src[x], r1);                           \
     }
@@ -517,8 +516,7 @@ PRED_PLANAR_3(10)
     r0 = _mm_srli_si128(r1, 1);                                                \
     r1 = _mm_unpacklo_epi8(r1, r0);                                            \
     r1 = _mm_maddubs_epi16(r1, r3);                                            \
-    r1 = _mm_add_epi16(r1, add);                                               \
-    r1 = _mm_srai_epi16(r1, 5);                                                \
+    r1 = _mm_mulhrs_epi16(r1, _mm_set1_epi16(1024));                                           \
     r1 = _mm_packus_epi16(r1, r1);                                             \
     *((uint32_t *)p_src) = _mm_cvtsi128_si32(r1)
 #define ANGULAR_COMPUTE8_8()     ANGULAR_COMPUTE_8( 8)
@@ -639,8 +637,7 @@ PRED_PLANAR_3(10)
         r0 = _mm_srli_si128(r1, 2);                                            \
         r1 = _mm_unpacklo_epi16(r1, r0);                                       \
         r1 = _mm_madd_epi16(r1, r3);                                           \
-        r1 = _mm_add_epi32(r1, add);                                           \
-        r1 = _mm_srai_epi32(r1, 5);                                            \
+        r1 = _mm_mulhrs_epi16(r1, _mm_set1_epi16(1024));                                           \
         r1 = _MM_PACKUS_EPI32(r1, r1);                                         \
         _mm_storel_epi64((__m128i *) &p_src[x], r1);                           \
     }
