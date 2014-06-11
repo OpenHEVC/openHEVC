@@ -42,7 +42,7 @@
 
 #define MAX_NB_THREADS 16
 #define SHIFT_CTB_WPP 2
-
+#define MAX_POC      1024
 /**
  * 7.4.2.1
  */
