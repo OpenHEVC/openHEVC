@@ -526,11 +526,10 @@ void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in_ref, 
     fctx = p->parent;
 
     poc = poc & (MAX_POC-1);
-    
     if (avxt->debug&FF_DEBUG_THREADS)
         av_log(avxt, AV_LOG_DEBUG, "ff_thread_report_il_progress %d\n", poc);
     pthread_mutex_lock(&fctx->il_progress_mutex);
-    if(fctx->is_decoded[poc] == 3) {
+    if(fctx->is_decoded[poc] == 3 && in_ref) {
         ff_hevc_unref_frame(avxt->priv_data, in_ref, ~0);
         fctx->is_decoded[poc] = 0;
     } else {
@@ -589,12 +588,12 @@ void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status) {
     FrameThreadContext *fctx = ((AVCodecContext *)avxt->BL_avcontext)->internal->thread_ctx_frame;
     AVCodecContext *avxt_bl = (AVCodecContext *)avxt->BL_avcontext;
     poc = poc & (MAX_POC-1);
-
     if (avxt->debug&FF_DEBUG_THREADS)
         av_log(avxt, AV_LOG_DEBUG, "ff_thread_report_il_status poc %d status %d\n", poc, status);
     pthread_mutex_lock(&fctx->il_progress_mutex);
-    if(fctx->is_decoded[poc]==1) {
-        ff_hevc_unref_frame(avxt_bl->priv_data, fctx->frames_ref[poc], ~0);
+    if(fctx->is_decoded[poc]==1 ) {
+        if(fctx->frames_ref[poc])
+            ff_hevc_unref_frame(avxt_bl->priv_data, fctx->frames_ref[poc], ~0);
         fctx->is_decoded[poc] = 0;
     } else
         fctx->is_decoded[poc] = 3;

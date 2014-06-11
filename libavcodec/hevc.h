@@ -1184,8 +1184,9 @@ typedef struct HEVCContext {
     HEVCFrame   *BL_frame;
     HEVCFrame   *inter_layer_ref;
 
-    uint8_t         active_el_frame;
-    uint8_t         active_bl_frame;
+    uint8_t         bl_decoder_el_exist;
+    uint8_t         el_decoder_el_exist; // wheither the el exist or not at the el decoder
+    uint8_t         el_decoder_bl_exist;
     uint8_t     *is_upsampled;
 #endif
     int temporal_layer_id;
