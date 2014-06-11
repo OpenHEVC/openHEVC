@@ -42,7 +42,7 @@
 
 #define MAX_NB_THREADS 16
 #define SHIFT_CTB_WPP 2
-
+#define MAX_POC      1024
 /**
  * 7.4.2.1
  */
@@ -1183,8 +1183,9 @@ typedef struct HEVCContext {
     UpsamplInf  up_filter_inf;
     HEVCFrame   *BL_frame;
     HEVCFrame   *inter_layer_ref;
-    //int         prv_active_el_frame;
-    int         active_el_frame;
+
+    uint8_t         active_el_frame;
+    uint8_t         active_bl_frame;
     uint8_t     *is_upsampled;
 #endif
     int temporal_layer_id;
