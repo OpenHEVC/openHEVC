@@ -1017,8 +1017,6 @@ typedef struct HEVCFrame {
      * A combination of HEVC_FRAME_FLAG_*
      */
     uint8_t flags;
-    uint8_t active_el_frame;
-    int poc_id;
   //  uint8_t prv_active_el_frame;
 #if FRAME_CONCEALMENT
     uint8_t is_concealment_frame;
@@ -1105,6 +1103,9 @@ typedef struct HEVCContext {
     int temporal_id;  ///< temporal_id_plus1 - 1
     HEVCFrame *ref;
     HEVCFrame DPB[32];
+    HEVCFrame Add_ref[2];
+
+
     int poc;
     int poc_id;
     int pocTid0;
