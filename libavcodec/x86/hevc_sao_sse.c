@@ -38,7 +38,41 @@
 #include <smmintrin.h>
 #endif
 
-#if HAVE_SSSE3
+#if HAVE_SSE42
+#define _MM_MIN_EPU16 _mm_min_epu16
+#else
+
+static av_always_inline __m128i comlt_epu16(__m128i a, __m128i b)
+{
+    __m128i signMask, mask;
+
+    mask     = _mm_cmplt_epi16(a, b);              // FFFF where a < b (signed)
+    signMask = _mm_xor_si128  (a, b);              // Signbit is 1 where signs differ
+    signMask = _mm_srai_epi16 (signMask, 15);      // fill all fields with sign bit
+    mask     = _mm_xor_si128  (mask, signMask);    // Invert output where signs differed
+    return mask;
+}
+
+static av_always_inline __m128i logical_bitwise_select(__m128i a, __m128i b, __m128i mask)
+{
+    a = _mm_and_si128   (a,    mask);                                 // clear a where mask = 0
+    b = _mm_andnot_si128(mask, b   );                                 // clear b where mask = 1
+    a = _mm_or_si128    (a,    b   );                                 // a = a OR b
+    return a;
+}
+
+__m128i _MM_MIN_EPU16(__m128i a, __m128i b)
+{
+     __m128i mask = comlt_epu16(a, b);
+     a = logical_bitwise_select(a, b, mask);
+     return a;
+}
+
+#endif
+
+
+
+#if HAVE_SSE2
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -117,9 +151,6 @@ void ff_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
 SAO_BAND_FILTER( 8,  8)
 SAO_BAND_FILTER( 8, 10)
 
-#endif // HAVE_SSSE3
-
-#if HAVE_SSE42
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -150,11 +181,11 @@ SAO_BAND_FILTER( 8, 10)
     cmp1 = _mm_loadu_si128((__m128i *) (src + x + y_stride_1_1));              \
 
 #define SAO_EDGE_FILTER_COMPUTE()                                              \
-    r2 = _mm_min_epu16(x0, cmp0);                                              \
+    r2 = _MM_MIN_EPU16(x0, cmp0);                                              \
     x1 = _mm_cmpeq_epi16(cmp0, r2);                                            \
     x2 = _mm_cmpeq_epi16(x0, r2);                                              \
     x1 = _mm_sub_epi16(x2, x1);                                                \
-    r2 = _mm_min_epu16(x0, cmp1);                                              \
+    r2 = _MM_MIN_EPU16(x0, cmp1);                                              \
     x3 = _mm_cmpeq_epi16(cmp1, r2);                                            \
     x2 = _mm_cmpeq_epi16(x0, r2);                                              \
     x3 = _mm_sub_epi16(x2, x3);                                                \

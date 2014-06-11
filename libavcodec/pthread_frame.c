@@ -596,8 +596,8 @@ void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status) {
     }
     else
         fctx->is_decoded[poc] = 3;
-        fctx->frames_data[poc] = NULL;
-        fctx->frames_ref[poc] = NULL;
+    fctx->frames_data[poc] = NULL;
+    fctx->frames_ref[poc] = NULL;
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 

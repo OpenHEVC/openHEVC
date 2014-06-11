@@ -452,8 +452,6 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         s->up_filter_inf.addXLum   = (( phaseX * s->up_filter_inf.scaleXLum + 2 ) >> 2 )+ ( 1 << 11 );
         s->up_filter_inf.addYLum   = (( phaseY * s->up_filter_inf.scaleYLum + 2 ) >> 2 )+ ( 1 << 11 );
 
-        widthEL  >>= 1;
-        heightEL >>= 1;
         widthBL  >>= 1;
         heightBL >>= 1;
 
@@ -668,8 +666,6 @@ static int hls_slice_header(HEVCContext *s)
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             print_cabac("pic_order_cnt_lsb", sh->pic_order_cnt_lsb);
-            //if(s->decoder_id>0 && (s->threads_type&FF_THREAD_FRAME))
-              //  s->pocTid0 = ff_thread_get_last_Tid(s->avctx);
             poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
             if (!sh->first_slice_in_pic_flag && poc != s->poc) {
                 av_log(s->avctx, AV_LOG_WARNING,
@@ -2865,7 +2861,6 @@ fail:
 static int hevc_frame_start(HEVCContext *s)
 {
     HEVCLocalContext *lc = s->HEVClc;
-    int ctb_size;
     int pic_size_in_ctb  = ((s->sps->width  >> s->sps->log2_min_cb_size) + 1) *
                            ((s->sps->height >> s->sps->log2_min_cb_size) + 1);
     int ret;
@@ -2887,16 +2882,14 @@ static int hevc_frame_start(HEVCContext *s)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
 #ifdef SVC_EXTENSION
     if (s->nuh_layer_id) {
-        ctb_size =  1 << s->sps->log2_ctb_size;
 #if ACTIVE_PU_UPSAMPLING
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
         if (s->threads_type&FF_THREAD_FRAME){
-           // printf("Call ff_thread_await_il_progress s->poc_id %d \n", s->poc_id);
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
         }
 
-        if(s->avctx->BL_frame != NULL)
+        if(s->avctx->BL_frame)
              s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
         else
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
@@ -3516,8 +3509,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         ret = ff_hevc_output_frame(s, data, 1);
         if (ret < 0)
             return ret;
-        if (s->decoder_id)
+        if (s->decoder_id) {
+            // av_log(s->avctx, AV_LOG_ERROR, "flush poc %d\n", s->poc);
             s->max_ra = INT_MAX;
+        }
         *got_output = ret;
         return 0;
     }
