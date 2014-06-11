@@ -2827,6 +2827,40 @@ static int set_side_data(HEVCContext *s)
 
     return 0;
 }
+static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
+{
+    int ret;
+
+    ret = ff_thread_ref_frame(&dst->tf, &src->tf);
+    if (ret < 0)
+        return ret;
+
+    dst->tab_mvf_buf = av_buffer_ref(src->tab_mvf_buf);
+    if (!dst->tab_mvf_buf)
+        goto fail;
+    dst->tab_mvf = src->tab_mvf;
+
+    dst->rpl_tab_buf = av_buffer_ref(src->rpl_tab_buf);
+    if (!dst->rpl_tab_buf)
+        goto fail;
+    dst->rpl_tab = src->rpl_tab;
+
+    dst->rpl_buf = av_buffer_ref(src->rpl_buf);
+    if (!dst->rpl_buf)
+        goto fail;
+
+    dst->poc        = src->poc;
+    dst->ctb_count  = src->ctb_count;
+    dst->window     = src->window;
+    dst->flags      = src->flags;
+    dst->sequence   = src->sequence;
+
+    return 0;
+fail:
+    ff_hevc_unref_frame(s, dst, ~0);
+    return AVERROR(ENOMEM);
+}
+
 
 static int hevc_frame_start(HEVCContext *s)
 {
@@ -2870,27 +2904,15 @@ static int hevc_frame_start(HEVCContext *s)
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
-        /*if(!s->BL_frame->prv_active_el_frame) {
-            s->max_ra = INT_MAX;
-            av_log(s->avctx, AV_LOG_ERROR, "s->BL_frame->prv_active_el_frame %d \n",s->BL_frame->prv_active_el_frame);
-        
-            if( !IS_IDR(s) ){
-                ret = -1; 
-                goto fail;
-            }
-        }*/
-
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
         s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
 #endif
     }
 #endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
-    s->ref->poc_id = s->poc_id;
     if (ret < 0)
         goto fail;
-
-    s->ref->active_el_frame = s->active_el_frame;
+    s->ref->poc_id = s->poc_id;
     s->avctx->BL_frame = s->ref;
     ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
@@ -2961,6 +2983,8 @@ static unsigned long int GetTimeMs64()
     return ret;
 #endif
 }
+
+
 
 static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 {
@@ -3099,8 +3123,21 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
 #if ACTIVE_PU_UPSAMPLING
-        if (s->ref->active_el_frame)
-            ff_thread_report_il_progress(s->avctx, s->poc_id, s->ref);
+            if (s->active_el_frame) {
+                int i;
+                for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
+                    HEVCFrame *frame = &s->Add_ref[i];
+                    if (frame->frame->buf[0])
+                        continue;
+                    ret = hevc_ref_frame(s, &s->Add_ref[i], s->ref);
+                    if (ret < 0)
+                        return ret;
+                    ff_thread_report_il_progress(s->avctx, s->poc_id, &s->Add_ref[i], s->ref);
+                    break;
+                }
+                if(i==FF_ARRAY_ELEMS(s->Add_ref))
+                    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
+            }
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -3110,17 +3147,27 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 tiles_filters(s);
 #ifdef SVC_EXTENSION
 #if !ACTIVE_PU_UPSAMPLING
-            if (s->active_el_frame)
-                ff_thread_report_il_progress(s->avctx, s->poc_id, s->ref);
+            if (s->active_el_frame) {
+                int i;
+                for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
+                    HEVCFrame *frame = &s->Add_ref[i];
+                    if (frame->frame->buf[0])
+                        continue;
+                    ret = hevc_ref_frame(s, &s->Add_ref[i], s->ref);
+                    if (ret < 0)
+                        return ret;
+                    ff_thread_report_il_progress(s->avctx, s->poc_id, &s->Add_ref[i], s->ref);
+                    break;
+                }
+                if(i==FF_ARRAY_ELEMS(s->Add_ref))
+                    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
+            }
 #endif
 #endif
 
 #ifdef SVC_EXTENSION
-            if(s->decoder_id > 0) {
-                if(s->threads_type&FF_THREAD_FRAME)
-                    ff_thread_report_il_status(s->avctx, s->poc_id, 2);
+            if(s->decoder_id > 0)
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
-            }
 #endif
         }
 
@@ -3267,6 +3314,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->last_eos = s->eos;
     s->eos = 0;
     s->active_el_frame = 0;
+    int flag = 0; 
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
@@ -3348,9 +3396,9 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             s->active_el_frame = 1;
             s->poc_id ++;
         }
-        if(s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= NAL_CRA_NUT) {
+        if(!flag && s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= NAL_CRA_NUT) {
             s->poc_id++;
-            
+            flag=1;
         }
 
         if (s->nal_unit_type == NAL_EOB_NUT ||
@@ -3521,39 +3569,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     return avpkt->size;
 }
 
-static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
-{
-    int ret;
-
-    ret = ff_thread_ref_frame(&dst->tf, &src->tf);
-    if (ret < 0)
-        return ret;
-
-    dst->tab_mvf_buf = av_buffer_ref(src->tab_mvf_buf);
-    if (!dst->tab_mvf_buf)
-        goto fail;
-    dst->tab_mvf = src->tab_mvf;
-
-    dst->rpl_tab_buf = av_buffer_ref(src->rpl_tab_buf);
-    if (!dst->rpl_tab_buf)
-        goto fail;
-    dst->rpl_tab = src->rpl_tab;
-
-    dst->rpl_buf = av_buffer_ref(src->rpl_buf);
-    if (!dst->rpl_buf)
-        goto fail;
-
-    dst->poc        = src->poc;
-    dst->ctb_count  = src->ctb_count;
-    dst->window     = src->window;
-    dst->flags      = src->flags;
-    dst->sequence   = src->sequence;
-
-    return 0;
-fail:
-    ff_hevc_unref_frame(s, dst, ~0);
-    return AVERROR(ENOMEM);
-}
 
 #if 1
 static int first;
@@ -3592,6 +3607,12 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         ff_hevc_unref_frame(s, &s->DPB[i], ~0);
         av_frame_free(&s->DPB[i].frame);
     }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
+        ff_hevc_unref_frame(s, &s->Add_ref[i], ~0);
+        av_frame_free(&s->Add_ref[i].frame);
+    }
+
+
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++)
         av_buffer_unref(&s->vps_list[i]);
@@ -3662,6 +3683,12 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
             goto fail;
         s->DPB[i].tf.f = s->DPB[i].frame;
     }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
+        s->Add_ref[i].frame = av_frame_alloc();
+        if (!s->Add_ref[i].frame)
+            goto fail;
+        s->Add_ref[i].tf.f = s->Add_ref[i].frame;
+    }
 
     s->max_ra = INT_MAX;
 
@@ -3677,7 +3704,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     s->temporal_layer_id   = 8;
     s->quality_layer_id    = 8;
-//    s->prv_active_el_frame = 1;
 
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;

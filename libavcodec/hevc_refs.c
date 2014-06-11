@@ -28,25 +28,17 @@
 #include "hevc.h"
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
-    int is_up_sampled = 2;
     if (!frame->frame || !frame->frame->buf[0])
         return;
     frame->flags &= ~flags;
-    if (frame->active_el_frame)
-        is_up_sampled = ff_thread_get_il_up_status(s->avctx, frame->poc_id);
-    if (!frame->flags && is_up_sampled == 2) {
-        if(frame->active_el_frame)
-            ff_thread_report_il_status2(s->avctx, frame->poc_id, 0);
+    if (!frame->flags) {
         ff_thread_release_buffer(s->avctx, &frame->tf);
         av_buffer_unref(&frame->tab_mvf_buf);
         frame->tab_mvf = NULL;
-        frame->active_el_frame = 0;
-
         av_buffer_unref(&frame->rpl_buf);
         av_buffer_unref(&frame->rpl_tab_buf);
         frame->rpl_tab    = NULL;
         frame->refPicList = NULL;
-
         frame->collocated_ref = NULL;
     }
 }
@@ -118,6 +110,7 @@ fail:
     return NULL;
 }
 
+
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
     HEVCFrame *ref;
@@ -148,7 +141,6 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
         ref->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
     ref->sequence = s->seq_decode;
     ref->window   = s->sps->output_window;
-    ref->active_el_frame = 0;
     return 0;
 }
 #ifdef REF_IDX_FRAMEWORK
@@ -179,7 +171,6 @@ int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc)
     ref->flags          = HEVC_FRAME_FLAG_LONG_REF;
     ref->sequence       = s->seq_decode;
     ref->window         = s->sps->output_window;
-    ref->active_el_frame = 0;
     if (s->threads_type & FF_THREAD_FRAME)
         ff_thread_report_progress(&s->inter_layer_ref->tf, INT_MAX, 0);
 
@@ -649,8 +640,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
 #endif
         } else {
             init_upsampled_mv_fields(s);
-            if(s->threads_type&FF_THREAD_FRAME)
-                ff_thread_report_il_status(s->avctx, s->poc_id, 2);
+         //   if(s->threads_type&FF_THREAD_FRAME)
+           //     ff_thread_report_il_status(s->avctx, s->poc_id, 2);
         }
 #endif
     }
