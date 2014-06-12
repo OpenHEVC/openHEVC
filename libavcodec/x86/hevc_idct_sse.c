@@ -7,12 +7,6 @@
 #if HAVE_SSE2
 #include <emmintrin.h>
 #endif
-#if HAVE_SSSE3
-#include <tmmintrin.h>
-#endif
-#if HAVE_SSE42
-#include <smmintrin.h>
-#endif
 
 DECLARE_ALIGNED(16, static const int16_t, transform4x4_luma[8][8] )=
 {
@@ -89,32 +83,6 @@ DECLARE_ALIGNED(16, static const int16_t, transform16x16_1[4][8][8] )=
         {  87, -90,  87, -90,  87, -90,  87, -90 },
     }
 };
-DECLARE_ALIGNED(16, static const int16_t, transform16x16_2[2][4][8] )=
-{
-    { /*2-6*/ /*4-12*/
-        { 89,  75,  89,  75, 89,  75, 89,  75 },
-        { 75, -18,  75, -18, 75, -18, 75, -18 },
-        { 50, -89,  50, -89, 50, -89, 50, -89 },
-        { 18, -50,  18, -50, 18, -50, 18, -50 },
-    },{ /*10-14*/  /*20-28*/
-        {  50,  18,  50,  18,  50,  18,  50,  18 },
-        { -89, -50, -89, -50, -89, -50, -89, -50 },
-        {  18,  75,  18,  75,  18,  75,  18,  75 },
-        {  75, -89,  75, -89,  75, -89,  75, -89 },
-    }
-};
-
-DECLARE_ALIGNED(16, static const int16_t, transform16x16_3[2][2][8] )=
-{
-    {/*4-12*/ /*8-24*/
-        {  83,  36,  83,  36,  83,  36,  83,  36 },
-        {  36, -83,  36, -83,  36, -83,  36, -83 },
-    },{ /*0-8*/  /*0-16*/
-        { 64,  64, 64,  64, 64,  64, 64,  64 },
-        { 64, -64, 64, -64, 64, -64, 64, -64 },
-    }
-};
-
 
 DECLARE_ALIGNED(16, static const int16_t, transform32x32[8][16][8] )=
 {
@@ -260,7 +228,7 @@ DECLARE_ALIGNED(16, static const int16_t, transform32x32[8][16][8] )=
 #define shift_1st 7
 #define add_1st (1 << (shift_1st - 1))
 
-#if HAVE_SSE42
+#if HAVE_SSE2
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
 {
     uint8_t *dst = (uint8_t*)_dst;
@@ -302,15 +270,13 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 
     *((uint32_t *)(dst)) = _mm_cvtsi128_si32(r3);
     dst+=stride;
-    *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 1);
+    *((uint32_t *)(dst)) = _mm_cvtsi128_si32(_mm_srli_si128(r3, 4));
     dst+=stride;
-    *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 2);
+    *((uint32_t *)(dst)) = _mm_cvtsi128_si32(_mm_srli_si128(r3, 8));
     dst+=stride;
-    *((uint32_t *)(dst)) = _mm_extract_epi32(r3, 3);
+    *((uint32_t *)(dst)) = _mm_cvtsi128_si32(_mm_srli_si128(r3, 12));
 }
-#endif //HAVE_SSE42
 
-#if HAVE_SSSE3
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////

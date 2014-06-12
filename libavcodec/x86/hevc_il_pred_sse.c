@@ -15,6 +15,7 @@
 #if HAVE_SSE42
 #include <smmintrin.h>
 #endif
+/*      Upsampling filters      */
 
 DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_luma_x2_h_sse[4][16] )= /*0 , 8 */
 {
