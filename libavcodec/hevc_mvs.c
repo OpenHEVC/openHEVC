@@ -110,7 +110,7 @@ static int check_prediction_block_available(HEVCContext *s, int log2_cb_size,
 }
 
 //check if the two luma locations belong to the same mostion estimation region
-static int isDiffMER(HEVCContext *s, int xN, int yN, int xP, int yP)
+static int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->pps->log2_parallel_merge_level;
 
@@ -358,8 +358,6 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     const int nb_refs = (s->sh.slice_type == P_SLICE) ?
                         s->sh.nb_refs[0] : FFMIN(s->sh.nb_refs[0], s->sh.nb_refs[1]);
-    int check_MER   = 1;
-    int check_MER_1 = 1;
 
     int zero_idx = 0;
 
@@ -371,85 +369,59 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     int is_available_b0;
     int is_available_b1;
     int is_available_b2;
-    int check_B0;
-    int check_A0;
 
-    //first left spatial merge candidate
-    is_available_a1 = AVAILABLE(cand_left, A1);
 
     if (!singleMCLFlag && part_idx == 1 &&
         (lc->cu.part_mode == PART_Nx2N ||
          lc->cu.part_mode == PART_nLx2N ||
          lc->cu.part_mode == PART_nRx2N) ||
-        isDiffMER(s, xA1, yA1, x0, y0)) {
+        is_diff_mer(s, xA1, yA1, x0, y0)) {
         is_available_a1 = 0;
+    } else {
+        is_available_a1 = AVAILABLE(cand_left, A1);
+        if (is_available_a1)
+            mergecandlist[nb_merge_cand++] = TAB_MVF_PU(A1);
     }
-
-    if (is_available_a1)
-        mergecandlist[nb_merge_cand++] = TAB_MVF_PU(A1);
-
-    // above spatial merge candidate
-    is_available_b1 = AVAILABLE(cand_up, B1);
 
     if (!singleMCLFlag && part_idx == 1 &&
         (lc->cu.part_mode == PART_2NxN ||
          lc->cu.part_mode == PART_2NxnU ||
          lc->cu.part_mode == PART_2NxnD) ||
-        isDiffMER(s, xB1, yB1, x0, y0)) {
+        is_diff_mer(s, xB1, yB1, x0, y0)) {
         is_available_b1 = 0;
+    } else {
+        is_available_b1 = AVAILABLE(cand_up, B1);
+        if (is_available_b1 &&
+            !(is_available_a1 && COMPARE_MV_REFIDX(B1, A1)))
+            mergecandlist[nb_merge_cand++] = TAB_MVF_PU(B1);
     }
 
-    if (is_available_a1 && is_available_b1)
-        check_MER = !COMPARE_MV_REFIDX(B1, A1);
-
-    if (is_available_b1 && check_MER)
-        mergecandlist[nb_merge_cand++] = TAB_MVF_PU(B1);
-
     // above right spatial merge candidate
-    check_MER = 1;
-    check_B0  = PRED_BLOCK_AVAILABLE(B0);
+    is_available_b0 = AVAILABLE(cand_up_right, B0) &&
+                      PRED_BLOCK_AVAILABLE(B0) &&
+                      !is_diff_mer(s, xB0, yB0, x0, y0);
 
-    is_available_b0 = check_B0 && AVAILABLE(cand_up_right, B0);
-
-    if (isDiffMER(s, xB0, yB0, x0, y0))
-        is_available_b0 = 0;
-
-    if (is_available_b1 && is_available_b0)
-        check_MER = !COMPARE_MV_REFIDX(B0, B1);
-
-    if (is_available_b0 && check_MER)
+    if (is_available_b0 &&
+        !(is_available_b1 && COMPARE_MV_REFIDX(B0, B1)))
         mergecandlist[nb_merge_cand++] = TAB_MVF_PU(B0);
 
     // left bottom spatial merge candidate
-    check_MER = 1;
-    check_A0  = PRED_BLOCK_AVAILABLE(A0);
+    is_available_a0 = AVAILABLE(cand_bottom_left, A0) &&
+                      PRED_BLOCK_AVAILABLE(A0) &&
+                      !is_diff_mer(s, xA0, yA0, x0, y0);
 
-    is_available_a0 = check_A0 && AVAILABLE(cand_bottom_left, A0);
-
-    if (isDiffMER(s, xA0, yA0, x0, y0))
-        is_available_a0 = 0;
-
-    if (is_available_a1 && is_available_a0)
-        check_MER = !COMPARE_MV_REFIDX(A0, A1);
-
-    if (is_available_a0 && check_MER)
+    if (is_available_a0 &&
+        !(is_available_a1 && COMPARE_MV_REFIDX(A0, A1)))
         mergecandlist[nb_merge_cand++] = TAB_MVF_PU(A0);
 
     // above left spatial merge candidate
-    check_MER = 1;
+    is_available_b2 = AVAILABLE(cand_up_left, B2) &&
+                      !is_diff_mer(s, xB2, yB2, x0, y0);
 
-    is_available_b2 = AVAILABLE(cand_up_left, B2);
-
-    if (isDiffMER(s, xB2, yB2, x0, y0))
-        is_available_b2 = 0;
-
-    if (is_available_a1 && is_available_b2)
-        check_MER = !COMPARE_MV_REFIDX(B2, A1);
-
-    if (is_available_b1 && is_available_b2)
-        check_MER_1 = !COMPARE_MV_REFIDX(B2, B1);
-
-    if (is_available_b2 && check_MER && check_MER_1 && nb_merge_cand != 4)
+    if (is_available_b2 &&
+        !(is_available_a1 && COMPARE_MV_REFIDX(B2, A1)) &&
+        !(is_available_b1 && COMPARE_MV_REFIDX(B2, B1)) &&
+        nb_merge_cand != 4)
         mergecandlist[nb_merge_cand++] = TAB_MVF_PU(B2);
 
     // temporal motion vector candidate
@@ -631,8 +603,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     HEVCLocalContext *lc = s->HEVClc;
     MvField *tab_mvf = s->ref->tab_mvf;
     int isScaledFlag_L0 = 0;
-    int availableFlagLXA0 = 0;
-    int availableFlagLXB0 = 0;
+    int availableFlagLXA0 = 1;
+    int availableFlagLXB0 = 1;
     int numMVPCandLX = 0;
     int min_pu_width = s->sps->min_pu_width;
 
@@ -662,18 +634,12 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int ref_idx = 0;
     int pred_flag_index_l0;
     int pred_flag_index_l1;
-    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
-    int cand_up = (lc->ctb_up_flag || y0b);
-    int cand_left = (lc->ctb_left_flag || x0b);
-    int cand_up_left =
-            (!x0b && !y0b) ? lc->ctb_up_left_flag : cand_left && cand_up;
-    int cand_up_right =
-            (x0b + nPbW == (1 << s->sps->log2_ctb_size) ||
-             x0  + nPbW >= lc->end_of_tiles_x) ? lc->ctb_up_right_flag && !y0b
-                                               : cand_up;
-    int cand_bottom_left = (y0 + nPbH >= lc->end_of_tiles_y) ? 0 : cand_left;
+    const int cand_bottom_left = lc->na.cand_bottom_left;
+    const int cand_left        = lc->na.cand_left;
+    const int cand_up_left     = lc->na.cand_up_left;
+    const int cand_up          = lc->na.cand_up;
+    const int cand_up_right    = lc->na.cand_up_right_sap;
 
     ref_idx_curr       = LX;
     ref_idx            = mv->ref_idx[LX];
@@ -699,29 +665,43 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         isScaledFlag_L0 = 1;
 
     if (is_available_a0) {
-        availableFlagLXA0 = MP_MX(A0, pred_flag_index_l0, mxA);
-        if (!availableFlagLXA0)
-            availableFlagLXA0 = MP_MX(A0, pred_flag_index_l1, mxA);
+        if (MP_MX(A0, pred_flag_index_l0, mxA)) {
+            goto b_candidates;
+        }
+        if (MP_MX(A0, pred_flag_index_l1, mxA)) {
+            goto b_candidates;
+        }
     }
 
-    if (is_available_a1 && !availableFlagLXA0) {
-        availableFlagLXA0 = MP_MX(A1, pred_flag_index_l0, mxA);
-        if (!availableFlagLXA0)
-            availableFlagLXA0 = MP_MX(A1, pred_flag_index_l1, mxA);
+    if (is_available_a1) {
+        if (MP_MX(A1, pred_flag_index_l0, mxA)) {
+            goto b_candidates;
+        }
+        if (MP_MX(A1, pred_flag_index_l1, mxA)) {
+            goto b_candidates;
+        }
     }
 
-    if (is_available_a0 && !availableFlagLXA0) {
-        availableFlagLXA0 = MP_MX_LT(A0, pred_flag_index_l0, mxA);
-        if (!availableFlagLXA0)
-            availableFlagLXA0 = MP_MX_LT(A0, pred_flag_index_l1, mxA);
+    if (is_available_a0) {
+        if (MP_MX_LT(A0, pred_flag_index_l0, mxA)) {
+            goto b_candidates;
+        }
+        if (MP_MX_LT(A0, pred_flag_index_l1, mxA)) {
+            goto b_candidates;
+        }
     }
 
-    if (is_available_a1 && !availableFlagLXA0) {
-        availableFlagLXA0 = MP_MX_LT(A1, pred_flag_index_l0, mxA);
-        if (!availableFlagLXA0)
-            availableFlagLXA0 = MP_MX_LT(A1, pred_flag_index_l1, mxA);
+    if (is_available_a1) {
+        if (MP_MX_LT(A1, pred_flag_index_l0, mxA)) {
+            goto b_candidates;
+        }
+        if (MP_MX_LT(A1, pred_flag_index_l1, mxA)) {
+            goto b_candidates;
+        }
     }
+    availableFlagLXA0 = 0;
 
+b_candidates:
     // B candidates
     // above right spatial merge candidate
     xB0    = x0 + nPbW;
@@ -732,43 +712,50 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     is_available_b0 = PRED_BLOCK_AVAILABLE(B0) && AVAILABLE(cand_up_right, B0);
 
     if (is_available_b0) {
-        availableFlagLXB0 = MP_MX(B0, pred_flag_index_l0, mxB);
-        if (!availableFlagLXB0)
-            availableFlagLXB0 = MP_MX(B0, pred_flag_index_l1, mxB);
-    }
-
-    if (!availableFlagLXB0) {
-        // above spatial merge candidate
-        xB1    = x0 + nPbW - 1;
-        yB1    = y0 - 1;
-        xB1_pu = xB1 >> s->sps->log2_min_pu_size;
-        yB1_pu = yB1 >> s->sps->log2_min_pu_size;
-
-        is_available_b1 = AVAILABLE(cand_up, B1);
-
-        if (is_available_b1) {
-            availableFlagLXB0 = MP_MX(B1, pred_flag_index_l0, mxB);
-            if (!availableFlagLXB0)
-                availableFlagLXB0 = MP_MX(B1, pred_flag_index_l1, mxB);
+        if (MP_MX(B0, pred_flag_index_l0, mxB)) {
+            goto scalef;
+        }
+        if (MP_MX(B0, pred_flag_index_l1, mxB)) {
+            goto scalef;
         }
     }
 
-    if (!availableFlagLXB0) {
-        // above left spatial merge candidate
-        xB2 = x0 - 1;
-        yB2 = y0 - 1;
-        xB2_pu = xB2 >> s->sps->log2_min_pu_size;
-        yB2_pu = yB2 >> s->sps->log2_min_pu_size;
-        is_available_b2 = AVAILABLE(cand_up_left, B2);
+    // above spatial merge candidate
+    xB1    = x0 + nPbW - 1;
+    yB1    = y0 - 1;
+    xB1_pu = xB1 >> s->sps->log2_min_pu_size;
+    yB1_pu = yB1 >> s->sps->log2_min_pu_size;
 
-        if (is_available_b2) {
-            availableFlagLXB0 = MP_MX(B2, pred_flag_index_l0, mxB);
-            if (!availableFlagLXB0)
-                availableFlagLXB0 = MP_MX(B2, pred_flag_index_l1, mxB);
+    is_available_b1 = AVAILABLE(cand_up, B1);
+
+    if (is_available_b1) {
+        if (MP_MX(B1, pred_flag_index_l0, mxB)) {
+            goto scalef;
+        }
+        if (MP_MX(B1, pred_flag_index_l1, mxB)) {
+            goto scalef;
         }
     }
 
-    if (isScaledFlag_L0 == 0) {
+    // above left spatial merge candidate
+    xB2 = x0 - 1;
+    yB2 = y0 - 1;
+    xB2_pu = xB2 >> s->sps->log2_min_pu_size;
+    yB2_pu = yB2 >> s->sps->log2_min_pu_size;
+    is_available_b2 = AVAILABLE(cand_up_left, B2);
+
+    if (is_available_b2) {
+        if (MP_MX(B2, pred_flag_index_l0, mxB)) {
+            goto scalef;
+        }
+        if (MP_MX(B2, pred_flag_index_l1, mxB)) {
+            goto scalef;
+        }
+    }
+    availableFlagLXB0 = 0;
+
+scalef:
+    if (!isScaledFlag_L0) {
         if (availableFlagLXB0) {
             availableFlagLXA0 = 1;
             mxA = mxB;
