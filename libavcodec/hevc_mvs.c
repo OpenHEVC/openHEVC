@@ -68,45 +68,10 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
     int Curr = MIN_TB_ADDR_ZS(xCurr >> s->sps->log2_min_tb_size,
                               yCurr >> s->sps->log2_min_tb_size);
-    int N;
-
-    if (xN < 0 || yN < 0 ||
-        xN >= s->sps->width ||
-        yN >= s->sps->height)
-        return 0;
-
-    N = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_tb_size,
-                       yN >> s->sps->log2_min_tb_size);
-
+    int N    = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_tb_size,
+                              yN >> s->sps->log2_min_tb_size);
+    
     return N <= Curr;
-}
-
-static int same_prediction_block(HEVCLocalContext *lc, int log2_cb_size,
-                                 int x0, int y0, int nPbW, int nPbH,
-                                 int xA1, int yA1, int partIdx)
-{
-    return !(nPbW << 1 == 1 << log2_cb_size &&
-             nPbH << 1 == 1 << log2_cb_size && partIdx == 1 &&
-             lc->cu.x + nPbW > xA1 &&
-             lc->cu.y + nPbH <= yA1);
-}
-
-/*
- * 6.4.2 Derivation process for prediction block availability
- */
-static int check_prediction_block_available(HEVCContext *s, int log2_cb_size,
-                                            int x0, int y0, int nPbW, int nPbH,
-                                            int xA1, int yA1, int partIdx)
-{
-    HEVCLocalContext *lc = s->HEVClc;
-
-    if (lc->cu.x < xA1 && lc->cu.y < yA1 &&
-        (lc->cu.x + (1 << log2_cb_size)) > xA1 &&
-        (lc->cu.y + (1 << log2_cb_size)) > yA1)
-        return same_prediction_block(lc, log2_cb_size, x0, y0,
-                                     nPbW, nPbH, xA1, yA1, partIdx);
-    else
-        return z_scan_block_avail(s, x0, y0, xA1, yA1);
 }
 
 //check if the two luma locations belong to the same mostion estimation region
@@ -303,9 +268,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     (cand && !(TAB_MVF_PU(v).pred_flag == PF_INTRA))
 
 #define PRED_BLOCK_AVAILABLE(v)                                 \
-    check_prediction_block_available(s, log2_cb_size,           \
-                                     x0, y0, nPbW, nPbH,        \
-                                     x ## v, y ## v, part_idx)
+    z_scan_block_avail(s, x0, y0, x ## v, y ## v)
 
 #define COMPARE_MV_REFIDX(a, b)                                 \
     compareMVrefidx(TAB_MVF_PU(a), TAB_MVF_PU(b))
@@ -398,6 +361,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     // above right spatial merge candidate
     is_available_b0 = AVAILABLE(cand_up_right, B0) &&
+                      xB0 < s->sps->width &&
                       PRED_BLOCK_AVAILABLE(B0) &&
                       !is_diff_mer(s, xB0, yB0, x0, y0);
 
@@ -407,6 +371,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     // left bottom spatial merge candidate
     is_available_a0 = AVAILABLE(cand_bottom_left, A0) &&
+                      yA0 < s->sps->height &&
                       PRED_BLOCK_AVAILABLE(A0) &&
                       !is_diff_mer(s, xA0, yA0, x0, y0);
 
@@ -640,7 +605,6 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     const int cand_up_left     = lc->na.cand_up_left;
     const int cand_up          = lc->na.cand_up;
     const int cand_up_right    = lc->na.cand_up_right_sap;
-
     ref_idx_curr       = LX;
     ref_idx            = mv->ref_idx[LX];
     pred_flag_index_l0 = LX;
@@ -652,7 +616,9 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     xA0_pu = xA0 >> s->sps->log2_min_pu_size;
     yA0_pu = yA0 >> s->sps->log2_min_pu_size;
 
-    is_available_a0 = PRED_BLOCK_AVAILABLE(A0) && AVAILABLE(cand_bottom_left, A0);
+    is_available_a0 = AVAILABLE(cand_bottom_left, A0) &&
+                      yA0 < s->sps->height &&
+                      PRED_BLOCK_AVAILABLE(A0);
 
     //left spatial merge candidate
     xA1    = x0 - 1;
@@ -709,7 +675,9 @@ b_candidates:
     xB0_pu = xB0 >> s->sps->log2_min_pu_size;
     yB0_pu = yB0 >> s->sps->log2_min_pu_size;
 
-    is_available_b0 = PRED_BLOCK_AVAILABLE(B0) && AVAILABLE(cand_up_right, B0);
+    is_available_b0 =  AVAILABLE(cand_up_right, B0) &&
+                       xB0 < s->sps->width &&
+                       PRED_BLOCK_AVAILABLE(B0);
 
     if (is_available_b0) {
         if (MP_MX(B0, pred_flag_index_l0, mxB)) {
