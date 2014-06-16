@@ -86,7 +86,7 @@ static int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
 #define MATCH(x) (A.x == B.x)
 
 // check if the mv's and refidx are the same between A and B
-static int compareMVrefidx(struct MvField A, struct MvField B)
+static int compare_mv_ref_idx(struct MvField A, struct MvField B)
 {
     int a_pf = A.pred_flag;
     int b_pf = B.pred_flag;
@@ -166,19 +166,20 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
         return CHECK_MVSET(0);
     else if (temp_col.pred_flag == PF_BI) {
         int check_diffpicount = 0;
-        int i = 0;
-        for (i = 0; i < refPicList[0].nb_refs; i++) {
-            if (refPicList[0].list[i] > s->poc)
-                check_diffpicount++;
+        int i, j;
+        for (j = 0; j < 2; j++) {
+            for (i = 0; i < refPicList[j].nb_refs; i++) {
+                if (refPicList[j].list[i] > s->poc) {
+                    check_diffpicount++;
+                    break;
+                }
+            }
         }
-        for (i = 0; i < refPicList[1].nb_refs; i++) {
-            if (refPicList[1].list[i] > s->poc)
-                check_diffpicount++;
-        }
-        if (check_diffpicount == 0 && X == 0)
-            return CHECK_MVSET(0);
-        else if (check_diffpicount == 0 && X == 1)
-            return CHECK_MVSET(1);
+        if (!check_diffpicount)
+            if (X==0)
+                return CHECK_MVSET(0);
+            else
+                return CHECK_MVSET(1);
         else {
             if (s->sh.collocated_list == L1)
                 return CHECK_MVSET(0);
@@ -194,7 +195,8 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
     tab_mvf[(y) * min_pu_width + x]
 
 #define TAB_MVF_PU(v)                                                   \
-    TAB_MVF(x ## v ## _pu, y ## v ## _pu)
+    TAB_MVF(((x ## v) >> s->sps->log2_min_pu_size),                       \
+            ((y ## v) >> s->sps->log2_min_pu_size))
 
 #define DERIVE_TEMPORAL_COLOCATED_MVS                                   \
     derive_temporal_colocated_mvs(s, temp_col,                          \
@@ -271,7 +273,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     z_scan_block_avail(s, x0, y0, x ## v, y ## v)
 
 #define COMPARE_MV_REFIDX(a, b)                                 \
-    compareMVrefidx(TAB_MVF_PU(a), TAB_MVF_PU(b))
+    compare_mv_ref_idx(TAB_MVF_PU(a), TAB_MVF_PU(b))
 
 /*
  * 8.5.3.1.2  Derivation process for spatial merging candidates
@@ -296,28 +298,18 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     const int xA1    = x0 - 1;
     const int yA1    = y0 + nPbH - 1;
-    const int xA1_pu = xA1 >> s->sps->log2_min_pu_size;
-    const int yA1_pu = yA1 >> s->sps->log2_min_pu_size;
 
     const int xB1    = x0 + nPbW - 1;
     const int yB1    = y0 - 1;
-    const int xB1_pu = xB1 >> s->sps->log2_min_pu_size;
-    const int yB1_pu = yB1 >> s->sps->log2_min_pu_size;
 
     const int xB0    = x0 + nPbW;
     const int yB0    = y0 - 1;
-    const int xB0_pu = xB0 >> s->sps->log2_min_pu_size;
-    const int yB0_pu = yB0 >> s->sps->log2_min_pu_size;
 
     const int xA0    = x0 - 1;
     const int yA0    = y0 + nPbH;
-    const int xA0_pu = xA0 >> s->sps->log2_min_pu_size;
-    const int yA0_pu = yA0 >> s->sps->log2_min_pu_size;
 
     const int xB2    = x0 - 1;
     const int yB2    = y0 - 1;
-    const int xB2_pu = xB2 >> s->sps->log2_min_pu_size;
-    const int yB2_pu = yB2 >> s->sps->log2_min_pu_size;
 
     const int nb_refs = (s->sh.slice_type == P_SLICE) ?
                         s->sh.nb_refs[0] : FFMIN(s->sh.nb_refs[0], s->sh.nb_refs[1]);
@@ -435,10 +427,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                 mergecandlist[nb_merge_cand].ref_idx[0]   = l0_cand.ref_idx[0];
                 mergecandlist[nb_merge_cand].ref_idx[1]   = l1_cand.ref_idx[1];
                 mergecandlist[nb_merge_cand].pred_flag    = PF_BI;
-                mergecandlist[nb_merge_cand].mv[0].x      = l0_cand.mv[0].x;
-                mergecandlist[nb_merge_cand].mv[0].y      = l0_cand.mv[0].y;
-                mergecandlist[nb_merge_cand].mv[1].x      = l1_cand.mv[1].x;
-                mergecandlist[nb_merge_cand].mv[1].y      = l1_cand.mv[1].y;
+                mergecandlist[nb_merge_cand].mv[0]        = l0_cand.mv[0];
+                mergecandlist[nb_merge_cand].mv[1]        = l1_cand.mv[1];
                 nb_merge_cand++;
             }
         }
