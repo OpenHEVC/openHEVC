@@ -1018,8 +1018,10 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                 yBL = (((av_clip_c(yEL+8, 0, s->sps->height -1) - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + (1<<15)) >> 16) + 4;
                 pre_unit = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + (xEL>>s->sps->log2_min_pu_size);
                 if (xBL < s->BL_frame->frame->coded_width && yBL < s->BL_frame->frame->coded_height) {
-                    xBL = (xBL >>=4)<<(4-s->sps->log2_min_pu_size); // 4 <==> xBL & 0xFFFFFFF0
-                    yBL = (yBL >>=4)<<(4-s->sps->log2_min_pu_size); // 4 <==> yBL & 0xFFFFFFF0
+                    xBL >>= 4;
+                    xBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> xBL & 0xFFFFFFF0
+                    yBL >>= 4;
+                    yBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> yBL & 0xFFFFFFF0
                     Ref_pre_unit = (yBL*pic_width_in_min_puBL)+xBL;
                     if (refBL->tab_mvf[Ref_pre_unit].pred_flag) {
                         memcpy(&refEL->tab_mvf[pre_unit], &refBL->tab_mvf[Ref_pre_unit], sizeof(MvField));
@@ -1049,8 +1051,10 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                 yBL = (((av_clip_c(yEL+8, 0, s->sps->height -1) - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + (1<<15)) >> 16) + 4;
                 pre_unit = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + (xEL>>s->sps->log2_min_pu_size);
                 if(xBL < s->BL_frame->frame->coded_width && yBL < s->BL_frame->frame->coded_height) {
-                    xBL = (xBL >>=4)<<(4-s->sps->log2_min_pu_size); // 4 <==> xBL & 0xFFFFFFF0
-                    yBL = (yBL >>=4)<<(4-s->sps->log2_min_pu_size); // 4 <==> yBL & 0xFFFFFFF0
+                    xBL >>= 4;
+                    xBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> xBL & 0xFFFFFFF0
+                    yBL >>= 4;
+                    yBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> yBL & 0xFFFFFFF0
                     Ref_pre_unit = (yBL*pic_width_in_min_puBL)+xBL;
                     if(refBL->tab_mvf[Ref_pre_unit].pred_flag) {
                         for( list=0; list < nb_list; list++) {
@@ -1082,47 +1086,12 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
     }
 }
 
-static unsigned long int GetTimeMs64()
-{
-#ifdef WIN32
-    /* Windows */
-    FILETIME ft;
-    LARGE_INTEGER li;
-
-    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
-     * to a LARGE_INTEGER structure. */
-    GetSystemTimeAsFileTime(&ft);
-    li.LowPart = ft.dwLowDateTime;
-    li.HighPart = ft.dwHighDateTime;
-
-    uint64_t ret = li.QuadPart;
-    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
-    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
-
-    return ret;
-#else
-    /* Linux */
-    struct timeval tv;
-
-    gettimeofday(&tv, NULL);
-
-    unsigned long int ret = tv.tv_usec;
-    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
-    //ret /= 1000;
-
-    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
-    ret += (tv.tv_sec * 1000000);
-
-    return ret;
-#endif
-}
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH) {
 
     int ctb_size =  1<<s->sps->log2_ctb_size;
     int log2_ctb =  s->sps->log2_ctb_size;
     int ctb_x0   =  (x0 >> log2_ctb) << log2_ctb;
     int ctb_y0   =  (y0 >> log2_ctb) << log2_ctb;
-    unsigned long int time_mp = GetTimeMs64();
 
     if(  (x0 - ctb_x0) < MAX_EDGE  && ctb_x0> ctb_size &&
        !s->is_upsampled[(ctb_y0/ctb_size*s->sps->ctb_width)+((ctb_x0-ctb_size)/ctb_size)]){
@@ -1163,5 +1132,4 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
         upsample_block_mc   ( s, ref0, ctb_x0>>1, (ctb_y0 + ctb_size)>>1  );
         upsample_block_luma ( s, ref0, ctb_x0   ,  ctb_y0 + ctb_size      );
     }
-    layers_time[2] += (GetTimeMs64()-time_mp);
 }

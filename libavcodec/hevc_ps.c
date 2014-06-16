@@ -1656,9 +1656,19 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P10;
             if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P10;
             break;
+        case 12:
+            if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P12;
+            if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P12;
+            if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P12;
+            break;
+        case 14:
+            if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P14;
+            if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P14;
+            if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P14;
+            break;
         default:
             av_log(s->avctx, AV_LOG_ERROR,
-                   "4:2:0, 4:2:2, 4:4:4 supports are currently specified.\n");
+                   "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10, 12 and 14 bits.\n");
             return AVERROR_PATCHWELCOME;
         }
     } else if(s->nuh_layer_id) {
@@ -1884,14 +1894,23 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps_extension_7bits	= get_bits(gb, 7);
         if (sps_extension_flag[0]) {
             sps->transform_skip_rotation_enabled_flag = get_bits1(gb);
+            print_cabac("transform_skip_rotation_enabled_flag ", sps->transform_skip_rotation_enabled_flag);
             sps->transform_skip_context_enabled_flag  = get_bits1(gb);
+            print_cabac("transform_skip_context_enabled_flag ", sps->transform_skip_context_enabled_flag);
             int implicit_rdpcm_enabled_flag          = get_bits1(gb);
+            print_cabac("implicit_rdpcm_enabled_flag ", implicit_rdpcm_enabled_flag);
             int explicit_rdpcm_enabled_flag          = get_bits1(gb);
+            print_cabac("explicit_rdpcm_enabled_flag ", explicit_rdpcm_enabled_flag);
             int extended_precision_processing_flag   = get_bits1(gb);
+            print_cabac("extended_precision_processing_flag ", extended_precision_processing_flag);
             sps->intra_smoothing_disabled_flag       = get_bits1(gb);
+            print_cabac("intra_smoothing_disabled_flag ", sps->intra_smoothing_disabled_flag);
             int high_precision_offsets_enabled_flag  = get_bits1(gb);
+            print_cabac("high_precision_offsets_enabled_flag ", high_precision_offsets_enabled_flag);
             int fast_rice_adaptation_enabled_flag    = get_bits1(gb);
+            print_cabac("fast_rice_adaptation_enabled_flag ", fast_rice_adaptation_enabled_flag);
             int cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
+            print_cabac("cabac_bypass_alignment_enabled_flag ", cabac_bypass_alignment_enabled_flag);
         }
     }
     if (s->apply_defdispwin) {

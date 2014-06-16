@@ -426,6 +426,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         const int   phaseX = phaseAlignFlag   << 1;
         const int   phaseY = phaseAlignFlag   << 1;
         HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
+        HEVCWindow scaled_ref_layer_window;
         if(bl_sps) {
             heightBL = bl_sps->height - bl_sps->output_window.bottom_offset - bl_sps->output_window.top_offset;
             widthBL  = bl_sps->width  - bl_sps->output_window.left_offset - bl_sps->output_window.right_offset;
@@ -439,7 +440,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        HEVCWindow scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->m_refLayerId[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
+        scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->m_refLayerId[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
 
         heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
         widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
@@ -782,13 +783,12 @@ static int hls_slice_header(HEVCContext *s)
 
         sh->nb_refs[L0] = sh->nb_refs[L1] = 0;
         if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
-            int nb_refs;
+            int nb_refs, num_ref_idx_active_override_flag;
 
             sh->nb_refs[L0] = s->pps->num_ref_idx_l0_default_active;
             if (sh->slice_type == B_SLICE)
                 sh->nb_refs[L1] = s->pps->num_ref_idx_l1_default_active;
-            int num_ref_idx_active_override_flag = get_bits1(gb); 
-            print_cabac("num_ref_idx_active_override_flag", num_ref_idx_active_override_flag);
+            num_ref_idx_active_override_flag = get_bits1(gb);
             if (num_ref_idx_active_override_flag) { // num_ref_idx_active_override_flag
                 sh->nb_refs[L0] = get_ue_golomb_long(gb) + 1;
                 print_cabac("num_ref_idx_l0_active_minus1", sh->nb_refs[L0] -1);
@@ -2248,7 +2248,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
 
     MvField *tab_mvf = s->ref->tab_mvf;
     RefPicList  *refPicList = s->ref->refPicList;
-    HEVCFrame *ref0, *ref1;
+    HEVCFrame *ref0 = NULL, *ref1 = NULL;
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);
@@ -2520,6 +2520,7 @@ static void hls_prediction_unit_compute(HEVCContext *s, int x0, int y0,
                                    log2_cb_size, partIdx,
                                    current_mv->merge_idx, current_mv);
     } else {  //MODE_INTER
+        ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
         if (current_mv->merge_flag) {
             ff_hevc_luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                     partIdx, current_mv->merge_idx, current_mv);
@@ -4020,6 +4021,7 @@ static int set_side_data(HEVCContext *s)
 
     return 0;
 }
+
 static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
 {
     int ret;
@@ -4059,7 +4061,7 @@ static int hevc_frame_start(HEVCContext *s)
 {
     int pic_size_in_ctb  = ((s->sps->width  >> s->sps->log2_min_cb_size) + 1) *
                            ((s->sps->height >> s->sps->log2_min_cb_size) + 1);
-    int ret;
+    int ret = 0;
     AVFrame *cur_frame;
     av_log(s->avctx, AV_LOG_DEBUG, "frame start %d\n", s->decoder_id);
 
@@ -4073,7 +4075,6 @@ static int hevc_frame_start(HEVCContext *s)
     s->is_decoded        = 0;
     s->first_nal_type    = s->nal_unit_type;
 
-    
     if (s->pps->tiles_enabled_flag)
         s->HEVClc->co.end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
 #ifdef SVC_EXTENSION
@@ -4103,6 +4104,7 @@ static int hevc_frame_start(HEVCContext *s)
     }
 #endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
+
     if (ret < 0)
         goto fail;
     s->avctx->BL_frame = s->ref;
@@ -4141,43 +4143,6 @@ fail:
     return ret;
 }
 
-static unsigned long int GetTimeMs64()
-{
-#ifdef WIN32
-    /* Windows */
-    FILETIME ft;
-    LARGE_INTEGER li;
-    
-    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
-     * to a LARGE_INTEGER structure. */
-    GetSystemTimeAsFileTime(&ft);
-    li.LowPart = ft.dwLowDateTime;
-    li.HighPart = ft.dwHighDateTime;
-    
-    uint64_t ret = li.QuadPart;
-    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
-    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
-    
-    return ret;
-#else
-    /* Linux */
-    struct timeval tv;
-    
-    gettimeofday(&tv, NULL);
-    
-    unsigned long int ret = tv.tv_usec;
-    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
-    //ret /= 1000;
-    
-    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
-    ret += (tv.tv_sec * 1000000);
-    
-    return ret;
-#endif
-}
-
-
-
 static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContextCabac *lc = &s->HEVClc->ca;
@@ -4203,7 +4168,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     s->avctx->layers_size += length;
     
     s->nuh_layer_id = ret;
-    time_mp = GetTimeMs64();
 
     switch (s->nal_unit_type) {
     case NAL_VPS:
@@ -4383,7 +4347,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                "Skipping NAL unit %d\n", s->nal_unit_type);
     }
 
-    layers_time[s->nuh_layer_id] +=(GetTimeMs64()-time_mp);
     return 0;
 fail:
     if (s->avctx->err_recognition & AV_EF_EXPLODE)
@@ -4589,13 +4552,15 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         ret = hls_nal_unit(s);
         if(!s->bl_decoder_el_exist && ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->bl_decoder_el_exist = 1;
-            s->poc_id = ++s->poc_id & (MAX_POC-1);
+            s->poc_id++;
+            s->poc_id &= (MAX_POC-1);
         }
         if(!s->el_decoder_bl_exist && s->decoder_id && ret == s->decoder_id-1 && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->el_decoder_bl_exist=1;
         }
         if(!s->el_decoder_el_exist && s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
-            s->poc_id = ++s->poc_id & (MAX_POC-1);
+            s->poc_id++;
+            s->poc_id &= (MAX_POC-1);
             s->el_decoder_el_exist = 1;
         }
         if (s->nal_unit_type == NAL_EOB_NUT ||
@@ -4605,6 +4570,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         buf    += consumed;
         length -= consumed;
     }
+
     /* parse the NAL units */
     if(!s->el_decoder_bl_exist) {
         s->el_decoder_el_exist = 0;
@@ -4621,6 +4587,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         }
     }
+
 fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
@@ -4786,13 +4753,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     pic_arrays_free(s);
 
     av_freep(&s->md5_ctx);
-
-#if 1
-    if(!first){
-        printf("Times %ld  %ld  %ld  ", layers_time[0], layers_time[1], layers_time[2]);
-        first = 1;
-    }
-#endif
 
     for(i=0; i < s->nals_allocated; i++) {
         av_freep(&s->skipped_bytes_pos_nal[i]);

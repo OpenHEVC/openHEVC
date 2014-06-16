@@ -265,6 +265,14 @@ static void FUNC(transform_4x4_luma_add)(uint8_t *_dst, int16_t *coeffs,
         }                                                                      \
     } while (0)
 
+#define TRANSFORM_ADD_VAR4(H)                                                    \
+    int      limit2   = FFMIN(col_limit + 4, H)
+#define TRANSFORM_ADD_VAR8(H)                                                    \
+        int      limit   = FFMIN(col_limit, H);                                    \
+        int      limit2   = FFMIN(col_limit + 4, H)
+#define TRANSFORM_ADD_VAR16(H)   TRANSFORM_ADD_VAR8(H)
+#define TRANSFORM_ADD_VAR32(H)   TRANSFORM_ADD_VAR8(H)
+
 #define TRANSFORM_ADD(H)                                                       \
 static void FUNC(transform_##H ##x ##H ##_add)(                                \
     uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit) {        \
@@ -274,8 +282,7 @@ static void FUNC(transform_##H ##x ##H ##_add)(                                \
     int      shift   = 7;                                                      \
     int      add     = 1 << (shift - 1);                                       \
     int16_t *src     = coeffs;                                                 \
-    int      limit   = FFMIN(col_limit, H);                                    \
-    int      limit2   = FFMIN(col_limit + 4, H);                               \
+    TRANSFORM_ADD_VAR ##H(H);                                                   \
                                                                                \
     for (i = 0; i < H; i++) {                                                  \
         TR_ ## H(src, src, H, H, SCALE, limit2);                               \
@@ -1982,7 +1989,7 @@ static void FUNC(upsample_filter_block_cr_v_x2)( uint8_t *_dst, ptrdiff_t dststr
     int rightEndC  = widthEL - (Enhscal->right_offset>>1);
     int topStartC  = Enhscal->top_offset>>1;
     int bottomEndC = heightEL - (Enhscal->bottom_offset>>1);
-    int y, i, j, phase, refPos16, refPos;
+    int y, i, j, refPos16, refPos;
     const int8_t* coeff;
     int16_t *   src_tmp;
     pixel *dst_tmp, *dst    = (pixel *)_dst;
@@ -2083,20 +2090,19 @@ static void FUNC(upsample_filter_block_cr_v_x1_5)( uint8_t *_dst, ptrdiff_t dsts
     int rightEndC  = widthEL - (Enhscal->right_offset>>1);
     int topStartC  = Enhscal->top_offset>>1;
     int bottomEndC = heightEL - (Enhscal->bottom_offset>>1);
-    int y, i, j, phase, refPos16, refPos;
+    int y, i, j, refPos16, refPos;
     const int8_t* coeff;
     int16_t *   src_tmp;
     pixel *dst_tmp, *dst    = (pixel *)_dst;
-    for( j = 0; j < block_h; j++ ) {
-        y =   av_clip_c(y_EL+j, topStartC, bottomEndC-1);
+    for ( j = 0; j < block_h; j++ ) {
+        y        = av_clip_c(y_EL+j, topStartC, bottomEndC-1);
         refPos16 = ((( y - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12)-4;
-        phase    = refPos16 & 15;
         coeff    = up_sample_filter_x1_5chroma[y%3];
         refPos   = (refPos16>>4) - y_BL;
         src_tmp  = _src  + refPos  * _srcstride;
         dst_tmp  =  dst  + y* dststride + x_EL;
         refPos = (refPos16>>4);
-        for( i = 0; i < block_w; i++ )	{
+        for ( i = 0; i < block_w; i++ ) {
             *dst_tmp = av_clip_pixel( (CroVer_FILTER_Block(src_tmp, coeff, _srcstride) + I_OFFSET) >> (N_SHIFT));
             if( ((x_EL+i) >= leftStartC) && ((x_EL+i) <= rightEndC-2) )
                 src_tmp++;
@@ -2142,19 +2148,29 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     int phase    = 0;
     int refPos   = 0;
     const int8_t* coeff;
-    
-    widthEL   = FrameEL->coded_width;  //pcUsPic->getWidth ();
-    heightEL  = FrameEL->coded_height; //pcUsPic->getHeight();
-
-    widthBL   = FrameBL->coded_width;
-    heightBL  = FrameBL->coded_height <= heightEL ? FrameBL->coded_height:heightEL;  // min( FrameBL->height, heightEL);
     int leftStartL = Enhscal->left_offset;
     int rightEndL  = FrameEL->coded_width - Enhscal->right_offset;
     int topStartL  = Enhscal->top_offset;
     int bottomEndL = FrameEL->coded_height - Enhscal->bottom_offset;
     pixel buffer[8];
+
+    const int nShift = 20-8;
+    int iOffset = 1 << (nShift - 1);
+    short buffer1[8];
+
+    int leftStartC = Enhscal->left_offset>>1;
+    int rightEndC  = (FrameEL->coded_width>>1) - (Enhscal->right_offset>>1);
+    int topStartC  = Enhscal->top_offset>>1;
+    int bottomEndC = (FrameEL->coded_height>>1) - (Enhscal->bottom_offset>>1);
+
+    widthEL   = FrameEL->coded_width;  //pcUsPic->getWidth ();
+    heightEL  = FrameEL->coded_height; //pcUsPic->getHeight();
+
+    widthBL   = FrameBL->coded_width;
+    heightBL  = FrameBL->coded_height <= heightEL ? FrameBL->coded_height:heightEL;  // min( FrameBL->height, heightEL);
+
     for( i = 0; i < widthEL; i++ )	{
-    	int x = av_clip_c(i, leftStartL, rightEndL);
+        int x = av_clip_c(i, leftStartL, rightEndL);
         refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
         phase    = refPos16 & 15;
         refPos   = refPos16 >> 4;
@@ -2163,59 +2179,53 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
         srcY = srcBufY + refPos;
         dstY1 = tempBufY + i;
         if(refPos < 0)
-            for( j = 0; j < heightBL ; j++ )	{
-                
-        		memset(buffer, srcY[-refPos], -refPos);
+            for( j = 0; j < heightBL ; j++ ) {
+
+                memset(buffer, srcY[-refPos], -refPos);
                 memcpy(buffer-refPos, srcY-refPos, 8+refPos);
                 *dstY1 = LumHor_FILTER(buffer, coeff);
-                
+
                 srcY += strideBL;
                 dstY1 += widthEL;//strideEL;
-            }else if(refPos+8 > widthBL )
-                for( j = 0; j < heightBL ; j++ )	{
+            } else if (refPos+8 > widthBL )
+                for ( j = 0; j < heightBL ; j++ ) {
                     
-            		memcpy(buffer, srcY, widthBL-refPos);
+                    memcpy(buffer, srcY, widthBL-refPos);
                     memset(buffer+(widthBL-refPos), srcY[widthBL-refPos-1], 8-(widthBL-refPos));
                     *dstY1 = LumHor_FILTER(buffer, coeff);
                     
                     srcY += strideBL;
                     dstY1 += widthEL;//strideEL;
-                }else
-                    for( j = 0; j < heightBL ; j++ )	{
-                        
+                } else
+                    for ( j = 0; j < heightBL ; j++ ) {
                         *dstY1 = LumHor_FILTER(srcY, coeff);
                         srcY += strideBL;
                         dstY1 += widthEL;//strideEL;
                     }
-        
     }
-    
-    const int nShift = 20-8;
-    int iOffset = 1 << (nShift - 1);
-    short buffer1[8];
-    for( j = 0; j < heightEL; j++ )	{
-    	int y = av_clip_c(j, topStartL, bottomEndL-1);
-    	refPos16 = ((( y - topStartL )*up_info->scaleYLum + up_info->addYLum) >> 12);
+    for ( j = 0; j < heightEL; j++ ) {
+        int y = av_clip_c(j, topStartL, bottomEndL-1);
+        refPos16 = ((( y - topStartL )*up_info->scaleYLum + up_info->addYLum) >> 12);
         phase    = refPos16 & 15;
         refPos   = refPos16 >> 4;
         coeff = up_sample_filter_luma[phase];
         refPos -= ((NTAPS_LUMA>>1) - 1);
         srcY1 = tempBufY + refPos *widthEL;
         dstY = dstBufY + j * strideEL;
-        if(refPos < 0)
-            for( i = 0; i < widthEL; i++ )	{
+        if (refPos < 0)
+            for ( i = 0; i < widthEL; i++ ) {
                 
-        		for(k= 0; k<-refPos ; k++)
-        			buffer1[k] = srcY1[-refPos*widthEL]; //srcY1[(-refPos+k)*strideEL];
+                for(k= 0; k<-refPos ; k++)
+                    buffer1[k] = srcY1[-refPos*widthEL]; //srcY1[(-refPos+k)*strideEL];
                 for(k= 0; k<8+refPos ; k++)
-                	buffer1[-refPos+k] = srcY1[(-refPos+k)*widthEL];
+                    buffer1[-refPos+k] = srcY1[(-refPos+k)*widthEL];
                 *dstY = av_clip_pixel( (LumVer_FILTER(buffer1, coeff) + iOffset) >> (nShift));
-                
+
                 if( (i >= leftStartL) && (i <= rightEndL-2) )
                     srcY1++;
                 dstY++;
-            }else if(refPos+8 > heightBL )
-                for( i = 0; i < widthEL; i++ )	{
+            } else if(refPos+8 > heightBL )
+                for( i = 0; i < widthEL; i++ ) {
                     
                     for(k= 0; k<heightBL-refPos ; k++)
                         buffer1[k] = srcY1[k*widthEL];
@@ -2226,19 +2236,14 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                     if( (i >= leftStartL) && (i <= rightEndL-2) )
                         srcY1++;
                     dstY++;
-                }else
-                    for( i = 0; i < widthEL; i++ )	{
-                        
+                } else
+                    for ( i = 0; i < widthEL; i++ ) {
                         *dstY = av_clip_pixel( (LumVer_FILTER1(srcY1, coeff, widthEL) + iOffset) >> (nShift));
-                         
                         if( (i >= leftStartL) && (i <= rightEndL-2) )
                             srcY1++;
                         dstY++;
                     }
     }
-    
-    
-      
     
     widthBL   = FrameBL->coded_width;
     heightBL  = FrameBL->coded_height;
@@ -2252,12 +2257,6 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     heightBL >>= 1;
     strideBL  = FrameBL->linesize[1];
     strideEL  = FrameEL->linesize[1];
-    int leftStartC = Enhscal->left_offset>>1;
-    int rightEndC  = (FrameEL->coded_width>>1) - (Enhscal->right_offset>>1);
-    int topStartC  = Enhscal->top_offset>>1;
-    int bottomEndC = (FrameEL->coded_height>>1) - (Enhscal->bottom_offset>>1);
-    
-    
     widthEL   = FrameEL->coded_width >> 1;
     heightEL  = FrameEL->coded_height >> 1;
     widthBL   = FrameBL->coded_width >> 1;
@@ -2314,22 +2313,17 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                     srcV += strideBL;
                     dstU1 += widthEL;
                     dstV1 += widthEL;
-                }else
-                    for( j = 0; j < heightBL ; j++ )	{
-                        
-                		*dstU1 = CroHor_FILTER(srcU, coeff);
-                        
-                		*dstV1 = CroHor_FILTER(srcV, coeff);
-                        
-                        
-                        srcU += strideBL;
-                        srcV += strideBL;
+                } else
+                    for ( j = 0; j < heightBL ; j++ ) {
+                        *dstU1 = CroHor_FILTER(srcU, coeff);
+                        *dstV1 = CroHor_FILTER(srcV, coeff);
+                        srcU  += strideBL;
+                        srcV  += strideBL;
                         dstU1 += widthEL;
                         dstV1 += widthEL;
-                	}
+                    }
     }
-    
-    
+
     for( j = 0; j < heightEL; j++ )	{
         int y = av_clip_c(j, topStartC, bottomEndC - 1);
         refPos16 = (((y - topStartC)*up_info->scaleYCr + up_info->addYCr) >> 12) - 4;
@@ -2337,18 +2331,14 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
         phase    = refPos16 & 15;
         refPos   = refPos16 >> 4;
          
-        coeff = up_sample_filter_chroma[phase];
+        coeff   = up_sample_filter_chroma[phase];
         refPos -= ((NTAPS_CHROMA>>1) - 1);
-        srcU1 = tempBufU  + refPos *widthEL;
-        srcV1 = tempBufV  + refPos *widthEL;
-        dstU = dstBufU + j*strideEL;
-        dstV = dstBufV + j*strideEL;
-        if(refPos < 0)
-            for( i = 0; i < widthEL; i++ )	{
-                
-                
-                
-                
+        srcU1   = tempBufU  + refPos *widthEL;
+        srcV1   = tempBufV  + refPos *widthEL;
+        dstU    = dstBufU + j*strideEL;
+        dstV    = dstBufV + j*strideEL;
+        if (refPos < 0)
+            for ( i = 0; i < widthEL; i++ ) {
                 for(k= 0; k<-refPos ; k++){
                     buffer1[k] = srcU1[(-refPos)*widthEL];
                     buffer1[k+4] = srcV1[(-refPos)*widthEL];
@@ -2359,45 +2349,35 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                 }
                 *dstU = av_clip_pixel( (CroVer_FILTER(buffer1, coeff) + iOffset) >> (nShift));
                 *dstV = av_clip_pixel( (CroVer_FILTER((buffer1+4), coeff) + iOffset) >> (nShift));
-                
-                 
-                                if( (i >= leftStartC) && (i <= rightEndC-2) )	{
+                if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
                     srcU1++;
                     srcV1++;
                 }
                 dstU++;
                 dstV++;
-            }else if(refPos+4 > heightBL )
-                for( i = 0; i < widthEL; i++ )	{
-                    
-                    for(k= 0; k< heightBL-refPos ; k++) {
+            } else if(refPos+4 > heightBL )
+                for( i = 0; i < widthEL; i++ ) {
+                    for (k= 0; k< heightBL-refPos ; k++) {
                         buffer1[k] = srcU1[k*widthEL];
                         buffer1[k+4] = srcV1[k*widthEL];
                     }
-                    for(k= 0; k<4-(heightBL-refPos) ; k++) {
+                    for (k= 0; k<4-(heightBL-refPos) ; k++) {
                         buffer1[heightBL-refPos+k] = srcU1[(heightBL-refPos-1)*widthEL];
                         buffer1[heightBL-refPos+k+4] = srcV1[(heightBL-refPos-1)*widthEL];
                     }
                     *dstU = av_clip_pixel( (CroVer_FILTER(buffer1, coeff) + iOffset) >> (nShift));
-                    
-                    
                     *dstV = av_clip_pixel( (CroVer_FILTER((buffer1+4), coeff) + iOffset) >> (nShift));
-                   
-                    if( (i >= leftStartC) && (i <= rightEndC-2) )	{
+                    if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
                         srcU1++;
                         srcV1++;
                     }
                     dstU++;
                     dstV++;
-                }else
-                    for( i = 0; i < widthEL; i++ )	{
+                } else
+                    for ( i = 0; i < widthEL; i++ ) {
                         *dstU = av_clip_pixel( (CroVer_FILTER1(srcU1, coeff, widthEL) + iOffset) >> (nShift));
-                        
-                        
                         *dstV = av_clip_pixel( (CroVer_FILTER1(srcV1, coeff, widthEL) + iOffset) >> (nShift));
-                        
-                        
-                        if( (i >= leftStartC) && (i <= rightEndC-2) )	{
+                        if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
                             srcU1++;
                             srcV1++;
                         }

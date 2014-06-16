@@ -10,7 +10,7 @@
 #include <libavformat/avformat.h>
 
 
-#define TIME2
+//#define TIME2
 
 #ifdef TIME2
 #ifdef WIN32

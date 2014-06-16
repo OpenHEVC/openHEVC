@@ -373,7 +373,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     MC_PIXEL_COMPUTE2_10()
 
 #define PUT_HEVC_PEL_PIXELS_VAR2_8()                                           \
-    __m128i x1, x2;                                                            \
+    __m128i x1;                                                                 \
     __m128i c0 = _mm_setzero_si128()
 
 #define PUT_HEVC_PEL_PIXELS_VAR4_8()  PUT_HEVC_PEL_PIXELS_VAR2_8()
@@ -388,6 +388,20 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 #define PUT_HEVC_PEL_PIXELS_VAR6_10()   PUT_HEVC_PEL_PIXELS_VAR2_10()
 #define PUT_HEVC_PEL_PIXELS_VAR8_10()   PUT_HEVC_PEL_PIXELS_VAR2_10()
 #define PUT_HEVC_PEL_PIXELS_VAR16_10()  PUT_HEVC_PEL_PIXELS_VAR16_8()
+
+#define PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5()                                      \
+    __m128i r5
+#define PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()                                   \
+    __m128i r5, r6
+
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()    PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR6_8()    PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR8_8()    PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_8()   PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_10()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR6_10()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR8_10()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_10()  PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_8()
 
 #define PUT_HEVC_PEL_PIXELS(H, D)                                              \
 void ff_hevc_put_hevc_pel_pixels ## H ## _ ## D ## _sse (                      \
@@ -422,7 +436,7 @@ void ff_hevc_put_hevc_bi_pel_pixels ## H ## _ ## D ## _sse (                   \
     BI_UNWEIGHTED_INIT(D);                                                     \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             MC_LOAD_PIXEL();                                                   \
             MC_PIXEL_COMPUTE ## H ## _ ## D();                                 \
             BI_UNWEIGHTED_COMPUTE ## H(H);                                     \
@@ -463,7 +477,6 @@ void ff_hevc_put_hevc_uni_w_pel_pixels ## H ## _ ## D ## _sse (                \
     UNI_WEIGHTED_INIT(D);                                                      \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             MC_LOAD_PIXEL();                                                   \
             MC_PIXEL_COMPUTE ## H ## _ ## D();                                 \
             UNI_WEIGHTED_COMPUTE ## H(H);                                      \
@@ -488,7 +501,7 @@ void ff_hevc_put_hevc_bi_w_pel_pixels ## H ## _ ## D ## _sse (                  
     BI_WEIGHTED_INIT(D);                                                       \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             MC_LOAD_PIXEL();                                                   \
             MC_PIXEL_COMPUTE ## H ## _ ## D();                                 \
             BI_WEIGHTED_COMPUTE ## H(H);                                       \
@@ -596,7 +609,7 @@ void ff_hevc_put_hevc_bi_epel_h ## H ## _ ## D ## _sse (                       \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             EPEL_LOAD_ ## D(src, 1);                                           \
             EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             BI_UNWEIGHTED_COMPUTE ## H(H);                                     \
@@ -621,7 +634,6 @@ void ff_hevc_put_hevc_uni_epel_h ## H ## _ ## D ## _sse (                      \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             EPEL_LOAD_ ## D(src, 1);                                           \
             EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             UNI_UNWEIGHTED_COMPUTE ## H(H);                                    \
@@ -645,7 +657,6 @@ void ff_hevc_put_hevc_uni_w_epel_h ## H ## _ ## D ## _sse (                    \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             EPEL_LOAD_ ## D(src, 1);                                           \
             EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             UNI_WEIGHTED_COMPUTE ## H(H);                                      \
@@ -671,7 +682,7 @@ void ff_hevc_put_hevc_bi_w_epel_h ## H ## _ ## D ## _sse (                     \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             EPEL_LOAD_ ## D(src, 1);                                           \
             EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             BI_WEIGHTED_COMPUTE ## H(H);                                       \
@@ -739,7 +750,7 @@ void ff_hevc_put_hevc_bi_epel_v ## H ## _ ## D ## _sse (                       \
     EPEL_FILTER_ ## D(f1, f2, my - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             EPEL_LOAD_ ## D(src, srcstride);                                   \
             EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             BI_UNWEIGHTED_COMPUTE ## H(H);                                     \
@@ -764,7 +775,6 @@ void ff_hevc_put_hevc_uni_epel_v ## H ## _ ## D ## _sse (                      \
     EPEL_FILTER_ ## D(f1, f2, my - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             EPEL_LOAD_ ## D(src, srcstride);                                   \
             EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             UNI_UNWEIGHTED_COMPUTE ## H(H);                                    \
@@ -789,7 +799,6 @@ void ff_hevc_put_hevc_uni_w_epel_v ## H ## _ ## D ## _sse (                    \
     EPEL_FILTER_ ## D(f1, f2, my - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             EPEL_LOAD_ ## D(src, srcstride);                                   \
             EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             UNI_WEIGHTED_COMPUTE ## H(H);                                      \
@@ -815,8 +824,8 @@ void ff_hevc_put_hevc_bi_w_epel_v ## H ## _ ## D ## _sse (                     \
     EPEL_FILTER_ ## D(f1, f2, my - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
-           EPEL_LOAD_ ## D(src, srcstride);                                   \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
+            EPEL_LOAD_ ## D(src, srcstride);                                   \
             EPEL_COMPUTE_ ## D(x1, f1, f2);                                    \
             BI_WEIGHTED_COMPUTE ## H(H);                                       \
             WEIGHTED_STORE ## H ## _ ## D();                                   \
@@ -852,7 +861,6 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     EPEL_FILTER_10(f3, f4, my - 1);                                            \
     for (x = 0; x < width; x += H) {                                           \
-        __m128i r5, r6;                                                        \
         EPEL_LOAD_ ## D(src, 1);                                               \
         EPEL_COMPUTE_ ## D(r1, f1, f2);                                        \
         src += srcstride;                                                      \
@@ -910,7 +918,7 @@ void ff_hevc_put_hevc_bi_epel_hv ## H ## _ ## D ## _sse (                      \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     EPEL_FILTER_10(f3, f4, my - 1);                                            \
     for (x = 0; x < width; x += H) {                                           \
-            __m128i r5, r6;                                                    \
+        PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                      \
         EPEL_LOAD_ ## D(src, 1);                                               \
         EPEL_COMPUTE_ ## D(r1, f1, f2);                                        \
         src += srcstride;                                                      \
@@ -960,7 +968,6 @@ void ff_hevc_put_hevc_uni_epel_hv ## H ## _ ## D ## _sse (                     \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     EPEL_FILTER_10(f3, f4, my - 1);                                            \
     for (x = 0; x < width; x += H) {                                           \
-        __m128i r5, r6;                                                        \
         EPEL_LOAD_ ## D(src, 1);                                               \
         EPEL_COMPUTE_ ## D(r1, f1, f2);                                        \
         src += srcstride;                                                      \
@@ -1009,7 +1016,6 @@ void ff_hevc_put_hevc_uni_w_epel_hv ## H ## _ ## D ## _sse (                   \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     EPEL_FILTER_10(f3, f4, my - 1);                                            \
     for (x = 0; x < width; x += H) {                                           \
-            __m128i r5, r6;                                                    \
         EPEL_LOAD_ ## D(src, 1);                                               \
         EPEL_COMPUTE_ ## D(r1, f1, f2);                                        \
         src += srcstride;                                                      \
@@ -1060,7 +1066,7 @@ void ff_hevc_put_hevc_bi_w_epel_hv ## H ## _ ## D ## _sse (                    \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     EPEL_FILTER_10(f3, f4, my - 1);                                            \
     for (x = 0; x < width; x += H) {                                           \
-        __m128i r5, r6;                                                        \
+        PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                      \
         EPEL_LOAD_ ## D(src, 1);                                               \
         EPEL_COMPUTE_ ## D(r1, f1, f2);                                        \
         src += srcstride;                                                      \
@@ -1204,10 +1210,10 @@ void ff_hevc_put_hevc_bi_w_epel_hv ## H ## _ ## D ## _sse (                    \
 #define QPEL_H_COMPUTE8_14()    QPEL_H_COMPUTE8(6)
 
 #define PUT_HEVC_QPEL_H_VAR4_8()                                               \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, c1, c2, c3, c4
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4
 #define PUT_HEVC_QPEL_H_VAR8_8()   PUT_HEVC_QPEL_H_VAR4_8()
 #define PUT_HEVC_QPEL_H_VAR16_8()                                              \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, r1, r2, c1, c2, c3, c4
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4
 
 #define PUT_HEVC_QPEL_H(H, D)                                                  \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
@@ -1243,7 +1249,7 @@ void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _sse (                       \
     QPEL_H_FILTER_ ## D(mx - 1);                                               \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             QPEL_H_LOAD();                                                     \
             QPEL_H_COMPUTE ## H ## _ ## D();                                   \
             BI_UNWEIGHTED_COMPUTE ## H(H);                                     \
@@ -1268,7 +1274,6 @@ void ff_hevc_put_hevc_uni_qpel_h ## H ## _ ## D ## _sse (                      \
     QPEL_H_FILTER_ ## D(mx - 1);                                               \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             QPEL_H_LOAD();                                                     \
             QPEL_H_COMPUTE ## H ## _ ## D();                                   \
             UNI_UNWEIGHTED_COMPUTE ## H(H);                                    \
@@ -1293,7 +1298,6 @@ void ff_hevc_put_hevc_uni_w_qpel_h ## H ## _ ## D ## _sse (                    \
     QPEL_H_FILTER_ ## D(mx - 1);                                               \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             QPEL_H_LOAD();                                                     \
             QPEL_H_COMPUTE ## H ## _ ## D();                                   \
             UNI_WEIGHTED_COMPUTE ## H(H);                                      \
@@ -1319,7 +1323,7 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _sse (                     \
     QPEL_H_FILTER_ ## D(mx - 1);                                               \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             QPEL_H_LOAD();                                                     \
             QPEL_H_COMPUTE ## H ## _ ## D();                                   \
             BI_WEIGHTED_COMPUTE ## H(H);                                       \
@@ -1478,7 +1482,6 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
     QPEL_FILTER_ ## D(mx - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             QPEL_LOAD_LO ## H ## _ ## D(src, 1);                               \
             QPEL_COMPUTE ## H ## _ ## D(r1, r2, c1, c2);                       \
             QPEL_LOAD_HI ## H ## _ ## D(src, 1);                               \
@@ -1506,7 +1509,7 @@ void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _sse (                       \
     QPEL_FILTER_ ## D(mx - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             QPEL_LOAD_LO ## H ## _ ## D(src, 1);                               \
             QPEL_COMPUTE ## H ## _ ## D(r1, r2, c1, c2);                       \
             QPEL_LOAD_HI ## H ## _ ## D(src, 1);                               \
@@ -1535,7 +1538,6 @@ void ff_hevc_put_hevc_uni_qpel_h ## H ## _ ## D ## _sse (                      \
     QPEL_FILTER_ ## D(mx - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             QPEL_LOAD_LO ## H ## _ ## D(src, 1);                               \
             QPEL_COMPUTE ## H ## _ ## D(r1, r2, c1, c2);                       \
             QPEL_LOAD_HI ## H ## _ ## D(src, 1);                               \
@@ -1564,7 +1566,6 @@ void ff_hevc_put_hevc_uni_w_qpel_h ## H ## _ ## D ## _sse (                    \
     QPEL_FILTER_ ## D(mx - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
             QPEL_LOAD_LO ## H ## _ ## D(src, 1);                               \
             QPEL_COMPUTE ## H ## _ ## D(r1, r2, c1, c2);                       \
             QPEL_LOAD_HI ## H ## _ ## D(src, 1);                               \
@@ -1594,7 +1595,7 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _sse (                     \
     QPEL_FILTER_ ## D(mx - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
             QPEL_LOAD_LO ## H ## _ ## D(src, 1);                               \
             QPEL_COMPUTE ## H ## _ ## D(r1, r2, c1, c2);                       \
             QPEL_LOAD_HI ## H ## _ ## D(src, 1);                               \
@@ -1613,16 +1614,16 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _sse (                     \
 // ff_hevc_put_hevc_qpel_vX_X_X_sse
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_QPEL_V_VAR4_8()                                               \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, c1, c2, c3, c4
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4
 #define PUT_HEVC_QPEL_V_VAR8_8()     PUT_HEVC_QPEL_V_VAR4_8()
 #define PUT_HEVC_QPEL_V_VAR16_8()                                              \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, r1, r2, c1, c2, c3, c4
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4
 
 #define PUT_HEVC_QPEL_V_VAR4_10()                                              \
     const __m128i c0    = _mm_setzero_si128();                                 \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, c1, c2, c3, c4
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4
 #define PUT_HEVC_QPEL_V_VAR8_10()                                              \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, r1, r2, c1, c2, c3, c4
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4
 
 #define PUT_HEVC_QPEL_V_VAR4_14()     PUT_HEVC_QPEL_V_VAR4_10()
 #define PUT_HEVC_QPEL_V_VAR8_14()     PUT_HEVC_QPEL_V_VAR8_10()
@@ -1661,7 +1662,7 @@ void ff_hevc_put_hevc_bi_qpel_v ## V ## _ ## D ## _sse (                       \
     QPEL_FILTER_ ## D(my - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## V ## _ ## D();                  \
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _ ## D();                                   \
             BI_UNWEIGHTED_COMPUTE ## V(V);                                     \
@@ -1686,7 +1687,6 @@ void ff_hevc_put_hevc_uni_qpel_v ## V ## _ ## D ## _sse (                      \
     QPEL_FILTER_ ## D(my - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            __m128i r5, r6;                                                    \
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _ ## D();                                   \
             UNI_UNWEIGHTED_COMPUTE ## V(V);                                    \
@@ -1736,7 +1736,7 @@ void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _ ## D ## _sse (                     \
     QPEL_FILTER_ ## D(my - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## V ## _ ## D();                  \
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _ ## D();                                   \
             BI_WEIGHTED_COMPUTE ## V(V);                                       \
@@ -1762,7 +1762,7 @@ void ff_hevc_put_hevc_bi_qpel_v ## V ## _14_ ## D ## _sse (                    \
     QPEL_FILTER_14(my - 1);                                                    \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## V ## _ ## D();                  \
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _14();                                      \
             BI_UNWEIGHTED_COMPUTE ## V(V);                                     \
@@ -1787,7 +1787,6 @@ void ff_hevc_put_hevc_uni_qpel_v ## V ## _14_ ## D ## _sse (                   \
     QPEL_FILTER_14(my - 1);                                                    \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            __m128i r5, r6;                                                    \
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _14();                                      \
             UNI_UNWEIGHTED_COMPUTE ## V(V);                                    \
@@ -1812,7 +1811,6 @@ void ff_hevc_put_hevc_uni_w_qpel_v ## V ## _14_ ## D ## _sse (                 \
     QPEL_FILTER_14(my - 1);                                                    \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            __m128i r5, r6;                                                    \
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _14();                                      \
             UNI_WEIGHTED_COMPUTE ## V(V);                                      \
@@ -1838,7 +1836,7 @@ void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _14_ ## D ## _sse (                  \
     QPEL_FILTER_14(my - 1);                                                    \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
-            __m128i r5, r6;                                                    \
+            PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## V ## _ ## D();                  \
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _14();                                      \
             BI_WEIGHTED_COMPUTE ## V(V);                                       \
