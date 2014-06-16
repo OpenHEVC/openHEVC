@@ -110,7 +110,6 @@ fail:
     return NULL;
 }
 
-
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 {
     HEVCFrame *ref;

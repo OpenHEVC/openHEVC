@@ -255,7 +255,4 @@ void ff_hevc_sao_band_filter_0_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _s
            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 //#endif
 
-
-
-
 #endif // AVCODEC_X86_HEVCDSP_H

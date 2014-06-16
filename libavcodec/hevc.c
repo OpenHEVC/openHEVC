@@ -2823,6 +2823,7 @@ static int set_side_data(HEVCContext *s)
 
     return 0;
 }
+
 static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
 {
     int ret;
@@ -3370,6 +3371,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         buf    += consumed;
         length -= consumed;
     }
+
     /* parse the NAL units */
     if(!s->el_decoder_bl_exist) {
         s->el_decoder_el_exist = 0;
@@ -3386,6 +3388,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         }
     }
+
 fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
