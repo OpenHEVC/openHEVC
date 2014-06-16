@@ -357,10 +357,16 @@ int i = 0;
         HEVC_DSP_UP(9);
         break;
     case 10:
-        HEVC_DSP_UP(10);        
+        HEVC_DSP_UP(10);
+        break;
+    case 12:
+        HEVC_DSP_UP(12);
+        break;
+    case 14:
+        HEVC_DSP_UP(14);
         break;
     default:
-        HEVC_DSP_UP(8);        
+        HEVC_DSP_UP(8);
         break;
     }
 #endif
