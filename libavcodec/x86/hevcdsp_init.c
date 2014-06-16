@@ -399,9 +399,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
     if (bit_depth == 8) {
         if (EXTERNAL_MMX(mm_flags)) {
-            /*if (mm_flags & AV_CPU_FLAG_CMOV)
-                c->h264_luma_dc_dequant_idct = ff_h264_luma_dc_dequant_idct_mmx; */
-
             if (EXTERNAL_MMXEXT(mm_flags)) {
 #if ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL
                 /* MMEXT optimizations */
