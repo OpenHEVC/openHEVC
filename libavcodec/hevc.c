@@ -2877,7 +2877,6 @@ static int hevc_frame_start(HEVCContext *s)
     s->is_decoded        = 0;
     s->first_nal_type    = s->nal_unit_type;
 
-    
     if (s->pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
 #ifdef SVC_EXTENSION
@@ -2907,6 +2906,7 @@ static int hevc_frame_start(HEVCContext *s)
     }
 #endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
+
     if (ret < 0)
         goto fail;
     s->avctx->BL_frame = s->ref;
@@ -2945,43 +2945,6 @@ fail:
     return ret;
 }
 
-static unsigned long int GetTimeMs64()
-{
-#ifdef WIN32
-    /* Windows */
-    FILETIME ft;
-    LARGE_INTEGER li;
-    
-    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
-     * to a LARGE_INTEGER structure. */
-    GetSystemTimeAsFileTime(&ft);
-    li.LowPart = ft.dwLowDateTime;
-    li.HighPart = ft.dwHighDateTime;
-    
-    uint64_t ret = li.QuadPart;
-    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
-    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
-    
-    return ret;
-#else
-    /* Linux */
-    struct timeval tv;
-    
-    gettimeofday(&tv, NULL);
-    
-    unsigned long int ret = tv.tv_usec;
-    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
-    //ret /= 1000;
-    
-    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
-    ret += (tv.tv_sec * 1000000);
-    
-    return ret;
-#endif
-}
-
-
-
 static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
@@ -3007,7 +2970,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     s->avctx->layers_size += length;
     
     s->nuh_layer_id = ret;
-    time_mp = GetTimeMs64();
 
     switch (s->nal_unit_type) {
     case NAL_VPS:
@@ -3187,7 +3149,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                "Skipping NAL unit %d\n", s->nal_unit_type);
     }
 
-    layers_time[s->nuh_layer_id] +=(GetTimeMs64()-time_mp);
     return 0;
 fail:
     if (s->avctx->err_recognition & AV_EF_EXPLODE)
@@ -3590,13 +3551,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     pic_arrays_free(s);
 
     av_freep(&s->md5_ctx);
-
-#if 1
-    if(!first){
-        printf("Times %ld  %ld  %ld  ", layers_time[0], layers_time[1], layers_time[2]);
-        first = 1;
-    }
-#endif
 
     for(i=0; i < s->nals_allocated; i++) {
         av_freep(&s->skipped_bytes_pos_nal[i]);
