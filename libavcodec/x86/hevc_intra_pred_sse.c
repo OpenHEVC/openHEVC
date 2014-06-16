@@ -764,7 +764,6 @@ PRED_PLANAR_3(10)
 #define PRED_ANGULAR_INIT_8(W)                                                 \
     const uint8_t *src1;                                                       \
     const uint8_t *src2;                                                       \
-    const __m128i  add     = _mm_set1_epi16(16);                               \
     uint8_t       *ref, *p_src, *src, *p_out;                                  \
     uint8_t        src_tmp[W*W];                                               \
     if (mode >= 18) {                                                          \
@@ -785,7 +784,6 @@ PRED_PLANAR_3(10)
 #define PRED_ANGULAR_INIT_10(W)                                                \
     const uint16_t *src1;                                                      \
     const uint16_t *src2;                                                      \
-    const __m128i  add     = _mm_set1_epi32(16);                               \
     uint16_t       *ref, *p_src, *src, *p_out;                                 \
     uint16_t        src_tmp[W*W];                                              \
     if (mode >= 18) {                                                          \

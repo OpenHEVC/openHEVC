@@ -426,6 +426,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         const int   phaseX = phaseAlignFlag   << 1;
         const int   phaseY = phaseAlignFlag   << 1;
         HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
+        HEVCWindow scaled_ref_layer_window;
         if(bl_sps) {
             heightBL = bl_sps->height - bl_sps->output_window.bottom_offset - bl_sps->output_window.top_offset;
             widthBL  = bl_sps->width  - bl_sps->output_window.left_offset - bl_sps->output_window.right_offset;
@@ -439,7 +440,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        HEVCWindow scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->m_refLayerId[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
+        scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->m_refLayerId[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
 
         heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
         widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
@@ -782,13 +783,12 @@ static int hls_slice_header(HEVCContext *s)
 
         sh->nb_refs[L0] = sh->nb_refs[L1] = 0;
         if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
-            int nb_refs;
+            int nb_refs, num_ref_idx_active_override_flag;
 
             sh->nb_refs[L0] = s->pps->num_ref_idx_l0_default_active;
             if (sh->slice_type == B_SLICE)
                 sh->nb_refs[L1] = s->pps->num_ref_idx_l1_default_active;
-            int num_ref_idx_active_override_flag = get_bits1(gb); 
-            print_cabac("num_ref_idx_active_override_flag", num_ref_idx_active_override_flag);
+            num_ref_idx_active_override_flag = get_bits1(gb);
             if (num_ref_idx_active_override_flag) { // num_ref_idx_active_override_flag
                 sh->nb_refs[L0] = get_ue_golomb_long(gb) + 1;
                 print_cabac("num_ref_idx_l0_active_minus1", sh->nb_refs[L0] -1);
@@ -1806,7 +1806,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
 
     MvField *tab_mvf = s->ref->tab_mvf;
     RefPicList  *refPicList = s->ref->refPicList;
-    HEVCFrame *ref0, *ref1;
+    HEVCFrame *ref0 = NULL, *ref1 = NULL;
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);
@@ -2864,7 +2864,7 @@ static int hevc_frame_start(HEVCContext *s)
     HEVCLocalContext *lc = s->HEVClc;
     int pic_size_in_ctb  = ((s->sps->width  >> s->sps->log2_min_cb_size) + 1) *
                            ((s->sps->height >> s->sps->log2_min_cb_size) + 1);
-    int ret;
+    int ret = 0;
     AVFrame *cur_frame;
     av_log(s->avctx, AV_LOG_DEBUG, "frame start %d\n", s->decoder_id);
 
@@ -3355,13 +3355,15 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         ret = hls_nal_unit(s);
         if(!s->bl_decoder_el_exist && ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->bl_decoder_el_exist = 1;
-            s->poc_id = ++s->poc_id & (MAX_POC-1);
+            s->poc_id++;
+            s->poc_id &= (MAX_POC-1);
         }
         if(!s->el_decoder_bl_exist && s->decoder_id && ret == s->decoder_id-1 && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->el_decoder_bl_exist=1;
         }
         if(!s->el_decoder_el_exist && s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
-            s->poc_id = ++s->poc_id & (MAX_POC-1);
+            s->poc_id++;
+            s->poc_id &= (MAX_POC-1);
             s->el_decoder_el_exist = 1;
         }
         if (s->nal_unit_type == NAL_EOB_NUT ||

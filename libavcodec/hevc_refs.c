@@ -601,11 +601,10 @@ static void init_upsampled_mv_fields(HEVCContext *s) {
 
 int ff_hevc_frame_rps(HEVCContext *s)
 {
-    int ctb_size                  = 1<<s->sps->log2_ctb_size;
     const ShortTermRPS *short_rps = s->sh.short_term_rps;
     const LongTermRPS  *long_rps  = &s->sh.long_term_rps;
     RefPicList               *rps = s->rps;
-    HEVCVPS *vps                  = s->vps;
+    const HEVCVPS *vps           = s->vps;
     int i, ret;
 
     if (!short_rps) {

@@ -895,7 +895,7 @@ static av_always_inline int significant_coeff_group_flag_decode(HEVCContext *s, 
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_GROUP_FLAG] + inc);
 }
 static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int x_c, int y_c,
-                                           int offset, uint8_t *ctx_idx_map)
+                                           int offset, const uint8_t *ctx_idx_map)
 {
     int inc = ctx_idx_map[(y_c << 2) + x_c] + offset;
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
