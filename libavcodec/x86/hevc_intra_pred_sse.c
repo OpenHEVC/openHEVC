@@ -825,7 +825,7 @@ PRED_PLANAR_3(10)
 
 #define PRED_ANGULAR(W, D)                                                     \
 static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src,\
-        uint8_t *_top, uint8_t *_left, ptrdiff_t _stride, int c_idx, int mode) {\
+        const uint8_t *_top, const uint8_t *_left, ptrdiff_t _stride, int c_idx, int mode) {\
     const int intra_pred_angle[] = {                                           \
          32, 26, 21, 17, 13,  9,  5,  2,  0, -2, -5, -9,-13,-17,-21,-26,       \
         -32,-26,-21,-17,-13, -9, -5, -2,  0,  2,  5,  9, 13, 17, 21, 26, 32    \
@@ -877,36 +877,36 @@ PRED_ANGULAR( 8,10)
 PRED_ANGULAR(16,10)
 PRED_ANGULAR(32,10)
 
-void pred_angular_0_8_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
+void pred_angular_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_4_8_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_1_8_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
+void pred_angular_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
         ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_8_8_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_2_8_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
+void pred_angular_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
         ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_16_8_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_3_8_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
+void pred_angular_3_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
         ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_32_8_sse(_src, _top, _left, _stride, c_idx, mode);
 }
 
-void pred_angular_0_10_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
+void pred_angular_0_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_4_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_1_10_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
+void pred_angular_1_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_8_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_2_10_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
+void pred_angular_2_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_16_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
-void pred_angular_3_10_sse(uint8_t *_src, uint8_t *_top, uint8_t *_left,
+void pred_angular_3_10_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left,
             ptrdiff_t _stride, int c_idx, int mode) {
     pred_angular_32_10_sse(_src, _top, _left, _stride, c_idx, mode);
 }
