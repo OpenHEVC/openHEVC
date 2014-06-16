@@ -195,7 +195,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
     tab_mvf[(y) * min_pu_width + x]
 
 #define TAB_MVF_PU(v)                                                   \
-    TAB_MVF(((x ## v) >> s->sps->log2_min_pu_size),                       \
+    TAB_MVF(((x ## v) >> s->sps->log2_min_pu_size),                     \
             ((y ## v) >> s->sps->log2_min_pu_size))
 
 #define DERIVE_TEMPORAL_COLOCATED_MVS                                   \
@@ -419,7 +419,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
             MvField l0_cand = mergecandlist[l0_cand_idx];
             MvField l1_cand = mergecandlist[l1_cand_idx];
 
-            if ((l0_cand.pred_flag & PF_L0) && (l1_cand.pred_flag & PF_L1) &&
+            if ((l0_cand.pred_flag & PF_L0) &&
+                (l1_cand.pred_flag & PF_L1) &&
                 (refPicList[0].list[l0_cand.ref_idx[0]] !=
                  refPicList[1].list[l1_cand.ref_idx[1]] ||
                  l0_cand.mv[0].x != l1_cand.mv[1].x ||
@@ -458,7 +459,7 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
 {
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
-    struct MvField mergecand_list[MRG_MAX_NUM_CANDS] = { { { { 0 } } } };
+    struct MvField mergecand_list[MRG_MAX_NUM_CANDS];
     int nPbW2 = nPbW;
     int nPbH2 = nPbH;
     HEVCLocalContext *lc = s->HEVClc;
@@ -543,12 +544,16 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
 }
 
 #define MP_MX(v, pred, mx)                                      \
-    mv_mp_mode_mx(s, x ## v ## _pu, y ## v ## _pu, pred,        \
-                  &mx, ref_idx_curr, ref_idx)
+    mv_mp_mode_mx(s,                                            \
+                  (x ## v) >> s->sps->log2_min_pu_size,         \
+                  (y ## v) >> s->sps->log2_min_pu_size,         \
+                  pred, &mx, ref_idx_curr, ref_idx)
 
 #define MP_MX_LT(v, pred, mx)                                   \
-    mv_mp_mode_mx_lt(s, x ## v ## _pu, y ## v ## _pu, pred,     \
-                     &mx, ref_idx_curr, ref_idx)
+    mv_mp_mode_mx_lt(s,                                         \
+                     (x ## v) >> s->sps->log2_min_pu_size,      \
+                     (y ## v) >> s->sps->log2_min_pu_size,      \
+                     pred, &mx, ref_idx_curr, ref_idx)
 
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                               int nPbH, int log2_cb_size, int part_idx,
@@ -564,24 +569,16 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int min_pu_width = s->sps->min_pu_width;
 
     int xA0, yA0;
-    int xA0_pu, yA0_pu;
     int is_available_a0;
-
     int xA1, yA1;
-    int xA1_pu, yA1_pu;
     int is_available_a1;
-
     int xB0, yB0;
-    int xB0_pu, yB0_pu;
     int is_available_b0;
-
     int xB1, yB1;
-    int xB1_pu = 0, yB1_pu = 0;
-    int is_available_b1 = 0;
-
+    int is_available_b1;
     int xB2, yB2;
-    int xB2_pu = 0, yB2_pu = 0;
-    int is_available_b2 = 0;
+    int is_available_b2;
+
     Mv mvpcand_list[2] = { { 0 } };
     Mv mxA;
     Mv mxB;
@@ -603,8 +600,6 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     // left bottom spatial candidate
     xA0 = x0 - 1;
     yA0 = y0 + nPbH;
-    xA0_pu = xA0 >> s->sps->log2_min_pu_size;
-    yA0_pu = yA0 >> s->sps->log2_min_pu_size;
 
     is_available_a0 = AVAILABLE(cand_bottom_left, A0) &&
                       yA0 < s->sps->height &&
@@ -613,8 +608,6 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     //left spatial merge candidate
     xA1    = x0 - 1;
     yA1    = y0 + nPbH - 1;
-    xA1_pu = xA1 >> s->sps->log2_min_pu_size;
-    yA1_pu = yA1 >> s->sps->log2_min_pu_size;
 
     is_available_a1 = AVAILABLE(cand_left, A1);
     if (is_available_a0 || is_available_a1)
@@ -662,8 +655,6 @@ b_candidates:
     // above right spatial merge candidate
     xB0    = x0 + nPbW;
     yB0    = y0 - 1;
-    xB0_pu = xB0 >> s->sps->log2_min_pu_size;
-    yB0_pu = yB0 >> s->sps->log2_min_pu_size;
 
     is_available_b0 =  AVAILABLE(cand_up_right, B0) &&
                        xB0 < s->sps->width &&
@@ -681,8 +672,6 @@ b_candidates:
     // above spatial merge candidate
     xB1    = x0 + nPbW - 1;
     yB1    = y0 - 1;
-    xB1_pu = xB1 >> s->sps->log2_min_pu_size;
-    yB1_pu = yB1 >> s->sps->log2_min_pu_size;
 
     is_available_b1 = AVAILABLE(cand_up, B1);
 
@@ -698,8 +687,6 @@ b_candidates:
     // above left spatial merge candidate
     xB2 = x0 - 1;
     yB2 = y0 - 1;
-    xB2_pu = xB2 >> s->sps->log2_min_pu_size;
-    yB2_pu = yB2 >> s->sps->log2_min_pu_size;
     is_available_b2 = AVAILABLE(cand_up_left, B2);
 
     if (is_available_b2) {
