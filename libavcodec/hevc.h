@@ -957,10 +957,6 @@ typedef struct MvField {
     Mv mv[2];
     int8_t ref_idx[2];
     uint8_t pred_flag;
-    uint8_t merge_flag;
-    uint8_t mvp_flag[2];
-    int merge_idx;
-    enum InterPredIdc inter_pred_idc;
 } MvField;
 
 typedef struct NeighbourAvailable {
@@ -982,12 +978,15 @@ typedef struct PredictionUnitCabac {
 
 typedef struct PredictionUnit {
     uint8_t merge_flag;
+    uint8_t merge_flag_tab[4][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t mvp_flag[2][4][MAX_CU_SIZE * MAX_CU_SIZE];
+    int merge_idx[4][MAX_CU_SIZE * MAX_CU_SIZE];
+    enum InterPredIdc inter_pred_idc[4][MAX_CU_SIZE * MAX_CU_SIZE];
 } PredictionUnit;
 
 typedef struct TransformTreeCabac {
     uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t cbf_luma[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } TransformTreeCabac;
 
 typedef struct TransformTree {
