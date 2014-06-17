@@ -720,6 +720,7 @@ typedef struct HEVCSPS {
 
     int transform_skip_rotation_enabled_flag;
     int transform_skip_context_enabled_flag;
+    int implicit_rdpcm_enabled_flag;
     int intra_smoothing_disabled_flag;
 
     ///< coded frame dimension in various units

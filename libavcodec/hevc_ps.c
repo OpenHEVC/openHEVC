@@ -1893,24 +1893,54 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps_extension_flag[i] = get_bits1(gb);
         sps_extension_7bits	= get_bits(gb, 7);
         if (sps_extension_flag[0]) {
+            int implicit_rdpcm_enabled_flag;
+            int explicit_rdpcm_enabled_flag;
+            int extended_precision_processing_flag;
+            int high_precision_offsets_enabled_flag;
+            int fast_rice_adaptation_enabled_flag;
+            int cabac_bypass_alignment_enabled_flag;
+
             sps->transform_skip_rotation_enabled_flag = get_bits1(gb);
             print_cabac("transform_skip_rotation_enabled_flag ", sps->transform_skip_rotation_enabled_flag);
             sps->transform_skip_context_enabled_flag  = get_bits1(gb);
             print_cabac("transform_skip_context_enabled_flag ", sps->transform_skip_context_enabled_flag);
-            int implicit_rdpcm_enabled_flag          = get_bits1(gb);
+            sps->implicit_rdpcm_enabled_flag = get_bits1(gb);
+            if (implicit_rdpcm_enabled_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "implicit_rdpcm_enabled_flag not yet implemented\n");
+
             print_cabac("implicit_rdpcm_enabled_flag ", implicit_rdpcm_enabled_flag);
-            int explicit_rdpcm_enabled_flag          = get_bits1(gb);
+            explicit_rdpcm_enabled_flag = get_bits1(gb);
+            if (explicit_rdpcm_enabled_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "explicit_rdpcm_enabled_flag not yet implemented\n");
+
             print_cabac("explicit_rdpcm_enabled_flag ", explicit_rdpcm_enabled_flag);
-            int extended_precision_processing_flag   = get_bits1(gb);
+            extended_precision_processing_flag = get_bits1(gb);
+            if (extended_precision_processing_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "extended_precision_processing_flag not yet implemented\n");
+
             print_cabac("extended_precision_processing_flag ", extended_precision_processing_flag);
             sps->intra_smoothing_disabled_flag       = get_bits1(gb);
             print_cabac("intra_smoothing_disabled_flag ", sps->intra_smoothing_disabled_flag);
-            int high_precision_offsets_enabled_flag  = get_bits1(gb);
+            high_precision_offsets_enabled_flag  = get_bits1(gb);
+            if (high_precision_offsets_enabled_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "high_precision_offsets_enabled_flag not yet implemented\n");
+
             print_cabac("high_precision_offsets_enabled_flag ", high_precision_offsets_enabled_flag);
-            int fast_rice_adaptation_enabled_flag    = get_bits1(gb);
+            fast_rice_adaptation_enabled_flag = get_bits1(gb);
             print_cabac("fast_rice_adaptation_enabled_flag ", fast_rice_adaptation_enabled_flag);
-            int cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
+            if (fast_rice_adaptation_enabled_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "fast_rice_adaptation_enabled_flag not yet implemented\n");
+
+            cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
             print_cabac("cabac_bypass_alignment_enabled_flag ", cabac_bypass_alignment_enabled_flag);
+            if (cabac_bypass_alignment_enabled_flag)
+                av_log(s->avctx, AV_LOG_WARNING,
+                   "cabac_bypass_alignment_enabled_flag not yet implemented\n");
         }
     }
     if (s->apply_defdispwin) {
