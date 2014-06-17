@@ -1041,7 +1041,6 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
     HEVCLocalContextCabac  *lc_ca = &s->HEVClc->ca;
     int sao_merge_left_flag = 0;
     int sao_merge_up_flag   = 0;
-    int shift               = s->sps->bit_depth - FFMIN(s->sps->bit_depth, 10);
     SAOParams *sao          = &CTB(s->sao, rx, ry);
     int c_idx, i;
 
@@ -1093,7 +1092,7 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
         // Inferred parameters
         sao->offset_val[c_idx][0] = 0;
         for (i = 0; i < 4; i++) {
-            sao->offset_val[c_idx][i + 1] = sao->offset_abs[c_idx][i] << shift;
+            sao->offset_val[c_idx][i + 1] = sao->offset_abs[c_idx][i];
             if (sao->type_idx[c_idx] == SAO_EDGE) {
                 if (i > 1)
                     sao->offset_val[c_idx][i + 1] = -sao->offset_val[c_idx][i + 1];
