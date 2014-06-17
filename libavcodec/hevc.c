@@ -2949,7 +2949,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb    = &lc->gb;
-    long unsigned int time_mp = 0; 
     int ctb_addr_ts, ret;
 
     ret = init_get_bits8(gb, nal, length);
@@ -3540,11 +3539,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     return avpkt->size;
 }
-
-
-#if 1
-static int first;
-#endif
 
 static av_cold int hevc_decode_free(AVCodecContext *avctx)
 {
