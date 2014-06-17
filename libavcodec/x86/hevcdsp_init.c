@@ -53,32 +53,60 @@ LFL_FUNCS(uint8_t,  10)
 
 
 #if !ARCH_X86_32 && defined(OPTI_ASM)
-void ff_hevc_put_transform32x32_dc_add_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+#if HAVE_SSE2_EXTERNAL
+void ff_hevc_idct32_dc_add_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 {
-    	ff_hevc_put_transform16x16_dc_add_8_sse2(dst, coeffs, stride);
-        ff_hevc_put_transform16x16_dc_add_8_sse2(dst+16, coeffs, stride);
-        ff_hevc_put_transform16x16_dc_add_8_sse2(dst+16*stride, coeffs, stride);
-        ff_hevc_put_transform16x16_dc_add_8_sse2(dst+16*stride+16, coeffs, stride);
-
+    ff_hevc_idct16_dc_add_8_sse2(dst, coeffs, stride);
+    ff_hevc_idct16_dc_add_8_sse2(dst+16, coeffs, stride);
+    ff_hevc_idct16_dc_add_8_sse2(dst+16*stride, coeffs, stride);
+    ff_hevc_idct16_dc_add_8_sse2(dst+16*stride+16, coeffs, stride);
 }
 
-void ff_hevc_put_transform16x16_dc_add_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+void ff_hevc_idct16_dc_add_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 {
-    	ff_hevc_put_transform8x8_dc_add_10_sse2(dst, coeffs, stride);
-        ff_hevc_put_transform8x8_dc_add_10_sse2(dst+16, coeffs, stride);
-        ff_hevc_put_transform8x8_dc_add_10_sse2(dst+8*stride, coeffs, stride);
-        ff_hevc_put_transform8x8_dc_add_10_sse2(dst+8*stride+16, coeffs, stride);
-
+    ff_hevc_idct8_dc_add_10_sse2(dst, coeffs, stride);
+    ff_hevc_idct8_dc_add_10_sse2(dst+16, coeffs, stride);
+    ff_hevc_idct8_dc_add_10_sse2(dst+8*stride, coeffs, stride);
+    ff_hevc_idct8_dc_add_10_sse2(dst+8*stride+16, coeffs, stride);
 }
 
-void ff_hevc_put_transform32x32_dc_add_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+void ff_hevc_idct32_dc_add_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 {
-    	ff_hevc_put_transform16x16_dc_add_10_sse2(dst, coeffs, stride);
-        ff_hevc_put_transform16x16_dc_add_10_sse2(dst+32, coeffs, stride);
-        ff_hevc_put_transform16x16_dc_add_10_sse2(dst+16*stride, coeffs, stride);
-        ff_hevc_put_transform16x16_dc_add_10_sse2(dst+16*stride+32, coeffs, stride);
-
+    ff_hevc_idct16_dc_add_10_sse2(dst, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_sse2(dst+32, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_sse2(dst+16*stride, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_sse2(dst+16*stride+32, coeffs, stride);
 }
+#endif //HAVE_SSE2_EXTERNAL
+#if HAVE_AVX_EXTERNAL
+void ff_hevc_idct16_dc_add_10_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+{
+    ff_hevc_idct8_dc_add_10_avx(dst, coeffs, stride);
+    ff_hevc_idct8_dc_add_10_avx(dst+16, coeffs, stride);
+    ff_hevc_idct8_dc_add_10_avx(dst+8*stride, coeffs, stride);
+    ff_hevc_idct8_dc_add_10_avx(dst+8*stride+16, coeffs, stride);
+}
+
+void ff_hevc_idct32_dc_add_10_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+{
+    ff_hevc_idct16_dc_add_10_avx(dst, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_avx(dst+32, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_avx(dst+16*stride, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_avx(dst+16*stride+32, coeffs, stride);
+}
+#endif
+
+
+#if HAVE_AVX2_EXTERNAL
+void ff_hevc_idct32_dc_add_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+{
+    ff_hevc_idct16_dc_add_10_avx2(dst, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_avx2(dst+32, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_avx2(dst+16*stride, coeffs, stride);
+    ff_hevc_idct16_dc_add_10_avx2(dst+16*stride+32, coeffs, stride);
+}
+#endif
+
 
 #define mc_rep_func(name, bitd, step, W, opt) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststride,                            \
@@ -404,7 +432,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 /* MMEXT optimizations */
 #endif /* ARCH_X86_32 && HAVE_MMXEXT_EXTERNAL */
 #ifdef OPTI_ASM
-                c->transform_dc_add[0]    =  ff_hevc_put_transform4x4_dc_add_8_mmx;
+                c->transform_dc_add[0]    =  ff_hevc_idct4_dc_add_8_mmxext;
+                c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_8_mmxext;
 #endif
 
 #if HAVE_SSE2
@@ -420,9 +449,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
 
 #ifdef OPTI_ASM
-                    c->transform_dc_add[1]    =  ff_hevc_put_transform8x8_dc_add_8_sse2;
-                    c->transform_dc_add[2]    =  ff_hevc_put_transform16x16_dc_add_8_sse2;
-                    c->transform_dc_add[3]    =  ff_hevc_put_transform32x32_dc_add_8_sse2;
+                    c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_8_sse2;
+                    c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_8_sse2;
 #endif
 #ifndef OPTI_ASM
                     c->transform_dc_add[0] = ff_hevc_transform_4x4_dc_add_8_sse4;
@@ -482,6 +510,9 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 #endif //HAVE_SSE42
                 if (EXTERNAL_AVX(mm_flags)) {
                 }
+                if (EXTERNAL_AVX2(mm_flags)) {
+                    c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_8_avx2;
+                }
             }
         }
     } else if (bit_depth == 10) {
@@ -490,7 +521,7 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 #if ARCH_X86_32
 #endif /* ARCH_X86_32 */
 #ifdef OPTI_ASM
-                c->transform_dc_add[0]    =  ff_hevc_put_transform4x4_dc_add_10_mmx;
+                c->transform_dc_add[0]    =  ff_hevc_idct4_dc_add_10_mmxext;
 #endif
 #if HAVE_SSE2
                 if (EXTERNAL_SSE2(mm_flags)) {
@@ -498,9 +529,9 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
 
 #ifdef OPTI_ASM
-                    c->transform_dc_add[1]    =  ff_hevc_put_transform8x8_dc_add_10_sse2;
-                    c->transform_dc_add[2]    =  ff_hevc_put_transform16x16_dc_add_10_sse2;
-                    c->transform_dc_add[3]    =  ff_hevc_put_transform32x32_dc_add_10_sse2;
+                    c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_10_sse2;
+                    c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_10_sse2;
+                    c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_10_sse2;
 #endif
                     c->transform_4x4_luma_add   = ff_hevc_transform_4x4_luma_add_10_sse4;
                     c->transform_add[0]         = ff_hevc_transform_4x4_add_10_sse4;
@@ -537,8 +568,23 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 
                 }
 #endif
-                if (EXTERNAL_AVX(mm_flags)) {
-                }
+#if HAVE_AVX_EXTERNAL
+        if (EXTERNAL_AVX(mm_flags)) {
+#ifdef OPTI_ASM
+            c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_10_avx;
+            c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_10_avx;
+            c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_10_avx;
+#endif
+        }
+#endif
+#if HAVE_AVX2_EXTERNAL
+        if (EXTERNAL_AVX2(mm_flags)) {
+#ifdef OPTI_ASM
+            c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_10_avx2;
+            c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_10_avx2;
+#endif
+        }
+#endif
             }
         }
     }
