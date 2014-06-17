@@ -913,19 +913,19 @@ typedef struct SliceHeader {
 } SliceHeader;
 
 typedef struct CodingTreeCabac {
-    int depth; ///< ctDepth
+    uint8_t depth; ///< ctDepth
 } CodingTreeCabac;
 
 typedef struct CodingTree {
-    int split_cu_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int y[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    enum PredMode pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PredMode
-    enum PartMode part_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PartMode
+    uint8_t split_cu_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t rqt_root_cbf[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t pcm_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cu_transquant_bypass_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int end_of_slice_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t end_of_slice_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    enum PredMode pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PredMode
+    enum PartMode part_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];    ///< PartMode
+    int16_t x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    int16_t y[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } CodingTree;
 
 typedef struct CodingUnitCabac {
@@ -935,8 +935,8 @@ typedef struct CodingUnitCabac {
 } CodingUnitCabac;
 
 typedef struct CodingUnit {
-    int x;
-    int y;
+    int16_t x;
+    int16_t y;
 
     enum PredMode pred_mode;    ///< PredMode
     enum PartMode part_mode;    ///< PartMode
@@ -956,28 +956,28 @@ typedef struct Mv {
 typedef struct MvField {
     Mv mv[2];
     int8_t ref_idx[2];
-    int8_t pred_flag;
+    uint8_t pred_flag;
     uint8_t merge_flag;
-    int mvp_flag[2];
+    uint8_t mvp_flag[2];
     int merge_idx;
     enum InterPredIdc inter_pred_idc;
 } MvField;
 
 typedef struct NeighbourAvailable {
-    int cand_bottom_left;
-    int cand_left;
-    int cand_up;
-    int cand_up_left;
-    int cand_up_right;
-    int cand_up_right_sap;
+    uint8_t cand_bottom_left;
+    uint8_t cand_left;
+    uint8_t cand_up;
+    uint8_t cand_up_left;
+    uint8_t cand_up_right;
+    uint8_t cand_up_right_sap;
 } NeighbourAvailable;
 
 typedef struct PredictionUnitCabac {
-    int mpm_idx;
-    int rem_intra_luma_pred_mode;
     uint8_t intra_pred_mode[4];
     uint8_t intra_pred_mode_c[4];
     Mv mvd;
+    int mpm_idx;
+    int rem_intra_luma_pred_mode;
 } PredictionUnitCabac;
 
 typedef struct PredictionUnit {
@@ -1000,8 +1000,8 @@ typedef struct TransformTree {
 } TransformTree;
 
 typedef struct TransformUnitCabac {
-    int cu_qp_delta;
     uint8_t is_cu_qp_delta_coded;
+    int cu_qp_delta;
     int cur_intra_pred_mode;
     int cur_intra_pred_mode_c;
 } TransformUnitCabac;
@@ -1012,9 +1012,9 @@ typedef struct TransformUnitCompute {
 } TransformUnitCompute;
 
 typedef struct ResidualCoding {
-    int last_significant_coeff_x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int last_significant_coeff_y[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int transform_skip_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t last_significant_coeff_x[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t last_significant_coeff_y[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t transform_skip_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE]);
 } ResidualCoding;
 
@@ -1076,12 +1076,12 @@ typedef struct HEVCLocalContextCabac {
     CodingTreeCabac     ct;
     CodingUnitCabac     cu;
     PredictionUnitCabac pu;
-    uint8_t cabac_state[HEVC_CONTEXTS];
-    int8_t  qp_y;
-    int     qPy_pred;
     uint8_t first_qp_group;
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
+    uint8_t cabac_state[HEVC_CONTEXTS];
+    int8_t  qp_y;
+    int     qPy_pred;
 } HEVCLocalContextCabac;
 
 typedef struct HEVCLocalContextCompute {
