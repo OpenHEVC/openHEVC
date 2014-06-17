@@ -562,7 +562,6 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                               int mvp_lx_flag, int LX)
 {
     HEVCLocalContextCommon  *lc    =  s->HEVClc->cm_co;
-    HEVCLocalContextCompute *lc_co = &s->HEVClc->co;
     MvField *tab_mvf = s->ref->tab_mvf;
     int isScaledFlag_L0 = 0;
     int availableFlagLXA0 = 1;

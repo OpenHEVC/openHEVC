@@ -91,8 +91,7 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
 static int get_qPy_pred(HEVCContext *s, int xC, int yC,
                         int xBase, int yBase, int log2_cb_size)
 {
-    HEVCLocalContextCommon *lc    =  s->HEVClc->cm_ca;
-    HEVCLocalContextCabac  *lc_ca = &s->HEVClc->ca;
+    HEVCLocalContextCabac  *lc = &s->HEVClc->ca;
     int ctb_size_mask        = (1 << s->sps->log2_ctb_size) - 1;
     int MinCuQpDeltaSizeMask = (1 << (s->sps->log2_ctb_size -
                                       s->pps->diff_cu_qp_delta_depth)) - 1;
@@ -108,11 +107,11 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC,
     int qPy_pred, qPy_a, qPy_b;
 
     // qPy_pred
-    if (lc_ca->first_qp_group || (!xQgBase && !yQgBase)) {
-        lc_ca->first_qp_group = !lc_ca->tu.is_cu_qp_delta_coded;
+    if (lc->first_qp_group || (!xQgBase && !yQgBase)) {
+        lc->first_qp_group = !lc->tu.is_cu_qp_delta_coded;
         qPy_pred = s->sh.slice_qp;
     } else {
-        qPy_pred = lc_ca->qPy_pred;
+        qPy_pred = lc->qPy_pred;
     }
 
     // qPy_a
@@ -634,7 +633,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                                            int log2_trafo_size)
 {
-    HEVCLocalContextCompute *lc_co = &s->HEVClc->co;
+    HEVCLocalContextCompute *lc = &s->HEVClc->co;
     MvField *tab_mvf     = s->ref->tab_mvf;
     int log2_min_pu_size = s->sps->log2_min_pu_size;
     int log2_min_tu_size = s->sps->log2_min_tb_size;
@@ -647,9 +646,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
     if (y0 > 0 && (y0 & 7) == 0) {
         int bd_ctby = y0 & ((1 << s->sps->log2_ctb_size) - 1);
         int bd_slice = s->sh.slice_loop_filter_across_slices_enabled_flag ||
-                       !(lc_co->slice_or_tiles_up_boundary & 1);
+                       !(lc->slice_or_tiles_up_boundary & 1);
         int bd_tiles = s->pps->loop_filter_across_tiles_enabled_flag ||
-                       !(lc_co->slice_or_tiles_up_boundary & 2);
+                       !(lc->slice_or_tiles_up_boundary & 2);
         if (((bd_slice && bd_tiles)  || bd_ctby)) {
             int yp_pu = (y0 - 1) >> log2_min_pu_size;
             int yq_pu =  y0      >> log2_min_pu_size;
@@ -681,9 +680,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
     if (x0 > 0 && (x0 & 7) == 0) {
         int bd_ctbx = x0 & ((1 << s->sps->log2_ctb_size) - 1);
         int bd_slice = s->sh.slice_loop_filter_across_slices_enabled_flag ||
-                       !(lc_co->slice_or_tiles_left_boundary & 1);
+                       !(lc->slice_or_tiles_left_boundary & 1);
         int bd_tiles = s->pps->loop_filter_across_tiles_enabled_flag ||
-                       !(lc_co->slice_or_tiles_left_boundary & 2);
+                       !(lc->slice_or_tiles_left_boundary & 2);
         if (((bd_slice && bd_tiles)  || bd_ctbx)) {
             int xp_pu = (x0 - 1) >> log2_min_pu_size;
             int xq_pu =  x0      >> log2_min_pu_size;
