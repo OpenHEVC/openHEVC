@@ -37,6 +37,8 @@
 #include "videodsp.h"
 #include "hevc_defs.h"
 
+#define TEST_MIN_TB_ADDR_ZS
+
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
 
@@ -734,6 +736,7 @@ typedef struct HEVCSPS {
     int min_tb_height;
     int min_pu_width;
     int min_pu_height;
+    int tb_mask;
 
     int hshift[3];
     int vshift[3];
@@ -820,6 +823,7 @@ typedef struct HEVCPPS {
     int *tile_id;           ///< TileId
     int *tile_pos_rs;       ///< TilePosRS
     int *min_tb_addr_zs;    ///< MinTbAddrZS
+    int *min_tb_addr_zs_tab;///< MinTbAddrZS
 
 } HEVCPPS;
 
