@@ -206,9 +206,49 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
     openHevcFrameInfo->nTimeStamp              = picture->pkt_pts;
 }
 
-void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
+void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {
-    libOpenHevcGetPictureInfo(openHevcHandle, openHevcFrameInfo);
+
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[openHevcContexts->display_layer];
+    AVFrame                 *picture          = openHevcContext->picture;
+    int edge = avcodec_get_edge_width();
+
+    switch (picture->format) {
+        case PIX_FMT_YUV420P   :
+            openHevcFrameInfo->nYPitch    = picture->linesize[0] - 4 * edge;
+            openHevcFrameInfo->nUPitch    = picture->linesize[1] - 4 * edge;
+            openHevcFrameInfo->nVPitch    = picture->linesize[2] - 4 * edge;
+            break;
+        case PIX_FMT_YUV420P9  :
+        case PIX_FMT_YUV420P10 :
+            openHevcFrameInfo->nYPitch    = picture->linesize[0] - 4 * edge;
+            openHevcFrameInfo->nUPitch    = picture->linesize[1] - 4 * edge;
+            openHevcFrameInfo->nVPitch    = picture->linesize[2] - 4 * edge;
+            break;
+        default :
+            openHevcFrameInfo->nYPitch    = picture->linesize[0] - 4 * edge;
+            openHevcFrameInfo->nUPitch    = picture->linesize[1] - 4 * edge;
+            openHevcFrameInfo->nVPitch    = picture->linesize[2] - 4 * edge;
+            break;
+    }
+
+    switch (picture->format) {
+        case PIX_FMT_YUV420P   : openHevcFrameInfo->nBitDepth  =  8; break;
+        case PIX_FMT_YUV420P9  : openHevcFrameInfo->nBitDepth  =  9; break;
+        case PIX_FMT_YUV420P10 : openHevcFrameInfo->nBitDepth  = 10; break;
+        default               : openHevcFrameInfo->nBitDepth   =  8; break;
+    }
+
+    openHevcFrameInfo->nWidth                  = picture->width;
+    openHevcFrameInfo->nHeight                 = picture->height;
+    openHevcFrameInfo->sample_aspect_ratio.num = picture->sample_aspect_ratio.num;
+    openHevcFrameInfo->sample_aspect_ratio.den = picture->sample_aspect_ratio.den;
+    openHevcFrameInfo->frameRate.num           = openHevcContext->c->time_base.den;
+    openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
+    openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
+    openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
+    openHevcFrameInfo->nTimeStamp              = picture->pkt_pts;
 }
 
 int libOpenHevcGetOutput(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame *openHevcFrame)
@@ -262,7 +302,7 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
             y_offset  += openHevcContext->picture->linesize[1];
             y_offset2 += width / 2;
         }
-        libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame->frameInfo);
+        libOpenHevcGetPictureInfoCpy(openHevcHandle, &openHevcFrame->frameInfo);
     }
     return 1;
 }
