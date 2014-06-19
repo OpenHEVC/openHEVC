@@ -450,7 +450,6 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
             int offset_val = sao_offset_val[0];
             for (x = init_x; x < width; x++)
                 dst[x] = av_clip_pixel(src[x] + offset_val);
-            init_y = 1;
         }
         if (borders[3]) {
             int offset_val = sao_offset_val[0];
@@ -1895,7 +1894,6 @@ static void FUNC(upsample_filter_block_cr_v_all)( uint8_t *_dst, ptrdiff_t dstst
         refPos   = (refPos16>>4) - y_BL;
         src_tmp  = _src  + refPos  * _srcstride;
         dst_tmp  =  dst  + y* dststride + x_EL;
-        refPos = (refPos16>>4);
         for( i = 0; i < block_w; i++ )	{
             *dst_tmp = av_clip_pixel( (CroVer_FILTER_Block(src_tmp, coeff, _srcstride) + I_OFFSET) >> (N_SHIFT));
             if( ((x_EL+i) >= leftStartC) && ((x_EL+i) <= rightEndC-2) )
@@ -2101,7 +2099,6 @@ static void FUNC(upsample_filter_block_cr_v_x1_5)( uint8_t *_dst, ptrdiff_t dsts
         refPos   = (refPos16>>4) - y_BL;
         src_tmp  = _src  + refPos  * _srcstride;
         dst_tmp  =  dst  + y* dststride + x_EL;
-        refPos = (refPos16>>4);
         for ( i = 0; i < block_w; i++ ) {
             *dst_tmp = av_clip_pixel( (CroVer_FILTER_Block(src_tmp, coeff, _srcstride) + I_OFFSET) >> (N_SHIFT));
             if( ((x_EL+i) >= leftStartC) && ((x_EL+i) <= rightEndC-2) )
