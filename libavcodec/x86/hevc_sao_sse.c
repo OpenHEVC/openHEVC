@@ -355,11 +355,11 @@ static __attribute__((always_inline)) inline void ff_hevc_sao_edge_filter_8_sse(
                 x0   = _mm_loadl_epi64((__m128i *) (src + x + y_stride));
                 cmp0 = _mm_loadl_epi64((__m128i *) (src + x + y_stride_0_1));
                 cmp1 = _mm_loadl_epi64((__m128i *) (src + x + y_stride_1_1));
-                r2 = _mm_min_epu8(x0, cmp0);
+                r2 = _MM_MIN_EPU16(x0, cmp0);
                 x1 = _mm_cmpeq_epi8(cmp0, r2);
                 x2 = _mm_cmpeq_epi8(x0, r2);
                 x1 = _mm_sub_epi8(x2, x1);
-                r2 = _mm_min_epu8(x0, cmp1);
+                r2 = _MM_MIN_EPU16(x0, cmp1);
                 x3 = _mm_cmpeq_epi8(cmp1, r2);
                 x2 = _mm_cmpeq_epi8(x0, r2);
                 x3 = _mm_sub_epi8(x2, x3);
