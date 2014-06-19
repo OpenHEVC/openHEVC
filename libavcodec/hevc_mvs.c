@@ -38,7 +38,7 @@ static const uint8_t l0_l1_cand_idx[12][2] = {
     { 3, 2, },
 };
 
-void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
+void  ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
                                      int nPbW, int nPbH)
 {
     HEVCLocalContext *lc = s->HEVClc;
@@ -52,8 +52,7 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
             ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)) ?
                     lc->ctb_up_right_flag && !y0b : lc->na.cand_up;
     lc->na.cand_up_right =
-            ((x0b + nPbW) == (1 << s->sps->log2_ctb_size) ?
-                    lc->ctb_up_right_flag && !y0b : lc->na.cand_up )
+            lc->na.cand_up_right_sap
                      && (x0 + nPbW) < lc->end_of_tiles_x;
     lc->na.cand_bottom_left = ((y0 + nPbH) >= lc->end_of_tiles_y) ? 0 : lc->na.cand_left;
 }
