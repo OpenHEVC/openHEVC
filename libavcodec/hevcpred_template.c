@@ -38,9 +38,13 @@ static av_always_inline void FUNC(intra_pred)(HEVCContext *s, int x0, int y0,
     MVF(PU(x0 + ((x) << hshift)), PU(y0 + ((y) << vshift)))
 #define IS_INTRA(x, y) \
     (MVF_PU(x, y).pred_flag == PF_INTRA)
+#ifndef TEST_MIN_TB_ADDR_ZS
 #define MIN_TB_ADDR_ZS(x, y) \
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
-
+#else
+#define MIN_TB_ADDR_ZS(x, y) \
+    s->pps->min_tb_addr_zs[(y) * (s->sps->tb_mask+2) + (x)]
+#endif
 #define EXTEND(ptr, val, len)         \
 do {                                  \
     pixel4 pix = PIXEL_SPLAT_X4(val); \
@@ -82,8 +86,13 @@ do {                                  \
     int size_in_tbs_v  = size_in_luma_v >> s->sps->log2_min_tb_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
+#ifndef TEST_MIN_TB_ADDR_ZS
     int x_tb = x0 >> s->sps->log2_min_tb_size;
     int y_tb = y0 >> s->sps->log2_min_tb_size;
+#else
+    int x_tb = (x0 >> s->sps->log2_min_tb_size) & s->sps->tb_mask;
+    int y_tb = (y0 >> s->sps->log2_min_tb_size) & s->sps->tb_mask;
+#endif
     int cur_tb_addr = MIN_TB_ADDR_ZS(x_tb, y_tb);
 
     ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(pixel);
@@ -103,11 +112,19 @@ do {                                  \
     pixel  *top           = top_array  + 1;
     pixel  *filtered_left = filtered_left_array + 1;
     pixel  *filtered_top  = filtered_top_array  + 1;
+#ifndef TEST_MIN_TB_ADDR_ZS
     int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb - 1, y_tb + size_in_tbs_v);
+#else
+    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS( x_tb - 1, (y_tb + size_in_tbs_v) & s->sps->tb_mask);
+#endif
     int cand_left        = lc->na.cand_left;
     int cand_up_left     = lc->na.cand_up_left;
     int cand_up          = lc->na.cand_up;
+#ifndef TEST_MIN_TB_ADDR_ZS
     int cand_up_right    = lc->na.cand_up_right && cur_tb_addr > MIN_TB_ADDR_ZS(x_tb + size_in_tbs_h, y_tb - 1);
+#else
+    int cand_up_right    = lc->na.cand_up_right    && cur_tb_addr > MIN_TB_ADDR_ZS((x_tb + size_in_tbs_h) & s->sps->tb_mask, y_tb - 1);
+#endif
 
     int bottom_left_size = (FFMIN(y0 + 2 * size_in_luma_v, s->sps->height) -
                            (y0 + size_in_luma_v)) >> vshift;

@@ -64,6 +64,7 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
 static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
                               int xN, int yN)
 {
+#ifndef TEST_MIN_TB_ADDR_ZS
 #define MIN_TB_ADDR_ZS(x, y)                                            \
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
     int Curr = MIN_TB_ADDR_ZS(xCurr >> s->sps->log2_min_tb_size,
@@ -72,6 +73,26 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
                               yN >> s->sps->log2_min_tb_size);
     
     return N <= Curr;
+#else
+#define MIN_TB_ADDR_ZS(x, y)                                            \
+    s->pps->min_tb_addr_zs[(y) * (s->sps->tb_mask+2) + (x)]
+
+    int xCurr_ctb = xCurr >> s->sps->log2_ctb_size;
+    int yCurr_ctb = yCurr >> s->sps->log2_ctb_size;
+    int xN_ctb    = xN    >> s->sps->log2_ctb_size;
+    int yN_ctb    = yN    >> s->sps->log2_ctb_size;
+    if( yN_ctb < yCurr_ctb || xN_ctb < xCurr_ctb )
+        return 1;
+    else if( yN_ctb > yCurr_ctb || xN_ctb > xCurr_ctb )
+        return 0;
+    else {
+        int Curr = MIN_TB_ADDR_ZS((xCurr >> s->sps->log2_min_tb_size) & s->sps->tb_mask,
+                (yCurr >> s->sps->log2_min_tb_size) & s->sps->tb_mask);
+        int N    = MIN_TB_ADDR_ZS((xN >> s->sps->log2_min_tb_size) & s->sps->tb_mask,
+                (yN >> s->sps->log2_min_tb_size) & s->sps->tb_mask);
+        return N <= Curr;
+    }
+#endif
 }
 
 //check if the two luma locations belong to the same mostion estimation region
