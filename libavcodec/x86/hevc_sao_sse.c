@@ -132,8 +132,8 @@ void ff_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
         int *borders, int width, int height, int c_idx) {                      \
     int y, x;                                                                  \
     int  shift          = D - 5;                                               \
-    int *sao_offset_val = sao->offset_val[c_idx];                              \
-    int  sao_left_class = sao->band_position[c_idx];                           \
+    int16_t *sao_offset_val = sao->offset_val[c_idx];                          \
+    uint8_t  sao_left_class = sao->band_position[c_idx];                       \
     __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4;            \
     __m128i src0, src2;                                                        \
     SAO_INIT_ ## D();                                                          \
@@ -238,7 +238,7 @@ static av_always_inline void ff_hevc_sao_edge_filter_ ## D ##_sse(             \
         int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge,  \
         uint8_t *horiz_edge, uint8_t *diag_edge) {                             \
     int x, y;                                                                  \
-    int *sao_offset_val = sao->offset_val[c_idx];                              \
+    int16_t *sao_offset_val = sao->offset_val[c_idx];                          \
     int  sao_eo_class   = sao->eo_class[c_idx];                                \
     const uint8_t edge_idx[]  = { 1, 2, 0, 3, 4 };                             \
     const int8_t pos[4][2][2] = {                                              \
@@ -278,7 +278,7 @@ static av_always_inline void ff_hevc_sao_edge_filter_ ## D ##_sse(             \
     if (sao_eo_class != SAO_EO_VERT) {                                         \
         if (borders[0]) {                                                      \
             int idx        = 0;                                                \
-            int offset_val = sao_offset_val[0];                                \
+            int16_t offset_val = sao_offset_val[0];                            \
             for (y = 0; y < height; y++) {                                     \
                 dst[idx] = av_clip_uintp2(src[idx] + offset_val, D);           \
                 idx     += stride;                                             \
@@ -286,7 +286,7 @@ static av_always_inline void ff_hevc_sao_edge_filter_ ## D ##_sse(             \
         }                                                                      \
         if (borders[2]) {                                                      \
             int idx        = _width - 1;                                       \
-            int offset_val = sao_offset_val[0];                                \
+            int16_t offset_val = sao_offset_val[0];                            \
             for (y = 0; y < height; y++) {                                     \
                 dst[idx] = av_clip_uintp2(src[idx] + offset_val, D);           \
                 idx     += stride;                                             \
@@ -301,7 +301,7 @@ static __attribute__((always_inline)) inline void ff_hevc_sao_edge_filter_8_sse(
                                                                                 int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge,
                                                                                 uint8_t *horiz_edge, uint8_t *diag_edge) {
     int x, y;
-    int *sao_offset_val = sao->offset_val[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
     int  sao_eo_class   = sao->eo_class[c_idx];
     const uint8_t edge_idx[]  = { 1, 2, 0, 3, 4 };
     const int8_t pos[4][2][2] = {
@@ -380,7 +380,7 @@ static __attribute__((always_inline)) inline void ff_hevc_sao_edge_filter_8_sse(
     if (sao_eo_class != SAO_EO_VERT) {
         if (borders[0]) {
             int idx        = 0;
-            int offset_val = sao_offset_val[0];
+            int16_t offset_val = sao_offset_val[0];
             for (y = 0; y < height; y++) {
                 dst[idx] = av_clip_uintp2_c(src[idx] + offset_val, 8);
                 idx     += stride;
@@ -388,7 +388,7 @@ static __attribute__((always_inline)) inline void ff_hevc_sao_edge_filter_8_sse(
         }
         if (borders[2]) {
             int idx        = _width - 1;
-            int offset_val = sao_offset_val[0];
+            int16_t offset_val = sao_offset_val[0];
             for (y = 0; y < height; y++) {
                 dst[idx] = av_clip_uintp2_c(src[idx] + offset_val, 8);
                 idx     += stride;

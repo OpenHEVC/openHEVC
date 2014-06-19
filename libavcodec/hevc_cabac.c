@@ -558,7 +558,7 @@ int ff_hevc_sao_type_idx_decode(HEVCContext *s)
     return SAO_EDGE;
 }
 
-int ff_hevc_sao_band_position_decode(HEVCContext *s)
+uint8_t ff_hevc_sao_band_position_decode(HEVCContext *s)
 {
     int i;
     int value = get_cabac_bypass(&s->HEVClc->cc);
@@ -568,7 +568,7 @@ int ff_hevc_sao_band_position_decode(HEVCContext *s)
     return value;
 }
 
-int ff_hevc_sao_offset_abs_decode(HEVCContext *s)
+uint8_t ff_hevc_sao_offset_abs_decode(HEVCContext *s)
 {
     int i = 0;
     int length = (1 << (FFMIN(s->sps->bit_depth, 10) - 5)) - 1;
@@ -578,12 +578,12 @@ int ff_hevc_sao_offset_abs_decode(HEVCContext *s)
     return i;
 }
 
-int ff_hevc_sao_offset_sign_decode(HEVCContext *s)
+uint8_t ff_hevc_sao_offset_sign_decode(HEVCContext *s)
 {
     return get_cabac_bypass(&s->HEVClc->cc);
 }
 
-int ff_hevc_sao_eo_class_decode(HEVCContext *s)
+uint8_t ff_hevc_sao_eo_class_decode(HEVCContext *s)
 {
     int ret = get_cabac_bypass(&s->HEVClc->cc) << 1;
     ret    |= get_cabac_bypass(&s->HEVClc->cc);
