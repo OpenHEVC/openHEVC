@@ -212,24 +212,23 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[openHevcContexts->display_layer];
     AVFrame                 *picture          = openHevcContext->picture;
-    int edge = avcodec_get_edge_width();
 
     switch (picture->format) {
         case PIX_FMT_YUV420P   :
-            openHevcFrameInfo->nYPitch    = picture->linesize[0] - 4 * edge;
-            openHevcFrameInfo->nUPitch    = picture->linesize[1] - 4 * edge;
-            openHevcFrameInfo->nVPitch    = picture->linesize[2] - 4 * edge;
+            openHevcFrameInfo->nYPitch    = picture->width;
+            openHevcFrameInfo->nUPitch    = picture->width >> 1;
+            openHevcFrameInfo->nVPitch    = picture->width >> 1;
             break;
         case PIX_FMT_YUV420P9  :
         case PIX_FMT_YUV420P10 :
-            openHevcFrameInfo->nYPitch    = picture->linesize[0] - 4 * edge;
-            openHevcFrameInfo->nUPitch    = picture->linesize[1] - 4 * edge;
-            openHevcFrameInfo->nVPitch    = picture->linesize[2] - 4 * edge;
+            openHevcFrameInfo->nYPitch    = picture->width << 1;
+            openHevcFrameInfo->nUPitch    = picture->width;
+            openHevcFrameInfo->nVPitch    = picture->width;
             break;
         default :
-            openHevcFrameInfo->nYPitch    = picture->linesize[0] - 4 * edge;
-            openHevcFrameInfo->nUPitch    = picture->linesize[1] - 4 * edge;
-            openHevcFrameInfo->nVPitch    = picture->linesize[2] - 4 * edge;
+            openHevcFrameInfo->nYPitch    = picture->width;
+            openHevcFrameInfo->nUPitch    = picture->width >> 1;
+            openHevcFrameInfo->nVPitch    = picture->width >> 1;
             break;
     }
 
