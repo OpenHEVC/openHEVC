@@ -7,7 +7,7 @@ libOpenHevcFlushSVC
 libOpenHevcGetOutput
 libOpenHevcGetOutputCpy
 libOpenHevcGetPictureInfo
-libOpenHevcGetPictureSize2
+libOpenHevcGetPictureInfoCpy
 libOpenHevcInit
 libOpenHevcSetActiveDecoders
 libOpenHevcSetCheckMD5
