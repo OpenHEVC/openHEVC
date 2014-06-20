@@ -349,8 +349,8 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
     int offset_table[32] = { 0 };
     int k, y, x;
     int shift  = BIT_DEPTH - 5;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int sao_left_class  = sao->band_position[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    uint8_t sao_left_class  = sao->band_position[c_idx];
 
     stride /= sizeof(pixel);
 
@@ -381,8 +381,8 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
         { { -1, -1 }, {  1, 1 } }, // 45 degree
         { {  1, -1 }, { -1, 1 } }, // 135 degree
     };
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int sao_eo_class    = sao->eo_class[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    uint8_t sao_eo_class    = sao->eo_class[c_idx];
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
 
@@ -417,8 +417,8 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     int x, y;
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int sao_eo_class    = sao->eo_class[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    uint8_t sao_eo_class    = sao->eo_class[c_idx];
     int init_x = 0, init_y = 0, width = _width, height = _height;
 
     stride /= sizeof(pixel);
@@ -470,8 +470,8 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
     int x, y;
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
-    int *sao_offset_val = sao->offset_val[c_idx];
-    int sao_eo_class    = sao->eo_class[c_idx];
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    uint8_t sao_eo_class    = sao->eo_class[c_idx];
     int init_x = 0, init_y = 0, width = _width, height = _height;
 
     stride /= sizeof(pixel);
