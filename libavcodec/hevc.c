@@ -1799,7 +1799,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                            (((x) >> s->sps->hshift[c_idx]) << s->sps->pixel_shift)]
     HEVCLocalContext *lc = s->HEVClc;
     int merge_idx = 0;
-    struct MvField current_mv = {{{ 0 }}};
+    struct MvField current_mv;
 
     int min_pu_width = s->sps->min_pu_width;
 
@@ -1829,12 +1829,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                                    1 << log2_cb_size,
                                    log2_cb_size, partIdx,
                                    merge_idx, &current_mv);
-        x_pu = x0 >> s->sps->log2_min_pu_size;
-        y_pu = y0 >> s->sps->log2_min_pu_size;
-
-        for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
-            for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-                tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
     } else { /* MODE_INTER */
         lc->pu.merge_flag = ff_hevc_merge_flag_decode(s);
         if (lc->pu.merge_flag) {
@@ -1845,12 +1839,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
 
             ff_hevc_luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                        partIdx, merge_idx, &current_mv);
-            x_pu = x0 >> s->sps->log2_min_pu_size;
-            y_pu = y0 >> s->sps->log2_min_pu_size;
-
-            for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-                for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
-                    tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
         } else {
             enum InterPredIdc inter_pred_idc = PRED_L0;
             ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
@@ -1894,15 +1882,15 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                 current_mv.mv[1].x += lc->pu.mvd.x;
                 current_mv.mv[1].y += lc->pu.mvd.y;
             }
-
-            x_pu = x0 >> s->sps->log2_min_pu_size;
-            y_pu = y0 >> s->sps->log2_min_pu_size;
-
-            for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
-                for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-                    tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
         }
     }
+
+    x_pu = x0 >> s->sps->log2_min_pu_size;
+    y_pu = y0 >> s->sps->log2_min_pu_size;
+
+    for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+        for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
+            tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
 
     if (current_mv.pred_flag & PF_L0) {
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
