@@ -42,6 +42,7 @@ find_package(Yasm)
 set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ${_force})
 
 configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
+configure_file(platform/x86/config.asm.in ${PROJECT_SOURCE_DIR}/config.asm)
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 	enable_language(ASM)
