@@ -459,9 +459,6 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->transform_dc_add[3] = ff_hevc_transform_32x32_dc_add_8_sse4;
 #endif
 
-                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
                 }
 #endif //HAVE_SSE2
 #if HAVE_SSSE3
@@ -479,6 +476,10 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     8, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
+
+                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
+                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
+                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
@@ -539,9 +540,6 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     c->transform_add[2]         = ff_hevc_transform_16x16_add_10_sse4;
                     c->transform_add[3]         = ff_hevc_transform_32x32_add_10_sse4;
 
-                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
                 }
 #endif // HAVE_SSE2
 #if HAVE_SSSE3
@@ -560,6 +558,10 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     10, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4);
+
+                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
+                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
+                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42

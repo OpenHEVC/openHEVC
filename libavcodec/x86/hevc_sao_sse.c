@@ -70,9 +70,16 @@ __m128i _MM_MIN_EPU16(__m128i a, __m128i b)
 
 #endif
 
+#if HAVE_SSE42
+#define _MM_CVTEPI8_EPI16 _mm_cvtepi8_epi16
 
+#else
+static inline __m128i _MM_CVTEPI8_EPI16(__m128i m0) {
+    return _mm_unpacklo_epi8(m0, _mm_cmplt_epi8(m0, _mm_setzero_si128()));
+}
+#endif
 
-#if HAVE_SSE2
+#if HAVE_SSSE3
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -366,7 +373,7 @@ static __attribute__((always_inline)) inline void ff_hevc_sao_edge_filter_8_sse(
                 x1 = _mm_add_epi8(x1, x3);
                 x1 = _mm_add_epi8(x1, _mm_set1_epi8(2));
                 r0 = _mm_shuffle_epi8(offset0, x1);
-                r0 = _mm_cvtepi8_epi16(r0);
+                r0 = _MM_CVTEPI8_EPI16(r0);
                 x0 = _mm_unpacklo_epi8(x0, _mm_setzero_si128());
                 r0 = _mm_add_epi16(r0, x0);
                 r0 = _mm_packus_epi16(r0, r0);
