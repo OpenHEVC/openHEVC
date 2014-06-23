@@ -144,7 +144,7 @@ cglobal hevc_idct16_dc_add_8, 3, 4, 6
     DC_ADD_OP       mova, r0, r2, r3
     RET
 
-
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 ; void ff_hevc_idct32_dc_add_8_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 cglobal hevc_idct32_dc_add_8, 3, 4, 6
@@ -156,7 +156,7 @@ cglobal hevc_idct32_dc_add_8, 3, 4, 6
     DC_ADD_OP       mova, r0, r2, r3
 %endrep
     RET
-
+%endif ;HAVE_AVX2_EXTERNAL
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_idct_dc_add_10(pixel *dst, int16_t *block, int stride)
 ;-----------------------------------------------------------------------------
@@ -224,7 +224,7 @@ INIT_XMM avx
 IDCT8_DC_ADD
 %endif
 
-
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 cglobal hevc_idct16_dc_add_10,3,4,7
     mov              r1w, [r1]
@@ -242,4 +242,4 @@ cglobal hevc_idct16_dc_add_10,3,4,7
     lea               r0, [r0+r2*4]
     IDCT_DC_ADD_OP_10 r0, r2, r1
     RET
-
+%endif ;HAVE_AVX_EXTERNAL
