@@ -37,8 +37,6 @@
 #include "videodsp.h"
 #include "hevc_defs.h"
 
-#define TEST_MIN_TB_ADDR_ZS
-
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
 
@@ -797,8 +795,8 @@ typedef struct HEVCPPS {
     uint8_t m_inferScalingListFlag;
     int m_scalingListRefLayerId; 
     uint8_t disable_dbf;
-    int beta_offset;    ///< beta_offset_div2 * 2
-    int tc_offset;      ///< tc_offset_div2 * 2
+    int8_t beta_offset;    ///< beta_offset_div2 * 2
+    int8_t tc_offset;      ///< tc_offset_div2 * 2
 
     uint8_t scaling_list_data_present_flag;
     ScalingList scaling_list;
@@ -870,8 +868,8 @@ typedef struct SliceHeader {
     int slice_cb_qp_offset;
     int slice_cr_qp_offset;
 
-    int beta_offset;    ///< beta_offset_div2 * 2
-    int tc_offset;      ///< tc_offset_div2 * 2
+    int8_t beta_offset;    ///< beta_offset_div2 * 2
+    int8_t tc_offset;      ///< tc_offset_div2 * 2
 
     unsigned int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
 
@@ -1021,8 +1019,8 @@ typedef struct ResidualCoding {
 } ResidualCoding;
 
 typedef struct DBParams {
-    int beta_offset;
-    int tc_offset;
+    int8_t beta_offset;
+    int8_t tc_offset;
 } DBParams;
 
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
