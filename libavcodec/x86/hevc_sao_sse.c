@@ -38,6 +38,9 @@
 #include <smmintrin.h>
 #endif
 
+#define CLPI_PIXEL_MAX_10 0x03FF
+#define CLPI_PIXEL_MAX_12 0x0FFF
+
 #if HAVE_SSE42
 #define _MM_MIN_EPU16 _mm_min_epu16
 #else
@@ -91,6 +94,8 @@ static inline __m128i _MM_CVTEPI8_EPI16(__m128i m0) {
     uint16_t  *dst      = (uint16_t *) _dst;                                   \
     uint16_t *src       = (uint16_t *) _src;                                   \
     ptrdiff_t stride    = _stride >> 1
+#define SAO_INIT_12() SAO_INIT_10()
+
 #define SAO_BAND_FILTER_INIT()                                                 \
     r0   = _mm_set1_epi16((sao_left_class    ) & 31);                          \
     r1   = _mm_set1_epi16((sao_left_class + 1) & 31);                          \
@@ -108,6 +113,7 @@ static inline __m128i _MM_CVTEPI8_EPI16(__m128i m0) {
 #define SAO_BAND_FILTER_LOAD_10(x)                                             \
     src0 = _mm_load_si128((__m128i *) &src[x]);                                \
     src2 = _mm_srai_epi16(src0, shift)
+#define SAO_BAND_FILTER_LOAD_12(x) SAO_BAND_FILTER_LOAD_10(x)
 
 #define SAO_BAND_FILTER_COMPUTE()                                              \
     x0   = _mm_cmpeq_epi16(src2, r0);                                          \
@@ -126,10 +132,14 @@ static inline __m128i _MM_CVTEPI8_EPI16(__m128i m0) {
 #define SAO_BAND_FILTER_STORE_8()                                              \
     src0 = _mm_packus_epi16(src0, src0);                                       \
     _mm_storel_epi64((__m128i *) &dst[x], src0)
-#define SAO_BAND_FILTER_STORE_10()                                             \
+#define SAO_BAND_FILTER_STORE(D)                                             \
     src0 = _mm_max_epi16(src0, _mm_setzero_si128());                           \
-    src0 = _mm_min_epi16(src0, _mm_set1_epi16(0x03ff));                         \
+    src0 = _mm_min_epi16(src0, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));           \
     _mm_store_si128((__m128i *) &dst[x  ], src0)
+
+#define SAO_BAND_FILTER_STORE_10()    SAO_BAND_FILTER_STORE(10)
+#define SAO_BAND_FILTER_STORE_12()    SAO_BAND_FILTER_STORE(12)
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,6 +167,7 @@ void ff_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
 }
 SAO_BAND_FILTER( 8,  8)
 SAO_BAND_FILTER( 8, 10)
+SAO_BAND_FILTER( 8, 12)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -185,7 +196,8 @@ SAO_BAND_FILTER( 8, 10)
 #define SAO_EDGE_FILTER_LOAD_10()                                              \
     x0   = _mm_loadu_si128((__m128i *) (src + x + y_stride));                  \
     cmp0 = _mm_loadu_si128((__m128i *) (src + x + y_stride_0_1));              \
-    cmp1 = _mm_loadu_si128((__m128i *) (src + x + y_stride_1_1));              \
+    cmp1 = _mm_loadu_si128((__m128i *) (src + x + y_stride_1_1))
+#define SAO_EDGE_FILTER_LOAD_12() SAO_EDGE_FILTER_LOAD_10()
 
 #define SAO_EDGE_FILTER_COMPUTE()                                              \
     r2 = _MM_MIN_EPU16(x0, cmp0);                                              \
@@ -216,11 +228,13 @@ SAO_BAND_FILTER( 8, 10)
 #define SAO_EDGE_FILTER_STORE_8()                                              \
     r0 = _mm_packus_epi16(r0, r0);                                             \
     _mm_storel_epi64((__m128i *) (dst + x + y_stride), r0)
-#define SAO_EDGE_FILTER_STORE_10()                                             \
-    r1 = _mm_set1_epi16(0x03ff);                                               \
+#define SAO_EDGE_FILTER_STORE(D)                                               \
+    r1 = _mm_set1_epi16(CLPI_PIXEL_MAX_## D);                                  \
     r0 = _mm_max_epi16(r0, _mm_setzero_si128());                               \
     r0 = _mm_min_epi16(r0, r1);                                                \
     _mm_storeu_si128((__m128i *) (dst + x + y_stride), r0)
+#define SAO_EDGE_FILTER_STORE_10() SAO_EDGE_FILTER_STORE(10)
+#define SAO_EDGE_FILTER_STORE_12() SAO_EDGE_FILTER_STORE(12)
 
 #define SAO_EDGE_FILTER_BORDER_LOOP_8(incr)                                    \
     x1 = _mm_set1_epi8(sao_offset_val[0]);                                     \
@@ -236,6 +250,8 @@ SAO_BAND_FILTER( 8, 10)
         x0 = _mm_add_epi16(x0, x1);                                            \
         _mm_storeu_si128((__m128i *) (dst + incr), x0);                        \
     }
+#define SAO_EDGE_FILTER_BORDER_LOOP_12(incr) SAO_EDGE_FILTER_BORDER_LOOP_10(incr)
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -404,6 +420,7 @@ static __attribute__((always_inline)) inline void ff_hevc_sao_edge_filter_8_sse(
     }                                                                          
 }
 SAO_EDGE_FILTER(10)
+SAO_EDGE_FILTER(12)
 
 #define SAO_EDGE_FILTER_0(D)                                                   \
 void ff_hevc_sao_edge_filter_0_ ## D ##_sse(uint8_t *_dst, uint8_t *_src,      \
@@ -468,4 +485,7 @@ SAO_EDGE_FILTER_1( 8)
 
 SAO_EDGE_FILTER_0(10)
 SAO_EDGE_FILTER_1(10)
+
+SAO_EDGE_FILTER_0(12)
+SAO_EDGE_FILTER_1(12)
 #endif //HAVE_SSE42
