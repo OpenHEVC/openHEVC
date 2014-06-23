@@ -357,10 +357,10 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int ctb_size        = 1 << log2_ctb_size;
     int ctb             = (x0 >> log2_ctb_size) +
                           (y0 >> log2_ctb_size) * s->sps->ctb_width;
-    int cur_tc_offset   = s->deblock[ctb].tc_offset;
-    int cur_beta_offset = s->deblock[ctb].beta_offset;
-    int left_tc_offset, left_beta_offset;
-    int tc_offset, beta_offset;
+    int8_t cur_tc_offset   = s->deblock[ctb].tc_offset;
+    int8_t cur_beta_offset = s->deblock[ctb].beta_offset;
+    int8_t left_tc_offset, left_beta_offset;
+    int8_t tc_offset, beta_offset;
     int pcmf = (s->sps->pcm_enabled_flag &&
                 s->sps->pcm.loop_filter_disable_flag) ||
                s->pps->transquant_bypass_enable_flag;
