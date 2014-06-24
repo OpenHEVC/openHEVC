@@ -729,32 +729,34 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                                                            x0,
                                                            y0);
         // bs for TU internal horizontal PU boundaries
-        for (j = 8; j < (1 << log2_trafo_size); j += 8) {
-            int yp_pu = (y0 + j - 1) >> log2_min_pu_size;
-            int yq_pu = (y0 + j)     >> log2_min_pu_size;
+        for (i = 0; i < (1 << log2_trafo_size); i += 4) {
+            int x_pu  = (x0 + i) >> log2_min_pu_size;
+            int yp_pu = (y0 + 8 - 1) >> log2_min_pu_size;
+            MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
 
-            for (i = 0; i < (1 << log2_trafo_size); i += 4) {
-                int x_pu = (x0 + i) >> log2_min_pu_size;
-                MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+            for (j = 8; j < (1 << log2_trafo_size); j += 8) {
+                int yq_pu = (y0 + j)     >> log2_min_pu_size;
                 MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
 
                 bs = boundary_strength(s, curr, top, refPicList);
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
+                top = curr;
             }
         }
 
         // bs for TU internal vertical PU boundaries
         for (j = 0; j < (1 << log2_trafo_size); j += 4) {
-            int y_pu = (y0 + j) >> log2_min_pu_size;
+            int y_pu  = (y0 + j) >> log2_min_pu_size;
+            int xp_pu = (x0 + 8 - 1) >> log2_min_pu_size;
+            MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
 
             for (i = 8; i < (1 << log2_trafo_size); i += 8) {
-                int xp_pu = (x0 + i - 1) >> log2_min_pu_size;
                 int xq_pu = (x0 + i)     >> log2_min_pu_size;
-                MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
                 MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
 
                 bs = boundary_strength(s, curr, left, refPicList);
                 s->vertical_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
+                left = curr;
             }
         }
     }
