@@ -22,7 +22,7 @@
 #ifndef OPEN_HEVC_WRAPPER_H
 #define OPEN_HEVC_WRAPPER_H
 
-#define NV_VERSION  "1.2" ///< Current software version
+#define NV_VERSION  "2.0" ///< Current software version
 
 #ifdef __cplusplus
 extern "C" {
