@@ -986,8 +986,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int vshift = s->sps->vshift[c_idx];
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                           ((x0 >> hshift) << s->sps->pixel_shift)];
-    LOCAL_ALIGNED_16(int16_t, coeffs, [MAX_TB_SIZE * MAX_TB_SIZE]);
-    uint8_t significant_coeff_group_flag[8][8] = {{0}};
+    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]);
+    DECLARE_ALIGNED(8, uint8_t, significant_coeff_group_flag[8][8]) = {{0}};
 
     int trafo_size = 1 << log2_trafo_size;
     int i;

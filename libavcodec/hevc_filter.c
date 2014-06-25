@@ -347,7 +347,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int x, y;
     int chroma;
     int c_tc[2], beta[2], tc[2];
-    uint8_t no_p[2], no_q[2];
+    uint8_t no_p[2] = { 0 };
+    uint8_t no_q[2] = { 0 };
 
     int log2_ctb_size = s->sps->log2_ctb_size;
     int x_end, x_end2, y_end;

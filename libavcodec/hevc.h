@@ -813,6 +813,8 @@ typedef struct HEVCPPS {
     // Inferred parameters
     unsigned int *column_width;  ///< ColumnWidth
     unsigned int *row_height;    ///< RowHeight
+    unsigned int *col_bd;        ///< ColBd
+    unsigned int *row_bd;        ///< RowBd
     int *col_idxX;
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
@@ -945,17 +947,17 @@ typedef struct MvField {
 } MvField;
 
 typedef struct NeighbourAvailable {
-    uint8_t cand_bottom_left;
-    uint8_t cand_left;
-    uint8_t cand_up;
-    uint8_t cand_up_left;
-    uint8_t cand_up_right;
-    uint8_t cand_up_right_sap;
+    int cand_bottom_left;
+    int cand_left;
+    int cand_up;
+    int cand_up_left;
+    int cand_up_right;
+    int cand_up_right_sap;
 } NeighbourAvailable;
 
 typedef struct PredictionUnit {
-    uint8_t mpm_idx;
-    uint8_t rem_intra_luma_pred_mode;
+    int mpm_idx;
+    int rem_intra_luma_pred_mode;
     uint8_t intra_pred_mode[4];
     Mv mvd;
     uint8_t merge_flag;
