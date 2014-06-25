@@ -60,7 +60,7 @@ void  ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
 /*
  * 6.4.1 Derivation process for z-scan order block availability
  */
-static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
+static av_always_inline int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
                               int xN, int yN)
 {
 #define MIN_TB_ADDR_ZS(x, y)                                            \
@@ -82,7 +82,7 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
 }
 
 //check if the two luma locations belong to the same mostion estimation region
-static int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
+static av_always_inline int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->pps->log2_parallel_merge_level;
 
@@ -93,7 +93,7 @@ static int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
 #define MATCH(x) (A.x == B.x)
 
 // check if the mv's and refidx are the same between A and B
-static int compare_mv_ref_idx(struct MvField A, struct MvField B)
+static av_always_inline int compare_mv_ref_idx(struct MvField A, struct MvField B)
 {
     int a_pf = A.pred_flag;
     int b_pf = B.pred_flag;

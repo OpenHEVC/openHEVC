@@ -813,8 +813,6 @@ typedef struct HEVCPPS {
     // Inferred parameters
     unsigned int *column_width;  ///< ColumnWidth
     unsigned int *row_height;    ///< RowHeight
-    unsigned int *col_bd;        ///< ColBd
-    unsigned int *row_bd;        ///< RowBd
     int *col_idxX;
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
