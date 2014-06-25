@@ -128,7 +128,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     if (!s->sao || !s->deblock)
         goto fail;
 
-    s->skip_flag    = av_malloc(pic_size_in_ctb);
+    s->skip_flag    = av_malloc(sps->min_cb_height * sps->min_cb_width);
     s->tab_ct_depth = av_malloc(sps->min_cb_height * sps->min_cb_width);
     s->dynamic_alloc += pic_size_in_ctb;
     s->dynamic_alloc += (sps->min_cb_height * sps->min_cb_width);
@@ -2204,6 +2204,12 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
             x += min_cb_width;
         }
         lc->cu.pred_mode = skip_flag ? MODE_SKIP : MODE_INTER;
+    } else {
+        x = y_cb * min_cb_width + x_cb;
+        for (y = 0; y < length; y++) {
+            memset(&s->skip_flag[x], 0, length);
+            x += min_cb_width;
+        }
     }
 
     if (SAMPLE_CTB(s->skip_flag, x_cb, y_cb)) {
