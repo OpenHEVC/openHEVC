@@ -2470,6 +2470,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
+    av_freep(&col_bd);
+    av_freep(&row_bd);
     av_buffer_unref(&s->pps_list[pps_id]);
     s->pps_list[pps_id] = pps_buf;
 
