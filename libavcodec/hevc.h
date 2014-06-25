@@ -104,6 +104,12 @@ enum ScalabilityType
     SCALABILITY_ID = 2,
 };
 
+#define CBF_LUMA_FLAG   1
+#define CBF_CB_FLAG     2
+#define CBF_CR_FLAG     4
+#define CBF_CB_CR_FLAG  6
+#define CBF_FLAG        8
+
 /**
  * Table 7-3: NAL unit type codes
  */
@@ -987,14 +993,11 @@ typedef struct PredictionUnit {
 } PredictionUnit;
 
 typedef struct TransformTreeCabac {
-    uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_flags[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } TransformTreeCabac;
 
 typedef struct TransformTree {
-    uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t cbf_luma[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_flags[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t split_transform_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cur_intra_pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cur_intra_pred_mode_c[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
