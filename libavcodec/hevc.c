@@ -1038,8 +1038,8 @@ do {                                                    \
 static void hls_sao_param(HEVCContext *s, int rx, int ry)
 {
     HEVCLocalContextCabac  *lc = &s->HEVClc->ca;
-    int sao_merge_left_flag = 0;
-    int sao_merge_up_flag   = 0;
+    uint8_t sao_merge_left_flag = 0;
+    uint8_t sao_merge_up_flag   = 0;
     SAOParams *sao          = &CTB(s->sao, rx, ry);
     int c_idx, i;
 
@@ -2237,7 +2237,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                            (((x) >> s->sps->hshift[c_idx]) << s->sps->pixel_shift)]
     HEVCLocalContextCommon *lc    =  s->HEVClc->cm_ca;
     HEVCLocalContextCabac  *lc_ca = &s->HEVClc->ca;
-    int merge_idx = 0;
+    uint8_t merge_idx = 0;
     struct MvField current_mv;
 
     int min_pu_width = s->sps->min_pu_width;
@@ -2252,8 +2252,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     int min_cb_width     = s->sps->min_cb_width;
     int x_cb             = x0 >> log2_min_cb_size;
     int y_cb             = y0 >> log2_min_cb_size;
-    int ref_idx[2];
-    int mvp_flag[2];
+    uint8_t ref_idx[2];
+    uint8_t mvp_flag[2];
     int x_pu, y_pu;
     int i, j;
 
@@ -2429,7 +2429,7 @@ static void hls_prediction_unit_cabac(HEVCContext *s, int x0, int y0,
     int x_pu             = x0 >> s->sps->log2_min_pu_size;
     int y_pu             = y0 >> s->sps->log2_min_pu_size;
     struct MvField current_mv = {{{ 0 }}};
-    int merge_idx = 0;
+    uint8_t merge_idx = 0;
     uint8_t mvp_flag[2];
     enum InterPredIdc inter_pred_idc = PRED_L0;
 
@@ -2737,7 +2737,7 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0,
     int split   = s->HEVClc->cm_ca->cu.part_mode == PART_NxN;
     int pb_size = (1 << log2_cb_size) >> split;
     int side    = split + 1;
-    int chroma_mode;
+    uint8_t chroma_mode;
     int i, j;
 
     for (i = 0; i < side; i++)
@@ -3219,7 +3219,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     const int cb_size    = 1 << log2_cb_size;
     int ret;
     int qp_block_mask = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
-    int split_cu_flag;
+    uint8_t split_cu_flag;
 
     lc->ct.depth = cb_depth;
     if (x0 + cb_size <= s->sps->width  &&

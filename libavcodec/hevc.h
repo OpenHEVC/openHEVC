@@ -957,7 +957,7 @@ typedef struct Mv {
 
 typedef struct MvField {
     Mv mv[2];
-    int8_t ref_idx[2];
+    uint8_t ref_idx[2];
     uint8_t pred_flag;
 } MvField;
 
@@ -971,18 +971,18 @@ typedef struct NeighbourAvailable {
 } NeighbourAvailable;
 
 typedef struct PredictionUnitCabac {
+    Mv mvd;
     uint8_t intra_pred_mode[4];
     uint8_t intra_pred_mode_c[4];
-    Mv mvd;
-    int mpm_idx;
-    int rem_intra_luma_pred_mode;
+    uint8_t mpm_idx;
+    uint8_t rem_intra_luma_pred_mode;
 } PredictionUnitCabac;
 
 typedef struct PredictionUnit {
     uint8_t merge_flag;
     uint8_t merge_flag_tab[4][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t mvp_flag[2][4][MAX_CU_SIZE * MAX_CU_SIZE];
-    int merge_idx[4][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t merge_idx[4][MAX_CU_SIZE * MAX_CU_SIZE];
     enum InterPredIdc inter_pred_idc[4][MAX_CU_SIZE * MAX_CU_SIZE];
 } PredictionUnit;
 
@@ -996,20 +996,20 @@ typedef struct TransformTree {
     uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t cbf_luma[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
     uint8_t split_transform_flag[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int cur_intra_pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-    int cur_intra_pred_mode_c[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cur_intra_pred_mode[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cur_intra_pred_mode_c[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } TransformTree;
 
 typedef struct TransformUnitCabac {
     uint8_t is_cu_qp_delta_coded;
+    uint8_t cur_intra_pred_mode;
+    uint8_t cur_intra_pred_mode_c;
     int cu_qp_delta;
-    int cur_intra_pred_mode;
-    int cur_intra_pred_mode_c;
 } TransformUnitCabac;
 
 typedef struct TransformUnitCompute {
-    int cur_intra_pred_mode;
-    int cur_intra_pred_mode_c;
+    uint8_t cur_intra_pred_mode;
+    uint8_t cur_intra_pred_mode_c;
 } TransformUnitCompute;
 
 typedef struct ResidualCoding {
@@ -1087,6 +1087,7 @@ typedef struct HEVCLocalContextCabac {
 
 typedef struct HEVCLocalContextCompute {
     TransformUnitCompute tu;
+    NeighbourAvailable  na;
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
     uint8_t ctb_up_right_flag;
@@ -1107,7 +1108,6 @@ typedef struct HEVCLocalContextCommon {
     CodingTree          ct;
     CodingUnit          cu;
     PredictionUnit      pu;
-    NeighbourAvailable  na;
 } HEVCLocalContextCommon;
 
 typedef struct HEVCLocalContext {
@@ -1310,34 +1310,32 @@ int ff_hevc_slice_rpl(HEVCContext *s);
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);
 void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts);
-int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
-int ff_hevc_sao_type_idx_decode(HEVCContext *s);
+uint8_t ff_hevc_sao_merge_flag_decode(HEVCContext *s);
+uint8_t ff_hevc_sao_type_idx_decode(HEVCContext *s);
 uint8_t ff_hevc_sao_band_position_decode(HEVCContext *s);
 uint8_t ff_hevc_sao_offset_abs_decode(HEVCContext *s);
 uint8_t ff_hevc_sao_offset_sign_decode(HEVCContext *s);
 uint8_t ff_hevc_sao_eo_class_decode(HEVCContext *s);
-int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
-int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
-int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0,
-                             int x_cb, int y_cb);
-int ff_hevc_pred_mode_decode(HEVCContext *s);
-int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth,
-                                          int x0, int y0);
-int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size);
-int ff_hevc_pcm_flag_decode(HEVCContext *s);
-int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s);
-int ff_hevc_mpm_idx_decode(HEVCContext *s);
-int ff_hevc_rem_intra_luma_pred_mode_decode(HEVCContext *s);
-int ff_hevc_intra_chroma_pred_mode_decode(HEVCContext *s);
-int ff_hevc_merge_idx_decode(HEVCContext *s);
-int ff_hevc_merge_flag_decode(HEVCContext *s);
-int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH);
-int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int num_ref_idx_lx);
-int ff_hevc_mvp_lx_flag_decode(HEVCContext *s);
-int ff_hevc_no_residual_syntax_flag_decode(HEVCContext *s);
-int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size);
-int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth);
-int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth);
+int     ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
+uint8_t ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
+uint8_t ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb);
+uint8_t ff_hevc_pred_mode_decode(HEVCContext *s);
+uint8_t ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0);
+uint8_t ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size);
+uint8_t ff_hevc_pcm_flag_decode(HEVCContext *s);
+uint8_t ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s);
+uint8_t ff_hevc_mpm_idx_decode(HEVCContext *s);
+uint8_t ff_hevc_rem_intra_luma_pred_mode_decode(HEVCContext *s);
+uint8_t ff_hevc_intra_chroma_pred_mode_decode(HEVCContext *s);
+uint8_t ff_hevc_merge_idx_decode(HEVCContext *s);
+uint8_t ff_hevc_merge_flag_decode(HEVCContext *s);
+uint8_t ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH);
+uint8_t ff_hevc_ref_idx_lx_decode(HEVCContext *s, int num_ref_idx_lx);
+uint8_t ff_hevc_mvp_lx_flag_decode(HEVCContext *s);
+uint8_t ff_hevc_no_residual_syntax_flag_decode(HEVCContext *s);
+uint8_t ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size);
+uint8_t ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth);
+uint8_t ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth);
 
 /**
  * Get the number of candidate references for the current frame.
@@ -1374,7 +1372,7 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0,
 
 void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y);
 
-int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
+uint8_t ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
