@@ -46,6 +46,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
+#include "libavcodec/hevc.h"
 
 #define MAX_POC      1024
 /**

@@ -720,6 +720,7 @@ typedef struct HEVCSPS {
 
     int transform_skip_rotation_enabled_flag;
     int transform_skip_context_enabled_flag;
+    int implicit_rdpcm_enabled_flag;
     int intra_smoothing_disabled_flag;
 
     ///< coded frame dimension in various units
@@ -1311,10 +1312,10 @@ void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);
 void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s);
-int ff_hevc_sao_band_position_decode(HEVCContext *s);
-int ff_hevc_sao_offset_abs_decode(HEVCContext *s);
-int ff_hevc_sao_offset_sign_decode(HEVCContext *s);
-int ff_hevc_sao_eo_class_decode(HEVCContext *s);
+uint8_t ff_hevc_sao_band_position_decode(HEVCContext *s);
+uint8_t ff_hevc_sao_offset_abs_decode(HEVCContext *s);
+uint8_t ff_hevc_sao_offset_sign_decode(HEVCContext *s);
+uint8_t ff_hevc_sao_eo_class_decode(HEVCContext *s);
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0,

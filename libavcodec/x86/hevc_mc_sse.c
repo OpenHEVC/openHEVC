@@ -37,6 +37,9 @@
 #include <smmintrin.h>
 #endif
 
+#define CLPI_PIXEL_MAX_10 0x03FF
+#define CLPI_PIXEL_MAX_12 0x0FFF
+
 #if HAVE_SSE42
 #define _MM_PACKUS_EPI32 _mm_packus_epi32
 #else
@@ -132,6 +135,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 #define SRC_INIT_10()                                                          \
     uint16_t *src       = (uint16_t*) _src;                                    \
     const int srcstride = _srcstride >> 1
+#define SRC_INIT_12() SRC_INIT_10()
 #define SRC_INIT_14() SRC_INIT_10()
 #define DST_INIT_8()                                                           \
     uint8_t *dst        = (uint8_t *) _dst;                                    \
@@ -139,12 +143,14 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 #define DST_INIT_10()                                                          \
     uint16_t *dst       = (uint16_t *) _dst;                                   \
     const int dststride = _dststride >> 1
+#define DST_INIT_12() DST_INIT_10()
 #define DST_INIT_14() DST_INIT_10()
 
 #define SRC_INIT1_8()                                                          \
         src       = (uint8_t*) _src
 #define SRC_INIT1_10()                                                         \
         src       = (uint16_t*) _src
+#define SRC_INIT1_12() SRC_INIT1_10()
 
 #define PEL_STORE_2(tab)                                                       \
     *((uint32_t *) &tab[x]) = _mm_cvtsi128_si32(x1)
@@ -199,28 +205,36 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     x1 = _mm_packus_epi16(x1, x2);                                             \
     PEL_STORE_8(dst)
 
-#define WEIGHTED_STORE2_10()                                                   \
+#define WEIGHTED_STORE2(D)                                                     \
     x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
-    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));               \
     PEL_STORE_2(dst)
-#define WEIGHTED_STORE4_10()                                                   \
+#define WEIGHTED_STORE4(D)                                                     \
     x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
-    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));               \
     PEL_STORE_4(dst)
-#define WEIGHTED_STORE6_10()                                                   \
+#define WEIGHTED_STORE6(D)                                                     \
     x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
-    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));               \
     PEL_STORE_6(dst)
-#define WEIGHTED_STORE8_10()                                                   \
+#define WEIGHTED_STORE8(D)                                                     \
     x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
-    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));               \
     PEL_STORE_8(dst)
-#define WEIGHTED_STORE16_10()                                                  \
+#define WEIGHTED_STORE16(D)                                                    \
     x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
-    x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03ff));                            \
+    x1 = _mm_min_epi16(x1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));               \
     x2 = _mm_max_epi16(x2, _mm_setzero_si128());                               \
-    x2 = _mm_min_epi16(x2, _mm_set1_epi16(0x03ff));                            \
+    x2 = _mm_min_epi16(x2, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));               \
     PEL_STORE_16(dst)
+
+#define WEIGHTED_STORE4_10()    WEIGHTED_STORE4(10)
+#define WEIGHTED_STORE6_10()    WEIGHTED_STORE6(10)
+#define WEIGHTED_STORE8_10()    WEIGHTED_STORE8(10)
+
+#define WEIGHTED_STORE4_12()    WEIGHTED_STORE4(12)
+#define WEIGHTED_STORE6_12()    WEIGHTED_STORE6(12)
+#define WEIGHTED_STORE8_12()    WEIGHTED_STORE8(12)
 
 #define WEIGHTED_STORE4_14()    WEIGHTED_STORE4_10()
 #define WEIGHTED_STORE6_14()    WEIGHTED_STORE6_10()
@@ -363,14 +377,15 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     MC_PIXEL_COMPUTE2_8();                                                     \
     x2 = _mm_slli_epi16(x2, 14 - 8)
 
-#define MC_PIXEL_COMPUTE2_10()                                                 \
-    x1 = _mm_slli_epi16(x1, 14 - 10)
-#define MC_PIXEL_COMPUTE4_10()                                                 \
-    MC_PIXEL_COMPUTE2_10()
-#define MC_PIXEL_COMPUTE6_10()                                                 \
-    MC_PIXEL_COMPUTE2_10()
-#define MC_PIXEL_COMPUTE8_10()                                                 \
-    MC_PIXEL_COMPUTE2_10()
+#define MC_PIXEL_COMPUTE2_10()  x1 = _mm_slli_epi16(x1, 14 - 10)
+#define MC_PIXEL_COMPUTE4_10()  MC_PIXEL_COMPUTE2_10()
+#define MC_PIXEL_COMPUTE6_10()  MC_PIXEL_COMPUTE2_10()
+#define MC_PIXEL_COMPUTE8_10()  MC_PIXEL_COMPUTE2_10()
+
+#define MC_PIXEL_COMPUTE2_12()  x1 = _mm_slli_epi16(x1, 14 - 12)
+#define MC_PIXEL_COMPUTE4_12()  MC_PIXEL_COMPUTE2_12()
+#define MC_PIXEL_COMPUTE6_12()  MC_PIXEL_COMPUTE2_12()
+#define MC_PIXEL_COMPUTE8_12()  MC_PIXEL_COMPUTE2_12()
 
 #define PUT_HEVC_PEL_PIXELS_VAR2_8()                                           \
     __m128i x1;                                                                 \
@@ -389,6 +404,12 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 #define PUT_HEVC_PEL_PIXELS_VAR8_10()   PUT_HEVC_PEL_PIXELS_VAR2_10()
 #define PUT_HEVC_PEL_PIXELS_VAR16_10()  PUT_HEVC_PEL_PIXELS_VAR16_8()
 
+#define PUT_HEVC_PEL_PIXELS_VAR2_12()   PUT_HEVC_PEL_PIXELS_VAR2_10()
+#define PUT_HEVC_PEL_PIXELS_VAR4_12()   PUT_HEVC_PEL_PIXELS_VAR2_10()
+#define PUT_HEVC_PEL_PIXELS_VAR6_12()   PUT_HEVC_PEL_PIXELS_VAR2_10()
+#define PUT_HEVC_PEL_PIXELS_VAR8_12()   PUT_HEVC_PEL_PIXELS_VAR2_10()
+#define PUT_HEVC_PEL_PIXELS_VAR16_12()  PUT_HEVC_PEL_PIXELS_VAR16_8()
+
 #define PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5()                                      \
     __m128i r5
 #define PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()                                   \
@@ -402,6 +423,11 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR6_10()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR8_10()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_10()  PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_8()
+
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_12()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR6_12()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR8_12()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_12()  PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_8()
 
 #define PUT_HEVC_PEL_PIXELS(H, D)                                              \
 void ff_hevc_put_hevc_pel_pixels ## H ## _ ## D ## _sse (                      \
@@ -522,12 +548,14 @@ void ff_hevc_put_hevc_bi_w_pel_pixels ## H ## _ ## D ## _sse (                  
 #define SRC_INIT_H_10()                                                        \
     uint16_t *src = ((uint16_t*) _src) - 1;                                    \
     ptrdiff_t srcstride  = _srcstride >> 1
+#define SRC_INIT_H_12() SRC_INIT_H_10()
 #define EPEL_FILTER_8(f1, f2, idx)                                             \
     f1 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_sse[idx][0]);         \
     f2 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_sse[idx][1])
 #define EPEL_FILTER_10(f1, f2, idx)                                            \
     f1 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_sse_10[idx][0]);      \
     f2 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_sse_10[idx][1])
+#define EPEL_FILTER_12(f1, f2, idx)  EPEL_FILTER_10(f1, f2, idx)
 
 #define EPEL_LOAD_8(src, stride)                                               \
     x1 = _mm_loadl_epi64((__m128i *) &src[x]);                                 \
@@ -545,6 +573,7 @@ void ff_hevc_put_hevc_bi_w_pel_pixels ## H ## _ ## D ## _sse (                  
     x1 = _mm_unpacklo_epi16(x1, x2);                                           \
     t2 = _mm_unpackhi_epi16(x3, x4);                                           \
     x2 = _mm_unpacklo_epi16(x3, x4)
+#define EPEL_LOAD_12(src, stride) EPEL_LOAD_10(src, stride)
 
 #define EPEL_COMPUTE_8(dst, f1, f2)                                            \
     x1  = _mm_maddubs_epi16(x1, f1);                                           \
@@ -561,6 +590,7 @@ void ff_hevc_put_hevc_bi_w_pel_pixels ## H ## _ ## D ## _sse (                  
     x1  = _mm_srai_epi32(x1, shift);                                           \
     dst = _mm_packs_epi32(x1, t1)
 #define EPEL_COMPUTE_10(dst, f1, f2)    EPEL_COMPUTE(dst, f1, f2, 2)
+#define EPEL_COMPUTE_12(dst, f1, f2)    EPEL_COMPUTE(dst, f1, f2, 4)
 #define EPEL_COMPUTE_14(dst, f1, f2)    EPEL_COMPUTE(dst, f1, f2, 6)
 
 #define PUT_HEVC_EPEL_H_VAR2_8()                                               \
@@ -573,6 +603,11 @@ void ff_hevc_put_hevc_bi_w_pel_pixels ## H ## _ ## D ## _sse (                  
 #define PUT_HEVC_EPEL_H_VAR4_10()  PUT_HEVC_EPEL_H_VAR2_10()
 #define PUT_HEVC_EPEL_H_VAR6_10()  PUT_HEVC_EPEL_H_VAR2_10()
 #define PUT_HEVC_EPEL_H_VAR8_10()  PUT_HEVC_EPEL_H_VAR2_10()
+
+#define PUT_HEVC_EPEL_H_VAR2_12()  PUT_HEVC_EPEL_H_VAR2_10()
+#define PUT_HEVC_EPEL_H_VAR4_12()  PUT_HEVC_EPEL_H_VAR2_10()
+#define PUT_HEVC_EPEL_H_VAR6_12()  PUT_HEVC_EPEL_H_VAR2_10()
+#define PUT_HEVC_EPEL_H_VAR8_12()  PUT_HEVC_EPEL_H_VAR2_10()
 
 #define PUT_HEVC_EPEL_H(H, D)                                                  \
 void ff_hevc_put_hevc_epel_h ## H ## _ ## D ## _sse (                          \
@@ -703,6 +738,7 @@ void ff_hevc_put_hevc_bi_w_epel_h ## H ## _ ## D ## _sse (                     \
 #define SRC_INIT_V_10()                                                        \
     ptrdiff_t srcstride = _srcstride >> 1;                                     \
     uint16_t *src       = ((uint16_t*) _src) - srcstride
+#define SRC_INIT_V_12() SRC_INIT_V_10()
 
 #define PUT_HEVC_EPEL_V_VAR2_8()                                               \
     __m128i x1, x2, x3, x4, f1, f2
@@ -714,6 +750,10 @@ void ff_hevc_put_hevc_bi_w_epel_h ## H ## _ ## D ## _sse (                     \
 #define PUT_HEVC_EPEL_V_VAR4_10()  PUT_HEVC_EPEL_V_VAR2_10()
 #define PUT_HEVC_EPEL_V_VAR6_10()  PUT_HEVC_EPEL_V_VAR2_10()
 #define PUT_HEVC_EPEL_V_VAR8_10()  PUT_HEVC_EPEL_V_VAR2_10()
+#define PUT_HEVC_EPEL_V_VAR2_12()  PUT_HEVC_EPEL_V_VAR2_10()
+#define PUT_HEVC_EPEL_V_VAR4_12()  PUT_HEVC_EPEL_V_VAR2_10()
+#define PUT_HEVC_EPEL_V_VAR6_12()  PUT_HEVC_EPEL_V_VAR2_10()
+#define PUT_HEVC_EPEL_V_VAR8_12()  PUT_HEVC_EPEL_V_VAR2_10()
 
 #define PUT_HEVC_EPEL_V(H, D)                                                  \
 void ff_hevc_put_hevc_epel_v ## H ## _ ## D ## _sse (                          \
@@ -845,6 +885,7 @@ void ff_hevc_put_hevc_bi_w_epel_v ## H ## _ ## D ## _sse (                     \
 #define SRC_INIT_HV_10()                                                       \
     uint16_t *src_bis, *src = ((uint16_t*) _src) - 1;                          \
     ptrdiff_t srcstride  = _srcstride >> 1
+#define SRC_INIT_HV_12() SRC_INIT_HV_10()
 
 #define PUT_HEVC_EPEL_HV(H, D)                                                 \
 void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
@@ -900,6 +941,7 @@ void ff_hevc_put_hevc_epel_hv ## H ## _ ## D ## _sse (                         \
     uint16_t *dst_bis  = dst;                                                  \
     uint16_t *src_bis, *src = ((uint16_t*) _src) - 1;                          \
     ptrdiff_t srcstride  = _srcstride >> 1
+#define SRC_INIT_WEIGHTED_HV_12() SRC_INIT_WEIGHTED_HV_10()
 
 #define PUT_HEVC_BI_EPEL_HV(H, D)                                              \
 void ff_hevc_put_hevc_bi_epel_hv ## H ## _ ## D ## _sse (                      \
@@ -1145,6 +1187,7 @@ void ff_hevc_put_hevc_bi_w_epel_hv ## H ## _ ## D ## _sse (                    \
     x1 = _mm_packs_epi32(x1, c0)
 
 #define QPEL_H_COMPUTE4_10()    QPEL_H_COMPUTE4(2)
+#define QPEL_H_COMPUTE4_12()    QPEL_H_COMPUTE4(4)
 #define QPEL_H_COMPUTE4_14()    QPEL_H_COMPUTE4(6)
 
 #define QPEL_H_COMPUTE16_8()                                                   \
@@ -1207,6 +1250,7 @@ void ff_hevc_put_hevc_bi_w_epel_hv ## H ## _ ## D ## _sse (                    \
     x1 = _mm_packs_epi32(x1, x2)
 
 #define QPEL_H_COMPUTE8_10()    QPEL_H_COMPUTE8(2)
+#define QPEL_H_COMPUTE8_12()    QPEL_H_COMPUTE8(4)
 #define QPEL_H_COMPUTE8_14()    QPEL_H_COMPUTE8(6)
 
 #define PUT_HEVC_QPEL_H_VAR4_8()                                               \
@@ -1414,6 +1458,10 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _sse (                     \
 #define QPEL_LOAD_LO8_10(src, srcstride) QPEL_LOAD_LO_10(_mm_loadu_si128, src, srcstride)
 #define QPEL_LOAD_HI4_10(src, srcstride) QPEL_LOAD_HI_4_10(_mm_loadl_epi64, src, srcstride)
 #define QPEL_LOAD_HI8_10(src, srcstride) QPEL_LOAD_HI_10(_mm_loadu_si128, src, srcstride)
+#define QPEL_LOAD_LO4_12(src, srcstride) QPEL_LOAD_LO_4_10(_mm_loadl_epi64, src, srcstride)
+#define QPEL_LOAD_LO8_12(src, srcstride) QPEL_LOAD_LO_10(_mm_loadu_si128, src, srcstride)
+#define QPEL_LOAD_HI4_12(src, srcstride) QPEL_LOAD_HI_4_10(_mm_loadl_epi64, src, srcstride)
+#define QPEL_LOAD_HI8_12(src, srcstride) QPEL_LOAD_HI_10(_mm_loadu_si128, src, srcstride)
 #define QPEL_LOAD_LO4_14(src, srcstride) QPEL_LOAD_LO_4_10(_mm_loadl_epi64, src, srcstride)
 #define QPEL_LOAD_LO8_14(src, srcstride) QPEL_LOAD_LO_10(_mm_load_si128 , src, srcstride)
 #define QPEL_LOAD_HI4_14(src, srcstride) QPEL_LOAD_HI_4_10(_mm_loadl_epi64, src, srcstride)
@@ -1456,6 +1504,14 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _sse (                     \
     x2 = _mm_srai_epi32(x2, shift);                                            \
     x1 = _mm_packs_epi32(x1, x2)
 
+#define QPEL_FILTER_12(idx)                     QPEL_FILTER_10(idx)
+#define QPEL_COMPUTE2_12(dst1, dst2, f1, f2)    QPEL_COMPUTE2_10(dst1, dst2, f1, f2)
+#define QPEL_COMPUTE4_12(dst1, dst2, f1, f2)    QPEL_COMPUTE4_10(dst1, dst2, f1, f2)
+#define QPEL_COMPUTE8_12(dst1, dst2, f1, f2)    QPEL_COMPUTE8_10(dst1, dst2, f1, f2)
+#define QPEL_MERGE2_12()                        QPEL_MERGE2_10()
+#define QPEL_MERGE4_12()                        QPEL_MERGE4_10()
+#define QPEL_MERGE8_12()                        QPEL_MERGE8_10()
+
 #define QPEL_FILTER_14(idx)                     QPEL_FILTER_10(idx)
 #define QPEL_COMPUTE2_14(dst1, dst2, f1, f2)    QPEL_COMPUTE2_10(dst1, dst2, f1, f2)
 #define QPEL_COMPUTE4_14(dst1, dst2, f1, f2)    QPEL_COMPUTE4_10(dst1, dst2, f1, f2)
@@ -1467,8 +1523,10 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _sse (                     \
 #define PUT_HEVC_QPEL_H_10_VAR4_10()                                           \
     const __m128i c0    = _mm_setzero_si128();                                 \
     __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4
+#define PUT_HEVC_QPEL_H_10_VAR4_12() PUT_HEVC_QPEL_H_10_VAR4_10()
 #define PUT_HEVC_QPEL_H_10_VAR8_10()                                           \
     __m128i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2
+#define PUT_HEVC_QPEL_H_10_VAR8_12() PUT_HEVC_QPEL_H_10_VAR8_10()
 
 #define PUT_HEVC_QPEL_H_10(H, D)                                               \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse (                          \
@@ -1625,6 +1683,8 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _sse (                     \
 #define PUT_HEVC_QPEL_V_VAR8_10()                                              \
     __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4
 
+#define PUT_HEVC_QPEL_V_VAR4_12()     PUT_HEVC_QPEL_V_VAR4_10()
+#define PUT_HEVC_QPEL_V_VAR8_12()     PUT_HEVC_QPEL_V_VAR8_10()
 #define PUT_HEVC_QPEL_V_VAR4_14()     PUT_HEVC_QPEL_V_VAR4_10()
 #define PUT_HEVC_QPEL_V_VAR8_14()     PUT_HEVC_QPEL_V_VAR8_10()
 
@@ -1954,12 +2014,16 @@ PUT_HEVC_BI_W_ ## FUNC(H,D)
 static PUT_HEVC_ ## FUNC(H,D)                                                  \
 static PUT_HEVC_BI_ ## FUNC ##14(H, 8)                                         \
 static PUT_HEVC_BI_ ## FUNC ##14(H,10)                                         \
+static PUT_HEVC_BI_ ## FUNC ##14(H,12)                                         \
 static PUT_HEVC_UNI_ ## FUNC ##14(H, 8)                                        \
 static PUT_HEVC_UNI_ ## FUNC ##14(H,10)                                        \
+static PUT_HEVC_UNI_ ## FUNC ##14(H,12)                                        \
 static PUT_HEVC_UNI_W_ ## FUNC ##14(H, 8)                                      \
 static PUT_HEVC_UNI_W_ ## FUNC ##14(H,10)                                      \
+static PUT_HEVC_UNI_W_ ## FUNC ##14(H,12)                                      \
 static PUT_HEVC_BI_W_ ## FUNC ##14(H, 8)                                       \
-static PUT_HEVC_BI_W_ ## FUNC ##14(H,10)
+static PUT_HEVC_BI_W_ ## FUNC ##14(H,10)                                       \
+static PUT_HEVC_BI_W_ ## FUNC ##14(H,12)
 
 // ff_hevc_put_hevc_mc_pixelsX_X_sse
 #if HAVE_SSSE3
@@ -1971,6 +2035,10 @@ GEN_FUNC(PEL_PIXELS, 16, 8)
 GEN_FUNC(PEL_PIXELS,  4, 10)
 GEN_FUNC(PEL_PIXELS,  6, 10)
 GEN_FUNC(PEL_PIXELS,  8, 10)
+
+GEN_FUNC(PEL_PIXELS,  4, 12)
+GEN_FUNC(PEL_PIXELS,  6, 12)
+GEN_FUNC(PEL_PIXELS,  8, 12)
 // ff_hevc_put_hevc_epel_hX_X_sse
 GEN_FUNC(EPEL_H,  4,  8)
 GEN_FUNC(EPEL_H,  6,  8)
@@ -1979,6 +2047,10 @@ GEN_FUNC(EPEL_H,  8,  8)
 GEN_FUNC(EPEL_H,  4, 10)
 GEN_FUNC(EPEL_H,  6, 10)
 GEN_FUNC(EPEL_H,  8, 10)
+
+GEN_FUNC(EPEL_H,  4, 12)
+GEN_FUNC(EPEL_H,  6, 12)
+GEN_FUNC(EPEL_H,  8, 12)
 
 // ff_hevc_put_hevc_epel_vX_X_sse
 GEN_FUNC(EPEL_V,  4,  8)
@@ -1989,6 +2061,10 @@ GEN_FUNC(EPEL_V,  4, 10)
 GEN_FUNC(EPEL_V,  6, 10)
 GEN_FUNC(EPEL_V,  8, 10)
 
+GEN_FUNC(EPEL_V,  4, 12)
+GEN_FUNC(EPEL_V,  6, 12)
+GEN_FUNC(EPEL_V,  8, 12)
+
 // ff_hevc_put_hevc_epel_hvX_X_sse
 GEN_FUNC(EPEL_HV,  4,  8)
 GEN_FUNC(EPEL_HV,  6,  8)
@@ -1998,6 +2074,10 @@ GEN_FUNC(EPEL_HV,  4, 10)
 GEN_FUNC(EPEL_HV,  6, 10)
 GEN_FUNC(EPEL_HV,  8, 10)
 
+GEN_FUNC(EPEL_HV,  4, 12)
+GEN_FUNC(EPEL_HV,  6, 12)
+GEN_FUNC(EPEL_HV,  8, 12)
+
 // ff_hevc_put_hevc_qpel_hX_X_X_sse
 GEN_FUNC(QPEL_H,  4,  8)
 GEN_FUNC(QPEL_H,  8,  8)
@@ -2006,6 +2086,9 @@ GEN_FUNC(QPEL_H, 16,  8)
 GEN_FUNC(QPEL_H_10,  4, 10)
 GEN_FUNC(QPEL_H_10,  8, 10)
 
+GEN_FUNC(QPEL_H_10,  4, 12)
+GEN_FUNC(QPEL_H_10,  8, 12)
+
 // ff_hevc_put_hevc_qpel_vX_X_X_sse
 GEN_FUNC(QPEL_V,  4,  8)
 GEN_FUNC(QPEL_V,  8,  8)
@@ -2013,6 +2096,9 @@ GEN_FUNC(QPEL_V, 16,  8)
 
 GEN_FUNC(QPEL_V,  4, 10)
 GEN_FUNC(QPEL_V,  8, 10)
+
+GEN_FUNC(QPEL_V,  4, 12)
+GEN_FUNC(QPEL_V,  8, 12)
 
 GEN_FUNC_STATIC(QPEL_V, 4, 14)
 GEN_FUNC_STATIC(QPEL_V, 8, 14)
@@ -2023,6 +2109,9 @@ GEN_FUNC(QPEL_HV,  8,  8)
 
 GEN_FUNC(QPEL_HV,  4, 10)
 GEN_FUNC(QPEL_HV,  8, 10)
+
+GEN_FUNC(QPEL_HV,  4, 12)
+GEN_FUNC(QPEL_HV,  8, 12)
 
 #define mc_red_func(name, bitd, step, W)                                                                    \
 void ff_hevc_put_hevc_##name##W##_##bitd##_sse(                                                             \
@@ -2077,6 +2166,13 @@ mc_red_func(pel_pixels,10, 8, 32);
 mc_red_func(pel_pixels,10, 8, 48);
 mc_red_func(pel_pixels,10, 8, 64);
 
+mc_red_func(pel_pixels,12, 4, 12);
+mc_red_func(pel_pixels,12, 8, 16);
+mc_red_func(pel_pixels,12, 8, 24);
+mc_red_func(pel_pixels,12, 8, 32);
+mc_red_func(pel_pixels,12, 8, 48);
+mc_red_func(pel_pixels,12, 8, 64);
+
 mc_red_func(qpel_h, 8, 4, 12);
 mc_red_func(qpel_h, 8, 8, 24);
 mc_red_func(qpel_h, 8,16, 32);
@@ -2090,6 +2186,13 @@ mc_red_func(qpel_h,10, 8, 32);
 mc_red_func(qpel_h,10, 8, 48);
 mc_red_func(qpel_h,10, 8, 64);
 
+mc_red_func(qpel_h,12, 4, 12);
+mc_red_func(qpel_h,12, 8, 16);
+mc_red_func(qpel_h,12, 8, 24);
+mc_red_func(qpel_h,12, 8, 32);
+mc_red_func(qpel_h,12, 8, 48);
+mc_red_func(qpel_h,12, 8, 64);
+
 mc_red_func(qpel_v, 8, 4, 12);
 mc_red_func(qpel_v, 8, 8, 24);
 mc_red_func(qpel_v, 8,16, 32);
@@ -2102,6 +2205,13 @@ mc_red_func(qpel_v,10, 8, 24);
 mc_red_func(qpel_v,10, 8, 32);
 mc_red_func(qpel_v,10, 8, 48);
 mc_red_func(qpel_v,10, 8, 64);
+
+mc_red_func(qpel_v,12, 4, 12);
+mc_red_func(qpel_v,12, 8, 16);
+mc_red_func(qpel_v,12, 8, 24);
+mc_red_func(qpel_v,12, 8, 32);
+mc_red_func(qpel_v,12, 8, 48);
+mc_red_func(qpel_v,12, 8, 64);
 
 mc_red_func(qpel_hv, 8, 4, 12);
 mc_red_func(qpel_hv, 8, 8, 16);
@@ -2117,6 +2227,13 @@ mc_red_func(qpel_hv,10, 8, 32);
 mc_red_func(qpel_hv,10, 8, 48);
 mc_red_func(qpel_hv,10, 8, 64);
 
+mc_red_func(qpel_hv,12, 4, 12);
+mc_red_func(qpel_hv,12, 8, 16);
+mc_red_func(qpel_hv,12, 8, 24);
+mc_red_func(qpel_hv,12, 8, 32);
+mc_red_func(qpel_hv,12, 8, 48);
+mc_red_func(qpel_hv,12, 8, 64);
+
 mc_red_func(epel_h, 8, 4, 12);
 mc_red_func(epel_h, 8, 8, 16);
 mc_red_func(epel_h, 8, 8, 24);
@@ -2130,6 +2247,13 @@ mc_red_func(epel_h,10, 8, 24);
 mc_red_func(epel_h,10, 8, 32);
 mc_red_func(epel_h,10, 8, 48);
 mc_red_func(epel_h,10, 8, 64);
+
+mc_red_func(epel_h,12, 4, 12);
+mc_red_func(epel_h,12, 8, 16);
+mc_red_func(epel_h,12, 8, 24);
+mc_red_func(epel_h,12, 8, 32);
+mc_red_func(epel_h,12, 8, 48);
+mc_red_func(epel_h,12, 8, 64);
 
 mc_red_func(epel_v, 8, 4, 12);
 mc_red_func(epel_v, 8, 8, 16);
@@ -2145,6 +2269,13 @@ mc_red_func(epel_v,10, 8, 32);
 mc_red_func(epel_v,10, 8, 48);
 mc_red_func(epel_v,10, 8, 64);
 
+mc_red_func(epel_v,12, 4, 12);
+mc_red_func(epel_v,12, 8, 16);
+mc_red_func(epel_v,12, 8, 24);
+mc_red_func(epel_v,12, 8, 32);
+mc_red_func(epel_v,12, 8, 48);
+mc_red_func(epel_v,12, 8, 64);
+
 mc_red_func(epel_hv, 8, 4, 12);
 mc_red_func(epel_hv, 8, 8, 16);
 mc_red_func(epel_hv, 8, 8, 24);
@@ -2158,6 +2289,13 @@ mc_red_func(epel_hv,10, 8, 24);
 mc_red_func(epel_hv,10, 8, 32);
 mc_red_func(epel_hv,10, 8, 48);
 mc_red_func(epel_hv,10, 8, 64);
+
+mc_red_func(epel_hv,12, 4, 12);
+mc_red_func(epel_hv,12, 8, 16);
+mc_red_func(epel_hv,12, 8, 24);
+mc_red_func(epel_hv,12, 8, 32);
+mc_red_func(epel_hv,12, 8, 48);
+mc_red_func(epel_hv,12, 8, 64);
 
 #endif //HAVE_SSE4
 

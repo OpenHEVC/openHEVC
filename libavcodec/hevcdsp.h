@@ -39,16 +39,14 @@ struct HEVCWindow;
 #define I_OFFSET (1 << (N_SHIFT - 1))
 
 typedef struct SAOParams {
-    int offset_abs[3][4];   ///< sao_offset_abs
-    int offset_sign[3][4];  ///< sao_offset_sign
+    uint8_t offset_abs[3][4];   ///< sao_offset_abs
+    uint8_t offset_sign[3][4];  ///< sao_offset_sign
 
-    int band_position[3];   ///< sao_band_position
+    uint8_t band_position[3];   ///< sao_band_position
+    int16_t offset_val[3][5];   ///<SaoOffsetVal
 
-    int eo_class[3];        ///< sao_eo_class
-
-    int offset_val[3][5];   ///<SaoOffsetVal
-
-    uint8_t type_idx[3];    ///< sao_type_idx
+    uint8_t eo_class[3];        ///< sao_eo_class
+    uint8_t type_idx[3];        ///< sao_type_idx
 } SAOParams;
 
 typedef struct HEVCDSPContext {

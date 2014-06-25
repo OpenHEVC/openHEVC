@@ -53,8 +53,7 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
             ((x0b + nPbW) == (1 << s->sps->log2_ctb_size)) ?
                     lc_co->ctb_up_right_flag && !y0b : lc->na.cand_up;
     lc->na.cand_up_right =
-            ((x0b + nPbW) == (1 << s->sps->log2_ctb_size) ?
-                    lc_co->ctb_up_right_flag && !y0b : lc->na.cand_up )
+            lc->na.cand_up_right_sap
                      && (x0 + nPbW) < lc_co->end_of_tiles_x;
     lc->na.cand_bottom_left = ((y0 + nPbH) >= lc_co->end_of_tiles_y) ? 0 : lc->na.cand_left;
 }
@@ -595,13 +594,12 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int ref_idx = 0;
     int pred_flag_index_l0;
     int pred_flag_index_l1;
-    
+
     const int cand_bottom_left = lc->na.cand_bottom_left;
     const int cand_left        = lc->na.cand_left;
     const int cand_up_left     = lc->na.cand_up_left;
     const int cand_up          = lc->na.cand_up;
     const int cand_up_right    = lc->na.cand_up_right_sap;
-
     ref_idx_curr       = LX;
     ref_idx            = mv->ref_idx[LX];
     pred_flag_index_l0 = LX;

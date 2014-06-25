@@ -32,6 +32,9 @@ struct HEVCWindow;
 
 //#define OPTI_ASM
 
+#define idct_dc_proto(size, bitd, opt) \
+		void ff_hevc_idct##size##_dc_add_##bitd##_##opt(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+
 #define PEL_LINK2(dst, idx1, idx2, idx3, name, D, opt) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _ ## opt; \
 dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _ ## opt; \
@@ -82,18 +85,23 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 
 void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 void ff_hevc_transform_4x4_luma_add_10_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+void ff_hevc_transform_4x4_luma_add_12_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
 #define IDCT_FUNC(s, b) void ff_hevc_transform_ ## s ## x ## s ##_add_##b##_sse4\
             (uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit);
 
 IDCT_FUNC(4, 8)
 IDCT_FUNC(4, 10)
+IDCT_FUNC(4, 12)
 IDCT_FUNC(8, 8)
 IDCT_FUNC(8, 10)
+IDCT_FUNC(8, 12)
 IDCT_FUNC(16, 8)
 IDCT_FUNC(16, 10)
+IDCT_FUNC(16, 12)
 IDCT_FUNC(32, 8)
 IDCT_FUNC(32, 10)
+IDCT_FUNC(32, 12)
 
 void ff_hevc_transform_4x4_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 void ff_hevc_transform_8x8_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
@@ -104,6 +112,11 @@ void ff_hevc_transform_4x4_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff
 void ff_hevc_transform_8x8_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 void ff_hevc_transform_16x16_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 void ff_hevc_transform_32x32_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
+void ff_hevc_transform_4x4_dc_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_8x8_dc_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_16x16_dc_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_32x32_dc_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
 ///////////////////////////////////////////////////////////////////////////////
 // MC functions
@@ -146,48 +159,63 @@ void ff_hevc_transform_32x32_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdi
 ///////////////////////////////////////////////////////////////////////////////
 EPEL_PROTOTYPES(pel_pixels ,  8, sse4);
 EPEL_PROTOTYPES(pel_pixels , 10, sse4);
+EPEL_PROTOTYPES(pel_pixels , 12, sse4);
 ///////////////////////////////////////////////////////////////////////////////
 // EPEL
 ///////////////////////////////////////////////////////////////////////////////
 EPEL_PROTOTYPES(epel_h ,  8, sse4);
 EPEL_PROTOTYPES(epel_h , 10, sse4);
+EPEL_PROTOTYPES(epel_h , 12, sse4);
 
 EPEL_PROTOTYPES(epel_v ,  8, sse4);
 EPEL_PROTOTYPES(epel_v , 10, sse4);
+EPEL_PROTOTYPES(epel_v , 12, sse4);
 
 EPEL_PROTOTYPES(epel_hv ,  8, sse4);
 EPEL_PROTOTYPES(epel_hv , 10, sse4);
+EPEL_PROTOTYPES(epel_hv , 12, sse4);
 
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL
 ///////////////////////////////////////////////////////////////////////////////
 QPEL_PROTOTYPES(qpel_h ,  8, sse4);
 QPEL_PROTOTYPES(qpel_h , 10, sse4);
+QPEL_PROTOTYPES(qpel_h , 12, sse4);
 
 QPEL_PROTOTYPES(qpel_v,  8, sse4);
 QPEL_PROTOTYPES(qpel_v, 10, sse4);
+QPEL_PROTOTYPES(qpel_v, 12, sse4);
 
 QPEL_PROTOTYPES(qpel_hv,  8, sse4);
 QPEL_PROTOTYPES(qpel_hv, 10, sse4);
+QPEL_PROTOTYPES(qpel_hv, 12, sse4);
 
 
 WEIGHTING_PROTOTYPES(8, sse4);
 WEIGHTING_PROTOTYPES(10, sse4);
+WEIGHTING_PROTOTYPES(12, sse4);
 
 ///////////////////////////////////////////////////////////////////////////////
 // IDCT
 ///////////////////////////////////////////////////////////////////////////////
-#define TRANSFORM_DC(bitd, opt) \
-void ff_hevc_put_transform8x8_dc_add_##bitd##_##opt(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride); \
-void ff_hevc_put_transform16x16_dc_add_##bitd##_##opt(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride); \
-void ff_hevc_put_transform32x32_dc_add_##bitd##_##opt(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+idct_dc_proto(4, 8,mmxext);
+idct_dc_proto(8, 8,mmxext);
+idct_dc_proto(16,8,  sse2);
+idct_dc_proto(32,8,  sse2);
 
-void ff_hevc_put_transform4x4_dc_add_8_mmx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_put_transform4x4_dc_add_10_mmx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+idct_dc_proto(32,8,  avx2);
 
 
-TRANSFORM_DC(8,  sse2);
-TRANSFORM_DC(10, sse2);
+idct_dc_proto(4, 10,mmxext);
+idct_dc_proto(8, 10,  sse2);
+idct_dc_proto(16,10,  sse2);
+idct_dc_proto(32,10,  sse2);
+idct_dc_proto(8, 10,   avx);
+idct_dc_proto(16,10,   avx);
+idct_dc_proto(32,10,   avx);
+
+idct_dc_proto(16,10,  avx2);
+idct_dc_proto(32,10,  avx2);
 
 ///////////////////////////////////////////////////////////////////////////////
 // SAO functions
@@ -196,9 +224,12 @@ void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
 void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
 void ff_hevc_sao_edge_filter_0_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
 void ff_hevc_sao_edge_filter_1_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
+void ff_hevc_sao_edge_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
+void ff_hevc_sao_edge_filter_1_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao,int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
 
 void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 void ff_hevc_sao_band_filter_0_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
+void ff_hevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 
 //#ifdef SVC_EXTENSION
 

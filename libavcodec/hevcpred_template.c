@@ -207,7 +207,6 @@ do {                                  \
                         j++;
                     EXTEND_LEFT_CIP(top, j, j + 1);
                     left[-1] = top[-1];
-                    j        = 0;
                 }
             } else {
                 j = 0;
@@ -221,7 +220,6 @@ do {                                  \
                         top[-1] = top[0];
                     }
                 left[-1] = top[-1];
-                j        = 0;
             }
             left[-1] = top[-1];
             if (cand_bottom_left || cand_left) {
@@ -238,7 +236,6 @@ do {                                  \
                 if (!IS_INTRA(-1, - 1))
                     left[-1] = left[0];
             } else if (x0 == 0) {
-                a = PIXEL_SPLAT_X4(left[size_max_y - 1]);
                 EXTEND(left, 0, size_max_y);
             } else {
                 a = PIXEL_SPLAT_X4(left[size_max_y - 1]);

@@ -220,7 +220,7 @@ static void video_decode_example(const char *filename)
 #endif
             if (got_picture > 0) {
                 fflush(stdout);
-                libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
+                libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
                 if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
                     width  = openHevcFrame.frameInfo.nWidth;
                     height = openHevcFrame.frameInfo.nHeight;
@@ -252,7 +252,7 @@ static void video_decode_example(const char *filename)
 #if USE_SDL
                 if (display_flags == ENABLE) {
                     libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
-                    libOpenHevcGetPictureSize2(openHevcHandle, &openHevcFrame.frameInfo);
+                    libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
                     SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
                             openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
                 }

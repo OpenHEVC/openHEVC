@@ -354,7 +354,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     uint8_t no_q[2] = { 0 };
 
     int log2_ctb_size = s->sps->log2_ctb_size;
-    int x_end, y_end;
+    int x_end, x_end2, y_end;
     int ctb_size        = 1 << log2_ctb_size;
     int ctb             = (x0 >> log2_ctb_size) +
                           (y0 >> log2_ctb_size) * s->sps->ctb_width;
@@ -387,8 +387,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     // vertical filtering luma
     for (y = y0; y < y_end; y += 8) {
         for (x = x0 ? x0 : 8; x < x_end; x += 8) {
-            const int bs0 = s->vertical_bs[(x >> 3) + (y       >> 2) * s->bs_width];
-            const int bs1 = s->vertical_bs[(x >> 3) + ((y + 4) >> 2) * s->bs_width];
+            const int bs0 = s->vertical_bs[(x +  y      * s->bs_width) >> 2];
+            const int bs1 = s->vertical_bs[(x + (y + 4) * s->bs_width) >> 2];
             if (bs0 || bs1) {
                 const int qp0 = (get_qPy(s, x - 1, y)     + get_qPy(s, x, y)     + 1) >> 1;
                 const int qp1 = (get_qPy(s, x - 1, y + 4) + get_qPy(s, x, y + 4) + 1) >> 1;
@@ -415,51 +415,62 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     }
 
     // vertical filtering chroma
-    for (chroma = 1; chroma <= 2; chroma++) {
-        int h = 1 << s->sps->hshift[chroma];
-        int v = 1 << s->sps->vshift[chroma];
+    {
+        int c_tc2[2];
+        uint8_t* src2;
+        int h = 1 << s->sps->hshift[1];
+        int v = 1 << s->sps->vshift[1];
         for (y = y0; y < y_end; y += (8 * v)) {
             for (x = x0 ? x0 : 8 * h; x < x_end; x += (8 * h)) {
-                const int bs0 = s->vertical_bs[(x >> 3) + (y             >> 2) * s->bs_width];
-                const int bs1 = s->vertical_bs[(x >> 3) + ((y + (4 * v)) >> 2) * s->bs_width];
+                const int bs0 = s->vertical_bs[(x +  y            * s->bs_width) >> 2];
+                const int bs1 = s->vertical_bs[(x + (y + (4 * v)) * s->bs_width) >> 2];
 
                 if ((bs0 == 2) || (bs1 == 2)) {
                     const int qp0 = (get_qPy(s, x - 1, y)           + get_qPy(s, x, y)           + 1) >> 1;
                     const int qp1 = (get_qPy(s, x - 1, y + (4 * v)) + get_qPy(s, x, y + (4 * v)) + 1) >> 1;
 
-                    c_tc[0] = (bs0 == 2) ? chroma_tc(s, qp0, chroma, tc_offset) : 0;
-                    c_tc[1] = (bs1 == 2) ? chroma_tc(s, qp1, chroma, tc_offset) : 0;
-                    src       = &s->frame->data[chroma][(y >> s->sps->vshift[chroma]) * s->frame->linesize[chroma] + ((x >> s->sps->hshift[chroma]) << s->sps->pixel_shift)];
+                    c_tc[0]  = (bs0 == 2) ? chroma_tc(s, qp0, 1, tc_offset) : 0;
+                    c_tc[1]  = (bs1 == 2) ? chroma_tc(s, qp1, 1, tc_offset) : 0;
+                    c_tc2[0] = (bs0 == 2) ? chroma_tc(s, qp0, 2, tc_offset) : 0;
+                    c_tc2[1] = (bs1 == 2) ? chroma_tc(s, qp1, 2, tc_offset) : 0;
+                    src      = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
+                    src2     = &s->frame->data[2][(y >> s->sps->vshift[2]) * s->frame->linesize[2] + ((x >> s->sps->hshift[2]) << s->sps->pixel_shift)];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x - 1, y);
                         no_p[1] = get_pcm(s, x - 1, y + (4 * v));
                         no_q[0] = get_pcm(s, x, y);
                         no_q[1] = get_pcm(s, x, y + (4 * v));
                         s->hevcdsp.hevc_v_loop_filter_chroma_c(src,
-                                                               s->frame->linesize[chroma],
+                                                               s->frame->linesize[1],
                                                                c_tc, no_p, no_q);
-                    } else
+                        s->hevcdsp.hevc_v_loop_filter_chroma_c(src2,
+                                                               s->frame->linesize[2],
+                                                               c_tc2, no_p, no_q);
+                    } else {
                         s->hevcdsp.hevc_v_loop_filter_chroma(src,
-                                                             s->frame->linesize[chroma],
+                                                             s->frame->linesize[1],
                                                              c_tc, no_p, no_q);
+                        s->hevcdsp.hevc_v_loop_filter_chroma(src2,
+                                                             s->frame->linesize[2],
+                                                             c_tc2, no_p, no_q);
+                    }
                 }
             }
         }
     }
 
     // horizontal filtering luma
+    x_end2 = x_end;
     if (x_end != s->sps->width)
         x_end -= 8;
     for (y = y0 ? y0 : 8; y < y_end; y += 8) {
+        beta_offset = x0 ? left_beta_offset : cur_beta_offset;
         for (x = x0 ? x0 - 8 : 0; x < x_end; x += 8) {
-            const int bs0 = s->horizontal_bs[(x +     y * s->bs_width) >> 2];
-            const int bs1 = s->horizontal_bs[(x + 4 + y * s->bs_width) >> 2];
+            const int bs0 = s->horizontal_bs[( x      + y * s->bs_width) >> 2];
+            const int bs1 = s->horizontal_bs[((x + 4) + y * s->bs_width) >> 2];
             if (bs0 || bs1) {
                 const int qp0 = (get_qPy(s, x, y - 1)     + get_qPy(s, x, y)     + 1) >> 1;
                 const int qp1 = (get_qPy(s, x + 4, y - 1) + get_qPy(s, x + 4, y) + 1) >> 1;
-
-                tc_offset   = x >= x0 ? cur_tc_offset : left_tc_offset;
-                beta_offset = x >= x0 ? cur_beta_offset : left_beta_offset;
 
                 beta[0] = betatable[av_clip(qp0 + beta_offset, 0, MAX_QP)];
                 beta[1] = betatable[av_clip(qp1 + beta_offset, 0, MAX_QP)];
@@ -479,50 +490,54 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                                                        s->frame->linesize[LUMA],
                                                        beta, tc, no_p, no_q);
             }
+            beta_offset = cur_beta_offset;
         }
     }
 
     // horizontal filtering chroma
-    for (chroma = 1; chroma <= 2; chroma++) {
-        int h = 1 << s->sps->hshift[chroma];
-        int v = 1 << s->sps->vshift[chroma];
-        for (y = y0 ? y0 : 8 * v; y < y_end; y +=  (8 * v)) {
-            for (x = x0 - 8; x < x_end; x += (8 * h)) {
-                int bs0, bs1;
-                // to make sure no memory access over boundary when x = -8
-                // TODO: simplify with row based deblocking
-                if (x < 0) {
-                    bs0 = 0;
-                    bs1 = s->horizontal_bs[(x + (4 * h) + y * s->bs_width) >> 2];
-                } else if (x >= x_end - 4 * h) {
-                    bs0 = s->horizontal_bs[(x +           y * s->bs_width) >> 2];
-                    bs1 = 0;
-                } else {
-                    bs0 = s->horizontal_bs[(x           + y * s->bs_width) >> 2];
-                    bs1 = s->horizontal_bs[(x + (4 * h) + y * s->bs_width) >> 2];
-                }
-
+    {
+        int c_tc2[2];
+        uint8_t* src2;
+        int h = 1 << s->sps->hshift[1];
+        int v = 1 << s->sps->vshift[1];
+        if (x_end2 != s->sps->width)
+             x_end = x_end2 - 8*h;
+        for (y = y0 ? y0 : 8 * v; y < y_end; y += (8 * v)) {
+            tc_offset = x0 ? left_tc_offset : cur_tc_offset;
+            for (x = x0 ? x0 - 8 * h : 0; x < x_end; x += (8 * h)) {
+                const int bs0 = s->horizontal_bs[( x          + y * s->bs_width) >> 2];
+                const int bs1 = s->horizontal_bs[((x + 4 * h) + y * s->bs_width) >> 2];
                 if ((bs0 == 2) || (bs1 == 2)) {
                     const int qp0 = bs0 == 2 ? (get_qPy(s, x,           y - 1) + get_qPy(s, x,           y) + 1) >> 1 : 0;
                     const int qp1 = bs1 == 2 ? (get_qPy(s, x + (4 * h), y - 1) + get_qPy(s, x + (4 * h), y) + 1) >> 1 : 0;
 
-                    tc_offset = x >= x0 ? cur_tc_offset : left_tc_offset;
-                    c_tc[0]   = bs0 == 2 ? chroma_tc(s, qp0, chroma, tc_offset)     : 0;
-                    c_tc[1]   = bs1 == 2 ? chroma_tc(s, qp1, chroma, cur_tc_offset) : 0;
-                    src       = &s->frame->data[chroma][(y >> s->sps->vshift[1]) * s->frame->linesize[chroma] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
+                    c_tc[0]   = bs0 == 2 ? chroma_tc(s, qp0, 1, tc_offset)     : 0;
+                    c_tc[1]   = bs1 == 2 ? chroma_tc(s, qp1, 1, cur_tc_offset) : 0;
+                    c_tc2[0]  = bs0 == 2 ? chroma_tc(s, qp0, 2, tc_offset)     : 0;
+                    c_tc2[1]  = bs1 == 2 ? chroma_tc(s, qp1, 2, cur_tc_offset) : 0;
+                    src       = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
+                    src2      = &s->frame->data[2][(y >> s->sps->vshift[1]) * s->frame->linesize[2] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x,           y - 1);
                         no_p[1] = get_pcm(s, x + (4 * h), y - 1);
                         no_q[0] = get_pcm(s, x,           y);
                         no_q[1] = get_pcm(s, x + (4 * h), y);
                         s->hevcdsp.hevc_h_loop_filter_chroma_c(src,
-                                                               s->frame->linesize[chroma],
+                                                               s->frame->linesize[1],
                                                                c_tc, no_p, no_q);
-                    } else
+                        s->hevcdsp.hevc_h_loop_filter_chroma_c(src2,
+                                                               s->frame->linesize[2],
+                                                               c_tc2, no_p, no_q);
+                    } else {
                         s->hevcdsp.hevc_h_loop_filter_chroma(src,
-                                                             s->frame->linesize[chroma],
+                                                             s->frame->linesize[1],
                                                              c_tc, no_p, no_q);
+                        s->hevcdsp.hevc_h_loop_filter_chroma(src2,
+                                                             s->frame->linesize[2],
+                                                             c_tc2, no_p, no_q);
+                    }
                 }
+                tc_offset = cur_tc_offset;
             }
         }
     }
@@ -705,7 +720,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                     bs = 1;
                 else
                     bs = boundary_strength(s, curr, left, left_refPicList);
-                s->vertical_bs[(x0 >> 3) + ((y0 + i) >> 2) * s->bs_width] = bs;
+                s->vertical_bs[(x0 + (y0 + i) * s->bs_width) >> 2] = bs;
             }
         }
     }
@@ -715,32 +730,34 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                                                            x0,
                                                            y0);
         // bs for TU internal horizontal PU boundaries
-        for (j = 8; j < (1 << log2_trafo_size); j += 8) {
-            int yp_pu = (y0 + j - 1) >> log2_min_pu_size;
-            int yq_pu = (y0 + j)     >> log2_min_pu_size;
+        for (i = 0; i < (1 << log2_trafo_size); i += 4) {
+            int x_pu  = (x0 + i) >> log2_min_pu_size;
+            int yp_pu = (y0 + 8 - 1) >> log2_min_pu_size;
+            MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
 
-            for (i = 0; i < (1 << log2_trafo_size); i += 4) {
-                int x_pu = (x0 + i) >> log2_min_pu_size;
-                MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+            for (j = 8; j < (1 << log2_trafo_size); j += 8) {
+                int yq_pu = (y0 + j)     >> log2_min_pu_size;
                 MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
 
                 bs = boundary_strength(s, curr, top, refPicList);
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
+                top = curr;
             }
         }
 
         // bs for TU internal vertical PU boundaries
         for (j = 0; j < (1 << log2_trafo_size); j += 4) {
-            int y_pu = (y0 + j) >> log2_min_pu_size;
+            int y_pu  = (y0 + j) >> log2_min_pu_size;
+            int xp_pu = (x0 + 8 - 1) >> log2_min_pu_size;
+            MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
 
             for (i = 8; i < (1 << log2_trafo_size); i += 8) {
-                int xp_pu = (x0 + i - 1) >> log2_min_pu_size;
                 int xq_pu = (x0 + i)     >> log2_min_pu_size;
-                MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
                 MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
 
                 bs = boundary_strength(s, curr, left, refPicList);
-                s->vertical_bs[((x0 + i) >> 3) + ((y0 + j) >> 2) * s->bs_width] = bs;
+                s->vertical_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
+                left = curr;
             }
         }
     }
@@ -813,7 +830,7 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int
             bs = 0;
         if (s->sh.disable_deblocking_filter_flag == 1)
             bs = 0;
-        s->vertical_bs[(x0 >> 3) + (y0 >> 2) * s->bs_width] =  bs;
+        s->vertical_bs[(x0 + y0 * s->bs_width) >> 2] =  bs;
     }
 }
 #undef LUMA
