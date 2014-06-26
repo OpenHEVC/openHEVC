@@ -540,6 +540,121 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     }
 }
 
+#ifdef TEST_MV_POC
+static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
+{
+#if HAVE_SSE42
+    {
+        __m128i x0, x1;
+        x0 = _mm_loadu_si128((__m128i *) neigh);
+        x1 = _mm_loadu_si128((__m128i *) curr);
+        x0 = _mm_cmpeq_epi64 (x0, x1);
+        if (_mm_test_all_ones(x0))
+            return 0;
+    }
+#else
+    if ( bcmp(curr, neigh, sizeof(MvField)) == 0)
+        return 0;
+#endif
+    if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
+        // same L0 and L1
+        if (curr->poc[0] == neigh->poc[0]  &&
+            curr->poc[0] == curr->poc[1] &&
+            neigh->poc[0] == neigh->poc[1]) {
+#if HAVE_SSE42
+            __m128i x0, x1, x2;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x2 =  _mm_shufflelo_epi16(x0, 0x4E);
+            x0 = _mm_sub_epi16(x0, x1);
+            x2 = _mm_sub_epi16(x2, x1);
+            x1 = _mm_set1_epi16(4);
+            x0 = _mm_abs_epi16(x0);
+            x2 = _mm_abs_epi16(x2);
+            x0 = _mm_cmplt_epi16(x0, x1);
+            x2 = _mm_cmplt_epi16(x2, x1);
+            return !(_mm_test_all_ones(x0) || _mm_test_all_ones(x2));
+#else
+            if ((FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
+                 FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
+                (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
+                 FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
+                return 1;
+            else
+                return 0;
+#endif
+        } else if (neigh->poc[0] == curr->poc[0] &&
+                   neigh->poc[1] == curr->poc[1]) {
+#if HAVE_SSE42
+            __m128i x0, x1;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x0 = _mm_sub_epi16(x0, x1);
+            x1 = _mm_set1_epi16(4);
+            x0 = _mm_abs_epi16(x0);
+            x0 = _mm_cmplt_epi16(x0, x1);
+            return !(_mm_test_all_ones(x0));
+#else
+            if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
+                FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
+                return 1;
+            else
+                return 0;
+#endif
+        } else if (neigh->poc[1] == curr->poc[0] &&
+                   neigh->poc[0] == curr->poc[1]) {
+#if HAVE_SSE42
+            __m128i x0, x1, x2;
+            x0 = _mm_loadl_epi64((__m128i *) neigh);
+            x1 = _mm_loadl_epi64((__m128i *) curr);
+            x2 = _mm_shufflelo_epi16(x0, 0x4E);
+            x2 = _mm_sub_epi16(x2, x1);
+            x1 = _mm_set1_epi16(4);
+            x2 = _mm_abs_epi16(x2);
+            x2 = _mm_cmplt_epi16(x2, x1);
+            return !(_mm_test_all_ones(x2));
+#else
+            if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
+                FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
+                return 1;
+            else
+                return 0;
+#endif
+        } else {
+            return 1;
+        }
+    } else if ((curr->pred_flag != PF_BI) && (neigh->pred_flag != PF_BI)){ // 1 MV
+        Mv A, B;
+        int ref_A, ref_B;
+
+        if (curr->pred_flag & 1) {
+            A     = curr->mv[0];
+            ref_A = curr->poc[0];
+        } else {
+            A     = curr->mv[1];
+            ref_A = curr->poc[1];
+        }
+
+        if (neigh->pred_flag & 1) {
+            B     = neigh->mv[0];
+            ref_B = neigh->poc[0];
+        } else {
+            B     = neigh->mv[1];
+            ref_B = neigh->poc[1];
+        }
+
+        if (ref_A == ref_B) {
+            if (FFABS(A.x - B.x) >= 4 || FFABS(A.y - B.y) >= 4)
+                return 1;
+            else
+                return 0;
+        } else
+            return 1;
+    }
+
+    return 1;
+}
+#else
 static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
                              RefPicList *neigh_refPicList)
 {
@@ -641,6 +756,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 
     return 1;
 }
+#endif
 
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                                            int log2_trafo_size)
@@ -666,9 +782,10 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
             int yq_pu =  y0      >> log2_min_pu_size;
             int yp_tu = (y0 - 1) >> log2_min_tu_size;
             int yq_tu =  y0      >> log2_min_tu_size;
+#ifndef TEST_MV_POC
             RefPicList *top_refPicList = ff_hevc_get_ref_list(s, s->ref,
                                                               x0, y0 - 1);
-
+#endif
             for (i = 0; i < (1 << log2_trafo_size); i += 4) {
                 int x_pu = (x0 + i) >> log2_min_pu_size;
                 int x_tu = (x0 + i) >> log2_min_tu_size;
@@ -682,7 +799,11 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 else if (curr_cbf_luma || top_cbf_luma)
                     bs = 1;
                 else
+#ifdef TEST_MV_POC
+                    bs = boundary_strength(s, curr, top);
+#else
                     bs = boundary_strength(s, curr, top, top_refPicList);
+#endif
                 s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
             }
         }
@@ -700,9 +821,10 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
             int xq_pu =  x0      >> log2_min_pu_size;
             int xp_tu = (x0 - 1) >> log2_min_tu_size;
             int xq_tu =  x0      >> log2_min_tu_size;
+#ifndef TEST_MV_POC
             RefPicList *left_refPicList = ff_hevc_get_ref_list(s, s->ref,
                                                                x0 - 1, y0);
-
+#endif
             for (i = 0; i < (1 << log2_trafo_size); i += 4) {
                 int y_pu      = (y0 + i) >> log2_min_pu_size;
                 int y_tu      = (y0 + i) >> log2_min_tu_size;
@@ -716,16 +838,22 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 else if (curr_cbf_luma || left_cbf_luma)
                     bs = 1;
                 else
+#ifdef TEST_MV_POC
+                    bs = boundary_strength(s, curr, left);
+#else
                     bs = boundary_strength(s, curr, left, left_refPicList);
+#endif
                 s->vertical_bs[(x0 + (y0 + i) * s->bs_width) >> 2] = bs;
             }
         }
     }
 
     if (log2_trafo_size > log2_min_pu_size && !is_intra) {
+#ifndef TEST_MV_POC
         RefPicList *refPicList = ff_hevc_get_ref_list(s, s->ref,
                                                            x0,
                                                            y0);
+#endif
         // bs for TU internal horizontal PU boundaries
         for (i = 0; i < (1 << log2_trafo_size); i += 4) {
             int x_pu  = (x0 + i) >> log2_min_pu_size;
@@ -736,7 +864,11 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 int yq_pu = (y0 + j)     >> log2_min_pu_size;
                 MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
 
+#ifdef TEST_MV_POC
+                bs = boundary_strength(s, curr, top);
+#else
                 bs = boundary_strength(s, curr, top, refPicList);
+#endif
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
                 top = curr;
             }
@@ -752,7 +884,11 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
                 int xq_pu = (x0 + i)     >> log2_min_pu_size;
                 MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
 
+#ifdef TEST_MV_POC
+                bs = boundary_strength(s, curr, left);
+#else
                 bs = boundary_strength(s, curr, left, refPicList);
+#endif
                 s->vertical_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
                 left = curr;
             }
@@ -779,14 +915,19 @@ void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0, int
         MvField *curr = &tab_mvf[yq_pu * pic_width_in_min_pu + x_pu];
         uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * pic_width_in_min_tu + x_tu];
         uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * pic_width_in_min_tu + x_tu];
+#ifndef TEST_MV_POC
         RefPicList* top_refPicList = ff_hevc_get_ref_list(s, s->ref, x0, y0 - 1);
-
+#endif
         if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA)
             bs = 2;
         else if (curr_cbf_luma || top_cbf_luma)
             bs = 1;
         else
-            bs = boundary_strength(s, curr, top, top_refPicList);
+#ifdef TEST_MV_POC
+                bs = boundary_strength(s, curr, top);
+#else
+                bs = boundary_strength(s, curr, top, top_refPicList);
+#endif
         if ((slice_up_boundary & 1) && (y0 % (1 << s->sps->log2_ctb_size)) == 0)
             bs = 0;
         if (s->sh.disable_deblocking_filter_flag == 1)
@@ -815,14 +956,19 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int
         MvField *curr = &tab_mvf[y_pu * pic_width_in_min_pu + xq_pu];
         uint8_t left_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xp_tu];
         uint8_t curr_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xq_tu];
+#ifndef TEST_MV_POC
         RefPicList* left_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 - 1, y0);
-
+#endif
         if (curr->pred_flag == PF_INTRA || left->pred_flag == PF_INTRA)
             bs = 2;
         else if (curr_cbf_luma || left_cbf_luma)
             bs = 1;
         else
-            bs = boundary_strength(s, curr, left, left_refPicList);
+#ifdef TEST_MV_POC
+                bs = boundary_strength(s, curr, left);
+#else
+                bs = boundary_strength(s, curr, left, left_refPicList);
+#endif
         if ((slice_left_boundary & 1) && (x0 % (1 << s->sps->log2_ctb_size)) == 0)
             bs = 0;
         if (s->sh.disable_deblocking_filter_flag == 1)
@@ -1074,6 +1220,9 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                             refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->sh.ScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->sh.ScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
                             refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->sh.ScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->sh.ScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
                             refEL->tab_mvf[pre_unit].ref_idx[list] = refBL->tab_mvf[Ref_pre_unit].ref_idx[list];
+#ifdef TEST_MV_POC
+                            refEL->tab_mvf[pre_unit].poc[list] = refBL->tab_mvf[Ref_pre_unit].poc[list];
+#endif
                             refEL->tab_mvf[pre_unit].pred_flag = refBL->tab_mvf[Ref_pre_unit].pred_flag;
                         }
                     } else

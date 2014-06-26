@@ -1809,7 +1809,12 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     int mvp_flag;
     int x_pu, y_pu;
     int i, j;
+    uint8_t ref_idx[2];
 
+#ifdef TEST_MV_POC
+    current_mv.poc[0] = 0;
+    current_mv.poc[1] = 0;
+#endif
     if (SAMPLE_CTB(s->skip_flag, x_cb, y_cb)) {
         if (s->sh.max_num_merge_cand > 1)
             merge_idx = ff_hevc_merge_idx_decode(s);
@@ -1840,21 +1845,23 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
 
             if (inter_pred_idc != PRED_L1) {
                 if (s->sh.nb_refs[L0]) {
-                    current_mv.ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L0]);
+                    ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L0]);
+                    current_mv.ref_idx[0] = ref_idx[0];
                 }
                 current_mv.pred_flag = PF_L0;
                 ff_hevc_hls_mvd_coding(s, x0, y0, 0);
                 mvp_flag = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv,
-                                         mvp_flag, 0);
+                                         mvp_flag, 0, ref_idx[0]);
                 current_mv.mv[0].x += lc->pu.mvd.x;
                 current_mv.mv[0].y += lc->pu.mvd.y;
             }
 
             if (inter_pred_idc != PRED_L0) {
                 if (s->sh.nb_refs[L1]) {
-                    current_mv.ref_idx[1] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L1]);
+                    ref_idx[1] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L1]);
+                    current_mv.ref_idx[1] = ref_idx[1];
                 }
 
                 if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
@@ -1868,7 +1875,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                 mvp_flag = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv,
-                                         mvp_flag, 1);
+                                         mvp_flag, 1, ref_idx[1]);
                 current_mv.mv[1].x += lc->pu.mvd.x;
                 current_mv.mv[1].y += lc->pu.mvd.y;
             }
@@ -1877,7 +1884,16 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
 
     x_pu = x0 >> s->sps->log2_min_pu_size;
     y_pu = y0 >> s->sps->log2_min_pu_size;
-
+#ifdef TEST_MV_POC
+    if (current_mv.pred_flag & PF_L0)
+        current_mv.poc[0] = refPicList[0].list[current_mv.ref_idx[0]];
+    else
+        current_mv.poc[0] = 0;
+    if (current_mv.pred_flag & PF_L1)
+        current_mv.poc[1] = refPicList[1].list[current_mv.ref_idx[1]];
+    else
+        current_mv.poc[1] = 0;
+#endif
     for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
         for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
             tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
