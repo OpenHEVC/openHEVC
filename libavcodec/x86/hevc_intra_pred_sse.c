@@ -381,14 +381,14 @@ PRED_PLANAR_3(12)
     _mm_storel_epi64((__m128i*)&out[7*sstep_out], m13)
 
 #define STORE16(out, sstep_out)                                                \
-    _mm_storeu_si128((__m128i *) &out[0*sstep_out], m0);                       \
-    _mm_storeu_si128((__m128i *) &out[1*sstep_out], m1);                       \
-    _mm_storeu_si128((__m128i *) &out[2*sstep_out], m2);                       \
-    _mm_storeu_si128((__m128i *) &out[3*sstep_out], m3);                       \
-    _mm_storeu_si128((__m128i *) &out[4*sstep_out], m4);                       \
-    _mm_storeu_si128((__m128i *) &out[5*sstep_out], m5);                       \
-    _mm_storeu_si128((__m128i *) &out[6*sstep_out], m6);                       \
-    _mm_storeu_si128((__m128i *) &out[7*sstep_out], m7)
+    _mm_store_si128((__m128i *) &out[0*sstep_out], m0);                       \
+    _mm_store_si128((__m128i *) &out[1*sstep_out], m1);                       \
+    _mm_store_si128((__m128i *) &out[2*sstep_out], m2);                       \
+    _mm_store_si128((__m128i *) &out[3*sstep_out], m3);                       \
+    _mm_store_si128((__m128i *) &out[4*sstep_out], m4);                       \
+    _mm_store_si128((__m128i *) &out[5*sstep_out], m5);                       \
+    _mm_store_si128((__m128i *) &out[6*sstep_out], m6);                       \
+    _mm_store_si128((__m128i *) &out[7*sstep_out], m7)
 
 #define TRANSPOSE4x4_8(in, sstep_in, out, sstep_out)                           \
     {                                                                          \
@@ -924,8 +924,325 @@ static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src,\
     }                                                                          \
 }
 
-PRED_ANGULAR( 4, 8)
-PRED_ANGULAR( 8, 8)
+//PRED_ANGULAR( 4, 8)
+
+static __attribute__((always_inline)) inline void pred_angular_4_8_sse(uint8_t *_src,
+                                                                       const uint8_t *_top, const uint8_t *_left, ptrdiff_t _stride, int c_idx, int mode) {
+    const int intra_pred_angle[] = {                                           
+        32, 26, 21, 17, 13,  9,  5,  2,  0, -2, -5, -9,-13,-17,-21,-26,       
+        -32,-26,-21,-17,-13, -9, -5, -2,  0,  2,  5,  9, 13, 17, 21, 26, 32    
+    };                                                                         
+    const int inv_angle[] = {                                                  
+        -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,    
+        -630, -910, -1638, -4096                                               
+    };                                                                         
+    int y;                                                                     
+    __m128i r0, r1, r3;                                                        
+    __m128i r2;                                         
+    int            angle   = intra_pred_angle[mode-2];                         
+    int            angle_i = angle;                                            
+    int            last    = (4 * angle) >> 5;                                 
+    int            stride;                                                     
+    const uint8_t *src1;                                                       
+    const uint8_t *src2;                                                       
+    uint8_t       *ref, *p_src, *src, *p_out;                                  
+    uint8_t        src_tmp[4*4];                                               
+    if (mode >= 18) {                                                          
+        src1   = (const uint8_t*) _top;                                        
+        src2   = (const uint8_t*) _left;                                       
+        src    = (uint8_t*) _src;                                              
+        stride = _stride;                                                      
+        p_src  = src;                                                          
+    } else {                                                                   
+        src1   = (const uint8_t*) _left;                                       
+        src2   = (const uint8_t*) _top;                                        
+        src    = &src_tmp[0];                                                  
+        stride = 4;                                                            
+        p_src  = src;                                                          
+    }                                                                          
+    p_out  = (uint8_t*) _src;                                                  
+    ref = (uint8_t*) (src1 - 1);                                                
+    if (angle < 0 && last < -1) {                                              
+        for (y = last; y <= -1; y++)                                           
+            ref[y] = src2[-1 + ((y * inv_angle[mode-11] + 128) >> 8)];         
+    }
+    if (mode == 26) {
+        if (c_idx) {
+            for (y = 0; y < 4; y++) {
+                *((uint32_t *)p_src) = *((uint32_t *) &ref[1]);
+                p_src   += stride;
+            }
+        } else {
+            __m128i m0;
+            p_src = src;
+            r3  = _mm_loadu_si128((__m128i*)src2);
+            r1  = _mm_set1_epi16(src2[-1]);
+            r2  = _mm_set1_epi16(src1[0]);
+            r0  = _mm_unpacklo_epi8(r3,_mm_setzero_si128());
+            r0  = _mm_sub_epi16(r0, r1);
+            r0  = _mm_srai_epi16((r0), (1));
+            r0  = _mm_add_epi16(r0, r2);
+            m0  = _mm_packus_epi16(r0, r0);
+            *((uint32_t *) (src_tmp + 1 * 4)) = ref[2] * (0x01010101);
+            *((uint32_t *) (src_tmp + 2 * 4)) = ref[3] * (0x01010101);
+            *((uint32_t *) (src_tmp + 3 * 4)) = ref[4] * (0x01010101);
+
+            __m128i m1  = _mm_loadl_epi64((__m128i *) &src_tmp[1*4]);
+            __m128i m2  = _mm_loadl_epi64((__m128i *) &src_tmp[2*4]);
+            __m128i m3  = _mm_loadl_epi64((__m128i *) &src_tmp[3*4]);
+
+            __m128i m10 = _mm_unpacklo_epi8(m0, m1);
+            __m128i m11 = _mm_unpacklo_epi8(m2, m3);
+
+            m0  = _mm_unpacklo_epi16(m10, m11);
+
+            *((uint32_t *) (p_out+0*_stride)) =_mm_cvtsi128_si32(m0);
+            *((uint32_t *) (p_out+1*_stride)) =_mm_extract_epi32(m0, 1);
+            *((uint32_t *) (p_out+2*_stride)) =_mm_extract_epi32(m0, 2);
+            *((uint32_t *) (p_out+3*_stride)) =_mm_extract_epi32(m0, 3);
+        }
+    } else if (mode == 10) {
+        {
+            *((uint32_t *) (p_out+0*_stride)) = ref[1] * (0x01010101);
+            *((uint32_t *) (p_out+1*_stride)) = ref[2] * (0x01010101);
+            *((uint32_t *) (p_out+2*_stride)) = ref[3] * (0x01010101);
+            *((uint32_t *) (p_out+3*_stride)) = ref[4] * (0x01010101);
+        };
+        if (c_idx == 0) {
+            r3  = _mm_loadu_si128((__m128i*)src2);
+            r1  = _mm_set1_epi16(src2[-1]);
+            r2  = _mm_set1_epi16(src1[0]);
+            r0  = _mm_unpacklo_epi8(r3,_mm_setzero_si128());
+            r0  = _mm_subs_epi16(r0, r1);
+            r0  = _mm_srai_epi16 (r0, 1);
+            r0  = _mm_add_epi16(r0, r2);
+            r0  = _mm_packus_epi16(r0, r0);
+            *((uint32_t *)_src) = _mm_cvtsi128_si32(r0);
+        }
+    } else {
+        for (y = 0; y < 4; y++) {
+            int idx  = (angle_i) >> 5;
+            int fact = (angle_i) & 31;
+            if (fact) {
+                r3 = _mm_set1_epi16((fact << 8) + (32 - fact));
+                r1 = _mm_loadu_si128((__m128i*)(&ref[idx+1]));
+                r0 = _mm_srli_si128(r1, 1);
+                r1 = _mm_unpacklo_epi8(r1, r0);
+                r1 = _mm_maddubs_epi16(r1, r3);
+                r1 = _mm_mulhrs_epi16(r1, _mm_set1_epi16(1024));
+                r1 = _mm_packus_epi16(r1, r1);
+                *((uint32_t *)p_src) = _mm_cvtsi128_si32(r1);
+            } else {
+                *((uint32_t *)p_src) = *((uint32_t *)&ref[idx+1]);
+            }
+            angle_i += angle;
+            p_src   += stride;
+        }
+        if (mode < 18) {
+            {
+                __m128i m0  = _mm_loadl_epi64((__m128i *) &src_tmp[0*4]);
+                __m128i m1  = _mm_loadl_epi64((__m128i *) &src_tmp[1*4]);
+                __m128i m2  = _mm_loadl_epi64((__m128i *) &src_tmp[2*4]);
+                __m128i m3  = _mm_loadl_epi64((__m128i *) &src_tmp[3*4]);
+
+                __m128i m10 = _mm_unpacklo_epi8(m0, m1);
+                __m128i m11 = _mm_unpacklo_epi8(m2, m3);
+
+                m0  = _mm_unpacklo_epi16(m10, m11);
+
+                *((uint32_t *) (p_out+0*_stride)) =_mm_cvtsi128_si32(m0);
+                *((uint32_t *) (p_out+1*_stride)) =_mm_extract_epi32(m0, 1);
+                *((uint32_t *) (p_out+2*_stride)) =_mm_extract_epi32(m0, 2);
+                *((uint32_t *) (p_out+3*_stride)) =_mm_extract_epi32(m0, 3);
+            };
+        }
+    }
+}
+
+//PRED_ANGULAR( 8, 8)
+static __attribute__((always_inline)) inline void pred_angular_8_8_sse(uint8_t *_src,
+                                                                       const uint8_t *_top, const uint8_t *_left, ptrdiff_t _stride, int c_idx, int mode) {
+    const int intra_pred_angle[] = {                                           
+        32, 26, 21, 17, 13,  9,  5,  2,  0, -2, -5, -9,-13,-17,-21,-26,       
+        -32,-26,-21,-17,-13, -9, -5, -2,  0,  2,  5,  9, 13, 17, 21, 26, 32    
+    };                                                                         
+    const int inv_angle[] = {                                                  
+        -4096, -1638, -910, -630, -482, -390, -315, -256, -315, -390, -482,    
+        -630, -910, -1638, -4096                                               
+    };                                                                         
+    int y;                                                                     
+    __m128i r0, r1, r3;                                                        
+    __m128i r2;                                                       
+    int            angle   = intra_pred_angle[mode-2];
+    int            angle_i = angle;                                            
+    int            last    = (8 * angle) >> 5;                                 
+    int            stride;                                                     
+    const uint8_t *src1;                                                       
+    const uint8_t *src2;                                                       
+    uint8_t       *ref, *p_src, *src, *p_out;                                  
+    uint8_t        src_tmp[8*8];                                               
+    if (mode >= 18) {                                                          
+        src1   = (const uint8_t*) _top;                                        
+        src2   = (const uint8_t*) _left;                                       
+        src    = (uint8_t*) _src;                                              
+        stride = _stride;                                                      
+        p_src  = src;                                                          
+    } else {                                                                   
+        src1   = (const uint8_t*) _left;                                       
+        src2   = (const uint8_t*) _top;                                        
+        src    = &src_tmp[0];                                                  
+        stride = 8;                                                            
+        p_src  = src;                                                          
+    }                                                                          
+    p_out  = (uint8_t*) _src;                                                  
+    ref = (uint8_t*) (src1 - 1);                                                
+    if (angle < 0 && last < -1) {                                              
+        for (y = last; y <= -1; y++)                                           
+            ref[y] = src2[-1 + ((y * inv_angle[mode-11] + 128) >> 8)];         
+    }
+
+    if (mode == 26) {
+        if (c_idx == 0) {
+            __m128i m0;
+            p_src = src;
+            r3  = _mm_loadu_si128((__m128i*)src2);
+            r1  = _mm_set1_epi16(src2[-1]);
+            r2  = _mm_set1_epi16(src1[0]);
+            r0  = _mm_unpacklo_epi8(r3,_mm_setzero_si128());
+            r0  = _mm_sub_epi16(r0, r1);
+            r0  = ((__m128i)__builtin_ia32_psrawi128 ((__v8hi)(r0), (1)));
+            r0  = _mm_add_epi16(r0, r2);
+            m0  = _mm_packus_epi16(r0, r0);
+
+            *((uint64_t *) (src_tmp+1*8)) = ref[2] * (0x0101010101010101);
+            *((uint64_t *) (src_tmp+2*8)) = ref[3] * (0x0101010101010101);
+            *((uint64_t *) (src_tmp+3*8)) = ref[4] * (0x0101010101010101);
+            *((uint64_t *) (src_tmp+4*8)) = ref[5] * (0x0101010101010101);
+            *((uint64_t *) (src_tmp+5*8)) = ref[6] * (0x0101010101010101);
+            *((uint64_t *) (src_tmp+6*8)) = ref[7] * (0x0101010101010101);
+            *((uint64_t *) (src_tmp+7*8)) = ref[8] * (0x0101010101010101);
+
+            __m128i m1  = _mm_loadl_epi64((__m128i *) &src_tmp[1*8]);
+            __m128i m2  = _mm_loadl_epi64((__m128i *) &src_tmp[2*8]);
+            __m128i m3  = _mm_loadl_epi64((__m128i *) &src_tmp[3*8]);
+            __m128i m4  = _mm_loadl_epi64((__m128i *) &src_tmp[4*8]);
+            __m128i m5  = _mm_loadl_epi64((__m128i *) &src_tmp[5*8]);
+            __m128i m6  = _mm_loadl_epi64((__m128i *) &src_tmp[6*8]);
+            __m128i m7  = _mm_loadl_epi64((__m128i *) &src_tmp[7*8]);
+
+            __m128i m10 = _mm_unpacklo_epi8(m0, m1);
+            __m128i m11 = _mm_unpacklo_epi8(m2, m3);
+            __m128i m12 = _mm_unpacklo_epi8(m4, m5);
+            __m128i m13 = _mm_unpacklo_epi8(m6, m7);
+
+            m0  = _mm_unpacklo_epi16(m10, m11);
+            m1  = _mm_unpacklo_epi16(m12, m13);
+            m2  = _mm_unpackhi_epi16(m10, m11);
+            m3  = _mm_unpackhi_epi16(m12, m13);
+
+            m10 = _mm_unpacklo_epi32(m0 , m1 );
+            m11 = _mm_unpacklo_epi32(m2 , m3 );
+            m12 = _mm_unpackhi_epi32(m0 , m1 );
+            m13 = _mm_unpackhi_epi32(m2 , m3 );
+
+            _mm_storel_epi64((__m128i*)&p_out[0*_stride], m10);
+            _mm_storel_epi64((__m128i*)&p_out[2*_stride], m12);
+            _mm_storel_epi64((__m128i*)&p_out[4*_stride], m11);
+            _mm_storel_epi64((__m128i*)&p_out[6*_stride], m13);
+            m10 = _mm_unpackhi_epi64(m10, m10);
+            m12 = _mm_unpackhi_epi64(m12, m12);
+            m11 = _mm_unpackhi_epi64(m11, m11);
+            m13 = _mm_unpackhi_epi64(m13, m13);
+            _mm_storel_epi64((__m128i*)&p_out[1*_stride], m10);
+            _mm_storel_epi64((__m128i*)&p_out[3*_stride], m12);
+            _mm_storel_epi64((__m128i*)&p_out[5*_stride], m11);
+            _mm_storel_epi64((__m128i*)&p_out[7*_stride], m13);
+        } else {
+            for (y = 0; y < 8; y++) {
+                r1 = _mm_loadu_si128((__m128i*)(&ref[1]));
+                _mm_storel_epi64((__m128i *) p_src, r1);
+                p_src   += stride;
+            }
+        }
+    } else if (mode == 10) {
+        {
+            *((uint64_t *) (p_out+0*_stride)) = ref[1] * (0x0101010101010101);
+            *((uint64_t *) (p_out+1*_stride)) = ref[2] * (0x0101010101010101);
+            *((uint64_t *) (p_out+2*_stride)) = ref[3] * (0x0101010101010101);
+            *((uint64_t *) (p_out+3*_stride)) = ref[4] * (0x0101010101010101);
+            *((uint64_t *) (p_out+4*_stride)) = ref[5] * (0x0101010101010101);
+            *((uint64_t *) (p_out+5*_stride)) = ref[6] * (0x0101010101010101);
+            *((uint64_t *) (p_out+6*_stride)) = ref[7] * (0x0101010101010101);
+            *((uint64_t *) (p_out+7*_stride)) = ref[8] * (0x0101010101010101);
+        };
+        if (c_idx == 0) {
+            r3  = _mm_loadu_si128((__m128i*)src2);
+            r1  = _mm_set1_epi16(src2[-1]);
+            r2  = _mm_set1_epi16(src1[0]);
+            r0  = _mm_unpacklo_epi8(r3,_mm_setzero_si128());
+            r0  = _mm_subs_epi16(r0, r1);
+            r0  = ((__m128i)__builtin_ia32_psrawi128 ((__v8hi)(r0), (1)));
+            r0  = _mm_add_epi16(r0, r2);
+            r0  = _mm_packus_epi16(r0, r0);
+            _mm_storel_epi64((__m128i*)_src, r0);
+        }
+    } else {
+        for (y = 0; y < 8; y++) {
+            int idx  = (angle_i) >> 5;
+            int fact = (angle_i) & 31;
+            r1 = _mm_loadu_si128((__m128i*)(&ref[idx+1]));
+            if (fact) {
+                r3 = _mm_set1_epi16((fact << 8) + (32 - fact));
+                r0 = _mm_srli_si128(r1, 1);
+                r1 = _mm_unpacklo_epi8(r1, r0);
+                r1 = _mm_maddubs_epi16(r1, r3);
+                r1 = _mm_mulhrs_epi16(r1, _mm_set1_epi16(1024));
+                r1 = _mm_packus_epi16(r1, r1);
+            }
+            _mm_storel_epi64((__m128i *) p_src, r1);
+            angle_i += angle;
+            p_src   += stride;
+        }
+        if (mode < 18) {
+                __m128i m0  = _mm_loadl_epi64((__m128i *) &src_tmp[0*8]);
+                __m128i m1  = _mm_loadl_epi64((__m128i *) &src_tmp[1*8]);
+                __m128i m2  = _mm_loadl_epi64((__m128i *) &src_tmp[2*8]);
+                __m128i m3  = _mm_loadl_epi64((__m128i *) &src_tmp[3*8]);
+                __m128i m4  = _mm_loadl_epi64((__m128i *) &src_tmp[4*8]);
+                __m128i m5  = _mm_loadl_epi64((__m128i *) &src_tmp[5*8]);
+                __m128i m6  = _mm_loadl_epi64((__m128i *) &src_tmp[6*8]);
+                __m128i m7  = _mm_loadl_epi64((__m128i *) &src_tmp[7*8]);
+
+                __m128i m10 = _mm_unpacklo_epi8(m0, m1);
+                __m128i m11 = _mm_unpacklo_epi8(m2, m3);
+                __m128i m12 = _mm_unpacklo_epi8(m4, m5);
+                __m128i m13 = _mm_unpacklo_epi8(m6, m7);
+
+                m0  = _mm_unpacklo_epi16(m10, m11);
+                m1  = _mm_unpacklo_epi16(m12, m13);
+                m2  = _mm_unpackhi_epi16(m10, m11);
+                m3  = _mm_unpackhi_epi16(m12, m13);
+
+                m10 = _mm_unpacklo_epi32(m0 , m1 );
+                m11 = _mm_unpacklo_epi32(m2 , m3 );
+                m12 = _mm_unpackhi_epi32(m0 , m1 );
+                m13 = _mm_unpackhi_epi32(m2 , m3 );
+
+                _mm_storel_epi64((__m128i*)&p_out[0*_stride], m10);
+                _mm_storel_epi64((__m128i*)&p_out[2*_stride], m12);
+                _mm_storel_epi64((__m128i*)&p_out[4*_stride], m11);
+                _mm_storel_epi64((__m128i*)&p_out[6*_stride], m13);
+                m10 = _mm_unpackhi_epi64(m10, m10);
+                m12 = _mm_unpackhi_epi64(m12, m12);
+                m11 = _mm_unpackhi_epi64(m11, m11);
+                m13 = _mm_unpackhi_epi64(m13, m13);
+                _mm_storel_epi64((__m128i*)&p_out[1*_stride], m10);
+                _mm_storel_epi64((__m128i*)&p_out[3*_stride], m12);
+                _mm_storel_epi64((__m128i*)&p_out[5*_stride], m11);
+                _mm_storel_epi64((__m128i*)&p_out[7*_stride], m13);
+        }
+    }
+}
 PRED_ANGULAR(16, 8)
 PRED_ANGULAR(32, 8)
 
