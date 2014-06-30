@@ -3590,8 +3590,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 static int hls_coding_entry_cabac(HEVCContext *s, int ctb_addr_ts, int ctb_size)
 {
     int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
-    int x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-    int y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+    int x_ctb = FFUMOD(ctb_addr_rs, s->sps->ctb_width) << s->sps->log2_ctb_size;
+    int y_ctb = FFUDIV(ctb_addr_rs, s->sps->ctb_width) << s->sps->log2_ctb_size;
     int more_data;
     s->HEVClc->cm_ca = &s->HEVClc->cm[ctb_addr_ts & (NB_THREADS_CABAC-1)];
     hls_decode_neighbour_cabac(s, x_ctb, y_ctb, ctb_addr_ts);
@@ -3614,8 +3614,8 @@ static int hls_coding_entry_cabac(HEVCContext *s, int ctb_addr_ts, int ctb_size)
 static int hls_coding_entry_compute(HEVCContext *s, int ctb_addr_ts, int ctb_size)
 {
     int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
-    int x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-    int y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+    int x_ctb = FFUMOD(ctb_addr_rs, s->sps->ctb_width) << s->sps->log2_ctb_size;
+    int y_ctb = FFUDIV(ctb_addr_rs, s->sps->ctb_width) << s->sps->log2_ctb_size;
     int more_data;
     s->HEVClc->cm_co = &s->HEVClc->cm[ctb_addr_ts & (NB_THREADS_CABAC-1)];
     hls_decode_neighbour_compute(s, x_ctb, y_ctb, ctb_addr_ts);
@@ -3664,7 +3664,7 @@ static int hls_decode_entry2(AVCodecContext *avctxt, void *input_ctb_row, int jo
         if (more_data < 0)
             return more_data;
     }
-
+    ff_thread_report_progress3(s->avctx, job);
     if (job) {
         ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts-1];
         x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
