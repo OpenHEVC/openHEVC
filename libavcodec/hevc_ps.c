@@ -2059,8 +2059,6 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
 
     av_freep(&pps->column_width);
     av_freep(&pps->row_height);
-    av_freep(&pps->col_bd);
-    av_freep(&pps->row_bd);
     av_freep(&pps->col_idxX);
     av_freep(&pps->ctb_addr_rs_to_ts);
     av_freep(&pps->ctb_addr_ts_to_rs);
@@ -2075,6 +2073,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->ca.gb;
     HEVCSPS      *sps = NULL;
+    unsigned int *col_bd;
+    unsigned int *row_bd;
     int pic_area_in_ctbs;
     int log2_diff_ctb_min_tb_size;
     int i, j, x, y, ctb_addr_rs, tile_id;
@@ -2342,10 +2342,10 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     print_cabac("pps_extension_flag", pps->pps_extension_flag );
 
     // Inferred parameters
-    pps->col_bd   = av_malloc_array(pps->num_tile_columns + 1, sizeof(*pps->col_bd));
-    pps->row_bd   = av_malloc_array(pps->num_tile_rows + 1,    sizeof(*pps->row_bd));
+    col_bd   = av_malloc_array(pps->num_tile_columns + 1, sizeof(*col_bd));
+    row_bd   = av_malloc_array(pps->num_tile_rows + 1,    sizeof(*row_bd));
     pps->col_idxX = av_malloc_array(sps->ctb_width,    sizeof(*pps->col_idxX));
-    if (!pps->col_bd || !pps->row_bd || !pps->col_idxX) {
+    if (!col_bd || !row_bd || !pps->col_idxX) {
         ret = AVERROR(ENOMEM);
         goto err;
     }
@@ -2371,16 +2371,16 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
-    pps->col_bd[0] = 0;
+    col_bd[0] = 0;
     for (i = 0; i < pps->num_tile_columns; i++)
-        pps->col_bd[i + 1] = pps->col_bd[i] + pps->column_width[i];
+        col_bd[i + 1] = col_bd[i] + pps->column_width[i];
 
-    pps->row_bd[0] = 0;
+    row_bd[0] = 0;
     for (i = 0; i < pps->num_tile_rows; i++)
-        pps->row_bd[i + 1] = pps->row_bd[i] + pps->row_height[i];
+        row_bd[i + 1] = row_bd[i] + pps->row_height[i];
 
     for (i = 0, j = 0; i < sps->ctb_width; i++) {
-        if (i > pps->col_bd[j])
+        if (i > col_bd[j])
             j++;
         pps->col_idxX[i] = j;
     }
@@ -2408,14 +2408,14 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         int val    = 0;
 
         for (i = 0; i < pps->num_tile_columns; i++) {
-            if (tb_x < pps->col_bd[i + 1]) {
+            if (tb_x < col_bd[i + 1]) {
                 tile_x = i;
                 break;
             }
         }
 
         for (i = 0; i < pps->num_tile_rows; i++) {
-            if (tb_y < pps->row_bd[i + 1]) {
+            if (tb_y < row_bd[i + 1]) {
                 tile_y = i;
                 break;
             }
@@ -2426,8 +2426,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         for (i = 0; i < tile_y; i++)
             val += sps->ctb_width * pps->row_height[i];
 
-        val += (tb_y - pps->row_bd[tile_y]) * pps->column_width[tile_x] +
-               tb_x - pps->col_bd[tile_x];
+        val += (tb_y - row_bd[tile_y]) * pps->column_width[tile_x] +
+               tb_x - col_bd[tile_x];
 
         pps->ctb_addr_rs_to_ts[ctb_addr_rs] = val;
         pps->ctb_addr_ts_to_rs[val]         = ctb_addr_rs;
@@ -2435,8 +2435,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     for (j = 0, tile_id = 0; j < pps->num_tile_rows; j++)
         for (i = 0; i < pps->num_tile_columns; i++, tile_id++)
-            for (y = pps->row_bd[j]; y < pps->row_bd[j + 1]; y++)
-                for (x = pps->col_bd[i]; x < pps->col_bd[i + 1]; x++)
+            for (y = row_bd[j]; y < row_bd[j + 1]; y++)
+                for (x = col_bd[i]; x < col_bd[i + 1]; x++)
                     pps->tile_id[pps->ctb_addr_rs_to_ts[y * sps->ctb_width + x]] = tile_id;
 
     pps->tile_pos_rs = av_malloc_array(tile_id, sizeof(*pps->tile_pos_rs));
@@ -2447,7 +2447,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     for (j = 0; j < pps->num_tile_rows; j++)
         for (i = 0; i < pps->num_tile_columns; i++)
-            pps->tile_pos_rs[j * pps->num_tile_columns + i] = pps->row_bd[j] * sps->ctb_width + pps->col_bd[i];
+            pps->tile_pos_rs[j * pps->num_tile_columns + i] = row_bd[j] * sps->ctb_width + col_bd[i];
 
     log2_diff_ctb_min_tb_size = sps->log2_ctb_size - sps->log2_min_tb_size;
     pps->min_tb_addr_zs = &pps->min_tb_addr_zs_tab[1*(sps->tb_mask+2)+1];
@@ -2470,6 +2470,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
+    av_freep(&col_bd);
+    av_freep(&row_bd);
     av_buffer_unref(&s->pps_list[pps_id]);
     s->pps_list[pps_id] = pps_buf;
 

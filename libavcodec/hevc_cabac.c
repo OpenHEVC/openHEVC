@@ -986,8 +986,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int vshift = s->sps->vshift[c_idx];
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                           ((x0 >> hshift) << s->sps->pixel_shift)];
-    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]);
-    DECLARE_ALIGNED(8, uint8_t, significant_coeff_group_flag[8][8]) = {{0}};
+    LOCAL_ALIGNED_16(int16_t, coeffs, [MAX_TB_SIZE * MAX_TB_SIZE]);
+    uint8_t significant_coeff_group_flag[8][8] = {{0}};
 
     int trafo_size = 1 << log2_trafo_size;
     int i;
@@ -1417,8 +1417,8 @@ void ff_hevc_hls_residual_coding_cabac(HEVCContext *s, int x0, int y0,
 
     const uint8_t *scan_x_cg, *scan_y_cg, *scan_x_off, *scan_y_off;
 
-    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]);
-    DECLARE_ALIGNED(8, uint8_t, significant_coeff_group_flag[8][8]) = {{0}};
+    LOCAL_ALIGNED_16(int16_t, coeffs, [MAX_TB_SIZE * MAX_TB_SIZE]);
+    uint8_t significant_coeff_group_flag[8][8] = {{0}};
 
     int trafo_size = 1 << log2_trafo_size;
     int i;
@@ -1812,7 +1812,7 @@ void ff_hevc_hls_residual_coding_compute(HEVCContext *s, int x0, int y0,
     int vshift = s->sps->vshift[c_idx];
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                           ((x0 >> hshift) << s->sps->pixel_shift)];
-    DECLARE_ALIGNED(16, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]);
+    LOCAL_ALIGNED_16(int16_t, coeffs, [MAX_TB_SIZE * MAX_TB_SIZE]);
     int last_significant_coeff_x = SAMPLE_CBF(lc->rc[c_idx].last_significant_coeff_x[trafo_depth], x0, y0);
     int last_significant_coeff_y = SAMPLE_CBF(lc->rc[c_idx].last_significant_coeff_y[trafo_depth], x0, y0);
     int transform_skip_flag      = SAMPLE_CBF(lc->rc[c_idx].transform_skip_flag[trafo_depth], x0, y0);

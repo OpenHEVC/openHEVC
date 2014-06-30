@@ -60,7 +60,7 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
 /*
  * 6.4.1 Derivation process for z-scan order block availability
  */
-static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
+static av_always_inline int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
                               int xN, int yN)
 {
 #define MIN_TB_ADDR_ZS(x, y)                                            \
@@ -82,7 +82,7 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
 }
 
 //check if the two luma locations belong to the same mostion estimation region
-static int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
+static av_always_inline int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->pps->log2_parallel_merge_level;
 
@@ -93,11 +93,21 @@ static int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
 #define MATCH(x) (A.x == B.x)
 
 // check if the mv's and refidx are the same between A and B
-static int compare_mv_ref_idx(struct MvField A, struct MvField B)
+static av_always_inline int compare_mv_ref_idx(struct MvField A, struct MvField B)
 {
     int a_pf = A.pred_flag;
     int b_pf = B.pred_flag;
     if (a_pf == b_pf) {
+#ifdef TEST_MV_POC
+        if (a_pf == PF_BI) {
+            return MATCH(poc[0]) && MATCH(mv[0].x) && MATCH(mv[0].y) &&
+                   MATCH(poc[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
+        } else if (a_pf == PF_L0) {
+            return MATCH(poc[0]) && MATCH(mv[0].x) && MATCH(mv[0].y);
+        } else if (a_pf == PF_L1) {
+            return MATCH(poc[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
+        }
+#else
         if (a_pf == PF_BI) {
             return MATCH(ref_idx[0]) && MATCH(mv[0].x) && MATCH(mv[0].y) &&
                    MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
@@ -106,6 +116,7 @@ static int compare_mv_ref_idx(struct MvField A, struct MvField B)
         } else if (a_pf == PF_L1) {
             return MATCH(ref_idx[1]) && MATCH(mv[1].x) && MATCH(mv[1].y);
         }
+#endif
     }
     return 0;
 }
@@ -404,10 +415,16 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
             if (available_l0) {
                 mergecandlist[nb_merge_cand].mv[0]      = mv_l0_col;
                 mergecandlist[nb_merge_cand].ref_idx[0] = 0;
+#ifdef TEST_MV_POC
+                mergecandlist[nb_merge_cand].poc[0]     = refPicList[0].list[0];
+#endif
             }
             if (available_l1) {
                 mergecandlist[nb_merge_cand].mv[1]      = mv_l1_col;
                 mergecandlist[nb_merge_cand].ref_idx[1] = 0;
+#ifdef TEST_MV_POC
+                mergecandlist[nb_merge_cand].poc[1]     = refPicList[1].list[0];
+#endif
             }
             nb_merge_cand++;
         }
@@ -429,8 +446,13 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
             if ((l0_cand.pred_flag & PF_L0) &&
                 (l1_cand.pred_flag & PF_L1) &&
-                (refPicList[0].list[l0_cand.ref_idx[0]] !=
+                (
+#ifdef TEST_MV_POC
+                 l0_cand.poc[0] != l1_cand.poc[1] ||
+#else
+                 refPicList[0].list[l0_cand.ref_idx[0]] !=
                  refPicList[1].list[l1_cand.ref_idx[1]] ||
+#endif
                  l0_cand.mv[0].x != l1_cand.mv[1].x ||
                  l0_cand.mv[0].y != l1_cand.mv[1].y)) {
                 mergecandlist[nb_merge_cand].ref_idx[0]   = l0_cand.ref_idx[0];
@@ -438,6 +460,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                 mergecandlist[nb_merge_cand].pred_flag    = PF_BI;
                 mergecandlist[nb_merge_cand].mv[0]        = l0_cand.mv[0];
                 mergecandlist[nb_merge_cand].mv[1]        = l1_cand.mv[1];
+#ifdef TEST_MV_POC
+                mergecandlist[nb_merge_cand].poc[0]       = l0_cand.poc[0];
+                mergecandlist[nb_merge_cand].poc[1]       = l1_cand.poc[1];
+#endif
                 nb_merge_cand++;
             }
         }
@@ -452,7 +478,10 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
         mergecandlist[nb_merge_cand].mv[1].y      = 0;
         mergecandlist[nb_merge_cand].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
         mergecandlist[nb_merge_cand].ref_idx[1]   = zero_idx < nb_refs ? zero_idx : 0;
-
+#ifdef TEST_MV_POC
+        mergecandlist[nb_merge_cand].poc[0]       = refPicList[0].list[zero_idx < nb_refs ? zero_idx : 0];
+        mergecandlist[nb_merge_cand].poc[1]       = refPicList[1].list[zero_idx < nb_refs ? zero_idx : 0];
+#endif
         nb_merge_cand++;
         zero_idx++;
     }
@@ -499,7 +528,11 @@ static av_always_inline void dist_scale(HEVCContext *s, Mv *mv,
 {
     RefPicList *refPicList = s->ref->refPicList;
     MvField *tab_mvf       = s->ref->tab_mvf;
+#ifdef TEST_MV_POC
+    int ref_pic_elist      = TAB_MVF(x, y).poc[elist];
+#else
     int ref_pic_elist      = refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]];
+#endif
     int ref_pic_curr       = refPicList[ref_idx_curr].list[ref_idx];
 
     if (ref_pic_elist != ref_pic_curr) {
@@ -519,7 +552,12 @@ static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
     RefPicList *refPicList = s->ref->refPicList;
 
     if (((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) &&
-        refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]] == refPicList[ref_idx_curr].list[ref_idx]) {
+#ifdef TEST_MV_POC
+        TAB_MVF(x, y).poc[pred_flag_index] == refPicList[ref_idx_curr].list[ref_idx]
+#else
+        refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]] == refPicList[ref_idx_curr].list[ref_idx]
+#endif
+    ) {
         *mv = TAB_MVF(x, y).mv[pred_flag_index];
         return 1;
     }
