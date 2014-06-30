@@ -603,7 +603,7 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                               int nPbH, int log2_cb_size, int part_idx,
                               int merge_idx, MvField *mv,
-                              int mvp_lx_flag, int LX, uint8_t ref_idx)
+                              int mvp_lx_flag, int LX)
 {
     HEVCLocalContext *lc = s->HEVClc;
     MvField *tab_mvf = s->ref->tab_mvf;
@@ -628,6 +628,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     Mv mxA;
     Mv mxB;
     int ref_idx_curr = 0;
+    int ref_idx = 0;
     int pred_flag_index_l0;
     int pred_flag_index_l1;
 
@@ -637,6 +638,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     const int cand_up          = lc->na.cand_up;
     const int cand_up_right    = lc->na.cand_up_right_sap;
     ref_idx_curr       = LX;
+    ref_idx            = mv->ref_idx[LX];
     pred_flag_index_l0 = LX;
     pred_flag_index_l1 = !LX;
 
