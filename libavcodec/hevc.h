@@ -38,12 +38,17 @@
 #include "hevc_defs.h"
 
 #define TEST_MV_POC
+//#define ENCRYPTE_CABAC
 
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
 
 #define MAX_NB_THREADS 16
+#ifdef ENCRYPTE_CABAC
+#define NB_THREADS_CABAC 1024
+#else
 #define NB_THREADS_CABAC 8
+#endif
 #define SHIFT_CTB_WPP 2
 #define MAX_POC      1024
 /**
@@ -54,10 +59,20 @@
 #define MAX_SPS_COUNT 32
 #define MAX_PPS_COUNT 256
 #define MAX_SHORT_TERM_RPS_COUNT 64
+
+#ifdef ENCRYPTE_CABAC
+#define MAX_CU_SIZE 64/*128*/
+#else
 #define MAX_CU_SIZE 128
+#endif
 
 //TODO: check if this is really the maximum
-#define MAX_TRANSFORM_DEPTH 5
+#ifdef ENCRYPTE_CABAC
+#define MAX_TRANSFORM_DEPTH 4 //5
+#else
+#define MAX_TRANSFORM_DEPTH  5
+#endif
+#define MAX_PREDICTION_DEPTH 4
 #define MIN_PB_LOG_SIZE 2
 
 #define MAX_TB_SIZE 32
@@ -991,10 +1006,10 @@ typedef struct PredictionUnitCabac {
 
 typedef struct PredictionUnit {
     uint8_t merge_flag;
-    uint8_t merge_flag_tab[4][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t mvp_flag[2][4][MAX_CU_SIZE * MAX_CU_SIZE];
-    uint8_t merge_idx[4][MAX_CU_SIZE * MAX_CU_SIZE];
-    enum InterPredIdc inter_pred_idc[4][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t merge_flag_tab[MAX_PREDICTION_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t mvp_flag[2][MAX_PREDICTION_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t merge_idx[MAX_PREDICTION_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    enum InterPredIdc inter_pred_idc[MAX_PREDICTION_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
 } PredictionUnit;
 
 typedef struct TransformTreeCabac {

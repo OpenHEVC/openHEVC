@@ -3628,7 +3628,7 @@ static int hls_coding_entry_compute(HEVCContext *s, int ctb_addr_ts, int ctb_siz
     return more_data;
 }
 
-static int hls_decode_entry2(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
+static int hls_decode_entry_cabac(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
 {
     HEVCContext *s  = avctxt->priv_data;
     int ctb_size    = 1 << s->sps->log2_ctb_size;
@@ -3917,16 +3917,26 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp  , arg, ret, s->sh.num_entry_point_offsets + 1);
     else if (s->pps->tiles_enabled_flag        && s->threads_number!=1)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_tiles, arg, ret, s->sh.num_entry_point_offsets + 1);
+#ifdef ENCRYPTE_CABAC
+    else {
+        ff_reset_entries(s->avctx);
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_cabac, arg, ret, 2);
+        res = ret[1];
+        av_free(ret);
+        av_free(arg);
+        return res;
+    }
+#else
     else if (s->threads_number!=1) {
         ff_reset_entries(s->avctx);
-        s->avctx->execute2(s->avctx, (void *) hls_decode_entry2, arg, ret, 2);
+        s->avctx->execute2(s->avctx, (void *) hls_decode_entry_cabac, arg, ret, 2);
         res = ret[1];
         av_free(ret);
         av_free(arg);
         return res;
     } else
         s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
-
+#endif
     res = ret[s->threads_number==1 ? 0:s->sh.num_entry_point_offsets];
 
     av_free(ret);
