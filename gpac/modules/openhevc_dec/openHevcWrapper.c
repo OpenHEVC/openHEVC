@@ -67,6 +67,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
         openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
         openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
         openHevcContext->picture = avcodec_alloc_frame();
+        openHevcContext->c->flags |= CODEC_FLAG_UNALIGNED;
 
         if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
             openHevcContext->c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
