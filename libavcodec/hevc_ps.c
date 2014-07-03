@@ -1893,7 +1893,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps_extension_flag[i] = get_bits1(gb);
         sps_extension_7bits	= get_bits(gb, 7);
         if (sps_extension_flag[0]) {
-            int implicit_rdpcm_enabled_flag;
             int explicit_rdpcm_enabled_flag;
             int extended_precision_processing_flag;
             int high_precision_offsets_enabled_flag;
@@ -1905,7 +1904,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps->transform_skip_context_enabled_flag  = get_bits1(gb);
             print_cabac("transform_skip_context_enabled_flag ", sps->transform_skip_context_enabled_flag);
             sps->implicit_rdpcm_enabled_flag = get_bits1(gb);
-            if (implicit_rdpcm_enabled_flag)
+            if (sps->implicit_rdpcm_enabled_flag)
                 av_log(s->avctx, AV_LOG_WARNING,
                    "implicit_rdpcm_enabled_flag not yet implemented\n");
 
