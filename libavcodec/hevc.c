@@ -3125,20 +3125,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         break;
     case NAL_EOS_NUT:
     case NAL_EOB_NUT:
-        {int i;
-            for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++) {
-                if (s->pps_list[i])
-                    av_buffer_unref(&s->pps_list[i]);
-            }
-            for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++) {
-                if (s->sps_list[i])
-                    av_buffer_unref(&s->sps_list[i]);
-            }
-            for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++) {
-                if (s->vps_list[i])
-                    av_buffer_unref(&s->vps_list[i]);
-            }
-        }
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
         break;
