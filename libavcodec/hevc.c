@@ -1120,12 +1120,9 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         s->hpc.intra_pred[log2_trafo_size - 2](s, x0, y0, 0);
     }
 
-    if (lc->tt.cbf_luma ||
-        SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) ||
-        SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) ||
+    if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) ||
         (s->sps->chroma_array_type == 2 &&
-         (SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0 + (1 << log2_trafo_size_c)) ||
-         SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0 + (1 << log2_trafo_size_c))))) {
+         (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (1 << log2_trafo_size_c)) & CBF_CB_CR_FLAG))) {
         int scan_idx   = SCAN_DIAG;
         int scan_idx_c = SCAN_DIAG;
 
@@ -1168,7 +1165,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
             }
         }
 
-        if (lc->tt.cbf_luma)
+        if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) & CBF_LUMA_FLAG)
             ff_hevc_hls_residual_coding(s, x0, y0, log2_trafo_size, scan_idx, 0);
         if (log2_trafo_size > 2 || s->sps->chroma_array_type == 3) {
             int trafo_size_h = 1 << (log2_trafo_size_c + s->sps->hshift[1]);
@@ -1178,7 +1175,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     ff_hevc_set_neighbour_available(s, x0, y0 + (i << log2_trafo_size_c), trafo_size_h, trafo_size_v);
                     s->hpc.intra_pred[log2_trafo_size_c - 2](s, x0, y0 + (i << log2_trafo_size_c), 1);
                 }
-                if (SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0 + (i << log2_trafo_size_c)))
+                if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (i << log2_trafo_size_c)) & CBF_CB_FLAG)
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 1);
             }
@@ -1187,7 +1184,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     ff_hevc_set_neighbour_available(s, x0, y0 + (i << log2_trafo_size_c), trafo_size_h, trafo_size_v);
                     s->hpc.intra_pred[log2_trafo_size_c - 2](s, x0, y0 + (i << log2_trafo_size_c), 2);
                 }
-                if (SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0 + (i << log2_trafo_size_c)))
+                if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (i << log2_trafo_size_c)) & CBF_CR_FLAG)
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 2);
             }
@@ -1200,7 +1197,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                                                     trafo_size_h, trafo_size_v);
                     s->hpc.intra_pred[log2_trafo_size - 2](s, xBase, yBase + (i << log2_trafo_size), 1);
                 }
-                if (SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], xBase, yBase + (i << log2_trafo_size_c)))
+                if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], xBase, yBase + (i << log2_trafo_size_c)) & CBF_CB_FLAG)
                     ff_hevc_hls_residual_coding(s, xBase, yBase + (i << log2_trafo_size),
                                                 log2_trafo_size, scan_idx_c, 1);
             }
@@ -1210,7 +1207,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                                                 trafo_size_h, trafo_size_v);
                     s->hpc.intra_pred[log2_trafo_size - 2](s, xBase, yBase + (i << log2_trafo_size), 2);
                 }
-                if (SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], xBase, yBase + (i << log2_trafo_size_c)))
+                if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], xBase, yBase + (i << log2_trafo_size_c)) & CBF_CR_FLAG)
                     ff_hevc_hls_residual_coding(s, xBase, yBase + (i << log2_trafo_size),
                                                 log2_trafo_size, scan_idx_c, 2);
             }
@@ -1269,27 +1266,22 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
 {
     HEVCLocalContext *lc = s->HEVClc;
     uint8_t split_transform_flag;
+    uint8_t inter_split_flag;
     int ret;
 
+    SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) = CBF_LUMA_FLAG;
     if (trafo_depth > 0 && log2_trafo_size == 2) {
-        SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) =
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth - 1], xBase, yBase);
-        SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) =
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth - 1], xBase, yBase);
+        SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) |=
+            SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth - 1], xBase, yBase) & CBF_CB_CR_FLAG;
         if (s->sps->chroma_array_type == 2) {
             int xBase_cb = xBase & ((1 << log2_trafo_size) - 1);
             int yBase_cb = yBase & ((1 << log2_trafo_size) - 1);
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0 + (1 << (log2_trafo_size - 1))) =
-                SAMPLE_CBF2(lc->tt.cbf_cb[trafo_depth - 1], xBase_cb, yBase_cb + (1 << (log2_trafo_size)));
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0 + (1 << (log2_trafo_size - 1))) =
-                SAMPLE_CBF2(lc->tt.cbf_cr[trafo_depth - 1], xBase_cb, yBase_cb + (1 << (log2_trafo_size)));
+            SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (1 << (log2_trafo_size - 1))) =
+                SAMPLE_CBF2(lc->tt.cbf_flags[trafo_depth - 1], xBase_cb, yBase_cb + (1 << (log2_trafo_size))) & CBF_CB_CR_FLAG;
         }
     } else {
-        SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) =
-        SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) = 0;
         if (s->sps->chroma_array_type == 2) {
-                SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0 + (1 << (log2_trafo_size - 1))) =
-                SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0 + (1 << (log2_trafo_size - 1))) = 0;
+            SAMPLE_CBF2(lc->tt.cbf_flags[trafo_depth], x0, y0 + (1 << (log2_trafo_size - 1))) = 0;
         }
     }
 
@@ -1306,12 +1298,10 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
         lc->tu.cur_intra_pred_mode_c = lc->pu.intra_pred_mode_c[0];
     }
 
-    lc->tt.cbf_luma = 1;
-
-    lc->tt.inter_split_flag = s->sps->max_transform_hierarchy_depth_inter == 0 &&
-                              lc->cu.pred_mode == MODE_INTER &&
-                              lc->cu.part_mode != PART_2Nx2N &&
-                              trafo_depth == 0;
+    inter_split_flag = s->sps->max_transform_hierarchy_depth_inter == 0 &&
+                       lc->cu.pred_mode == MODE_INTER &&
+                       lc->cu.part_mode != PART_2Nx2N &&
+                       trafo_depth == 0;
 
     if (log2_trafo_size <= s->sps->log2_max_trafo_size &&
         log2_trafo_size >  s->sps->log2_min_tb_size    &&
@@ -1321,27 +1311,31 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
     } else {
         split_transform_flag = log2_trafo_size > s->sps->log2_max_trafo_size ||
                                (lc->cu.intra_split_flag && trafo_depth == 0) ||
-                               lc->tt.inter_split_flag;
+                               inter_split_flag;
     }
 
     if (log2_trafo_size > 2 || s->sps->chroma_array_type == 3) {
         if (trafo_depth == 0 ||
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth - 1], xBase, yBase)) {
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) =
-                ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
+                (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth - 1], xBase, yBase) & CBF_CB_FLAG)) {
+            SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) &= ~CBF_CB_FLAG;
+            SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) |=
+                    ff_hevc_cbf_cb_cr_decode(s, trafo_depth) * CBF_CB_FLAG;
             if (s->sps->chroma_format_idc == 2 && (!split_transform_flag || log2_trafo_size == 3)) {
-                SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0 +  (1  <<  (log2_trafo_size - 1))) =
-                    ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
+                SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (1  <<  (log2_trafo_size - 1))) &= ~CBF_CB_FLAG;
+                SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (1  <<  (log2_trafo_size - 1))) |=
+                        ff_hevc_cbf_cb_cr_decode(s, trafo_depth) * CBF_CB_FLAG;
             }
         }
 
         if (trafo_depth == 0 ||
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth - 1], xBase, yBase)) {
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) =
-                ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
+                (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth - 1], xBase, yBase) & CBF_CR_FLAG)) {
+            SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) &= ~CBF_CR_FLAG;
+            SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) |=
+                    ff_hevc_cbf_cb_cr_decode(s, trafo_depth) * CBF_CR_FLAG;
             if (s->sps->chroma_format_idc == 2 && (!split_transform_flag || log2_trafo_size == 3)) {
-                SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0 +  (1  <<  (log2_trafo_size - 1))) =
-                    ff_hevc_cbf_cb_cr_decode(s, trafo_depth);
+                SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (1  <<  (log2_trafo_size - 1))) &= ~CBF_CR_FLAG;
+                SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (1  <<  (log2_trafo_size - 1))) |=
+                        ff_hevc_cbf_cb_cr_decode(s, trafo_depth) * CBF_CR_FLAG;
             }
         }
     }
@@ -1376,12 +1370,11 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
         int min_tu_width     = s->sps->min_tb_width;
 
         if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
-            SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0) ||
-            SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0) ||
-            (s->sps->chroma_array_type  ==  2 &&
-             (SAMPLE_CBF(lc->tt.cbf_cb[trafo_depth], x0, y0 +  (1  <<  (log2_trafo_size - 1))) ||
-              SAMPLE_CBF(lc->tt.cbf_cr[trafo_depth], x0, y0 +  (1  <<  (log2_trafo_size - 1)))))) {
-            lc->tt.cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth);
+                (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) & CBF_CB_CR_FLAG) ||
+                (s->sps->chroma_array_type  ==  2 &&
+                        (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 +  (1  <<  (log2_trafo_size - 1))) & CBF_CB_CR_FLAG))) {
+            SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) &= ~CBF_LUMA_FLAG;
+            SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) |= ff_hevc_cbf_luma_decode(s, trafo_depth) * CBF_LUMA_FLAG;
         }
 
         ret = hls_transform_unit(s, x0, y0, xBase, yBase, cb_xBase, cb_yBase,
@@ -1390,7 +1383,7 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
         if (ret < 0)
             return ret;
         // TODO: store cbf_luma somewhere else
-        if (lc->tt.cbf_luma) {
+        if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) & CBF_LUMA_FLAG) {
             int i, j;
             for (i = 0; i < (1 << log2_trafo_size); i += min_tu_size)
                 for (j = 0; j < (1 << log2_trafo_size); j += min_tu_size) {
