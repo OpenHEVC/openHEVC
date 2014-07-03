@@ -1908,7 +1908,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
                 av_log(s->avctx, AV_LOG_WARNING,
                    "implicit_rdpcm_enabled_flag not yet implemented\n");
 
-            print_cabac("implicit_rdpcm_enabled_flag ", implicit_rdpcm_enabled_flag);
+            print_cabac("implicit_rdpcm_enabled_flag ", sps->implicit_rdpcm_enabled_flag);
             explicit_rdpcm_enabled_flag = get_bits1(gb);
             if (explicit_rdpcm_enabled_flag)
                 av_log(s->avctx, AV_LOG_WARNING,
@@ -2038,10 +2038,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         !memcmp(s->sps_list[sps_id]->data, sps_buf->data, sps_buf->size)) {
         av_buffer_unref(&sps_buf);
     } else {
-        for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++) {
-            if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == sps_id)
-                av_buffer_unref(&s->pps_list[i]);
-        }
         av_buffer_unref(&s->sps_list[sps_id]);
         s->sps_list[sps_id] = sps_buf;
     }
