@@ -992,6 +992,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int trafo_size = 1 << log2_trafo_size;
     int i;
     int qp,shift,add,scale,scale_m;
+    int log2_transform_range = 15; //FFMAX(15, s->sps->bit_depth + 6); // extended_precision_processing_flag ?  : 15
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
     const uint8_t *scale_matrix = NULL;
     uint8_t dc_scale;
@@ -1001,16 +1002,18 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     // Derive QP for dequant
     if (!lc->cu.cu_transquant_bypass_flag) {
         static const int qp_c[] = { 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37 };
-        static const uint8_t rem6[51 + 2 * 6 + 1] = {
+        static const uint8_t rem6[51 + 4 * 6 + 1] = {
             0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2,
             3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5,
             0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
+            4, 5, 0, 1, 2, 3, 4, 5, 0, 1
         };
 
-        static const uint8_t div6[51 + 2 * 6 + 1] = {
+        static const uint8_t div6[51 + 4 * 6 + 1] = {
             0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3,  3,  3,
             3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6,  6,  6,
             7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10,
+            10, 10, 11, 11, 11, 11, 11, 11, 12, 12
         };
         int qp_y = lc->qp_y;
 
@@ -1042,7 +1045,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             qp += s->sps->qp_bd_offset;
         }
 
-        shift    = s->sps->bit_depth + log2_trafo_size - 5;
+        shift    = s->sps->bit_depth + log2_trafo_size + 10 - log2_transform_range;
         add      = 1 << (shift-1);
         scale    = level_scale[rem6[qp]] << (div6[qp]);
         scale_m  = 16; // default when no custom scaling lists.
