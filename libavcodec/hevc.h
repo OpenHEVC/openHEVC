@@ -106,12 +106,6 @@ enum ScalabilityType
     SCALABILITY_ID = 2,
 };
 
-#define CBF_LUMA_FLAG   1
-#define CBF_CB_FLAG     2
-#define CBF_CR_FLAG     4
-#define CBF_CB_CR_FLAG  6
-#define CBF_FLAG        8
-
 /**
  * Table 7-3: NAL unit type codes
  */
@@ -975,9 +969,13 @@ typedef struct PredictionUnit {
     uint8_t intra_pred_mode_c[4];
 } PredictionUnit;
 
-
 typedef struct TransformTree {
-    uint8_t cbf_flags[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_cb[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_cr[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
+    uint8_t cbf_luma;
+
+    // Inferred parameters
+    uint8_t inter_split_flag;
 } TransformTree;
 
 typedef struct TransformUnit {
