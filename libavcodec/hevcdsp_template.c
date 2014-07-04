@@ -150,7 +150,7 @@ static void FUNC(transform_rdpcm)(uint8_t *_dst, int16_t *_coeffs,
 
     for (y = 0; y < size; y ++) {
         for (x = 0; x < size; x++)
-            dst[x] = av_clip_pixel(dst[x] + _coeffs[4 * y + x]);
+            dst[x] = av_clip_pixel(dst[x] + _coeffs[size * y + x]);
         dst += stride;
     }
 }
