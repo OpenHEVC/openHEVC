@@ -1376,7 +1376,12 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     }
 
     if (lc->cu.cu_transquant_bypass_flag) {
-        s->hevcdsp.transquant_bypass[log2_trafo_size-2](dst, coeffs, stride);
+        if (s->sps->implicit_rdpcm_enabled_flag && (pred_mode_intra == 10 || pred_mode_intra == 26)) {
+            int mode = pred_mode_intra == 10;
+
+            s->hevcdsp.transform_rdpcm(dst, coeffs, stride, trafo_size, mode);
+        } else
+            s->hevcdsp.transquant_bypass[log2_trafo_size-2](dst, coeffs, stride);
     } else {
         if (transform_skip_flag) {
             int rot = s->sps->transform_skip_rotation_enabled_flag &&
