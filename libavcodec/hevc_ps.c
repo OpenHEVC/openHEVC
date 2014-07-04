@@ -2332,6 +2332,10 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     pps->slice_header_extension_present_flag = get_bits1(gb);
     pps->pps_extension_flag                  = get_bits1(gb);
+    if (pps->pps_extension_flag)
+        av_log(s->avctx, AV_LOG_ERROR,
+               "PPS extension flag not yet implemented.\n");
+
 
     print_cabac("slice_segment_header_extension_present_flag", pps->slice_header_extension_present_flag);
     print_cabac("pps_extension_flag", pps->pps_extension_flag );
