@@ -111,6 +111,51 @@ static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
+
+static void FUNC(transform_rdpcm)(uint8_t *_dst, int16_t *_coeffs,
+                                 ptrdiff_t stride, int16_t size, int mode)
+{
+    pixel *dst = (pixel *)_dst;
+    int16_t *coeffs = (int16_t *) _coeffs;
+    int shift  = 13 - BIT_DEPTH;
+#if BIT_DEPTH <= 13
+    int offset = 1 << (shift - 1);
+#else
+    int offset = 0;
+#endif
+    int x, y;
+
+    stride /= sizeof(pixel);
+
+
+
+    for (x = 0; x < size * size; x ++)
+        _coeffs[x] = (_coeffs[x] + offset) >> shift;
+
+    if (mode) {
+        for (y = 0; y < size; y++) {
+            for (x = 1; x < size; x++)
+                coeffs[x] += coeffs[x - 1];
+            coeffs += size;
+        }
+    } else {
+        coeffs += size;
+        for (y = 0; y < size - 1; y++) {
+            for (x = 0; x < size; x++)
+                coeffs[x] += coeffs[x - size];
+            coeffs += size;
+        }
+    }
+
+
+    for (y = 0; y < size; y ++) {
+        for (x = 0; x < size; x++)
+            dst[x] = av_clip_pixel(dst[x] + _coeffs[4 * y + x]);
+        dst += stride;
+    }
+}
+
+
 static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs,
                                  ptrdiff_t stride)
 {
@@ -131,28 +176,6 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs,
         dst += stride;
     }
 }
-
-static void FUNC(transform_skip_rot)(uint8_t *_dst, int16_t *coeffs,
-                                 ptrdiff_t stride)
-{
-    pixel *dst = (pixel *)_dst;
-    int shift  = 13 - BIT_DEPTH;
-#if BIT_DEPTH <= 13
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-    int x, y;
-
-    stride /= sizeof(pixel);
-
-    for (y = 0; y < 4 * 4; y += 4) {
-        for (x = 0; x < 4; x++)
-            dst[x] = av_clip_pixel(dst[x] + ((coeffs[15 - x - y] + offset) >> shift));
-        dst += stride;
-    }
-}
-
 
 #define SET(dst, x)   (dst) = (x)
 #define SCALE(dst, x) (dst) = av_clip_int16(((x) + add) >> shift)
