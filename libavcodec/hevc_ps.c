@@ -1906,7 +1906,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps->implicit_rdpcm_enabled_flag = get_bits1(gb);
             if (sps->implicit_rdpcm_enabled_flag)
                 av_log(s->avctx, AV_LOG_WARNING,
-                   "implicit_rdpcm_enabled_flag not yet implemented\n");
+                   "implicit_rdpcm_enabled_flag is partially implemented\n");
 
             print_cabac("implicit_rdpcm_enabled_flag ", sps->implicit_rdpcm_enabled_flag);
             explicit_rdpcm_enabled_flag = get_bits1(gb);
