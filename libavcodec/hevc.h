@@ -69,7 +69,7 @@
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
 
-#define HEVC_CONTEXTS 183
+#define HEVC_CONTEXTS 191
 
 #define MRG_MAX_NUM_CANDS     5
 
@@ -200,6 +200,8 @@ enum SyntaxElement {
     CBF_LUMA,
     CBF_CB_CR,
     TRANSFORM_SKIP_FLAG,
+    EXPLICIT_RDPCM_FLAG,
+    EXPLICIT_RDPCM_DIR_FLAG,
     LAST_SIGNIFICANT_COEFF_X_PREFIX,
     LAST_SIGNIFICANT_COEFF_Y_PREFIX,
     LAST_SIGNIFICANT_COEFF_X_SUFFIX,
@@ -729,6 +731,7 @@ typedef struct HEVCSPS {
     int transform_skip_rotation_enabled_flag;
     int transform_skip_context_enabled_flag;
     int implicit_rdpcm_enabled_flag;
+    int explicit_rdpcm_enabled_flag;
     int intra_smoothing_disabled_flag;
 
     ///< coded frame dimension in various units

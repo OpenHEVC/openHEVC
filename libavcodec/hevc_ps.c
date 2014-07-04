@@ -1893,7 +1893,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps_extension_flag[i] = get_bits1(gb);
         sps_extension_7bits	= get_bits(gb, 7);
         if (sps_extension_flag[0]) {
-            int explicit_rdpcm_enabled_flag;
             int extended_precision_processing_flag;
             int high_precision_offsets_enabled_flag;
             int fast_rice_adaptation_enabled_flag;
@@ -1907,14 +1906,11 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             if (sps->implicit_rdpcm_enabled_flag)
                 av_log(s->avctx, AV_LOG_WARNING,
                    "implicit_rdpcm_enabled_flag is partially implemented\n");
-
             print_cabac("implicit_rdpcm_enabled_flag ", sps->implicit_rdpcm_enabled_flag);
-            explicit_rdpcm_enabled_flag = get_bits1(gb);
-            if (explicit_rdpcm_enabled_flag)
-                av_log(s->avctx, AV_LOG_WARNING,
-                   "explicit_rdpcm_enabled_flag not yet implemented\n");
 
-            print_cabac("explicit_rdpcm_enabled_flag ", explicit_rdpcm_enabled_flag);
+            sps->explicit_rdpcm_enabled_flag = get_bits1(gb);
+            print_cabac("explicit_rdpcm_enabled_flag ", sps->explicit_rdpcm_enabled_flag);
+
             extended_precision_processing_flag = get_bits1(gb);
             if (extended_precision_processing_flag)
                 av_log(s->avctx, AV_LOG_WARNING,

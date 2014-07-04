@@ -66,6 +66,8 @@ av_unused static const int8_t num_bins_in_se[] = {
      2, // cbf_luma
      4, // cbf_cb, cbf_cr
      2, // transform_skip_flag[][]
+     4, // explicit_rdpcm_flag[][]
+     4, // explicit_rdpcm_dir_flag[][]
     18, // last_significant_coeff_x_prefix
     18, // last_significant_coeff_y_prefix
      0, // last_significant_coeff_x_suffix
@@ -82,49 +84,51 @@ av_unused static const int8_t num_bins_in_se[] = {
  * Offset to ctxIdx 0 in init_values and states, indexed by SyntaxElement.
  */
 static const int elem_offset[sizeof(num_bins_in_se)] = {
-      0,
-      1,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      5,
-      6,
-      9,
-     12,
-     13,
-     17,
-     17,
-     18,
-     18,
-     18,
-     20,
-     21,
-     22,
-     27,
-     29,
-     31,
-     33,
-     35,
-     35,
-     35,
-     36,
-     37,
-     40,
-     42,
-     46,
-     48,
-     66,
-     84,
-     84,
-     84,
-     88,
-    132,
-    156,
-    162,
-    162,
+    0, // sao_merge_flag
+    1, // sao_type_idx
+    2, // sao_eo_class
+    2, // sao_band_position
+    2, // sao_offset_abs
+    2, // sao_offset_sign
+    2, // end_of_slice_flag
+    2, // split_coding_unit_flag
+    5, // cu_transquant_bypass_flag
+    6, // skip_flag
+    9, // cu_qp_delta
+    12, // pred_mode
+    13, // part_mode
+    17, // pcm_flag
+    17, // prev_intra_luma_pred_mode
+    18, // mpm_idx
+    18, // rem_intra_luma_pred_mode
+    18, // intra_chroma_pred_mode
+    20, // merge_flag
+    21, // merge_idx
+    22, // inter_pred_idc
+    27, // ref_idx_l0
+    29, // ref_idx_l1
+    31, // abs_mvd_greater0_flag
+    33, // abs_mvd_greater1_flag
+    35, // abs_mvd_minus2
+    35, // mvd_sign_flag
+    35, // mvp_lx_flag
+    36, // no_residual_data_flag
+    37, // split_transform_flag
+    40, // cbf_luma
+    42, // cbf_cb, cbf_cr
+    46, // transform_skip_flag[][]
+    48, // explicit_rdpcm_flag[][]
+    52, // explicit_rdpcm_dir_flag[][]
+    56, // last_significant_coeff_x_prefix
+    74, // last_significant_coeff_y_prefix
+    92, // last_significant_coeff_x_suffix
+    92, // last_significant_coeff_y_suffix
+    92, // significant_coeff_group_flag
+    96, // significant_coeff_flag
+    140, // coeff_abs_level_greater1_flag
+    164, // coeff_abs_level_greater2_flag
+    170, // coeff_abs_level_remaining
+    170, // coeff_sign_flag
 };
 
 #define CNU 154
@@ -178,6 +182,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       94, 138, 182, 154,
       // transform_skip_flag
       139, 139,
+      // explicit_rdpcm_flag
+      139, 139, 139, 139,
+      // explicit_rdpcm_dir_flag
+      139, 139, 139, 139,
       // last_significant_coeff_x_prefix
       110, 110, 124, 125, 140, 153, 125, 127, 140, 109, 111, 143, 127, 111,
        79, 108, 123,  63,
@@ -242,6 +250,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       149, 107, 167, 154,
       // transform_skip_flag
       139, 139,
+      // explicit_rdpcm_flag
+      139, 139, 139, 139,
+      // explicit_rdpcm_dir_flag
+      139, 139, 139, 139,
       // last_significant_coeff_x_prefix
       125, 110,  94, 110,  95,  79, 125, 111, 110,  78, 110, 111, 111,  95,
        94, 108, 123, 108,
@@ -306,6 +318,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       149, 92, 167, 154,
       // transform_skip_flag
       139, 139,
+      // explicit_rdpcm_flag
+      139, 139, 139, 139,
+      // explicit_rdpcm_dir_flag
+      139, 139, 139, 139,
       // last_significant_coeff_x_prefix
       125, 110, 124, 110,  95,  94, 125, 111, 111,  79, 125, 126, 111, 111,
        79, 108, 123,  93,
@@ -848,6 +864,16 @@ static int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
     return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }
 
+static int ff_hevc_explicit_rdpcm_flag(HEVCContext *s, int c_idx)
+{
+    return GET_CABAC(elem_offset[EXPLICIT_RDPCM_FLAG] + !!c_idx);
+}
+
+static int ff_hevc_explicit_rdpcm_dir_flag(HEVCContext *s, int c_idx)
+{
+    return GET_CABAC(elem_offset[EXPLICIT_RDPCM_DIR_FLAG] + !!c_idx);
+}
+
 static av_always_inline void last_significant_coeff_xy_prefix_decode(HEVCContext *s, int c_idx,
                                                    int log2_size, int *last_scx_prefix, int *last_scy_prefix)
 {
@@ -988,6 +1014,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                           ((x0 >> hshift) << s->sps->pixel_shift)];
     LOCAL_ALIGNED_16(int16_t, coeffs, [MAX_TB_SIZE * MAX_TB_SIZE]);
     uint8_t significant_coeff_group_flag[8][8] = {{0}};
+    int explicit_rdpcm_flag = 0;
+    int explicit_rdpcm_dir_flag;
 
     int trafo_size = 1 << log2_trafo_size;
     int i;
@@ -1075,6 +1103,14 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     if (s->pps->transform_skip_enabled_flag && !lc->cu.cu_transquant_bypass_flag &&
         log2_trafo_size == 2) {
         transform_skip_flag = ff_hevc_transform_skip_flag_decode(s, c_idx);
+    }
+
+    if (lc->cu.pred_mode == MODE_INTER && s->sps->explicit_rdpcm_enabled_flag &&
+        (transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
+        explicit_rdpcm_flag = ff_hevc_explicit_rdpcm_flag(s, c_idx);
+        if (explicit_rdpcm_flag) {
+            explicit_rdpcm_dir_flag = ff_hevc_explicit_rdpcm_dir_flag(s, c_idx);
+        }
     }
 
     last_significant_coeff_xy_prefix_decode(s, c_idx, log2_trafo_size,
@@ -1305,7 +1341,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             if (lc->cu.cu_transquant_bypass_flag ||
                 (lc->cu.pred_mode ==  MODE_INTRA  &&
                  s->sps->implicit_rdpcm_enabled_flag  &&  transform_skip_flag  &&
-                 (pred_mode_intra == 10 || pred_mode_intra  ==  26 )) /*|| explicit_rdpcm_flag[x0][y0][cIdx]*/)
+                 (pred_mode_intra == 10 || pred_mode_intra  ==  26 )) ||
+                 explicit_rdpcm_flag)
                 sign_hidden = 0;
             else
                 sign_hidden = (last_nz_pos_in_cg - first_nz_pos_in_cg >= 4);
@@ -1376,8 +1413,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     }
 
     if (lc->cu.cu_transquant_bypass_flag) {
-        if (s->sps->implicit_rdpcm_enabled_flag && (pred_mode_intra == 10 || pred_mode_intra == 26)) {
-            int mode = pred_mode_intra == 10;
+        if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag && (pred_mode_intra == 10 || pred_mode_intra == 26))) {
+            int mode = s->sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : explicit_rdpcm_dir_flag;
 
             s->hevcdsp.transform_rdpcm(dst, coeffs, stride, trafo_size, mode);
         } else
@@ -1391,8 +1428,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 for (i = 0; i < (trafo_size * trafo_size  >> 1); i++)
                     FFSWAP(int16_t, coeffs[i], coeffs[trafo_size * trafo_size - i - 1]);
             }
-            if (s->sps->implicit_rdpcm_enabled_flag && (pred_mode_intra == 10 || pred_mode_intra == 26)) {
-                int mode = pred_mode_intra == 10;
+            if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag && (pred_mode_intra == 10 || pred_mode_intra == 26))) {
+                int mode = s->sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : explicit_rdpcm_dir_flag;
                 
                 s->hevcdsp.transform_rdpcm(dst, coeffs, stride, trafo_size, mode);
             } else
