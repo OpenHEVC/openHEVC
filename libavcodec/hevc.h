@@ -142,7 +142,7 @@ enum NALUnitType {
     NAL_SEI_PREFIX = 39,
     NAL_SEI_SUFFIX = 40,
 };
-#if 0
+#if 1
 #define print_cabac(string, val) \
     printf(" %s : %d \n", string, val);
 #else
@@ -733,6 +733,7 @@ typedef struct HEVCSPS {
     int implicit_rdpcm_enabled_flag;
     int explicit_rdpcm_enabled_flag;
     int intra_smoothing_disabled_flag;
+    int persistent_rice_adaptation_enabled_flag;
 
     ///< coded frame dimension in various units
     int width;
@@ -817,9 +818,6 @@ typedef struct HEVCPPS {
     int log2_parallel_merge_level; ///< log2_parallel_merge_level_minus2 + 2
     int num_extra_slice_header_bits;
     uint8_t slice_header_extension_present_flag;
-
-    uint8_t pps_extension_flag;
-    uint8_t pps_extension_data_flag;
 
     // Inferred parameters
     unsigned int *column_width;  ///< ColumnWidth
@@ -1053,6 +1051,8 @@ typedef struct HEVCLocalContext {
     NeighbourAvailable  na;
 
     uint8_t cabac_state[HEVC_CONTEXTS];
+
+    uint8_t stat_coeff[4];
 
     uint8_t first_qp_group;
 

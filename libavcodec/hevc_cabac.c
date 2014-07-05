@@ -511,6 +511,9 @@ static void cabac_init_state(HEVCContext *s)
             pre = 124 + (pre & 1);
         s->HEVClc->cabac_state[i] = pre;
     }
+
+    for (i = 0; i < 4; i++)
+        s->HEVClc->stat_coeff[i] = 0;
 }
 
 void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
@@ -1187,6 +1190,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         int64_t trans_coeff_level;
         int prev_sig = 0;
         int offset = i << 4;
+        int rice_init = 0;
 
         uint8_t significant_coeff_flag_idx[16];
         uint8_t nb_significant_coeff_flag = 0;
@@ -1315,9 +1319,19 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             uint16_t coeff_sign_flag;
             int sum_abs = 0;
             int sign_hidden;
+            int sb_type;
+
 
             // initialize first elem of coeff_bas_level_greater1_flag
             int ctx_set = (i > 0 && c_idx == 0) ? 2 : 0;
+
+            if (s->sps->persistent_rice_adaptation_enabled_flag) {
+                if (!transform_skip_flag && !lc->cu.cu_transquant_bypass_flag)
+                    sb_type = 2 * (c_idx == 0 ? 1 : 0);
+                else
+                    sb_type = 2 * (c_idx == 0 ? 1 : 0) + 1;
+                c_rice_param = lc->stat_coeff[sb_type] / 4;
+            }
 
             if (!(i == num_last_subset) && greater1_ctx == 0)
                 ctx_set++;
@@ -1366,15 +1380,32 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
                         trans_coeff_level += last_coeff_abs_level_remaining;
                         if (trans_coeff_level > (3 << c_rice_param))
-                            c_rice_param = FFMIN(c_rice_param + 1, 4);
-
+                            c_rice_param = s->sps->persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
+                        if (s->sps->persistent_rice_adaptation_enabled_flag && !rice_init) {
+                            int c_rice_p_init = lc->stat_coeff[sb_type] / 4;
+                            if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
+                                lc->stat_coeff[sb_type]++;
+                            else if (2 * last_coeff_abs_level_remaining < (1 << c_rice_p_init))
+                                if (lc->stat_coeff[sb_type] > 0)
+                                    lc->stat_coeff[sb_type]--;
+                            rice_init = 1;
+                        }
                     }
                 } else {
                     int last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, c_rice_param);
 
                     trans_coeff_level = 1 + last_coeff_abs_level_remaining;
                     if (trans_coeff_level > (3 << c_rice_param))
-                        c_rice_param = FFMIN(c_rice_param + 1, 4);
+                        c_rice_param = s->sps->persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
+                    if (s->sps->persistent_rice_adaptation_enabled_flag && !rice_init) {
+                        int c_rice_p_init = lc->stat_coeff[sb_type] / 4;
+                        if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
+                            lc->stat_coeff[sb_type]++;
+                        else if (2 * last_coeff_abs_level_remaining < (1 << c_rice_p_init))
+                            if (lc->stat_coeff[sb_type] > 0)
+                                lc->stat_coeff[sb_type]--;
+                        rice_init = 1;
+                    }
                 }
                 if (s->pps->sign_data_hiding_flag && sign_hidden) {
                     sum_abs += trans_coeff_level;
