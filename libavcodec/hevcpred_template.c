@@ -90,8 +90,8 @@ do {                                  \
 
     int min_pu_width = s->sps->min_pu_width;
 
-    enum IntraPredMode mode = c_idx ? lc->tu.cur_intra_pred_mode_c :
-                              lc->tu.cur_intra_pred_mode;
+    enum IntraPredMode mode = c_idx ? lc->tu.intra_pred_mode_c :
+                              lc->tu.intra_pred_mode;
     pixel4 a;
     pixel  left_array[2 * MAX_TB_SIZE + 1];
     pixel  filtered_left_array[2 * MAX_TB_SIZE + 1];

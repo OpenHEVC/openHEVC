@@ -78,6 +78,8 @@ av_unused static const int8_t num_bins_in_se[] = {
      6, // coeff_abs_level_greater2_flag
      0, // coeff_abs_level_remaining
      0, // coeff_sign_flag
+     8, // log2_res_scale_abs
+     2, // res_scale_sign_flag
 };
 
 /**
@@ -129,6 +131,8 @@ static const int elem_offset[sizeof(num_bins_in_se)] = {
     160, // coeff_abs_level_greater2_flag
     166, // coeff_abs_level_remaining
     166, // coeff_sign_flag
+    166, // log2_res_scale_abs
+    174, // res_scale_sign_flag
 };
 
 #define CNU 154
@@ -203,7 +207,12 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       140,  92, 137, 138, 140, 152, 138, 139, 153,  74, 149,  92, 139, 107,
       122, 152, 140, 179, 166, 182, 140, 227, 122, 197,
       // coeff_abs_level_greater2_flag
-      138, 153, 136, 167, 152, 152, },
+      138, 153, 136, 167, 152, 152,
+      // log2_res_scale_abs
+      154, 154, 154, 154, 154, 154, 154, 154,
+      // res_scale_sign_flag
+      154, 154,
+    },
     { // sao_merge_flag
       153,
       // sao_type_idx
@@ -271,7 +280,12 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154, 196, 196, 167, 154, 152, 167, 182, 182, 134, 149, 136, 153, 121,
       136, 137, 169, 194, 166, 167, 154, 167, 137, 182,
       // coeff_abs_level_greater2_flag
-      107, 167, 91, 122, 107, 167, },
+      107, 167, 91, 122, 107, 167,
+      // log2_res_scale_abs
+      154, 154, 154, 154, 154, 154, 154, 154,
+      // res_scale_sign_flag
+      154, 154,
+    },
     { // sao_merge_flag
       153,
       // sao_type_idx
@@ -339,7 +353,12 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154, 196, 167, 167, 154, 152, 167, 182, 182, 134, 149, 136, 153, 121,
       136, 122, 169, 208, 166, 167, 154, 152, 167, 182,
       // coeff_abs_level_greater2_flag
-      107, 167, 91, 107, 107, 167, },
+      107, 167, 91, 107, 107, 167,
+      // log2_res_scale_abs
+      154, 154, 154, 154, 154, 154, 154, 154,
+      // res_scale_sign_flag
+      154, 154,
+    },
 };
 
 static const uint8_t scan_1x1[1] = {
@@ -867,14 +886,27 @@ static int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
     return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }
 
-static int ff_hevc_explicit_rdpcm_flag(HEVCContext *s, int c_idx)
+static int explicit_rdpcm_flag_decode(HEVCContext *s, int c_idx)
 {
     return GET_CABAC(elem_offset[EXPLICIT_RDPCM_FLAG] + !!c_idx);
 }
 
-static int ff_hevc_explicit_rdpcm_dir_flag(HEVCContext *s, int c_idx)
+static int explicit_rdpcm_dir_flag_decode(HEVCContext *s, int c_idx)
 {
     return GET_CABAC(elem_offset[EXPLICIT_RDPCM_DIR_FLAG] + !!c_idx);
+}
+
+int ff_hevc_log2_res_scale_abs(HEVCContext *s, int idx) {
+    int i =0;
+
+    while (i < 4 && GET_CABAC(elem_offset[LOG2_RES_SCALE_ABS] + 4 * idx + i))
+        i++;
+
+    return i;
+}
+
+int ff_hevc_res_scale_sign_flag(HEVCContext *s, int idx) {
+    return GET_CABAC(elem_offset[RES_SCALE_SIGN_FLAG] + idx);
 }
 
 static av_always_inline void last_significant_coeff_xy_prefix_decode(HEVCContext *s, int c_idx,
@@ -1027,8 +1059,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
     const uint8_t *scale_matrix = NULL;
     uint8_t dc_scale;
-    int pred_mode_intra = (c_idx == 0) ? lc->tu.cur_intra_pred_mode :
-                                         lc->tu.cur_intra_pred_mode_c;
+    int pred_mode_intra = (c_idx == 0) ? lc->tu.intra_pred_mode :
+                                         lc->tu.intra_pred_mode_c;
 
     memset(coeffs, 0, trafo_size * trafo_size * sizeof(int16_t));
 
@@ -1110,9 +1142,9 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
     if (lc->cu.pred_mode == MODE_INTER && s->sps->explicit_rdpcm_enabled_flag &&
         (transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
-        explicit_rdpcm_flag = ff_hevc_explicit_rdpcm_flag(s, c_idx);
+        explicit_rdpcm_flag = explicit_rdpcm_flag_decode(s, c_idx);
         if (explicit_rdpcm_flag) {
-            explicit_rdpcm_dir_flag = ff_hevc_explicit_rdpcm_dir_flag(s, c_idx);
+            explicit_rdpcm_dir_flag = explicit_rdpcm_dir_flag_decode(s, c_idx);
         }
     }
 

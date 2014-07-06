@@ -1111,6 +1111,16 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
 #undef SET_SAO
 #undef CTB
 
+static int hls_cross_component_pred(HEVCContext *s, int idx) {
+
+    int log2_res_scale_abs_plus1 = ff_hevc_log2_res_scale_abs(s, idx);
+    if (log2_res_scale_abs_plus1 !=  0) {
+        int res_scale_sign_flag = ff_hevc_res_scale_sign_flag(s, idx);
+    }
+
+    return 0;
+}
+
 static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
@@ -1131,6 +1141,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
          (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (1 << log2_trafo_size_c)) & CBF_CB_CR_FLAG))) {
         int scan_idx   = SCAN_DIAG;
         int scan_idx_c = SCAN_DIAG;
+        int cbf_luma = SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) & CBF_LUMA_FLAG;
 
         if (s->pps->cu_qp_delta_enabled_flag && !lc->tu.is_cu_qp_delta_coded) {
             lc->tu.cu_qp_delta = ff_hevc_cu_qp_delta_abs(s);
@@ -1154,28 +1165,35 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         }
 
         if (lc->cu.pred_mode == MODE_INTRA && log2_trafo_size < 4) {
-            if (lc->tu.cur_intra_pred_mode >= 6 &&
-                lc->tu.cur_intra_pred_mode <= 14) {
+            if (lc->tu.intra_pred_mode >= 6 &&
+                lc->tu.intra_pred_mode <= 14) {
                 scan_idx = SCAN_VERT;
-            } else if (lc->tu.cur_intra_pred_mode >= 22 &&
-                       lc->tu.cur_intra_pred_mode <= 30) {
+            } else if (lc->tu.intra_pred_mode >= 22 &&
+                       lc->tu.intra_pred_mode <= 30) {
                 scan_idx = SCAN_HORIZ;
             }
 
-            if (lc->tu.cur_intra_pred_mode_c >=  6 &&
-                lc->tu.cur_intra_pred_mode_c <= 14) {
+            if (lc->tu.intra_pred_mode_c >=  6 &&
+                lc->tu.intra_pred_mode_c <= 14) {
                 scan_idx_c = SCAN_VERT;
-            } else if (lc->tu.cur_intra_pred_mode_c >= 22 &&
-                       lc->tu.cur_intra_pred_mode_c <= 30) {
+            } else if (lc->tu.intra_pred_mode_c >= 22 &&
+                       lc->tu.intra_pred_mode_c <= 30) {
                 scan_idx_c = SCAN_HORIZ;
             }
         }
 
-        if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0) & CBF_LUMA_FLAG)
+        if (cbf_luma)
             ff_hevc_hls_residual_coding(s, x0, y0, log2_trafo_size, scan_idx, 0);
         if (log2_trafo_size > 2 || s->sps->chroma_array_type == 3) {
             int trafo_size_h = 1 << (log2_trafo_size_c + s->sps->hshift[1]);
             int trafo_size_v = 1 << (log2_trafo_size_c + s->sps->vshift[1]);
+            int cross_pf     = (s->pps->cross_component_prediction_enabled_flag && cbf_luma &&
+                                (lc->cu.pred_mode == MODE_INTER ||
+                                 (lc->tu.chroma_mode_c ==  4)));
+
+            if (cross_pf) {
+				hls_cross_component_pred(s, 0);
+            }
             for (i = 0; i < (s->sps->chroma_array_type  ==  2 ? 2 : 1 ); i++ ) {
                 if (lc->cu.pred_mode == MODE_INTRA) {
                     ff_hevc_set_neighbour_available(s, x0, y0 + (i << log2_trafo_size_c), trafo_size_h, trafo_size_v);
@@ -1184,6 +1202,10 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 if (SAMPLE_CBF(lc->tt.cbf_flags[trafo_depth], x0, y0 + (i << log2_trafo_size_c)) & CBF_CB_FLAG)
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 1);
+            }
+
+            if (cross_pf) {
+				hls_cross_component_pred(s, 1);
             }
             for (i = 0; i < (s->sps->chroma_array_type  ==  2 ? 2 : 1 ); i++ ) {
                 if (lc->cu.pred_mode == MODE_INTRA) {
@@ -1293,15 +1315,19 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
 
     if (lc->cu.intra_split_flag) {
         if (trafo_depth == 1) {
-            lc->tu.cur_intra_pred_mode   = lc->pu.intra_pred_mode[blk_idx];
-            if (s->sps->chroma_array_type == 3)
-                lc->tu.cur_intra_pred_mode_c = lc->pu.intra_pred_mode_c[blk_idx];
-            else
-                lc->tu.cur_intra_pred_mode_c = lc->pu.intra_pred_mode_c[0];
+            lc->tu.intra_pred_mode   = lc->pu.intra_pred_mode[blk_idx];
+            if (s->sps->chroma_array_type == 3) {
+                lc->tu.intra_pred_mode_c = lc->pu.intra_pred_mode_c[blk_idx];
+                lc->tu.chroma_mode_c     = lc->pu.chroma_mode_c[blk_idx];
+            } else {
+                lc->tu.intra_pred_mode_c = lc->pu.intra_pred_mode_c[0];
+                lc->tu.chroma_mode_c     = lc->pu.chroma_mode_c[0];
+            }
         }
     } else {
-        lc->tu.cur_intra_pred_mode = lc->pu.intra_pred_mode[0];
-        lc->tu.cur_intra_pred_mode_c = lc->pu.intra_pred_mode_c[0];
+        lc->tu.intra_pred_mode = lc->pu.intra_pred_mode[0];
+        lc->tu.intra_pred_mode_c = lc->pu.intra_pred_mode_c[0];
+        lc->tu.chroma_mode_c     = lc->pu.chroma_mode_c[0];
     }
 
     inter_split_flag = s->sps->max_transform_hierarchy_depth_inter == 0 &&
@@ -2109,7 +2135,7 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0,
     if (s->sps->chroma_array_type  ==  3) {
         for (i = 0; i < side; i++) {
             for (j = 0; j < side; j++) {
-                chroma_mode = ff_hevc_intra_chroma_pred_mode_decode(s);
+                lc->pu.chroma_mode_c[2 * i + j] = chroma_mode = ff_hevc_intra_chroma_pred_mode_decode(s);
                 if (chroma_mode != 4) {
                     if (lc->pu.intra_pred_mode[2 * i + j] == intra_chroma_table[chroma_mode])
                         lc->pu.intra_pred_mode_c[2 * i + j] = 34;
@@ -2122,7 +2148,7 @@ static void intra_prediction_unit(HEVCContext *s, int x0, int y0,
         }
     } else if (s->sps->chroma_array_type == 2) {
         int mode_idx;
-        chroma_mode = ff_hevc_intra_chroma_pred_mode_decode(s);
+        lc->pu.chroma_mode_c[0] = chroma_mode = ff_hevc_intra_chroma_pred_mode_decode(s);
         if (chroma_mode != 4) {
             if (lc->pu.intra_pred_mode[0] == intra_chroma_table[chroma_mode])
                 mode_idx = 34;
