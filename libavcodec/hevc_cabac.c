@@ -66,8 +66,8 @@ av_unused static const int8_t num_bins_in_se[] = {
      2, // cbf_luma
      4, // cbf_cb, cbf_cr
      2, // transform_skip_flag[][]
-     4, // explicit_rdpcm_flag[][]
-     4, // explicit_rdpcm_dir_flag[][]
+     2, // explicit_rdpcm_flag[][]
+     2, // explicit_rdpcm_dir_flag[][]
     18, // last_significant_coeff_x_prefix
     18, // last_significant_coeff_y_prefix
      0, // last_significant_coeff_x_suffix
@@ -118,17 +118,17 @@ static const int elem_offset[sizeof(num_bins_in_se)] = {
     42, // cbf_cb, cbf_cr
     46, // transform_skip_flag[][]
     48, // explicit_rdpcm_flag[][]
-    52, // explicit_rdpcm_dir_flag[][]
-    56, // last_significant_coeff_x_prefix
-    74, // last_significant_coeff_y_prefix
-    92, // last_significant_coeff_x_suffix
-    92, // last_significant_coeff_y_suffix
-    92, // significant_coeff_group_flag
-    96, // significant_coeff_flag
-    140, // coeff_abs_level_greater1_flag
-    164, // coeff_abs_level_greater2_flag
-    170, // coeff_abs_level_remaining
-    170, // coeff_sign_flag
+    50, // explicit_rdpcm_dir_flag[][]
+    52, // last_significant_coeff_x_prefix
+    70, // last_significant_coeff_y_prefix
+    88, // last_significant_coeff_x_suffix
+    88, // last_significant_coeff_y_suffix
+    88, // significant_coeff_group_flag
+    92, // significant_coeff_flag
+    136, // coeff_abs_level_greater1_flag
+    160, // coeff_abs_level_greater2_flag
+    166, // coeff_abs_level_remaining
+    166, // coeff_sign_flag
 };
 
 #define CNU 154
@@ -183,9 +183,9 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       // transform_skip_flag
       139, 139,
       // explicit_rdpcm_flag
-      139, 139, 139, 139,
+      139, 139,
       // explicit_rdpcm_dir_flag
-      139, 139, 139, 139,
+      139, 139,
       // last_significant_coeff_x_prefix
       110, 110, 124, 125, 140, 153, 125, 127, 140, 109, 111, 143, 127, 111,
        79, 108, 123,  63,
@@ -251,9 +251,9 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       // transform_skip_flag
       139, 139,
       // explicit_rdpcm_flag
-      139, 139, 139, 139,
+      139, 139,
       // explicit_rdpcm_dir_flag
-      139, 139, 139, 139,
+      139, 139,
       // last_significant_coeff_x_prefix
       125, 110,  94, 110,  95,  79, 125, 111, 110,  78, 110, 111, 111,  95,
        94, 108, 123, 108,
@@ -319,9 +319,9 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       // transform_skip_flag
       139, 139,
       // explicit_rdpcm_flag
-      139, 139, 139, 139,
+      139, 139,
       // explicit_rdpcm_dir_flag
-      139, 139, 139, 139,
+      139, 139,
       // last_significant_coeff_x_prefix
       125, 110, 124, 110,  95,  94, 125, 111, 111,  79, 125, 126, 111, 111,
        79, 108, 123,  93,

@@ -69,7 +69,7 @@
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
 
-#define HEVC_CONTEXTS 191
+#define HEVC_CONTEXTS 187
 
 #define MRG_MAX_NUM_CANDS     5
 
