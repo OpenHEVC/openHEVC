@@ -1104,7 +1104,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     }
 
     if (s->pps->transform_skip_enabled_flag && !lc->cu.cu_transquant_bypass_flag &&
-        log2_trafo_size == 2) {
+        log2_trafo_size <= s->pps->log2_max_transform_skip_block_size) {
         transform_skip_flag = ff_hevc_transform_skip_flag_decode(s, c_idx);
     }
 
@@ -1453,7 +1453,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     } else {
         if (transform_skip_flag) {
             int rot = s->sps->transform_skip_rotation_enabled_flag &&
-                      log2_trafo_size == 2 &&
                       lc->cu.pred_mode == MODE_INTRA;
             if (rot) {
                 for (i = 0; i < (trafo_size * trafo_size  >> 1); i++)
@@ -1464,7 +1463,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 
                 s->hevcdsp.transform_rdpcm(dst, coeffs, stride, trafo_size, mode);
             } else
-                s->hevcdsp.transform_skip(dst, coeffs, stride);
+                s->hevcdsp.transform_skip(dst, coeffs, stride, trafo_size);
         } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2)
             s->hevcdsp.transform_4x4_luma_add(dst, coeffs, stride);
         else {

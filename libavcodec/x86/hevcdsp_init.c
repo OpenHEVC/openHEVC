@@ -441,7 +441,7 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
                     c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
 
-                    c->transform_skip    = ff_hevc_transform_skip_8_sse;
+// only 4X4 needs update for Rext                   c->transform_skip    = ff_hevc_transform_skip_8_sse; 
                     c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
                     c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
                     c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;

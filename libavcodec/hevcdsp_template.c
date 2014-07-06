@@ -157,7 +157,7 @@ static void FUNC(transform_rdpcm)(uint8_t *_dst, int16_t *_coeffs,
 
 
 static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs,
-                                 ptrdiff_t stride)
+                                 ptrdiff_t stride, int16_t size)
 {
     pixel *dst = (pixel *)_dst;
     int shift  = 13 - BIT_DEPTH;
@@ -170,9 +170,9 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs,
 
     stride /= sizeof(pixel);
 
-    for (y = 0; y < 4 * 4; y += 4) {
-        for (x = 0; x < 4; x++)
-            dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
+    for (y = 0; y < size; y++) {
+        for (x = 0; x < size; x++)
+            dst[x] = av_clip_pixel(dst[x] + ((coeffs[y * size + x] + offset) >> shift));
         dst += stride;
     }
 }

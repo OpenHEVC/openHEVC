@@ -55,7 +55,7 @@ typedef struct HEVCDSPContext {
 
     void (*transquant_bypass[4])(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-    void (*transform_skip)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+    void (*transform_skip)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride, int16_t size);
 
     void (*transform_rdpcm)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride, int16_t size, int mode);
 
