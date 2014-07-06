@@ -2059,7 +2059,7 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
     av_freep(&pps);
 }
 
-static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps) {
+static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
     GetBitContext *gb = &s->HEVClc->gb;
     int i;
 
@@ -2113,13 +2113,13 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps) {
     }
 	pps->log2_sao_offset_scale_luma = get_ue_golomb_long(gb);
     print_cabac("log2_sao_offset_scale_luma", pps->log2_sao_offset_scale_luma);
-    if (pps->log2_sao_offset_scale_luma > s->sps->bit_depth - 10) {
+    if (pps->log2_sao_offset_scale_luma > sps->bit_depth - 10) {
         av_log(s->avctx, AV_LOG_ERROR,
                "log2_sao_offset_scale_luma must be in range [0, %d]\n", s->sps->bit_depth - 10);
     }
 	pps->log2_sao_offset_scale_chroma = get_ue_golomb_long(gb);
     print_cabac("log2_sao_offset_scale_chroma", pps->log2_sao_offset_scale_chroma);
-    if (pps->log2_sao_offset_scale_luma > s->sps->bit_depth - 10) {
+    if (pps->log2_sao_offset_scale_luma > sps->bit_depth - 10) {
         av_log(s->avctx, AV_LOG_ERROR,
                "log2_sao_offset_scale_luma must be in range [0, %d]\n", s->sps->bit_depth - 10);
     }
@@ -2402,7 +2402,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         if (pps_range_extensions_flag) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "PPS extension flag is partially implemented.\n");
-            pps_range_extensions(s, pps);
+            pps_range_extensions(s, pps, sps);
         }
 	}
 
