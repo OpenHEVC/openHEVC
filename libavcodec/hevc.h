@@ -819,6 +819,8 @@ typedef struct HEVCPPS {
     int num_extra_slice_header_bits;
     uint8_t slice_header_extension_present_flag;
     uint8_t log2_max_transform_skip_block_size;
+    uint8_t log2_sao_offset_scale_luma;
+    uint8_t log2_sao_offset_scale_chroma;
 
 
     // Inferred parameters

@@ -1058,6 +1058,9 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
     }
 
     for (c_idx = 0; c_idx < 3; c_idx++) {
+        int log2_sao_offset_scale = c_idx == 0 ? s->pps->log2_sao_offset_scale_luma :
+                                                 s->pps->log2_sao_offset_scale_chroma;
+
         if (!s->sh.slice_sample_adaptive_offset_flag[c_idx]) {
             sao->type_idx[c_idx] = SAO_NOT_APPLIED;
             continue;
@@ -1100,6 +1103,7 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
             } else if (sao->offset_sign[c_idx][i]) {
                 sao->offset_val[c_idx][i + 1] = -sao->offset_val[c_idx][i + 1];
             }
+            sao->offset_val[c_idx][i + 1] <<= log2_sao_offset_scale;
         }
     }
 }
