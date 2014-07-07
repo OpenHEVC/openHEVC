@@ -2113,15 +2113,15 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
     }
 	pps->log2_sao_offset_scale_luma = get_ue_golomb_long(gb);
     print_cabac("log2_sao_offset_scale_luma", pps->log2_sao_offset_scale_luma);
-    if (pps->log2_sao_offset_scale_luma > sps->bit_depth - 10) {
+    if (pps->log2_sao_offset_scale_luma && pps->log2_sao_offset_scale_luma > sps->bit_depth - 10) {
         av_log(s->avctx, AV_LOG_ERROR,
-               "log2_sao_offset_scale_luma must be in range [0, %d]\n", s->sps->bit_depth - 10);
+               "log2_sao_offset_scale_luma must be in range [0, %d]\n", sps->bit_depth - 10);
     }
 	pps->log2_sao_offset_scale_chroma = get_ue_golomb_long(gb);
     print_cabac("log2_sao_offset_scale_chroma", pps->log2_sao_offset_scale_chroma);
-    if (pps->log2_sao_offset_scale_luma > sps->bit_depth - 10) {
+    if (pps->log2_sao_offset_scale_luma && pps->log2_sao_offset_scale_luma > sps->bit_depth - 10) {
         av_log(s->avctx, AV_LOG_ERROR,
-               "log2_sao_offset_scale_luma must be in range [0, %d]\n", s->sps->bit_depth - 10);
+               "log2_sao_offset_scale_luma must be in range [0, %d]\n", sps->bit_depth - 10);
     }
 
     return(0);
