@@ -1120,9 +1120,11 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             int qp_i, offset;
 
             if (c_idx == 1)
-                offset = s->pps->cb_qp_offset + s->sh.slice_cb_qp_offset;
+                offset = s->pps->cb_qp_offset + s->sh.slice_cb_qp_offset +
+                         lc->tu.cu_qp_offset_cb;
             else
-                offset = s->pps->cr_qp_offset + s->sh.slice_cr_qp_offset;
+                offset = s->pps->cr_qp_offset + s->sh.slice_cr_qp_offset +
+                         lc->tu.cu_qp_offset_cr;
 
             qp_i = av_clip(qp_y + offset, - s->sps->qp_bd_offset, 57);
             if (s->sps->chroma_array_type == 1) {

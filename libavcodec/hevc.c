@@ -1024,6 +1024,8 @@ static int hls_slice_header(HEVCContext *s)
         s->HEVClc->qp_y = s->sh.slice_qp;
 
     s->slice_initialized = 1;
+    s->HEVClc->tu.cu_qp_offset_cb = 0;
+    s->HEVClc->tu.cu_qp_offset_cr = 0;
 
     return 0;
 }
@@ -1170,17 +1172,22 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
             }
 
             ff_hevc_set_qPy(s, cb_xBase, cb_yBase, log2_cb_size);
+        }
 
-            if (s->sh.cu_chroma_qp_offset_enabled_flag && cbf_chroma &&
-               !lc->cu.cu_transquant_bypass_flag  &&  !lc->tu.is_cu_chroma_qp_offset_coded) {
-                int cu_chroma_qp_offset_flag = ff_hevc_cu_chroma_qp_offset_flag(s);
-                if (cu_chroma_qp_offset_flag && s->pps->chroma_qp_offset_list_len_minus1 > 0) {
-                    int cu_chroma_qp_offset_idx = ff_hevc_cu_chroma_qp_offset_idx(s);
+        if (s->sh.cu_chroma_qp_offset_enabled_flag && cbf_chroma &&
+            !lc->cu.cu_transquant_bypass_flag  &&  !lc->tu.is_cu_chroma_qp_offset_coded) {
+            int cu_chroma_qp_offset_flag = ff_hevc_cu_chroma_qp_offset_flag(s);
+            if (cu_chroma_qp_offset_flag) {
+                int cu_chroma_qp_offset_idx  = 0;
+                if (s->pps->chroma_qp_offset_list_len_minus1 > 0) {
+                    cu_chroma_qp_offset_idx = ff_hevc_cu_chroma_qp_offset_idx(s);
                     av_log(s->avctx, AV_LOG_ERROR,
-                           "cu_chroma_qp_offset_idx not yet tested.\n");
+                        "cu_chroma_qp_offset_idx not yet tested.\n");
                 }
-                lc->tu.is_cu_chroma_qp_offset_coded = 1;
+                lc->tu.cu_qp_offset_cb = s->pps->cb_qp_offset_list[cu_chroma_qp_offset_idx];
+                lc->tu.cu_qp_offset_cr = s->pps->cr_qp_offset_list[cu_chroma_qp_offset_idx];
             }
+            lc->tu.is_cu_chroma_qp_offset_coded = 1;
         }
 
         if (lc->cu.pred_mode == MODE_INTRA && log2_trafo_size < 4) {
