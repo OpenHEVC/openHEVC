@@ -69,7 +69,7 @@
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
 
-#define HEVC_CONTEXTS 197
+#define HEVC_CONTEXTS 199
 
 #define MRG_MAX_NUM_CANDS     5
 
@@ -214,6 +214,8 @@ enum SyntaxElement {
     COEFF_SIGN_FLAG,
     LOG2_RES_SCALE_ABS,
     RES_SCALE_SIGN_FLAG,
+    CU_CHROMA_QP_OFFSET_FLAG,
+    CU_CHROMA_QP_OFFSET_IDX,
 };
 
 enum PartMode {
@@ -822,6 +824,9 @@ typedef struct HEVCPPS {
     uint8_t slice_header_extension_present_flag;
     uint8_t log2_max_transform_skip_block_size;
     uint8_t cross_component_prediction_enabled_flag;
+    uint8_t chroma_qp_offset_list_enabled_flag;
+    uint8_t diff_cu_chroma_qp_offset_depth;
+    uint8_t chroma_qp_offset_list_len_minus1;
     uint8_t log2_sao_offset_scale_luma;
     uint8_t log2_sao_offset_scale_chroma;
 
@@ -882,6 +887,8 @@ typedef struct SliceHeader {
     int slice_qp_delta;
     int slice_cb_qp_offset;
     int slice_cr_qp_offset;
+
+    uint8_t cu_chroma_qp_offset_enabled_flag;
 
     int8_t beta_offset;    ///< beta_offset_div2 * 2
     int8_t tc_offset;      ///< tc_offset_div2 * 2
@@ -997,6 +1004,7 @@ typedef struct TransformUnit {
     int intra_pred_mode_c;
     int chroma_mode_c;
     uint8_t is_cu_qp_delta_coded;
+    uint8_t is_cu_chroma_qp_offset_coded;
 } TransformUnit;
 
 typedef struct DBParams {
@@ -1346,6 +1354,8 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y);
 
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
+int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s);
+int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH);

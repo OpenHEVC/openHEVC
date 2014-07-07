@@ -80,6 +80,8 @@ av_unused static const int8_t num_bins_in_se[] = {
      0, // coeff_sign_flag
      8, // log2_res_scale_abs
      2, // res_scale_sign_flag
+     1, // cu_chroma_qp_offset_flag
+     1, // cu_chroma_qp_offset_idx
 };
 
 /**
@@ -133,6 +135,8 @@ static const int elem_offset[sizeof(num_bins_in_se)] = {
     166, // coeff_sign_flag
     166, // log2_res_scale_abs
     174, // res_scale_sign_flag
+    176, // cu_chroma_qp_offset_flag
+    177, // cu_chroma_qp_offset_idx
 };
 
 #define CNU 154
@@ -212,6 +216,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154, 154, 154, 154, 154, 154, 154, 154,
       // res_scale_sign_flag
       154, 154,
+      // cu_chroma_qp_offset_flag
+      154,
+      // cu_chroma_qp_offset_idx
+      154,
     },
     { // sao_merge_flag
       153,
@@ -285,6 +293,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154, 154, 154, 154, 154, 154, 154, 154,
       // res_scale_sign_flag
       154, 154,
+      // cu_chroma_qp_offset_flag
+      154,
+      // cu_chroma_qp_offset_idx
+      154,
     },
     { // sao_merge_flag
       153,
@@ -358,6 +370,10 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154, 154, 154, 154, 154, 154, 154, 154,
       // res_scale_sign_flag
       154, 154,
+      // cu_chroma_qp_offset_flag
+      154,
+      // cu_chroma_qp_offset_idx
+      154,
     },
 };
 
@@ -681,6 +697,22 @@ int ff_hevc_cu_qp_delta_abs(HEVCContext *s)
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s)
 {
     return get_cabac_bypass(&s->HEVClc->cc);
+}
+
+int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s)
+{
+    return GET_CABAC(elem_offset[CU_CHROMA_QP_OFFSET_FLAG]);
+}
+
+int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s)
+{
+    int c_max= FFMAX(5, s->pps->chroma_qp_offset_list_len_minus1);
+    int i = 0;
+
+    while (i < c_max && GET_CABAC(elem_offset[CU_CHROMA_QP_OFFSET_IDX]))
+        i++;
+
+    return i;
 }
 
 int ff_hevc_pred_mode_decode(HEVCContext *s)
