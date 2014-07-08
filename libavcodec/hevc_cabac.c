@@ -1524,7 +1524,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 for (i = 0; i < (trafo_size * trafo_size  >> 1); i++)
                     FFSWAP(int16_t, coeffs[i], coeffs[trafo_size * trafo_size - i - 1]);
             }
-            if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag && (pred_mode_intra == 10 || pred_mode_intra == 26))) {
+            if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag &&
+                                        lc->cu.pred_mode == MODE_INTRA && (pred_mode_intra == 10 || pred_mode_intra == 26))) {
                 int mode = s->sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : explicit_rdpcm_dir_flag;
                 
                 s->hevcdsp.transform_rdpcm(dst, coeffs, stride, trafo_size, mode);
@@ -1548,6 +1549,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             }
         }
     }
+
 }
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
