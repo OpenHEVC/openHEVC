@@ -1186,6 +1186,9 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 }
                 lc->tu.cu_qp_offset_cb = s->pps->cb_qp_offset_list[cu_chroma_qp_offset_idx];
                 lc->tu.cu_qp_offset_cr = s->pps->cr_qp_offset_list[cu_chroma_qp_offset_idx];
+            } else {
+                lc->tu.cu_qp_offset_cb = 0;
+                lc->tu.cu_qp_offset_cr = 0;
             }
             lc->tu.is_cu_chroma_qp_offset_coded = 1;
         }
@@ -3933,6 +3936,7 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_HEVC_MAIN,                 "Main"                },
     { FF_PROFILE_HEVC_MAIN_10,              "Main 10"             },
     { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "Main Still Picture"  },
+    { FF_PROFILE_HEVC_REXT,                 "Rext"  },
     { FF_PROFILE_UNKNOWN },
 };
 
