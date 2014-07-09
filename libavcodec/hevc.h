@@ -142,7 +142,7 @@ enum NALUnitType {
     NAL_SEI_PREFIX = 39,
     NAL_SEI_SUFFIX = 40,
 };
-#if 1
+#if 0   
 #define print_cabac(string, val) \
     printf(" %s : %d \n", string, val);
 #else
@@ -1009,6 +1009,7 @@ typedef struct TransformUnit {
     uint8_t is_cu_chroma_qp_offset_coded;
     int8_t  cu_qp_offset_cb;
     int8_t  cu_qp_offset_cr;
+    uint8_t cross_pf;
 } TransformUnit;
 
 typedef struct DBParams {

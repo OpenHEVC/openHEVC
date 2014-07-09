@@ -2067,7 +2067,7 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
 
     if (pps->transform_skip_enabled_flag) {
         pps->log2_max_transform_skip_block_size = get_ue_golomb_long(gb) + 2;
-        print_cabac("log2_max_transform_skip_block_size_minus2", pps->log2_max_transform_skip_block_size);
+        print_cabac("log2_max_transform_skip_block_size", pps->log2_max_transform_skip_block_size);
         if (pps->log2_max_transform_skip_block_size > 2) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "log2_max_transform_skip_block_size_minus2 is partially implemented.\n");

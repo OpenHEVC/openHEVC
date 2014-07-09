@@ -1211,16 +1211,20 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
             }
         }
 
-        if (cbf_luma)
+        lc->tu.cross_pf = 0;
+
+        if (cbf_luma) {
+            lc->tu.cross_pf = (s->pps->cross_component_prediction_enabled_flag &&
+                               (lc->cu.pred_mode == MODE_INTER ||
+                               (lc->tu.chroma_mode_c ==  4)));
             ff_hevc_hls_residual_coding(s, x0, y0, log2_trafo_size, scan_idx, 0);
+        }
         if (log2_trafo_size > 2 || s->sps->chroma_array_type == 3) {
             int trafo_size_h = 1 << (log2_trafo_size_c + s->sps->hshift[1]);
             int trafo_size_v = 1 << (log2_trafo_size_c + s->sps->vshift[1]);
-            int cross_pf     = (s->pps->cross_component_prediction_enabled_flag && cbf_luma &&
-                                (lc->cu.pred_mode == MODE_INTER ||
-                                 (lc->tu.chroma_mode_c ==  4)));
 
-            if (cross_pf) {
+
+            if (lc->tu.cross_pf) {
 				hls_cross_component_pred(s, 0);
             }
             for (i = 0; i < (s->sps->chroma_array_type  ==  2 ? 2 : 1 ); i++ ) {
@@ -1233,7 +1237,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                                                 log2_trafo_size_c, scan_idx_c, 1);
             }
 
-            if (cross_pf) {
+            if (lc->tu.cross_pf) {
 				hls_cross_component_pred(s, 1);
             }
             for (i = 0; i < (s->sps->chroma_array_type  ==  2 ? 2 : 1 ); i++ ) {
