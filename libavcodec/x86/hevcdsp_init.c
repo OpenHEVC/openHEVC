@@ -444,9 +444,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 // only 4X4 needs update for Rext                   c->transform_skip    = ff_hevc_transform_skip_8_sse; 
                     c->transform_4x4_luma_add = ff_hevc_transform_4x4_luma_add_8_sse4;
                     c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
-                    c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
-                    c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
-                    c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
+                    c->transform_cross[1] = ff_hevc_transform_8x8_add_8_sse4;
+                    c->transform_cross[2] = ff_hevc_transform_16x16_add_8_sse4;
+                    c->transform_cross[3] = ff_hevc_transform_32x32_add_8_sse4;
 
 #ifdef OPTI_ASM
                     c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_8_sse2;
@@ -536,9 +536,9 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 #endif
                     c->transform_4x4_luma_add   = ff_hevc_transform_4x4_luma_add_10_sse4;
                     c->transform_add[0]         = ff_hevc_transform_4x4_add_10_sse4;
-                    c->transform_add[1]         = ff_hevc_transform_8x8_add_10_sse4;
-                    c->transform_add[2]         = ff_hevc_transform_16x16_add_10_sse4;
-                    c->transform_add[3]         = ff_hevc_transform_32x32_add_10_sse4;
+                    c->transform_cross[1]         = ff_hevc_transform_8x8_add_10_sse4;
+                    c->transform_cross[2]         = ff_hevc_transform_16x16_add_10_sse4;
+                    c->transform_cross[3]         = ff_hevc_transform_32x32_add_10_sse4;
 
                 }
 #endif // HAVE_SSE2
@@ -609,9 +609,9 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
 #endif
                     c->transform_4x4_luma_add   = ff_hevc_transform_4x4_luma_add_12_sse4;
                     c->transform_add[0]         = ff_hevc_transform_4x4_add_12_sse4;
-                    c->transform_add[1]         = ff_hevc_transform_8x8_add_12_sse4;
-                    c->transform_add[2]         = ff_hevc_transform_16x16_add_12_sse4;
-                    c->transform_add[3]         = ff_hevc_transform_32x32_add_12_sse4;
+                    c->transform_cross[1]         = ff_hevc_transform_8x8_add_12_sse4;
+                    c->transform_cross[2]         = ff_hevc_transform_16x16_add_12_sse4;
+                    c->transform_cross[3]         = ff_hevc_transform_32x32_add_12_sse4;
 
                 }
 #endif // HAVE_SSE2

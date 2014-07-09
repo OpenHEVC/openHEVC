@@ -668,9 +668,6 @@ TRANSFORM_LUMA_ADD( 12);
 #define TR_8_1( dst, dst_stride, src)                                         \
     TR_8( dst, dst_stride, src,  8, SCALE8x8_2x32_WRAPPER);                    \
     TRANSPOSE8x8_16_S(dst, dst_stride, e, SAVE_8x16)
-#define TR_8_2( dst, dst_stride, src, D)                                       \
-    TR_8( dst, dst_stride, src,  8, SCALE8x8_2x32_WRAPPER);                    \
-    TRANSPOSE8x8_16_S(dst, dst_stride, e, ADD_AND_SAVE_8x ## D)
 
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_transform_XxX_add_X_sse4
@@ -691,8 +688,7 @@ void ff_hevc_transform_4x4_add_ ## D ## _sse4 (                                \
     TR_4_2(dst, stride, tmp, D);                                               \
 }
 #define TRANSFORM_ADD8x8(D)                                                    \
-void ff_hevc_transform_8x8_add_ ## D ## _sse4 (                                \
-    uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit) {        \
+void ff_hevc_transform_8x8_add_ ## D ## _sse4 (int16_t *coeffs, int col_limit) { \
     int16_t tmp[8*8];                                                          \
     int16_t *src    = coeffs;                                                  \
     int16_t *p_dst1 = tmp;                                                     \
@@ -705,11 +701,9 @@ void ff_hevc_transform_8x8_add_ ## D ## _sse4 (                                \
     TR_8_1(p_dst1, 8, src);                                                    \
     shift   = 20 - D;                                                          \
     add     = 1 << (shift - 1);                                                \
-    {                                                                          \
-        INIT8_ ## D();                                                         \
-        TR_8_2(dst, stride, tmp, D);                                           \
-    }                                                                          \
+    TR_8_1(coeffs, 8, tmp);                                                    \
 }
+
 TRANSFORM_ADD4x4( 8)
 TRANSFORM_ADD4x4(10)
 TRANSFORM_ADD4x4(12)
@@ -792,13 +786,12 @@ TRANSFORM_ADD8x8(12)
 ////////////////////////////////////////////////////////////////////////////////
 #define TRANSFORM_ADD2(H, D)                                                   \
 void ff_hevc_transform_ ## H ## x ## H ## _add_ ## D ## _sse4 (                \
-    uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit) {        \
+    int16_t *coeffs, int col_limit) {                                          \
     int i, j, k, add;                                                          \
     int      shift = 7;                                                        \
     int16_t *src   = coeffs;                                                   \
     int16_t  tmp[H*H];                                                         \
     int16_t  tmp_2[H*H];                                                       \
-    int16_t  tmp_3[H*H];                                                       \
     int16_t *p_dst, *p_tra = tmp_2;                                            \
     __m128i src0, src1, src2, src3;                                            \
     __m128i tmp0, tmp1, tmp2, tmp3, tmp4;                                      \
@@ -814,17 +807,8 @@ void ff_hevc_transform_ ## H ## x ## H ## _add_ ## D ## _sse4 (                \
             }                                                                  \
         }                                                                      \
         src   = tmp_2;                                                         \
-        p_tra = tmp_3;                                                         \
+        p_tra = coeffs;                                                         \
         shift = 20 - D;                                                        \
-    }                                                                          \
-    for (i = 0; i < H; i+=16) {                                                \
-        INIT_ ## D();                                                          \
-        src = p_tra + i;                                                       \
-        dst += i;                                                              \
-        for (k = 0; k < H; k++) {                                              \
-            ADD_AND_SAVE_16x ## D(dst, stride, src);                           \
-            src += H;                                                          \
-        }                                                                      \
     }                                                                          \
 }
 
