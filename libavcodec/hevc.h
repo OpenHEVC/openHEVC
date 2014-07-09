@@ -999,7 +999,11 @@ typedef struct TransformTree {
 } TransformTree;
 
 typedef struct TransformUnit {
+    DECLARE_ALIGNED(32, int16_t, coeffs[2][MAX_TB_SIZE * MAX_TB_SIZE]);
+
     int cu_qp_delta;
+
+    int res_scale_val;
 
     // Inferred parameters;
     int intra_pred_mode;
@@ -1093,7 +1097,7 @@ typedef struct HEVCLocalContext {
     /* +7 is for subpixel interpolation, *2 for high bit depths */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer2)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
-    DECLARE_ALIGNED(16, int16_t, edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE]);
+    DECLARE_ALIGNED(32, int16_t, edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE]);
 
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
