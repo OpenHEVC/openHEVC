@@ -289,12 +289,6 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
 #define INIT_10()                                                              \
     uint16_t *dst = (uint16_t*) _dst;                                          \
     ptrdiff_t stride = _stride>>1
-#define INIT8_8()                                                              \
-    uint8_t *p_dst;                                                            \
-    INIT_8()
-#define INIT8_10()                                                             \
-    uint16_t *p_dst;                                                           \
-    INIT_10()
 
 #define INIT_12() INIT_10()
 #define INIT8_12() INIT8_10()
@@ -361,10 +355,6 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     ADD_AND_SAVE_8(dst, dst_stride, src);                                      \
     *((uint32_t *)(dst)) = _mm_cvtsi128_si32(tmp0);                            \
     dst += dst_stride
-#define ADD_AND_SAVE_8x8(dst, dst_stride, src)                                 \
-    ADD_AND_SAVE_8(dst, dst_stride, src);                                      \
-    _mm_storel_epi64((__m128i *) dst, tmp0);                                   \
-    dst += dst_stride
 #define ADD_AND_SAVE(dst, dst_stride, src, D)                                  \
     tmp0 = _mm_add_epi16(src, tmp0);                                           \
     tmp1 = _mm_set1_epi16(CLPI_PIXEL_MAX_## D);                                \
@@ -375,44 +365,9 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     ADD_AND_SAVE(dst, dst_stride, src, D);                                     \
     _mm_storel_epi64((__m128i *) dst, tmp0);                                   \
     dst += dst_stride
-#define ADD_AND_SAVE_8xD(dst, dst_stride, src, D)                              \
-    tmp0 = _mm_load_si128((__m128i *) dst);                                   \
-    ADD_AND_SAVE(dst, dst_stride, src, D);                                     \
-    _mm_store_si128((__m128i *) dst, tmp0);                                   \
-    dst += dst_stride
-#define ADD_AND_SAVE_16x8(dst, dst_stride, src)                               \
-    tmp0 = _mm_load_si128((__m128i *) dst);                                   \
-    tmp2 = _mm_load_si128((__m128i *) src);                                   \
-    tmp3 = _mm_load_si128((__m128i *) &src[8]);                               \
-    tmp1 = _mm_unpackhi_epi8(tmp0, _mm_setzero_si128());                       \
-    tmp0 = _mm_unpacklo_epi8(tmp0, _mm_setzero_si128());                       \
-    tmp1 = _mm_add_epi16(tmp1, tmp3);                                          \
-    tmp0 = _mm_add_epi16(tmp0, tmp2);                                          \
-    tmp0 = _mm_packus_epi16(tmp0, tmp1);                                       \
-    _mm_store_si128((__m128i *) dst, tmp0);                                   \
-    dst += dst_stride
-#define ADD_AND_SAVE_16(dst, dst_stride, src, D)                               \
-    tmp0 = _mm_load_si128((__m128i *) dst);                                   \
-    tmp1 = _mm_load_si128((__m128i *) &dst[8]);                               \
-    tmp2 = _mm_load_si128((__m128i *) src);                                   \
-    tmp3 = _mm_load_si128((__m128i *) &src[8]);                               \
-    tmp0 = _mm_add_epi16(tmp0, tmp2);                                          \
-    tmp1 = _mm_add_epi16(tmp1, tmp3);                                          \
-    tmp2 = _mm_set1_epi16(CLPI_PIXEL_MAX_## D);                                \
-    tmp0 = _mm_max_epi16(tmp0, _mm_setzero_si128());                           \
-    tmp1 = _mm_max_epi16(tmp1, _mm_setzero_si128());                           \
-    tmp0 = _mm_min_epi16(tmp0, tmp2);                                          \
-    tmp1 = _mm_min_epi16(tmp1, tmp2);                                          \
-    _mm_store_si128((__m128i *) dst, tmp0);                                   \
-    _mm_store_si128((__m128i *) &dst[8], tmp1);                               \
-    dst += dst_stride
 
 #define ADD_AND_SAVE_4x10(dst, dst_stride, src) ADD_AND_SAVE_4xD(dst, dst_stride, src, 10)
-#define ADD_AND_SAVE_8x10(dst, dst_stride, src) ADD_AND_SAVE_8xD(dst, dst_stride, src, 10)
 #define ADD_AND_SAVE_4x12(dst, dst_stride, src) ADD_AND_SAVE_4xD(dst, dst_stride, src, 12)
-#define ADD_AND_SAVE_8x12(dst, dst_stride, src) ADD_AND_SAVE_8xD(dst, dst_stride, src, 12)
-#define ADD_AND_SAVE_16x10(dst, dst_stride, src) ADD_AND_SAVE_16(dst, dst_stride, src, 10)
-#define ADD_AND_SAVE_16x12(dst, dst_stride, src) ADD_AND_SAVE_16(dst, dst_stride, src, 12)
 
 #define ASSIGN2(dst, dst_stride, src0, src1, assign)                           \
     assign(dst, dst_stride, src0);                                             \
