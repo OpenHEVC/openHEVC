@@ -59,11 +59,7 @@ typedef struct HEVCDSPContext {
 
     void (*transform_rdpcm)(int16_t *coeffs, int16_t log2_size, int mode);
 
-    void (*transform_4x4_luma_add)(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-
     void (*idct_4x4_luma)(int16_t *coeffs);
-
-    void (*transform_dc_add[4])(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
     void (*idct[4])(int16_t *coeffs, int col_limit);
 

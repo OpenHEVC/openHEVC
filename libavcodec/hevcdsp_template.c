@@ -183,32 +183,7 @@ static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
         assign(dst[3 * step], 55 * c0 + 29 * c2 - c3);                  \
     } while (0)
 
-static void FUNC(transform_4x4_luma_add)(uint8_t *_dst, int16_t *coeffs,
-                                         ptrdiff_t stride)
-{
-    int i;
-    pixel *dst   = (pixel *)_dst;
-    int shift    = 7;
-    int add      = 1 << (shift - 1);
-    int16_t *src = coeffs;
-
-    stride /= sizeof(pixel);
-
-    for (i = 0; i < 4; i++) {
-        TR_4x4_LUMA(src, src, 4, SCALE);
-        src++;
-    }
-
-    shift = 20 - BIT_DEPTH;
-    add   = 1 << (shift - 1);
-    for (i = 0; i < 4; i++) {
-        TR_4x4_LUMA(dst, coeffs, 1, ADD_AND_SCALE);
-        coeffs += 4;
-        dst    += stride;
-    }
-}
-
-static void FUNC(transform_4x4_luma_cross)(int16_t *coeffs)
+static void FUNC(transform_4x4_luma)(int16_t *coeffs)
 {
     int i;
     int shift    = 7;
@@ -294,116 +269,62 @@ static void FUNC(transform_4x4_luma_cross)(int16_t *coeffs)
         }                                                                      \
     } while (0)
 
-#define TRANSFORM_ADD_VAR4(H)                                                    \
+#define IDCT_VAR4(H)                                                          \
     int      limit2   = FFMIN(col_limit + 4, H)
-#define TRANSFORM_ADD_VAR8(H)                                                    \
-        int      limit   = FFMIN(col_limit, H);                                    \
+#define IDCT_VAR8(H)                                                          \
+        int      limit   = FFMIN(col_limit, H);                               \
         int      limit2   = FFMIN(col_limit + 4, H)
-#define TRANSFORM_ADD_VAR16(H)   TRANSFORM_ADD_VAR8(H)
-#define TRANSFORM_ADD_VAR32(H)   TRANSFORM_ADD_VAR8(H)
+#define IDCT_VAR16(H)   IDCT_VAR8(H)
+#define IDCT_VAR32(H)   IDCT_VAR8(H)
 
-#define TRANSFORM_ADD(H)                                                       \
-static void FUNC(transform_##H ##x ##H ##_add)(                                \
-    uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit) {        \
-    int i;                                                                     \
-    pixel    *dst    = (pixel *)_dst;                                          \
-    int      stride  = _stride/sizeof(pixel);                                  \
-    int      shift   = 7;                                                      \
-    int      add     = 1 << (shift - 1);                                       \
-    int16_t *src     = coeffs;                                                 \
-    TRANSFORM_ADD_VAR ##H(H);                                                   \
-                                                                               \
-    for (i = 0; i < H; i++) {                                                  \
-        TR_ ## H(src, src, H, H, SCALE, limit2);                               \
-        if (limit2 < H && i%4 == 0 && !!i)                                     \
-            limit2 -= 4;                                                       \
-        src++;                                                                 \
-    }                                                                          \
-                                                                               \
-    shift   = 20 - BIT_DEPTH;                                                  \
-    add     = 1 << (shift - 1);                                                \
-    for (i = 0; i < H; i++) {                                                  \
-        TR_ ## H(dst, coeffs, 1, 1, ADD_AND_SCALE, limit);                     \
-        coeffs += H;                                                           \
-        dst    += stride;                                                      \
-    }                                                                          \
+#define IDCT(H)                                                              \
+static void FUNC(idct_##H ##x ##H )(                                         \
+                   int16_t *coeffs, int col_limit) {                         \
+    int i;                                                                   \
+    int      shift   = 7;                                                    \
+    int      add     = 1 << (shift - 1);                                     \
+    int16_t *src     = coeffs;                                               \
+    IDCT_VAR ##H(H);                                                         \
+                                                                             \
+    for (i = 0; i < H; i++) {                                                \
+        TR_ ## H(src, src, H, H, SCALE, limit2);                             \
+        if (limit2 < H && i%4 == 0 && !!i)                                   \
+            limit2 -= 4;                                                     \
+        src++;                                                               \
+    }                                                                        \
+                                                                             \
+    shift   = 20 - BIT_DEPTH;                                                \
+    add     = 1 << (shift - 1);                                              \
+    for (i = 0; i < H; i++) {                                                \
+        TR_ ## H(coeffs, coeffs, 1, 1, SCALE, limit);                        \
+        coeffs += H;                                                         \
+    }                                                                        \
 }
 
-#define TRANSFORM_DC_ADD(H)                                                    \
-static void FUNC(transform_##H ##x ##H ##_dc_add)(                             \
-    uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride) {                       \
-    int i, j;                                                                  \
-    pixel    *dst    = (pixel *)_dst;                                          \
-    int      stride  = _stride/sizeof(pixel);                                  \
-    int      shift   = 14 - BIT_DEPTH;                                         \
-    int      add     = 1 << (shift - 1);                                       \
-    int      coeff   = (((coeffs[0] + 1) >> 1) + add) >> shift;                \
-                                                                               \
-    for (j = 0; j < H; j++) {                                                  \
-        for (i = 0; i < H; i++) {                                              \
-            dst[i+j*stride] = av_clip_pixel(dst[i+j*stride] + coeff);          \
-        }                                                                      \
-    }                                                                          \
+#define IDCT_DC(H)                                                           \
+static void FUNC(idct_##H ##x ##H ##_dc)(                                    \
+                   int16_t *coeffs) {                                        \
+    int i, j;                                                                \
+    int      shift   = 14 - BIT_DEPTH;                                       \
+    int      add     = 1 << (shift - 1);                                     \
+    int      coeff   = (((coeffs[0] + 1) >> 1) + add) >> shift;              \
+                                                                             \
+    for (j = 0; j < H; j++) {                                                \
+        for (i = 0; i < H; i++) {                                            \
+            coeffs[i+j*H] = coeff;                                           \
+        }                                                                    \
+    }                                                                        \
 }
 
-TRANSFORM_ADD( 4)
-TRANSFORM_ADD( 8)
-TRANSFORM_ADD(16)
-TRANSFORM_ADD(32)
+IDCT( 4)
+IDCT( 8)
+IDCT(16)
+IDCT(32)
 
-TRANSFORM_DC_ADD( 4)
-TRANSFORM_DC_ADD( 8)
-TRANSFORM_DC_ADD(16)
-TRANSFORM_DC_ADD(32)
-
-#define TRANSFORM_CROSS(H)                                                     \
-static void FUNC(transform_##H ##x ##H ##_cross)(                              \
-                   int16_t *coeffs, int col_limit) {                           \
-    int i;                                                                     \
-    int      shift   = 7;                                                      \
-    int      add     = 1 << (shift - 1);                                       \
-    int16_t *src     = coeffs;                                                 \
-    TRANSFORM_ADD_VAR ##H(H);                                                  \
-                                                                               \
-    for (i = 0; i < H; i++) {                                                  \
-        TR_ ## H(src, src, H, H, SCALE, limit2);                               \
-        if (limit2 < H && i%4 == 0 && !!i)                                     \
-            limit2 -= 4;                                                       \
-        src++;                                                                 \
-    }                                                                          \
-                                                                               \
-    shift   = 20 - BIT_DEPTH;                                                  \
-    add     = 1 << (shift - 1);                                                \
-    for (i = 0; i < H; i++) {                                                  \
-        TR_ ## H(coeffs, coeffs, 1, 1, SCALE, limit);                          \
-        coeffs += H;                                                           \
-    }                                                                          \
-}
-
-#define TRANSFORM_DC_CROSS(H)                                                  \
-static void FUNC(transform_##H ##x ##H ##_dc_cross)(                           \
-                   int16_t *coeffs) {                                          \
-    int i, j;                                                                  \
-    int      shift   = 14 - BIT_DEPTH;                                         \
-    int      add     = 1 << (shift - 1);                                       \
-    int      coeff   = (((coeffs[0] + 1) >> 1) + add) >> shift;                \
-                                                                               \
-    for (j = 0; j < H; j++) {                                                  \
-        for (i = 0; i < H; i++) {                                              \
-            coeffs[i+j*H] = coeff;                                             \
-        }                                                                      \
-    }                                                                          \
-}
-
-TRANSFORM_CROSS( 4)
-TRANSFORM_CROSS( 8)
-TRANSFORM_CROSS(16)
-TRANSFORM_CROSS(32)
-
-TRANSFORM_DC_CROSS( 4)
-TRANSFORM_DC_CROSS( 8)
-TRANSFORM_DC_CROSS(16)
-TRANSFORM_DC_CROSS(32)
+IDCT_DC( 4)
+IDCT_DC( 8)
+IDCT_DC(16)
+IDCT_DC(32)
 
 #undef TR_4
 #undef TR_8
