@@ -83,19 +83,16 @@ PEL_PROTOTYPE2(name, D, sse)
 ///////////////////////////////////////////////////////////////////////////////
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-void ff_hevc_transform_4x4_luma_add_8_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
-void ff_hevc_transform_4x4_luma_add_10_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
-void ff_hevc_transform_4x4_luma_add_12_sse4(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+void ff_hevc_transform_4x4_luma_add_8_sse4(int16_t *coeffs);
+void ff_hevc_transform_4x4_luma_add_10_sse4(int16_t *coeffs);
+void ff_hevc_transform_4x4_luma_add_12_sse4(int16_t *coeffs);
 
 #define IDCT_FUNC(s, b) void ff_hevc_transform_ ## s ## x ## s ##_add_##b##_sse4\
             (int16_t *coeffs, int col_limit);
 
-#define IDCT_FUNC2(s, b) void ff_hevc_transform_ ## s ## x ## s ##_add_##b##_sse4\
-(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride, int col_limit);
-
-IDCT_FUNC2(4, 8)
-IDCT_FUNC2(4, 10)
-IDCT_FUNC2(4, 12)
+IDCT_FUNC(4, 8)
+IDCT_FUNC(4, 10)
+IDCT_FUNC(4, 12)
 IDCT_FUNC(8, 8)
 IDCT_FUNC(8, 10)
 IDCT_FUNC(8, 12)
