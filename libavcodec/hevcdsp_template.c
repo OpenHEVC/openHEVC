@@ -43,7 +43,7 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height
     }
 }
 
-static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs,
+static void FUNC(transform_add4x4)(uint8_t *_dst, int16_t *coeffs,
                                        ptrdiff_t stride)
 {
     int x, y;
@@ -60,7 +60,7 @@ static void FUNC(transquant_bypass4x4)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
-static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs,
+static void FUNC(transform_add8x8)(uint8_t *_dst, int16_t *coeffs,
                                        ptrdiff_t stride)
 {
     int x, y;
@@ -77,7 +77,7 @@ static void FUNC(transquant_bypass8x8)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
-static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs,
+static void FUNC(transform_add16x16)(uint8_t *_dst, int16_t *coeffs,
                                          ptrdiff_t stride)
 {
     int x, y;
@@ -94,7 +94,7 @@ static void FUNC(transquant_bypass16x16)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
-static void FUNC(transquant_bypass32x32)(uint8_t *_dst, int16_t *coeffs,
+static void FUNC(transform_add32x32)(uint8_t *_dst, int16_t *coeffs,
                                          ptrdiff_t stride)
 {
     int x, y;

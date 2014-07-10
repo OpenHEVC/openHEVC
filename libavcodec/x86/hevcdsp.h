@@ -83,11 +83,11 @@ PEL_PROTOTYPE2(name, D, sse)
 ///////////////////////////////////////////////////////////////////////////////
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-void ff_hevc_transform_4x4_luma_add_8_sse4(int16_t *coeffs);
-void ff_hevc_transform_4x4_luma_add_10_sse4(int16_t *coeffs);
-void ff_hevc_transform_4x4_luma_add_12_sse4(int16_t *coeffs);
+void ff_hevc_transform_4x4_luma_8_sse4(int16_t *coeffs);
+void ff_hevc_transform_4x4_luma_10_sse4(int16_t *coeffs);
+void ff_hevc_transform_4x4_luma_12_sse4(int16_t *coeffs);
 
-#define IDCT_FUNC(s, b) void ff_hevc_transform_ ## s ## x ## s ##_add_##b##_sse4\
+#define IDCT_FUNC(s, b) void ff_hevc_transform_ ## s ## x ## s ##_## b ##_sse4\
             (int16_t *coeffs, int col_limit);
 
 IDCT_FUNC(4, 8)

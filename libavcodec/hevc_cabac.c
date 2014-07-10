@@ -1535,11 +1535,11 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
         } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
-            s->hevcdsp.transform_4x4_luma_cross(coeffs);
+            s->hevcdsp.idct_4x4_luma(coeffs);
         } else {
             int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
             if (max_xy == 0)
-                s->hevcdsp.transform_dc_cross[log2_trafo_size-2](coeffs);
+                s->hevcdsp.idct_dc[log2_trafo_size-2](coeffs);
             else {
                 int col_limit = last_significant_coeff_x + last_significant_coeff_y + 4;
                 if (max_xy < 4)
@@ -1548,7 +1548,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     col_limit = FFMIN(8, col_limit);
                 else if (max_xy < 12)
                     col_limit = FFMIN(24, col_limit);
-                s->hevcdsp.transform_cross[log2_trafo_size-2](coeffs, col_limit);
+                s->hevcdsp.idct[log2_trafo_size-2](coeffs, col_limit);
             }
         }
     }
@@ -1559,7 +1559,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             coeffs[i] = coeffs[i] + ((lc->tu.res_scale_val * coeffs_y[i]) >> 3);
         }
     }
-    s->hevcdsp.transquant_bypass[log2_trafo_size-2](dst, coeffs, stride);
+    s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
 }
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
