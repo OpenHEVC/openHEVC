@@ -447,16 +447,20 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     c->idct[1] = ff_hevc_transform_8x8_8_sse4;
                     c->idct[2] = ff_hevc_transform_16x16_8_sse4;
                     c->idct[3] = ff_hevc_transform_32x32_8_sse4;
+                    c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
+                    c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
+                    c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
+                    c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
 
 #ifdef OPTI_ASM
                     c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_8_sse2;
                     c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_8_sse2;
 #endif
 #ifndef OPTI_ASM
-                    c->transform_dc_add[0] = ff_hevc_transform_4x4_dc_add_8_sse4;
-                    c->transform_dc_add[1] = ff_hevc_transform_8x8_dc_add_8_sse4;
-                    c->transform_dc_add[2] = ff_hevc_transform_16x16_dc_add_8_sse4;
-                    c->transform_dc_add[3] = ff_hevc_transform_32x32_dc_add_8_sse4;
+//                    c->transform_dc_add[0] = ff_hevc_transform_4x4_dc_add_8_sse4;
+//                    c->transform_dc_add[1] = ff_hevc_transform_8x8_dc_add_8_sse4;
+//                    c->transform_dc_add[2] = ff_hevc_transform_16x16_dc_add_8_sse4;
+//                    c->transform_dc_add[3] = ff_hevc_transform_32x32_dc_add_8_sse4;
 #endif
 
                 }
@@ -539,6 +543,10 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     c->idct[1]           = ff_hevc_transform_8x8_10_sse4;
                     c->idct[2]           = ff_hevc_transform_16x16_10_sse4;
                     c->idct[3]           = ff_hevc_transform_32x32_10_sse4;
+                    c->transform_add[0] = ff_hevc_transform_4x4_add_10_sse4;
+                    c->transform_add[1] = ff_hevc_transform_8x8_add_10_sse4;
+                    c->transform_add[2] = ff_hevc_transform_16x16_add_10_sse4;
+                    c->transform_add[3] = ff_hevc_transform_32x32_add_10_sse4;
 
                 }
 #endif // HAVE_SSE2
@@ -612,6 +620,10 @@ c->upsample_filter_block_cr_v[0] = ff_upsample_filter_block_cr_v_all_sse;
                     c->idct[1]         = ff_hevc_transform_8x8_12_sse4;
                     c->idct[2]         = ff_hevc_transform_16x16_12_sse4;
                     c->idct[3]         = ff_hevc_transform_32x32_12_sse4;
+                    c->transform_add[0] = ff_hevc_transform_4x4_add_12_sse4;
+                    c->transform_add[1] = ff_hevc_transform_8x8_add_12_sse4;
+                    c->transform_add[2] = ff_hevc_transform_16x16_add_12_sse4;
+                    c->transform_add[3] = ff_hevc_transform_32x32_add_12_sse4;
 
                 }
 #endif // HAVE_SSE2

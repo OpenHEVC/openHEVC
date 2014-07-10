@@ -103,20 +103,20 @@ IDCT_FUNC(32, 8)
 IDCT_FUNC(32, 10)
 IDCT_FUNC(32, 12)
 
-void ff_hevc_transform_4x4_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_8x8_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_16x16_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_32x32_dc_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_4x4_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_8x8_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_16x16_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_32x32_add_8_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-void ff_hevc_transform_4x4_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_8x8_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_16x16_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_32x32_dc_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_4x4_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_8x8_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_16x16_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_32x32_add_10_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-void ff_hevc_transform_4x4_dc_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_8x8_dc_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_16x16_dc_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_32x32_dc_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_4x4_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_8x8_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_16x16_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_transform_32x32_add_12_sse4(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
 ///////////////////////////////////////////////////////////////////////////////
 // MC functions

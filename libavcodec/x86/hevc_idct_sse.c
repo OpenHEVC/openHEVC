@@ -228,8 +228,8 @@ DECLARE_ALIGNED(16, static const int16_t, transform32x32[8][16][8] )=
 #define shift_1st 7
 #define add_1st (1 << (shift_1st - 1))
 
-#define CLPI_PIXEL_MAX_10 0x03FF
-#define CLPI_PIXEL_MAX_12 0x0FFF
+#define CLIP_PIXEL_MAX_10 0x03FF
+#define CLIP_PIXEL_MAX_12 0x0FFF
 
 #if HAVE_SSE2
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride)
@@ -754,135 +754,164 @@ TRANSFORM2(32, 12);
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_transform_XxX_DC_X_sse4
 ////////////////////////////////////////////////////////////////////////////////
-#define DC_COMPUTE4_8()                                                        \
+#define ADD_COMPUTE4_8()                                                        \
     src = _mm_loadl_epi64((__m128i*) dst);                                     \
     src = _mm_unpacklo_epi8(src, _mm_setzero_si128());                         \
+    add1 = _mm_loadl_epi64((__m128i*) coeffs);                                 \
     src = _mm_add_epi16(src, add1);                                            \
     src = _mm_packus_epi16(src, src);                                          \
     *((uint32_t *) dst) = _mm_cvtsi128_si32(src   );                           \
-    dst += stride
-#define DC_COMPUTE8_8()                                                        \
+    dst += stride;                                                             \
+    coeffs += 4
+#define ADD_COMPUTE8_8()                                                       \
     src = _mm_loadl_epi64((__m128i*) dst);                                     \
     src = _mm_unpacklo_epi8(src, _mm_setzero_si128());                         \
+    add1 = _mm_load_si128((__m128i*) coeffs);                                  \
     src = _mm_add_epi16(src, add1);                                            \
     src = _mm_packus_epi16(src, src);                                          \
     _mm_storel_epi64((__m128i*) dst, src);                                     \
-    dst += stride
-#define DC_COMPUTE16_8()                                                       \
+    dst += stride;                                                             \
+    coeffs += 8
+#define ADD_COMPUTE16_8()                                                      \
     __m128i src1;                                                              \
-    src  = _mm_loadu_si128((__m128i*) dst);                                    \
+    src  = _mm_load_si128((__m128i*) dst);                                     \
     src1 = _mm_unpackhi_epi8(src, _mm_setzero_si128());                        \
     src  = _mm_unpacklo_epi8(src, _mm_setzero_si128());                        \
-    src1 = _mm_add_epi16(src1, add1);                                          \
+    add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+    coeffs += 8;                                                               \
     src  = _mm_add_epi16(src , add1);                                          \
+    add1 = _mm_load_si128((__m128i*) coeffs);                                  \
+    coeffs += 8;                                                               \
+    src1 = _mm_add_epi16(src1, add1);                                          \
     src  = _mm_packus_epi16(src, src1);                                        \
     _mm_storeu_si128((__m128i*) dst, src);                                     \
     dst += stride
-#define DC_COMPUTE32_8()                                                       \
+#define ADD_COMPUTE32_8()                                                      \
     __m128i src1;                                                              \
-    src  = _mm_loadu_si128((__m128i*) dst);                                    \
+    src  = _mm_load_si128((__m128i*) dst);                                     \
     src1 = _mm_unpackhi_epi8(src, _mm_setzero_si128());                        \
     src  = _mm_unpacklo_epi8(src, _mm_setzero_si128());                        \
-    src1 = _mm_add_epi16(src1, add1);                                          \
+    add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+    coeffs += 8;                                                               \
     src  = _mm_add_epi16(src , add1);                                          \
+    add1 = _mm_load_si128((__m128i*) coeffs);                                  \
+    coeffs += 8;                                                               \
+    src1 = _mm_add_epi16(src1, add1);                                          \
     src  = _mm_packus_epi16(src, src1);                                        \
     _mm_storeu_si128((__m128i*) dst, src);                                     \
-    src  = _mm_loadu_si128((__m128i*) &dst[16]);                               \
+    src  = _mm_load_si128((__m128i*) &dst[16]);                                \
     src1 = _mm_unpackhi_epi8(src, _mm_setzero_si128());                        \
     src  = _mm_unpacklo_epi8(src, _mm_setzero_si128());                        \
-    src1 = _mm_add_epi16(src1, add1);                                          \
+    add1 = _mm_load_si128((__m128i*) (coeffs ));                               \
+    coeffs += 8;                                                               \
     src  = _mm_add_epi16(src , add1);                                          \
+    add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+    coeffs += 8;                                                               \
+    src1 = _mm_add_epi16(src1, add1);                                          \
     src  = _mm_packus_epi16(src, src1);                                        \
     _mm_storeu_si128((__m128i*) &dst[16], src);                                \
     dst += stride
 
-#define DC_COMPUTE4(D)                                                         \
+#define ADD_COMPUTE4(D)                                                        \
     src = _mm_loadl_epi64((__m128i*) dst);                                     \
+add1 = _mm_loadl_epi64((__m128i*) (coeffs));                                \
+coeffs += 4;                                                               \
     src = _mm_add_epi16(src, add1);                                            \
     src = _mm_max_epi16(src, _mm_setzero_si128());                             \
-    src = _mm_min_epi16(src, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));             \
+    src = _mm_min_epi16(src, _mm_set1_epi16(CLIP_PIXEL_MAX_## D));             \
     _mm_storel_epi64((__m128i*) dst, src);                                     \
     dst += stride
-#define DC_COMPUTE8(D)                                                         \
-    src = _mm_loadu_si128((__m128i*) dst);                                     \
+#define ADD_COMPUTE8(D)                                                        \
+    src = _mm_load_si128((__m128i*) dst);                                      \
+add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+coeffs += 8;                                                               \
     src = _mm_add_epi16(src, add1);                                            \
     src = _mm_max_epi16(src, _mm_setzero_si128());                             \
-    src = _mm_min_epi16(src, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));             \
+    src = _mm_min_epi16(src, _mm_set1_epi16(CLIP_PIXEL_MAX_## D));             \
     _mm_storeu_si128((__m128i*) dst, src);                                     \
     dst += stride
-#define DC_COMPUTE16(D)                                                        \
+#define ADD_COMPUTE16(D)                                                       \
     __m128i src1;                                                              \
-    src  = _mm_loadu_si128((__m128i*)  dst   );                                \
-    src1 = _mm_loadu_si128((__m128i*) &dst[8]);                                \
+    src  = _mm_load_si128((__m128i*)  dst   );                                 \
+    src1 = _mm_load_si128((__m128i*) &dst[8]);                                 \
+add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+coeffs += 8;                                                               \
     src  = _mm_add_epi16(src , add1);                                          \
+add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+coeffs += 8;                                                               \
     src1 = _mm_add_epi16(src1, add1);                                          \
     src  = _mm_max_epi16(src , _mm_setzero_si128());                           \
     src1 = _mm_max_epi16(src1, _mm_setzero_si128());                           \
-    src  = _mm_min_epi16(src , _mm_set1_epi16(CLPI_PIXEL_MAX_## D));           \
-    src1 = _mm_min_epi16(src1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));           \
+    src  = _mm_min_epi16(src , _mm_set1_epi16(CLIP_PIXEL_MAX_## D));           \
+    src1 = _mm_min_epi16(src1, _mm_set1_epi16(CLIP_PIXEL_MAX_## D));           \
     _mm_storeu_si128((__m128i*)  dst   , src );                                \
     _mm_storeu_si128((__m128i*) &dst[8], src1);                                \
     dst += stride
-#define DC_COMPUTE32(D)                                                        \
+#define ADD_COMPUTE32(D)                                                       \
     __m128i src1;                                                              \
-    src  = _mm_loadu_si128((__m128i*)  dst   );                                \
-    src1 = _mm_loadu_si128((__m128i*) &dst[8]);                                \
+    src  = _mm_load_si128((__m128i*)  dst   );                                 \
+    src1 = _mm_load_si128((__m128i*) &dst[8]);                                 \
+add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+coeffs += 8;                                                               \
     src  = _mm_add_epi16(src , add1);                                          \
+add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+coeffs += 8;                                                               \
     src1 = _mm_add_epi16(src1, add1);                                          \
     src  = _mm_max_epi16(src , _mm_setzero_si128());                           \
     src1 = _mm_max_epi16(src1, _mm_setzero_si128());                           \
-    src  = _mm_min_epi16(src , _mm_set1_epi16(CLPI_PIXEL_MAX_## D));           \
-    src1 = _mm_min_epi16(src1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));           \
+    src  = _mm_min_epi16(src , _mm_set1_epi16(CLIP_PIXEL_MAX_## D));           \
+    src1 = _mm_min_epi16(src1, _mm_set1_epi16(CLIP_PIXEL_MAX_## D));           \
     _mm_storeu_si128((__m128i*)  dst   , src );                                \
     _mm_storeu_si128((__m128i*) &dst[8], src1);                                \
-    src  = _mm_loadu_si128((__m128i*) &dst[16]);                               \
-    src1 = _mm_loadu_si128((__m128i*) &dst[24]);                               \
+    src  = _mm_load_si128((__m128i*) &dst[16]);                                \
+    src1 = _mm_load_si128((__m128i*) &dst[24]);                                \
+add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+coeffs += 8;                                                               \
     src  = _mm_add_epi16(src , add1);                                          \
+add1 = _mm_load_si128((__m128i*) (coeffs));                                \
+coeffs += 8;                                                               \
     src1 = _mm_add_epi16(src1, add1);                                          \
     src  = _mm_max_epi16(src , _mm_setzero_si128());                           \
     src1 = _mm_max_epi16(src1, _mm_setzero_si128());                           \
-    src  = _mm_min_epi16(src , _mm_set1_epi16(CLPI_PIXEL_MAX_## D));           \
-    src1 = _mm_min_epi16(src1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));           \
+    src  = _mm_min_epi16(src , _mm_set1_epi16(CLIP_PIXEL_MAX_## D));           \
+    src1 = _mm_min_epi16(src1, _mm_set1_epi16(CLIP_PIXEL_MAX_## D));           \
     _mm_storeu_si128((__m128i*) &dst[16], src );                               \
     _mm_storeu_si128((__m128i*) &dst[24], src1);                               \
     dst += stride
 
-#define DC_COMPUTE4_10()   DC_COMPUTE4(10)
-#define DC_COMPUTE8_10()   DC_COMPUTE8(10)
-#define DC_COMPUTE16_10()  DC_COMPUTE16(10)
-#define DC_COMPUTE32_10()  DC_COMPUTE32(10)
-#define DC_COMPUTE4_12()   DC_COMPUTE4(12)
-#define DC_COMPUTE8_12()   DC_COMPUTE8(12)
-#define DC_COMPUTE16_12()  DC_COMPUTE16(12)
-#define DC_COMPUTE32_12()  DC_COMPUTE32(12)
+#define ADD_COMPUTE4_10()   ADD_COMPUTE4(10)
+#define ADD_COMPUTE8_10()   ADD_COMPUTE8(10)
+#define ADD_COMPUTE16_10()  ADD_COMPUTE16(10)
+#define ADD_COMPUTE32_10()  ADD_COMPUTE32(10)
+#define ADD_COMPUTE4_12()   ADD_COMPUTE4(12)
+#define ADD_COMPUTE8_12()   ADD_COMPUTE8(12)
+#define ADD_COMPUTE16_12()  ADD_COMPUTE16(12)
+#define ADD_COMPUTE32_12()  ADD_COMPUTE32(12)
 
-#define TRANSFORM_DC_ADD(H, D)                                                 \
-void ff_hevc_transform_ ## H ## x ## H ## _dc_add_ ## D ## _sse4 (             \
-    uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride) {                       \
+#define TRANSFORM_ADD(H, D)                                                    \
+void ff_hevc_transform_ ## H ## x ## H ## _add_ ## D ## _sse4 (                \
+    uint8_t *_dst, int16_t *_coeffs, ptrdiff_t _stride) {                      \
     int j;                                                                     \
-    int shift = 14 - D;                                                        \
-    int add   = 1 << (shift - 1);                                              \
-    int coeff = (((coeffs[0] + 1) >> 1) + add) >> shift;                       \
+    int16_t *coeffs = _coeffs;                                                 \
     INIT_ ## D();                                                              \
     __m128i src, add1;                                                         \
-    add1 = _mm_set1_epi16(coeff);                                              \
     for (j = 0; j < H; j++) {                                                  \
-        DC_COMPUTE ## H ## _ ## D();                                           \
+        ADD_COMPUTE ## H ## _ ## D();                                          \
     }                                                                          \
 }
 
-TRANSFORM_DC_ADD( 4, 8)
-TRANSFORM_DC_ADD( 8, 8)
-TRANSFORM_DC_ADD(16, 8)
-TRANSFORM_DC_ADD(32, 8)
+TRANSFORM_ADD( 4, 8)
+TRANSFORM_ADD( 8, 8)
+TRANSFORM_ADD(16, 8)
+TRANSFORM_ADD(32, 8)
 
-TRANSFORM_DC_ADD( 4,10)
-TRANSFORM_DC_ADD( 8,10)
-TRANSFORM_DC_ADD(16,10)
-TRANSFORM_DC_ADD(32,10)
+TRANSFORM_ADD( 4,10)
+TRANSFORM_ADD( 8,10)
+TRANSFORM_ADD(16,10)
+TRANSFORM_ADD(32,10)
 
-TRANSFORM_DC_ADD( 4,12)
-TRANSFORM_DC_ADD( 8,12)
-TRANSFORM_DC_ADD(16,12)
-TRANSFORM_DC_ADD(32,12)
+TRANSFORM_ADD( 4,12)
+TRANSFORM_ADD( 8,12)
+TRANSFORM_ADD(16,12)
+TRANSFORM_ADD(32,12)
 #endif
