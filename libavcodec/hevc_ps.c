@@ -1904,9 +1904,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps->transform_skip_context_enabled_flag  = get_bits1(gb);
             print_cabac("transform_skip_context_enabled_flag ", sps->transform_skip_context_enabled_flag);
             sps->implicit_rdpcm_enabled_flag = get_bits1(gb);
-            if (sps->implicit_rdpcm_enabled_flag)
-                av_log(s->avctx, AV_LOG_WARNING,
-                   "implicit_rdpcm_enabled_flag is partially implemented\n");
             print_cabac("implicit_rdpcm_enabled_flag ", sps->implicit_rdpcm_enabled_flag);
 
             sps->explicit_rdpcm_enabled_flag = get_bits1(gb);
@@ -1928,9 +1925,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             print_cabac("high_precision_offsets_enabled_flag ", high_precision_offsets_enabled_flag);
             sps->persistent_rice_adaptation_enabled_flag = get_bits1(gb);
             print_cabac("persistent_rice_adaptation_enabled_flag ", sps->persistent_rice_adaptation_enabled_flag);
-            if (sps->persistent_rice_adaptation_enabled_flag)
-                av_log(s->avctx, AV_LOG_WARNING,
-                   "persistent_rice_adaptation_enabled_flag not yet implemented\n");
 
             cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
             print_cabac("cabac_bypass_alignment_enabled_flag ", cabac_bypass_alignment_enabled_flag);
@@ -2075,10 +2069,6 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
     }
     pps->cross_component_prediction_enabled_flag = get_bits1(gb);
     print_cabac("cross_component_prediction_enabled_flag", pps->cross_component_prediction_enabled_flag);
-    if (pps->cross_component_prediction_enabled_flag) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "cross_component_prediction_enabled_flag is not yet implemented.\n");
-    }
     pps->chroma_qp_offset_list_enabled_flag = get_bits1(gb);
     print_cabac("chroma_qp_offset_list_enabled_flag", pps->chroma_qp_offset_list_enabled_flag);
     if (pps->chroma_qp_offset_list_enabled_flag) {
