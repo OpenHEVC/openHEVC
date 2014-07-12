@@ -183,16 +183,6 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
         int min_poc   = INT_MAX;
         int i, min_idx=0, ret;
 
-        if(s->sh.no_output_of_prior_pics_flag == 1) {
-            for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-                HEVCFrame *frame = &s->DPB[i];
-                if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) && frame->poc != s->poc &&
-                        frame->sequence == s->seq_output) {
-                    frame->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
-                }
-            }
-        }
-
         if (s->sh.no_output_of_prior_pics_flag == 1) {
             for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
                 HEVCFrame *frame = &s->DPB[i];
