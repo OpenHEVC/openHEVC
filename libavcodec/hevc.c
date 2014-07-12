@@ -544,8 +544,7 @@ static int hls_slice_header(HEVCContext *s)
                 if (s->sps->width !=  last_sps->width || s->sps->height != last_sps->height ||
                         s->sps->temporal_layer[s->sps->max_sub_layers - 1].max_dec_pic_buffering != last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
                     sh->no_output_of_prior_pics_flag = 0;
-            } else
-                sh->no_output_of_prior_pics_flag = 0;
+            }
         }
         ff_hevc_clear_refs(s);
         ret = set_sps(s, s->sps);
