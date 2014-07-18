@@ -86,7 +86,6 @@ static void pic_arrays_free(HEVCContext *s)
     av_buffer_pool_uninit(&s->tab_mvf_pool);
     av_buffer_pool_uninit(&s->rpl_tab_pool);
 
-#ifdef SVC_EXTENSION
 #if ACTIVE_BOTH_FRAME_AND_PU
     av_freep(&s->buffer_frame[0]);
     av_freep(&s->buffer_frame[1]);
@@ -101,7 +100,6 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->is_upsampled);
 #endif
 #endif    
-#endif
 }
 
 /* allocate arrays that depend on frame dimensions */
@@ -175,7 +173,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     if (!s->tab_mvf_pool || !s->rpl_tab_pool)
         goto fail;
-#ifdef SVC_EXTENSION
     if(s->decoder_id)    {
 
 #if ACTIVE_BOTH_FRAME_AND_PU
@@ -195,7 +192,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 #endif
 #endif
     }
-#endif
 
 #if 0
     printf("dynamic #*# %ld #*#  %d #*# \n", s->dynamic_alloc, s->decoder_id );
@@ -357,6 +353,25 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
+static int get_buffer_sao(HEVCContext *s, AVFrame *frame)
+{
+    int ret, i;
+
+    frame->width  = s->avctx->width  + 2;
+    frame->height = s->avctx->height + 2;
+    if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+        return ret;
+    for (i = 0; frame->data[i]; i++) {
+        int offset = frame->linesize[i] + 1;
+        frame->data[i] += offset;
+    }
+    frame->width  = s->avctx->width;
+    frame->height = s->avctx->height;
+
+    return 0;
+}
+
+
 static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
     int ret;
@@ -397,9 +412,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     if (sps->sao_enabled) {
         av_frame_unref(s->tmp_frame);
-        ret = ff_get_buffer(s->avctx, s->tmp_frame, AV_GET_BUFFER_FLAG_REF);
-        if (ret < 0)
-            goto fail;
+        ret = get_buffer_sao(s, s->tmp_frame);
         s->sao_frame = s->tmp_frame;
     }
 
@@ -422,7 +435,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         int heightBL, widthBL, heightEL, widthEL;
         const int phaseXC = 0;
         const int phaseYC = 1;
-        const int phaseAlignFlag = ((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->m_phaseAlignFlag;
+        const int phaseAlignFlag = ((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->phase_align_flag;
         const int   phaseX = phaseAlignFlag   << 1;
         const int   phaseY = phaseAlignFlag   << 1;
         HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
@@ -497,11 +510,9 @@ static int hls_slice_header(HEVCContext *s)
     GetBitContext *gb = &s->HEVClc->gb;
     SliceHeader *sh   = &s->sh;
     int i, j, ret;
+    int NumILRRefIdx;
 
     print_cabac("\n --- Decode slice header --- \n", s->nuh_layer_id);
-#if JCTVC_M0458_INTERLAYER_RPS_SIG
-    int NumILRRefIdx;
-#endif
 
     // Coded parameters
     sh->first_slice_in_pic_flag = get_bits1(gb);
@@ -591,7 +602,6 @@ static int hls_slice_header(HEVCContext *s)
     if (!sh->dependent_slice_segment_flag) {
         s->slice_initialized = 0;
 
-#if SVC_EXTENSION
 #if POC_RESET_FLAG
         {
             int iBits = 0;
@@ -627,12 +637,6 @@ static int hls_slice_header(HEVCContext *s)
             }
 #endif
         }
-#else //SVC_EXTENSION
-        for (i = 0; i < s->pps->num_extra_slice_header_bits; i++){
-            skip_bits(gb, 1);  // slice_reserved_undetermined_flag[]
-            print_cabac("skip ", 0);
-        }
-#endif //SVC_EXTENSION
 
         sh->slice_type = get_ue_golomb_long(gb);
         print_cabac("slice_type", sh->slice_type);
@@ -660,7 +664,7 @@ static int hls_slice_header(HEVCContext *s)
         }
 
         print_cabac("s->nal_unit_type", s->nal_unit_type);
-        if (( s->nuh_layer_id > 0 && !s->vps->m_pocLsbNotPresentFlag[s->vps->m_layerIdInVps[s->nuh_layer_id]] )
+        if (( s->nuh_layer_id > 0 && !s->vps->m_pocLsbNotPresentFlag[s->vps->layer_id_in_vps[s->nuh_layer_id]] )
             || (!IS_IDR(s))) {
             int poc;
 
@@ -735,10 +739,10 @@ static int hls_slice_header(HEVCContext *s)
             s->nal_unit_type != NAL_RASL_N  &&
             s->nal_unit_type != NAL_RASL_R)
             s->pocTid0 = s->poc;
-#ifdef REF_IDX_FRAMEWORK
-#ifdef JCTVC_M0458_INTERLAYER_RPS_SIG
         s->sh.active_num_ILR_ref_idx = 0;
+
         NumILRRefIdx = s->vps->m_numDirectRefLayers[s->nuh_layer_id];
+
         if (s->nuh_layer_id > 0 && NumILRRefIdx>0) {
             s->sh.inter_layer_pred_enabled_flag = get_bits1(gb);
             print_cabac("inter_layer_pred_enabled_flag", s->sh.inter_layer_pred_enabled_flag );
@@ -763,11 +767,7 @@ static int hls_slice_header(HEVCContext *s)
                 }
             }
         }
-#else
-        if (s->nuh_layer_id > 0)
-            s->sh.active_num_ILR_ref_idx = s->vps->m_numDirectRefLayers[sc->layer_id];
-#endif
-#endif
+
         if (s->sps->sao_enabled) {
             sh->slice_sample_adaptive_offset_flag[0] = get_bits1(gb);
             print_cabac("slice_sao_luma_flag", sh->slice_sample_adaptive_offset_flag[0] );
@@ -2973,7 +2973,6 @@ static int hevc_frame_start(HEVCContext *s)
 
     if (s->pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->pps->column_width[0] << s->sps->log2_ctb_size;
-#ifdef SVC_EXTENSION
     if (s->nuh_layer_id) {
 #if ACTIVE_PU_UPSAMPLING
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
@@ -2998,7 +2997,6 @@ static int hevc_frame_start(HEVCContext *s)
         s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->m_refLayerId[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
 #endif
     }
-#endif
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
 
     if (ret < 0)
@@ -3197,7 +3195,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             s->is_decoded = 1;
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
-#ifdef SVC_EXTENSION
 #if !ACTIVE_PU_UPSAMPLING
             if (s->active_el_frame) {
                 int i;
@@ -3216,12 +3213,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
             }
 #endif
-#endif
 
-#ifdef SVC_EXTENSION
             if(s->decoder_id > 0)
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
-#endif
         }
 
         if (ctb_addr_ts < 0) {
