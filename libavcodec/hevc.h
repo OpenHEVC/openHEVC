@@ -534,9 +534,11 @@ typedef struct HEVCVPS {
     unsigned int       m_outputLayerSetIdx[MAX_VPS_LAYER_SETS_PLUS1];
     unsigned int       m_outputLayerFlag[MAX_VPS_LAYER_SETS_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
 
+    uint8_t tree_partition_layer_id_list[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
+    uint8_t num_layers_in_tree_partition[MAX_VPS_LAYER_ID_PLUS1];
 #if VPS_EXTN_DIRECT_REF_LAYERS
     uint8_t direct_dependency_flag[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
-    unsigned int   m_numDirectRefLayers[MAX_VPS_LAYER_ID_PLUS1];
+    uint8_t num_direct_ref_layers[MAX_VPS_LAYER_ID_PLUS1];
     unsigned int   m_refLayerId[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
 #if M0457_PREDICTION_INDICATIONS
     unsigned int   m_directDepTypeLen;

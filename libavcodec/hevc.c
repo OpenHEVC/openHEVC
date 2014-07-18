@@ -741,7 +741,7 @@ static int hls_slice_header(HEVCContext *s)
             s->pocTid0 = s->poc;
         s->sh.active_num_ILR_ref_idx = 0;
 
-        NumILRRefIdx = s->vps->m_numDirectRefLayers[s->nuh_layer_id];
+        NumILRRefIdx = s->vps->num_direct_ref_layers[s->nuh_layer_id];
 
         if (s->nuh_layer_id > 0 && NumILRRefIdx>0) {
             s->sh.inter_layer_pred_enabled_flag = get_bits1(gb);

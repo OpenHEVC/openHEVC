@@ -444,7 +444,7 @@ static void setTilesNotInUseFlag(HEVCVPS *vps, unsigned int x)
 #if TILE_BOUNDARY_ALIGNED_FLAG
     if (vps->m_tilesNotInUseFlag) {
         for (i = 1; i < vps->vps_max_layers; i++) {
-            for (j = 0; j < vps->m_numDirectRefLayers[vps->m_layerIdInNuh[i]]; j++) {
+            for (j = 0; j < vps->num_direct_ref_layers[vps->m_layerIdInNuh[i]]; j++) {
                 vps->m_tileBoundariesAlignedFlag[i][j]  = vps->m_tilesNotInUseFlag;
             }
         }
@@ -534,7 +534,7 @@ static void parseVPSVUI(GetBitContext *gb, HEVCVPS *vps)
         for(i = 1; i < vps->vps_max_layers; i++)
         {
 
-            for(j = 0; j < vps->m_numDirectRefLayers[vps->m_layerIdInNuh[i]]; j++)
+            for(j = 0; j < vps->num_direct_ref_layers[vps->m_layerIdInNuh[i]]; j++)
             {
                 layerIdx = vps->layer_id_in_vps[vps->m_refLayerId[vps->m_layerIdInNuh[i]][j]];
                 if (vps->m_tilesInUseFlag[i] && vps->m_tilesInUseFlag[layerIdx]) {
@@ -562,7 +562,7 @@ static void parseVPSVUI(GetBitContext *gb, HEVCVPS *vps)
     {
         for(i = 1; i < vps->vps_max_layers; i++)
         {
-            for(j = 0; j <  vps->m_numDirectRefLayers[vps->m_layerIdInNuh[i]]; j++) {
+            for(j = 0; j <  vps->num_direct_ref_layers[vps->m_layerIdInNuh[i]]; j++) {
                 vps->m_minSpatialSegmentOffsetPlus1[i][j] = get_ue_golomb_long(gb);
                 print_cabac("min_spatial_segment_offset_plus1", vps->m_minSpatialSegmentOffsetPlus1[i][j]); 
                 if( vps->m_minSpatialSegmentOffsetPlus1[i][j] > 0 ) {
@@ -685,7 +685,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
         }
 
 
-    vps->m_numDirectRefLayers[0] = 0;
+    vps->num_direct_ref_layers[0] = 0;
     for (i = 1; i < vps->vps_max_layers; i++) {
         int num_direct_ref_layers = 0;
         for (j = 0; j < i; j++) {
@@ -696,24 +696,40 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
                 num_direct_ref_layers++;
             }
         }
-        vps->m_numDirectRefLayers[i] = num_direct_ref_layers;
+        vps->num_direct_ref_layers[i] = num_direct_ref_layers;
     }
 
+/*    for( j = 0; j < vps->num_direct_ref_layers[ currLayerId ]; j++ ) {
+        refLayerId = RefLayerId[ currLayerId ][ j ]
+        RecursiveRefLayerFlag[ currLayerId ][ refLayerId ] = 1
+        for( k = 0; k < 63; k++ )
+            RecursiveRefLayerFlag[ currLayerId ][ k ] =
+			RecursiveRefLayerFlag[ currLayerId ][ k ]  | |  RecursiveRefLayerFlag[ refLayerId ][ k ]
+            }
 
-/*    for (i = 0, k = 0; i < vps->vps_max_layers; i++ ) {
+    for (i = 0, k = 0; i < vps->vps_max_layers; i++ ) {
         int nuh_id = layer_id_in_nuh[i];
-        if (!vps->m_numDirectRefLayers[nuh_id]) {
-            TreePartitionLayerIdList[ k ][ 0 ] = nuh_id
-            NumLayersInTreePartition[ k ] = 1
-            for( j = 0; j < NumPredictedLayers[ iNuhLId ]; j++ )
-                if( !counted_layer_idx_flag[ LayerIdxInVps[ PredictedLayerId[ nuh_id ][ j ] ] ] ) {
-                    TreePartitionLayerIdList[ k ][ NumLayersInTreePartition[ k ] ] = PredictedLayerId[ iNuhLId ][ j ]
-                    NumLayersInTreePartition[ k ]++
-                    counted_layer_idx_flag[ LayerIdxInVps[ PredictedLayerId[ nuh_id ][ j ] ] ] = 1
+        for (j = nuh_id + 1, pred_idx = 0; j < 63; j++)
+            if( RecursiveRefLayerFlag[ j ][ nuh_id ] )
+                PredictedLayerId[ iNuhLId ][ predIdx++ ] = j;
+                NumPredictedLayers[ iNuhLId ] = pred_idx;
                 }
-            k++
+
+    for (i = 0, k = 0; i < vps->vps_max_layers; i++ ) {
+        int nuh_id = layer_id_in_nuh[i];
+        if (!vps->num_direct_ref_layers[nuh_id]) {
+            vps->tree_partition_layer_id_list[k][0] = nuh_id;
+            vps->num_layers_in_tree_partition[k] = 1;
+
+        for (j = 0; j < NumPredictedLayers[nuh_id]; j++)
+                if( !counted_layer_idx_flag[ LayerIdxInVps[ PredictedLayerId[ nuh_id ][ j ] ] ] ) {
+                    tree_partition_layer_id_l[k][num_layers_in_tree_partition[k]] = PredictedLayerId[nuh_id][j];
+                    num_layers_in_tree_partition[k]++
+                    counted_layer_idx_flag[ LayerIdxInVps[ PredictedLayerId[ nuh_id ][ j ] ] ] = 1;
+                }
+            k++;
         }
-        NumIndependentLayers = k
+        NumIndependentLayers = k;
     }
 */
 /*
@@ -864,7 +880,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     print_cabac("max_one_active_ref_layer_flag", vps->max_one_active_ref_layer_flag);
 #if O0062_POC_LSB_NOT_PRESENT_FLAG
     for (i = 1; i< vps->vps_max_layers; i++) {
-        if(vps->m_numDirectRefLayers[layer_id_in_nuh[i]] == 0) {
+        if(vps->num_direct_ref_layers[layer_id_in_nuh[i]] == 0) {
             vps->m_pocLsbNotPresentFlag[i] =  get_bits1(gb);
             print_cabac("poc_lsb_not_present_flag", vps->m_pocLsbNotPresentFlag[i]);
         }
