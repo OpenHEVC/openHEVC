@@ -90,6 +90,7 @@ static av_always_inline int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, 
            yN >> plevel == yP >> plevel;
 }
 
+#define MATCH_MV(x) (AV_RN32A(&A.x) == AV_RN32A(&B.x))
 #define MATCH(x) (A.x == B.x)
 
 // check if the mv's and refidx are the same between A and B
@@ -193,12 +194,12 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
                 }
             }
         }
-        if (!check_diffpicount)
+        if (!check_diffpicount) {
             if (X==0)
                 return CHECK_MVSET(0);
             else
                 return CHECK_MVSET(1);
-        else {
+        } else {
             if (s->sh.collocated_list == L1)
                 return CHECK_MVSET(0);
             else
@@ -264,6 +265,8 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
         x < s->sps->width) {
         x                 &= -16;
         y                 &= -16;
+        if (s->threads_type == FF_THREAD_FRAME)
+            ff_thread_await_progress(&ref->tf, y, 0);
         x_pu               = x >> s->sps->log2_min_pu_size;
         y_pu               = y >> s->sps->log2_min_pu_size;
         temp_col           = TAB_MVF(x_pu, y_pu);
@@ -276,6 +279,8 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
         y                  = y0 + (nPbH >> 1);
         x                 &= -16;
         y                 &= -16;
+        if (s->threads_type == FF_THREAD_FRAME)
+            ff_thread_await_progress(&ref->tf, y, 0);
         x_pu               = x >> s->sps->log2_min_pu_size;
         y_pu               = y >> s->sps->log2_min_pu_size;
         temp_col           = TAB_MVF(x_pu, y_pu);

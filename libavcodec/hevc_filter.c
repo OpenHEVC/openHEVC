@@ -265,17 +265,15 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 
         switch (sao->type_idx[c_idx]) {
         case SAO_BAND:
-        {
             copy_CTB(dst, src, width << s->sps->pixel_shift, height, stride_dst, stride_src);
             s->hevcdsp.sao_band_filter(src, dst,
-                    stride_src, stride_dst,
-                    sao,
-                    edges, width,
-                    height, c_idx);
+                                       stride_src, stride_dst,
+                                       sao,
+                                       edges, width,
+                                       height, c_idx);
             restore_tqb_pixels(s, x, y, width, height, c_idx);
             sao->type_idx[c_idx] = SAO_APPLIED;
             break;
-        }
         case SAO_EDGE:
         {
             uint8_t left_pixels = !edges[0] && (CTB(s->sao, x_ctb-1, y_ctb).type_idx[c_idx] != SAO_APPLIED);
@@ -307,13 +305,13 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                      src - (left_pixels << s->sps->pixel_shift),
                      (width + 1 + left_pixels) << s->sps->pixel_shift, height, stride_dst, stride_src);
             s->hevcdsp.sao_edge_filter[restore](src, dst,
-                    stride_src, stride_dst,
-                    sao,
-                    edges, width,
-                    height, c_idx,
-                    vert_edge,
-                    horiz_edge,
-                    diag_edge);
+                                                stride_src, stride_dst,
+                                                sao,
+                                                edges, width,
+                                                height, c_idx,
+                                                vert_edge,
+                                                horiz_edge,
+                                                diag_edge);
             restore_tqb_pixels(s, x, y, width, height, c_idx);
             sao->type_idx[c_idx] = SAO_APPLIED;
             break;
