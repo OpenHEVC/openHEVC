@@ -118,8 +118,6 @@ static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
     int x, y;
     int size = 1 << log2_size;
 
-
-
     if (mode) {
         coeffs += size;
         for (y = 0; y < size - 1; y++) {
@@ -135,7 +133,6 @@ static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
         }
     }
 }
-
 
 static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
 {
@@ -205,9 +202,6 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
 
 #undef TR_4x4_LUMA
 
-////////////////////////////////////////////////////////////////////////////////
-//
-////////////////////////////////////////////////////////////////////////////////
 #define TR_4(dst, src, dstep, sstep, assign, end)                              \
     do {                                                                       \
         const int e0 = 64 * src[0 * sstep] + 64 * src[2 * sstep];              \
@@ -335,9 +329,6 @@ IDCT_DC(32)
 #undef SCALE
 #undef ADD_AND_SCALE
 
-////////////////////////////////////////////////////////////////////////////////
-//
-////////////////////////////////////////////////////////////////////////////////
 static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
                                   int *borders, int width, int height,
@@ -364,9 +355,6 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//
-////////////////////////////////////////////////////////////////////////////////
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
 
 static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
@@ -1575,13 +1563,15 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
 
 static void FUNC(hevc_loop_filter_luma)(uint8_t *_pix,
                                         ptrdiff_t _xstride, ptrdiff_t _ystride,
-                                        int *_beta, int *_tc,
+                                        int beta, int *_tc,
                                         uint8_t *_no_p, uint8_t *_no_q)
 {
     int d, j;
     pixel *pix        = (pixel *)_pix;
     ptrdiff_t xstride = _xstride / sizeof(pixel);
     ptrdiff_t ystride = _ystride / sizeof(pixel);
+
+    beta <<= BIT_DEPTH - 8;
 
     for (j = 0; j < 2; j++) {
         const int dp0  = abs(P2  - 2 * P1  + P0);
@@ -1590,7 +1580,6 @@ static void FUNC(hevc_loop_filter_luma)(uint8_t *_pix,
         const int dq3  = abs(TQ2 - 2 * TQ1 + TQ0);
         const int d0   = dp0 + dq0;
         const int d3   = dp3 + dq3;
-        const int beta = _beta[j] << (BIT_DEPTH - 8);
         const int tc   = _tc[j]   << (BIT_DEPTH - 8);
         const int no_p = _no_p[j];
         const int no_q = _no_q[j];
@@ -1717,7 +1706,7 @@ static void FUNC(hevc_v_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
 }
 
 static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int *beta, int *tc, uint8_t *no_p,
+                                          int beta, int *tc, uint8_t *no_p,
                                           uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, stride, sizeof(pixel),
@@ -1725,7 +1714,7 @@ static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
 }
 
 static void FUNC(hevc_v_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int *beta, int *tc, uint8_t *no_p,
+                                          int beta, int *tc, uint8_t *no_p,
                                           uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, sizeof(pixel), stride,
