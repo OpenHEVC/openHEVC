@@ -186,7 +186,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
         if (s->sh.no_output_of_prior_pics_flag == 1) {
             for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
                 HEVCFrame *frame = &s->DPB[i];
-                if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) && frame->poc != s->poc &&
+                if (!(frame->flags & HEVC_FRAME_FLAG_BUMPING) && frame->poc != s->poc &&
                         frame->sequence == s->seq_output) {
                     frame->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
                 }
@@ -235,7 +235,8 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             }
 #else
             frame->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
-            
+            if (frame->flags & HEVC_FRAME_FLAG_BUMPING)
+                frame->flags &= ~(HEVC_FRAME_FLAG_BUMPING);
 #endif
 
             if (ret < 0)
@@ -260,6 +261,46 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
     } while (1);
 
     return 0;
+}
+
+void ff_hevc_bump_frame(HEVCContext *s)
+{
+    int dpb = 0;
+    int min_poc = INT_MAX;
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        HEVCFrame *frame = &s->DPB[i];
+        if ((frame->flags) &&
+            frame->sequence == s->seq_output &&
+            frame->poc != s->poc) {
+            dpb++;
+        }
+    }
+
+    if (s->sps && dpb >= s->sps->temporal_layer[s->sps->max_sub_layers - 1].max_dec_pic_buffering) {
+        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+            HEVCFrame *frame = &s->DPB[i];
+            if ((frame->flags) &&
+                frame->sequence == s->seq_output &&
+                frame->poc != s->poc) {
+                if (frame->flags == HEVC_FRAME_FLAG_OUTPUT && frame->poc < min_poc) {
+                    min_poc = frame->poc;
+                }
+            }
+        }
+
+        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+            HEVCFrame *frame = &s->DPB[i];
+            if (frame->flags & HEVC_FRAME_FLAG_OUTPUT &&
+                frame->sequence == s->seq_output &&
+                frame->poc <= min_poc) {
+                frame->flags |= HEVC_FRAME_FLAG_BUMPING;
+            }
+        }
+
+        dpb--;
+    }
 }
 
 static int init_slice_rpl(HEVCContext *s)
