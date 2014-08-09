@@ -590,40 +590,23 @@ static int hls_slice_header(HEVCContext *s)
     if (!sh->dependent_slice_segment_flag) {
         s->slice_initialized = 0;
 
-#if POC_RESET_FLAG
         {
             int iBits = 0;
             if(s->pps->num_extra_slice_header_bits > iBits) {
-                sh->m_bPocResetFlag = get_bits1(gb);
-                print_cabac("poc_reset_flag", sh->m_bPocResetFlag);
+                uint8_t discardable_flag = get_bits1(gb);
+                print_cabac("discardable_flag  ", discardable_flag);
                 iBits++;
             }
-            if(s->pps->num_extra_slice_header_bits > iBits) {
-                skip_bits1(gb);
-                print_cabac("skip  ", 0);
-                iBits++;
-            }
-#if O0149_CROSS_LAYER_BLA_FLAG
             if(s->pps->num_extra_slice_header_bits > iBits) {
                 sh->m_bCrossLayerBLAFlag = get_bits1(gb);
                 print_cabac("cross_layer_bla_flag", sh->m_bCrossLayerBLAFlag);
                 iBits++;
             }
-#endif
-           for (; iBits < s->pps->num_extra_slice_header_bits; iBits++) {
-                skip_bits1(gb);
-                print_cabac("skip ", 0);
+            if(s->pps->num_extra_slice_header_bits > iBits) {
+                sh->m_bPocResetFlag = get_bits1(gb);
+                print_cabac("poc_reset_flag", sh->m_bPocResetFlag);
+                iBits++;
             }
-#else
-            if(s->pps->num_extra_slice_header_bits>0) {
-                skip_bits1(gb);
-                print_cabac("skip ", 0);
-            }
-            for ( i = 1; i < s->pps->num_extra_slice_header_bits; i++) {
-                skip_bits1(gb);
-                print_cabac("skip ", 0);
-            }
-#endif
         }
 
         sh->slice_type = get_ue_golomb_long(gb);
@@ -731,7 +714,7 @@ static int hls_slice_header(HEVCContext *s)
 
         NumILRRefIdx = s->vps->num_direct_ref_layers[s->nuh_layer_id];
 
-        if (s->nuh_layer_id > 0 && NumILRRefIdx>0) {
+        if (s->nuh_layer_id > 0 && !s->vps->all_ref_layers_active_flag && NumILRRefIdx>0) {
             s->sh.inter_layer_pred_enabled_flag = get_bits1(gb);
             print_cabac("inter_layer_pred_enabled_flag", s->sh.inter_layer_pred_enabled_flag );
             if (s->sh.inter_layer_pred_enabled_flag) {
@@ -776,6 +759,7 @@ static int hls_slice_header(HEVCContext *s)
             if (sh->slice_type == B_SLICE)
                 sh->nb_refs[L1] = s->pps->num_ref_idx_l1_default_active;
             num_ref_idx_active_override_flag = get_bits1(gb);
+            print_cabac("num_ref_idx_active_override_flag", num_ref_idx_active_override_flag);
             if (num_ref_idx_active_override_flag) { // num_ref_idx_active_override_flag
                 sh->nb_refs[L0] = get_ue_golomb_long(gb) + 1;
                 print_cabac("num_ref_idx_l0_active_minus1", sh->nb_refs[L0] -1);
@@ -795,7 +779,7 @@ static int hls_slice_header(HEVCContext *s)
             nb_refs = ff_hevc_frame_nb_refs(s);
             if (!nb_refs) {
                 av_log(s->avctx, AV_LOG_ERROR, "Zero refs for a frame with P or B slices.\n");
-                return AVERROR_INVALIDDATA;
+                //return AVERROR_INVALIDDATA;
             }
 
             if (s->pps->lists_modification_present_flag && nb_refs > 1) {
@@ -3187,9 +3171,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if (s->pps->tiles_enabled_flag && s->threads_number!=1)
                 tiles_filters(s);
 #if !ACTIVE_PU_UPSAMPLING
-            if (s->active_el_frame) {
+            if (s->bl_decoder_el_exist) {
                 int i;
-                s->active_el_frame = 0;
+                s->bl_decoder_el_exist = 0;
                 for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
                     HEVCFrame *frame = &s->Add_ref[i];
                     if (frame->frame->buf[0])

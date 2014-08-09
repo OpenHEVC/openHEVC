@@ -643,6 +643,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
         if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) &&
             s->sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
+            int ctb_size = s->sps->ctb_size;
             int *arg, *ret, cmpt = (s->sps->height / ctb_size) + (s->sps->height%ctb_size ? 1:0);
 
             arg = av_malloc(cmpt*sizeof(int));

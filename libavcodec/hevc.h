@@ -39,6 +39,7 @@
 
 #define TEST_MV_POC
 
+#define HM_MV 0
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
 
@@ -142,7 +143,7 @@ enum NALUnitType {
     NAL_SEI_PREFIX = 39,
     NAL_SEI_SUFFIX = 40,
 };
-#if 0 
+#if 1 
 #define print_cabac(string, val) \
     printf(" %s : %d \n", string, val);
 #else
@@ -482,6 +483,9 @@ typedef struct HEVCVPS {
 #ifdef VPS_EXTENSION
     int avc_base_layer_flag;
     int layer_id_in_vps[MAX_VPS_LAYER_ID_PLUS1];
+    int layer_id_in_nuh[MAX_VPS_LAYER_ID_PLUS1];
+    uint8_t scalability_mask[MAX_VPS_NUM_SCALABILITY_TYPES];
+    uint32_t dimension_id[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_NUM_SCALABILITY_TYPES];
 
 #if DERIVE_LAYER_ID_LIST_VARIABLES
     int         m_layerSetLayerIdList[MAX_VPS_LAYER_SETS_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
@@ -493,11 +497,8 @@ typedef struct HEVCVPS {
 #if VPS_EXTN_MASK_AND_DIM_INFO
     unsigned int      m_avcBaseLayerFlag;                                // For now, always set to true.
     unsigned int       m_splittingFlag;
-    unsigned int       m_scalabilityMask[MAX_VPS_NUM_SCALABILITY_TYPES];
     unsigned int       m_dimensionIdLen[MAX_VPS_NUM_SCALABILITY_TYPES];
     unsigned int       m_nuhLayerIdPresentFlag;
-    unsigned int       m_layerIdInNuh[MAX_VPS_LAYER_ID_PLUS1];            // Maps layer ID in the VPS with layer_id_in_nuh
-    unsigned int       m_dimensionId[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_NUM_SCALABILITY_TYPES];
 
    // Below are derived variables
    //  unsigned int       m_numScalabilityTypes;
@@ -511,6 +512,7 @@ typedef struct HEVCVPS {
 #endif
     
     uint32_t max_tid_il_ref_pics_plus1[MAX_VPS_LAYER_ID_PLUS1 - 1][MAX_VPS_LAYER_ID_PLUS1];
+    uint8_t all_ref_layers_active_flag;
 #if VPS_EXTN_PROFILE_INFO
     unsigned int    vps_profile_present_flag[MAX_VPS_LAYER_SETS_PLUS1];    // The value with index 0 will not be used.
     unsigned int    profile_ref[MAX_VPS_LAYER_SETS_PLUS1];    // The value with index 0 will not be used.

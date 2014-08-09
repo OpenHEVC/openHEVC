@@ -30,11 +30,11 @@
     #define VPS_EXTENSION   1
     #define VPS_EXTN_MASK_AND_DIM_INFO 1
     #define SCALED_REF_LAYER_OFFSETS   1
-    #define MAX_LAYERS  2
+    #define MAX_LAYERS  10
     #define PHASE_DERIVATION_IN_INTEGER 1
     #define ILP_DECODED_PICTURE 1
     #define CHROMA_UPSAMPLING   1
-    #define MAX_VPS_OP_LAYER_SETS_PLUS1       3
+    #define MAX_VPS_OP_LAYER_SETS_PLUS1       10
         #define REF_IDX_ME_ZEROMV                1
         #define REF_IDX_MFM                      1
 #endif
@@ -80,11 +80,7 @@
     #define REPN_FORMAT_IN_VPS               1      ///< JCTVC-N0092: Signal represenation format (spatial resolution, bit depth, colour format) in the VPS
 
 
-    #define M0040_ADAPTIVE_RESOLUTION_CHANGE 1
     #define VPS_VUI                          1      ///< Include function structure for VPS VUI
-    #if M0040_ADAPTIVE_RESOLUTION_CHANGE
-        #define HIGHER_LAYER_IRAP_SKIP_FLAG      1      ///< JCTVC-O0199: Indication that higher layer IRAP picture uses skip blocks only
-    #endif
     #define VPS_VUI_BITRATE_PICRATE          1      ///< JCTVC-N0085: Signal bit rate and picture in VPS VUI
 #endif
 
