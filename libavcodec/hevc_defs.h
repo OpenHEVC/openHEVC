@@ -68,9 +68,6 @@
     #define MAX_VPS_LAYER_ID_PLUS1              MAX_LAYERS
     #define MAX_VPS_LAYER_SETS_PLUS1            1024
     #define VPS_MOVE_DIR_DEPENDENCY_FLAG        1
-    #define VPS_EXTN_DIRECT_REF_LAYERS          1
-    #define M0457_PREDICTION_INDICATIONS     1
-    #define O0096_DEFAULT_DEPENDENCY_TYPE    1      ///< JCTVC-O0096: specify default dependency type for all direct reference layers
     #if O0092_0094_DEPENDENCY_CONSTRAINT
         #define MAX_REF_LAYERS                   7
     #endif
@@ -115,7 +112,5 @@
 #if FAST_INTRA_SHVC
 #define NB_REMAIN_MODES                  2      ///< JCTVC-M0115: nb of remaining modes
 #endif
-
-#define DERIVE_LAYER_ID_LIST_VARIABLES      1
 
 #endif /* AVCODEC_HEVC_DEF_H */

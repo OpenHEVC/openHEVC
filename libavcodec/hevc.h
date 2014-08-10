@@ -39,7 +39,7 @@
 
 #define TEST_MV_POC
 
-#define HM_MV 0
+#define HM_MV 1
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
 
@@ -447,10 +447,10 @@ typedef struct RepFormat
     unsigned int m_chromaAndBitDepthVpsPresentFlag;
     enum ChromaFormat m_chromaFormatVpsIdc;
     unsigned int m_separateColourPlaneVpsFlag;
-    int  m_picWidthVpsInLumaSamples;
-    int  m_picHeightVpsInLumaSamples;
-    int  m_bitDepthVpsLuma;               // coded as minus8
-    int  m_bitDepthVpsChroma;             // coded as minus8
+    int16_t   pic_width_vps_in_luma_samples;
+    int16_t   pic_height_vps_in_luma_samples;
+    uint8_t   bit_depth_vps_luma;               // coded as minus8
+    uint8_t   bit_depth_vps_chroma;             // coded as minus8
 } RepFormat;
 #endif
 
@@ -487,10 +487,8 @@ typedef struct HEVCVPS {
     uint8_t scalability_mask[MAX_VPS_NUM_SCALABILITY_TYPES];
     uint32_t dimension_id[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_NUM_SCALABILITY_TYPES];
 
-#if DERIVE_LAYER_ID_LIST_VARIABLES
     int         m_layerSetLayerIdList[MAX_VPS_LAYER_SETS_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
     int         m_numLayerInIdList[MAX_VPS_LAYER_SETS_PLUS1];
-#endif
 
     uint32_t view_id_val [MAX_LAYERS];
 
@@ -538,19 +536,13 @@ typedef struct HEVCVPS {
 
     uint8_t tree_partition_layer_id_list[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
     uint8_t num_layers_in_tree_partition[MAX_VPS_LAYER_ID_PLUS1];
-#if VPS_EXTN_DIRECT_REF_LAYERS
     uint8_t direct_dependency_flag[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
     uint8_t num_direct_ref_layers[MAX_VPS_LAYER_ID_PLUS1];
     unsigned int   m_refLayerId[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
-#if M0457_PREDICTION_INDICATIONS
     unsigned int   m_directDepTypeLen;
-#if O0096_DEFAULT_DEPENDENCY_TYPE
     unsigned int   m_defaultDirectDependencyTypeFlag;
     unsigned int   m_defaultDirectDependencyType;
-#endif
     unsigned int   m_directDependencyType[MAX_VPS_LAYER_ID_PLUS1][MAX_VPS_LAYER_ID_PLUS1];
-#endif
-#endif
 #endif
     
     
