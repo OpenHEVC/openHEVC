@@ -722,7 +722,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
     if (s->nuh_layer_id) {
         for (i = 0; i < s->vps->max_one_active_ref_layer_flag; i ++) {
             if ((vps->view_id_val[s->nuh_layer_id] <= vps->view_id_val[0]) &&
-                (vps->view_id_val[s->nuh_layer_id] <= vps->view_id_val[vps->m_refLayerId[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
+                (vps->view_id_val[s->nuh_layer_id] <= vps->view_id_val[vps->ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
                 //IL_REF0 , IL_REF1
                 ret = add_candidate_ref(s, &rps[IL_REF0], s->poc, HEVC_FRAME_FLAG_LONG_REF);
             }
