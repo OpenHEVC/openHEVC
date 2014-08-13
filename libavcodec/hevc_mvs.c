@@ -38,7 +38,7 @@ static const uint8_t l0_l1_cand_idx[12][2] = {
     { 3, 2, },
 };
 
-void  ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
+void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
                                      int nPbW, int nPbH)
 {
     HEVCLocalContext *lc = s->HEVClc;
@@ -720,6 +720,11 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     }
     availableFlagLXA0 = 0;
 
+    if(availableFlagLXA0 && !mvp_lx_flag) {
+        mv->mv[LX] = mxA;
+        return;
+    }
+
 b_candidates:
     // B candidates
     // above right spatial merge candidate
@@ -804,7 +809,8 @@ scalef:
         mvpcand_list[numMVPCandLX++] = mxB;
 
     //temporal motion vector prediction candidate
-    if (numMVPCandLX < 2 && s->sh.slice_temporal_mvp_enabled_flag) {
+    if (numMVPCandLX < 2 && s->sh.slice_temporal_mvp_enabled_flag &&
+        mvp_lx_flag == numMVPCandLX) {
         Mv mv_col;
         int available_col = temporal_luma_motion_vector(s, x0, y0, nPbW,
                                                         nPbH, ref_idx,

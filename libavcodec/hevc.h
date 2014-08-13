@@ -93,8 +93,6 @@
  */
 #define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->width + (x)])
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
-#define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
-#define SAMPLE_CBF2(tab, x, y) ((tab)[(y) * MAX_CU_SIZE +  (x)])
 
 #define IS_IDR(s) ((s)->nal_unit_type == NAL_IDR_W_RADL || (s)->nal_unit_type == NAL_IDR_N_LP)
 #define IS_BLA(s) ((s)->nal_unit_type == NAL_BLA_W_RADL || (s)->nal_unit_type == NAL_BLA_W_LP || \
@@ -106,12 +104,6 @@ enum ScalabilityType
     VIEW_ORDER_INDEX  = 1,
     SCALABILITY_ID = 2,
 };
-
-#define CBF_LUMA_FLAG   1
-#define CBF_CB_FLAG     2
-#define CBF_CR_FLAG     4
-#define CBF_CB_CR_FLAG  6
-#define CBF_FLAG        8
 
 /**
  * Table 7-3: NAL unit type codes
@@ -893,11 +885,6 @@ typedef struct PredictionUnit {
     uint8_t chroma_mode_c[4];
 } PredictionUnit;
 
-
-typedef struct TransformTree {
-    uint8_t cbf_flags[MAX_TRANSFORM_DEPTH][MAX_CU_SIZE * MAX_CU_SIZE];
-} TransformTree;
-
 typedef struct TransformUnit {
     DECLARE_ALIGNED(32, int16_t, coeffs[2][MAX_TB_SIZE * MAX_TB_SIZE]);
 
@@ -970,7 +957,6 @@ typedef struct HEVCNAL {
 typedef struct HEVCLocalContext {
     GetBitContext       gb;
     CABACContext        cc;
-    TransformTree       tt;
     TransformUnit       tu;
     CodingTree          ct;
     CodingUnit          cu;

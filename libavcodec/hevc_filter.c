@@ -159,6 +159,7 @@ static void copy_CTB(uint8_t *dst, uint8_t *src,
         src += stride_src;
     }
 }
+
 static void restore_tqb_pixels(HEVCContext *s, int x0, int y0, int width, int height, int c_idx)
 {
     if ( s->pps->transquant_bypass_enable_flag ||
