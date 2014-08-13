@@ -83,6 +83,7 @@ set(YASM_NAMES
     libavcodec/x86/hevc_mc.asm
     libavcodec/x86/hevc_deblock.asm
     libavcodec/x86/hevc_idct.asm
+    libavcodec/x86/hevc_res_add.asm
     libavcodec/x86/hpeldsp.asm
     libavcodec/x86/qpel.asm
     libavcodec/x86/qpeldsp.asm
