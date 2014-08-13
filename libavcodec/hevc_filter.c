@@ -1161,54 +1161,22 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
     HEVCFrame *refBL = s->BL_frame;
     HEVCFrame *refEL = s->inter_layer_ref;
 
-    if (s->up_filter_inf.idx == SNR) {
-
-
-        for(yEL=ctb_y; yEL < ctb_y+ctb_size && yEL<s->sps->height; yEL+=16) {
-            for(xEL=ctb_x; xEL < ctb_x+ctb_size && xEL<s->sps->width; xEL+=16) {
-                xBL = (((av_clip_c(xEL+8, 0, s->sps->width -1)  - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + (1<<15)) >> 16) + 4;
-                yBL = (((av_clip_c(yEL+8, 0, s->sps->height -1) - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + (1<<15)) >> 16) + 4;
-                pre_unit = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + (xEL>>s->sps->log2_min_pu_size);
-                if (xBL < s->BL_frame->frame->coded_width && yBL < s->BL_frame->frame->coded_height) {
-                    xBL >>= 4;
-                    xBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> xBL & 0xFFFFFFF0
-                    yBL >>= 4;
-                    yBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> yBL & 0xFFFFFFF0
-                    Ref_pre_unit = (yBL*pic_width_in_min_puBL)+xBL;
-                    if (refBL->tab_mvf[Ref_pre_unit].pred_flag) {
+    for(yEL=ctb_y; yEL < ctb_y+ctb_size && yEL<s->sps->height; yEL+=16) {
+        for(xEL=ctb_x; xEL < ctb_x+ctb_size && xEL<s->sps->width; xEL+=16) {
+            xBL = (((av_clip_c(xEL+8, 0, s->sps->width -1)  - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + (1<<15)) >> 16) + 4;
+            yBL = (((av_clip_c(yEL+8, 0, s->sps->height -1) - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + (1<<15)) >> 16) + 4;
+            pre_unit = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + (xEL>>s->sps->log2_min_pu_size);
+            if(xBL < s->BL_frame->frame->coded_width && yBL < s->BL_frame->frame->coded_height) {
+                xBL >>= 4;
+                xBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> xBL & 0xFFFFFFF0
+                yBL >>= 4;
+                yBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> yBL & 0xFFFFFFF0
+                Ref_pre_unit = (yBL*pic_width_in_min_puBL)+xBL;
+                if(refBL->tab_mvf[Ref_pre_unit].pred_flag) {
+                    if (s->up_filter_inf.idx == SNR) {
                         memcpy(&refEL->tab_mvf[pre_unit], &refBL->tab_mvf[Ref_pre_unit], sizeof(MvField));
-                    } else
-                        memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
-                } else
-                    memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
+                    } else {
 
-                if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu && ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
-                    pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
-                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-                }
-                if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
-                    pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
-                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-                }
-                if( ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
-                    pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
-                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-                }
-            }
-        }
-    }   else {
-        for(yEL=ctb_y; yEL < ctb_y+ctb_size && yEL<s->sps->height; yEL+=16) {
-            for(xEL=ctb_x; xEL < ctb_x+ctb_size && xEL<s->sps->width; xEL+=16) {
-                xBL = (((av_clip_c(xEL+8, 0, s->sps->width -1)  - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + (1<<15)) >> 16) + 4;
-                yBL = (((av_clip_c(yEL+8, 0, s->sps->height -1) - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + (1<<15)) >> 16) + 4;
-                pre_unit = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + (xEL>>s->sps->log2_min_pu_size);
-                if(xBL < s->BL_frame->frame->coded_width && yBL < s->BL_frame->frame->coded_height) {
-                    xBL >>= 4;
-                    xBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> xBL & 0xFFFFFFF0
-                    yBL >>= 4;
-                    yBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> yBL & 0xFFFFFFF0
-                    Ref_pre_unit = (yBL*pic_width_in_min_puBL)+xBL;
-                    if(refBL->tab_mvf[Ref_pre_unit].pred_flag) {
                         for( list=0; list < nb_list; list++) {
                             refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->sh.ScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->sh.ScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
                             refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->sh.ScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->sh.ScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
@@ -1218,24 +1186,25 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
 #endif
                             refEL->tab_mvf[pre_unit].pred_flag = refBL->tab_mvf[Ref_pre_unit].pred_flag;
                         }
-                    } else
-                        memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
-
+                    }
                 } else
                     memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
 
-                if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu && ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
-                    pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
-                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-                }
-                if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
-                    pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
-                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-                }
-                if( ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
-                    pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
-                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-                }
+
+            } else
+                memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
+
+            if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu && ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
+                pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
+                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+            }
+            if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
+                pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
+                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+            }
+            if( ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
+                pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
+                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
             }
         }
     }
@@ -1245,46 +1214,56 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
 
     int ctb_size =  1<<s->sps->log2_ctb_size;
     int log2_ctb =  s->sps->log2_ctb_size;
-    int ctb_x0   =  (x0 >> log2_ctb) << log2_ctb;
-    int ctb_y0   =  (y0 >> log2_ctb) << log2_ctb;
+    int ctb_x0   =  (av_clip(x0, 0, s->sps->width) >> log2_ctb) << log2_ctb;
+    int ctb_y0   =  (av_clip(y0, 0, s->sps->height) >> log2_ctb) << log2_ctb;
 
-    if(  (x0 - ctb_x0) < MAX_EDGE  && ctb_x0> ctb_size &&
-       !s->is_upsampled[(ctb_y0/ctb_size*s->sps->ctb_width)+((ctb_x0-ctb_size)/ctb_size)]){
-        ff_upscale_mv_block(s, ctb_x0-ctb_size      , ctb_y0);
-        upsample_block_mc   ( s, ref0, (ctb_x0-ctb_size)>>1  , ctb_y0>>1 );
-        upsample_block_luma ( s, ref0,  ctb_x0-ctb_size      , ctb_y0    );
+    if ((x0 - ctb_x0) < MAX_EDGE &&
+        ctb_x0 > ctb_size        &&
+        !s->is_upsampled[(ctb_y0 / ctb_size * s->sps->ctb_width)+((ctb_x0 - ctb_size) / ctb_size)]){
+        ff_upscale_mv_block(s, ctb_x0 - ctb_size            , ctb_y0);
+        upsample_block_mc  (s, ref0, (ctb_x0-ctb_size) >> 1 , ctb_y0 >> 1);
+        upsample_block_luma(s, ref0, ctb_x0-ctb_size        , ctb_y0);
     }
 
-    if(  (y0 - ctb_y0) < MAX_EDGE  && ctb_y0>ctb_size &&
-       !s->is_upsampled[((ctb_y0-ctb_size)/ctb_size*s->sps->ctb_width)+(ctb_x0/ctb_size)]){
-        ff_upscale_mv_block(s, ctb_x0      , ctb_y0-ctb_size);
-        upsample_block_mc   ( s, ref0, ctb_x0>>1, (ctb_y0-ctb_size)>>1 );
-        upsample_block_luma ( s, ref0, ctb_x0   ,  ctb_y0-ctb_size     );
+    if ((y0 - ctb_y0) < MAX_EDGE &&
+        ctb_y0 > ctb_size &&
+        !s->is_upsampled[((ctb_y0 - ctb_size) / ctb_size * s->sps->ctb_width) + (ctb_x0 / ctb_size)]){
+        ff_upscale_mv_block(s, ctb_x0            , ctb_y0 - ctb_size);
+        upsample_block_mc  (s, ref0, ctb_x0 >> 1 , (ctb_y0 - ctb_size) >> 1);
+        upsample_block_luma(s, ref0, ctb_x0      , ctb_y0 - ctb_size);
     }
 
-    if(!s->is_upsampled[(ctb_y0/ctb_size*s->sps->ctb_width)+(ctb_x0/ctb_size)]){
-        ff_upscale_mv_block(s, ctb_x0      , ctb_y0);
-        upsample_block_mc   ( s, ref0, ctb_x0>>1, ctb_y0>>1 );
-        upsample_block_luma ( s, ref0, ctb_x0   , ctb_y0    );
+    if(!s->is_upsampled[(ctb_y0 / ctb_size * s->sps->ctb_width) + (ctb_x0 / ctb_size)]){
+        ff_upscale_mv_block(s, ctb_x0           , ctb_y0);
+        upsample_block_mc  (s, ref0, ctb_x0 >> 1, ctb_y0 >> 1);
+        upsample_block_luma(s, ref0, ctb_x0     , ctb_y0);
 
     }
 
-    if((((x0 + nPbW + MAX_EDGE) >> log2_ctb)<<log2_ctb) > ctb_x0 && ((ctb_x0+ctb_size) < s->sps->width) &&
-       !s->is_upsampled[(ctb_y0/ctb_size*s->sps->ctb_width)+((ctb_x0+ctb_size)/ctb_size)]){
+    if((((x0 + nPbW + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_x0 && ((ctb_x0 + ctb_size) < s->sps->width) &&
+       !s->is_upsampled[(ctb_y0 / ctb_size * s->sps->ctb_width) + ((ctb_x0 + ctb_size) / ctb_size)]){
         ff_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0);
-        upsample_block_mc   ( s,  ref0, (ctb_x0 + ctb_size)>>1,  ctb_y0>>1 );
-        upsample_block_luma (  s, ref0,  ctb_x0 + ctb_size     , ctb_y0    );
+        upsample_block_mc  (s, ref0, (ctb_x0 + ctb_size) >> 1, ctb_y0 >> 1);
+        upsample_block_luma(s, ref0, ctb_x0 + ctb_size       , ctb_y0);
     }
 
-    if((((y0 + nPbH + MAX_EDGE) >> log2_ctb)<<log2_ctb) > ctb_y0 && ((ctb_y0+ctb_size) < s->sps->height) &&
-       !s->is_upsampled[((ctb_y0+ctb_size)/ctb_size*s->sps->ctb_width)+(ctb_x0/ctb_size)]){
-        if (s->threads_type & FF_THREAD_FRAME ) {
-            int bl_y = ctb_y0+ ctb_size + ctb_size*2 + 9;
-            bl_y = (( (bl_y  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
-            ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);
+    if((((y0 + nPbH + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_y0 &&
+       ((ctb_y0 + ctb_size) < s->sps->height)) {
+        if (!s->is_upsampled[((ctb_y0 + ctb_size) / ctb_size * s->sps->ctb_width) + (ctb_x0 / ctb_size)]){
+            if (s->threads_type & FF_THREAD_FRAME ) {
+                int bl_y = ctb_y0 + ctb_size + ctb_size * 2 + 9;
+                bl_y = (( (bl_y  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
+                ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);
+            }
+            ff_upscale_mv_block(s, ctb_x0, ctb_y0 + ctb_size);
+            upsample_block_mc  (s, ref0, ctb_x0 >> 1, (ctb_y0 + ctb_size) >> 1);
+            upsample_block_luma(s, ref0, ctb_x0     , ctb_y0 + ctb_size);
         }
-        ff_upscale_mv_block(s, ctb_x0 , ctb_y0+ ctb_size);
-        upsample_block_mc   ( s, ref0, ctb_x0>>1, (ctb_y0 + ctb_size)>>1  );
-        upsample_block_luma ( s, ref0, ctb_x0   ,  ctb_y0 + ctb_size      );
+        if((((x0 + nPbW + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_x0 && ((ctb_x0 + ctb_size) < s->sps->width) &&
+           !s->is_upsampled[((ctb_y0 + ctb_size) / ctb_size * s->sps->ctb_width) + ((ctb_x0 + ctb_size) / ctb_size)]){
+            ff_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0 + ctb_size);
+            upsample_block_mc  (s, ref0, (ctb_x0 + ctb_size) >> 1, (ctb_y0 + ctb_size) >> 1);
+            upsample_block_luma(s, ref0, (ctb_x0 + ctb_size)    , ctb_y0 + ctb_size);
+        }
     }
 }
