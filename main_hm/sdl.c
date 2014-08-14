@@ -103,8 +103,17 @@ void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, 
     if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
     // let's draw the data (*yuv[3]) on a SDL screen (*screen)
     memcpy(yuv_overlay->pixels[0], Y, (frame_width + 2 * edge) * frame_height);
-    memcpy(yuv_overlay->pixels[1], V, (frame_width + 2 * edge) * frame_height / 4);
-    memcpy(yuv_overlay->pixels[2], U, (frame_width + 2 * edge) * frame_height / 4);
+    if (V)
+        memcpy(yuv_overlay->pixels[1], V, (frame_width + 2 * edge) * frame_height / 4);
+    else
+        memset(yuv_overlay->pixels[1], 0x80, (frame_width + 2 * edge) * frame_height / 4);
+
+
+    if (U)
+        memcpy(yuv_overlay->pixels[2], U, (frame_width + 2 * edge) * frame_height / 4);
+    else
+        memset(yuv_overlay->pixels[2], 0x80, (frame_width + 2 * edge) * frame_height / 4);
+
     SDL_UnlockYUVOverlay(yuv_overlay);
     // Show, baby, show!
     SDL_DisplayYUVOverlay(yuv_overlay, &rect);
