@@ -1404,8 +1404,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     if (v1_compatible) {
         sps->chroma_format_idc = get_ue_golomb_long(gb);
         print_cabac("chroma_format_idc", sps->chroma_format_idc);
-        if (!(sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2 || sps->chroma_format_idc == 3)) {
-            avpriv_report_missing_feature(s->avctx, "chroma_format_idc != {1, 2, 3}\n");
+        if (!(sps->chroma_format_idc == 0 || sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2 || sps->chroma_format_idc == 3)) {
+            avpriv_report_missing_feature(s->avctx, "chroma_format_idc != {0, 1, 2, 3}\n");
             ret = AVERROR_PATCHWELCOME;
             goto err;
         }
@@ -1471,7 +1471,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         print_cabac("bit_depth_luma_minus8", sps->bit_depth - 8);
         bit_depth_chroma = get_ue_golomb_long(gb) + 8;
         print_cabac("bit_depth_chroma_minus8", bit_depth_chroma - 8);
-        if (bit_depth_chroma != sps->bit_depth) {
+        if (sps->chroma_format_idc && bit_depth_chroma != sps->bit_depth) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Luma bit depth (%d) is different from chroma bit depth (%d), "
                    "this is unsupported.\n",
@@ -1483,33 +1483,32 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     if (v1_compatible) {
         switch (sps->bit_depth) {
         case 8:
+            if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY8;
             if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P;
             if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P;
             if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P;
             break;
         case 9:
+            if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
             if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P9;
             if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P9;
             if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P9;
             break;
         case 10:
+            if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
             if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P10;
             if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P10;
             if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P10;
             break;
         case 12:
+            if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
             if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P12;
             if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P12;
             if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P12;
             break;
-        case 14:
-            if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P14;
-            if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P14;
-            if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P14;
-            break;
         default:
             av_log(s->avctx, AV_LOG_ERROR,
-                   "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10, 12 and 14 bits.\n");
+                   "4:0:0, 4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10 and 12bits.\n");
             return AVERROR_PATCHWELCOME;
         }
     } else {
