@@ -1103,7 +1103,6 @@ static int hls_cross_component_pred(HEVCContext *s, int idx) {
         lc->tu.res_scale_val = 0;
     }
 
-
     return 0;
 }
 
@@ -1493,7 +1492,9 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
                            cb_size >> s->sps->hshift[2],
                            cb_size >> s->sps->vshift[2],
                            &gb, s->sps->pcm.bit_depth_chroma);
-    }    return 0;
+    }
+
+    return 0;
 }
 
 /**
@@ -2927,6 +2928,7 @@ static int hevc_frame_start(HEVCContext *s)
     memset(s->horizontal_bs, 0, s->bs_width * s->bs_height);
     memset(s->vertical_bs,   0, s->bs_width * s->bs_height);
     memset(s->cbf_luma,      0, s->sps->min_tb_width * s->sps->min_tb_height);
+    memset(s->is_pcm,        0, s->sps->min_pu_width * s->sps->min_pu_height);
     memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
 
     s->is_decoded        = 0;
