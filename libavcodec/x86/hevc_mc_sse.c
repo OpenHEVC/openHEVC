@@ -40,20 +40,6 @@
 #define CLPI_PIXEL_MAX_10 0x03FF
 #define CLPI_PIXEL_MAX_12 0x0FFF
 
-#if HAVE_SSE42
-#define _MM_PACKUS_EPI32 _mm_packus_epi32
-#else
-static av_always_inline __m128i _MM_PACKUS_EPI32( __m128i a, __m128i b )
-{
-     a = _mm_slli_epi32 (a, 16);
-     a = _mm_srai_epi32 (a, 16);
-     b = _mm_slli_epi32 (b, 16);
-     b = _mm_srai_epi32 (b, 16);
-     a = _mm_packs_epi32 (a, b);
-    return a;
-}
-#endif
-
 #ifndef OPTI_ASM
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters_sse[7][2][16]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},
@@ -297,7 +283,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
         x1 = _mm_srai_epi32(_mm_add_epi32(x1, offset), shift2);                \
         x3 = _mm_add_epi32(x3, ox);                                            \
         x1 = _mm_add_epi32(x1, ox);                                            \
-        x1 = _MM_PACKUS_EPI32(x1, x3);                                         \
+        x1 = _mm_packs_epi32(x1, x3);                                         \
     }
 #define UNI_WEIGHTED_COMPUTE4(H)      UNI_WEIGHTED_COMPUTE2(H)
 #define UNI_WEIGHTED_COMPUTE6(H)      UNI_WEIGHTED_COMPUTE2(H)
@@ -314,7 +300,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
         x2 = _mm_srai_epi32(_mm_add_epi32(x2, offset), shift2);                \
         x3 = _mm_add_epi32(x3, ox);                                            \
         x2 = _mm_add_epi32(x2, ox);                                            \
-        x2 = _MM_PACKUS_EPI32(x2, x3);                                         \
+        x2 = _mm_packs_epi32(x2, x3);                                         \
     }
 
 #define BI_WEIGHTED_COMPUTE2(H)                                                \
@@ -333,7 +319,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
         x1 = _mm_add_epi32(x1, r5);                                            \
         x4 = _mm_srai_epi32(_mm_add_epi32(x4, offset), shift2);                \
         x1 = _mm_srai_epi32(_mm_add_epi32(x1, offset), shift2);                \
-        x1 = _MM_PACKUS_EPI32(x1, x4);                                         \
+        x1 = _mm_packs_epi32(x1, x4);                                         \
     }
 #define BI_WEIGHTED_COMPUTE4(H)      BI_WEIGHTED_COMPUTE2(H)
 #define BI_WEIGHTED_COMPUTE6(H)      BI_WEIGHTED_COMPUTE2(H)
@@ -354,7 +340,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
         x2 = _mm_add_epi32(x2, r6);                                            \
         x4 = _mm_srai_epi32(_mm_add_epi32(x4, offset), shift2);                \
         x2 = _mm_srai_epi32(_mm_add_epi32(x2, offset), shift2);                \
-        x2 = _MM_PACKUS_EPI32(x2, x4);                                         \
+        x2 = _mm_packs_epi32(x2, x4);                                         \
     }
 
 ////////////////////////////////////////////////////////////////////////////////
