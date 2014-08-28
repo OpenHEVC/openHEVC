@@ -3334,7 +3334,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->nb_nals = 0;
     while (length >= 4) {
         HEVCNAL *nal;
-        int extract_length = 0;
+        uint32_t extract_length = 0;
 
         if (s->is_nalff) {
             int i;
@@ -3350,7 +3350,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             }
         } else {
             /* search start code */
-            if (buf[2] == 0) {
+            if (buf[2] == 0) { // padding
                 length--;
                 buf++;
                 continue;
@@ -3390,6 +3390,13 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         nal = &s->nals[s->nb_nals];
 
         consumed = ff_hevc_extract_rbsp(s, buf, extract_length, nal);
+
+        if (s->is_nalff && consumed != extract_length) {
+            av_log(s->avctx, AV_LOG_WARNING,
+                   "NALU type #%d, Consumed rbsp not equal to extracted length from mp4 (%d!=%d)\n",
+                   s->nal_unit_type, consumed, extract_length);
+            consumed = extract_length;
+        }
 
         s->skipped_bytes_nal[s->nb_nals] = s->skipped_bytes;
         s->skipped_bytes_pos_size_nal[s->nb_nals] = s->skipped_bytes_pos_size;
