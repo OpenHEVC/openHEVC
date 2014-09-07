@@ -2835,6 +2835,11 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
     for (i = 1; i < s->threads_number; i++) {
         s->sList[i]->HEVClc->first_qp_group = 1;
         s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
+
+        s->sList[i]->HEVClc->sh = s->sList[0]->HEVClc->sh;
+        s->sList[i]->HEVClc->nal_unit_type = s->sList[0]->HEVClc->nal_unit_type;
+        s->sList[i]->HEVClc->nuh_layer_id  = s->sList[0]->HEVClc->nuh_layer_id; 
+        s->sList[i]->HEVClc->temporal_id   = s->sList[0]->HEVClc->temporal_id; 
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
     }
@@ -2871,7 +2876,6 @@ static int hls_nal_unit(HEVCContext *s)
         return AVERROR_INVALIDDATA;
 
     s->HEVClc->nal_unit_type = get_bits(gb, 6);
-    printf("Nal type: %d \n ", s->HEVClc->nal_unit_type);
     ret              = get_bits(gb, 6);
 
     s->HEVClc->temporal_id = get_bits(gb, 3) - 1;
@@ -3261,7 +3265,6 @@ static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, in
     int *nal_id = input_ctb_row;
     const uint8_t *nal = s->nals[nal_id[job]].data;
     int length = s->nals[nal_id[job]].size;
-    printf("decode_nal_unit_slice job: %d  self_id: %d *ctb_row_p %d \n", job, self_id, nal_id[job]);
     int ctb_addr_ts, ret;
 
     ret = init_get_bits8(gb, nal, length);

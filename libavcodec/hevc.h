@@ -37,7 +37,7 @@
 #include "videodsp.h"
 #include "hevc_defs.h"
 
-#define PARALLEL_SLICE   1
+#define PARALLEL_SLICE   0
 
 
 #define TEST_MV_POC
