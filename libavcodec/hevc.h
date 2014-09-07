@@ -37,8 +37,10 @@
 #include "videodsp.h"
 #include "hevc_defs.h"
 
-#define TEST_MV_POC
+#define PARALLEL_SLICE   1
 
+
+#define TEST_MV_POC
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
 
@@ -95,10 +97,10 @@
 #define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
 #define SAMPLE_CBF2(tab, x, y) ((tab)[(y) * MAX_CU_SIZE +  (x)])
 
-#define IS_IDR(s) ((s)->nal_unit_type == NAL_IDR_W_RADL || (s)->nal_unit_type == NAL_IDR_N_LP)
-#define IS_BLA(s) ((s)->nal_unit_type == NAL_BLA_W_RADL || (s)->nal_unit_type == NAL_BLA_W_LP || \
-                   (s)->nal_unit_type == NAL_BLA_N_LP)
-#define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
+#define IS_IDR(s) ((s)->HEVClc->nal_unit_type == NAL_IDR_W_RADL || (s)->HEVClc->nal_unit_type == NAL_IDR_N_LP)
+#define IS_BLA(s) ((s)->HEVClc->nal_unit_type == NAL_BLA_W_RADL || (s)->HEVClc->nal_unit_type == NAL_BLA_W_LP || \
+                   (s)->HEVClc->nal_unit_type == NAL_BLA_N_LP)
+#define IS_IRAP(s) ((s)->HEVClc->nal_unit_type >= 16 && (s)->HEVClc->nal_unit_type <= 23)
 
 enum ScalabilityType
 {
@@ -1101,6 +1103,11 @@ typedef struct HEVCLocalContext {
 
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
+
+    enum NALUnitType nal_unit_type;
+    int temporal_id;  ///< temporal_id_plus1 - 1
+    int nuh_layer_id;
+    SliceHeader sh;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
@@ -1128,15 +1135,13 @@ typedef struct HEVCContext {
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
 
-    SliceHeader sh;
     SAOParams *sao;
     DBParams *deblock;
 
     ///< candidate references for the current frame
     RefPicList rps[5+2]; // 2 for inter layer reference pictures
 
-    enum NALUnitType nal_unit_type;
-    int temporal_id;  ///< temporal_id_plus1 - 1
+
     HEVCFrame *ref;
     HEVCFrame DPB[32];
     HEVCFrame Add_ref[2];
@@ -1232,7 +1237,7 @@ typedef struct HEVCContext {
     int active_seq_parameter_set_id;
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
-    int nuh_layer_id;
+    
 
     /** frame packing arrangement variables */
     int sei_frame_packing_present;
@@ -1253,6 +1258,9 @@ typedef struct HEVCContext {
     int no_display_pic;
 #endif
     int     decode_checksum_sei;
+
+    int NALListOrder[16];
+    int NbListElement;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,

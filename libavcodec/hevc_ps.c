@@ -1476,7 +1476,7 @@ static void parseSPSExtension( HEVCContext *s, HEVCSPS *sps )
     int i;
     int inter_view = get_bits1(gb);
     print_cabac("inter_view_mv_vert_constraint_flag",  inter_view);
-    if( s->nuh_layer_id > 0 )
+    if( s->HEVClc->nuh_layer_id > 0 )
     {
         sps->m_numScaledRefLayerOffsets = get_ue_golomb_long(gb);
         print_cabac("num_scaled_ref_layer_offsets",  sps->m_numScaledRefLayerOffsets);
@@ -1534,7 +1534,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         goto err;
     }
     vps = ((HEVCVPS*)s->vps_list[sps->vps_id]->data);
-    if (s->nuh_layer_id ==0) {
+    if (s->HEVClc->nuh_layer_id ==0) {
         sps->max_sub_layers = get_bits(gb, 3) + 1;
         print_cabac("sps_max_sub_layers_minus1", sps->max_sub_layers-1);
         if (sps->max_sub_layers > MAX_SUB_LAYERS) {
@@ -1550,7 +1550,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->m_bTemporalIdNestingFlag = vps->vps_temporal_id_nesting_flag;
     }
 
-    if (s->nuh_layer_id == 0)
+    if (s->HEVClc->nuh_layer_id == 0)
         parse_ptl(s, &sps->ptl, sps->max_sub_layers);
     sps_id = get_ue_golomb_long(gb);
 
@@ -1560,13 +1560,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    if (s->nuh_layer_id > 0) {
+    if (s->HEVClc->nuh_layer_id > 0) {
         sps->m_updateRepFormatFlag = get_bits1(gb);
         print_cabac("update_rep_format_flag", sps->m_updateRepFormatFlag);
     } else {
         sps->m_updateRepFormatFlag = 1;
     }
-    if (s->nuh_layer_id == 0) {
+    if (s->HEVClc->nuh_layer_id == 0) {
         sps->chroma_format_idc = get_ue_golomb_long(gb);
         print_cabac("chroma_format_idc", sps->chroma_format_idc);
         if (!(sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2 || sps->chroma_format_idc == 3)) {
@@ -1627,7 +1627,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->output_window = sps->pic_conf_win;
     }
 
-    if (s->nuh_layer_id == 0) {
+    if (s->HEVClc->nuh_layer_id == 0) {
         sps->bit_depth   = get_ue_golomb_long(gb) + 8;
         print_cabac("bit_depth_luma_minus8", sps->bit_depth -8);
         bit_depth_chroma = get_ue_golomb_long(gb) + 8;
@@ -1641,7 +1641,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             goto err;
         }
     }
-    if (!s->nuh_layer_id) {
+    if (!s->HEVClc->nuh_layer_id) {
         switch (sps->bit_depth) {
         case 8:
             if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -1673,13 +1673,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
                    "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10, 12 and 14 bits.\n");
             return AVERROR_PATCHWELCOME;
         }
-    } else if(s->nuh_layer_id) {
+    } else if(s->HEVClc->nuh_layer_id) {
         RepFormat Rep;
         if(sps->m_updateRepFormatFlag)
             Rep = vps->m_vpsRepFormat[sps->m_updateRepFormatIndex];
         else {
             if(vps->m_vpsNumRepFormats > 1 )   {
-                Rep = vps->m_vpsRepFormat[vps->m_vpsRepFormatIdx[s->nuh_layer_id]];
+                Rep = vps->m_vpsRepFormat[vps->m_vpsRepFormatIdx[s->HEVClc->nuh_layer_id]];
             } else
                 Rep = vps->m_vpsRepFormat[0];
         }
@@ -1789,7 +1789,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     if (sps->scaling_list_enable_flag) {
 #if SCALINGLIST_INFERRING
-        if (s->nuh_layer_id > 0) {
+        if (s->HEVClc->nuh_layer_id > 0) {
             sps->m_inferScalingListFlag =  get_bits1(gb);
             print_cabac("sps_infer_scaling_list_flag\n", sps->m_inferScalingListFlag);
         }
@@ -1875,7 +1875,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->sps_temporal_mvp_enabled_flag          = get_bits1(gb);
     print_cabac("sps_temporal_mvp_enable_flag", sps->sps_temporal_mvp_enabled_flag);
 #if REF_IDX_MFM
-    if(s->nuh_layer_id > 0)
+    if(s->HEVClc->nuh_layer_id > 0)
         sps->set_mfm_enabled_flag = 1;
     else
         sps->set_mfm_enabled_flag = 0;
@@ -2350,7 +2350,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     }
 #if SCALINGLIST_INFERRING
     pps->m_inferScalingListFlag = 0;
-    if( s->nuh_layer_id > 0 ) {
+    if( s->HEVClc->nuh_layer_id > 0 ) {
         pps->m_inferScalingListFlag = get_bits1(gb);
         print_cabac("pps_infer_scaling_list_flag", pps->m_inferScalingListFlag);
     }

@@ -90,8 +90,9 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
                       const uint8_t *buf, int buf_size)
 {
     HEVCContext   *h  = &((HEVCParseContext *)s->priv_data)->h;
+    HEVCLocalContext *l = h->HEVClc;
     GetBitContext *gb = &h->HEVClc->gb;
-    SliceHeader   *sh = &h->sh;
+    SliceHeader   *sh = &h->HEVClc->sh;
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;
     HEVCNAL *nal;
@@ -124,10 +125,10 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             break;
         src_length = buf_end - buf;
 
-        h->nal_unit_type = (*buf >> 1) & 0x3f;
-        h->temporal_id   = (*(buf + 1) & 0x07) - 1;
-        h->nuh_layer_id  =  (((*buf)&0x01)<<5) + (((*(buf+1))&0xF8)>>3);
-        if (h->nal_unit_type <= NAL_CRA_NUT) {
+        l->nal_unit_type = (*buf >> 1) & 0x3f;
+        l->temporal_id   = (*(buf + 1) & 0x07) - 1;
+        l->nuh_layer_id  =  (((*buf)&0x01)<<5) + (((*(buf+1))&0xF8)>>3);
+        if (l->nal_unit_type <= NAL_CRA_NUT) {
             // Do not walk the whole buffer just to decode slice segment header
             if (src_length > 20)
                 src_length = 20;
@@ -138,7 +139,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             return consumed;
 
         init_get_bits8(gb, nal->data + 2, nal->size);
-        switch (h->nal_unit_type) {
+        switch (l->nal_unit_type) {
         case NAL_VPS:
             ff_hevc_decode_nal_vps(h);
             break;
@@ -242,14 +243,14 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             } else
                 s->output_picture_number = h->poc = 0;
 
-            if (h->temporal_id == 0 &&
-                h->nal_unit_type != NAL_TRAIL_N &&
-                h->nal_unit_type != NAL_TSA_N &&
-                h->nal_unit_type != NAL_STSA_N &&
-                h->nal_unit_type != NAL_RADL_N &&
-                h->nal_unit_type != NAL_RASL_N &&
-                h->nal_unit_type != NAL_RADL_R &&
-                h->nal_unit_type != NAL_RASL_R)
+            if (h->HEVClc->temporal_id == 0 &&
+                h->HEVClc->nal_unit_type != NAL_TRAIL_N &&
+                h->HEVClc->nal_unit_type != NAL_TSA_N &&
+                h->HEVClc->nal_unit_type != NAL_STSA_N &&
+                h->HEVClc->nal_unit_type != NAL_RADL_N &&
+                h->HEVClc->nal_unit_type != NAL_RASL_N &&
+                h->HEVClc->nal_unit_type != NAL_RADL_R &&
+                h->HEVClc->nal_unit_type != NAL_RASL_R)
                 h->pocTid0 = h->poc;
 
             return 0; /* no need to evaluate the rest */

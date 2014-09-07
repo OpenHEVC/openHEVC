@@ -199,7 +199,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
             else
                 return CHECK_MVSET(1);
         else {
-            if (s->sh.collocated_list == L1)
+            if (s->HEVClc->sh.collocated_list == L1)
                 return CHECK_MVSET(0);
             else
                 return CHECK_MVSET(1);
@@ -330,8 +330,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     const int xB2    = x0 - 1;
     const int yB2    = y0 - 1;
 
-    const int nb_refs = (s->sh.slice_type == P_SLICE) ?
-                        s->sh.nb_refs[0] : FFMIN(s->sh.nb_refs[0], s->sh.nb_refs[1]);
+    const int nb_refs = (s->HEVClc->sh.slice_type == P_SLICE) ?
+                        s->HEVClc->sh.nb_refs[0] : FFMIN(s->HEVClc->sh.nb_refs[0], s->HEVClc->sh.nb_refs[1]);
 
     int zero_idx = 0;
 
@@ -416,12 +416,12 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     }
 
     // temporal motion vector candidate
-    if (s->sh.slice_temporal_mvp_enabled_flag &&
-        nb_merge_cand < s->sh.max_num_merge_cand) {
+    if (s->HEVClc->sh.slice_temporal_mvp_enabled_flag &&
+        nb_merge_cand < s->HEVClc->sh.max_num_merge_cand) {
         Mv mv_l0_col, mv_l1_col;
         int available_l0 = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH,
                                                        0, &mv_l0_col, 0);
-        int available_l1 = (s->sh.slice_type == B_SLICE) ?
+        int available_l1 = (s->HEVClc->sh.slice_type == B_SLICE) ?
                            temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH,
                                                        0, &mv_l1_col, 1) : 0;
 
@@ -449,11 +449,11 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     nb_orig_merge_cand = nb_merge_cand;
 
     // combined bi-predictive merge candidates  (applies for B slices)
-    if (s->sh.slice_type == B_SLICE && nb_orig_merge_cand > 1 &&
-        nb_orig_merge_cand < s->sh.max_num_merge_cand) {
+    if (s->HEVClc->sh.slice_type == B_SLICE && nb_orig_merge_cand > 1 &&
+        nb_orig_merge_cand < s->HEVClc->sh.max_num_merge_cand) {
         int comb_idx = 0;
 
-        for (comb_idx = 0; nb_merge_cand < s->sh.max_num_merge_cand &&
+        for (comb_idx = 0; nb_merge_cand < s->HEVClc->sh.max_num_merge_cand &&
                            comb_idx < nb_orig_merge_cand * (nb_orig_merge_cand - 1); comb_idx++) {
             int l0_cand_idx = l0_l1_cand_idx[comb_idx][0];
             int l1_cand_idx = l0_l1_cand_idx[comb_idx][1];
@@ -487,8 +487,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     }
 
     // append Zero motion vector candidates
-    while (nb_merge_cand < s->sh.max_num_merge_cand) {
-        mergecandlist[nb_merge_cand].pred_flag    = PF_L0 + ((s->sh.slice_type == B_SLICE) << 1);
+    while (nb_merge_cand < s->HEVClc->sh.max_num_merge_cand) {
+        mergecandlist[nb_merge_cand].pred_flag    = PF_L0 + ((s->HEVClc->sh.slice_type == B_SLICE) << 1);
         mergecandlist[nb_merge_cand].mv[0].x      = 0;
         mergecandlist[nb_merge_cand].mv[0].y      = 0;
         mergecandlist[nb_merge_cand].mv[1].x      = 0;
@@ -799,7 +799,7 @@ scalef:
         mvpcand_list[numMVPCandLX++] = mxB;
 
     //temporal motion vector prediction candidate
-    if (numMVPCandLX < 2 && s->sh.slice_temporal_mvp_enabled_flag) {
+    if (numMVPCandLX < 2 && s->HEVClc->sh.slice_temporal_mvp_enabled_flag) {
         Mv mv_col;
         int available_col = temporal_luma_motion_vector(s, x0, y0, nPbW,
                                                         nPbH, ref_idx,
