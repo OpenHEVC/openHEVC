@@ -37,7 +37,7 @@
 #include "videodsp.h"
 #include "hevc_defs.h"
 
-#define PARALLEL_SLICE   0
+#define PARALLEL_SLICE   1
 
 
 #define TEST_MV_POC
@@ -1261,6 +1261,7 @@ typedef struct HEVCContext {
 
     int NALListOrder[16];
     int NbListElement;
+    int self_id; 
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
