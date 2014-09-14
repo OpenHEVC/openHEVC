@@ -37,7 +37,7 @@
 #include "videodsp.h"
 #include "hevc_defs.h"
 
-#define PARALLEL_SLICE   1
+#define PARALLEL_SLICE   0
 
 
 #define TEST_MV_POC
@@ -97,10 +97,10 @@
 #define SAMPLE_CBF(tab, x, y) ((tab)[((y) & ((1<<log2_trafo_size)-1)) * MAX_CU_SIZE + ((x) & ((1<<log2_trafo_size)-1))])
 #define SAMPLE_CBF2(tab, x, y) ((tab)[(y) * MAX_CU_SIZE +  (x)])
 
-#define IS_IDR(s) ((s)->HEVClc->nal_unit_type == NAL_IDR_W_RADL || (s)->HEVClc->nal_unit_type == NAL_IDR_N_LP)
-#define IS_BLA(s) ((s)->HEVClc->nal_unit_type == NAL_BLA_W_RADL || (s)->HEVClc->nal_unit_type == NAL_BLA_W_LP || \
-                   (s)->HEVClc->nal_unit_type == NAL_BLA_N_LP)
-#define IS_IRAP(s) ((s)->HEVClc->nal_unit_type >= 16 && (s)->HEVClc->nal_unit_type <= 23)
+#define IS_IDR(s) ((s)->nal_unit_type == NAL_IDR_W_RADL || (s)->nal_unit_type == NAL_IDR_N_LP)
+#define IS_BLA(s) ((s)->nal_unit_type == NAL_BLA_W_RADL || (s)->nal_unit_type == NAL_BLA_W_LP || \
+                   (s)->nal_unit_type == NAL_BLA_N_LP)
+#define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
 
 enum ScalabilityType
 {
@@ -1104,10 +1104,7 @@ typedef struct HEVCLocalContext {
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
 
-    enum NALUnitType nal_unit_type;
-    int temporal_id;  ///< temporal_id_plus1 - 1
-    int nuh_layer_id;
-    SliceHeader sh;
+    
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
@@ -1261,7 +1258,12 @@ typedef struct HEVCContext {
 
     int NALListOrder[16];
     int NbListElement;
-    int self_id; 
+    int self_id;
+
+    enum NALUnitType nal_unit_type;
+    int temporal_id;  ///< temporal_id_plus1 - 1
+    int nuh_layer_id;
+    SliceHeader sh;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
