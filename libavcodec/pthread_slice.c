@@ -284,7 +284,6 @@ void ff_thread_report_progress_slice(AVCodecContext *avctx)
 void ff_thread_await_progress_slice(AVCodecContext *avctx)
 {
     SliceThreadContext *p  = avctx->internal->thread_ctx;
-
     pthread_mutex_lock(&p->progress_mutex_slice);
     if (!p->first_slice){
         pthread_cond_wait(&p->progress_cond_slice, &p->progress_mutex_slice);
