@@ -67,9 +67,13 @@ typedef struct SliceThreadContext {
     pthread_cond_t *progress_cond;
     pthread_mutex_t *progress_mutex;
 
+
     pthread_cond_t progress_cond_slice;
     pthread_mutex_t progress_mutex_slice;
     int first_slice;
+
+
+
 } SliceThreadContext;
 
 static void* attribute_align_arg worker(void *v)
@@ -227,6 +231,9 @@ int ff_slice_thread_init(AVCodecContext *avctx)
     pthread_mutex_init(&c->progress_mutex_slice, NULL);
     pthread_cond_init(&c->progress_cond_slice, NULL);
     c->first_slice = 0;
+
+    
+
     for (i=0; i<thread_count; i++) {
         if(pthread_create(&c->workers[i], NULL, worker, avctx)) {
            avctx->thread_count = i;
@@ -270,29 +277,34 @@ void ff_thread_await_progress2(AVCodecContext *avctx, int field, int thread, int
     pthread_mutex_unlock(&p->progress_mutex[thread]);
 }
 
-
-
+/*      First slice in the picture activate other threads   */
 void ff_thread_report_progress_slice(AVCodecContext *avctx)
 {
     SliceThreadContext *p = avctx->internal->thread_ctx;
+    if(!p)
+        return;
     pthread_mutex_lock(&p->progress_mutex_slice);
     p->first_slice = 1;
     pthread_cond_broadcast(&p->progress_cond_slice);
     pthread_mutex_unlock(&p->progress_mutex_slice);
-}
 
+}
+/*  Wait for for the first slice in the picture   */
 void ff_thread_await_progress_slice(AVCodecContext *avctx)
 {
     SliceThreadContext *p  = avctx->internal->thread_ctx;
+    if(!p)
+        return;
     pthread_mutex_lock(&p->progress_mutex_slice);
-    if (!p->first_slice){
+    if (!p->first_slice)
         pthread_cond_wait(&p->progress_cond_slice, &p->progress_mutex_slice);
-    }
     pthread_mutex_unlock(&p->progress_mutex_slice);
-}
 
+}
 void ff_thread_set_slice_flag(AVCodecContext *avctx, int flag) {
     SliceThreadContext *p  = avctx->internal->thread_ctx;
+    if(!p)
+        return;
     pthread_mutex_lock(&p->progress_mutex_slice);
     p->first_slice = flag;
     pthread_mutex_unlock(&p->progress_mutex_slice);

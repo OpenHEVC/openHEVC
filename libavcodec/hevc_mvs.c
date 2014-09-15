@@ -173,7 +173,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
                                          int refIdxLx, Mv *mvLXCol, int X,
                                          int colPic, RefPicList *refPicList_col)
 {
-    RefPicList *refPicList = s->ref->refPicList;
+    RefPicList *refPicList = s->ref->refPicList[s->slice_idx];
 
     if (temp_col.pred_flag == PF_INTRA)
         return 0;
@@ -304,7 +304,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
                                             struct MvField mergecandlist[])
 {
     HEVCLocalContext *lc   = s->HEVClc;
-    RefPicList *refPicList = s->ref->refPicList;
+    RefPicList *refPicList = s->ref->refPicList[s->slice_idx];
     MvField *tab_mvf       = s->ref->tab_mvf;
 
     const int min_pu_width = s->sps->min_pu_width;
@@ -545,7 +545,7 @@ static av_always_inline void dist_scale(HEVCContext *s, Mv *mv,
                                         int min_pu_width, int x, int y,
                                         int elist, int ref_idx_curr, int ref_idx)
 {
-    RefPicList *refPicList = s->ref->refPicList;
+    RefPicList *refPicList = s->ref->refPicList[s->slice_idx];
     MvField *tab_mvf       = s->ref->tab_mvf;
 #ifdef TEST_MV_POC
     int ref_pic_elist      = TAB_MVF(x, y).poc[elist];
@@ -568,7 +568,7 @@ static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
     MvField *tab_mvf = s->ref->tab_mvf;
     int min_pu_width = s->sps->min_pu_width;
 
-    RefPicList *refPicList = s->ref->refPicList;
+    RefPicList *refPicList = s->ref->refPicList[s->slice_idx];
 
     if (((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) &&
 #ifdef TEST_MV_POC
@@ -589,7 +589,7 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
     MvField *tab_mvf = s->ref->tab_mvf;
     int min_pu_width = s->sps->min_pu_width;
 
-    RefPicList *refPicList = s->ref->refPicList;
+    RefPicList *refPicList = s->ref->refPicList[s->slice_idx];
 
     if ((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) {
         int currIsLongTerm     = refPicList[ref_idx_curr].isLongTerm[ref_idx];

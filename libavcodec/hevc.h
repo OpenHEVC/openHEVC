@@ -1031,7 +1031,7 @@ typedef struct HEVCFrame {
     AVFrame *frame;
     ThreadFrame tf;
     MvField *tab_mvf;
-    RefPicList *refPicList;
+    RefPicList *refPicList[64];
     RefPicListTab **rpl_tab;
     int ctb_count;
     int poc;
@@ -1160,7 +1160,7 @@ typedef struct HEVCContext {
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
     DSPContext dsp;
-    int8_t *qp_y_tab;
+    int8_t  *qp_y_tab;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
 
@@ -1256,10 +1256,12 @@ typedef struct HEVCContext {
 #endif
     int     decode_checksum_sei;
 
+#if PARALLEL_SLICE
     int NALListOrder[16];
     int NbListElement;
     int self_id;
-
+    int job; 
+#endif
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
     int nuh_layer_id;

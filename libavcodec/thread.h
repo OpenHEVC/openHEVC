@@ -153,5 +153,5 @@ void ff_thread_await_progress2(AVCodecContext *avctx,  int field, int thread, in
 
 void ff_thread_report_progress_slice(AVCodecContext *avctx);
 void ff_thread_await_progress_slice(AVCodecContext *avctx);
-void ff_thread_set_slice_flag(AVCodecContext *avctx, int flag); 
+void ff_thread_set_slice_flag(AVCodecContext *avctx, int flag);
 #endif /* AVCODEC_THREAD_H */

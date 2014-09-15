@@ -656,8 +656,8 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 {
     if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
         // same L0 and L1
-        if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
-            s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
+        if (s->ref->refPicList[s->slice_idx][0].list[curr->ref_idx[s->slice_idx][0]] == neigh_refPicList[s->slice_idx][0].list[s->slice_idx][neigh->ref_idx[0]]  &&
+            s->ref->refPicList[s->slice_idx][0].list[curr->ref_idx[0]] == s->ref->refPicList[s->slice_idx][1].list[curr->ref_idx[1]] &&
             neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1, x2;
@@ -681,8 +681,8 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
             else
                 return 0;
 #endif
-        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                   neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[s->slice_idx][0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[s->slice_idx][1].list[curr->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
@@ -699,8 +699,8 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
             else
                 return 0;
 #endif
-        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                   neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[s->slice_idx][0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[s->slice_idx][1].list[curr->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
@@ -727,10 +727,10 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 
         if (curr->pred_flag & 1) {
             A     = curr->mv[0];
-            ref_A = s->ref->refPicList[0].list[curr->ref_idx[0]];
+            ref_A = s->ref->refPicList[s->slice_idx][0].list[curr->ref_idx[0]];
         } else {
             A     = curr->mv[1];
-            ref_A = s->ref->refPicList[1].list[curr->ref_idx[1]];
+            ref_A = s->ref->refPicList[s->slice_idx][1].list[curr->ref_idx[1]];
         }
 
         if (neigh->pred_flag & 1) {

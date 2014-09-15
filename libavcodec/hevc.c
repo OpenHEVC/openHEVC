@@ -506,21 +506,26 @@ static int hls_slice_header(HEVCContext *s)
     int NumILRRefIdx;
 #endif
     // Coded parameters
-
-#if PARALLEL_SLICE
     int first_slice_in_pic_flag = get_bits1(gb);
+#if PARALLEL_SLICE
     if(!first_slice_in_pic_flag) {
-        int self_id = s->self_id;
+        int self_id, temporal_id, nuh_layer_id, nal_unit_type, job;
+        nal_unit_type = s->nal_unit_type;
+        self_id       = s->self_id;
+        temporal_id   = s->temporal_id;
+        nuh_layer_id  = s->nuh_layer_id;
+        job           = s->job;
         ff_thread_await_progress_slice(s->avctx);
         memcpy(s, s1, sizeof(HEVCContext));
-        s->HEVClc = s1->HEVClcList[self_id];
-        s->HEVClc->first_qp_group = 1;
-        s->HEVClc->qp_y = s1->HEVClc->qp_y;
+        s->HEVClc                 = s1->HEVClcList[self_id];
+        s->nal_unit_type          = nal_unit_type;
+        s->temporal_id            = temporal_id;
+        s->nuh_layer_id           = nuh_layer_id;
+        s->job                    = job;
     }
-    sh->first_slice_in_pic_flag = first_slice_in_pic_flag;
-#else
-    sh->first_slice_in_pic_flag = get_bits1(gb);
 #endif
+    sh->first_slice_in_pic_flag   = first_slice_in_pic_flag;
+
     print_cabac("first_slice_segment_in_pic_flag", sh->first_slice_in_pic_flag);
     if ((IS_IDR(s) || IS_BLA(s)) && sh->first_slice_in_pic_flag) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
@@ -579,7 +584,6 @@ static int hls_slice_header(HEVCContext *s)
     sh->dependent_slice_segment_flag = 0;
     if (!sh->first_slice_in_pic_flag) {
         int slice_address_length;
-
         if (s->pps->dependent_slice_segments_enabled_flag) {
             sh->dependent_slice_segment_flag = get_bits1(gb);
             print_cabac("dependent_slice_segment_flag", sh->dependent_slice_segment_flag);
@@ -598,7 +602,11 @@ static int hls_slice_header(HEVCContext *s)
 
         if (!sh->dependent_slice_segment_flag) {
             sh->slice_addr = sh->slice_segment_addr;
+#if PARALLEL_SLICE
+            s->slice_idx = s->job;
+#else
             s->slice_idx++;
+#endif
         }
     } else {
         sh->slice_segment_addr = sh->slice_addr = 0;
@@ -676,7 +684,6 @@ static int hls_slice_header(HEVCContext *s)
             sh->colour_plane_id = get_bits(gb, 2);
             print_cabac("pic_output_flag", sh->pic_output_flag);
         }
-
         print_cabac("s->nal_unit_type", s->nal_unit_type);
         if (( s->nuh_layer_id > 0 && !s->vps->m_pocLsbNotPresentFlag[s->vps->m_layerIdInVps[s->nuh_layer_id]] )
             || (!IS_IDR(s))) {
@@ -1043,6 +1050,8 @@ static int hls_slice_header(HEVCContext *s)
     s->slice_initialized = 1;
     s->HEVClc->tu.cu_qp_offset_cb = 0;
     s->HEVClc->tu.cu_qp_offset_cr = 0;
+
+
     return 0;
 }
 
@@ -1916,7 +1925,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     int min_pu_width = s->sps->min_pu_width;
 
     MvField *tab_mvf = s->ref->tab_mvf;
-    RefPicList  *refPicList = s->ref->refPicList;
+    RefPicList  *refPicList = s->ref->refPicList[s->slice_idx];
     HEVCFrame *ref0 = NULL, *ref1 = NULL;
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
@@ -2632,6 +2641,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     return ctb_addr_ts;
 }
 
+#if PARALLEL_SLICE
 static int hls_decode_entry_slice(HEVCContext *s)
 {
     int ctb_size    = 1 << s->sps->log2_ctb_size;
@@ -2673,6 +2683,8 @@ static int hls_decode_entry_slice(HEVCContext *s)
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
 
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
+
+
         if (more_data < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
             return more_data;
@@ -2684,10 +2696,10 @@ static int hls_decode_entry_slice(HEVCContext *s)
    if (x_ctb + ctb_size >= s->sps->width &&
         y_ctb + ctb_size >= s->sps->height)
         ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
- 
+
     return ctb_addr_ts;
 }
-
+#endif
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
 {
     HEVCContext *s1  = avctxt->priv_data, *s;
@@ -3326,8 +3338,7 @@ fail:
 }
 
 #if PARALLEL_SLICE
-static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
-{
+static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id) {
     HEVCContext *s1      = avctxt->priv_data;
     HEVCContext *s       = s1->sList[self_id];
     HEVCLocalContext *lc = s->HEVClc;
@@ -3338,7 +3349,7 @@ static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, in
     const uint8_t *nal   = s1->nals[nal_id[job]].data;
     int length           = s1->nals[nal_id[job]].size;
     int ctb_addr_ts, ret;
-
+    
 
     ret = init_get_bits8(gb, nal, length);
     if (ret < 0)
@@ -3354,9 +3365,10 @@ static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, in
 
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
-    s->nuh_layer_id  = ret;
+    s->nuh_layer_id          = ret;
     s->avctx->layers_size   += length;
-    s->self_id = self_id;
+    s->self_id               = self_id;
+    s->job                   = job;
 
 
     switch (s->nal_unit_type) {
@@ -3398,7 +3410,7 @@ static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, in
         case NAL_RASL_N:
         case NAL_RASL_R:
             ret = hls_slice_header(s);
-
+            
             if (ret < 0)
                 return ret;
 
@@ -3429,15 +3441,12 @@ static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, in
             
             if (s->sh.first_slice_in_pic_flag) {
                 ret = hevc_frame_start(s);
-#if PARALLEL_SLICE
-                ff_thread_report_progress_slice(avctxt);
-#endif
+                ff_thread_report_progress_slice(s->avctx);
                 if (ret < 0)
                     return ret;
 
             } else if (!s->ref) {
                 av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
-                ff_thread_report_progress_slice(avctxt);
                 goto fail;
             }
 
@@ -3447,15 +3456,18 @@ static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, in
                        s->first_nal_type, s->nal_unit_type);
                 goto fail;
             }
+            
             if (!s->sh.dependent_slice_segment_flag &&
                 s->sh.slice_type != I_SLICE) {
+                
                 ret = ff_hevc_slice_rpl(s);
                 if (ret < 0) {
                     av_log(s->avctx, AV_LOG_WARNING,
                            "Error constructing the reference lists for the current slice.\n");
                     goto fail;
                 }
-            }
+            } 
+              
 #if ACTIVE_PU_UPSAMPLING
             if (s->bl_decoder_el_exist) {
                 int i;
@@ -3654,10 +3666,11 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->bl_decoder_el_exist  = 0;
     s->el_decoder_el_exist  = 0;
     s->el_decoder_bl_exist  = 0;
+#if PARALLEL_SLICE
     s->NbListElement        = 0;
     for(i = 0; i < 16; i++)
-        s->NALListOrder[i] = 0;
-
+        s->NALListOrder[i]  = 0;
+#endif
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
     s->nb_nals = 0;
@@ -4346,7 +4359,7 @@ AVCodec ff_hevc_decoder = {
 
 static void printf_ref_pic_list(HEVCContext *s)
 {
-    RefPicList  *refPicList = s->ref->refPicList;
+    RefPicList  *refPicList = s->ref->refPicList[s->slice_idx];
 
     int i, list_idx;
     if (s->sh.slice_type == I_SLICE)
