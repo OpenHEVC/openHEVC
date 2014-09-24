@@ -2317,7 +2317,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     }
 
     pps->seq_loop_filter_across_slices_enabled_flag = get_bits1(gb);
-    
+
     print_cabac("loop_filter_across_slices_enabled_flag", pps->seq_loop_filter_across_slices_enabled_flag);
 
     pps->deblocking_filter_control_present_flag = get_bits1(gb);

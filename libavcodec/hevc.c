@@ -123,14 +123,14 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
     s->dynamic_alloc += sizeof(*s->sao);
     s->dynamic_alloc += sizeof(*s->deblock);
-    s->dynamic_alloc += pic_size;
+//    s->dynamic_alloc += pic_size;
 
     if (!s->sao || !s->deblock)
         goto fail;
 
     s->skip_flag    = av_malloc(sps->min_cb_height * sps->min_cb_width);
     s->tab_ct_depth = av_malloc(sps->min_cb_height * sps->min_cb_width);
-    s->dynamic_alloc += pic_size_in_ctb;
+    s->dynamic_alloc += (sps->min_cb_height * sps->min_cb_width);
     s->dynamic_alloc += (sps->min_cb_height * sps->min_cb_width);
 
     if (!s->skip_flag || !s->tab_ct_depth)
@@ -151,6 +151,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
                                       sizeof(*s->tab_slice_address));
     s->qp_y_tab           = av_malloc(pic_size_in_ctb *
                                       sizeof(*s->qp_y_tab));
+
     s->dynamic_alloc += ctb_count;
     s->dynamic_alloc += (pic_size_in_ctb *
                          sizeof(*s->tab_slice_address));
@@ -505,7 +506,6 @@ static int hls_slice_header(HEVCContext *s)
 #if JCTVC_M0458_INTERLAYER_RPS_SIG
     int NumILRRefIdx;
 #endif
-    // Coded parameters
     int first_slice_in_pic_flag = get_bits1(gb);
 #if PARALLEL_SLICE
     if(!first_slice_in_pic_flag) {
@@ -2650,10 +2650,6 @@ static int hls_decode_entry_slice(HEVCContext *s)
     int y_ctb       = 0;
     int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
 
-    s->HEVClc->first_qp_group = 1;
-    s->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
-
-
     if (!ctb_addr_ts && s->sh.dependent_slice_segment_flag) {
         av_log(s->avctx, AV_LOG_ERROR, "Impossible initial tile.\n");
         return AVERROR_INVALIDDATA;
@@ -2681,9 +2677,7 @@ static int hls_decode_entry_slice(HEVCContext *s)
         s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
         s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
-
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->sps->log2_ctb_size, 0);
-
 
         if (more_data < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
@@ -2691,11 +2685,15 @@ static int hls_decode_entry_slice(HEVCContext *s)
         }
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
+#if PARALLEL_FILTERS
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
+#endif
     }
-   if (x_ctb + ctb_size >= s->sps->width &&
+#if PARALLEL_FILTERS
+    if (x_ctb + ctb_size >= s->sps->width &&
         y_ctb + ctb_size >= s->sps->height)
         ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
+#endif
 
     return ctb_addr_ts;
 }
@@ -2868,6 +2866,18 @@ static void tiles_filters(HEVCContext *s)
         for (x0 = 0; x0 < s->sps->width; x0 += ctb_size)
             ff_hevc_hls_filter(s, x0, y0, ctb_size);
 }
+#if !PARALLEL_FILTERS
+static void slices_filters(HEVCContext *s)
+{
+    uint16_t ctb_size        = 1 << s->sps->log2_ctb_size;
+    int x0, y0;
+    // Deblocking and SAO filters
+    for (y0 = 0; y0 < s->sps->height; y0 += ctb_size)
+        for (x0 = 0; x0 < s->sps->width; x0 += ctb_size)
+            ff_hevc_hls_filter(s, x0, y0, ctb_size);
+}
+#endif
+
 
 static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 {
@@ -3487,6 +3497,8 @@ static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, in
             }
 #endif
             ctb_addr_ts = hls_decode_entry_slice(s);
+
+
             if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
                 for(int i= 0; i < s->threads_number ; i++)
                     s->sList[i]->is_decoded = 1;
@@ -3757,6 +3769,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 s->NbListElement++;
             s->NALListOrder[s->NbListElement]++;
         }
+
         prv_nal_type = nal_type;
 #endif
 
@@ -3791,7 +3804,6 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 //      s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
         for(k=0; k < s->NALListOrder[i]; k++)
             arg[k] = cum_nal_pos+k;
-
         s->avctx->execute2(s->avctx, (void *) decode_nal_unit_slice  , arg, ret, s->NALListOrder[i]);
         cum_nal_pos += s->NALListOrder[i];
 
@@ -3801,6 +3813,11 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         }
     }
+#if !PARALLEL_FILTERS
+    if(s->is_decoded)
+        slices_filters(s);
+#endif
+
 #else
     for (i = 0; i < s->nb_nals; i++) {
         int ret;
@@ -3816,6 +3833,9 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     }
 #endif
 fail:
+#if PARALLEL_SLICE
+    ff_thread_report_progress_slice(s->avctx);
+#endif
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
@@ -4047,7 +4067,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->HEVClcList[0] = s->HEVClc;
     s->sList[0] = s;
 
-    s->cabac_state = av_malloc(HEVC_CONTEXTS);
+    s->cabac_state    = av_malloc(HEVC_CONTEXTS);
     s->dynamic_alloc += HEVC_CONTEXTS;
     if (!s->cabac_state)
         goto fail;

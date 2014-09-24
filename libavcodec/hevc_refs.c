@@ -28,6 +28,7 @@
 #include "hevc.h"
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
+    int i;
     if (!frame->frame || !frame->frame->buf[0])
         return;
     frame->flags &= ~flags;
@@ -38,8 +39,10 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
         av_buffer_unref(&frame->rpl_buf);
         av_buffer_unref(&frame->rpl_tab_buf);
         frame->rpl_tab    = NULL;
-        frame->refPicList[s->slice_idx] = NULL;
+        for(i=0; i < MAX_SLICES_IN_FRAME; i++) 
+            frame->refPicList[i] = NULL;
         frame->collocated_ref = NULL;
+        
     }
 }
 

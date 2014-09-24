@@ -38,7 +38,7 @@
 #include "hevc_defs.h"
 
 #define PARALLEL_SLICE   0
-
+#define PARALLEL_FILTERS 0
 
 #define TEST_MV_POC
 #define MAX_DPB_SIZE 16 // A.4.1
@@ -1026,12 +1026,12 @@ typedef struct DBParams {
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
 #define HEVC_FRAME_FLAG_LONG_REF  (1 << 2)
-
+#define MAX_SLICES_IN_FRAME       64
 typedef struct HEVCFrame {
     AVFrame *frame;
     ThreadFrame tf;
     MvField *tab_mvf;
-    RefPicList *refPicList[64];
+    RefPicList *refPicList[MAX_SLICES_IN_FRAME];
     RefPicListTab **rpl_tab;
     int ctb_count;
     int poc;

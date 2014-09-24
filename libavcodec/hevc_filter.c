@@ -345,7 +345,6 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
 {
     uint8_t *src;
     int x, y;
-    int chroma;
     int c_tc[2], beta[2], tc[2];
     uint8_t no_p[2] = { 0 };
     uint8_t no_q[2] = { 0 };
@@ -372,11 +371,10 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     }
 
     x_end = x0 + ctb_size;
-    if (x_end > s->sps->width)
-        x_end = s->sps->width;
+    x_end = x_end > s->sps->width ? s->sps->width:x_end;
     y_end = y0 + ctb_size;
-    if (y_end > s->sps->height)
-        y_end = s->sps->height;
+
+    y_end = y_end > s->sps->height ? s->sps->height:y_end;
 
     tc_offset   = cur_tc_offset;
     beta_offset = cur_beta_offset;
