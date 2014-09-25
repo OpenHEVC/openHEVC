@@ -136,66 +136,74 @@ static av_always_inline void mv_scale(Mv *dst, Mv *src, int td, int tb)
                            (scale_factor * src->y < 0)) >> 8);
 }
 
-static int check_mvset(Mv *mvLXCol, Mv *mvCol,
-                       int colPic, int poc,
-                       RefPicList *refPicList, int X, int refIdxLx,
-                       RefPicList *refPicList_col, int listCol, int refidxCol)
+static int check_mvset(Mv *mvLXCol, MvField *mvCol,
+                       int col_poc, int poc,
+                       RefPicList *rpl, int X, int ref_idx,
+                       RefPicList *rpl_col, int list_col)
 {
-    int cur_lt = refPicList[X].isLongTerm[refIdxLx];
-    int col_lt = refPicList_col[listCol].isLongTerm[refidxCol];
+    int cur_lt      = rpl[X].isLongTerm[ref_idx];
+    int ref_idx_col = mvCol->ref_idx[list_col];
+    int col_lt      = rpl_col[list_col].isLongTerm[ref_idx_col];
     int col_poc_diff, cur_poc_diff;
 
     if (cur_lt != col_lt) {
-        mvLXCol->x = 0;
-        mvLXCol->y = 0;
         return 0;
     }
 
-    col_poc_diff = colPic - refPicList_col[listCol].list[refidxCol];
-    cur_poc_diff = poc    - refPicList[X].list[refIdxLx];
+    cur_poc_diff = poc     - rpl[X].list[ref_idx];
+    col_poc_diff = col_poc - rpl_col[list_col].list[ref_idx_col];
 
     if (cur_lt || col_poc_diff == cur_poc_diff || !col_poc_diff) {
-        mvLXCol->x = mvCol->x;
-        mvLXCol->y = mvCol->y;
+        mvLXCol->x = mvCol->mv[list_col].x;
+        mvLXCol->y = mvCol->mv[list_col].y;
     } else {
-        mv_scale(mvLXCol, mvCol, col_poc_diff, cur_poc_diff);
+        Mv mv = mvCol->mv[list_col];
+        mv_scale(mvLXCol, &mv, col_poc_diff, cur_poc_diff);
     }
     return 1;
 }
 
+#define TAB_MVF(x, y)                                                   \
+    tab_mvf[(y) * min_pu_width + x]
+
 #define CHECK_MVSET(l)                                          \
-    check_mvset(mvLXCol, temp_col.mv + l,                       \
-                colPic, s->poc,                                 \
-                refPicList, X, refIdxLx,                        \
-                refPicList_col, L ## l, temp_col.ref_idx[l])
+    check_mvset(mvLXCol, mvf,                                   \
+                ref-> poc, s->poc,                              \
+                rpl, X, ref_idx,                                \
+                rpl_col, L ## l)
 
 // derive the motion vectors section 8.5.3.1.8
-static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
-                                         int refIdxLx, Mv *mvLXCol, int X,
-                                         int colPic, RefPicList *refPicList_col)
+static int derive_temporal_colocated_mvs(HEVCContext *s, int x, int y,
+                                         int ref_idx, Mv *mvLXCol, int X, RefPicList *rpl_col)
 {
-    RefPicList *refPicList = s->ref->refPicList;
+    RefPicList *rpl   = s->ref->refPicList;
+    HEVCFrame *ref    = s->ref->collocated_ref;
+    int x_pu          = x >> s->sps->log2_min_pu_size;
+    int y_pu          = y >> s->sps->log2_min_pu_size;
+    MvField *tab_mvf = ref->tab_mvf;
+    int min_pu_width  = s->sps->min_pu_width;
+    MvField *mvf     = &TAB_MVF(x_pu, y_pu);
 
-    if (temp_col.pred_flag == PF_INTRA)
+    if (mvf->pred_flag == PF_INTRA)
         return 0;
 
-    if (!(temp_col.pred_flag & PF_L0))
+    if (mvf->pred_flag == PF_L1)
         return CHECK_MVSET(1);
-    else if (temp_col.pred_flag == PF_L0)
+    else if (mvf->pred_flag == PF_L0)
         return CHECK_MVSET(0);
-    else if (temp_col.pred_flag == PF_BI) {
+    else if (mvf->pred_flag == PF_BI) {
         int check_diffpicount = 0;
         int i, j;
         for (j = 0; j < 2; j++) {
-            for (i = 0; i < refPicList[j].nb_refs; i++) {
-                if (refPicList[j].list[i] > s->poc) {
+            for (i = 0; i < rpl[j].nb_refs; i++) {
+                if (rpl[j].list[i] > s->poc) {
                     check_diffpicount++;
                     break;
                 }
             }
         }
         if (!check_diffpicount) {
-            if (X==0)
+            if (!X)
                 return CHECK_MVSET(0);
             else
                 return CHECK_MVSET(1);
@@ -210,39 +218,30 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
     return 0;
 }
 
-#define TAB_MVF(x, y)                                                   \
-    tab_mvf[(y) * min_pu_width + x]
-
 #define TAB_MVF_PU(v)                                                   \
     TAB_MVF(((x ## v) >> s->sps->log2_min_pu_size),                     \
             ((y ## v) >> s->sps->log2_min_pu_size))
 
 #define DERIVE_TEMPORAL_COLOCATED_MVS                                   \
-    derive_temporal_colocated_mvs(s, temp_col,                          \
-                                  refIdxLx, mvLXCol, X, colPic,         \
+    derive_temporal_colocated_mvs(s, x, y,                              \
+                                  ref_idx, mvLXCol, X,                  \
                                   ff_hevc_get_ref_list(s, ref, x, y))
 
 /*
  * 8.5.3.1.7  temporal luma motion vector prediction
  */
 static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
-                                       int nPbW, int nPbH, int refIdxLx,
+                                       int nPbW, int nPbH, int ref_idx,
                                        Mv *mvLXCol, int X)
 {
-    MvField *tab_mvf;
-    MvField temp_col;
-    int x, y, x_pu, y_pu;
-    int min_pu_width = s->sps->min_pu_width;
+    int x, y;
     int availableFlagLXCol = 0;
-    int colPic;
 
     HEVCFrame *ref = s->ref->collocated_ref;
 
     if (!ref)
         return 0;
 
-    tab_mvf = ref->tab_mvf;
-    colPic  = ref->poc;
 
     //bottom right collocated motion vector
     x = x0 + nPbW;
@@ -259,31 +258,24 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 #endif
     if (s->threads_type & FF_THREAD_FRAME )
         ff_thread_await_progress(&ref->tf, y, 0);
-    if (tab_mvf &&
-        (y0 >> s->sps->log2_ctb_size) == (y >> s->sps->log2_ctb_size) &&
+    if ((y0 >> s->sps->log2_ctb_size) == (y >> s->sps->log2_ctb_size) &&
         y < s->sps->height &&
         x < s->sps->width) {
         x                 &= -16;
         y                 &= -16;
         if (s->threads_type == FF_THREAD_FRAME)
             ff_thread_await_progress(&ref->tf, y, 0);
-        x_pu               = x >> s->sps->log2_min_pu_size;
-        y_pu               = y >> s->sps->log2_min_pu_size;
-        temp_col           = TAB_MVF(x_pu, y_pu);
         availableFlagLXCol = DERIVE_TEMPORAL_COLOCATED_MVS;
     }
 
     // derive center collocated motion vector
-    if (tab_mvf && !availableFlagLXCol) {
+    if (!availableFlagLXCol) {
         x                  = x0 + (nPbW >> 1);
         y                  = y0 + (nPbH >> 1);
         x                 &= -16;
         y                 &= -16;
         if (s->threads_type == FF_THREAD_FRAME)
             ff_thread_await_progress(&ref->tf, y, 0);
-        x_pu               = x >> s->sps->log2_min_pu_size;
-        y_pu               = y >> s->sps->log2_min_pu_size;
-        temp_col           = TAB_MVF(x_pu, y_pu);
         availableFlagLXCol = DERIVE_TEMPORAL_COLOCATED_MVS;
     }
     return availableFlagLXCol;
