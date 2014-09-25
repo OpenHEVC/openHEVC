@@ -610,6 +610,25 @@ mc_bi_w_funcs(qpel_hv, 12, sse4);
 
 #endif // OPTI_ASM
 
+
+PEL_PROTOTYPE2(pel_pixels16, 8, avx2);
+PEL_PROTOTYPE2(pel_pixels32, 8, avx2);
+PEL_PROTOTYPE2(qpel_h16, 8, avx2);
+PEL_PROTOTYPE2(qpel_h32, 8, avx2);
+PEL_PROTOTYPE2(qpel_hv16, 8, avx2);
+PEL_PROTOTYPE2(qpel_v32, 8, avx2);
+PEL_PROTOTYPE2(pel_pixels16, 10, avx2);
+PEL_PROTOTYPE2(qpel_h16, 10, avx2);
+PEL_PROTOTYPE2(qpel_v16, 10, avx2);
+PEL_PROTOTYPE2(qpel_hv16, 10, avx2);
+PEL_PROTOTYPE2(epel_h16, 10, avx2);
+PEL_PROTOTYPE2(epel_v16, 10, avx2);
+PEL_PROTOTYPE2(epel_hv16, 10, avx2);
+
+void ff_hevc_put_hevc_qpel_h16_8_sse2 (                          \
+                                    int16_t *dst, ptrdiff_t dststride,         \
+                                    uint8_t *_src, ptrdiff_t _srcstride,       \
+                                    int height, intptr_t mx, intptr_t my, int width);
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -701,6 +720,12 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         if (EXTERNAL_AVX2(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_avx2;
+
+            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h32,  8, avx2);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h32,  8, avx2);
+            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v32,  8, avx2);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v32,  8, avx2);
+//            PEL_LINK2(c->put_hevc_qpel, 5, 1 , 1 , qpel_hv16,  8, avx2);
 #ifdef OPTI_ASM
             c->put_hevc_epel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_8_avx2;
             c->put_hevc_epel[8][0][0] = ff_hevc_put_hevc_pel_pixels48_8_avx2;

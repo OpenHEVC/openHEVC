@@ -424,20 +424,16 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
         if (available_l0 || available_l1) {
             mergecandlist[nb_merge_cand].pred_flag = available_l0 + (available_l1 << 1);
-            if (available_l0) {
-                mergecandlist[nb_merge_cand].mv[0]      = mv_l0_col;
-                mergecandlist[nb_merge_cand].ref_idx[0] = 0;
+            mergecandlist[nb_merge_cand].mv[0]      = mv_l0_col;
+            mergecandlist[nb_merge_cand].ref_idx[0] = 0;
 #ifdef TEST_MV_POC
-                mergecandlist[nb_merge_cand].poc[0]     = refPicList[0].list[0];
+            mergecandlist[nb_merge_cand].poc[0]     = refPicList[0].list[0];
 #endif
-            }
-            if (available_l1) {
-                mergecandlist[nb_merge_cand].mv[1]      = mv_l1_col;
-                mergecandlist[nb_merge_cand].ref_idx[1] = 0;
+            mergecandlist[nb_merge_cand].mv[1]      = mv_l1_col;
+            mergecandlist[nb_merge_cand].ref_idx[1] = 0;
 #ifdef TEST_MV_POC
-                mergecandlist[nb_merge_cand].poc[1]     = refPicList[1].list[0];
+            mergecandlist[nb_merge_cand].poc[1]     = refPicList[1].list[0];
 #endif
-            }
             if (merge_idx == nb_merge_cand) return;
             nb_merge_cand++;
         }
@@ -468,38 +464,36 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 #endif
                  l0_cand.mv[0].x != l1_cand.mv[1].x ||
                  l0_cand.mv[0].y != l1_cand.mv[1].y)) {
-                mergecandlist[nb_merge_cand].ref_idx[0]   = l0_cand.ref_idx[0];
-                mergecandlist[nb_merge_cand].ref_idx[1]   = l1_cand.ref_idx[1];
-                mergecandlist[nb_merge_cand].pred_flag    = PF_BI;
-                mergecandlist[nb_merge_cand].mv[0]        = l0_cand.mv[0];
-                mergecandlist[nb_merge_cand].mv[1]        = l1_cand.mv[1];
+                if (merge_idx == nb_merge_cand) {
+                    mergecandlist[nb_merge_cand].ref_idx[0]   = l0_cand.ref_idx[0];
+                    mergecandlist[nb_merge_cand].ref_idx[1]   = l1_cand.ref_idx[1];
+                    mergecandlist[nb_merge_cand].pred_flag    = PF_BI;
+                    mergecandlist[nb_merge_cand].mv[0]        = l0_cand.mv[0];
+                    mergecandlist[nb_merge_cand].mv[1]        = l1_cand.mv[1];
 #ifdef TEST_MV_POC
-                mergecandlist[nb_merge_cand].poc[0]       = l0_cand.poc[0];
-                mergecandlist[nb_merge_cand].poc[1]       = l1_cand.poc[1];
+                    mergecandlist[nb_merge_cand].poc[0]       = l0_cand.poc[0];
+                    mergecandlist[nb_merge_cand].poc[1]       = l1_cand.poc[1];
 #endif
-                if (merge_idx == nb_merge_cand) return;
+                    return;
+                }
                 nb_merge_cand++;
             }
         }
     }
 
     // append Zero motion vector candidates
-    while (nb_merge_cand < s->sh.max_num_merge_cand) {
-        mergecandlist[nb_merge_cand].pred_flag    = PF_L0 + ((s->sh.slice_type == B_SLICE) << 1);
-        mergecandlist[nb_merge_cand].mv[0].x      = 0;
-        mergecandlist[nb_merge_cand].mv[0].y      = 0;
-        mergecandlist[nb_merge_cand].mv[1].x      = 0;
-        mergecandlist[nb_merge_cand].mv[1].y      = 0;
-        mergecandlist[nb_merge_cand].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
-        mergecandlist[nb_merge_cand].ref_idx[1]   = zero_idx < nb_refs ? zero_idx : 0;
+    zero_idx = merge_idx - nb_merge_cand;
+    mergecandlist[merge_idx].pred_flag    = PF_L0 + ((s->sh.slice_type == B_SLICE) << 1);
+    mergecandlist[merge_idx].mv[0].x      = 0;
+    mergecandlist[merge_idx].mv[0].y      = 0;
+    mergecandlist[merge_idx].mv[1].x      = 0;
+    mergecandlist[merge_idx].mv[1].y      = 0;
+    mergecandlist[merge_idx].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
+    mergecandlist[merge_idx].ref_idx[1]   = zero_idx < nb_refs ? zero_idx : 0;
 #ifdef TEST_MV_POC
-        mergecandlist[nb_merge_cand].poc[0]       = refPicList[0].list[zero_idx < nb_refs ? zero_idx : 0];
-        mergecandlist[nb_merge_cand].poc[1]       = refPicList[1].list[zero_idx < nb_refs ? zero_idx : 0];
+    mergecandlist[merge_idx].poc[0]       = refPicList[0].list[zero_idx < nb_refs ? zero_idx : 0];
+    mergecandlist[merge_idx].poc[1]       = refPicList[1].list[zero_idx < nb_refs ? zero_idx : 0];
 #endif
-        if (merge_idx == nb_merge_cand) return;
-        nb_merge_cand++;
-        zero_idx++;
-    }
 }
 
 /*

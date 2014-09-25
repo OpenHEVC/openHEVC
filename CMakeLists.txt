@@ -317,6 +317,7 @@ list(APPEND libfilenames
     libavcodec/x86/hevc_idct_sse.c
     libavcodec/x86/hevc_il_pred_sse.c
     libavcodec/x86/hevc_mc_sse.c
+    libavcodec/x86/hevc_mc_avx2.c
     libavcodec/x86/hevc_sao_sse.c
     libavcodec/x86/hevc_intra_pred_sse.c
     libavcodec/x86/hpeldsp_init.c
