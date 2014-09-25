@@ -498,9 +498,18 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     no_p[1] = get_pcm(s, x + 4, y - 1);
                     no_q[0] = get_pcm(s, x, y);
                     no_q[1] = get_pcm(s, x + 4, y);
-                    s->hevcdsp.hevc_h_loop_filter_luma_c(src,
-                                                         s->frame->linesize[LUMA],
-                                                         beta, tc, no_p, no_q);
+                    if (!no_p[0] &&
+                        !no_p[1] &&
+                        !no_q[0] &&
+                        !no_q[1]) {
+                        s->hevcdsp.hevc_h_loop_filter_luma(src,
+                                                             s->frame->linesize[LUMA],
+                                                             beta, tc, no_p, no_q);
+                    } else {
+                        s->hevcdsp.hevc_h_loop_filter_luma_c(src,
+                                                           s->frame->linesize[LUMA],
+                                                           beta, tc, no_p, no_q);
+                    }
                 } else
                     s->hevcdsp.hevc_h_loop_filter_luma(src,
                                                        s->frame->linesize[LUMA],
@@ -538,12 +547,24 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                         no_p[1] = get_pcm(s, x + (4 * h), y - 1);
                         no_q[0] = get_pcm(s, x,           y);
                         no_q[1] = get_pcm(s, x + (4 * h), y);
-                        s->hevcdsp.hevc_h_loop_filter_chroma_c(src,
-                                                               s->frame->linesize[1],
-                                                               c_tc, no_p, no_q);
-                        s->hevcdsp.hevc_h_loop_filter_chroma_c(src2,
-                                                               s->frame->linesize[2],
-                                                               c_tc2, no_p, no_q);
+                        if (!no_p[0] &&
+                            !no_p[1] &&
+                            !no_q[0] &&
+                            !no_q[1]) {
+                            s->hevcdsp.hevc_h_loop_filter_chroma(src,
+                                                                 s->frame->linesize[1],
+                                                                 c_tc, no_p, no_q);
+                            s->hevcdsp.hevc_h_loop_filter_chroma(src2,
+                                                                 s->frame->linesize[2],
+                                                                 c_tc2, no_p, no_q);
+                        } else {
+                            s->hevcdsp.hevc_h_loop_filter_chroma_c(src,
+                                                                   s->frame->linesize[1],
+                                                                   c_tc, no_p, no_q);
+                            s->hevcdsp.hevc_h_loop_filter_chroma_c (src2,
+                                                                   s->frame->linesize[2],
+                                                                   c_tc2, no_p, no_q);
+                        }
                     } else {
                         s->hevcdsp.hevc_h_loop_filter_chroma(src,
                                                              s->frame->linesize[1],
