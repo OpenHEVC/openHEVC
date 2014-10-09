@@ -5,8 +5,8 @@ openHEVC is a fork of Libav with only the files needed to decode HEVC content, i
 Most people will not need to use this and should use the libav HEVC decoder available at https://github.com/OpenHEVC/ffmpeg instead (see https://ffmpeg.org/documentation.html for documentation).
 
 openHEVC in combination with GPAC is used in 3 research projects:
-* 4EVER
-* H2B2VS
+* [4EVER!] (http://www.4ever-project.com)
+* [H2B2VS!] (http://h2b2vs.epfl.ch)
 * AUSTRAL
 
 What does openHEVC support?
