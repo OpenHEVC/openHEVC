@@ -481,9 +481,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
 
-                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
+//                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
+//                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
+//                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
@@ -567,9 +567,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4);
 
-                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
+//                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
+//                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
+//                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
@@ -644,9 +644,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     12, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    12, sse4);
                     
-                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_12_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_12_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_12_sse;
+//                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_12_sse;
+//                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_12_sse;
+//                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_12_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42

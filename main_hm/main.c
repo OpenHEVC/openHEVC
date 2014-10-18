@@ -236,17 +236,16 @@ static void video_decode_example(const char *filename)
                     }
 #endif
                     if (fout) {
-                        int nbData;
+                        int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
                         libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
-                        nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight * (openHevcFrameCpy.frameInfo.nBitDepth==8 ? 1 : 2);
                         if(openHevcFrameCpy.pvY) {
                             free(openHevcFrameCpy.pvY);
                             free(openHevcFrameCpy.pvU);
                             free(openHevcFrameCpy.pvV);
                         }
-                        openHevcFrameCpy.pvY = calloc ( nbData    , sizeof(unsigned char));
-                        openHevcFrameCpy.pvU = calloc ( nbData / 4, sizeof(unsigned char));
-                        openHevcFrameCpy.pvV = calloc ( nbData / 4, sizeof(unsigned char));
+                        openHevcFrameCpy.pvY = calloc (openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, sizeof(unsigned char));
+                        openHevcFrameCpy.pvU = calloc (openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
+                        openHevcFrameCpy.pvV = calloc (openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
                     }
                 }
 #if USE_SDL
@@ -258,11 +257,11 @@ static void video_decode_example(const char *filename)
                 }
 #endif
                 if (fout) {
-                    int nbData = openHevcFrameCpy.frameInfo.nWidth * openHevcFrameCpy.frameInfo.nHeight * (openHevcFrameCpy.frameInfo.nBitDepth==8 ? 1 : 2);
+                    int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
                     libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
-                    fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , nbData    , fout);
-                    fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , nbData / 4, fout);
-                    fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , nbData / 4, fout);
+                    fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, fout);
+                    fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
+                    fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
                 }
                 nbFrame++;
                 if (nbFrame == num_frames)
