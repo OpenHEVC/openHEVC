@@ -638,20 +638,15 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     Mv mvpcand_list[2] = { { 0 } };
     Mv mxA;
     Mv mxB;
-    int ref_idx_curr = 0;
-    int ref_idx = 0;
-    int pred_flag_index_l0;
-    int pred_flag_index_l1;
 
     const int cand_bottom_left = lc->na.cand_bottom_left;
     const int cand_left        = lc->na.cand_left;
     const int cand_up_left     = lc->na.cand_up_left;
     const int cand_up          = lc->na.cand_up;
     const int cand_up_right    = lc->na.cand_up_right_sap;
-    ref_idx_curr       = LX;
-    ref_idx            = mv->ref_idx[LX];
-    pred_flag_index_l0 = LX;
-    pred_flag_index_l1 = !LX;
+    int ref_idx_curr       = LX;
+    int pred_flag_index_l0 = LX;
+    int pred_flag_index_l1 = !LX;
 
     // left bottom spatial candidate
     xA0 = x0 - 1;
