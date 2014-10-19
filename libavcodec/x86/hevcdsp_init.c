@@ -481,9 +481,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
 
-//                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
-//                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
-//                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
+                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
+                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
+                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
@@ -567,9 +567,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4);
 
-//                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
-//                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
-//                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
+                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
+                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
+                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
@@ -644,9 +644,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     12, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    12, sse4);
                     
-//                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_12_sse;
-//                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_12_sse;
-//                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_12_sse;
+                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_12_sse;
+                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_12_sse;
+                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_12_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
@@ -658,9 +658,9 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 #if HAVE_AVX_EXTERNAL
                 if (EXTERNAL_AVX(mm_flags)) {
 #ifdef OPTI_ASM
-                    //            c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_10_avx;
-                    //            c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_10_avx;
-                    //            c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_10_avx;
+                    c->transform_dc_add[1]    =  ff_hevc_idct8_dc_add_10_avx;
+                    c->transform_dc_add[2]    =  ff_hevc_idct16_dc_add_10_avx;
+                    c->transform_dc_add[3]    =  ff_hevc_idct32_dc_add_10_avx;
 #endif
                 }
 #endif
