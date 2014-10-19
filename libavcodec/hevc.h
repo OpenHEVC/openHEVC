@@ -1013,6 +1013,7 @@ typedef struct DBParams {
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
 #define HEVC_FRAME_FLAG_LONG_REF  (1 << 2)
+#define HEVC_FRAME_FLAG_BUMPING   (1 << 3)
 #define MAX_SLICES_IN_FRAME       64
 typedef struct HEVCFrame {
     AVFrame *frame;
