@@ -1064,8 +1064,12 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
             sao_filter_CTB(s, x - ctb_size, y);
         if (y && x_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width])) {
             sao_filter_CTB(s, x, y - ctb_size);
-            if (s->threads_type & FF_THREAD_FRAME )
-                ff_thread_report_progress(&s->ref->tf, y - ctb_size, 0);
+            if (s->threads_type & FF_THREAD_FRAME ) {
+                int i;
+                s->sps->ctb_height[(y - ctb_size)>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->sps->ctb_height[i]; i++);
+                ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
+            }
         }
 
         if(!x_end)
@@ -1075,8 +1079,12 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
 
         if(x_slice_end && y && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width])) {
             sao_filter_CTB(s, x , y - ctb_size);
-            if (s->threads_type & FF_THREAD_FRAME )
-                ff_thread_report_progress(&s->ref->tf, y - ctb_size, 0);
+            if (s->threads_type & FF_THREAD_FRAME ) {
+                int i; 
+                s->sps->ctb_height[(y - ctb_size)>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->sps->ctb_height[i]; i++);
+                    ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
+            }
         }
 
         if(y_slice_end && x && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs- 1]))
@@ -1095,8 +1103,12 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
         }
     } else {
         if (y && x >= s->sps->width - ctb_size)
-            if (s->threads_type & FF_THREAD_FRAME )
-                ff_thread_report_progress(&s->ref->tf, y, 0);
+            if (s->threads_type & FF_THREAD_FRAME ) {
+                int i;
+                s->sps->ctb_height[y>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->sps->ctb_height[i]; i++);
+                    ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
+            }
     }
 }
 #endif

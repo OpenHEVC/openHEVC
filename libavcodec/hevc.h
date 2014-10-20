@@ -1250,7 +1250,8 @@ typedef struct HEVCContext {
     int NbListElement;
     int self_id;
     int job;
-    int max_slices; 
+    int max_slices;
+    uint8_t *decoded_rows; 
 #endif
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1

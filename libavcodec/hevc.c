@@ -132,7 +132,9 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     s->tab_ct_depth = av_malloc(sps->min_cb_height * sps->min_cb_width);
     s->dynamic_alloc += (sps->min_cb_height * sps->min_cb_width);
     s->dynamic_alloc += (sps->min_cb_height * sps->min_cb_width);
-
+#if PARALLEL_SLICE
+    s->decoded_rows = av_malloc(sps->ctb_height);
+#endif
     if (!s->skip_flag || !s->tab_ct_depth)
         goto fail;
 
@@ -3060,7 +3062,9 @@ static int hevc_frame_start(HEVCContext *s)
     memset(s->vertical_bs,   0, s->bs_width * s->bs_height);
     memset(s->cbf_luma,      0, s->sps->min_tb_width * s->sps->min_tb_height);
     memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
-
+#if PARALLEL_SLICE
+    memset(s->decoded_rows, 0,s->sps->ctb_height);
+#endif
     s->is_decoded        = 0;
     s->first_nal_type    = s->nal_unit_type;
 
