@@ -102,6 +102,10 @@ static void pic_arrays_free(HEVCContext *s)
 #endif
 #endif    
 #endif
+
+#if PARALLEL_SLICE
+    av_freep(&s->decoded_rows);
+#endif
 }
 
 /* allocate arrays that depend on frame dimensions */

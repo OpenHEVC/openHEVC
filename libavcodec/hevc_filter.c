@@ -1066,8 +1066,8 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
             sao_filter_CTB(s, x, y - ctb_size);
             if (s->threads_type & FF_THREAD_FRAME ) {
                 int i;
-                s->sps->ctb_height[(y - ctb_size)>>s->sps->log2_ctb_size] = 1;
-                for(i = 0; i < s->sps->ctb_height && s->sps->ctb_height[i]; i++);
+                s->decoded_rows[(y - ctb_size)>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->decoded_rows[i]; i++);
                 ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
             }
         }
@@ -1081,8 +1081,8 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
             sao_filter_CTB(s, x , y - ctb_size);
             if (s->threads_type & FF_THREAD_FRAME ) {
                 int i; 
-                s->sps->ctb_height[(y - ctb_size)>>s->sps->log2_ctb_size] = 1;
-                for(i = 0; i < s->sps->ctb_height && s->sps->ctb_height[i]; i++);
+                s->decoded_rows[(y - ctb_size)>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->decoded_rows[i]; i++);
                     ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
             }
         }
@@ -1105,8 +1105,8 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
         if (y && x >= s->sps->width - ctb_size)
             if (s->threads_type & FF_THREAD_FRAME ) {
                 int i;
-                s->sps->ctb_height[y>>s->sps->log2_ctb_size] = 1;
-                for(i = 0; i < s->sps->ctb_height && s->sps->ctb_height[i]; i++);
+                s->decoded_rows[y>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->decoded_rows[i]; i++);
                     ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
             }
     }
