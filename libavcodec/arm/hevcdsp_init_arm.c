@@ -30,8 +30,8 @@ static void (*put_hevc_qpel_neon[4][4])(int16_t *dst, ptrdiff_t dststride, uint8
 
 static void (*put_hevc_qpel_uw_neon[4][4])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                    int width, int height, int16_t* src2, ptrdiff_t src2stride);
-void ff_hevc_v_loop_filter_luma_neon(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
-void ff_hevc_h_loop_filter_luma_neon(uint8_t *_pix, ptrdiff_t _stride, int *_beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+void ff_hevc_v_loop_filter_luma_neon(uint8_t *_pix, ptrdiff_t _stride, int _beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+void ff_hevc_h_loop_filter_luma_neon(uint8_t *_pix, ptrdiff_t _stride, int _beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 void ff_hevc_v_loop_filter_chroma_neon(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 void ff_hevc_h_loop_filter_chroma_neon(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 void ff_hevc_put_pixels_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
@@ -162,6 +162,7 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         put_hevc_qpel_uw_neon[3][1]      = ff_hevc_put_qpel_uw_h1v3_neon_8;
         put_hevc_qpel_uw_neon[3][2]      = ff_hevc_put_qpel_uw_h2v3_neon_8;
         put_hevc_qpel_uw_neon[3][3]      = ff_hevc_put_qpel_uw_h3v3_neon_8;
+#if 0
         for (x = 0; x < 10; x++) {
             c->put_hevc_qpel[x][0][0]         = ff_hevc_put_pixels_neon_8;
             c->put_hevc_qpel[x][1][0]         = ff_hevc_put_qpel_neon_wrapper;
@@ -180,7 +181,7 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel_h_neon_8;
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
         }
-
+#endif
        /* c->put_hevc_epel[1][0]         = ff_hevc_put_epel_v_neon_8;
         c->put_hevc_epel[0][1]         = ff_hevc_put_epel_h_neon_8;
         c->put_hevc_epel[1][1]         = ff_hevc_put_epel_hv_neon_8;*/
