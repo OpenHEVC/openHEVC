@@ -1014,6 +1014,93 @@ void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb, ctb_size);
 }
 
+#if PARALLEL_FILTERS
+void ff_hevc_hls_filters_slice(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size) {
+    int x_slice_end = 0, y_slice_end = 0;
+    unsigned int x_end = x_ctb >= s->sps->width  - ctb_size;
+    unsigned int y_end = y_ctb >= s->sps->height - ctb_size;
+    int ctb_addr_rs = (x_ctb >> s->sps->log2_ctb_size) + (y_ctb >> s->sps->log2_ctb_size) * s->sps->ctb_width;
+
+    if (y_ctb && x_ctb && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1 - s->sps->ctb_width]))
+        ff_hevc_hls_filter_slice(s, x_ctb - ctb_size, y_ctb - ctb_size, ctb_size);
+
+    if (y_ctb && x_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]))
+        ff_hevc_hls_filter_slice(s, x_ctb, y_ctb - ctb_size, ctb_size);
+
+
+    if (x_ctb && y_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1]))
+        ff_hevc_hls_filter_slice(s, x_ctb - ctb_size, y_ctb, ctb_size);
+
+    if(!x_end)
+        x_slice_end = (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs + 1]);
+    if(!y_end)
+        y_slice_end = (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs + s->sps->ctb_width]);
+
+    if(x_slice_end && y_ctb && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]))
+        ff_hevc_hls_filter_slice(s, x_ctb , y_ctb - ctb_size, ctb_size);
+
+    if(y_slice_end && x_ctb && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs- 1]))
+        ff_hevc_hls_filter_slice(s, x_ctb - ctb_size , y_ctb, ctb_size);
+
+    if(x_end && y_slice_end)
+        ff_hevc_hls_filter_slice(s, x_ctb , y_ctb, ctb_size);
+    if(y_end && x_slice_end)
+        ff_hevc_hls_filter_slice(s, x_ctb , y_ctb, ctb_size);
+    if(y_end && x_end)
+        ff_hevc_hls_filter_slice(s, x_ctb , y_ctb, ctb_size);
+}
+void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
+{
+    int x_slice_end = 0, y_slice_end= 0;
+    deblocking_filter_CTB(s, x, y);
+    int ctb_addr_rs = (x >> s->sps->log2_ctb_size) + (y >> s->sps->log2_ctb_size) * s->sps->ctb_width;
+
+    if (s->sps->sao_enabled) {
+        int x_end = x >= s->sps->width  - ctb_size;
+        int y_end = y >= s->sps->height - ctb_size;
+        if (y && x && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1 - s->sps->ctb_width]))
+            sao_filter_CTB(s, x - ctb_size, y - ctb_size);
+        if (x && y_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1]))
+            sao_filter_CTB(s, x - ctb_size, y);
+        if (y && x_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width])) {
+            sao_filter_CTB(s, x, y - ctb_size);
+            if (s->threads_type & FF_THREAD_FRAME )
+                ff_thread_report_progress(&s->ref->tf, y - ctb_size, 0);
+        }
+
+        if(!x_end)
+            x_slice_end = (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs + 1]);
+        if(!y_end)
+            y_slice_end = (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs + s->sps->ctb_width]);
+
+        if(x_slice_end && y && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width])) {
+            sao_filter_CTB(s, x , y - ctb_size);
+            if (s->threads_type & FF_THREAD_FRAME )
+                ff_thread_report_progress(&s->ref->tf, y - ctb_size, 0);
+        }
+
+        if(y_slice_end && x && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs- 1]))
+            sao_filter_CTB(s, x - ctb_size , y);
+
+        if(x_end && y_slice_end)
+            sao_filter_CTB(s, x , y);
+
+        if(y_end && x_slice_end)
+            sao_filter_CTB(s, x , y);
+
+        if (x_end && y_end) {
+            sao_filter_CTB(s, x , y);
+            if (s->threads_type & FF_THREAD_FRAME )
+                ff_thread_report_progress(&s->ref->tf, y, 0);
+        }
+    } else {
+        if (y && x >= s->sps->width - ctb_size)
+            if (s->threads_type & FF_THREAD_FRAME )
+                ff_thread_report_progress(&s->ref->tf, y, 0);
+    }
+}
+#endif
+
 static void copy_block (pixel *src, pixel * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW ) {
     int i;
 

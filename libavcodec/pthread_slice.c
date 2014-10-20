@@ -41,6 +41,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 
+#define MAX_SLICES_FRAME 16
+
 typedef int (action_func)(AVCodecContext *c, void *arg);
 typedef int (action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr);
 
@@ -72,6 +74,9 @@ typedef struct SliceThreadContext {
     pthread_mutex_t progress_mutex_slice;
     int first_slice;
 
+    pthread_cond_t  progress_cond_slice2[MAX_SLICES_FRAME];
+    pthread_mutex_t progress_mutex_slice2[MAX_SLICES_FRAME];
+    int last_slice2[MAX_SLICES_FRAME];
 
 
 } SliceThreadContext;
@@ -232,7 +237,11 @@ int ff_slice_thread_init(AVCodecContext *avctx)
     pthread_cond_init(&c->progress_cond_slice, NULL);
     c->first_slice = 0;
 
-    
+    for(i=0; i < MAX_SLICES_FRAME; i++) {
+        pthread_mutex_init(&c->progress_mutex_slice2[i], NULL);
+        pthread_cond_init(&c->progress_cond_slice2[i], NULL);
+        c->last_slice2[i] = 0;
+    }
 
     for (i=0; i<thread_count; i++) {
         if(pthread_create(&c->workers[i], NULL, worker, avctx)) {
@@ -308,6 +317,34 @@ void ff_thread_set_slice_flag(AVCodecContext *avctx, int flag) {
     pthread_mutex_lock(&p->progress_mutex_slice);
     p->first_slice = flag;
     pthread_mutex_unlock(&p->progress_mutex_slice);
+}
+void ff_thread_await_progress_slice2(AVCodecContext *avctx, int i)
+{
+    SliceThreadContext *p  = avctx->internal->thread_ctx;
+    if(!p)
+        return;
+    pthread_mutex_lock(&p->progress_mutex_slice2[i]);
+    if (!p->last_slice2[i])
+        pthread_cond_wait(&p->progress_cond_slice2[i], &p->progress_mutex_slice2[i]);
+    pthread_mutex_unlock(&p->progress_mutex_slice2[i]);
+}
+void ff_thread_report_progress_slice2(AVCodecContext *avctx, int i)
+{
+    SliceThreadContext *p = avctx->internal->thread_ctx;
+    if(!p)
+        return;
+    pthread_mutex_lock(&p->progress_mutex_slice2[i-1]);
+    p->last_slice2[i-1] = 1;
+    pthread_cond_broadcast(&p->progress_cond_slice2[i-1]);
+    pthread_mutex_unlock(&p->progress_mutex_slice2[i-1]);
+}
+void ff_init_flags(AVCodecContext *avctx) {
+    int i;
+    SliceThreadContext *p = avctx->internal->thread_ctx;
+    if(!p)
+        return;
+    for(i=0; i <MAX_SLICES_FRAME; i++)
+        p->last_slice2[i] = 0;
 }
 
 int ff_alloc_entries(AVCodecContext *avctx, int count)

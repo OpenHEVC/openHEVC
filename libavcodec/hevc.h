@@ -39,6 +39,7 @@
 
 #define PARALLEL_SLICE   0
 #define PARALLEL_FILTERS 0
+#define MAX_SLICES_FRAME 16
 
 #define TEST_MV_POC
 #define MAX_DPB_SIZE 16 // A.4.1
@@ -1244,10 +1245,12 @@ typedef struct HEVCContext {
     int     decode_checksum_sei;
 
 #if PARALLEL_SLICE
-    int NALListOrder[16];
+    int NALListOrder[MAX_SLICES_FRAME];
+    int slice_segment_addr[MAX_SLICES_FRAME]; 
     int NbListElement;
     int self_id;
-    int job; 
+    int job;
+    int max_slices; 
 #endif
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
@@ -1367,6 +1370,10 @@ int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s);
 int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
+#if PARALLEL_FILTERS
+void ff_hevc_hls_filters_slice( HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
+void ff_hevc_hls_filter_slice(  HEVCContext *s, int x, int y, int ctb_size);
+#endif
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH);
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
