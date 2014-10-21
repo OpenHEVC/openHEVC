@@ -614,7 +614,7 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                               int nPbH, int log2_cb_size, int part_idx,
                               int merge_idx, MvField *mv,
-                              int mvp_lx_flag, int LX)
+                              int mvp_lx_flag, int LX, int ref_idx)
 {
     HEVCLocalContext *lc = s->HEVClc;
     MvField *tab_mvf = s->ref->tab_mvf;
