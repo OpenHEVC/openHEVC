@@ -39,7 +39,8 @@
 
 #define PARALLEL_SLICE   0
 #define PARALLEL_FILTERS 0
-#define MAX_SLICES_FRAME 16
+
+#define MAX_SLICES_FRAME 64
 
 #define TEST_MV_POC
 #define MAX_DPB_SIZE 16 // A.4.1

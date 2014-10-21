@@ -2821,7 +2821,6 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
             s->tab_slice_address[ctb_addr_rs] = -1;
             return more_data;
         }
-
         ctb_addr_ts++;
         if (x_ctb + ctb_size < s->sps->width || y_ctb + ctb_size < s->sps->height)
             if (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[ctb_addr_ts-1])

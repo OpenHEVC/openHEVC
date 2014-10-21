@@ -41,7 +41,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 
-#define MAX_SLICES_FRAME 16
+#define MAX_SLICES_FRAME 64
 
 typedef int (action_func)(AVCodecContext *c, void *arg);
 typedef int (action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr);
