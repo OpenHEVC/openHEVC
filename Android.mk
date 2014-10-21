@@ -21,6 +21,7 @@ openhevc_files := \
     libavutil/crc.c \
     libavutil/des.c \
     libavutil/dict.c \
+    libavutil/display.c \
     libavutil/error.c \
     libavutil/eval.c \
     libavutil/file_open.c \
@@ -40,6 +41,7 @@ openhevc_files := \
     libavutil/rc4.c \
     libavutil/samplefmt.c \
     libavutil/sha.c \
+    libavutil/stereo3d.c \
     libavutil/time.c \
     libavutil/timecode.c \
     libavutil/utils.c \
@@ -50,6 +52,7 @@ openhevc_files := \
     libavformat/aviobuf.c \
     libavformat/cutils.c \
     libavformat/file.c \
+    libavformat/flac_picture.c \
     libavformat/format.c \
     libavformat/id3v1.c \
     libavformat/id3v2.c \
@@ -62,13 +65,16 @@ openhevc_files := \
     libavformat/mov_chan.c \
     libavformat/mpegts.c \
     libavformat/mux.c \
+    libavformat/oggparsevorbis.c \
     libavformat/options.c \
     libavformat/os_support.c \
     libavformat/rawdec.c \
+    libavformat/replaygain.c \
     libavformat/riffdec.c \
     libavformat/riff.c \
     libavformat/rmsipr.c \
     libavformat/utils.c \
+    libavformat/vorbiscomment.c \
     libavcodec/arm/videodsp_init_arm.c \
     libavcodec/ac3tab.c \
     libavcodec/allcodecs.c \

@@ -593,7 +593,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             return 0;
     }
 #else
-    if ( bcmp(curr, neigh, sizeof(MvField)) == 0)
+    if ( memcmp(curr, neigh, sizeof(MvField)) == 0)
         return 0;
 #endif
     if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
