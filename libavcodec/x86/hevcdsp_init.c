@@ -611,12 +611,10 @@ mc_bi_w_funcs(qpel_hv, 12, sse4);
 #endif // OPTI_ASM
 
 
-PEL_PROTOTYPE2(pel_pixels16, 8, avx2_);
 PEL_PROTOTYPE2(pel_pixels32, 8, avx2_);
-PEL_PROTOTYPE2(qpel_h16, 8, avx2_);
 PEL_PROTOTYPE2(qpel_h32, 8, avx2_);
-PEL_PROTOTYPE2(qpel_hv16, 8, avx2_);
 PEL_PROTOTYPE2(qpel_v32, 8, avx2_);
+
 PEL_PROTOTYPE2(pel_pixels16, 10, avx2_);
 PEL_PROTOTYPE2(qpel_h16, 10, avx2_);
 PEL_PROTOTYPE2(qpel_v16, 10, avx2_);
@@ -681,9 +679,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
             c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
 #ifdef OPTI_ASM
-            //                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
-            //            c->sao_edge_filter[0] = sao_edge_filter_0_sse_8;
-            //                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
+            // c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
+            // c->sao_edge_filter[0] = sao_edge_filter_0_sse_8;
+            // c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
 #endif
 #endif //HAVE_SSSE3
         }
@@ -721,11 +719,12 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_avx2;
 
+            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 0 , pel_pixels32,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 0 , pel_pixels32,  8, avx2_);
             PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h32,  8, avx2_);
             PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h32,  8, avx2_);
             PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v32,  8, avx2_);
             PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v32,  8, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 5, 1 , 1 , qpel_hv16,  8, avx2);
 #ifdef OPTI_ASM
             c->put_hevc_epel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_8_avx2;
             c->put_hevc_epel[8][0][0] = ff_hevc_put_hevc_pel_pixels48_8_avx2;
@@ -876,6 +875,12 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
                 c->transform_add[3] = ff_hevc_transform_add32_10_avx2;
             }
+            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 1 , qpel_hv16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 1 , qpel_hv16,  10, avx2_);
 
 #ifdef OPTI_ASM
             c->put_hevc_epel[5][0][0] = ff_hevc_put_hevc_pel_pixels16_10_avx2;

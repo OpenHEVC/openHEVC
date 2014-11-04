@@ -2028,399 +2028,43 @@ static PUT_HEVC_BI_W_ ## FUNC ##14(H,12)
 
 // ff_hevc_put_hevc_mc_pixelsX_X_avx2
 #if HAVE_AVX2
-//GEN_FUNC(PEL_PIXELS,  4, 8)
-//GEN_FUNC(PEL_PIXELS,  6, 8)
-//GEN_FUNC(PEL_PIXELS, 16, 8)
 GEN_FUNC(PEL_PIXELS, 32, 8)
-
-//GEN_FUNC(PEL_PIXELS,  4, 10)
-//GEN_FUNC(PEL_PIXELS,  6, 10)
 GEN_FUNC(PEL_PIXELS,  16, 10)
-
-//GEN_FUNC(PEL_PIXELS,  4, 12)
-//GEN_FUNC(PEL_PIXELS,  6, 12)
 GEN_FUNC(PEL_PIXELS,  16, 12)
-// ff_hevc_put_hevc_epel_hX_X_avx2
-//GEN_FUNC(EPEL_H,  4,  8)
-//GEN_FUNC(EPEL_H,  6,  8)
-//GEN_FUNC(EPEL_H,  8,  8)
 
-//GEN_FUNC(EPEL_H,  4, 10)
-//GEN_FUNC(EPEL_H,  6, 10)
+// ff_hevc_put_hevc_epel_hX_X_avx2
 GEN_FUNC(EPEL_H,  16, 10)
-//GEN_FUNC(EPEL_H,  4, 12)
-//GEN_FUNC(EPEL_H,  6, 12)
-//GEN_FUNC(EPEL_H,  8, 12)
+GEN_FUNC(EPEL_H,  16, 12)
 
 // ff_hevc_put_hevc_epel_vX_X_avx2
-//GEN_FUNC(EPEL_V,  4,  8)
-//GEN_FUNC(EPEL_V,  6,  8)
-//GEN_FUNC(EPEL_V,  8,  8)
-
-//GEN_FUNC(EPEL_V,  4, 10)
-//GEN_FUNC(EPEL_V,  6, 10)
 GEN_FUNC(EPEL_V,  16, 10)
-
-//GEN_FUNC(EPEL_V,  4, 12)
-//GEN_FUNC(EPEL_V,  6, 12)
-//GEN_FUNC(EPEL_V,  8, 12)
+GEN_FUNC(EPEL_V,  16, 12)
 
 // ff_hevc_put_hevc_epel_hvX_X_avx2
-//GEN_FUNC(EPEL_HV,  4,  8)
-//GEN_FUNC(EPEL_HV,  6,  8)
 //GEN_FUNC(EPEL_HV,  8,  8)
-
-//GEN_FUNC(EPEL_HV,  4, 10)
-//GEN_FUNC(EPEL_HV,  6, 10)
 GEN_FUNC(EPEL_HV,  16, 10)
 
-//GEN_FUNC(EPEL_HV,  4, 12)
-//GEN_FUNC(EPEL_HV,  6, 12)
-//GEN_FUNC(EPEL_HV,  8, 12)
+GEN_FUNC(EPEL_HV,  16, 12)
 
 // ff_hevc_put_hevc_qpel_hX_X_X_avx2
 //GEN_FUNC(QPEL_H,  4,  8)
 //GEN_FUNC(QPEL_H,  8,  8)
 //GEN_FUNC(QPEL_H, 16,  8)
-void ff_hevc_put_hevc_qpel_h16_8_sse2 (                          \
-                                       int16_t *dst, ptrdiff_t dststride,         \
-                                       uint8_t *_src, ptrdiff_t _srcstride,       \
-                                       int height, intptr_t mx, intptr_t my, int width) {   \
-    int x, y, k;                                                                  \
-    __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;                                      \
-    uint8_t  *src       = (uint8_t*) _src;                                     \
-    const int srcstride = _srcstride;                                                          \
-    c1 = _mm_load_si128((__m128i *) ff_hevc_qpel_filters_avx2[mx - 1][0]);         \
-    c2 = _mm_load_si128((__m128i *) ff_hevc_qpel_filters_avx2[mx - 1][1]);         \
-    c3 = _mm_load_si128((__m128i *) ff_hevc_qpel_filters_avx2[mx - 1][2]);         \
-    c4 = _mm_load_si128((__m128i *) ff_hevc_qpel_filters_avx2[mx - 1][3]);                                               \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += 8) {                                       \
-            x1 = _mm_loadu_si128((__m128i *) &src[x - 3]);                             \
-            x2 = _mm_loadu_si128((__m128i *) &src[x - 2]);                             \
-            x3 = _mm_loadu_si128((__m128i *) &src[x - 1]);                             \
-            x4 = _mm_loadu_si128((__m128i *) &src[x    ]);                             \
-            x5 = _mm_loadu_si128((__m128i *) &src[x + 1]);                             \
-            x6 = _mm_loadu_si128((__m128i *) &src[x + 2]);                             \
-            x7 = _mm_loadu_si128((__m128i *) &src[x + 3]);                             \
-            x8 = _mm_loadu_si128((__m128i *) &src[x + 4]);                                                     \
-            x1 = _mm_unpacklo_epi8(x1, x2);                                            \
-            x2 = _mm_unpacklo_epi8(x3, x4);                                            \
-            x3 = _mm_unpacklo_epi8(x5, x6);                                            \
-            x4 = _mm_unpacklo_epi8(x7, x8);                                            \
-            x2 = _mm_maddubs_epi16(x2,c2);                                             \
-            x3 = _mm_maddubs_epi16(x3,c3);                                             \
-            x1 = _mm_maddubs_epi16(x1,c1);                                             \
-            x4 = _mm_maddubs_epi16(x4,c4);                                             \
-            x1 = _mm_add_epi16(x1, x2);                                                \
-            x2 = _mm_add_epi16(x3, x4);                                                \
-            x1 = _mm_add_epi16(x1, x2);                                   \
-            _mm_store_si128((__m128i *) &dst[x], x1);                                              \
-            for (k=0; k <8; k++)
-                printf("%d\n", dst[x+k]);
-        }                                                                      \
-        src += srcstride;                                                      \
-        dst += dststride;                                                      \
-    }                                                                          \
-}                                                         \
-void ff_hevc_put_hevc_qpel_h16_8_avx2_ (
-                                    int16_t *dst, ptrdiff_t dststride,         
-                                    uint8_t *_src, ptrdiff_t _srcstride,       
-                                    int height, intptr_t mx, intptr_t my, int width) {   
-    int x, y, k;
-    __m256i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;                                      
-    uint8_t  *src       = (uint8_t*) _src;                                     
-    const int srcstride = _srcstride;                                                          
-    c1 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][0]));
-    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][1]));
-    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][2]));
-    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][3]));
-    for (y = 0; y < height; y++) {                                             
-        for (x = 0; x < width; x += 16) {                                       
-            x1 = _mm256_loadu_si256((__m256i *) &src[x - 3]);                             
-    x2 = _mm256_loadu_si256((__m256i *) &src[x - 2]);
-    x3 = _mm256_loadu_si256((__m256i *) &src[x - 1]);
-    x4 = _mm256_loadu_si256((__m256i *) &src[x    ]);
-    x5 = _mm256_loadu_si256((__m256i *) &src[x + 1]);
-    x6 = _mm256_loadu_si256((__m256i *) &src[x + 2]);
-    x7 = _mm256_loadu_si256((__m256i *) &src[x + 3]);
-    x8 = _mm256_loadu_si256((__m256i *) &src[x + 4]);
-
-            x1 = _mm256_unpacklo_epi8(x1, x2);
-    x2 = _mm256_unpacklo_epi8(x3, x4);                                            
-    x3 = _mm256_unpacklo_epi8(x5, x6);                                            
-    x4 = _mm256_unpacklo_epi8(x7, x8);                                            
-    x2 = _mm256_maddubs_epi16(x2,c2);                                             
-    x3 = _mm256_maddubs_epi16(x3,c3);                                             
-    x1 = _mm256_maddubs_epi16(x1,c1);                                             
-    x4 = _mm256_maddubs_epi16(x4,c4);                                             
-    x1 = _mm256_add_epi16(x1, x2);                                                
-    x2 = _mm256_add_epi16(x3, x4);                                                
-    x1 = _mm256_add_epi16(x1, x2);                                   
-            _mm256_store_si256((__m256i *) &dst[x], x1);
-            for (k=0; k <16; k++)
-                printf("%d\n", dst[x+k]);
-        }                                                                      
-        src += srcstride;                                                      
-        dst += dststride;                                                      
-    }                                                                          
-}                                                         
-void ff_hevc_put_hevc_bi_qpel_h16_8_avx2_ (                       \
-                                        uint8_t *_dst, ptrdiff_t _dststride,   \
-                                        uint8_t *_src, ptrdiff_t _srcstride,   \
-                                        int16_t *src2, ptrdiff_t src2stride,   \
-                                        int height,                            \
-                                        intptr_t mx, intptr_t my, int width) { \
-    int x, y;                                                                  \
-    __m256i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;                                      \
-    uint8_t  *src       = (uint8_t*) _src;                                     \
-    const int srcstride = _srcstride;                                                          \
-    const __m256i offset = _mm256_set1_epi16(1 << 8);                             \
-    uint8_t *dst        = (uint8_t *) _dst;                                    \
-    const int dststride = _dststride;                                                     \
-    c1 = _mm256_set1_epi16((ff_hevc_qpel_filters_avx2[mx - 1][0][1] << 8) + ff_hevc_qpel_filters_avx2[mx - 1][0][0] );         \
-    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][1]));         \
-    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][2]));         \
-    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][3]));                                               \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += 16) {                                       \
-            __m256i r5;                  \
-            x1 = _mm256_loadu_si256((__m256i *) &src[x - 3]);                             \
-    x2 = _mm256_loadu_si256((__m256i *) &src[x - 2]);                             \
-    x3 = _mm256_loadu_si256((__m256i *) &src[x - 1]);                             \
-    x4 = _mm256_loadu_si256((__m256i *) &src[x    ]);                             \
-    x5 = _mm256_loadu_si256((__m256i *) &src[x + 1]);                             \
-    x6 = _mm256_loadu_si256((__m256i *) &src[x + 2]);                             \
-    x7 = _mm256_loadu_si256((__m256i *) &src[x + 3]);                             \
-    x8 = _mm256_loadu_si256((__m256i *) &src[x + 4]);                                                     \
-            x1 = _mm256_unpacklo_epi8(x1, x2);                                            \
-    x2 = _mm256_unpacklo_epi8(x3, x4);                                            \
-    x3 = _mm256_unpacklo_epi8(x5, x6);                                            \
-    x4 = _mm256_unpacklo_epi8(x7, x8);                                            \
-    x2 = _mm256_maddubs_epi16(x2,c2);                                             \
-    x3 = _mm256_maddubs_epi16(x3,c3);                                             \
-    x1 = _mm256_maddubs_epi16(x1,c1);                                             \
-    x4 = _mm256_maddubs_epi16(x4,c4);                                             \
-    x1 = _mm256_add_epi16(x1, x2);                                                \
-    x2 = _mm256_add_epi16(x3, x4);                                                \
-    x1 = _mm256_add_epi16(x1, x2);                                   \
-            r5 = _mm256_load_si256((__m256i *) &src2[x    ]);                                                \
-    x1 = _mm256_adds_epi16(x1, r5);                                               \
-    x1 = _mm256_mulhrs_epi16(x1, offset);                                     \
-            x1 = _mm256_packus_epi16(x1, x1);                                             \
-    _mm_store_si128((__m128i *) &dst[x], _mm256_extracti128_si256(x1, 0));                                   \
-        }                                                                      \
-        src  += srcstride;                                                     \
-        src2 += src2stride;                                                    \
-        dst  += dststride;                                                     \
-    }                                                                          \
-}                                                      \
-void ff_hevc_put_hevc_uni_qpel_h16_8_avx2_ (                      \
-                                        uint8_t *_dst, ptrdiff_t _dststride,   \
-                                        uint8_t *_src, ptrdiff_t _srcstride,   \
-                                        int height,                            \
-                                        intptr_t mx, intptr_t my, int width) { \
-    int x, y;                                                                  \
-    __m256i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;                                      \
-    uint8_t  *src       = (uint8_t*) _src;                                     \
-    const int srcstride = _srcstride;                                                          \
-    const __m256i offset = _mm256_set1_epi16(1 << (8 + 1));                       \
-    uint8_t *dst        = (uint8_t *) _dst;                                    \
-    const int dststride = _dststride;                                                    \
-    c1 = _mm256_set1_epi16((ff_hevc_qpel_filters_avx2[mx - 1][0][1] << 8) + ff_hevc_qpel_filters_avx2[mx - 1][0][0] );         \
-    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][1]));         \
-    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][2]));         \
-    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][3]));                                               \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += 16) {                                       \
-            x1 = _mm256_loadu_si256((__m256i *) &src[x - 3]);                             \
-    x2 = _mm256_loadu_si256((__m256i *) &src[x - 2]);                             \
-    x3 = _mm256_loadu_si256((__m256i *) &src[x - 1]);                             \
-    x4 = _mm256_loadu_si256((__m256i *) &src[x    ]);                             \
-    x5 = _mm256_loadu_si256((__m256i *) &src[x + 1]);                             \
-    x6 = _mm256_loadu_si256((__m256i *) &src[x + 2]);                             \
-    x7 = _mm256_loadu_si256((__m256i *) &src[x + 3]);                             \
-    x8 = _mm256_loadu_si256((__m256i *) &src[x + 4]);                                                     \
-            x1 = _mm256_unpacklo_epi8(x1, x2);                                            \
-    x2 = _mm256_unpacklo_epi8(x3, x4);                                            \
-    x3 = _mm256_unpacklo_epi8(x5, x6);                                            \
-    x4 = _mm256_unpacklo_epi8(x7, x8);                                            \
-    x2 = _mm256_maddubs_epi16(x2,c2);                                             \
-    x3 = _mm256_maddubs_epi16(x3,c3);                                             \
-    x1 = _mm256_maddubs_epi16(x1,c1);                                             \
-    x4 = _mm256_maddubs_epi16(x4,c4);                                             \
-    x1 = _mm256_add_epi16(x1, x2);                                                \
-    x2 = _mm256_add_epi16(x3, x4);                                                \
-    x1 = _mm256_add_epi16(x1, x2);                                   \
-            x1 = _mm256_mulhrs_epi16(x1, offset);                                    \
-            x1 = _mm256_packus_epi16(x1, x1);                                             \
-    _mm_store_si128((__m128i *) &dst[x], _mm256_extracti128_si256(x1, 0));                                   \
-        }                                                                      \
-        src  += srcstride;                                                     \
-        dst  += dststride;                                                     \
-    }                                                                          \
-}                                                     \
-void ff_hevc_put_hevc_uni_w_qpel_h16_8_avx2_ (                    \
-                                        uint8_t *_dst, ptrdiff_t _dststride,   \
-                                        uint8_t *_src, ptrdiff_t _srcstride,   \
-                                        int height, int denom,                 \
-                                        int _wx, int _ox,                      \
-                                        intptr_t mx, intptr_t my, int width) { \
-    int x, y;                                                                  \
-    __m256i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;                                      \
-    uint8_t  *src       = (uint8_t*) _src;                                     \
-    const int srcstride = _srcstride;                                                          \
-    const int shift2     = denom + 14 - 8;                                     \
-    const __m256i ox     = _mm256_set1_epi32(_ox << (8 - 8));                     \
-    const __m256i wx     = _mm256_set1_epi16(_wx);                                \
-    const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));                  \
-    uint8_t *dst        = (uint8_t *) _dst;                                    \
-    const int dststride = _dststride;                                                      \
-    c1 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][0]));         \
-    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][1]));         \
-    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][2]));         \
-    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][3]));                                               \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += 16) {                                       \
-            x1 = _mm256_loadu_si256((__m256i *) &src[x - 3]);                             \
-    x2 = _mm256_loadu_si256((__m256i *) &src[x - 2]);                             \
-    x3 = _mm256_loadu_si256((__m256i *) &src[x - 1]);                             \
-    x4 = _mm256_loadu_si256((__m256i *) &src[x    ]);                             \
-    x5 = _mm256_loadu_si256((__m256i *) &src[x + 1]);                             \
-    x6 = _mm256_loadu_si256((__m256i *) &src[x + 2]);                             \
-    x7 = _mm256_loadu_si256((__m256i *) &src[x + 3]);                             \
-    x8 = _mm256_loadu_si256((__m256i *) &src[x + 4]);                                                     \
-            x1 = _mm256_unpacklo_epi8(x1, x2);                                            \
-    x2 = _mm256_unpacklo_epi8(x3, x4);                                            \
-    x3 = _mm256_unpacklo_epi8(x5, x6);                                            \
-    x4 = _mm256_unpacklo_epi8(x7, x8);                                            \
-    x2 = _mm256_maddubs_epi16(x2,c2);                                             \
-    x3 = _mm256_maddubs_epi16(x3,c3);                                             \
-    x1 = _mm256_maddubs_epi16(x1,c1);                                             \
-    x4 = _mm256_maddubs_epi16(x4,c4);                                             \
-    x1 = _mm256_add_epi16(x1, x2);                                                \
-    x2 = _mm256_add_epi16(x3, x4);                                                \
-    x1 = _mm256_add_epi16(x1, x2);                                   \
-            {                                                                          \
-        __m256i x3, x4;                                                        \
-        x3 = _mm256_mulhi_epi16(x1, wx);                                          \
-        x1 = _mm256_mullo_epi16(x1, wx);                                          \
-        x4 = _mm256_unpackhi_epi16(x1, x3);                                       \
-        x1 = _mm256_unpacklo_epi16(x1, x3);                                       \
-        x3 = _mm256_srai_epi32(_mm256_add_epi32(x4, offset), shift2);                \
-        x1 = _mm256_srai_epi32(_mm256_add_epi32(x1, offset), shift2);                \
-        x3 = _mm256_add_epi32(x3, ox);                                            \
-        x1 = _mm256_add_epi32(x1, ox);                                            \
-        x1 = _mm256_packs_epi32(x1, x3);                                         \
-    };                                      \
-            x1 = _mm256_packus_epi16(x1, x1);                                             \
-    _mm_store_si128((__m128i *) &dst[x], _mm256_extracti128_si256(x1, 0));                                   \
-        }                                                                      \
-        src  += srcstride;                                                     \
-        dst  += dststride;                                                     \
-    }                                                                          \
-}                                                   \
-void ff_hevc_put_hevc_bi_w_qpel_h16_8_avx2_ (                     \
-                                        uint8_t *_dst, ptrdiff_t _dststride,   \
-                                        uint8_t *_src, ptrdiff_t _srcstride,   \
-                                        int16_t *src2, ptrdiff_t src2stride,   \
-                                        int height, int denom, int _wx0,       \
-                                        int _wx1, int _ox0, int _ox1,          \
-                                        intptr_t mx, intptr_t my, int width) { \
-    int x, y;                                                                  \
-    __m256i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;                                      \
-    uint8_t  *src       = (uint8_t*) _src;                                     \
-    const int srcstride = _srcstride;                                                          \
-    const int log2Wd     = denom + 14 - 8;                                     \
-    const int shift2     = log2Wd + 1;                                         \
-    const int ox0        = _ox0 << (8 - 8);                                    \
-    const int ox1        = _ox1 << (8 - 8);                                    \
-    const __m256i wx0    = _mm256_set1_epi16(_wx0);                               \
-    const __m256i wx1    = _mm256_set1_epi16(_wx1);                               \
-    const __m256i offset = _mm256_set1_epi32( (ox0 + ox1 + 1) << log2Wd);         \
-    uint8_t *dst        = (uint8_t *) _dst;                                    \
-    const int dststride = _dststride;                                                       \
-    c1 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][0]));         \
-    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][1]));         \
-    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][2]));         \
-    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[mx - 1][3]));                                               \
-    for (y = 0; y < height; y++) {                                             \
-        for (x = 0; x < width; x += 16) {                                       \
-            __m256i r5;                  \
-            x1 = _mm256_loadu_si256((__m256i *) &src[x - 3]);                             \
-    x2 = _mm256_loadu_si256((__m256i *) &src[x - 2]);                             \
-    x3 = _mm256_loadu_si256((__m256i *) &src[x - 1]);                             \
-    x4 = _mm256_loadu_si256((__m256i *) &src[x    ]);                             \
-    x5 = _mm256_loadu_si256((__m256i *) &src[x + 1]);                             \
-    x6 = _mm256_loadu_si256((__m256i *) &src[x + 2]);                             \
-    x7 = _mm256_loadu_si256((__m256i *) &src[x + 3]);                             \
-    x8 = _mm256_loadu_si256((__m256i *) &src[x + 4]);                                                     \
-            x1 = _mm256_unpacklo_epi8(x1, x2);                                            \
-    x2 = _mm256_unpacklo_epi8(x3, x4);                                            \
-    x3 = _mm256_unpacklo_epi8(x5, x6);                                            \
-    x4 = _mm256_unpacklo_epi8(x7, x8);                                            \
-    x2 = _mm256_maddubs_epi16(x2,c2);                                             \
-    x3 = _mm256_maddubs_epi16(x3,c3);                                             \
-    x1 = _mm256_maddubs_epi16(x1,c1);                                             \
-    x4 = _mm256_maddubs_epi16(x4,c4);                                             \
-    x1 = _mm256_add_epi16(x1, x2);                                                \
-    x2 = _mm256_add_epi16(x3, x4);                                                \
-    x1 = _mm256_add_epi16(x1, x2);                                   \
-            r5 = _mm256_load_si256((__m256i *) &src2[x    ]);                                               \
-    {                                                                          \
-        __m256i x3, x4, r7, r8;                                                \
-        x3 = _mm256_mulhi_epi16(x1, wx1);                                         \
-        x1 = _mm256_mullo_epi16(x1, wx1);                                         \
-        r7 = _mm256_mulhi_epi16(r5, wx0);                                         \
-        r5 = _mm256_mullo_epi16(r5, wx0);                                         \
-        x4 = _mm256_unpackhi_epi16(x1, x3);                                       \
-        x1 = _mm256_unpacklo_epi16(x1, x3);                                       \
-        r8 = _mm256_unpackhi_epi16(r5, r7);                                       \
-        r5 = _mm256_unpacklo_epi16(r5, r7);                                       \
-        x4 = _mm256_add_epi32(x4, r8);                                            \
-        x1 = _mm256_add_epi32(x1, r5);                                            \
-        x4 = _mm256_srai_epi32(_mm256_add_epi32(x4, offset), shift2);                \
-        x1 = _mm256_srai_epi32(_mm256_add_epi32(x1, offset), shift2);                \
-        x1 = _mm256_packs_epi32(x1, x4);                                         \
-    };                                       \
-            x1 = _mm256_packus_epi16(x1, x1);                                             \
-    _mm_store_si128((__m128i *) &dst[x], _mm256_extracti128_si256(x1, 0));                                   \
-        }                                                                      \
-        src  += srcstride;                                                     \
-        src2 += src2stride;                                                    \
-        dst  += dststride;                                                     \
-    }                                                                          \
-}
-
 GEN_FUNC(QPEL_H, 32,  8)
-//GEN_FUNC(QPEL_H_10,  8, 10)
 GEN_FUNC(QPEL_H_10,  16, 10)
-//GEN_FUNC(QPEL_H_10,  4, 12)
 GEN_FUNC(QPEL_H_10,  16, 12)
 
 // ff_hevc_put_hevc_qpel_vX_X_X_avx2
-//GEN_FUNC(QPEL_V,  4,  8)
-//GEN_FUNC(QPEL_V,  8,  8)
-//GEN_FUNC(QPEL_V, 16,  8)
 GEN_FUNC(QPEL_V, 32,  8)
 
-//GEN_FUNC(QPEL_V,  4, 10)
 GEN_FUNC(QPEL_V,  16, 10)
 
-//GEN_FUNC(QPEL_V,  4, 12)
 GEN_FUNC(QPEL_V,  16, 12)
 
-//GEN_FUNC_STATIC(QPEL_V, 4, 14)
 GEN_FUNC_STATIC(QPEL_V, 16, 14)
 
 // ff_hevc_put_hevc_qpel_hvX_X_avx2
-//GEN_FUNC(QPEL_HV,  4,  8)
-GEN_FUNC(QPEL_HV,  16,  8)
-
-//GEN_FUNC(QPEL_HV,  4, 10)
 GEN_FUNC(QPEL_HV,  16, 10)
-
-//GEN_FUNC(QPEL_HV,  4, 12)
 GEN_FUNC(QPEL_HV,  16, 12)
 
 #define mc_red_func(name, bitd, step, W)                                                                    \
