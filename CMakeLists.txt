@@ -41,8 +41,12 @@ my_check_include_files(windows.h                WINDOWS_H_FOUND)
 find_package(Yasm)
 set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ${_force})
 
-configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
-configure_file(platform/x86/config.asm.in ${PROJECT_SOURCE_DIR}/config.asm)
+if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
+  configure_file(platform/arm/config.h ${PROJECT_SOURCE_DIR}/config.h)
+else()
+  configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
+  configure_file(platform/x86/config.asm.in ${PROJECT_SOURCE_DIR}/config.asm)
+endif()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 	enable_language(ASM)
@@ -279,6 +283,8 @@ list(APPEND libfilenames
     libavutil/arm/cpu.c
     libavutil/arm/asm.S
     libavcodec/arm/dsputil_arm.S
+    libavcodec/arm/dsputil_armv6.S    
+    libavcodec/arm/dsputil_init_armv6.c    
     libavcodec/arm/dsputil_init_arm.c
     libavcodec/arm/dsputil_init_neon.c
     libavcodec/arm/dsputil_neon.S
@@ -299,6 +305,7 @@ list(APPEND libfilenames
     libavcodec/arm/mdct_neon.S
     libavcodec/arm/rdft_neon.S
     libavcodec/arm/simple_idct_arm.S
+    libavcodec/arm/simple_idct_armv6.S
     libavcodec/arm/simple_idct_neon.S
     libavcodec/arm/videodsp_init_arm.c
 )
@@ -335,7 +342,7 @@ list(APPEND libfilenames
 )
 endif()
 
-if(WIN32)
+if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
     option(ENABLE_STATIC "enabled static library instead of shared" ON)
 else()
     option(ENABLE_STATIC "enabled static library instead of shared" OFF)
