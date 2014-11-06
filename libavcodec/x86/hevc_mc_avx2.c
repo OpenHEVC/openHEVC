@@ -198,6 +198,34 @@ DECLARE_ALIGNED(32, const int16_t, ff_hevc_qpel_filters_avx2_10[3][4][2]) = {
     x1 = _mm256_packus_epi16(x1, x2);                                             \
     PEL_STORE_16(dst)
 
+#define WEIGHTED_STORE14_16_8()                                                   \
+    x1 = _mm256_packus_epi16(x1, x1);                                             \
+    x1 = _mm256_permute4x64_epi64(x1, 0xD8);                                      \
+    PEL_STORE_4(dst)
+#define WEIGHTED_STORE14_32_8()                                                   \
+    x1 = _mm256_packus_epi16(x1, x2);                                             \
+    x1 = _mm256_permute4x64_epi64(x1, 0xD8);                                      \
+    PEL_STORE_16(dst)
+
+
+#define WEIGHTED_STORE2_8()                                                    \
+    x1 = _mm_packus_epi16(x1, x1);                                             \
+    *((short *) (dst + x)) = _mm_extract_epi16(x1, 0)
+#define WEIGHTED_STORE4_8()                                                    \
+    x1 = _mm_packus_epi16(x1, x1);                                             \
+    PEL_STORE_2(dst)
+#define WEIGHTED_STORE6_8()                                                    \
+    x1 = _mm_packus_epi16(x1, x1);                                             \
+    PEL_STORE_2(dst);                                                          \
+    *((short *) (dst + x + 4)) = _mm_extract_epi16(x1, 2)
+#define WEIGHTED_STORE16_8()                                                    \
+    x1 = _mm256_packus_epi16(x1, x1);                                             \
+    PEL_STORE_4(dst)
+#define WEIGHTED_STORE32_8()                                                   \
+    x1 = _mm256_packus_epi16(x1, x2);                                             \
+    PEL_STORE_16(dst)
+
+
 #define WEIGHTED_STORE2(D)                                                     \
     x1 = _mm_max_epi16(x1, _mm_setzero_si128());                               \
     x1 = _mm_min_epi16(x1, _mm_set1_epi16(CLPI_PIXEL_MAX_## D));               \
@@ -224,14 +252,17 @@ DECLARE_ALIGNED(32, const int16_t, ff_hevc_qpel_filters_avx2_10[3][4][2]) = {
 #define WEIGHTED_STORE4_10()    WEIGHTED_STORE4(10)
 #define WEIGHTED_STORE6_10()    WEIGHTED_STORE6(10)
 #define WEIGHTED_STORE16_10()    WEIGHTED_STORE16(10)
+#define WEIGHTED_STORE14_16_10()    WEIGHTED_STORE16(10)
 
 #define WEIGHTED_STORE4_12()    WEIGHTED_STORE4(12)
 #define WEIGHTED_STORE6_12()    WEIGHTED_STORE6(12)
 #define WEIGHTED_STORE16_12()    WEIGHTED_STORE16(12)
+#define WEIGHTED_STORE14_16_12()    WEIGHTED_STORE16(12)
 
 #define WEIGHTED_STORE4_14()    WEIGHTED_STORE4_10()
 #define WEIGHTED_STORE6_14()    WEIGHTED_STORE6_10()
 #define WEIGHTED_STORE16_14()    WEIGHTED_STORE16_10()
+#define WEIGHTED_STORE14_16_14()    WEIGHTED_STORE16_10()
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1827,7 +1858,7 @@ void ff_hevc_put_hevc_bi_qpel_v ## V ## _14_ ## D ## _avx2_ (                   
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _14();                                      \
             BI_UNWEIGHTED_COMPUTE ## V(V);                                     \
-            WEIGHTED_STORE ## V ## _ ## D();                                   \
+            WEIGHTED_STORE14_ ## V ## _ ## D();                                \
         }                                                                      \
         src  += srcstride;                                                     \
         src2 += src2stride;                                                    \
@@ -1851,7 +1882,7 @@ void ff_hevc_put_hevc_uni_qpel_v ## V ## _14_ ## D ## _avx2_ (                  
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _14();                                      \
             UNI_UNWEIGHTED_COMPUTE ## V(V);                                    \
-            WEIGHTED_STORE ## V ## _ ## D();                                   \
+            WEIGHTED_STORE14_ ## V ## _ ## D();                                \
         }                                                                      \
         src  += srcstride;                                                     \
         dst  += dststride;                                                     \
@@ -1875,7 +1906,7 @@ void ff_hevc_put_hevc_uni_w_qpel_v ## V ## _14_ ## D ## _avx2_ (                
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _14();                                      \
             UNI_WEIGHTED_COMPUTE ## V(V);                                      \
-            WEIGHTED_STORE ## V ## _ ## D();                                   \
+            WEIGHTED_STORE14_ ## V ## _ ## D();                                \
         }                                                                      \
         src  += srcstride;                                                     \
         dst  += dststride;                                                     \
@@ -1901,7 +1932,7 @@ void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _14_ ## D ## _avx2_ (                 
             QPEL_V_LOAD();                                                     \
             QPEL_H_COMPUTE ## V ## _14();                                      \
             BI_WEIGHTED_COMPUTE ## V(V);                                       \
-            WEIGHTED_STORE ## V ## _ ## D();                                   \
+            WEIGHTED_STORE14_ ## V ## _ ## D();                                \
         }                                                                      \
         src  += srcstride;                                                     \
         src2 += src2stride;                                                    \
@@ -1924,7 +1955,7 @@ void ff_hevc_put_hevc_qpel_hv ## H ## _ ## D ## _avx2_ (                        
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_qpel_v ## H ## _14_avx2_(                                   \
+    ff_hevc_put_hevc_qpel_v16 ## _14_avx2_(                                   \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, mx, my, width);\
 }
 
@@ -1942,7 +1973,7 @@ DECLARE_ALIGNED(32, int16_t, tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE]
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_bi_qpel_v ## H ## _14_ ## D ## _avx2_(                      \
+    ff_hevc_put_hevc_bi_qpel_v16 ## _14_ ## D ## _avx2_(                      \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , src2, src2stride, height, mx, my, width);\
 }
 
@@ -1959,7 +1990,7 @@ DECLARE_ALIGNED(32, int16_t, tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE]
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_uni_qpel_v ## H ## _14_ ## D ## _avx2_(                     \
+    ff_hevc_put_hevc_uni_qpel_v16 ## _14_ ## D ## _avx2_(                     \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, mx, my, width);\
 }
 
@@ -1977,7 +2008,7 @@ void ff_hevc_put_hevc_uni_w_qpel_hv ## H ## _ ## D ## _avx2_ (                  
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_uni_w_qpel_v ## H ## _14_ ## D ## _avx2_(                   \
+    ff_hevc_put_hevc_uni_w_qpel_v16 ## _14_ ## D ## _avx2_(                   \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, denom, wx, ox, mx, my, width);\
 }
 
@@ -1996,7 +2027,7 @@ void ff_hevc_put_hevc_bi_w_qpel_hv ## H ## _ ## D ## _avx2_ (                   
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_bi_w_qpel_v ## H ## _14_ ## D ## _avx2_(                    \
+    ff_hevc_put_hevc_bi_w_qpel_v16 ## _14_ ## D ## _avx2_(                    \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , src2, src2stride, height, denom, wx0, wx1, ox0, ox1, mx, my, width);\
 }
 
@@ -2046,6 +2077,7 @@ GEN_FUNC(EPEL_HV,  16, 10)
 
 GEN_FUNC(EPEL_HV,  16, 12)
 
+
 // ff_hevc_put_hevc_qpel_hX_X_X_avx2
 //GEN_FUNC(QPEL_H,  4,  8)
 //GEN_FUNC(QPEL_H,  8,  8)
@@ -2062,8 +2094,8 @@ GEN_FUNC(QPEL_V,  16, 10)
 GEN_FUNC(QPEL_V,  16, 12)
 
 GEN_FUNC_STATIC(QPEL_V, 16, 14)
-
 // ff_hevc_put_hevc_qpel_hvX_X_avx2
+GEN_FUNC(QPEL_HV,  32, 8)
 GEN_FUNC(QPEL_HV,  16, 10)
 GEN_FUNC(QPEL_HV,  16, 12)
 

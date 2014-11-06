@@ -1896,7 +1896,7 @@ void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _14_ ## D ## _sse (                  \
 ////////////////////////////////////////////////////////////////////////////////
 // ff_hevc_put_hevc_qpel_hvX_X_sse
 ////////////////////////////////////////////////////////////////////////////////
-#define PUT_HEVC_QPEL_HV(H, D)                                                 \
+#define PUT_HEVC_QPEL_HV(H, D, H2)                                                 \
 void ff_hevc_put_hevc_qpel_hv ## H ## _ ## D ## _sse (                         \
         int16_t *dst, ptrdiff_t dststride,                                     \
         uint8_t *_src, ptrdiff_t _srcstride,                                   \
@@ -1909,11 +1909,11 @@ void ff_hevc_put_hevc_qpel_hv ## H ## _ ## D ## _sse (                         \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_qpel_v ## H ## _14_sse(                                   \
+    ff_hevc_put_hevc_qpel_v ## H2 ## _14_sse(                                   \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, mx, my, width);\
 }
 
-#define PUT_HEVC_BI_QPEL_HV(H, D)                                              \
+#define PUT_HEVC_BI_QPEL_HV(H, D, H2)                                              \
 void ff_hevc_put_hevc_bi_qpel_hv ## H ## _ ## D ## _sse (                      \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
@@ -1927,11 +1927,11 @@ void ff_hevc_put_hevc_bi_qpel_hv ## H ## _ ## D ## _sse (                      \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_bi_qpel_v ## H ## _14_ ## D ## _sse(                      \
+    ff_hevc_put_hevc_bi_qpel_v ## H2 ## _14_ ## D ## _sse(                      \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , src2, src2stride, height, mx, my, width);\
 }
 
-#define PUT_HEVC_UNI_QPEL_HV(H, D)                                             \
+#define PUT_HEVC_UNI_QPEL_HV(H, D, H2)                                             \
 void ff_hevc_put_hevc_uni_qpel_hv ## H ## _ ## D ## _sse (                     \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
@@ -1944,11 +1944,11 @@ void ff_hevc_put_hevc_uni_qpel_hv ## H ## _ ## D ## _sse (                     \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_uni_qpel_v ## H ## _14_ ## D ## _sse(                     \
+    ff_hevc_put_hevc_uni_qpel_v ## H2 ## _14_ ## D ## _sse(                     \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, mx, my, width);\
 }
 
-#define PUT_HEVC_UNI_W_QPEL_HV(H, D)                                           \
+#define PUT_HEVC_UNI_W_QPEL_HV(H, D, H2)                                           \
 void ff_hevc_put_hevc_uni_w_qpel_hv ## H ## _ ## D ## _sse (                   \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
@@ -1962,11 +1962,11 @@ void ff_hevc_put_hevc_uni_w_qpel_hv ## H ## _ ## D ## _sse (                   \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_uni_w_qpel_v ## H ## _14_ ## D ## _sse(                   \
+    ff_hevc_put_hevc_uni_w_qpel_v ## H2 ## _14_ ## D ## _sse(                   \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, denom, wx, ox, mx, my, width);\
 }
 
-#define PUT_HEVC_BI_W_QPEL_HV(H, D)                                            \
+#define PUT_HEVC_BI_W_QPEL_HV(H, D, H2)                                            \
 void ff_hevc_put_hevc_bi_w_qpel_hv ## H ## _ ## D ## _sse (                    \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
@@ -1981,7 +1981,7 @@ void ff_hevc_put_hevc_bi_w_qpel_hv ## H ## _ ## D ## _sse (                    \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _sse(                            \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_bi_w_qpel_v ## H ## _14_ ## D ## _sse(                    \
+    ff_hevc_put_hevc_bi_w_qpel_v ## H2 ## _14_ ## D ## _sse(                   \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , src2, src2stride, height, denom, wx0, wx1, ox0, ox1, mx, my, width);\
 }
 
@@ -1995,6 +1995,13 @@ PUT_HEVC_BI_ ## FUNC(H,D)                                                      \
 PUT_HEVC_UNI_ ## FUNC(H,D)                                                     \
 PUT_HEVC_UNI_W_ ## FUNC(H,D)                                                   \
 PUT_HEVC_BI_W_ ## FUNC(H,D)
+
+#define GEN_FUNC_HV(FUNC, H, D, H2)                                                   \
+PUT_HEVC_ ## FUNC(H,D,H2)                                                         \
+PUT_HEVC_BI_ ## FUNC(H,D,H2)                                                      \
+PUT_HEVC_UNI_ ## FUNC(H,D,H2)                                                     \
+PUT_HEVC_UNI_W_ ## FUNC(H,D,H2)                                                   \
+PUT_HEVC_BI_W_ ## FUNC(H,D,H2)
 
 #define GEN_FUNC_STATIC(FUNC, H, D)                                            \
 static PUT_HEVC_ ## FUNC(H,D)                                                  \
@@ -2090,14 +2097,15 @@ GEN_FUNC_STATIC(QPEL_V, 4, 14)
 GEN_FUNC_STATIC(QPEL_V, 8, 14)
 
 // ff_hevc_put_hevc_qpel_hvX_X_sse
-GEN_FUNC(QPEL_HV,  4,  8)
-GEN_FUNC(QPEL_HV,  8,  8)
+GEN_FUNC_HV(QPEL_HV,  4,  8, 4)
+GEN_FUNC_HV(QPEL_HV,  8,  8, 8)
+GEN_FUNC_HV(QPEL_HV,  16, 8, 8)
 
-GEN_FUNC(QPEL_HV,  4, 10)
-GEN_FUNC(QPEL_HV,  8, 10)
+GEN_FUNC_HV(QPEL_HV,  4, 10, 4)
+GEN_FUNC_HV(QPEL_HV,  8, 10, 8)
 
-GEN_FUNC(QPEL_HV,  4, 12)
-GEN_FUNC(QPEL_HV,  8, 12)
+GEN_FUNC_HV(QPEL_HV,  4, 12, 4)
+GEN_FUNC_HV(QPEL_HV,  8, 12, 8)
 
 #define mc_red_func(name, bitd, step, W)                                                                    \
 void ff_hevc_put_hevc_##name##W##_##bitd##_sse(                                                             \
@@ -2199,13 +2207,21 @@ mc_red_func(qpel_v,12, 8, 32);
 mc_red_func(qpel_v,12, 8, 48);
 mc_red_func(qpel_v,12, 8, 64);
 
+#ifdef OPTI_ASM
 mc_red_func(qpel_hv, 8, 4, 12);
 mc_red_func(qpel_hv, 8, 8, 16);
 mc_red_func(qpel_hv, 8, 8, 24);
 mc_red_func(qpel_hv, 8, 8, 32);
 mc_red_func(qpel_hv, 8, 8, 48);
 mc_red_func(qpel_hv, 8, 8, 64);
-
+#else
+mc_red_func(qpel_hv, 8, 4, 12);
+//mc_red_func(qpel_hv, 8, 8, 16);
+mc_red_func(qpel_hv, 8, 8, 24);
+mc_red_func(qpel_hv, 8, 16, 32);
+mc_red_func(qpel_hv, 8, 16, 48);
+mc_red_func(qpel_hv, 8, 16, 64);
+#endif
 mc_red_func(qpel_hv,10, 4, 12);
 mc_red_func(qpel_hv,10, 8, 16);
 mc_red_func(qpel_hv,10, 8, 24);
