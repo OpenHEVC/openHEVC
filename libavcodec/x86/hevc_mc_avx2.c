@@ -2001,7 +2001,7 @@ void ff_hevc_put_hevc_uni_w_qpel_hv ## H ## _ ## D ## _avx2_ (                  
                                         int height, int denom,                 \
                                         int wx, int ox,                        \
                                         intptr_t mx, intptr_t my, int width) { \
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];               \
+    DECLARE_ALIGNED(32, int16_t, tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];)              \
     int16_t *tmp = tmp_array;                                                  \
     SRC_INIT_ ## D();                                                          \
     src -= QPEL_EXTRA_BEFORE * srcstride;                                      \
@@ -2020,7 +2020,7 @@ void ff_hevc_put_hevc_bi_w_qpel_hv ## H ## _ ## D ## _avx2_ (                   
                                         int height, int denom, int wx0,        \
                                         int wx1, int ox0, int ox1,             \
                                         intptr_t mx, intptr_t my, int width) { \
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];               \
+    DECLARE_ALIGNED(32, int16_t, tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];)              \
     int16_t *tmp = tmp_array;                                                  \
     SRC_INIT_ ## D();                                                          \
     src -= QPEL_EXTRA_BEFORE * srcstride;                                      \
@@ -2094,6 +2094,7 @@ GEN_FUNC(QPEL_V,  16, 10)
 GEN_FUNC(QPEL_V,  16, 12)
 
 GEN_FUNC_STATIC(QPEL_V, 16, 14)
+
 // ff_hevc_put_hevc_qpel_hvX_X_avx2
 GEN_FUNC(QPEL_HV,  32, 8)
 GEN_FUNC(QPEL_HV,  16, 10)
