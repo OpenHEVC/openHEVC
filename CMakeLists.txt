@@ -41,8 +41,12 @@ my_check_include_files(windows.h                WINDOWS_H_FOUND)
 find_package(Yasm)
 set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ${_force})
 
+if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
+configure_file(platform/arm/config.h ${PROJECT_SOURCE_DIR}/config.h)
+else()
 configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
 configure_file(platform/x86/config.asm.in ${PROJECT_SOURCE_DIR}/config.asm)
+endif()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 	enable_language(ASM)
@@ -130,16 +134,18 @@ endif(YASM_FOUND)
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
     if(MINGW)
-        set(CMAKE_C_FLAGS "-arch x86_64 -m64 -fPIC -DPIC -Wl,-Bsymbolic -march=native -fno-tree-vectorize")
+        set(CMAKE_C_FLAGS "-arch x86_64 -m64 -Wl,-Bsymbolic -march=native -fno-tree-vectorize")
     else()
-        set(CMAKE_C_FLAGS "-DPIC -fPIC -Wl,-Bsymbolic -march=native -fno-tree-vectorize")
+        set(CMAKE_C_FLAGS "-Wl,-Bsymbolic -march=native -fno-tree-vectorize")
     endif()
 elseif(APPLE)
-    set(CMAKE_C_FLAGS   "-D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -DPIC -fPIC -mssse3 -msse4 -msse4.1")
+    set(CMAKE_C_FLAGS   "-D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DHAVE_AV_CONFIG_H -mssse3 -msse4 -msse4.1")
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
-    set(CMAKE_C_FLAGS "-DX86_32 -DPIC -fPIC -Wl,-Bsymbolic -march=native -fno-tree-vectorize")
+    set(CMAKE_C_FLAGS "-DX86_32 -Wl,-Bsymbolic -march=native -fno-tree-vectorize")
 endif()
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SDL")
+add_definitions("-DPIC")
+add_definitions("-DUSE_SDL")
+AddCompilerFlag("-fPIC")
 
 find_package(SDL)
 find_package(SDL2)
@@ -275,7 +281,9 @@ list(APPEND libfilenames
     libavutil/arm/cpu.c
     libavutil/arm/asm.S
     libavcodec/arm/dsputil_arm.S
+    libavcodec/arm/dsputil_armv6.S
     libavcodec/arm/dsputil_init_arm.c
+    libavcodec/arm/dsputil_init_armv6.c
     libavcodec/arm/dsputil_init_neon.c
     libavcodec/arm/dsputil_neon.S
     libavcodec/arm/fft_init_arm.c
@@ -295,6 +303,7 @@ list(APPEND libfilenames
     libavcodec/arm/mdct_neon.S
     libavcodec/arm/rdft_neon.S
     libavcodec/arm/simple_idct_arm.S
+    libavcodec/arm/simple_idct_armv6.S
     libavcodec/arm/simple_idct_neon.S
     libavcodec/arm/videodsp_init_arm.c
 )
@@ -330,7 +339,7 @@ list(APPEND libfilenames
 )
 endif()
 
-if(WIN32)
+if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
     option(ENABLE_STATIC "enabled static library instead of shared" ON)
 else()
     option(ENABLE_STATIC "enabled static library instead of shared" OFF)
