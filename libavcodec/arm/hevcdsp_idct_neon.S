@@ -22,19 +22,6 @@
 #include "neon.S"
 /*(uint8_t *_dst, int16_t *coeffs, ptrdiff_t stride) */
 
-tr4f:
-.word 0x00240053  // 36 and d1[0] = 83
-.word 0x00000000
-tr8f:
-.word 0x0059004b  // 89, d0[0] = 75
-.word 0x00320012  // 50, d0[2] = 18
-tr16:
-.word 0x005a0057  // 90, d2[0] = 87
-.word 0x00500046  // 80, d2[2] = 70
-.word 0x0039002b  // 57, d2[0] = 43
-.word 0x00190009  // 25, d2[2] = 9
-
-
 .macro  transpose_16b_8x8   r0, r1, r2, r3, r4, r5, r6, r7
         vtrn.64         \r0, \r4
         vtrn.64         \r1, \r5
@@ -533,3 +520,15 @@ function ff_hevc_transform_16x16_add_neon_8, export=1
         bx lr
 endfunc
 
+
+tr4f:
+.word 0x00240053  // 36 and d1[0] = 83
+.word 0x00000000
+tr8f:
+.word 0x0059004b  // 89, d0[0] = 75
+.word 0x00320012  // 50, d0[2] = 18
+tr16:
+.word 0x005a0057  // 90, d2[0] = 87
+.word 0x00500046  // 80, d2[2] = 70
+.word 0x0039002b  // 57, d2[0] = 43
+.word 0x00190009  // 25, d2[2] = 9

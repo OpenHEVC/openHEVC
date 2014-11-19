@@ -69,8 +69,6 @@
         vmovl.u8  q13, d26
         vmovl.u8  q14, d28
         vmovl.u8  q15, d30
-        ldr        r10, [r2]
-        ldr        r11, [r2, #4]
 
         vadd.i16   q7, q9, q11
         vadd.i16   q6, q14, q12
@@ -80,11 +78,10 @@
         vabd.s16   q6, q6, q13
 
 
-        vdup.16    d0, r10
+        vdup.16    q0, r2
         vmov       q4, q7
         vmov       q5, q6
         vdup.16    d4, r12
-        vdup.16    d1, r11
         vtrn.16    q7, q4
         vtrn.16    q6, q5
 
@@ -219,8 +216,7 @@ weakfilter_\@:
         cmp       r9, #0
         beq       ready_\@
 
-        vdup.16    d8, r10
-        vdup.16    d9, r11
+        vdup.16    q4, r2
 
         vdup.16   d10, r9
         lsr       r9, #16
