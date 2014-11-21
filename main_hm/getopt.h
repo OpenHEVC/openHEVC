@@ -42,6 +42,7 @@
 #define ENABLE  1
 
 
+int h264_flags;
 int check_md5_flags;
 int thread_type;
 char *input_file;

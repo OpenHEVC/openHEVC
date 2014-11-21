@@ -69,40 +69,7 @@ typedef struct OpenHevcWrapperContext {
     AVCodecParserContext *parser;
 } OpenHevcWrapperContext;
 
-int find_start_code (unsigned char *Buf, int zeros_in_startcode)
-{
-    int i;
-    for (i = 0; i < zeros_in_startcode; i++)
-        if(Buf[i] != 0)
-            return 0;
-    return Buf[i];
-}
 
-int get_next_nal(FILE* inpf, unsigned char* Buf)
-{
-    int pos = 0;
-    int StartCodeFound = 0;
-    int info2 = 0;
-    int info3 = 0;
-    while(!feof(inpf)&&(/*Buf[pos++]=*/fgetc(inpf))==0);
-
-    while (pos < 3) Buf[pos++] = fgetc (inpf);
-    while (!StartCodeFound)
-    {
-        if (feof (inpf))
-        {
-            //            return -1;
-            return pos-1;
-        }
-        Buf[pos++] = fgetc (inpf);
-        info3 = find_start_code(&Buf[pos-4], 3);
-        if(info3 != 1)
-            info2 = find_start_code(&Buf[pos-3], 2);
-        StartCodeFound = (info2 == 1 || info3 == 1);
-    }
-    fseek (inpf, - 4 + info2, SEEK_CUR);
-    return pos - 4 + info2;
-}
 typedef struct Info {
     int NbFrame;
     int Poc;
@@ -146,7 +113,12 @@ static void video_decode_example(const char *filename)
         exit(1);
     }
 
-    openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
+    if (h264_flags)
+        openHevcHandle = libOpenH264Init(nb_pthreads, thread_type/*, pFormatCtx*/);
+    else
+        openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
+
+
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
 
     if (!openHevcHandle) {

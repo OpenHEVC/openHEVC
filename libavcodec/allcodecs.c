@@ -73,6 +73,8 @@ void avcodec_register_all(void)
         return;
     initialized = 1;
 
+    REGISTER_DECODER(H264, h264);
     REGISTER_DECODER(HEVC, hevc);
+    REGISTER_PARSER(H264, h264);
     REGISTER_PARSER(HEVC, hevc);
 }

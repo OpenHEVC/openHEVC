@@ -131,9 +131,10 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
     // every command line option must be followed by ':' if it takes an
     // argument, and '::' if this argument is optional
-    const char *ostr = "achi:no:p:f:s:t:wl:";
+    const char *ostr = "achi:no:p:f:s:t:v:wl:";
 
     int c;
+    h264_flags        = DISABLE;
     check_md5_flags   = ENABLE;
     thread_type       = 1;
     input_file        = NULL;
@@ -177,6 +178,9 @@ void init_main(int argc, char *argv[]) {
             break;
         case 't':
             temporal_layer_id = atoi(optarg);
+            break;
+        case 'v':
+            h264_flags = ENABLE;
             break;
         case 'w':
             no_cropping = ENABLE;

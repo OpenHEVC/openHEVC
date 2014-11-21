@@ -58,6 +58,7 @@ void av_register_all(void)
 
     avcodec_register_all();
 
+    REGISTER_DEMUXER(H264, h264);
     REGISTER_DEMUXER(HEVC, hevc);
     REGISTER_DEMUXER(MOV, mov);
     REGISTER_DEMUXER(MPEGTS, mpegts);
