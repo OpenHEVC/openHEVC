@@ -74,12 +74,11 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
     int i, j, ret;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *frame = &s->DPB[i];
-        int interlaced = (s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD) || (s->picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD);
 
         if (frame->frame->buf[0])
             continue;
 
-        if (interlaced)
+        if (s->interlaced)
             s->avctx->height = s->sps->output_height * 2;
 
         ret = ff_thread_get_buffer(s->avctx, &frame->tf,
@@ -98,10 +97,9 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
 
         frame->rpl_tab_buf = av_buffer_pool_get(s->rpl_tab_pool);
 
-        if (interlaced)
+        if (s->interlaced)
             for (j = 0; j < 3; j++) {
                 frame->frame->linesize[j] = 2 * frame->frame->linesize[j];
-                frame->frame->data[j] += frame->frame->linesize[j] / 2;
             }
 
         if (!frame->rpl_tab_buf)
@@ -111,8 +109,8 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         for (j = 0; j < frame->ctb_count; j++)
             frame->rpl_tab[j] = (RefPicListTab *)frame->rpl_buf->data;
 
-        frame->frame->top_field_first  = s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD;
-        frame->frame->interlaced_frame = interlaced;
+        frame->frame->top_field_first  = s->field_order == AV_FIELD_TT;
+        frame->frame->interlaced_frame = s->interlaced;
         return frame;
 fail:
         ff_hevc_unref_frame(s, frame, ~0);
@@ -145,6 +143,8 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
     *frame = ref->frame;
     s->ref = ref;
+
+    ref->field_order = s->field_order;
 
     ref->poc      = poc;
     ref->flags    = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
@@ -190,7 +190,7 @@ int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc)
 
 static void copy_field(HEVCContext *s, AVFrame *_dst, AVFrame *_src) {
     int stride = _dst->linesize[0];
-    uint8_t *dst = _dst->data[0] - stride / 2;
+    uint8_t *dst = _dst->data[0] + stride / 2;
     uint8_t *src = _src->data[0];
 
     int i, j, k;
@@ -205,7 +205,7 @@ static void copy_field(HEVCContext *s, AVFrame *_dst, AVFrame *_src) {
 
     for (k = 1; k < 3; k++) {
         stride = _dst->linesize[k];
-        dst = _dst->data[k] - stride / 2;
+        dst = _dst->data[k] + stride / 2;
         src = _src->data[k];
 
         for (j = 0; j < s->sps->height / 2; j++) {
@@ -242,21 +242,14 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
                 frame->sequence == s->seq_output) {
 
-                if ((frame->flags & HEVC_FRAME_FIRST_FIELD) &&
-                    frame->poc < min_poc) {
-                    min_field = frame->poc;
-                    min_idx[1] = i;
-                }
-                if (!(frame->flags & HEVC_FRAME_FIRST_FIELD) &&
-                    (frame->flags & HEVC_FRAME_FLAG_OUTPUT)) {
-                    nb_output++;
-                    if (frame->poc < min_poc) {
-                        min_poc = frame->poc;
-                        min_idx[0] = i;
-                    }
+                nb_output++;
+                if (frame->poc < min_poc) {
+                    min_poc = frame->poc;
+                    min_idx[0] = i;
                 }
             }
         }
+
 
 #if FRAME_CONCEALMENT
         nb_output += s->no_display_pic;
@@ -264,32 +257,43 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 
         /* wait for more frames before output */
         if (!flush && s->seq_output == s->seq_decode && s->sps &&
-            nb_output <= s->sps->temporal_layer[s->sps->max_sub_layers - 1].num_reorder_pics)
+            nb_output <= s->sps->temporal_layer[s->sps->max_sub_layers - 1].num_reorder_pics + s->interlaced)
             return 0;
 
         if (nb_output) {
             HEVCFrame *frame = &s->DPB[min_idx[0]];
-            HEVCFrame *first_frame = NULL;
+            HEVCFrame *field = NULL;
             AVFrame *dst = out;
             AVFrame *src = frame->frame;
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src->format);
             int pixel_shift = !!(desc->comp[0].depth_minus1 > 7);
-            int first_field = (frame->frame->top_field_first == AV_PICTURE_STRUCTURE_TOP_FIELD ||
-                               frame->frame->top_field_first == AV_PICTURE_STRUCTURE_BOTTOM_FIELD);
 
-            if (first_field) {
+            if (frame->field_order == AV_FIELD_TT ||
+                frame->field_order == AV_FIELD_BB) {
                 frame->flags |= HEVC_FRAME_FIRST_FIELD;
-                return 0;
-            }
 
-            if (frame->frame->interlaced_frame) {
-                first_frame = &s->DPB[min_idx[1]];
+                for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+                    HEVCFrame *frame = &s->DPB[i];
+                    if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
+                        frame->sequence == s->seq_output) {
 
-                if (first_frame->frame->top_field_first) {
+                        if (!(frame->flags & HEVC_FRAME_FIRST_FIELD) &&
+                            frame->poc < min_field) {
+                            min_field = frame->poc;
+                            min_idx[1] = i;
+                        }
+                    }
+                }
+
+                frame->flags &= ~(HEVC_FRAME_FIRST_FIELD);
+                field = &s->DPB[min_idx[1]];
+                if (field->frame->interlaced_frame &&
+                    (field->field_order != AV_FIELD_TT ||
+                     field->field_order != AV_FIELD_BB)) {
                     if (s->threads_type & FF_THREAD_FRAME )
-                        ff_thread_await_progress(&first_frame->tf, INT_MAX, 0);
+                        ff_thread_await_progress(&field->tf, s->sps->height, 0);
 
-                    copy_field(s, src, first_frame->frame);
+                    copy_field(s, src, field->frame);
                 }
             }
 
@@ -308,20 +312,27 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
                 s->prev_display_poc ++; // incremate
             }
 #else
-            frame->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
             if (frame->flags & HEVC_FRAME_FLAG_BUMPING)
-                frame->flags &= ~(HEVC_FRAME_FLAG_BUMPING);
+                ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_BUMPING);
+            else
+                ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT);
 
-            if (frame->frame->interlaced_frame) {
-                first_frame->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
-                first_frame->flags &= ~(HEVC_FRAME_FIRST_FIELD);
-                if (first_frame->flags & HEVC_FRAME_FLAG_BUMPING)
-                    first_frame->flags &= ~(HEVC_FRAME_FLAG_BUMPING);
+            if (frame->field_order == AV_FIELD_TT ||
+                frame->field_order == AV_FIELD_BB) {
+                if (field &&
+                    field->frame->interlaced_frame &&
+                    (field->field_order != AV_FIELD_TT ||
+                     field->field_order != AV_FIELD_BB)) {
 
-                for (i = 0; i < 3; i++)
-                    dst->linesize[i] /= 2;
+                    if (field->flags & HEVC_FRAME_FLAG_BUMPING)
+                        ff_hevc_unref_frame(s, field, HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_BUMPING);
+                    else
+                        ff_hevc_unref_frame(s, field, HEVC_FRAME_FLAG_OUTPUT);
+
+                    for (i = 0; i < 3; i++)
+                        dst->linesize[i] /= 2;
+                }
             }
-
 #endif
 
             if (ret < 0)

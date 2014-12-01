@@ -2907,6 +2907,7 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
     dst->window     = src->window;
     dst->flags      = src->flags;
     dst->sequence   = src->sequence;
+    dst->field_order= src->field_order;
 
     return 0;
 fail:
@@ -3806,7 +3807,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->seq_output           = s0->seq_output;
     s->pocTid0              = s0->pocTid0;
     s->max_ra               = s0->max_ra;
-    s->eos        = s0->eos;
+    s->eos                  = s0->eos;
     s->is_nalff             = s0->is_nalff;
     s->nal_length_size      = s0->nal_length_size;
     s->threads_number       = s0->threads_number;
@@ -3817,6 +3818,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->quality_layer_id     = s0->quality_layer_id;
     s->decode_checksum_sei  = s0->decode_checksum_sei;
     s->poc_id               = s0->poc_id;
+    s->field_order          = s0->field_order;
+    s->picture_struct       = s0->picture_struct;
+    s->interlaced           = s0->interlaced;
 
     if (s->sps != s0->sps)
         ret = set_sps(s, s0->sps);

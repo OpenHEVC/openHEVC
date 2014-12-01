@@ -170,9 +170,23 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
         case NAL_CRA_NUT:
             av_log(h->avctx, AV_LOG_DEBUG, "parsing NALU %d\n", h->decoder_id);
             sh->first_slice_in_pic_flag = get_bits1(gb);
-            s->picture_structure = h->picture_struct;
-            s->field_order = h->picture_struct;
+            switch(h->picture_struct) {
+                case  0 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "(progressive) frame \n"); break;
+                case  1 : s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(h->avctx, AV_LOG_DEBUG, "top field\n"); break;
+                case  2 : s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(h->avctx, AV_LOG_DEBUG, "bottom field\n"); break;
+                case  3 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "top field, bottom field, in that order\n"); break;
+                case  4 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "bottom field, top field, in that order\n"); break;
+                case  5 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "top field, bottom field, top field repeated, in that order\n"); break;
+                case  6 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "bottom field, top field, bottom field repeated, in that order\n"); break;
+                case  7 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "frame doubling\n"); break;
+                case  8 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "frame tripling\n"); break;
+                case  9 : s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(h->avctx, AV_LOG_DEBUG, "top field paired with previous bottom field in output order\n"); break;
+                case 10 : s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(h->avctx, AV_LOG_DEBUG, "bottom field paired with previous top field in output order\n"); break;
+                case 11 : s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(h->avctx, AV_LOG_DEBUG, "top field paired with next bottom field in output order\n"); break;
+                case 12 : s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(h->avctx, AV_LOG_DEBUG, "bottom field paired with next top field in output order\n"); break;
+            }
 
+            s->field_order = h->field_order;
             if (IS_IRAP(h)) {
                 s->key_frame = 1;
                 sh->no_output_of_prior_pics_flag = get_bits1(gb);
