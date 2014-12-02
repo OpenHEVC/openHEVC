@@ -20,15 +20,6 @@
 
 #include "libavutil/arm/asm.S"
 #include "neon.S"
-.global epel_coeffs
-epel_coeffs:
-.byte 2, 58, 10, 2
-.byte 4, 54, 16, 2
-.byte 6, 46, 28, 4
-.byte 4, 36, 36, 4
-.byte 4, 28, 46, 6
-.byte 2, 16, 54, 4
-.byte 2, 10, 58, 2
 
 .macro vextin_d4
     vld1.8    {q10}, [r2], r3
@@ -333,3 +324,11 @@ function ff_hevc_put_epel_hv_neon_8, export=1
         bx lr
 endfunc
 
+epel_coeffs:
+       .byte 2, 58, 10, 2
+       .byte 4, 54, 16, 2
+       .byte 6, 46, 28, 4
+       .byte 4, 36, 36, 4
+       .byte 4, 28, 46, 6
+       .byte 2, 16, 54, 4
+       .byte 2, 10, 58, 2

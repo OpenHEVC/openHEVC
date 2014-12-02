@@ -8,7 +8,7 @@ LOCAL_ARM_MODE := arm
 #LOCAL_CFLAGS    := -I <Your header files goes here>
 LOCAL_CFLAGS    += -g
 LOCAL_CFLAGS    += -ggdb
-LOCAL_CFLAGS    += -O1
+LOCAL_CFLAGS    += -O0
 
 openhevc_files := \
     libavutil/avstring.c \
@@ -54,6 +54,7 @@ openhevc_files := \
     libavformat/file.c \
     libavformat/flac_picture.c \
     libavformat/format.c \
+    libavformat/h264dec.c \
     libavformat/id3v1.c \
     libavformat/id3v2.c \
     libavformat/isom.c \
@@ -75,6 +76,23 @@ openhevc_files := \
     libavformat/rmsipr.c \
     libavformat/utils.c \
     libavformat/vorbiscomment.c \
+    libavcodec/h264_cabac.c \
+    libavcodec/h264_cavlc.c \
+    libavcodec/h264_direct.c \
+    libavcodec/h264_loopfilter.c \
+    libavcodec/h264_mb.c \
+    libavcodec/h264_parser.c \
+    libavcodec/h264_picture.c \
+    libavcodec/h264_ps.c \
+    libavcodec/h264_refs.c \
+    libavcodec/h264_sei.c \
+    libavcodec/h264_slice.c \
+    libavcodec/h264.c \
+    libavcodec/h264chroma.c \
+    libavcodec/h264dsp.c \
+    libavcodec/h264idct.c \
+    libavcodec/h264pred.c \
+    libavcodec/h264qpel.c \
     libavcodec/arm/videodsp_init_arm.c \
     libavcodec/ac3tab.c \
     libavcodec/allcodecs.c \
@@ -118,6 +136,7 @@ openhevc_files := \
     libavcodec/rawdec.c \
     libavcodec/rdft.c \
     libavcodec/simple_idct.c \
+    libavcodec/startcode.c \
     libavcodec/utils.c \
     libavcodec/videodsp.c \
     libavcodec/arm/hevcdsp_init_arm.c \
