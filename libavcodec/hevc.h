@@ -940,10 +940,6 @@ typedef struct HEVCFrame {
      * A combination of HEVC_FRAME_FLAG_*
      */
     uint8_t flags;
-  //  uint8_t prv_active_el_frame;
-#if FRAME_CONCEALMENT
-    uint8_t is_concealment_frame;
-#endif
     uint8_t field_order;
 } HEVCFrame;
 
@@ -1138,10 +1134,6 @@ typedef struct HEVCContext {
 
     uint8_t threads_type;
     uint8_t threads_number;
-#if FRAME_CONCEALMENT
-    int prev_display_poc;
-    int no_display_pic;
-#endif
     int     decode_checksum_sei;
 } HEVCContext;
 

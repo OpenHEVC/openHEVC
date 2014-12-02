@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 
 #include "internal.h"
@@ -250,11 +251,6 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             }
         }
 
-
-#if FRAME_CONCEALMENT
-        nb_output += s->no_display_pic;
-#endif
-
         /* wait for more frames before output */
         if (!flush && s->seq_output == s->seq_decode && s->sps &&
             nb_output <= s->sps->temporal_layer[s->sps->max_sub_layers - 1].num_reorder_pics + s->interlaced)
@@ -299,19 +295,6 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 
             ret = av_frame_ref(dst, src);
 
-#if FRAME_CONCEALMENT
-            /*      ADD remove frames from the DPB    */
-            if(s->prev_display_poc == -1 || s->prev_display_poc == min_poc-1) {
-                    s->no_display_pic = 0;
-                frame->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
-                av_log(s->avctx, AV_LOG_ERROR,"min_poc %d \n", min_poc);
-                s->prev_display_poc = min_poc;
-            } else {
-                s->no_display_pic ++;
-                av_log(s->avctx, AV_LOG_ERROR,"min_poc %d \n", min_poc-1);
-                s->prev_display_poc ++; // incremate
-            }
-#else
             if (frame->flags & HEVC_FRAME_FLAG_BUMPING)
                 ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_BUMPING);
             else
@@ -333,7 +316,6 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
                         dst->linesize[i] /= 2;
                 }
             }
-#endif
 
             if (ret < 0)
                 return ret;
@@ -594,99 +576,72 @@ static void mark_ref(HEVCFrame *frame, int flag)
     frame->flags |= flag;
 }
 
-#if FRAME_CONCEALMENT
-static HEVCFrame * find_new_concealemnt_frame(HEVCContext *s, int poc, int gop_size) {
-    int  poc_inf, poc_sup;
+static HEVCFrame *find_new_concealemnt_frame(HEVCContext *s, int poc) {
     HEVCFrame *ref = NULL;
-    int max_val = (poc & 0xFFF8) + gop_size;
-    int min_val = (poc & 0xFFF8);
-    
-    poc_inf = poc_sup = poc;
-    while(1) {
-        poc_inf--;
-        if(poc_inf >= min_val && poc_inf!=s->poc ) {
-            ref = find_ref_idx(s, poc_inf);
-            if(ref && !ref->is_concealment_frame){
-                printf("poc_inf %d \n", poc_inf);
-                return ref;
-            }
+    int max_val = INT_MAX;
+    int min_val = INT_MIN;
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        HEVCFrame *ref = &s->DPB[i];
+        if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
+            if (ref->poc < poc && ref->poc > min_val)
+                min_val = ref->poc;
+            if (ref->poc > poc && ref->poc < max_val)
+                max_val = ref->poc;
         }
-        poc_sup++;
-        if(poc_sup <= max_val && poc_sup!=s->poc) {
-            ref = find_ref_idx(s, poc_sup);
-            if(ref && !ref->is_concealment_frame) {
-                printf("poc_inf %d \n", poc_sup);
-                return ref;
-            }
-        }
-        if(poc_inf < min_val && poc_sup > max_val)
-            return NULL;
     }
+    if (max_val == INT_MAX && min_val == INT_MIN) {
+        av_log(s->avctx, AV_LOG_ERROR, "Could not find any references.\n");
+        return ref;
+    }
+    if (max_val - poc < poc - min_val) {
+        av_log(s->avctx, AV_LOG_ERROR, "Replace reference %d with %d.\n", poc, max_val);
+        ref = find_ref_idx(s, max_val);
+    } else {
+        av_log(s->avctx, AV_LOG_ERROR, "Replace reference %d with %d.\n", poc, min_val);
+        ref = find_ref_idx(s, min_val);
+    }
+
+    return ref;
 }
-#endif
 
 static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
 {
-    HEVCFrame *frame;
+    HEVCFrame *conc_frame, *frame;
     int i;
-#if FRAME_CONCEALMENT    
-    int gop_size = 8; // FIXME the GOP size should not be  a constant
-    HEVCFrame *conc_frame;
-#else
-    int x, y; 
-#endif
+    int x, y;
 
     frame = alloc_frame(s);
     if (!frame)
         return NULL;
 
-#if FRAME_CONCEALMENT
-    if(!(poc & 0x0007)) {
-        av_log(s->avctx, AV_LOG_ERROR, "The key pictures need to be successfully received cannot be recovered with this algorithm .\n");
-        return AVERROR_INVALIDDATA;
-    }
-    printf("Find new reference \n");
-    conc_frame = find_new_concealemnt_frame(s, poc, gop_size);
+    conc_frame = find_new_concealemnt_frame(s, poc);
     if(!conc_frame) {
-        av_log(s->avctx, AV_LOG_ERROR, "Concealment frame not found: this should not occur with this algorithm .\n");
-        return AVERROR_INVALIDDATA;
-    }
-    printf("Reference found %d \n", conc_frame->poc);
-#endif
-
-#if FRAME_CONCEALMENT
-    av_image_copy(  frame->frame->data, frame->frame->linesize, conc_frame->frame->data,
-                    conc_frame->frame->linesize, s->sps->pix_fmt , conc_frame->frame->width,
-                    conc_frame->frame->height);
-#if COPY_MV
-    memcpy(frame->rpl_buf->data, conc_frame->rpl_buf->data, frame->rpl_buf->size);
-    memcpy(frame->tab_mvf_buf->data, conc_frame->tab_mvf_buf->data, frame->tab_mvf_buf->size);
-    memcpy(frame->rpl_tab_buf->data, conc_frame->rpl_tab_buf->data, frame->rpl_tab_buf->size);
-#endif
-#else
-    if (!s->sps->pixel_shift) {
-        for (i = 0; frame->frame->buf[i]; i++)
-            memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
-                   frame->frame->buf[i]->size);
+        if (!s->sps->pixel_shift) {
+            for (i = 0; frame->frame->buf[i]; i++)
+                memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
+                       frame->frame->buf[i]->size);
+        } else {
+            for (i = 0; frame->frame->data[i]; i++)
+                for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
+                    for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
+                        AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
+                                1 << (s->sps->bit_depth - 1));
+                    }
+        }
     } else {
-        for (i = 0; frame->frame->data[i]; i++)
-            for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
-                for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
-                    AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
-                            1 << (s->sps->bit_depth - 1));
-                }
+        av_image_copy(frame->frame->data, frame->frame->linesize, conc_frame->frame->data,
+                      conc_frame->frame->linesize, s->sps->pix_fmt , conc_frame->frame->width,
+                      conc_frame->frame->height);
+        memcpy(frame->rpl_buf->data, conc_frame->rpl_buf->data, frame->rpl_buf->size);
+        memcpy(frame->tab_mvf_buf->data, conc_frame->tab_mvf_buf->data, frame->tab_mvf_buf->size);
+        memcpy(frame->rpl_tab_buf->data, conc_frame->rpl_tab_buf->data, frame->rpl_tab_buf->size);
     }
-#endif
+
     frame->poc                  = poc;
     frame->sequence             = s->seq_decode;
-    
-    
-#if FRAME_CONCEALMENT
-    frame->flags                = HEVC_FRAME_FLAG_OUTPUT; // Display the frame
-    frame->is_concealment_frame = 1;
-#else
     frame->flags                = 0;
-#endif
 
     if (s->threads_type & FF_THREAD_FRAME) {
         ff_thread_report_progress(&frame->tf, INT_MAX, 0);

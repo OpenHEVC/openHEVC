@@ -19,7 +19,6 @@
 #include <sys/time.h>
 //#include <ctime>
 #endif
-#define FRAME_CONCEALMENT   0
 
 
 /* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
@@ -83,13 +82,6 @@ static void video_decode_example(const char *filename)
 {
     AVFormatContext *pFormatCtx=NULL;
     AVPacket        packet;
-#if FRAME_CONCEALMENT
-    FILE *fin_loss = NULL, *fin1 = NULL;
-    Info info;
-    Info info_loss;
-    char filename0[1024];
-    int is_received = 1;
-#endif
     FILE *fout  = NULL;
     int width   = -1;
     int height  = -1;
@@ -161,35 +153,11 @@ static void video_decode_example(const char *filename)
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
     libOpenHevcSetActiveDecoders(openHevcHandle, quality_layer_id);
     libOpenHevcSetViewLayers(openHevcHandle, quality_layer_id);
-#if FRAME_CONCEALMENT
-    fin_loss = fopen( "/Users/wassim/Softwares/shvc_transmission/parser/hevc_parser/BascketBall_Loss.txt", "rb");
-    fin1 = fopen( "/Users/wassim/Softwares/shvc_transmission/parser/hevc_parser/BascketBall.txt", "rb");
-    sprintf(filename0, "%s \n", "Nbframe  Poc Tid  Qid  NalType Length");
-    fread ( filename0, strlen(filename), 1, fin_loss);
-    fread ( filename0, strlen(filename), 1, fin1);
-#endif
 
     while(!stop) {
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
-#if FRAME_CONCEALMENT
-        // Get the corresponding frame in the trace
-        if(is_received)
-            fscanf(fin_loss, "%d    %d    %d    %d    %d        %d \n", &info_loss.NbFrame, &info_loss.Poc, &info_loss.Tid, &info_loss.Qid, &info_loss.type, &info_loss.size);
-        fscanf(fin1, "%d    %d    %d    %d    %d        %d \n", &info.NbFrame, &info.Poc, &info.Tid, &info.Qid, &info.type, &info.size);
-        if(info_loss.NbFrame == info.NbFrame)
-            is_received = 1;
-        else
-            is_received = 0;
-#endif
         if (packet.stream_index == video_stream_idx || stop_dec == 1) {
-#if FRAME_CONCEALMENT
-            if(is_received)
-                got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
-            else
-                got_picture = libOpenHevcDecode(openHevcHandle, NULL,  0, packet.pts);
-#else
             got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
-#endif
             if (got_picture > 0) {
                 fflush(stdout);
                 libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);

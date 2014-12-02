@@ -36,11 +36,4 @@
 #define MAX_VPS_LAYER_ID_PLUS1           MAX_LAYERS
 #define MAX_VPS_ADD_OUTPUT_LAYER_SETS    1024
 
-#define FRAME_CONCEALMENT                0
-#define SIM_ERROR_CONCEALMENT            0
-
-#if FRAME_CONCEALMENT
-#define COPY_MV                              1
-#endif
-
 #endif /* AVCODEC_HEVC_DEF_H */
