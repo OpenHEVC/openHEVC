@@ -595,7 +595,7 @@ static HEVCFrame *find_new_concealemnt_frame(HEVCContext *s, int poc) {
         av_log(s->avctx, AV_LOG_ERROR, "Could not find any references.\n");
         return ref;
     }
-    if (max_val - poc < poc - min_val) {
+    if (FFABS(max_val - poc) < FFABS(poc - min_val)) {
         av_log(s->avctx, AV_LOG_ERROR, "Replace reference %d with %d.\n", poc, max_val);
         ref = find_ref_idx(s, max_val);
     } else {
