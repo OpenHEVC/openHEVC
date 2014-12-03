@@ -149,7 +149,7 @@ add_definitions("-DUSE_SDL")
 AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 
-set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS})
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
 
 find_package(SDL)
 find_package(SDL2)
