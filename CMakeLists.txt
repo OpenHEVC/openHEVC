@@ -328,7 +328,7 @@ list(APPEND libfilenames
     libavcodec/arm/fft_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_deblock_neon.S
-#    libavcodec/arm/hevcdsp_idct_neon.S
+    libavcodec/arm/hevcdsp_idct_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_qpel_neon.S
     libavcodec/arm/hevcdsp_epel_neon.S
