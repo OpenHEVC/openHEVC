@@ -82,6 +82,7 @@ QPEL_FUNC(ff_hevc_put_qpel_h3v3_neon_8);
 #define QPEL_FUNC_UW(name) \
     void name(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, \
                                    int width, int height, int16_t* src2, ptrdiff_t src2stride);
+QPEL_FUNC_UW(ff_hevc_put_qpel_uw_pixels_neon_8);
 QPEL_FUNC_UW(ff_hevc_put_qpel_uw_v1_neon_8);
 QPEL_FUNC_UW(ff_hevc_put_qpel_uw_v2_neon_8);
 QPEL_FUNC_UW(ff_hevc_put_qpel_uw_v3_neon_8);
@@ -115,11 +116,6 @@ void ff_hevc_transform_8x8_add_neon_8(uint8_t *_dst, int16_t *coeffs,
 void ff_hevc_transform_16x16_add_neon_8(uint8_t *_dst, int16_t *coeffs,
                                     ptrdiff_t stride);
 
-int ff_hevc_put_qpel_uw_pixels_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                   int width, int height, int16_t* src2, ptrdiff_t src2stride);
-
-
-
 static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
 {
 #if HAVE_NEON
@@ -130,7 +126,6 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         c->hevc_v_loop_filter_chroma   = ff_hevc_v_loop_filter_chroma_neon;
         c->hevc_h_loop_filter_chroma   = ff_hevc_h_loop_filter_chroma_neon;
         //c->put_weighted_pred_avg       = ff_hevc_put_weighted_pred_avg_neon_8;
-        //put_hevc_qpel_neon[0][0]         = ff_hevc_put_qpel_uw_pixels_neon_8;
         put_hevc_qpel_neon[1][0]         = ff_hevc_put_qpel_v1_neon_8;
         put_hevc_qpel_neon[2][0]         = ff_hevc_put_qpel_v2_neon_8;
         put_hevc_qpel_neon[3][0]         = ff_hevc_put_qpel_v3_neon_8;
@@ -146,7 +141,7 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         put_hevc_qpel_neon[3][1]         = ff_hevc_put_qpel_h1v3_neon_8;
         put_hevc_qpel_neon[3][2]         = ff_hevc_put_qpel_h2v3_neon_8;
         put_hevc_qpel_neon[3][3]         = ff_hevc_put_qpel_h3v3_neon_8;
-        //put_hevc_qpel_uw_neon[0][0]      = ff_hevc_put_qpel_uw_pixels_neon_8;
+        put_hevc_qpel_uw_neon[0][0]      = ff_hevc_put_qpel_uw_pixels_neon_8;
         put_hevc_qpel_uw_neon[1][0]      = ff_hevc_put_qpel_uw_v1_neon_8;
         put_hevc_qpel_uw_neon[2][0]      = ff_hevc_put_qpel_uw_v2_neon_8;
         put_hevc_qpel_uw_neon[3][0]      = ff_hevc_put_qpel_uw_v3_neon_8;
@@ -181,8 +176,10 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel_h_neon_8;
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
         }
+        c->put_hevc_qpel_uni[3][0][0]     = ff_hevc_put_qpel_uni_neon_wrapper;
+        //c->put_hevc_qpel_bi[3][0][0]      = ff_hevc_put_qpel_bi_neon_wrapper;
 
-	//Fixme compilation error in transform optimizations
+        //Fixme compilation error in transform optimizations
         /* c->transform_add[0]            = ff_hevc_transform_4x4_add_neon_8;
         c->transform_add[1]            = ff_hevc_transform_8x8_add_neon_8; */
         //c->transform_add[2]            = ff_hevc_transform_16x16_add_neon_8;
