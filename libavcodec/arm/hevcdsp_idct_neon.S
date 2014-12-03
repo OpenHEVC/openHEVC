@@ -85,9 +85,9 @@
 .endm
 
 
-function ff_hevc_transform_4x4_add_neon_8, export=1
+function ff_hevc_transform_4x4_neon_8, export=1
         vpush       {d8-d15}
-        vld1.16     {q14, q15}, [r1,:128]  // coeffs
+        vld1.16     {q14, q15}, [r0,:128]  // coeffs
         ldr         r3, tr4f  // 36 and 83
         vmov.32     d0[0], r3
 
@@ -103,19 +103,7 @@ function ff_hevc_transform_4x4_add_neon_8, export=1
         vtrn.16     d30, d31
         vtrn.32     q14, q15
 
-        vld1.32     {d0[0]}, [r0], r2
-        vld1.32     {d0[1]}, [r0], r2
-        vld1.32     {d1[0]}, [r0], r2
-        vld1.32     {d1[1]}, [r0], r2
-        sub         r0, r0, r2, lsl #2
-        vaddw.u8    q14, q14, d0
-        vaddw.u8    q15, q15, d1
-        vqmovun.s16 d28, q14
-        vqmovun.s16 d30, q15
-        vst1.32     {d28[0]}, [r0], r2
-        vst1.32     {d28[1]}, [r0], r2
-        vst1.32     {d30[0]}, [r0], r2
-        vst1.32     {d30[1]}, [r0]
+        vst1.16     {q14, q15}, [r0,:128]
         vpop        {d8-d15}
         bx lr
 endfunc
@@ -278,10 +266,7 @@ endfunc
         vst1.8      {\dtmp}, [r0], r2
 .endm
 
-function ff_hevc_transform_8x8_add_neon_8, export=1
-        mov    r0, r0
-        mov    r0, r0
-        mov    r0, r0
+function ff_hevc_transform_8x8_neon_8, export=1
         push   {r4-r8}
         vpush {d8-d15}
         mov    r5, #16
@@ -290,52 +275,52 @@ function ff_hevc_transform_8x8_add_neon_8, export=1
         vld1.16   {d0, d1}, [r3]
 
         // left half
-        vld1.16 {d24}, [r1], r5
-        vld1.16 {d25}, [r1], r5
-        vld1.16 {d26}, [r1], r5
-        vld1.16 {d27}, [r1], r5
-        vld1.16 {d28}, [r1], r5
-        vld1.16 {d29}, [r1], r5
-        vld1.16 {d30}, [r1], r5
-        vld1.16 {d31}, [r1], r5
-        sub      r1, #128
+        vld1.16 {d24}, [r0], r5
+        vld1.16 {d25}, [r0], r5
+        vld1.16 {d26}, [r0], r5
+        vld1.16 {d27}, [r0], r5
+        vld1.16 {d28}, [r0], r5
+        vld1.16 {d29}, [r0], r5
+        vld1.16 {d30}, [r0], r5
+        vld1.16 {d31}, [r0], r5
+        sub      r0, #128
         tr8_begin d25, d27, d29, d31
         tr4       d24, d26, d28, d30
         tr8_end   #7
-        vst1.16 {d2}, [r1], r5
-        vst1.16 {d3}, [r1], r5
-        vst1.16 {d4}, [r1], r5
-        vst1.16 {d5}, [r1], r5
-        vst1.16 {d6}, [r1], r5
-        vst1.16 {d7}, [r1], r5
-        vst1.16 {d8}, [r1], r5
-        vst1.16 {d9}, [r1], r5
+        vst1.16 {d2}, [r0], r5
+        vst1.16 {d3}, [r0], r5
+        vst1.16 {d4}, [r0], r5
+        vst1.16 {d5}, [r0], r5
+        vst1.16 {d6}, [r0], r5
+        vst1.16 {d7}, [r0], r5
+        vst1.16 {d8}, [r0], r5
+        vst1.16 {d9}, [r0], r5
 
         //right half
-        sub      r1, #120
-        vld1.16 {d24}, [r1], r5
-        vld1.16 {d25}, [r1], r5
-        vld1.16 {d26}, [r1], r5
-        vld1.16 {d27}, [r1], r5
-        vld1.16 {d28}, [r1], r5
-        vld1.16 {d29}, [r1], r5
-        vld1.16 {d30}, [r1], r5
-        vld1.16 {d31}, [r1], r5
-        sub      r1, #128
+        sub      r0, #120
+        vld1.16 {d24}, [r0], r5
+        vld1.16 {d25}, [r0], r5
+        vld1.16 {d26}, [r0], r5
+        vld1.16 {d27}, [r0], r5
+        vld1.16 {d28}, [r0], r5
+        vld1.16 {d29}, [r0], r5
+        vld1.16 {d30}, [r0], r5
+        vld1.16 {d31}, [r0], r5
+        sub      r0, #128
         tr8_begin d25, d27, d29, d31
         tr4       d24, d26, d28, d30
         tr8_end   #7
-        vst1.16 {d2}, [r1], r5
-        vst1.16 {d3}, [r1], r5
-        vst1.16 {d4}, [r1], r5
-        vst1.16 {d5}, [r1], r5
-        vst1.16 {d6}, [r1], r5
-        vst1.16 {d7}, [r1], r5
-        vst1.16 {d8}, [r1], r5
-        vst1.16 {d9}, [r1], r5
-        sub      r1, #136
+        vst1.16 {d2}, [r0], r5
+        vst1.16 {d3}, [r0], r5
+        vst1.16 {d4}, [r0], r5
+        vst1.16 {d5}, [r0], r5
+        vst1.16 {d6}, [r0], r5
+        vst1.16 {d7}, [r0], r5
+        vst1.16 {d8}, [r0], r5
+        vst1.16 {d9}, [r0], r5
+        sub      r0, #136
         // top half
-        vldm r1!, {q12-q15} // coeffs
+        vldm r0, {q12-q15} // coeffs
         transpose_16b_4x4 d24, d26, d28, d30
         transpose_16b_4x4 d25, d27, d29, d31
         tr8_begin d26, d30, d27, d31
@@ -347,14 +332,10 @@ function ff_hevc_transform_8x8_add_neon_8, export=1
         vswp     d7, d8
         vswp     d3, d6
         vswp     d6, d4
-
-        tr8_add q1
-        tr8_add q2
-        tr8_add q3
-        tr8_add q4
+        vstm r0!, {q1-q4}
 
         // bottom half
-        vldm r1, {q12-q15} // coeffs
+        vldm r0, {q12-q15} // coeffs
         transpose_16b_4x4 d24, d26, d28, d30
         transpose_16b_4x4 d25, d27, d29, d31
         tr8_begin d26, d30, d27, d31
@@ -366,10 +347,7 @@ function ff_hevc_transform_8x8_add_neon_8, export=1
         vswp     d7, d8
         vswp     d3, d6
         vswp     d6, d4
-        tr8_add q1
-        tr8_add q2
-        tr8_add q3
-        tr8_add q4
+        vstm     r0, {q1-q4}
         vpop {d8-d15}
         pop {r4-r8}
         bx lr
@@ -401,7 +379,7 @@ endfunc
         ldr     r3, = 0x00190009  // 25, d2[2] = 9
         vmov.32     d3[1], r3
 */
-
+/* NOTE: not working yet */
 function ff_hevc_transform_16x16_add_neon_8, export=1
         mov    r0, r0
         mov    r0, r0

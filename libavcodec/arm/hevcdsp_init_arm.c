@@ -122,10 +122,9 @@ void ff_hevc_put_epel_v_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
 void ff_hevc_put_epel_hv_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
                                 ptrdiff_t srcstride, int height,
                                 intptr_t mx, intptr_t my, int width);
-void ff_hevc_transform_4x4_add_neon_8(uint8_t *_dst, int16_t *coeffs,
-                                    ptrdiff_t stride);
-void ff_hevc_transform_8x8_add_neon_8(uint8_t *_dst, int16_t *coeffs,
-                                    ptrdiff_t stride);
+void ff_hevc_transform_4x4_neon_8(int16_t *coeffs, int col_limit);
+void ff_hevc_transform_8x8_neon_8(int16_t *coeffs, int col_limit);
+
 void ff_hevc_transform_16x16_add_neon_8(uint8_t *_dst, int16_t *coeffs,
                                     ptrdiff_t stride);
 
@@ -199,10 +198,8 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
 
         //c->put_hevc_qpel_bi[3][0][0]      = ff_hevc_put_qpel_bi_neon_wrapper;
 
-        //Fixme compilation error in transform optimizations
-        /* c->transform_add[0]            = ff_hevc_transform_4x4_add_neon_8;
-        c->transform_add[1]            = ff_hevc_transform_8x8_add_neon_8; */
-        //c->transform_add[2]            = ff_hevc_transform_16x16_add_neon_8;
+        c->idct[0]                        = ff_hevc_transform_4x4_neon_8;
+        c->idct[1]                        = ff_hevc_transform_8x8_neon_8;
     }
 #endif // HAVE_NEON
 }
