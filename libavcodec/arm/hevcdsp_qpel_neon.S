@@ -995,10 +995,56 @@ function ff_hevc_put_qpel_uw_pixels_neon_8, export=1
         bx lr
 endfunc
 
+.macro put_qpel_uw_pixels width regs
+function ff_hevc_put_qpel_uw_pixels_neon_8_w\width, export=1
+        push   {r4-r9}
+        ldr    r5, [sp, #36] // width
+        ldr    r4, [sp, #24] // height
+        vpush {d8-d15}
+1:      subs r4, #1
+        pld    [r2]
+        vld1.32     \regs , [r2], r3
+        pld    [r0]
+        vst1.32     \regs , [r0], r1
+        bne 1b
+        vpop {d8-d15}
+        pop   {r4-r9}
+        bx lr
+endfunc
+.endm
 
+.macro put_qpel_uw_pixels_m width regs regs2
+function ff_hevc_put_qpel_uw_pixels_neon_8_w\width, export=1
+        push   {r4-r9}
+        ldr    r5, [sp, #36] // width
+        ldr    r4, [sp, #24] // height
+        vpush {d8-d15}
+1:      subs r4, #1
+        pld    [r2]
+        mov      r6, r2
+        vld1.32   \regs , [r2]!
+        vld1.32   \regs2, [r2]
+        add      r2, r6, r3
+        mov      r7, r0
+        pld    [r0]
+        vst1.32   \regs , [r0]!
+        vst1.32   \regs2, [r0]
+        add      r0, r7, r1
+        bne 1b
+        vpop {d8-d15}
+        pop   {r4-r9}
+        bx lr
+endfunc
+.endm
 
-
-
+put_qpel_uw_pixels    4 "{d0[0]}"
+put_qpel_uw_pixels    8 "{d0}"
+put_qpel_uw_pixels_m 12 "{d0}" {d1[0]}
+put_qpel_uw_pixels   16 "{q0}"
+put_qpel_uw_pixels   24 "{d0-d2}"
+put_qpel_uw_pixels   32 "{q0,q1}"
+put_qpel_uw_pixels_m 48 "{q0,q1}" {q2}
+put_qpel_uw_pixels_m 64 "{q0-q1}" {q2-q3}
 
 function ff_hevc_put_weighted_pred_avg_neon_8, export=1
         pld    [r2]

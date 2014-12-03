@@ -78,6 +78,19 @@ QPEL_FUNC(ff_hevc_put_qpel_h3v1_neon_8);
 QPEL_FUNC(ff_hevc_put_qpel_h3v2_neon_8);
 QPEL_FUNC(ff_hevc_put_qpel_h3v3_neon_8);
 #undef QPEL_FUNC
+/*void (*put_hevc_qpel_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                                        int height, intptr_t mx, intptr_t my, int width);*/
+#define QPEL_FUNC_UW_PIX(name) \
+    void name(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, \
+                                   int height, intptr_t mx, intptr_t my, int width);
+QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_neon_8_w4);
+QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_neon_8_w8);
+QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_neon_8_w16);
+QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_neon_8_w24);
+QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_neon_8_w32);
+QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_neon_8_w48);
+QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_neon_8_w64);
+#undef QPEL_FUNC_UW_PIX
 
 #define QPEL_FUNC_UW(name) \
     void name(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, \
@@ -141,7 +154,7 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         put_hevc_qpel_neon[3][1]         = ff_hevc_put_qpel_h1v3_neon_8;
         put_hevc_qpel_neon[3][2]         = ff_hevc_put_qpel_h2v3_neon_8;
         put_hevc_qpel_neon[3][3]         = ff_hevc_put_qpel_h3v3_neon_8;
-        put_hevc_qpel_uw_neon[0][0]      = ff_hevc_put_qpel_uw_pixels_neon_8;
+        //put_hevc_qpel_uw_neon[0][0]      = ff_hevc_put_qpel_uw_pixels_neon_8;
         put_hevc_qpel_uw_neon[1][0]      = ff_hevc_put_qpel_uw_v1_neon_8;
         put_hevc_qpel_uw_neon[2][0]      = ff_hevc_put_qpel_uw_v2_neon_8;
         put_hevc_qpel_uw_neon[3][0]      = ff_hevc_put_qpel_uw_v3_neon_8;
@@ -176,7 +189,14 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel_h_neon_8;
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
         }
-        c->put_hevc_qpel_uni[3][0][0]     = ff_hevc_put_qpel_uni_neon_wrapper;
+        c->put_hevc_qpel_uni[1][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w4;
+        c->put_hevc_qpel_uni[3][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w8;
+        c->put_hevc_qpel_uni[5][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w16;
+        c->put_hevc_qpel_uni[6][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w24;
+        c->put_hevc_qpel_uni[7][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w32;
+        c->put_hevc_qpel_uni[8][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w48;
+        c->put_hevc_qpel_uni[9][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w64;
+
         //c->put_hevc_qpel_bi[3][0][0]      = ff_hevc_put_qpel_bi_neon_wrapper;
 
         //Fixme compilation error in transform optimizations
