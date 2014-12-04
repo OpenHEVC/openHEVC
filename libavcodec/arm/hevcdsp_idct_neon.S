@@ -20,7 +20,94 @@
 
 #include "libavutil/arm/asm.S"
 #include "neon.S"
-/*(uint8_t *_dst, int16_t *coeffs, ptrdiff_t stride) */
+
+function ff_hevc_idct_4x4_dc_neon_8, export=1
+        ldrsh       r1, [r0]
+        ldr         r2, =0x20
+        add         r1, #1
+        asr         r1, #1
+        add         r1, r2
+        asr         r1, #6
+        vdup.16     q0, r1
+        vdup.16     q1, r1
+        vst1.16     {q0, q1}, [r0,:128]
+        bx lr
+endfunc
+
+function ff_hevc_idct_8x8_dc_neon_8, export=1
+        ldrsh       r1, [r0]
+        ldr         r2, =0x20
+        add         r1, #1
+        asr         r1, #1
+        add         r1, r2
+        asr         r1, #6
+        vdup.16     q8, r1
+        vdup.16     q9, r1
+        vmov.16     q10, q8
+        vmov.16     q11, q8
+        vmov.16     q12, q8
+        vmov.16     q13, q8
+        vmov.16     q14, q8
+        vmov.16     q15, q8
+        vstm        r0, {q8-q15}
+        bx lr
+endfunc
+
+function ff_hevc_idct_16x16_dc_neon_8, export=1
+        ldrsh       r1, [r0]
+        ldr         r2, =0x20
+        add         r1, #1
+        asr         r1, #1
+        add         r1, r2
+        asr         r1, #6
+        vdup.16     q8, r1
+        vdup.16     q9, r1
+        vmov.16     q10, q8
+        vmov.16     q11, q8
+        vmov.16     q12, q8
+        vmov.16     q13, q8
+        vmov.16     q14, q8
+        vmov.16     q15, q8
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0, {q8-q15}
+        bx lr
+endfunc
+
+function ff_hevc_idct_32x32_dc_neon_8, export=1
+        ldrsh       r1, [r0]
+        ldr         r2, =0x20
+        add         r1, #1
+        asr         r1, #1
+        add         r1, r2
+        asr         r1, #6
+        vdup.16     q8, r1
+        vdup.16     q9, r1
+        vmov.16     q10, q8
+        vmov.16     q11, q8
+        vmov.16     q12, q8
+        vmov.16     q13, q8
+        vmov.16     q14, q8
+        vmov.16     q15, q8
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0, {q8-q15}
+        bx lr
+endfunc
 
 .macro  transpose_16b_8x8   r0, r1, r2, r3, r4, r5, r6, r7
         vtrn.64         \r0, \r4
@@ -84,7 +171,6 @@
         vqrshrn.s32   \r3, q3, \shift
 .endm
 
-
 function ff_hevc_transform_4x4_neon_8, export=1
         vpush       {d8-d15}
         vld1.16     {q14, q15}, [r0,:128]  // coeffs
@@ -107,6 +193,7 @@ function ff_hevc_transform_4x4_neon_8, export=1
         vpop        {d8-d15}
         bx lr
 endfunc
+
 
 .macro tr8_begin in0, in1, in2, in3
         vmull.s16  q7, \in0, d1[1]   // 89 * src1
@@ -295,9 +382,12 @@ function ff_hevc_transform_8x8_neon_8, export=1
         vst1.16 {d7}, [r0], r5
         vst1.16 {d8}, [r0], r5
         vst1.16 {d9}, [r0], r5
-
+        sub      r0, #128
+        //skip right half if col_limit in r1 is less than 4
+        cmp      r1, #4
+        blt      1f
         //right half
-        sub      r0, #120
+        add      r0, #8
         vld1.16 {d24}, [r0], r5
         vld1.16 {d25}, [r0], r5
         vld1.16 {d26}, [r0], r5
@@ -319,6 +409,7 @@ function ff_hevc_transform_8x8_neon_8, export=1
         vst1.16 {d8}, [r0], r5
         vst1.16 {d9}, [r0], r5
         sub      r0, #136
+1:
         // top half
         vldm r0, {q12-q15} // coeffs
         transpose_16b_4x4 d24, d26, d28, d30
