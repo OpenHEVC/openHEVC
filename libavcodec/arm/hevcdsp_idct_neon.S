@@ -82,6 +82,7 @@ function ff_hevc_idct_32x32_dc_neon_8, export=1
         asr         r1, #1
         add         r1, r2
         asr         r1, #6
+        mov         r3, #16
         vdup.16     q8, r1
         vdup.16     q9, r1
         vmov.16     q10, q8
@@ -90,23 +91,81 @@ function ff_hevc_idct_32x32_dc_neon_8, export=1
         vmov.16     q13, q8
         vmov.16     q14, q8
         vmov.16     q15, q8
+1:      subs        r3, #1
         vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0!, {q8-q15}
-        vstm        r0, {q8-q15}
+        bne         1b
         bx lr
+endfunc
+
+function ff_hevc_transform_add_4x4_neon_8, export=1
+        vldm        r1, {q0-q1}
+        vld1.32     d4[0], [r0], r2
+        vld1.32     d4[1], [r0], r2
+        vld1.32     d5[0], [r0], r2
+        vld1.32     d5[1], [r0], r2
+        sub         r0, r0, r2, lsl #2
+        vmovl.u8    q8, d4
+        vmovl.u8    q9, d5
+        vqadd.s16   q0, q0, q8
+        vqadd.s16   q1, q1, q9
+        vqmovun.s16 d0, q0
+        vqmovun.s16 d1, q1
+        vst1.32     d0[0], [r0], r2
+        vst1.32     d0[1], [r0], r2
+        vst1.32     d1[0], [r0], r2
+        vst1.32     d1[1], [r0], r2
+        bx          lr
+endfunc
+
+function ff_hevc_transform_add_8x8_neon_8, export=1
+        mov         r3,   #8
+1:      subs        r3,   #1
+        vld1.16     {q0}, [r1]!
+        vld1.8      d16,  [r0]
+        vmovl.u8    q8,   d16
+        vqadd.s16   q0,   q8
+        vqmovun.s16 d0,   q0
+        vst1.32     d0,   [r0], r2
+        bne         1b
+        bx          lr
+endfunc
+
+function ff_hevc_transform_add_16x16_neon_8, export=1
+        mov         r3,   #16
+1:      subs        r3,   #1
+        vld1.16     {q0, q1}, [r1]!
+        vld1.8      {q8},  [r0]
+        vmovl.u8    q9,  d16
+        vmovl.u8    q10, d17
+        vqadd.s16   q0,  q9
+        vqadd.s16   q1,  q10
+        vqmovun.s16 d0,  q0
+        vqmovun.s16 d1,  q1
+        vst1.8      {q0},   [r0], r2
+        bne         1b
+        bx          lr
+endfunc
+
+function ff_hevc_transform_add_32x32_neon_8, export=1
+        mov         r3,   #32
+1:      subs        r3,   #1
+        vldm        r1!, {q0-q3}
+        vld1.8      {q8, q9},  [r0]
+        vmovl.u8    q10, d16
+        vmovl.u8    q11, d17
+        vmovl.u8    q12, d18
+        vmovl.u8    q13, d19
+        vqadd.s16   q0,  q10
+        vqadd.s16   q1,  q11
+        vqadd.s16   q2,  q12
+        vqadd.s16   q3,  q13
+        vqmovun.s16 d0,  q0
+        vqmovun.s16 d1,  q1
+        vqmovun.s16 d2,  q2
+        vqmovun.s16 d3,  q3
+        vst1.8     {q0, q1},   [r0], r2
+        bne         1b
+        bx          lr
 endfunc
 
 .macro  transpose_16b_8x8   r0, r1, r2, r3, r4, r5, r6, r7
