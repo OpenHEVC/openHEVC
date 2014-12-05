@@ -648,7 +648,7 @@ function ff_hevc_transform_16x16_add_neon_8, export=1
         bx lr
 endfunc
 
-
+.align 4
 tr4f:
 .word 0x00240053  // 36 and d1[0] = 83
 .word 0x00000000
