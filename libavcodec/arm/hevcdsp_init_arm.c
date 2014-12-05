@@ -132,6 +132,8 @@ void ff_hevc_idct_8x8_dc_neon_8(int16_t *coeffs);
 void ff_hevc_idct_16x16_dc_neon_8(int16_t *coeffs);
 void ff_hevc_idct_32x32_dc_neon_8(int16_t *coeffs);
 
+void ff_hevc_transform_luma_4x4_neon_8(int16_t *coeffs);
+
 void ff_hevc_transform_add_4x4_neon_8(uint8_t *_dst, int16_t *coeffs,
                                       ptrdiff_t stride);
 void ff_hevc_transform_add_8x8_neon_8(uint8_t *_dst, int16_t *coeffs,
@@ -220,6 +222,7 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         c->transform_add[1]               = ff_hevc_transform_add_8x8_neon_8;
         c->transform_add[2]               = ff_hevc_transform_add_16x16_neon_8;
         c->transform_add[3]               = ff_hevc_transform_add_32x32_neon_8;
+        c->idct_4x4_luma                  = ff_hevc_transform_luma_4x4_neon_8;
     }
 #endif // HAVE_NEON
 }

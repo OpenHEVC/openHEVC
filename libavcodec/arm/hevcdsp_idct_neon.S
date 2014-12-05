@@ -192,6 +192,38 @@ endfunc
         vtrn.16         \r2, \r3
 .endm
 
+/* uses registers q2 - q9 for temp values */
+.macro tr4_luma_shift r0, r1, r2, r3, shift
+        vaddl.s16   q5, \r0, \r2    // c0 = src0 + src2
+        vaddl.s16   q2, \r2, \r3    // c1 = src2 + src3
+        vsubl.s16   q4, \r0, \r3    // c2 = src0 - src3
+        vmull.s16   q6, \r1, d0[0]  // c3 = 74 * src1
+
+        vaddl.s16   q7, \r0, \r3    // src0 + src3
+        vsubw.s16   q7, q7, \r2     // src0 - src2 + src3
+        vmul.s32    q7, q7, d0[0]   // dst2 = 74 * (src0 - src2 + src3)
+
+        vmul.s32    q8, q5, d0[1]   // 29 * c0
+        vmul.s32    q9, q2, d1[0]   // 55 * c1
+        vadd.s32    q8, q9          // 29 * c0 + 55 * c1
+        vadd.s32    q8, q6          // dst0 = 29 * c0 + 55 * c1 + c3
+
+        vmul.s32    q2, q2, d0[1]   // 29 * c1
+        vmul.s32    q9, q4, d1[0]   // 55 * c2
+        vsub.s32    q9, q2          // 55 * c2 - 29 * c1
+        vadd.s32    q9, q6          // dst1 = 55 * c2 - 29 * c1 + c3
+
+        vmul.s32    q5, q5, d1[0]   // 55 * c0
+        vmul.s32    q4, q4, d0[1]   // 29 * c2
+        vadd.s32    q5, q4          // 55 * c0 + 29 * c2
+        vsub.s32    q5, q6          // dst3 = 55 * c0 + 29 * c2 - c3
+
+        vqrshrn.s32   \r0, q8, \shift
+        vqrshrn.s32   \r1, q9, \shift
+        vqrshrn.s32   \r2, q7, \shift
+        vqrshrn.s32   \r3, q5, \shift
+.endm
+
 /* uses registers q2 - q6 for temp values */
 .macro tr4 r0, r1, r2, r3
         vmull.s16  q4, \r1, d0[0]   // 83 * src1
@@ -233,8 +265,8 @@ endfunc
 function ff_hevc_transform_4x4_neon_8, export=1
         vpush       {d8-d15}
         vld1.16     {q14, q15}, [r0,:128]  // coeffs
-        ldr         r3, tr4f  // 36 and 83
-        vmov.32     d0[0], r3
+        adr         r3, tr4f    // 36 and 83
+        vld1.32     {d0[0]}, [r3]
 
         tr4_shift d28, d29, d30, d31, #7
 
@@ -253,6 +285,31 @@ function ff_hevc_transform_4x4_neon_8, export=1
         bx lr
 endfunc
 
+function ff_hevc_transform_luma_4x4_neon_8, export=1
+        vpush       {d8-d15}
+        vld1.16     {q14, q15}, [r0,:128]  // coeffs
+        ldr         r3, =0x4a  // 74
+        vmov.32     d0[0], r3
+        ldr         r3, =0x1d  // 29
+        vmov.32     d0[1], r3
+        ldr         r3, =0x37  // 55
+        vmov.32     d1[0], r3
+
+        tr4_luma_shift d28, d29, d30, d31, #7
+
+        vtrn.16     d28, d29
+        vtrn.16     d30, d31
+        vtrn.32     q14, q15
+
+        tr4_luma_shift d28, d29, d30, d31, #12
+
+        vtrn.16     d28, d29
+        vtrn.16     d30, d31
+        vtrn.32     q14, q15
+        vst1.16     {q14, q15}, [r0,:128]
+        vpop        {d8-d15}
+        bx lr
+endfunc
 
 .macro tr8_begin in0, in1, in2, in3
         vmull.s16  q7, \in0, d1[1]   // 89 * src1
