@@ -633,12 +633,11 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     } else {
         av_image_copy(frame->frame->data, frame->frame->linesize, conc_frame->frame->data,
                       conc_frame->frame->linesize, s->sps->pix_fmt , conc_frame->frame->width,
-                      conc_frame->frame->height);
+                      s->sps->height);
         memcpy(frame->rpl_buf->data, conc_frame->rpl_buf->data, frame->rpl_buf->size);
         memcpy(frame->tab_mvf_buf->data, conc_frame->tab_mvf_buf->data, frame->tab_mvf_buf->size);
         memcpy(frame->rpl_tab_buf->data, conc_frame->rpl_tab_buf->data, frame->rpl_tab_buf->size);
     }
-
     frame->poc                  = poc;
     frame->sequence             = s->seq_decode;
     frame->flags                = 0;
