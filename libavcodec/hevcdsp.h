@@ -68,7 +68,20 @@ typedef struct HEVCDSPContext {
     void (*sao_band_filter)( uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 
     void (*sao_edge_filter[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
-
+    /* put_hevc_qpel[x] block widths
+       x     width
+       --------------
+       0 ->  2 pixels
+       1 ->  4 pixels
+       2 ->  6 pixels
+       3 ->  8 pixels
+       4 -> 12 pixels
+       5 -> 16 pixels
+       6 -> 24 pixels
+       7 -> 32 pixels
+       8 -> 48 pixels
+       9 -> 64 pixels
+    */
     void (*put_hevc_qpel[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                     int height, intptr_t mx, intptr_t my, int width);
     void (*put_hevc_qpel_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,

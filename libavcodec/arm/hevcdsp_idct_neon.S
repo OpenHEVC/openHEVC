@@ -20,7 +20,153 @@
 
 #include "libavutil/arm/asm.S"
 #include "neon.S"
-/*(uint8_t *_dst, int16_t *coeffs, ptrdiff_t stride) */
+
+function ff_hevc_idct_4x4_dc_neon_8, export=1
+        ldrsh       r1, [r0]
+        ldr         r2, =0x20
+        add         r1, #1
+        asr         r1, #1
+        add         r1, r2
+        asr         r1, #6
+        vdup.16     q0, r1
+        vdup.16     q1, r1
+        vst1.16     {q0, q1}, [r0,:128]
+        bx lr
+endfunc
+
+function ff_hevc_idct_8x8_dc_neon_8, export=1
+        ldrsh       r1, [r0]
+        ldr         r2, =0x20
+        add         r1, #1
+        asr         r1, #1
+        add         r1, r2
+        asr         r1, #6
+        vdup.16     q8, r1
+        vdup.16     q9, r1
+        vmov.16     q10, q8
+        vmov.16     q11, q8
+        vmov.16     q12, q8
+        vmov.16     q13, q8
+        vmov.16     q14, q8
+        vmov.16     q15, q8
+        vstm        r0, {q8-q15}
+        bx lr
+endfunc
+
+function ff_hevc_idct_16x16_dc_neon_8, export=1
+        ldrsh       r1, [r0]
+        ldr         r2, =0x20
+        add         r1, #1
+        asr         r1, #1
+        add         r1, r2
+        asr         r1, #6
+        vdup.16     q8, r1
+        vdup.16     q9, r1
+        vmov.16     q10, q8
+        vmov.16     q11, q8
+        vmov.16     q12, q8
+        vmov.16     q13, q8
+        vmov.16     q14, q8
+        vmov.16     q15, q8
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0!, {q8-q15}
+        vstm        r0, {q8-q15}
+        bx lr
+endfunc
+
+function ff_hevc_idct_32x32_dc_neon_8, export=1
+        ldrsh       r1, [r0]
+        ldr         r2, =0x20
+        add         r1, #1
+        asr         r1, #1
+        add         r1, r2
+        asr         r1, #6
+        mov         r3, #16
+        vdup.16     q8, r1
+        vdup.16     q9, r1
+        vmov.16     q10, q8
+        vmov.16     q11, q8
+        vmov.16     q12, q8
+        vmov.16     q13, q8
+        vmov.16     q14, q8
+        vmov.16     q15, q8
+1:      subs        r3, #1
+        vstm        r0!, {q8-q15}
+        bne         1b
+        bx lr
+endfunc
+
+function ff_hevc_transform_add_4x4_neon_8, export=1
+        vldm        r1, {q0-q1}
+        vld1.32     d4[0], [r0], r2
+        vld1.32     d4[1], [r0], r2
+        vld1.32     d5[0], [r0], r2
+        vld1.32     d5[1], [r0], r2
+        sub         r0, r0, r2, lsl #2
+        vmovl.u8    q8, d4
+        vmovl.u8    q9, d5
+        vqadd.s16   q0, q0, q8
+        vqadd.s16   q1, q1, q9
+        vqmovun.s16 d0, q0
+        vqmovun.s16 d1, q1
+        vst1.32     d0[0], [r0], r2
+        vst1.32     d0[1], [r0], r2
+        vst1.32     d1[0], [r0], r2
+        vst1.32     d1[1], [r0], r2
+        bx          lr
+endfunc
+
+function ff_hevc_transform_add_8x8_neon_8, export=1
+        mov         r3,   #8
+1:      subs        r3,   #1
+        vld1.16     {q0}, [r1]!
+        vld1.8      d16,  [r0]
+        vmovl.u8    q8,   d16
+        vqadd.s16   q0,   q8
+        vqmovun.s16 d0,   q0
+        vst1.32     d0,   [r0], r2
+        bne         1b
+        bx          lr
+endfunc
+
+function ff_hevc_transform_add_16x16_neon_8, export=1
+        mov         r3,   #16
+1:      subs        r3,   #1
+        vld1.16     {q0, q1}, [r1]!
+        vld1.8      {q8},  [r0]
+        vmovl.u8    q9,  d16
+        vmovl.u8    q10, d17
+        vqadd.s16   q0,  q9
+        vqadd.s16   q1,  q10
+        vqmovun.s16 d0,  q0
+        vqmovun.s16 d1,  q1
+        vst1.8      {q0},   [r0], r2
+        bne         1b
+        bx          lr
+endfunc
+
+function ff_hevc_transform_add_32x32_neon_8, export=1
+        mov         r3,   #32
+1:      subs        r3,   #1
+        vldm        r1!, {q0-q3}
+        vld1.8      {q8, q9},  [r0]
+        vmovl.u8    q10, d16
+        vmovl.u8    q11, d17
+        vmovl.u8    q12, d18
+        vmovl.u8    q13, d19
+        vqadd.s16   q0,  q10
+        vqadd.s16   q1,  q11
+        vqadd.s16   q2,  q12
+        vqadd.s16   q3,  q13
+        vqmovun.s16 d0,  q0
+        vqmovun.s16 d1,  q1
+        vqmovun.s16 d2,  q2
+        vqmovun.s16 d3,  q3
+        vst1.8     {q0, q1},   [r0], r2
+        bne         1b
+        bx          lr
+endfunc
 
 .macro  transpose_16b_8x8   r0, r1, r2, r3, r4, r5, r6, r7
         vtrn.64         \r0, \r4
@@ -44,6 +190,38 @@
         vtrn.32         \r1, \r3
         vtrn.16         \r0, \r1
         vtrn.16         \r2, \r3
+.endm
+
+/* uses registers q2 - q9 for temp values */
+.macro tr4_luma_shift r0, r1, r2, r3, shift
+        vaddl.s16   q5, \r0, \r2    // c0 = src0 + src2
+        vaddl.s16   q2, \r2, \r3    // c1 = src2 + src3
+        vsubl.s16   q4, \r0, \r3    // c2 = src0 - src3
+        vmull.s16   q6, \r1, d0[0]  // c3 = 74 * src1
+
+        vaddl.s16   q7, \r0, \r3    // src0 + src3
+        vsubw.s16   q7, q7, \r2     // src0 - src2 + src3
+        vmul.s32    q7, q7, d0[0]   // dst2 = 74 * (src0 - src2 + src3)
+
+        vmul.s32    q8, q5, d0[1]   // 29 * c0
+        vmul.s32    q9, q2, d1[0]   // 55 * c1
+        vadd.s32    q8, q9          // 29 * c0 + 55 * c1
+        vadd.s32    q8, q6          // dst0 = 29 * c0 + 55 * c1 + c3
+
+        vmul.s32    q2, q2, d0[1]   // 29 * c1
+        vmul.s32    q9, q4, d1[0]   // 55 * c2
+        vsub.s32    q9, q2          // 55 * c2 - 29 * c1
+        vadd.s32    q9, q6          // dst1 = 55 * c2 - 29 * c1 + c3
+
+        vmul.s32    q5, q5, d1[0]   // 55 * c0
+        vmul.s32    q4, q4, d0[1]   // 29 * c2
+        vadd.s32    q5, q4          // 55 * c0 + 29 * c2
+        vsub.s32    q5, q6          // dst3 = 55 * c0 + 29 * c2 - c3
+
+        vqrshrn.s32   \r0, q8, \shift
+        vqrshrn.s32   \r1, q9, \shift
+        vqrshrn.s32   \r2, q7, \shift
+        vqrshrn.s32   \r3, q5, \shift
 .endm
 
 /* uses registers q2 - q6 for temp values */
@@ -84,12 +262,11 @@
         vqrshrn.s32   \r3, q3, \shift
 .endm
 
-
-function ff_hevc_transform_4x4_add_neon_8, export=1
+function ff_hevc_transform_4x4_neon_8, export=1
         vpush       {d8-d15}
-        vld1.16     {q14, q15}, [r1,:128]  // coeffs
-        ldr         r3, tr4f  // 36 and 83
-        vmov.32     d0[0], r3
+        vld1.16     {q14, q15}, [r0,:128]  // coeffs
+        adr         r3, tr4f    // 36 and 83
+        vld1.32     {d0[0]}, [r3]
 
         tr4_shift d28, d29, d30, d31, #7
 
@@ -103,19 +280,33 @@ function ff_hevc_transform_4x4_add_neon_8, export=1
         vtrn.16     d30, d31
         vtrn.32     q14, q15
 
-        vld1.32     {d0[0]}, [r0], r2
-        vld1.32     {d0[1]}, [r0], r2
-        vld1.32     {d1[0]}, [r0], r2
-        vld1.32     {d1[1]}, [r0], r2
-        sub         r0, r0, r2, lsl #2
-        vaddw.u8    q14, q14, d0
-        vaddw.u8    q15, q15, d1
-        vqmovun.s16 d28, q14
-        vqmovun.s16 d30, q15
-        vst1.32     {d28[0]}, [r0], r2
-        vst1.32     {d28[1]}, [r0], r2
-        vst1.32     {d30[0]}, [r0], r2
-        vst1.32     {d30[1]}, [r0]
+        vst1.16     {q14, q15}, [r0,:128]
+        vpop        {d8-d15}
+        bx lr
+endfunc
+
+function ff_hevc_transform_luma_4x4_neon_8, export=1
+        vpush       {d8-d15}
+        vld1.16     {q14, q15}, [r0,:128]  // coeffs
+        ldr         r3, =0x4a  // 74
+        vmov.32     d0[0], r3
+        ldr         r3, =0x1d  // 29
+        vmov.32     d0[1], r3
+        ldr         r3, =0x37  // 55
+        vmov.32     d1[0], r3
+
+        tr4_luma_shift d28, d29, d30, d31, #7
+
+        vtrn.16     d28, d29
+        vtrn.16     d30, d31
+        vtrn.32     q14, q15
+
+        tr4_luma_shift d28, d29, d30, d31, #12
+
+        vtrn.16     d28, d29
+        vtrn.16     d30, d31
+        vtrn.32     q14, q15
+        vst1.16     {q14, q15}, [r0,:128]
         vpop        {d8-d15}
         bx lr
 endfunc
@@ -278,10 +469,7 @@ endfunc
         vst1.8      {\dtmp}, [r0], r2
 .endm
 
-function ff_hevc_transform_8x8_add_neon_8, export=1
-        mov    r0, r0
-        mov    r0, r0
-        mov    r0, r0
+function ff_hevc_transform_8x8_neon_8, export=1
         push   {r4-r8}
         vpush {d8-d15}
         mov    r5, #16
@@ -290,52 +478,56 @@ function ff_hevc_transform_8x8_add_neon_8, export=1
         vld1.16   {d0, d1}, [r3]
 
         // left half
-        vld1.16 {d24}, [r1], r5
-        vld1.16 {d25}, [r1], r5
-        vld1.16 {d26}, [r1], r5
-        vld1.16 {d27}, [r1], r5
-        vld1.16 {d28}, [r1], r5
-        vld1.16 {d29}, [r1], r5
-        vld1.16 {d30}, [r1], r5
-        vld1.16 {d31}, [r1], r5
-        sub      r1, #128
+        vld1.16 {d24}, [r0], r5
+        vld1.16 {d25}, [r0], r5
+        vld1.16 {d26}, [r0], r5
+        vld1.16 {d27}, [r0], r5
+        vld1.16 {d28}, [r0], r5
+        vld1.16 {d29}, [r0], r5
+        vld1.16 {d30}, [r0], r5
+        vld1.16 {d31}, [r0], r5
+        sub      r0, #128
         tr8_begin d25, d27, d29, d31
         tr4       d24, d26, d28, d30
         tr8_end   #7
-        vst1.16 {d2}, [r1], r5
-        vst1.16 {d3}, [r1], r5
-        vst1.16 {d4}, [r1], r5
-        vst1.16 {d5}, [r1], r5
-        vst1.16 {d6}, [r1], r5
-        vst1.16 {d7}, [r1], r5
-        vst1.16 {d8}, [r1], r5
-        vst1.16 {d9}, [r1], r5
-
+        vst1.16 {d2}, [r0], r5
+        vst1.16 {d3}, [r0], r5
+        vst1.16 {d4}, [r0], r5
+        vst1.16 {d5}, [r0], r5
+        vst1.16 {d6}, [r0], r5
+        vst1.16 {d7}, [r0], r5
+        vst1.16 {d8}, [r0], r5
+        vst1.16 {d9}, [r0], r5
+        sub      r0, #128
+        //skip right half if col_limit in r1 is less than 4
+        cmp      r1, #4
+        blt      1f
         //right half
-        sub      r1, #120
-        vld1.16 {d24}, [r1], r5
-        vld1.16 {d25}, [r1], r5
-        vld1.16 {d26}, [r1], r5
-        vld1.16 {d27}, [r1], r5
-        vld1.16 {d28}, [r1], r5
-        vld1.16 {d29}, [r1], r5
-        vld1.16 {d30}, [r1], r5
-        vld1.16 {d31}, [r1], r5
-        sub      r1, #128
+        add      r0, #8
+        vld1.16 {d24}, [r0], r5
+        vld1.16 {d25}, [r0], r5
+        vld1.16 {d26}, [r0], r5
+        vld1.16 {d27}, [r0], r5
+        vld1.16 {d28}, [r0], r5
+        vld1.16 {d29}, [r0], r5
+        vld1.16 {d30}, [r0], r5
+        vld1.16 {d31}, [r0], r5
+        sub      r0, #128
         tr8_begin d25, d27, d29, d31
         tr4       d24, d26, d28, d30
         tr8_end   #7
-        vst1.16 {d2}, [r1], r5
-        vst1.16 {d3}, [r1], r5
-        vst1.16 {d4}, [r1], r5
-        vst1.16 {d5}, [r1], r5
-        vst1.16 {d6}, [r1], r5
-        vst1.16 {d7}, [r1], r5
-        vst1.16 {d8}, [r1], r5
-        vst1.16 {d9}, [r1], r5
-        sub      r1, #136
+        vst1.16 {d2}, [r0], r5
+        vst1.16 {d3}, [r0], r5
+        vst1.16 {d4}, [r0], r5
+        vst1.16 {d5}, [r0], r5
+        vst1.16 {d6}, [r0], r5
+        vst1.16 {d7}, [r0], r5
+        vst1.16 {d8}, [r0], r5
+        vst1.16 {d9}, [r0], r5
+        sub      r0, #136
+1:
         // top half
-        vldm r1!, {q12-q15} // coeffs
+        vldm r0, {q12-q15} // coeffs
         transpose_16b_4x4 d24, d26, d28, d30
         transpose_16b_4x4 d25, d27, d29, d31
         tr8_begin d26, d30, d27, d31
@@ -347,14 +539,10 @@ function ff_hevc_transform_8x8_add_neon_8, export=1
         vswp     d7, d8
         vswp     d3, d6
         vswp     d6, d4
-
-        tr8_add q1
-        tr8_add q2
-        tr8_add q3
-        tr8_add q4
+        vstm r0!, {q1-q4}
 
         // bottom half
-        vldm r1, {q12-q15} // coeffs
+        vldm r0, {q12-q15} // coeffs
         transpose_16b_4x4 d24, d26, d28, d30
         transpose_16b_4x4 d25, d27, d29, d31
         tr8_begin d26, d30, d27, d31
@@ -366,10 +554,7 @@ function ff_hevc_transform_8x8_add_neon_8, export=1
         vswp     d7, d8
         vswp     d3, d6
         vswp     d6, d4
-        tr8_add q1
-        tr8_add q2
-        tr8_add q3
-        tr8_add q4
+        vstm     r0, {q1-q4}
         vpop {d8-d15}
         pop {r4-r8}
         bx lr
@@ -401,7 +586,7 @@ endfunc
         ldr     r3, = 0x00190009  // 25, d2[2] = 9
         vmov.32     d3[1], r3
 */
-
+/* NOTE: not working yet */
 function ff_hevc_transform_16x16_add_neon_8, export=1
         mov    r0, r0
         mov    r0, r0
@@ -520,7 +705,7 @@ function ff_hevc_transform_16x16_add_neon_8, export=1
         bx lr
 endfunc
 
-
+.align 4
 tr4f:
 .word 0x00240053  // 36 and d1[0] = 83
 .word 0x00000000

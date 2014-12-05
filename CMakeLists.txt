@@ -149,7 +149,7 @@ add_definitions("-DUSE_SDL")
 AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 
-set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS})
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
 
 find_package(SDL)
 find_package(SDL2)
@@ -328,7 +328,7 @@ list(APPEND libfilenames
     libavcodec/arm/fft_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_deblock_neon.S
-#    libavcodec/arm/hevcdsp_idct_neon.S
+    libavcodec/arm/hevcdsp_idct_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_qpel_neon.S
     libavcodec/arm/hevcdsp_epel_neon.S
