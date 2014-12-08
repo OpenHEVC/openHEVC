@@ -6,9 +6,10 @@ APP_OPTIM := debug
 LOCAL_ARM_MODE := arm
 
 #LOCAL_CFLAGS    := -I <Your header files goes here>
-LOCAL_CFLAGS    += -g
-LOCAL_CFLAGS    += -ggdb
-LOCAL_CFLAGS    += -O0
+#for debug
+#LOCAL_CFLAGS    := -g -ggdb -O0
+#for production
+LOCAL_CFLAGS    := -O3
 
 openhevc_files := \
     libavutil/avstring.c \
@@ -145,6 +146,7 @@ openhevc_files := \
     libavcodec/arm/hevcdsp_idct_neon.S \
     libavcodec/arm/hevcdsp_qpel_neon.S \
     libavcodec/arm/hevcdsp_epel_neon.S \
+    libavcodec/arm/hevcdsp_sao_neon.S \
     libavcodec/arm/dsputil_init_arm.c \
     libavcodec/arm/dsputil_init_armv6.c \
     libavcodec/arm/dsputil_init_neon.c \
