@@ -21,6 +21,8 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
+.code 32
+
 function ff_hevc_idct_4x4_dc_neon_8, export=1
         ldrsh       r1, [r0]
         ldr         r2, =0x20
@@ -193,6 +195,7 @@ endfunc
 .endm
 
 /* uses registers q2 - q9 for temp values */
+/* TODO: reorder */
 .macro tr4_luma_shift r0, r1, r2, r3, shift
         vaddl.s16   q5, \r0, \r2    // c0 = src0 + src2
         vaddl.s16   q2, \r2, \r3    // c1 = src2 + src3
@@ -265,8 +268,8 @@ endfunc
 function ff_hevc_transform_4x4_neon_8, export=1
         vpush       {d8-d15}
         vld1.16     {q14, q15}, [r0,:128]  // coeffs
-        adr         r3, tr4f    // 36 and 83
-        vld1.32     {d0[0]}, [r3]
+        ldr         r3, =0x00240053 // 36 and 83
+        vmov.32     d0[0], r3
 
         tr4_shift d28, d29, d30, d31, #7
 
@@ -594,8 +597,8 @@ function ff_hevc_transform_16x16_add_neon_8, export=1
         push   {r4-r8}
         vpush {d8-d15}
 
-        adr       r3, tr4f
-        vld1.16   {q0, q1}, [r3]
+        //adr       r3, tr4f
+        //vld1.16   {q0, q1}, [r3]
         mov     r5, #32
         mov     r3, #4
 
