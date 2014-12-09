@@ -530,20 +530,22 @@ static int hls_slice_header(HEVCContext *s)
 #endif
     int first_slice_in_pic_flag = get_bits1(gb);
 #if PARALLEL_SLICE
-    if(!first_slice_in_pic_flag) {
-        int self_id, temporal_id, nuh_layer_id, nal_unit_type, job;
-        nal_unit_type = s->nal_unit_type;
-        self_id       = s->self_id;
-        temporal_id   = s->temporal_id;
-        nuh_layer_id  = s->nuh_layer_id;
-        job           = s->job;
-        ff_thread_await_progress_slice(s->avctx);
-        memcpy(s, s1, sizeof(HEVCContext));
-        s->HEVClc                 = s1->HEVClcList[self_id];
-        s->nal_unit_type          = nal_unit_type;
-        s->temporal_id            = temporal_id;
-        s->nuh_layer_id           = nuh_layer_id;
-        s->job                    = job;
+    if (IS_IRAP(s)) {
+        if(!first_slice_in_pic_flag) {
+            int self_id, temporal_id, nuh_layer_id, nal_unit_type, job;
+            nal_unit_type = s->nal_unit_type;
+            self_id       = s->self_id;
+            temporal_id   = s->temporal_id;
+            nuh_layer_id  = s->nuh_layer_id;
+            job           = s->job;
+            ff_thread_await_progress_slice(s->avctx);
+            memcpy(s, s1, sizeof(HEVCContext));
+            s->HEVClc                 = s1->HEVClcList[self_id];
+            s->nal_unit_type          = nal_unit_type;
+            s->temporal_id            = temporal_id;
+            s->nuh_layer_id           = nuh_layer_id;
+            s->job                    = job;
+        }
     }
 #endif
     sh->first_slice_in_pic_flag   = first_slice_in_pic_flag;
@@ -630,7 +632,11 @@ static int hls_slice_header(HEVCContext *s)
         if (!sh->dependent_slice_segment_flag) {
             sh->slice_addr = sh->slice_segment_addr;
 #if PARALLEL_SLICE
-            s->slice_idx = s->job;
+if (0)
+    s->slice_idx = s->job;
+else
+    s->slice_idx++;
+
 #else
             s->slice_idx++;
 #endif
@@ -3372,6 +3378,9 @@ static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, in
         return ret;
 
     ret = hls_nal_unit(s);
+
+    av_log(s->avctx, AV_LOG_DEBUG,
+           "decode IRAP in parallel #%d.\n", s->nal_unit_type);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                s->nal_unit_type);
@@ -3685,6 +3694,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 #if PARALLEL_SLICE
     int cum_nal_pos = 0, k, nal_type, prv_nal_type=-1;
     int arg[128];
+    int is_irap = 1;
 #endif
     s->ref = NULL;
     s->last_eos = s->eos;
@@ -3776,6 +3786,9 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 #if PARALLEL_SLICE
         /*   Find out the set of slices to run in parallel   */
         nal_type = s->nal_unit_type > NAL_CRA_NUT;
+        if (!nal_type)
+            is_irap &= IS_IRAP(s);
+
         if(prv_nal_type==-1)
             s->NALListOrder[0]++;
         else {
@@ -3813,20 +3826,36 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         s->el_decoder_el_exist = 0;
     }
 #if PARALLEL_SLICE
-    for(i = 0; i <= s->NbListElement; i++) {
-//      s->skipped_bytes = s->skipped_bytes_nal[i];
-//      s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
-        s->max_slices = s->NALListOrder[i]-1;
-        for(k=0; k < s->NALListOrder[i]; k++)
-            arg[k] = cum_nal_pos+k;
-        s->avctx->execute2(s->avctx, (void *) decode_nal_unit_slice  , arg, ret, s->NALListOrder[i]);
-        cum_nal_pos += s->NALListOrder[i];
+    if (is_irap) {
+        for(i = 0; i <= s->NbListElement; i++) {
+            //      s->skipped_bytes = s->skipped_bytes_nal[i];
+            //      s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
+            s->max_slices = s->NALListOrder[i]-1;
+            for(k=0; k < s->NALListOrder[i]; k++)
+                arg[k] = cum_nal_pos+k;
+            s->avctx->execute2(s->avctx, (void *) decode_nal_unit_slice, arg, ret, s->NALListOrder[i]);
+            cum_nal_pos += s->NALListOrder[i];
 
-        if (ret < 0) {
-            av_log(s->avctx, AV_LOG_WARNING,
-                   "Error parsing NAL unit #%d.\n", i);
-            goto fail;
+            if (ret < 0) {
+                av_log(s->avctx, AV_LOG_WARNING,
+                       "Error parsing NAL unit #%d.\n", i);
+                goto fail;
+            }
         }
+    } else {
+        for (i = 0; i < s->nb_nals; i++) {
+            int ret;
+            s->skipped_bytes = s->skipped_bytes_nal[i];
+            s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
+
+            ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
+            if (ret < 0) {
+                av_log(s->avctx, AV_LOG_WARNING,
+                       "Error parsing NAL unit #%d.\n", i);
+                goto fail;
+            }
+        }
+
     }
 #if !PARALLEL_FILTERS
     if(s->is_decoded)
