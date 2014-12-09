@@ -144,7 +144,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->cbf_luma = av_malloc(sps->min_tb_width * sps->min_tb_height);
     s->tab_ipm  = av_mallocz(min_pu_size);
-    s->is_pcm   = av_malloc(min_pu_size);
+    s->is_pcm   = av_mallocz(min_pu_size);
 
     s->dynamic_alloc += (sps->min_tb_width * sps->min_tb_height);
     s->dynamic_alloc += min_pu_size;
