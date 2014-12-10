@@ -375,6 +375,8 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
     uint8_t sao_eo_class    = sao->eo_class[c_idx];
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
+    stride_src /= sizeof(pixel);
+    stride_dst /= sizeof(pixel);
 
     int y_stride_src = init_y * stride_src;
     int y_stride_dst = init_y * stride_dst;
@@ -400,7 +402,7 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
     }
 }
 
-static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
+static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride_dst,  ptrdiff_t stride_src,
                                     SAOParams *sao,
                                     int *borders, int _width, int _height,
@@ -416,8 +418,6 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
 
     stride_src /= sizeof(pixel);
     stride_dst /= sizeof(pixel);
-
-    FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride_dst, stride_src, sao, width, height, c_idx, init_x, init_y);
 
     if (sao_eo_class != SAO_EO_VERT) {
         if (borders[0]) {
@@ -460,7 +460,7 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     }
 }
 
-static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
+static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride_dst, ptrdiff_t stride_src, 
                                     SAOParams *sao,
                                     int *borders, int _width, int _height,
@@ -476,8 +476,6 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
 
     stride_src /= sizeof(pixel);
     stride_dst /= sizeof(pixel);
-
-    FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride_dst, stride_src, sao, width, height, c_idx, init_x, init_y);
 
     if (sao_eo_class != SAO_EO_VERT) {
         if (borders[0]) {
