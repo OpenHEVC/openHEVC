@@ -303,6 +303,7 @@ if(ENABLE_STATIC)
 else()
     add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
 endif()
+target_link_libraries(LibOpenHevcWrapper m)
 
 include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
 
