@@ -150,7 +150,15 @@ void ff_hevc_sao_band_w16_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_
 void ff_hevc_sao_band_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
 void ff_hevc_sao_band_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
 
+void ff_hevc_sao_edge_eo0_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
+void ff_hevc_sao_edge_eo1_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
+void ff_hevc_sao_edge_eo2_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
+void ff_hevc_sao_edge_eo3_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
+
+void ff_hevc_sao_edge_eo0_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
 void ff_hevc_sao_edge_eo1_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
+void ff_hevc_sao_edge_eo2_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
+void ff_hevc_sao_edge_eo3_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
 
 static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride_dst, ptrdiff_t stride_src,
@@ -224,10 +232,40 @@ static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,
 
     stride_src /= sizeof(pixel);
     stride_dst /= sizeof(pixel);
-
-    if (eo == 1 && width == 64) {
-        ff_hevc_sao_edge_eo1_w64_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
-    } else {
+    switch (width) {
+    case 32:
+        switch(eo) {
+        case 0:
+            ff_hevc_sao_edge_eo0_w32_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
+            break;
+        case 1:
+            ff_hevc_sao_edge_eo1_w32_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
+            break;
+        case 2:
+            ff_hevc_sao_edge_eo2_w32_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
+            break;
+        case 3:
+            ff_hevc_sao_edge_eo3_w32_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
+            break;
+        }
+        break;
+    case 64:
+        switch(eo) {
+        case 0:
+            ff_hevc_sao_edge_eo0_w64_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
+            break;
+        case 1:
+            ff_hevc_sao_edge_eo1_w64_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
+            break;
+        case 2:
+            ff_hevc_sao_edge_eo2_w64_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
+            break;
+        case 3:
+            ff_hevc_sao_edge_eo3_w64_neon_8(dst, src, stride_dst, stride_src, height, sao_offset_val);
+            break;
+        }
+        break;
+    default:
         a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
         b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
         for (y = 0; y < height; y++) {
