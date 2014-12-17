@@ -32,7 +32,7 @@ function ff_hevc_idct_4x4_dc_neon_8, export=1
         asr         r1, #6
         vdup.16     q0, r1
         vdup.16     q1, r1
-        vst1.16     {q0, q1}, [r0,:128]
+        vst1.16     {q0, q1}, [r0]
         bx lr
 endfunc
 
@@ -267,7 +267,7 @@ endfunc
 
 function ff_hevc_transform_4x4_neon_8, export=1
         vpush       {d8-d15}
-        vld1.16     {q14, q15}, [r0,:128]  // coeffs
+        vld1.16     {q14, q15}, [r0]  // coeffs
         ldr         r3, =0x00240053 // 36 and 83
         vmov.32     d0[0], r3
 
@@ -283,14 +283,14 @@ function ff_hevc_transform_4x4_neon_8, export=1
         vtrn.16     d30, d31
         vtrn.32     q14, q15
 
-        vst1.16     {q14, q15}, [r0,:128]
+        vst1.16     {q14, q15}, [r0]
         vpop        {d8-d15}
         bx lr
 endfunc
 
 function ff_hevc_transform_luma_4x4_neon_8, export=1
         vpush       {d8-d15}
-        vld1.16     {q14, q15}, [r0,:128]  // coeffs
+        vld1.16     {q14, q15}, [r0]  // coeffs
         ldr         r3, =0x4a  // 74
         vmov.32     d0[0], r3
         ldr         r3, =0x1d  // 29
@@ -309,7 +309,7 @@ function ff_hevc_transform_luma_4x4_neon_8, export=1
         vtrn.16     d28, d29
         vtrn.16     d30, d31
         vtrn.32     q14, q15
-        vst1.16     {q14, q15}, [r0,:128]
+        vst1.16     {q14, q15}, [r0]
         vpop        {d8-d15}
         bx lr
 endfunc
@@ -557,7 +557,11 @@ function ff_hevc_transform_8x8_neon_8, export=1
         vswp     d7, d8
         vswp     d3, d6
         vswp     d6, d4
-        vstm     r0, {q1-q4}
+        //vstm     r0, {q1-q4}
+        vst1.16 {q1-q2}, [r0]
+        add     r0, #32
+        vst1.16 {q3-q4}, [r0]
+        sub     r0, #32
         vpop {d8-d15}
         pop {r4-r8}
         bx lr
