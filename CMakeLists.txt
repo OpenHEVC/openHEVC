@@ -79,7 +79,6 @@ set(YASM_NAMES
     libavutil/x86/emms.asm
     libavcodec/x86/dct32.asm
     libavcodec/x86/deinterlace.asm
-    libavcodec/x86/dsputil.asm
     libavcodec/x86/fft.asm
     libavcodec/x86/fpel.asm
     libavcodec/x86/h264_qpel_8bit.asm
@@ -234,13 +233,13 @@ set(libfilenames
     libavcodec/avpicture.c
     libavcodec/bitstream.c
     libavcodec/bitstream_filter.c
+    libavcodec/bswapdsp.c
     libavcodec/cabac.c
     libavcodec/codec_desc.c
     libavcodec/dct.c
     libavcodec/dct32_float.c
     libavcodec/dct32_template.c
     libavcodec/dirac.c
-    libavcodec/dsputil.c
     libavcodec/faanidct.c
     libavcodec/fft_template.c
     libavcodec/flac.c
@@ -259,6 +258,7 @@ set(libfilenames
     libavcodec/hpeldsp.c
     libavcodec/jrevdct.c
     libavcodec/mathtables.c
+    libavcodec/me_cmp.c
     libavcodec/mdct_template.c
     libavcodec/mpegaudiodata.c
     libavcodec/mpeg12data.c
@@ -315,8 +315,6 @@ list(APPEND libfilenames
     libavutil/x86/cpu.c
     libavcodec/x86/constants.c
     libavcodec/x86/dct_init.c
-    libavcodec/x86/dsputil_init.c
-    libavcodec/x86/dsputil_mmx.c
     libavcodec/x86/fdct.c
     libavcodec/x86/fft_init.c
     libavcodec/x86/h264_qpel.c

@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/bprint.h"
 #include "libavutil/crc.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
@@ -138,7 +139,7 @@ static void writeout(AVIOContext *s, const uint8_t *data, int len)
 
 static void flush_buffer(AVIOContext *s)
 {
-    if (s->buf_ptr > s->buffer) {
+    if (s->write_flag && s->buf_ptr > s->buffer) {
         writeout(s, s->buffer, s->buf_ptr - s->buffer);
         if (s->update_checksum) {
             s->checksum     = s->update_checksum(s->checksum, s->checksum_ptr,
@@ -147,6 +148,8 @@ static void flush_buffer(AVIOContext *s)
         }
     }
     s->buf_ptr = s->buffer;
+    if (!s->write_flag)
+        s->buf_end = s->buffer;
 }
 
 void avio_w8(AVIOContext *s, int b)
@@ -291,7 +294,7 @@ int64_t avio_size(AVIOContext *s)
     return size;
 }
 
-int url_feof(AVIOContext *s)
+int avio_feof(AVIOContext *s)
 {
     if(!s)
         return 0;
@@ -301,6 +304,13 @@ int url_feof(AVIOContext *s)
     }
     return s->eof_reached;
 }
+
+#if FF_API_URL_FEOF
+int url_feof(AVIOContext *s)
+{
+    return avio_feof(s);
+}
+#endif
 
 void avio_wl32(AVIOContext *s, unsigned int val)
 {
@@ -547,7 +557,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
     }
     if (size1 == size) {
         if (s->error)      return s->error;
-        if (url_feof(s))   return AVERROR_EOF;
+        if (avio_feof(s))  return AVERROR_EOF;
     }
     return size1 - size;
 }
@@ -596,7 +606,7 @@ int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size)
     s->buf_ptr += len;
     if (!len) {
         if (s->error)      return s->error;
-        if (url_feof(s))   return AVERROR_EOF;
+        if (avio_feof(s))  return AVERROR_EOF;
     }
     return len;
 }
@@ -666,7 +676,7 @@ int ff_get_line(AVIOContext *s, char *buf, int maxlen)
         if (c && i < maxlen-1)
             buf[i++] = c;
     } while (c != '\n' && c != '\r' && c);
-    if (c == '\r' && avio_r8(s) != '\n')
+    if (c == '\r' && avio_r8(s) != '\n' && !avio_feof(s))
         avio_skip(s, -1);
 
     buf[i] = 0;
@@ -766,7 +776,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     return 0;
 }
 
-int ffio_ensure_seekback(AVIOContext *s, int buf_size)
+int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
 {
     uint8_t *buffer;
     int max_buffer_size = s->max_packet_size ?
@@ -953,6 +963,24 @@ int64_t avio_seek_time(AVIOContext *s, int stream_index,
     return ret;
 }
 
+int avio_read_to_bprint(AVIOContext *h, AVBPrint *pb, size_t max_size)
+{
+    int ret;
+    char buf[1024];
+    while (max_size) {
+        ret = avio_read(h, buf, FFMIN(max_size, sizeof(buf)));
+        if (ret == AVERROR_EOF)
+            return 0;
+        if (ret <= 0)
+            return ret;
+        av_bprint_append_data(pb, buf, ret);
+        if (!av_bprint_is_complete(pb))
+            return AVERROR(ENOMEM);
+        max_size -= ret;
+    }
+    return 0;
+}
+
 /* output in a dynamic buffer */
 
 typedef struct DynBuffer {
@@ -1069,7 +1097,6 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
         *pbuffer = NULL;
         return 0;
     }
-    d = s->opaque;
 
     /* don't attempt to pad fixed-size packet buffers */
     if (!s->max_packet_size) {
@@ -1079,6 +1106,7 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 
     avio_flush(s);
 
+    d = s->opaque;
     *pbuffer = d->buffer;
     size = d->size;
     av_free(d);

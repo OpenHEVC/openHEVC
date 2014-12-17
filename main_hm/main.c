@@ -165,7 +165,7 @@ static void video_decode_example(const char *filename)
         exit(1);
     }
 
-    av_dump_format(pFormatCtx, 0, filename, 0);
+ //   av_dump_format(pFormatCtx, 0, filename, 0);
 
     const size_t extra_size_alloc = pFormatCtx->streams[video_stream_idx]->codec->extradata_size > 0 ?
     (pFormatCtx->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
@@ -174,7 +174,7 @@ static void video_decode_example(const char *filename)
         libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
     }
 
-    libOpenHevcSetDebugMode(openHevcHandle, 0);
+    libOpenHevcSetDebugMode(openHevcHandle, 1);
     libOpenHevcStartDecoder(openHevcHandle);
     openHevcFrameCpy.pvY = NULL;
     openHevcFrameCpy.pvU = NULL;

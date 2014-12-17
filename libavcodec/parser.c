@@ -30,7 +30,7 @@
 
 static AVCodecParser *av_first_parser = NULL;
 
-AVCodecParser *av_parser_next(AVCodecParser *p)
+AVCodecParser *av_parser_next(const AVCodecParser *p)
 {
     if (p)
         return p->next;
@@ -54,7 +54,7 @@ AVCodecParserContext *av_parser_init(int codec_id)
     if (codec_id == AV_CODEC_ID_NONE)
         return NULL;
 
-    for (parser = av_first_parser; parser != NULL; parser = parser->next) {
+    for (parser = av_first_parser; parser; parser = parser->next) {
         if (parser->codec_ids[0] == codec_id ||
             parser->codec_ids[1] == codec_id ||
             parser->codec_ids[2] == codec_id ||
@@ -212,7 +212,7 @@ void av_parser_close(AVCodecParserContext *s)
     if (s) {
         if (s->parser->parser_close)
             s->parser->parser_close(s);
-        av_free(s->priv_data);
+        av_freep(&s->priv_data);
         av_free(s);
     }
 }

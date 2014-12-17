@@ -33,9 +33,9 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
 
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "cabac_functions.h"
-#include "dsputil.h"
 #include "golomb.h"
 #include "hevc.h"
 
@@ -3169,7 +3169,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
     s->nuh_layer_id = ret;
-    s->avctx->layers_size += length;
     
     s->nuh_layer_id = ret;
 
@@ -3308,9 +3307,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 tiles_filters(s);
 #ifdef SVC_EXTENSION
 #if !ACTIVE_PU_UPSAMPLING
-            if (s->active_el_frame) {
+            if (s->bl_decoder_el_exist) {
                 int i;
-                s->active_el_frame = 0;
+                s->bl_decoder_el_exist = 0;
                 for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
                     HEVCFrame *frame = &s->Add_ref[i];
                     if (frame->frame->buf[0])
@@ -4148,7 +4147,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     if (!s->md5_ctx)
         goto fail;
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_bswapdsp_init(&s->bdsp);
 #if FRAME_CONCEALMENT
     s->prev_display_poc = -1;
     s->no_display_pic   =  0;
@@ -4331,7 +4330,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 
     avctx->internal->allocate_progress = 1;
 
-    avctx->layers_size     = 0;
     ret = hevc_init_context(avctx);
     if (ret < 0)
         return ret;

@@ -72,7 +72,7 @@ int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type)
 
 const char *av_get_colorspace_name(enum AVColorSpace val)
 {
-    static const char *name[] = {
+    static const char * const name[] = {
         [AVCOL_SPC_RGB]       = "GBR",
         [AVCOL_SPC_BT709]     = "bt709",
         [AVCOL_SPC_FCC]       = "fcc",
@@ -104,13 +104,20 @@ static void get_frame_defaults(AVFrame *frame)
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
     frame->extended_data       = frame->data;
-#if FF_API_AVFRAME_COLORSPACE
     frame->color_primaries     = AVCOL_PRI_UNSPECIFIED;
     frame->color_trc           = AVCOL_TRC_UNSPECIFIED;
     frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
     frame->color_range         = AVCOL_RANGE_UNSPECIFIED;
     frame->chroma_location     = AVCHROMA_LOC_UNSPECIFIED;
-#endif
+}
+
+static void free_side_data(AVFrameSideData **ptr_sd)
+{
+    AVFrameSideData *sd = *ptr_sd;
+
+    av_freep(&sd->data);
+    av_dict_free(&sd->metadata);
+    av_freep(ptr_sd);
 }
 
 AVFrame *av_frame_alloc(void)
@@ -360,9 +367,7 @@ void av_frame_unref(AVFrame *frame)
     int i;
 
     for (i = 0; i < frame->nb_side_data; i++) {
-        av_freep(&frame->side_data[i]->data);
-        av_dict_free(&frame->side_data[i]->metadata);
-        av_freep(&frame->side_data[i]);
+        free_side_data(&frame->side_data[i]);
     }
     av_freep(&frame->side_data);
 
@@ -475,13 +480,11 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->display_picture_number = src->display_picture_number;
     dst->flags                  = src->flags;
     dst->decode_error_flags     = src->decode_error_flags;
-#if FF_API_AVFRAME_COLORSPACE
     dst->color_primaries        = src->color_primaries;
     dst->color_trc              = src->color_trc;
     dst->colorspace             = src->colorspace;
     dst->color_range            = src->color_range;
     dst->chroma_location        = src->chroma_location;
-#endif
 
     av_dict_copy(&dst->metadata, src->metadata, 0);
 
@@ -489,13 +492,15 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
 
     for (i = 0; i < src->nb_side_data; i++) {
         const AVFrameSideData *sd_src = src->side_data[i];
-        AVFrameSideData *sd_dst = av_frame_new_side_data(dst, sd_src->type,
+        AVFrameSideData *sd_dst;
+        if (   sd_src->type == AV_FRAME_DATA_PANSCAN
+            && (src->width != dst->width || src->height != dst->height))
+            continue;
+        sd_dst = av_frame_new_side_data(dst, sd_src->type,
                                                          sd_src->size);
         if (!sd_dst) {
             for (i = 0; i < dst->nb_side_data; i++) {
-                av_freep(&dst->side_data[i]->data);
-                av_dict_free(&dst->side_data[i]->metadata);
-                av_freep(&dst->side_data[i]);
+                free_side_data(&dst->side_data[i]);
             }
             av_freep(&dst->side_data);
             return AVERROR(ENOMEM);
@@ -661,11 +666,24 @@ void av_frame_remove_side_data(AVFrame *frame, enum AVFrameSideDataType type)
     for (i = 0; i < frame->nb_side_data; i++) {
         AVFrameSideData *sd = frame->side_data[i];
         if (sd->type == type) {
-            av_freep(&sd->data);
-            av_dict_free(&sd->metadata);
-            av_freep(&frame->side_data[i]);
+            free_side_data(&frame->side_data[i]);
             frame->side_data[i] = frame->side_data[frame->nb_side_data - 1];
             frame->nb_side_data--;
         }
     }
+}
+
+const char *av_frame_side_data_name(enum AVFrameSideDataType type)
+{
+    switch(type) {
+    case AV_FRAME_DATA_PANSCAN:         return "AVPanScan";
+    case AV_FRAME_DATA_A53_CC:          return "ATSC A53 Part 4 Closed Captions";
+    case AV_FRAME_DATA_STEREO3D:        return "Stereoscopic 3d metadata";
+    case AV_FRAME_DATA_MATRIXENCODING:  return "AVMatrixEncoding";
+    case AV_FRAME_DATA_DOWNMIX_INFO:    return "Metadata relevant to a downmix procedure";
+    case AV_FRAME_DATA_REPLAYGAIN:      return "AVReplayGain";
+    case AV_FRAME_DATA_DISPLAYMATRIX:   return "3x3 displaymatrix";
+    case AV_FRAME_DATA_MOTION_VECTORS:  return "Motion vectors";
+    }
+    return NULL;
 }

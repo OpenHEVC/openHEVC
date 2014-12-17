@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include "avformat.h"
+#include "os_support.h"
 
 #define MAX_URL_SIZE 4096
 
@@ -93,7 +94,7 @@ void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
  * @return 0, or < 0 on error
  */
 int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
-                              int (*compare)(AVFormatContext *, AVPacket *, AVPacket *));
+                             int (*compare)(AVFormatContext *, AVPacket *, AVPacket *));
 
 void ff_read_frame_flush(AVFormatContext *s);
 
@@ -134,10 +135,11 @@ void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
  * @param dst_stream the stream index within dst to write the packet to
  * @param pkt the packet to be written
  * @param src the muxer the packet originally was intended for
+ * @param interleave 0->use av_write_frame, 1->av_write_interleaved_frame
  * @return the value av_write_frame returned
  */
 int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
-                     AVFormatContext *src);
+                     AVFormatContext *src, int interleave);
 
 /**
  * Get the length in bytes which is needed to store val as v.
@@ -333,10 +335,8 @@ void ff_free_stream(AVFormatContext *s, AVStream *st);
 /**
  * Return the frame duration in seconds. Return 0 if not available.
  */
-void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
+void ff_compute_frame_duration(AVFormatContext *s, int *pnum, int *pden, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt);
-
-int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux);
 
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);
 
@@ -371,6 +371,24 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precisio
  * order.
  */
 int ff_generate_avci_extradata(AVStream *st);
+
+/**
+ * Wrap errno on rename() error.
+ *
+ * @param oldpath source path
+ * @param newpath destination path
+ * @return        0 or AVERROR on failure
+ */
+static inline int ff_rename(const char *oldpath, const char *newpath, void *logctx)
+{
+    int ret = 0;
+    if (rename(oldpath, newpath) == -1) {
+        ret = AVERROR(errno);
+        if (logctx)
+            av_log(logctx, AV_LOG_ERROR, "failed to rename file %s to %s\n", oldpath, newpath);
+    }
+    return ret;
+}
 
 /**
  * Allocate extradata with additional FF_INPUT_BUFFER_PADDING_SIZE at end
@@ -413,5 +431,9 @@ enum AVWriteUncodedFrameFlags {
 
 };
 
+/**
+ * Copies the whilelists from one context to the other
+ */
+int ff_copy_whitelists(AVFormatContext *dst, AVFormatContext *src);
 
 #endif /* AVFORMAT_INTERNAL_H */

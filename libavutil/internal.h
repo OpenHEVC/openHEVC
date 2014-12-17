@@ -39,6 +39,7 @@
 #include "timer.h"
 #include "cpu.h"
 #include "dict.h"
+#include "pixfmt.h"
 #include "version.h"
 
 #if ARCH_X86
@@ -79,9 +80,6 @@
 #    define FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-#ifndef INT_BIT
-#    define INT_BIT (CHAR_BIT * sizeof(int))
-#endif
 
 #define FF_MEMORY_POISON 0x2a
 
@@ -131,7 +129,7 @@
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_malloc(size);\
-    if (p == NULL && (size) != 0) {\
+    if (!(p) && (size) != 0) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -140,7 +138,7 @@
 #define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_mallocz(size);\
-    if (p == NULL && (size) != 0) {\
+    if (!(p) && (size) != 0) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -149,7 +147,7 @@
 #define FF_ALLOC_ARRAY_OR_GOTO(ctx, p, nelem, elsize, label)\
 {\
     p = av_malloc_array(nelem, elsize);\
-    if (p == NULL) {\
+    if (!p) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -158,7 +156,7 @@
 #define FF_ALLOCZ_ARRAY_OR_GOTO(ctx, p, nelem, elsize, label)\
 {\
     p = av_mallocz_array(nelem, elsize);\
-    if (p == NULL) {\
+    if (!p) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -255,6 +253,8 @@ void avpriv_request_sample(void *avc,
  * A wrapper for open() setting O_CLOEXEC.
  */
 int avpriv_open(const char *filename, int flags, ...);
+
+int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
 
 #if FF_API_GET_CHANNEL_LAYOUT_COMPAT
 uint64_t ff_get_channel_layout(const char *name, int compat);
