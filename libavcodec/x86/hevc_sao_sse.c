@@ -45,6 +45,7 @@
 #define _MM_MIN_EPU16 _mm_min_epu16
 #else
 
+#if HAVE_SSE2
 static av_always_inline __m128i comlt_epu16(__m128i a, __m128i b)
 {
     __m128i signMask, mask;
@@ -70,16 +71,18 @@ __m128i _MM_MIN_EPU16(__m128i a, __m128i b)
      a = logical_bitwise_select(a, b, mask);
      return a;
 }
-
+#endif
 #endif
 
 #if HAVE_SSE42
 #define _MM_CVTEPI8_EPI16 _mm_cvtepi8_epi16
 
 #else
+#if HAVE_SSE2
 static inline __m128i _MM_CVTEPI8_EPI16(__m128i m0) {
     return _mm_unpacklo_epi8(m0, _mm_cmplt_epi8(m0, _mm_setzero_si128()));
 }
+#endif
 #endif
 
 #if HAVE_SSSE3
