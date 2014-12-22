@@ -362,8 +362,7 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                   SAOParams *sao,
                                   int width, int height,
-                                  int c_idx, int init_x, int init_y) {
-
+                                  int c_idx) {
     static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
     static const int8_t pos[4][2][2] = {
         { { -1,  0 }, {  1, 0 } }, // horizontal
@@ -372,35 +371,33 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
         { {  1, -1 }, { -1, 1 } }, // 135 degree
     };
     int16_t *sao_offset_val = sao->offset_val[c_idx];
-    uint8_t sao_eo_class    = sao->eo_class[c_idx];
+    uint8_t eo = sao->eo_class[c_idx];
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
 
-    int y_stride_src = init_y * stride_src;
-    int y_stride_dst = init_y * stride_dst;
-    int pos_0_0  = pos[sao_eo_class][0][0];
-    int pos_0_1  = pos[sao_eo_class][0][1];
-    int pos_1_0  = pos[sao_eo_class][1][0];
-    int pos_1_1  = pos[sao_eo_class][1][1];
+    int a_stride, b_stride;
+    int src_offset = 0;
+    int dst_offset = 0;
     int x, y;
+    stride_src /= sizeof(pixel);
+    stride_dst /= sizeof(pixel);
 
-    int y_stride_0_1 = (init_y + pos_0_1) * stride_src;
-    int y_stride_1_1 = (init_y + pos_1_1) * stride_src;
-    for (y = init_y; y < height; y++) {
-        for (x = init_x; x < width; x++) {
-            int diff0         = CMP(src[x + y_stride_src], src[x + pos_0_0 + y_stride_0_1]);
-            int diff1         = CMP(src[x + y_stride_src], src[x + pos_1_0 + y_stride_1_1]);
+    a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
+    b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int diff0         = CMP(src[x + src_offset], src[x + src_offset + a_stride]);
+            int diff1         = CMP(src[x + src_offset], src[x + src_offset + b_stride]);
             int offset_val    = edge_idx[2 + diff0 + diff1];
-            dst[x + y_stride_dst] = av_clip_pixel(src[x + y_stride_src] + sao_offset_val[offset_val]);
+            dst[x + dst_offset] = av_clip_pixel(src[x + src_offset] + sao_offset_val[offset_val]);
         }
-        y_stride_src += stride_src;
-        y_stride_0_1 += stride_src;
-        y_stride_1_1 += stride_src;
-        y_stride_dst += stride_dst;
+        src_offset += stride_src;
+        dst_offset += stride_dst;
     }
+
 }
 
-static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
+static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride_dst,  ptrdiff_t stride_src,
                                     SAOParams *sao,
                                     int *borders, int _width, int _height,
@@ -416,8 +413,6 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
 
     stride_src /= sizeof(pixel);
     stride_dst /= sizeof(pixel);
-
-    FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride_dst, stride_src, sao, width, height, c_idx, init_x, init_y);
 
     if (sao_eo_class != SAO_EO_VERT) {
         if (borders[0]) {
@@ -460,7 +455,7 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     }
 }
 
-static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
+static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride_dst, ptrdiff_t stride_src, 
                                     SAOParams *sao,
                                     int *borders, int _width, int _height,
@@ -476,8 +471,6 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
 
     stride_src /= sizeof(pixel);
     stride_dst /= sizeof(pixel);
-
-    FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride_dst, stride_src, sao, width, height, c_idx, init_x, init_y);
 
     if (sao_eo_class != SAO_EO_VERT) {
         if (borders[0]) {
