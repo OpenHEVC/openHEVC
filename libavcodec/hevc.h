@@ -828,10 +828,6 @@ typedef struct SliceHeader {
     int slice_ctb_addr_rs;
 } SliceHeader;
 
-typedef struct CodingTree {
-    int depth; ///< ctDepth
-} CodingTree;
-
 typedef struct CodingUnit {
     int x;
     int y;
@@ -886,7 +882,6 @@ typedef struct PredictionUnit {
 
 typedef struct TransformUnit {
     DECLARE_ALIGNED(32, int16_t, coeffs[2][MAX_TB_SIZE * MAX_TB_SIZE]);
-
     int cu_qp_delta;
 
     int res_scale_val;
@@ -954,7 +949,6 @@ typedef struct HEVCLocalContext {
     GetBitContext       gb;
     CABACContext        cc;
     TransformUnit       tu;
-    CodingTree          ct;
     CodingUnit          cu;
     PredictionUnit      pu;
     NeighbourAvailable  na;
@@ -983,6 +977,8 @@ typedef struct HEVCLocalContext {
     DECLARE_ALIGNED(32, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
 
     DECLARE_ALIGNED(32, int16_t, edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE]);
+
+    int ct_depth;
 
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;

@@ -32,6 +32,7 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
 {
     if (!frame->frame || !frame->frame->buf[0])
         return;
+
     frame->flags &= ~flags;
     if (!frame->flags) {
         ff_thread_release_buffer(s->avctx, &frame->tf);
@@ -79,7 +80,6 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
     int i, j, ret;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *frame = &s->DPB[i];
-
         if (frame->frame->buf[0])
             continue;
 

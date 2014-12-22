@@ -983,6 +983,12 @@ static int hls_slice_header(HEVCContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (get_bits_left(gb) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Overread slice header by %d bits\n", -get_bits_left(gb));
+        return AVERROR_INVALIDDATA;
+    }
+
     s->HEVClc->first_qp_group = !s->sh.dependent_slice_segment_flag;
 
     if (!s->pps->cu_qp_delta_enabled_flag)
@@ -2365,7 +2371,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         lc->qPy_pred = lc->qp_y;
     }
 
-    set_ct_depth(s, x0, y0, log2_cb_size, lc->ct.depth);
+    set_ct_depth(s, x0, y0, log2_cb_size, lc->ct_depth);
 
     return 0;
 }
@@ -2378,7 +2384,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     int ret;
     int split_cu_flag;
 
-    lc->ct.depth = cb_depth;
+    lc->ct_depth = cb_depth;
     if (x0 + cb_size <= s->sps->width  &&
         y0 + cb_size <= s->sps->height &&
         log2_cb_size > s->sps->log2_min_cb_size) {

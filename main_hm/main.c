@@ -94,6 +94,7 @@ static void video_decode_example(const char *filename)
     long unsigned int time_us = 0;
 #endif
     int video_stream_idx;
+    char output_file2[256];
 
     OpenHevc_Frame     openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
@@ -166,7 +167,8 @@ static void video_decode_example(const char *filename)
                     if (fout)
                        fclose(fout);
                     if (output_file) {
-                        fout = fopen(output_file, "wb");
+                        sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
+                        fout = fopen(output_file2, "wb");
                     }
 #if USE_SDL
                     if (display_flags == ENABLE) {
