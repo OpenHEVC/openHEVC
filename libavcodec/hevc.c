@@ -119,17 +119,12 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
-    s->dynamic_alloc += sizeof(*s->sao);
-    s->dynamic_alloc += sizeof(*s->deblock);
-    s->dynamic_alloc += pic_size;
 
     if (!s->sao || !s->deblock)
         goto fail;
 
     s->skip_flag    = av_malloc(sps->min_cb_height * sps->min_cb_width);
     s->tab_ct_depth = av_malloc(sps->min_cb_height * sps->min_cb_width);
-    s->dynamic_alloc += pic_size_in_ctb;
-    s->dynamic_alloc += (sps->min_cb_height * sps->min_cb_width);
 
     if (!s->skip_flag || !s->tab_ct_depth)
         goto fail;
@@ -138,9 +133,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     s->tab_ipm  = av_mallocz(min_pu_size);
     s->is_pcm   = av_malloc(min_pu_size);
 
-    s->dynamic_alloc += (sps->min_tb_width * sps->min_tb_height);
-    s->dynamic_alloc += min_pu_size;
-    s->dynamic_alloc += min_pu_size;
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
 
@@ -149,18 +141,11 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
                                       sizeof(*s->tab_slice_address));
     s->qp_y_tab           = av_malloc(pic_size_in_ctb *
                                       sizeof(*s->qp_y_tab));
-    s->dynamic_alloc += ctb_count;
-    s->dynamic_alloc += (pic_size_in_ctb *
-                         sizeof(*s->tab_slice_address));
-    s->dynamic_alloc += (pic_size_in_ctb *
-                         sizeof(*s->qp_y_tab));
     if (!s->qp_y_tab || !s->filter_slice_edges || !s->tab_slice_address)
         goto fail;
 
     s->horizontal_bs = av_mallocz(s->bs_width * s->bs_height);
     s->vertical_bs   = av_mallocz(s->bs_width * s->bs_height);
-    s->dynamic_alloc += (s->bs_width * s->bs_height);
-    s->dynamic_alloc += (s->bs_width * s->bs_height);
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
 
@@ -168,8 +153,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
                                           av_buffer_allocz);
     s->rpl_tab_pool = av_buffer_pool_init(ctb_count * sizeof(RefPicListTab),
                                           av_buffer_allocz);
-    s->dynamic_alloc += (min_pu_size * sizeof(MvField));
-    s->dynamic_alloc += (ctb_count * sizeof(RefPicListTab));
 
     if (!s->tab_mvf_pool || !s->rpl_tab_pool)
         goto fail;
@@ -180,7 +163,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         s->buffer_frame[1] = av_malloc((pic_size>>2)*sizeof(short));
         s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
         s->is_upsampled = av_malloc(sps->ctb_width * sps->ctb_height);
-        s->dynamic_alloc += (sps->ctb_width * sps->ctb_height);
 #else
 #if !ACTIVE_PU_UPSAMPLING
         s->buffer_frame[0] = av_malloc(pic_size*sizeof(short));
@@ -188,7 +170,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
 #else
         s->is_upsampled = av_malloc(sps->ctb_width * sps->ctb_height);
-        s->dynamic_alloc += (sps->ctb_width * sps->ctb_height);
 #endif
 #endif
     }
@@ -3661,7 +3642,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 {
     HEVCContext *s = avctx->priv_data;
     int i;
-    s->dynamic_alloc = 0;
     s->avctx = avctx;
 
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
@@ -3675,23 +3655,19 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->sList[0] = s;
 
     s->cabac_state = av_malloc(HEVC_CONTEXTS);
-    s->dynamic_alloc += HEVC_CONTEXTS;
     if (!s->cabac_state)
         goto fail;
 
     s->tmp_frame = av_frame_alloc();
-    s->dynamic_alloc += sizeof(AVFrame); 
     if (!s->tmp_frame)
         goto fail;
 
     s->output_frame = av_frame_alloc();
-    s->dynamic_alloc += sizeof(AVFrame); 
     if (!s->output_frame)
         goto fail;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         s->DPB[i].frame = av_frame_alloc();
-        s->dynamic_alloc += sizeof(AVFrame); 
         if (!s->DPB[i].frame)
             goto fail;
         s->DPB[i].tf.f = s->DPB[i].frame;

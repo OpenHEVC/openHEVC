@@ -161,10 +161,8 @@ static int decode_nal_sei_message(HEVCContext *s)
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
         if (payload_type == 256 /*&& s->decode_checksum_sei*/) {
             decode_nal_sei_decoded_picture_hash(s);
-            return 1;
         } else if (payload_type == 45) {
             decode_nal_sei_frame_packing_arrangement(s);
-            return 1;
         } else if (payload_type == 1){
             int ret = decode_pic_timing(s);
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
@@ -173,11 +171,9 @@ static int decode_nal_sei_message(HEVCContext *s)
         } else if (payload_type == 129){
             active_parameter_sets(s);
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-            return 1;
         } else {
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
             skip_bits(gb, 8*payload_size);
-            return 1;
         }
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
         if (payload_type == 132 /* && s->decode_checksum_sei */)
@@ -186,8 +182,8 @@ static int decode_nal_sei_message(HEVCContext *s)
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
             skip_bits(gb, 8 * payload_size);
         }
-        return 1;
     }
+    return 1;
 }
 
 static int more_rbsp_data(GetBitContext *gb)

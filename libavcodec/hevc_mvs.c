@@ -218,6 +218,9 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, int x, int y,
     return 0;
 }
 
+#define TAB_MVF(x, y)                                                   \
+    tab_mvf[(y) * min_pu_width + x]
+
 #define TAB_MVF_PU(v)                                                   \
     TAB_MVF(((x ## v) >> s->sps->log2_min_pu_size),                     \
             ((y ## v) >> s->sps->log2_min_pu_size))
@@ -239,9 +242,10 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 
     HEVCFrame *ref = s->ref->collocated_ref;
 
-    if (!ref)
+    if (!ref) {
+        memset(mvLXCol, 0, sizeof(*mvLXCol));
         return 0;
-
+    }
 
     //bottom right collocated motion vector
     x = x0 + nPbW;
@@ -249,21 +253,20 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 #if ACTIVE_PU_UPSAMPLING
     if(ref == s->inter_layer_ref ) {
         if (s->threads_type & FF_THREAD_FRAME ){
-            int bl_y = y0 + (1 << s->sps->log2_ctb_size) * 2 + 9;
+            int bl_y = y0 + (1<<s->sps->log2_ctb_size) * 2 + 9;
             bl_y = (( (bl_y  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
             ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);
         }
         ff_upsample_block(s, ref, x0 , y0, nPbW, nPbH);
     }
 #endif
-    if (s->threads_type & FF_THREAD_FRAME )
-        ff_thread_await_progress(&ref->tf, y, 0);
+
     if ((y0 >> s->sps->log2_ctb_size) == (y >> s->sps->log2_ctb_size) &&
         y < s->sps->height &&
         x < s->sps->width) {
-        x                 &= -16;
-        y                 &= -16;
-        if (s->threads_type == FF_THREAD_FRAME)
+        x                 &= ~15;
+        y                 &= ~15;
+        if (s->threads_type & FF_THREAD_FRAME)
             ff_thread_await_progress(&ref->tf, y, 0);
         availableFlagLXCol = DERIVE_TEMPORAL_COLOCATED_MVS;
     }
@@ -272,9 +275,9 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     if (!availableFlagLXCol) {
         x                  = x0 + (nPbW >> 1);
         y                  = y0 + (nPbH >> 1);
-        x                 &= -16;
-        y                 &= -16;
-        if (s->threads_type == FF_THREAD_FRAME)
+        x                 &= ~15;
+        y                 &= ~15;
+        if (s->threads_type & FF_THREAD_FRAME)
             ff_thread_await_progress(&ref->tf, y, 0);
         availableFlagLXCol = DERIVE_TEMPORAL_COLOCATED_MVS;
     }
@@ -352,7 +355,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
         is_available_a1 = AVAILABLE(cand_left, A1);
         if (is_available_a1) {
             mergecandlist[nb_merge_cand] = TAB_MVF_PU(A1);
-            if (merge_idx == 0) return;
+            if (merge_idx == 0)
+                return;
             nb_merge_cand++;
         }
     }
@@ -368,7 +372,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
         if (is_available_b1 &&
             !(is_available_a1 && COMPARE_MV_REFIDX(B1, A1))) {
             mergecandlist[nb_merge_cand] = TAB_MVF_PU(B1);
-            if (merge_idx == nb_merge_cand) return;
+            if (merge_idx == nb_merge_cand)
+                return;
             nb_merge_cand++;
         }
     }
@@ -382,7 +387,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     if (is_available_b0 &&
         !(is_available_b1 && COMPARE_MV_REFIDX(B0, B1))) {
         mergecandlist[nb_merge_cand] = TAB_MVF_PU(B0);
-        if (merge_idx == nb_merge_cand) return;
+        if (merge_idx == nb_merge_cand)
+            return;
         nb_merge_cand++;
     }
 
@@ -395,7 +401,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     if (is_available_a0 &&
         !(is_available_a1 && COMPARE_MV_REFIDX(A0, A1))) {
         mergecandlist[nb_merge_cand] = TAB_MVF_PU(A0);
-        if (merge_idx == nb_merge_cand) return;
+        if (merge_idx == nb_merge_cand)
+            return;
         nb_merge_cand++;
     }
 
@@ -408,7 +415,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
         !(is_available_b1 && COMPARE_MV_REFIDX(B2, B1)) &&
         nb_merge_cand != 4) {
         mergecandlist[nb_merge_cand] = TAB_MVF_PU(B2);
-        if (merge_idx == nb_merge_cand) return;
+        if (merge_idx == nb_merge_cand)
+            return;
         nb_merge_cand++;
     }
 

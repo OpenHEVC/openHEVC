@@ -1128,7 +1128,6 @@ typedef struct HEVCContext {
 
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
-    long unsigned int dynamic_alloc;
 
     uint8_t threads_type;
     uint8_t threads_number;
