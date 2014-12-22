@@ -2230,11 +2230,9 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
     lc->cu.x                = x0;
     lc->cu.y                = y0;
-    lc->cu.rqt_root_cbf     = 1;
     lc->cu.pred_mode        = MODE_INTRA;
     lc->cu.part_mode        = PART_2Nx2N;
     lc->cu.intra_split_flag = 0;
-    lc->cu.pcm_flag         = 0;
 
     SAMPLE_CTB(s->skip_flag, x_cb, y_cb) = 0;
     for (x = 0; x < 4; x++)
@@ -2270,6 +2268,8 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         if (!s->sh.disable_deblocking_filter_flag)
             ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
     } else {
+        int pcm_flag = 0;
+
         if (s->sh.slice_type != I_SLICE)
             lc->cu.pred_mode = ff_hevc_pred_mode_decode(s);
         if (lc->cu.pred_mode != MODE_INTRA ||
@@ -2283,9 +2283,9 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
             if (lc->cu.part_mode == PART_2Nx2N && s->sps->pcm_enabled_flag &&
                 log2_cb_size >= s->sps->pcm.log2_min_pcm_cb_size &&
                 log2_cb_size <= s->sps->pcm.log2_max_pcm_cb_size) {
-                lc->cu.pcm_flag = ff_hevc_pcm_flag_decode(s);
+                pcm_flag = ff_hevc_pcm_flag_decode(s);
             }
-            if (lc->cu.pcm_flag) {
+            if (pcm_flag) {
                 intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
                 ret = hls_pcm_sample(s, x0, y0, log2_cb_size);
                 if (s->sps->pcm.loop_filter_disable_flag)
@@ -2335,12 +2335,14 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
             }
         }
 
-        if (!lc->cu.pcm_flag) {
+        if (!pcm_flag) {
+            int rqt_root_cbf = 1;
+
             if (lc->cu.pred_mode != MODE_INTRA &&
                 !(lc->cu.part_mode == PART_2Nx2N && lc->pu.merge_flag)) {
-                lc->cu.rqt_root_cbf = ff_hevc_no_residual_syntax_flag_decode(s);
+                rqt_root_cbf = ff_hevc_no_residual_syntax_flag_decode(s);
             }
-            if (lc->cu.rqt_root_cbf) {
+            if (rqt_root_cbf) {
                 const static int cbf[2] = { 0 };
                 lc->cu.max_trafo_depth = lc->cu.pred_mode == MODE_INTRA ?
                                          s->sps->max_transform_hierarchy_depth_intra + lc->cu.intra_split_flag :
@@ -2382,15 +2384,15 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     HEVCLocalContext *lc = s->HEVClc;
     const int cb_size    = 1 << log2_cb_size;
     int ret;
-    int split_cu_flag;
+    int split_cu;
 
     lc->ct_depth = cb_depth;
     if (x0 + cb_size <= s->sps->width  &&
         y0 + cb_size <= s->sps->height &&
         log2_cb_size > s->sps->log2_min_cb_size) {
-        split_cu_flag = ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
+        split_cu = ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
     } else {
-        split_cu_flag = (log2_cb_size > s->sps->log2_min_cb_size);
+        split_cu = (log2_cb_size > s->sps->log2_min_cb_size);
     }
     if (s->pps->cu_qp_delta_enabled_flag &&
         log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth) {
@@ -2403,7 +2405,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
         lc->tu.is_cu_chroma_qp_offset_coded = 0;
     }
 
-    if (split_cu_flag) {
+    if (split_cu) {
         int qp_block_mask = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
         const int cb_size_split = cb_size >> 1;
         const int x1 = x0 + cb_size_split;
@@ -2469,9 +2471,6 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
     int ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
     int ctb_addr_in_slice = ctb_addr_rs - s->sh.slice_addr;
 
-    int tile_left_boundary, tile_up_boundary;
-    int slice_left_boundary, slice_up_boundary;
-
     s->tab_slice_address[ctb_addr_rs] = s->sh.slice_addr;
 
     if (s->pps->entropy_coding_sync_enabled_flag) {
@@ -2490,27 +2489,27 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
 
     lc->end_of_tiles_y = FFMIN(y_ctb + ctb_size, s->sps->height);
 
+    lc->boundary_flags = 0;
     if (s->pps->tiles_enabled_flag) {
-        tile_left_boundary = x_ctb > 0 &&
-                             s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1]];
-        slice_left_boundary = x_ctb > 0 &&
-                              s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1];
-        tile_up_boundary  = y_ctb > 0 &&
-                            s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]];
-        slice_up_boundary = y_ctb > 0 &&
-                            s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width];
+        if (x_ctb > 0 && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - 1]])
+            lc->boundary_flags |= BOUNDARY_LEFT_TILE;
+        if (x_ctb > 0 && s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1])
+            lc->boundary_flags |= BOUNDARY_LEFT_SLICE;
+        if (y_ctb > 0 && s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]])
+            lc->boundary_flags |= BOUNDARY_UPPER_TILE;
+        if (y_ctb > 0 && s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width])
+            lc->boundary_flags |= BOUNDARY_UPPER_SLICE;
     } else {
-        tile_left_boundary =
-        tile_up_boundary   = 0;
-        slice_left_boundary = ctb_addr_in_slice <= 0;
-        slice_up_boundary   = ctb_addr_in_slice < s->sps->ctb_width;
+        if (!ctb_addr_in_slice > 0)
+            lc->boundary_flags |= BOUNDARY_LEFT_SLICE;
+        if (ctb_addr_in_slice < s->sps->ctb_width)
+            lc->boundary_flags |= BOUNDARY_UPPER_SLICE;
     }
-    lc->slice_or_tiles_left_boundary = slice_left_boundary + (tile_left_boundary << 1);
-    lc->slice_or_tiles_up_boundary   = slice_up_boundary   + (tile_up_boundary   << 1);
-    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0)                  && !tile_left_boundary);
-    lc->ctb_up_flag   = ((y_ctb > 0) && (ctb_addr_in_slice >= s->sps->ctb_width) && !tile_up_boundary);
-    lc->ctb_up_right_flag = ((y_ctb > 0)                 && (ctb_addr_in_slice+1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - s->sps->ctb_width]]));
-    lc->ctb_up_left_flag  = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->sps->ctb_width]]));
+
+    lc->ctb_left_flag = ((x_ctb > 0) && (ctb_addr_in_slice > 0) && !(lc->boundary_flags & BOUNDARY_LEFT_TILE));
+    lc->ctb_up_flag   = ((y_ctb > 0) && (ctb_addr_in_slice >= s->sps->ctb_width) && !(lc->boundary_flags & BOUNDARY_UPPER_TILE));
+    lc->ctb_up_right_flag = ((y_ctb > 0)  && (ctb_addr_in_slice+1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs+1 - s->sps->ctb_width]]));
+    lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->sps->ctb_width) && (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->sps->ctb_width]]));
 }
 
 static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
@@ -2740,8 +2739,8 @@ static void tiles_filters(HEVCContext *s)
 static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
-    int *ret = av_malloc((s->sh.num_entry_point_offsets + 1) * sizeof(int));
-    int *arg = av_malloc((s->sh.num_entry_point_offsets + 1) * sizeof(int));
+    int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
+    int *arg = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
     int offset;
     int startheader, cmpt = 0;
     int i, j, res = 0;
