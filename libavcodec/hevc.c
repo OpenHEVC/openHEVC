@@ -1101,8 +1101,7 @@ static int hls_cross_component_pred(HEVCContext *s, int idx) {
 static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
-                              int trafo_depth, int blk_idx,
-                              int cbf_luma, int *cbf_cb, int *cbf_cr)
+                              int blk_idx, int cbf_luma, int *cbf_cb, int *cbf_cr)
 {
     HEVCLocalContext *lc = s->HEVClc;
     const int log2_trafo_size_c = log2_trafo_size - s->sps->hshift[1];
@@ -1111,6 +1110,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
     if (lc->cu.pred_mode == MODE_INTRA) {
         int trafo_size = 1 << log2_trafo_size;
         ff_hevc_set_neighbour_available(s, x0, y0, trafo_size, trafo_size);
+
         s->hpc.intra_pred[log2_trafo_size - 2](s, x0, y0, 0);
     }
 
@@ -1418,7 +1418,7 @@ do {                                                                            
         }
 
         ret = hls_transform_unit(s, x0, y0, xBase, yBase, cb_xBase, cb_yBase,
-                                 log2_cb_size, log2_trafo_size, trafo_depth,
+                                 log2_cb_size, log2_trafo_size,
                                  blk_idx, cbf_luma, cbf_cb, cbf_cr);
         if (ret < 0)
             return ret;
@@ -1565,7 +1565,6 @@ static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
                        int block_w, int block_h, AVFrame *ref1, const Mv *mv1, struct MvField *current_mv)
 {
     HEVCLocalContext *lc = s->HEVClc;
-    LOCAL_ALIGNED(32, int16_t,  tmp, [MAX_PB_SIZE * MAX_PB_SIZE]);
     ptrdiff_t src0stride  = ref0->linesize[0];
     ptrdiff_t src1stride  = ref1->linesize[0];
     int pic_width        = s->sps->width;
@@ -1619,13 +1618,13 @@ static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
         src1stride = edge_emu_stride;
     }
 
-    s->hevcdsp.put_hevc_qpel[idx][!!my0][!!mx0](tmp, MAX_PB_SIZE, src0, src0stride,
+    s->hevcdsp.put_hevc_qpel[idx][!!my0][!!mx0](lc->tmp, MAX_PB_SIZE, src0, src0stride,
                                                 block_h, mx0, my0, block_w);
     if (!weight_flag)
-        s->hevcdsp.put_hevc_qpel_bi[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, MAX_PB_SIZE,
+        s->hevcdsp.put_hevc_qpel_bi[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, lc->tmp, MAX_PB_SIZE,
                                                        block_h, mx1, my1, block_w);
     else
-        s->hevcdsp.put_hevc_qpel_bi_w[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, tmp, MAX_PB_SIZE,
+        s->hevcdsp.put_hevc_qpel_bi_w[idx][!!my1][!!mx1](dst, dststride, src1, src1stride, lc->tmp, MAX_PB_SIZE,
                                                          block_h, s->sh.luma_log2_weight_denom,
                                                          s->sh.luma_weight_l0[current_mv->ref_idx[0]],
                                                          s->sh.luma_weight_l1[current_mv->ref_idx[1]],
@@ -1720,7 +1719,6 @@ static void chroma_mc_uni(HEVCContext *s, uint8_t *dst0,
 static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVFrame *ref0, AVFrame *ref1,
                          int x_off, int y_off, int block_w, int block_h, struct MvField *current_mv, int cidx)
 {
-    DECLARE_ALIGNED(32, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
     int tmpstride = MAX_PB_SIZE;
     HEVCLocalContext *lc = s->HEVClc;
     uint8_t *src1        = ref0->data[cidx+1];
@@ -1791,15 +1789,15 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
         src2stride = edge_emu_stride;
     }
 
-    s->hevcdsp.put_hevc_epel[idx][!!my0][!!mx0](tmp, tmpstride, src1, src1stride,
+    s->hevcdsp.put_hevc_epel[idx][!!my0][!!mx0](lc->tmp, tmpstride, src1, src1stride,
                                                 block_h, _mx0, _my0, block_w);
     if (!weight_flag)
         s->hevcdsp.put_hevc_epel_bi[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
-                                                       src2, src2stride, tmp, tmpstride,
+                                                       src2, src2stride, lc->tmp, tmpstride,
                                                        block_h, _mx1, _my1, block_w);
     else
         s->hevcdsp.put_hevc_epel_bi_w[idx][!!my1][!!mx1](dst0, s->frame->linesize[cidx+1],
-                                                         src2, src2stride, tmp, tmpstride,
+                                                         src2, src2stride, lc->tmp, tmpstride,
                                                          block_h,
                                                          s->sh.chroma_log2_weight_denom,
                                                          s->sh.chroma_weight_l0[current_mv->ref_idx[0]][cidx],
