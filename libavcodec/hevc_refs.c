@@ -28,18 +28,22 @@
 #include "thread.h"
 #include "hevc.h"
 
-void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
+void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
+{
     if (!frame->frame || !frame->frame->buf[0])
         return;
     frame->flags &= ~flags;
     if (!frame->flags) {
         ff_thread_release_buffer(s->avctx, &frame->tf);
+
         av_buffer_unref(&frame->tab_mvf_buf);
         frame->tab_mvf = NULL;
+
         av_buffer_unref(&frame->rpl_buf);
         av_buffer_unref(&frame->rpl_tab_buf);
         frame->rpl_tab    = NULL;
         frame->refPicList = NULL;
+
         frame->collocated_ref = NULL;
     }
 }

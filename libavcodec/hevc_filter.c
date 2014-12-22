@@ -73,7 +73,7 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
         offset = s->pps->cr_qp_offset;
 
     qp_i = av_clip(qp_y + offset, 0, 57);
-    if (s->sps->chroma_array_type == 1) {
+    if (s->sps->chroma_format_idc == 1) {
         if (qp_i < 30)
             qp = qp_i;
         else if (qp_i > 43)
@@ -252,7 +252,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         }
     }
 
-    for (c_idx = 0; c_idx < (s->sps->chroma_array_type ? 3 : 1); c_idx++) {
+    for (c_idx = 0; c_idx < (s->sps->chroma_format_idc ? 3 : 1); c_idx++) {
         int x0       = x >> s->sps->hshift[c_idx];
         int y0       = y >> s->sps->vshift[c_idx];
         int stride_src = s->frame->linesize[c_idx];
@@ -421,7 +421,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     }
 
     // vertical filtering chroma
-    if (s->sps->chroma_array_type) {
+    if (s->sps->chroma_format_idc) {
         int c_tc2[2];
         uint8_t* src2;
         int h = 1 << s->sps->hshift[1];
@@ -520,7 +520,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     }
 
     // horizontal filtering chroma
-    if (s->sps->chroma_array_type) {
+    if (s->sps->chroma_format_idc) {
         int c_tc2[2];
         uint8_t* src2;
         int h = 1 << s->sps->hshift[1];

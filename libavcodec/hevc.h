@@ -571,7 +571,6 @@ typedef struct ScalingList {
 typedef struct HEVCSPS {
     unsigned vps_id;
     int chroma_format_idc;
-    int chroma_array_type;
     uint8_t separate_colour_plane_flag;
 
     ///< output (i.e. cropped) values

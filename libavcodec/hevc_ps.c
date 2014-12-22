@@ -1417,9 +1417,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             sps->separate_colour_plane_flag = get_bits1(gb);
 
        if (sps->separate_colour_plane_flag)
-            sps->chroma_array_type = 0;
-       else
-            sps->chroma_array_type = sps->chroma_format_idc;
+            sps->chroma_format_idc = 0;
 
         sps->width  = get_ue_golomb_long(gb);
         sps->height = get_ue_golomb_long(gb);
@@ -1432,7 +1430,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     } else if (sps->update_rep_format_flag) {
         int update_rep_format = get_bits1(gb);
         print_cabac("update_rep_format", update_rep_format);
-        sps->chroma_array_type = sps->chroma_format_idc = 0;
+        sps->chroma_format_idc = 0;
         if (update_rep_format) {
             sps->update_rep_format_index = get_bits(gb, 8);
             print_cabac("update_rep_format_index", sps->update_rep_format_index);
@@ -1527,7 +1525,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->width  = Rep.pic_width_vps_in_luma_samples;
         sps->height = Rep.pic_height_vps_in_luma_samples;
         sps->bit_depth   = Rep.bit_depth_vps_luma;
-        sps->chroma_array_type = Rep.chroma_format_vps_idc;
+        sps->chroma_format_idc = Rep.chroma_format_vps_idc;
         //sps->bit_depth_chroma = Rep.m_bitDepthVpsChroma;
 
         if(Rep.chroma_format_vps_idc) {
