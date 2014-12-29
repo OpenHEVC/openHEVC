@@ -145,10 +145,10 @@ void ff_hevc_transform_add_16x16_neon_8(uint8_t *_dst, int16_t *coeffs,
 void ff_hevc_transform_add_32x32_neon_8(uint8_t *_dst, int16_t *coeffs,
                                       ptrdiff_t stride);
 
-void ff_hevc_sao_band_w8_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
-void ff_hevc_sao_band_w16_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
-void ff_hevc_sao_band_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
-void ff_hevc_sao_band_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
+void ff_hevc_sao_band_w8_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int8_t * offset_table, int height);
+void ff_hevc_sao_band_w16_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int8_t * offset_table, int height);
+void ff_hevc_sao_band_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int8_t * offset_table, int height);
+void ff_hevc_sao_band_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int8_t * offset_table, int height);
 
 void ff_hevc_sao_edge_eo0_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
 void ff_hevc_sao_edge_eo1_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
@@ -182,16 +182,16 @@ static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
 
     switch(width){
     case 8:
-        ff_hevc_sao_band_w8_neon_8(_dst, _src, stride_dst, stride_src, height, offset_table);
+        ff_hevc_sao_band_w8_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
     case 16:
-        ff_hevc_sao_band_w16_neon_8(_dst, _src, stride_dst, stride_src, height, offset_table);
+        ff_hevc_sao_band_w16_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
     case 32:
-        ff_hevc_sao_band_w32_neon_8(_dst, _src, stride_dst, stride_src, height, offset_table);
+        ff_hevc_sao_band_w32_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
     case 64:
-        ff_hevc_sao_band_w64_neon_8(_dst, _src, stride_dst, stride_src, height, offset_table);
+        ff_hevc_sao_band_w64_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
     default:
         for (y = 0; y < height; y++) {

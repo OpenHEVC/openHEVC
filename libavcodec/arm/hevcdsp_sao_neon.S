@@ -21,53 +21,13 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
-function ff_hevc_sao_band_w8_neon_8, export=1
-        ldr      r12, [sp, #4]    // offset_table address
+.macro init_sao_band
+        ldr      r12, [sp, #0]    // offset_table address
         vld1.8   {q0, q1}, [r12]  // offset table
-        ldr      r12, [sp, #0]    // height
+        ldr      r12, [sp, #4]    // height
+.endm
 
-1:      subs     r12, #1
-        vld1.8   {d24}, [r1,:64], r3
-        vshr.u8  d16, d24, #3
-        vtbl.8   d16, {q0, q1}, d16
-        vmovl.u8 q6, d24
-        vaddw.s8 q6, d16
-        vqmovun.s16 d4, q2
-        vst1.8  {d4}, [r0,:64], r2
-        bne    1b
-
-        bx lr
-endfunc
-
-function ff_hevc_sao_band_w16_neon_8, export=1
-        ldr      r12, [sp, #4]    // offset_table address
-        vld1.8   {q0, q1}, [r12]  // offset table
-        ldr      r12, [sp, #0]    // height
-
-1:      subs     r12, #1
-        vld1.8  {q12}, [r1,:128], r3
-        vshr.u8   q8, q12, #3
-        vtbl.8  d16, {q0, q1}, d16
-        vtbl.8  d17, {q0, q1}, d17
-        vmovl.u8 q10, d24
-        vmovl.u8 q11, d25
-        vaddw.s8 q10, d16
-        vaddw.s8 q11, d17
-        vqmovun.s16 d4, q10
-        vqmovun.s16 d5, q11
-        vst1.8   {q2}, [r0,:128], r2
-        bne    1b
-
-        bx lr
-endfunc
-
-function ff_hevc_sao_band_w32_neon_8, export=1
-        ldr      r12, [sp, #4]    // offset_table address
-        vld1.8   {q0, q1}, [r12]  // offset table
-        ldr      r12, [sp, #0]    // height
-
-1:      subs     r12, #1
-        vld1.8   {q2-q3}, [r1,:128], r3
+.macro sao_band_32
         vshr.u8  q8, q2, #3
         vshr.u8  q9, q3, #3
         vtbl.8   d16, {q0, q1}, d16
@@ -86,6 +46,43 @@ function ff_hevc_sao_band_w32_neon_8, export=1
         vqmovun.s16 d5, q13
         vqmovun.s16 d6, q14
         vqmovun.s16 d7, q15
+.endm
+
+function ff_hevc_sao_band_w8_neon_8, export=1
+        init_sao_band
+1:      subs     r12, #4
+        vld1.8   {d4}, [r1,:64], r3
+        vld1.8   {d5}, [r1,:64], r3
+        vld1.8   {d6}, [r1,:64], r3
+        vld1.8   {d7}, [r1,:64], r3
+        sao_band_32
+        vst1.8  {d4}, [r0,:64], r2
+        vst1.8  {d5}, [r0,:64], r2
+        vst1.8  {d6}, [r0,:64], r2
+        vst1.8  {d7}, [r0,:64], r2
+        bne    1b
+
+        bx lr
+endfunc
+
+function ff_hevc_sao_band_w16_neon_8, export=1
+        init_sao_band
+1:      subs     r12, #2
+        vld1.8  {q2}, [r1,:128], r3
+        vld1.8  {q3}, [r1,:128], r3
+        sao_band_32
+        vst1.8   {q2}, [r0,:128], r2
+        vst1.8   {q3}, [r0,:128], r2
+        bne    1b
+
+        bx lr
+endfunc
+
+function ff_hevc_sao_band_w32_neon_8, export=1
+        init_sao_band
+1:      subs     r12, #1
+        vld1.8   {q2-q3}, [r1,:128], r3
+        sao_band_32
         vst1.8   {q2-q3}, [r0,:128], r2
         bne      1b
 
@@ -93,63 +90,17 @@ function ff_hevc_sao_band_w32_neon_8, export=1
 endfunc
 
 function ff_hevc_sao_band_w64_neon_8, export=1
-        ldr      r12, [sp, #4]    // offset_table address
-        vld1.8   {q0, q1}, [r12]  // offset table
-        ldr      r12, [sp, #0]    // height
-
-1:      subs     r12, #1
-        vld1.8  {q12-q13}, [r1,:128]!
-        vld1.8  {q14-q15}, [r1,:128], r3
-        sub     r1, #32
-
-        vshr.u8   q8, q12, #3
-        vshr.u8   q9, q13, #3
-        vshr.u8  q10, q14, #3
-        vshr.u8  q11, q15, #3
-
-        vtbl.8  d16, {q0, q1}, d16
-        vtbl.8  d17, {q0, q1}, d17
-        vtbl.8  d18, {q0, q1}, d18
-        vtbl.8  d19, {q0, q1}, d19
-        vtbl.8  d20, {q0, q1}, d20
-        vtbl.8  d21, {q0, q1}, d21
-        vtbl.8  d22, {q0, q1}, d22
-        vtbl.8  d23, {q0, q1}, d23
-
-        vmovl.u8 q2, d24
-        vmovl.u8 q3, d25
-        vmovl.u8 q12, d26
-        vmovl.u8 q13, d27
-
-        vaddw.s8 q2, d16
-        vaddw.s8 q3, d17
-        vaddw.s8 q12, d18
-        vaddw.s8 q13, d19
-
-        vqmovun.s16 d4, q2
-        vqmovun.s16 d5, q3
-        vqmovun.s16 d6, q12
-        vqmovun.s16 d7, q13
-
-        vmovl.u8 q12, d28
-        vmovl.u8 q13, d29
-        vmovl.u8 q14, d30
-        vmovl.u8 q15, d31
-
-        vaddw.s8 q12, d20
-        vaddw.s8 q13, d21
-        vaddw.s8 q14, d22
-        vaddw.s8 q15, d23
-
-        vqmovun.s16  d8, q12
-        vqmovun.s16  d9, q13
-        vqmovun.s16 d10, q14
-        vqmovun.s16 d11, q15
-
-        vst1.8     {q2-q3}, [r0,:128]!
-        vst1.8     {q4-q5}, [r0,:128], r2
-        sub    r0, #32
-        bne    1b
+        init_sao_band
+1:      subs      r12, #1
+        vld1.8    {q2-q3}, [r1,:128]!
+        sao_band_32
+        vst1.8    {q2-q3}, [r0,:128]!
+        vld1.8    {q2-q3}, [r1,:128], r3
+        sub       r1, #32
+        sao_band_32
+        vst1.8    {q2-q3}, [r0,:128], r2
+        sub       r0, #32
+        bne       1b
 
         bx lr
 endfunc
