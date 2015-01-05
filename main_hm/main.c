@@ -174,7 +174,7 @@ static void video_decode_example(const char *filename)
         libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
     }
 
-    libOpenHevcSetDebugMode(openHevcHandle, 1);
+    libOpenHevcSetDebugMode(openHevcHandle, 0);
     libOpenHevcStartDecoder(openHevcHandle);
     openHevcFrameCpy.pvY = NULL;
     openHevcFrameCpy.pvU = NULL;
