@@ -227,7 +227,7 @@ static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,
     int x, y;
 
     for (x = 0; x < 5; x++) {
-        sao_offset_val[x] = sao->offset_val[c_idx][x];
+        sao_offset_val[x] = sao->offset_val[c_idx][edge_idx[x]];
     }
 
     stride_src /= sizeof(pixel);
@@ -272,8 +272,9 @@ static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,
             for (x = 0; x < width; x++) {
                 int diff0         = CMP(src[x + src_offset], src[x + src_offset + a_stride]);
                 int diff1         = CMP(src[x + src_offset], src[x + src_offset + b_stride]);
-                int offset_val    = edge_idx[2 + diff0 + diff1];
-                dst[x + dst_offset] = av_clip_pixel(src[x + src_offset] + sao_offset_val[offset_val]);
+                int idx           = diff0 + diff1;
+                if (idx)
+                    dst[x + dst_offset] = av_clip_pixel(src[x + src_offset] + sao_offset_val[idx+2]);
             }
             src_offset += stride_src;
             dst_offset += stride_dst;
