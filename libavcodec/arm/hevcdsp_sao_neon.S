@@ -26,12 +26,12 @@
         pld      [r1]
         vld1.8   {q0, q1}, [r12]  // offset table
         ldr      r12, [sp, #4]    // height
+        vmov.u8  q14, #128
 .endm
 
 .macro sao_band_32
         vshr.u8  q8, q2, #3
         vshr.u8  q9, q3, #3
-        vmov.u8  q14, #128
         vtbl.8   d16, {q0, q1}, d16
         vtbl.8   d17, {q0, q1}, d17
         vtbl.8   d18, {q0, q1}, d18
