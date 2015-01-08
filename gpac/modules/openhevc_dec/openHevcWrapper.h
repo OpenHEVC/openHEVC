@@ -57,7 +57,6 @@ typedef struct OpenHevc_FrameInfo
    int         display_picture_number;
    int         flag; //progressive, interlaced, interlaced top field first, interlaced bottom field first.
    int64_t     nTimeStamp;
-   int        chromat_format;
 } OpenHevc_FrameInfo;
 
 typedef struct OpenHevc_Frame
