@@ -25,7 +25,7 @@
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/hevcdsp.h"
 
-#include "../bit_depth_template.c"
+#include "libavcodec/bit_depth_template.c"
 
 static void (*put_hevc_qpel_neon[4][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                    int height, int width);
@@ -145,10 +145,10 @@ void ff_hevc_transform_add_16x16_neon_8(uint8_t *_dst, int16_t *coeffs,
 void ff_hevc_transform_add_32x32_neon_8(uint8_t *_dst, int16_t *coeffs,
                                       ptrdiff_t stride);
 
-void ff_hevc_sao_band_w8_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
-void ff_hevc_sao_band_w16_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
-void ff_hevc_sao_band_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
-void ff_hevc_sao_band_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t * offset_table);
+void ff_hevc_sao_band_w8_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int8_t * offset_table, int height);
+void ff_hevc_sao_band_w16_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int8_t * offset_table, int height);
+void ff_hevc_sao_band_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int8_t * offset_table, int height);
+void ff_hevc_sao_band_w64_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int8_t * offset_table, int height);
 
 void ff_hevc_sao_edge_eo0_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
 void ff_hevc_sao_edge_eo1_w32_neon_8(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, ptrdiff_t stride_src, int height, int8_t *sao_offset_table);
@@ -182,16 +182,16 @@ static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
 
     switch(width){
     case 8:
-        ff_hevc_sao_band_w8_neon_8(_dst, _src, stride_dst, stride_src, height, offset_table);
+        ff_hevc_sao_band_w8_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
     case 16:
-        ff_hevc_sao_band_w16_neon_8(_dst, _src, stride_dst, stride_src, height, offset_table);
+        ff_hevc_sao_band_w16_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
     case 32:
-        ff_hevc_sao_band_w32_neon_8(_dst, _src, stride_dst, stride_src, height, offset_table);
+        ff_hevc_sao_band_w32_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
     case 64:
-        ff_hevc_sao_band_w64_neon_8(_dst, _src, stride_dst, stride_src, height, offset_table);
+        ff_hevc_sao_band_w64_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
     default:
         for (y = 0; y < height; y++) {
@@ -227,7 +227,7 @@ static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,
     int x, y;
 
     for (x = 0; x < 5; x++) {
-        sao_offset_val[x] = sao->offset_val[c_idx][x];
+        sao_offset_val[x] = sao->offset_val[c_idx][edge_idx[x]];
     }
 
     stride_src /= sizeof(pixel);
@@ -272,8 +272,9 @@ static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,
             for (x = 0; x < width; x++) {
                 int diff0         = CMP(src[x + src_offset], src[x + src_offset + a_stride]);
                 int diff1         = CMP(src[x + src_offset], src[x + src_offset + b_stride]);
-                int offset_val    = edge_idx[2 + diff0 + diff1];
-                dst[x + dst_offset] = av_clip_pixel(src[x + src_offset] + sao_offset_val[offset_val]);
+                int idx           = diff0 + diff1;
+                if (idx)
+                    dst[x + dst_offset] = av_clip_pixel(src[x + src_offset] + sao_offset_val[idx+2]);
             }
             src_offset += stride_src;
             dst_offset += stride_dst;
