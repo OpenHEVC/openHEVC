@@ -26,36 +26,59 @@
         pld      [r1]
         vld1.8   {q0, q1}, [r12]  // offset table
         ldr      r12, [sp, #4]    // height
-        vmov.u8  q14, #128
+        vmov.u8  q3, #128
 .endm
 
-.macro sao_band_32
-        vshr.u8  q8, q2, #3
-        vshr.u8  q9, q3, #3
-        vtbl.8   d16, {q0, q1}, d16
-        vtbl.8   d17, {q0, q1}, d17
-        vtbl.8   d18, {q0, q1}, d18
-        vtbl.8   d19, {q0, q1}, d19
-        vadd.s8  q2, q14
-        vadd.s8  q3, q14
-        vqadd.s8 q2, q8
-        vqadd.s8 q3, q9
-        vsub.s8  q2, q14
-        vsub.s8  q3, q14
+// 128 in q3
+// input q8 - q11
+// 32 cycles
+.macro sao_band_64
+        vshr.u8  q12, q8, #3
+        vshr.u8  q13, q9, #3
+        vshr.u8  q14, q10, #3
+        vshr.u8  q15, q11, #3
+        vtbl.8   d24, {d0, d1, d2, d3}, d24
+        vadd.s8  q8, q3
+        vtbl.8   d25, {d0, d1, d2, d3}, d25
+        vadd.s8  q9, q3
+        vtbl.8   d26, {d0, d1, d2, d3}, d26
+        vadd.s8  q10, q3
+        vtbl.8   d27, {d0, d1, d2, d3}, d27
+        vadd.s8  q11, q3
+        vtbl.8   d28, {d0, d1, d2, d3}, d28
+        vqadd.s8 q8, q12
+        vtbl.8   d29, {d0, d1, d2, d3}, d29
+        vqadd.s8 q9, q13
+        vtbl.8   d30, {d0, d1, d2, d3}, d30
+        vqadd.s8 q10, q14
+        vtbl.8   d31, {d0, d1, d2, d3}, d31
+        vqadd.s8 q11, q15
+        vsub.s8  q8, q3
+        vsub.s8  q9, q3
+        vsub.s8  q10, q3
+        vsub.s8  q11, q3
 .endm
 
 function ff_hevc_sao_band_w8_neon_8, export=1
         init_sao_band
-1:      subs     r12, #4
-        vld1.8   {d4}, [r1, :64], r3
-        vld1.8   {d5}, [r1, :64], r3
-        vld1.8   {d6}, [r1, :64], r3
-        vld1.8   {d7}, [r1, :64], r3
-        sao_band_32
-        vst1.8  {d4}, [r0, :64], r2
-        vst1.8  {d5}, [r0, :64], r2
-        vst1.8  {d6}, [r0, :64], r2
-        vst1.8  {d7}, [r0, :64], r2
+1:      subs     r12, #8
+        vld1.8   {d16}, [r1, :64], r3
+        vld1.8   {d17}, [r1, :64], r3
+        vld1.8   {d18}, [r1, :64], r3
+        vld1.8   {d19}, [r1, :64], r3
+        vld1.8   {d20}, [r1, :64], r3
+        vld1.8   {d21}, [r1, :64], r3
+        vld1.8   {d22}, [r1, :64], r3
+        vld1.8   {d23}, [r1, :64], r3
+        sao_band_64
+        vst1.8  {d16}, [r0, :64], r2
+        vst1.8  {d17}, [r0, :64], r2
+        vst1.8  {d18}, [r0, :64], r2
+        vst1.8  {d19}, [r0, :64], r2
+        vst1.8  {d20}, [r0, :64], r2
+        vst1.8  {d21}, [r0, :64], r2
+        vst1.8  {d22}, [r0, :64], r2
+        vst1.8  {d23}, [r0, :64], r2
         bne    1b
 
         bx lr
@@ -63,12 +86,16 @@ endfunc
 
 function ff_hevc_sao_band_w16_neon_8, export=1
         init_sao_band
-1:      subs     r12, #2
-        vld1.8  {q2}, [r1, :128], r3
-        vld1.8  {q3}, [r1, :128], r3
-        sao_band_32
-        vst1.8   {q2}, [r0, :128], r2
-        vst1.8   {q3}, [r0, :128], r2
+1:      subs     r12, #4
+        vld1.8  {q8}, [r1, :128], r3
+        vld1.8  {q9}, [r1, :128], r3
+        vld1.8  {q10}, [r1, :128], r3
+        vld1.8  {q11}, [r1, :128], r3
+        sao_band_64
+        vst1.8   {q8}, [r0, :128], r2
+        vst1.8   {q9}, [r0, :128], r2
+        vst1.8   {q10}, [r0, :128], r2
+        vst1.8   {q11}, [r0, :128], r2
         bne    1b
 
         bx lr
@@ -76,10 +103,12 @@ endfunc
 
 function ff_hevc_sao_band_w32_neon_8, export=1
         init_sao_band
-1:      subs     r12, #1
-        vld1.8   {q2-q3}, [r1, :128], r3
-        sao_band_32
-        vst1.8   {q2-q3}, [r0, :128], r2
+1:      subs     r12, #2
+        vld1.8   {q8-q9}, [r1, :128], r3
+        vld1.8   {q10-q11}, [r1, :128], r3
+        sao_band_64
+        vst1.8   {q8-q9}, [r0, :128], r2
+        vst1.8   {q10-q11}, [r0, :128], r2
         bne      1b
 
         bx       lr
@@ -89,13 +118,12 @@ function ff_hevc_sao_band_w64_neon_8, export=1
         init_sao_band
 1:      subs      r12, #1
         pld       [r1, r3]
-        vld1.8    {q2-q3}, [r1, :128]!
-        sao_band_32
-        vst1.8    {q2-q3}, [r0, :128]!
-        vld1.8    {q2-q3}, [r1, :128], r3
+        vld1.8    {q8-q9}, [r1, :128]!
+        vld1.8    {q10-q11}, [r1, :128], r3
         sub       r1, #32
-        sao_band_32
-        vst1.8    {q2-q3}, [r0, :128], r2
+        sao_band_64
+        vst1.8    {q8-q9}, [r0, :128]!
+        vst1.8    {q10-q11}, [r0, :128], r2
         sub       r0, #32
         bne       1b
 
@@ -121,7 +149,6 @@ endfunc
         vcgt.u8  q1,  q5, q9
         vcgt.u8 q15,  q9, q5
         vsub.s8  q0, q14, q0 // diff1
-
         vsub.s8  q1, q15, q1
 
         vadd.s8  q0, q12 //diff0 + diff1
@@ -157,27 +184,25 @@ endfunc
 
         vmov.u8  q15, #128 // s8 #-128
         vtbl.8   d0, {d24}, d0
+        vadd.s8  q13,  q4, q15
         vtbl.8   d1, {d24}, d1
+        vadd.s8  q14,  q5, q15
         vtbl.8   d2, {d24}, d2
+        vqadd.s8 q0, q13
         vtbl.8   d3, {d24}, d3
+        vqadd.s8 q1, q14
         vtbl.8   d4, {d24}, d4
+        vadd.s8  q13,  q6, q15
         vtbl.8   d5, {d24}, d5
+        vadd.s8  q14,  q7, q15
         vtbl.8   d6, {d24}, d6
+        vqadd.s8 q2, q13
         vtbl.8   d7, {d24}, d7
-
-        vadd.s8  q12,  q4, q15
-        vadd.s8  q13,  q5, q15
-        vadd.s8  q14,  q6, q15
-        vadd.s8  q15,  q7, q15
-        vqadd.s8 q12,  q0
-        vqadd.s8 q15,  q3
-        vmov.u8   q3, #128 // s8 #-128
-        vqadd.s8 q13,  q1
-        vqadd.s8 q14,  q2
-        vsub.s8   q0, q12, q3
-        vsub.s8   q1, q13, q3
-        vsub.s8   q2, q14, q3
-        vsub.s8   q3, q15, q3
+        vqadd.s8 q3, q14
+        vsub.s8   q0, q15
+        vsub.s8   q1, q15
+        vsub.s8   q2, q15
+        vsub.s8   q3, q15
         vst1.8  {q0-q1}, [r0, :128]!
         vst1.8  {q2-q3}, [r0, :128], r2
         sub     r0, #32
@@ -342,13 +367,12 @@ endfunc
 
         vmov.u8  q10, #128
         vtbl.8   d0, {d31}, d0
+        vadd.s8  q11, q2, q10
         vtbl.8   d1, {d31}, d1
+        vadd.s8  q12, q3, q10
         vtbl.8   d2, {d31}, d2
+        vqadd.s8 q11, q0
         vtbl.8   d3, {d31}, d3
-
-        vadd.s8    q11, q2, q10
-        vadd.s8    q12, q3, q10
-        vqadd.s8   q11, q0
         vqadd.s8   q12, q1
         vsub.s8    q0, q11, q10
         vsub.s8    q1, q12, q10

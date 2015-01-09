@@ -171,6 +171,7 @@ static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
     int8_t offset_table[32] = { 0 };
     int k, y, x;
     int shift  = 3; // BIT_DEPTH - 5
+    int cwidth = 0;
     int16_t *sao_offset_val = sao->offset_val[c_idx];
     uint8_t sao_left_class  = sao->band_position[c_idx];
 
@@ -180,7 +181,10 @@ static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
     for (k = 0; k < 4; k++)
         offset_table[(k + sao_left_class) & 31] = sao_offset_val[k + 1];
 
-    switch(width){
+    if (height % 8 == 0)
+        cwidth = width;
+
+    switch(cwidth){
     case 8:
         ff_hevc_sao_band_w8_neon_8(_dst, _src, stride_dst, stride_src, offset_table, height);
         break;
@@ -225,14 +229,18 @@ static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,
     int src_offset = 0;
     int dst_offset = 0;
     int x, y;
+    int cwidth = 0;
 
     for (x = 0; x < 5; x++) {
         sao_offset_val[x] = sao->offset_val[c_idx][edge_idx[x]];
     }
 
+    if (height % 8 == 0)
+        cwidth = width;
+
     stride_src /= sizeof(pixel);
     stride_dst /= sizeof(pixel);
-    switch (width) {
+    switch (cwidth) {
     case 32:
         switch(eo) {
         case 0:
@@ -274,10 +282,10 @@ static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,
                 int diff1         = CMP(src[x + src_offset], src[x + src_offset + b_stride]);
                 int idx           = diff0 + diff1;
                 if (idx)
-                    dst[x + dst_offset] = av_clip_pixel(src[x + src_offset] + sao_offset_val[idx+2]);
+                    dst[x] = av_clip_pixel(src[x] + sao_offset_val[idx+2]);
             }
-            src_offset += stride_src;
-            dst_offset += stride_dst;
+            src += stride_src;
+            dst += stride_dst;
         }
     }
 }
