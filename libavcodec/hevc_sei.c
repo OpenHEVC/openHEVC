@@ -101,7 +101,7 @@ static int decode_pic_timing(HEVCContext *s)
             case 11 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "top field paired with next bottom field in output order\n"); break;
             case 12 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "bottom field paired with next top field in output order\n"); break;
         }
-        
+
         if (s->picture_struct == 1 || s->picture_struct == 11)
             s->field_order = AV_FIELD_TT;
         else if (s->picture_struct == 2 || s->picture_struct == 12)
