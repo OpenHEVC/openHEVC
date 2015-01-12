@@ -38,6 +38,7 @@
 #include "hevc_defs.h"
 
 #define TEST_MV_POC
+//#define USE_SAO_SMALL_BUFFER /* reduce the memory used by SAO */
 
 #define HM_MV 1
 #define MAX_DPB_SIZE 16 // A.4.1
@@ -948,7 +949,9 @@ typedef struct HEVCLocalContext {
     CodingUnit          cu;
     PredictionUnit      pu;
     NeighbourAvailable  na;
-
+#ifdef USE_SAO_SMALL_BUFFER
+    uint8_t *sao_pixel_buffer;
+#endif
     uint8_t cabac_state[HEVC_CONTEXTS];
 
     uint8_t stat_coeff[4];
@@ -996,9 +999,14 @@ typedef struct HEVCContext {
     uint8_t *cabac_state;
 
     AVFrame *frame;
-    AVFrame *sao_frame;
-    AVFrame *tmp_frame;
     AVFrame *output_frame;
+#ifdef USE_SAO_SMALL_BUFFER
+    uint8_t *sao_pixel_buffer_h[3];
+    uint8_t *sao_pixel_buffer_v[3];
+#else
+    AVFrame *tmp_frame;
+    AVFrame *sao_frame;
+#endif
 
     const HEVCVPS *vps;
     const HEVCSPS *sps;
