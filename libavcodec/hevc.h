@@ -38,7 +38,7 @@
 #include "hevc_defs.h"
 
 #define TEST_MV_POC
-//#define USE_SAO_SMALL_BUFFER /* reduce the memory used by SAO */
+#define USE_SAO_SMALL_BUFFER /* reduce the memory used by SAO */
 
 #define HM_MV 1
 #define MAX_DPB_SIZE 16 // A.4.1

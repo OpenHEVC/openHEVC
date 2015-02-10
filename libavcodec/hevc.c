@@ -2706,8 +2706,8 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
 
 static void tiles_filters(HEVCContext *s)
 {
-    uint16_t ctb_size        = 1 << s->sps->log2_ctb_size;
-    int min_size            = 1 << s->sps->log2_min_tb_size;
+    uint16_t ctb_size = 1 << s->sps->log2_ctb_size;
+    int min_size      = 4;
     int ctb_addr_rs;
     int x0, y0, i;
 

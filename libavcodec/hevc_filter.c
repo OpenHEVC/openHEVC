@@ -251,6 +251,9 @@ static void restore_tqb_pixels(HEVCContext *s,
 
 static void sao_filter_CTB(HEVCContext *s, int x, int y)
 {
+#if defined(USE_SAO_SMALL_BUFFER)
+    HEVCLocalContext *lc = s->HEVClc;
+#endif
     int c_idx;
     int edges[4];  // 0 left 1 top 2 right 3 bottom
     int x_ctb                = x >> s->sps->log2_ctb_size;
