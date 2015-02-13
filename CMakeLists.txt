@@ -34,6 +34,7 @@ my_check_function_exists(sched_getaffinity      SCHED_GETAFFINITY_FOUND)
 my_check_function_exists(strerror_r             STRERROR_R_FOUND)
 my_check_function_exists(sysconf                SYSCONF_FOUND)
 my_check_function_exists(usleep                 USLEEP_FOUND)
+my_check_function_exists(localtime_r            LOCALTIME_R_FOUND)
 
 my_check_include_files(fcntl.h                  FCNTL_H_FOUND)
 my_check_include_files(pthread.h                PTHREADS_FOUND)

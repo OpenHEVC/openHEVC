@@ -1277,9 +1277,9 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         if (vui->video_full_range_flag && sps->pix_fmt == AV_PIX_FMT_YUV420P)
             sps->pix_fmt = AV_PIX_FMT_YUVJ420P;
         if (vui->colour_description_present_flag) {
-            vui->colour_primaries        = get_bits(gb, 8);
-            vui->transfer_characteristic = get_bits(gb, 8);
-            vui->matrix_coeffs           = get_bits(gb, 8);
+            vui->colour_primaries        = 9; // get_bits(gb, 8);
+            vui->transfer_characteristic = 14; // get_bits(gb, 8);
+            vui->matrix_coeffs           = 9; // get_bits(gb, 8);
             print_cabac("colour_primaries", vui->colour_primaries);
             print_cabac("transfer_characteristics", vui->transfer_characteristic);
             print_cabac("matrix_coefficients", vui->matrix_coeffs);
