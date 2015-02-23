@@ -2299,7 +2299,7 @@ mc_red_func(epel_hv,12, 8, 32);
 mc_red_func(epel_hv,12, 8, 48);
 mc_red_func(epel_hv,12, 8, 64);
 
-#endif //HAVE_SSE4
+#endif //HAVE_SSSE3
 
 #endif //OPTI_ASM
 
