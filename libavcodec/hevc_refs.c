@@ -83,8 +83,10 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         if (frame->frame->buf[0])
             continue;
 
-        if (s->interlaced)
+        if (s->interlaced) {
             s->avctx->height = s->sps->output_height * 2;
+            s->avctx->coded_height = s->avctx->height;
+        }
 
         ret = ff_thread_get_buffer(s->avctx, &frame->tf,
                                    AV_GET_BUFFER_FLAG_REF);
@@ -193,32 +195,24 @@ int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc)
     return 0;
 }
 
-static void copy_field(HEVCContext *s, AVFrame *_dst, AVFrame *_src) {
-    int stride = _dst->linesize[0];
-    uint8_t *dst = _dst->data[0] + stride / 2;
-    uint8_t *src = _src->data[0];
+static void copy_field(HEVCContext *s, AVFrame *_dst, AVFrame *_src, int height) {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(_src->format);
+    int i, j, planes_nb = 0;
 
-    int i, j, k;
+    for (i = 0; i < desc->nb_components; i++)
+        planes_nb = FFMAX(planes_nb, desc->comp[i].plane + 1);
 
-    for (j = 0; j < s->sps->height; j++) {
-        for (i = 0; i < stride / 2; i++) {
-            dst[i] = src[i];
+     for (i = 0; i < planes_nb; i++) {
+        int h = height;
+        uint8_t *dst = _dst->data[i] + _dst->linesize[i] / 2;
+        uint8_t *src = _src->data[i];
+        if (i == 1 || i == 2) {
+            h = FF_CEIL_RSHIFT(height, desc->log2_chroma_h);
         }
-        dst += stride;
-        src += stride;
-    }
-
-    for (k = 1; k < 3; k++) {
-        stride = _dst->linesize[k];
-        dst = _dst->data[k] + stride / 2;
-        src = _src->data[k];
-
-        for (j = 0; j < s->sps->height / 2; j++) {
-            for (i = 0; i < stride / 2; i++) {
-                dst[i] = src[i];
-            }
-            dst += stride;
-            src += stride;
+        for (j = 0; j < h; j++) {
+            memcpy(dst, src, _src->linesize[i] / 2);
+            dst += _dst->linesize[i];
+            src += _src->linesize[i];
         }
     }
 
@@ -287,17 +281,22 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 
                 frame->flags &= ~(HEVC_FRAME_FIRST_FIELD);
                 field = &s->DPB[min_idx[1]];
-                if (field->frame->interlaced_frame &&
+                if (field->poc != s->poc &&
+                    field->frame->interlaced_frame &&
                     (field->field_order != AV_FIELD_TT ||
                      field->field_order != AV_FIELD_BB)) {
                     if (s->threads_type & FF_THREAD_FRAME )
                         ff_thread_await_progress(&field->tf, s->sps->height, 0);
 
-                    copy_field(s, src, field->frame);
+                    copy_field(s, src, field->frame, s->sps->height);
                 }
             }
 
             ret = av_frame_ref(dst, src);
+
+            if (frame->frame->interlaced_frame)
+                for (i = 0; i < 3; i++)
+                    dst->linesize[i] /= 2;
 
             if (frame->flags & HEVC_FRAME_FLAG_BUMPING)
                 ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_BUMPING);
@@ -316,8 +315,6 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
                     else
                         ff_hevc_unref_frame(s, field, HEVC_FRAME_FLAG_OUTPUT);
 
-                    for (i = 0; i < 3; i++)
-                        dst->linesize[i] /= 2;
                 }
             }
 
