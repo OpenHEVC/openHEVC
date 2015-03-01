@@ -694,7 +694,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
             return 0;
     }
 
-    if (s->nuh_layer_id > 0 && s->vps->max_one_active_ref_layer_flag > 0) {
+    if (s->nuh_layer_id > 0 && s->vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag > 0) {
         if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) &&
             s->sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
@@ -774,9 +774,9 @@ int ff_hevc_frame_rps(HEVCContext *s)
         }
 
     if (s->nuh_layer_id) {
-        for (i = 0; i < s->vps->max_one_active_ref_layer_flag; i ++) {
-            if ((vps->view_id_val[s->nuh_layer_id] <= vps->view_id_val[0]) &&
-                (vps->view_id_val[s->nuh_layer_id] <= vps->view_id_val[vps->ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
+        for (i = 0; i < s->vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag; i ++) {
+            if ((vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[0]) &&
+                (vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
                 //IL_REF0 , IL_REF1
                 ret = add_candidate_ref(s, &rps[IL_REF0], s->poc, HEVC_FRAME_FLAG_LONG_REF);
             }
@@ -827,23 +827,20 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
                                         (s->nal_unit_type<= NAL_CRA_NUT))) {
         return s->sh.active_num_ILR_ref_idx;
     }
-
     if (rps) {
         for (i = 0; i < rps->num_negative_pics; i++)
             ret += !!rps->used[i];
         for (; i < rps->num_delta_pocs; i++)
             ret += !!rps->used[i];
     }
-
     if (long_rps) {
         for (i = 0; i < long_rps->nb_refs; i++)
             ret += !!long_rps->used[i];
     }
-
-    if(s->nuh_layer_id) {
-        for( i = 0; i < s->vps->max_one_active_ref_layer_flag; i ++) {
-            ret++;
-        }
-    }
+    if(s->nuh_layer_id)// {
+//        for( i = 0; i < s->vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag; i ++) {
+            ret += s->sh.active_num_ILR_ref_idx;
+      //  }
+   // }
     return ret;
 }

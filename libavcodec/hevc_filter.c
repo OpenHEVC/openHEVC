@@ -1260,7 +1260,7 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
         int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
         int bl_edge_left   =  (MAX_EDGE - 1 - bl_x ) > 0 ?  0: MAX_EDGE - 1;
         int bl_edge_top    = ( MAX_EDGE - 1 - bl_y ) > 0 ?  0: MAX_EDGE - 1;
-        int ref_layer_id = s->vps->ref_layer_id[s->nuh_layer_id][0];
+        int ref_layer_id = s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
         int16_t *tmp0;
 
         if(bl_x+bPbW > bl_width)
@@ -1332,7 +1332,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
 
         int bl_edge_left  = (MAX_EDGE_CR - 1 - bl_x) > 0 ?  0 : MAX_EDGE_CR - 1;
         int bl_edge_top   = (MAX_EDGE_CR - 1 - bl_y) > 0 ?  0 : MAX_EDGE_CR - 1;
-        int ref_layer_id = s->vps->ref_layer_id[s->nuh_layer_id][0];
+        int ref_layer_id = s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
 
         bPbW = bl_x+bPbW > bl_width  ? bl_width -bl_x:bPbW;
         bPbH = bl_y+bPbH > bl_height ? bl_height-bl_y:bPbH;

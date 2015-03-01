@@ -39,7 +39,8 @@ typedef struct OpenHevc_Rational{
 
 
 enum ChromaFormat {
-    YUV420 = 0,
+    YUV400 = 0,
+    YUV420,
     YUV422,
     YUV444,
 };
