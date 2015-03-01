@@ -902,46 +902,6 @@ typedef struct HEVCPPS {
 
 } HEVCPPS;
 
-enum ScalingListSize
-{
-    SCALING_LIST_4x4 = 0,
-    SCALING_LIST_8x8,
-    SCALING_LIST_16x16,
-    SCALING_LIST_32x32,
-    SCALING_LIST_SIZE_NUM
-};
-static const char MatrixType[4][6][20] =
-{
-    {
-        "INTRA4X4_LUMA",
-        "INTRA4X4_CHROMAU",
-        "INTRA4X4_CHROMAV",
-        "INTER4X4_LUMA",
-        "INTER4X4_CHROMAU",
-        "INTER4X4_CHROMAV"
-    },
-    {
-        "INTRA8X8_LUMA",
-        "INTRA8X8_CHROMAU",
-        "INTRA8X8_CHROMAV",
-        "INTER8X8_LUMA",
-        "INTER8X8_CHROMAU",
-        "INTER8X8_CHROMAV"
-    },
-    {
-        "INTRA16X16_LUMA",
-        "INTRA16X16_CHROMAU",
-        "INTRA16X16_CHROMAV",
-        "INTER16X16_LUMA",
-        "INTER16X16_CHROMAU", 
-        "INTER16X16_CHROMAV"  
-    },
-    {
-        "INTRA32X32_LUMA",
-        "INTER32X32_LUMA",
-    },
-};
-
 
 
 typedef struct SliceHeader {

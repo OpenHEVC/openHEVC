@@ -2281,30 +2281,6 @@ static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
     }
 }
 
-
-
-static void parseScalingList(GetBitContext *gb, ScalingList *scaling_list) {
-    uint8_t  code, sizeId, listId;
-    uint8_t g_scalingListNum[SCALING_LIST_SIZE_NUM] = {6,6,6,2};
-    for(sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++) {
-        for(listId = 0; listId <  g_scalingListNum[sizeId]; listId++) {
-            int scaling_list_pred_mode_flag = get_bits1(gb);
-            if(!scaling_list_pred_mode_flag) { //Copy Mode
-                code = get_ue_golomb_long(gb);
-                /*
-                if( sizeId > SCALING_LIST_8x8 )
-                {
-                }*/
-            }/*
-            else //DPCM Mode
-            {
-
-            }*/
-        }
-    }
-}
-
-
 int ff_hevc_decode_nal_pps(HEVCContext *s) {
     GetBitContext *gb = &s->HEVClc->gb;
     HEVCSPS      *sps = NULL;
