@@ -200,13 +200,13 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 
 
 static int profile_tier (GetBitContext *gb, PTL *ptl) {
-    int j; 
+    int j;
+    if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 16 + 16 + 12)
+        return -1;
     ptl->profile_space   = get_bits(gb, 2);
     print_cabac("XXX_profile_space", ptl->profile_space);
     ptl->tier_flag       = get_bits1(gb);
 
-    if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 16 + 16 + 12)
-        return -1;
     print_cabac("XXX_tier_flag", ptl->tier_flag);
     ptl->profile_idc     = get_bits(gb, 5);
     print_cabac("XXX_profile_idc", ptl->profile_idc);
@@ -265,7 +265,7 @@ static int profile_tier (GetBitContext *gb, PTL *ptl) {
     skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
     skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
 #endif
-    return -1;
+    return 0;
 }
 
 static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParameter *Sublayer_HRDPar, int CpbCnt, int sub_pic_hrd_params_present_flag ) {
@@ -1133,7 +1133,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
                 }
             }
     
-    int vps_non_vui_extension_length, vps_vui_alignment_bit_equal_to_one, vps_non_vui_extension_data_byte;
+    int vps_non_vui_extension_length, vps_non_vui_extension_data_byte;
 	vps_non_vui_extension_length = get_ue_golomb_long(gb);
     print_cabac("vps_non_vui_extension_length", vps_non_vui_extension_length);
 
@@ -1143,7 +1143,6 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
 
     if( vps_vui_present_flag ) {
 		align_get_bits(gb);
-        //vps_vui_alignment_bit_equal_to_one = get_bits1(gb);
         parse_vps_vui(s, vps);
     }
 }
@@ -2793,7 +2792,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s) {
     if (get_bits_left(gb) < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Overread PPS by %d bits\n", -get_bits_left(gb));
-        goto err;
+      /*  goto err; */ /* TODO with  EXT_A_ericsson_4.bit */
     }
 
     av_freep(&col_bd);
