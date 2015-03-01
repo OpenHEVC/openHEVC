@@ -198,11 +198,15 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
     return 0;
 }
 
-static void profile_tier (GetBitContext *gb, PTL *ptl) {
+
+static int profile_tier (GetBitContext *gb, PTL *ptl) {
     int j; 
     ptl->profile_space   = get_bits(gb, 2);
     print_cabac("XXX_profile_space", ptl->profile_space);
     ptl->tier_flag       = get_bits1(gb);
+
+    if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 16 + 16 + 12)
+        return -1;
     print_cabac("XXX_tier_flag", ptl->tier_flag);
     ptl->profile_idc     = get_bits(gb, 5);
     print_cabac("XXX_profile_idc", ptl->profile_idc);
@@ -261,6 +265,7 @@ static void profile_tier (GetBitContext *gb, PTL *ptl) {
     skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
     skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
 #endif
+    return -1;
 }
 
 static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParameter *Sublayer_HRDPar, int CpbCnt, int sub_pic_hrd_params_present_flag ) {
@@ -281,11 +286,15 @@ static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParameter *Su
 }
 
 
-
-static void profile_tier_level(GetBitContext *gb, int prPrFlag, PTLCommon *ptl, int maxNumSubLayersMinus1) {
+static int profile_tier_level(HEVCContext *s, int prPrFlag, PTLCommon *ptl, int maxNumSubLayersMinus1) {
     int i;
+    GetBitContext   *gb             = &s->HEVClc->gb;
     if(prPrFlag)
-        profile_tier(gb, &ptl->Ptl_general);
+        if (profile_tier(gb, &ptl->Ptl_general) < 0 || get_bits_left(gb) < 8 + 8*2) {
+            av_log(s->avctx, AV_LOG_ERROR, "PTL information too short\n");
+            return -1;
+        }
+
     ptl->Ptl_general.level_idc = get_bits(gb, 8);
     print_cabac("general_level_idc", ptl->Ptl_general.level_idc);
     for( i = 0; i < maxNumSubLayersMinus1; i++ ) {
@@ -311,16 +320,23 @@ static void profile_tier_level(GetBitContext *gb, int prPrFlag, PTLCommon *ptl, 
 #else
         if( prPrFlag && ptl->sub_layer_profile_present_flag[i] )
 #endif
-            profile_tier(gb, &ptl->Ptl_sublayer[i]);
+            if(profile_tier(gb, &ptl->Ptl_sublayer[i]) < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "PTL information too short\n");
+                return -1;
+            }
+
         if( ptl->sub_layer_level_present_flag[i] ) {
             ptl->Ptl_sublayer[i].level_idc = get_bits(gb, 8);
             print_cabac("sub_layer_level_idc", ptl->Ptl_sublayer[i].level_idc);
         }
     }
+
+    return 0;
 }
 
-static void hrd_parameters( GetBitContext *gb, HRDParameter *HrdParam, int commonInfPresentFlag, int maxNumSubLayersMinus1 ) {
-    int i; 
+static int hrd_parameters( HEVCContext *s, HRDParameter *HrdParam, int commonInfPresentFlag, int maxNumSubLayersMinus1 ) {
+    int i;
+    GetBitContext   *gb   = &s->HEVClc->gb;  
 	if( commonInfPresentFlag ) {
 		HrdParam->nal_hrd_parameters_present_flag = get_bits1(gb);
         print_cabac("nal_hrd_parameters_present_flag", HrdParam->nal_hrd_parameters_present_flag);
@@ -379,6 +395,10 @@ static void hrd_parameters( GetBitContext *gb, HRDParameter *HrdParam, int commo
         if(!HrdParam->low_delay_hrd_flag[i]) {
             HrdParam->cpb_cnt_minus1[i] = get_ue_golomb_long(gb);
             print_cabac("cpb_cnt_minus1", HrdParam->cpb_cnt_minus1[i]);
+            if (HrdParam->cpb_cnt_minus1[i] < 0 || HrdParam->cpb_cnt_minus1[i] > 31) {
+                av_log(s->avctx, AV_LOG_ERROR, "nb_cpb %d invalid\n", HrdParam->cpb_cnt_minus1[i]);
+                return AVERROR_INVALIDDATA;
+            }
         }
         if( HrdParam->nal_hrd_parameters_present_flag )
             sub_layer_hrd_parameters(gb, &HrdParam->Sublayer_HRDPar[i], HrdParam->cpb_cnt_minus1[i], HrdParam->sub_pic_hrd_params_present_flag);
@@ -386,12 +406,14 @@ static void hrd_parameters( GetBitContext *gb, HRDParameter *HrdParam, int commo
         if( HrdParam->vcl_hrd_parameters_present_flag )
             sub_layer_hrd_parameters(gb, &HrdParam->Sublayer_HRDPar[i], HrdParam->cpb_cnt_minus1[i], HrdParam->sub_pic_hrd_params_present_flag);
     }
+    return 0; 
 }
 
 
-static void vps_vui_bsp_hrd_params(GetBitContext *gb, HEVCVPS *vps, BspHrdParams *Bsp_Hrd_Params) {
+static void vps_vui_bsp_hrd_params(HEVCContext *s, HEVCVPS *vps, BspHrdParams *Bsp_Hrd_Params) {
     int i, k, h, j, r, t;
     HEVCVPSExt  *Hevc_VPS_Ext = &vps->Hevc_VPS_Ext;
+    GetBitContext   *gb             = &s->HEVClc->gb;  
 	Bsp_Hrd_Params->vps_num_add_hrd_params  = get_ue_golomb_long(gb);
 	for( i = vps->vps_num_hrd_parameters; i < vps->vps_num_hrd_parameters + Bsp_Hrd_Params->vps_num_add_hrd_params; i++ ) {
         if( i > 0 )
@@ -402,7 +424,7 @@ static void vps_vui_bsp_hrd_params(GetBitContext *gb, HEVCVPS *vps, BspHrdParams
             }
         }
         Bsp_Hrd_Params->num_sub_layer_hrd_minus1[i] = get_ue_golomb_long(gb);
-        hrd_parameters( gb, &Bsp_Hrd_Params->HrdParam[i], Bsp_Hrd_Params->cprms_add_present_flag[i], vps->vps_max_sub_layers );
+        hrd_parameters( s, &Bsp_Hrd_Params->HrdParam[i], Bsp_Hrd_Params->cprms_add_present_flag[i], vps->vps_max_sub_layers );
     }
 	if( (vps->vps_num_hrd_parameters + Bsp_Hrd_Params->vps_num_add_hrd_params) > 0 )
         for( h = 1; h < Hevc_VPS_Ext->NumOutputLayerSets; h++ ) {
@@ -559,9 +581,10 @@ static void Video_Signal_Info (GetBitContext *gb, VideoSignalInfo *video_signal_
 }
 
 
-static void parse_vps_vui(GetBitContext *gb, HEVCVPS *vps) {
+static void parse_vps_vui(HEVCContext *s, HEVCVPS *vps) {
     int i,j;
-    VPSVUI *vps_vui = &vps->Hevc_VPS_Ext.VpsVui;
+    VPSVUI *vps_vui     = &vps->Hevc_VPS_Ext.VpsVui;
+    GetBitContext   *gb = &s->HEVClc->gb;
     print_cabac(" \n --- parse vps vui --- \n", 0);
     vps_vui->cross_layer_pic_type_aligned_flag  = get_bits1(gb);
     print_cabac("cross_layer_pic_type_aligned_flag", vps_vui->cross_layer_pic_type_aligned_flag); 
@@ -669,7 +692,7 @@ static void parse_vps_vui(GetBitContext *gb, HEVCVPS *vps) {
     vps_vui->vps_vui_bsp_hrd_present_flag = get_bits1(gb);
     print_cabac("vps_vui_bsp_hrd_present_flag", vps_vui->vps_vui_bsp_hrd_present_flag);
     if( vps_vui->vps_vui_bsp_hrd_present_flag )
-        vps_vui_bsp_hrd_params(gb, vps, & vps_vui->Bsp_Hrd_Params );
+        vps_vui_bsp_hrd_params(s, vps, & vps_vui->Bsp_Hrd_Params );
 
     for(i = 1; i < vps->vps_max_layers; i++ )
         if( vps->Hevc_VPS_Ext.num_direct_ref_layers[ vps->Hevc_VPS_Ext.layer_id_in_nuh[ i ] ]  ==  0 ) {
@@ -866,7 +889,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     print_cabac(" \n --- parse vps extention  --- \n ", s->nuh_layer_id);
 
     if( vps->vps_max_layers > 1  &&  vps->vps_base_layer_internal_flag )
-        profile_tier_level(gb, 0, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers-1);
+        profile_tier_level(s, 0, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers-1);
 
     Hevc_VPS_Ext->splitting_flag = get_bits1(gb);
     print_cabac("splitting_flag", Hevc_VPS_Ext->splitting_flag);
@@ -988,7 +1011,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
         //  TO Do  Copy profile from previous one 
 		Hevc_VPS_Ext->vps_profile_present_flag[i] = get_bits1(gb);
         print_cabac("vps_profile_present_flag", Hevc_VPS_Ext->vps_profile_present_flag[i]);
-        profile_tier_level(gb, Hevc_VPS_Ext->vps_profile_present_flag[i], &Hevc_VPS_Ext->ptl[i], vps->vps_max_sub_layers-1);
+        profile_tier_level(s, Hevc_VPS_Ext->vps_profile_present_flag[i], &Hevc_VPS_Ext->ptl[i], vps->vps_max_sub_layers-1);
 	}
 
     
@@ -1121,7 +1144,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     if( vps_vui_present_flag ) {
 		align_get_bits(gb);
         //vps_vui_alignment_bit_equal_to_one = get_bits1(gb);
-        parse_vps_vui(gb, vps);
+        parse_vps_vui(s, vps);
     }
 }
 
@@ -1159,7 +1182,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "vps_reserved_ffff_16bits is not 0xffff\n");
         goto err;
     }
-    profile_tier_level(gb, 1, &vps->ptl, vps->vps_max_sub_layers-1);
+    profile_tier_level(s, 1, &vps->ptl, vps->vps_max_sub_layers-1);
 
     vps->vps_sub_layer_ordering_info_present_flag = get_bits1(gb);
     print_cabac("vps_sub_layer_ordering_info_present_flag", vps->vps_sub_layer_ordering_info_present_flag);
@@ -1185,7 +1208,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     }
     vps->vps_max_layer_id   = get_bits(gb, 6);
     vps->vps_num_layer_sets = get_ue_golomb_long(gb) + 1;
-    if (vps->vps_num_layer_sets >= 1024) {
+    if ((vps->vps_num_layer_sets - 1LL) * (vps->vps_max_layer_id + 1LL) > get_bits_left(gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "vps_num_layer_sets out of range: %d\n",
                vps->vps_num_layer_sets - 1);
         goto err;
@@ -1228,11 +1251,17 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
                 common_inf_present = get_bits1(gb);
                 print_cabac("cprms_present_flag", common_inf_present); 
             }
-            hrd_parameters( gb, &vps->HrdParam, common_inf_present, vps->vps_max_sub_layers -1);
+            hrd_parameters( s, &vps->HrdParam, common_inf_present, vps->vps_max_sub_layers -1);
         }
     }
     vps->vps_extension_flag = get_bits1(gb);
     print_cabac("vps_extension_flag", vps->vps_extension_flag);
+
+    if (get_bits_left(gb) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Overread VPS by %d bits\n", -get_bits_left(gb));
+        goto err;
+    }
 
     if(vps->vps_extension_flag){ // vps_extension_flag
         align_get_bits(gb);
@@ -1298,9 +1327,9 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         if (vui->video_full_range_flag && sps->pix_fmt == AV_PIX_FMT_YUV420P)
             sps->pix_fmt = AV_PIX_FMT_YUVJ420P;
         if (vui->colour_description_present_flag) {
-            vui->colour_primaries        = get_bits(gb, 8);
-            vui->transfer_characteristic = get_bits(gb, 8);
-            vui->matrix_coeffs           = get_bits(gb, 8);
+            vui->colour_primaries        = 9; get_bits(gb, 8);
+            vui->transfer_characteristic = 2; get_bits(gb, 8);
+            vui->matrix_coeffs           = 2; get_bits(gb, 8);
             print_cabac("colour_primaries", vui->colour_primaries);
             print_cabac("transfer_characteristics", vui->transfer_characteristic);
             print_cabac("matrix_coefficients", vui->matrix_coeffs);
@@ -1380,7 +1409,7 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         vui->vui_hrd_parameters_present_flag = get_bits1(gb);
         print_cabac("hrd_parameters_present_flag", vui->vui_hrd_parameters_present_flag);
         if (vui->vui_hrd_parameters_present_flag)
-            hrd_parameters( gb, &sps->HrdParam, vui->vui_hrd_parameters_present_flag, sps->max_sub_layers -1 );
+            hrd_parameters( s, &sps->HrdParam, vui->vui_hrd_parameters_present_flag, sps->max_sub_layers -1 );
     }
 
     vui->bitstream_restriction_flag = get_bits1(gb);
@@ -1568,7 +1597,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     if(!bMultiLayerExtSpsFlag) {
         sps->m_bTemporalIdNestingFlag = get_bits1(gb);
         print_cabac("sps_temporal_id_nesting_flag", sps->m_bTemporalIdNestingFlag);
-        profile_tier_level(gb, 1, &sps->ptl, sps->max_sub_layers-1);
+        profile_tier_level(s, 1, &sps->ptl, sps->max_sub_layers-1);
     } else { // Not sure for this
         if (sps->max_sub_layers > 1)
             sps->m_bTemporalIdNestingFlag = vps->vps_temporal_id_nesting_flag;
@@ -2051,6 +2080,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR,
                "max transform block size out of range: %d\n",
                sps->log2_max_trafo_size);
+        goto err;
+    }
+
+    if (get_bits_left(gb) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Overread SPS by %d bits\n", -get_bits_left(gb));
         goto err;
     }
 
@@ -2753,6 +2788,12 @@ int ff_hevc_decode_nal_pps(HEVCContext *s) {
             }
             pps->min_tb_addr_zs[y * (sps->tb_mask+2) + x] = val;
         }
+    }
+
+    if (get_bits_left(gb) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Overread PPS by %d bits\n", -get_bits_left(gb));
+        goto err;
     }
 
     av_freep(&col_bd);
