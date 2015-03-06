@@ -168,6 +168,13 @@ void ff_upsample_filter_block_luma_h_x2_neon( int16_t *_dst, ptrdiff_t _dststrid
 void ff_upsample_filter_block_luma_v_x2_neon( uint8_t *_dst, ptrdiff_t _dststride, int16_t *_src, ptrdiff_t _srcstride,
                                                   int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                                   const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+void ff_upsample_filter_block_cr_h_x2_neon(  int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+                                                int x_EL, int x_BL, int block_w, int block_h, int widthEL,
+                                                const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+void ff_upsample_filter_block_cr_v_x2_neon( uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+                                                int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
+                                                const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+
 static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                     SAOParams *sao,
@@ -384,8 +391,8 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
 #ifdef SVC_EXTENSION
             c->upsample_filter_block_luma_h[1] = ff_upsample_filter_block_luma_h_x2_neon;
             c->upsample_filter_block_luma_v[1] = ff_upsample_filter_block_luma_v_x2_neon;
-            /*c->upsample_filter_block_cr_h[1] = ff_upsample_filter_block_cr_h_x2_neon;
-            c->upsample_filter_block_cr_v[1] = ff_upsample_filter_block_cr_v_x2_neon;*/
+            c->upsample_filter_block_cr_h[1] = ff_upsample_filter_block_cr_h_x2_neon;
+            c->upsample_filter_block_cr_v[1] = ff_upsample_filter_block_cr_v_x2_neon;
 #endif
 
     }
