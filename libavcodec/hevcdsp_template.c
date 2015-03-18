@@ -1938,7 +1938,7 @@ static void FUNC(upsample_filter_block_cr_h_x2)(  int16_t *dst, ptrdiff_t dststr
     
     for( i = 0; i < block_w; i++ )	{
         x        = av_clip_c(i+x_EL, leftStartC, rightEndC);
-        coeff    = up_sample_filter_chroma_x2[x&0x01];
+        coeff    = up_sample_filter_chroma_x2_h[x&0x01];
         dst_tmp  = dst  + i;
         src_tmp  = src + (x>>1) ;
         for( j = 0; j < block_h ; j++ ) {
@@ -2042,7 +2042,7 @@ static void FUNC(upsample_filter_block_cr_h_x1_5)(  int16_t *dst, ptrdiff_t dsts
 
     for( i = 0; i < block_w; i++ )	{
         x        = av_clip_c(i+x_EL, leftStartC, rightEndC);
-        coeff    = up_sample_filter_chroma_x1_5[(x-leftStartC)%3];
+        coeff    = up_sample_filter_chroma_x1_5_h[(x-leftStartC)%3];
         dst_tmp  = dst  + i;
         src_tmp  = src + (((x-leftStartC)<<1)/3);
         for( j = 0; j < block_h ; j++ ) {
@@ -2094,7 +2094,7 @@ static void FUNC(upsample_filter_block_cr_v_x1_5)( uint8_t *_dst, ptrdiff_t dsts
     for ( j = 0; j < block_h; j++ ) {
         y        = av_clip_c(y_EL+j, topStartC, bottomEndC-1);
         refPos16 = ((( y - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12)-4;
-        coeff    = up_sample_filter_x1_5chroma[y%3];
+        coeff    = up_sample_filter_chroma_x1_5_v[y%3];
         refPos   = (refPos16>>4) - y_BL;
         src_tmp  = _src  + refPos  * _srcstride;
         dst_tmp  =  dst  + y* dststride + x_EL;

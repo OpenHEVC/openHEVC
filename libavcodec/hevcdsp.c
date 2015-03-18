@@ -147,20 +147,20 @@ DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_luma_x1_5[3][8] )= /* 
     { -1,  4, -11,  52,  26,  -8,  3, -1}
 };
 
-DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x1_5[3][4])= /* 0, 11, 5 */
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x1_5_h[3][4])= /* 0, 11, 5 */
 {
     {  0,  64,   0,  0},
     { -2,  20,  52, -6},
     { -6,  52,  20, -2}
 };
-DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_x1_5chroma[3][4])=
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x1_5_v[3][4])=
 {
     {  0,   4,  62, -2},
     { -4,  30,  42, -4},
     { -4,  54,  16, -2}
 };
 
-DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x2[2][4])=
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x2_h[2][4])=
 {
     {  0,  64,   0,  0},
     { -4,  36,  36, -4}
