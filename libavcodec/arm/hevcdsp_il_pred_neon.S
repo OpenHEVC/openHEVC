@@ -627,6 +627,150 @@ function ff_upsample_filter_block_cr_v_x2_neon, export=1
     bx lr
 endfunc
 
+/*
+dst2: -4*a + 54*b + 16*c - 2*d
+dst0:         4*b + 62*c - 2*d
+dst1:        -4*b + 30*c + 42*d - 4*e
+*/
+function ff_upsample_filter_block_cr_v_x1_5_neon, export=1
+    push   {r4-r9}
+    ldr    r8, [sp, #24] // y_BL
+    ldr    r4, [sp, #28] // x_EL
+    ldr    r5, [sp, #32] // y_EL
+
+    ldr    r6, [sp, #36] // width
+    ldr    r7, [sp, #40] // height
+    vpush  {d8-d15}
+    vmov.s32   q15, I_OFFSET
+    lsl    r3, #1
+    add    r0, r4  // dst += x_EL
+
+    add    r9, r5, #1  // y_EL + 1
+    lsl    r9, #1      // (y_EL+1) <<1
+    ldr    r4, =0x5555
+    mul    r9, r4
+    lsr    r9, #16    // ((y_EL+1)<<1)/3
+    sub    r9, #1     // ((y_EL+1)<<1)/3 - 1
+    sub    r9, r8     // ((y_EL+1)<<1)/3 - 1 - y_BL
+    mul    r9, r3     // refPos * srcStride
+    add    r2, r9     // src + refPos * srcStride
+
+    ldr    r4, =0x5555
+    mul    r4, r5
+    lsr    r4, #16
+    mov    r12, #3
+    mul    r4, r12
+    sub    r9, r5, r4
+    cmp    r9, #3
+    bne    33f
+    sub    r9, #3      // y_EL % 3
+33: mul    r5, r1      // y_EL * dst_stride
+    add    r0, r5      // dst += y_EL * dst_stride
+    adr    r8, coeffs_c_x1_5
+    vld1.16    {d0}, [r8]
+    mov    r12, r7
+    cmp    r9, #2
+    beq    2f
+    sub    r2, r3
+    cmp    r9, #0
+    beq    2f
+    sub    r2, r3
+2:  mov    r4, r0
+    mov    r5, r2
+    vld1.16    {q1}, [r2:128], r3 // a
+    vld1.16    {q2}, [r2:128], r3 // b
+    vld1.16    {q3}, [r2:128], r3 // c
+
+    vld1.16    {q4}, [r2:128], r3 // d
+    vld1.16    {q5}, [r2:128], r3 // e
+    cmp    r9, #0
+    beq    10f
+    cmp    r9, #2
+    beq    12f
+    b      11f
+0:  vld1.16    {q4}, [r2:128], r3 // d
+    vld1.16    {q5}, [r2:128], r3 // e
+
+12: subs   r7, #1
+    vshll.s16  q6, d2, #2
+    vshll.s16  q7, d3, #2         // 4*a
+    vshll.s16  q8, d6, #4
+    vshll.s16  q9, d7, #4         // 16*c
+    vmull.s16  q10, d4, d0[1]
+    vmull.s16  q11, d5, d0[1]     // 54*b
+    vsub.s32   q8, q6
+    vsub.s32   q9, q7             // -4*a + 16*c
+    vshll.s16  q6, d8, #1
+    vshll.s16  q7, d9, #1         // 2*d
+    vadd.s32   q8, q10
+    vadd.s32   q9, q11            // -4*a + 54*b + 16*c
+    vsub.s32   q8, q6
+    vsub.s32   q9, q7             // -4*a + 54*b + 16*c - 2*d
+    vadd.s32   q8, q15
+    vadd.s32   q9, q15            // + I_OFFSET
+    vqshrn.s32 d16, q8, N_SHIFT
+    vqshrn.s32 d17, q9, N_SHIFT
+    vqmovun.s16  d16, q8
+    vst1.8    {d16}, [r0:64], r1
+    beq    99f
+
+10: subs   r7, #1
+    vshll.s16  q6, d8, #1
+    vshll.s16  q7, d9, #1         // 2*d // repeat
+    vmull.s16  q8, d6, d0[0]
+    vmull.s16  q9, d7, d0[0]       // 62*c
+    vshll.s16  q10, d4, #2
+    vshll.s16  q11, d5, #2         // 4*b
+    vsub.s32   q8, q6
+    vsub.s32   q9, q7              // 62*c - 2*d
+    vadd.s32   q8, q10
+    vadd.s32   q9, q11             // 4*b + 62*c - 2*d
+    vadd.s32   q8, q15
+    vadd.s32   q9, q15            // + I_OFFSET
+    vqshrn.s32 d16, q8, N_SHIFT
+    vqshrn.s32 d17, q9, N_SHIFT
+    vqmovun.s16  d16, q8
+    vst1.8    {d16}, [r0:64], r1
+    beq    99f
+
+11: subs   r7, #1
+    vshll.s16  q10, d4, #2
+    vshll.s16  q11, d5, #2         // 4*b // repeat
+    vmull.s16  q6, d8, d0[2]
+    vmull.s16  q7, d9, d0[2]       // 42*d
+    vmull.s16  q8, d6, d0[3]
+    vmull.s16  q9, d7, d0[3]       // 30*c
+    vshll.s16  q12, d10, #2
+    vshll.s16  q13, d11, #2        // 4*e
+    vsub.s32   q6, q10
+    vsub.s32   q7, q11             // -4*b + 42*d
+    vadd.s32   q6, q8
+    vadd.s32   q7, q9              // -4*b + 30*c + 42*d
+    vsub.s32   q6, q12
+    vsub.s32   q7, q13             // -4*b + 30*c + 42*d - 4*e
+    vadd.s32   q8, q6, q15
+    vadd.s32   q9, q7, q15            // + I_OFFSET
+    vqshrn.s32 d16, q8, N_SHIFT
+    vqshrn.s32 d17, q9, N_SHIFT
+    vqmovun.s16 d16, q8
+    vst1.8    {d16}, [r0:64], r1
+    vmov       q1, q3
+    vmov       q2, q4
+    vmov       q3, q5
+    bgt    0b
+99: subs   r6, #8
+    mov    r7, r12
+    add    r0, r4, #8
+    add    r2, r5, #16
+    bgt    2b
+    vpop {d8-d15}
+    pop {r4-r9}
+    bx     lr
+endfunc
+
+coeffs_c_x1_5:
+.word 0x0036003e  // d0[1] = 54, d0[0] = 62
+.word 0x001e002a  // d0[3] = 30, d0[2] = 42
 coeffsx1_5:
 .word 0x0034001a  // d0[1] = 52, d0[0] = 26
 .word 0x0003000b  // d0[3] =  3, d0[2] = 11
