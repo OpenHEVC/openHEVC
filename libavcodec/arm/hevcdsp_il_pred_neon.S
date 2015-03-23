@@ -173,22 +173,6 @@ function ff_upsample_filter_block_luma_v_x2_neon, export=1
     bx lr
 endfunc
 
-.macro vextin
-    vld2.8 {d28,d29}, [r2]! // q12, q13
-    vld2.8 {d30,d31}, [r2] // q14, q15
-    vmov   d2, d29          // a
-    vext.8 d3, d28, d30, #1 // b
-    vext.8 d4, d29, d31, #1 // c
-    vext.8 d5, d28, d30, #2 // d
-    vext.8 d6, d29, d31, #2 // e
-    vext.8 d7, d28, d30, #3 // f
-    vext.8 d8, d29, d31, #3 // g
-    vext.8 d9, d28, d30, #4 // h
-    vext.8 d10, d29, d31, #4 // i
-    vext.8 d11, d28, d30, #5 // j
-.endm
-
-
 // dst0:                    64*d
 // dst1:   -a + 3*b - 8*c + 26*d + 52*e - 11*f +  4*g -    h
 // dst2:       -1*b + 4*c - 11*d + 52*e + 26*f -  8*g +  3*h - 1*i
@@ -220,7 +204,19 @@ function ff_upsample_filter_block_luma_h_x1_5_neon, export=1
 2:  mov    r4, r0
     mov    r5, r2
     mov    r8, #3
-0:  vextin
+0:
+    vld2.8 {d28,d29}, [r2]! // q12, q13
+    vld2.8 {d30,d31}, [r2] // q14, q15
+    vmov   d2, d29          // a
+    vext.8 d3, d28, d30, #1 // b
+    vext.8 d4, d29, d31, #1 // c
+    vext.8 d5, d28, d30, #2 // d
+    vext.8 d6, d29, d31, #2 // e
+    vext.8 d7, d28, d30, #3 // f
+    vext.8 d8, d29, d31, #3 // g
+    vext.8 d9, d28, d30, #4 // h
+    vext.8 d10, d29, d31, #4 // i
+    vext.8 d11, d28, d30, #5 // j
     cmp    r9, #1
     beq    11f
     cmp    r9, #2
@@ -624,6 +620,146 @@ function ff_upsample_filter_block_cr_v_x2_neon, export=1
     bne 2b
     vpop {d8-d15}
     pop {r4-r8}
+    bx lr
+endfunc
+
+/*
+   dst0:        64*b
+   dst1: -2*a + 20*b + 52*c -  6*d
+   dst2:      -  6*b + 52*c + 20*d - 2*e
+r2 dst0:                      64*d
+r2 dst1:               -2*c + 20*d + 52*e - 6*f
+
+*/
+
+function ff_upsample_filter_block_cr_h_x1_5_neon, export=1
+
+    push   {r4-r9}
+    ldr    r4, [sp, #24] // x_EL
+    ldr    r5, [sp, #28] // x_BL
+    ldr    r6, [sp, #32] // width
+    ldr    r7, [sp, #36] // height
+    vpush  {d8-d15}
+    sub    r2, #2
+    lsl    r1, #1
+
+    ldr    r9, =0x5555
+    mul    r9, r4
+    lsr    r9, #16
+    mov    r12, #3
+    mul    r9, r12
+    sub    r9, r4, r9 // x_EL % 3
+    cmp    r9, #3
+    bne    33f
+    sub    r9, #3      // x_EL % 3
+33: mov    r12, r6
+    cmp    r9, #2
+    bne    2f
+    sub    r2, #1
+2:  mov    r4, r0
+    mov    r5, r2
+    mov    r8, #3
+0:  vld2.8 {d28,d29}, [r2]!
+    vld2.8 {d30,d31}, [r2]
+    vmov   d2, d29          // a
+    vext.8 d3, d28, d30, #1 // b
+    vext.8 d4, d29, d31, #1 // c
+    vext.8 d5, d28, d30, #2 // d
+    vext.8 d6, d29, d31, #2 // e
+    vext.8 d7, d28, d30, #3 // f
+    cmp  r9, #0
+    beq  10f
+    cmp  r9, #1
+    beq  11f
+    b    12f
+
+10: vmov     q8, q9
+    vmov     q9, q10
+    vshll.u8 q10, d3, #6     // 64*b
+    subs   r8, #1
+    bne    11f
+    mov    r8, #3
+    vst3.16  {d16, d18, d20}, [r0]!
+    vst3.16  {d17, d19, d21}, [r0]!
+
+11: vmov.u8  d22, #20
+    vmov.u8  d23, #52
+    vmull.u8 q12, d3, d22    // 20*b
+    vmov.u8  d22, #6
+    vmull.u8 q13, d4, d23    // 52*c
+    vshll.u8 q14, d2, #1     // 2*a
+    vmull.u8 q15, d5, d22    // 6*d
+    vadd.s16 q12, q13        // 20*b + 52*c
+    vsub.s16 q12, q14        // -2*a + 20*b + 52*c
+    vmov     q8, q9
+    vmov     q9, q10
+    vsub.s16 q10, q12, q15   // -2*a + 20*b + 52*c - 6*d
+    subs   r8, #1
+    bne    12f
+    mov    r8, #3
+    vst3.16  {d16, d18, d20}, [r0]!
+    vst3.16  {d17, d19, d21}, [r0]!
+
+12: vmov.u8  d22, #20
+    vmov.u8  d23, #52
+    vmull.u8 q12, d5, d22    // 20*d
+    vmov.u8  d22, #6
+    vmull.u8 q13, d4, d23    // 52*c
+    vshll.u8 q14, d6, #1     // 2*e
+    vmull.u8 q15, d3, d22    // 6*b
+    vadd.s16 q12, q13        // 52*c + 20*d
+    vsub.s16 q12, q14        // 52*c + 20*d - 2*e
+    vmov     q8, q9
+    vmov     q9, q10
+    vsub.s16 q10, q12, q15   // -6*b + 52*c + 20*d - 2*e
+    subs   r8, #1
+    bne    66f
+    mov    r8, #3
+    vst3.16  {d16, d18, d20}, [r0]!
+    vst3.16  {d17, d19, d21}, [r0]!
+66:
+    cmp    r9, #0
+    beq    99f
+13:
+    vmov     q8, q9
+    vmov     q9, q10
+    vshll.u8 q10, d5, #6     // 64*d
+    subs   r8, #1
+    bne    67f
+    mov    r8, #3
+    vst3.16  {d16, d18, d20}, [r0]!
+    vst3.16  {d17, d19, d21}, [r0]!
+67:
+    cmp    r9, #2
+    bne    99f
+14:
+    vmov.u8  d22, #20
+    vmov.u8  d23, #52
+    vmull.u8 q12, d5, d22    // 20*d
+    vmov.u8  d22, #6
+    vmull.u8 q13, d6, d23    // 52*e
+    vshll.u8 q14, d4, #1     // 2*c
+    vmull.u8 q15, d7, d22    // 6*f
+    vadd.s16 q12, q13        // 20*d + 52*e
+    vsub.s16 q12, q14        // -2*c + 20*d + 52*e
+    vmov     q8, q9
+    vmov     q9, q10
+    vsub.s16 q10, q12, q15   // -2*c + 20*d + 52*e - 6*f
+    subs   r8, #1
+    bne    99f
+    mov    r8, #3
+    vst3.16  {d16, d18, d20}, [r0]!
+    vst3.16  {d17, d19, d21}, [r0]!
+
+99: subs   r6, #24
+    bgt    0b
+    subs  r7, #1
+    add   r0, r4, r1
+    add   r2, r5, r3
+    mov   r6, r12
+    bne   2b
+    vpop {d8-d15}
+    pop {r4-r9}
     bx lr
 endfunc
 

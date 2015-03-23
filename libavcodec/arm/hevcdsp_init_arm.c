@@ -405,7 +405,7 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
             c->upsample_filter_block_luma_v[1] = ff_upsample_filter_block_luma_v_x2_neon;
             c->upsample_filter_block_cr_h[1] = ff_upsample_filter_block_cr_h_x2_neon;
             c->upsample_filter_block_cr_v[1] = ff_upsample_filter_block_cr_v_x2_neon;
-            //c->upsample_filter_block_cr_h[2] = ff_upsample_filter_block_cr_h_x1_5_neon;
+            c->upsample_filter_block_cr_h[2] = ff_upsample_filter_block_cr_h_x1_5_neon;
             c->upsample_filter_block_cr_v[2] = ff_upsample_filter_block_cr_v_x1_5_neon;
             c->upsample_filter_block_luma_h[2] = ff_upsample_filter_block_luma_h_x1_5_neon;
             c->upsample_filter_block_luma_v[2] = ff_upsample_filter_block_luma_v_x1_5_neon;
