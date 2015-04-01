@@ -288,12 +288,6 @@ if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 list(APPEND libfilenames
     libavutil/arm/cpu.c
     libavutil/arm/asm.S
-    libavcodec/arm/dsputil_arm.S
-    libavcodec/arm/dsputil_armv6.S
-    libavcodec/arm/dsputil_init_arm.c
-    libavcodec/arm/dsputil_init_armv6.c
-    libavcodec/arm/dsputil_init_neon.c
-    libavcodec/arm/dsputil_neon.S
     libavcodec/arm/fft_init_arm.c
     libavcodec/arm/fft_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
@@ -355,6 +349,8 @@ if(ENABLE_STATIC)
 else()
     add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
 endif()
+
+target_link_libraries(LibOpenHevcWrapper m)
 
 include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
 
