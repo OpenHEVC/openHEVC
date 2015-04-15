@@ -470,7 +470,7 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
     OpenHevcWrapperContext  *openHevcContext;
     int i;
 
-    for (i = 0; i < openHevcContexts->nb_decoders; i++){
+    for (i = openHevcContexts->nb_decoders-1; i >=0 ; i--){
         openHevcContext = openHevcContexts->wraper[i];
         avcodec_close(openHevcContext->c);
         av_parser_close(openHevcContext->parser);
