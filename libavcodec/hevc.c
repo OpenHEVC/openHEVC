@@ -3229,7 +3229,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
         if (ret < 0)
             return ret;
-
+        if(s->au_poc !=-1 && s->au_poc != s->poc) {
+            av_log(s->avctx, AV_LOG_ERROR, "Receive different poc in one AU. \n");
+            s->max_ra == INT_MAX;
+            goto fail;
+        }
+        s->au_poc = s->poc;
         if (s->max_ra == INT_MAX) {
             if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
                 s->max_ra = s->poc;
@@ -3696,6 +3701,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     int is_irap = 1;
 #endif
     s->ref = NULL;
+    s->au_poc = -1;
     s->last_eos = s->eos;
     s->eos = 0;
     s->bl_decoder_el_exist  = 0;

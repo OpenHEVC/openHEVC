@@ -1132,7 +1132,7 @@ typedef struct HEVCContext {
     HEVCFrame DPB[32];
     HEVCFrame Add_ref[2];
 
-
+    int au_poc;
     int poc;
     int poc_id;
     int pocTid0;
