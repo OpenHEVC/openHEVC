@@ -4,7 +4,6 @@ libOpenHevcCopyExtraData
 libOpenHevcDecode
 libOpenHevcFlush
 libOpenHevcFlushSVC
-libOpenHevcGetChromaformat
 libOpenHevcGetOutput
 libOpenHevcGetOutputCpy
 libOpenHevcGetPictureInfo
