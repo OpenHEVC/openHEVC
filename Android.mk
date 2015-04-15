@@ -77,12 +77,12 @@ openhevc_files := \
     libavcodec/avpicture.c \
     libavcodec/bitstream.c \
     libavcodec/bitstream_filter.c \
+    libavcodec/bswapdsp.c \
     libavcodec/cabac.c \
     libavcodec/codec_desc.c \
     libavcodec/dct.c \
     libavcodec/dct32_float.c \
     libavcodec/dct32_template.c \
-    libavcodec/dsputil.c \
     libavcodec/faanidct.c \
     libavcodec/fft_template.c \
     libavcodec/golomb.c \
@@ -99,6 +99,7 @@ openhevc_files := \
     libavcodec/hpeldsp.c \
     libavcodec/jrevdct.c \
     libavcodec/mathtables.c \
+    libavcodec/me_cmp.c \
     libavcodec/mdct_template.c \
     libavcodec/mpegaudiodata.c \
     libavcodec/mpeg4audio.c \
@@ -120,15 +121,9 @@ openhevc_files := \
     libavcodec/arm/hevcdsp_idct_neon.S \
     libavcodec/arm/hevcdsp_qpel_neon.S \
     libavcodec/arm/hevcdsp_epel_neon.S \
-    libavcodec/arm/dsputil_init_arm.c \
-    libavcodec/arm/dsputil_init_armv6.c \
-    libavcodec/arm/dsputil_init_neon.c \
-    libavcodec/arm/dsputil_neon.S \
     libavcodec/arm/simple_idct_neon.S \
     libavcodec/arm/simple_idct_arm.S \
     libavcodec/arm/simple_idct_armv6.S \
-    libavcodec/arm/dsputil_arm.S \
-    libavcodec/arm/dsputil_armv6.S \
     libavcodec/arm/jrevdct_arm.S \
     libavcodec/arm/int_neon.S \
     main_hm/getopt.c \
