@@ -28,6 +28,8 @@
 #include "libavcodec/bit_depth_template.c"
 #include "libavcodec/hevc_defs.h"
 
+#include "../eco_param.h"
+
 static void (*put_hevc_qpel_neon[4][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                    int height, int width);
 
@@ -373,9 +375,15 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][0][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
             c->put_hevc_epel[x][0][0]         = ff_hevc_put_pixels_neon_8;
-            c->put_hevc_epel[x][1][0]         = ff_hevc_put_epel_v_neon_8;
-            c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel_h_neon_8;
-            c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
+            #ifndef ECO_CHROMA
+                c->put_hevc_epel[x][1][0]         = ff_hevc_put_epel_v_neon_8;
+                c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel_h_neon_8;
+                c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
+            #else
+                c->put_hevc_epel[x][1][0]         = ff_hevc_put_pixels_neon_8;
+                c->put_hevc_epel[x][0][1]         = ff_hevc_put_pixels_neon_8;
+                c->put_hevc_epel[x][1][1]         = ff_hevc_put_pixels_neon_8;
+            #endif
         }
         c->put_hevc_qpel_uni[1][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w4;
         c->put_hevc_qpel_uni[3][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w8;
