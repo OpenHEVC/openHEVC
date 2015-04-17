@@ -1,13 +1,6 @@
-#include "../eco_param.h"
-
-#if defined(ECO_LUMA1)
-    #include "hevcdsp_qpel_eco1_neon.S"
-#elif defined(ECO_LUMA3)
-    #include "hevcdsp_qpel_eco3_neon.S"
-#else
-
 /*
  * Copyright (c) 2014 Seppo Tomperi <seppo.tomperi@vtt.fi>
+ *               2015 Morgan LACOUR <morgan.lacour@insa-rennes.fr>
  *
  * This file is part of FFmpeg.
  *
@@ -30,36 +23,21 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
-.macro regshuffle_d8
+.macro regshuffle_d8 	//rename!
     vmov d16, d17
     vmov d17, d18
-    vmov d18, d19
-    vmov d19, d20
-    vmov d20, d21
-    vmov d21, d22
-    vmov d22, d23
 .endm
 
 .macro regshuffle_q8
     vmov q0, q1
     vmov q1, q2
-    vmov q2, q3
-    vmov q3, q4
-    vmov q4, q5
-    vmov q5, q6
-    vmov q6, q7
 .endm
 
 .macro vextin8
         pld       [r2]
         vld1.8    {q11}, [r2], r3
-        vext.8    d16, d22, d23, #1
-        vext.8    d17, d22, d23, #2
-        vext.8    d18, d22, d23, #3
-        vext.8    d19, d22, d23, #4
-        vext.8    d20, d22, d23, #5
-        vext.8    d21, d22, d23, #6
-        vext.8    d22, d22, d23, #7
+        vext.8    d16, d22, d23, #0
+        vext.8    d17, d22, d23, #1
 .endm
 
 .macro loadin8
@@ -67,228 +45,70 @@
         vld1.8    {d16}, [r2], r3
         pld       [r2]
         vld1.8    {d17}, [r2], r3
-        pld       [r2]
-        vld1.8    {d18}, [r2], r3
-        pld       [r2]
-        vld1.8    {d19}, [r2], r3
-        pld       [r2]
-        vld1.8    {d20}, [r2], r3
-        pld       [r2]
-        vld1.8    {d21}, [r2], r3
-        pld       [r2]
-        vld1.8    {d22}, [r2], r3
-        pld       [r2]
-        vld1.8    {d23}, [r2], r3
 .endm
 
-// 29 cycles
-// -a + 4*b - 10*c + 58*d + 17*e - 5*f + g
-// q0   q1    q2       q3    q4    q5   q6
+
+
 .macro qpel_filter_1_32b
-        vmov.i16   d16, #58
-        vmov.i16   d17, #10
-        vmull.s16   q9, d6, d16   // 58 * d0
-        vmull.s16  q10, d7, d16   // 58 * d1
-        vmov.i16   d16, #17
-        vmull.s16  q11, d4, d17   // 10 * c0
-        vmull.s16  q12, d5, d17   // 10 * c1
-        vmov.i16   d17, #5
-        vmull.s16  q13, d8, d16   // 17 * e0
-        vmull.s16  q14, d9, d16   // 17 * e1
-        vmull.s16  q15, d10, d17  //  5 * f0
-        vmull.s16   q8, d11, d17  //  5 * f1
-        vsub.s32    q9, q11       // 58 * d0 - 10 * c0
-        vsub.s32   q10, q12       // 58 * d1 - 10 * c1
-        vshll.s16  q11, d2, #2    // 4 * b0
-        vshll.s16  q12, d3, #2    // 4 * b1
-        vadd.s32    q9, q13       // 58 * d0 - 10 * c0 + 17 * e0
-        vadd.s32   q10, q14       // 58 * d1 - 10 * c1 + 17 * e1
-        vsubl.s16  q13, d12, d0   // g0 - a0
-        vsubl.s16  q14, d13, d1   // g1 - a1
-        vadd.s32    q9, q11       // 58 * d0 - 10 * c0 + 17 * e0 + 4 * b0
-        vadd.s32   q10, q12       // 58 * d1 - 10 * c1 + 17 * e1 + 4 * b1
-        vsub.s32   q13, q15       // g0 - a0 - 5 * f0
-        vsub.s32   q14, q8        // g1 - a1 - 5 * f1
-        vadd.s32    q9, q13       // 58 * d0 - 10 * c0 + 17 * e0 + 4 * b0 + g0 - a0 - 5 * f0
-        vadd.s32   q10, q14       // 58 * d1 - 10 * c1 + 17 * e1 + 4 * b1 + g1 - a1 - 5 * f1
-        vqshrn.s32  d16, q9, #6
-        vqshrn.s32  d17, q10, #6
+	vmov.u8	d16, d0
+	vmov.u8 d17, d1		
 .endm
-
-// input  q0 - q7
-// output q8
-// -a + 4*b - 11*c + 40*d + 40*e -11*f + 4*g - h
-// q0   q1    q2     q3     q4    q5     q6    q7
 
 .macro qpel_filter_2_32b
-        vmov.i32   q8, #11
-        vaddl.s16   q9, d6, d8  // d0 + e0
-        vaddl.s16  q10, d7, d9  // d1 + e1
-        vaddl.s16  q11, d4, d10 // c0 + f0
-        vaddl.s16  q12, d5, d11 // c1 + f1
-        vmul.s32   q11, q8   // 11 * (c0 + f0)
-        vmul.s32   q12, q8     // 11 * (c1 + f1)
-        vmov.i32   q8, #40
-        vaddl.s16  q15, d2, d12  // b0 + g0
-        vmul.s32    q9, q8      // 40 * (d0 + e0)
-        vmul.s32   q10, q8      // 40 * (d1 + e1)
-        vaddl.s16   q8, d3, d13  // b1 + g1
-        vaddl.s16  q13, d0, d14  // a0 + h0
-        vaddl.s16  q14, d1, d15  // a1 + h1
-        vshl.s32   q15, #2       // 4*(b0+g0)
-        vshl.s32    q8, #2       // 4*(b1+g1)
-        vadd.s32   q11, q13      // 11 * (c0 + f0) + a0 + h0
-        vadd.s32   q12, q14      // 11 * (c1 + f1) + a1 + h1
-        vadd.s32   q9, q15       // 40 * (d0 + e0) + 4*(b0+g0)
-        vadd.s32   q10, q8       // 40 * (d1 + e1) + 4*(b1+g1)
-        vsub.s32   q9, q11       // 40 * (d0 + e0) + 4*(b0+g0) - (11 * (c0 + f0) + a0 + h0)
-        vsub.s32   q10, q12      // 40 * (d1 + e1) + 4*(b1+g1) - (11 * (c1 + f1) + a1 + h1)
-        vqshrn.s32  d16, q9, #6
-        vqshrn.s32  d17, q10, #6
+	vmov.u8	d16, d0
+	vmov.u8 d17, d1		
 .endm
 
-
-// 29 cycles
-// -a + 4*b - 10*c + 58*d + 17*e - 5*f + g
-// q0      q1      q2       q3    q4    q5       q6      q7
-// d0,1    d2,3    d4,5     d6,7  d8,9  d10,11   d12,13  d14,15
-// q7      q6      q5       q4    q3    q2       q1
-// d14,15  d12,13  d10,11   d8,9  d6,7  d4,5     d2,3
 .macro qpel_filter_3_32b
-        vmov.i16   d16, #58
-        vmov.i16   d17, #10
-        vmull.s16   q9, d8, d16   // 58 * d0
-        vmull.s16  q10, d9, d16   // 58 * d1
-        vmov.i16   d16, #17
-        vmull.s16  q11, d10, d17   // 10 * c0
-        vmull.s16  q12, d11, d17   // 10 * c1
-        vmov.i16   d17, #5
-        vmull.s16  q13, d6, d16   // 17 * e0
-        vmull.s16  q14, d7, d16   // 17 * e1
-        vmull.s16  q15, d4, d17  //  5 * f0
-        vmull.s16   q8, d5, d17  //  5 * f1
-        vsub.s32    q9, q11       // 58 * d0 - 10 * c0
-        vsub.s32   q10, q12       // 58 * d1 - 10 * c1
-        vshll.s16  q11, d12, #2    // 4 * b0
-        vshll.s16  q12, d13, #2    // 4 * b1
-        vadd.s32    q9, q13       // 58 * d0 - 10 * c0 + 17 * e0
-        vadd.s32   q10, q14       // 58 * d1 - 10 * c1 + 17 * e1
-        vsubl.s16  q13, d2, d14   // g0 - a0
-        vsubl.s16  q14, d3, d15   // g1 - a1
-        vadd.s32    q9, q11       // 58 * d0 - 10 * c0 + 17 * e0 + 4 * b0
-        vadd.s32   q10, q12       // 58 * d1 - 10 * c1 + 17 * e1 + 4 * b1
-        vsub.s32   q13, q15       // g0 - a0 - 5 * f0
-        vsub.s32   q14, q8        // g1 - a1 - 5 * f1
-        vadd.s32    q9, q13       // 58 * d0 - 10 * c0 + 17 * e0 + 4 * b0 + g0 - a0 - 5 * f0
-        vadd.s32   q10, q14       // 58 * d1 - 10 * c1 + 17 * e1 + 4 * b1 + g1 - a1 - 5 * f1
-        vqshrn.s32  d16, q9, #6
-        vqshrn.s32  d17, q10, #6
+	vmov.u8	d16, d2
+	vmov.u8 d17, d3		
 .endm
 
-//        a    b   c    d    e    f   g  reserved
-// input d16  d17 d18 d19  d20  d21 d22  d23
-// old    d0  d2  d4  d6    d8  d10  d12
-
-// q vapaana d23,  d24 -> q12, q13, q14, q15
-// 15 cycles
 .macro qpel_filter_1 out=q7
-        vmov.u8   d24, #58
-        vmov.u8   d25, #10
-        vshll.u8  q13, d20, #4     // 16*e
-        vshll.u8  q14, d21, #2     // 4*f
-        vmull.u8   \out, d19, d24    // 58*d
-        vaddw.u8  q13, q13, d20    // 17*e
-        vmull.u8  q15, d18, d25    // 10*c
-        vaddw.u8  q14, q14, d21    // 5*f
-        vsubl.u8  q12, d22, d16    // g - a
-        vadd.u16   \out, q13         // 58d + 17e
-        vshll.u8  q13, d17, #2     // 4*b
-        vadd.u16  q15, q14         // 10*c + 5*f
-        vadd.s16  q13, q12         // - a + 4*b + g
-        vsub.s16   \out, q15         // -10*c + 58*d + 17*e -5*f
-        vadd.s16   \out, q13         // -a + 4*b -10*c + 58*d + 17*e -5*f
+	vshll.u8  \out, d16, #6     // 64*a
 .endm
 
-//        a    b   c    d    e    f   g   h
-// input d16  d17 d18 d19  d20  d21 d22  d23
-// old    d0  d2  d4  d6    d8  d10  d12 d14
-
-// q vapaana d24 -> q12, q13, q14, q15
-
-// 16 cycles
 .macro qpel_filter_2 out=q7
-        vmov.i16   q12, #10
-        vmov.i16   q14, #11
-        vaddl.u8   q13, d19, d20   // d + e
-        vaddl.u8   q15, d18, d21   // c + f
-        vmul.u16   q13, q12        // 10 * (d+e)
-        vmul.u16   q15, q14        // 11 * ( c + f)
-        vaddl.u8  \out, d17, d22   // b + g
-        vaddl.u8   q12, d16, d23   // a + h
-        vadd.u16  \out, q13        // b + 10 * (d + e) + g
-        vadd.s16   q12, q15
-        vshl.u16  \out, #2         // 4 * (b + 10 * (d + e) + g)
-        vsub.s16  \out, q12
+	vshll.u8  \out, d16, #6     // 64*a
 .endm
 
-//        a    b   c    d    e    f   g  reserv
-// old  d16  d17 d18 d19  d20  d21 d22  d23 
-// new  d23  d22  d21 d20 d19  d18  d17 d16
-// old    d0  d2  d4  d6    d8  d10  d12
-// q vapaana d23,  d24 -> q12, q13, q14, q15
-// 15 cycles
 .macro qpel_filter_3 out=q7
-        vmov.u8   d24, #58
-        vmov.u8   d25, #10
-        vshll.u8  q13, d19, #4     // 16*e
-        vshll.u8  q14, d18, #2     // 4*f
-        vmull.u8   \out, d20, d24    // 58*d
-        vaddw.u8  q13, q13, d19    // 17*e
-        vmull.u8  q15, d21, d25    // 10*c
-        vaddw.u8  q14, q14, d18    // 5*f
-        vsubl.u8  q12, d17, d23    // g - a
-        vadd.u16   \out, q13         // 58d + 17e
-        vshll.u8  q13, d22, #2     // 4*b
-        vadd.u16  q15, q14         // 10*c + 5*f
-        vadd.s16  q13, q12         // - a + 4*b + g
-        vsub.s16   \out, q15         // -10*c + 58*d + 17*e -5*f
-        vadd.s16   \out, q13         // -a + 4*b -10*c + 58*d + 17*e -5*f
+	vshll.u8  \out, d17, #6     // 64*a
 .endm
+
 
 .macro  hevc_put_qpel_vX_neon_8 filter
         push   {r4, r5, r6, r7}
         ldr    r4, [sp, #16] // height
         ldr    r5, [sp, #20] // width
         vpush {d8-d15}
-        sub       r2, r2, r3, lsl #1
-        sub       r2, r3
-        mov       r12, r4
-        mov       r6, r0
-        mov       r7, r2
-        lsl       r1, #1
-0:      loadin8
-        cmp       r5, #4
-        beq       4f
-8:      subs r4, #1
-        \filter
-        vst1.16    {q7}, [r0], r1
-        regshuffle_d8
-        vld1.8    {d23}, [r2], r3
-        bne 8b
-        subs  r5, #8
-        beq       99f
-        mov r4, r12
-        add r6, #16
-        mov r0, r6
-        add r7, #8
-        mov r2, r7
-        b     0b
-4:      subs r4, #1
-        \filter
-        vst1.16    d14, [r0], r1
-        regshuffle_d8
-        vld1.32    {d23[0]}, [r2], r3
-        bne 4b
+        mov       r12, r4 		//_height
+        mov       r6, r0 		// _dst
+        mov       r7, r2 		// _src
+        lsl       r1, #1 		// dststride*2
+0:      loadin8 			//d16 d17 d18 (a b c)
+        cmp       r5, #4 	// width==4?
+        beq       4f 		// br 4f si width=4
+8:      subs r4, #1 		// height--
+        \filter 			// q7 = vect filtre
+        vst1.16    {q7}, [r0], r1 	// *dst=q7, dst+=dststride
+        regshuffle_d8 		// a=b, b=c
+        vld1.8    {d17}, [r2], r3 // charge d17, src+=srcstride //MODIF ECO
+        bne 8b 				// height!=0 boucle
+        subs  r5, #8 		// width-=8
+        beq       99f 		// si width==0 fin
+        mov r4, r12 		// reload height
+        add r6, #16 		// _dst += 16 (8*2octets)
+        mov r0, r6 			// dst = _dst
+        add r7, #8 			// _src += 8
+        mov r2, r7 			// src = _src
+        b     0b 			// br 0b
+4:      subs r4, #1 		// height--
+        \filter 			//q7 = vect filtre
+        vst1.16    d14, [r0], r1 	// *dst=d14, dst+=dststride
+        regshuffle_d8		//veillissement
+        vld1.32    {d17[0]}, [r2], r3 	// MODIF ECO
+        bne 4b 
 99:     vpop {d8-d15}
         pop {r4, r5, r6, r7}
         bx lr
@@ -301,14 +121,11 @@
         ldr    r8, [sp, #36] // src2
         ldr    r9, [sp, #40] // src2stride
         vpush {d8-d15}
-        sub       r2, r2, r3, lsl #1
-        sub       r2, r3
         mov       r12, r4
         mov       r6, r0
         mov       r7, r2
         cmp       r8, #0
         bne       .Lbi\@
-        //lsl       r1, #1
 0:      loadin8
         cmp       r5, #4
         beq       4f
@@ -317,7 +134,7 @@
         vqrshrun.s16   d0, q7, #6
         vst1.8    d0, [r0], r1
         regshuffle_d8
-        vld1.8    {d23}, [r2], r3
+        vld1.8    {d17}, [r2], r3 	// MODIF ECO
         bne 8b
         subs  r5, #8
         beq       99f
@@ -332,11 +149,11 @@
         vqrshrun.s16   d0, q7, #6
         vst1.32    d0[0], [r0], r1
         regshuffle_d8
-        vld1.32    {d23[0]}, [r2], r3
+        vld1.32    {d17[0]}, [r2], r3 	//MODIF ECO
         bne 4b
         b   99f
 .Lbi\@: lsl       r9, #1
-        mov       r10, r8
+        mov       r10, r8 	// _src2
 0:      loadin8
         cmp       r5, #4
         beq       4f
@@ -347,7 +164,7 @@
         vqrshrun.s16   d0, q0, #7
         vst1.8         d0, [r0], r1
         regshuffle_d8
-        vld1.8    {d23}, [r2], r3
+        vld1.8    {d17}, [r2], r3	//MODIF ECO
         bne 8b
         subs  r5, #8
         beq       99f
@@ -366,7 +183,7 @@
         vqrshrun.s16 d0, q0, #7
         vst1.32      d0[0], [r0], r1
         regshuffle_d8
-        vld1.32    {d23[0]}, [r2], r3
+        vld1.32    {d17[0]}, [r2], r3	//MODIF ECO
         bne 4b
 99:     vpop {d8-d15}
         pop {r4-r10}
@@ -400,13 +217,13 @@ function ff_hevc_put_qpel_uw_v3_neon_8, export=1
 endfunc
 
 
+
+
 .macro hevc_put_qpel_hX_neon_8 filter
         push     {r4, r5, r6, r7}
         ldr    r4, [sp, #16] // height
         ldr    r5, [sp, #20] // width
-
         vpush    {d8-d15}
-        sub       r2, #4
         lsl       r1, #1
         mov      r12, r4
         mov       r6, r0
@@ -450,7 +267,6 @@ endfunc
         ldr       r8, [sp, #36] // src2
         ldr       r9, [sp, #40] // src2stride
         vpush    {d8-d15}
-        sub       r2, #4
         mov      r12, r4
         mov       r6, r0
         mov       r7, r2
@@ -517,6 +333,7 @@ endfunc
         bx lr
 .endm
 
+
 function ff_hevc_put_qpel_h1_neon_8, export=1
         hevc_put_qpel_hX_neon_8 qpel_filter_1
 endfunc
@@ -542,7 +359,6 @@ function ff_hevc_put_qpel_uw_h3_neon_8, export=1
         hevc_put_qpel_uw_hX_neon_8 qpel_filter_3
 endfunc
 
-
 //hevc.c:41:const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 2 };
 //hevc.c:42:const uint8_t ff_hevc_qpel_extra_after[4]  = { 0, 3, 4, 4 };
 //hevc.c:43:const uint8_t ff_hevc_qpel_extra[4]        = { 0, 6, 7, 6 };
@@ -553,9 +369,6 @@ endfunc
         ldr    r5, [sp, #20] // width
 
         vpush {d8-d15}
-        sub       r2, #4
-        sub       r2, r2, r3, lsl #1
-        sub       r2, r3  // extra_before 3
         lsl       r1, #1
         mov       r12, r4
         mov       r6, r0
@@ -564,18 +377,7 @@ endfunc
         \filterh q0
         vextin8
         \filterh q1
-        vextin8
-        \filterh q2
-        vextin8
-        \filterh q3
-        vextin8
-        \filterh q4
-        vextin8
-        \filterh q5
-        vextin8
-        \filterh q6
-        vextin8
-        \filterh q7
+
         cmp r5, #4
         beq 4f
 8:      subs  r4, #1
@@ -583,7 +385,7 @@ endfunc
         vst1.16    {q8}, [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
+        \filterh q1 	//MODIF ECO
         bne 8b
         subs  r5, #8
         beq 99f
@@ -598,7 +400,7 @@ endfunc
         vst1.16    d16, [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
+        \filterh q1 	// MODIF ECO
         bne 4b
 99:     vpop {d8-d15}
         pop {r4, r5, r6, r7}
@@ -612,30 +414,16 @@ endfunc
         ldr       r8, [sp, #36] // src2
         ldr       r9, [sp, #40] // src2stride
         vpush {d8-d15}
-        sub       r2, #4
-        sub       r2, r2, r3, lsl #1
-        sub       r2, r3  // extra_before 3
-        mov       r12, r4
-        mov       r6, r0
-        mov       r7, r2
-        cmp       r8, #0
-        bne       .Lbi\@
+        mov       r12, r4 		// _height
+        mov       r6, r0 		// _dst
+        mov       r7, r2 		// _src
+        cmp       r8, #0 		// src2?
+        bne       .Lbi\@ 		//src2 branch
 0:      vextin8
         \filterh q0
         vextin8
         \filterh q1
-        vextin8
-        \filterh q2
-        vextin8
-        \filterh q3
-        vextin8
-        \filterh q4
-        vextin8
-        \filterh q5
-        vextin8
-        \filterh q6
-        vextin8
-        \filterh q7
+
         cmp r5, #4
         beq 4f
 8:      subs  r4, #1
@@ -644,7 +432,7 @@ endfunc
         vst1.8    d0, [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
+        \filterh q1	//MODIF ECO
         bne 8b
         subs  r5, #8
         beq 99f
@@ -654,44 +442,33 @@ endfunc
         add r7, #8
         mov r2, r7
         b 0b
-4:      subs  r4, #1
+4:      subs  r4, #1 	// height--
         \filterv
         vqrshrun.s16   d0, q8, #6
         vst1.32        d0[0], [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
+        \filterh q1 	//MODIF ECO
         bne 4b
         b   99f
-.Lbi\@: lsl      r9, #1
-        mov      r10, r8
-0:      vextin8
+.Lbi\@: lsl      r9, #1 	// BIDIR PROCESS
+        mov      r10, r8 	//_src2
+0:      vextin8 		// load src1
         \filterh q0
         vextin8
         \filterh q1
-        vextin8
-        \filterh q2
-        vextin8
-        \filterh q3
-        vextin8
-        \filterh q4
-        vextin8
-        \filterh q5
-        vextin8
-        \filterh q6
-        vextin8
-        \filterh q7
+
         cmp r5, #4
         beq 4f
-8:      subs  r4, #1
-        \filterv
-        vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q8
-        vqrshrun.s16   d0, q0, #7
-        vst1.8         d0, [r0], r1
+8:      subs  r4, #1 	//height--
+        \filterv 		// q8 out
+        vld1.16        {q0}, [r8], r9 	//q0=src2[0-15], src2+=src2stride
+        vqadd.s16      q0, q8 			// q0+=q8
+        vqrshrun.s16   d0, q0, #7 		// recadrage
+        vst1.8         d0, [r0], r1 	// *dst=d0, dst+=dststride
         regshuffle_q8
         vextin8
-        \filterh q7
+        \filterh q1 	//MODIF ECO
         bne 8b
         subs  r5, #8
         beq 99f
@@ -711,12 +488,13 @@ endfunc
         vst1.32      d0[0], [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
+        \filterh q1 	//MODIF ECO
         bne 4b
 99:     vpop {d8-d15}
         pop {r4-r10}
         bx lr
 .endm
+
 
 
 function ff_hevc_put_qpel_h1v1_neon_8, export=1
@@ -1268,6 +1046,3 @@ function ff_hevc_put_weighted_pred_avg_neon_8, export=1
         pop {r4, r5, r6, r7}
         bx lr
 endfunc
-
-
-#endif
