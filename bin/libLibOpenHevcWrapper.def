@@ -1,0 +1,14 @@
+LIBRARY   libLibOpenHevcWrapper
+EXPORTS
+libOpenHevcInit
+libOpenHevcDecode
+libOpenHevcGetPictureSize
+libOpenHevcGetPictureSize2
+libOpenHevcGetOutput
+libOpenHevcGetOutputCpy
+libOpenHevcSetCheckMD5
+libOpenHevcClose
+libOpenHevcVersion
+libOpenHevcFlush
+libOpenHevcSetDisableAU
+libOpenHevcGetPictureInfo

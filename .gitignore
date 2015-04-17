@@ -1,0 +1,17 @@
+# Common useless files
+.svn
+.DS_Store
+*.o
+
+# Build directories
+/build*/
+
+# Eclipse projects files
+.project
+.cproject
+
+# QtCreator projects files
+*.user
+*.user.*
+/config.h
+/config.asm
