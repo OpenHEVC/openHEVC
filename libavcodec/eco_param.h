@@ -3,7 +3,7 @@
 
 /* ECO Decoding Parameters */
 
-//#define ECO_DBF_OFF	// disable deblocking filter
+//#define ECO_LOOP	// disable deblocking filter & SAO
 
 #define ECO_LUMA1	// number of taps for luma filters [1;3;7]
 

@@ -2006,6 +2006,27 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
     }
 
+    // Eco Filters reload Morgan
+
+    if (s->eco_filter >= 3)
+        s->eco_filter = NORM;
+    else
+        s->eco_filter++;
+
+    if (s->eco_filter == NORM){
+        //ff_hevcdsp_init_arm(s->hevcdsp, s->sps->pcm.bit_depth);
+        printf("\n>>Reload Filters Norm\n");
+    }
+    else if (s->eco_filter == ECO1){
+
+        printf("\n>>Reload Filters Eco1\n");
+     }
+     else if (s->eco_filter == ECO3){
+
+        printf("\n>>Reload Filters Eco3\n");
+     }
+    
+
     if (current_mv.pred_flag == PF_L0) {
         int x0_c = x0 >> s->sps->hshift[1];
         int y0_c = y0 >> s->sps->vshift[1];
