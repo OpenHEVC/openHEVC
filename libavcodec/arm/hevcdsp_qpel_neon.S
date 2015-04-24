@@ -1,11 +1,3 @@
-#include "../eco_param.h"
-
-#if defined(ECO_LUMA1)
-    #include "hevcdsp_qpel_eco1_neon.S"
-#elif defined(ECO_LUMA3)
-    #include "hevcdsp_qpel_eco3_neon.S"
-#else
-
 /*
  * Copyright (c) 2014 Seppo Tomperi <seppo.tomperi@vtt.fi>
  *
@@ -1268,6 +1260,3 @@ function ff_hevc_put_weighted_pred_avg_neon_8, export=1
         pop {r4, r5, r6, r7}
         bx lr
 endfunc
-
-
-#endif

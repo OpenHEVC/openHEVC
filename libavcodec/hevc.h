@@ -100,12 +100,20 @@
                    (s)->nal_unit_type == NAL_BLA_N_LP)
 #define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
 
-// Eco Parameters to select the interpolation filters
-enum EcoParam
+// Eco Parameters to select the luma interpolation filters
+enum EcoParamLuma
 {
-    NORM = 0,
-    ECO1 = 1,
-    ECO3 = 3,
+    LUMA7 = 0,
+    LUMA1 = 1,
+    LUMA3 = 3,
+};
+
+// Eco Parameters to select the chroma interpolation filters
+enum EcoParamChroma
+{
+    CHROMA4 = 0,
+    CHROMA1 = 1,
+    CHROMA2 = 2,
 };
 
 
@@ -1159,8 +1167,9 @@ typedef struct HEVCLocalContext {
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
-    
-    enum EcoParam eco_filter;
+
+    enum EcoParamLuma eco_luma;   // Eco param Morgan
+    enum EcoParamChroma eco_chroma;   // Eco param Morgan
 
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;

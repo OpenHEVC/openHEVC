@@ -2006,24 +2006,40 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
     }
 
-    // Eco Filters reload Morgan
+    // Eco Filters param inc
 
-    if (s->eco_filter >= 3)
-        s->eco_filter = NORM;
+    if (s->eco_luma >= 3)
+        s->eco_luma = LUMA7;
     else
-        s->eco_filter++;
+        s->eco_luma++;
+    s->eco_chroma = CHROMA1;
 
-    if (s->eco_filter == NORM){
-        //ff_hevcdsp_init_arm(s->hevcdsp, s->sps->pcm.bit_depth);
-        printf("\n>>Reload Filters Norm\n");
+    // Eco Filters reload luma
+    if (s->eco_luma == LUMA7){
+        eco_reload_filter_luma7(&(s->hevcdsp), s->sps->pcm.bit_depth);
+        //printf("\n>>Load 7 Taps luma filter\n");
     }
-    else if (s->eco_filter == ECO1){
-
-        printf("\n>>Reload Filters Eco1\n");
+    else if (s->eco_luma == LUMA1){
+        eco_reload_filter_luma1(&(s->hevcdsp), s->sps->pcm.bit_depth);
+        //printf("\n>>Load 1 Tap luma filter\n");
      }
-     else if (s->eco_filter == ECO3){
+     else if (s->eco_luma == LUMA3){
+        eco_reload_filter_luma3(&(s->hevcdsp), s->sps->pcm.bit_depth);
+        //printf("\n>>Load 3 Taps luma filter\n");
+     }
 
-        printf("\n>>Reload Filters Eco3\n");
+    // Eco Filters reload chroma
+    if (s->eco_chroma == CHROMA4){
+        eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->pcm.bit_depth);
+        //printf("\n>>Load 4 Taps chroma filter\n");
+    }
+    else if (s->eco_chroma == CHROMA1){
+        eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->pcm.bit_depth);
+        //printf("\n>>Load 1 Tap chroma filter\n");
+     }
+     else if (s->eco_chroma == CHROMA2){
+        //eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->pcm.bit_depth);
+        //printf("\n>>Load 2 Taps chroma filter\n");
      }
     
 
