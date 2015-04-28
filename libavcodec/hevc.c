@@ -3859,7 +3859,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     
 
     // Eco Filters param inc
-/*
+
     if (s->eco_luma >= 3)
         s->eco_luma = LUMA7;
     else
@@ -3895,7 +3895,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         //printf("\n>>Load 2 Taps chroma filter\n");
      }
     // Fin ECO Param
-*/
+
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra = INT_MAX;
