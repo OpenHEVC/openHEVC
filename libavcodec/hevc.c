@@ -48,6 +48,7 @@ static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
 static void display_md5(int poc, uint8_t md5[3][16], int chroma_idc);
 static void printf_ref_pic_list(HEVCContext *s);
 
+int dec_pic_count=0;
 
 
 /**
@@ -3630,6 +3631,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     }
     av_log(s->avctx, AV_LOG_DEBUG, "frame end %d\n", s->decoder_id);
 
+    // ECO Param activation level
+    dec_pic_count++;
+
     return avpkt->size;
 }
 
@@ -3860,10 +3864,11 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     // Eco Filters param inc
 
-    if (s->eco_luma >= 3)
-        s->eco_luma = LUMA7;
+    if( dec_pic_count%2 == 0)
+        s->eco_luma = LUMA1;
     else
-        s->eco_luma++;
+        s->eco_luma = LUMA7;
+
 
     s->eco_chroma = CHROMA4;
 
