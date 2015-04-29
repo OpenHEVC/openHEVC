@@ -35,6 +35,14 @@ int          ticksSDL;
 
 void Init_Time() {
 #ifndef SDL_NO_DISPLAY
+    /* First, initialize SDL's video subsystem. */
+    if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
+        /* Failed, exit. */
+        printf("Video initialization failed: %s\n", SDL_GetError( ) );
+        SDL_Quit();
+        exit(0);
+    }
+
     ticksSDL = SDL_GetTicks();
 #endif
 }
@@ -47,14 +55,6 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     const SDL_VideoInfo* info;
     Uint8 bpp;
     Uint32 vflags;
-    
-    /* First, initialize SDL's video subsystem. */
-    if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
-        /* Failed, exit. */
-        printf("Video initialization failed: %s\n", SDL_GetError( ) );
-        SDL_Quit();
-        exit(0);
-    }
     
     info = SDL_GetVideoInfo();
     if( !info ) {
