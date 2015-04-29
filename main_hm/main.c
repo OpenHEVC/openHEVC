@@ -181,6 +181,10 @@ static void video_decode_example(const char *filename)
     openHevcFrameCpy.pvV = NULL;
 #if USE_SDL
     Init_Time();
+    if (frame_rate > 0) {
+        initFramerate_SDL();
+        setFramerate_SDL(frame_rate);
+    }
 #endif
 #ifdef TIME2
     time_us = GetTimeMs64();
@@ -249,6 +253,9 @@ static void video_decode_example(const char *filename)
                     }
                 }
 #if USE_SDL
+                if (frame_rate > 0) {
+                    framerateDelay_SDL();
+                }                
                 if (display_flags == ENABLE) {
                     libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
                     libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
