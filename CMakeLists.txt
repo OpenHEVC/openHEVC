@@ -410,22 +410,22 @@ if(ENABLE_EXECUTABLE)
 
     if(SDL_FOUND)
         # Build executable
-        add_executable(hevc ${HEVC_SOURCES_FILES} main_hm/sdl.c)
+        add_executable(hevc ${HEVC_SOURCES_FILES} main_hm/sdl.c main_hm/SDL_framerate.c)
         # Link executable
         target_link_libraries(hevc ${LINK_LIBRARIES_LIST} ${SDL_LIBRARY})
         # Set include directory specific for this file. Avoid conflicts when including SDL.h
         # if both SDL and SDL2 are installed
-        set_source_files_properties(main_hm/sdl.c PROPERTIES COMPILE_FLAGS -I"${SDL_INCLUDE_DIR}")
+        set_source_files_properties(main_hm/sdl.c main_hm/SDL_framerate.c PROPERTIES COMPILE_FLAGS -I"${SDL_INCLUDE_DIR}")
     endif()
 
     if(SDL2_FOUND)
         # Build executable
-        add_executable(hevc_sdl2 ${HEVC_SOURCES_FILES} main_hm/sdl2.c)
+        add_executable(hevc_sdl2 ${HEVC_SOURCES_FILES} main_hm/sdl2.c main_hm/SDL_framerate.c)
         # Link executable
         target_link_libraries(hevc_sdl2 ${LINK_LIBRARIES_LIST} ${SDL2_LIBRARY})
         # Set include directory specific for this file. Avoid conflicts when including SDL.h
         # if both SDL and SDL2 are installed
-        set_source_files_properties(main_hm/sdl2.c PROPERTIES COMPILE_FLAGS -I"${SDL2_INCLUDE_DIR}")
+        set_source_files_properties(main_hm/sdl2.c main_hm/SDL_framerate.c PROPERTIES COMPILE_FLAGS -I"${SDL2_INCLUDE_DIR}")
     endif()
 
 endif()
