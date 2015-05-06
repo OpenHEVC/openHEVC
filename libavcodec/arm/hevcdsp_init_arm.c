@@ -28,8 +28,6 @@
 #include "libavcodec/bit_depth_template.c"
 #include "libavcodec/hevc_defs.h"
 
-#include "../eco_param.h"
-
 static void (*put_hevc_qpel_neon[4][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                    int height, int width);
 
@@ -305,6 +303,24 @@ static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
         }
     }
 }
+static void ff_hevc_sao_band_eco_wrapper(uint8_t *_dst, uint8_t *_src,
+                                    ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                    SAOParams *sao,
+                                    int *borders, int width, int height,
+                                    int c_idx)
+{
+    put_hevc_qpel_uw_neon[0][1](_dst, stride_dst, _src, stride_src, width, height, NULL, 0);
+}
+
+static void ff_hevc_sao_edge_eco_wrapper(uint8_t *_dst, uint8_t *_src,
+                                  ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                  SAOParams *sao,
+                                  int width, int height,
+                                  int c_idx)
+{
+    put_hevc_qpel_uw_neon[0][1](_dst, stride_dst, _src, stride_src, width, height, NULL, 0);
+}
+
 
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
 static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,
@@ -445,15 +461,9 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][0][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
             c->put_hevc_epel[x][0][0]         = ff_hevc_put_pixels_neon_8;
-            #ifndef ECO_CHROMA
-                c->put_hevc_epel[x][1][0]         = ff_hevc_put_epel_v_neon_8;
-                c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel_h_neon_8;
-                c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
-            #else
-                c->put_hevc_epel[x][1][0]         = ff_hevc_put_pixels_neon_8;
-                c->put_hevc_epel[x][0][1]         = ff_hevc_put_pixels_neon_8;
-                c->put_hevc_epel[x][1][1]         = ff_hevc_put_pixels_neon_8;
-            #endif
+            c->put_hevc_epel[x][1][0]         = ff_hevc_put_epel_v_neon_8;
+            c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel_h_neon_8;
+            c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
         }
         c->put_hevc_qpel_uni[1][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w4;
         c->put_hevc_qpel_uni[3][0][0]     = ff_hevc_put_qpel_uw_pixels_neon_8_w8;
@@ -489,7 +499,7 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
             c->upsample_filter_block_luma_v[2] = ff_upsample_filter_block_luma_v_x1_5_neon;
 #endif
 
-    }
+    }   printf("\n >> init neon \n");
 #endif // HAVE_NEON
 }
 
@@ -699,6 +709,16 @@ av_cold void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
 
         }
 
+    }
+#endif // HAVE_NEON
+}
+
+av_cold void eco_sao_off(HEVCDSPContext *c, const int bit_depth)
+{
+#if HAVE_NEON
+    if (bit_depth == 8) {        
+        c->sao_band_filter                = ff_hevc_sao_band_eco_wrapper;
+        c->sao_edge_filter                = ff_hevc_sao_edge_eco_wrapper;
     }
 #endif // HAVE_NEON
 }

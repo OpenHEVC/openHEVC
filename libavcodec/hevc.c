@@ -3142,10 +3142,72 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 s->max_ra = INT_MIN;
         }
 
-        if (s->sh.first_slice_in_pic_flag) {
+        if (s->sh.first_slice_in_pic_flag) { // Morgan: 1st slice of frame
+            /*
+            if (s->sh.slice_type != I_SLICE){
+                // Eco activation levels
+
+                if( dec_pic_count%2 == 0){
+                    s->eco_luma = LUMA1;
+                    s->eco_chroma = CHROMA1;
+                    s->eco_dbf_off = 1;
+                    s->eco_sao_off = 1;
+                }else{
+                    s->eco_luma = LUMA7;
+                    s->eco_chroma = CHROMA4;
+                    s->eco_dbf_off = 0;
+                    s->eco_sao_off = 0;
+                }
+
+                switch(s->eco_luma){
+                    case LUMA1:
+                            eco_reload_filter_luma1(&(s->hevcdsp), 8);
+                            //printf("\n>>Load 1 Tap luma filter\n");
+                            break;
+                    case LUMA3:
+                            eco_reload_filter_luma3(&(s->hevcdsp), 8);
+                            //printf("\n>>Load 3 Taps luma filter\n");
+                            break;
+                    case LUMA7:
+                            eco_reload_filter_luma7(&(s->hevcdsp), 8);
+                            //printf("\n>>Load 3 Taps luma filter\n");
+                            break;
+                    default:
+                            break;
+                }
+
+                switch(s->eco_chroma){
+                    case CHROMA1:
+                            eco_reload_filter_chroma1(&(s->hevcdsp), 8);
+                            //printf("\n>>Load 1 Tap chroma filter\n");
+                            break;
+                    case CHROMA2:
+                            //eco_reload_filter_chroma2(&(s->hevcdsp), 8);
+                            //printf("\n>>Load 2 Taps chroma filter\n");
+                            break;
+                    case CHROMA4:
+                            eco_reload_filter_chroma4(&(s->hevcdsp), 8);
+                            //printf("\n>>Load 4 Taps chroma filter\n");
+                            break;
+                    default:
+                            break;
+                }
+
+                if (s->eco_sao_off)
+                    eco_sao_off(&(s->hevcdsp), 8);
+
+                // Fin ECO Param
+            }
+            // Fin morgan
+            */
+
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
+
+             // ECO Param activation level
+             dec_pic_count++;
+
         } else if (!s->ref) {
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
             goto fail;
@@ -3631,9 +3693,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     }
     av_log(s->avctx, AV_LOG_DEBUG, "frame end %d\n", s->decoder_id);
 
-    // ECO Param activation level
-    dec_pic_count++;
-
     return avpkt->size;
 }
 
@@ -3860,46 +3919,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     if (s->sps != s0->sps)
         ret = set_sps(s, s0->sps);
-    
-
-    // Eco Filters param inc
-
-    if( dec_pic_count%2 == 0)
-        s->eco_luma = LUMA1;
-    else
-        s->eco_luma = LUMA7;
-
-
-    s->eco_chroma = CHROMA4;
-
-    // Eco Filters reload luma
-    if (s->eco_luma == LUMA7){
-        eco_reload_filter_luma7(&(s->hevcdsp), 8);
-        //printf("\n>>Load 7 Taps luma filter\n");
-    }
-    else if (s->eco_luma == LUMA1){
-        eco_reload_filter_luma1(&(s->hevcdsp), 8);
-        //printf("\n>>Load 1 Tap luma filter\n");
-     }
-     else if (s->eco_luma == LUMA3){
-        eco_reload_filter_luma3(&(s->hevcdsp), 8);
-        //printf("\n>>Load 3 Taps luma filter\n");
-     }
-
-    // Eco Filters reload chroma
-    if (s->eco_chroma == CHROMA4){
-        eco_reload_filter_chroma4(&(s->hevcdsp), 8);
-        //printf("\n>>Load 4 Taps chroma filter\n");
-    }
-    else if (s->eco_chroma == CHROMA1){
-        eco_reload_filter_chroma1(&(s->hevcdsp), 8);
-        //printf("\n>>Load 1 Tap chroma filter\n");
-     }
-     else if (s->eco_chroma == CHROMA2){
-        //eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->pcm.bit_depth);
-        //printf("\n>>Load 2 Taps chroma filter\n");
-     }
-    // Fin ECO Param
 
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;

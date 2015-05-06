@@ -1170,6 +1170,8 @@ typedef struct HEVCContext {
 
     enum EcoParamLuma eco_luma;   // Eco param Morgan
     enum EcoParamChroma eco_chroma;   // Eco param Morgan
+    uint8_t eco_sao_off;
+    uint8_t eco_dbf_off;
 
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;

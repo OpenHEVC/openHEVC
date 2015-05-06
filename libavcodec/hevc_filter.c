@@ -1193,9 +1193,11 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int
 
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 {
-#ifndef ECO_LOOP
     int x_end = x >= s->sps->width  - ctb_size;
-    deblocking_filter_CTB(s, x, y);
+
+    if (!s->eco_dbf_off)        // ECO DBF OFF
+        deblocking_filter_CTB(s, x, y);
+
     if (s->sps->sao_enabled) {
         int y_end = y >= s->sps->height - ctb_size;
         if (y && x)
@@ -1214,7 +1216,6 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
         }
     } else if (s->threads_type & FF_THREAD_FRAME && x_end)
         ff_thread_report_progress(&s->ref->tf, y + ctb_size - 4, 0);
-#endif
 }
 
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
