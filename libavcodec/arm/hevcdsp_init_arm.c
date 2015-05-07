@@ -482,7 +482,7 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
             c->upsample_filter_block_luma_v[2] = ff_upsample_filter_block_luma_v_x1_5_neon;
 #endif
 
-    }   printf("\n >> init neon \n");
+    }
 #endif // HAVE_NEON
 }
 

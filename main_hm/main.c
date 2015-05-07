@@ -138,13 +138,17 @@ static void video_decode_example(const char *filename)
         libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
     }
 
-    libOpenHevcSetDebugMode(openHevcHandle, 1);
+    libOpenHevcSetDebugMode(openHevcHandle, 0);
     libOpenHevcStartDecoder(openHevcHandle);
     openHevcFrameCpy.pvY = NULL;
     openHevcFrameCpy.pvU = NULL;
     openHevcFrameCpy.pvV = NULL;
 #if USE_SDL
     Init_Time();
+    if (frame_rate > 0) {
+        initFramerate_SDL();
+        setFramerate_SDL(frame_rate);
+    }
 #endif
 #ifdef TIME2
     time_us = GetTimeMs64();
@@ -189,6 +193,9 @@ static void video_decode_example(const char *filename)
                     }
                 }
 #if USE_SDL
+                if (frame_rate > 0) {
+                    framerateDelay_SDL();
+                }                
                 if (display_flags == ENABLE) {
                     libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
                     libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);

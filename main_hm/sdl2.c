@@ -27,6 +27,7 @@
 #ifndef SDL_NO_DISPLAY
 #include <SDL.h>
 #include <stdio.h>
+#include "SDL_framerate.h"
 
 /* SDL variables */
 SDL_Window        *pWindow1;
@@ -35,7 +36,11 @@ SDL_Texture       *bmpTex1;
 uint8_t           *pixels1;
 int               pitch1, size1;
 int               ticksSDL;
+
+/* SDL_gfx variable */
+FPSmanager   fpsm;
 #endif
+
 void Init_Time() {
 #ifndef SDL_NO_DISPLAY
     ticksSDL = SDL_GetTicks();
@@ -95,4 +100,25 @@ void CloseSDLDisplay(){
 }
 int SDL_GetTime() {
     return SDL_GetTicks() - ticksSDL;
+}
+
+// Frame rate managment
+void initFramerate_SDL() {
+    SDL_initFramerate(&fpsm);
+}
+
+void setFramerate_SDL(Uint32 rate) {
+    if (SDL_setFramerate(&fpsm,rate) < 0) {
+        printf("SDL_glx: Couldn't set frame rate\n");
+        SDL_Quit();
+        exit(0);
+    }
+}
+
+void framerateDelay_SDL() {
+    if (SDL_framerateDelay(&fpsm) < 0) {
+        printf("SDL_glx: Couldn't set frame rate delay\n");
+        SDL_Quit();
+        exit(0);
+    }
 }

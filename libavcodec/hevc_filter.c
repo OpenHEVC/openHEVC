@@ -33,7 +33,6 @@
 #include "hevc.h"
 #include "bit_depth_template.c"
 
-#include "eco_param.h"
 
 #if HAVE_SSE2
 #include <emmintrin.h>

@@ -25,7 +25,7 @@
 #define SDL_NO_DISPLAY_
 
 #include <SDL.h>
-
+#include "SDL_framerate.h"
 
 /* SDL variables */
 SDL_Surface *screen;
@@ -33,8 +33,19 @@ SDL_Overlay *yuv_overlay;
 SDL_Rect     rect;
 int          ticksSDL;
 
+/* SDL_gfx variable */
+FPSmanager   fpsm;
+
 void Init_Time() {
 #ifndef SDL_NO_DISPLAY
+    /* First, initialize SDL's video subsystem. */
+    if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
+        /* Failed, exit. */
+        printf("Video initialization failed: %s\n", SDL_GetError( ) );
+        SDL_Quit();
+        exit(0);
+    }
+
     ticksSDL = SDL_GetTicks();
 #endif
 }
@@ -47,14 +58,6 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     const SDL_VideoInfo* info;
     Uint8 bpp;
     Uint32 vflags;
-    
-    /* First, initialize SDL's video subsystem. */
-    if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
-        /* Failed, exit. */
-        printf("Video initialization failed: %s\n", SDL_GetError( ) );
-        SDL_Quit();
-        exit(0);
-    }
     
     info = SDL_GetVideoInfo();
     if( !info ) {
@@ -128,4 +131,25 @@ void CloseSDLDisplay(){
 }
 int SDL_GetTime() {
     return SDL_GetTicks() - ticksSDL;
+}
+
+// Frame rate managment
+void initFramerate_SDL() {
+    SDL_initFramerate(&fpsm);
+}
+
+void setFramerate_SDL(Uint32 rate) {
+    if (SDL_setFramerate(&fpsm,rate) < 0) {
+        printf("SDL_glx: Couldn't set frame rate\n");
+        SDL_Quit();
+        exit(0);
+    }
+}
+
+void framerateDelay_SDL() {
+    if (SDL_framerateDelay(&fpsm) < 0) {
+        printf("SDL_glx: Couldn't set frame rate delay\n");
+        SDL_Quit();
+        exit(0);
+    }
 }
