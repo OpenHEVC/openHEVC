@@ -3143,11 +3143,11 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
         if (s->sh.first_slice_in_pic_flag) { // Morgan: 1st slice of frame
-            /*
+
             if (s->sh.slice_type != I_SLICE){
                 // Eco activation levels
-
-                if( dec_pic_count%2 == 0){
+/*
+                if( dec_pic_count%1 == 0){
                     s->eco_luma = LUMA1;
                     s->eco_chroma = CHROMA1;
                     s->eco_dbf_off = 1;
@@ -3158,6 +3158,11 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     s->eco_dbf_off = 0;
                     s->eco_sao_off = 0;
                 }
+*/
+                    s->eco_luma = LUMA7;
+                    s->eco_chroma = CHROMA4;
+                    s->eco_dbf_off = 0;
+                    s->eco_sao_off = 1;
 
                 switch(s->eco_luma){
                     case LUMA1:
@@ -3193,13 +3198,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                             break;
                 }
 
-                if (s->eco_sao_off)
-                    eco_sao_off(&(s->hevcdsp), 8);
-
                 // Fin ECO Param
             }
             // Fin morgan
-            */
 
             ret = hevc_frame_start(s);
             if (ret < 0)

@@ -303,23 +303,6 @@ static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
         }
     }
 }
-static void ff_hevc_sao_band_eco_wrapper(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                    SAOParams *sao,
-                                    int *borders, int width, int height,
-                                    int c_idx)
-{
-    put_hevc_qpel_uw_neon[0][1](_dst, stride_dst, _src, stride_src, width, height, NULL, 0);
-}
-
-static void ff_hevc_sao_edge_eco_wrapper(uint8_t *_dst, uint8_t *_src,
-                                  ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                  SAOParams *sao,
-                                  int width, int height,
-                                  int c_idx)
-{
-    put_hevc_qpel_uw_neon[0][1](_dst, stride_dst, _src, stride_src, width, height, NULL, 0);
-}
 
 
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
@@ -709,16 +692,6 @@ av_cold void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
 
         }
 
-    }
-#endif // HAVE_NEON
-}
-
-av_cold void eco_sao_off(HEVCDSPContext *c, const int bit_depth)
-{
-#if HAVE_NEON
-    if (bit_depth == 8) {        
-        c->sao_band_filter                = ff_hevc_sao_band_eco_wrapper;
-        c->sao_edge_filter                = ff_hevc_sao_edge_eco_wrapper;
     }
 #endif // HAVE_NEON
 }

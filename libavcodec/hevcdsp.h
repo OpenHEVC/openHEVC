@@ -160,6 +160,5 @@ void eco_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth);
-void eco_sao_off(HEVCDSPContext *c, const int bit_depth);
 
 #endif /* AVCODEC_HEVCDSP_H */
