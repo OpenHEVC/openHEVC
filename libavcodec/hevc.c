@@ -3146,8 +3146,85 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
             if (s->sh.slice_type != I_SLICE){
                 // Eco activation levels
+                s->green.activation_level = 12;
+                switch(s->green.activation_level){
+                    case 0:
+                        s->green.eco_reload = 0;
+                        break;
+                    case 1:
+                        if( dec_pic_count%12 == 0)
+                            s->green.eco_reload = 1;
+                        else
+                            s->green.eco_reload = 0;
+                        break;
+                    case 2:
+                        if( dec_pic_count%6 == 0)
+                            s->green.eco_reload = 1;
+                        else
+                            s->green.eco_reload = 0;
+                        break;
+                    case 3:
+                        if( dec_pic_count%4 == 0)
+                            s->green.eco_reload = 1;
+                        else
+                            s->green.eco_reload = 0;
+                        break;
+                    case 4:
+                        if( dec_pic_count%3 == 0)
+                            s->green.eco_reload = 1;
+                        else
+                            s->green.eco_reload = 0;
+                        break;
+                    case 5:
+                        if( dec_pic_count%2 == 0 || dec_pic_count%12 == 5)
+                            s->green.eco_reload = 0;
+                        else
+                            s->green.eco_reload = 1;
+                        break;
+                    case 6:
+                        if( dec_pic_count%2 == 0)
+                            s->green.eco_reload = 1;
+                        else
+                            s->green.eco_reload = 0;
+                        break;
+                    case 7:
+                        if( dec_pic_count%2 == 0 || dec_pic_count%12 == 5 )
+                            s->green.eco_reload = 1;
+                        else
+                            s->green.eco_reload = 0;
+                        break;
+                    case 8:
+                        if( dec_pic_count%3 == 0)
+                            s->green.eco_reload = 0;
+                        else
+                            s->green.eco_reload = 1;
+                        break;
+                    case 9:
+                        if( dec_pic_count%4 == 0)
+                            s->green.eco_reload = 0;
+                        else
+                            s->green.eco_reload = 1;
+                        break;
+                    case 10:
+                        if( dec_pic_count%6 == 0)
+                            s->green.eco_reload = 0;
+                        else
+                            s->green.eco_reload = 1;
+                        break;
+                    case 11:
+                        if( dec_pic_count%12 == 6)
+                            s->green.eco_reload = 0;
+                        else
+                            s->green.eco_reload = 1;
+                        break;
+                    case 12:
+                        s->green.eco_reload = 1;
+                        break;
+                    default:
+                        break;
+                }
 
-                if( dec_pic_count%2 == 0){
+                if( s->green.eco_reload ){
                     s->green.eco_luma = LUMA1;
                     s->green.eco_chroma = CHROMA1;
                     s->green.eco_dbf_off = 1;
@@ -3158,7 +3235,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     s->green.eco_dbf_off = 0;
                     s->green.eco_sao_off = 0;
                 }
-
 
                 switch(s->green.eco_luma){
                     case LUMA1:

@@ -1171,10 +1171,16 @@ typedef struct HEVCContext {
     struct {    // Parametres Green Morgan
     enum EcoParamLuma eco_luma;
     enum EcoParamChroma eco_chroma;
+
     enum EcoParamLuma eco_cur_luma;
     enum EcoParamChroma eco_cur_chroma;
+
     uint8_t eco_dbf_off;
     uint8_t eco_sao_off;
+
+    uint8_t eco_reload;
+
+    uint8_t activation_level;
 
     } green;
 
