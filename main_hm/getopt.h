@@ -54,6 +54,7 @@ int quality_layer_id;
 int no_cropping;
 int num_frames;
 int frame_rate;
+int green_mode;
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);

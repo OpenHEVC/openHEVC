@@ -39,8 +39,6 @@
 #include "golomb.h"
 #include "hevc.h"
 
-#include "../main_hm/getopt.h"
-
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
 #define POC_DISPLAY_MD5
@@ -50,7 +48,10 @@ static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
 static void display_md5(int poc, uint8_t md5[3][16], int chroma_idc);
 static void printf_ref_pic_list(HEVCContext *s);
 
+<<<<<<< HEAD
 int dec_pic_count=0;
+=======
+>>>>>>> upstream/shm-dev
 
 
 /**
@@ -2007,7 +2008,11 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         }
 #endif
         hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
+<<<<<<< HEAD
     }    
+=======
+    }
+>>>>>>> upstream/shm-dev
 
     if (current_mv.pred_flag == PF_L0) {
         int x0_c = x0 >> s->sps->hshift[1];
@@ -3144,11 +3149,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 s->max_ra = INT_MIN;
         }
 
+<<<<<<< HEAD
         if (s->sh.first_slice_in_pic_flag) { // Morgan: 1st slice of frame
 
             if (s->sh.slice_type != I_SLICE){
                 // Eco activation levels
-                s->green.activation_level = green_mode;
+                s->green.activation_level = 12;
                 switch(s->green.activation_level){
                     case 0:
                         s->green.eco_reload = 0;
@@ -3295,6 +3301,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
              // ECO Param activation level
              dec_pic_count++;
 
+=======
+        if (s->sh.first_slice_in_pic_flag) {
+            ret = hevc_frame_start(s);
+            if (ret < 0)
+                return ret;
+>>>>>>> upstream/shm-dev
         } else if (!s->ref) {
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
             goto fail;
