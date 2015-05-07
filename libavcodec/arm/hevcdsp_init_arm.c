@@ -673,7 +673,6 @@ av_cold void eco_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][0][1]         = ff_hevc_put_pixels_neon_8;
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_pixels_neon_8;
         }
-
     }
 #endif // HAVE_NEON
 }
@@ -689,9 +688,7 @@ av_cold void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][1][0]         = ff_hevc_put_epel_v_neon_8;
             c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel_h_neon_8;
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
-
         }
-
     }
 #endif // HAVE_NEON
 }

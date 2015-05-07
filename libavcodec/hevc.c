@@ -3146,53 +3146,61 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
             if (s->sh.slice_type != I_SLICE){
                 // Eco activation levels
-/*
-                if( dec_pic_count%1 == 0){
-                    s->eco_luma = LUMA1;
-                    s->eco_chroma = CHROMA1;
-                    s->eco_dbf_off = 1;
-                    s->eco_sao_off = 1;
-                }else{
-                    s->eco_luma = LUMA7;
-                    s->eco_chroma = CHROMA4;
-                    s->eco_dbf_off = 0;
-                    s->eco_sao_off = 0;
-                }
-*/
-                    s->eco_luma = LUMA7;
-                    s->eco_chroma = CHROMA4;
-                    s->eco_dbf_off = 0;
-                    s->eco_sao_off = 1;
 
-                switch(s->eco_luma){
+                if( dec_pic_count%2 == 0){
+                    s->green.eco_luma = LUMA1;
+                    s->green.eco_chroma = CHROMA1;
+                    s->green.eco_dbf_off = 1;
+                    s->green.eco_sao_off = 1;
+                }else{
+                    s->green.eco_luma = LUMA7;
+                    s->green.eco_chroma = CHROMA4;
+                    s->green.eco_dbf_off = 0;
+                    s->green.eco_sao_off = 0;
+                }
+
+
+                switch(s->green.eco_luma){
                     case LUMA1:
-                            eco_reload_filter_luma1(&(s->hevcdsp), 8);
-                            //printf("\n>>Load 1 Tap luma filter\n");
+                            if (s->green.eco_cur_luma != LUMA1){
+                                eco_reload_filter_luma1(&(s->hevcdsp), 8);
+                                s->green.eco_cur_luma = LUMA1;
+                            }
                             break;
                     case LUMA3:
-                            eco_reload_filter_luma3(&(s->hevcdsp), 8);
-                            //printf("\n>>Load 3 Taps luma filter\n");
+                            if (s->green.eco_cur_luma != LUMA3){
+                                eco_reload_filter_luma3(&(s->hevcdsp), 8);
+                                s->green.eco_cur_luma = LUMA3;
+                            }
                             break;
                     case LUMA7:
-                            eco_reload_filter_luma7(&(s->hevcdsp), 8);
-                            //printf("\n>>Load 3 Taps luma filter\n");
+                            if (s->green.eco_cur_luma != LUMA7){
+                                eco_reload_filter_luma7(&(s->hevcdsp), 8);
+                                s->green.eco_cur_luma = LUMA7;
+                            }
                             break;
                     default:
                             break;
                 }
 
-                switch(s->eco_chroma){
+                switch(s->green.eco_chroma){
                     case CHROMA1:
-                            eco_reload_filter_chroma1(&(s->hevcdsp), 8);
-                            //printf("\n>>Load 1 Tap chroma filter\n");
+                            if (s->green.eco_cur_chroma != CHROMA1){
+                                eco_reload_filter_chroma1(&(s->hevcdsp), 8);
+                                s->green.eco_cur_chroma = CHROMA1;
+                            }
                             break;
                     case CHROMA2:
-                            //eco_reload_filter_chroma2(&(s->hevcdsp), 8);
-                            //printf("\n>>Load 2 Taps chroma filter\n");
+                            if (s->green.eco_cur_chroma != CHROMA2){
+                                //eco_reload_filter_chroma2(&(s->hevcdsp), 8);
+                                s->green.eco_cur_chroma = CHROMA2;
+                            }
                             break;
                     case CHROMA4:
-                            eco_reload_filter_chroma4(&(s->hevcdsp), 8);
-                            //printf("\n>>Load 4 Taps chroma filter\n");
+                            if (s->green.eco_cur_chroma != CHROMA4){
+                                eco_reload_filter_chroma4(&(s->hevcdsp), 8);
+                                s->green.eco_cur_chroma = CHROMA4;
+                            }
                             break;
                     default:
                             break;
