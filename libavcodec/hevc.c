@@ -3259,7 +3259,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                                 break;
                         case CHROMA2:
                                 if (s->green.eco_cur_chroma != CHROMA2){
-                                    //eco_reload_filter_chroma2(&(s->hevcdsp), 8);
+                                    eco_reload_filter_chroma2(&(s->hevcdsp), 8);
                                     s->green.eco_cur_chroma = CHROMA2;
                                 }
                                 break;

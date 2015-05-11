@@ -334,6 +334,7 @@ list(APPEND libfilenames
     libavcodec/arm/hevcdsp_qpel_eco1_neon.S
     libavcodec/arm/hevcdsp_qpel_eco3_neon.S
     libavcodec/arm/hevcdsp_epel_neon.S
+    libavcodec/arm/hevcdsp_epel_eco_neon.S
     libavcodec/arm/hevcdsp_il_pred_neon.S
     libavcodec/arm/hevcdsp_sao_neon.S
     libavcodec/arm/hpeldsp_arm.S

@@ -195,6 +195,15 @@ void ff_hevc_put_epel_v_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
 void ff_hevc_put_epel_hv_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
                                 ptrdiff_t srcstride, int height,
                                 intptr_t mx, intptr_t my, int width);
+void ff_hevc_put_epel2_h_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                ptrdiff_t srcstride, int height,
+                                intptr_t mx, intptr_t my, int width);
+void ff_hevc_put_epel2_v_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                ptrdiff_t srcstride, int height,
+                                intptr_t mx, intptr_t my, int width);
+void ff_hevc_put_epel2_hv_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                ptrdiff_t srcstride, int height,
+                                intptr_t mx, intptr_t my, int width);
 void ff_hevc_transform_4x4_neon_8(int16_t *coeffs, int col_limit);
 void ff_hevc_transform_8x8_neon_8(int16_t *coeffs, int col_limit);
 void ff_hevc_transform_16x16_add_neon_8(uint8_t *_dst, int16_t *coeffs,
@@ -672,6 +681,22 @@ av_cold void eco_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][1][0]         = ff_hevc_put_pixels_neon_8;
             c->put_hevc_epel[x][0][1]         = ff_hevc_put_pixels_neon_8;
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_pixels_neon_8;
+        }
+    }
+#endif // HAVE_NEON
+}
+
+av_cold void eco_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth)
+{
+#if HAVE_NEON
+    if (bit_depth == 8) {
+        int x;
+        
+        for (x = 0; x < 10; x++) {
+            c->put_hevc_epel[x][0][0]         = ff_hevc_put_pixels_neon_8;
+            c->put_hevc_epel[x][1][0]         = ff_hevc_put_epel2_v_neon_8;
+            c->put_hevc_epel[x][0][1]         = ff_hevc_put_epel2_h_neon_8;
+            c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel2_hv_neon_8;
         }
     }
 #endif // HAVE_NEON
