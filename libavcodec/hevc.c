@@ -3148,7 +3148,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
             if (s->sh.slice_type != I_SLICE){
                 // Eco activation levels
-                s->green.activation_level = green_mode;
                 switch(s->green.activation_level){
                     case 0:
                         s->green.eco_reload = 0;
@@ -3227,63 +3226,53 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 }
 
                 if( s->green.eco_reload ){
-                    s->green.eco_luma = LUMA1;
-                    s->green.eco_chroma = CHROMA1;
-                    s->green.eco_dbf_off = 1;
-                    s->green.eco_sao_off = 1;
-                }else{
-                    s->green.eco_luma = LUMA7;
-                    s->green.eco_chroma = CHROMA4;
-                    s->green.eco_dbf_off = 0;
-                    s->green.eco_sao_off = 0;
-                }
 
-                switch(s->green.eco_luma){
-                    case LUMA1:
-                            if (s->green.eco_cur_luma != LUMA1){
-                                eco_reload_filter_luma1(&(s->hevcdsp), 8);
-                                s->green.eco_cur_luma = LUMA1;
-                            }
-                            break;
-                    case LUMA3:
-                            if (s->green.eco_cur_luma != LUMA3){
-                                eco_reload_filter_luma3(&(s->hevcdsp), 8);
-                                s->green.eco_cur_luma = LUMA3;
-                            }
-                            break;
-                    case LUMA7:
-                            if (s->green.eco_cur_luma != LUMA7){
-                                eco_reload_filter_luma7(&(s->hevcdsp), 8);
-                                s->green.eco_cur_luma = LUMA7;
-                            }
-                            break;
-                    default:
-                            break;
-                }
+                    switch(s->green.eco_luma){
+                        case LUMA1:
+                                if (s->green.eco_cur_luma != LUMA1){
+                                    eco_reload_filter_luma1(&(s->hevcdsp), 8);
+                                    s->green.eco_cur_luma = LUMA1;
+                                }
+                                break;
+                        case LUMA3:
+                                if (s->green.eco_cur_luma != LUMA3){
+                                    eco_reload_filter_luma3(&(s->hevcdsp), 8);
+                                    s->green.eco_cur_luma = LUMA3;
+                                }
+                                break;
+                        case LUMA7:
+                                if (s->green.eco_cur_luma != LUMA7){
+                                    eco_reload_filter_luma7(&(s->hevcdsp), 8);
+                                    s->green.eco_cur_luma = LUMA7;
+                                }
+                                break;
+                        default:
+                                break;
+                    }
 
-                switch(s->green.eco_chroma){
-                    case CHROMA1:
-                            if (s->green.eco_cur_chroma != CHROMA1){
-                                eco_reload_filter_chroma1(&(s->hevcdsp), 8);
-                                s->green.eco_cur_chroma = CHROMA1;
-                            }
-                            break;
-                    case CHROMA2:
-                            if (s->green.eco_cur_chroma != CHROMA2){
-                                //eco_reload_filter_chroma2(&(s->hevcdsp), 8);
-                                s->green.eco_cur_chroma = CHROMA2;
-                            }
-                            break;
-                    case CHROMA4:
-                            if (s->green.eco_cur_chroma != CHROMA4){
-                                eco_reload_filter_chroma4(&(s->hevcdsp), 8);
-                                s->green.eco_cur_chroma = CHROMA4;
-                            }
-                            break;
-                    default:
-                            break;
+                    switch(s->green.eco_chroma){
+                        case CHROMA1:
+                                if (s->green.eco_cur_chroma != CHROMA1){
+                                    eco_reload_filter_chroma1(&(s->hevcdsp), 8);
+                                    s->green.eco_cur_chroma = CHROMA1;
+                                }
+                                break;
+                        case CHROMA2:
+                                if (s->green.eco_cur_chroma != CHROMA2){
+                                    //eco_reload_filter_chroma2(&(s->hevcdsp), 8);
+                                    s->green.eco_cur_chroma = CHROMA2;
+                                }
+                                break;
+                        case CHROMA4:
+                                if (s->green.eco_cur_chroma != CHROMA4){
+                                    eco_reload_filter_chroma4(&(s->hevcdsp), 8);
+                                    s->green.eco_cur_chroma = CHROMA4;
+                                }
+                                break;
+                        default:
+                                break;
+                    }
                 }
-
                 // Fin ECO Param
             }
             // Fin morgan
@@ -3292,7 +3281,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             if (ret < 0)
                 return ret;
 
-             // ECO Param activation level
+             // ECO Param activation level counter
              dec_pic_count++;
 
         } else if (!s->ref) {
@@ -3862,6 +3851,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     int i;
     s->avctx = avctx;
 
+
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
     if (!s->HEVClc)
         goto fail;
@@ -3917,6 +3907,8 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     else
         s->threads_number  = 1;
     s->eos = 0;
+
+    eco_param_parse(&s->green, eco_param); // Morgan ECO
 
     for (i = 1; i < s->threads_number ; i++) {
         s->sList[i] = av_mallocz(sizeof(HEVCContext));
@@ -4101,6 +4093,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
             return ret;
         }
     }
+
     return 0;
 }
 
@@ -4242,3 +4235,39 @@ static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int heig
     av_free(buf);
 }
 
+void eco_param_parse(GREENparam *eco_struct, char *eco_param)
+{
+    int len = strlen(eco_param);
+    char buffer[3]={0};
+    int i = 0;
+
+    if( len == 5)
+        i = 0;
+    else
+        i = 1;
+
+    strncpy(buffer,eco_param,(1+i)*sizeof(char));
+    eco_struct->activation_level = atoi(buffer);
+    //printf("Activation = %d \n", eco_struct->activation_level);
+    strcpy(buffer,"0");
+    
+    if( eco_struct->activation_level != 0){
+        strncpy(buffer,eco_param+1+i,sizeof(char));
+        eco_struct->eco_luma = atoi(buffer);
+        //printf("Luma = %d \n", eco_struct->eco_luma);
+        
+        strncpy(buffer,eco_param+2+i,sizeof(char));
+        eco_struct->eco_chroma = atoi(buffer);
+        //printf("Chroma = %d \n", eco_struct->eco_chroma);
+        
+        strncpy(buffer,eco_param+3+i,sizeof(char));
+        eco_struct->eco_sao_off = atoi(buffer);
+        //printf("SAO = %d \n", eco_struct->eco_sao_off);
+        
+        strncpy(buffer,eco_param+4+i,sizeof(char));
+        eco_struct->eco_dbf_off = atoi(buffer);
+        //printf("DBF = %d \n", eco_struct->eco_dbf_off);
+    }else
+        printf(" Legacy decoder \n");
+
+}

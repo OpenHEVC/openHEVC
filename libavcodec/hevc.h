@@ -103,9 +103,9 @@
 // Eco Parameters to select the luma interpolation filters
 enum EcoParamLuma
 {
-    LUMA7 = 0,
     LUMA1 = 1,
     LUMA3 = 3,
+    LUMA7 = 7,
 };
 
 // Eco Parameters to select the chroma interpolation filters
@@ -1166,9 +1166,7 @@ typedef struct HEVCLocalContext {
     int boundary_flags;
 } HEVCLocalContext;
 
-typedef struct HEVCContext {
-
-    struct {    // Parametres Green Morgan
+typedef  struct GREENparam {    // Parametres Green Morgan
     enum EcoParamLuma eco_luma;
     enum EcoParamChroma eco_chroma;
 
@@ -1182,8 +1180,10 @@ typedef struct HEVCContext {
 
     uint8_t activation_level;
 
-    } green;
+    } GREENparam;
 
+
+typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
 
@@ -1335,6 +1335,8 @@ typedef struct HEVCContext {
     uint8_t threads_type;
     uint8_t threads_number;
     int     decode_checksum_sei;
+
+    GREENparam green;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
@@ -1467,5 +1469,7 @@ extern const uint8_t ff_hevc_diag_scan4x4_x[16];
 extern const uint8_t ff_hevc_diag_scan4x4_y[16];
 extern const uint8_t ff_hevc_diag_scan8x8_x[64];
 extern const uint8_t ff_hevc_diag_scan8x8_y[64];
+
+void eco_param_parse(GREENparam *eco_struct, char *eco_param);
 
 #endif /* AVCODEC_HEVC_H */
