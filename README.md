@@ -8,7 +8,7 @@ openHEVC Green is a research project to improve the power consumption of an embe
 Thus, it uses ARM NEON assembly optimisations in order to observe a speed up on the decoding process and on the energy consummed as well.
 Furthermore, these optimisations are only applied on 8bit coded pixels.
 
-In order to reduce the power consumption of the decoder the main goal was to simplify the inter-prediction filters in one hand, and in the other hand to desactivates the in-loop filters.
+In order to reduce the power consumption of the decoder the main goal was to simplify the inter-prediction filters in one hand, and in the other hand to desactivate the in-loop filters.
 
 What does openHEVC Green feature?
 --------
