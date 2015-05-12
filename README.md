@@ -1,21 +1,21 @@
-openHEVC
+openHEVC Green
 ========
 
-openHEVC is a fork of Libav with only the files needed to decode HEVC content, it was created for research purposes.
-Most people will not need to use this and should use the libav HEVC decoder available at https://github.com/OpenHEVC/ffmpeg instead (see https://ffmpeg.org/documentation.html for documentation).
+openHEVC Green is a fork of openHEVC meant to be a power (or energy) efficient HEVC decoder.
+Here we provide the user guide for the Green features only, openHEVC README is available at https://github.com/OpenHEVC/openHEVC.
 
-openHEVC in combination with GPAC is used in 3 research projects:
-* 4EVER
-* H2B2VS
-* AUSTRAL
+openHEVC Green is a research project to improve the power consumption of an embedded HEVC decoder by reasonably degrading the image quality.
+Thus, it uses ARM assembly optimisations in order to observe a speed up on the decoding process and on the energy consummed as well.
+Furthermore, these optimisations are only applied on 8bit coded pixels.
 
-What does openHEVC support?
+What does openHEVC Green feature?
 --------
-* Main Profile (all conformance bitstreams except BUMPING)
-* Main 10 Profile (except different combination of luma/chroma bitwidth)
-* Range extension (4:2:2/4:4:4)
-  + Bitstream aligned with April 2014 HEVC standard
-* support of SHM4.1 bitstreams
+* 7 (legacy), 3 et 1 taps inter-prediction luma filters
+* 4 (legacy), 2 and 1 taps inter-prediction chroma filters
+* Disabling of the loop filters
+  + SAO on (legacy) / off
+  + DBF on (legacy) / off
+* Activation levels, from  0 to 12, in order to activate promptly the power awaire configuration.
 
 What is the compiling infrastructure?
 --------
@@ -24,47 +24,19 @@ What is the compiling infrastructure?
 * clang
 
 
-Where is the source code of openHEVC?
---------
-* openHEVC is located at https://github.com/OpenHEVC/openHEVC.
-* openHEVC is under LGPL2.1 license
-* reusing ffmpeg runtime for multithreading
-
-Where is the source code of GPAC?
---------
-* gpac is located at http://gpac.wp.mines-telecom.fr.
-* gpac is under LGPL license
-
-How to compile openHEVC on linux from source code
-----------
-* execute these commands
-
-```sh
-git clone git://github.com/OpenHEVC/openHEVC.git
-git checkout hevc_rext
-```
-* install yasm
-* go into OpenHEVC source folder
-* execute these commands
-
-```sh
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=RELEASE ..
-make
-sudo make install
-```
-
-How to test openHEVC on linux from source code
+How to use openHEVC Green on linux from source code
 ----------
 * Prerequisites: SDL or SDL2
 * go into source folder of openHEVC
-* with SDL: `cd build; ./hevc -i name_of_annexB_bitstream.(bit,bin,265)`
-* with SDL2: `cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)`
-  + add `-n` to remove the display 
-  + add `-l layer` with `layer` a number to select the layer in a SHVC bitstream 
-  + add `-f xx` with `xx` to select frame-based (`0`), wpp/tiles (`1`) or combination of frame-based and wpp (`4`)
-  + add `-p` to select the number of threads when -f is activated
+* e.g SDL2: `cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)`
+  + add `-e xxxxx` with `xxxxx` to select the configuration according to the scheme as follows:
+    + first digit is the Activation Level [0-12]
+    + second digit is the luma taps number, [7;3;1]
+    + third digit is the chroma taps number, [4;2;1]
+    + fourth digit is the desactivation of the SAO filter, [0;1]
+    + fifth gidit is the desativation of the deblocking filter, [0,1]
+For instance, here is how to apply a 3 taps luma interpolating filter, with a 1 tap chroma interpolating filter, with any loop filter, and this for every frame:
+`./hevc_sdl2 -e 123111 -i name_of_annexB_bitstream.(bit,bin,265)`
 
 How to compile gpac with openHEVC on linux
 -----------
@@ -77,25 +49,6 @@ How to compile gpac with openHEVC on linux
 ./configure 
 make
 sudo make install
-```
-
-How to embed HEVC into MP4 file format
------------
-* use i_main, lp_main, ld_main or ra_main bitstreams from http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/
-* `MP4Box -add name_of_annexB_bitstream.(bit,bin,265) -fps 50 -new output.mp4`
-  + where fps specifies the framerate (in the case of BQMall_832x480_60_qp22.bin the framerate is 60)
-* `MP4Client output.mp4 # to play HEVC mp4 content`
-
-How to embed HEVC into TS
------------
-* use i_main, lp_main, ld_main or ra_main bitstreams from http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/
-* go into gpac source folder
-* execute these commands:
-
-```sh
-cd bin/gcc
-./mp42ts -prog=hevc.mp4 -dst-file=test.ts
-MP4Client test.ts # to play HEVC transport streams
 ```
 
 openHEVC contributors
