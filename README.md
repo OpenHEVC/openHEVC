@@ -23,11 +23,11 @@ How to use openHEVC Green on linux from source code
 * go into source folder of openHEVC
 * e.g SDL2: `cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)`
   + add `-e xxxxx` with `xxxxx` to select the configuration according to the scheme as follows:
-    - first digit is the Activation Level [0-12]
-    - second digit is the luma taps number, [7;3;1]
-    - third digit is the chroma taps number, [4;2;1]
-    - fourth digit is the desactivation of the SAO filter, [0;1]
-    - fifth gidit is the desativation of the deblocking filter, [0,1]
+        - first digit is the Activation Level [0-12]
+        - second digit is the luma taps number, [7;3;1]
+        - third digit is the chroma taps number, [4;2;1]
+        - fourth digit is the desactivation of the SAO filter, [0;1]
+        - fifth gidit is the desativation of the deblocking filter, [0,1]
 For instance, here is how to apply a 3 taps luma interpolating filter, with a 1 tap chroma interpolating filter, with any loop filter, and this for every frame:
 `./hevc_sdl2 -e 123111 -i name_of_annexB_bitstream.(bit,bin,265)`
 
