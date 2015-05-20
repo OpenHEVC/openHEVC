@@ -184,10 +184,32 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters[7][4]) = {
     { -2, 10, 58, -2},
 };
 
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_eco2_filters[7][2]) = {
+    { 54, 10},
+    { 54, 10},
+    { 54, 10},
+    { 54, 10},
+    { 54, 10},
+    { 54, 10},
+    { 54, 10}
+};
+
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters[3][16]) = {
     { -1,  4,-10, 58, 17, -5,  1,  0, -1,  4,-10, 58, 17, -5,  1,  0},
     { -1,  4,-11, 40, 40,-11,  4, -1, -1,  4,-11, 40, 40,-11,  4, -1},
     {  0,  1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1}
+};
+
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_eco3_filters[3][3]) = {
+    { -8, 58, 14},
+    { -8, 40, 32},
+    {  -4, 20, 48}
+};
+
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_eco1_filters[3][2]) = {
+	    { 64, 0},
+	    { 64, 0},
+	    { 0, 64}
 };
 
 #define BIT_DEPTH 8
@@ -364,4 +386,309 @@ int i = 0;
 #endif
     if (ARCH_X86) ff_hevc_dsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
+}
+
+
+void eco_reload_filter_luma1(HEVCDSPContext *hevcdsp, int bit_depth)
+{
+#undef PEL_FUNC
+#define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
+    for(i = 0 ; i < 10 ; i++)                                                  \
+{                                                                              \
+    hevcdsp->dst1[i][idx1][idx2] = a ## _ ## depth;                            \
+}
+
+#undef QPEL_FUNCS
+#define QPEL_FUNCS(depth)                                                         \
+    PEL_FUNC(put_hevc_qpel, 0, 0, put_hevc_pel_pixels, depth);                    \
+    PEL_FUNC(put_hevc_qpel, 0, 1, put_hevc_qpel1_h, depth);                        \
+    PEL_FUNC(put_hevc_qpel, 1, 0, put_hevc_qpel1_v, depth);                        \
+    PEL_FUNC(put_hevc_qpel, 1, 1, put_hevc_qpel1_hv, depth)
+
+#undef QPEL_UNI_FUNCS
+#define QPEL_UNI_FUNCS(depth)                                                     \
+    PEL_FUNC(put_hevc_qpel_uni, 0, 0, put_hevc_pel_uni_pixels, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni, 0, 1, put_hevc_qpel1_uni_h, depth);                \
+    PEL_FUNC(put_hevc_qpel_uni, 1, 0, put_hevc_qpel1_uni_v, depth);                \
+    PEL_FUNC(put_hevc_qpel_uni, 1, 1, put_hevc_qpel1_uni_hv, depth);               \
+    PEL_FUNC(put_hevc_qpel_uni_w, 0, 0, put_hevc_pel_uni_w_pixels, depth);        \
+    PEL_FUNC(put_hevc_qpel_uni_w, 0, 1, put_hevc_qpel1_uni_w_h, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni_w, 1, 0, put_hevc_qpel1_uni_w_v, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni_w, 1, 1, put_hevc_qpel1_uni_w_hv, depth)
+
+#undef QPEL_BI_FUNCS
+#define QPEL_BI_FUNCS(depth)                                                      \
+    PEL_FUNC(put_hevc_qpel_bi, 0, 0, put_hevc_pel_bi_pixels, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi, 0, 1, put_hevc_qpel1_bi_h, depth);                  \
+    PEL_FUNC(put_hevc_qpel_bi, 1, 0, put_hevc_qpel1_bi_v, depth);                  \
+    PEL_FUNC(put_hevc_qpel_bi, 1, 1, put_hevc_qpel1_bi_hv, depth);                 \
+    PEL_FUNC(put_hevc_qpel_bi_w, 0, 0, put_hevc_pel_bi_w_pixels, depth);          \
+    PEL_FUNC(put_hevc_qpel_bi_w, 0, 1, put_hevc_qpel1_bi_w_h, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi_w, 1, 0, put_hevc_qpel1_bi_w_v, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi_w, 1, 1, put_hevc_qpel1_bi_w_hv, depth)
+
+#undef HEVC_DSP
+#define HEVC_DSP(depth)                                                            \
+    QPEL_FUNCS(depth);                                                             \
+    QPEL_UNI_FUNCS(depth);                                                         \
+    QPEL_BI_FUNCS(depth)
+
+int i = 0;
+
+    switch (bit_depth) {
+    case 9:
+        HEVC_DSP(9);
+        break;
+    case 10:
+        HEVC_DSP(10);
+        break;
+    case 12:
+        HEVC_DSP(12);
+        break;
+    default:
+        HEVC_DSP(8);
+        break;
+    }
+}
+
+void eco_reload_filter_luma3(HEVCDSPContext *hevcdsp, int bit_depth)
+{
+#undef PEL_FUNC
+#define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
+    for(i = 0 ; i < 10 ; i++)                                                  \
+{                                                                              \
+    hevcdsp->dst1[i][idx1][idx2] = a ## _ ## depth;                            \
+}
+
+#undef QPEL_FUNCS
+#define QPEL_FUNCS(depth)                                                         \
+    PEL_FUNC(put_hevc_qpel, 0, 0, put_hevc_pel_pixels, depth);                    \
+    PEL_FUNC(put_hevc_qpel, 0, 1, put_hevc_qpel3_h, depth);                        \
+    PEL_FUNC(put_hevc_qpel, 1, 0, put_hevc_qpel3_v, depth);                        \
+    PEL_FUNC(put_hevc_qpel, 1, 1, put_hevc_qpel3_hv, depth)
+
+#undef QPEL_UNI_FUNCS
+#define QPEL_UNI_FUNCS(depth)                                                     \
+    PEL_FUNC(put_hevc_qpel_uni, 0, 0, put_hevc_pel_uni_pixels, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni, 0, 1, put_hevc_qpel3_uni_h, depth);                \
+    PEL_FUNC(put_hevc_qpel_uni, 1, 0, put_hevc_qpel3_uni_v, depth);                \
+    PEL_FUNC(put_hevc_qpel_uni, 1, 1, put_hevc_qpel3_uni_hv, depth);               \
+    PEL_FUNC(put_hevc_qpel_uni_w, 0, 0, put_hevc_pel_uni_w_pixels, depth);        \
+    PEL_FUNC(put_hevc_qpel_uni_w, 0, 1, put_hevc_qpel3_uni_w_h, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni_w, 1, 0, put_hevc_qpel3_uni_w_v, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni_w, 1, 1, put_hevc_qpel3_uni_w_hv, depth)
+
+#undef QPEL_BI_FUNCS
+#define QPEL_BI_FUNCS(depth)                                                      \
+    PEL_FUNC(put_hevc_qpel_bi, 0, 0, put_hevc_pel_bi_pixels, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi, 0, 1, put_hevc_qpel3_bi_h, depth);                  \
+    PEL_FUNC(put_hevc_qpel_bi, 1, 0, put_hevc_qpel3_bi_v, depth);                  \
+    PEL_FUNC(put_hevc_qpel_bi, 1, 1, put_hevc_qpel3_bi_hv, depth);                 \
+    PEL_FUNC(put_hevc_qpel_bi_w, 0, 0, put_hevc_pel_bi_w_pixels, depth);          \
+    PEL_FUNC(put_hevc_qpel_bi_w, 0, 1, put_hevc_qpel3_bi_w_h, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi_w, 1, 0, put_hevc_qpel3_bi_w_v, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi_w, 1, 1, put_hevc_qpel3_bi_w_hv, depth)
+
+#undef HEVC_DSP
+#define HEVC_DSP(depth)                                                            \
+    QPEL_FUNCS(depth);                                                             \
+    QPEL_UNI_FUNCS(depth);                                                         \
+    QPEL_BI_FUNCS(depth)
+
+int i = 0;
+
+    switch (bit_depth) {
+    case 9:
+        HEVC_DSP(9);
+        break;
+    case 10:
+        HEVC_DSP(10);
+        break;
+    case 12:
+        HEVC_DSP(12);
+        break;
+    default:
+        HEVC_DSP(8);
+        break;
+    }
+}
+
+void eco_reload_filter_luma7(HEVCDSPContext *hevcdsp, int bit_depth)
+{
+#undef PEL_FUNC
+#define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
+    for(i = 0 ; i < 10 ; i++)                                                  \
+{                                                                              \
+    hevcdsp->dst1[i][idx1][idx2] = a ## _ ## depth;                            \
+}
+
+#undef QPEL_FUNCS
+#define QPEL_FUNCS(depth)                                                         \
+    PEL_FUNC(put_hevc_qpel, 0, 0, put_hevc_pel_pixels, depth);                    \
+    PEL_FUNC(put_hevc_qpel, 0, 1, put_hevc_qpel_h, depth);                        \
+    PEL_FUNC(put_hevc_qpel, 1, 0, put_hevc_qpel_v, depth);                        \
+    PEL_FUNC(put_hevc_qpel, 1, 1, put_hevc_qpel_hv, depth)
+
+#undef QPEL_UNI_FUNCS
+#define QPEL_UNI_FUNCS(depth)                                                     \
+    PEL_FUNC(put_hevc_qpel_uni, 0, 0, put_hevc_pel_uni_pixels, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni, 0, 1, put_hevc_qpel_uni_h, depth);                \
+    PEL_FUNC(put_hevc_qpel_uni, 1, 0, put_hevc_qpel_uni_v, depth);                \
+    PEL_FUNC(put_hevc_qpel_uni, 1, 1, put_hevc_qpel_uni_hv, depth);               \
+    PEL_FUNC(put_hevc_qpel_uni_w, 0, 0, put_hevc_pel_uni_w_pixels, depth);        \
+    PEL_FUNC(put_hevc_qpel_uni_w, 0, 1, put_hevc_qpel_uni_w_h, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni_w, 1, 0, put_hevc_qpel_uni_w_v, depth);            \
+    PEL_FUNC(put_hevc_qpel_uni_w, 1, 1, put_hevc_qpel_uni_w_hv, depth)
+
+#undef QPEL_BI_FUNCS
+#define QPEL_BI_FUNCS(depth)                                                      \
+    PEL_FUNC(put_hevc_qpel_bi, 0, 0, put_hevc_pel_bi_pixels, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi, 0, 1, put_hevc_qpel_bi_h, depth);                  \
+    PEL_FUNC(put_hevc_qpel_bi, 1, 0, put_hevc_qpel_bi_v, depth);                  \
+    PEL_FUNC(put_hevc_qpel_bi, 1, 1, put_hevc_qpel_bi_hv, depth);                 \
+    PEL_FUNC(put_hevc_qpel_bi_w, 0, 0, put_hevc_pel_bi_w_pixels, depth);          \
+    PEL_FUNC(put_hevc_qpel_bi_w, 0, 1, put_hevc_qpel_bi_w_h, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi_w, 1, 0, put_hevc_qpel_bi_w_v, depth);              \
+    PEL_FUNC(put_hevc_qpel_bi_w, 1, 1, put_hevc_qpel_bi_w_hv, depth)
+
+#undef HEVC_DSP
+#define HEVC_DSP(depth)                                                            \
+    QPEL_FUNCS(depth);                                                             \
+    QPEL_UNI_FUNCS(depth);                                                         \
+    QPEL_BI_FUNCS(depth)
+
+int i = 0;
+
+    switch (bit_depth) {
+    case 9:
+        HEVC_DSP(9);
+        break;
+    case 10:
+        HEVC_DSP(10);
+        break;
+    case 12:
+        HEVC_DSP(12);
+        break;
+    default:
+        HEVC_DSP(8);
+        break;
+    }
+}
+
+void eco_reload_filter_chroma1(HEVCDSPContext *hevcdsp, int bit_depth)
+{
+#undef PEL_FUNC
+#define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
+    for(i = 0 ; i < 10 ; i++)                                                  \
+{                                                                              \
+    hevcdsp->dst1[i][idx1][idx2] = a ## _ ## depth;                            \
+}
+
+#undef EPEL_FUNCS
+#define EPEL_FUNCS(depth)                                                       \
+    PEL_FUNC(put_hevc_epel, 0, 0, put_hevc_pel_pixels, depth);                  \
+    PEL_FUNC(put_hevc_epel, 0, 1, put_hevc_pel_pixels, depth);                      \
+    PEL_FUNC(put_hevc_epel, 1, 0, put_hevc_pel_pixels, depth);                      \
+    PEL_FUNC(put_hevc_epel, 1, 1, put_hevc_pel_pixels, depth)
+
+
+#undef HEVC_DSP
+#define HEVC_DSP(depth)                                                            \
+    EPEL_FUNCS(depth);                                                             \
+
+int i = 0;
+
+    switch (bit_depth) {
+    case 9:
+        HEVC_DSP(9);
+        break;
+    case 10:
+        HEVC_DSP(10);
+        break;
+    case 12:
+        HEVC_DSP(12);
+        break;
+    default:
+        HEVC_DSP(8);
+        break;
+    }
+}
+
+
+void eco_reload_filter_chroma2(HEVCDSPContext *hevcdsp, int bit_depth)
+{
+#undef PEL_FUNC
+#define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
+    for(i = 0 ; i < 10 ; i++)                                                  \
+{                                                                              \
+    hevcdsp->dst1[i][idx1][idx2] = a ## _ ## depth;                            \
+}
+
+#undef EPEL_FUNCS
+#define EPEL_FUNCS(depth)                                                       \
+	    PEL_FUNC(put_hevc_epel, 0, 0, put_hevc_pel_pixels, depth);                  \
+	    PEL_FUNC(put_hevc_epel, 0, 1, put_hevc_epel2_h, depth);                      \
+	    PEL_FUNC(put_hevc_epel, 1, 0, put_hevc_epel2_v, depth);                      \
+	    PEL_FUNC(put_hevc_epel, 1, 1, put_hevc_epel2_hv, depth)
+
+
+#undef HEVC_DSP
+#define HEVC_DSP(depth)                                                            \
+    EPEL_FUNCS(depth);                                                             \
+
+int i = 0;
+
+    switch (bit_depth) {
+    case 9:
+        HEVC_DSP(9);
+        break;
+    case 10:
+        HEVC_DSP(10);
+        break;
+    case 12:
+        HEVC_DSP(12);
+        break;
+    default:
+        HEVC_DSP(8);
+        break;
+    }
+}
+
+
+void eco_reload_filter_chroma4(HEVCDSPContext *hevcdsp, int bit_depth)
+{
+#undef PEL_FUNC
+#define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
+    for(i = 0 ; i < 10 ; i++)                                                  \
+{                                                                              \
+    hevcdsp->dst1[i][idx1][idx2] = a ## _ ## depth;                            \
+}
+
+#undef EPEL_FUNCS
+#define EPEL_FUNCS(depth)                                                       \
+    PEL_FUNC(put_hevc_epel, 0, 0, put_hevc_pel_pixels, depth);                  \
+    PEL_FUNC(put_hevc_epel, 0, 1, put_hevc_epel_h, depth);                      \
+    PEL_FUNC(put_hevc_epel, 1, 0, put_hevc_epel_v, depth);                      \
+    PEL_FUNC(put_hevc_epel, 1, 1, put_hevc_epel_hv, depth)
+
+#undef HEVC_DSP
+#define HEVC_DSP(depth)                                                            \
+    EPEL_FUNCS(depth);                                                             \
+
+int i = 0;
+
+    switch (bit_depth) {
+    case 9:
+        HEVC_DSP(9);
+        break;
+    case 10:
+        HEVC_DSP(10);
+        break;
+    case 12:
+        HEVC_DSP(12);
+        break;
+    default:
+        HEVC_DSP(8);
+        break;
+    }
 }

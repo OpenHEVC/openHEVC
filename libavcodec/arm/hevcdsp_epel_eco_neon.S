@@ -89,7 +89,7 @@ function ff_hevc_put_epel2_h_neon_8, export=1
         vpush {d8-d15}
         adr    r12, epel_coeffs2
         add    r7, r12
-        sub       r2, #1
+        //sub       r2, #1
         lsl       r1, #1    // Seule ligne a changer pour ECO
         load_coeffs2_16b r7  //d0 et d1 coeffs
         mov   r12, r4       // _h
@@ -150,7 +150,7 @@ function ff_hevc_put_epel2_v_neon_8, export=1
         adr    r12, epel_coeffs2
         add    r7, r12
         load_coeffs2_16b r7
-        sub       r2, r3
+        //sub       r2, r3
         lsl       r1, #1
         mov   r12, r4
         mov   r6, r0
@@ -229,8 +229,8 @@ function ff_hevc_put_epel2_hv_neon_8, export=1
         lsl    r6, #1
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
-        sub       r2, #1
-        sub       r2, r3
+        //sub       r2, #1
+        //sub       r2, r3
         lsl       r1, #1
         load_coeffs2_16b r6
         load_coeffs2_32b r7
