@@ -148,6 +148,7 @@ void init_main(int argc, char *argv[]) {
     quality_layer_id  = 0; // Base layer
     num_frames        = 0;
     frame_rate        = 0;
+    eco_param = strdup("07400");
 
     program           = argv[0];
     
@@ -200,7 +201,7 @@ void init_main(int argc, char *argv[]) {
                 print_usage();
                 exit(1);
             }
-            strcpy(eco_param,optarg);
+            eco_param = strdup(optarg);
             break;
         default:
             print_usage();

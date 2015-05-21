@@ -3148,125 +3148,125 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
             if (s->sh.slice_type != I_SLICE){
                 // Eco activation levels
-                switch(s->green.activation_level){
+                switch(s->alevel){
                     case 0:
-                        s->green.eco_reload = 0;
+                        s->eco_reload = 0;
                         break;
                     case 1:
                         if( dec_pic_count%12 == 0)
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         else
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         break;
                     case 2:
                         if( dec_pic_count%6 == 0)
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         else
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         break;
                     case 3:
                         if( dec_pic_count%4 == 0)
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         else
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         break;
                     case 4:
                         if( dec_pic_count%3 == 0)
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         else
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         break;
                     case 5:
                         if( dec_pic_count%2 == 0 || dec_pic_count%12 == 5)
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         else
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         break;
                     case 6:
                         if( dec_pic_count%2 == 0)
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         else
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         break;
                     case 7:
                         if( dec_pic_count%2 == 0 || dec_pic_count%12 == 5 )
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         else
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         break;
                     case 8:
                         if( dec_pic_count%3 == 0)
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         else
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         break;
                     case 9:
                         if( dec_pic_count%4 == 0)
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         else
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         break;
                     case 10:
                         if( dec_pic_count%6 == 0)
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         else
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         break;
                     case 11:
                         if( dec_pic_count%12 == 6)
-                            s->green.eco_reload = 0;
+                            s->eco_reload = 0;
                         else
-                            s->green.eco_reload = 1;
+                            s->eco_reload = 1;
                         break;
                     case 12:
-                        s->green.eco_reload = 1;
+                        s->eco_reload = 1;
                         break;
                     default:
                         break;
                 }
 
-                if( s->green.eco_reload ){
+                if( s->eco_reload ){
 
-                    switch(s->green.eco_luma){
+                    switch(s->eco_luma){
                         case LUMA1:
-                                if (s->green.eco_cur_luma != LUMA1){
-                                    eco_reload_filter_luma1(&(s->hevcdsp), 8);
-                                    s->green.eco_cur_luma = LUMA1;
+                                if (s->eco_cur_luma != LUMA1){
+                                    eco_reload_filter_luma1(&(s->hevcdsp), s->sps->bit_depth);
+                                    s->eco_cur_luma = LUMA1;
                                 }
                                 break;
                         case LUMA3:
-                                if (s->green.eco_cur_luma != LUMA3){
-                                    eco_reload_filter_luma3(&(s->hevcdsp), 8);
-                                    s->green.eco_cur_luma = LUMA3;
+                                if (s->eco_cur_luma != LUMA3){
+                                    eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
+                                    s->eco_cur_luma = LUMA3;
                                 }
                                 break;
                         case LUMA7:
-                                if (s->green.eco_cur_luma != LUMA7){
-                                    eco_reload_filter_luma7(&(s->hevcdsp), 8);
-                                    s->green.eco_cur_luma = LUMA7;
+                                if (s->eco_cur_luma != LUMA7){
+                                    eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
+                                    s->eco_cur_luma = LUMA7;
                                 }
                                 break;
                         default:
                                 break;
                     }
 
-                    switch(s->green.eco_chroma){
+                    switch(s->eco_chroma){
                         case CHROMA1:
-                                if (s->green.eco_cur_chroma != CHROMA1){
-                                    eco_reload_filter_chroma1(&(s->hevcdsp), 8);
-                                    s->green.eco_cur_chroma = CHROMA1;
+                                if (s->eco_cur_chroma != CHROMA1){
+                                    eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->bit_depth);
+                                    s->eco_cur_chroma = CHROMA1;
                                 }
                                 break;
                         case CHROMA2:
-                                if (s->green.eco_cur_chroma != CHROMA2){
-                                    eco_reload_filter_chroma2(&(s->hevcdsp), 8);
-                                    s->green.eco_cur_chroma = CHROMA2;
+                                if (s->eco_cur_chroma != CHROMA2){
+                                    eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
+                                    s->eco_cur_chroma = CHROMA2;
                                 }
                                 break;
                         case CHROMA4:
-                                if (s->green.eco_cur_chroma != CHROMA4){
-                                    eco_reload_filter_chroma4(&(s->hevcdsp), 8);
-                                    s->green.eco_cur_chroma = CHROMA4;
+                                if (s->eco_cur_chroma != CHROMA4){
+                                    eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
+                                    s->eco_cur_chroma = CHROMA4;
                                 }
                                 break;
                         default:
@@ -3908,8 +3908,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->threads_number  = 1;
     s->eos = 0;
 
-    eco_param_parse(&s->green, eco_param); // Morgan ECO
-
     for (i = 1; i < s->threads_number ; i++) {
         s->sList[i] = av_mallocz(sizeof(HEVCContext));
         memcpy(s->sList[i], s, sizeof(HEVCContext));
@@ -4129,6 +4127,7 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+//Morgan
 static const AVOption options[] = {
     { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
@@ -4140,6 +4139,16 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "quality_layer_id", "set the max quality id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
+	{ "a-level", "Eco Activation level", OFFSET(alevel),
+			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 12, PAR },
+	{ "eco-luma", "Eco Inter-prediction Luma nb taps", OFFSET(eco_luma),
+			AV_OPT_TYPE_INT, {.i64 = 7}, 1, 7, PAR },
+	{ "eco-chroma", "Eco Inter-prediction Chroma nb taps", OFFSET(eco_chroma),
+			AV_OPT_TYPE_INT, {.i64 = 4}, 1, 4, PAR },
+	{ "eco-dbf-off", "Eco Deblocking filter on/off", OFFSET(eco_dbf_off),
+			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+	{ "eco-sao-off", "Eco SAO filter on/off", OFFSET(eco_sao_off),
+			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { NULL },
 };
 
@@ -4149,6 +4158,7 @@ static const AVClass hevc_decoder_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
+
 
 AVCodec ff_hevc_decoder = {
     .name                  = "hevc",
@@ -4233,41 +4243,4 @@ static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int heig
     }
     av_md5_sum(md5, buf, stride_buf * height);
     av_free(buf);
-}
-
-void eco_param_parse(GREENparam *eco_struct, char *eco_param)
-{
-    int len = strlen(eco_param);
-    char buffer[3]={0};
-    int i = 0;
-
-    if( len == 5)
-        i = 0;
-    else
-        i = 1;
-
-    strncpy(buffer,eco_param,(1+i)*sizeof(char));
-    eco_struct->activation_level = atoi(buffer);
-    //printf("Activation = %d \n", eco_struct->activation_level);
-    strcpy(buffer,"0");
-    
-    if( eco_struct->activation_level != 0){
-        strncpy(buffer,eco_param+1+i,sizeof(char));
-        eco_struct->eco_luma = atoi(buffer);
-        //printf("Luma = %d \n", eco_struct->eco_luma);
-        
-        strncpy(buffer,eco_param+2+i,sizeof(char));
-        eco_struct->eco_chroma = atoi(buffer);
-        //printf("Chroma = %d \n", eco_struct->eco_chroma);
-        
-        strncpy(buffer,eco_param+3+i,sizeof(char));
-        eco_struct->eco_sao_off = atoi(buffer);
-        //printf("SAO = %d \n", eco_struct->eco_sao_off);
-        
-        strncpy(buffer,eco_param+4+i,sizeof(char));
-        eco_struct->eco_dbf_off = atoi(buffer);
-        //printf("DBF = %d \n", eco_struct->eco_dbf_off);
-    }else
-        printf(" Legacy decoder \n");
-
 }

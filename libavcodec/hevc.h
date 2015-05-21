@@ -81,9 +81,11 @@
 #define EPEL_EXTRA_BEFORE 1
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
+
 #define QPEL_EXTRA_BEFORE 3
 #define QPEL_EXTRA_AFTER  4
 #define QPEL_EXTRA        7
+
 #define ACTIVE_PU_UPSAMPLING     1
 #define ACTIVE_BOTH_FRAME_AND_PU 0
 
@@ -99,23 +101,6 @@
 #define IS_BLA(s) ((s)->nal_unit_type == NAL_BLA_W_RADL || (s)->nal_unit_type == NAL_BLA_W_LP || \
                    (s)->nal_unit_type == NAL_BLA_N_LP)
 #define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
-
-// Eco Parameters to select the luma interpolation filters
-enum EcoParamLuma
-{
-    LUMA1 = 1,
-    LUMA3 = 3,
-    LUMA7 = 7,
-};
-
-// Eco Parameters to select the chroma interpolation filters
-enum EcoParamChroma
-{
-    CHROMA4 = 0,
-    CHROMA1 = 1,
-    CHROMA2 = 2,
-};
-
 
 enum ScalabilityType
 {
@@ -1166,23 +1151,6 @@ typedef struct HEVCLocalContext {
     int boundary_flags;
 } HEVCLocalContext;
 
-typedef  struct GREENparam {    // Parametres Green Morgan
-    enum EcoParamLuma eco_luma;
-    enum EcoParamChroma eco_chroma;
-
-    enum EcoParamLuma eco_cur_luma;
-    enum EcoParamChroma eco_cur_chroma;
-
-    uint8_t eco_dbf_off;
-    uint8_t eco_sao_off;
-
-    uint8_t eco_reload;
-
-    uint8_t activation_level;
-
-    } GREENparam;
-
-
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
@@ -1336,7 +1304,16 @@ typedef struct HEVCContext {
     uint8_t threads_number;
     int     decode_checksum_sei;
 
-    GREENparam green;
+    uint8_t alevel; //Morgan
+    uint8_t eco_luma;
+    uint8_t eco_chroma;
+    uint8_t eco_dbf_off;
+    uint8_t eco_sao_off;
+
+    uint8_t eco_cur_luma;
+    uint8_t eco_cur_chroma;
+    uint8_t eco_reload;
+
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
@@ -1470,6 +1447,11 @@ extern const uint8_t ff_hevc_diag_scan4x4_y[16];
 extern const uint8_t ff_hevc_diag_scan8x8_x[64];
 extern const uint8_t ff_hevc_diag_scan8x8_y[64];
 
-void eco_param_parse(GREENparam *eco_struct, char *eco_param);
+#define LUMA1 1
+#define LUMA3 3
+#define LUMA7 7
+#define CHROMA1 1
+#define CHROMA2 3
+#define CHROMA4 4
 
 #endif /* AVCODEC_HEVC_H */

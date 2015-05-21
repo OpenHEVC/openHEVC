@@ -94,6 +94,8 @@ void libOpenHevcSetViewLayers(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId);
+// Morgan ECO
+void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param);
 
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 

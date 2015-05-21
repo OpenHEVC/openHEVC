@@ -67,6 +67,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
         }
 
         openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
+
         openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
         openHevcContext->picture = avcodec_alloc_frame();
         openHevcContext->c->flags |= CODEC_FLAG_UNALIGNED;
@@ -512,6 +513,54 @@ void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val)
         av_opt_set_int(openHevcContext->c->priv_data, "no-cropping", val, 0);
     }
 }
+// Morgan
+void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext;
+
+    uint8_t alevel=0;
+    uint8_t eco_luma=7;
+    uint8_t eco_chroma=4;
+    uint8_t eco_dbf_off=0;
+    uint8_t eco_sao_off=0;
+
+    int len = strlen(eco_param);
+    char buffer[3]="0";
+    int i = (len == 5) ? 0 : 1;
+
+    strncpy(buffer,eco_param,(1+i)*sizeof(char));
+    alevel = atoi(buffer);
+
+    strcpy(buffer,"0");
+
+    if( alevel != 0){
+        strncpy(buffer,eco_param+1+i,sizeof(char));
+        eco_luma = atoi(buffer);
+
+        strncpy(buffer,eco_param+2+i,sizeof(char));
+        eco_chroma = atoi(buffer);
+
+        strncpy(buffer,eco_param+3+i,sizeof(char));
+        eco_sao_off = atoi(buffer);
+
+        strncpy(buffer,eco_param+4+i,sizeof(char));
+        eco_dbf_off = atoi(buffer);
+
+    }
+        //printf(" Legacy decoder \n");
+
+
+    for (i = 0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_int(openHevcContext->c->priv_data, "a-level", alevel, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "eco-luma", eco_luma, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "eco-chroma", eco_chroma, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "eco-dbf-off", eco_dbf_off, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "eco-sao-off", eco_sao_off, 0);
+    }
+}
+
 
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
 {
