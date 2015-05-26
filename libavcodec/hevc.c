@@ -4002,6 +4002,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 	s->eco_cur_chroma       = s0->eco_cur_chroma;
 	s->eco_reload           = s0->eco_reload;
 
+
     if (s->sps != s0->sps)
         ret = set_sps(s, s0->sps);
 
