@@ -1304,15 +1304,15 @@ typedef struct HEVCContext {
     uint8_t threads_number;
     int     decode_checksum_sei;
 
-    uint8_t alevel; //Morgan
-    uint8_t eco_luma;
-    uint8_t eco_chroma;
-    uint8_t eco_dbf_off;
-    uint8_t eco_sao_off;
+    int alevel; //Morgan
+    int eco_luma;
+    int eco_chroma;
+    int eco_dbf_off;
+    int eco_sao_off;
 
-    uint8_t eco_cur_luma;
-    uint8_t eco_cur_chroma;
-    uint8_t eco_reload;
+    int eco_cur_luma;
+    int eco_cur_chroma;
+    int eco_reload;
 
 } HEVCContext;
 

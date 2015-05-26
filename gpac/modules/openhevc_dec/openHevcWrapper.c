@@ -519,11 +519,11 @@ void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param)
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
 
-    uint8_t alevel=0;
-    uint8_t eco_luma=7;
-    uint8_t eco_chroma=4;
-    uint8_t eco_dbf_off=0;
-    uint8_t eco_sao_off=0;
+    int alevel=0;
+    int eco_luma=7;
+    int eco_chroma=4;
+    int eco_dbf_off=0;
+    int eco_sao_off=0;
 
     int len = strlen(eco_param);
     char buffer[3]="0";
