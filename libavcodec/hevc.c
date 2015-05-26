@@ -3993,6 +3993,14 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
+	s->alevel               = s0->alevel;	//Eco
+	s->eco_luma             = s0->eco_luma;
+	s->eco_chroma           = s0->eco_chroma;
+	s->eco_dbf_off          = s0->eco_dbf_off;
+	s->eco_sao_off          = s0->eco_sao_off;
+	s->eco_cur_luma         = s0->eco_cur_luma;
+	s->eco_cur_chroma       = s0->eco_cur_chroma;
+	s->eco_reload           = s0->eco_reload;
 
     if (s->sps != s0->sps)
         ret = set_sps(s, s0->sps);
