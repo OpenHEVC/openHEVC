@@ -3148,7 +3148,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
             if (s->sh.slice_type != I_SLICE){
                 // Eco activation levels
-                switch(s->alevel){
+                switch(s->eco_alevel){
                     case 0:
                         s->eco_reload = 0;
                         break;
@@ -3993,7 +3993,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
-	s->alevel               = s0->alevel;	//Eco
+	s->eco_alevel               = s0->eco_alevel;	//Eco
 	s->eco_luma             = s0->eco_luma;
 	s->eco_chroma           = s0->eco_chroma;
 	s->eco_dbf_off          = s0->eco_dbf_off;
@@ -4148,7 +4148,7 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "quality_layer_id", "set the max quality id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
-	{ "a-level", "Eco Activation level", OFFSET(alevel),
+	{ "a-level", "Eco Activation level", OFFSET(eco_alevel),
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 12, PAR },
 	{ "eco-luma", "Eco Inter-prediction Luma nb taps", OFFSET(eco_luma),
 			AV_OPT_TYPE_INT, {.i64 = 7}, 1, 7, PAR },
