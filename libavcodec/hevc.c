@@ -3996,8 +3996,8 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 	s->eco_alevel               = s0->eco_alevel;	//Eco
 	s->eco_luma             = s0->eco_luma;
 	s->eco_chroma           = s0->eco_chroma;
-	s->eco_dbf_off          = s0->eco_dbf_off;
-	s->eco_sao_off          = s0->eco_sao_off;
+	s->eco_dbf_on	        = s0->eco_dbf_on;
+	s->eco_sao_on           = s0->eco_sao_on;
 	s->eco_cur_luma         = s0->eco_cur_luma;
 	s->eco_cur_chroma       = s0->eco_cur_chroma;
 	s->eco_reload           = s0->eco_reload;
@@ -4154,9 +4154,9 @@ static const AVOption options[] = {
 			AV_OPT_TYPE_INT, {.i64 = 7}, 1, 7, PAR },
 	{ "eco-chroma", "Eco Inter-prediction Chroma nb taps", OFFSET(eco_chroma),
 			AV_OPT_TYPE_INT, {.i64 = 4}, 1, 4, PAR },
-	{ "eco-dbf-off", "Eco Deblocking filter on/off", OFFSET(eco_dbf_off),
+	{ "eco-dbf-on", "Eco Deblocking filter on/off", OFFSET(eco_dbf_on),
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-	{ "eco-sao-off", "Eco SAO filter on/off", OFFSET(eco_sao_off),
+	{ "eco-sao-on", "Eco SAO filter on/off", OFFSET(eco_sao_on),
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { NULL },
 };

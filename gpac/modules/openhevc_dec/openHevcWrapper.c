@@ -522,8 +522,8 @@ void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param)
     int alevel=0;
     int eco_luma=7;
     int eco_chroma=4;
-    int eco_dbf_off=0;
-    int eco_sao_off=0;
+    int eco_dbf_on=1;
+    int eco_sao_on=1;
 
     int len = strlen(eco_param);
     char buffer[3]="0";
@@ -542,10 +542,10 @@ void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param)
         eco_chroma = atoi(buffer);
 
         strncpy(buffer,eco_param+3+i,sizeof(char));
-        eco_sao_off = atoi(buffer);
+        eco_sao_on = atoi(buffer);
 
         strncpy(buffer,eco_param+4+i,sizeof(char));
-        eco_dbf_off = atoi(buffer);
+        eco_dbf_on = atoi(buffer);
 
     }
         //printf(" Legacy decoder \n");
@@ -556,8 +556,8 @@ void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param)
         av_opt_set_int(openHevcContext->c->priv_data, "a-level", alevel, 0);
         av_opt_set_int(openHevcContext->c->priv_data, "eco-luma", eco_luma, 0);
         av_opt_set_int(openHevcContext->c->priv_data, "eco-chroma", eco_chroma, 0);
-        av_opt_set_int(openHevcContext->c->priv_data, "eco-dbf-off", eco_dbf_off, 0);
-        av_opt_set_int(openHevcContext->c->priv_data, "eco-sao-off", eco_sao_off, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "eco-dbf-on", eco_dbf_on, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "eco-sao-on", eco_sao_on, 0);
     }
 }
 
