@@ -43,8 +43,10 @@ my_check_include_files(unistd.h                 UNISTD_H_FOUND)
 my_check_include_files(windows.h                WINDOWS_H_FOUND)
 
 #find asm compiler
-find_package(Yasm)
-set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ${_force})
+option (USE_YASM "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ON)
+if (USE_YASM)
+  find_package (Yasm)
+endif ()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
   configure_file(platform/arm/config.h ${PROJECT_SOURCE_DIR}/config.h)
