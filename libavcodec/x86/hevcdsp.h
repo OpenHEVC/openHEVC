@@ -221,32 +221,22 @@ idct_dc_proto(32,10,  avx2);
 // SAO functions
 ///////////////////////////////////////////////////////////////////////////////
 //#ifndef OPTI_ASM
-void ff_hevc_sao_edge_filter_0_8_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao,
-                                     int *borders, int _width, int _height, int c_idx,
-                                     uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
-void ff_hevc_sao_edge_filter_1_8_sse(uint8_t *_dst, uint8_t *_src,
-                                     ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao,
-                                     int *borders, int _width, int _height, int c_idx,
-                                     uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
+void ff_hevc_sao_edge_filter_8_sse(uint8_t *_dst, uint8_t *_src,
+                                  ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                  SAOParams *sao,
+                                  int width, int height,
+                                  int c_idx);
 //#endif
-void ff_hevc_sao_edge_filter_0_10_sse(uint8_t *_dst, uint8_t *_src,
-                                      ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao,
-                                      int *borders, int _width, int _height, int c_idx,
-                                      uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
-void ff_hevc_sao_edge_filter_1_10_sse(uint8_t *_dst, uint8_t *_src,
-                                      ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao,
-                                      int *borders, int _width, int _height, int c_idx,
-                                      uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
-void ff_hevc_sao_edge_filter_0_12_sse(uint8_t *_dst, uint8_t *_src,
-                                      ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao,
-                                      int *borders, int _width, int _height, int c_idx,
-                                      uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
-void ff_hevc_sao_edge_filter_1_12_sse(uint8_t *_dst, uint8_t *_src,
-                                      ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao,
-                                      int *borders, int _width, int _height, int c_idx,
-                                      uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
-
+void ff_hevc_sao_edge_filter_10_sse(uint8_t *_dst, uint8_t *_src,
+                                  ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                  SAOParams *sao,
+                                  int width, int height,
+                                  int c_idx);
+void ff_hevc_sao_edge_filter_12_sse(uint8_t *_dst, uint8_t *_src,
+                                  ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                  SAOParams *sao,
+                                  int width, int height,
+                                  int c_idx);
 //#ifndef OPTI_ASM
 void ff_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                      struct SAOParams *sao, int *borders, int width, int height, int c_idx);

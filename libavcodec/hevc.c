@@ -1533,7 +1533,7 @@ do {                                                                            
         }
 
         ret = hls_transform_unit(s, x0, y0, xBase, yBase, cb_xBase, cb_yBase,
-                                 log2_cb_size, log2_trafo_size,
+                                 log2_cb_size, log2_trafo_size, trafo_depth,
                                  blk_idx, cbf_luma, cbf_cb, cbf_cr);
         if (ret < 0)
             return ret;
@@ -2008,7 +2008,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                 mvp_flag = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv,
-                                         mvp_flag, 0, current_mv.ref_idx[0]);
+                                         mvp_flag, 0);
                 current_mv.mv[0].x += lc->pu.mvd.x;
                 current_mv.mv[0].y += lc->pu.mvd.y;
             }
@@ -2032,7 +2032,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                 mvp_flag = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv,
-                                         mvp_flag, 1, current_mv.ref_idx[1]);
+                                         mvp_flag, 1);
                 current_mv.mv[1].x += lc->pu.mvd.x;
                 current_mv.mv[1].y += lc->pu.mvd.y;
             }
@@ -3136,8 +3136,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
 
-    cur_frame = s->sps->sao_enabled ? s->sao_frame : s->frame;
-    cur_frame->pict_type = 3 - s->sh.slice_type;
+    s->frame->pict_type = 3 - s->sh.slice_type;
 
     if (!IS_IRAP(s))
         ff_hevc_bump_frame(s);
@@ -3899,7 +3898,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         }
     }
-
+#endif
 fail:
 #if PARALLEL_SLICE
     ff_thread_report_progress_slice(s->avctx);

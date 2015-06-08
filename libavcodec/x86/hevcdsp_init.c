@@ -2,20 +2,21 @@
  * Copyright (c) 2013 Seppo Tomperi
  * Copyright (c) 2013 - 2014 Pierre-Edouard Lepere
  *
- * This file is part of ffmpeg.
  *
- * ffmpeg is free software; you can redistribute it and/or
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * ffmpeg is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with ffmpeg; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -421,7 +422,7 @@ mc_bi_w_funcs(qpel_hv, 10, sse4);
         PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
 
 
-void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
+void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int mm_flags = av_get_cpu_flags();
 
@@ -481,9 +482,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
 
-                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_8_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_8_sse;
+					c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
+           			c->sao_edge_filter    = ff_hevc_sao_edge_filter_8_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
@@ -567,9 +567,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4);
 
-                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_10_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_10_sse;
+            c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
+            c->sao_edge_filter    = ff_hevc_sao_edge_filter_10_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
@@ -644,9 +643,8 @@ void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                     QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     12, sse4);
                     QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    12, sse4);
                     
-                    c->sao_band_filter    = ff_hevc_sao_band_filter_0_12_sse;
-                    c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_0_12_sse;
-                    c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_1_12_sse;
+            		c->sao_band_filter = ff_hevc_sao_band_filter_0_12_sse;
+            		c->sao_edge_filter = ff_hevc_sao_edge_filter_12_sse;
                 }
 #endif //HAVE_SSSE3
 #if HAVE_SSE42
