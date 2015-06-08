@@ -3226,7 +3226,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 }
 
                 if( s->eco_reload ){
-
                     switch(s->eco_luma){
                         case LUMA1:
                                 if (s->eco_cur_luma != LUMA1){
@@ -3272,17 +3271,26 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                         default:
                                 break;
                     }
+                }else{
+                	if (s->eco_cur_luma != LUMA7){
+						eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
+						s->eco_cur_luma = LUMA7;
+					}
+                	if (s->eco_cur_chroma != CHROMA4){
+						eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
+						s->eco_cur_chroma = CHROMA4;
+					}
                 }
                 // Fin ECO Param
+
+                // ECO Param activation level counter
+				dec_pic_count++;
             }
             // Fin morgan
 
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
-
-             // ECO Param activation level counter
-             dec_pic_count++;
 
         } else if (!s->ref) {
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
