@@ -67,8 +67,25 @@ typedef struct HEVCDSPContext {
 
     void (*sao_band_filter)( uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 
-    void (*sao_edge_filter[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
+    void (*sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst,
+                            ptrdiff_t stride_src, SAOParams *sao, int width,
+                            int height, int c_idx);
 
+    void (*sao_edge_restore[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
+    /* put_hevc_qpel[x] block widths
+       x     width
+       --------------
+       0 ->  2 pixels
+       1 ->  4 pixels
+       2 ->  6 pixels
+       3 ->  8 pixels
+       4 -> 12 pixels
+       5 -> 16 pixels
+       6 -> 24 pixels
+       7 -> 32 pixels
+       8 -> 48 pixels
+       9 -> 64 pixels
+    */
     void (*put_hevc_qpel[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
                                     int height, intptr_t mx, intptr_t my, int width);
     void (*put_hevc_qpel_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
@@ -132,6 +149,6 @@ void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
 extern const int8_t ff_hevc_epel_filters[7][4];
 extern const int8_t ff_hevc_qpel_filters[3][16];
 
-void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth);
+void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);
 void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth);
 #endif /* AVCODEC_HEVCDSP_H */

@@ -146,20 +146,20 @@ DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_luma_x1_5[3][8] )= /* 
     { -1,  4, -11,  52,  26,  -8,  3, -1}
 };
 
-DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x1_5[3][4])= /* 0, 11, 5 */
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x1_5_h[3][4])= /* 0, 11, 5 */
 {
     {  0,  64,   0,  0},
     { -2,  20,  52, -6},
     { -6,  52,  20, -2}
 };
-DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_x1_5chroma[3][4])=
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x1_5_v[3][4])=
 {
     {  0,   4,  62, -2},
     { -4,  30,  42, -4},
     { -4,  54,  16, -2}
 };
 
-DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x2[2][4])=
+DECLARE_ALIGNED(16, static const int8_t, up_sample_filter_chroma_x2_h[2][4])=
 {
     {  0,  64,   0,  0},
     { -4,  36,  36, -4}
@@ -297,9 +297,10 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->idct_dc[1]             = FUNC(idct_8x8_dc, depth);                    \
     hevcdsp->idct_dc[2]             = FUNC(idct_16x16_dc, depth);                  \
     hevcdsp->idct_dc[3]             = FUNC(idct_32x32_dc, depth);                  \
-    hevcdsp->sao_band_filter    = FUNC(sao_band_filter_0, depth);                  \
-    hevcdsp->sao_edge_filter[0] = FUNC(sao_edge_filter_0, depth);                  \
-    hevcdsp->sao_edge_filter[1] = FUNC(sao_edge_filter_1, depth);                  \
+    hevcdsp->sao_band_filter        = FUNC(sao_band_filter_0, depth);              \
+    hevcdsp->sao_edge_filter        = FUNC(sao_edge_filter, depth);                \
+    hevcdsp->sao_edge_restore[0]    = FUNC(sao_edge_restore_0, depth);             \
+    hevcdsp->sao_edge_restore[1]    = FUNC(sao_edge_restore_1, depth);             \
                                                                                    \
     QPEL_FUNCS(depth);                                                             \
     QPEL_UNI_FUNCS(depth);                                                         \
@@ -370,6 +371,6 @@ int i = 0;
         break;
     }
 #endif
-    if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
+    if (ARCH_X86) ff_hevc_dsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 }

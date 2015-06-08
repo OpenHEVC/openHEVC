@@ -25,7 +25,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
-#define MAX_DECODERS 2
+#define MAX_DECODERS 3
 #define ACTIVE_NAL
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
@@ -67,6 +67,54 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
         openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
         openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
         openHevcContext->picture = avcodec_alloc_frame();
+        openHevcContext->c->flags |= CODEC_FLAG_UNALIGNED;
+
+        if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
+            openHevcContext->c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+
+        /* For some codecs, such as msmpeg4 and mpeg4, width and height
+         MUST be initialized there because this information is not
+         available in the bitstream. */
+
+        /*      set thread parameters    */
+        if(thread_type == 1)
+            av_opt_set(openHevcContext->c, "thread_type", "frame", 0);
+        else if (thread_type == 2)
+            av_opt_set(openHevcContext->c, "thread_type", "slice", 0);
+        else
+            av_opt_set(openHevcContext->c, "thread_type", "frameslice", 0);
+
+        av_opt_set_int(openHevcContext->c, "threads", nb_pthreads, 0);
+
+        /*  Set the decoder id    */
+        av_opt_set_int(openHevcContext->c->priv_data, "decoder-id", i, 0);
+    }
+    return (OpenHevc_Handle) openHevcContexts;
+}
+
+OpenHevc_Handle libOpenH264Init(int nb_pthreads, int thread_type)
+{
+    /* register all the codecs */
+    int i;
+    OpenHevcWrapperContexts *openHevcContexts = av_mallocz(sizeof(OpenHevcWrapperContexts));
+    OpenHevcWrapperContext  *openHevcContext;
+    avcodec_register_all();
+    openHevcContexts->nb_decoders   = MAX_DECODERS;
+    openHevcContexts->active_layer  = MAX_DECODERS-1;
+    openHevcContexts->display_layer = MAX_DECODERS-1;
+    openHevcContexts->wraper = av_malloc(sizeof(OpenHevcWrapperContext*)*openHevcContexts->nb_decoders);
+    for(i=0; i < openHevcContexts->nb_decoders; i++){
+        openHevcContext = openHevcContexts->wraper[i] = av_malloc(sizeof(OpenHevcWrapperContext));
+        av_init_packet(&openHevcContext->avpkt);
+        openHevcContext->codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+        if (!openHevcContext->codec) {
+            fprintf(stderr, "codec not found\n");
+            return NULL;
+        }
+
+        openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
+        openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
+        openHevcContext->picture = av_frame_alloc();
         openHevcContext->c->flags |= CODEC_FLAG_UNALIGNED;
 
         if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
