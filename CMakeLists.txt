@@ -1,4 +1,10 @@
 cmake_minimum_required (VERSION 2.8)
+
+# Configure build type (Release when no one is selected)
+if (NOT DEFINED CMAKE_BUILD_TYPE)
+  set (CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+endif ()
+
 project (openHEVC)
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
@@ -67,13 +73,6 @@ if(WIN32)
         -Dinline=__inline
         -Drestrict=__restrict
     )
-endif()
-# Configure build type (Release when no one is selected)
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-    set(BUILDTYPE_MSG "Release (set by default)")
-else()
-    set(BUILDTYPE_MSG "${CMAKE_BUILD_TYPE}")
 endif()
 
 #define asm sources
