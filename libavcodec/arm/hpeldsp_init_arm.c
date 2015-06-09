@@ -65,7 +65,7 @@ av_cold void ff_hpeldsp_init_arm(HpelDSPContext *c, int flags)
     c->put_no_rnd_pixels_tab[1][3] = ff_put_no_rnd_pixels8_xy2_arm;
 
     if (have_armv6(cpu_flags))
-        ff_hpeldsp_init_armv6(c, flags);
+        // ff_hpeldsp_init_armv6(c, flags);
     if (have_neon(cpu_flags))
         ff_hpeldsp_init_neon(c, flags);
 }
