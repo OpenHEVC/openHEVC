@@ -503,10 +503,9 @@ av_cold void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth)
         hevcdsp_init_neon(c, bit_depth);
 }
 
-
+#if HAVE_NEON
 av_cold void eco_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth)
 {
-#if HAVE_NEON
     if (bit_depth == 8) {
         int x;
         put_hevc_qpel_neon[1][0]         = ff_hevc_put_qpel1_v1_neon_8;
@@ -555,14 +554,12 @@ av_cold void eco_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][0][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
         }
-#endif
     }
 }
 
 
 av_cold void eco_reload_filter_luma3(HEVCDSPContext *c, const int bit_depth)
 {
-#if HAVE_NEON
     if (bit_depth == 8) {
         int x;
         put_hevc_qpel_neon[1][0]         = ff_hevc_put_qpel3_v1_neon_8;
@@ -611,13 +608,11 @@ av_cold void eco_reload_filter_luma3(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][0][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
         }
-#endif
     }
 }
 
 av_cold void eco_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth)
 {
-#if HAVE_NEON
     if (bit_depth == 8) {
         int x;
         put_hevc_qpel_neon[1][0]         = ff_hevc_put_qpel_v1_neon_8;
@@ -666,13 +661,11 @@ av_cold void eco_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][0][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
         }
-#endif
     }
 }
 
 av_cold void eco_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth)
 {
-#if HAVE_NEON
     if (bit_depth == 8) {
         int x;
         
@@ -683,12 +676,10 @@ av_cold void eco_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_pixels_neon_8;
         }
     }
-#endif // HAVE_NEON
 }
 
 av_cold void eco_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth)
 {
-#if HAVE_NEON
     if (bit_depth == 8) {
         int x;
         
@@ -699,12 +690,10 @@ av_cold void eco_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel2_hv_neon_8;
         }
     }
-#endif // HAVE_NEON
 }
 
 av_cold void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
 {
-#if HAVE_NEON
     if (bit_depth == 8) {
         int x;
         
@@ -715,5 +704,6 @@ av_cold void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
         }
     }
-#endif // HAVE_NEON
 }
+
+#endif // HAVE_NEON

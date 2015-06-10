@@ -3150,82 +3150,82 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                 // Eco activation levels
                 switch(s->eco_alevel){
                     case 0:
-                        s->eco_reload = 0;
+                        s->eco_on = 0;
                         break;
                     case 1:
                         if( dec_pic_count%12 == 0)
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         else
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         break;
                     case 2:
                         if( dec_pic_count%6 == 0)
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         else
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         break;
                     case 3:
                         if( dec_pic_count%4 == 0)
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         else
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         break;
                     case 4:
                         if( dec_pic_count%3 == 0)
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         else
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         break;
                     case 5:
                         if( dec_pic_count%2 == 0 || dec_pic_count%12 == 5)
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         else
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         break;
                     case 6:
                         if( dec_pic_count%2 == 0)
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         else
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         break;
                     case 7:
                         if( dec_pic_count%2 == 0 || dec_pic_count%12 == 5 )
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         else
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         break;
                     case 8:
                         if( dec_pic_count%3 == 0)
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         else
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         break;
                     case 9:
                         if( dec_pic_count%4 == 0)
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         else
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         break;
                     case 10:
                         if( dec_pic_count%6 == 0)
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         else
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         break;
                     case 11:
                         if( dec_pic_count%12 == 6)
-                            s->eco_reload = 0;
+                            s->eco_on = 0;
                         else
-                            s->eco_reload = 1;
+                            s->eco_on = 1;
                         break;
                     case 12:
-                        s->eco_reload = 1;
+                        s->eco_on = 1;
                         break;
                     default:
                         break;
                 }
 
-                if( s->eco_reload ){
+                if( s->eco_on ){
                     switch(s->eco_luma){
                         case LUMA1:
                                 if (s->eco_cur_luma != LUMA1){
@@ -4008,7 +4008,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 	s->eco_sao_on           = s0->eco_sao_on;
 	s->eco_cur_luma         = s0->eco_cur_luma;
 	s->eco_cur_chroma       = s0->eco_cur_chroma;
-	s->eco_reload           = s0->eco_reload;
+	s->eco_on				= s0->eco_on;
 
 
     if (s->sps != s0->sps)
