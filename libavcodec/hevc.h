@@ -962,7 +962,7 @@ typedef struct Mv {
 typedef struct MvField {
     Mv mv[2];
 #ifdef TEST_MV_POC
-    int16_t poc[2];
+    int32_t poc[2];
     uint32_t pred_flag;
 #else
     uint8_t pred_flag;
