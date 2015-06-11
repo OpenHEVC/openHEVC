@@ -925,6 +925,7 @@ static av_always_inline void pred_angular_ ## W ##_ ## D ## _sse(uint8_t *_src,\
 }
 
 PRED_ANGULAR( 4, 8)
+PRED_ANGULAR( 8, 8)
 
 PRED_ANGULAR(16, 8)
 PRED_ANGULAR(32, 8)
