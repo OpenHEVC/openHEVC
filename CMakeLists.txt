@@ -92,6 +92,7 @@ set(YASM_NAMES
     libavcodec/x86/hevc_mc.asm
     libavcodec/x86/hevc_deblock.asm
     libavcodec/x86/hevc_idct.asm
+    libavcodec/x86/hevc_res_add.asm
     libavcodec/x86/hpeldsp.asm
     libavcodec/x86/qpel.asm
     libavcodec/x86/qpeldsp.asm
@@ -348,9 +349,9 @@ list(APPEND libfilenames
 endif()
 
 if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
-    option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
-else()
     option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
+else()
+    option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
 endif()
 add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 

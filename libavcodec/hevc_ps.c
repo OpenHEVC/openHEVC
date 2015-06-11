@@ -713,7 +713,7 @@ static void set_ref_layers_flags(HEVCVPS *vps, int currLayerId) {
 static void set_num_ref_layers(HEVCVPS *vps) {
     int i, j, iNuhLId;
     HEVCVPSExt  *Hevc_VPS_Ext = &vps->Hevc_VPS_Ext;
-    memset( Hevc_VPS_Ext->number_ref_layers, 0, sizeof( u_int8_t )*16*16 );
+    memset( Hevc_VPS_Ext->number_ref_layers, 0, sizeof( uint8_t )*16*16 );
     for (i = 0; i < vps->vps_max_layers; i++) {
         iNuhLId = Hevc_VPS_Ext->layer_id_in_nuh[i];
         set_ref_layers_flags(vps, iNuhLId);
@@ -740,9 +740,9 @@ static void set_predicted_layerIds(HEVCVPS *vps) {
 
 static void set_tree_partition_layer_IdList(HEVCVPS *vps) {
     int i, j; 
-    u_int8_t countedLayerIdxFlag[MAX_NUM_LAYER_IDS];
+    uint8_t countedLayerIdxFlag[MAX_NUM_LAYER_IDS];
     HEVCVPSExt  *Hevc_VPS_Ext = &vps->Hevc_VPS_Ext;
-    memset( countedLayerIdxFlag, 0, sizeof(u_int8_t)*MAX_NUM_LAYER_IDS );
+    memset( countedLayerIdxFlag, 0, sizeof(uint8_t)*MAX_NUM_LAYER_IDS );
 
     Hevc_VPS_Ext->NumIndependentLayers = 0;
 
