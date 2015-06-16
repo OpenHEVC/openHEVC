@@ -95,7 +95,7 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId);
 // Morgan ECO
-void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param);
+void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param, int eco_verbose);
 
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 

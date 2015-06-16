@@ -514,7 +514,7 @@ void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val)
     }
 }
 // Morgan
-void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param)
+void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param, int eco_verbose)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
@@ -558,6 +558,7 @@ void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param)
         av_opt_set_int(openHevcContext->c->priv_data, "eco-chroma", eco_chroma, 0);
         av_opt_set_int(openHevcContext->c->priv_data, "eco-dbf-on", eco_dbf_on, 0);
         av_opt_set_int(openHevcContext->c->priv_data, "eco-sao-on", eco_sao_on, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "eco-verbose", eco_verbose, 0);
     }
 }
 

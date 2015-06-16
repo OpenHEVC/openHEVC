@@ -1309,6 +1309,7 @@ typedef struct HEVCContext {
     int eco_chroma;
     int eco_dbf_on;
     int eco_sao_on;
+    int eco_verbose;
 
     int eco_cur_luma;
     int eco_cur_chroma;

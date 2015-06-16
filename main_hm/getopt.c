@@ -61,7 +61,8 @@ void print_usage() {
     printf("     -l <Quality layer id> \n");
     printf("     -s <num> Stop after num frames \n");
     printf("     -r <num> Frame rate (FPS) \n");
-    printf("     -e <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;4] SAO [1;0] DBF [1;0] \n");
+    printf("     -e Eco mode <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;4] SAO [1;0] DBF [1;0] \n");
+    printf("     -E Eco mode verbose, same args as -e \n");
 }
 
 /*
@@ -133,7 +134,7 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
     // every command line option must be followed by ':' if it takes an
     // argument, and '::' if this argument is optional
-    const char *ostr = "achi:no:p:f:s:t:v:wl:r:e:";
+    const char *ostr = "achi:no:p:f:s:t:v:wl:r:e:E:";
 
     int c;
     h264_flags        = DISABLE;
@@ -148,7 +149,8 @@ void init_main(int argc, char *argv[]) {
     quality_layer_id  = 0; // Base layer
     num_frames        = 0;
     frame_rate        = 0;
-    eco_param = strdup("07400");
+    eco_param = strdup("07411");	// ECO init
+    eco_verbose = 0;
 
     program           = argv[0];
     
@@ -203,6 +205,14 @@ void init_main(int argc, char *argv[]) {
             }
             eco_param = strdup(optarg);
             break;
+        case 'E':
+		   if(strlen(optarg) < 5 || strlen(optarg) > 6){
+			   print_usage();
+			   exit(1);
+		   }
+		   eco_param = strdup(optarg);
+		   eco_verbose = 1;
+		   break;
         default:
             print_usage();
             exit(1);

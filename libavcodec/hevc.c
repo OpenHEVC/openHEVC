@@ -3769,10 +3769,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         s->ref->frame->key_frame = IS_IRAP(s);
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         // Eco Mode Log
-        av_log(s->avctx, AV_LOG_INFO,
-			   "Interpolation configuration: AL %d Luma %d Chroma %d SAO %s DBF %s. count = %d\n",
-			   s->eco_alevel, s->eco_cur_luma, s->eco_cur_chroma,((s->eco_sao_on && s->eco_on) || !s->eco_on) ? "on" : "off",
-			   ((s->eco_dbf_on && s->eco_on) || !s->eco_on) ? "on" : "off", dec_pic_count);
+        if(s->eco_verbose)
+            av_log(s->avctx, AV_LOG_INFO,
+				   "Interpolation configuration: AL %d Luma %d Chroma %d SAO %s DBF %s. count = %d\n",
+				   s->eco_alevel, s->eco_cur_luma, s->eco_cur_chroma,((s->eco_sao_on && s->eco_on) || !s->eco_on) ? "on" : "off",
+				   ((s->eco_dbf_on && s->eco_on) || !s->eco_on) ? "on" : "off", dec_pic_count);
         s->is_decoded = 0;
     }
 
@@ -4014,6 +4015,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 	s->eco_cur_luma         = s0->eco_cur_luma;
 	s->eco_cur_chroma       = s0->eco_cur_chroma;
 	s->eco_on				= s0->eco_on;
+	s->eco_verbose			= s0->eco_verbose;
 
 
     if (s->sps != s0->sps)
@@ -4171,6 +4173,8 @@ static const AVOption options[] = {
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
 	{ "eco-sao-on", "Eco SAO filter on/off", OFFSET(eco_sao_on),
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+	{ "eco-verbose", "Eco verbose", OFFSET(eco_verbose),
+				AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { NULL },
 };
 

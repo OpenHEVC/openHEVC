@@ -55,6 +55,7 @@ int no_cropping;
 int num_frames;
 int frame_rate;
 char *eco_param;
+int eco_verbose;
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);
