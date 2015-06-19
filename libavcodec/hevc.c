@@ -50,8 +50,6 @@ static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
 static void display_md5(int poc, uint8_t md5[3][16], int chroma_idc);
 static void printf_ref_pic_list(HEVCContext *s);
 
-int dec_pic_count=0;
-
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -3189,6 +3187,146 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
             }
 #endif
+
+	    if (s->sh.first_slice_in_pic_flag) { // Morgan: 1st slice of frame
+	      if (s->sh.slice_type != I_SLICE){
+		// Eco activation levels
+		switch(s->eco_alevel){
+		case 0:
+		  s->eco_on = 0;
+		  break;
+		case 1:
+		  if( s->poc%12 == 0)
+		    s->eco_on = 1;
+		  else
+		    s->eco_on = 0;
+		  break;
+		case 2:
+		  if( s->poc%6 == 0)
+		    s->eco_on = 1;
+		  else
+		    s->eco_on = 0;
+		  break;
+		case 3:
+		  if( s->poc%4 == 0)
+		    s->eco_on = 1;
+		  else
+		    s->eco_on = 0;
+		  break;
+		case 4:
+		  if( s->poc%3 == 0)
+		    s->eco_on = 1;
+		  else
+		    s->eco_on = 0;
+		  break;
+		case 5:
+		  if( s->poc%2 == 0 || s->poc%12 == 5)
+		    s->eco_on = 0;
+		  else
+		    s->eco_on = 1;
+		  break;
+		case 6:
+		  if( s->poc%2 == 0)
+		    s->eco_on = 1;
+		  else
+		    s->eco_on = 0;
+		  break;
+		case 7:
+		  if( s->poc%2 == 0 || s->poc%12 == 5 )
+		    s->eco_on = 1;
+		  else
+		    s->eco_on = 0;
+		  break;
+		case 8:
+		  if( s->poc%3 == 0)
+		    s->eco_on = 0;
+		  else
+		    s->eco_on = 1;
+		  break;
+		case 9:
+		  if( s->poc%4 == 0)
+		    s->eco_on = 0;
+		  else
+		    s->eco_on = 1;
+		  break;
+		case 10:
+		  if( s->poc%6 == 0)
+		    s->eco_on = 0;
+		  else
+		    s->eco_on = 1;
+		  break;
+		case 11:
+		  if( s->poc%12 == 6)
+		    s->eco_on = 0;
+		  else
+		    s->eco_on = 1;
+		  break;
+		case 12:
+		  s->eco_on = 1;
+		  break;
+		default:
+		  break;
+		}
+
+		if( s->eco_on ){
+		  switch(s->eco_luma){
+		  case LUMA1:
+		    if (s->eco_cur_luma != LUMA1){
+		      eco_reload_filter_luma1(&(s->hevcdsp), s->sps->bit_depth);
+		      s->eco_cur_luma = LUMA1;
+		    }
+		    break;
+		  case LUMA3:
+		    if (s->eco_cur_luma != LUMA3){
+		      eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
+		      s->eco_cur_luma = LUMA3;
+		    }
+		    break;
+		  case LUMA7:
+		    if (s->eco_cur_luma != LUMA7){
+		      eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
+		      s->eco_cur_luma = LUMA7;
+		    }
+		    break;
+		  default:
+		    break;
+		  }
+
+		  switch(s->eco_chroma){
+		  case CHROMA1:
+		    if (s->eco_cur_chroma != CHROMA1){
+		      eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->bit_depth);
+		      s->eco_cur_chroma = CHROMA1;
+		    }
+		    break;
+		  case CHROMA2:
+		    if (s->eco_cur_chroma != CHROMA2){
+		      eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
+		      s->eco_cur_chroma = CHROMA2;
+		    }
+		    break;
+		  case CHROMA4:
+		    if (s->eco_cur_chroma != CHROMA4){
+		      eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
+		      s->eco_cur_chroma = CHROMA4;
+		    }
+		    break;
+		  default:
+		    break;
+		  }
+		}else{
+		  if (s->eco_cur_luma != LUMA7){
+		    eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
+		    s->eco_cur_luma = LUMA7;
+		  }
+		  if (s->eco_cur_chroma != CHROMA4){
+		    eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
+		    s->eco_cur_chroma = CHROMA4;
+		  }
+		}// Fin ECO Param
+	      }
+            }// Fin morgan
+
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
@@ -3590,148 +3728,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     s->ref = NULL;
 
-    if (s->sh.first_slice_in_pic_flag) { // Morgan: 1st slice of frame
-		if (s->sh.slice_type != I_SLICE){
-			// Eco activation levels
-			switch(s->eco_alevel){
-				case 0:
-					s->eco_on = 0;
-					break;
-				case 1:
-					if( dec_pic_count%12 == 0)
-						s->eco_on = 1;
-					else
-						s->eco_on = 0;
-					break;
-				case 2:
-					if( dec_pic_count%6 == 0)
-						s->eco_on = 1;
-					else
-						s->eco_on = 0;
-					break;
-				case 3:
-					if( dec_pic_count%4 == 0)
-						s->eco_on = 1;
-					else
-						s->eco_on = 0;
-					break;
-				case 4:
-					if( dec_pic_count%3 == 0)
-						s->eco_on = 1;
-					else
-						s->eco_on = 0;
-					break;
-				case 5:
-					if( dec_pic_count%2 == 0 || dec_pic_count%12 == 5)
-						s->eco_on = 0;
-					else
-						s->eco_on = 1;
-					break;
-				case 6:
-					if( dec_pic_count%2 == 0)
-						s->eco_on = 1;
-					else
-						s->eco_on = 0;
-					break;
-				case 7:
-					if( dec_pic_count%2 == 0 || dec_pic_count%12 == 5 )
-						s->eco_on = 1;
-					else
-						s->eco_on = 0;
-					break;
-				case 8:
-					if( dec_pic_count%3 == 0)
-						s->eco_on = 0;
-					else
-						s->eco_on = 1;
-					break;
-				case 9:
-					if( dec_pic_count%4 == 0)
-						s->eco_on = 0;
-					else
-						s->eco_on = 1;
-					break;
-				case 10:
-					if( dec_pic_count%6 == 0)
-						s->eco_on = 0;
-					else
-						s->eco_on = 1;
-					break;
-				case 11:
-					if( dec_pic_count%12 == 6)
-						s->eco_on = 0;
-					else
-						s->eco_on = 1;
-					break;
-				case 12:
-					s->eco_on = 1;
-					break;
-				default:
-					break;
-			}
-
-			if( s->eco_on ){
-				switch(s->eco_luma){
-					case LUMA1:
-							if (s->eco_cur_luma != LUMA1){
-								eco_reload_filter_luma1(&(s->hevcdsp), s->sps->bit_depth);
-								s->eco_cur_luma = LUMA1;
-							}
-							break;
-					case LUMA3:
-							if (s->eco_cur_luma != LUMA3){
-								eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
-								s->eco_cur_luma = LUMA3;
-							}
-							break;
-					case LUMA7:
-							if (s->eco_cur_luma != LUMA7){
-								eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
-								s->eco_cur_luma = LUMA7;
-							}
-							break;
-					default:
-							break;
-				}
-
-				switch(s->eco_chroma){
-					case CHROMA1:
-							if (s->eco_cur_chroma != CHROMA1){
-								eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->bit_depth);
-								s->eco_cur_chroma = CHROMA1;
-							}
-							break;
-					case CHROMA2:
-							if (s->eco_cur_chroma != CHROMA2){
-								eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
-								s->eco_cur_chroma = CHROMA2;
-							}
-							break;
-					case CHROMA4:
-							if (s->eco_cur_chroma != CHROMA4){
-								eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
-								s->eco_cur_chroma = CHROMA4;
-							}
-							break;
-					default:
-							break;
-				}
-			}else{
-				if (s->eco_cur_luma != LUMA7){
-					eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
-					s->eco_cur_luma = LUMA7;
-				}
-				if (s->eco_cur_chroma != CHROMA4){
-					eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
-					s->eco_cur_chroma = CHROMA4;
-				}
-			}// Fin ECO Param
-
-			// ECO Param activation level counter
-			dec_pic_count++;
-		}
-    }// Fin morgan
-
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
@@ -3769,11 +3765,10 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         s->ref->frame->key_frame = IS_IRAP(s);
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         // Eco Mode Log
-        if(s->eco_verbose)
-            av_log(s->avctx, AV_LOG_INFO,
-				   "Interpolation configuration: AL %d Luma %d Chroma %d SAO %s DBF %s. count = %d\n",
-				   s->eco_alevel, s->eco_cur_luma, s->eco_cur_chroma,((s->eco_sao_on && s->eco_on) || !s->eco_on) ? "on" : "off",
-				   ((s->eco_dbf_on && s->eco_on) || !s->eco_on) ? "on" : "off", dec_pic_count);
+        if(s->eco_verbose && s->sh.slice_type != I_SLICE){
+            av_log(s->avctx, AV_LOG_INFO,"%d Interpolation configuration: AL %d Luma %d Chroma %d SAO %s DBF %s.\n",s->poc, s->eco_alevel, s->eco_cur_luma,
+				   s->eco_cur_chroma,((s->eco_sao_on && s->eco_on) || !s->eco_on) ? "on" : "off",((s->eco_dbf_on && s->eco_on) || !s->eco_on) ? "on" : "off");
+        }
         s->is_decoded = 0;
     }
 
