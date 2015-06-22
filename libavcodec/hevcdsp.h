@@ -173,6 +173,9 @@ typedef struct HEVCDSPContext {
                                            uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
                                            int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+
+    int eco_cur_luma;
+    int eco_cur_chroma;
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);

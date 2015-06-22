@@ -386,6 +386,9 @@ int i = 0;
 #endif
     if (ARCH_X86) ff_hevc_dsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
+
+    hevcdsp->eco_cur_luma=7;
+    hevcdsp->eco_cur_chroma=4;
 }
 
 
@@ -449,6 +452,8 @@ int i = 0;
         HEVC_DSP(8);
         break;
     }
+
+    hevcdsp->eco_cur_luma=1;
 }
 
 void eco_reload_filter_luma3(HEVCDSPContext *hevcdsp, int bit_depth)
@@ -511,6 +516,7 @@ int i = 0;
         HEVC_DSP(8);
         break;
     }
+    hevcdsp->eco_cur_luma=3;
 }
 
 void eco_reload_filter_luma7(HEVCDSPContext *hevcdsp, int bit_depth)
@@ -573,6 +579,7 @@ int i = 0;
         HEVC_DSP(8);
         break;
     }
+    hevcdsp->eco_cur_luma=7;
 }
 
 void eco_reload_filter_chroma1(HEVCDSPContext *hevcdsp, int bit_depth)
@@ -612,6 +619,7 @@ int i = 0;
         HEVC_DSP(8);
         break;
     }
+    hevcdsp->eco_cur_chroma=1;
 }
 
 
@@ -652,6 +660,7 @@ int i = 0;
         HEVC_DSP(8);
         break;
     }
+    hevcdsp->eco_cur_chroma=2;
 }
 
 
@@ -691,4 +700,5 @@ int i = 0;
         HEVC_DSP(8);
         break;
     }
+    hevcdsp->eco_cur_chroma=4;
 }

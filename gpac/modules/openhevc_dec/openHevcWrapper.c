@@ -548,7 +548,6 @@ void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param, int eco
         eco_dbf_on = atoi(buffer);
 
     }
-        //printf(" Legacy decoder \n");
 
 
     for (i = 0; i < openHevcContexts->nb_decoders; i++) {

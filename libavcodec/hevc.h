@@ -1452,7 +1452,7 @@ extern const uint8_t ff_hevc_diag_scan8x8_y[64];
 #define LUMA3 3
 #define LUMA7 7
 #define CHROMA1 1
-#define CHROMA2 3
+#define CHROMA2 2
 #define CHROMA4 4
 
 #endif /* AVCODEC_HEVC_H */

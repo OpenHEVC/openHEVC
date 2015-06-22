@@ -45,11 +45,11 @@ const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12
 
 #define POC_DISPLAY_MD5
 
+
 static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift);
 static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
 static void display_md5(int poc, uint8_t md5[3][16], int chroma_idc);
 static void printf_ref_pic_list(HEVCContext *s);
-
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -3271,21 +3271,18 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 		if( s->eco_on ){
 		  switch(s->eco_luma){
 		  case LUMA1:
-		    if (s->eco_cur_luma != LUMA1){
+		    if (s->hevcdsp.eco_cur_luma != LUMA1){
 		      eco_reload_filter_luma1(&(s->hevcdsp), s->sps->bit_depth);
-		      s->eco_cur_luma = LUMA1;
 		    }
 		    break;
 		  case LUMA3:
-		    if (s->eco_cur_luma != LUMA3){
+		    if (s->hevcdsp.eco_cur_luma != LUMA3){
 		      eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
-		      s->eco_cur_luma = LUMA3;
 		    }
 		    break;
 		  case LUMA7:
-		    if (s->eco_cur_luma != LUMA7){
+		    if (s->hevcdsp.eco_cur_luma != LUMA7){
 		      eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
-		      s->eco_cur_luma = LUMA7;
 		    }
 		    break;
 		  default:
@@ -3294,34 +3291,29 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
 		  switch(s->eco_chroma){
 		  case CHROMA1:
-		    if (s->eco_cur_chroma != CHROMA1){
+		    if (s->hevcdsp.eco_cur_chroma != CHROMA1){
 		      eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->bit_depth);
-		      s->eco_cur_chroma = CHROMA1;
 		    }
 		    break;
 		  case CHROMA2:
-		    if (s->eco_cur_chroma != CHROMA2){
+		    if (s->hevcdsp.eco_cur_chroma != CHROMA2){
 		      eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
-		      s->eco_cur_chroma = CHROMA2;
 		    }
 		    break;
 		  case CHROMA4:
-		    if (s->eco_cur_chroma != CHROMA4){
+		    if (s->hevcdsp.eco_cur_chroma != CHROMA4){
 		      eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
-		      s->eco_cur_chroma = CHROMA4;
 		    }
 		    break;
 		  default:
 		    break;
 		  }
 		}else{
-		  if (s->eco_cur_luma != LUMA7){
+		  if (s->hevcdsp.eco_cur_luma != LUMA7){
 		    eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
-		    s->eco_cur_luma = LUMA7;
 		  }
-		  if (s->eco_cur_chroma != CHROMA4){
+		  if (s->hevcdsp.eco_cur_chroma != CHROMA4){
 		    eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
-		    s->eco_cur_chroma = CHROMA4;
 		  }
 		}// Fin ECO Param
 	      }
@@ -3917,6 +3909,9 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->threads_number  = 1;
     s->eos = 0;
 
+    // Eco init morgan
+    s->eco_on = 0;
+
     for (i = 1; i < s->threads_number ; i++) {
         s->sList[i] = av_mallocz(sizeof(HEVCContext));
         memcpy(s->sList[i], s, sizeof(HEVCContext));
@@ -4002,14 +3997,11 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
-	s->eco_alevel           = s0->eco_alevel;	//Eco
+	s->eco_alevel           = s0->eco_alevel;	// Eco
 	s->eco_luma             = s0->eco_luma;
 	s->eco_chroma           = s0->eco_chroma;
 	s->eco_dbf_on	        = s0->eco_dbf_on;
 	s->eco_sao_on           = s0->eco_sao_on;
-	s->eco_cur_luma         = s0->eco_cur_luma;
-	s->eco_cur_chroma       = s0->eco_cur_chroma;
-	s->eco_on				= s0->eco_on;
 	s->eco_verbose			= s0->eco_verbose;
 
 
