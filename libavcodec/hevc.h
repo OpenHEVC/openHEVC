@@ -1311,10 +1311,6 @@ typedef struct HEVCContext {
     int eco_sao_on;
     int eco_verbose;
 
-    int eco_cur_luma;
-    int eco_cur_chroma;
-    int eco_on;
-
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,

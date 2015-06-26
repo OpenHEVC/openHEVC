@@ -387,8 +387,10 @@ int i = 0;
     if (ARCH_X86) ff_hevc_dsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 
+    // Eco init morgan
     hevcdsp->eco_cur_luma=7;
     hevcdsp->eco_cur_chroma=4;
+    hevcdsp->eco_on = 0;
 }
 
 

@@ -3051,12 +3051,11 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         goto fail;
     } else if (ret != (s->decoder_id) && (s->nal_unit_type != NAL_VPS && (s->nal_unit_type != NAL_SPS) /*&& s->nal_unit_type != NAL_PPS*/))
         return 0;
-
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
     s->nuh_layer_id = ret;
     s->avctx->layers_size += length;
-    
+
     s->nuh_layer_id = ret;
 
     switch (s->nal_unit_type) {
@@ -3188,136 +3187,140 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             }
 #endif
 
-	    if (s->sh.first_slice_in_pic_flag) { // Morgan: 1st slice of frame
-	      if (s->sh.slice_type != I_SLICE){
-		// Eco activation levels
-		switch(s->eco_alevel){
-		case 0:
-		  s->eco_on = 0;
-		  break;
-		case 1:
-		  if( s->poc%12 == 0)
-		    s->eco_on = 1;
-		  else
-		    s->eco_on = 0;
-		  break;
-		case 2:
-		  if( s->poc%6 == 0)
-		    s->eco_on = 1;
-		  else
-		    s->eco_on = 0;
-		  break;
-		case 3:
-		  if( s->poc%4 == 0)
-		    s->eco_on = 1;
-		  else
-		    s->eco_on = 0;
-		  break;
-		case 4:
-		  if( s->poc%3 == 0)
-		    s->eco_on = 1;
-		  else
-		    s->eco_on = 0;
-		  break;
-		case 5:
-		  if( s->poc%2 == 0 || s->poc%12 == 5)
-		    s->eco_on = 0;
-		  else
-		    s->eco_on = 1;
-		  break;
-		case 6:
-		  if( s->poc%2 == 0)
-		    s->eco_on = 1;
-		  else
-		    s->eco_on = 0;
-		  break;
-		case 7:
-		  if( s->poc%2 == 0 || s->poc%12 == 5 )
-		    s->eco_on = 1;
-		  else
-		    s->eco_on = 0;
-		  break;
-		case 8:
-		  if( s->poc%3 == 0)
-		    s->eco_on = 0;
-		  else
-		    s->eco_on = 1;
-		  break;
-		case 9:
-		  if( s->poc%4 == 0)
-		    s->eco_on = 0;
-		  else
-		    s->eco_on = 1;
-		  break;
-		case 10:
-		  if( s->poc%6 == 0)
-		    s->eco_on = 0;
-		  else
-		    s->eco_on = 1;
-		  break;
-		case 11:
-		  if( s->poc%12 == 6)
-		    s->eco_on = 0;
-		  else
-		    s->eco_on = 1;
-		  break;
-		case 12:
-		  s->eco_on = 1;
-		  break;
-		default:
-		  break;
-		}
+		if (s->sh.first_slice_in_pic_flag) { // Morgan: 1st slice of frame
+			if (s->sh.slice_type != I_SLICE){
+				// Eco activation levels
+				switch(s->eco_alevel){
+				case 0:
+					s->hevcdsp.eco_on = 0;
+					break;
+				case 1:
+					if( s->poc%12 == 0)
+						s->hevcdsp.eco_on = 1;
+					else
+						s->hevcdsp.eco_on = 0;
+					break;
+				case 2:
+					if( s->poc%6 == 0)
+						s->hevcdsp.eco_on = 1;
+					else
+						s->hevcdsp.eco_on = 0;
+					break;
+				case 3:
+					if( s->poc%4 == 0)
+						s->hevcdsp.eco_on = 1;
+					else
+						s->hevcdsp.eco_on = 0;
+					break;
+				case 4:
+					if( s->poc%3 == 0)
+						s->hevcdsp.eco_on = 1;
+					else
+						s->hevcdsp.eco_on = 0;
+					break;
+				case 5:
+					if( s->poc%2 == 0 || s->poc%12 == 5)
+						s->hevcdsp.eco_on = 0;
+					else
+						s->hevcdsp.eco_on = 1;
+					break;
+				case 6:
+					if( s->poc%2 == 0)
+						s->hevcdsp.eco_on = 1;
+					else
+						s->hevcdsp.eco_on = 0;
+					break;
+				case 7:
+					if( s->poc%2 == 0 || s->poc%12 == 5 )
+						s->hevcdsp.eco_on = 1;
+					else
+						s->hevcdsp.eco_on = 0;
+					break;
+				case 8:
+					if( s->poc%3 == 0)
+						s->hevcdsp.eco_on = 0;
+					else
+						s->hevcdsp.eco_on = 1;
+					break;
+				case 9:
+					if( s->poc%4 == 0)
+						s->hevcdsp.eco_on = 0;
+					else
+						s->hevcdsp.eco_on = 1;
+					break;
+				case 10:
+					if( s->poc%6 == 0)
+						s->hevcdsp.eco_on = 0;
+					else
+						s->hevcdsp.eco_on = 1;
+					break;
+				case 11:
+					if( s->poc%12 == 6)
+						s->hevcdsp.eco_on = 0;
+					else
+						s->hevcdsp.eco_on = 1;
+					break;
+				case 12:
+					s->hevcdsp.eco_on = 1;
+					break;
+				default:
+					break;
+				}
 
-		if( s->eco_on ){
-		  switch(s->eco_luma){
-		  case LUMA1:
-		    if (s->hevcdsp.eco_cur_luma != LUMA1){
-		      eco_reload_filter_luma1(&(s->hevcdsp), s->sps->bit_depth);
-		    }
-		    break;
-		  case LUMA3:
-		    if (s->hevcdsp.eco_cur_luma != LUMA3){
-		      eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
-		    }
-		    break;
-		  case LUMA7:
-		    if (s->hevcdsp.eco_cur_luma != LUMA7){
-		      eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
-		    }
-		    break;
-		  default:
-		    break;
-		  }
+				if( s->hevcdsp.eco_on ){
 
-		  switch(s->eco_chroma){
-		  case CHROMA1:
-		    if (s->hevcdsp.eco_cur_chroma != CHROMA1){
-		      eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->bit_depth);
-		    }
-		    break;
-		  case CHROMA2:
-		    if (s->hevcdsp.eco_cur_chroma != CHROMA2){
-		      eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
-		    }
-		    break;
-		  case CHROMA4:
-		    if (s->hevcdsp.eco_cur_chroma != CHROMA4){
-		      eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
-		    }
-		    break;
-		  default:
-		    break;
-		  }
-		}else{
-		  if (s->hevcdsp.eco_cur_luma != LUMA7){
-		    eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
-		  }
-		  if (s->hevcdsp.eco_cur_chroma != CHROMA4){
-		    eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
-		  }
-		}// Fin ECO Param
-	      }
-            }// Fin morgan
+					if(s->eco_dbf_on == 0)
+						s->sh.disable_deblocking_filter_flag = 1;
+
+					switch(s->eco_luma){
+					case LUMA1:
+						if (s->hevcdsp.eco_cur_luma != LUMA1){
+							eco_reload_filter_luma1(&(s->hevcdsp), s->sps->bit_depth);
+						}
+						break;
+					case LUMA3:
+						if (s->hevcdsp.eco_cur_luma != LUMA3){
+							eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
+						}
+						break;
+					case LUMA7:
+						if (s->hevcdsp.eco_cur_luma != LUMA7){
+							eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
+						}
+						break;
+					default:
+						break;
+					}
+
+					switch(s->eco_chroma){
+					case CHROMA1:
+						if (s->hevcdsp.eco_cur_chroma != CHROMA1){
+							eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->bit_depth);
+						}
+						break;
+					case CHROMA2:
+						if (s->hevcdsp.eco_cur_chroma != CHROMA2){
+							eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
+						}
+						break;
+					case CHROMA4:
+						if (s->hevcdsp.eco_cur_chroma != CHROMA4){
+							eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
+						}
+						break;
+					default:
+						break;
+					}
+				}else{
+					if (s->hevcdsp.eco_cur_luma != LUMA7){
+						eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
+					}
+					if (s->hevcdsp.eco_cur_chroma != CHROMA4){
+						eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
+					}
+				}// Fin ECO Param
+			}
+		}// Fin morgan
 
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -3758,8 +3761,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         // Eco Mode Log
         if(s->eco_verbose && s->sh.slice_type != I_SLICE){
-            av_log(s->avctx, AV_LOG_INFO,"%d Interpolation configuration: AL %d Luma %d Chroma %d SAO %s DBF %s.\n",s->poc, s->eco_alevel, s->eco_cur_luma,
-				   s->eco_cur_chroma,((s->eco_sao_on && s->eco_on) || !s->eco_on) ? "on" : "off",((s->eco_dbf_on && s->eco_on) || !s->eco_on) ? "on" : "off");
+            av_log(s->avctx, AV_LOG_INFO,"%d Interpolation configuration: AL %d Luma %d Chroma %d SAO %s DBF %s.\n",s->poc, s->eco_alevel, s->hevcdsp.eco_cur_luma,
+				   s->hevcdsp.eco_cur_chroma,(s->eco_sao_on || !s->hevcdsp.eco_on) ? "on" : "off",(s->eco_dbf_on || !s->hevcdsp.eco_on) ? "on" : "off");
         }
         s->is_decoded = 0;
     }
@@ -3908,9 +3911,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     else
         s->threads_number  = 1;
     s->eos = 0;
-
-    // Eco init morgan
-    s->eco_on = 0;
 
     for (i = 1; i < s->threads_number ; i++) {
         s->sList[i] = av_mallocz(sizeof(HEVCContext));

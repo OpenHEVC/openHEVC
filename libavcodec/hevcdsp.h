@@ -115,36 +115,6 @@ typedef struct HEVCDSPContext {
                                          int16_t *src2, ptrdiff_t src2stride,
                                          int height, int denom, int wx0, int ox0, int wx1,
                                          int ox1, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_eco1[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                    int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_eco1_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                        int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_eco1_uni_w[10][2][2])(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                          int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
-
-    void (*put_hevc_qpel_eco1_bi[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_eco1_bi_w[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int16_t *src2, ptrdiff_t src2stride,
-                                         int height, int denom, int wx0, int wx1,
-                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_eco3[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                    int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_eco3_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                        int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_eco3_uni_w[10][2][2])(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                          int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
-
-    void (*put_hevc_qpel_eco3_bi[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_eco3_bi_w[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int16_t *src2, ptrdiff_t src2stride,
-                                         int height, int denom, int wx0, int wx1,
-                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_epel_eco2[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                    int height, intptr_t mx, intptr_t my, int width);
 
 
     void (*hevc_h_loop_filter_luma)(uint8_t *_pix, ptrdiff_t _stride, int _beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
@@ -176,6 +146,7 @@ typedef struct HEVCDSPContext {
 
     int eco_cur_luma;
     int eco_cur_chroma;
+    int eco_on;
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
