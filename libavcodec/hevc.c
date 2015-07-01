@@ -3318,6 +3318,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 					if (s->hevcdsp.eco_cur_chroma != CHROMA4){
 						eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
 					}
+					s->sh.disable_deblocking_filter_flag = 0;
 				}// Fin ECO Param
 			}
 		}// Fin morgan
