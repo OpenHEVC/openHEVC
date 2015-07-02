@@ -940,6 +940,7 @@ typedef struct SliceHeader {
 
     uint8_t cabac_init_flag;
     uint8_t disable_deblocking_filter_flag; ///< slice_header_disable_deblocking_filter_flag
+    uint8_t disable_sao_filter_flag;
     uint8_t slice_loop_filter_across_slices_enabled_flag;
     uint8_t collocated_list;
 

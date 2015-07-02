@@ -3264,6 +3264,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 					s->hevcdsp.eco_on = 1;
 					break;
 				default:
+					s->hevcdsp.eco_on = 0;
 					break;
 				}
 
@@ -3271,6 +3272,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
 					if(s->eco_dbf_on == 0)
 						s->sh.disable_deblocking_filter_flag = 1;
+					if(s->eco_sao_on == 0)
+						s->sh.disable_sao_filter_flag = 1;
 
 					switch(s->eco_luma){
 					case LUMA1:
@@ -3284,10 +3287,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 						}
 						break;
 					case LUMA7:
-						if (s->hevcdsp.eco_cur_luma != LUMA7){
-							eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
-						}
-						break;
 					default:
 						break;
 					}
@@ -3304,9 +3303,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 						}
 						break;
 					case CHROMA4:
-						if (s->hevcdsp.eco_cur_chroma != CHROMA4){
-							eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
-						}
 						break;
 					default:
 						break;
@@ -3319,8 +3315,14 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 						eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
 					}
 					s->sh.disable_deblocking_filter_flag = 0;
+					s->sh.disable_sao_filter_flag = 0;
 				}// Fin ECO Param
+			}else{
+				s->hevcdsp.eco_on = 0;
+				s->sh.disable_deblocking_filter_flag = 0;
+				s->sh.disable_sao_filter_flag = 0;
 			}
+
 		}// Fin morgan
 
         ctb_addr_ts = hls_slice_data(s, nal, length);
