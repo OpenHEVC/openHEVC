@@ -54,6 +54,8 @@ int quality_layer_id;
 int no_cropping;
 int num_frames;
 int frame_rate;
+
+/** ECO arguments */
 char *eco_param;
 int eco_verbose;
 

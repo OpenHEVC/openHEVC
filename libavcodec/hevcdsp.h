@@ -144,9 +144,10 @@ typedef struct HEVCDSPContext {
                                            int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-    int eco_cur_luma;
-    int eco_cur_chroma;
-    int eco_on;
+    /** ECO parameters */
+    int eco_cur_luma;	//< Current Luma Interpolation filters taps number
+    int eco_cur_chroma;	//< Current Chroma Interpolation filters taps number
+    int eco_on;			//< ECO mode activation flag
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
@@ -157,7 +158,7 @@ extern const int8_t ff_hevc_qpel_filters[3][16];
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);
 void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth);
 
-// Eco Param Morgan
+/** ECO reload functions */
 void eco_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_luma3(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth);

@@ -673,12 +673,12 @@ static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, 
      filter[5] * src[x + 2 * stride] +                                         \
      filter[6] * src[x + 3 * stride] +                                         \
      filter[7] * src[x + 4 * stride])
-
+/** ECO Luma 3taps interpolation filter */
 #define QPEL_FILTER3(src, stride)                                               \
     (filter[0] * src[x -     stride] +                                         \
      filter[1] * src[x             ] +                                         \
      filter[2] * src[x +     stride])
-
+/** ECO Luma 1tap interpolation filter */
 #define QPEL_FILTER1(src, stride)                                               \
 	    (filter[0] * src[x] +                                         \
 	     filter[1] * src[x +     stride])
@@ -698,7 +698,7 @@ static void FUNC(put_hevc_qpel_h)(int16_t *dst,  ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 3taps H interpolation filter */
 static void FUNC(put_hevc_qpel3_h)(int16_t *dst,  ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
@@ -714,7 +714,7 @@ static void FUNC(put_hevc_qpel3_h)(int16_t *dst,  ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap H interpolation filter */
 static void FUNC(put_hevc_qpel1_h)(int16_t *dst,  ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
@@ -746,7 +746,7 @@ static void FUNC(put_hevc_qpel_v)(int16_t *dst,  ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 3taps V interpolation filter */
 static void FUNC(put_hevc_qpel3_v)(int16_t *dst,  ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
@@ -762,7 +762,7 @@ static void FUNC(put_hevc_qpel3_v)(int16_t *dst,  ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap V interpolation filter */
 static void FUNC(put_hevc_qpel1_v)(int16_t *dst,  ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
@@ -811,7 +811,7 @@ static void FUNC(put_hevc_qpel_hv)(int16_t *dst,
         dst += dststride;
     }
 }
-
+/** ECO Luma 3taps HV interpolation filter */
 static void FUNC(put_hevc_qpel3_hv)(int16_t *dst,
                                    ptrdiff_t dststride,
                                    uint8_t *_src,
@@ -844,7 +844,7 @@ static void FUNC(put_hevc_qpel3_hv)(int16_t *dst,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap HV interpolation filter */
 static void FUNC(put_hevc_qpel1_hv)(int16_t *dst,
                                    ptrdiff_t dststride,
                                    uint8_t *_src,
@@ -903,7 +903,7 @@ static void FUNC(put_hevc_qpel_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 3taps uni H interpolation filter */
 static void FUNC(put_hevc_qpel3_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
                                       uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)
@@ -929,7 +929,7 @@ static void FUNC(put_hevc_qpel3_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap uni H interpolation filter */
 static void FUNC(put_hevc_qpel1_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
                                       uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)
@@ -984,7 +984,7 @@ static void FUNC(put_hevc_qpel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 3taps bi H interpolation filter */
 static void FUNC(put_hevc_qpel3_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                      int16_t *src2, ptrdiff_t src2stride,
                                      int height, intptr_t mx, intptr_t my, int width)
@@ -1012,7 +1012,7 @@ static void FUNC(put_hevc_qpel3_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 1tap bi H interpolation filter */
 static void FUNC(put_hevc_qpel1_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                      int16_t *src2, ptrdiff_t src2stride,
                                      int height, intptr_t mx, intptr_t my, int width)
@@ -1066,7 +1066,7 @@ static void FUNC(put_hevc_qpel_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 3taps uni V interpolation filter */
 static void FUNC(put_hevc_qpel3_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
                                      uint8_t *_src, ptrdiff_t _srcstride,
                                      int height, intptr_t mx, intptr_t my, int width)
@@ -1092,7 +1092,7 @@ static void FUNC(put_hevc_qpel3_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap uni V interpolation filter */
 static void FUNC(put_hevc_qpel1_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
                                      uint8_t *_src, ptrdiff_t _srcstride,
                                      int height, intptr_t mx, intptr_t my, int width)
@@ -1147,7 +1147,7 @@ static void FUNC(put_hevc_qpel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 3taps bi V interpolation filter */
 static void FUNC(put_hevc_qpel3_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                      int16_t *src2, ptrdiff_t src2stride,
                                      int height, intptr_t mx, intptr_t my, int width)
@@ -1175,7 +1175,7 @@ static void FUNC(put_hevc_qpel3_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 1tap bi V interpolation filter */
 static void FUNC(put_hevc_qpel1_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                      int16_t *src2, ptrdiff_t src2stride,
                                      int height, intptr_t mx, intptr_t my, int width)
@@ -1244,7 +1244,7 @@ static void FUNC(put_hevc_qpel_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
     }
 }
 
-
+/** ECO Luma 3taps uni HV interpolation filter */
 static void FUNC(put_hevc_qpel3_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
                                        int height, intptr_t mx, intptr_t my, int width)
@@ -1284,7 +1284,7 @@ static void FUNC(put_hevc_qpel3_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap uni HV interpolation filter */
 static void FUNC(put_hevc_qpel1_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,
                                        int height, intptr_t mx, intptr_t my, int width)
@@ -1364,7 +1364,7 @@ static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 3taps bi HV interpolation filter */
 static void FUNC(put_hevc_qpel3_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                       int16_t *src2, ptrdiff_t src2stride,
                                       int height, intptr_t mx, intptr_t my, int width)
@@ -1404,7 +1404,7 @@ static void FUNC(put_hevc_qpel3_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 1tap bi HV interpolation filter */
 static void FUNC(put_hevc_qpel1_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                       int16_t *src2, ptrdiff_t src2stride,
                                       int height, intptr_t mx, intptr_t my, int width)
@@ -1471,7 +1471,7 @@ static void FUNC(put_hevc_qpel_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 3taps uni H weighted interpolation filter */
 static void FUNC(put_hevc_qpel3_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
                                         uint8_t *_src, ptrdiff_t _srcstride,
                                         int height, int denom, int wx, int ox,
@@ -1498,7 +1498,7 @@ static void FUNC(put_hevc_qpel3_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap uni H weighted interpolation filter */
 static void FUNC(put_hevc_qpel1_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
                                         uint8_t *_src, ptrdiff_t _srcstride,
                                         int height, int denom, int wx, int ox,
@@ -1554,7 +1554,7 @@ static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 3taps bi H weighted interpolation filter */
 static void FUNC(put_hevc_qpel3_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                        int16_t *src2, ptrdiff_t src2stride,
                                        int height, int denom, int wx0, int wx1,
@@ -1582,7 +1582,7 @@ static void FUNC(put_hevc_qpel3_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uin
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 1tap bi H weighted interpolation filter */
 static void FUNC(put_hevc_qpel1_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                        int16_t *src2, ptrdiff_t src2stride,
                                        int height, int denom, int wx0, int wx1,
@@ -1637,7 +1637,7 @@ static void FUNC(put_hevc_qpel_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 3taps uni V weighted interpolation filter */
 static void FUNC(put_hevc_qpel3_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
                                         uint8_t *_src, ptrdiff_t _srcstride,
                                         int height, int denom, int wx, int ox,
@@ -1664,7 +1664,7 @@ static void FUNC(put_hevc_qpel3_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap uni V weighted interpolation filter */
 static void FUNC(put_hevc_qpel1_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
                                         uint8_t *_src, ptrdiff_t _srcstride,
                                         int height, int denom, int wx, int ox,
@@ -1719,7 +1719,7 @@ static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 3taps bi V weighted interpolation filter */
 static void FUNC(put_hevc_qpel3_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                        int16_t *src2, ptrdiff_t src2stride,
                                        int height, int denom, int wx0, int wx1,
@@ -1747,7 +1747,7 @@ static void FUNC(put_hevc_qpel3_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uin
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 1tap bi V weighted interpolation filter */
 static void FUNC(put_hevc_qpel1_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                        int16_t *src2, ptrdiff_t src2stride,
                                        int height, int denom, int wx0, int wx1,
@@ -1816,7 +1816,7 @@ static void FUNC(put_hevc_qpel_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 3taps uni HV weighted interpolation filter */
 static void FUNC(put_hevc_qpel3_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
                                          uint8_t *_src, ptrdiff_t _srcstride,
                                          int height, int denom, int wx, int ox,
@@ -1857,7 +1857,7 @@ static void FUNC(put_hevc_qpel3_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
+/** ECO Luma 1tap uni HV weighted interpolation filter */
 static void FUNC(put_hevc_qpel1_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
                                          uint8_t *_src, ptrdiff_t _srcstride,
                                          int height, int denom, int wx, int ox,
@@ -1938,7 +1938,7 @@ static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 3taps bi HV weighted interpolation filter */
 static void FUNC(put_hevc_qpel3_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                         int16_t *src2, ptrdiff_t src2stride,
                                         int height, int denom, int wx0, int wx1,
@@ -1978,7 +1978,7 @@ static void FUNC(put_hevc_qpel3_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, ui
         src2 += src2stride;
     }
 }
-
+/** ECO Luma 1tap bi HV weighted interpolation filter */
 static void FUNC(put_hevc_qpel1_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                         int16_t *src2, ptrdiff_t src2stride,
                                         int height, int denom, int wx0, int wx1,
@@ -2027,7 +2027,7 @@ static void FUNC(put_hevc_qpel1_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, ui
      filter[1] * src[x]          +                                             \
      filter[2] * src[x + stride] +                                             \
      filter[3] * src[x + 2 * stride])
-
+/** ECO Chroma 2taps interpolation filter */
 #define EPEL_FILTER2(src, stride)                                               \
     (filter[0] * src[x] +                                             \
      filter[1] * src[x + stride])
@@ -2048,7 +2048,7 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
+/** ECO Chroma 2taps H interpolation filter */
 static void FUNC(put_hevc_epel2_h)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
@@ -2081,7 +2081,7 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
+/** ECO Chroma 2taps V interpolation filter */
 static void FUNC(put_hevc_epel2_v)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
@@ -2129,7 +2129,7 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
+/** ECO Chroma 2taps HV interpolation filter */
 static void FUNC(put_hevc_epel2_hv)(int16_t *dst, ptrdiff_t dststride,
                                    uint8_t *_src, ptrdiff_t _srcstride,
                                    int height, intptr_t mx, intptr_t my, int width)

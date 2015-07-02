@@ -39,6 +39,7 @@
 #include "golomb.h"
 #include "hevc.h"
 
+/** ECO needs getopt.h */
 #include "../main_hm/getopt.h"
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
@@ -3187,7 +3188,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             }
 #endif
 
-		if (s->sh.first_slice_in_pic_flag) { // Morgan: 1st slice of frame
+		if (s->sh.first_slice_in_pic_flag) { 	// ECO: configuration is the same for the whole frame
 			if (s->sh.slice_type != I_SLICE){
 				// Eco activation levels
 				switch(s->eco_alevel){
@@ -3268,46 +3269,46 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 					break;
 				}
 
-				if( s->hevcdsp.eco_on ){
+				if( s->hevcdsp.eco_on ){ // ECO Mode Activated
 
 					if(s->eco_dbf_on == 0)
-						s->sh.disable_deblocking_filter_flag = 1;
+						s->sh.disable_deblocking_filter_flag = 1;	// ECO: disable deblocking filter
 					if(s->eco_sao_on == 0)
-						s->sh.disable_sao_filter_flag = 1;
+						s->sh.disable_sao_filter_flag = 1;			// ECO: disable SAO filter
 
 					switch(s->eco_luma){
-					case LUMA1:
+					case LUMA1:										// ECO: 1tap luma interpolation
 						if (s->hevcdsp.eco_cur_luma != LUMA1){
 							eco_reload_filter_luma1(&(s->hevcdsp), s->sps->bit_depth);
 						}
 						break;
-					case LUMA3:
+					case LUMA3:										// ECO: 3taps luma interpolation
 						if (s->hevcdsp.eco_cur_luma != LUMA3){
 							eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
 						}
 						break;
-					case LUMA7:
+					case LUMA7:	// ECO: no need to reload if 7taps filter is selected
 					default:
 						break;
 					}
 
 					switch(s->eco_chroma){
-					case CHROMA1:
+					case CHROMA1:									// ECO: 1tap chroma interpolation
 						if (s->hevcdsp.eco_cur_chroma != CHROMA1){
 							eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->bit_depth);
 						}
 						break;
-					case CHROMA2:
+					case CHROMA2:									// ECO: 2taps chroma interpolation
 						if (s->hevcdsp.eco_cur_chroma != CHROMA2){
 							eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
 						}
 						break;
-					case CHROMA4:
+					case CHROMA4: // ECO: no need to reload if 4taps filter is selected
 						break;
 					default:
 						break;
 					}
-				}else{
+				}else{ // ECO Mode Desactivated -> Legacy decoding
 					if (s->hevcdsp.eco_cur_luma != LUMA7){
 						eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
 					}
@@ -3316,14 +3317,13 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 					}
 					s->sh.disable_deblocking_filter_flag = 0;
 					s->sh.disable_sao_filter_flag = 0;
-				}// Fin ECO Param
-			}else{
+				}
+			}else{ // If frame is I, make sure the in-loop filters are enabled
 				s->hevcdsp.eco_on = 0;
 				s->sh.disable_deblocking_filter_flag = 0;
 				s->sh.disable_sao_filter_flag = 0;
 			}
-
-		}// Fin morgan
+		}// ECO: Activation Level management end
 
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -4141,7 +4141,6 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
-//Morgan
 static const AVOption options[] = {
     { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
@@ -4153,17 +4152,17 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "quality_layer_id", "set the max quality id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
-	{ "a-level", "Eco Activation level", OFFSET(eco_alevel),
+	{ "a-level", "Eco Activation level", OFFSET(eco_alevel),					//< ECO Activation Level
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 12, PAR },
-	{ "eco-luma", "Eco Inter-prediction Luma nb taps", OFFSET(eco_luma),
+	{ "eco-luma", "Eco Inter-prediction Luma nb taps", OFFSET(eco_luma),		//< ECO Luma
 			AV_OPT_TYPE_INT, {.i64 = 7}, 1, 7, PAR },
-	{ "eco-chroma", "Eco Inter-prediction Chroma nb taps", OFFSET(eco_chroma),
+	{ "eco-chroma", "Eco Inter-prediction Chroma nb taps", OFFSET(eco_chroma),	//< ECO Chroma
 			AV_OPT_TYPE_INT, {.i64 = 4}, 1, 4, PAR },
-	{ "eco-dbf-on", "Eco Deblocking filter on/off", OFFSET(eco_dbf_on),
+	{ "eco-dbf-on", "Eco Deblocking filter on/off", OFFSET(eco_dbf_on),			//< ECO deblocking filter
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-	{ "eco-sao-on", "Eco SAO filter on/off", OFFSET(eco_sao_on),
+	{ "eco-sao-on", "Eco SAO filter on/off", OFFSET(eco_sao_on),				//< ECO SAO
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-	{ "eco-verbose", "Eco verbose", OFFSET(eco_verbose),
+	{ "eco-verbose", "Eco verbose", OFFSET(eco_verbose),						//< ECO Logs
 				AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { NULL },
 };

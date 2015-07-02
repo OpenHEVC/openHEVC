@@ -513,7 +513,7 @@ void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val)
         av_opt_set_int(openHevcContext->c->priv_data, "no-cropping", val, 0);
     }
 }
-// Morgan
+/** ECO arguments parse and parameters init */
 void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param, int eco_verbose)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;

@@ -149,8 +149,8 @@ void init_main(int argc, char *argv[]) {
     quality_layer_id  = 0; // Base layer
     num_frames        = 0;
     frame_rate        = 0;
-    eco_param = strdup("07411");	// ECO init
-    eco_verbose = 0;
+    eco_param = strdup("07411");	//< ECO args init
+    eco_verbose = 0;				//< ECO verbose flag
 
     program           = argv[0];
     
@@ -198,14 +198,14 @@ void init_main(int argc, char *argv[]) {
         case 'r':
             frame_rate = atoi(optarg);
             break;
-        case 'e':
+        case 'e':	//< ECO
             if(strlen(optarg) < 5 || strlen(optarg) > 6){
                 print_usage();
                 exit(1);
             }
             eco_param = strdup(optarg);
             break;
-        case 'E':
+        case 'E':	//< ECO
 		   if(strlen(optarg) < 5 || strlen(optarg) > 6){
 			   print_usage();
 			   exit(1);

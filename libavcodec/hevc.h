@@ -1305,12 +1305,13 @@ typedef struct HEVCContext {
     uint8_t threads_number;
     int     decode_checksum_sei;
 
-    int eco_alevel; //Morgan
-    int eco_luma;
-    int eco_chroma;
-    int eco_dbf_on;
-    int eco_sao_on;
-    int eco_verbose;
+    /** ECO parameters */
+    int eco_alevel; 	//< Activation Level [0-12]
+    int eco_luma;		//< Luma Interpolation filters taps number
+    int eco_chroma;		//< Chroma Interpolation filters taps number
+    int eco_dbf_on; 	//< Deblocking filter activation
+    int eco_sao_on;		//< SAO filter activation
+    int eco_verbose;	//< Show logs
 
 } HEVCContext;
 
@@ -1445,6 +1446,7 @@ extern const uint8_t ff_hevc_diag_scan4x4_y[16];
 extern const uint8_t ff_hevc_diag_scan8x8_x[64];
 extern const uint8_t ff_hevc_diag_scan8x8_y[64];
 
+/** ECO defines */
 #define LUMA1 1
 #define LUMA3 3
 #define LUMA7 7

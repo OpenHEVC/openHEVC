@@ -1194,10 +1194,10 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 {
     int x_end = x >= s->sps->width  - ctb_size;
 
-    if(!s->sh.disable_deblocking_filter_flag)
+    if(!s->sh.disable_deblocking_filter_flag) // ECO deblocking filter activation
       deblocking_filter_CTB(s, x, y);
 
-    if (s->sps->sao_enabled && !s->sh.disable_sao_filter_flag) {
+    if (s->sps->sao_enabled && !s->sh.disable_sao_filter_flag) { // ECO SAO filter activation
         int y_end = y >= s->sps->height - ctb_size;
         if (y && x)
             sao_filter_CTB(s, x - ctb_size, y - ctb_size);
