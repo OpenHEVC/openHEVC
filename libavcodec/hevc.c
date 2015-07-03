@@ -3997,7 +3997,8 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
-	s->eco_alevel           = s0->eco_alevel;	// Eco
+    /** ECO update */
+	s->eco_alevel           = s0->eco_alevel;
 	s->eco_luma             = s0->eco_luma;
 	s->eco_chroma           = s0->eco_chroma;
 	s->eco_dbf_on	        = s0->eco_dbf_on;
