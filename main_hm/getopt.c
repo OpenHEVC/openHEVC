@@ -61,7 +61,7 @@ void print_usage() {
     printf("     -l <Quality layer id> \n");
     printf("     -s <num> Stop after num frames \n");
     printf("     -r <num> Frame rate (FPS) \n");
-    printf("     -e Eco mode <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;4] SAO [1;0] DBF [1;0] \n");
+    printf("     -e Eco mode <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;2;4] SAO [1;0] DBF [1;0] \n");
     printf("     -E Eco mode verbose, same args as -e \n");
 }
 
