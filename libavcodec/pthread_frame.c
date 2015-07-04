@@ -440,7 +440,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
      * didn't output a frame, because we don't want to accidentally signal
      * EOF (avpkt->size == 0 && *got_picture_ptr == 0).
      */
-
+    finished = fctx->next_decoding >= avctx->thread_count_frame ? 0:fctx->next_decoding;
     do {
         p = &fctx->threads[finished++];
 
