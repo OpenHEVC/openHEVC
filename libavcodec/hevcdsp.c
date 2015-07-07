@@ -393,6 +393,7 @@ int i = 0;
     hevcdsp->eco_on = 0;
 }
 
+#if !HAVE_NEON
 /** ECO filters reload functions */
 void eco_reload_filter_luma1(HEVCDSPContext *hevcdsp, int bit_depth)
 {
@@ -704,3 +705,4 @@ int i = 0;
     }
     hevcdsp->eco_cur_chroma=4;
 }
+#endif

@@ -3181,7 +3181,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     break;
                 }
                 if(i==FF_ARRAY_ELEMS(s->Add_ref))
-                    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
+                    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Additional DPB full, decoder_%d.\n", s->decoder_id);
             }
 #endif
 
