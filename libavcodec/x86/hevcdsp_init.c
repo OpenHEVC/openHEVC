@@ -610,7 +610,7 @@ mc_bi_w_funcs(qpel_hv, 12, sse4);
 
 #endif // OPTI_ASM
 
-
+#if HAVE_AVX2
 PEL_PROTOTYPE2(pel_pixels32, 8, avx2_);
 PEL_PROTOTYPE2(qpel_h32,  8, avx2_);
 PEL_PROTOTYPE2(qpel_v32,  8, avx2_);
@@ -623,6 +623,7 @@ PEL_PROTOTYPE2(qpel_hv16, 10, avx2_);
 PEL_PROTOTYPE2(epel_h16, 10, avx2_);
 PEL_PROTOTYPE2(epel_v16, 10, avx2_);
 PEL_PROTOTYPE2(epel_hv16, 10, avx2_);
+#endif
 
 void ff_hevc_put_hevc_qpel_h16_8_sse2 (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \

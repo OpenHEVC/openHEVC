@@ -118,8 +118,6 @@ static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
     int x, y;
     int size = 1 << log2_size;
 
-
-
     if (mode) {
         coeffs += size;
         for (y = 0; y < size - 1; y++) {
@@ -135,7 +133,6 @@ static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
         }
     }
 }
-
 
 static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
 {
@@ -406,7 +403,6 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
         src_offset += stride_src;
         dst_offset += stride_dst;
     }
-
 }
 
 static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,

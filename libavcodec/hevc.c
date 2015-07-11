@@ -123,7 +123,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
-
     if (!s->sao || !s->deblock)
         goto fail;
 
@@ -160,7 +159,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
                                           av_buffer_allocz);
     s->rpl_tab_pool = av_buffer_pool_init(ctb_count * sizeof(RefPicListTab),
                                           av_buffer_allocz);
-
     if (!s->tab_mvf_pool || !s->rpl_tab_pool)
         goto fail;
     if(s->decoder_id)    {
@@ -299,7 +297,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     nb_sh = get_ue_golomb_long(gb);
     print_cabac("num_long_term_pics", nb_sh);
 
-    if (nb_sh + nb_sps > FF_ARRAY_ELEMS(rps->poc))
+    if (nb_sh + (uint64_t)nb_sps > FF_ARRAY_ELEMS(rps->poc))
         return AVERROR_INVALIDDATA;
 
     rps->nb_refs = nb_sh + nb_sps;
@@ -592,7 +590,7 @@ static int hls_slice_header(HEVCContext *s)
                 last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
                 sh->no_output_of_prior_pics_flag = 0;
         }
-        ff_hevc_clear_refs(s); 
+        ff_hevc_clear_refs(s);
         ret = set_sps(s, s->sps);
         if (ret < 0)
             return ret;
@@ -825,7 +823,6 @@ else
             }
         }
 
-        
         if (s->sps->sao_enabled) {
             enum ChromaFormat format; 
             sh->slice_sample_adaptive_offset_flag[0] = get_bits1(gb);
@@ -1950,7 +1947,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                            (((x) >> s->sps->hshift[c_idx]) << s->sps->pixel_shift)]
     HEVCLocalContext *lc = s->HEVClc;
     int merge_idx = 0;
-    struct MvField current_mv;
+    struct MvField current_mv = {{{ 0 }}};
 
     int min_pu_width = s->sps->min_pu_width;
 
@@ -2726,6 +2723,9 @@ static int hls_decode_entry_slice(HEVCContext *s)
     return ctb_addr_ts;
 }
 #endif
+
+
+
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
 {
     HEVCContext *s1  = avctxt->priv_data, *s;
@@ -3184,9 +3184,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
     s->nuh_layer_id = ret;
-    
-    s->nuh_layer_id = ret;
-
     switch (s->nal_unit_type) {
     case NAL_VPS:
         ret = ff_hevc_decode_nal_vps(s);
@@ -3372,227 +3369,8 @@ fail:
         return ret;
     return 0;
 }
+// ----------------------here lices 
 
-#if PARALLEL_SLICE
-static int decode_nal_unit_slice(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id) {
-    HEVCContext *s1      = avctxt->priv_data;
-    HEVCContext *s       = s1->sList[self_id];
-    HEVCLocalContext *lc = s->HEVClc;
-    GetBitContext *gb    = &lc->gb;
-    s->avctx = avctxt;
-    int i; 
-    int *nal_id          = input_ctb_row;
-
-    const uint8_t *nal   = s1->nals[nal_id[job]].data;
-    int length           = s1->nals[nal_id[job]].size;
-    int ctb_addr_ts, ret;
-    
-
-    ret = init_get_bits8(gb, nal, length);
-    if (ret < 0)
-        return ret;
-
-    ret = hls_nal_unit(s);
-
-    av_log(s->avctx, AV_LOG_DEBUG,
-           "decode IRAP in parallel #%d.\n", s->nal_unit_type);
-    if (ret < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
-               s->nal_unit_type);
-        goto fail;
-    } else if (ret != (s->decoder_id) && (s->nal_unit_type != NAL_VPS && (s->nal_unit_type != NAL_SPS) /*&& s->nal_unit_type != NAL_PPS*/))
-        return 0;
-
-    if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
-        return 0;
-    s->nuh_layer_id          = ret;
-    s->avctx->layers_size   += length;
-    s->self_id               = self_id;
-    s->job                   = job;
-
-
-    switch (s->nal_unit_type) {
-        case NAL_VPS:
-            ret = ff_hevc_decode_nal_vps(s);
-            if (ret < 0)
-                goto fail;
-            break;
-        case NAL_SPS:
-            ret = ff_hevc_decode_nal_sps(s);
-            if (ret < 0)
-                goto fail;
-            break;
-        case NAL_PPS:
-            ret = ff_hevc_decode_nal_pps(s);
-            if (ret < 0)
-                goto fail;
-            break;
-        case NAL_SEI_PREFIX:
-        case NAL_SEI_SUFFIX:
-            ret = ff_hevc_decode_nal_sei(s);
-            if (ret < 0)
-                goto fail;
-            break;
-        case NAL_TRAIL_R:
-        case NAL_TRAIL_N:
-        case NAL_TSA_N:
-        case NAL_TSA_R:
-        case NAL_STSA_N:
-        case NAL_STSA_R:
-        case NAL_BLA_W_LP:
-        case NAL_BLA_W_RADL:
-        case NAL_BLA_N_LP:
-        case NAL_IDR_W_RADL:
-        case NAL_IDR_N_LP:
-        case NAL_CRA_NUT:
-        case NAL_RADL_N:
-        case NAL_RADL_R:
-        case NAL_RASL_N:
-        case NAL_RASL_R:
-            ret = hls_slice_header(s);
-            
-            if (ret < 0)
-                return ret;
-
-            if (s->max_ra == INT_MAX) {
-                if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
-                    s->max_ra = s->poc;
-                    av_log(s->avctx, AV_LOG_WARNING,
-                           "max_ra equal to s->max_ra %d \n", s->max_ra);
-                } else {
-                    if (IS_IDR(s))
-                        s->max_ra = INT_MIN;
-                    else if( s->decoder_id ) {
-                        av_log(s->avctx, AV_LOG_WARNING,
-                               "Nal type %d s->max_ra %d \n", s->nal_unit_type,  s->max_ra);
-                        break;
-                    }
-                }
-            }
-
-            if ((s->nal_unit_type == NAL_RASL_R || s->nal_unit_type == NAL_RASL_N) &&
-                s->poc <= s->max_ra) {
-                s->is_decoded = 0;
-                return 0;
-            } else {
-                if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
-                    s->max_ra = INT_MIN;
-            }
-            
-            if (s->sh.first_slice_in_pic_flag) {
-                ret = hevc_frame_start(s);
-                ff_thread_report_progress_slice(s->avctx);
-                if (ret < 0)
-                    return ret;
-
-            } else if (!s->ref) {
-                av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
-                goto fail;
-            }
-
-            if (s->nal_unit_type != s->first_nal_type) {
-                av_log(s->avctx, AV_LOG_ERROR,
-                       "Non-matching NAL types of the VCL NALUs: %d %d\n",
-                       s->first_nal_type, s->nal_unit_type);
-                goto fail;
-            }
-            
-            if (!s->sh.dependent_slice_segment_flag &&
-                s->sh.slice_type != I_SLICE) {
-                
-                ret = ff_hevc_slice_rpl(s);
-                if (ret < 0) {
-                    av_log(s->avctx, AV_LOG_WARNING,
-                           "Error constructing the reference lists for the current slice.\n");
-                    goto fail;
-                }
-            } 
-              
-#if ACTIVE_PU_UPSAMPLING
-            if (s->bl_decoder_el_exist) {
-                int i;
-                s->bl_decoder_el_exist = 0;
-                for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
-                    HEVCFrame *frame = &s->Add_ref[i];
-                    if (frame->frame->buf[0])
-                        continue;
-                    ret = hevc_ref_frame(s, &s->Add_ref[i], s->ref);
-                    if (ret < 0)
-                        return ret;
-                    ff_thread_report_il_progress(s->avctx, s->poc_id, &s->Add_ref[i], s->ref);
-                    break;
-                }
-                if(i==FF_ARRAY_ELEMS(s->Add_ref))
-                    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
-            }
-#endif
-            if(s->job != s1->max_slices) {
-                ff_thread_await_progress_slice2(s->avctx, s->job);
-                for(i=s1->slice_segment_addr[s->job]; i < s1->slice_segment_addr[s->job+1]; i++)
-                    s->tab_slice_address[i] = s1->slice_segment_addr[s->job];
-            } else {
-                for(i = s1->slice_segment_addr[s->job]; i < s->sps->ctb_height*s->sps->ctb_width; i++)
-                    s->tab_slice_address[i] = s1->slice_segment_addr[s->job];
-            }
-            ctb_addr_ts = hls_decode_entry_slice(s);
-
-
-            if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
-                for(int i= 0; i < s->threads_number ; i++)
-                    s->sList[i]->is_decoded = 1;
-                if (s->pps->tiles_enabled_flag && s->threads_number!=1)
-                    tiles_filters(s);
-#ifdef SVC_EXTENSION
-#if !ACTIVE_PU_UPSAMPLING
-                if (s->active_el_frame) {
-                    int i;
-                    s->active_el_frame = 0;
-                    for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
-                        HEVCFrame *frame = &s->Add_ref[i];
-                        if (frame->frame->buf[0])
-                            continue;
-                        ret = hevc_ref_frame(s, &s->Add_ref[i], s->ref);
-                        if (ret < 0)
-                            return ret;
-                        ff_thread_report_il_progress(s->avctx, s->poc_id, &s->Add_ref[i], s->ref);
-                        break;
-                    }
-                    if(i==FF_ARRAY_ELEMS(s->Add_ref))
-                        av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
-                }
-#endif
-#endif
-
-#ifdef SVC_EXTENSION
-                if(s->decoder_id > 0)
-                    ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
-#endif
-            }
-            
-            if (ctb_addr_ts < 0) {
-                ret = ctb_addr_ts;
-                goto fail;
-            }
-            break;
-        case NAL_EOS_NUT:
-        case NAL_EOB_NUT:
-            s->seq_decode = (s->seq_decode + 1) & 0xff;
-            s->max_ra     = INT_MAX;
-            break;
-        case NAL_AUD:
-        case NAL_FD_NUT:
-            break;
-        default:
-            av_log(s->avctx, AV_LOG_INFO,
-                   "Skipping NAL unit %d\n", s->nal_unit_type);
-    }
-    return 0;
-fail:
-    if (s->avctx->err_recognition & AV_EF_EXPLODE)
-        return ret;
-    return 0;
-}
-#endif
 /* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
  * between these functions would be nice. */
 int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,

@@ -390,7 +390,7 @@ static int init_slice_rpl(HEVCContext *s)
 {
     HEVCFrame *frame = s->ref;
     if (frame) {
-        int ctb_count    = frame->ctb_count;       
+        int ctb_count    = frame->ctb_count;
         int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
         int i;
 
