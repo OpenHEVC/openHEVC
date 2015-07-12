@@ -3129,7 +3129,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
     s->avctx->BL_frame = s->ref;
-    if(s->sh.slice_type != I_SLICE)
+//    if(s->sh.slice_type != I_SLICE)
         ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS. decoder_id %d \n", s->decoder_id);
