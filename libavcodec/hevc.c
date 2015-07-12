@@ -823,6 +823,9 @@ else
             }
         }
 
+        sh->slice_sample_adaptive_offset_flag[0] =
+        sh->slice_sample_adaptive_offset_flag[1] =
+        sh->slice_sample_adaptive_offset_flag[2] = 0;
         if (s->sps->sao_enabled) {
             enum ChromaFormat format; 
             sh->slice_sample_adaptive_offset_flag[0] = get_bits1(gb);
@@ -3126,7 +3129,8 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
     s->avctx->BL_frame = s->ref;
-    ret = ff_hevc_frame_rps(s);
+    if(s->sh.slice_type != I_SLICE)
+        ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS. decoder_id %d \n", s->decoder_id);
         goto fail;
