@@ -791,7 +791,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
                  FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
                 (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
                  FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
-                return 1;
+            	return 1;
             else
                 return 0;
 #endif
@@ -810,7 +810,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
                 FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
                 return 1;
-            else
+        else
                 return 0;
 #endif
         } else if (neigh->poc[1] == curr->poc[0] &&
@@ -827,14 +827,13 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             return !(_mm_test_all_ones(x2));
 #else
             if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
-                FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
+                FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4) {
                 return 1;
-            else
-                return 0;
+        } else
+            return 0;
 #endif
-        } else {
+        } else
             return 1;
-        }
     } else if ((curr->pred_flag != PF_BI) && (neigh->pred_flag != PF_BI)){ // 1 MV
         Mv A, B;
         int ref_A, ref_B;
@@ -854,7 +853,6 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             B     = neigh->mv[1];
             ref_B = neigh->poc[1];
         }
-
         if (ref_A == ref_B) {
             if (FFABS(A.x - B.x) >= 4 || FFABS(A.y - B.y) >= 4)
                 return 1;
@@ -863,17 +861,19 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
         } else
             return 1;
     }
-
     return 1;
+
 }
 #else
 static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
-                             RefPicList *neigh_refPicList)
+                             RefPicList *neigh_refPicList, RefPicList *refPicList)
 {
+    if ( !memcmp(curr, neigh, sizeof(MvField) ) && refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]] && refPicList[1].list[curr->ref_idx[1]] == neigh_refPicList[1].list[neigh->ref_idx[1]])
+        return 0;
     if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
         // same L0 and L1
-        if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
-            s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
+        if (refPicList[0].list[curr->ref_idx[0]]        == neigh_refPicList[0].list[neigh->ref_idx[0]] &&
+            refPicList[0].list[curr->ref_idx[0]]        == refPicList[1].list[curr->ref_idx[1]]        &&
             neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1, x2;
@@ -894,11 +894,11 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
                 (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
                  FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
                 return 1;
-            else
+        else
                 return 0;
 #endif
-        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                   neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == refPicList[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[1].list[neigh->ref_idx[1]] == refPicList[1].list[curr->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
@@ -915,8 +915,8 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
             else
                 return 0;
 #endif
-        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                   neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == refPicList[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[0].list[neigh->ref_idx[0]] == refPicList[1].list[curr->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
@@ -934,19 +934,18 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
             else
                 return 0;
 #endif
-        } else {
+        } else
             return 1;
-        }
     } else if ((curr->pred_flag != PF_BI) && (neigh->pred_flag != PF_BI)){ // 1 MV
         Mv A, B;
         int ref_A, ref_B;
 
         if (curr->pred_flag & 1) {
             A     = curr->mv[0];
-            ref_A = s->ref->refPicList[0].list[curr->ref_idx[0]];
+            ref_A = refPicList[0].list[curr->ref_idx[0]];
         } else {
             A     = curr->mv[1];
-            ref_A = s->ref->refPicList[1].list[curr->ref_idx[1]];
+            ref_A = refPicList[1].list[curr->ref_idx[1]];
         }
 
         if (neigh->pred_flag & 1) {
@@ -965,7 +964,6 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
         } else
             return 1;
     }
-
     return 1;
 }
 #endif
@@ -1014,7 +1012,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #ifdef TEST_MV_POC
                     bs = boundary_strength(s, curr, top);
 #else
-                    bs = boundary_strength(s, curr, top, top_refPicList);
+                    bs = boundary_strength(s, curr, top, top_refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
                 s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
             }
@@ -1053,7 +1051,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #ifdef TEST_MV_POC
                     bs = boundary_strength(s, curr, left);
 #else
-                    bs = boundary_strength(s, curr, left, left_refPicList);
+                    bs = boundary_strength(s, curr, left, left_refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
                 s->vertical_bs[(x0 + (y0 + i) * s->bs_width) >> 2] = bs;
             }
@@ -1079,7 +1077,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #ifdef TEST_MV_POC
                 bs = boundary_strength(s, curr, top);
 #else
-                bs = boundary_strength(s, curr, top, refPicList);
+                bs = boundary_strength(s, curr, top, refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
                 top = curr;
@@ -1099,7 +1097,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #ifdef TEST_MV_POC
                 bs = boundary_strength(s, curr, left);
 #else
-                bs = boundary_strength(s, curr, left, refPicList);
+                bs = boundary_strength(s, curr, left, refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
                 s->vertical_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
                 left = curr;
@@ -1138,7 +1136,7 @@ void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0, int
 #ifdef TEST_MV_POC
                 bs = boundary_strength(s, curr, top);
 #else
-                bs = boundary_strength(s, curr, top, top_refPicList);
+                bs = boundary_strength(s, curr, top, top_refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
         if ((slice_up_boundary & 1) && (y0 % (1 << s->sps->log2_ctb_size)) == 0)
             bs = 0;
@@ -1179,7 +1177,7 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int
 #ifdef TEST_MV_POC
                 bs = boundary_strength(s, curr, left);
 #else
-                bs = boundary_strength(s, curr, left, left_refPicList);
+                bs = boundary_strength(s, curr, left, left_refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
         if ((slice_left_boundary & 1) && (x0 % (1 << s->sps->log2_ctb_size)) == 0)
             bs = 0;

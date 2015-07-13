@@ -2012,7 +2012,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                 current_mv.mv[0].x += lc->pu.mvd.x;
                 current_mv.mv[0].y += lc->pu.mvd.y;
             }
-
             if (inter_pred_idc != PRED_L0) {
                 if (s->sh.nb_refs[L1]) {
                     current_mv.ref_idx[1] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L1]);
@@ -2020,7 +2019,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                     current_mv.poc[1] = refPicList[1].list[current_mv.ref_idx[1]];
 #endif
                 }
-
                 if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
                     lc->pu.mvd.x = 0;
                     lc->pu.mvd.y = 0;
@@ -3129,7 +3127,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
     s->avctx->BL_frame = s->ref;
-//    if(s->sh.slice_type != I_SLICE)
+
         ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS. decoder_id %d \n", s->decoder_id);

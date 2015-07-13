@@ -306,7 +306,6 @@ enum ScanType {
     SCAN_VERT,
 };
 
-#ifdef SVC_EXTENSION
 enum {
     DEFAULT=0,
     X2,
@@ -325,7 +324,6 @@ typedef struct UpsamplInf {
     int scaleYCr;
     int idx;
 } UpsamplInf;
-#endif
 
 typedef struct ShortTermRPS {
     unsigned int num_negative_pics;
@@ -1078,7 +1076,7 @@ typedef struct HEVCFrame {
     AVFrame *frame;
     ThreadFrame tf;
     MvField *tab_mvf;
-    RefPicList *refPicList[MAX_SLICES_IN_FRAME];
+    RefPicListTab *refPicList[MAX_SLICES_IN_FRAME];
     RefPicListTab **rpl_tab;
     int ctb_count;
     int poc;
