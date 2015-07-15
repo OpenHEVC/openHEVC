@@ -753,14 +753,18 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
 {
 #if HAVE_SSE42
     {
-        __m128i x0, x1, x2, x3;
+        __m128i x0, x1, x2, x3, x4;
+        unsigned char temp[4] = {0x00, 0x0F, 0xFF, 0xFF};
         x0 = _mm_loadu_si128((__m128i *) neigh);
         x1 = _mm_loadu_si128((__m128i *) curr);
         x2 = _mm_loadl_epi64((__m128i *) &(neigh->pred_flag));
         x3 = _mm_loadl_epi64((__m128i *) &(curr->pred_flag));
-        x0 = _mm_cmpeq_epi64 (x0, x1);
-        x2 = _mm_cmpeq_epi32 (x2, x3);
 
+        x4 = _mm_loadl_epi64((__m128i *) temp);
+        x0 = _mm_cmpeq_epi64 (x0, x1);
+        x2 = _mm_cmpeq_epi8 (x2, x3);
+
+        x2 = _mm_or_si128 (x2, x4);
         if (_mm_test_all_ones(x0) && _mm_test_all_ones(x2))
             return 0;
     }
