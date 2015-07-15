@@ -599,8 +599,8 @@ static int hls_slice_header(HEVCContext *s)
         s->max_ra     = INT_MAX;
     }
 
-    s->avctx->profile = s->sps->ptl.profile_idc;
-    s->avctx->level   = s->sps->ptl.level_idc;
+    s->avctx->profile = s->sps->ptl.Ptl_general.profile_idc;
+    s->avctx->level   = s->sps->ptl.Ptl_general.level_idc;
 
     sh->dependent_slice_segment_flag = 0;
     if (!sh->first_slice_in_pic_flag) {
@@ -3119,7 +3119,7 @@ static int hevc_frame_start(HEVCContext *s)
         if (ret < 0)
             goto fail;
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
-        s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
+        s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
 #endif
     }
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
@@ -3127,7 +3127,6 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
     s->avctx->BL_frame = s->ref;
-
         ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS. decoder_id %d \n", s->decoder_id);

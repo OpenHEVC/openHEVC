@@ -697,7 +697,6 @@ static void dpb_size(GetBitContext *gb, HEVCVPS *vps ) {
 	}
 }
 
-#define MAX_NUM_LAYER_IDS 16
 
 static void set_ref_layers_flags(HEVCVPS *vps, int currLayerId) {
     int i, k, refLayerId;
@@ -1764,7 +1763,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         }
     } else {
         for (i = 0; i < sps->max_sub_layers; i++) {
-            sps->temporal_layer[i].max_dec_pic_buffering = vps->Hevc_VPS_Ext.DPB_Size.max_vps_dec_pic_buffering_minus1[1][0] - 1;
+            sps->temporal_layer[i].max_dec_pic_buffering = vps->Hevc_VPS_Ext.DPB_Size.max_vps_dec_pic_buffering_minus1[1][0][0] - 1;
             sps->temporal_layer[i].num_reorder_pics      = vps->Hevc_VPS_Ext.DPB_Size.max_vps_num_reorder_pics[1][0];
             sps->temporal_layer[i].max_latency_increase  = vps->Hevc_VPS_Ext.DPB_Size.max_vps_latency_increase_plus1[1][0] + 1;
         }
@@ -2495,15 +2494,15 @@ int ff_hevc_decode_nal_pps(HEVCContext *s) {
         print_cabac("pps_range_extensions_flag", pps_range_extensions_flag);
         print_cabac("pps_multilayer_extension_flag", pps_multilayer_extension_flag);
         print_cabac("pps_extension_6bits", pps_extension_6bits);
-        if (sps->ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
+        if (sps->ptl.Ptl_general.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "PPS extension flag is partially implemented.\n");
             pps_range_extensions(s, pps, sps);
         }
 
-        if (sps->ptl.profile_idc != FF_PROFILE_HEVC_REXT    &&
-            sps->ptl.profile_idc != FF_PROFILE_HEVC_MAIN    &&
-            sps->ptl.profile_idc != FF_PROFILE_HEVC_MAIN_10 &&
+        if (sps->ptl.Ptl_general.profile_idc != FF_PROFILE_HEVC_REXT    &&
+            sps->ptl.Ptl_general.profile_idc != FF_PROFILE_HEVC_MAIN    &&
+            sps->ptl.Ptl_general.profile_idc != FF_PROFILE_HEVC_MAIN_10 &&
             pps_range_extensions_flag) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "hack with the spec.\n"

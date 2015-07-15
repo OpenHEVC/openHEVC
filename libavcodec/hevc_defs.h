@@ -55,7 +55,7 @@
 #define SCALINGLIST_INFERRING            1       ///< JCTVC-N0371: inter-layer scaling list
 #define O0215_PHASE_ALIGNMENT            1       ///< JCTVC_O0215: signal a flag to specify phase alignment case, 0: zero-position-aligned, 1: central-position-aligned,
 #define MAX_CPB_CNT                     32       ///< Upper bound of (cpb_cnt_minus1 + 1)
-#define MAX_NUM_LAYER_IDS                64
+#define MAX_NUM_LAYER_IDS                16
 #define POC_RESET_FLAG                   1      ///< JCTVC-N0244: POC reset flag for  layer pictures.
 #define O0149_CROSS_LAYER_BLA_FLAG       1      ///< JCTVC-O0149: signal cross_layer_bla_flag in slice header
 

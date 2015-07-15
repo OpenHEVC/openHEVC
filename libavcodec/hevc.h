@@ -714,13 +714,13 @@ typedef struct HEVCSPS {
     int max_sub_layers;
     int m_bTemporalIdNestingFlag;
     struct {
-        int max_dec_pic_buffering;
-        int num_reorder_pics;
-        int max_latency_increase;
+        uint16_t max_dec_pic_buffering;
+        uint16_t num_reorder_pics;
+        uint16_t max_latency_increase;
     } temporal_layer[MAX_SUB_LAYERS];
 
     VUI vui;
-    PTL ptl;
+    PTLCommon ptl;
 
     uint8_t scaling_list_enable_flag;
     uint8_t m_inferScalingListFlag;
@@ -1076,7 +1076,7 @@ typedef struct HEVCFrame {
     AVFrame *frame;
     ThreadFrame tf;
     MvField *tab_mvf;
-    RefPicListTab *refPicList[MAX_SLICES_IN_FRAME];
+    RefPicList *refPicList[MAX_SLICES_IN_FRAME];
     RefPicListTab **rpl_tab;
     int ctb_count;
     int poc;

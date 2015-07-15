@@ -791,7 +791,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
                  FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
                 (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
                  FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
-            	return 1;
+                return 1;
             else
                 return 0;
 #endif
@@ -810,7 +810,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
                 FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
                 return 1;
-        else
+            else
                 return 0;
 #endif
         } else if (neigh->poc[1] == curr->poc[0] &&
@@ -827,10 +827,10 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             return !(_mm_test_all_ones(x2));
 #else
             if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
-                FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4) {
+                FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
                 return 1;
-        } else
-            return 0;
+            else
+                return 0;
 #endif
         } else
             return 1;
@@ -862,7 +862,6 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             return 1;
     }
     return 1;
-
 }
 #else
 static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
@@ -894,7 +893,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
                 (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
                  FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4))
                 return 1;
-        else
+            else
                 return 0;
 #endif
         } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == refPicList[0].list[curr->ref_idx[0]] &&

@@ -399,7 +399,7 @@ static int init_slice_rpl(HEVCContext *s)
 
         for (i = ctb_addr_ts; i < ctb_count; i++)
             frame->rpl_tab[i] = (RefPicListTab *)frame->rpl_buf->data + s->slice_idx;
-        frame->refPicList[s->slice_idx] = frame->rpl_tab[ctb_addr_ts];
+        frame->refPicList[s->slice_idx] = (RefPicList *)frame->rpl_tab[ctb_addr_ts];
         return 0;
     }
     return AVERROR_INVALIDDATA;
@@ -411,10 +411,8 @@ static int init_il_slice_rpl(HEVCContext *s)
     int ctb_count   = frame->ctb_count;
     int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
     int i;
-
     if (s->slice_idx >= frame->rpl_buf->size / sizeof(RefPicListTab))
         return AVERROR_INVALIDDATA;
-
     for (i = ctb_addr_ts; i < ctb_count; i++)
         frame->rpl_tab[i] = (RefPicListTab*)frame->rpl_buf->data + s->slice_idx;
 
@@ -456,17 +454,17 @@ static void set_refindex_data(HEVCContext *s){
     HEVCFrame  *refBL, *refEL, *ref;
     int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
     refBL = s->BL_frame;
-     
+
     init_il_slice_rpl(s);
     refEL = s->inter_layer_ref;
     for( list=0; list < nb_list; list++) {
-        refEL->refPicList[s->slice_idx]->refPicList[list].nb_refs = 0;
-        for(i=0; refBL->refPicList[s->slice_idx] && i< refBL->refPicList[s->slice_idx]->refPicList[list].nb_refs; i++) {
-            ref = find_ref_idx(s, refBL->refPicList[s->slice_idx]->refPicList[list].list[i]);
+        refEL->refPicList[s->slice_idx][list].nb_refs = 0;
+        for(i=0; refBL->refPicList[s->slice_idx] && i< refBL->refPicList[s->slice_idx][list].nb_refs; i++) {
+            ref = find_ref_idx(s, refBL->refPicList[s->slice_idx][list].list[i]);
             if(ref) {
-                refEL->refPicList[s->slice_idx]->refPicList[list].list[refEL->refPicList[s->slice_idx]->refPicList[list].nb_refs]           = refBL->refPicList[s->slice_idx]->refPicList[list].list[i];
-                refEL->refPicList[s->slice_idx]->refPicList[list].ref[refEL->refPicList[s->slice_idx]->refPicList[list].nb_refs]            = ref;
-                refEL->refPicList[s->slice_idx]->refPicList[list].isLongTerm[refEL->refPicList[s->slice_idx]->refPicList[list].nb_refs++]   = refBL->refPicList[s->slice_idx]->refPicList[list].isLongTerm[i];
+                refEL->refPicList[s->slice_idx][list].list[refEL->refPicList[s->slice_idx][list].nb_refs]           = refBL->refPicList[s->slice_idx][list].list[i];
+                refEL->refPicList[s->slice_idx][list].ref[refEL->refPicList[s->slice_idx][list].nb_refs]            = ref;
+                refEL->refPicList[s->slice_idx][list].isLongTerm[refEL->refPicList[s->slice_idx][list].nb_refs++]   = refBL->refPicList[s->slice_idx][list].isLongTerm[i];
             }
         }
     }
@@ -524,7 +522,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
 
     for (list_idx = 0; list_idx < nb_list; list_idx++) {
         RefPicList  rpl_tmp = { { 0 } };
-        RefPicList *rpl     = &s->ref->refPicList[s->slice_idx]->refPicList[list_idx];
+        RefPicList *rpl     = &s->ref->refPicList[s->slice_idx][list_idx];
 
         /* The order of the elements is
          * ST_CURR_BEF - ST_CURR_AFT - LT_CURR for the L0 and
