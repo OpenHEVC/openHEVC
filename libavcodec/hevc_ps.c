@@ -1136,16 +1136,26 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         print_cabac("vps_max_latency_increase_plus1", vps->vps_max_latency_increase[i]+1);
 
         if (vps->vps_max_dec_pic_buffering[i] > MAX_DPB_SIZE) {
-            av_log(s->avctx, AV_LOG_ERROR, "vps_max_dec_pic_buffering_minus1 out of range: %d\n",
-                   vps->vps_max_dec_pic_buffering[i] - 1);
-            goto err;
-        }
-        if (vps->vps_num_reorder_pics[i] > vps->vps_max_dec_pic_buffering[i] - 1) {
-            av_log(s->avctx, AV_LOG_ERROR, "vps_max_num_reorder_pics out of range: %d\n",
-                   vps->vps_num_reorder_pics[i]);
-            goto err;
+                    av_log(s->avctx, AV_LOG_ERROR, "vps_max_dec_pic_buffering_minus1 out of range: %d\n",
+                           vps->vps_max_dec_pic_buffering[i] - 1);
+                    goto err;
+                }
+                if (vps->vps_num_reorder_pics[i] > vps->vps_max_dec_pic_buffering[i] - 1) {
+                    av_log(s->avctx, AV_LOG_ERROR, "vps_max_num_reorder_pics out of range: %d\n",
+                           vps->vps_num_reorder_pics[i]);
+                    goto err;
+                }
+
+        if (!vps->vps_sub_layer_ordering_info_present_flag) {
+          for (i++; i < vps->vps_max_sub_layers; i++) {
+              vps->vps_max_dec_pic_buffering[i] = vps->vps_max_dec_pic_buffering[0];
+              vps->vps_num_reorder_pics[i]      = vps->vps_num_reorder_pics[0];
+              vps->vps_max_latency_increase[i]  = vps->vps_max_latency_increase[0];
+          }
+          goto Loop;
         }
     }
+    Loop:
     vps->vps_max_layer_id   = get_bits(gb, 6);
     vps->vps_num_layer_sets = get_ue_golomb_long(gb) + 1;
     if ((vps->vps_num_layer_sets - 1LL) * (vps->vps_max_layer_id + 1LL) > get_bits_left(gb)) {
@@ -1552,7 +1562,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps_id = get_ue_golomb_long(gb);
-
     print_cabac("sps_seq_parameter_set_id", sps_id);
     if (sps_id >= MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", sps_id);
@@ -1728,11 +1737,11 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sublayer_ordering_info = get_bits1(gb);
         print_cabac("sublayer_ordering_info", sublayer_ordering_info);
         start = sublayer_ordering_info ? 0 : sps->max_sub_layers - 1;
+
         for (i = start; i < sps->max_sub_layers; i++) {
             sps->temporal_layer[i].max_dec_pic_buffering = get_ue_golomb_long(gb) + 1;
             sps->temporal_layer[i].num_reorder_pics      = get_ue_golomb_long(gb);
             sps->temporal_layer[i].max_latency_increase  = get_ue_golomb_long(gb) - 1;
-
             print_cabac("sps_max_dec_pic_buffering_minus1", sps->temporal_layer[i].max_dec_pic_buffering - 1);
             print_cabac("sps_num_reorder_pics", sps->temporal_layer[i].num_reorder_pics);
             print_cabac("sps_max_latency_increase_plus1", sps->temporal_layer[i].max_latency_increase + 1);
@@ -1754,22 +1763,17 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
                 sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[i].num_reorder_pics + 1;
             }
         }
+
         if (!sublayer_ordering_info) {
             for (i ++; i < start; i++) {
                 sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[0].max_dec_pic_buffering;
                 sps->temporal_layer[i].num_reorder_pics      = sps->temporal_layer[0].num_reorder_pics;
                 sps->temporal_layer[i].max_latency_increase  = sps->temporal_layer[0].max_latency_increase;
             }
-        }
-    } else {
-        for (i = 0; i < sps->max_sub_layers; i++) {
-            sps->temporal_layer[i].max_dec_pic_buffering = vps->Hevc_VPS_Ext.DPB_Size.max_vps_dec_pic_buffering_minus1[1][0][0] - 1;
-            sps->temporal_layer[i].num_reorder_pics      = vps->Hevc_VPS_Ext.DPB_Size.max_vps_num_reorder_pics[1][0];
-            sps->temporal_layer[i].max_latency_increase  = vps->Hevc_VPS_Ext.DPB_Size.max_vps_latency_increase_plus1[1][0] + 1;
+            goto Loop;
         }
     }
-
-
+    Loop:
     sps->log2_min_cb_size                    = get_ue_golomb_long(gb) + 3;
     sps->log2_diff_max_min_coding_block_size = get_ue_golomb_long(gb);
     sps->log2_min_tb_size                    = get_ue_golomb_long(gb) + 2;

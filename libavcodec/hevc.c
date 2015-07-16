@@ -848,7 +848,7 @@ else
         }
 
         sh->nb_refs[L0] = sh->nb_refs[L1] = 0;
-        if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
+        if (sh->slice_type != I_SLICE) {
             int nb_refs, num_ref_idx_active_override_flag;
 
             sh->nb_refs[L0] = s->pps->num_ref_idx_l0_default_active;
@@ -3143,6 +3143,7 @@ static int hevc_frame_start(HEVCContext *s)
         ff_hevc_bump_frame(s);
 
     av_frame_unref(s->output_frame);
+
     ret = ff_hevc_output_frame(s, s->output_frame, 0);
     if (ret < 0)
         goto fail;
