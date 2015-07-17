@@ -706,7 +706,7 @@ int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s)
 
 int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s)
 {
-    int c_max= FFMAX(5, s->pps->chroma_qp_offset_list_len_minus1);
+    int c_max= FFMAX(5, s->pps->chroma_qp_adjustment_table_size_minus1);
     int i = 0;
 
     while (i < c_max && GET_CABAC(elem_offset[CU_CHROMA_QP_OFFSET_IDX]))

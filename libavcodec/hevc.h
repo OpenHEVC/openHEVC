@@ -804,6 +804,8 @@ typedef struct TCom3DAsymLUT {
     uint8_t     cm_flc_bits;
     uint16_t    cm_adapt_threshold_u_delta;
     uint16_t    cm_adapt_threshold_v_delta;
+    uint16_t    nAdaptCThresholdU;
+    uint16_t    nAdaptCThresholdV;
 } TCom3DAsymLUT;
 
 typedef struct HEVCPPS {
@@ -857,15 +859,19 @@ typedef struct HEVCPPS {
     int log2_parallel_merge_level; ///< log2_parallel_merge_level_minus2 + 2
     int num_extra_slice_header_bits;
     uint8_t slice_header_extension_present_flag;
+
     uint8_t log2_max_transform_skip_block_size;
     uint8_t cross_component_prediction_enabled_flag;
-    uint8_t chroma_qp_offset_list_enabled_flag;
-    uint8_t diff_cu_chroma_qp_offset_depth;
-    uint8_t chroma_qp_offset_list_len_minus1;
-    int8_t  cb_qp_offset_list[5];
-    int8_t  cr_qp_offset_list[5];
-    uint8_t log2_sao_offset_scale_luma;
-    uint8_t log2_sao_offset_scale_chroma;
+
+    uint8_t chroma_qp_adjustment_enabled_flag;
+    uint8_t  m_ChromaQpAdjTableSize;
+    uint8_t  m_MaxCuChromaQpAdjDepth;
+    uint8_t diff_cu_chroma_qp_adjustment_depth;
+    uint8_t chroma_qp_adjustment_table_size_minus1;
+    int8_t  cb_qp_adjustnemt[5];
+    int8_t  cr_qp_adjustnemt[5];
+    uint8_t sao_luma_bit_shift;
+    uint8_t sao_chroma_bit_shift;
 
 
     // Inferred parameters
@@ -898,7 +904,8 @@ typedef struct HEVCPPS {
     TCom3DAsymLUT pc3DAsymLUT;
     HEVCWindow scaled_ref_window[16];
     HEVCWindow ref_window[16];
-
+    uint8_t m_nCGSOutputBitDepthY;
+    uint8_t m_nCGSOutputBitDepthC;
 } HEVCPPS;
 
 typedef struct SliceHeader {

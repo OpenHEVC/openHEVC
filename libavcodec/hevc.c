@@ -426,6 +426,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         s->sao_frame = s->tmp_frame;
 #endif
     }
+
     s->sps = sps;
     s->vps = (HEVCVPS*) s->vps_list[s->sps->vps_id]->data;
 
@@ -957,7 +958,7 @@ else
             sh->slice_cr_qp_offset = 0;
         }
 
-        if (s->pps->chroma_qp_offset_list_enabled_flag)
+        if (s->pps->chroma_qp_adjustment_enabled_flag)
             sh->cu_chroma_qp_offset_enabled_flag = get_bits1(gb);
         else
             sh->cu_chroma_qp_offset_enabled_flag = 0;
@@ -1137,8 +1138,8 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
     }
 
     for (c_idx = 0; c_idx < (s->sps->chroma_format_idc ? 3 : 1); c_idx++) {
-        int log2_sao_offset_scale = c_idx == 0 ? s->pps->log2_sao_offset_scale_luma :
-                                                 s->pps->log2_sao_offset_scale_chroma;
+        int sao_offset_scale = c_idx == 0 ? s->pps->sao_luma_bit_shift:
+                                                 s->pps->sao_chroma_bit_shift;
 
         if (!s->sh.slice_sample_adaptive_offset_flag[c_idx]) {
             sao->type_idx[c_idx] = SAO_NOT_APPLIED;
@@ -1182,7 +1183,7 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
             } else if (sao->offset_sign[c_idx][i]) {
                 sao->offset_val[c_idx][i + 1] = -sao->offset_val[c_idx][i + 1];
             }
-            sao->offset_val[c_idx][i + 1] <<= log2_sao_offset_scale;
+            sao->offset_val[c_idx][i + 1] <<= sao_offset_scale;
         }
     }
 }
@@ -1256,13 +1257,13 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
             int cu_chroma_qp_offset_flag = ff_hevc_cu_chroma_qp_offset_flag(s);
             if (cu_chroma_qp_offset_flag) {
                 int cu_chroma_qp_offset_idx  = 0;
-                if (s->pps->chroma_qp_offset_list_len_minus1 > 0) {
+                if (s->pps->chroma_qp_adjustment_table_size_minus1 > 0) {
                     cu_chroma_qp_offset_idx = ff_hevc_cu_chroma_qp_offset_idx(s);
                     av_log(s->avctx, AV_LOG_ERROR,
                         "cu_chroma_qp_offset_idx not yet tested.\n");
                 }
-                lc->tu.cu_qp_offset_cb = s->pps->cb_qp_offset_list[cu_chroma_qp_offset_idx];
-                lc->tu.cu_qp_offset_cr = s->pps->cr_qp_offset_list[cu_chroma_qp_offset_idx];
+                lc->tu.cu_qp_offset_cb = s->pps->cb_qp_adjustnemt[cu_chroma_qp_offset_idx];
+                lc->tu.cu_qp_offset_cr = s->pps->cr_qp_adjustnemt[cu_chroma_qp_offset_idx];
             } else {
                 lc->tu.cu_qp_offset_cb = 0;
                 lc->tu.cu_qp_offset_cr = 0;
@@ -2508,7 +2509,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     }
 
 	if (s->sh.cu_chroma_qp_offset_enabled_flag &&
-        log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_chroma_qp_offset_depth) {
+        log2_cb_size >= s->sps->log2_ctb_size - s->pps->diff_cu_chroma_qp_adjustment_depth) {
         lc->tu.is_cu_chroma_qp_offset_coded = 0;
 	}
     if (split_cu_flag) {
