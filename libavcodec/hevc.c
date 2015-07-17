@@ -426,7 +426,6 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         s->sao_frame = s->tmp_frame;
 #endif
     }
-
     s->sps = sps;
     s->vps = (HEVCVPS*) s->vps_list[s->sps->vps_id]->data;
 

@@ -1152,10 +1152,9 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
               vps->vps_num_reorder_pics[i]      = vps->vps_num_reorder_pics[0];
               vps->vps_max_latency_increase[i]  = vps->vps_max_latency_increase[0];
           }
-          goto Loop;
+          break;
         }
     }
-    Loop:
     vps->vps_max_layer_id   = get_bits(gb, 6);
     vps->vps_num_layer_sets = get_ue_golomb_long(gb) + 1;
     if ((vps->vps_num_layer_sets - 1LL) * (vps->vps_max_layer_id + 1LL) > get_bits_left(gb)) {
@@ -1762,18 +1761,16 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
                 }
                 sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[i].num_reorder_pics + 1;
             }
-        }
-
-        if (!sublayer_ordering_info) {
-            for (i ++; i < start; i++) {
-                sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[0].max_dec_pic_buffering;
-                sps->temporal_layer[i].num_reorder_pics      = sps->temporal_layer[0].num_reorder_pics;
-                sps->temporal_layer[i].max_latency_increase  = sps->temporal_layer[0].max_latency_increase;
+            if (!sublayer_ordering_info) {
+                for (i ++; i < start; i++) {
+                    sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[0].max_dec_pic_buffering;
+                    sps->temporal_layer[i].num_reorder_pics      = sps->temporal_layer[0].num_reorder_pics;
+                    sps->temporal_layer[i].max_latency_increase  = sps->temporal_layer[0].max_latency_increase;
+                }
+                break;
             }
-            goto Loop;
         }
     }
-    Loop:
     sps->log2_min_cb_size                    = get_ue_golomb_long(gb) + 3;
     sps->log2_diff_max_min_coding_block_size = get_ue_golomb_long(gb);
     sps->log2_min_tb_size                    = get_ue_golomb_long(gb) + 2;
