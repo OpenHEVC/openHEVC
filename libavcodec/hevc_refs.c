@@ -805,24 +805,15 @@ int ff_hevc_frame_rps(HEVCContext *s)
         }
     }
 
-    if (s->nuh_layer_id && s->sh.active_num_ILR_ref_idx >0) {
+/*    if (s->nuh_layer_id && s->sh.active_num_ILR_ref_idx >0) {
         for( i=0; i < vps->Hevc_VPS_Ext.num_direct_ref_layers[s->nuh_layer_id]; i++ )
         {
             int maxTidIlRefPicsPlus1 = vps->Hevc_VPS_Ext.max_tid_il_ref_pics_plus1[vps->Hevc_VPS_Ext.layer_id_in_vps[+++]][vps->Hevc_VPS_Ext.layer_id_in_vps[s->nuh_layer_id]];
             if( (s->temporal_id <= maxTidIlRefPicsPlus1-1) || (maxTidIlRefPicsPlus1==0 && ilpPic[i]->getSlice(0)->getRapPicFlag() ) )
                 numInterLayerRPSPics++;
         }
-
-
-
-
-
-
-
-
-
-
-
+*/
+    if (s->nuh_layer_id) {
         for (i = 0; i < s->sh.active_num_ILR_ref_idx; i ++) {
             if ((vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[0]) &&
                 (vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
@@ -834,10 +825,6 @@ int ff_hevc_frame_rps(HEVCContext *s)
             }
         }
     }
-
-
-
-
     /* release any frames that are now unused */
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         ff_hevc_unref_frame(s, &s->DPB[i], 0);

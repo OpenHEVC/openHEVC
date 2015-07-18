@@ -1385,9 +1385,6 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
     }
 }
 
-
-
-
 static void set_default_scaling_list_data(ScalingList *sl)
 {
     int matrixId;
@@ -1417,8 +1414,6 @@ static void set_default_scaling_list_data(ScalingList *sl)
     memcpy(sl->sl[3][4], default_scaling_list_inter, 64);
     memcpy(sl->sl[3][5], default_scaling_list_inter, 64);
 }
-
-
 
 static int scaling_list_data(HEVCContext *s, ScalingList *sl, HEVCSPS *sps)
 {

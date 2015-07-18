@@ -1082,7 +1082,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int16_t *coeffs = lc->tu.coeffs[c_idx > 0];
     uint8_t significant_coeff_group_flag[8][8] = {{0}};
     int explicit_rdpcm_flag = 0;
-    int explicit_rdpcm_dir_flag;
+    int explicit_rdpcm_dir_flag = 0;
 
     int trafo_size = 1 << log2_trafo_size;
     int i;
@@ -1524,14 +1524,13 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 for (i = 0; i < 8; i++)
                     FFSWAP(int16_t, coeffs[i], coeffs[16 - i - 1]);
             }
-
             s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
-
-            if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag &&
-                                        lc->cu.pred_mode == MODE_INTRA &&
-                                        (pred_mode_intra == 10 || pred_mode_intra == 26))) {
-                int mode = explicit_rdpcm_flag ? explicit_rdpcm_dir_flag : (pred_mode_intra == 26);
-
+            if (explicit_rdpcm_flag) {
+                s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, explicit_rdpcm_dir_flag);
+            } else if ((s->sps->implicit_rdpcm_enabled_flag &&
+                        lc->cu.pred_mode == MODE_INTRA &&
+                       (pred_mode_intra == 10 || pred_mode_intra == 26))) {
+                int mode = s->sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : 0;
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
         } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
