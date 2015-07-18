@@ -2112,7 +2112,7 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
         pps->chroma_qp_adjustment_table_size_minus1 = get_ue_golomb_long(gb);
         print_cabac("chroma_qp_adjustment_table_size_minus1", pps->chroma_qp_adjustment_table_size_minus1);
 
-        for (i= 1; i <= (pps->chroma_qp_adjustment_table_size_minus1 + 1); i++) {
+        for (i= 0; i <= (pps->chroma_qp_adjustment_table_size_minus1 ); i++) {
             pps->cb_qp_adjustnemt[i] = get_se_golomb_long(gb);
             print_cabac("cb_qp_adjustnemt[i]", pps->cb_qp_adjustnemt[i]);
             pps->cr_qp_adjustnemt[i] = get_se_golomb_long(gb);
