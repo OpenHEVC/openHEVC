@@ -1684,8 +1684,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
                    "Luma bit depth (%d) is different from chroma bit depth (%d), "
                    "this is unsupported.\n",
                    sps->bit_depth, bit_depth_chroma);
-            ret = AVERROR_INVALIDDATA;
-            goto err;
+            //ret = AVERROR_INVALIDDATA;
+            //goto err;
         }
 
 
