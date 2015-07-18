@@ -1487,6 +1487,56 @@ static int scaling_list_data(HEVCContext *s, ScalingList *sl, HEVCSPS *sps)
     return 0;
 }
 
+
+static int sps_range_extensions(HEVCContext *s, HEVCSPS *sps)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+    int extended_precision_processing_flag;
+    int high_precision_offsets_enabled_flag;
+    int cabac_bypass_alignment_enabled_flag;
+    sps->transform_skip_rotation_enabled_flag = get_bits1(gb);
+    print_cabac("transform_skip_rotation_enabled_flag ", sps->transform_skip_rotation_enabled_flag);
+    sps->transform_skip_context_enabled_flag  = get_bits1(gb);
+    print_cabac("transform_skip_context_enabled_flag ", sps->transform_skip_context_enabled_flag);
+    sps->implicit_rdpcm_enabled_flag = get_bits1(gb);
+    print_cabac("implicit_rdpcm_enabled_flag ", sps->implicit_rdpcm_enabled_flag);
+
+    sps->explicit_rdpcm_enabled_flag = get_bits1(gb);
+    print_cabac("explicit_rdpcm_enabled_flag ", sps->explicit_rdpcm_enabled_flag);
+
+    extended_precision_processing_flag = get_bits1(gb);
+    if (extended_precision_processing_flag)
+        av_log(s->avctx, AV_LOG_WARNING,
+              "extended_precision_processing_flag not yet implemented\n");
+
+    print_cabac("extended_precision_processing_flag ", extended_precision_processing_flag);
+    sps->intra_smoothing_disabled_flag       = get_bits1(gb);
+    print_cabac("intra_smoothing_disabled_flag ", sps->intra_smoothing_disabled_flag);
+    high_precision_offsets_enabled_flag  = get_bits1(gb);
+    if (high_precision_offsets_enabled_flag)
+        av_log(s->avctx, AV_LOG_WARNING,
+               "high_precision_offsets_enabled_flag not yet implemented\n");
+
+    print_cabac("high_precision_offsets_enabled_flag ", high_precision_offsets_enabled_flag);
+    sps->persistent_rice_adaptation_enabled_flag = get_bits1(gb);
+    print_cabac("persistent_rice_adaptation_enabled_flag ", sps->persistent_rice_adaptation_enabled_flag);
+
+    cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
+    print_cabac("cabac_bypass_alignment_enabled_flag ", cabac_bypass_alignment_enabled_flag);
+    if (cabac_bypass_alignment_enabled_flag)
+        av_log(s->avctx, AV_LOG_WARNING,
+               "cabac_bypass_alignment_enabled_flag not yet implemented\n");
+    return 0;
+}
+
+static int sps_multilayer_extensions(HEVCContext *s, HEVCSPS *sps)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+    uint8_t inter_view_mv_vert_constraint_flag = get_bits1(gb);
+    print_cabac("inter_view_mv_vert_constraint_flag",  inter_view_mv_vert_constraint_flag);
+    return 0;
+}
+
 int ff_hevc_decode_nal_sps(HEVCContext *s)
 {
     const AVPixFmtDescriptor *desc;
@@ -1900,45 +1950,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         print_cabac("sps_multilayer_extension_flag", sps_extension_flag[1]);
         sps_extension_6bits	= get_bits(gb, 6);
         print_cabac("sps_extension_6bits", sps_extension_6bits);
-        uint8_t inter_view_mv_vert_constraint_flag = get_bits1(gb);
-        print_cabac("inter_view_mv_vert_constraint_flag",  inter_view_mv_vert_constraint_flag);
-        if (sps_extension_flag[0]) {
-            int extended_precision_processing_flag;
-            int high_precision_offsets_enabled_flag;
-            int cabac_bypass_alignment_enabled_flag;
-            sps->transform_skip_rotation_enabled_flag = get_bits1(gb);
-            print_cabac("transform_skip_rotation_enabled_flag ", sps->transform_skip_rotation_enabled_flag);
-            sps->transform_skip_context_enabled_flag  = get_bits1(gb);
-            print_cabac("transform_skip_context_enabled_flag ", sps->transform_skip_context_enabled_flag);
-            sps->implicit_rdpcm_enabled_flag = get_bits1(gb);
-            print_cabac("implicit_rdpcm_enabled_flag ", sps->implicit_rdpcm_enabled_flag);
+        if (sps_extension_flag[0])
+            sps_range_extensions(s, sps);
 
-            sps->explicit_rdpcm_enabled_flag = get_bits1(gb);
-            print_cabac("explicit_rdpcm_enabled_flag ", sps->explicit_rdpcm_enabled_flag);
+        if(sps_extension_flag[1])
+            sps_multilayer_extensions(s, sps);
 
-            extended_precision_processing_flag = get_bits1(gb);
-            if (extended_precision_processing_flag)
-                av_log(s->avctx, AV_LOG_WARNING,
-                   "extended_precision_processing_flag not yet implemented\n");
-
-            print_cabac("extended_precision_processing_flag ", extended_precision_processing_flag);
-            sps->intra_smoothing_disabled_flag       = get_bits1(gb);
-            print_cabac("intra_smoothing_disabled_flag ", sps->intra_smoothing_disabled_flag);
-            high_precision_offsets_enabled_flag  = get_bits1(gb);
-            if (high_precision_offsets_enabled_flag)
-                av_log(s->avctx, AV_LOG_WARNING,
-                   "high_precision_offsets_enabled_flag not yet implemented\n");
-
-            print_cabac("high_precision_offsets_enabled_flag ", high_precision_offsets_enabled_flag);
-            sps->persistent_rice_adaptation_enabled_flag = get_bits1(gb);
-            print_cabac("persistent_rice_adaptation_enabled_flag ", sps->persistent_rice_adaptation_enabled_flag);
-
-            cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
-            print_cabac("cabac_bypass_alignment_enabled_flag ", cabac_bypass_alignment_enabled_flag);
-            if (cabac_bypass_alignment_enabled_flag)
-                av_log(s->avctx, AV_LOG_WARNING,
-                   "cabac_bypass_alignment_enabled_flag not yet implemented\n");
-        }
     } else {
         // Read more RSB data 
     }
@@ -2082,8 +2099,8 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
     }
     pps->cross_component_prediction_enabled_flag = get_bits1(gb);
     print_cabac("cross_component_prediction_enabled_flag", pps->cross_component_prediction_enabled_flag);
-    pps->chroma_qp_adjustment_enabled_flag= get_bits1(gb);
-    print_cabac("chroma_qp_adjustment_enabled_flag", pps->chroma_qp_offset_list_enabled_flag);
+    pps->chroma_qp_adjustment_enabled_flag = get_bits1(gb);
+    print_cabac("chroma_qp_adjustment_enabled_flag", pps->chroma_qp_adjustment_enabled_flag);
 
     if(!pps->chroma_qp_adjustment_enabled_flag) {
         pps->m_ChromaQpAdjTableSize  = 0;
@@ -2097,9 +2114,9 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
 
         for (i= 1; i <= (pps->chroma_qp_adjustment_table_size_minus1 + 1); i++) {
             pps->cb_qp_adjustnemt[i] = get_se_golomb_long(gb);
-            print_cabac("cb_qp_adjustnem"t, pps->cb_qp_adjustnemt[i]);
+            print_cabac("cb_qp_adjustnemt[i]", pps->cb_qp_adjustnemt[i]);
             pps->cr_qp_adjustnemt[i] = get_se_golomb_long(gb);
-            print_cabac("cr_qp_adjustnemt", pps->cr_qp_adjustnemt[i]);
+            print_cabac("cr_qp_adjustnemt[i]", pps->cr_qp_adjustnemt[i]);
         }
         pps->m_ChromaQpAdjTableSize = pps->chroma_qp_adjustment_table_size_minus1 + 1;
     }
@@ -2156,7 +2173,6 @@ static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
 static int pps_multilayer_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
     GetBitContext *gb = &s->HEVClc->gb;
     int i;
-
 
     pps->poc_reset_info_present_flag = get_bits1(gb);
     print_cabac("poc_reset_info_present_flag", pps->poc_reset_info_present_flag);
