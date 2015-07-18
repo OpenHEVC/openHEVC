@@ -551,14 +551,14 @@ static int hls_slice_header(HEVCContext *s)
     sh->first_slice_in_pic_flag   = first_slice_in_pic_flag;
 
     print_cabac("first_slice_segment_in_pic_flag", sh->first_slice_in_pic_flag);
-    if ((IS_IDR(s) || IS_BLA(s)) && sh->first_slice_in_pic_flag) {
+    if ((IS_IDR(s->nal_unit_type) || IS_BLA(s->nal_unit_type)) && sh->first_slice_in_pic_flag) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
-        if (IS_IDR(s))
+        if (IS_IDR(s->nal_unit_type))
             ff_hevc_clear_refs(s);
     }
     sh->no_output_of_prior_pics_flag = 0;
-    if (IS_IRAP(s)) {
+    if (IS_IRAP(s->nal_unit_type)) {
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
         print_cabac("no_output_of_prior_pics_flag", sh->no_output_of_prior_pics_flag);
         if (s->decoder_id)
@@ -584,7 +584,7 @@ static int hls_slice_header(HEVCContext *s)
     if (s->sps != (HEVCSPS*)s->sps_list[s->pps->sps_id]->data) {
         const HEVCSPS* last_sps = s->sps;
         s->sps = (HEVCSPS*)s->sps_list[s->pps->sps_id]->data;
-        if (last_sps && IS_IRAP(s) && s->nal_unit_type != NAL_CRA_NUT) {
+        if (last_sps && IS_IRAP(s->nal_unit_type) && s->nal_unit_type != NAL_CRA_NUT) {
             if (s->sps->width !=  last_sps->width || s->sps->height != last_sps->height ||
                 s->sps->temporal_layer[s->sps->max_sub_layers - 1].max_dec_pic_buffering !=
                 last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
@@ -675,7 +675,7 @@ else
                    sh->slice_type, sh->first_slice_in_pic_flag);
             return AVERROR_INVALIDDATA;
         }
-        if (!s->decoder_id && IS_IRAP(s) && sh->slice_type != I_SLICE) {
+        if (!s->decoder_id && IS_IRAP(s->nal_unit_type) && sh->slice_type != I_SLICE) {
             av_log(s->avctx, AV_LOG_ERROR, "Inter slices in an IRAP frame.\n");
             return AVERROR_INVALIDDATA;
         }
@@ -693,7 +693,7 @@ else
         print_cabac("s->nal_unit_type", s->nal_unit_type);
 
         if (( s->nuh_layer_id > 0 && !s->vps->Hevc_VPS_Ext.poc_lsb_not_present_flag[s->vps->Hevc_VPS_Ext.layer_id_in_vps[s->nuh_layer_id]])
-            || (!IS_IDR(s)) ) {
+            || (!IS_IDR(s->nal_unit_type)) ) {
             int poc;
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
@@ -717,7 +717,7 @@ else
             return -10;
         }
 #endif
-        if(!IS_IDR(s)) {
+        if(!IS_IDR(s->nal_unit_type)) {
             int short_term_ref_pic_set_sps_flag = get_bits1(gb);
             print_cabac("short_term_ref_pic_set_sps_flag", short_term_ref_pic_set_sps_flag);
             if (!short_term_ref_pic_set_sps_flag) {
@@ -3139,7 +3139,7 @@ static int hevc_frame_start(HEVCContext *s)
 
     s->frame->pict_type = 3 - s->sh.slice_type;
 
-    if (!IS_IRAP(s))
+    if (!IS_IRAP(s->nal_unit_type))
         ff_hevc_bump_frame(s);
 
     av_frame_unref(s->output_frame);
@@ -3250,12 +3250,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
         s->au_poc = s->poc;
         if (s->max_ra == INT_MAX) {
-            if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
+            if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s->nal_unit_type)) {
                 s->max_ra = s->poc;
                 av_log(s->avctx, AV_LOG_WARNING,
                        "max_ra equal to s->max_ra %d \n", s->max_ra);
             } else {
-                if (IS_IDR(s))
+                if (IS_IDR(s->nal_unit_type))
                     s->max_ra = INT_MIN;
                 else if( s->decoder_id ) {
                     av_log(s->avctx, AV_LOG_WARNING,
@@ -3825,7 +3825,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     s->is_md5 = 0;
 
     if (s->is_decoded) {
-        s->ref->frame->key_frame = IS_IRAP(s);
+        s->ref->frame->key_frame = IS_IRAP(s->nal_unit_type);
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
         s->is_decoded = 0;
     }

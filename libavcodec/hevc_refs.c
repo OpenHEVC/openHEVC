@@ -153,12 +153,14 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
     ref->field_order = s->field_order;
 
-    ref->poc      = poc;
-    ref->flags    = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
+    ref->poc   = poc;
+    ref->flags = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
     if (s->sh.pic_output_flag == 0)
-        ref->flags &= ~(HEVC_FRAME_FLAG_OUTPUT);
-    ref->sequence = s->seq_decode;
-    ref->window   = s->sps->output_window;
+        ref->flags        &= ~(HEVC_FRAME_FLAG_OUTPUT);
+    ref->sequence          = s->seq_decode;
+    ref->window            = s->sps->output_window;
+    ref->nal_unit_type     = s->nal_unit_type;
+    ref->temporal_layer_id = s->temporal_id;
     return 0;
 }
 
@@ -752,59 +754,75 @@ int ff_hevc_frame_rps(HEVCContext *s)
     for (i = 0; i < NB_RPS_TYPE; i++)
         rps[i].nb_refs = 0;
 
-     if (! s->nuh_layer_id || (s->nuh_layer_id >0 &&
-        !(s->nal_unit_type >= NAL_BLA_W_LP &&
-          s->nal_unit_type <= NAL_CRA_NUT  &&
-          s->sh.active_num_ILR_ref_idx)) ) {
+    if (!s->nuh_layer_id
+        || (s->nuh_layer_id > 0
+        && !(s->nal_unit_type >= NAL_BLA_W_LP
+        && s->nal_unit_type <= NAL_CRA_NUT
+        && s->sh.active_num_ILR_ref_idx)))
+    {
+        /* add the short refs */
+        for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++)
+        {
+            int poc = s->poc + short_rps->delta_poc[i];
+            int list;
 
+            if (!short_rps->used[i])
+                list = ST_FOLL;
+            else if (i < short_rps->num_negative_pics)
+                list = ST_CURR_BEF;
+            else
+                list = ST_CURR_AFT;
 
-/*    if (!s->nuh_layer_id ||
-        !(s->nal_unit_type >= NAL_BLA_W_LP &&
-          s->nal_unit_type <= NAL_CRA_NUT  &&
-          s->sps->set_mfm_enabled_flag)) {
-*/
-            /* add the short refs */
-            for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++) {
-                int poc = s->poc + short_rps->delta_poc[i];
-                int list;
-
-                if (!short_rps->used[i])
-                    list = ST_FOLL;
-                else if (i < short_rps->num_negative_pics)
-                    list = ST_CURR_BEF;
-                else
-                    list = ST_CURR_AFT;
-
-                ret = add_candidate_ref(s, &rps[list], poc, HEVC_FRAME_FLAG_SHORT_REF);
-                if (ret < 0)
-                    return ret;
-            }
-
-            /* add the long refs */
-            for (i = 0; long_rps && i < long_rps->nb_refs; i++) {
-                int poc  = long_rps->poc[i];
-                int list = long_rps->used[i] ? LT_CURR : LT_FOLL;
-
-                ret = add_candidate_ref(s, &rps[list], poc, HEVC_FRAME_FLAG_LONG_REF);
-                if (ret < 0)
-                    return ret;
-            }
-        } else {
-            for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++) {
-                int poc = s->poc + short_rps->delta_poc[i];
-                HEVCFrame *ref = find_ref_idx(s, poc);
-                if (ref)
-                    mark_ref(ref, HEVC_FRAME_FLAG_SHORT_REF);
-            }
-            for (i = 0; long_rps && i < long_rps->nb_refs; i++) {
-                int poc  = long_rps->poc[i];
-                HEVCFrame *ref = find_ref_idx(s, poc);
-                if (ref)
-                    mark_ref(ref, HEVC_FRAME_FLAG_LONG_REF);
-            }
+            ret = add_candidate_ref( s, &rps[list], poc,
+                                     HEVC_FRAME_FLAG_SHORT_REF);
+            if (ret < 0)
+                return ret;
         }
 
-    if (s->nuh_layer_id) {
+        /* add the long refs */
+        for (i = 0; long_rps && i < long_rps->nb_refs; i++)
+        {
+            int poc  = long_rps->poc[i];
+            int list = long_rps->used[i] ? LT_CURR : LT_FOLL;
+
+            ret = add_candidate_ref( s, &rps[list], poc,
+                                     HEVC_FRAME_FLAG_LONG_REF);
+            if (ret < 0)
+                return ret;
+        }
+    } else {
+        for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++) {
+            int poc = s->poc + short_rps->delta_poc[i];
+            HEVCFrame *ref = find_ref_idx(s, poc);
+            if (ref)
+                mark_ref(ref, HEVC_FRAME_FLAG_SHORT_REF);
+        }
+        for (i = 0; long_rps && i < long_rps->nb_refs; i++) {
+            int poc = long_rps->poc[i];
+            HEVCFrame *ref = find_ref_idx(s, poc);
+            if (ref)
+                mark_ref(ref, HEVC_FRAME_FLAG_LONG_REF);
+        }
+    }
+
+    if (s->nuh_layer_id && s->sh.active_num_ILR_ref_idx >0) {
+        for( i=0; i < vps->Hevc_VPS_Ext.num_direct_ref_layers[s->nuh_layer_id]; i++ )
+        {
+            int maxTidIlRefPicsPlus1 = vps->Hevc_VPS_Ext.max_tid_il_ref_pics_plus1[vps->Hevc_VPS_Ext.layer_id_in_vps[+++]][vps->Hevc_VPS_Ext.layer_id_in_vps[s->nuh_layer_id]];
+            if( (s->temporal_id <= maxTidIlRefPicsPlus1-1) || (maxTidIlRefPicsPlus1==0 && ilpPic[i]->getSlice(0)->getRapPicFlag() ) )
+                numInterLayerRPSPics++;
+        }
+
+
+
+
+
+
+
+
+
+
+
         for (i = 0; i < s->sh.active_num_ILR_ref_idx; i ++) {
             if ((vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[0]) &&
                 (vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){

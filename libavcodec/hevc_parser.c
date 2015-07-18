@@ -173,7 +173,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             s->picture_structure = h->picture_struct;
             s->field_order = h->picture_struct;
 
-            if (IS_IRAP(h)) {
+            if (IS_IRAP(h->nal_unit_type)) {
                 s->key_frame = 1;
                 sh->no_output_of_prior_pics_flag = get_bits1(gb);
             }
@@ -236,7 +236,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             if (h->sps->separate_colour_plane_flag)
                 sh->colour_plane_id = get_bits(gb, 2);
 
-            if (!IS_IDR(h)) {
+            if (!IS_IDR(h->nal_unit_type)) {
                 sh->pic_order_cnt_lsb = get_bits(gb, h->sps->log2_max_poc_lsb);
                 s->output_picture_number = h->poc = ff_hevc_compute_poc(h, sh->pic_order_cnt_lsb);
             } else
