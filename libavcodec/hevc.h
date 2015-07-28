@@ -1445,7 +1445,7 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0,
                                            int slice_left_boundary);
 
 void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y);
-
+int set_el_parameter(HEVCContext *s);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s);

@@ -442,6 +442,14 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
                   num, den, 1 << 30);
 
+    return 0;
+fail:
+    pic_arrays_free(s);
+    s->sps = NULL;
+    return ret;
+}
+int set_el_parameter(HEVCContext *s) {
+    int ret = 0;
     if (s->decoder_id) {
         int heightBL, widthBL, heightEL, widthEL;
         const int phaseXC = 0;
@@ -512,13 +520,9 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
                     av_log(s->avctx, AV_LOG_INFO, "DEFAULT mode: SSE optimizations are not implemented for spatial scalability with a ratio different from x2 and x1.5 widthBL %d heightBL %d \n", widthBL<<1, heightBL<<1);
                 }
     }
-    return 0;
-fail:
-    pic_arrays_free(s);
-    s->sps = NULL;
-    return ret;
+    fail:
+        return ret;
 }
-
 static int is_sps_exist(HEVCContext *s, const HEVCSPS* last_sps)
 {
     int i;
@@ -537,7 +541,7 @@ static int hls_slice_header(HEVCContext *s)
 #if PARALLEL_SLICE
     HEVCContext   *s1   = (HEVCContext*) s->avctx->priv_data;
 #endif
-    int i, j, ret;
+    int i, j, ret, change_pps = 0;
     int NumILRRefIdx;
 
     print_cabac("\n --- Decode slice header --- \n", s->nuh_layer_id);
@@ -591,6 +595,9 @@ static int hls_slice_header(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
         return AVERROR_INVALIDDATA;
     }
+    if(s->pps != (HEVCPPS*)s->pps_list[sh->pps_id]->data)
+        change_pps = 1;
+
     s->pps = (HEVCPPS*)s->pps_list[sh->pps_id]->data;
     if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
@@ -612,7 +619,8 @@ static int hls_slice_header(HEVCContext *s)
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
     }
-
+    if(change_pps)
+        set_el_parameter(s);
     s->avctx->profile = s->sps->ptl.Ptl_general.profile_idc;
     s->avctx->level   = s->sps->ptl.Ptl_general.level_idc;
 
