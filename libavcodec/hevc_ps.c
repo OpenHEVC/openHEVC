@@ -225,14 +225,13 @@ static int profile_tier (GetBitContext *gb, PTL *ptl) {
 
 
 #if MULTIPLE_PTL_SUPPORT
-    if( ptl->profile_idc == 4 || ptl->profile_compatibility_flag[4] ||
-        ptl->profile_idc == 5 || ptl->profile_compatibility_flag[5] ||
-        ptl->profile_idc == 6 || ptl->profile_compatibility_flag[6] ||
-        ptl->profile_idc == 7 || ptl->profile_compatibility_flag[7] ) {
-
+    if( ptl->profile_idc == FF_PROFILE_HEVC_REXT || ptl->profile_compatibility_flag[4] ||
+        ptl->profile_idc == FF_PROFILE_HEVC_HIGHTHROUGHPUTREXT || ptl->profile_compatibility_flag[5] ||
+        ptl->profile_idc == FF_PROFILE_HEVC_MULTIVIEWMAIN || ptl->profile_compatibility_flag[6] ||
+        ptl->profile_idc == FF_PROFILE_HEVC_SCALABLEMAIN || ptl->profile_compatibility_flag[7] ) {
         get_bits1(gb); // general_max_12bit_constraint_flag
         get_bits1(gb); //general_max_10bit_constraint_flag
-        ptl->setProfileIdc = (get_bits1(gb)) ? SCALABLEMAIN : SCALABLEMAIN10; //general_max_8bit_constraint_flag
+        ptl->setProfileIdc = (get_bits1(gb)) ? FF_PROFILE_HEVC_SCALABLEMAIN : FF_PROFILE_HEVC_SCALABLEMAIN10; //general_max_8bit_constraint_flag
         print_cabac("general_max_8bit_constraint_flag", ptl->setProfileIdc);
         get_bits1(gb);   //general_max_422chroma_constraint_flag
         get_bits1(gb);   //general_max_420chroma_constraint_flag
@@ -247,9 +246,6 @@ static int profile_tier (GetBitContext *gb, PTL *ptl) {
         skip_bits(gb, 32); // general_reserved_zero_43bits
         skip_bits(gb, 11); // general_reserved_zero_43bits
     }
-
-
-
     if( ( ptl->profile_idc >= 1 && ptl->profile_idc <= 5 ) ||
         ptl->profile_compatibility_flag[1] || ptl->profile_compatibility_flag[2] ||
         ptl->profile_compatibility_flag[3] || ptl->profile_compatibility_flag[4] ||
@@ -2540,11 +2536,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s) {
                    "PPS extension flag is partially implemented.\n");
             pps_range_extensions(s, pps, sps);
         }
-
-        if (sps->ptl.Ptl_general.profile_idc != FF_PROFILE_HEVC_REXT    &&
-            sps->ptl.Ptl_general.profile_idc != FF_PROFILE_HEVC_MAIN    &&
-            sps->ptl.Ptl_general.profile_idc != FF_PROFILE_HEVC_MAIN_10 &&
-            pps_range_extensions_flag) {
+        if (pps_multilayer_extension_flag) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "hack with the spec.\n"
                    "use pps_range_extensions_flag instead of pps_multilayer_extension_flag\n."

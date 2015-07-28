@@ -1798,7 +1798,7 @@ static void FUNC(upsample_filter_block_luma_h_all)( int16_t *_dst, ptrdiff_t _ds
 
     for( i = 0; i < block_w; i++ )	{
         x        = av_clip_c(i+x_EL, leftStartL, rightEndL);
-        refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
+        refPos16 = (((x - leftStartL)*up_info->scaleXLum - up_info->addXLum) >> 12);
         phase    = refPos16 & 15;
         //printf("x %d phase %d \n", x, phase);
         coeff    = up_sample_filter_luma[phase];
@@ -1829,7 +1829,7 @@ static void FUNC(upsample_filter_block_cr_h_all)(  int16_t *dst, ptrdiff_t dstst
     
     for( i = 0; i < block_w; i++ )	{
         x        = av_clip_c(i+x_EL, leftStartC, rightEndC);
-        refPos16 = (((x - leftStartC)*up_info->scaleXCr + up_info->addXCr) >> 12);
+        refPos16 = (((x - leftStartC)*up_info->scaleXCr - up_info->addXCr) >> 12);
         phase    = refPos16 & 15;
         coeff    = up_sample_filter_chroma[phase];
         refPos   = (refPos16 >> 4) - (x_BL);
@@ -1858,10 +1858,8 @@ static void FUNC(upsample_filter_block_luma_v_all)( uint8_t *_dst, ptrdiff_t _ds
     int16_t *   src_tmp;
     for( j = 0; j < block_h; j++ )	{
     	y        =   av_clip_c(y_EL+j, topStartL, bottomEndL-1);
-    	refPos16 = ((( y - topStartL )* up_info->scaleYLum + up_info->addYLum) >> 12);
+    	refPos16 = ((( y - topStartL )* up_info->scaleYLum - up_info->addYLum) >> 12);
         phase    = refPos16 & 15;
-        //printf("y %d phase %d \n", y, phase);
-
         coeff    = up_sample_filter_luma[phase];
         refPos   = (refPos16 >> 4) - y_BL;
         src_tmp  = _src  + refPos  * _srcstride;
@@ -1893,9 +1891,9 @@ static void FUNC(upsample_filter_block_cr_v_all)( uint8_t *_dst, ptrdiff_t dstst
     const int8_t* coeff;
     int16_t *   src_tmp;
     pixel *dst_tmp, *dst    = (pixel *)_dst;
-    for( j = 0; j < block_h; j++ )	{
+    for( j = 0; j < block_h; j++ ) {
         y =   av_clip_c(y_EL+j, topStartC, bottomEndC-1);
-        refPos16 = ((( y - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12)-4;
+        refPos16 = ((( y - topStartC )* up_info->scaleYCr - up_info->addYCr) >> 12); //-4;
         phase    = refPos16 & 15;
         coeff    = up_sample_filter_chroma[phase];
         refPos   = (refPos16>>4) - y_BL;
@@ -1920,9 +1918,8 @@ static void FUNC(upsample_filter_block_luma_h_x2)( int16_t *_dst, ptrdiff_t _dst
     int16_t*   dst_tmp;
     pixel*   src_tmp, *src = (pixel *) _src - x_BL;
     const int8_t*   coeff;
-
     for( i = 0; i < block_w; i++ )	{
-        x        = av_clip_c(i+x_EL, leftStartL, rightEndL);
+        x        = i+x_EL;  //av_clip_c(i+x_EL, leftStartL, rightEndL);
         coeff    = up_sample_filter_luma_x2[x&0x01];
         dst_tmp  = _dst  + i;
         src_tmp  = src + ((x-leftStartL)>>1);
@@ -1945,10 +1942,10 @@ static void FUNC(upsample_filter_block_cr_h_x2)(  int16_t *dst, ptrdiff_t dststr
     const int8_t*  coeff;
     
     for( i = 0; i < block_w; i++ )	{
-        x        = av_clip_c(i+x_EL, leftStartC, rightEndC);
+        x        = i+x_EL; //av_clip_c(i+x_EL, leftStartC, rightEndC);
         coeff    = up_sample_filter_chroma_x2_h[x&0x01];
         dst_tmp  = dst  + i;
-        src_tmp  = src + (x>>1) ;
+        src_tmp  = src + (x>>1);
         for( j = 0; j < block_h ; j++ ) {
             *dst_tmp   =  CroHor_FILTER_Block(src_tmp, coeff);
             src_tmp  +=  _srcstride;
@@ -1971,9 +1968,10 @@ static void FUNC(upsample_filter_block_luma_v_x2)( uint8_t *_dst, ptrdiff_t _dst
     pixel *dst_tmp, *dst    = (pixel *)_dst + y_EL * _dststride + x_EL;
     int16_t *   src_tmp;
 
-    for( j = 0; j < block_h; j++ )	{
-    	y        = av_clip_c(y_EL+j, topStartL, bottomEndL-1);
+    for( j = 0; j < block_h; j++ ) {
+    	y        = y_EL+j; //av_clip_c(y_EL+j, topStartL, bottomEndL-1);
         coeff    = up_sample_filter_luma_x2[(y-topStartL)&0x01];
+
         src_tmp  = _src  + (((y-topStartL)>>1)-y_BL)  * _srcstride;
         dst_tmp  =  dst;
         for( i = 0; i < block_w; i++ )	{
@@ -1998,9 +1996,9 @@ static void FUNC(upsample_filter_block_cr_v_x2)( uint8_t *_dst, ptrdiff_t dststr
     const int8_t* coeff;
     int16_t *   src_tmp;
     pixel *dst_tmp, *dst    = (pixel *)_dst;
-    for( j = 0; j < block_h; j++ )	{
-        y =   av_clip_c(y_EL+j, topStartC, bottomEndC-1);
-        refPos16 = ((( y - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12)-4;
+    for( j = 0; j < block_h; j++ ) {
+        y =   y_EL+j; //av_clip_c(y_EL+j, topStartC, bottomEndC-1);
+        refPos16 = ((( y - topStartC )* up_info->scaleYCr - up_info->addYCr) >> 12); //-4;
         coeff = up_sample_filter_chroma_x2_v[y&0x01];
         refPos   = (refPos16>>4) - y_BL;
         src_tmp  = _src  + refPos  * _srcstride;
@@ -2173,9 +2171,9 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     widthBL   = FrameBL->coded_width;
     heightBL  = FrameBL->coded_height <= heightEL ? FrameBL->coded_height:heightEL;  // min( FrameBL->height, heightEL);
 
-    for( i = 0; i < widthEL; i++ )	{
-        int x = av_clip_c(i, leftStartL, rightEndL);
-        refPos16 = (((x - leftStartL)*up_info->scaleXLum + up_info->addXLum) >> 12);
+    for( i = 0; i < widthEL; i++ ) {
+        int x = i; //av_clip_c(i, leftStartL, rightEndL);
+        refPos16 = ((x *up_info->scaleXLum - up_info->addXLum) >> 12);
         phase    = refPos16 & 15;
         refPos   = refPos16 >> 4;
         coeff = up_sample_filter_luma[phase];
@@ -2208,8 +2206,9 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                     }
     }
     for ( j = 0; j < heightEL; j++ ) {
-        int y = av_clip_c(j, topStartL, bottomEndL-1);
-        refPos16 = ((( y - topStartL )*up_info->scaleYLum + up_info->addYLum) >> 12);
+        int y = j; //av_clip_c(j, topStartL, bottomEndL-1);
+        refPos16 = (( y *up_info->scaleYLum - up_info->addYLum) >> 12);
+
         phase    = refPos16 & 15;
         refPos   = refPos16 >> 4;
         coeff = up_sample_filter_luma[phase];
@@ -2237,13 +2236,13 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                         buffer1[heightBL-refPos+k] = srcY1[(heightBL-refPos-1)*widthEL];
                     *dstY = av_clip_pixel( (LumVer_FILTER(buffer1, coeff) + iOffset) >> (nShift));
                     
-                    if( (i >= leftStartL) && (i <= rightEndL-2) )
+            //        if( (i >= leftStartL) && (i <= rightEndL-2) )
                         srcY1++;
                     dstY++;
                 } else
                     for ( i = 0; i < widthEL; i++ ) {
                         *dstY = av_clip_pixel( (LumVer_FILTER1(srcY1, coeff, widthEL) + iOffset) >> (nShift));
-                        if( (i >= leftStartL) && (i <= rightEndL-2) )
+                    //    if( (i >= leftStartL) && (i <= rightEndL-2) )
                             srcY1++;
                         dstY++;
                     }
@@ -2271,8 +2270,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     
     //========== horizontal upsampling ===========
     for( i = 0; i < widthEL; i++ )	{
-    	int x = av_clip_c(i, leftStartC, rightEndC - 1);
-        refPos16 = (((x - leftStartC)*up_info->scaleXCr + up_info->addXCr) >> 12);
+    	int x = i; //av_clip_c(i, leftStartC, rightEndC - 1);
+        refPos16 = (((x - leftStartC)*up_info->scaleXCr - up_info->addXCr) >> 12);
         phase    = refPos16 & 15;
         refPos   = refPos16 >> 4;
         coeff = up_sample_filter_chroma[phase];
@@ -2329,9 +2328,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     }
 
     for( j = 0; j < heightEL; j++ )	{
-        int y = av_clip_c(j, topStartC, bottomEndC - 1);
-        refPos16 = (((y - topStartC)*up_info->scaleYCr + up_info->addYCr) >> 12) - 4;
-     //   printf("j %d refPos16 %d phase %d refPos %d refPos %d \n", j, refPos16, phase, refPos, refPos - ((NTAPS_CHROMA>>1) - 1) );
+        int y = j; //av_clip_c(j, topStartC, bottomEndC - 1);
+        refPos16 = (((y - topStartC)*up_info->scaleYCr - up_info->addYCr) >> 12); // - 4;
         phase    = refPos16 & 15;
         refPos   = refPos16 >> 4;
          

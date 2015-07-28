@@ -447,13 +447,15 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         const int phaseXC = 0;
         const int phaseYC = 1;
         const int phaseAlignFlag = 0; // TO DO ((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->phase_align_flag;
-        const int   phaseX = phaseAlignFlag   << 1;
-        const int   phaseY = phaseAlignFlag   << 1;
+        const int phaseHorLuma = 0;
+        const int phaseVerLuma = 0;
+
         HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
         HEVCWindow scaled_ref_layer_window;
         if(bl_sps) {
-            heightBL = bl_sps->height - bl_sps->output_window.bottom_offset - bl_sps->output_window.top_offset;
-            widthBL  = bl_sps->width  - bl_sps->output_window.left_offset - bl_sps->output_window.right_offset;
+            HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
+            heightBL = bl_sps->height - base_layer_window.bottom_offset - base_layer_window.top_offset;
+            widthBL  = bl_sps->width  - base_layer_window.left_offset   - base_layer_window.right_offset;
         } else {
             av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
             ret = AVERROR(ENOMEM);
@@ -469,22 +471,34 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
         widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
 
+        int phaseHorChroma = 0;
+        int phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;
+
+#if 0
         s->sh.ScalingFactor[s->nuh_layer_id][0]   = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095 );
         s->sh.ScalingFactor[s->nuh_layer_id][1]   = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095 );
-        s->up_filter_inf.scaleXLum = ( ( widthBL << 16 )  + ( widthEL >> 1 ) ) / widthEL ;
-        s->up_filter_inf.scaleYLum = ( ( heightBL << 16 ) + ( heightEL >> 1 ) ) / heightEL;
+#else
+        s->sh.ScalingFactor[s->nuh_layer_id][0]   = ((widthBL  << 16) + (widthEL  >> 1)) / widthEL;
+        s->sh.ScalingFactor[s->nuh_layer_id][1]   = ((heightBL << 16) + (heightEL >> 1)) / heightEL;
 
-        s->up_filter_inf.addXLum   = (( phaseX * s->up_filter_inf.scaleXLum + 2 ) >> 2 )+ ( 1 << 11 );
-        s->up_filter_inf.addYLum   = (( phaseY * s->up_filter_inf.scaleYLum + 2 ) >> 2 )+ ( 1 << 11 );
+        s->sh.MvScalingFactor[s->nuh_layer_id][0] = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095 );;
+        s->sh.MvScalingFactor[s->nuh_layer_id][1] = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095 );;
+#endif
+
+        s->up_filter_inf.scaleXLum = s->sh.ScalingFactor[s->nuh_layer_id][0];
+        s->up_filter_inf.scaleYLum = s->sh.ScalingFactor[s->nuh_layer_id][1];
+
+        s->up_filter_inf.addXLum   = (( phaseHorLuma * s->up_filter_inf.scaleXLum + 8 ) >> 4 ) - ( 1 << 11 );
+        s->up_filter_inf.addYLum   = (( phaseVerLuma * s->up_filter_inf.scaleYLum + 8 ) >> 4 ) - ( 1 << 11 );
 
         widthBL  >>= 1;
         heightBL >>= 1;
 
-        s->up_filter_inf.addXCr   = ( ((phaseXC+phaseAlignFlag) * s->up_filter_inf.scaleXLum + 2) >> 2) + ( 1 << 11 );
-        s->up_filter_inf.addYCr   = ( ((phaseYC+phaseAlignFlag) * s->up_filter_inf.scaleYLum + 2) >> 2) + ( 1 << 11 );
+        s->up_filter_inf.addXCr   = ((phaseHorChroma * s->up_filter_inf.scaleXLum + 8) >> 4) - ( 1 << 11 );
+        s->up_filter_inf.addYCr   = ((phaseVerChroma * s->up_filter_inf.scaleYLum + 8) >> 4) - ( 1 << 11 );
+
         s->up_filter_inf.scaleXCr     = s->up_filter_inf.scaleXLum;
         s->up_filter_inf.scaleYCr     = s->up_filter_inf.scaleYLum;
-
         if(s->up_filter_inf.scaleXLum == 65536 && s->up_filter_inf.scaleYLum == 65536)
             s->up_filter_inf.idx = SNR;
         else

@@ -986,7 +986,7 @@ typedef struct SliceHeader {
 
 #ifdef SVC_EXTENSION
     int ScalingFactor[MAX_LAYERS][2];
- //   int ScalingPosition[MAX_LAYERS][2];
+    int MvScalingFactor[MAX_LAYERS][2];
     uint8_t m_bPocResetFlag;
     uint8_t m_bCrossLayerBLAFlag; 
 #endif

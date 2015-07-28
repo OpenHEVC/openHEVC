@@ -202,10 +202,7 @@ static void video_decode_example(const char *filename)
 #endif
 
     while(!stop) {
-        if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0)
-            stop_dec = 1;
-        else if (stop_dec > 0 && nbFrame == 0)
-            stop_dec++;
+        if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
 #if FRAME_CONCEALMENT
         // Get the corresponding frame in the trace
         if(is_received)
@@ -216,7 +213,7 @@ static void video_decode_example(const char *filename)
         else
             is_received = 0;
 #endif
-        if (packet.stream_index == video_stream_idx || stop_dec > 0) {
+        if (packet.stream_index == video_stream_idx || stop_dec == 1) {
 #if FRAME_CONCEALMENT
             if(is_received)
                 got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
@@ -277,13 +274,8 @@ static void video_decode_example(const char *filename)
                 if (nbFrame == num_frames)
                     stop = 1;
             } else {
-                if (stop_dec > 0 && nbFrame)
+                if (stop_dec==1 && nbFrame)
                 stop = 1;
-                if (stop_dec >= nb_pthreads && nbFrame == 0) {
-                    av_free_packet(&packet);
-                    fprintf(stderr, "Error when reading first frame\n");
-                    exit(1);
-                }
             }
         }
         av_free_packet(&packet);
