@@ -650,16 +650,16 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     memcpy(frame->rpl_tab_buf->data, conc_frame->rpl_tab_buf->data, frame->rpl_tab_buf->size);
 #endif
 #else
-    if (!s->sps->pixel_shift) {
+    if (!s->sps->pixel_shift[CHANNEL_TYPE_LUMA]) {
         for (i = 0; frame->frame->buf[i]; i++)
-            memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
+            memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth[CHANNEL_TYPE_LUMA] - 1),
                    frame->frame->buf[i]->size);
     } else {
         for (i = 0; frame->frame->data[i]; i++)
             for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
                 for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
                     AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
-                            1 << (s->sps->bit_depth - 1));
+                            1 << (s->sps->bit_depth[CHANNEL_TYPE_LUMA] - 1));
                 }
     }
 #endif

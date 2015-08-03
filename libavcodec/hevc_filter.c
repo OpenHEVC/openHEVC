@@ -197,7 +197,7 @@ static void copy_CTB_to_hv(HEVCContext *s, const uint8_t *src,
                            int stride_src, int x, int y, int width, int height,
                            int c_idx, int x_ctb, int y_ctb)
 {
-    int sh = s->sps->pixel_shift;
+    int sh = s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
     int w = s->sps->width >> s->sps->hshift[c_idx];
     int h = s->sps->height >> s->sps->vshift[c_idx];
 
@@ -229,13 +229,13 @@ static void restore_tqb_pixels(HEVCContext *s,
         int y_min        = ((y0         ) >> s->sps->log2_min_pu_size);
         int x_max        = ((x0 + width ) >> s->sps->log2_min_pu_size);
         int y_max        = ((y0 + height) >> s->sps->log2_min_pu_size);
-        int len          = (min_pu_size >> hshift) << s->sps->pixel_shift;
+        int len          = (min_pu_size >> hshift) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
         for (y = y_min; y < y_max; y++) {
             for (x = x_min; x < x_max; x++) {
                 if (s->is_pcm[y * s->sps->min_pu_width + x]) {
                     int n;
-                    uint8_t *src = src1 + (((y << s->sps->log2_min_pu_size) - y0) >> vshift) * stride_src + ((((x << s->sps->log2_min_pu_size) - x0) >> hshift) << s->sps->pixel_shift);
-                    const uint8_t *dst = dst1 + (((y << s->sps->log2_min_pu_size) - y0) >> vshift) * stride_dst + ((((x << s->sps->log2_min_pu_size) - x0) >> hshift) << s->sps->pixel_shift);
+                    uint8_t *src = src1 + (((y << s->sps->log2_min_pu_size) - y0) >> vshift) * stride_src + ((((x << s->sps->log2_min_pu_size) - x0) >> hshift) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]);
+                    const uint8_t *dst = dst1 + (((y << s->sps->log2_min_pu_size) - y0) >> vshift) * stride_dst + ((((x << s->sps->log2_min_pu_size) - x0) >> hshift) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]);
                     for (n = 0; n < (min_pu_size >> vshift); n++) {
                         memcpy(src, dst, len);
                         src += stride_src;
@@ -318,9 +318,9 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         int ctb_size_v = (1 << (s->sps->log2_ctb_size)) >> s->sps->vshift[c_idx];
         int width    = FFMIN(ctb_size_h, (s->sps->width  >> s->sps->hshift[c_idx]) - x0);
         int height   = FFMIN(ctb_size_v, (s->sps->height >> s->sps->vshift[c_idx]) - y0);
-        uint8_t *src = &s->frame->data[c_idx][y0 * stride_src + (x0 << s->sps->pixel_shift)];
+        uint8_t *src = &s->frame->data[c_idx][y0 * stride_src + (x0 << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA])];
 #if defined(USE_SAO_SMALL_BUFFER)
-        int stride_dst = ((1 << (FFMAX(4, s->sps->log2_ctb_size))) + 16) << s->sps->pixel_shift;
+        int stride_dst = ((1 << (FFMAX(4, s->sps->log2_ctb_size))) + 16) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
         uint8_t *dst = lc->sao_pixel_buffer + (1 * stride_dst) + 16;
 #else
         int stride_dst = s->sao_frame->linesize[c_idx];
@@ -329,7 +329,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 
         switch (sao->type_idx[c_idx]) {
         case SAO_BAND:
-            copy_CTB(dst, src, width << s->sps->pixel_shift, height, stride_dst, stride_src);
+            copy_CTB(dst, src, width << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA], height, stride_dst, stride_src);
 #if defined(USE_SAO_SMALL_BUFFER)
             copy_CTB_to_hv(s, src, stride_src, x0, y0, width, height, c_idx,
                            x_ctb, y_ctb);
@@ -352,7 +352,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
             int top_edge = edges[1];
             int right_edge = edges[2];
             int bottom_edge = edges[3];
-            int sh = s->sps->pixel_shift;
+            int sh = s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
             int left_pixels, right_pixels;
 
             if (!top_edge) {
@@ -561,7 +561,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 beta    = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
                 tc[0]   = bs0 ? TC_CALC(qp, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp, bs1) : 0;
-                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift)];
+                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift[CHANNEL_TYPE_LUMA])];
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x - 1, y);
                     no_p[1] = get_pcm(s, x - 1, y + 4);
@@ -607,8 +607,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     c_tc[1]  = (bs1 == 2) ? chroma_tc(s, qp1, 1, tc_offset) : 0;
                     c_tc2[0] = (bs0 == 2) ? chroma_tc(s, qp0, 2, tc_offset) : 0;
                     c_tc2[1] = (bs1 == 2) ? chroma_tc(s, qp1, 2, tc_offset) : 0;
-                    src      = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
-                    src2     = &s->frame->data[2][(y >> s->sps->vshift[2]) * s->frame->linesize[2] + ((x >> s->sps->hshift[2]) << s->sps->pixel_shift)];
+                    src      = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift[CHANNEL_TYPE_CHROMA])];
+                    src2     = &s->frame->data[2][(y >> s->sps->vshift[2]) * s->frame->linesize[2] + ((x >> s->sps->hshift[2]) << s->sps->pixel_shift[CHANNEL_TYPE_CHROMA])];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x - 1, y);
                         no_p[1] = get_pcm(s, x - 1, y + (4 * v));
@@ -660,7 +660,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 beta    = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
                 tc[0]   = bs0 ? TC_CALC(qp, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp, bs1) : 0;
-                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift)];
+                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift[CHANNEL_TYPE_LUMA])];
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x, y - 1);
                     no_p[1] = get_pcm(s, x + 4, y - 1);
@@ -708,8 +708,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     c_tc[1]   = bs1 == 2 ? chroma_tc(s, qp1, 1, cur_tc_offset) : 0;
                     c_tc2[0]  = bs0 == 2 ? chroma_tc(s, qp0, 2, tc_offset)     : 0;
                     c_tc2[1]  = bs1 == 2 ? chroma_tc(s, qp1, 2, cur_tc_offset) : 0;
-                    src       = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
-                    src2      = &s->frame->data[2][(y >> s->sps->vshift[1]) * s->frame->linesize[2] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
+                    src       = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift[CHANNEL_TYPE_CHROMA])];
+                    src2      = &s->frame->data[2][(y >> s->sps->vshift[1]) * s->frame->linesize[2] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift[CHANNEL_TYPE_CHROMA])];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x,           y - 1);
                         no_p[1] = get_pcm(s, x + (4 * h), y - 1);
@@ -1328,14 +1328,49 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
 }
 #endif
 
-static void copy_block(pixel *src, pixel * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW ) {
-    int i;
+static int getBitDepth(HEVCContext *s, enum ChannelType channel)
+{
+  const HEVCVPS *vps = s->vps;
+  const HEVCSPS *sps = s->sps;
+  int retVal, layerId = s->nuh_layer_id;
 
+  if ( !layerId || sps->v1_compatible) {
+    if( !layerId && vps->vps_nonHEVCBaseLayerFlag)
+      retVal = vps->Hevc_VPS_Ext.rep_format[layerId].bit_depth_vps[channel];
+    else
+      retVal = sps->bit_depth[channel];
+  }
+  else {
+    retVal = sps->update_rep_format_flag ? sps->update_rep_format_index : vps->Hevc_VPS_Ext.vps_rep_format_idx[vps->Hevc_VPS_Ext.layer_id_in_vps[layerId]];
+    retVal = vps->Hevc_VPS_Ext.rep_format[retVal].bit_depth_vps[channel];
+  }
+  return retVal;
+}
+
+
+static void copy_block(HEVCContext *s, pixel *src, pixel * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW ) {
+    int i;
+#if 1
     for (i = 0; i < ePbH ; i++) {
         memcpy(dst, src, ePbW * sizeof(pixel));
         src += bl_stride;
         dst += el_stride;
     }
+#else
+    int j;
+    int shift = 0; // TODO current bit depth - reference bit depth
+    if(s->pps->colour_mapping_enabled_flag) {
+       shift =s->sh.m_nCGSOutputBitDepthY[]
+    uint8_t ;
+    uint8_t m_nCGSOutputBitDepthC;
+    }
+    for (i = 0; i < ePbH ; i++) {
+        for (j = 0; j < ePbW ; j++)
+            dst[j] = src[j];
+        src += bl_stride;
+        dst += el_stride;
+    }
+#endif
 }
 
 static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
@@ -1351,7 +1386,7 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
     int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
 
     if (s->up_filter_inf.idx == SNR) { /* x1 quality (SNR) scalability */
-        copy_block (s->BL_frame->frame->data[0] + y0 * bl_stride + x0,
+        copy_block (s, s->BL_frame->frame->data[0] + y0 * bl_stride + x0,
                     ref0->frame->data[0] + y0 * el_stride + x0,
                     bl_stride, el_stride, ePbH, ePbW );
     } else { /* spatial scalability */
@@ -1423,7 +1458,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
 
     if (s->up_filter_inf.idx == SNR) {
         for (cr = 1; cr <= 2; cr++)
-            copy_block(s->BL_frame->frame->data[cr] + y0 * bl_stride + x0,
+            copy_block(s, s->BL_frame->frame->data[cr] + y0 * bl_stride + x0,
                        ref0->frame->data[cr] + y0 * el_stride + x0,
                        bl_stride, el_stride, ePbH, ePbW );
     } else {
@@ -1481,7 +1516,8 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
     int pic_height_in_min_pu = s->sps->height>>s->sps->log2_min_pu_size;
     int pic_width_in_min_puBL = s->BL_frame->frame->coded_width >> s->sps->log2_min_pu_size;
     int ctb_size = 1 << s->sps->log2_ctb_size;
-    int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
+    int min_pu_size = 1 << s->sps->log2_min_pu_size;
+    int nb_list = s->sh.slice_type==B_SLICE ? 2:1, i, j;
     HEVCFrame *refBL = s->BL_frame;
     HEVCFrame *refEL = s->inter_layer_ref;
 
@@ -1500,7 +1536,6 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                     if (s->up_filter_inf.idx == SNR) {
                         memcpy(&refEL->tab_mvf[pre_unit], &refBL->tab_mvf[Ref_pre_unit], sizeof(MvField));
                     } else {
-
                         for( list=0; list < nb_list; list++) {
                             refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->sh.MvScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->sh.MvScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
                             refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->sh.MvScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->sh.MvScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
@@ -1515,18 +1550,35 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                     memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
             } else
                 memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
+            for(i=0; i < 16; i+=min_pu_size) {
+                for(j=0; j < 16; j+=min_pu_size) {
+                    if(!i && !j)
+                        continue;
+                    if(!i && ((yEL+j+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
+                        pre_unit_col = (((yEL+j+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
+                        memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                        continue;
+                    }
 
-            if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu && ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
-                pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
-                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-            }
-            if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
-                pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
-                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-            }
-            if( ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
-                pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
-                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                    if(!j && ((xEL+i+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
+                        pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+i+1)>>s->sps->log2_min_pu_size);
+                        memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                        continue;
+                    }
+
+                    if(((xEL+i+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu && ((yEL+j+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
+                        pre_unit_col = (((yEL+j+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+i+1)>>s->sps->log2_min_pu_size);
+                        memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                    }
+                }/*
+                if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
+                    pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
+                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                }
+                if( ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
+                    pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
+                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                }*/
             }
         }
     }

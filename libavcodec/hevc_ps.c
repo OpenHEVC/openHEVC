@@ -496,10 +496,10 @@ static void parse_rep_format(RepFormat *rep_format, GetBitContext *gb) {
             rep_format->separate_colour_plane_vps_flag = get_bits1(gb);
             print_cabac("separate_colour_plane_vps_flag", rep_format->separate_colour_plane_vps_flag);
         }
-        rep_format->bit_depth_vps_luma =   get_bits(gb, 4) + 8;
-        print_cabac("bit_depth_vps_luma_minus8", rep_format->bit_depth_vps_luma - 8);
-        rep_format->bit_depth_vps_chroma = get_bits(gb, 4) + 8;
-        print_cabac("bit_depth_vps_chroma_minus8", rep_format->bit_depth_vps_chroma - 8);
+        rep_format->bit_depth_vps[CHANNEL_TYPE_LUMA] =   get_bits(gb, 4) + 8;
+        print_cabac("bit_depth_vps_luma_minus8", rep_format->bit_depth_vps[CHANNEL_TYPE_LUMA] - 8);
+        rep_format->bit_depth_vps[CHANNEL_TYPE_CHROMA] = get_bits(gb, 4) + 8;
+        print_cabac("bit_depth_vps_chroma_minus8", rep_format->bit_depth_vps[CHANNEL_TYPE_CHROMA] - 8);
     }
     rep_format->conformance_window_vps_flag = get_bits1(gb);
     print_cabac("conformance_window_vps_flag", rep_format->conformance_window_vps_flag);
@@ -1106,6 +1106,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
     vps->vps_base_layer_available_flag = get_bits(gb, 1);
     print_cabac("vps_base_layer_available_flag", vps->vps_base_layer_available_flag);
 
+    vps->vps_nonHEVCBaseLayerFlag = (vps->vps_base_layer_available_flag && !vps->vps_base_layer_internal_flag);
 
     vps->vps_max_layers               = get_bits(gb, 6) + 1;
     print_cabac("vps_max_layers_minus1", vps->vps_max_layers-1);
@@ -1540,17 +1541,17 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     int ret    = 0;
     int sps_id = 0;
     int log2_diff_max_min_transform_block_size;
-    int bit_depth_chroma, start, vui_present, sublayer_ordering_info;
+    int start, vui_present, sublayer_ordering_info;
     int i;
     print_cabac(" \n --- parse sps --- \n ", s->nuh_layer_id);
     HEVCSPS *sps;
     HEVCVPS *vps;
     AVBufferRef *sps_buf = av_buffer_allocz(sizeof(*sps));
-    uint8_t v1_compatible = 1;
 
     if ( !sps_buf )
         return AVERROR(ENOMEM);
     sps = (HEVCSPS*)sps_buf->data;
+    sps->v1_compatible = 1;
     sps->chroma_format_idc = 1; //FIXME shouldn't it be passing from BL
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding SPS\n");
 
@@ -1583,13 +1584,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     } else {
         uint8_t sps_ext_or_max_sub_layers = get_bits(gb, 3) + 1;
         print_cabac("sps_ext_or_max_sub_layers_minus1", sps_ext_or_max_sub_layers - 1);
-        v1_compatible = sps_ext_or_max_sub_layers - 1; 
+        sps->v1_compatible = sps_ext_or_max_sub_layers - 1;
         if ( (sps_ext_or_max_sub_layers - 1) == 7 )
             sps->max_sub_layers = vps->vps_max_sub_layers;
          else
             sps->max_sub_layers = sps_ext_or_max_sub_layers;
     }
-    uint8_t bMultiLayerExtSpsFlag = ( s->nuh_layer_id != 0 && v1_compatible == 7 );
+    uint8_t bMultiLayerExtSpsFlag = ( s->nuh_layer_id != 0 && sps->v1_compatible == 7 );
     if(!bMultiLayerExtSpsFlag) {
         sps->m_bTemporalIdNestingFlag = get_bits1(gb);
         print_cabac("sps_temporal_id_nesting_flag", sps->m_bTemporalIdNestingFlag);
@@ -1602,6 +1603,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps_id = get_ue_golomb_long(gb);
+    printf("Layer Id %d %d \n",s->nuh_layer_id, sps_id);
     print_cabac("sps_seq_parameter_set_id", sps_id);
     if (sps_id >= MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", sps_id);
@@ -1671,21 +1673,21 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
             }
             sps->output_window = sps->pic_conf_win;
         }
-        sps->bit_depth   = get_ue_golomb_long(gb) + 8;
-        print_cabac("bit_depth_luma_minus8", sps->bit_depth - 8);
-        bit_depth_chroma = get_ue_golomb_long(gb) + 8;
-        print_cabac("bit_depth_chroma_minus8", bit_depth_chroma - 8);
-        if (sps->chroma_format_idc && bit_depth_chroma != sps->bit_depth) {
+        sps->bit_depth[CHANNEL_TYPE_LUMA]   = get_ue_golomb_long(gb) + 8;
+        print_cabac("bit_depth_luma_minus8", sps->bit_depth[CHANNEL_TYPE_LUMA] - 8);
+        sps->bit_depth[CHANNEL_TYPE_CHROMA] = get_ue_golomb_long(gb) + 8;
+        print_cabac("bit_depth_chroma_minus8", sps->bit_depth[CHANNEL_TYPE_CHROMA] - 8);
+
+        if (sps->chroma_format_idc && sps->bit_depth[CHANNEL_TYPE_LUMA] != sps->bit_depth[CHANNEL_TYPE_CHROMA]) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Luma bit depth (%d) is different from chroma bit depth (%d), "
                    "this is unsupported.\n",
-                   sps->bit_depth, bit_depth_chroma);
+                   sps->bit_depth[CHANNEL_TYPE_LUMA], sps->bit_depth[CHANNEL_TYPE_CHROMA]);
             //ret = AVERROR_INVALIDDATA;
             //goto err;
         }
 
-
-        switch (sps->bit_depth) {
+        switch (sps->bit_depth[CHANNEL_TYPE_CHROMA]) {
         case 8:
             if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY8;
             if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -1732,18 +1734,18 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         }
         sps->width  = Rep.pic_width_vps_in_luma_samples;
         sps->height = Rep.pic_height_vps_in_luma_samples;
-        sps->bit_depth   = Rep.bit_depth_vps_luma;
+        sps->bit_depth[CHANNEL_TYPE_LUMA]   = Rep.bit_depth_vps[CHANNEL_TYPE_LUMA];
         sps->chroma_format_idc = Rep.chroma_format_vps_idc;
         //sps->bit_depth_chroma = Rep.m_bitDepthVpsChroma;
 
         if(Rep.chroma_format_vps_idc) {
-            switch (Rep.bit_depth_vps_luma) {
+            switch (Rep.bit_depth_vps[CHANNEL_TYPE_LUMA]) {
             case 8:  sps->pix_fmt = AV_PIX_FMT_YUV420P;   break;
             case 9:  sps->pix_fmt = AV_PIX_FMT_YUV420P9;  break;
             case 10: sps->pix_fmt = AV_PIX_FMT_YUV420P10; break;
             default:
                 av_log(s->avctx, AV_LOG_ERROR, "-- Unsupported bit depth: %d\n",
-                        sps->bit_depth);
+                		sps->bit_depth[CHANNEL_TYPE_LUMA]);
                 ret = AVERROR_PATCHWELCOME;
                 goto err;
             }
@@ -1762,7 +1764,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->hshift[0] = sps->vshift[0] = 0;
     sps->hshift[2] = sps->hshift[1] = desc->log2_chroma_w;
     sps->vshift[2] = sps->vshift[1] = desc->log2_chroma_h;
-    sps->pixel_shift = sps->bit_depth > 8;
+    sps->pixel_shift[CHANNEL_TYPE_LUMA] = sps->bit_depth[CHANNEL_TYPE_LUMA] > 8;
+    sps->pixel_shift[CHANNEL_TYPE_CHROMA] = sps->bit_depth[CHANNEL_TYPE_CHROMA] > 8;
     sps->log2_max_poc_lsb = get_ue_golomb_long(gb) + 4;
     print_cabac("log2_max_pic_order_cnt_lsb_minus4", sps->log2_max_poc_lsb-4);
     if (sps->log2_max_poc_lsb > 16) {
@@ -1876,10 +1879,10 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->pcm.log2_min_pcm_cb_size = get_ue_golomb_long(gb) + 3;
         sps->pcm.log2_max_pcm_cb_size = sps->pcm.log2_min_pcm_cb_size +
                                         get_ue_golomb_long(gb);
-        if (sps->pcm.bit_depth > sps->bit_depth) {
+        if (sps->pcm.bit_depth > sps->bit_depth[CHANNEL_TYPE_LUMA]) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "PCM bit depth (%d) is greater than normal bit depth (%d)\n",
-                   sps->pcm.bit_depth, sps->bit_depth);
+                   sps->pcm.bit_depth, sps->bit_depth[CHANNEL_TYPE_LUMA]);
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
@@ -1961,9 +1964,9 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->output_window.top_offset    += sps->vui.def_disp_win.top_offset;
         sps->output_window.bottom_offset += sps->vui.def_disp_win.bottom_offset;
     }
-    if (sps->output_window.left_offset & (0x1F >> (sps->pixel_shift)) &&
+    if (sps->output_window.left_offset & (0x1F >> (sps->pixel_shift[CHANNEL_TYPE_LUMA])) &&
         !(s->avctx->flags & CODEC_FLAG_UNALIGNED)) {
-        sps->output_window.left_offset &= ~(0x1F >> (sps->pixel_shift));
+        sps->output_window.left_offset &= ~(0x1F >> (sps->pixel_shift[CHANNEL_TYPE_LUMA]));
         av_log(s->avctx, AV_LOG_WARNING, "Reducing left output window to %d "
                "chroma samples to preserve alignment.\n",
                sps->output_window.left_offset);
@@ -2005,7 +2008,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->min_pu_height = sps->height >> sps->log2_min_pu_size;
     sps->tb_mask       = (1 << (sps->log2_ctb_size - sps->log2_min_tb_size) ) - 1;
 
-    sps->qp_bd_offset = 6 * (sps->bit_depth - 8);
+    sps->qp_bd_offset = 6 * (sps->bit_depth[CHANNEL_TYPE_LUMA] - 8);
 
     if (sps->width  & ((1 << sps->log2_min_cb_size) - 1) ||
         sps->height & ((1 << sps->log2_min_cb_size) - 1)) {
@@ -2230,12 +2233,12 @@ static int pps_multilayer_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps)
             print_cabac("phase_ver_chroma_plus8", pps->phase_ver_chroma[i] + 8);
         }
     }
-    int colour_mapping_enabled_flag = get_bits1(gb);
-    print_cabac("colour_mapping_enabled_flag", colour_mapping_enabled_flag);
-    if (colour_mapping_enabled_flag) {
+    pps->colour_mapping_enabled_flag = get_bits1(gb);
+    print_cabac("colour_mapping_enabled_flag", pps->colour_mapping_enabled_flag);
+    if (pps->colour_mapping_enabled_flag) {
         xParse3DAsymLUT(gb, &pps->pc3DAsymLUT);
-        pps->m_nCGSOutputBitDepthY  =  pps->pc3DAsymLUT.cm_output_luma_bit_depth;
-        pps->m_nCGSOutputBitDepthC =   pps->pc3DAsymLUT.cm_output_chroma_bit_depth;
+        pps->m_nCGSOutputBitDepth[0]  =  pps->pc3DAsymLUT.cm_output_luma_bit_depth;
+        pps->m_nCGSOutputBitDepth[1] =   pps->pc3DAsymLUT.cm_output_chroma_bit_depth;
     }
     return 0;
 }

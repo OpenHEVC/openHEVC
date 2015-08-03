@@ -2157,6 +2157,7 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     pixel buffer[8];
 
     const int nShift = 20-8;
+
     int iOffset = 1 << (nShift - 1);
     short buffer1[8];
 

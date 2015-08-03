@@ -313,6 +313,12 @@ enum {
     SNR,
 };
 
+enum ChannelType {
+    CHANNEL_TYPE_LUMA    = 0,
+    CHANNEL_TYPE_CHROMA  = 1,
+    MAX_NUM_CHANNEL_TYPE = 2
+};
+
 typedef struct UpsamplInf {
     int addXLum;
     int addYLum;
@@ -478,8 +484,8 @@ typedef struct RepFormat
     int16_t   pic_height_vps_in_luma_samples;
     uint8_t   chroma_and_bit_depth_vps_present_flag;
     uint8_t   separate_colour_plane_vps_flag; 
-    uint8_t   bit_depth_vps_luma;               // coded as minus8
-    uint8_t   bit_depth_vps_chroma;             // coded as minus8
+    uint8_t   bit_depth_vps[MAX_NUM_CHANNEL_TYPE]; // coded as minus8
+
 
     uint8_t conformance_window_vps_flag;
     int     conf_win_vps_left_offset;
@@ -652,6 +658,7 @@ typedef struct HEVCVPSExt {
 typedef struct HEVCVPS {
     uint8_t     vps_base_layer_internal_flag;
     uint8_t     vps_base_layer_available_flag;
+    uint8_t     vps_nonHEVCBaseLayerFlag;
 
     int         vps_max_layers;
     int         vps_max_sub_layers;
@@ -702,8 +709,8 @@ typedef struct HEVCSPS {
 
     HEVCWindow pic_conf_win;
 
-    int bit_depth;
-    int pixel_shift;
+    int bit_depth[MAX_NUM_CHANNEL_TYPE];
+    int pixel_shift[MAX_NUM_CHANNEL_TYPE];
     enum AVPixelFormat pix_fmt;
     uint8_t update_rep_format_flag;
     uint8_t update_rep_format_index;
@@ -788,6 +795,7 @@ typedef struct HEVCSPS {
     HRDParameter HrdParam;
     HEVCWindow scaled_ref_layer_window[MAX_LAYERS];
     uint8_t    set_mfm_enabled_flag;
+    uint8_t    v1_compatible;
 } HEVCSPS;
 
 
@@ -904,8 +912,8 @@ typedef struct HEVCPPS {
     TCom3DAsymLUT pc3DAsymLUT;
     HEVCWindow scaled_ref_window[16];
     HEVCWindow ref_window[16];
-    uint8_t m_nCGSOutputBitDepthY;
-    uint8_t m_nCGSOutputBitDepthC;
+    uint8_t colour_mapping_enabled_flag;
+    uint8_t m_nCGSOutputBitDepth[MAX_NUM_CHANNEL_TYPE];
 } HEVCPPS;
 
 typedef struct SliceHeader {
