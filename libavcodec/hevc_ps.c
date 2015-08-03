@@ -1735,8 +1735,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->width  = Rep.pic_width_vps_in_luma_samples;
         sps->height = Rep.pic_height_vps_in_luma_samples;
         sps->bit_depth[CHANNEL_TYPE_LUMA]   = Rep.bit_depth_vps[CHANNEL_TYPE_LUMA];
+        sps->bit_depth[CHANNEL_TYPE_CHROMA]   = Rep.bit_depth_vps[CHANNEL_TYPE_CHROMA];
         sps->chroma_format_idc = Rep.chroma_format_vps_idc;
-        //sps->bit_depth_chroma = Rep.m_bitDepthVpsChroma;
 
         if(Rep.chroma_format_vps_idc) {
             switch (Rep.bit_depth_vps[CHANNEL_TYPE_LUMA]) {
