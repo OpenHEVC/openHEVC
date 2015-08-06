@@ -339,7 +339,8 @@ int i = 0;
     }
 
 #ifdef SVC_EXTENSION
-#define HEVC_DSP_UP(depth)                                                 \
+#define HEVC_DSP_UP(depth)                                                             \
+    hevcdsp->colorMapping  = FUNC(colorMapping, depth);                                \
     hevcdsp->upsample_base_layer_frame       = FUNC(upsample_base_layer_frame, depth); \
     hevcdsp->upsample_filter_block_luma_h[0] = FUNC(upsample_filter_block_luma_h_all, depth); \
     hevcdsp->upsample_filter_block_luma_h[1] = FUNC(upsample_filter_block_luma_h_x2, depth); \

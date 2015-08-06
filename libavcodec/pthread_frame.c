@@ -920,7 +920,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         err = p->result;
 
         pthread_mutex_unlock(&p->progress_mutex);
-
     }
     if (!THREAD_SAFE_CALLBACKS(avctx) && !avctx->codec->update_thread_context)
         ff_thread_finish_setup(avctx);

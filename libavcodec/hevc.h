@@ -88,7 +88,7 @@
 #define QPEL_EXTRA_BEFORE 3
 #define QPEL_EXTRA_AFTER  4
 #define QPEL_EXTRA        7
-#define ACTIVE_PU_UPSAMPLING     1
+#define ACTIVE_PU_UPSAMPLING     0
 #define ACTIVE_BOTH_FRAME_AND_PU 0
 
 #define EDGE_EMU_BUFFER_STRIDE 80
@@ -140,7 +140,7 @@ enum NALUnitType {
     NAL_SEI_PREFIX = 39,
     NAL_SEI_SUFFIX = 40,
 };
-#if 0
+#if 1
 #define print_cabac(string, val) \
     printf(" %s : %d \n", string, val);
 #else
@@ -329,6 +329,8 @@ typedef struct UpsamplInf {
     int scaleXCr;
     int scaleYCr;
     int idx;
+    int shift[MAX_NUM_CHANNEL_TYPE];
+    int shift_up[MAX_NUM_CHANNEL_TYPE];
 } UpsamplInf;
 
 typedef struct ShortTermRPS {
@@ -798,23 +800,46 @@ typedef struct HEVCSPS {
     uint8_t    v1_compatible;
 } HEVCSPS;
 
+typedef struct SYUVP {
+    uint16_t Y;
+    uint16_t U;
+    uint16_t V;
+} SYUVP;
+
+typedef struct SCuboid {
+  SYUVP P[4];
+} SCuboid;
 
 typedef struct TCom3DAsymLUT {
-    uint16_t    num_cm_ref_layers_minus1;
-    uint8_t     uiRefLayerId[16];
-    uint8_t     cm_octant_depth;
-    uint8_t     cm_y_part_num_log2;
-    uint16_t    cm_input_luma_bit_depth;
-    uint16_t    cm_input_chroma_bit_depth;
-    uint16_t    cm_output_luma_bit_depth;
-    uint16_t    cm_output_chroma_bit_depth;
-    uint8_t     cm_res_quant_bit;
-    uint8_t     cm_flc_bits;
-    uint16_t    cm_adapt_threshold_u_delta;
-    uint16_t    cm_adapt_threshold_v_delta;
-    uint16_t    nAdaptCThresholdU;
-    uint16_t    nAdaptCThresholdV;
+    uint16_t  num_cm_ref_layers_minus1;
+    uint8_t   uiRefLayerId[16];
+    uint8_t   cm_octant_depth;              // m_nMaxOctantDepth = nMaxOctantDepth;
+    uint8_t   cm_y_part_num_log2;           //m_nMaxYPartNumLog2 = nMaxYPartNumLog2;
+    uint16_t  cm_input_luma_bit_depth;     // m_nInputBitDepthY = nInputBitDepth;
+    uint16_t  cm_input_chroma_bit_depth;   // m_nInputBitDepthC = nInputBitDepthC;
+    uint16_t  cm_output_luma_bit_depth;
+    uint16_t  cm_output_chroma_bit_depth;  // m_nOutputBitDepthC = nOutputBitDepthC;
+    uint8_t   cm_res_quant_bit;
+    uint8_t   cm_flc_bits;
+    int  cm_adapt_threshold_u_delta;
+    int  cm_adapt_threshold_v_delta;
+    int  nAdaptCThresholdU;
+    int  nAdaptCThresholdV;
+
+    int16_t  delta_bit_depth;   //    m_nDeltaBitDepthC = m_nOutputBitDepthC - m_nInputBitDepthC;
+    int16_t  delta_bit_depth_C; //    m_nDeltaBitDepth = m_nOutputBitDepthY - m_nInputBitDepthY;
+    uint16_t  max_part_num_log2; //3 * m_nMaxOctantDepth + m_nMaxYPartNumLog2;
+
+    int16_t YShift2Idx;
+    int16_t UShift2Idx;
+    int16_t VShift2Idx;
+    int16_t nMappingShift;
+    int16_t nMappingOffset;
+    SCuboid ***S_Cuboid;
+
 } TCom3DAsymLUT;
+
+
 
 typedef struct HEVCPPS {
     unsigned int sps_id; ///< seq_parameter_set_id
@@ -995,6 +1020,8 @@ typedef struct SliceHeader {
 #ifdef SVC_EXTENSION
     int ScalingFactor[MAX_LAYERS][2];
     int MvScalingFactor[MAX_LAYERS][2];
+    int Bit_Depth[MAX_LAYERS][MAX_NUM_CHANNEL_TYPE];
+
     uint8_t m_bPocResetFlag;
     uint8_t m_bCrossLayerBLAFlag; 
 #endif
@@ -1292,7 +1319,7 @@ typedef struct HEVCContext {
     uint8_t is_nalff;       ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
 
-#ifdef SVC_EXTENSION
+
     AVFrame     *EL_frame;
     short       *buffer_frame[3];
     UpsamplInf  up_filter_inf;
@@ -1303,7 +1330,8 @@ typedef struct HEVCContext {
     uint8_t         el_decoder_el_exist; // wheither the el exist or not at the el decoder
     uint8_t         el_decoder_bl_exist;
     uint8_t     *is_upsampled;
-#endif
+
+    AVFrame *Ref_color_mapped_frame;
     int temporal_layer_id;
     int decoder_id;
     int apply_defdispwin;

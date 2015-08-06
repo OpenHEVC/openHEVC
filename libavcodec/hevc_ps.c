@@ -1735,7 +1735,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->width  = Rep.pic_width_vps_in_luma_samples;
         sps->height = Rep.pic_height_vps_in_luma_samples;
         sps->bit_depth[CHANNEL_TYPE_LUMA]   = Rep.bit_depth_vps[CHANNEL_TYPE_LUMA];
-        sps->bit_depth[CHANNEL_TYPE_CHROMA]   = Rep.bit_depth_vps[CHANNEL_TYPE_CHROMA];
+        sps->bit_depth[CHANNEL_TYPE_CHROMA] = Rep.bit_depth_vps[CHANNEL_TYPE_CHROMA];
         sps->chroma_format_idc = Rep.chroma_format_vps_idc;
 
         if(Rep.chroma_format_vps_idc) {
@@ -2128,8 +2128,115 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
     return 0;
 }
 
+SYUVP  GetCuboidVertexPredAll(TCom3DAsymLUT * pc3DAsymLUT, int yIdx , int uIdx , int vIdx , int nVertexIdx){
+  SCuboid***  pCuboid = pc3DAsymLUT->S_Cuboid;
+
+  SYUVP sPred;
+  if( yIdx == 0 ) {
+    sPred.Y = nVertexIdx == 0 ? 1024 : 0;
+    sPred.U = nVertexIdx == 1 ? 1024 : 0;
+    sPred.V = nVertexIdx == 2 ? 1024 : 0;
+  }
+  else
+    sPred = pCuboid[yIdx-1][uIdx][vIdx].P[nVertexIdx];
+  return sPred;
+}
+
+static void setCuboidVertexResTree( TCom3DAsymLUT * pc3DAsymLUT, int yIdx , int uIdx , int vIdx , int nVertexIdx , int deltaY , int deltaU , int deltaV ) {
+/*    SYUVP *sYuvp = &pc3DAsymLUT->S_Cuboid[yIdx][uIdx][vIdx].P[nVertexIdx], sPred;
+    sPred  = GetCuboidVertexPredAll( pc3DAsymLUT, yIdx , uIdx , vIdx , nVertexIdx);
+
+    sYuvp->Y = sPred.Y + ( deltaY << pc3DAsymLUT->cm_res_quant_bit );
+    sYuvp->U = sPred.U + ( deltaU << pc3DAsymLUT->cm_res_quant_bit );
+    sYuvp->V = sPred.V + ( deltaV << pc3DAsymLUT->cm_res_quant_bit );*/
+}
+
+static int ReadParam( GetBitContext   *gb, int rParam ) {
+  unsigned int prefix, codeWord, rSymbol, sign;
+  int param;
+  prefix   = get_ue_golomb_long(gb);
+  print_cabac("quotient", prefix);
+  codeWord = get_bits(gb, rParam);
+  print_cabac("rParam", rParam);
+  print_cabac("remainder", codeWord);
+  rSymbol = (prefix<<rParam) + codeWord;
+
+  if(rSymbol) {
+    sign = get_bits1(gb);
+    param = sign ? -(int)(rSymbol) : (int)(rSymbol);
+    return param;
+  }
+  else
+    return 0;
+}
+static void xParse3DAsymLUTOctant( GetBitContext *gb , TCom3DAsymLUT * pc3DAsymLUT , int nDepth , int yIdx , int uIdx , int vIdx , int length) {
+    uint8_t split_octant_flag = nDepth < pc3DAsymLUT->cm_octant_depth;
+    int l,m,n;
+    if(split_octant_flag){
+      split_octant_flag = get_bits1(gb);
+      print_cabac("split_octant_flag", split_octant_flag);
+    }
+    int nYPartNum = 1 << pc3DAsymLUT->cm_y_part_num_log2;
+    if( split_octant_flag ) {
+        int nHalfLength = length >> 1;
+        for(l = 0 ; l < 2 ; l++ )
+          for(m = 0 ; m < 2 ; m++ )
+            for(n = 0 ; n < 2 ; n++ )
+              xParse3DAsymLUTOctant( gb, pc3DAsymLUT , nDepth + 1 , yIdx + l * nHalfLength * nYPartNum , uIdx + m * nHalfLength , vIdx + n * nHalfLength , nHalfLength );
+    } else {
+        int l, m, u, v, y, nVertexIdx, nFLCbits = pc3DAsymLUT->nMappingShift - pc3DAsymLUT->cm_res_quant_bit -pc3DAsymLUT->cm_flc_bits;
+
+        nFLCbits = nFLCbits >= 0 ? nFLCbits:0;
+        for(l = 0 ; l < nYPartNum ; l++ ) {
+          int shift = pc3DAsymLUT->cm_octant_depth - nDepth;
+          for(nVertexIdx = 0 ; nVertexIdx < 4 ; nVertexIdx++ ) {
+            uint8_t  coded_vertex_flag = 0;
+            int deltaY = 0 , deltaU = 0 , deltaV = 0;
+            coded_vertex_flag = get_bits1(gb);
+            print_cabac("coded_vertex_flag", coded_vertex_flag);
+            if( coded_vertex_flag ) {
+                deltaY = ReadParam(gb, nFLCbits );
+                deltaU = ReadParam(gb, nFLCbits );
+                deltaV = ReadParam(gb, nFLCbits );
+            }
+            setCuboidVertexResTree( pc3DAsymLUT, yIdx + (l<<shift) , uIdx , vIdx , nVertexIdx , deltaY , deltaU , deltaV );
+            for ( m = 1; m < (1<<shift); m++) {
+              setCuboidVertexResTree( pc3DAsymLUT, yIdx + (l<<shift) + m , uIdx , vIdx , nVertexIdx , 0 , 0 , 0 );
+            }
+          }
+        }
+
+        for (u=0 ; u<length ; u++ )
+              for ( v=0 ; v<length ; v++ )
+                if ( u || v )
+                  for ( y=0 ; y<length*nYPartNum ; y++ )
+                    for( nVertexIdx = 0 ; nVertexIdx < 4 ; nVertexIdx++ )
+                      setCuboidVertexResTree( pc3DAsymLUT, yIdx + y , uIdx + u , vIdx + v , nVertexIdx , 0 , 0 , 0 );
+    }
+}
+
+static void Allocate3DArray(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, int zSize) {
+/*  int x, y;
+
+  pc3DAsymLUT->S_Cuboid    = av_malloc(xSize*sizeof(SCuboid**)) ;
+  pc3DAsymLUT->S_Cuboid[0] = av_malloc(xSize*ySize*sizeof(SCuboid*)) ;
+  for( x = 1 ; x < xSize ; x++ )
+    pc3DAsymLUT->S_Cuboid[x] = pc3DAsymLUT->S_Cuboid[x-1] + ySize;
+
+  pc3DAsymLUT->S_Cuboid[0][0] = av_mallocz(xSize*ySize*zSize*sizeof(SCuboid));
+  for( x = 0 ; x < xSize ; x++ )
+    for(y = 0 ; y < ySize ; y++ )
+        pc3DAsymLUT->S_Cuboid[x][y] = pc3DAsymLUT->S_Cuboid[0][0] + x * xSize * ySize + y * zSize;*/
+}
+
+static void Free3DArray(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, int zSize) {
+
+  av_free(pc3DAsymLUT->S_Cuboid[0][0]);
+  av_free(pc3DAsymLUT->S_Cuboid[0]);
+  av_free(pc3DAsymLUT->S_Cuboid);
+}
 static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
-    int i, uiRefLayerId;
+    int i, uiRefLayerId, YSize, CSize;
     pc3DAsymLUT->num_cm_ref_layers_minus1 = get_ue_golomb_long(gb);
     print_cabac("num_cm_ref_layers_minus1", pc3DAsymLUT->num_cm_ref_layers_minus1);
     for(  i = 0 ; i <= pc3DAsymLUT->num_cm_ref_layers_minus1; i++ ) {
@@ -2167,6 +2274,23 @@ static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
         print_cabac("cm_adapt_threshold_v_delta", pc3DAsymLUT->cm_adapt_threshold_v_delta);
         pc3DAsymLUT->nAdaptCThresholdV += pc3DAsymLUT->cm_adapt_threshold_v_delta;
     }
+    pc3DAsymLUT->delta_bit_depth   = pc3DAsymLUT->cm_output_luma_bit_depth   - pc3DAsymLUT->cm_input_luma_bit_depth;
+    pc3DAsymLUT->delta_bit_depth_C = pc3DAsymLUT->cm_output_chroma_bit_depth - pc3DAsymLUT->cm_input_chroma_bit_depth;
+    pc3DAsymLUT->max_part_num_log2 = 3*pc3DAsymLUT->cm_octant_depth          + pc3DAsymLUT->cm_y_part_num_log2;
+
+
+    pc3DAsymLUT->YShift2Idx = pc3DAsymLUT->cm_input_luma_bit_depth - pc3DAsymLUT->cm_octant_depth - pc3DAsymLUT->cm_y_part_num_log2;
+    pc3DAsymLUT->UShift2Idx = pc3DAsymLUT->VShift2Idx = pc3DAsymLUT->cm_input_chroma_bit_depth - pc3DAsymLUT->cm_octant_depth;
+
+    pc3DAsymLUT->nMappingShift = 10 + pc3DAsymLUT->cm_input_luma_bit_depth - pc3DAsymLUT->cm_output_luma_bit_depth;
+
+    pc3DAsymLUT->nMappingOffset = 1 << ( pc3DAsymLUT->nMappingShift - 1 );
+
+    YSize = 1 << ( pc3DAsymLUT->cm_octant_depth + pc3DAsymLUT->cm_y_part_num_log2 );
+    CSize = 1 << pc3DAsymLUT->cm_octant_depth;
+
+    Allocate3DArray( pc3DAsymLUT , YSize , CSize , CSize );
+    xParse3DAsymLUTOctant( gb , pc3DAsymLUT , 0 , 0 ,0 , 0 , 1<<pc3DAsymLUT->cm_octant_depth);
 }
 
 static int pps_multilayer_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {

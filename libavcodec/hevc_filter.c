@@ -1328,45 +1328,20 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
 }
 #endif
 
-static int getBitDepth(HEVCContext *s, enum ChannelType channel)
-{
-  const HEVCVPS *vps = s->vps;
-  const HEVCSPS *sps = s->sps;
-  int retVal, layerId = s->nuh_layer_id;
-
-  if ( !layerId || sps->v1_compatible) {
-    if( !layerId && vps->vps_nonHEVCBaseLayerFlag)
-      retVal = vps->Hevc_VPS_Ext.rep_format[layerId].bit_depth_vps[channel];
-    else
-      retVal = sps->bit_depth[channel];
-  }
-  else {
-    retVal = sps->update_rep_format_flag ? sps->update_rep_format_index : vps->Hevc_VPS_Ext.vps_rep_format_idx[vps->Hevc_VPS_Ext.layer_id_in_vps[layerId]];
-    retVal = vps->Hevc_VPS_Ext.rep_format[retVal].bit_depth_vps[channel];
-  }
-  return retVal;
-}
-
-
-static void copy_block(HEVCContext *s, pixel *src, pixel * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW ) {
+static void copy_block(HEVCContext *s, pixel *src, pixel * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
     int i;
-#if 1
+#if 0
     for (i = 0; i < ePbH ; i++) {
         memcpy(dst, src, ePbW * sizeof(pixel));
         src += bl_stride;
         dst += el_stride;
     }
 #else
-    int j;
-    int shift = 0; // TODO current bit depth - reference bit depth
-    if(s->pps->colour_mapping_enabled_flag) {
-       shift =s->sh.m_nCGSOutputBitDepthY[]
-    uint8_t ;
-    uint8_t m_nCGSOutputBitDepthC;
-    }
+    int j, refLayerId = 0;
+    int shift = s->up_filter_inf.shift[channel];
     for (i = 0; i < ePbH ; i++) {
         for (j = 0; j < ePbW ; j++)
-            dst[j] = src[j];
+            dst[j] = src[j]<<shift;
         src += bl_stride;
         dst += el_stride;
     }
@@ -1388,7 +1363,7 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
     if (s->up_filter_inf.idx == SNR) { /* x1 quality (SNR) scalability */
         copy_block (s, s->BL_frame->frame->data[0] + y0 * bl_stride + x0,
                     ref0->frame->data[0] + y0 * el_stride + x0,
-                    bl_stride, el_stride, ePbH, ePbW );
+                    bl_stride, el_stride, ePbH, ePbW , CHANNEL_TYPE_LUMA);
     } else { /* spatial scalability */
         int bl_edge_bottom, bl_edge_right, ret;
         int bPbW = ((( ePbW + 1 ) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4; /*    FIXME: check if this method is correct  */
@@ -1460,7 +1435,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
         for (cr = 1; cr <= 2; cr++)
             copy_block(s, s->BL_frame->frame->data[cr] + y0 * bl_stride + x0,
                        ref0->frame->data[cr] + y0 * el_stride + x0,
-                       bl_stride, el_stride, ePbH, ePbW );
+                       bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
     } else {
         int bl_edge_right, bl_edge_bottom;
         int bPbW = ((( ePbW + 1 ) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)  >> 4;    /*    FIXME: check if this method is correct  */
@@ -1641,3 +1616,5 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
         }
     }
 }
+
+

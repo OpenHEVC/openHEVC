@@ -125,6 +125,7 @@ typedef struct HEVCDSPContext {
     void (*hevc_h_loop_filter_chroma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
     void (*hevc_v_loop_filter_chroma_c)(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 
+    void (*colorMapping)(void * pc3DAsymLUT, struct AVFrame *src, struct AVFrame *dst);
     void (*upsample_base_layer_frame)  (struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel);
     void (*upsample_filter_block_luma_h[3])(
                                          int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,

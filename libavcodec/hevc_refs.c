@@ -45,8 +45,24 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
         frame->rpl_tab    = NULL;
         for(i=0; i < MAX_SLICES_IN_FRAME; i++) 
             frame->refPicList[i] = NULL;
-        frame->collocated_ref = NULL;      
+        frame->collocated_ref = NULL;
     }
+}
+
+
+void alloc_frame1(HEVCContext *s, AVFrame *frame, int flags) {
+   int height, width, coded_width, coded_height;
+    width  = s->avctx->width;
+    height = s->avctx->height;
+    coded_width  = s->avctx->coded_width;
+    coded_height = s->avctx->coded_height;
+    s->avctx->width  = s->avctx->coded_width  = frame->coded_width;
+    s->avctx->height = s->avctx->coded_height = frame->coded_height;
+    ff_get_buffer(s->avctx, frame, flags);
+    s->avctx->width  = width;
+    s->avctx->coded_width  = coded_width;
+    s->avctx->height = height;
+    s->avctx->coded_height = coded_height;
 }
 
 RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *ref, int x0, int y0)
