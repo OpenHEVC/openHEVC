@@ -502,8 +502,13 @@ int set_el_parameter(HEVCContext *s) {
     widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
     phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;
 
-//    if(s->pps->colour_mapping_enabled_flag) // allocate frame with BL parameters
-//      alloc_frame1(s->avctx, s->Ref_color_mapped_frame, AVMEDIA_TYPE_VIDEO);
+    if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
+      s->Ref_color_mapped_frame->coded_width  = s->Ref_color_mapped_frame->width  = widthBL;
+      s->Ref_color_mapped_frame->coded_height = s->Ref_color_mapped_frame->height = heightBL;
+      alloc_frame1(s, s->Ref_color_mapped_frame, AVMEDIA_TYPE_VIDEO);
+//      printf("%d %d %d %d \n", s->Ref_color_mapped_frame->coded_width, s->Ref_color_mapped_frame->width, s->Ref_color_mapped_frame->coded_height, s->Ref_color_mapped_frame->height);
+ //   exit(-1);
+    }
 
 #if 0
     s->sh.ScalingFactor[s->nuh_layer_id][0]   = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095 );
@@ -648,9 +653,7 @@ static int hls_slice_header(HEVCContext *s)
         }
 
         ff_hevc_clear_refs(s);
-        printf("---------------------------- \n");
         ret = set_sps(s, s->sps);
-        printf("---------------------------- \n");
         if (ret < 0)
             return ret;
 
@@ -3181,10 +3184,10 @@ static int hevc_frame_start(HEVCContext *s)
             goto fail;
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
 
-        /*if(s->pps->colour_mapping_enabled_flag) {
+        if(s->pps->colour_mapping_enabled_flag) {
             s->hevcdsp.colorMapping((void*)&s->pps->pc3DAsymLUT, s->BL_frame->frame, s->Ref_color_mapped_frame);
             s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->Ref_color_mapped_frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
-        } else*/
+        } else
             s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
 #endif
     }
@@ -4365,6 +4368,6 @@ static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int heig
         src += stride;
     }
     av_md5_sum(md5, buf, stride_buf * height);
-    av_free(buf);
+    av_freep(&buf);
 }
 

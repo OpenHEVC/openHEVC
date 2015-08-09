@@ -1603,7 +1603,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     sps_id = get_ue_golomb_long(gb);
-    printf("Layer Id %d %d \n",s->nuh_layer_id, sps_id);
     print_cabac("sps_seq_parameter_set_id", sps_id);
     if (sps_id >= MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", sps_id);
@@ -2143,12 +2142,12 @@ SYUVP  GetCuboidVertexPredAll(TCom3DAsymLUT * pc3DAsymLUT, int yIdx , int uIdx ,
 }
 
 static void setCuboidVertexResTree( TCom3DAsymLUT * pc3DAsymLUT, int yIdx , int uIdx , int vIdx , int nVertexIdx , int deltaY , int deltaU , int deltaV ) {
-/*    SYUVP *sYuvp = &pc3DAsymLUT->S_Cuboid[yIdx][uIdx][vIdx].P[nVertexIdx], sPred;
+    SYUVP *sYuvp = &pc3DAsymLUT->S_Cuboid[yIdx][uIdx][vIdx].P[nVertexIdx], sPred;
     sPred  = GetCuboidVertexPredAll( pc3DAsymLUT, yIdx , uIdx , vIdx , nVertexIdx);
 
     sYuvp->Y = sPred.Y + ( deltaY << pc3DAsymLUT->cm_res_quant_bit );
     sYuvp->U = sPred.U + ( deltaU << pc3DAsymLUT->cm_res_quant_bit );
-    sYuvp->V = sPred.V + ( deltaV << pc3DAsymLUT->cm_res_quant_bit );*/
+    sYuvp->V = sPred.V + ( deltaV << pc3DAsymLUT->cm_res_quant_bit );
 }
 
 static int ReadParam( GetBitContext   *gb, int rParam ) {
@@ -2216,7 +2215,7 @@ static void xParse3DAsymLUTOctant( GetBitContext *gb , TCom3DAsymLUT * pc3DAsymL
 }
 
 static void Allocate3DArray(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, int zSize) {
-/*  int x, y;
+  int x, y;
 
   pc3DAsymLUT->S_Cuboid    = av_malloc(xSize*sizeof(SCuboid**)) ;
   pc3DAsymLUT->S_Cuboid[0] = av_malloc(xSize*ySize*sizeof(SCuboid*)) ;
@@ -2226,9 +2225,17 @@ static void Allocate3DArray(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, i
   pc3DAsymLUT->S_Cuboid[0][0] = av_mallocz(xSize*ySize*zSize*sizeof(SCuboid));
   for( x = 0 ; x < xSize ; x++ )
     for(y = 0 ; y < ySize ; y++ )
-        pc3DAsymLUT->S_Cuboid[x][y] = pc3DAsymLUT->S_Cuboid[0][0] + x * xSize * ySize + y * zSize;*/
+        pc3DAsymLUT->S_Cuboid[x][y] = pc3DAsymLUT->S_Cuboid[0][0] + x * ySize * zSize + y * zSize;
 }
 
+
+static void Display(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, int zSize) {
+  int i, j, k;
+  for( i = 0 ; i < xSize ; i++ )
+    for(j = 0 ; j < ySize ; j++ )
+      for(k = 0 ; k < zSize ; k++ )
+        printf("%d %d %d %d - %d %d %d %d - %d %d %d %d \n", pc3DAsymLUT->S_Cuboid[i][j][k].P[0].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[0].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[0].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].V);
+}
 static void Free3DArray(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, int zSize) {
 
   av_free(pc3DAsymLUT->S_Cuboid[0][0]);
@@ -2291,6 +2298,7 @@ static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
 
     Allocate3DArray( pc3DAsymLUT , YSize , CSize , CSize );
     xParse3DAsymLUTOctant( gb , pc3DAsymLUT , 0 , 0 ,0 , 0 , 1<<pc3DAsymLUT->cm_octant_depth);
+//    Display( pc3DAsymLUT , YSize , CSize , CSize );
 }
 
 static int pps_multilayer_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {

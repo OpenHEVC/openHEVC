@@ -140,7 +140,7 @@ enum NALUnitType {
     NAL_SEI_PREFIX = 39,
     NAL_SEI_SUFFIX = 40,
 };
-#if 1
+#if 0
 #define print_cabac(string, val) \
     printf(" %s : %d \n", string, val);
 #else
@@ -801,9 +801,9 @@ typedef struct HEVCSPS {
 } HEVCSPS;
 
 typedef struct SYUVP {
-    uint16_t Y;
-    uint16_t U;
-    uint16_t V;
+    int16_t Y;
+    int16_t U;
+    int16_t V;
 } SYUVP;
 
 typedef struct SCuboid {
@@ -1322,6 +1322,8 @@ typedef struct HEVCContext {
 
     AVFrame     *EL_frame;
     short       *buffer_frame[3];
+
+
     UpsamplInf  up_filter_inf;
     HEVCFrame   *BL_frame;
     HEVCFrame   *inter_layer_ref;

@@ -2119,10 +2119,10 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     
     int widthBL =  FrameBL->coded_width;
     int heightBL = FrameBL->coded_height;
-    int strideBL = FrameBL->linesize[0];
+    int strideBL = FrameBL->linesize[0]/sizeof(pixel);
     int widthEL =  FrameEL->coded_width - Enhscal->left_offset - Enhscal->right_offset;
     int heightEL = FrameEL->coded_height - Enhscal->top_offset - Enhscal->bottom_offset;
-    int strideEL = FrameEL->linesize[0];
+    int strideEL = FrameEL->linesize[0]/sizeof(pixel);
     pixel *srcBufY = (pixel*)FrameBL->data[0];
     pixel *dstBufY = (pixel*)FrameEL->data[0];
     short *tempBufY = Buffer[0];
@@ -2156,7 +2156,7 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     int bottomEndL = FrameEL->coded_height - Enhscal->bottom_offset;
     pixel buffer[8];
 
-    const int nShift = 20-8;
+    const int nShift = 20-BIT_DEPTH;// TO DO ass the appropiate bit depth  bit  depth
 
     int iOffset = 1 << (nShift - 1);
     short buffer1[8];
@@ -2166,6 +2166,7 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     int topStartC  = Enhscal->top_offset>>1;
     int bottomEndC = (FrameEL->coded_height>>1) - (Enhscal->bottom_offset>>1);
     int shift1 = up_info->shift_up[0];
+
     widthEL   = FrameEL->coded_width;  //pcUsPic->getWidth ();
     heightEL  = FrameEL->coded_height; //pcUsPic->getHeight();
 
@@ -2183,29 +2184,51 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
         dstY1 = tempBufY + i;
         if(refPos < 0)
             for( j = 0; j < heightBL ; j++ ) {
+                for(k=0; k<-refPos; k++ )
+                  buffer[k] = srcY[-refPos];
+                for(k=-refPos; k<NTAPS_LUMA; k++ )
+                  buffer[k] = srcY[k];
+//                memcpy(buffer-refPos, srcY-refPos, (NTAPS_LUMA+refPos)*sizeof(pixel));
 
-                memset(buffer, srcY[-refPos], -refPos);
-                memcpy(buffer-refPos, srcY-refPos, 8+refPos);
                 *dstY1 = LumHor_FILTER(buffer, coeff)>>shift1;
-
+//                printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], coeff[0], coeff[1], coeff[2], coeff[3], coeff[4], coeff[5], coeff[6], coeff[7], *dstY1);
                 srcY += strideBL;
                 dstY1 += widthEL;//strideEL;
             } else if (refPos+8 > widthBL )
                 for ( j = 0; j < heightBL ; j++ ) {
                     
-                    memcpy(buffer, srcY, widthBL-refPos);
-                    memset(buffer+(widthBL-refPos), srcY[widthBL-refPos-1], 8-(widthBL-refPos));
+                    memcpy(buffer, srcY, (widthBL-refPos)*sizeof(pixel));
+//                    memset(buffer+(widthBL-refPos), srcY[widthBL-refPos-1], 8-(widthBL-refPos));
+                    for(k=widthBL-refPos; k<NTAPS_LUMA; k++ )
+                      buffer[k] = srcY[widthBL-refPos-1];
                     *dstY1 = LumHor_FILTER(buffer, coeff)>>shift1;
-                    
+//                    printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], coeff[0], coeff[1], coeff[2], coeff[3], coeff[4], coeff[5], coeff[6], coeff[7], *dstY1);
                     srcY += strideBL;
                     dstY1 += widthEL;//strideEL;
                 } else
                     for ( j = 0; j < heightBL ; j++ ) {
-                        *dstY1 = LumHor_FILTER(srcY, coeff)>>shift1;
-                        srcY += strideBL;
-                        dstY1 += widthEL;//strideEL;
+                      *dstY1 = LumHor_FILTER(srcY, coeff)>>shift1;
+               ///         if(i==1)
+//                      printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", srcY[0], srcY[1], srcY[2], srcY[3], srcY[4], srcY[5], srcY[6], srcY[7], coeff[0], coeff[1], coeff[2], coeff[3], coeff[4], coeff[5], coeff[6], coeff[7], *dstY1);
+                        //printf("* %d ", *dstY1);
+                      srcY  += strideBL;
+                      dstY1 += widthEL;//strideEL;
                     }
+//        printf("\n");
+    }//
+//    printf("strideBL %d \n", strideBL);
+ //   exit(-1);
+ /*   for(i = 0; i < 10; i++) {
+      for(j = 0; j < 500; j++)
+        printf("%d ", srcBufY[i*strideBL + j]);
+        printf("\n");
+    }exit(-1);*/
+/*    for(i = 0; i < heightBL; i++) {
+      for(j = 0; j < 500; j++)
+        printf("%d ", tempBufY[i*widthEL + j]);
+        printf("\n");
     }
+    exit(-1);*/
     for ( j = 0; j < heightEL; j++ ) {
         int y = j; //av_clip_c(j, topStartL, bottomEndL-1);
         refPos16 = (( y *up_info->scaleYLum - up_info->addYLum) >> 12);
@@ -2247,8 +2270,12 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                             srcY1++;
                         dstY++;
                     }
-    }
-    
+    }/*
+    for(i = 0; i < heightEL; i++) {
+      for(j = 0; j < widthEL; j++)
+        printf("%d ", dstBufY[i*strideEL + j]);
+      printf("\n");
+    }exit(-1);*/
     widthBL   = FrameBL->coded_width;
     heightBL  = FrameBL->coded_height;
     
@@ -2256,12 +2283,13 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     heightEL  = FrameEL->coded_height - Enhscal->top_offset - Enhscal->bottom_offset;
     
     shift1 = up_info->shift_up[1];
+
     widthEL  >>= 1;
     heightEL >>= 1;
     widthBL  >>= 1;
     heightBL >>= 1;
-    strideBL  = FrameBL->linesize[1];
-    strideEL  = FrameEL->linesize[1];
+    strideBL  = FrameBL->linesize[1]/sizeof(pixel);
+    strideEL  = FrameEL->linesize[1]/sizeof(pixel);
     widthEL   = FrameEL->coded_width >> 1;
     heightEL  = FrameEL->coded_height >> 1;
     widthBL   = FrameBL->coded_width >> 1;
@@ -2285,13 +2313,21 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
         dstV1 = tempBufV + i;
         
         if(refPos < 0)
-            for( j = 0; j < heightBL ; j++ )	{
-                
-        		memset(buffer, srcU[-refPos], -refPos);
+            for( j = 0; j < heightBL ; j++ ) {
+                for(k=0; k < -refPos; k++)
+                  buffer[k] = srcU[-refPos];
+                for(k=-refPos; k < 4; k++)
+                  buffer[k] = srcU[k];
+                for(k=0; k < -refPos; k++)
+                  buffer[k+4] = srcV[-refPos];
+                for(k=-refPos; k < 4; k++)
+                  buffer[k+4] = srcV[k];
+
+                /*memset(buffer, srcU[-refPos], -refPos);
                 memcpy(buffer-refPos, srcU-refPos, 4+refPos);
                 memset(buffer+4, srcV[-refPos], -refPos);
                 memcpy(buffer-refPos+4, srcV-refPos, 4+refPos);
-                
+                */
                 *dstU1 = CroHor_FILTER(buffer, coeff)>>shift1;
                 
                 *dstV1 = CroHor_FILTER((buffer+4), coeff)>>shift1;
@@ -2304,12 +2340,22 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
         	}else if(refPos+4 > widthBL )
                 for( j = 0; j < heightBL ; j++ )	{
                     
-                    memcpy(buffer, srcU, widthBL-refPos);
+/*                    memcpy(buffer, srcU, widthBL-refPos);
                     memset(buffer+(widthBL-refPos), srcU[widthBL-refPos-1], 4-(widthBL-refPos));
-                    
+
                     memcpy(buffer+4, srcV, widthBL-refPos);
-                    memset(buffer+(widthBL-refPos)+4, srcV[widthBL-refPos-1], 4-(widthBL-refPos));
-                    
+                    memset(buffer+(widthBL-refPos)+4, srcV[widthBL-refPos-1], 4-(widthBL-refPos));*/
+
+                    for(k=0; k < widthBL-refPos; k++)
+                      buffer[k] = srcU[k];
+                    for(k=0; k < 4-(widthBL-refPos); k++)
+                      buffer[widthBL-refPos+k] = srcU[widthBL-refPos-1];
+
+                    for(k=0; k < widthBL-refPos; k++)
+                      buffer[k+4] = srcV[k];
+                    for(k=0; k < 4-(widthBL-refPos); k++)
+                      buffer[widthBL-refPos+k+4] = srcV[widthBL-refPos-1];
+
                     *dstU1 = CroHor_FILTER(buffer, coeff)>>shift1;
                     
                     *dstV1 = CroHor_FILTER((buffer+4), coeff)>>shift1;
@@ -2327,8 +2373,12 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                         dstU1 += widthEL;
                         dstV1 += widthEL;
                     }
-    }
-
+    }/*
+    for(i = 0; i < 100; i++) {
+      for(j = 0; j < 100; j++)
+        printf("%d ", tempBufV[i*widthEL + j]);
+      printf("\n");
+    }exit(-1);*/
     for( j = 0; j < heightEL; j++ )	{
         int y = j; //av_clip_c(j, topStartC, bottomEndC - 1);
         refPos16 = (((y - topStartC)*up_info->scaleYCr - up_info->addYCr) >> 12); // - 4;
@@ -2351,12 +2401,17 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                     buffer1[-refPos+k] = srcU1[(-refPos+k)*widthEL];
                     buffer1[-refPos+k+4] = srcV1[(-refPos+k)*widthEL];
                 }
+
                 *dstU = av_clip_pixel( (CroVer_FILTER(buffer1, coeff) + iOffset) >> (nShift));
                 *dstV = av_clip_pixel( (CroVer_FILTER((buffer1+4), coeff) + iOffset) >> (nShift));
-                if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
+         //       if(j<10){
+          //        printf("%d %d %d %d %d %d %d %d %d \n", buffer1[0], buffer1[1], buffer1[2], buffer1[3] ,coeff[0] ,coeff[1] ,coeff[2] ,coeff[3], *dstU);
+           //       printf("%d %d %d %d %d %d %d %d %d \n", buffer1[4], buffer1[5], buffer1[6], buffer1[7] ,coeff[0] ,coeff[1] ,coeff[2] ,coeff[3], *dstV);
+            //    }
+              //  if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
                     srcU1++;
                     srcV1++;
-                }
+               // }
                 dstU++;
                 dstV++;
             } else if(refPos+4 > heightBL )
@@ -2369,100 +2424,134 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                         buffer1[heightBL-refPos+k] = srcU1[(heightBL-refPos-1)*widthEL];
                         buffer1[heightBL-refPos+k+4] = srcV1[(heightBL-refPos-1)*widthEL];
                     }
+
                     *dstU = av_clip_pixel( (CroVer_FILTER(buffer1, coeff) + iOffset) >> (nShift));
                     *dstV = av_clip_pixel( (CroVer_FILTER((buffer1+4), coeff) + iOffset) >> (nShift));
-                    if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
+                  //  if(j<10){
+                   //   printf("%d %d %d %d %d %d %d %d %d \n", buffer1[0], buffer1[1], buffer1[2], buffer1[3] ,coeff[0] ,coeff[1] ,coeff[2] ,coeff[3], *dstU);
+                  //    printf("%d %d %d %d %d %d %d %d %d \n", buffer1[4], buffer1[5], buffer1[6], buffer1[7] ,coeff[0] ,coeff[1] ,coeff[2] ,coeff[3], *dstV);
+                  //  }
+                 //   if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
                         srcU1++;
                         srcV1++;
-                    }
+                   // }
                     dstU++;
                     dstV++;
                 } else
                     for ( i = 0; i < widthEL; i++ ) {
                         *dstU = av_clip_pixel( (CroVer_FILTER1(srcU1, coeff, widthEL) + iOffset) >> (nShift));
                         *dstV = av_clip_pixel( (CroVer_FILTER1(srcV1, coeff, widthEL) + iOffset) >> (nShift));
-                        if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
+             //           if(j<10){
+               //           printf("%d %d %d %d %d %d %d %d %d \n", srcU1[0], srcU1[1], srcU1[2], srcU1[3] ,coeff[0] ,coeff[1] ,coeff[2] ,coeff[3], *dstU);
+                //          printf("%d %d %d %d %d %d %d %d %d \n", srcV1[0], srcV1[1], srcV1[2], srcV1[3] ,coeff[0] ,coeff[1] ,coeff[2] ,coeff[3], *dstV);
+                 //       }
+                     //   if ( (i >= leftStartC) && (i <= rightEndC-2) ) {
                             srcU1++;
                             srcV1++;
-                        }
+                      //  }
                         dstU++;
                         dstV++;
                     }
     }
+//    exit(-1);
+    /*for(i = 0; i < heightEL; i++) {
+      for(j = 0; j < widthEL; j++)
+        printf("%d ", dstBufV[i*strideEL + j]);
+      printf("\n");
+    }
+    for(i = 0; i < 100; i++) {
+      for(j = 0; j < 100; j++)
+        printf("%d ", dstBufV[i*strideEL + j]);
+      printf("\n");
+    } exit(-1);*/
 }
 
 #undef LumHor_FILTER
 #undef LumCro_FILTER
 #undef LumVer_FILTER
 #undef CroVer_FILTER
-/*
-static SYUVP xMapUV(TCom3DAsymLUT * pc3DAsymLUT, pixel y , pixel u , pixel v ) {
-  const SCuboid  rCuboid = pc3DAsymLUT->S_Cuboid[xGetYIdx(y)][xGetUIdx(u)][xGetVIdx(v)];
-  SYUVP dst;
-  dst.Y = 0;
-  dst.U = ( ( rCuboid.P[0].U * y + rCuboid.P[1].U * u + rCuboid.P[2].U * v + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].U;
-  dst.V = ( ( rCuboid.P[0].V * y + rCuboid.P[1].V * u + rCuboid.P[2].V * v + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].V;
-  return dst;
-}
 
-static pixel xMapY(TCom3DAsymLUT * pc3DAsymLUT, pixel y , pixel u , pixel v ) {
-  const SCuboid rCuboid = pc3DAsymLUT->S_Cuboid[xGetYIdx(y)][xGetUIdx(u)][xGetVIdx(v)];
-  pixel  dstY = ( ( rCuboid.P[0].Y * y + rCuboid.P[1].Y * u + rCuboid.P[2].Y * v + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
-  return dstY;
-}
-*/
+
 static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct AVFrame *dst) {
   int width  = src->width, i, j, k;
   int height = src->height;
-  int stride = src->linesize[0];
-  int stridec = src->linesize[1];
-  pixel val[6], val_dst[6], val_prev[2], val_next[2];
+  int src_stride  = src->linesize[0];
+  int src_stridec = src->linesize[1];
+
+  int dst_stride  = dst->linesize[0]/sizeof(pixel);
+  int dst_stridec = dst->linesize[1]/sizeof(pixel);
+
+  uint16_t val[6], val_dst[6], val_prev[2], val_next[2];
   SCuboid rCuboid;
   TCom3DAsymLUT *pc3DAsymLUT = (TCom3DAsymLUT *)pc3DAsymLUT_;
-  pixel *src_Y = (pixel*)src->data[0];
-  pixel *src_U = (pixel*)src->data[1];
-  pixel *src_V = (pixel*)src->data[2];
+  uint8_t *src_Y = (uint8_t*)src->data[0];
+  uint8_t *src_U = (uint8_t*)src->data[1];
+  uint8_t *src_V = (uint8_t*)src->data[2];
 
-  pixel *dst_Y = (pixel*)dst->data[0];
-  pixel *dst_U = (pixel*)dst->data[1];
-  pixel *dst_V = (pixel*)dst->data[2];
+  uint16_t *dst_Y = (uint16_t*)dst->data[0];
+  uint16_t *dst_U = (uint16_t*)dst->data[1];
+  uint16_t *dst_V = (uint16_t*)dst->data[2];
 
-  pixel *src_U_prev = (pixel*)src->data[1];
-  pixel *src_V_prev = (pixel*)src->data[2];
+  uint8_t *src_U_prev = (uint8_t*)src->data[1];
+  uint8_t *src_V_prev = (uint8_t*)src->data[2];
 
-  pixel *src_U_next = (pixel*)src->data[1];
-  pixel *src_V_next = (pixel*)src->data[2];
+  uint8_t *src_U_next = (uint8_t*)src->data[1]+src_stridec;
+  uint8_t *src_V_next = (uint8_t*)src->data[2]+src_stridec;
 
   pixel iMaxValY = (1<<pc3DAsymLUT->cm_output_luma_bit_depth)  -1;
   pixel iMaxValC = (1<<pc3DAsymLUT->cm_output_chroma_bit_depth)-1;
+
+  // add padding for chroma
+  for(i = 0 ; i < height>>1 ; i++ ) {
+    src_U[width>>1] = src_U[(width>>1)-1];
+    src_V[width>>1] = src_V[(width>>1)-1];
+    src_U          += src_stridec;
+    src_V          += src_stridec;
+  }
+  for(j = 0 ; j <= (width>>1) ; j++ ) {
+    src_U[j] = src_U[j-src_stridec];
+    src_V[j] = src_V[j-src_stridec];
+  }
+  src_U = (uint8_t*)src->data[1];
+  src_V = (uint8_t*)src->data[2];
+
   for(i = 0 ; i < height ; i += 2 ) {
     for(j = 0 , k = 0 ; j < width ; j += 2 , k++ ) {
         val[0] = src_Y[j];          //srcY00
         val[1] = src_Y[j+1];        //srcY01
-        val[2] = src_Y[j+stride];   //srcY10
-        val[3] = src_Y[j+stride+1]; //srcY11
+        val[2] = src_Y[j+src_stride];   //srcY10
+        val[3] = src_Y[j+src_stride+1]; //srcY11
 
         val[4] = src_U[k]; //srcU
         val[5] = src_V[k]; //srcV
-        pixel srcYaver;
+        uint8_t srcYaver = (val[0] + val[2] + 1 ) >> 1;;
 
         val_prev[0]  = src_U_prev[k]; //srcUP0
         val_prev[1]  = src_V_prev[k]; //srcVP0
 
-        pixel tmpU =  (val_prev[0] + val[4] + (val[4]<<1) + 2 ) >> 2;
-        pixel tmpV =  (val_prev[1] + val[5] + (val[5]<<1) + 2 ) >> 2;
+        uint8_t tmpU =  (val_prev[0] + val[4] + (val[4]<<1) + 2 ) >> 2;
+        uint8_t tmpV =  (val_prev[1] + val[5] + (val[5]<<1) + 2 ) >> 2;
+
         rCuboid = pc3DAsymLUT->S_Cuboid[val[0] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
-
-
         val_dst[0] = ( ( rCuboid.P[0].Y * val[0] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
-
-        pixel a = src_U[k+1] + val[4];
+/*        if(i==480) {
+          printf("%d %d %d %d %d %d %d %d %d %d \n", val[0], rCuboid.P[0].Y, rCuboid.P[1].Y, rCuboid.P[2].Y, rCuboid.P[3].Y, tmpU, tmpV, pc3DAsymLUT->nMappingOffset, pc3DAsymLUT->nMappingShift, val_dst[0]);
+        }*/
+//      printf("%d %d %d %d %d %d %d %d %d %d \n", val[0], rCuboid.P[0].Y, rCuboid.P[1].Y, rCuboid.P[2].Y, rCuboid.P[3].Y, tmpU, tmpV, pc3DAsymLUT->nMappingOffset, pc3DAsymLUT->nMappingShift, val_dst[0]);
+//      printf("%d %d %d -- %d %d %d rCuboid.P[0].Y %d %d %d %d \n",val[0], tmpU, tmpV, val[1] >> pc3DAsymLUT->YShift2Idx, pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx, pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx, rCuboid.P[0].Y, rCuboid.P[1].Y, rCuboid.P[2].Y, rCuboid.P[3].Y);
+        short a = src_U[k+1] + val[4];
         tmpU =  ((a<<1) + a + val_prev[0] + src_U_prev[k+1] + 4 ) >> 3;
-        pixel b = src_V[k+1] + val[5];
+        short b = src_V[k+1] + val[5];
         tmpV =  ((b<<1) + b + val_prev[1] + src_V_prev[k+1] + 4 ) >> 3;
+
+
         rCuboid = pc3DAsymLUT->S_Cuboid[val[1] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
         val_dst[1] = ( ( rCuboid.P[0].Y * val[1] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
-
+/*        if(i==480) {
+          printf("%d %d %d ", k+1, src_U[k+1], src_V[k+1]);
+          printf("%d %d %d %d %d %d %d %d %d %d \n", val[1], rCuboid.P[0].Y, rCuboid.P[1].Y, rCuboid.P[2].Y, rCuboid.P[3].Y, tmpU, tmpV, pc3DAsymLUT->nMappingOffset, pc3DAsymLUT->nMappingShift, val_dst[1]);
+        }*/
+//        printf("%d %d %d -- %d %d %d rCuboid.P[0].Y %d %d %d %d \n",val[1], tmpU, tmpV, val[1] >> pc3DAsymLUT->YShift2Idx, pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx, pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx, rCuboid.P[0].Y, rCuboid.P[1].Y, rCuboid.P[2].Y, rCuboid.P[3].Y);
         val_next[0] = src_U_next[k];
         val_next[1] = src_V_next[k];
 
@@ -2470,37 +2559,57 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
         tmpV =  (val_next[1] + val[5] + (val[5]<<1) + 2 ) >> 2;
         rCuboid = pc3DAsymLUT->S_Cuboid[val[2] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
         val_dst[2] = ( ( rCuboid.P[0].Y * val[2] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
-
+/*        if(i==480) {
+                  printf("%d %d %d %d %d %d %d %d %d %d \n", val[2], rCuboid.P[0].Y, rCuboid.P[1].Y, rCuboid.P[2].Y, rCuboid.P[3].Y, tmpU, tmpV, pc3DAsymLUT->nMappingOffset, pc3DAsymLUT->nMappingShift, val_dst[2]);
+                }*/
         tmpU =  ((a<<1) + a + val_next[0] + src_U_next[k+1] + 4 ) >> 3;
         tmpV =  ((b<<1) + b + val_next[1] + src_V_next[k+1] + 4 ) >> 3;
         rCuboid = pc3DAsymLUT->S_Cuboid[val[3] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
         val_dst[3] = ( ( rCuboid.P[0].Y * val[3] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
-
+/*        if(i==480) {
+                  printf("%d %d %d %d %d %d %d %d %d %d \n", val[3], rCuboid.P[0].Y, rCuboid.P[1].Y, rCuboid.P[2].Y, rCuboid.P[3].Y, tmpU, tmpV, pc3DAsymLUT->nMappingOffset, pc3DAsymLUT->nMappingShift, val_dst[3]);
+                }*/
         SYUVP dstUV;
         rCuboid = pc3DAsymLUT->S_Cuboid[srcYaver >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? val[4]>=pc3DAsymLUT->nAdaptCThresholdU : val[4]>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? val[5]>=pc3DAsymLUT->nAdaptCThresholdV : val[5]>> pc3DAsymLUT->VShift2Idx];
         dstUV.Y = 0;
         dstUV.U = ( ( rCuboid.P[0].U * srcYaver + rCuboid.P[1].U * val[4] + rCuboid.P[2].U * val[5] + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].U;
         dstUV.V = ( ( rCuboid.P[0].V * srcYaver + rCuboid.P[1].V * val[4] + rCuboid.P[2].V * val[5] + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].V;
+//        printf(" dstUV.V %d %d %d %d %d ",  dstUV.V, rCuboid.P[0].V, rCuboid.P[1].V, rCuboid.P[2].V, rCuboid.P[3].V);
+//        printf(" val_dst[0] %d %d %d %d %d \n",  val_dst[0], val_dst[1], val_dst[2], val_dst[3], iMaxValY);
 
-        dst_Y[j] = av_clip(val_dst[0],(pixel)0, iMaxValY);
-        dst_Y[j+1] = av_clip(val_dst[1], (pixel)0, iMaxValY );
-        dst_Y[j+stride] = av_clip(val_dst[2] , (pixel)0, iMaxValY);
-        dst_Y[j+stride+1] = av_clip(val_dst[3] , (pixel)0, iMaxValY);
-        dst_U[k] = av_clip(dstUV.U, (pixel)0, iMaxValC );
-        dst_V[k] = av_clip(dstUV.V, (pixel)0, iMaxValC );
+        dst_Y[j] = av_clip(val_dst[0],0, iMaxValY);
+        dst_Y[j+1] = av_clip(val_dst[1], 0, iMaxValY );
+        dst_Y[j+dst_stride] = av_clip(val_dst[2] , 0, iMaxValY);
+        dst_Y[j+dst_stride+1] = av_clip(val_dst[3] , 0, iMaxValY);
+        dst_U[k] = av_clip(dstUV.U, 0, iMaxValC );
+        dst_V[k] = av_clip(dstUV.V, 0, iMaxValC );
+        //printf("%d ", dst_V[k]);
     }
-    i += stride + stride;
+//    printf("\n k %d %d \n ", k, i);
+    src_Y += src_stride + src_stride;
+
     src_U_prev = src_U;
     src_V_prev = src_V;
 
     src_U = src_U_next;
     src_V = src_V_next;
-    src_U_next += stridec;
-    src_V_next += stridec;
+    src_U_next += src_stridec;
+    src_V_next += src_stridec;
 
-    dst_Y += stride + stride;
-    dst_U += stridec;
-    dst_V += stridec;
+    dst_Y += dst_stride + dst_stride;
+    dst_U += dst_stridec;
+    dst_V += dst_stridec;
   }
+//  printf("\n \n ");
+//exit(-1);
+//  printf("strideBL %d %d %d %d %d %d %d %d \n", src->height,src->width, src->linesize[0], src->linesize[1], dst->height,dst->width, dst->linesize[0], dst->linesize[1]);
+/*  dst_V = (uint16_t*)dst->data[2];
+  for(i = 0; i < 100; i++) {
+    for(j = 0; j < 100; j++)
+      printf("%d ", dst_V[j]);
+    printf("\n");
+    dst_V += dst_stridec;
+  }
+  exit(-1);*/
 }
 #endif
