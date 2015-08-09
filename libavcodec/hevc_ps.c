@@ -2236,11 +2236,12 @@ static void Display(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, int zSize
       for(k = 0 ; k < zSize ; k++ )
         printf("%d %d %d %d - %d %d %d %d - %d %d %d %d \n", pc3DAsymLUT->S_Cuboid[i][j][k].P[0].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[0].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[0].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].V);
 }
-static void Free3DArray(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, int zSize) {
-
-  av_free(pc3DAsymLUT->S_Cuboid[0][0]);
-  av_free(pc3DAsymLUT->S_Cuboid[0]);
-  av_free(pc3DAsymLUT->S_Cuboid);
+void Free3DArray(HEVCPPS * pps) {
+  if(pps && 0) {
+    av_freep(&pps->pc3DAsymLUT.S_Cuboid[0][0]);
+    av_freep(&pps->pc3DAsymLUT.S_Cuboid[0]);
+    av_freep(&pps->pc3DAsymLUT.S_Cuboid);
+  }
 }
 static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
     int i, uiRefLayerId, YSize, CSize;

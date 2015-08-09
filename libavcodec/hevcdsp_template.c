@@ -1965,6 +1965,7 @@ static void FUNC(upsample_filter_block_luma_v_x2)( uint8_t *_dst, ptrdiff_t _dst
     int leftStartL = Enhscal->left_offset;
     int y, i, j;
     const int8_t  *   coeff;
+    _dststride /= sizeof(pixel);
     pixel *dst_tmp, *dst    = (pixel *)_dst + y_EL * _dststride + x_EL;
     int16_t *   src_tmp;
 
@@ -1996,6 +1997,7 @@ static void FUNC(upsample_filter_block_cr_v_x2)( uint8_t *_dst, ptrdiff_t dststr
     const int8_t* coeff;
     int16_t *   src_tmp;
     pixel *dst_tmp, *dst    = (pixel *)_dst;
+    dststride /= sizeof(pixel);
     for( j = 0; j < block_h; j++ ) {
         y =   y_EL+j; //av_clip_c(y_EL+j, topStartC, bottomEndC-1);
         refPos16 = ((( y - topStartC )* up_info->scaleYCr - up_info->addYCr) >> 12); //-4;
@@ -2070,7 +2072,7 @@ static void FUNC(upsample_filter_block_luma_v_x1_5)( uint8_t *_dst, ptrdiff_t _d
     const int8_t  *   coeff;
     pixel *dst_tmp, *dst    = (pixel *)_dst + x_EL + y_EL * _dststride;
     int16_t *   src_tmp;
-
+    _dststride /= sizeof(pixel);
     for( j = 0; j < block_h; j++ )	{
     	y        =   av_clip_c(y_EL+j, topStartL, bottomEndL-1);
         coeff    = up_sample_filter_luma_x1_5[(y - topStartL)%3];
@@ -2097,6 +2099,7 @@ static void FUNC(upsample_filter_block_cr_v_x1_5)( uint8_t *_dst, ptrdiff_t dsts
     const int8_t* coeff;
     int16_t *   src_tmp;
     pixel *dst_tmp, *dst    = (pixel *)_dst;
+    dststride /= sizeof(pixel);
     for ( j = 0; j < block_h; j++ ) {
         y        = av_clip_c(y_EL+j, topStartC, bottomEndC-1);
         refPos16 = ((( y - topStartC )* up_info->scaleYCr + up_info->addYCr) >> 12)-4;

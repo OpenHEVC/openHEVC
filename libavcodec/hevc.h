@@ -88,7 +88,7 @@
 #define QPEL_EXTRA_BEFORE 3
 #define QPEL_EXTRA_AFTER  4
 #define QPEL_EXTRA        7
-#define ACTIVE_PU_UPSAMPLING     0
+#define ACTIVE_PU_UPSAMPLING     1
 #define ACTIVE_BOTH_FRAME_AND_PU 0
 
 #define EDGE_EMU_BUFFER_STRIDE 80
@@ -1332,8 +1332,9 @@ typedef struct HEVCContext {
     uint8_t         el_decoder_el_exist; // wheither the el exist or not at the el decoder
     uint8_t         el_decoder_bl_exist;
     uint8_t     *is_upsampled;
-
+#if !ACTIVE_PU_UPSAMPLING
     AVFrame *Ref_color_mapped_frame;
+#endif
     int temporal_layer_id;
     int decoder_id;
     int apply_defdispwin;
@@ -1500,7 +1501,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int c_idx);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
-
+void Free3DArray(HEVCPPS * pc3DAsymLUT);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

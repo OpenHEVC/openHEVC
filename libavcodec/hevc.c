@@ -501,7 +501,7 @@ int set_el_parameter(HEVCContext *s) {
     heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
     widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
     phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;
-
+#if !ACTIVE_PU_UPSAMPLING
     if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
       av_frame_unref(s->Ref_color_mapped_frame);
       s->Ref_color_mapped_frame->coded_width  = s->Ref_color_mapped_frame->width  = widthBL;
@@ -509,9 +509,8 @@ int set_el_parameter(HEVCContext *s) {
       ret = ff_get_buffer(s->avctx, s->Ref_color_mapped_frame, AV_GET_BUFFER_FLAG_REF);
       if(ret < 0)
         av_log(s->avctx, AV_LOG_ERROR, "Error in CGS allocation \n");
-
     }
-
+#endif
 #if 0
     s->sh.ScalingFactor[s->nuh_layer_id][0]   = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095 );
     s->sh.ScalingFactor[s->nuh_layer_id][1]   = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095 );
@@ -3923,13 +3922,15 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for(i=0; i < s->nals_allocated; i++) {
         av_freep(&s->skipped_bytes_pos_nal[i]);
     }
+
     av_freep(&s->skipped_bytes_pos_size_nal);
     av_freep(&s->skipped_bytes_nal);
     av_freep(&s->skipped_bytes_pos_nal);
     av_freep(&s->cabac_state);
+#if !ACTIVE_PU_UPSAMPLING
     av_frame_unref(s->Ref_color_mapped_frame);
     av_frame_free(&s->Ref_color_mapped_frame);
-
+#endif
 #ifdef USE_SAO_SMALL_BUFFER
     for (i = 0; i < s->threads_number; i++) {
         av_freep(&s->HEVClcList[i]->sao_pixel_buffer);
@@ -3956,8 +3957,11 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_buffer_unref(&s->vps_list[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
         av_buffer_unref(&s->sps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++){
+        if((HEVCPPS*)s->pps_list[i])
+          Free3DArray((HEVCPPS*)s->pps_list[i]->data);
         av_buffer_unref(&s->pps_list[i]);
+    }
 
     av_freep(&s->sh.entry_point_offset); // TODO Free for each slice
     av_freep(&s->sh.offset);
@@ -4000,8 +4004,9 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->cabac_state = av_malloc(HEVC_CONTEXTS);
     if (!s->cabac_state)
         goto fail;
-
+#if !ACTIVE_PU_UPSAMPLING
     s->Ref_color_mapped_frame  = av_frame_alloc();
+#endif
 #ifndef USE_SAO_SMALL_BUFFER
     s->tmp_frame = av_frame_alloc();
     if (!s->tmp_frame)
