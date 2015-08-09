@@ -49,13 +49,6 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
     }
 }
 
-
-void alloc_frame1(HEVCContext *s, AVFrame *frame, int flags) {
-	int ret;
-   if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
-     return ret;
-}
-
 RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *ref, int x0, int y0)
 {
     int x_cb         = x0 >> s->sps->log2_ctb_size;

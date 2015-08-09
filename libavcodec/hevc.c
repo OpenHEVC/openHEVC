@@ -503,11 +503,13 @@ int set_el_parameter(HEVCContext *s) {
     phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;
 
     if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
+      av_frame_unref(s->Ref_color_mapped_frame);
       s->Ref_color_mapped_frame->coded_width  = s->Ref_color_mapped_frame->width  = widthBL;
       s->Ref_color_mapped_frame->coded_height = s->Ref_color_mapped_frame->height = heightBL;
-      alloc_frame1(s, s->Ref_color_mapped_frame, AVMEDIA_TYPE_VIDEO);
-//      printf("%d %d %d %d \n", s->Ref_color_mapped_frame->coded_width, s->Ref_color_mapped_frame->width, s->Ref_color_mapped_frame->coded_height, s->Ref_color_mapped_frame->height);
- //   exit(-1);
+      ret = ff_get_buffer(s->avctx, s->Ref_color_mapped_frame, AV_GET_BUFFER_FLAG_REF);
+      if(ret < 0)
+        av_log(s->avctx, AV_LOG_ERROR, "Error in CGS allocation \n");
+
     }
 
 #if 0
@@ -3924,8 +3926,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->skipped_bytes_pos_size_nal);
     av_freep(&s->skipped_bytes_nal);
     av_freep(&s->skipped_bytes_pos_nal);
-
     av_freep(&s->cabac_state);
+    av_frame_unref(s->Ref_color_mapped_frame);
     av_frame_free(&s->Ref_color_mapped_frame);
 
 #ifdef USE_SAO_SMALL_BUFFER
@@ -3949,8 +3951,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         ff_hevc_unref_frame(s, &s->Add_ref[i], ~0);
         av_frame_free(&s->Add_ref[i].frame);
     }
-
-
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->vps_list); i++)
         av_buffer_unref(&s->vps_list[i]);
