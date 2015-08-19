@@ -1193,6 +1193,9 @@ typedef struct HEVCLocalContext {
 
     DECLARE_ALIGNED(32, int16_t, edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE]);
 
+    DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_y[MAX_EDGE_BUFFER_SIZE]);
+    DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_u[MAX_EDGE_BUFFER_SIZE>>2]);
+    DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_v[MAX_EDGE_BUFFER_SIZE>>2]);
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
 

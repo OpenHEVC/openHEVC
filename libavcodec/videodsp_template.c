@@ -102,24 +102,28 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
 
 static int FUNC(ff_emulated_edge_up_h)(uint8_t *src, ptrdiff_t linesize,
                                     const struct HEVCWindow *Enhscal,
-                                    int block_w, int block_h, int bl_edge_left, int bl_edge_right, int shift)
+                                    int block_w, int block_h, int bl_edge_left,
+                                    int bl_edge_right, int shift)
 {
-    int i;
-    uint8_t   *src_tmp = src;
-    
+    int i, j;
+    pixel   *src_tmp = (pixel*)src;
+    linesize /= sizeof(pixel);
+
     if(bl_edge_left < shift) {
-      //  printf("------------ bl_edge_left %d \n", bl_edge_left);
         for(i=0; i < block_h; i++) {
-            memset(src_tmp-(shift), src_tmp[0], shift);
+            for(j=0; j < shift; j++)
+                src_tmp[j-shift] = src_tmp[0];
+    //        memset(src_tmp-(shift), src_tmp[0], shift);
             src_tmp += linesize;
         }
         return 0;
     }
     
     if(bl_edge_right<(shift+1)) {
-        //printf("------------  bl_edge_right %d \n", bl_edge_right);
         for( i = 0; i < block_h ; i++ ) {
-            memset(src_tmp+block_w,               src_tmp[block_w-1], shift+1);
+            for(j=0; j < shift+1; j++)
+                src_tmp[block_w+j] = src_tmp[block_w-1];
+   //         memset(src_tmp+block_w,               src_tmp[block_w-1], shift+1);
             src_tmp += linesize;
         }
     }
@@ -140,11 +144,11 @@ static int FUNC(ff_emulated_edge_up_v)(int16_t *src, ptrdiff_t linesize,
     
     if(bl_edge_up < shift)  {
       //  printf("------------ bl_edge_up %d \n", bl_edge_up);
-        for( i = 0; i < block_w; i++ )	{
-            for(j= bl_edge_up; j<(shift) ; j++)
+        for( i = 0; i < block_w; i++ ) {
+            for(j= bl_edge_up; j<shift ; j++)
                 dst[(-j-1)*linesize] = src_tmp[-bl_edge_up*linesize];
-            if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
-                src_tmp++;
+          //  if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
+            src_tmp++;
             dst++; 
         }
         return 0;
@@ -156,11 +160,10 @@ static int FUNC(ff_emulated_edge_up_v)(int16_t *src, ptrdiff_t linesize,
             for(j= 0; j< shift+1 ; j++){
                 dst[(block_h+j)*linesize] = src_tmp[(block_h-1)*linesize];
             }
-            if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
-                src_tmp++;
+//            if( ((src_x+i) >= leftStartL) && ((src_x+i) <= rightEndL-2) )
+            src_tmp++;
             dst++;
         }
     }
-
     return 1;
 }

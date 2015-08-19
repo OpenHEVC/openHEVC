@@ -449,7 +449,6 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
     return NULL;
 }
 
-
 #if ACTIVE_PU_UPSAMPLING
 static void set_refindex_data(HEVCContext *s){
     int list, i;
