@@ -106,30 +106,55 @@ static int FUNC(ff_emulated_edge_up_h)(uint8_t *src, ptrdiff_t linesize,
                                     int bl_edge_right, int shift)
 {
     int i, j;
-    pixel   *src_tmp = (pixel*)src;
-    linesize /= sizeof(pixel);
+    uint8_t   *src_tmp = src;
+
+    if(bl_edge_left < shift) {
+      for(i=0; i < block_h; i++) {
+//      for(j=0; j < shift; j++)
+//        src_tmp[j-shift] = src_tmp[0];
+        memset(src_tmp-(shift), src_tmp[0], shift);
+        src_tmp += linesize;
+      }
+      return 0;
+    }
+    
+    if(bl_edge_right<(shift+1)) {
+      for( i = 0; i < block_h ; i++ ) {
+//      for(j=0; j < shift+1; j++)
+//        src_tmp[block_w+j] = src_tmp[block_w-1];
+        memset(src_tmp+block_w,               src_tmp[block_w-1], shift+1);
+        src_tmp += linesize;
+      }
+    }
+    return 1;
+}
+
+static int FUNC(ff_emulated_edge_up_cgs_h)(uint16_t *src, ptrdiff_t linesize,
+                                           const struct HEVCWindow *Enhscal,
+                                           int block_w, int block_h, int bl_edge_left,
+                                           int bl_edge_right, int shift)
+{
+    int i, j;
+    uint16_t   *src_tmp = src;
 
     if(bl_edge_left < shift) {
         for(i=0; i < block_h; i++) {
             for(j=0; j < shift; j++)
                 src_tmp[j-shift] = src_tmp[0];
-    //        memset(src_tmp-(shift), src_tmp[0], shift);
             src_tmp += linesize;
         }
         return 0;
     }
-    
+
     if(bl_edge_right<(shift+1)) {
         for( i = 0; i < block_h ; i++ ) {
             for(j=0; j < shift+1; j++)
                 src_tmp[block_w+j] = src_tmp[block_w-1];
-   //         memset(src_tmp+block_w,               src_tmp[block_w-1], shift+1);
             src_tmp += linesize;
         }
     }
     return 1;
 }
-
 
 static int FUNC(ff_emulated_edge_up_v)(int16_t *src, ptrdiff_t linesize,
                                     const struct HEVCWindow *Enhscal,
