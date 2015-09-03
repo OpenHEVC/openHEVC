@@ -2,7 +2,7 @@
  * HEVC video energy efficient decoder
  * Morgan Lacour 2015
  */
-
+#if CONFIG_ECO
 #include "get_bits.h"
 #include "hevc.h"
 
@@ -1002,3 +1002,4 @@ static void FUNC(put_hevc_epel2_hv)(int16_t *dst, ptrdiff_t dststride,
 	   dst += dststride;
 	}
 }
+#endif

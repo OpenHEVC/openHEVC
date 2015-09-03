@@ -2,7 +2,7 @@
  * HEVC video energy efficient decoder
  * Morgan Lacour 2015
  */
-
+#if CONFIG_ECO
 #include "hevc.h"
 #include "hevcdsp.h"
 #include "hevcdsp_eco.h"
@@ -326,4 +326,6 @@ int i = 0;
     }
     hevcdsp->eco_cur_chroma=4;
 }
+#endif
+
 #endif

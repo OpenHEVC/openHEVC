@@ -2,7 +2,7 @@
  * HEVC video energy efficient decoder
  * Morgan Lacour 2015
  */
-
+#if CONFIG_ECO
 #include "hevc_eco.h"
 
 void eco_get_activation(HEVCContext *s)
@@ -184,3 +184,4 @@ static const AVOption eco_param[] = {
 }
 };*/
 
+#endif
