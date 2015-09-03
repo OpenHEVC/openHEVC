@@ -288,6 +288,7 @@ libavcodec/h264qpel.h
     libavcodec/hevc_sei.c
     libavcodec/hevc_filter.c
     libavcodec/hevc.c
+    libavcodec/hevc_eco.c
     libavcodec/hevcdsp.c
     libavcodec/hevcpred.c
     libavcodec/hpeldsp.c

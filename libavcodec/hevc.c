@@ -39,6 +39,8 @@
 #include "golomb.h"
 #include "hevc.h"
 
+#include "hevc_eco.h"
+
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
 #define POC_DISPLAY_MD5
@@ -3185,142 +3187,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             }
 #endif
 
-		if (s->sh.first_slice_in_pic_flag) { 	// ECO: configuration is the same for the whole frame
-			if (s->sh.slice_type != I_SLICE){
-				// Eco activation levels
-				switch(s->eco_alevel){
-				case 0:
-					s->hevcdsp.eco_on = 0;
-					break;
-				case 1:
-					if( s->poc%12 == 0)
-						s->hevcdsp.eco_on = 1;
-					else
-						s->hevcdsp.eco_on = 0;
-					break;
-				case 2:
-					if( s->poc%6 == 0)
-						s->hevcdsp.eco_on = 1;
-					else
-						s->hevcdsp.eco_on = 0;
-					break;
-				case 3:
-					if( s->poc%4 == 0)
-						s->hevcdsp.eco_on = 1;
-					else
-						s->hevcdsp.eco_on = 0;
-					break;
-				case 4:
-					if( s->poc%3 == 0)
-						s->hevcdsp.eco_on = 1;
-					else
-						s->hevcdsp.eco_on = 0;
-					break;
-				case 5:
-					if( s->poc%2 == 0 || s->poc%12 == 5)
-						s->hevcdsp.eco_on = 0;
-					else
-						s->hevcdsp.eco_on = 1;
-					break;
-				case 6:
-					if( s->poc%2 == 0)
-						s->hevcdsp.eco_on = 1;
-					else
-						s->hevcdsp.eco_on = 0;
-					break;
-				case 7:
-					if( s->poc%2 == 0 || s->poc%12 == 5 )
-						s->hevcdsp.eco_on = 1;
-					else
-						s->hevcdsp.eco_on = 0;
-					break;
-				case 8:
-					if( s->poc%3 == 0)
-						s->hevcdsp.eco_on = 0;
-					else
-						s->hevcdsp.eco_on = 1;
-					break;
-				case 9:
-					if( s->poc%4 == 0)
-						s->hevcdsp.eco_on = 0;
-					else
-						s->hevcdsp.eco_on = 1;
-					break;
-				case 10:
-					if( s->poc%6 == 0)
-						s->hevcdsp.eco_on = 0;
-					else
-						s->hevcdsp.eco_on = 1;
-					break;
-				case 11:
-					if( s->poc%12 == 6)
-						s->hevcdsp.eco_on = 0;
-					else
-						s->hevcdsp.eco_on = 1;
-					break;
-				case 12:
-					s->hevcdsp.eco_on = 1;
-					break;
-				default:
-					s->hevcdsp.eco_on = 0;
-					break;
-				}
-
-				if( s->hevcdsp.eco_on ){ // ECO Mode Activated
-
-					if(s->eco_dbf_on == 0)
-						s->sh.disable_deblocking_filter_flag = 1;	// ECO: disable deblocking filter
-					if(s->eco_sao_on == 0)
-						s->sh.disable_sao_filter_flag = 1;			// ECO: disable SAO filter
-
-					switch(s->eco_luma){
-					case LUMA1:										// ECO: 1tap luma interpolation
-						if (s->hevcdsp.eco_cur_luma != LUMA1){
-							eco_reload_filter_luma1(&(s->hevcdsp), s->sps->bit_depth);
-						}
-						break;
-					case LUMA3:										// ECO: 3taps luma interpolation
-						if (s->hevcdsp.eco_cur_luma != LUMA3){
-							eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
-						}
-						break;
-					case LUMA7:	// ECO: no need to reload if 7taps filter is selected
-					default:
-						break;
-					}
-
-					switch(s->eco_chroma){
-					case CHROMA1:									// ECO: 1tap chroma interpolation
-						if (s->hevcdsp.eco_cur_chroma != CHROMA1){
-							eco_reload_filter_chroma1(&(s->hevcdsp), s->sps->bit_depth);
-						}
-						break;
-					case CHROMA2:									// ECO: 2taps chroma interpolation
-						if (s->hevcdsp.eco_cur_chroma != CHROMA2){
-							eco_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
-						}
-						break;
-					case CHROMA4: // ECO: no need to reload if 4taps filter is selected
-						break;
-					default:
-						break;
-					}
-				}else{ // ECO Mode Desactivated -> Legacy decoding
-					if (s->hevcdsp.eco_cur_luma != LUMA7){
-						eco_reload_filter_luma7(&(s->hevcdsp), s->sps->bit_depth);
-					}
-					if (s->hevcdsp.eco_cur_chroma != CHROMA4){
-						eco_reload_filter_chroma4(&(s->hevcdsp), s->sps->bit_depth);
-					}
-					s->sh.disable_deblocking_filter_flag = 0;
-					s->sh.disable_sao_filter_flag = 0;
-				}
-			}else{ // If frame is I, make sure the in-loop filters are enabled
-				s->hevcdsp.eco_on = 0;
-				s->sh.disable_deblocking_filter_flag = 0;
-				s->sh.disable_sao_filter_flag = 0;
-			}
-		}// ECO: Activation Level management end
+		eco_get_activation(s); //ECO
+		eco_set_activation(s); //ECO
 
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -3759,11 +3627,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (s->is_decoded) {
         s->ref->frame->key_frame = IS_IRAP(s);
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
-        // Eco Mode Log
-        if(s->eco_verbose && s->sh.slice_type != I_SLICE){
-            av_log(s->avctx, AV_LOG_INFO,"%d Interpolation configuration: AL %d Luma %d Chroma %d SAO %s DBF %s.\n",s->poc, s->eco_alevel, s->hevcdsp.eco_cur_luma,
-				   s->hevcdsp.eco_cur_chroma,(s->eco_sao_on || !s->hevcdsp.eco_on) ? "on" : "off",(s->eco_dbf_on || !s->hevcdsp.eco_on) ? "on" : "off");
-        }
+        eco_logs(s); //ECO
         s->is_decoded = 0;
     }
 
@@ -3997,13 +3861,8 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
-    /** ECO update */
-	s->eco_alevel           = s0->eco_alevel;
-	s->eco_luma             = s0->eco_luma;
-	s->eco_chroma           = s0->eco_chroma;
-	s->eco_dbf_on	        = s0->eco_dbf_on;
-	s->eco_sao_on           = s0->eco_sao_on;
-	s->eco_verbose			= s0->eco_verbose;
+
+    eco_update_context(s,s0); //ECO
 
 
     if (s->sps != s0->sps)
