@@ -1304,7 +1304,7 @@ typedef struct HEVCContext {
     uint8_t threads_type;
     uint8_t threads_number;
     int     decode_checksum_sei;
-
+#if CONFIG_ECO
     /** ECO parameters */
     int eco_alevel; 	//< Activation Level [0-12]
     int eco_luma;		//< Luma Interpolation filters taps number
@@ -1312,6 +1312,7 @@ typedef struct HEVCContext {
     int eco_dbf_on; 	//< Deblocking filter activation
     int eco_sao_on;		//< SAO filter activation
     int eco_verbose;	//< Show logs
+#endif
 
 } HEVCContext;
 
@@ -1446,6 +1447,7 @@ extern const uint8_t ff_hevc_diag_scan4x4_y[16];
 extern const uint8_t ff_hevc_diag_scan8x8_x[64];
 extern const uint8_t ff_hevc_diag_scan8x8_y[64];
 
+#if CONFIG_ECO
 /** ECO defines */
 #define LUMA1 1
 #define LUMA3 3
@@ -1453,5 +1455,6 @@ extern const uint8_t ff_hevc_diag_scan8x8_y[64];
 #define CHROMA1 1
 #define CHROMA2 2
 #define CHROMA4 4
+#endif
 
 #endif /* AVCODEC_HEVC_H */

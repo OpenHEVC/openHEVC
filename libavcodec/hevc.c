@@ -39,7 +39,9 @@
 #include "golomb.h"
 #include "hevc.h"
 
-#include "hevc_eco.h"
+#if CONFIG_ECO
+#include "hevc_eco.h" //ECO
+#endif
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
@@ -3186,10 +3188,10 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Additional DPB full, decoder_%d.\n", s->decoder_id);
             }
 #endif
-
+#if CONFIG_ECO
 		eco_get_activation(s); //ECO
 		eco_set_activation(s); //ECO
-
+#endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
@@ -3627,7 +3629,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (s->is_decoded) {
         s->ref->frame->key_frame = IS_IRAP(s);
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
+#if CONFIG_ECO
         eco_logs(s); //ECO
+#endif
         s->is_decoded = 0;
     }
 
@@ -3861,8 +3865,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
-
+#if CONFIG_ECO
     eco_update_context(s,s0); //ECO
+#endif
 
 
     if (s->sps != s0->sps)
@@ -4009,6 +4014,7 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "quality_layer_id", "set the max quality id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
+#if CONFIG_ECO
 	{ "a-level", "Eco Activation level", OFFSET(eco_alevel),					//< ECO Activation Level
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 12, PAR },
 	{ "eco-luma", "Eco Inter-prediction Luma nb taps", OFFSET(eco_luma),		//< ECO Luma
@@ -4021,6 +4027,7 @@ static const AVOption options[] = {
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
 	{ "eco-verbose", "Eco verbose", OFFSET(eco_verbose),						//< ECO Logs
 				AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+#endif
     { NULL },
 };
 

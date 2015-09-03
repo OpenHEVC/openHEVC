@@ -2394,4 +2394,6 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
 #undef CroVer_FILTER
 #endif
 
+#if CONFIG_ECO
 #include "hevcdsp_eco_template.c"
+#endif
