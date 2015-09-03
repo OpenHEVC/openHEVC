@@ -495,7 +495,7 @@ void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val)
 
     for (i = 0; i < openHevcContexts->nb_decoders; i++) {
         openHevcContext = openHevcContexts->wraper[i];
-        av_opt_set_int(openHevcContext->c->priv_data, "temporal-layer-id", val+1, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "temporal-layer-id", val, 0);
     }
     
 }
