@@ -144,6 +144,12 @@ elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
     add_definitions("-DX86_32")
 endif()
 
+#ECO MODE
+IF(NOT DEFINED CONFIG_ECO)
+    SET(CONFIG_ECO 0)
+ENDIF()
+ADD_DEFINITIONS(-DCONFIG_ECO=${CONFIG_ECO})
+
 add_definitions("-DPIC")
 add_definitions("-DUSE_SDL")
 AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
