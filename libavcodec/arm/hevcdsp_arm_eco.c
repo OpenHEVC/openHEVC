@@ -293,3 +293,4 @@ av_cold void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
 }
 
 #endif
+#endif
