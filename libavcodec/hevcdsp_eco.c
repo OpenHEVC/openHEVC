@@ -62,20 +62,7 @@ void eco_reload_filter_luma1(HEVCDSPContext *hevcdsp, int bit_depth)
 
 int i = 0;
 
-    switch (bit_depth) {
-    case 9:
-        HEVC_DSP(9);
-        break;
-    case 10:
-        HEVC_DSP(10);
-        break;
-    case 12:
-        HEVC_DSP(12);
-        break;
-    default:
-        HEVC_DSP(8);
-        break;
-    }
+    HEVC_DSP(8);
 
     hevcdsp->eco_cur_luma=1;
 }
@@ -126,20 +113,8 @@ void eco_reload_filter_luma3(HEVCDSPContext *hevcdsp, int bit_depth)
 
 int i = 0;
 
-    switch (bit_depth) {
-    case 9:
-        HEVC_DSP(9);
-        break;
-    case 10:
-        HEVC_DSP(10);
-        break;
-    case 12:
-        HEVC_DSP(12);
-        break;
-    default:
-        HEVC_DSP(8);
-        break;
-    }
+	HEVC_DSP(8);
+
     hevcdsp->eco_cur_luma=3;
 }
 
@@ -189,20 +164,8 @@ void eco_reload_filter_luma7(HEVCDSPContext *hevcdsp, int bit_depth)
 
 int i = 0;
 
-    switch (bit_depth) {
-    case 9:
-        HEVC_DSP(9);
-        break;
-    case 10:
-        HEVC_DSP(10);
-        break;
-    case 12:
-        HEVC_DSP(12);
-        break;
-    default:
-        HEVC_DSP(8);
-        break;
-    }
+	HEVC_DSP(8);
+
     hevcdsp->eco_cur_luma=7;
 }
 
@@ -229,20 +192,8 @@ void eco_reload_filter_chroma1(HEVCDSPContext *hevcdsp, int bit_depth)
 
 int i = 0;
 
-    switch (bit_depth) {
-    case 9:
-        HEVC_DSP(9);
-        break;
-    case 10:
-        HEVC_DSP(10);
-        break;
-    case 12:
-        HEVC_DSP(12);
-        break;
-    default:
-        HEVC_DSP(8);
-        break;
-    }
+	HEVC_DSP(8);
+
     hevcdsp->eco_cur_chroma=1;
 }
 
@@ -270,20 +221,8 @@ void eco_reload_filter_chroma2(HEVCDSPContext *hevcdsp, int bit_depth)
 
 int i = 0;
 
-    switch (bit_depth) {
-    case 9:
-        HEVC_DSP(9);
-        break;
-    case 10:
-        HEVC_DSP(10);
-        break;
-    case 12:
-        HEVC_DSP(12);
-        break;
-    default:
-        HEVC_DSP(8);
-        break;
-    }
+	HEVC_DSP(8);
+
     hevcdsp->eco_cur_chroma=2;
 }
 
@@ -310,20 +249,8 @@ void eco_reload_filter_chroma4(HEVCDSPContext *hevcdsp, int bit_depth)
 
 int i = 0;
 
-    switch (bit_depth) {
-    case 9:
-        HEVC_DSP(9);
-        break;
-    case 10:
-        HEVC_DSP(10);
-        break;
-    case 12:
-        HEVC_DSP(12);
-        break;
-    default:
-        HEVC_DSP(8);
-        break;
-    }
+	HEVC_DSP(8);
+
     hevcdsp->eco_cur_chroma=4;
 }
 #endif
