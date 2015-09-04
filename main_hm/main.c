@@ -109,8 +109,10 @@ static void video_decode_example(const char *filename)
         openHevcHandle = libOpenH264Init(nb_pthreads, thread_type/*, pFormatCtx*/);
     else
         openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
-    // ECO init from args
+
+#if CONFIG_ECO
     libOpenHevcInitECO(openHevcHandle, eco_param, eco_verbose);
+#endif
 
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
 
