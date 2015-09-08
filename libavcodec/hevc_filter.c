@@ -33,7 +33,6 @@
 #include "hevc.h"
 #include "bit_depth_template.c"
 
-
 #if HAVE_SSE2
 #include <emmintrin.h>
 #endif
@@ -1201,7 +1200,7 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 #if CONFIG_ECO
     if (!s->sh.disable_sao_filter_flag) // ECO SAO filter activation
 #endif
-    if (s->sps->sao_enabled && !s->sh.disable_sao_filter_flag) {
+    if (s->sps->sao_enabled) {
         int y_end = y >= s->sps->height - ctb_size;
         if (y && x)
             sao_filter_CTB(s, x - ctb_size, y - ctb_size);

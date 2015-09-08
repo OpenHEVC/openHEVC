@@ -765,7 +765,6 @@ static void FUNC(put_hevc_qpel_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
     }
 }
 
-
 static void FUNC(put_hevc_qpel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                      int16_t *src2, ptrdiff_t src2stride,
                                      int height, intptr_t mx, intptr_t my, int width)
@@ -888,7 +887,6 @@ static void FUNC(put_hevc_qpel_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
         dst += dststride;
     }
 }
-
 
 static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                       int16_t *src2, ptrdiff_t src2stride,
@@ -1145,7 +1143,6 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 }
-
 
 static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
@@ -1555,9 +1552,7 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
         dst  += dststride;
         src2 += src2stride;
     }
-}
-
-// line zero
+}// line zero
 #define P3 pix[-4 * xstride]
 #define P2 pix[-3 * xstride]
 #define P1 pix[-2 * xstride]

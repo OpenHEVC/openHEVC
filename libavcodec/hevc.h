@@ -81,11 +81,9 @@
 #define EPEL_EXTRA_BEFORE 1
 #define EPEL_EXTRA_AFTER  2
 #define EPEL_EXTRA        3
-
 #define QPEL_EXTRA_BEFORE 3
 #define QPEL_EXTRA_AFTER  4
 #define QPEL_EXTRA        7
-
 #define ACTIVE_PU_UPSAMPLING     1
 #define ACTIVE_BOTH_FRAME_AND_PU 0
 
@@ -940,7 +938,9 @@ typedef struct SliceHeader {
 
     uint8_t cabac_init_flag;
     uint8_t disable_deblocking_filter_flag; ///< slice_header_disable_deblocking_filter_flag
+#if CONFIG_ECO
     uint8_t disable_sao_filter_flag;
+#endif
     uint8_t slice_loop_filter_across_slices_enabled_flag;
     uint8_t collocated_list;
 

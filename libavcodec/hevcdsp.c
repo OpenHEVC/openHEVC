@@ -190,7 +190,6 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters[3][16]) = {
     {  0,  1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1}
 };
 
-
 #define BIT_DEPTH 8
 #include "hevcdsp_template.c"
 #undef BIT_DEPTH

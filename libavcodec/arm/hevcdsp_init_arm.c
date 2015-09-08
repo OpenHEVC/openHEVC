@@ -125,15 +125,6 @@ void ff_hevc_put_epel_v_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
 void ff_hevc_put_epel_hv_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
                                 ptrdiff_t srcstride, int height,
                                 intptr_t mx, intptr_t my, int width);
-void ff_hevc_put_epel2_h_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
-                                ptrdiff_t srcstride, int height,
-                                intptr_t mx, intptr_t my, int width);
-void ff_hevc_put_epel2_v_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
-                                ptrdiff_t srcstride, int height,
-                                intptr_t mx, intptr_t my, int width);
-void ff_hevc_put_epel2_hv_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
-                                ptrdiff_t srcstride, int height,
-                                intptr_t mx, intptr_t my, int width);
 void ff_hevc_transform_4x4_neon_8(int16_t *coeffs, int col_limit);
 void ff_hevc_transform_8x8_neon_8(int16_t *coeffs, int col_limit);
 void ff_hevc_transform_16x16_add_neon_8(uint8_t *_dst, int16_t *coeffs,
@@ -242,7 +233,6 @@ static void ff_hevc_sao_band_neon_wrapper(uint8_t *_dst, uint8_t *_src,
         }
     }
 }
-
 
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
 static void ff_hevc_sao_edge_neon_wrapper(uint8_t *_dst, uint8_t *_src,

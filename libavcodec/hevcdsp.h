@@ -50,7 +50,6 @@ typedef struct SAOParams {
 } SAOParams;
 
 typedef struct HEVCDSPContext {
-
     void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int width, int height,
                     struct GetBitContext *gb, int pcm_bit_depth);
 
@@ -158,5 +157,4 @@ extern const int8_t ff_hevc_qpel_filters[3][16];
 
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);
 void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth);
-
 #endif /* AVCODEC_HEVCDSP_H */

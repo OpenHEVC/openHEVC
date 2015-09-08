@@ -82,6 +82,16 @@ QPEL_FUNC_UW(ff_hevc_put_qpel3_uw_h3v2_neon_8);
 QPEL_FUNC_UW(ff_hevc_put_qpel3_uw_h3v3_neon_8);
 #undef QPEL_FUNC_UW
 
+void ff_hevc_put_epel2_h_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                ptrdiff_t srcstride, int height,
+                                intptr_t mx, intptr_t my, int width);
+void ff_hevc_put_epel2_v_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                ptrdiff_t srcstride, int height,
+                                intptr_t mx, intptr_t my, int width);
+void ff_hevc_put_epel2_hv_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                ptrdiff_t srcstride, int height,
+                                intptr_t mx, intptr_t my, int width);
+
 #if HAVE_NEON
 av_cold void eco_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth)
 {

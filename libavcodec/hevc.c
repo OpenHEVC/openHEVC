@@ -47,11 +47,12 @@ const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12
 
 #define POC_DISPLAY_MD5
 
-
 static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift);
 static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
 static void display_md5(int poc, uint8_t md5[3][16], int chroma_idc);
 static void printf_ref_pic_list(HEVCContext *s);
+
+
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -2007,7 +2008,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         }
 #endif
         hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
-    }    
+    }
 
     if (current_mv.pred_flag == PF_L0) {
         int x0_c = x0 >> s->sps->hshift[1];
@@ -3053,6 +3054,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         goto fail;
     } else if (ret != (s->decoder_id) && (s->nal_unit_type != NAL_VPS && (s->nal_unit_type != NAL_SPS) /*&& s->nal_unit_type != NAL_PPS*/))
         return 0;
+
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
     s->nuh_layer_id = ret;
@@ -3147,7 +3149,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
-
         } else if (!s->ref) {
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
             goto fail;
@@ -3592,7 +3593,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     }
 
     s->ref = NULL;
-
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
@@ -3722,7 +3722,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     HEVCContext *s = avctx->priv_data;
     int i;
     s->avctx = avctx;
-
 
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
     if (!s->HEVClc)
@@ -3967,7 +3966,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
             return ret;
         }
     }
-
     return 0;
 }
 
@@ -4037,7 +4035,6 @@ static const AVClass hevc_decoder_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-
 
 AVCodec ff_hevc_decoder = {
     .name                  = "hevc",
@@ -4123,3 +4120,4 @@ static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int heig
     av_md5_sum(md5, buf, stride_buf * height);
     av_free(buf);
 }
+
