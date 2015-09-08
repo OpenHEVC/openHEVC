@@ -19,6 +19,11 @@ What does openHEVC Green feature?
   + DBF on (legacy) / off
 * Activation levels, from  0 to 12, in order to activate promptly the power-aware configuration.
 
+How to compile openHEVC Green on linux from source code
+----------
+`cmake -DCONFIG_ECO=1 -DCMAKE_BUILD_TYPE=RELEASE ..`
+
+
 How to use openHEVC Green on linux from source code
 ----------
 * Prerequisites: SDL or SDL2
