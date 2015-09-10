@@ -1258,6 +1258,9 @@ typedef struct HEVCContext {
     int temporal_id;  ///< temporal_id_plus1 - 1
     int nuh_layer_id;
     SliceHeader sh;
+
+	uint8_t force_first_slice_in_pic;
+	int64_t last_frame_pts;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
