@@ -115,6 +115,11 @@ void eco_set_activation(HEVCContext *s)
 				eco_reload_filter_luma3(&(s->hevcdsp), s->sps->bit_depth);
 			}
 			break;
+		case LUMA5:										// ECO: 5taps luma interpolation
+					if (s->hevcdsp.eco_cur_luma != LUMA5){
+						eco_reload_filter_luma5(&(s->hevcdsp), s->sps->bit_depth);
+					}
+					break;
 		case LUMA7:	// ECO: no need to reload if 7taps filter is selected
 		default:
 			break;
@@ -166,22 +171,5 @@ void eco_update_context(HEVCContext *s, HEVCContext *s0)
 	s->eco_sao_on           = s0->eco_sao_on;
 	s->eco_verbose			= s0->eco_verbose;
 }
-/*
-static const AVOption eco_param[] = {
-	{ "a-level", "Eco Activation level", OFFSET(eco_alevel),					//< ECO Activation Level
-			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 12, PAR },
-	{ "eco-luma", "Eco Inter-prediction Luma nb taps", OFFSET(eco_luma),		//< ECO Luma
-			AV_OPT_TYPE_INT, {.i64 = 7}, 1, 7, PAR },
-	{ "eco-chroma", "Eco Inter-prediction Chroma nb taps", OFFSET(eco_chroma),	//< ECO Chroma
-			AV_OPT_TYPE_INT, {.i64 = 4}, 1, 4, PAR },
-	{ "eco-dbf-on", "Eco Deblocking filter on/off", OFFSET(eco_dbf_on),			//< ECO deblocking filter
-			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-	{ "eco-sao-on", "Eco SAO filter on/off", OFFSET(eco_sao_on),				//< ECO SAO
-			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-	{ "eco-verbose", "Eco verbose", OFFSET(eco_verbose),						//< ECO Logs
-				AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-	{ NULL },
-}
-};*/
 
 #endif

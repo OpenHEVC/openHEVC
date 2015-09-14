@@ -1447,14 +1447,4 @@ extern const uint8_t ff_hevc_diag_scan4x4_y[16];
 extern const uint8_t ff_hevc_diag_scan8x8_x[64];
 extern const uint8_t ff_hevc_diag_scan8x8_y[64];
 
-#if CONFIG_ECO
-/** ECO defines */
-#define LUMA1 1
-#define LUMA3 3
-#define LUMA7 7
-#define CHROMA1 1
-#define CHROMA2 2
-#define CHROMA4 4
-#endif
-
 #endif /* AVCODEC_HEVC_H */

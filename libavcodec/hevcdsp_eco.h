@@ -17,6 +17,12 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_eco2_filters[7][2]) = {
     { 54, 10}
 };
 
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_eco5_filters[3][5]) = {
+    { 1, -8, 58, 16, -3},
+    { 2, -9, 40, 40, -9},
+    { 1, -4, 17, 54, -4}
+};
+
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_eco3_filters[3][3]) = {
     { -8, 58, 14},
     { -8, 40, 32},
@@ -33,6 +39,7 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_eco1_filters[3][2]) = {
 /** ECO reload functions */
 void eco_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_luma3(HEVCDSPContext *c, const int bit_depth);
+void eco_reload_filter_luma5(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth);
 void eco_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth);
