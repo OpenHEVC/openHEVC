@@ -578,9 +578,9 @@ static int hls_slice_header(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
     SliceHeader   *sh   = &s->sh;
-#if PARALLEL_SLICE
+//#if PARALLEL_SLICE
     HEVCContext   *s1   = (HEVCContext*) s->avctx->priv_data;
-#endif
+//#endif
     int i, j, ret, change_pps = 0;
     int NumILRRefIdx;
 
@@ -607,6 +607,11 @@ static int hls_slice_header(HEVCContext *s)
     }
 #endif
     sh->first_slice_in_pic_flag   = first_slice_in_pic_flag;
+    if (s1->force_first_slice_in_pic) {
+      av_log(s->avctx, AV_LOG_DEBUG, "First_slice_in_pic_flag forced\n");
+      s1->force_first_slice_in_pic = 0;
+      sh->first_slice_in_pic_flag = 1;
+    }
 
     print_cabac("first_slice_segment_in_pic_flag", sh->first_slice_in_pic_flag);
     if ((IS_IDR(s->nal_unit_type) || IS_BLA(s->nal_unit_type)) && sh->first_slice_in_pic_flag) {
@@ -668,7 +673,8 @@ static int hls_slice_header(HEVCContext *s)
     s->avctx->level   = s->sps->ptl.Ptl_general.level_idc;
 
     sh->dependent_slice_segment_flag = 0;
-    if (!sh->first_slice_in_pic_flag) {
+//    if (!sh->first_slice_in_pic_flag) {
+    if(!first_slice_in_pic_flag) {
         int slice_address_length;
         if (s->pps->dependent_slice_segments_enabled_flag) {
             sh->dependent_slice_segment_flag = get_bits1(gb);
@@ -3861,6 +3867,14 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     ff_thread_set_slice_flag(avctx, 0);
     ff_init_flags(avctx);
 #endif
+//    ret    = decode_nal_units(s, avpkt->data, avpkt->size);
+
+    if (avpkt->pts != AV_NOPTS_VALUE) {
+      if (! s->last_frame_pts || (s->last_frame_pts!=avpkt->pts)) {
+        s->force_first_slice_in_pic = 1;
+      }
+      s->last_frame_pts = avpkt->pts;
+    }
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;

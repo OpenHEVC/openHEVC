@@ -1246,6 +1246,8 @@ typedef struct HEVCContext {
 
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
+    uint8_t force_first_slice_in_pic;
+    int64_t last_frame_pts;
     HEVCFrame *ref;
     HEVCFrame DPB[32];
     HEVCFrame Add_ref[2];
