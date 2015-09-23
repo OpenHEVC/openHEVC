@@ -228,7 +228,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
         int min_field = INT_MAX;
         int i, min_idx[2]= { 0 }, ret;
 
-        if (s->sh.no_output_of_prior_pics_flag == 1) {
+        if (s->sh.no_output_of_prior_pics_flag == 1 && s->no_rasl_output_flag == 1) {
             for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
                 HEVCFrame *frame = &s->DPB[i];
                 if (!(frame->flags & HEVC_FRAME_FLAG_BUMPING) && frame->poc != s->poc &&
@@ -259,6 +259,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             nb_output <= s->vps->vps_num_reorder_pics[s->vps->vps_max_sub_layers - 1] + s->interlaced) {
             return 0;
         }
+
         if (nb_output) {
             HEVCFrame *frame = &s->DPB[min_idx[0]];
             HEVCFrame *field = NULL;
@@ -532,7 +533,6 @@ int ff_hevc_slice_rpl(HEVCContext *s)
             list_idx ? ST_CURR_BEF : ST_CURR_AFT,
             LT_CURR,  list_idx ? IL_REF0 : IL_REF1};
         /* concatenate the candidate lists for the current frame */
-
         while (rpl_tmp.nb_refs < sh->nb_refs[list_idx]) {
             for (i = 0; i < FF_ARRAY_ELEMS(cand_lists); i++) {
                 RefPicList *rps = &s->rps[cand_lists[i]];
@@ -712,8 +712,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
     const ShortTermRPS *short_rps = s->sh.short_term_rps;
     const LongTermRPS  *long_rps  = &s->sh.long_term_rps;
     RefPicList               *rps = s->rps;
-    const HEVCVPS *vps           = s->vps;
     int i, ret;
+     const HEVCVPS *vps = s->vps;
 
     if (!short_rps) {
         rps[0].nb_refs = rps[1].nb_refs = 0;
@@ -752,13 +752,11 @@ int ff_hevc_frame_rps(HEVCContext *s)
 
     for (i = 0; i < NB_RPS_TYPE; i++)
         rps[i].nb_refs = 0;
-
-    if (!s->nuh_layer_id
-        || (s->nuh_layer_id > 0
-        && !(s->nal_unit_type >= NAL_BLA_W_LP
-        && s->nal_unit_type <= NAL_CRA_NUT
-        && s->sh.active_num_ILR_ref_idx)))
-    {
+    if (!s->nuh_layer_id ||
+        (s->nuh_layer_id > 0 &&
+        !(s->nal_unit_type >= NAL_BLA_W_LP &&
+        s->nal_unit_type <= NAL_CRA_NUT &&
+        s->sh.active_num_ILR_ref_idx))) {
         /* add the short refs */
         for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++)
         {

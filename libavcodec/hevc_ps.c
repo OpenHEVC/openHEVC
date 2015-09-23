@@ -797,9 +797,9 @@ static void derive_layerIdList_variables(HEVCVPS *vps) {
 
 static void derive_necessary_layer_flag(HEVCVPS *vps) {
     HEVCVPSExt  *Hevc_VPS_Ext = &vps->Hevc_VPS_Ext;
+    int olsIdx, lsLayerIdx, currNuhLayerId, rLsLayerIdx, refNuhLayerId;
     memset(Hevc_VPS_Ext->necessary_Layer_Flag, 0, sizeof(uint8_t)*16*16);
 
-    int olsIdx, lsLayerIdx, currNuhLayerId, rLsLayerIdx, refNuhLayerId;
     for(olsIdx = 0; olsIdx < Hevc_VPS_Ext->NumOutputLayerSets; olsIdx++) {
         int lsIdx           = Hevc_VPS_Ext->layer_set_idx_for_ols[olsIdx];
         int numLayersInLs   = Hevc_VPS_Ext->num_Layers_in_id_list[lsIdx];
@@ -823,6 +823,8 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
     int i, j, k, num_scalability_types = 0;
     GetBitContext   *gb             = &s->HEVClc->gb;
     HEVCVPSExt      *Hevc_VPS_Ext   = &vps->Hevc_VPS_Ext;
+    int NumOutputLayersInOutputLayerSet[16],  layerSetIdxForOutputLayerSet;
+    int vps_non_vui_extension_length, vps_vui_present_flag;
     print_cabac(" \n --- parse vps extention  --- \n ", s->nuh_layer_id);
 
     if( vps->vps_max_layers > 1  &&  vps->vps_base_layer_internal_flag )
@@ -960,8 +962,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
 	} else
         Hevc_VPS_Ext->num_add_olss = 0;
    // int numOutputLayerSets = vps->vps_num_layer_sets + Hevc_VPS_Ext->num_add_olss;
-    int NumOutputLayersInOutputLayerSet[16]; 
-
+ 
     Hevc_VPS_Ext->NumOutputLayerSets = Hevc_VPS_Ext->num_add_olss + vps->vps_num_layer_sets;
 	for(i=1; i < Hevc_VPS_Ext->NumOutputLayerSets; i++ ) {
         if( vps->vps_num_layer_sets > 2 && i >= vps->vps_num_layer_sets ) {
@@ -972,7 +973,7 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
             print_cabac("layer_set_idx_for_ols_minus1", Hevc_VPS_Ext->layer_set_idx_for_ols[i]);
         } else
             Hevc_VPS_Ext->layer_set_idx_for_ols[i] = i;
-        int layerSetIdxForOutputLayerSet = Hevc_VPS_Ext->layer_set_idx_for_ols[i];
+        layerSetIdxForOutputLayerSet = Hevc_VPS_Ext->layer_set_idx_for_ols[i];
         if( i > (vps->vps_num_layer_sets-1)  ||  Hevc_VPS_Ext->default_output_layer_idc  ==  2 ) {
             for( j = 0; j < Hevc_VPS_Ext->num_Layers_in_id_list[layerSetIdxForOutputLayerSet]; j++ ) {
                 Hevc_VPS_Ext->output_layer_flag[i][j] = get_bits1(gb);
@@ -1070,13 +1071,13 @@ static void parse_vps_extension (HEVCContext *s, HEVCVPS *vps)  {
                 }
             }
     
-    int vps_non_vui_extension_length, vps_non_vui_extension_data_byte;
+
 	vps_non_vui_extension_length = get_ue_golomb_long(gb);
     print_cabac("vps_non_vui_extension_length", vps_non_vui_extension_length);
 
-	for( i = 1; i  <=  vps_non_vui_extension_length; i++ )
-		vps_non_vui_extension_data_byte = get_bits(gb, 8);
-    int vps_vui_present_flag = get_bits1(gb);
+    for( i = 1; i  <=  vps_non_vui_extension_length; i++ )
+      get_bits(gb, 8); // vps_non_vui_extension_data_byte 
+    vps_vui_present_flag = get_bits1(gb);
 
     if( vps_vui_present_flag ) {
 		align_get_bits(gb);
@@ -1543,11 +1544,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     int log2_diff_max_min_transform_block_size;
     int start, vui_present, sublayer_ordering_info;
     int i;
-    print_cabac(" \n --- parse sps --- \n ", s->nuh_layer_id);
+    uint8_t bMultiLayerExtSpsFlag ;
+    
     HEVCSPS *sps;
     HEVCVPS *vps;
     AVBufferRef *sps_buf = av_buffer_allocz(sizeof(*sps));
-
+    print_cabac(" \n --- parse sps --- \n ", s->nuh_layer_id);
     if ( !sps_buf )
         return AVERROR(ENOMEM);
     sps = (HEVCSPS*)sps_buf->data;
@@ -1590,7 +1592,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
          else
             sps->max_sub_layers = sps_ext_or_max_sub_layers;
     }
-    uint8_t bMultiLayerExtSpsFlag = ( s->nuh_layer_id != 0 && sps->v1_compatible == 7 );
+    bMultiLayerExtSpsFlag = ( s->nuh_layer_id != 0 && sps->v1_compatible == 7 );
     if(!bMultiLayerExtSpsFlag) {
         sps->m_bTemporalIdNestingFlag = get_bits1(gb);
         print_cabac("sps_temporal_id_nesting_flag", sps->m_bTemporalIdNestingFlag);
@@ -2170,12 +2172,12 @@ static int ReadParam( GetBitContext   *gb, int rParam ) {
 }
 static void xParse3DAsymLUTOctant( GetBitContext *gb , TCom3DAsymLUT * pc3DAsymLUT , int nDepth , int yIdx , int uIdx , int vIdx , int length) {
     uint8_t split_octant_flag = nDepth < pc3DAsymLUT->cm_octant_depth;
-    int l,m,n;
+    int l,m,n, nYPartNum;
     if(split_octant_flag){
       split_octant_flag = get_bits1(gb);
       print_cabac("split_octant_flag", split_octant_flag);
     }
-    int nYPartNum = 1 << pc3DAsymLUT->cm_y_part_num_log2;
+    nYPartNum = 1 << pc3DAsymLUT->cm_y_part_num_log2;
     if( split_octant_flag ) {
         int nHalfLength = length >> 1;
         for(l = 0 ; l < 2 ; l++ )
@@ -2228,14 +2230,15 @@ static void Allocate3DArray(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, i
         pc3DAsymLUT->S_Cuboid[x][y] = pc3DAsymLUT->S_Cuboid[0][0] + x * ySize * zSize + y * zSize;
 }
 
-
+/*
 static void Display(TCom3DAsymLUT * pc3DAsymLUT, int xSize, int ySize, int zSize) {
   int i, j, k;
   for( i = 0 ; i < xSize ; i++ )
     for(j = 0 ; j < ySize ; j++ )
       for(k = 0 ; k < zSize ; k++ )
         printf("%d %d %d %d - %d %d %d %d - %d %d %d %d \n", pc3DAsymLUT->S_Cuboid[i][j][k].P[0].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].Y, pc3DAsymLUT->S_Cuboid[i][j][k].P[0].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].U, pc3DAsymLUT->S_Cuboid[i][j][k].P[0].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[1].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[2].V, pc3DAsymLUT->S_Cuboid[i][j][k].P[3].V);
-}
+}*/
+
 void Free3DArray(HEVCPPS * pps) {
   if(pps && 0) {
     av_freep(&pps->pc3DAsymLUT.S_Cuboid[0][0]);
@@ -2244,7 +2247,7 @@ void Free3DArray(HEVCPPS * pps) {
   }
 }
 static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
-    int i, uiRefLayerId, YSize, CSize;
+    int i, YSize, CSize;
     pc3DAsymLUT->num_cm_ref_layers_minus1 = get_ue_golomb_long(gb);
     print_cabac("num_cm_ref_layers_minus1", pc3DAsymLUT->num_cm_ref_layers_minus1);
     for(  i = 0 ; i <= pc3DAsymLUT->num_cm_ref_layers_minus1; i++ ) {
@@ -2274,7 +2277,6 @@ static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
     pc3DAsymLUT-> nAdaptCThresholdV = 1 << ( pc3DAsymLUT->cm_input_chroma_bit_depth - 1 );
 
     if( pc3DAsymLUT->cm_octant_depth == 1 ) {
-        int delta = 0;
         pc3DAsymLUT->cm_adapt_threshold_u_delta = get_se_golomb(gb);
         print_cabac("cm_adapt_threshold_u_delta", pc3DAsymLUT->cm_adapt_threshold_u_delta);
         pc3DAsymLUT->nAdaptCThresholdU += pc3DAsymLUT->cm_adapt_threshold_u_delta;
