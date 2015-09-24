@@ -307,6 +307,6 @@ epel_coeffs2:
        .byte 54, 10
        .byte 54, 10
        .byte 54, 10
-       .byte 54, 10
-       .byte 54, 10
-       .byte 54, 10
+       .byte 10, 54
+       .byte 10, 54
+       .byte 10, 54

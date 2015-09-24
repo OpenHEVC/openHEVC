@@ -12,9 +12,9 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_eco2_filters[7][2]) = {
     { 54, 10},
     { 54, 10},
     { 54, 10},
-    { 54, 10},
-    { 54, 10},
-    { 54, 10}
+    { 10, 54},
+    { 10, 54},
+    { 10, 54}
 };
 
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_eco5_filters[3][5]) = {
