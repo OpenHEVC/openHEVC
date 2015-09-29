@@ -52,7 +52,7 @@ int temporal_layer_id;
 int quality_layer_id;
 int no_cropping;
 int num_frames;
-int frame_rate;
+float frame_rate;
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);

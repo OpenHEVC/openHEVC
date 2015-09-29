@@ -190,7 +190,7 @@ void init_main(int argc, char *argv[]) {
             num_frames = atoi(optarg);
             break;
         case 'r':
-            frame_rate = atoi(optarg);
+            frame_rate = atof(optarg);
             break;
         default:
             print_usage();

@@ -87,12 +87,12 @@ Rate values must be between FPS_LOWER_LIMIT and FPS_UPPER_LIMIT inclusive to be 
 
 \return 0 for sucess and -1 for error.
 */
-int SDL_setFramerate(FPSmanager * manager, Uint32 rate)
+int SDL_setFramerate(FPSmanager * manager, float rate)
 {
 	if ((rate >= FPS_LOWER_LIMIT) && (rate <= FPS_UPPER_LIMIT)) {
 		manager->framecount = 0;
 		manager->rate = rate;
-		manager->rateticks = (1000.0f / (float) rate);
+		manager->rateticks = (1000.0f / rate);
 		return (0);
 	} else {
 		return (-1);
