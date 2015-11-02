@@ -251,7 +251,8 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 
         /* wait for more frames before output */
         if (!flush && s->seq_output == s->seq_decode && s->sps &&
-            nb_output <= s->sps->temporal_layer[s->sps->max_sub_layers - 1].num_reorder_pics + s->interlaced)
+            /*nb_output <= s->sps->temporal_layer[s->sps->max_sub_layers - 1].num_reorder_pics + s->interlaced)*/
+            nb_output <= s->vps->vps_num_reorder_pics[s->vps->vps_max_sub_layers - 1] + s->interlaced)
             return 0;
 
         if (nb_output) {
@@ -724,10 +725,10 @@ int ff_hevc_frame_rps(HEVCContext *s)
 
     for (i = 0; i < NB_RPS_TYPE; i++)
         rps[i].nb_refs = 0;
-    if (!s->nuh_layer_id ||
+    if (! s->nuh_layer_id || (s->nuh_layer_id >0 &&
         !(s->nal_unit_type >= NAL_BLA_W_LP &&
           s->nal_unit_type <= NAL_CRA_NUT  &&
-          s->sps->set_mfm_enabled_flag)) {
+          s->sh.active_num_ILR_ref_idx))) {
 
             /* add the short refs */
             for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++) {
@@ -771,7 +772,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
         }
 
     if (s->nuh_layer_id) {
-        for (i = 0; i < s->vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag; i ++) {
+//        for (i = 0; i < s->vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag; i ++) {
+            for (i = 0; i < s->sh.active_num_ILR_ref_idx; i ++) {
             if ((vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[0]) &&
                 (vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
                 //IL_REF0 , IL_REF1
