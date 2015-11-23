@@ -361,6 +361,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     pic_arrays_free(s);
     ret = pic_arrays_init(s, sps);
+    printf("decode slice header\n");
     if (ret < 0)
         goto fail;
 
@@ -531,6 +532,7 @@ static int hls_slice_header(HEVCContext *s)
 
 
     sh->pps_id = get_ue_golomb_long(gb);
+
     print_cabac("slice_pic_parameter_set_id", sh->pps_id);
     if (sh->pps_id >= MAX_PPS_COUNT || !s->pps_list[sh->pps_id]) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
@@ -542,6 +544,7 @@ static int hls_slice_header(HEVCContext *s)
         return AVERROR_INVALIDDATA;
     }
     s->pps = (HEVCPPS*)s->pps_list[sh->pps_id]->data;
+
     if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
 
@@ -3057,8 +3060,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     s->avctx->layers_size += length;
     
     s->nuh_layer_id = ret;
-
+ printf("decode hevc %d\n", s->nal_unit_type);
     switch (s->nal_unit_type) {
+
     case NAL_VPS:
         ret = ff_hevc_decode_nal_vps(s);
         if (ret < 0)
@@ -3106,6 +3110,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             //return 0;
         }
 #endif
+
         ret = hls_slice_header(s);
 
 #if 0
@@ -3471,8 +3476,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         int ret;
         s->skipped_bytes = s->skipped_bytes_nal[i];
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
-
         ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
+
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
@@ -3481,6 +3486,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     }
 
 fail:
+
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
@@ -3571,7 +3577,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 {
     int ret;
     HEVCContext *s = avctx->priv_data;
-
     if (!avpkt->size) {
         ret = ff_hevc_output_frame(s, data, 1);
         if (ret < 0)
@@ -3585,7 +3590,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     }
 
     s->ref = NULL;
-    ret    = decode_nal_units(s, avpkt->data, avpkt->size);
+    ret    = decode_nal_units(s, avpkt->data, avpkt->size);printf("decode hevc\n");
     if (ret < 0)
         return ret;
 

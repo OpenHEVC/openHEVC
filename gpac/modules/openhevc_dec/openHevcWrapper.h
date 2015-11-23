@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <libavformat/avformat.h>
 
 typedef void* OpenHevc_Handle;
 
@@ -79,6 +80,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type);
 OpenHevc_Handle libOpenH264Init(int nb_pthreads, int thread_type);
 int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle);
 int  libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int nal_len, int64_t pts);
+int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], const int stop_dec);
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc);
 

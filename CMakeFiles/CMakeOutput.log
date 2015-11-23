@@ -1,0 +1,742 @@
+The system is: Linux - 3.13.0-44-generic - x86_64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /usr/bin/cc 
+Build flags: 
+Id flags: 
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+
+The C compiler identification is GNU, found in "/home/gherrou/Project_TVN/openHEVC/CMakeFiles/2.8.12.2/CompilerIdC/a.out"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: /usr/bin/c++ 
+Build flags: 
+Id flags: 
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+
+The CXX compiler identification is GNU, found in "/home/gherrou/Project_TVN/openHEVC/CMakeFiles/2.8.12.2/CompilerIdCXX/a.out"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec684338401/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec684338401.dir/build.make CMakeFiles/cmTryCompileExec684338401.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec684338401.dir/testCCompiler.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec684338401.dir/testCCompiler.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/testCCompiler.c
+Linking C executable cmTryCompileExec684338401
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec684338401.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec684338401.dir/testCCompiler.c.o  -o cmTryCompileExec684338401 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2378489593/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2378489593.dir/build.make CMakeFiles/cmTryCompileExec2378489593.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o   -c /usr/share/cmake-2.8/Modules/CMakeCCompilerABI.c
+Linking C executable cmTryCompileExec2378489593
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2378489593.dir/link.txt --verbose=1
+/usr/bin/cc     -v CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o  -o cmTryCompileExec2378489593 -rdynamic  
+Using built-in specs.
+COLLECT_GCC=/usr/bin/cc
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/4.8/lto-wrapper
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Ubuntu 4.8.4-2ubuntu1~14.04' --with-bugurl=file:///usr/share/doc/gcc-4.8/README.Bugs --enable-languages=c,c++,java,go,d,fortran,objc,obj-c++ --prefix=/usr --program-suffix=-4.8 --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --with-gxx-include-dir=/usr/include/c++/4.8 --libdir=/usr/lib --enable-nls --with-sysroot=/ --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --enable-gnu-unique-object --disable-libmudflap --enable-plugin --with-system-zlib --disable-browser-plugin --enable-java-awt=gtk --enable-gtk-cairo --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64/jre --enable-java-home --with-jvm-root-dir=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64 --with-jvm-jar-dir=/usr/lib/jvm-exports/java-1.5.0-gcj-4.8-amd64 --with-arch-directory=amd64 --with-ecj-jar=/usr/share/java/eclipse-ecj.jar --enable-objc-gc --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --with-tune=generic --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04) 
+COMPILER_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/
+LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-o' 'cmTryCompileExec2378489593' '-rdynamic' '-mtune=generic' '-march=x86-64'
+ /usr/lib/gcc/x86_64-linux-gnu/4.8/collect2 --sysroot=/ --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -export-dynamic -dynamic-linker /lib64/ld-linux-x86-64.so.2 -z relro -o cmTryCompileExec2378489593 /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o -L/usr/lib/gcc/x86_64-linux-gnu/4.8 -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../.. CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/lib/gcc/x86_64-linux-gnu/4.8/crtend.o /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:/usr/bin/make "cmTryCompileExec2378489593/fast"]
+  ignore line: [/usr/bin/make -f CMakeFiles/cmTryCompileExec2378489593.dir/build.make CMakeFiles/cmTryCompileExec2378489593.dir/build]
+  ignore line: [make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp']
+  ignore line: [/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1]
+  ignore line: [Building C object CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o]
+  ignore line: [/usr/bin/cc    -o CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o   -c /usr/share/cmake-2.8/Modules/CMakeCCompilerABI.c]
+  ignore line: [Linking C executable cmTryCompileExec2378489593]
+  ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2378489593.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/cc     -v CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o  -o cmTryCompileExec2378489593 -rdynamic  ]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/cc]
+  ignore line: [COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/4.8/lto-wrapper]
+  ignore line: [Target: x86_64-linux-gnu]
+  ignore line: [Configured with: ../src/configure -v --with-pkgversion='Ubuntu 4.8.4-2ubuntu1~14.04' --with-bugurl=file:///usr/share/doc/gcc-4.8/README.Bugs --enable-languages=c,c++,java,go,d,fortran,objc,obj-c++ --prefix=/usr --program-suffix=-4.8 --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --with-gxx-include-dir=/usr/include/c++/4.8 --libdir=/usr/lib --enable-nls --with-sysroot=/ --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --enable-gnu-unique-object --disable-libmudflap --enable-plugin --with-system-zlib --disable-browser-plugin --enable-java-awt=gtk --enable-gtk-cairo --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64/jre --enable-java-home --with-jvm-root-dir=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64 --with-jvm-jar-dir=/usr/lib/jvm-exports/java-1.5.0-gcj-4.8-amd64 --with-arch-directory=amd64 --with-ecj-jar=/usr/share/java/eclipse-ecj.jar --enable-objc-gc --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --with-tune=generic --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [gcc version 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04) ]
+  ignore line: [COMPILER_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTryCompileExec2378489593' '-rdynamic' '-mtune=generic' '-march=x86-64']
+  link line: [ /usr/lib/gcc/x86_64-linux-gnu/4.8/collect2 --sysroot=/ --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -export-dynamic -dynamic-linker /lib64/ld-linux-x86-64.so.2 -z relro -o cmTryCompileExec2378489593 /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o -L/usr/lib/gcc/x86_64-linux-gnu/4.8 -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../.. CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/lib/gcc/x86_64-linux-gnu/4.8/crtend.o /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o]
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/collect2] ==> ignore
+    arg [--sysroot=/] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-export-dynamic] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTryCompileExec2378489593] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o] ==> ignore
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/4.8] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/4.8]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib]
+    arg [-L/lib/x86_64-linux-gnu] ==> dir [/lib/x86_64-linux-gnu]
+    arg [-L/lib/../lib] ==> dir [/lib/../lib]
+    arg [-L/usr/lib/x86_64-linux-gnu] ==> dir [/usr/lib/x86_64-linux-gnu]
+    arg [-L/usr/lib/../lib] ==> dir [/usr/lib/../lib]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../..] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../..]
+    arg [CMakeFiles/cmTryCompileExec2378489593.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-lgcc] ==> lib [gcc]
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--no-as-needed] ==> ignore
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--no-as-needed] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/crtend.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o] ==> ignore
+  remove lib [gcc]
+  remove lib [gcc_s]
+  remove lib [gcc]
+  remove lib [gcc_s]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/4.8] ==> [/usr/lib/gcc/x86_64-linux-gnu/4.8]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib] ==> [/usr/lib]
+  collapse library dir [/lib/x86_64-linux-gnu] ==> [/lib/x86_64-linux-gnu]
+  collapse library dir [/lib/../lib] ==> [/lib]
+  collapse library dir [/usr/lib/x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/usr/lib/../lib] ==> [/usr/lib]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../..] ==> [/usr/lib]
+  implicit libs: [c]
+  implicit dirs: [/usr/lib/gcc/x86_64-linux-gnu/4.8;/usr/lib/x86_64-linux-gnu;/usr/lib;/lib/x86_64-linux-gnu;/lib]
+  implicit fwks: []
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec4009724021/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec4009724021.dir/build.make CMakeFiles/cmTryCompileExec4009724021.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec4009724021.dir/testCXXCompiler.cxx.o
+/usr/bin/c++     -o CMakeFiles/cmTryCompileExec4009724021.dir/testCXXCompiler.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/testCXXCompiler.cxx
+Linking CXX executable cmTryCompileExec4009724021
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec4009724021.dir/link.txt --verbose=1
+/usr/bin/c++        CMakeFiles/cmTryCompileExec4009724021.dir/testCXXCompiler.cxx.o  -o cmTryCompileExec4009724021 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec397117542/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec397117542.dir/build.make CMakeFiles/cmTryCompileExec397117542.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o
+/usr/bin/c++     -o CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake-2.8/Modules/CMakeCXXCompilerABI.cpp
+Linking CXX executable cmTryCompileExec397117542
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec397117542.dir/link.txt --verbose=1
+/usr/bin/c++      -v CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o  -o cmTryCompileExec397117542 -rdynamic  
+Using built-in specs.
+COLLECT_GCC=/usr/bin/c++
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/4.8/lto-wrapper
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Ubuntu 4.8.4-2ubuntu1~14.04' --with-bugurl=file:///usr/share/doc/gcc-4.8/README.Bugs --enable-languages=c,c++,java,go,d,fortran,objc,obj-c++ --prefix=/usr --program-suffix=-4.8 --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --with-gxx-include-dir=/usr/include/c++/4.8 --libdir=/usr/lib --enable-nls --with-sysroot=/ --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --enable-gnu-unique-object --disable-libmudflap --enable-plugin --with-system-zlib --disable-browser-plugin --enable-java-awt=gtk --enable-gtk-cairo --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64/jre --enable-java-home --with-jvm-root-dir=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64 --with-jvm-jar-dir=/usr/lib/jvm-exports/java-1.5.0-gcj-4.8-amd64 --with-arch-directory=amd64 --with-ecj-jar=/usr/share/java/eclipse-ecj.jar --enable-objc-gc --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --with-tune=generic --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04) 
+COMPILER_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/
+LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-o' 'cmTryCompileExec397117542' '-rdynamic' '-shared-libgcc' '-mtune=generic' '-march=x86-64'
+ /usr/lib/gcc/x86_64-linux-gnu/4.8/collect2 --sysroot=/ --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -export-dynamic -dynamic-linker /lib64/ld-linux-x86-64.so.2 -z relro -o cmTryCompileExec397117542 /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o -L/usr/lib/gcc/x86_64-linux-gnu/4.8 -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../.. CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-linux-gnu/4.8/crtend.o /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Parsed CXX implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:/usr/bin/make "cmTryCompileExec397117542/fast"]
+  ignore line: [/usr/bin/make -f CMakeFiles/cmTryCompileExec397117542.dir/build.make CMakeFiles/cmTryCompileExec397117542.dir/build]
+  ignore line: [make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp']
+  ignore line: [/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1]
+  ignore line: [Building CXX object CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o]
+  ignore line: [/usr/bin/c++     -o CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake-2.8/Modules/CMakeCXXCompilerABI.cpp]
+  ignore line: [Linking CXX executable cmTryCompileExec397117542]
+  ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec397117542.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/c++      -v CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o  -o cmTryCompileExec397117542 -rdynamic  ]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/c++]
+  ignore line: [COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/4.8/lto-wrapper]
+  ignore line: [Target: x86_64-linux-gnu]
+  ignore line: [Configured with: ../src/configure -v --with-pkgversion='Ubuntu 4.8.4-2ubuntu1~14.04' --with-bugurl=file:///usr/share/doc/gcc-4.8/README.Bugs --enable-languages=c,c++,java,go,d,fortran,objc,obj-c++ --prefix=/usr --program-suffix=-4.8 --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --with-gxx-include-dir=/usr/include/c++/4.8 --libdir=/usr/lib --enable-nls --with-sysroot=/ --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --enable-gnu-unique-object --disable-libmudflap --enable-plugin --with-system-zlib --disable-browser-plugin --enable-java-awt=gtk --enable-gtk-cairo --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64/jre --enable-java-home --with-jvm-root-dir=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64 --with-jvm-jar-dir=/usr/lib/jvm-exports/java-1.5.0-gcj-4.8-amd64 --with-arch-directory=amd64 --with-ecj-jar=/usr/share/java/eclipse-ecj.jar --enable-objc-gc --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --with-tune=generic --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [gcc version 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04) ]
+  ignore line: [COMPILER_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.8/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTryCompileExec397117542' '-rdynamic' '-shared-libgcc' '-mtune=generic' '-march=x86-64']
+  link line: [ /usr/lib/gcc/x86_64-linux-gnu/4.8/collect2 --sysroot=/ --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -export-dynamic -dynamic-linker /lib64/ld-linux-x86-64.so.2 -z relro -o cmTryCompileExec397117542 /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o -L/usr/lib/gcc/x86_64-linux-gnu/4.8 -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../.. CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-linux-gnu/4.8/crtend.o /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o]
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/collect2] ==> ignore
+    arg [--sysroot=/] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-export-dynamic] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTryCompileExec397117542] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crt1.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crti.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/crtbegin.o] ==> ignore
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/4.8] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/4.8]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib]
+    arg [-L/lib/x86_64-linux-gnu] ==> dir [/lib/x86_64-linux-gnu]
+    arg [-L/lib/../lib] ==> dir [/lib/../lib]
+    arg [-L/usr/lib/x86_64-linux-gnu] ==> dir [/usr/lib/x86_64-linux-gnu]
+    arg [-L/usr/lib/../lib] ==> dir [/usr/lib/../lib]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/4.8/../../..] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../..]
+    arg [CMakeFiles/cmTryCompileExec397117542.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+    arg [-lstdc++] ==> lib [stdc++]
+    arg [-lm] ==> lib [m]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/crtend.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/crtn.o] ==> ignore
+  remove lib [gcc_s]
+  remove lib [gcc]
+  remove lib [gcc_s]
+  remove lib [gcc]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/4.8] ==> [/usr/lib/gcc/x86_64-linux-gnu/4.8]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib] ==> [/usr/lib]
+  collapse library dir [/lib/x86_64-linux-gnu] ==> [/lib/x86_64-linux-gnu]
+  collapse library dir [/lib/../lib] ==> [/lib]
+  collapse library dir [/usr/lib/x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/usr/lib/../lib] ==> [/usr/lib]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/4.8/../../..] ==> [/usr/lib]
+  implicit libs: [stdc++;m;c]
+  implicit dirs: [/usr/lib/gcc/x86_64-linux-gnu/4.8;/usr/lib/x86_64-linux-gnu;/usr/lib;/lib/x86_64-linux-gnu;/lib]
+  implicit fwks: []
+
+
+Determining size of void* passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2810893102/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2810893102.dir/build.make CMakeFiles/cmTryCompileExec2810893102.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2810893102.dir/SIZEOF_VOID_P.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec2810893102.dir/SIZEOF_VOID_P.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CheckTypeSize/SIZEOF_VOID_P.c
+Linking C executable cmTryCompileExec2810893102
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2810893102.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec2810893102.dir/SIZEOF_VOID_P.c.o  -o cmTryCompileExec2810893102 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__march_core_avx_i succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2597866324/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2597866324.dir/build.make CMakeFiles/cmTryCompileExec2597866324.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec2597866324.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__march_core_avx_i   -march=core-avx-i -o CMakeFiles/cmTryCompileExec2597866324.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec2597866324
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2597866324.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__march_core_avx_i    CMakeFiles/cmTryCompileExec2597866324.dir/src.cxx.o  -o cmTryCompileExec2597866324 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__msse2 succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2984074721/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2984074721.dir/build.make CMakeFiles/cmTryCompileExec2984074721.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec2984074721.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse2   -msse2 -o CMakeFiles/cmTryCompileExec2984074721.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec2984074721
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2984074721.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse2    CMakeFiles/cmTryCompileExec2984074721.dir/src.cxx.o  -o cmTryCompileExec2984074721 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__msse3 succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec613759778/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec613759778.dir/build.make CMakeFiles/cmTryCompileExec613759778.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec613759778.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse3   -msse3 -o CMakeFiles/cmTryCompileExec613759778.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec613759778
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec613759778.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse3    CMakeFiles/cmTryCompileExec613759778.dir/src.cxx.o  -o cmTryCompileExec613759778 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Determining if the include file pmmintrin.h exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec486506178/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec486506178.dir/build.make CMakeFiles/cmTryCompileExec486506178.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec486506178.dir/CheckIncludeFile.c.o
+/usr/bin/cc   -msse3    -o CMakeFiles/cmTryCompileExec486506178.dir/CheckIncludeFile.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTryCompileExec486506178
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec486506178.dir/link.txt --verbose=1
+/usr/bin/cc   -msse3     CMakeFiles/cmTryCompileExec486506178.dir/CheckIncludeFile.c.o  -o cmTryCompileExec486506178 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__mssse3 succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3774803390/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3774803390.dir/build.make CMakeFiles/cmTryCompileExec3774803390.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3774803390.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mssse3   -mssse3 -o CMakeFiles/cmTryCompileExec3774803390.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec3774803390
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3774803390.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mssse3    CMakeFiles/cmTryCompileExec3774803390.dir/src.cxx.o  -o cmTryCompileExec3774803390 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Determining if the include file tmmintrin.h exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2365899494/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2365899494.dir/build.make CMakeFiles/cmTryCompileExec2365899494.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2365899494.dir/CheckIncludeFile.c.o
+/usr/bin/cc   -mssse3    -o CMakeFiles/cmTryCompileExec2365899494.dir/CheckIncludeFile.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTryCompileExec2365899494
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2365899494.dir/link.txt --verbose=1
+/usr/bin/cc   -mssse3     CMakeFiles/cmTryCompileExec2365899494.dir/CheckIncludeFile.c.o  -o cmTryCompileExec2365899494 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__msse4_1 succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3210837004/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3210837004.dir/build.make CMakeFiles/cmTryCompileExec3210837004.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3210837004.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse4_1   -msse4.1 -o CMakeFiles/cmTryCompileExec3210837004.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec3210837004
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3210837004.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse4_1    CMakeFiles/cmTryCompileExec3210837004.dir/src.cxx.o  -o cmTryCompileExec3210837004 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Determining if the include file smmintrin.h exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec4013407790/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec4013407790.dir/build.make CMakeFiles/cmTryCompileExec4013407790.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec4013407790.dir/CheckIncludeFile.c.o
+/usr/bin/cc   -msse4.1    -o CMakeFiles/cmTryCompileExec4013407790.dir/CheckIncludeFile.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTryCompileExec4013407790
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec4013407790.dir/link.txt --verbose=1
+/usr/bin/cc   -msse4.1     CMakeFiles/cmTryCompileExec4013407790.dir/CheckIncludeFile.c.o  -o cmTryCompileExec4013407790 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__msse4_2 succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3803570720/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3803570720.dir/build.make CMakeFiles/cmTryCompileExec3803570720.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3803570720.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse4_2   -msse4.2 -o CMakeFiles/cmTryCompileExec3803570720.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec3803570720
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3803570720.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse4_2    CMakeFiles/cmTryCompileExec3803570720.dir/src.cxx.o  -o cmTryCompileExec3803570720 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__mavx succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3344052719/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3344052719.dir/build.make CMakeFiles/cmTryCompileExec3344052719.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3344052719.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mavx   -mavx -o CMakeFiles/cmTryCompileExec3344052719.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec3344052719
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3344052719.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mavx    CMakeFiles/cmTryCompileExec3344052719.dir/src.cxx.o  -o cmTryCompileExec3344052719 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Determining if the include file immintrin.h exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec775695631/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec775695631.dir/build.make CMakeFiles/cmTryCompileExec775695631.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec775695631.dir/CheckIncludeFile.c.o
+/usr/bin/cc   -mavx    -o CMakeFiles/cmTryCompileExec775695631.dir/CheckIncludeFile.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTryCompileExec775695631
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec775695631.dir/link.txt --verbose=1
+/usr/bin/cc   -mavx     CMakeFiles/cmTryCompileExec775695631.dir/CheckIncludeFile.c.o  -o cmTryCompileExec775695631 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__msse2avx succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec982009189/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec982009189.dir/build.make CMakeFiles/cmTryCompileExec982009189.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec982009189.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse2avx   -msse2avx -o CMakeFiles/cmTryCompileExec982009189.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec982009189
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec982009189.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__msse2avx    CMakeFiles/cmTryCompileExec982009189.dir/src.cxx.o  -o cmTryCompileExec982009189 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__mno_sse4a succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3674523526/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3674523526.dir/build.make CMakeFiles/cmTryCompileExec3674523526.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3674523526.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mno_sse4a   -mno-sse4a -o CMakeFiles/cmTryCompileExec3674523526.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec3674523526
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3674523526.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mno_sse4a    CMakeFiles/cmTryCompileExec3674523526.dir/src.cxx.o  -o cmTryCompileExec3674523526 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__mno_xop succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1092597032/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1092597032.dir/build.make CMakeFiles/cmTryCompileExec1092597032.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec1092597032.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mno_xop   -mno-xop -o CMakeFiles/cmTryCompileExec1092597032.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec1092597032
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1092597032.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mno_xop    CMakeFiles/cmTryCompileExec1092597032.dir/src.cxx.o  -o cmTryCompileExec1092597032 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__mno_fma4 succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1631820498/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1631820498.dir/build.make CMakeFiles/cmTryCompileExec1631820498.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec1631820498.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mno_fma4   -mno-fma4 -o CMakeFiles/cmTryCompileExec1631820498.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec1631820498
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1631820498.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mno_fma4    CMakeFiles/cmTryCompileExec1631820498.dir/src.cxx.o  -o cmTryCompileExec1631820498 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test check_cxx_compiler_flag__mno_avx2 succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec632302153/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec632302153.dir/build.make CMakeFiles/cmTryCompileExec632302153.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec632302153.dir/src.cxx.o
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mno_avx2   -mno-avx2 -o CMakeFiles/cmTryCompileExec632302153.dir/src.cxx.o -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTryCompileExec632302153
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec632302153.dir/link.txt --verbose=1
+/usr/bin/c++    -Dcheck_cxx_compiler_flag__mno_avx2    CMakeFiles/cmTryCompileExec632302153.dir/src.cxx.o  -o cmTryCompileExec632302153 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Determining if the function gettimeofday exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1257785975/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1257785975.dir/build.make CMakeFiles/cmTryCompileExec1257785975.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1257785975.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=gettimeofday   -o CMakeFiles/cmTryCompileExec1257785975.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec1257785975
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1257785975.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=gettimeofday    CMakeFiles/cmTryCompileExec1257785975.dir/CheckFunctionExists.c.o  -o cmTryCompileExec1257785975 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if the function sched_getaffinity exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1178399514/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1178399514.dir/build.make CMakeFiles/cmTryCompileExec1178399514.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1178399514.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=sched_getaffinity   -o CMakeFiles/cmTryCompileExec1178399514.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec1178399514
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1178399514.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=sched_getaffinity    CMakeFiles/cmTryCompileExec1178399514.dir/CheckFunctionExists.c.o  -o cmTryCompileExec1178399514 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if the function strerror_r exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec789984689/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec789984689.dir/build.make CMakeFiles/cmTryCompileExec789984689.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec789984689.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=strerror_r   -o CMakeFiles/cmTryCompileExec789984689.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec789984689
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec789984689.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=strerror_r    CMakeFiles/cmTryCompileExec789984689.dir/CheckFunctionExists.c.o  -o cmTryCompileExec789984689 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if the function sysconf exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2755609177/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2755609177.dir/build.make CMakeFiles/cmTryCompileExec2755609177.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2755609177.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=sysconf   -o CMakeFiles/cmTryCompileExec2755609177.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec2755609177
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2755609177.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=sysconf    CMakeFiles/cmTryCompileExec2755609177.dir/CheckFunctionExists.c.o  -o cmTryCompileExec2755609177 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if the function usleep exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1874419253/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1874419253.dir/build.make CMakeFiles/cmTryCompileExec1874419253.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1874419253.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=usleep   -o CMakeFiles/cmTryCompileExec1874419253.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec1874419253
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1874419253.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=usleep    CMakeFiles/cmTryCompileExec1874419253.dir/CheckFunctionExists.c.o  -o cmTryCompileExec1874419253 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if the function localtime_r exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec575216189/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec575216189.dir/build.make CMakeFiles/cmTryCompileExec575216189.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec575216189.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=localtime_r   -o CMakeFiles/cmTryCompileExec575216189.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec575216189
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec575216189.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=localtime_r    CMakeFiles/cmTryCompileExec575216189.dir/CheckFunctionExists.c.o  -o cmTryCompileExec575216189 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if the function gmtime_r exists passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1343835358/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1343835358.dir/build.make CMakeFiles/cmTryCompileExec1343835358.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1343835358.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=gmtime_r   -o CMakeFiles/cmTryCompileExec1343835358.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec1343835358
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1343835358.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=gmtime_r    CMakeFiles/cmTryCompileExec1343835358.dir/CheckFunctionExists.c.o  -o cmTryCompileExec1343835358 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if files fcntl.h exist passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3731077552/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3731077552.dir/build.make CMakeFiles/cmTryCompileExec3731077552.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec3731077552.dir/CheckIncludeFiles.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec3731077552.dir/CheckIncludeFiles.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+Linking C executable cmTryCompileExec3731077552
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3731077552.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec3731077552.dir/CheckIncludeFiles.c.o  -o cmTryCompileExec3731077552 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if files pthread.h exist passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1741643199/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1741643199.dir/build.make CMakeFiles/cmTryCompileExec1741643199.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1741643199.dir/CheckIncludeFiles.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec1741643199.dir/CheckIncludeFiles.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+Linking C executable cmTryCompileExec1741643199
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1741643199.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec1741643199.dir/CheckIncludeFiles.c.o  -o cmTryCompileExec1741643199 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if files unistd.h exist passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1631308524/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1631308524.dir/build.make CMakeFiles/cmTryCompileExec1631308524.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1631308524.dir/CheckIncludeFiles.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec1631308524.dir/CheckIncludeFiles.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+Linking C executable cmTryCompileExec1631308524
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1631308524.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec1631308524.dir/CheckIncludeFiles.c.o  -o cmTryCompileExec1631308524 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Performing C SOURCE FILE Test check_c_compiler_flag__fpic succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec879638936/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec879638936.dir/build.make CMakeFiles/cmTryCompileExec879638936.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec879638936.dir/src.c.o
+/usr/bin/cc   -Wl,-Bsymbolic -Dcheck_c_compiler_flag__fpic   -fpic -o CMakeFiles/cmTryCompileExec879638936.dir/src.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTryCompileExec879638936
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec879638936.dir/link.txt --verbose=1
+/usr/bin/cc   -Wl,-Bsymbolic -Dcheck_c_compiler_flag__fpic    CMakeFiles/cmTryCompileExec879638936.dir/src.c.o  -o cmTryCompileExec879638936 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Performing C SOURCE FILE Test check_c_compiler_flag__fno_tree_vectorize succeded with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2681886320/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2681886320.dir/build.make CMakeFiles/cmTryCompileExec2681886320.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2681886320.dir/src.c.o
+/usr/bin/cc   -Wl,-Bsymbolic -Dcheck_c_compiler_flag__fno_tree_vectorize   -fno-tree-vectorize -o CMakeFiles/cmTryCompileExec2681886320.dir/src.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTryCompileExec2681886320
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2681886320.dir/link.txt --verbose=1
+/usr/bin/cc   -Wl,-Bsymbolic -Dcheck_c_compiler_flag__fno_tree_vectorize    CMakeFiles/cmTryCompileExec2681886320.dir/src.c.o  -o cmTryCompileExec2681886320 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }
+Determining if files pthread.h exist passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3478416711/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3478416711.dir/build.make CMakeFiles/cmTryCompileExec3478416711.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec3478416711.dir/CheckIncludeFiles.c.o
+/usr/bin/cc   -Wl,-Bsymbolic -march=core-avx-i -msse2 -msse2 -msse3 -msse3 -mssse3 -mssse3 -msse4.1 -msse4.1 -msse4.2 -msse4.2 -mavx -mavx -msse2avx -msse2avx -mno-sse4a -mno-xop -mno-fma4 -mno-avx2 -fpic -fno-tree-vectorize    -o CMakeFiles/cmTryCompileExec3478416711.dir/CheckIncludeFiles.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+Linking C executable cmTryCompileExec3478416711
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3478416711.dir/link.txt --verbose=1
+/usr/bin/cc   -Wl,-Bsymbolic -march=core-avx-i -msse2 -msse2 -msse3 -msse3 -mssse3 -mssse3 -msse4.1 -msse4.1 -msse4.2 -msse4.2 -mavx -mavx -msse2avx -msse2avx -mno-sse4a -mno-xop -mno-fma4 -mno-avx2 -fpic -fno-tree-vectorize     CMakeFiles/cmTryCompileExec3478416711.dir/CheckIncludeFiles.c.o  -o cmTryCompileExec3478416711 -rdynamic 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+
+Determining if the function pthread_create exists in the pthread passed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec821353914/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec821353914.dir/build.make CMakeFiles/cmTryCompileExec821353914.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec821353914.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -Wl,-Bsymbolic -march=core-avx-i -msse2 -msse2 -msse3 -msse3 -mssse3 -mssse3 -msse4.1 -msse4.1 -msse4.2 -msse4.2 -mavx -mavx -msse2avx -msse2avx -mno-sse4a -mno-xop -mno-fma4 -mno-avx2 -fpic -fno-tree-vectorize -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTryCompileExec821353914.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec821353914
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec821353914.dir/link.txt --verbose=1
+/usr/bin/cc   -Wl,-Bsymbolic -march=core-avx-i -msse2 -msse2 -msse3 -msse3 -mssse3 -mssse3 -msse4.1 -msse4.1 -msse4.2 -msse4.2 -mavx -mavx -msse2avx -msse2avx -mno-sse4a -mno-xop -mno-fma4 -mno-avx2 -fpic -fno-tree-vectorize -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTryCompileExec821353914.dir/CheckFunctionExists.c.o  -o cmTryCompileExec821353914 -rdynamic -lpthread 
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+
+

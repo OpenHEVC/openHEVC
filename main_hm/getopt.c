@@ -132,13 +132,15 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
     // every command line option must be followed by ':' if it takes an
     // argument, and '::' if this argument is optional
-    const char *ostr = "achi:no:p:f:s:t:v:wl:r:";
+    const char *ostr = "achi:e:no:p:f:s:t:v:wl:r:";
 
     int c;
     h264_flags        = DISABLE;
+    shvc_flags		  = DISABLE;
     check_md5_flags   = ENABLE;
     thread_type       = 1;
     input_file        = NULL;
+    enhance_file 	  = NULL;
     display_flags     = ENABLE;
     output_file       = NULL;
     nb_pthreads       = 1;
@@ -167,6 +169,10 @@ void init_main(int argc, char *argv[]) {
         case 'i':
             input_file = strdup(optarg);
             break;
+        case 'e':
+        	enhance_file = strdup(optarg);
+        	shvc_flags = ENABLE;
+        	break;
         case 'n':
             display_flags = DISABLE;
             break;

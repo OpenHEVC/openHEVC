@@ -1,0 +1,97 @@
+Determining if the function GetProcessAffinityMask exists failed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2544005234/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2544005234.dir/build.make CMakeFiles/cmTryCompileExec2544005234.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2544005234.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=GetProcessAffinityMask   -o CMakeFiles/cmTryCompileExec2544005234.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec2544005234
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2544005234.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=GetProcessAffinityMask    CMakeFiles/cmTryCompileExec2544005234.dir/CheckFunctionExists.c.o  -o cmTryCompileExec2544005234 -rdynamic 
+CMakeFiles/cmTryCompileExec2544005234.dir/CheckFunctionExists.c.o: In function `main':
+CheckFunctionExists.c:(.text+0x15): undefined reference to `GetProcessAffinityMask'
+collect2: error: ld returned 1 exit status
+make[1]: *** [cmTryCompileExec2544005234] Error 1
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+make: *** [cmTryCompileExec2544005234/fast] Error 2
+
+
+Determining if files windows.h exist failed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec2037961357/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2037961357.dir/build.make CMakeFiles/cmTryCompileExec2037961357.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2037961357.dir/CheckIncludeFiles.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec2037961357.dir/CheckIncludeFiles.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckIncludeFiles.c:2:21: fatal error: windows.h: No such file or directory
+ #include <windows.h>
+                     ^
+compilation terminated.
+make[1]: *** [CMakeFiles/cmTryCompileExec2037961357.dir/CheckIncludeFiles.c.o] Error 1
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+make: *** [cmTryCompileExec2037961357/fast] Error 2
+
+Source:
+/* */
+#include <windows.h>
+
+
+int main(){return 0;}
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec945791572/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec945791572.dir/build.make CMakeFiles/cmTryCompileExec945791572.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec945791572.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -Wl,-Bsymbolic -march=core-avx-i -msse2 -msse2 -msse3 -msse3 -mssse3 -mssse3 -msse4.1 -msse4.1 -msse4.2 -msse4.2 -mavx -mavx -msse2avx -msse2avx -mno-sse4a -mno-xop -mno-fma4 -mno-avx2 -fpic -fno-tree-vectorize    -o CMakeFiles/cmTryCompileExec945791572.dir/CheckSymbolExists.c.o   -c /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTryCompileExec945791572
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec945791572.dir/link.txt --verbose=1
+/usr/bin/cc   -Wl,-Bsymbolic -march=core-avx-i -msse2 -msse2 -msse3 -msse3 -mssse3 -mssse3 -msse4.1 -msse4.1 -msse4.2 -msse4.2 -mavx -mavx -msse2avx -msse2avx -mno-sse4a -mno-xop -mno-fma4 -mno-avx2 -fpic -fno-tree-vectorize     CMakeFiles/cmTryCompileExec945791572.dir/CheckSymbolExists.c.o  -o cmTryCompileExec945791572 -rdynamic 
+CMakeFiles/cmTryCompileExec945791572.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x1b): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+make[1]: *** [cmTryCompileExec945791572] Error 1
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+make: *** [cmTryCompileExec945791572/fast] Error 2
+
+File /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3004702922/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3004702922.dir/build.make CMakeFiles/cmTryCompileExec3004702922.dir/build
+make[1]: Entering directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec3004702922.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -Wl,-Bsymbolic -march=core-avx-i -msse2 -msse2 -msse3 -msse3 -mssse3 -mssse3 -msse4.1 -msse4.1 -msse4.2 -msse4.2 -mavx -mavx -msse2avx -msse2avx -mno-sse4a -mno-xop -mno-fma4 -mno-avx2 -fpic -fno-tree-vectorize -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTryCompileExec3004702922.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec3004702922
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3004702922.dir/link.txt --verbose=1
+/usr/bin/cc   -Wl,-Bsymbolic -march=core-avx-i -msse2 -msse2 -msse3 -msse3 -mssse3 -mssse3 -msse4.1 -msse4.1 -msse4.2 -msse4.2 -mavx -mavx -msse2avx -msse2avx -mno-sse4a -mno-xop -mno-fma4 -mno-avx2 -fpic -fno-tree-vectorize -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTryCompileExec3004702922.dir/CheckFunctionExists.c.o  -o cmTryCompileExec3004702922 -rdynamic -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [cmTryCompileExec3004702922] Error 1
+make[1]: Leaving directory `/home/gherrou/Project_TVN/openHEVC/CMakeFiles/CMakeTmp'
+make: *** [cmTryCompileExec3004702922/fast] Error 2
+
+

@@ -78,16 +78,17 @@ typedef struct Info {
     int size;
 } Info;
 
-static void video_decode_example(const char *filename)
+static void video_decode_example(const char *filename, const char *enh_filename)
 {
-    AVFormatContext *pFormatCtx=NULL;
-    AVPacket        packet;
+    AVFormatContext *pFormatCtx[2];
+    AVPacket        packet[2];
     FILE *fout  = NULL;
     int width   = -1;
     int height  = -1;
     int nbFrame = 0;
     int stop    = 0;
     int stop_dec= 0;
+    int i= 0;
     int got_picture;
     float time  = 0.0;
 #ifdef TIME2
@@ -107,6 +108,11 @@ static void video_decode_example(const char *filename)
 
     if (h264_flags)
         openHevcHandle = libOpenH264Init(nb_pthreads, thread_type/*, pFormatCtx*/);
+    else if (shvc_flags){
+
+    	printf("file name : %s\n", enhance_file);
+    	openHevcHandle = libOpenShvcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
+    }
     else
         openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
 
@@ -118,26 +124,36 @@ static void video_decode_example(const char *filename)
         exit(1);
     }
     av_register_all();
-    pFormatCtx = avformat_alloc_context();
+    pFormatCtx[0] = avformat_alloc_context();
+    pFormatCtx[1] = avformat_alloc_context();
 
-    if(avformat_open_input(&pFormatCtx, filename, NULL, NULL)!=0) {
+    if(avformat_open_input(&pFormatCtx[0], filename, NULL, NULL)!=0) {
         printf("%s",filename);
         exit(1); // Couldn't open file
     }
-    if ( (video_stream_idx = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
-        fprintf(stderr, "Could not find video stream in input file\n");
-        exit(1);
+    if(shvc_flags && avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
+            printf("%s",enh_filename);
+            exit(1); // Couldn't open file
     }
+    for(i=0; i<2 ; i++){
+		if ( (video_stream_idx = av_find_best_stream(pFormatCtx[i], AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
+			fprintf(stderr, "Could not find video stream in input file\n");
+			exit(1);
+		}
 
-    av_dump_format(pFormatCtx, 0, filename, 0);
+		av_dump_format(pFormatCtx[i], 0, filename, 0);
 
-    const size_t extra_size_alloc = pFormatCtx->streams[video_stream_idx]->codec->extradata_size > 0 ?
-    (pFormatCtx->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
-    if (extra_size_alloc)
-    {
-        libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
+		const size_t extra_size_alloc = pFormatCtx[i]->streams[video_stream_idx]->codec->extradata_size > 0 ?
+		(pFormatCtx[i]->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
+		if (extra_size_alloc)
+		{
+			libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx[i]->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
+		}
+		if(!shvc_flags){
+			break;
+		}
+
     }
-
     libOpenHevcSetDebugMode(openHevcHandle, 0);
     libOpenHevcStartDecoder(openHevcHandle);
     openHevcFrameCpy.pvY = NULL;
@@ -159,10 +175,16 @@ static void video_decode_example(const char *filename)
     libOpenHevcSetViewLayers(openHevcHandle, quality_layer_id);
 
     while(!stop) {
-        if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
-        if (packet.stream_index == video_stream_idx || stop_dec == 1) {
-            got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
-            if (got_picture > 0) {
+    	if(shvc_flags)
+    		if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0) stop_dec = 0;
+        if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0) stop_dec = 1;
+
+        if (packet[0].stream_index == video_stream_idx || stop_dec == 1) {
+        	if(shvc_flags)
+        		got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
+        	else
+        		got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
+        	if (got_picture > 0) {
                 fflush(stdout);
                 libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
                 if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
@@ -218,7 +240,9 @@ static void video_decode_example(const char *filename)
                 stop = 1;
             }
         }
-        av_free_packet(&packet);
+       av_free_packet(&packet[0]);
+        if(shvc_flags)
+        	av_free_packet(&packet[1]);
     }
 #if USE_SDL
     time = SDL_GetTime()/1000.0;
@@ -235,7 +259,9 @@ static void video_decode_example(const char *filename)
             free(openHevcFrameCpy.pvV);
         }
     }
-    avformat_close_input(&pFormatCtx);
+    avformat_close_input(&pFormatCtx[0]);
+    if(shvc_flags)
+    	avformat_close_input(&pFormatCtx[1]);
     libOpenHevcClose(openHevcHandle);
 #if USE_SDL
 #ifdef TIME2
@@ -248,7 +274,7 @@ static void video_decode_example(const char *filename)
 
 int main(int argc, char *argv[]) {
     init_main(argc, argv);
-    video_decode_example(input_file);
+    video_decode_example(input_file, enhance_file);
     return 0;
 }
 

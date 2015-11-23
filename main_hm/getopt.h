@@ -43,9 +43,11 @@
 
 
 int h264_flags;
+int shvc_flags;
 int check_md5_flags;
 int thread_type;
 char *input_file;
+char *enhance_file;
 char display_flags;
 char *output_file;
 int nb_pthreads;
