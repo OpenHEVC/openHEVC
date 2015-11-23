@@ -268,7 +268,7 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
         openHevcContext                = openHevcContexts->wraper[i];
         openHevcContext->c->quality_id = openHevcContexts->active_layer;
 //        printf("quality_id %d \n", openHevcContext->c->quality_id);
-        if (i <= 1){//openHevcContexts->active_layer) {
+        if (i <= openHevcContexts->active_layer) { // pour la auite remplacer par l = 1
             openHevcContext->avpkt.size = packet[i].size;
             openHevcContext->avpkt.data = (uint8_t *) packet[i].data;
         } else {
@@ -291,7 +291,7 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
         max_layer = openHevcContexts->active_layer;
 
     for(i=max_layer; i>=0; i--) {
-        /*if(got_picture[i]){
+        if(got_picture[i]){
             if(i != openHevcContexts->display_layer) {
                 if (i >= 0 && i < openHevcContexts->nb_decoders)
                     openHevcContexts->display_layer = i;
@@ -299,9 +299,8 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
          //   fprintf(stderr, "Display layer %d  \n", i);
             return got_picture[i];
 
-        }*/
-    	printf("0 :%d \n1 :%d\n", got_picture[0], got_picture[1]);
-    	return got_picture[0];
+        }
+
     }
     return 0;
 }

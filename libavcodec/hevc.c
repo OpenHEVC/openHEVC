@@ -38,6 +38,8 @@
 #include "dsputil.h"
 #include "golomb.h"
 #include "hevc.h"
+#include "getopt.h"
+
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
@@ -48,7 +50,7 @@ static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
 static void display_md5(int poc, uint8_t md5[3][16], int chroma_idc);
 static void printf_ref_pic_list(HEVCContext *s);
 
-
+extern int shvc_flags;
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -361,7 +363,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     pic_arrays_free(s);
     ret = pic_arrays_init(s, sps);
-    printf("decode slice header\n");
+
     if (ret < 0)
         goto fail;
 
@@ -446,17 +448,24 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         const int phaseAlignFlag = 0; // TO DO ((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->phase_align_flag;
         const int   phaseX = phaseAlignFlag   << 1;
         const int   phaseY = phaseAlignFlag   << 1;
-        HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
         HEVCWindow scaled_ref_layer_window;
-        if(bl_sps) {
-            heightBL = bl_sps->height - bl_sps->output_window.bottom_offset - bl_sps->output_window.top_offset;
-            widthBL  = bl_sps->width  - bl_sps->output_window.left_offset - bl_sps->output_window.right_offset;
-        } else {
-            av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        if(!heightBL || !widthBL) {
+        if(!shvc_flags){
+        	HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
+
+			if(bl_sps) {
+				heightBL = bl_sps->height - bl_sps->output_window.bottom_offset - bl_sps->output_window.top_offset;
+
+				widthBL  = bl_sps->width  - bl_sps->output_window.left_offset - bl_sps->output_window.right_offset;
+			}  else{
+				av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
+				ret = AVERROR(ENOMEM);
+				goto fail;
+			}
+        } else{
+        	heightBL = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset;
+
+        	widthBL  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset;
+        }if(!heightBL || !widthBL) {
             av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing heightBL: %d widthBL: %d \n", heightBL, widthBL);
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -3060,7 +3069,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     s->avctx->layers_size += length;
     
     s->nuh_layer_id = ret;
- printf("decode hevc %d\n", s->nal_unit_type);
+
     switch (s->nal_unit_type) {
 
     case NAL_VPS:

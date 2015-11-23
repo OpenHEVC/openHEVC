@@ -136,7 +136,7 @@ enum NALUnitType {
     NAL_SEI_PREFIX = 39,
     NAL_SEI_SUFFIX = 40,
 };
-#if 0
+#if 1
 #define print_cabac(string, val) \
     printf(" %s : %d \n", string, val);
 #else
