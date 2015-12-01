@@ -25,6 +25,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
+
 #define MAX_DECODERS 3
 #define ACTIVE_NAL
 typedef struct OpenHevcWrapperContext {
@@ -278,8 +279,10 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
         openHevcContext->avpkt.pts  = packet[i].pts;
         len                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
                                                              &got_picture[i], &openHevcContext->avpkt);
+
         if(i+1 < openHevcContexts->nb_decoders)
-            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
+            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContext->picture;
+
     }
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");

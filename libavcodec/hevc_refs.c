@@ -455,7 +455,7 @@ static void set_refindex_data(HEVCContext *s){
     HEVCFrame  *refBL, *refEL, *ref;
     int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
     refBL = s->BL_frame;
-     
+
     init_il_slice_rpl(s);
     refEL = s->inter_layer_ref;
     for( list=0; list < nb_list; list++) {

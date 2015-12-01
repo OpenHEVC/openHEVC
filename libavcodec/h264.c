@@ -1858,6 +1858,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     int i, out_idx;
     int ret;
 
+
     h->flags = avctx->flags;
     /* reset data partitioning here, to ensure GetBitContexts from previous
      * packets do not get used. */

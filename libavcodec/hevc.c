@@ -2995,7 +2995,8 @@ static int hevc_frame_start(HEVCContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
         }
-        s->poc = s->BL_frame->poc;
+        SliceHeader *sh   = &s->sh;
+        s->poc = sh->pic_order_cnt_lsb;
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
