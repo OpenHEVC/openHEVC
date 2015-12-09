@@ -2995,8 +2995,6 @@ static int hevc_frame_start(HEVCContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
         }
-        SliceHeader *sh   = &s->sh;
-        s->poc = sh->pic_order_cnt_lsb;
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
@@ -3050,6 +3048,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb    = &lc->gb;
+    HEVCFrame *BL = NULL;
     int ctb_addr_ts, ret;
 
     ret = init_get_bits8(gb, nal, length);
@@ -3120,8 +3119,14 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             //return 0;
         }
 #endif
+        printf("start decode header\n");
+        ret = hls_slice_header(s);printf("end decode header\n");
+        if(shvc_flags)
+        {
+			s->poc= s->sh.pic_order_cnt_lsb;
+			s->BL_frame->poc = s->poc;
+        }
 
-        ret = hls_slice_header(s);
 
 #if 0
         if (ret == -10)
@@ -3157,7 +3162,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
         if (s->sh.first_slice_in_pic_flag) {
-            ret = hevc_frame_start(s);
+        	printf("start decode hevc frame\n");
+            ret = hevc_frame_start(s);printf("end decode hevc frame : %d\n", ret);
             if (ret < 0)
                 return ret;
         } else if (!s->ref) {
@@ -3587,6 +3593,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 {
     int ret;
     HEVCContext *s = avctx->priv_data;
+
     if (!avpkt->size) {
         ret = ff_hevc_output_frame(s, data, 1);
         if (ret < 0)
@@ -3599,6 +3606,12 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         return 0;
     }
 
+    if(shvc_flags){
+    	s->BL_frame = (HEVCFrame *) s->avctx->BL_frame;
+    	s->BL_frame->sequence = s->seq_decode;
+    	s->BL_frame->field_order = s->field_order;
+
+    }
     s->ref = NULL;
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);printf("decode hevc\n");
     if (ret < 0)

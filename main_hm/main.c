@@ -179,7 +179,7 @@ static void video_decode_example(const char *filename, const char *enh_filename)
     		if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0) stop_dec = 0;
         if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0) stop_dec = 1;
 
-        if (packet[0].stream_index == video_stream_idx || stop_dec == 1) {
+        if (packet[0].stream_index == video_stream_idx && packet[1].stream_index == video_stream_idx || stop_dec == 1) {
         	if(shvc_flags)
         		got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
         	else

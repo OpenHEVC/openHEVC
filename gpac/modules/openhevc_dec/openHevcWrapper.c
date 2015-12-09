@@ -277,11 +277,11 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
             openHevcContext->avpkt.data = NULL;
         }
         openHevcContext->avpkt.pts  = packet[i].pts;
-        len                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
+        len                         = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture,
                                                              &got_picture[i], &openHevcContext->avpkt);
 
         if(i+1 < openHevcContexts->nb_decoders)
-            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContext->picture;
+           openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContext->picture;
 
     }
     if (len < 0) {
