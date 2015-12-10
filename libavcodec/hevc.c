@@ -3119,8 +3119,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             //return 0;
         }
 #endif
-        printf("start decode header\n");
-        ret = hls_slice_header(s);printf("end decode header\n");
+
+        ret = hls_slice_header(s);
         if(shvc_flags)
         {
 			s->poc= s->sh.pic_order_cnt_lsb;
@@ -3162,8 +3162,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
         if (s->sh.first_slice_in_pic_flag) {
-        	printf("start decode hevc frame\n");
-            ret = hevc_frame_start(s);printf("end decode hevc frame : %d\n", ret);
+
+            ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
         } else if (!s->ref) {
@@ -3206,7 +3206,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
             }
 #endif
+
         ctb_addr_ts = hls_slice_data(s, nal, length);
+
 
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
             s->is_decoded = 1;
@@ -3608,12 +3610,12 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     if(shvc_flags){
     	s->BL_frame = (HEVCFrame *) s->avctx->BL_frame;
-    	s->BL_frame->sequence = s->seq_decode;
-    	s->BL_frame->field_order = s->field_order;
+    	//s->BL_frame->sequence = s->seq_decode;
+    	//s->BL_frame->field_order = s->field_order;
 
     }
     s->ref = NULL;
-    ret    = decode_nal_units(s, avpkt->data, avpkt->size);printf("decode hevc\n");
+    ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
 

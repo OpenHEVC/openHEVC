@@ -176,12 +176,14 @@ static void video_decode_example(const char *filename, const char *enh_filename)
 
     while(!stop) {
     	if(shvc_flags)
-    		if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0) stop_dec = 0;
+    		if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0) stop_dec = 1;
         if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0) stop_dec = 1;
-
+        //printf("Stop dec : %d", stop_dec);
         if (packet[0].stream_index == video_stream_idx && packet[1].stream_index == video_stream_idx || stop_dec == 1) {
-        	if(shvc_flags)
+        	if(shvc_flags){
         		got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
+
+        	}
         	else
         		got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
         	if (got_picture > 0) {
@@ -236,13 +238,15 @@ static void video_decode_example(const char *filename, const char *enh_filename)
                 if (nbFrame == num_frames)
                     stop = 1;
             } else {
-                if (stop_dec==1 && nbFrame)
-                stop = 1;
+                if (stop_dec==1 && nbFrame){
+                stop = 1;}
             }
         }
        av_free_packet(&packet[0]);
-        if(shvc_flags)
+        if(shvc_flags){
         	av_free_packet(&packet[1]);
+        }
+
     }
 #if USE_SDL
     time = SDL_GetTime()/1000.0;
@@ -251,17 +255,20 @@ static void video_decode_example(const char *filename, const char *enh_filename)
 #endif
     CloseSDLDisplay();
 #endif
-    if (fout) {
+    if (fout) {printf("Close fout\n");
         fclose(fout);
         if(openHevcFrameCpy.pvY) {
             free(openHevcFrameCpy.pvY);
             free(openHevcFrameCpy.pvU);
             free(openHevcFrameCpy.pvV);
         }
-    }
+    }printf("Close context AVC\n");
     avformat_close_input(&pFormatCtx[0]);
-    if(shvc_flags)
+
+    if(shvc_flags){
+    	printf("Close context HEVC\n");
     	avformat_close_input(&pFormatCtx[1]);
+    }
     libOpenHevcClose(openHevcHandle);
 #if USE_SDL
 #ifdef TIME2
