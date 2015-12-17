@@ -289,22 +289,21 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
         return -1;
     }
     if(openHevcContexts->set_display)
-        max_layer = openHevcContexts->display_layer;
-    else
-        max_layer = openHevcContexts->active_layer;
+            max_layer = openHevcContexts->display_layer;
+        else
+            max_layer = openHevcContexts->active_layer;
 
-    for(i=max_layer; i>=0; i--) {
-        if(got_picture[i]){
-            if(i != openHevcContexts->display_layer) {
-                if (i >= 0 && i < openHevcContexts->nb_decoders)
-                    openHevcContexts->display_layer = i;
+        for(i=max_layer; i>=0; i--) {
+            if(got_picture[i]){
+                if(i != openHevcContexts->display_layer) {
+                    if (i >= 0 && i < openHevcContexts->nb_decoders)
+                        openHevcContexts->display_layer = i;
+                }
+             //   fprintf(stderr, "Display layer %d  \n", i);
+                return got_picture[i];
             }
-         //   fprintf(stderr, "Display layer %d  \n", i);
-            return got_picture[i];
 
         }
-
-    }
     return 0;
 }
 

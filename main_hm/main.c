@@ -180,10 +180,8 @@ static void video_decode_example(const char *filename, const char *enh_filename)
         if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0) stop_dec = 1;
         //printf("Stop dec : %d", stop_dec);
         if (packet[0].stream_index == video_stream_idx && packet[1].stream_index == video_stream_idx || stop_dec == 1) {
-        	if(shvc_flags){
+        	if(shvc_flags)
         		got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
-
-        	}
         	else
         		got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
         	if (got_picture > 0) {

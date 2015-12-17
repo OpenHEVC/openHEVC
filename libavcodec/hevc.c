@@ -84,7 +84,8 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.size);
     av_freep(&s->sh.offset);
-
+    //if() if is BL AVC
+    av_freep(&s->BL_frame);
     av_buffer_pool_uninit(&s->tab_mvf_pool);
     av_buffer_pool_uninit(&s->rpl_tab_pool);
 
@@ -121,6 +122,8 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
+    //if() if is BL AVC
+    s->BL_frame = av_mallocz(sizeof(HEVCFrame));
 
     if (!s->sao || !s->deblock)
         goto fail;
@@ -1991,6 +1994,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
         if (!ref0)
             return;
+
+        //if(s->poc > 430) printf("============================== POC : %d\n", s->poc);
 #if ACTIVE_PU_UPSAMPLING
         if(ref0 == s->inter_layer_ref) {
             int y = (current_mv.mv[0].y >> 2) + y0;
@@ -2989,8 +2994,15 @@ static int hevc_frame_start(HEVCContext *s)
             if(s->threads_type&FF_THREAD_FRAME)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
 
-        if(s->avctx->BL_frame)
-             s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
+        if(s->avctx->BL_frame){
+        	// if is BL HEVC
+             //s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
+             // else
+        	//s->BL_frame->frame =  (AVFrame*)s->avctx->BL_frame;
+
+        	s->BL_frame->frame = (AVFrame*)s->avctx->BL_frame;
+        printf("linesize : %d\n", s->BL_frame->frame->linesize[0]);
+        }
         else {
             av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
@@ -3121,11 +3133,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 #endif
 
         ret = hls_slice_header(s);
-        if(shvc_flags)
-        {
-			s->poc= s->sh.pic_order_cnt_lsb;
-			s->BL_frame->poc = s->poc;
-        }
+        //if(shvc_flags)
+        	//s->BL_frame->poc = s->poc;
+
 
 
 #if 0
@@ -3608,12 +3618,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         return 0;
     }
 
-    if(shvc_flags){
-    	s->BL_frame = (HEVCFrame *) s->avctx->BL_frame;
-    	//s->BL_frame->sequence = s->seq_decode;
-    	//s->BL_frame->field_order = s->field_order;
-
-    }
     s->ref = NULL;
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)

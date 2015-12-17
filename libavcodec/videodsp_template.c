@@ -106,23 +106,23 @@ static int FUNC(ff_emulated_edge_up_h)(uint8_t *src, ptrdiff_t linesize,
 {
     int i;
     uint8_t   *src_tmp = src;
-    
+
     if(bl_edge_left < shift) {
       //  printf("------------ bl_edge_left %d \n", bl_edge_left);
-        for(i=0; i < block_h; i++) {
+        for(i=0; i < block_h; i++) {printf("shift :%d ----------------\n", shift);
             memset(src_tmp-(shift), src_tmp[0], shift);
             src_tmp += linesize;
         }
         return 0;
     }
-    
+
     if(bl_edge_right<(shift+1)) {
         //printf("------------  bl_edge_right %d \n", bl_edge_right);
-        for( i = 0; i < block_h ; i++ ) {
+        for( i = 0; i < block_h ; i++ ) {printf("shift 1:%d ----------------\nlinesize:%d\n", shift,linesize);
             memset(src_tmp+block_w,               src_tmp[block_w-1], shift+1);
             src_tmp += linesize;
         }
-    }
+    }printf("shift2 :%d ----------------\n", shift);
     return 1;
 }
 
