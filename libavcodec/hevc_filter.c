@@ -1432,7 +1432,7 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
 }
 
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH) {
-	printf("upsample ---------------------------- \n");
+	//printf("upsample ---------------------------- \n");
     int ctb_size =  1<<s->sps->log2_ctb_size;
     int log2_ctb =  s->sps->log2_ctb_size;
     int ctb_x0   =  (av_clip(x0, 0, s->sps->width) >> log2_ctb) << log2_ctb;

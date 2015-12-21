@@ -84,8 +84,9 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.size);
     av_freep(&s->sh.offset);
-    //if() if is BL AVC
-    av_freep(&s->BL_frame);
+
+   // if(!s->vps->vps_base_layer_internal_flag)
+    	av_freep(&s->BL_frame);
     av_buffer_pool_uninit(&s->tab_mvf_pool);
     av_buffer_pool_uninit(&s->rpl_tab_pool);
 
@@ -122,8 +123,8 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
-    //if() if is BL AVC
-    s->BL_frame = av_mallocz(sizeof(HEVCFrame));
+    //if(!s->vps->vps_base_layer_internal_flag)
+    	s->BL_frame = av_mallocz(sizeof(HEVCFrame));
 
     if (!s->sao || !s->deblock)
         goto fail;
@@ -365,6 +366,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     unsigned int num = 0, den = 0;
 
     pic_arrays_free(s);
+
     ret = pic_arrays_init(s, sps);
 
     if (ret < 0)
@@ -2995,12 +2997,12 @@ static int hevc_frame_start(HEVCContext *s)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
 
         if(s->avctx->BL_frame){
-        	// if is BL HEVC
-             //s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
-             // else
-        	//s->BL_frame->frame =  (AVFrame*)s->avctx->BL_frame;
+        	if(s->vps->vps_base_layer_internal_flag)
+        		s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
+            else
+        		s->BL_frame->frame =  (AVFrame*)s->avctx->BL_frame;
 
-        	s->BL_frame->frame = (AVFrame*)s->avctx->BL_frame;
+
         printf("linesize : %d\n", s->BL_frame->frame->linesize[0]);
         }
         else {

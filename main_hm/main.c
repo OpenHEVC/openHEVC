@@ -241,7 +241,7 @@ static void video_decode_example(const char *filename, const char *enh_filename)
             }
         }
        av_free_packet(&packet[0]);
-        if(shvc_flags){
+       if(shvc_flags){
         	av_free_packet(&packet[1]);
         }
 
