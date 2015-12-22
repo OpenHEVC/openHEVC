@@ -85,8 +85,6 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->sh.size);
     av_freep(&s->sh.offset);
 
-   // if(!s->vps->vps_base_layer_internal_flag)
-    	av_freep(&s->BL_frame);
     av_buffer_pool_uninit(&s->tab_mvf_pool);
     av_buffer_pool_uninit(&s->rpl_tab_pool);
 
@@ -123,8 +121,6 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
     s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
-    //if(!s->vps->vps_base_layer_internal_flag)
-    	s->BL_frame = av_mallocz(sizeof(HEVCFrame));
 
     if (!s->sao || !s->deblock)
         goto fail;
@@ -454,6 +450,10 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
         const int   phaseX = phaseAlignFlag   << 1;
         const int   phaseY = phaseAlignFlag   << 1;
         HEVCWindow scaled_ref_layer_window;
+
+        if(s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1) // We consider BL is AVC
+            	s->BL_frame = av_mallocz(sizeof(HEVCFrame));
+
         if(!shvc_flags){
         	HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
 
@@ -2997,9 +2997,9 @@ static int hevc_frame_start(HEVCContext *s)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
 
         if(s->avctx->BL_frame){
-        	if(s->vps->vps_base_layer_internal_flag)
+        	if(s->vps->vps_base_layer_internal_flag == 1 && s->vps->vps_base_layer_available_flag == 1)
         		s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
-            else
+            else if(s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
         		s->BL_frame->frame =  (AVFrame*)s->avctx->BL_frame;
 
 
@@ -3676,6 +3676,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     pic_arrays_free(s);
+
+    if(s->decoder_id == 1 && s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
+        	av_freep(&s->BL_frame);
 
     av_freep(&s->md5_ctx);
 

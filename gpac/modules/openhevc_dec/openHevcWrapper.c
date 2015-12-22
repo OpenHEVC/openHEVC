@@ -632,6 +632,7 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
         av_freep(&openHevcContext->picture);
         av_freep(&openHevcContext);
     }
+
     av_freep(&openHevcContexts->wraper);
     av_freep(&openHevcContexts);
 }

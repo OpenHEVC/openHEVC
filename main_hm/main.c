@@ -125,7 +125,8 @@ static void video_decode_example(const char *filename, const char *enh_filename)
     }
     av_register_all();
     pFormatCtx[0] = avformat_alloc_context();
-    pFormatCtx[1] = avformat_alloc_context();
+    if(shvc_flags)
+    	pFormatCtx[1] = avformat_alloc_context();
 
     if(avformat_open_input(&pFormatCtx[0], filename, NULL, NULL)!=0) {
         printf("%s",filename);
