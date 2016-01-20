@@ -6,9 +6,10 @@ APP_OPTIM := debug
 LOCAL_ARM_MODE := arm
 
 #LOCAL_CFLAGS    := -I <Your header files goes here>
-LOCAL_CFLAGS    += -g
-LOCAL_CFLAGS    += -ggdb
-LOCAL_CFLAGS    += -O1
+#for debug
+#LOCAL_CFLAGS    := -g -ggdb -O0
+#for production
+LOCAL_CFLAGS    := -O3
 
 openhevc_files := \
     libavutil/avstring.c \
@@ -21,6 +22,7 @@ openhevc_files := \
     libavutil/crc.c \
     libavutil/des.c \
     libavutil/dict.c \
+    libavutil/display.c \
     libavutil/error.c \
     libavutil/eval.c \
     libavutil/file_open.c \
@@ -40,6 +42,7 @@ openhevc_files := \
     libavutil/rc4.c \
     libavutil/samplefmt.c \
     libavutil/sha.c \
+    libavutil/stereo3d.c \
     libavutil/time.c \
     libavutil/timecode.c \
     libavutil/utils.c \
@@ -50,7 +53,9 @@ openhevc_files := \
     libavformat/aviobuf.c \
     libavformat/cutils.c \
     libavformat/file.c \
+    libavformat/flac_picture.c \
     libavformat/format.c \
+    libavformat/h264dec.c \
     libavformat/id3v1.c \
     libavformat/id3v2.c \
     libavformat/isom.c \
@@ -62,13 +67,33 @@ openhevc_files := \
     libavformat/mov_chan.c \
     libavformat/mpegts.c \
     libavformat/mux.c \
+    libavformat/oggparsevorbis.c \
     libavformat/options.c \
     libavformat/os_support.c \
     libavformat/rawdec.c \
+    libavformat/replaygain.c \
     libavformat/riffdec.c \
     libavformat/riff.c \
     libavformat/rmsipr.c \
     libavformat/utils.c \
+    libavformat/vorbiscomment.c \
+    libavcodec/h264_cabac.c \
+    libavcodec/h264_cavlc.c \
+    libavcodec/h264_direct.c \
+    libavcodec/h264_loopfilter.c \
+    libavcodec/h264_mb.c \
+    libavcodec/h264_parser.c \
+    libavcodec/h264_picture.c \
+    libavcodec/h264_ps.c \
+    libavcodec/h264_refs.c \
+    libavcodec/h264_sei.c \
+    libavcodec/h264_slice.c \
+    libavcodec/h264.c \
+    libavcodec/h264chroma.c \
+    libavcodec/h264dsp.c \
+    libavcodec/h264idct.c \
+    libavcodec/h264pred.c \
+    libavcodec/h264qpel.c \
     libavcodec/arm/videodsp_init_arm.c \
     libavcodec/ac3tab.c \
     libavcodec/allcodecs.c \
@@ -113,6 +138,7 @@ openhevc_files := \
     libavcodec/rawdec.c \
     libavcodec/rdft.c \
     libavcodec/simple_idct.c \
+    libavcodec/startcode.c \
     libavcodec/utils.c \
     libavcodec/videodsp.c \
     libavcodec/arm/hevcdsp_init_arm.c \

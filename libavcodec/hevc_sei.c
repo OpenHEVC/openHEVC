@@ -85,21 +85,30 @@ static int decode_pic_timing(HEVCContext *s)
     s->picture_struct = AV_PICTURE_STRUCTURE_UNKNOWN;
     if (sps->vui.frame_field_info_present_flag) {
         s->picture_struct = get_bits(gb, 4);
+
         switch(s->picture_struct) {
-        case  0 : s->picture_struct = AV_PICTURE_STRUCTURE_FRAME;        av_log(s->avctx, AV_LOG_DEBUG, "(progressive) frame \n"); break;
-        case  1 : s->picture_struct = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(s->avctx, AV_LOG_DEBUG, "top field\n"); break;
-        case  2 : s->picture_struct = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(s->avctx, AV_LOG_DEBUG, "bottom field\n"); break;
-        case  3 : s->picture_struct = AV_PICTURE_STRUCTURE_FRAME;        av_log(s->avctx, AV_LOG_DEBUG, "top field, bottom field, in that order\n"); break;
-        case  4 : s->picture_struct = AV_PICTURE_STRUCTURE_FRAME;        av_log(s->avctx, AV_LOG_DEBUG, "bottom field, top field, in that order\n"); break;
-        case  5 : s->picture_struct = AV_PICTURE_STRUCTURE_FRAME;        av_log(s->avctx, AV_LOG_DEBUG, "top field, bottom field, top field repeated, in that order\n"); break;
-        case  6 : s->picture_struct = AV_PICTURE_STRUCTURE_FRAME;        av_log(s->avctx, AV_LOG_DEBUG, "bottom field, top field, bottom field repeated, in that order\n"); break;
-        case  7 : s->picture_struct = AV_PICTURE_STRUCTURE_FRAME;        av_log(s->avctx, AV_LOG_DEBUG, "frame doubling\n"); break;
-        case  8 : s->picture_struct = AV_PICTURE_STRUCTURE_FRAME;        av_log(s->avctx, AV_LOG_DEBUG, "frame tripling\n"); break;
-        case  9 : s->picture_struct = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(s->avctx, AV_LOG_DEBUG, "top field paired with previous bottom field in output order\n"); break;
-        case 10 : s->picture_struct = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(s->avctx, AV_LOG_DEBUG, "bottom field paired with previous top field in output order\n"); break;
-        case 11 : s->picture_struct = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(s->avctx, AV_LOG_DEBUG, "top field paired with next bottom field in output order\n"); break;
-        case 12 : s->picture_struct = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(s->avctx, AV_LOG_DEBUG, "bottom field paired with next top field in output order\n"); break;
+            case  0 : s->interlaced = 0; av_log(s->avctx, AV_LOG_DEBUG, "(progressive) frame \n"); break;
+            case  1 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "top field\n"); break;
+            case  2 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "bottom field\n"); break;
+            case  3 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "top field, bottom field, in that order\n"); break;
+            case  4 : s->interlaced = 0; av_log(s->avctx, AV_LOG_DEBUG, "bottom field, top field, in that order\n"); break;
+            case  5 : s->interlaced = 0; av_log(s->avctx, AV_LOG_DEBUG, "top field, bottom field, top field repeated, in that order\n"); break;
+            case  6 : s->interlaced = 0; av_log(s->avctx, AV_LOG_DEBUG, "bottom field, top field, bottom field repeated, in that order\n"); break;
+            case  7 : s->interlaced = 0; av_log(s->avctx, AV_LOG_DEBUG, "frame doubling\n"); break;
+            case  8 : s->interlaced = 0; av_log(s->avctx, AV_LOG_DEBUG, "frame tripling\n"); break;
+            case  9 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "top field paired with previous bottom field in output order\n"); break;
+            case 10 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "bottom field paired with previous top field in output order\n"); break;
+            case 11 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "top field paired with next bottom field in output order\n"); break;
+            case 12 : s->interlaced = 1; av_log(s->avctx, AV_LOG_DEBUG, "bottom field paired with next top field in output order\n"); break;
         }
+
+        if (s->picture_struct == 1 || s->picture_struct == 3 || s->picture_struct == 11)
+            s->field_order = AV_FIELD_TT;
+        else if (s->picture_struct == 2 || s->picture_struct == 12)
+            s->field_order = AV_FIELD_BB;
+        else
+            s->field_order = AV_FIELD_UNKNOWN;
+
         get_bits(gb, 2);                   // source_scan_type
         get_bits(gb, 1);                   // duplicate_flag
     }
@@ -152,10 +161,8 @@ static int decode_nal_sei_message(HEVCContext *s)
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
         if (payload_type == 256 /*&& s->decode_checksum_sei*/) {
             decode_nal_sei_decoded_picture_hash(s);
-            return 1;
         } else if (payload_type == 45) {
             decode_nal_sei_frame_packing_arrangement(s);
-            return 1;
         } else if (payload_type == 1){
             int ret = decode_pic_timing(s);
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
@@ -164,11 +171,9 @@ static int decode_nal_sei_message(HEVCContext *s)
         } else if (payload_type == 129){
             active_parameter_sets(s);
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-            return 1;
         } else {
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
             skip_bits(gb, 8*payload_size);
-            return 1;
         }
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
         if (payload_type == 132 /* && s->decode_checksum_sei */)
@@ -177,8 +182,8 @@ static int decode_nal_sei_message(HEVCContext *s)
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
             skip_bits(gb, 8 * payload_size);
         }
-        return 1;
     }
+    return 1;
 }
 
 static int more_rbsp_data(GetBitContext *gb)

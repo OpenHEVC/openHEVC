@@ -25,8 +25,12 @@
 #include "parser.h"
 #include "hevc.h"
 #include "golomb.h"
+#include "getopt.h"
+
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
+
+extern int shvc_flags;
 
 typedef struct HEVCParseContext {
     HEVCContext  h;
@@ -42,7 +46,7 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
 {
     int i;
     ParseContext *pc = &((HEVCParseContext *)s->priv_data)->pc;
-
+    static frame_counter = 0;
     for (i = 0; i < buf_size; i++) {
         int nut, layer_id;
 
@@ -50,21 +54,22 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
 
         if (((pc->state64 >> 3 * 8) & 0xFFFFFF) != START_CODE)
             continue;
+        frame_counter++;
 
         nut = (pc->state64 >> 2 * 8 + 1) & 0x3F;
         layer_id  =  (((pc->state64 >> 2 * 8) &0x01)<<5) + (((pc->state64 >> 1 * 8)&0xF8)>>3);
-
+        //printf("Frame_counter : %d\nNAL Unit : %d \nLayer ID : %d\n", frame_counter, nut, layer_id);
         // Beginning of access unit
         if ((nut >= NAL_VPS && nut <= NAL_AUD) || nut == NAL_SEI_PREFIX ||
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
-            if (pc->frame_start_found && !layer_id) {
+            if (pc->frame_start_found && (!shvc_flags ? !layer_id : layer_id)) {
                 pc->frame_start_found = 0;
                 return i - 5;
             }
         } else if (nut <= NAL_RASL_R ||
                    (nut >= NAL_BLA_W_LP && nut <= NAL_CRA_NUT)) {
             int first_slice_segment_in_pic_flag = buf[i] >> 7;
-            if (first_slice_segment_in_pic_flag && !layer_id) {
+            if (first_slice_segment_in_pic_flag && (!shvc_flags ? !layer_id : layer_id)) {
                 if (!pc->frame_start_found) {
                     pc->frame_start_found = 1;
                 } else { // First slice of next frame found
@@ -170,9 +175,23 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
         case NAL_CRA_NUT:
             av_log(h->avctx, AV_LOG_DEBUG, "parsing NALU %d\n", h->decoder_id);
             sh->first_slice_in_pic_flag = get_bits1(gb);
-            s->picture_structure = h->picture_struct;
-            s->field_order = h->picture_struct;
+            switch(h->picture_struct) {
+                case  0 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "(progressive) frame \n"); break;
+                case  1 : s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(h->avctx, AV_LOG_DEBUG, "top field\n"); break;
+                case  2 : s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(h->avctx, AV_LOG_DEBUG, "bottom field\n"); break;
+                case  3 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "top field, bottom field, in that order\n"); break;
+                case  4 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "bottom field, top field, in that order\n"); break;
+                case  5 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "top field, bottom field, top field repeated, in that order\n"); break;
+                case  6 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "bottom field, top field, bottom field repeated, in that order\n"); break;
+                case  7 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "frame doubling\n"); break;
+                case  8 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "frame tripling\n"); break;
+                case  9 : s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(h->avctx, AV_LOG_DEBUG, "top field paired with previous bottom field in output order\n"); break;
+                case 10 : s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(h->avctx, AV_LOG_DEBUG, "bottom field paired with previous top field in output order\n"); break;
+                case 11 : s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(h->avctx, AV_LOG_DEBUG, "top field paired with next bottom field in output order\n"); break;
+                case 12 : s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD; av_log(h->avctx, AV_LOG_DEBUG, "bottom field paired with next top field in output order\n"); break;
+            }
 
+            s->field_order = h->field_order;
             if (IS_IRAP(h)) {
                 s->key_frame = 1;
                 sh->no_output_of_prior_pics_flag = get_bits1(gb);
@@ -273,6 +292,7 @@ static int hevc_parse(AVCodecParserContext *s,
         next = buf_size;
     } else {
         next = hevc_find_frame_end(s, buf, buf_size);
+        //printf("Position of next frame : %d\n", next);
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf      = NULL;
             *poutbuf_size = 0;

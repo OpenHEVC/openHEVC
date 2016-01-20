@@ -76,8 +76,14 @@ void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, 
 
     SDL_LockTexture(bmpTex1, NULL, (void **)&pixels1, &pitch1);
     memcpy(pixels1,             Y, size1  );
-    memcpy(pixels1 + size1,     V, size1/4);
-    memcpy(pixels1 + size1*5/4, U, size1/4);
+    if (V)
+        memcpy(pixels1 + size1,     V, size1/4);
+    else
+        memset(pixels1 + size1,     0x80, size1/4);
+    if (U)
+        memcpy(pixels1 + size1*5/4, U, size1/4);
+    else
+        memset(pixels1 + size1*5/4, 0x80, size1/4);
     SDL_UnlockTexture(bmpTex1);
     SDL_UpdateTexture(bmpTex1, NULL, pixels1, pitch1);
     // refresh screen

@@ -54,6 +54,7 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>
+
 #if CONFIG_ICONV
 # include <iconv.h>
 #endif
@@ -2369,8 +2370,10 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             ret = ff_thread_decode_frame(avctx, picture, got_picture_ptr,
                                          &tmp);
         else {
+
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
                                        &tmp);
+
             picture->pkt_dts = avpkt->dts;
 
             if(!avctx->has_b_frames){

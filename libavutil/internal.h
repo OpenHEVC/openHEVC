@@ -80,6 +80,9 @@
 #    define FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#ifndef INT_BIT
+#define INT_BIT (CHAR_BIT * sizeof(int))
+#endif
 
 #define FF_MEMORY_POISON 0x2a
 

@@ -38,6 +38,8 @@
 #include "cabac_functions.h"
 #include "golomb.h"
 #include "hevc.h"
+#include "getopt.h"
+
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
@@ -48,7 +50,7 @@ static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
 static void display_md5(int poc, uint8_t md5[3][16], int chroma_idc);
 static void printf_ref_pic_list(HEVCContext *s);
 
-
+extern int shvc_flags;
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the
@@ -479,14 +481,19 @@ int set_el_parameter(HEVCContext *s) {
 //    const int phaseAlignFlag = 0; // TO DO ((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->phase_align_flag;
     const int phaseHorLuma = 0;
     const int phaseVerLuma = 0, refLayer = 0;
-
-    HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
-    HEVCWindow scaled_ref_layer_window;
-    if(bl_sps) {
+    int bl_avc = s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1;
+    if(bl_avc){ // We consider BL is AVC
+      s->BL_frame = av_mallocz(sizeof(HEVCFrame));
+      heightBL    = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset;
+      widthBL     = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset;
+    } else {
+      HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
+      HEVCWindow scaled_ref_layer_window;
+      if(bl_sps) {
         HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
         heightBL = bl_sps->height - base_layer_window.bottom_offset - base_layer_window.top_offset;
         widthBL  = bl_sps->width  - base_layer_window.left_offset   - base_layer_window.right_offset;
-    } else {
+      } else {
         av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -563,7 +570,7 @@ int set_el_parameter(HEVCContext *s) {
     fail:
     return ret;
 }
-
+}
 
 
 static int hls_slice_header(HEVCContext *s)
@@ -3184,8 +3191,14 @@ static int hevc_frame_start(HEVCContext *s)
             if(s->threads_type&FF_THREAD_FRAME)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
 
-        if(s->avctx->BL_frame)
-             s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
+        if(s->avctx->BL_frame){
+        	if(s->vps->vps_base_layer_internal_flag == 1 && s->vps->vps_base_layer_available_flag == 1)
+        		s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
+            else if(s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
+        		s->BL_frame->frame =  (AVFrame*)s->avctx->BL_frame;
+
+
+        }
         else {
             av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
@@ -3931,6 +3944,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     pic_arrays_free(s);
+
+    if(s->decoder_id == 1 && s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
+        	av_freep(&s->BL_frame);
 
     av_freep(&s->md5_ctx);
 

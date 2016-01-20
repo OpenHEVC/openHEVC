@@ -414,7 +414,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     /*
      * Submit a packet to the next decoding thread.
      */
-
+    printf("decode thread\n");
     p = &fctx->threads[fctx->next_decoding];
     err = update_context_from_user(p->avctx, avctx);
     if (err) return err;
