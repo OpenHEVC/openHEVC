@@ -132,7 +132,7 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
     // every command line option must be followed by ':' if it takes an
     // argument, and '::' if this argument is optional
-    const char *ostr = "achi:e:no:p:f:s:t:v:wl:r:";
+    const char *ostr = "achvi:e:no:p:f:s:t:wl:r:";
 
     int c;
     h264_flags        = DISABLE;

@@ -11,6 +11,7 @@
 #include "sdl_wrapper.h"
 
 //#define TIME2
+#define PL_DEV
 
 #ifdef TIME2
 #ifdef WIN32
@@ -114,13 +115,26 @@ typedef struct Info {
 
 static void video_decode_example(const char *filename,const char *enh_filename)
 {
-    AVFormatContext *pFormatCtx[2];
-    AVPacket        packet[2];
+#ifndef PL_DEV
+	AVFormatContext **pFormatCtx = NULL;
+	AVPacket        *packet = NULL;
+	if(h264_flags && enh_filename){
+		pFormatCtx = malloc(sizeof(AVFormatContext*) * 2);
+		packet = malloc(sizeof(AVPacket) * 2);
+	} else{
+		pFormatCtx = malloc(sizeof(AVFormatContext*));
+		packet = malloc(sizeof(AVPacket));
+	}
+#else
+	AVFormatContext *pFormatCtx[2];
+	AVPacket        packet[2];
+#endif
+
 #if FRAME_CONCEALMENT
     FILE *fin_loss = NULL, *fin1 = NULL;
     Info info;
     Info info_loss;
-    char filename0[1024];
+    char filename0[1024];thread_type
     int is_received = 1;
 #endif
     FILE *fout  = NULL;
@@ -147,16 +161,23 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         exit(1);
     }
 
-    if (h264_flags)
+    if (h264_flags){
         openHevcHandle = libOpenH264Init(nb_pthreads, thread_type/*, pFormatCtx*/);
-    else if (shvc_flags){
-
+#ifndef PL_DEV
+        if(enh_filename) { //@FIXME: not supported at the moment, does nothing
+    	    //openHevcHandle = libOpenShvcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
+        }
+    }
+#else
+    } else if (shvc_flags){
     	printf("file name : %s\n", enhance_file);
     	openHevcHandle = libOpenShvcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     }
-    else
-        openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
+#endif
 
+    else {
+        openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
+    }
 
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
 
@@ -165,18 +186,69 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         exit(1);
     }
     av_register_all();
+#ifndef PL_DEV
+    if(h264_flags){
+        pFormatCtx[0] = avformat_alloc_context();
+        if(shvc_flags){ // EL is in a second file only if first file is AVC
+            pFormatCtx[1] = avformat_alloc_context();
+        }
+    }
+#else
     pFormatCtx[0] = avformat_alloc_context();
     if(shvc_flags)
     	pFormatCtx[1] = avformat_alloc_context();
-
+#endif
+#ifndef PL_DEV
+    if(avformat_open_input(pFormatCtx, filename, NULL, NULL)!=0) {
+#else
     if(avformat_open_input(&pFormatCtx[0], filename, NULL, NULL)!=0) {
-        printf("%s",filename);
+#endif
+    	printf("%s",filename);
         exit(1); // Couldn't open file
     }
-    if(shvc_flags && avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
-            printf("%s",enh_filename);
-            exit(1); // Couldn't open file
+#ifndef PL_DEV
+    if(enh_filename){ //@FIXME does nothing at the moment not supported
+    	//if(avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
+        //    printf("%s",enh_filename);
+        //    exit(1); // Couldn't open file
+        //}
     }
+#else
+    if(shvc_flags && avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
+        printf("%s",enh_filename);
+        exit(1); // Couldn't open file
+    }
+#endif
+
+#ifndef PL_DEV
+	if ( (video_stream_idx = av_find_best_stream(*pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
+		fprintf(stderr, "Could not find video stream in input file\n");
+		exit(1);
+	}
+
+	const size_t extra_size_alloc = (*pFormatCtx)->streams[video_stream_idx]->codec->extradata_size > 0 ?
+	((*pFormatCtx)->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
+	if (extra_size_alloc)
+	{
+		libOpenHevcCopyExtraData(openHevcHandle, (*pFormatCtx)->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
+	}
+
+	if(enhance_file){
+		if ( (video_stream_idx = av_find_best_stream(pFormatCtx[1], AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
+				fprintf(stderr, "Could not find video stream in input file\n");
+				exit(1);
+		}
+		const size_t extra_size_alloc = pFormatCtx[1]->streams[video_stream_idx]->codec->extradata_size > 0 ?
+			(pFormatCtx[1]->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
+		if (extra_size_alloc)
+		{
+			libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx[1]->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
+		}
+	}
+
+
+
+#else
     for(i=0; i<2 ; i++){
 		if ( (video_stream_idx = av_find_best_stream(pFormatCtx[i], AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
 			fprintf(stderr, "Could not find video stream in input file\n");
@@ -196,6 +268,8 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 		}
 
     }
+#endif
+
     libOpenHevcSetDebugMode(openHevcHandle, 0);
     libOpenHevcStartDecoder(openHevcHandle);
     openHevcFrameCpy.pvY = NULL;
@@ -224,10 +298,6 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 #endif
 
     while(!stop) {
-//        if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0)
-//            stop_dec = 1;
-//        else if (stop_dec > 0 && nbFrame == 0)
-//            stop_dec++;
 #if FRAME_CONCEALMENT
         // Get the corresponding frame in the trace
         if(is_received)
@@ -247,80 +317,83 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 #else
             //got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
 #endif
-            //if (got_picture > 0) {
-    	if(shvc_flags)
-    		if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0) stop_dec = 1;
-        if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0) stop_dec = 1;
-        //printf("Stop dec : %d", stop_dec);
-        if (packet[0].stream_index == video_stream_idx && packet[1].stream_index == video_stream_idx || stop_dec == 1) {
-        	if(shvc_flags)
-        		got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
-        	else
-        		got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
-        	if (got_picture > 0) {
-                fflush(stdout);
-                libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
-                if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
-                    width  = openHevcFrame.frameInfo.nWidth;
-                    height = openHevcFrame.frameInfo.nHeight;
-                    if (fout)
-                       fclose(fout);
-                    if (output_file) {
-                        sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
-                        fout = fopen(output_file2, "wb");
-                    }
-#if USE_SDL
-                    if (display_flags == ENABLE) {
-                        Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
-                    }
-#endif
-                    if (fout) {
-                        int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
-                        libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
-                        if(openHevcFrameCpy.pvY) {
-                            free(openHevcFrameCpy.pvY);
-                            free(openHevcFrameCpy.pvU);
-                            free(openHevcFrameCpy.pvV);
-                        }
-                        openHevcFrameCpy.pvY = calloc (openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, sizeof(unsigned char));
-                        openHevcFrameCpy.pvU = calloc (openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
-                        openHevcFrameCpy.pvV = calloc (openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
-                    }
-                }
-#if USE_SDL
-                if (frame_rate > 0) {
-                    framerateDelay_SDL();
-                }                
-                if (display_flags == ENABLE) {
-                    libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
-                    libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
-                    SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
-                            openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
-                }
-#endif
-                if (fout) {
-                    int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
-                    libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
-                    fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, fout);
-                    fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
-                    fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
-                }
-                nbFrame++;
-                if (nbFrame == num_frames)
-                    stop = 1;
-            } else {
-                if (stop_dec > 0 && nbFrame)
-                stop = 1;
-                if (stop_dec >= nb_pthreads && nbFrame == 0) {
-		    av_free_packet(&packet[0]);
-                    if(shvc_flags){
-		       av_free_packet(&packet[1]);
-                    }
-                    fprintf(stderr, "Error when reading first frame\n");
-                    exit(1);
-                }
-            }
-        }
+        //if (got_picture > 0) {
+			if(enh_filename)
+				if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0)
+					stop_dec = 1;
+			if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0)
+				stop_dec = 1;
+			//printf("Stop dec : %d", stop_dec);
+			if (packet[0].stream_index == video_stream_idx && packet[1].stream_index == video_stream_idx || stop_dec == 1) {
+				if(enh_filename)
+					got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
+				else
+					got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
+				if (got_picture > 0) {
+					fflush(stdout);
+					libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
+					if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
+						width  = openHevcFrame.frameInfo.nWidth;
+						height = openHevcFrame.frameInfo.nHeight;
+						if (fout)
+						   fclose(fout);
+						if (output_file) {
+							sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
+							fout = fopen(output_file2, "wb");
+						}
+	#if USE_SDL
+						if (display_flags == ENABLE) {
+							Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
+						}
+	#endif
+						if (fout) {
+							int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
+							libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
+							if(openHevcFrameCpy.pvY) {
+								free(openHevcFrameCpy.pvY);
+								free(openHevcFrameCpy.pvU);
+								free(openHevcFrameCpy.pvV);
+							}
+							openHevcFrameCpy.pvY = calloc (openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, sizeof(unsigned char));
+							openHevcFrameCpy.pvU = calloc (openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
+							openHevcFrameCpy.pvV = calloc (openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
+						}
+					}
+	#if USE_SDL
+					if (frame_rate > 0) {
+						framerateDelay_SDL();
+					}
+					if (display_flags == ENABLE) {
+						libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
+						libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
+						SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
+								openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
+					}
+	#endif
+					if (fout) {
+						int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
+						libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
+						fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, fout);
+						fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
+						fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
+					}
+					nbFrame++;
+					if (nbFrame == num_frames)
+						stop = 1;
+				} else {
+					if (stop_dec > 0 && nbFrame)
+					stop = 1;
+					if (stop_dec >= nb_pthreads && nbFrame == 0) {
+				av_free_packet(&packet[0]);
+						if(shvc_flags){
+				   av_free_packet(&packet[1]);
+						}
+						fprintf(stderr, "Error when reading first frame\n");
+						exit(1);
+					}
+				}
+			}
+        //}
     }
 #if USE_SDL
     time = SDL_GetTime()/1000.0;
@@ -351,11 +424,24 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     printf("frame= %d fps= %.0f time= %.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
 #endif
 #endif
+#ifndef PL_DEV
+    free(packet);
+    free(pFormatCtx);
+#endif
 }
 
 int main(int argc, char *argv[]) {
     init_main(argc, argv);
+#ifndef PL_DEV
+    if(h264_flags){
+    	video_decode_example(input_file, enhance_file);
+    } else{
+    	video_decode_example(input_file, NULL);
+    }
+#else
     video_decode_example(input_file, enhance_file);
+#endif
+
     return 0;
 }
 

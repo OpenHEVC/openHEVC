@@ -483,30 +483,30 @@ int set_el_parameter(HEVCContext *s) {
     const int phaseVerLuma = 0, refLayer = 0;
     int bl_avc = s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1;
     if(bl_avc){ // We consider BL is AVC
-      s->BL_frame = av_mallocz(sizeof(HEVCFrame));
+      s->BL_frame = av_mallocz(sizeof(HEVCFrame)); //BL-Frame is already allocated
       heightBL    = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset;
       widthBL     = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset;
     } else {
-      HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
-      HEVCWindow scaled_ref_layer_window;
-      if(bl_sps) {
-        HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
-        heightBL = bl_sps->height - base_layer_window.bottom_offset - base_layer_window.top_offset;
-        widthBL  = bl_sps->width  - base_layer_window.left_offset   - base_layer_window.right_offset;
-      } else {
-        av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    if(!heightBL || !widthBL) {
-        av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing heightBL: %d widthBL: %d \n", heightBL, widthBL);
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
+          HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
+          HEVCWindow scaled_ref_layer_window;
+          if(bl_sps) {
+              HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
+              heightBL = bl_sps->height - base_layer_window.bottom_offset - base_layer_window.top_offset;
+              widthBL  = bl_sps->width  - base_layer_window.left_offset   - base_layer_window.right_offset;
+          } else {
+              av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
+              ret = AVERROR(ENOMEM);
+              goto fail;
+          }
+          if(!heightBL || !widthBL) {
+              av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing heightBL: %d widthBL: %d \n", heightBL, widthBL);
+              ret = AVERROR(ENOMEM);
+              goto fail;
+          }
+          scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
 
-    heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
-    widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
+          heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
+          widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
     phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;
 #if !ACTIVE_PU_UPSAMPLING
     if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
@@ -3944,8 +3944,11 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     pic_arrays_free(s);
-
-    if(s->decoder_id == 1 && s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
+#ifndef PL_DEV
+#else
+#endif
+//careful here segfault
+    if(s->decoder_id == 1 && s->vps && s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
         	av_freep(&s->BL_frame);
 
     av_freep(&s->md5_ctx);
