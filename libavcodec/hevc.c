@@ -167,8 +167,8 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         goto fail;
 
     
-    s->horizontal_bs = av_mallocz((s->bs_width+(4*(1 << s->sps->hshift[1]))) * s->bs_height);
-    s->vertical_bs   = av_mallocz(s->bs_width * (s->bs_height+4*(1 << s->sps->vshift[1])));
+    s->horizontal_bs = av_mallocz((s->bs_width+(4*(1 << sps->hshift[1]))) * s->bs_height);
+    s->vertical_bs   = av_mallocz(s->bs_width * (s->bs_height+4*(1 << sps->vshift[1])));
     
     s->dynamic_alloc += (s->bs_width * s->bs_height);
     s->dynamic_alloc += (s->bs_width * s->bs_height);
