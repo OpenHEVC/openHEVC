@@ -162,7 +162,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     _mm_storel_epi64((__m128i *) &tab[x], x1);                                 \
     *((uint32_t *) &tab[x+4]) = _mm_cvtsi128_si32(_mm_srli_si128(x1, 8))
 #define PEL_STORE_8(tab)                                                       \
-    _mm_store_si128((__m128i *) &tab[x], x1)
+    _mm_storeu_si128((__m128i *) &tab[x], x1)
 #define PEL_STORE_16(tab)                                                      \
     _mm_store_si128((__m128i *) &tab[x    ], x1);                              \
     _mm_store_si128((__m128i *) &tab[x + 8], x2)

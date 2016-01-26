@@ -774,7 +774,7 @@ TRANSFORM2(32, 12);
     coeffs += 8
 #define ADD_COMPUTE16_8()                                                      \
     __m128i src1;                                                              \
-    src  = _mm_load_si128((__m128i*) dst);                                     \
+    src  = _mm_loadu_si128((__m128i*) dst);                                     \
     src1 = _mm_unpackhi_epi8(src, _mm_setzero_si128());                        \
     src  = _mm_unpacklo_epi8(src, _mm_setzero_si128());                        \
     add1 = _mm_load_si128((__m128i*) (coeffs));                                \
