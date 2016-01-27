@@ -689,6 +689,12 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         if (EXTERNAL_SSE4(cpu_flags)) {
 #if HAVE_SSE42
 #ifdef SVC_EXTENSION
+
+        	c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
+            c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
+            c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
+            c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
+
             c->upsample_filter_block_luma_h[1] = ff_upsample_filter_block_luma_h_x2_sse;
             c->upsample_filter_block_cr_h[1] = ff_upsample_filter_block_cr_h_x2_sse;
             c->upsample_filter_block_luma_v[1] = ff_upsample_filter_block_luma_v_x2_sse;
@@ -698,7 +704,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->upsample_filter_block_cr_h[2] = ff_upsample_filter_block_cr_h_x1_5_sse;
             c->upsample_filter_block_luma_v[2] = ff_upsample_filter_block_luma_v_x1_5_sse;
             c->upsample_filter_block_cr_v[2] = ff_upsample_filter_block_cr_v_x1_5_sse;
-
 
             // c->upsample_filter_block_luma_h[0] = ff_upsample_filter_block_luma_h_all_sse;
             // c->upsample_filter_block_cr_h[0] = ff_upsample_filter_block_cr_h_all_sse;
