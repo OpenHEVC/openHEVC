@@ -177,12 +177,12 @@ cglobal hevc_transform_add8_8, 3, 4, 6
 ; void ff_hevc_transform_add16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
 cglobal hevc_transform_add16_8, 3, 4, 6
     TR_ADD_INIT_SSE_16 r3, r2
-    TR_ADD_OP_SSE    mova, r0, r2, r3
+    TR_ADD_OP_SSE    movu, r0, r2, r3
 %rep 3
     lea                r1, [r1+16*8]
     lea                r0, [r0+r2*4]
     TR_ADD_INIT_SSE_16 r3, r2
-    TR_ADD_OP_SSE    mova, r0, r2, r3
+    TR_ADD_OP_SSE    movu, r0, r2, r3
 %endrep
     RET
 
