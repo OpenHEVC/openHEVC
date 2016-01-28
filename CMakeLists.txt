@@ -110,6 +110,9 @@ set(COMMON_YASM_ARGS
     -I "${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/"
     -DPIC
 )
+if(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
+set(COMMON_YASM_ARGS "${COMMON_YASM_ARGS} -g dwarf2")
+endif(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
 endif(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
 
 if(YASM_FOUND)
