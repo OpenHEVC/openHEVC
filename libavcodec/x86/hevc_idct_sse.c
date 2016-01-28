@@ -480,7 +480,7 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     SAVE16x16_2x32(dst, dst_stride, src0, src1, idx)
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_transform_4x4_luma_X_sse4
+// ff_hevc_transform_4x4_luma_X_sse2
 ////////////////////////////////////////////////////////////////////////////////
 #define COMPUTE_LUMA(dst , idx)                                                \
     tmp0 = _mm_load_si128((__m128i *) (transform4x4_luma[idx  ]));            \
@@ -502,7 +502,7 @@ void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _str
     res1 = _mm_packs_epi32(res2, res3)
 
 #define TRANSFORM_LUMA(D)                                                  \
-void ff_hevc_transform_4x4_luma ## _ ## D ## _sse4(int16_t *_coeffs) {          \
+void ff_hevc_transform_4x4_luma ## _ ## D ## _sse2(int16_t *_coeffs) {          \
     uint8_t  shift = 7;                                                        \
     int16_t *src    = _coeffs;                                                 \
     int16_t *coeffs = _coeffs;                                                 \
@@ -526,7 +526,7 @@ TRANSFORM_LUMA( 10);
 TRANSFORM_LUMA( 12);
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_transform_4x4_X_sse4
+// ff_hevc_transform_4x4_X_sse2
 ////////////////////////////////////////////////////////////////////////////////
 #define COMPUTE4x4(dst0, dst1, dst2, dst3)                                     \
     tmp0 = _mm_load_si128((__m128i *) transform4x4[0]);                        \
@@ -561,7 +561,7 @@ TRANSFORM_LUMA( 12);
 #define TR_4_2( dst, dst_stride, src, D) TR_4( dst, dst_stride, src,  4, LOAD_EMPTY, ASSIGN_EMPTY)
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_transform_8x8_X_sse4
+// ff_hevc_transform_8x8_X_sse2
 ////////////////////////////////////////////////////////////////////////////////
 #define TR_4_set8x4(in, sstep)                                                 \
     LOAD8x8_E(src, in, sstep);                                                 \
@@ -600,11 +600,11 @@ TRANSFORM_LUMA( 12);
     TRANSPOSE8x8_16_S(dst, dst_stride, e, SAVE_8x16)
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_transform_XxX_X_sse4
+// ff_hevc_transform_XxX_X_sse2
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRANSFORM_4x4(D)                                                       \
-void ff_hevc_transform_4x4_ ## D ## _sse4 (int16_t *_coeffs, int col_limit) {  \
+void ff_hevc_transform_4x4_ ## D ## _sse2 (int16_t *_coeffs, int col_limit) {  \
     int16_t *src    = _coeffs;                                                 \
     int16_t *coeffs = _coeffs;                                                 \
     int      shift  = 7;                                                       \
@@ -619,7 +619,7 @@ void ff_hevc_transform_4x4_ ## D ## _sse4 (int16_t *_coeffs, int col_limit) {  \
     _mm_store_si128((__m128i *) (coeffs + 8), e1);                             \
 }
 #define TRANSFORM_8x8(D)                                                       \
-void ff_hevc_transform_8x8_ ## D ## _sse4 (int16_t *coeffs, int col_limit) {    \
+void ff_hevc_transform_8x8_ ## D ## _sse2 (int16_t *coeffs, int col_limit) {    \
     int16_t tmp[8*8];                                                          \
     int16_t *src    = coeffs;                                                  \
     int16_t *p_dst1 = tmp;                                                     \
@@ -643,7 +643,7 @@ TRANSFORM_8x8(10)
 TRANSFORM_8x8(12)
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_transform_16x16_X_sse4
+// ff_hevc_transform_16x16_X_sse2
 ////////////////////////////////////////////////////////////////////////////////
 #define TR_COMPUTE16x16(dst1, dst2,src0, src1, src2, src3, i, j)              \
     TR_COMPUTE_TRANFORM(dst1, dst2,src0, src1, src2, src3, i, j, transform16x16_1)
@@ -671,7 +671,7 @@ TRANSFORM_8x8(12)
 #define TR_16_2( dst, dst_stride, src, sstep) TR_16( dst, dst_stride, src,  sstep, SAVE16x16_2x32_WRAPPER )
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_transform_32x32_X_sse4
+// ff_hevc_transform_32x32_X_sse2
 ////////////////////////////////////////////////////////////////////////////////
 #define TR_COMPUTE32x32(dst1, dst2,src0, src1, src2, src3, i, j)              \
     TR_COMPUTE_TRANFORM(dst1, dst2, src0, src1, src2, src3, i, j, transform32x32)
@@ -713,10 +713,10 @@ TRANSFORM_8x8(12)
 #define TR_32_1( dst, dst_stride, src)        TR_32( dst, dst_stride, src, 32)
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_transform_XxX_X_sse4
+// ff_hevc_transform_XxX_X_sse2
 ////////////////////////////////////////////////////////////////////////////////
 #define TRANSFORM2(H, D)                                                   \
-void ff_hevc_transform_ ## H ## x ## H ## _ ## D ## _sse4 (                \
+void ff_hevc_transform_ ## H ## x ## H ## _ ## D ## _sse2 (                \
     int16_t *coeffs, int col_limit) {                                          \
     int i, j, k, add;                                                          \
     int      shift = 7;                                                        \
@@ -752,7 +752,7 @@ TRANSFORM2(32, 10);
 TRANSFORM2(32, 12);
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_transform_XxX_DC_X_sse4
+// ff_hevc_transform_XxX_DC_X_sse2
 ////////////////////////////////////////////////////////////////////////////////
 #define ADD_COMPUTE4_8()                                                        \
     src = _mm_loadl_epi64((__m128i*) dst);                                     \
@@ -889,7 +889,7 @@ coeffs += 8;                                                               \
 #define ADD_COMPUTE32_12()  ADD_COMPUTE32(12)
 
 #define TRANSFORM_ADD(H, D)                                                    \
-void ff_hevc_transform_ ## H ## x ## H ## _add_ ## D ## _sse4 (                \
+void ff_hevc_transform_ ## H ## x ## H ## _add_ ## D ## _sse2 (                \
     uint8_t *_dst, int16_t *_coeffs, ptrdiff_t _stride) {                      \
     int j;                                                                     \
     int16_t *coeffs = _coeffs;                                                 \

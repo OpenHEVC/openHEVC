@@ -637,7 +637,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         if (EXTERNAL_MMXEXT(cpu_flags)) {
             c->idct_dc[0] = ff_hevc_idct4x4_dc_8_mmxext;
             c->idct_dc[1] = ff_hevc_idct8x8_dc_8_mmxext;
+#ifdef OPTI_ASM
             c->transform_add[0]    =  ff_hevc_transform_add4_8_mmxext;
+#else
+        	c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse2;
+#endif
         }
         if (EXTERNAL_SSE2(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
@@ -645,21 +649,30 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (ARCH_X86_64) {
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_sse2;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_sse2;
+#ifdef OPTI_ASM
                 c->transform_add[1]    = ff_hevc_transform_add8_8_sse2;
                 c->transform_add[2]    = ff_hevc_transform_add16_8_sse2;
                 c->transform_add[3]    = ff_hevc_transform_add32_8_sse2;
+#else
+                c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse2;
+                c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse2;
+                c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse2;
+#endif
             }
             c->idct_dc[1] = ff_hevc_idct8x8_dc_8_sse2;
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_sse2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_sse2;
 
+
+
+
 #if HAVE_SSE2
             // only 4X4 needs update for Rext                   c->transform_skip    = ff_hevc_transform_skip_8_sse;
-            c->idct_4x4_luma = ff_hevc_transform_4x4_luma_8_sse4;
-            c->idct[0] = ff_hevc_transform_4x4_8_sse4;
-            c->idct[1] = ff_hevc_transform_8x8_8_sse4;
-            c->idct[2] = ff_hevc_transform_16x16_8_sse4;
-            c->idct[3] = ff_hevc_transform_32x32_8_sse4;
+            c->idct_4x4_luma = ff_hevc_transform_4x4_luma_8_sse2;
+            c->idct[0] = ff_hevc_transform_4x4_8_sse2;
+            c->idct[1] = ff_hevc_transform_8x8_8_sse2;
+            c->idct[2] = ff_hevc_transform_16x16_8_sse2;
+            c->idct[3] = ff_hevc_transform_32x32_8_sse2;
 #endif //HAVE_SSE2
 
         }
@@ -689,12 +702,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         if (EXTERNAL_SSE4(cpu_flags)) {
 #if HAVE_SSE42
 #ifdef SVC_EXTENSION
-
-        	c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse4;
-            c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse4;
-            c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse4;
-            c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse4;
-
             c->upsample_filter_block_luma_h[1] = ff_upsample_filter_block_luma_h_x2_sse;
             c->upsample_filter_block_cr_h[1] = ff_upsample_filter_block_cr_h_x2_sse;
             c->upsample_filter_block_luma_v[1] = ff_upsample_filter_block_luma_v_x2_sse;
@@ -842,11 +849,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct16x16_dc_10_sse2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_10_sse2;
 #if HAVE_SSE2
-            c->idct_4x4_luma = ff_hevc_transform_4x4_luma_10_sse4;
-            c->idct[0] = ff_hevc_transform_4x4_10_sse4;
-            c->idct[1] = ff_hevc_transform_8x8_10_sse4;
-            c->idct[2] = ff_hevc_transform_16x16_10_sse4;
-            c->idct[3] = ff_hevc_transform_32x32_10_sse4;
+            c->idct_4x4_luma = ff_hevc_transform_4x4_luma_10_sse2;
+            c->idct[0] = ff_hevc_transform_4x4_10_sse2;
+            c->idct[1] = ff_hevc_transform_8x8_10_sse2;
+            c->idct[2] = ff_hevc_transform_16x16_10_sse2;
+            c->idct[3] = ff_hevc_transform_32x32_10_sse2;
 #endif // HAVE_SSE2
         }
         if (EXTERNAL_SSSE3(cpu_flags) && ARCH_X86_64) {
@@ -1054,11 +1061,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct16x16_dc_12_sse2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_12_sse2;
 #if HAVE_SSE2
-            c->idct_4x4_luma = ff_hevc_transform_4x4_luma_12_sse4;
-            c->idct[0] = ff_hevc_transform_4x4_12_sse4;
-            c->idct[1] = ff_hevc_transform_8x8_12_sse4;
-            c->idct[2] = ff_hevc_transform_16x16_12_sse4;
-            c->idct[3] = ff_hevc_transform_32x32_12_sse4;
+            c->idct_4x4_luma = ff_hevc_transform_4x4_luma_12_sse2;
+            c->idct[0] = ff_hevc_transform_4x4_12_sse2;
+            c->idct[1] = ff_hevc_transform_8x8_12_sse2;
+            c->idct[2] = ff_hevc_transform_16x16_12_sse2;
+            c->idct[3] = ff_hevc_transform_32x32_12_sse2;
 #endif // HAVE_SSE2
         }
         if (EXTERNAL_SSSE3(cpu_flags) && ARCH_X86_64) {
