@@ -2059,46 +2059,46 @@ static PUT_HEVC_BI_W_ ## FUNC ##14(H,12)
 
 // ff_hevc_put_hevc_mc_pixelsX_X_avx2
 #if HAVE_AVX2
-GEN_FUNC(PEL_PIXELS, 32, 8)
-GEN_FUNC(PEL_PIXELS,  16, 10)
-GEN_FUNC(PEL_PIXELS,  16, 12)
-
-// ff_hevc_put_hevc_epel_hX_X_avx2
-GEN_FUNC(EPEL_H,  16, 10)
-GEN_FUNC(EPEL_H,  16, 12)
-
-// ff_hevc_put_hevc_epel_vX_X_avx2
-GEN_FUNC(EPEL_V,  16, 10)
-GEN_FUNC(EPEL_V,  16, 12)
-
-// ff_hevc_put_hevc_epel_hvX_X_avx2
-//GEN_FUNC(EPEL_HV,  8,  8)
-GEN_FUNC(EPEL_HV,  16, 10)
-
-GEN_FUNC(EPEL_HV,  16, 12)
-
-
-// ff_hevc_put_hevc_qpel_hX_X_X_avx2
+//GEN_FUNC(PEL_PIXELS, 32, 8)
+//GEN_FUNC(PEL_PIXELS,  16, 10)
+//GEN_FUNC(PEL_PIXELS,  16, 12)
+//
+//// ff_hevc_put_hevc_epel_hX_X_avx2
+//GEN_FUNC(EPEL_H,  16, 10)
+//GEN_FUNC(EPEL_H,  16, 12)
+//
+//// ff_hevc_put_hevc_epel_vX_X_avx2
+//GEN_FUNC(EPEL_V,  16, 10)
+//GEN_FUNC(EPEL_V,  16, 12)
+//
+//// ff_hevc_put_hevc_epel_hvX_X_avx2
+////GEN_FUNC(EPEL_HV,  8,  8)
+//GEN_FUNC(EPEL_HV,  16, 10)
+//
+//GEN_FUNC(EPEL_HV,  16, 12)
+//
+//
+//// ff_hevc_put_hevc_qpel_hX_X_X_avx2
 //GEN_FUNC(QPEL_H,  4,  8)
 //GEN_FUNC(QPEL_H,  8,  8)
 //GEN_FUNC(QPEL_H, 16,  8)
-GEN_FUNC(QPEL_H, 32,  8)
-GEN_FUNC(QPEL_H_10,  16, 10)
-GEN_FUNC(QPEL_H_10,  16, 12)
-
+//GEN_FUNC(QPEL_H, 32,  8)
+//GEN_FUNC(QPEL_H_10,  16, 10)
+//GEN_FUNC(QPEL_H_10,  16, 12)
+//
 // ff_hevc_put_hevc_qpel_vX_X_X_avx2
-GEN_FUNC(QPEL_V, 32,  8)
-
-GEN_FUNC(QPEL_V,  16, 10)
-
-GEN_FUNC(QPEL_V,  16, 12)
-
-GEN_FUNC_STATIC(QPEL_V, 16, 14)
-
-// ff_hevc_put_hevc_qpel_hvX_X_avx2
-GEN_FUNC(QPEL_HV,  32, 8)
-GEN_FUNC(QPEL_HV,  16, 10)
-GEN_FUNC(QPEL_HV,  16, 12)
+//GEN_FUNC(QPEL_V, 32,  8)
+//
+//GEN_FUNC(QPEL_V,  16, 10)
+//
+//GEN_FUNC(QPEL_V,  16, 12)
+//
+//GEN_FUNC_STATIC(QPEL_V, 16, 14)
+//
+//// ff_hevc_put_hevc_qpel_hvX_X_avx2
+//GEN_FUNC(QPEL_HV,  32, 8)
+//GEN_FUNC(QPEL_HV,  16, 10)
+//GEN_FUNC(QPEL_HV,  16, 12)
 
 #define mc_red_func(name, bitd, step, W)                                                                    \
 void ff_hevc_put_hevc_##name##W##_##bitd##_avx2_(                                                             \
