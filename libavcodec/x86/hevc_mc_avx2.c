@@ -43,7 +43,7 @@
 #define CLPI_PIXEL_MAX_10 0x03FF
 #define CLPI_PIXEL_MAX_12 0x0FFF
 
-#ifndef OPTI_ASM
+//#ifndef OPTI_ASM
 DECLARE_ALIGNED(32, const int8_t, ff_hevc_epel_filters_avx2[7][2][32]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},
       { 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2} },
@@ -2284,7 +2284,7 @@ mc_red_func(epel_hv,12, 8, 32);
 mc_red_func(epel_hv,12, 8, 48);
 mc_red_func(epel_hv,12, 8, 64);
 */
-#endif //OPTI_ASM
+//#endif //OPTI_ASM
 
 #endif // HAVE_AVX2
 
