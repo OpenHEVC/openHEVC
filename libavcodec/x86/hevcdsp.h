@@ -43,8 +43,8 @@ dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _ #
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
 PEL_LINK2(dst, idx1, idx2, idx3, name, D, opt)
 //#else
-#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
-PEL_LINK2(dst, idx1, idx2, idx3, name, D, sse)
+//#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
+//PEL_LINK2(dst, idx1, idx2, idx3, name, D, sse)
 //#endif
 
 #define PEL_PROTOTYPE2(name, D, opt) \
@@ -63,16 +63,16 @@ void ff_hevc_put_hevc_bi_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dstst
 #define WEIGHTING_PROTOTYPE(width, bitd, opt) \
 		WEIGHTING_PROTOTYPE2(width, bitd, opt)
 //#else
-#define WEIGHTING_PROTOTYPE(width, bitd, opt) \
-		WEIGHTING_PROTOTYPE2(width, bitd, sse)
+//#define WEIGHTING_PROTOTYPE(width, bitd, opt) \
+//		WEIGHTING_PROTOTYPE2(width, bitd, sse)
 //#endif
 
 //#ifdef OPTI_ASM
 #define PEL_PROTOTYPE(name, D, opt) \
 PEL_PROTOTYPE2(name, D, opt)
 //#else
-#define PEL_PROTOTYPE(name, D, opt) \
-PEL_PROTOTYPE2(name, D, sse)
+//#define PEL_PROTOTYPE(name, D, opt) \
+//PEL_PROTOTYPE2(name, D, sse)
 //#endif
 
 ///////////////////////////////////////////////////////////////////////////////
