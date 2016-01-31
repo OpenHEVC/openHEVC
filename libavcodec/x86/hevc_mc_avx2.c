@@ -1717,7 +1717,7 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _avx2_ (                    
 
 #define PUT_HEVC_QPEL_V_VAR8_12()     PUT_HEVC_QPEL_V_VAR8_10()
 #define PUT_HEVC_QPEL_V_VAR16_12()     PUT_HEVC_QPEL_V_VAR16_10()
-#define PUT_HEVC_QPEL_V_VAR16_14()     PUT_HEVC_QPEL_V_VAR8_10()
+#define PUT_HEVC_QPEL_V_VAR8_14()     PUT_HEVC_QPEL_V_VAR8_10()
 #define PUT_HEVC_QPEL_V_VAR16_14()     PUT_HEVC_QPEL_V_VAR16_10()
 
 #define PUT_HEVC_QPEL_V(V, D)                                                  \
