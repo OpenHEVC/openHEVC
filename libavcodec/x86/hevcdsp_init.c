@@ -201,72 +201,72 @@ mc_uni_rep_mix_8(name, width1, width2, width3, opt1, opt2)
 
 #if HAVE_AVX2_EXTERNAL
 
-//mc_rep_mixs_8(pel_pixels, 48, 32, 16, avx2, sse4);
-//mc_rep_mixs_8(epel_hv,    48, 32, 16, avx2, sse4);
-//mc_rep_mixs_8(epel_h ,    48, 32, 16, avx2, sse4);
-//mc_rep_mixs_8(epel_v ,    48, 32, 16, avx2, sse4);
+mc_rep_mixs_8(pel_pixels, 48, 32, 16, avx2, sse4);
+mc_rep_mixs_8(epel_hv,    48, 32, 16, avx2, sse4);
+mc_rep_mixs_8(epel_h ,    48, 32, 16, avx2, sse4);
+mc_rep_mixs_8(epel_v ,    48, 32, 16, avx2, sse4);
 
-//mc_rep_mix_10(pel_pixels, 24, 16, 8, avx2, sse4, 32);
-//mc_bi_rep_mix_10(pel_pixels,24, 16, 8, avx2, sse4, 32);
-//mc_rep_mixs_10(epel_hv,   24, 16, 8, avx2, sse4, 32);
-//mc_rep_mixs_10(epel_h ,   24, 16, 8, avx2, sse4, 32);
-//mc_rep_mixs_10(epel_v ,   24, 16, 8, avx2, sse4, 32);
-
-
-//mc_rep_mixs_10(qpel_h ,   24, 16, 8, avx2, sse4, 32);
-//mc_rep_mixs_10(qpel_v ,   24, 16, 8, avx2, sse4, 32);
-//mc_rep_mixs_10(qpel_hv,   24, 16, 8, avx2, sse4, 32);
+mc_rep_mix_10(pel_pixels, 24, 16, 8, avx2, sse4, 32);
+mc_bi_rep_mix_10(pel_pixels,24, 16, 8, avx2, sse4, 32);
+mc_rep_mixs_10(epel_hv,   24, 16, 8, avx2, sse4, 32);
+mc_rep_mixs_10(epel_h ,   24, 16, 8, avx2, sse4, 32);
+mc_rep_mixs_10(epel_v ,   24, 16, 8, avx2, sse4, 32);
 
 
-//mc_rep_uni_func(pel_pixels, 8, 64, 128, avx2);//used for 10bit
-//mc_rep_uni_func(pel_pixels, 8, 32, 96, avx2); //used for 10bit
-
-//mc_rep_funcs(pel_pixels, 8, 32, 64, avx2);
-
-//mc_rep_func(pel_pixels, 10, 16, 32, avx2);
-//mc_rep_func(pel_pixels, 10, 16, 48, avx2);
-//mc_rep_func(pel_pixels, 10, 32, 64, avx2);
-
-//mc_rep_bi_func(pel_pixels, 10, 16, 32, avx2);
-//mc_rep_bi_func(pel_pixels, 10, 16, 48, avx2);
-//mc_rep_bi_func(pel_pixels, 10, 32, 64, avx2);
-
-//mc_rep_funcs(epel_h, 8, 32, 64, avx2);
-
-//mc_rep_funcs(epel_v, 8, 32, 64, avx2);
-
-//mc_rep_funcs(epel_h, 10, 16, 32, avx2);
-//mc_rep_funcs(epel_h, 10, 16, 48, avx2);
-//mc_rep_funcs(epel_h, 10, 32, 64, avx2);
-
-//mc_rep_funcs(epel_v, 10, 16, 32, avx2);
-//mc_rep_funcs(epel_v, 10, 16, 48, avx2);
-//mc_rep_funcs(epel_v, 10, 32, 64, avx2);
+mc_rep_mixs_10(qpel_h ,   24, 16, 8, avx2, sse4, 32);
+mc_rep_mixs_10(qpel_v ,   24, 16, 8, avx2, sse4, 32);
+mc_rep_mixs_10(qpel_hv,   24, 16, 8, avx2, sse4, 32);
 
 
-//mc_rep_funcs(epel_hv,  8, 32, 64, avx2);
+mc_rep_uni_func(pel_pixels, 8, 64, 128, avx2);//used for 10bit
+mc_rep_uni_func(pel_pixels, 8, 32, 96, avx2); //used for 10bit
 
-//mc_rep_funcs(epel_hv, 10, 16, 32, avx2);
-//mc_rep_funcs(epel_hv, 10, 16, 48, avx2);
-//mc_rep_funcs(epel_hv, 10, 32, 64, avx2);
+mc_rep_funcs(pel_pixels, 8, 32, 64, avx2);
 
-//mc_rep_funcs(qpel_h, 8, 32, 64, avx2);
-//mc_rep_mixs_8(qpel_h ,  48, 32, 16, avx2, sse4);
+mc_rep_func(pel_pixels, 10, 16, 32, avx2);
+mc_rep_func(pel_pixels, 10, 16, 48, avx2);
+mc_rep_func(pel_pixels, 10, 32, 64, avx2);
 
-//mc_rep_funcs(qpel_v, 8, 32, 64, avx2);
-//mc_rep_mixs_8(qpel_v,  48, 32, 16, avx2, sse4);
+mc_rep_bi_func(pel_pixels, 10, 16, 32, avx2);
+mc_rep_bi_func(pel_pixels, 10, 16, 48, avx2);
+mc_rep_bi_func(pel_pixels, 10, 32, 64, avx2);
 
-//mc_rep_funcs(qpel_h, 10, 16, 32, avx2);
-//mc_rep_funcs(qpel_h, 10, 16, 48, avx2);
-//mc_rep_funcs(qpel_h, 10, 32, 64, avx2);
+mc_rep_funcs(epel_h, 8, 32, 64, avx2);
 
-//mc_rep_funcs(qpel_v, 10, 16, 32, avx2);
-//mc_rep_funcs(qpel_v, 10, 16, 48, avx2);
-//mc_rep_funcs(qpel_v, 10, 32, 64, avx2);
+mc_rep_funcs(epel_v, 8, 32, 64, avx2);
 
-//mc_rep_funcs(qpel_hv, 10, 16, 32, avx2);
-//mc_rep_funcs(qpel_hv, 10, 16, 48, avx2);
-//mc_rep_funcs(qpel_hv, 10, 32, 64, avx2);
+mc_rep_funcs(epel_h, 10, 16, 32, avx2);
+mc_rep_funcs(epel_h, 10, 16, 48, avx2);
+mc_rep_funcs(epel_h, 10, 32, 64, avx2);
+
+mc_rep_funcs(epel_v, 10, 16, 32, avx2);
+mc_rep_funcs(epel_v, 10, 16, 48, avx2);
+mc_rep_funcs(epel_v, 10, 32, 64, avx2);
+
+
+mc_rep_funcs(epel_hv,  8, 32, 64, avx2);
+
+mc_rep_funcs(epel_hv, 10, 16, 32, avx2);
+mc_rep_funcs(epel_hv, 10, 16, 48, avx2);
+mc_rep_funcs(epel_hv, 10, 32, 64, avx2);
+
+mc_rep_funcs(qpel_h, 8, 32, 64, avx2);
+mc_rep_mixs_8(qpel_h ,  48, 32, 16, avx2, sse4);
+
+mc_rep_funcs(qpel_v, 8, 32, 64, avx2);
+mc_rep_mixs_8(qpel_v,  48, 32, 16, avx2, sse4);
+
+mc_rep_funcs(qpel_h, 10, 16, 32, avx2);
+mc_rep_funcs(qpel_h, 10, 16, 48, avx2);
+mc_rep_funcs(qpel_h, 10, 32, 64, avx2);
+
+mc_rep_funcs(qpel_v, 10, 16, 32, avx2);
+mc_rep_funcs(qpel_v, 10, 16, 48, avx2);
+mc_rep_funcs(qpel_v, 10, 32, 64, avx2);
+
+mc_rep_funcs(qpel_hv, 10, 16, 32, avx2);
+mc_rep_funcs(qpel_hv, 10, 16, 48, avx2);
+mc_rep_funcs(qpel_hv, 10, 32, 64, avx2);
 #endif //AVX2
 
 mc_rep_funcs(pel_pixels, 8, 16, 64, sse4);
