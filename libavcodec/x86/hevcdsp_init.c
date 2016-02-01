@@ -639,8 +639,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[1] = ff_hevc_idct8x8_dc_8_mmxext;
 #ifdef OPTI_ASM
             c->transform_add[0]    =  ff_hevc_transform_add4_8_mmxext;
-#else
-        	c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse2;
 #endif
         }
         if (EXTERNAL_SSE2(cpu_flags)) {
@@ -654,6 +652,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->transform_add[2]    = ff_hevc_transform_add16_8_sse2;
                 c->transform_add[3]    = ff_hevc_transform_add32_8_sse2;
 #else
+                c->transform_add[0] = ff_hevc_transform_4x4_add_8_sse2;
                 c->transform_add[1] = ff_hevc_transform_8x8_add_8_sse2;
                 c->transform_add[2] = ff_hevc_transform_16x16_add_8_sse2;
                 c->transform_add[3] = ff_hevc_transform_32x32_add_8_sse2;
