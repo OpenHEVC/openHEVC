@@ -324,7 +324,8 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 			if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0)
 				stop_dec = 1;
 			//printf("Stop dec : %d", stop_dec);
-			if (packet[0].stream_index == video_stream_idx && packet[1].stream_index == video_stream_idx || stop_dec == 1) {
+			if ((packet[0].stream_index == video_stream_idx && (!enh_filename || packet[1].stream_index == video_stream_idx))
+					|| stop_dec == 1) {
 				if(enh_filename)
 					got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
 				else
