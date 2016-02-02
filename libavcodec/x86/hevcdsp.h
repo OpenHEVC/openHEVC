@@ -32,15 +32,15 @@ struct HEVCWindow;
 
 //#define OPTI_ASM
 
-#define PEL_LINK2(dst, idx1, idx2, idx3, name, D, opt) \
-dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _ ## opt; \
-dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _ ## opt; \
-dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _ ## opt; \
-dst ## _uni_w[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _ ## opt; \
-dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _ ## opt
+#define PEL_LINK2(dst, idx1, idx2, idx3, name, D, opt)                                    \
+dst           [idx1][idx2][idx3] = ff_hevc_put_hevc_       ## name ## _ ## D ## _ ## opt; \
+dst ## _bi    [idx1][idx2][idx3] = ff_hevc_put_hevc_bi_    ## name ## _ ## D ## _ ## opt; \
+dst ## _uni   [idx1][idx2][idx3] = ff_hevc_put_hevc_uni_   ## name ## _ ## D ## _ ## opt; \
+dst ## _uni_w [idx1][idx2][idx3] = ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _ ## opt; \
+dst ## _bi_w  [idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_  ## name ## _ ## D ## _ ## opt
 
 //#ifdef OPTI_ASM
-#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
+#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt)                       \
 PEL_LINK2(dst, idx1, idx2, idx3, name, D, opt)
 //#else
 //#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
@@ -48,16 +48,16 @@ PEL_LINK2(dst, idx1, idx2, idx3, name, D, opt)
 //#endif
 
 #define PEL_PROTOTYPE2(name, D, opt) \
-void ff_hevc_put_hevc_ ## name ## _ ## D ## _##opt(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
-void ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, intptr_t mx, intptr_t my, int width); \
-void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
+void ff_hevc_put_hevc_       ## name ## _ ## D ## _##opt(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
+void ff_hevc_put_hevc_bi_    ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, intptr_t mx, intptr_t my, int width); \
+void ff_hevc_put_hevc_uni_   ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
 void ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width); \
-void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
+void ff_hevc_put_hevc_bi_w_  ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 
 
 #define WEIGHTING_PROTOTYPE2(width, bitd, opt) \
-void ff_hevc_put_hevc_uni_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox); \
-void ff_hevc_put_hevc_bi_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)
+void ff_hevc_put_hevc_uni_w ## width ## _ ## bitd ##_## opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox); \
+void ff_hevc_put_hevc_bi_w  ## width ## _ ## bitd ##_## opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)
 
 //#ifdef OPTI_ASM
 #define WEIGHTING_PROTOTYPE(width, bitd, opt) \
@@ -84,31 +84,38 @@ void ff_hevc_transform_4x4_luma_8_sse2(int16_t *coeffs);
 void ff_hevc_transform_4x4_luma_10_sse2(int16_t *coeffs);
 void ff_hevc_transform_4x4_luma_12_sse2(int16_t *coeffs);
 
-#define IDCT_FUNC(s, b) void ff_hevc_transform_ ## s ## x ## s ##_## b ##_sse2\
-            (int16_t *coeffs, int col_limit);
+#define IDCT_FUNC(s, b)                                                       \
+void ff_hevc_transform_ ## s ## x ## s ##_## b ##_sse2(int16_t *coeffs, int col_limit);
 
 IDCT_FUNC(4, 8)
 IDCT_FUNC(4, 10)
 IDCT_FUNC(4, 12)
+
 IDCT_FUNC(8, 8)
 IDCT_FUNC(8, 10)
 IDCT_FUNC(8, 12)
+
 IDCT_FUNC(16, 8)
 IDCT_FUNC(16, 10)
 IDCT_FUNC(16, 12)
+
 IDCT_FUNC(32, 8)
 IDCT_FUNC(32, 10)
 IDCT_FUNC(32, 12)
 
-#define TRANSFORM_ADD_FUNC_MMXEXT(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_mmxext\
+#define TRANSFORM_ADD_FUNC_MMXEXT(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_mmxext           \
 		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-#define TRANSFORM_ADD_FUNC_SSE2(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_sse2\
+
+#define TRANSFORM_ADD_FUNC_SSE2(s, b)   void ff_hevc_transform_add   ## s ## _ ## b ##_sse2           \
 		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-#define TRANSFORM_ADD_FUNC_AVX(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_avx\
+
+#define TRANSFORM_ADD_FUNC_AVX(s, b)    void ff_hevc_transform_add    ## s ## _ ## b ##_avx           \
 		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-#define TRANSFORM_ADD_FUNC_AVX2(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_avx2\
+
+#define TRANSFORM_ADD_FUNC_AVX2(s, b)   void ff_hevc_transform_add  ## s ## _ ## b ##_avx2            \
 		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-#define TRANSFORM_ADD2_FUNC_SSE2(s, b) void ff_hevc_transform_ ## s ## x ## s ##_add_## b ##_sse2\
+
+#define TRANSFORM_ADD2_FUNC_SSE2(s, b)  void ff_hevc_transform_     ## s ## x ## s ##_add_## b ##_sse2\
 		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
 TRANSFORM_ADD_FUNC_MMXEXT(4,8)
