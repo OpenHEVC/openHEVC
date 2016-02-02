@@ -348,8 +348,8 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 						}
 	#endif
 						if (fout) {
-							int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
 							libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
+							int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
 							if(openHevcFrameCpy.pvY) {
 								free(openHevcFrameCpy.pvY);
 								free(openHevcFrameCpy.pvU);
