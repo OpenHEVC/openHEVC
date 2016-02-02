@@ -178,7 +178,8 @@ void init_main(int argc, char *argv[]) {
             break;
         case 'o':
             output_file = strdup(optarg);
-            if(output_file[strlen(output_file)-4] == '.')
+            if(strlen(output_file) >= 4
+            		&& output_file[strlen(output_file)-4] == '.')
                 output_file[strlen(output_file)-4] = '\0';
             break;
         case 'p':
