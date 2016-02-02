@@ -786,13 +786,13 @@ scalef:
                 availableFlagLXB0 = MP_MX_LT(B0, pred_flag_index_l1, mxB);
         }
 
-        if (is_available_b1 && !availableFlagLXB0) {
+        if (!availableFlagLXB0 && is_available_b1) {
             availableFlagLXB0 = MP_MX_LT(B1, pred_flag_index_l0, mxB);
             if (!availableFlagLXB0)
                 availableFlagLXB0 = MP_MX_LT(B1, pred_flag_index_l1, mxB);
         }
 
-        if (is_available_b2 && !availableFlagLXB0) {
+        if (!availableFlagLXB0 && is_available_b2) {
             availableFlagLXB0 = MP_MX_LT(B2, pred_flag_index_l0, mxB);
             if (!availableFlagLXB0)
                 availableFlagLXB0 = MP_MX_LT(B2, pred_flag_index_l1, mxB);
