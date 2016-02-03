@@ -74,8 +74,8 @@ IDCT_FUNCS(32x32, sse2);
 IDCT_FUNCS(16x16, avx2);
 IDCT_FUNCS(32x32, avx2);
 
-#if !ARCH_X86_32 //&& defined(OPTI_ASM)
-/*
+/*#if !ARCH_X86_32 //&& defined(OPTI_ASM)
+
 #define mc_rep_func(name, bitd, step, W, opt) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststride,                            \
                                                 uint8_t *_src, ptrdiff_t _srcstride, int height,                \
@@ -595,6 +595,7 @@ mc_bi_w_funcs(qpel_hv, 12, sse4);
         PEL_LINK(pointer, 7, my , mx , fname##32,  bitd, opt ); \
         PEL_LINK(pointer, 8, my , mx , fname##48,  bitd, opt ); \
         PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
+
 #define QPEL_LINKS(pointer, my, mx, fname, bitd, opt)           \
         PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd, opt ); \
         PEL_LINK(pointer, 3, my , mx , fname##8 ,  bitd, opt ); \
@@ -628,10 +629,10 @@ mc_bi_w_funcs(qpel_hv, 12, sse4);
 //PEL_PROTOTYPE2(epel_hv16, 10, avx2_);
 //#endif
 
-void ff_hevc_put_hevc_qpel_h16_8_sse2 (                          \
+/*void ff_hevc_put_hevc_qpel_h16_8_sse2 (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
-                                    int height, intptr_t mx, intptr_t my, int width);
+                                    int height, intptr_t mx, intptr_t my, int width);*/
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -682,15 +683,15 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
 #if HAVE_SSSE3
-            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 8, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     8, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     8, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,    8, sse4);
+            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 8, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     8, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     8, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,    8, sse4_);
 
-            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 8, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     8, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 8, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     8, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4_);
 
             c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
             c->sao_edge_filter    = ff_hevc_sao_edge_filter_8_sse;
@@ -735,14 +736,27 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_avx2;
 
 //#ifndef OPTI_ASM
-//            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 0 , pel_pixels32,  8, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 0 , pel_pixels32,  8, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h32,  8, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h32,  8, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v32,  8, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v32,  8, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 1 , qpel_hv32,  8, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 1 , qpel_hv32,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 0 , pel_pixels32,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 0 , pel_pixels32,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h32,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h32,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v32,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v32,  8, avx2_);
+         /*   PEL_LINK2(c->put_hevc_qpel, 7, 0 , 0 , pel_pixels48,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 0 , pel_pixels48,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h48,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h48,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v48,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v48,  8, avx2_);*/
+          /*  PEL_LINK2(c->put_hevc_qpel, 7, 0 , 0 , pel_pixels64,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 0 , pel_pixels64,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h64,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h64,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v64,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v64,  8, avx2_);*/
+
+            /*PEL_LINK2(c->put_hevc_qpel, 7, 1 , 1 , qpel_hv32,  8, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 1 , qpel_hv32,  8, avx2_);*/
 //#endif
 /*#ifdef OPTI_ASM
             c->put_hevc_epel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_8_avx2;
@@ -863,15 +877,15 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
 
 #if HAVE_SSSE3
-            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 10, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     10, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     10, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,    10, sse4);
+            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 10, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     10, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     10, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,    10, sse4_);
 
-            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 10, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     10, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 10, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     10, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4_);
 
             c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
             c->sao_edge_filter    = ff_hevc_sao_edge_filter_10_sse;
@@ -894,12 +908,12 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->transform_add[3] = ff_hevc_transform_add32_10_avx2;
             }
 //#ifndef OPTI_ASM
-//            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h16,  10, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h16,  10, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v16,  10, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v16,  10, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 1 , qpel_hv16,  10, avx2_);
-//            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 1 , qpel_hv16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 0 , 1 , qpel_h16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 0 , 1 , qpel_h16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 0 , qpel_v16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 0 , qpel_v16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 7, 1 , 1 , qpel_hv16,  10, avx2_);
+            PEL_LINK2(c->put_hevc_qpel, 9, 1 , 1 , qpel_hv16,  10, avx2_);
 //#endif
 /*#ifdef OPTI_ASM
             c->put_hevc_epel[5][0][0] = ff_hevc_put_hevc_pel_pixels16_10_avx2;
@@ -1075,15 +1089,15 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_ssse3;
 
 #if HAVE_SSSE3
-            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 12, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h, 12, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v, 12, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv, 12, sse4);
+            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 12, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h, 12, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v, 12, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv, 12, sse4_);
 
-            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 12, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h, 12, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v, 12, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv, 12, sse4);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 12, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h, 12, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v, 12, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv, 12, sse4_);
 
             c->sao_band_filter = ff_hevc_sao_band_filter_0_12_sse;
             c->sao_edge_filter = ff_hevc_sao_edge_filter_12_sse;
@@ -1091,15 +1105,15 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         }
         if (EXTERNAL_SSE4(cpu_flags) && ARCH_X86_64) {
 #if HAVE_SSE42
-            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 12, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     12, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     12, sse4);
-            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,    12, sse4);
+            EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 12, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     12, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     12, sse4_);
+            EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,    12, sse4_);
 
-            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 12, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     12, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     12, sse4);
-            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    12, sse4);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 12, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     12, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     12, sse4_);
+            QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    12, sse4_);
 #endif
         }
         if (EXTERNAL_AVX(cpu_flags)) {

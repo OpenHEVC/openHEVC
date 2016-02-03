@@ -42,9 +42,10 @@
 
 #define CLPI_PIXEL_MAX_10 0x03FF
 #define CLPI_PIXEL_MAX_12 0x0FFF
+#define CLPI_PIXEL_MAX_14 0x0FFF
 
-#ifndef OPTI_ASM
-DECLARE_ALIGNED(32, const int8_t, ff_hevc_epel_filters_avx2[7][2][32]) = {
+//#ifndef OPTI_ASM
+DECLARE_ALIGNED(32, const int8_t, ff_hevc_epel_filters_avx2_[7][2][32]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},
       { 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2} },
     { { -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54, -4, 54},
@@ -77,7 +78,7 @@ DECLARE_ALIGNED(32, const int16_t, ff_hevc_epel_filters_avx2_10[7][2][2]) = {
       { 58, -2} }
 };
 
-DECLARE_ALIGNED(32, const int8_t, ff_hevc_qpel_filters_avx2[3][4][2]) = {
+DECLARE_ALIGNED(32, const int8_t, ff_hevc_qpel_filters_avx2_[3][4][2]) = {
     { { -1,  4},
       {-10, 58},
       { 17, -5},
@@ -110,11 +111,16 @@ DECLARE_ALIGNED(32, const int16_t, ff_hevc_qpel_filters_avx2_10[3][4][2]) = {
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define QPEL_H_FILTER_8(idx)                                                   \
-    c1 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[idx][0]));  \
-    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[idx][1]));  \
-    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[idx][2]));  \
-    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[idx][3]))
+    c1 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_[idx][0]));  \
+    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_[idx][1]));  \
+    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_[idx][2]));  \
+    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_[idx][3]))
 
+#define QPEL_H_FILTER_10(idx)                                                   \
+    c1 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_10[idx][0]));  \
+    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_10[idx][1]));  \
+    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_10[idx][2]));  \
+    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_10[idx][3]))
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
 ////////////////////////////////////////////////////////////////////////////////
@@ -290,7 +296,12 @@ DECLARE_ALIGNED(32, const int16_t, ff_hevc_qpel_filters_avx2_10[3][4][2]) = {
 #define WEIGHTED_STORE4_14()      WEIGHTED_STORE4_10()
 #define WEIGHTED_STORE6_14()      WEIGHTED_STORE6_10()
 #define WEIGHTED_STORE16_14()     WEIGHTED_STORE16_10()
-#define WEIGHTED_STORE14_16_14()  WEIGHTED_STORE16_10()
+#define WEIGHTED_STORE14_16_14()  WEIGHTED_STORE16_16()
+
+#define WEIGHTED_STORE14_32_10()  WEIGHTED_STORE32(10)
+#define WEIGHTED_STORE14_32_12()  WEIGHTED_STORE32(12)
+
+#define WEIGHTED_STORE32_14()     WEIGHTED_STORE32(14)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -420,7 +431,7 @@ DECLARE_ALIGNED(32, const int16_t, ff_hevc_qpel_filters_avx2_10[3][4][2]) = {
     }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_mc_pixelsX_X_avx2
+// ff_hevc_put_hevc_mc_pixelsX_X_avx2_
 ////////////////////////////////////////////////////////////////////////////////
 #define MC_LOAD_PIXEL()                                                        \
     x1 = _mm256_loadu_si256((__m256i *) &src[x])
@@ -492,12 +503,22 @@ DECLARE_ALIGNED(32, const int16_t, ff_hevc_qpel_filters_avx2_10[3][4][2]) = {
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_10()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR6_10()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR8_10()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
-#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_10()  PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_8()
+
+
+
+
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR32_8()  PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR32_10()  PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR32_12()  PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR32_14()  PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_14()  PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()
+#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_10()  PUT_HEVC_PEL_PIXELS_LOOP_VAR_R5_R6()
 
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_12()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR6_12()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR8_12()   PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR4_8()
 #define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_12()  PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_8()
+//#define PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR32_14()  PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR16_8()
 
 #define PUT_HEVC_PEL_PIXELS(H, D)                                              \
 void ff_hevc_put_hevc_pel_pixels ## H ## _ ## D ## _avx2_ (                    \
@@ -610,7 +631,7 @@ void ff_hevc_put_hevc_bi_w_pel_pixels ## H ## _ ## D ## _avx2_ (               \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_epel_hX_X_avx2
+// ff_hevc_put_hevc_epel_hX_X_avx2_
 ////////////////////////////////////////////////////////////////////////////////
 #define SRC_INIT_H_8()                                                         \
     uint8_t  *src = ((uint8_t*) _src) - 1;                                     \
@@ -623,8 +644,8 @@ void ff_hevc_put_hevc_bi_w_pel_pixels ## H ## _ ## D ## _avx2_ (               \
 #define SRC_INIT_H_12() SRC_INIT_H_10()
 
 #define EPEL_FILTER_8(f1, f2, idx)                                             \
-    f1 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_avx2[idx][0]);        \
-    f2 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_avx2[idx][1])
+    f1 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_avx2_[idx][0]);        \
+    f2 = _mm_load_si128((__m128i *) ff_hevc_epel_filters_avx2_[idx][1])
 
 #define EPEL_FILTER_10(f1, f2, idx)                                            \
     f1 = _mm256_set1_epi32(*((int32_t *) ff_hevc_epel_filters_avx2_10[idx][0]));      \
@@ -812,7 +833,7 @@ void ff_hevc_put_hevc_bi_w_epel_h ## H ## _ ## D ## _avx2_ (                   \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_epel_vX_X_avx2
+// ff_hevc_put_hevc_epel_vX_X_avx2_
 ////////////////////////////////////////////////////////////////////////////////
 #define SRC_INIT_V_8()                                                         \
     ptrdiff_t srcstride = _srcstride;                                          \
@@ -963,7 +984,7 @@ void ff_hevc_put_hevc_bi_w_epel_v ## H ## _ ## D ## _avx2_ (                   \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_epel_hvX_X_avx2
+// ff_hevc_put_hevc_epel_hvX_X_avx2_
 ////////////////////////////////////////////////////////////////////////////////
 #define SRC_INIT_HV_8()                                                        \
     uint8_t  *src_bis, *src = ((uint8_t*) _src) - 1;                           \
@@ -1232,7 +1253,7 @@ void ff_hevc_put_hevc_bi_w_epel_hv ## H ## _ ## D ## _avx2_ (                  \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_qpel_hX_X_avx2
+// ff_hevc_put_hevc_qpel_hX_X_avx2_
 ////////////////////////////////////////////////////////////////////////////////
 #define QPEL_H_LOAD()                                                          \
     x1 = _mm256_loadu_si256((__m256i *) &src[x - 3]);                          \
@@ -1341,11 +1362,16 @@ void ff_hevc_put_hevc_bi_w_epel_hv ## H ## _ ## D ## _avx2_ (                  \
 #define QPEL_H_COMPUTE16_12()    QPEL_H_COMPUTE16(4)
 #define QPEL_H_COMPUTE16_14()    QPEL_H_COMPUTE16(6)
 
+#define QPEL_H_COMPUTE32_14()    QPEL_H_COMPUTE16(6)
+
 #define PUT_HEVC_QPEL_H_VAR8_8()                                               \
     __m256i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4
 #define PUT_HEVC_QPEL_H_VAR16_8()   PUT_HEVC_QPEL_H_VAR8_8()
+
 #define PUT_HEVC_QPEL_H_VAR32_8()                                              \
     __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4
+
+#define PUT_HEVC_QPEL_H_VAR16_10() PUT_HEVC_QPEL_H_VAR32_8()
 
 #define PUT_HEVC_QPEL_H(H, D)                                                  \
 void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_ (                        \
@@ -1468,13 +1494,13 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _avx2_ (                   \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_qpel_hX_X_avx2
+// ff_hevc_put_hevc_qpel_hX_X_avx2_
 ////////////////////////////////////////////////////////////////////////////////
 #define QPEL_FILTER_8(idx)                                                     \
-    c1 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[idx][0]));  \
-    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[idx][1]));  \
-    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[idx][2]));  \
-    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2[idx][3]))
+    c1 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_[idx][0]));  \
+    c2 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_[idx][1]));  \
+    c3 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_[idx][2]));  \
+    c4 = _mm256_set1_epi16(*((int16_t *) ff_hevc_qpel_filters_avx2_[idx][3]))
 
 #define QPEL_FILTER_10(idx)                                                    \
     c1 = _mm256_set1_epi32(*((int32_t *) ff_hevc_qpel_filters_avx2_10[idx][0]));      \
@@ -1637,7 +1663,7 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _avx2_ (                   \
 #define PUT_HEVC_QPEL_H_10_VAR16_12() PUT_HEVC_QPEL_H_10_VAR16_10()
 
 #define PUT_HEVC_QPEL_H_10(H, D)                                               \
-void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_ (                        \
+void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_  (                        \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
                                     int height, intptr_t mx, intptr_t my, int width) {   \
@@ -1661,7 +1687,7 @@ void ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_ (                        \
 }
 
 #define PUT_HEVC_BI_QPEL_H_10(H, D)                                            \
-void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _avx2_ (                     \
+void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _avx2_  (                     \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
@@ -1691,7 +1717,7 @@ void ff_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _avx2_ (                     \
 }
 
 #define PUT_HEVC_UNI_QPEL_H_10(H, D)                                           \
-void ff_hevc_put_hevc_uni_qpel_h ## H ## _ ## D ## _avx2_ (                    \
+void ff_hevc_put_hevc_uni_qpel_h ## H ## _ ## D ## _avx2_  (                    \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int height,                            \
@@ -1718,7 +1744,7 @@ void ff_hevc_put_hevc_uni_qpel_h ## H ## _ ## D ## _avx2_ (                    \
 }
 
 #define PUT_HEVC_UNI_W_QPEL_H_10(H, D)                                         \
-void ff_hevc_put_hevc_uni_w_qpel_h ## H ## _ ## D ## _avx2_ (                  \
+void ff_hevc_put_hevc_uni_w_qpel_h ## H ## _ ## D ## _avx2_  (                  \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int height, int denom,                 \
@@ -1746,7 +1772,7 @@ void ff_hevc_put_hevc_uni_w_qpel_h ## H ## _ ## D ## _avx2_ (                  \
 }
 
 #define PUT_HEVC_BI_W_QPEL_H_10(H, D)                                          \
-void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _avx2_ (                   \
+void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _avx2_  (                   \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
@@ -1777,7 +1803,7 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _avx2_ (                   \
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_qpel_vX_X_X_avx2
+// ff_hevc_put_hevc_qpel_vX_X_X_avx2_
 ////////////////////////////////////////////////////////////////////////////////
 #define PUT_HEVC_QPEL_V_VAR8_8()                                               \
     __m256i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4
@@ -1797,9 +1823,10 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _avx2_ (                   \
 #define PUT_HEVC_QPEL_V_VAR16_12()     PUT_HEVC_QPEL_V_VAR16_10()
 #define PUT_HEVC_QPEL_V_VAR8_14()      PUT_HEVC_QPEL_V_VAR8_10()
 #define PUT_HEVC_QPEL_V_VAR16_14()     PUT_HEVC_QPEL_V_VAR16_10()
-
+#define PUT_HEVC_QPEL_V_VAR32_14()  \
+__m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4
 #define PUT_HEVC_QPEL_V(V, D)                                                  \
-void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _avx2_ (                        \
+void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _avx2_  (                        \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
                                     int height, intptr_t mx, intptr_t my, int width) {   \
@@ -1819,7 +1846,7 @@ void ff_hevc_put_hevc_qpel_v ## V ## _ ## D ## _avx2_ (                        \
 }
 
 #define PUT_HEVC_BI_QPEL_V(V, D)                                               \
-void ff_hevc_put_hevc_bi_qpel_v ## V ## _ ## D ## _avx2_ (                     \
+void ff_hevc_put_hevc_bi_qpel_v ## V ## _ ## D ## _avx2_  (                     \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
@@ -1845,7 +1872,7 @@ void ff_hevc_put_hevc_bi_qpel_v ## V ## _ ## D ## _avx2_ (                     \
 }
 
 #define PUT_HEVC_UNI_QPEL_V(V, D)                                              \
-void ff_hevc_put_hevc_uni_qpel_v ## V ## _ ## D ## _avx2_ (                    \
+void ff_hevc_put_hevc_uni_qpel_v ## V ## _ ## D ## _avx2_  (                    \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int height,                            \
@@ -1868,7 +1895,7 @@ void ff_hevc_put_hevc_uni_qpel_v ## V ## _ ## D ## _avx2_ (                    \
 }
 
 #define PUT_HEVC_UNI_W_QPEL_V(V, D)                                            \
-void ff_hevc_put_hevc_uni_w_qpel_v ## V ## _ ## D ## _avx2_ (                  \
+void ff_hevc_put_hevc_uni_w_qpel_v ## V ## _ ## D ## _avx2_  (                  \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int height, int denom,                 \
@@ -1892,7 +1919,7 @@ void ff_hevc_put_hevc_uni_w_qpel_v ## V ## _ ## D ## _avx2_ (                  \
 }
 
 #define PUT_HEVC_BI_W_QPEL_V(V, D)                                             \
-void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _ ## D ## _avx2_ (                   \
+void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _ ## D ## _avx2_  (                   \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
@@ -1919,7 +1946,7 @@ void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _ ## D ## _avx2_ (                   \
 }
 
 #define PUT_HEVC_BI_QPEL_V14(V, D)                                             \
-void ff_hevc_put_hevc_bi_qpel_v ## V ## _14_ ## D ## _avx2_ (                  \
+void ff_hevc_put_hevc_bi_qpel_v ## V ## _14_ ## D ## _avx2_  (                  \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
@@ -1945,7 +1972,7 @@ void ff_hevc_put_hevc_bi_qpel_v ## V ## _14_ ## D ## _avx2_ (                  \
 }
 
 #define PUT_HEVC_UNI_QPEL_V14(V, D)                                            \
-void ff_hevc_put_hevc_uni_qpel_v ## V ## _14_ ## D ## _avx2_ (                 \
+void ff_hevc_put_hevc_uni_qpel_v ## V ## _14_ ## D ## _avx2_  (                 \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int height,                            \
@@ -1968,7 +1995,7 @@ void ff_hevc_put_hevc_uni_qpel_v ## V ## _14_ ## D ## _avx2_ (                 \
 }
 
 #define PUT_HEVC_UNI_W_QPEL_V14(V, D)                                          \
-void ff_hevc_put_hevc_uni_w_qpel_v ## V ## _14_ ## D ## _avx2_ (               \
+void ff_hevc_put_hevc_uni_w_qpel_v ## V ## _14_ ## D ## _avx2_  (               \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int height, int denom,                 \
@@ -1992,7 +2019,7 @@ void ff_hevc_put_hevc_uni_w_qpel_v ## V ## _14_ ## D ## _avx2_ (               \
 }
 
 #define PUT_HEVC_BI_W_QPEL_V14(V, D)                                           \
-void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _14_ ## D ## _avx2_ (                \
+void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _14_ ## D ## _avx2_  (                \
                                         uint8_t *_dst, ptrdiff_t _dststride,   \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int16_t *src2, ptrdiff_t src2stride,   \
@@ -2018,9 +2045,9 @@ void ff_hevc_put_hevc_bi_w_qpel_v ## V ## _14_ ## D ## _avx2_ (                \
     }                                                                          \
 }
 ////////////////////////////////////////////////////////////////////////////////
-// ff_hevc_put_hevc_qpel_hvX_X_avx2
+// ff_hevc_put_hevc_qpel_hvX_X_avx2_
 ////////////////////////////////////////////////////////////////////////////////
-#define PUT_HEVC_QPEL_HV(H, D)                                                 \
+#define PUT_HEVC_QPEL_HV(H, D, H2)                                                 \
 void ff_hevc_put_hevc_qpel_hv ## H ## _ ## D ## _avx2_ (                       \
         int16_t *dst, ptrdiff_t dststride,                                     \
         uint8_t *_src, ptrdiff_t _srcstride,                                   \
@@ -2033,11 +2060,11 @@ void ff_hevc_put_hevc_qpel_hv ## H ## _ ## D ## _avx2_ (                       \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                          \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_qpel_v16 ## _14_avx2_(                                    \
+    ff_hevc_put_hevc_qpel_v ## H2 ## _14_avx2_(                                    \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, mx, my, width);\
 }
 
-#define PUT_HEVC_BI_QPEL_HV(H, D)                                              \
+#define PUT_HEVC_BI_QPEL_HV(H, D, H2)                                              \
 void ff_hevc_put_hevc_bi_qpel_hv ## H ## _ ## D ## _avx2_ (                    \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
@@ -2051,12 +2078,12 @@ DECLARE_ALIGNED(32, int16_t, tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE]
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                          \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_bi_qpel_v16 ## _14_ ## D ## _avx2_(                       \
+    ff_hevc_put_hevc_bi_qpel_v ## H2 ## _14_ ## D ## _avx2_(                       \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , src2, src2stride, height, mx, my, width);\
 }
 
-#define PUT_HEVC_UNI_QPEL_HV(H, D)                                             \
-void ff_hevc_put_hevc_uni_qpel_hv ## H ## _ ## D ## _avx2_ (                   \
+#define PUT_HEVC_UNI_QPEL_HV(H, D, H2)                                             \
+void ff_hevc_put_hevc_uni_qpel_hv ## H ## _ ## D ## _avx2_(                   \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
                                         int height,                            \
@@ -2068,11 +2095,11 @@ DECLARE_ALIGNED(32, int16_t, tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE]
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                          \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_uni_qpel_v16 ## _14_ ## D ## _avx2_(                      \
+    ff_hevc_put_hevc_uni_qpel_v ## H2 ## _14_ ## D ## _avx2_(                      \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, mx, my, width);\
 }
 
-#define PUT_HEVC_UNI_W_QPEL_HV(H, D)                                           \
+#define PUT_HEVC_UNI_W_QPEL_HV(H, D, H2)                                           \
 void ff_hevc_put_hevc_uni_w_qpel_hv ## H ## _ ## D ## _avx2_ (                 \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
@@ -2086,11 +2113,11 @@ void ff_hevc_put_hevc_uni_w_qpel_hv ## H ## _ ## D ## _avx2_ (                 \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                          \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_uni_w_qpel_v16 ## _14_ ## D ## _avx2_(                    \
+    ff_hevc_put_hevc_uni_w_qpel_v ## H2 ## _14_ ## D ## _avx2_(                    \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , height, denom, wx, ox, mx, my, width);\
 }
 
-#define PUT_HEVC_BI_W_QPEL_HV(H, D)                                            \
+#define PUT_HEVC_BI_W_QPEL_HV(H, D, H2)                                            \
 void ff_hevc_put_hevc_bi_w_qpel_hv ## H ## _ ## D ## _avx2_ (                  \
                                         uint8_t *dst, ptrdiff_t dststride,     \
                                         uint8_t *_src, ptrdiff_t _srcstride,   \
@@ -2105,7 +2132,7 @@ void ff_hevc_put_hevc_bi_w_qpel_hv ## H ## _ ## D ## _avx2_ (                  \
     ff_hevc_put_hevc_qpel_h ## H ## _ ## D ## _avx2_(                          \
         tmp, MAX_PB_SIZE, (uint8_t *)src, _srcstride, height + QPEL_EXTRA, mx, my, width); \
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                      \
-    ff_hevc_put_hevc_bi_w_qpel_v16 ## _14_ ## D ## _avx2_(                     \
+    ff_hevc_put_hevc_bi_w_qpel_v ## H2 ## _14_ ## D ## _avx2_(                     \
         dst, dststride, (uint8_t *) tmp, MAX_PB_SIZE <<1 , src2, src2stride, height, denom, wx0, wx1, ox0, ox1, mx, my, width);\
 }
 
@@ -2120,8 +2147,15 @@ PUT_HEVC_UNI_ ## FUNC(H,D)                                                     \
 PUT_HEVC_UNI_W_ ## FUNC(H,D)                                                   \
 PUT_HEVC_BI_W_ ## FUNC(H,D)
 
+#define GEN_FUNC_HV(FUNC, H, D, H2)                                                   \
+PUT_HEVC_ ## FUNC(H,D,H2)                                                         \
+PUT_HEVC_BI_ ## FUNC(H,D,H2)                                                      \
+PUT_HEVC_UNI_ ## FUNC(H,D,H2)                                                     \
+PUT_HEVC_UNI_W_ ## FUNC(H,D,H2)                                                   \
+PUT_HEVC_BI_W_ ## FUNC(H,D,H2)
+
+
 #define GEN_FUNC_STATIC(FUNC, H, D)                                            \
-static PUT_HEVC_ ## FUNC(H,D)                                                  \
 static PUT_HEVC_BI_ ## FUNC ##14(H, 8)                                         \
 static PUT_HEVC_BI_ ## FUNC ##14(H,10)                                         \
 static PUT_HEVC_BI_ ## FUNC ##14(H,12)                                         \
@@ -2135,28 +2169,68 @@ static PUT_HEVC_BI_W_ ## FUNC ##14(H, 8)                                       \
 static PUT_HEVC_BI_W_ ## FUNC ##14(H,10)                                       \
 static PUT_HEVC_BI_W_ ## FUNC ##14(H,12)
 
-// ff_hevc_put_hevc_mc_pixelsX_X_avx2
+// ff_hevc_put_hevc_mc_pixelsX_X_avx2_
 #if HAVE_AVX2
+
+GEN_FUNC(PEL_PIXELS,32,8)
+GEN_FUNC(PEL_PIXELS,16,8)
+GEN_FUNC(PEL_PIXELS,16,10)
+GEN_FUNC(PEL_PIXELS,16,12)
+
+
+GEN_FUNC(QPEL_H, 32, 8)
+GEN_FUNC(QPEL_V, 32, 8)
+//GEN_FUNC(QPEL_HV,32, 8)
+GEN_FUNC(QPEL_V, 32, 14)
+
+GEN_FUNC(QPEL_H, 16, 10)
+GEN_FUNC(QPEL_V, 16, 10)
+
+GEN_FUNC(QPEL_V, 16, 14)
+
+GEN_FUNC_STATIC(QPEL_V, 32, 8)
+GEN_FUNC_STATIC(QPEL_V, 16, 10)
+
+GEN_FUNC_HV(QPEL_HV,32, 8, 32)
+GEN_FUNC_HV(QPEL_HV,16, 10, 16)
+
+//PUT_HEVC_QPEL_V16_14();
+//PUT_HEVC_QPEL_V32_14();
+
+//GEN_FUNC(QPEL_V, 16, 14)
+
+GEN_FUNC(EPEL_H, 16, 10)
+GEN_FUNC(EPEL_V, 16, 10)
+//GEN_FUNC(EPEL_HV, 16, 10)
+
+//GEN_FUNC_STATIC(QPEL_V, 16, 8)
+//GEN_FUNC_STATIC(QPEL_V, 16, 10)
+//GEN_FUNC_STATIC(QPEL_V, 16, 10)
+//GEN_FUNC(EPEL_H, 16, 10)
+//GEN_FUNC(EPEL_V, 16, 10)
+
+//GEN_FUNC(PEL_PIXELS,16,10)
+//GEN_FUNC(PEL_PIXELS,16,12)
 //GEN_FUNC(PEL_PIXELS, 32, 8)
-//GEN_FUNC(PEL_PIXELS,  16, 10)
+//GEN_FUNC(PEL_PIXELS,  16, 10)1238
 //GEN_FUNC(PEL_PIXELS,  16, 12)
 //
-//// ff_hevc_put_hevc_epel_hX_X_avx2
+//// ff_hevc_put_hevc_epel_hX_X_avx2_
 //GEN_FUNC(EPEL_H,  16, 10)
 //GEN_FUNC(EPEL_H,  16, 12)
 //
-//// ff_hevc_put_hevc_epel_vX_X_avx2
+//// ff_hevc_put_hevc_epel_vX_X_avx2_
 //GEN_FUNC(EPEL_V,  16, 10)
 //GEN_FUNC(EPEL_V,  16, 12)
 //
-//// ff_hevc_put_hevc_epel_hvX_X_avx2
+//// ff_hevc_put_hevc_epel_hvX_X_avx2_
 ////GEN_FUNC(EPEL_HV,  8,  8)
 //GEN_FUNC(EPEL_HV,  16, 10)
 //
 //GEN_FUNC(EPEL_HV,  16, 12)
 //
 //
-//// ff_hevc_put_hevc_qpel_hX_X_X_avx2
+//// ff_hevc_put_hevc_qpel_hX_X_X_avx2_
 //GEN_FUNC(QPEL_H,  4,  8)
 //GEN_FUNC(QPEL_H,  8,  8)
 //GEN_FUNC(QPEL_H, 16,  8)
@@ -2164,16 +2238,16 @@ static PUT_HEVC_BI_W_ ## FUNC ##14(H,12)
 //GEN_FUNC(QPEL_H_10,  16, 10)
 //GEN_FUNC(QPEL_H_10,  16, 12)
 //
-// ff_hevc_put_hevc_qpel_vX_X_X_avx2
+// ff_hevc_put_hevc_qpel_vX_X_X_avx2_
 //GEN_FUNC(QPEL_V, 32,  8)
 //
 //GEN_FUNC(QPEL_V,  16, 10)
 //
 //GEN_FUNC(QPEL_V,  16, 12)
 //
-//GEN_FUNC_STATIC(QPEL_V, 16, 14)
 //
-//// ff_hevc_put_hevc_qpel_hvX_X_avx2
+//
+//// ff_hevc_put_hevc_qpel_hvX_X_avx2_
 //GEN_FUNC(QPEL_HV,  32, 8)
 //GEN_FUNC(QPEL_HV,  16, 10)
 //GEN_FUNC(QPEL_HV,  16, 12)

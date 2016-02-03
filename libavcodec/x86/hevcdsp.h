@@ -75,6 +75,8 @@ PEL_PROTOTYPE2(name, D, opt)
 //PEL_PROTOTYPE2(name, D, sse)
 //#endif
 
+
+
 ///////////////////////////////////////////////////////////////////////////////
 //IDCT functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,10 +196,14 @@ void ff_hevc_transform_32x32_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL_PIXELS EPEL_PIXELS
 ///////////////////////////////////////////////////////////////////////////////
-EPEL_PROTOTYPES(pel_pixels ,  8, sse4);
-EPEL_PROTOTYPES(pel_pixels , 10, sse4);
-EPEL_PROTOTYPES(pel_pixels , 12, sse4);
+EPEL_PROTOTYPES(pel_pixels ,  8, avx2_);
+EPEL_PROTOTYPES(pel_pixels , 10, avx2_);
+EPEL_PROTOTYPES(pel_pixels , 12, avx2_);
 
+EPEL_PROTOTYPES(pel_pixels ,  8, sse4_);
+EPEL_PROTOTYPES(pel_pixels , 10, sse4_);
+EPEL_PROTOTYPES(pel_pixels , 12, sse4_);
+/*
 void ff_hevc_put_hevc_pel_pixels16_8_avx2(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width);
 void ff_hevc_put_hevc_pel_pixels24_8_avx2(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width);
 void ff_hevc_put_hevc_pel_pixels32_8_avx2(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width);
@@ -230,23 +236,23 @@ void ff_hevc_put_hevc_bi_pel_pixels24_10_avx2(uint8_t *_dst, ptrdiff_t _dststrid
 void ff_hevc_put_hevc_bi_pel_pixels32_10_avx2(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, intptr_t mx, intptr_t my, int width);
 void ff_hevc_put_hevc_bi_pel_pixels48_10_avx2(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, intptr_t mx, intptr_t my, int width);
 void ff_hevc_put_hevc_bi_pel_pixels64_10_avx2(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, ptrdiff_t src2stride, int height, intptr_t mx, intptr_t my, int width);
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 // EPEL
 ///////////////////////////////////////////////////////////////////////////////
-EPEL_PROTOTYPES(epel_h ,  8, sse4);
-EPEL_PROTOTYPES(epel_h , 10, sse4);
-EPEL_PROTOTYPES(epel_h , 12, sse4);
+EPEL_PROTOTYPES(epel_h ,  8, sse4_);
+EPEL_PROTOTYPES(epel_h , 10, sse4_);
+EPEL_PROTOTYPES(epel_h , 12, sse4_);
 
-EPEL_PROTOTYPES(epel_v ,  8, sse4);
-EPEL_PROTOTYPES(epel_v , 10, sse4);
-EPEL_PROTOTYPES(epel_v , 12, sse4);
+EPEL_PROTOTYPES(epel_v ,  8, sse4_);
+EPEL_PROTOTYPES(epel_v , 10, sse4_);
+EPEL_PROTOTYPES(epel_v , 12, sse4_);
 
-EPEL_PROTOTYPES(epel_hv ,  8, sse4);
-EPEL_PROTOTYPES(epel_hv , 10, sse4);
-EPEL_PROTOTYPES(epel_hv , 12, sse4);
+EPEL_PROTOTYPES(epel_hv ,  8, sse4_);
+EPEL_PROTOTYPES(epel_hv , 10, sse4_);
+EPEL_PROTOTYPES(epel_hv , 12, sse4_);
 
-//#ifdef OPTI_ASM
+/*//#ifdef OPTI_ASM
 PEL_PROTOTYPE(epel_h16, 8, avx2);
 PEL_PROTOTYPE(epel_h24, 8, avx2);
 PEL_PROTOTYPE(epel_h32, 8, avx2);
@@ -282,23 +288,39 @@ PEL_PROTOTYPE(epel_hv24,10, avx2);
 PEL_PROTOTYPE(epel_hv32,10, avx2);
 PEL_PROTOTYPE(epel_hv48,10, avx2);
 PEL_PROTOTYPE(epel_hv64,10, avx2);
-//#endif
+//#endif*/
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL
 ///////////////////////////////////////////////////////////////////////////////
-QPEL_PROTOTYPES(qpel_h ,  8, sse4);
-QPEL_PROTOTYPES(qpel_h , 10, sse4);
-QPEL_PROTOTYPES(qpel_h , 12, sse4);
+QPEL_PROTOTYPES(qpel_h ,  8, avx2_);
+QPEL_PROTOTYPES(qpel_h , 10, avx2_);
+QPEL_PROTOTYPES(qpel_h , 12, avx2_);
 
-QPEL_PROTOTYPES(qpel_v,  8, sse4);
-QPEL_PROTOTYPES(qpel_v, 10, sse4);
-QPEL_PROTOTYPES(qpel_v, 12, sse4);
+QPEL_PROTOTYPES(qpel_v,  8, avx2_);
+QPEL_PROTOTYPES(qpel_v, 10, avx2_);
+QPEL_PROTOTYPES(qpel_v, 12, avx2_);
+QPEL_PROTOTYPES(qpel_v, 16, avx2_);
 
-QPEL_PROTOTYPES(qpel_hv,  8, sse4);
-QPEL_PROTOTYPES(qpel_hv, 10, sse4);
-QPEL_PROTOTYPES(qpel_hv, 12, sse4);
+QPEL_PROTOTYPES(qpel_hv,  8, avx2_);
+QPEL_PROTOTYPES(qpel_hv, 10, avx2_);
+QPEL_PROTOTYPES(qpel_hv, 12, avx2_);
 
-//#ifdef OPTI_ASM
+QPEL_PROTOTYPES(qpel_h ,  8, sse4_);
+QPEL_PROTOTYPES(qpel_h , 10, sse4_);
+QPEL_PROTOTYPES(qpel_h , 12, sse4_);
+
+QPEL_PROTOTYPES(qpel_v,  8, sse4_);
+QPEL_PROTOTYPES(qpel_v, 10, sse4_);
+QPEL_PROTOTYPES(qpel_v, 12, sse4_);
+
+QPEL_PROTOTYPES(qpel_hv,  8, sse4_);
+QPEL_PROTOTYPES(qpel_hv, 10, sse4_);
+QPEL_PROTOTYPES(qpel_hv, 12, sse4_);
+
+PEL_PROTOTYPE(qpel_v16,14,avx2_);
+PEL_PROTOTYPE(qpel_v32,14,avx2_);
+
+/*//#ifdef OPTI_ASM
 PEL_PROTOTYPE(qpel_h16, 8, avx2);
 PEL_PROTOTYPE(qpel_h24, 8, avx2);
 PEL_PROTOTYPE(qpel_h32, 8, avx2);
@@ -334,11 +356,15 @@ PEL_PROTOTYPE(qpel_hv24,10, avx2);
 PEL_PROTOTYPE(qpel_hv32,10, avx2);
 PEL_PROTOTYPE(qpel_hv48,10, avx2);
 PEL_PROTOTYPE(qpel_hv64,10, avx2);
-//#endif
+//#endif*/
 
-WEIGHTING_PROTOTYPES(8, sse4);
-WEIGHTING_PROTOTYPES(10, sse4);
-WEIGHTING_PROTOTYPES(12, sse4);
+WEIGHTING_PROTOTYPES(8, sse4_);
+WEIGHTING_PROTOTYPES(10, sse4_);
+WEIGHTING_PROTOTYPES(12, sse4_);
+
+WEIGHTING_PROTOTYPES(8, avx2_);
+WEIGHTING_PROTOTYPES(10, avx2_);
+WEIGHTING_PROTOTYPES(12, avx2_);
 
 ///////////////////////////////////////////////////////////////////////////////
 // SAO functions
