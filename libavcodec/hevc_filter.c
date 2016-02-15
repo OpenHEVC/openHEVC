@@ -320,7 +320,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         int height   = FFMIN(ctb_size_v, (s->sps->height >> s->sps->vshift[c_idx]) - y0);
         uint8_t *src = &s->frame->data[c_idx][y0 * stride_src + (x0 << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA])];
 #if defined(USE_SAO_SMALL_BUFFER)
-        int stride_dst = ((1 << (FFMAX(4, s->sps->log2_ctb_size))) + 16) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
+        int stride_dst = ((1 << (FFMAX(4, s->sps->log2_ctb_size))) + 32) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
         uint8_t *dst = lc->sao_pixel_buffer + (1 * stride_dst) + 16;
 #else
         int stride_dst = s->sao_frame->linesize[c_idx];

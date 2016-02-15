@@ -409,7 +409,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
             for (i = 0; i < s->threads_number ; i++) {
                 HEVCLocalContext    *lc = s->HEVClcList[i];
                 lc->sao_pixel_buffer =
-                    av_malloc(((FFMAX(ctb_size, 16) + 16) * (ctb_size + 2)) <<
+                    av_malloc(((FFMAX(ctb_size, 16) + 32) * (ctb_size + 2)) <<
                               sps->pixel_shift[CHANNEL_TYPE_LUMA]);
             }
             for(c_idx = 0; c_idx < c_count; c_idx++) {
