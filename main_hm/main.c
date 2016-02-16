@@ -161,7 +161,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         exit(1);
     }
 
-    if (h264_flags){
+    if (h264_flags && (enh_filename == NULL)){
         openHevcHandle = libOpenH264Init(nb_pthreads, thread_type/*, pFormatCtx*/);
 #ifndef PL_DEV
         if(enh_filename) { //@FIXME: not supported at the moment, does nothing
@@ -169,7 +169,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         }
     }
 #else
-    } else if (shvc_flags){
+    } else if (h264_flags && enh_filename){
     	printf("file name : %s\n", enhance_file);
     	openHevcHandle = libOpenShvcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     }
