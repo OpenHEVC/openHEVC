@@ -70,7 +70,7 @@ typedef struct OpenHevcWrapperContext {
     AVCodecParserContext *parser;
 } OpenHevcWrapperContext;
 
-int find_start_code (unsigned char *Buf, int zeros_in_startcode)
+static int find_start_code (unsigned char *Buf, int zeros_in_startcode)
 {
     int i;
     for (i = 0; i < zeros_in_startcode; i++)
@@ -79,7 +79,7 @@ int find_start_code (unsigned char *Buf, int zeros_in_startcode)
     return Buf[i];
 }
 
-int get_next_nal(FILE* inpf, unsigned char* Buf)
+static int get_next_nal(FILE* inpf, unsigned char* Buf)
 {
     int pos = 0;
     int StartCodeFound = 0;

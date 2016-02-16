@@ -47,7 +47,7 @@ char *optarg;                /* argument associated with option */
 static const char *usage = "%s: -i <file> [-n]\n";
 static char *program;
 
-void print_usage() {
+static void print_usage() {
     printf(usage, program);
     printf("     -a : disable AU\n");
     printf("     -c : no check md5\n");
@@ -67,7 +67,7 @@ void print_usage() {
  * getopt --
  *        Parse argc/argv argument vector.
  */
-int getopt(int nargc, char * const *nargv, const char *ostr) {
+static int getopt(int nargc, char * const *nargv, const char *ostr) {
     static char *place = EMSG;                /* option letter processing */
     char *oli;                                /* option letter list index */
     

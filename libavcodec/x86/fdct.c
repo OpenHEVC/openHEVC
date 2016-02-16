@@ -538,7 +538,7 @@ static av_always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const
         : "r" (in), "r" (table), "r" (fdct_r_row), "r" (out));
 }
 
-void ff_fdct_mmx(int16_t *block)
+static void ff_fdct_mmx(int16_t *block)
 {
     DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
     int16_t * block1= (int16_t*)align_tmp;
@@ -560,7 +560,7 @@ void ff_fdct_mmx(int16_t *block)
 
 #if HAVE_MMXEXT_INLINE
 
-void ff_fdct_mmxext(int16_t *block)
+static void ff_fdct_mmxext(int16_t *block)
 {
     DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
     int16_t *block1= (int16_t*)align_tmp;
@@ -582,7 +582,7 @@ void ff_fdct_mmxext(int16_t *block)
 
 #if HAVE_SSE2_INLINE
 
-void ff_fdct_sse2(int16_t *block)
+static void ff_fdct_sse2(int16_t *block)
 {
     DECLARE_ALIGNED(16, int64_t, align_tmp)[16];
     int16_t * const block1= (int16_t*)align_tmp;

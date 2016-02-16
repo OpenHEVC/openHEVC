@@ -570,7 +570,7 @@ int set_el_parameter(HEVCContext *s) {
     fail:
     return ret;
 }
-}
+return ret;}
 
 
 static int hls_slice_header(HEVCContext *s)

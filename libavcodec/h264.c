@@ -49,7 +49,7 @@
 #include "rectangle.h"
 #include "svq3.h"
 #include "thread.h"
-//#include "vdpau_internal.h"
+#include "vdpau_internal.h"
 
 #include <assert.h>
 
@@ -1944,13 +1944,13 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
                 return ret;
             *got_frame = 1;
             if (CONFIG_MPEGVIDEO) {
-                ff_print_debug_info2(h->avctx, pict, h->er.mbskip_table,
+                /*ff_print_debug_info2(h->avctx, pict, h->er.mbskip_table,
                                     h->next_output_pic->mb_type,
                                     h->next_output_pic->qscale_table,
                                     h->next_output_pic->motion_val,
                                     &h->low_delay,
                                     h->mb_width, h->mb_height, h->mb_stride, 1);
-            }
+        */    }
         }
     }
 
