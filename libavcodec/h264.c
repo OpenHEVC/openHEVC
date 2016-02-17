@@ -747,6 +747,7 @@ static int decode_init_thread_copy(AVCodecContext *avctx)
 static void decode_postinit(H264Context *h, int setup_finished)
 {
     H264Picture *out = h->cur_pic_ptr;
+    h->avctx->BL_frame = out;//SHVC BL
     H264Picture *cur = h->cur_pic_ptr;
     int i, pics, out_of_order, out_idx;
 

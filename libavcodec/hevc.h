@@ -88,7 +88,7 @@
 #define QPEL_EXTRA_BEFORE 3
 #define QPEL_EXTRA_AFTER  4
 #define QPEL_EXTRA        7
-#define ACTIVE_PU_UPSAMPLING     1
+#define ACTIVE_PU_UPSAMPLING     0
 #define ACTIVE_BOTH_FRAME_AND_PU 0
 
 #define EDGE_EMU_BUFFER_STRIDE 80
@@ -1249,7 +1249,7 @@ typedef struct HEVCContext {
     int temporal_id;  ///< temporal_id_plus1 - 1
     uint8_t force_first_slice_in_pic;
     int64_t last_frame_pts;
-    HEVCFrame *ref;
+    HEVCFrame *ref;//fixme : //if base layer
     HEVCFrame DPB[32];
     HEVCFrame Add_ref[2];
 
