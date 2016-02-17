@@ -722,7 +722,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
     }
 
     if (s->nuh_layer_id > 0 && s->vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag > 0) {
-        if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) &&
+        if (!(s->nal_unit_type >= HEVC_NAL_BLA_W_LP && s->nal_unit_type <= HEVC_NAL_CRA_NUT) &&
             s->sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
             int *arg, *ret, cmpt = (s->sps->ctb_height);
@@ -754,8 +754,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
         rps[i].nb_refs = 0;
     if (!s->nuh_layer_id ||
         (s->nuh_layer_id > 0 &&
-        !(s->nal_unit_type >= NAL_BLA_W_LP &&
-        s->nal_unit_type <= NAL_CRA_NUT &&
+        !(s->nal_unit_type >= HEVC_NAL_BLA_W_LP &&
+        s->nal_unit_type <= HEVC_NAL_CRA_NUT &&
         s->sh.active_num_ILR_ref_idx))) {
         /* add the short refs */
         for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++)
@@ -844,9 +844,9 @@ int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
         poc_msb = prev_poc_msb;
 
     // For BLA picture types, POCmsb is set to 0.
-    if (s->nal_unit_type == NAL_BLA_W_LP   ||
-        s->nal_unit_type == NAL_BLA_W_RADL ||
-        s->nal_unit_type == NAL_BLA_N_LP)
+    if (s->nal_unit_type == HEVC_NAL_BLA_W_LP   ||
+        s->nal_unit_type == HEVC_NAL_BLA_W_RADL ||
+        s->nal_unit_type == HEVC_NAL_BLA_N_LP)
         poc_msb = 0;
 
     return poc_msb + poc_lsb;
@@ -860,8 +860,8 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
     LongTermRPS *long_rps   = &s->sh.long_term_rps;
 
     if (s->sh.slice_type == I_SLICE || (s->nuh_layer_id &&
-                                        (s->nal_unit_type >= NAL_BLA_W_LP) &&
-                                        (s->nal_unit_type<= NAL_CRA_NUT))) {
+                                        (s->nal_unit_type >= HEVC_NAL_BLA_W_LP) &&
+                                        (s->nal_unit_type<= HEVC_NAL_CRA_NUT))) {
         return s->sh.active_num_ILR_ref_idx;
     }
     if (rps) {

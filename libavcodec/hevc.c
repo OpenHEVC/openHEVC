@@ -40,6 +40,7 @@
 #include "hevc.h"
 #include "getopt.h"
 
+#include "h264.h"
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
@@ -484,8 +485,8 @@ int set_el_parameter(HEVCContext *s) {
     HEVCWindow scaled_ref_layer_window;
     int bl_avc = s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1;
     if(bl_avc){ // We consider BL is AVC
-    	//NOTE it would be better to check s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1] type
-      s->BL_frame = av_mallocz(sizeof(HEVCFrame)); //BL-Frame is already allocated
+    	//NOTE fixme: it would be better to check s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1] type
+        //s->BL_frame = av_mallocz(sizeof(HEVCFrame)); //BL-Frame is already allocated
       heightBL    = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset;
       widthBL     = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset;
     } else {
@@ -511,7 +512,7 @@ int set_el_parameter(HEVCContext *s) {
      heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
      widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
     phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;
-#if !ACTIVE_PU_UPSAMPLING
+#if !ACTIVE_PU_UPSAMPLING //fixme : was this intended to avc base layer??
     if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
       av_frame_unref(s->Ref_color_mapped_frame);
       s->Ref_color_mapped_frame->coded_width  = s->Ref_color_mapped_frame->width  = widthBL;
@@ -652,13 +653,13 @@ static int hls_slice_header(HEVCContext *s)
         change_pps = 1;
 
     s->pps = (HEVCPPS*)s->pps_list[sh->pps_id]->data;
-    if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
+    if (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
 
     if (s->sps != (HEVCSPS*)s->sps_list[s->pps->sps_id]->data) {
         const HEVCSPS* last_sps = s->sps;
         s->sps = (HEVCSPS*)s->sps_list[s->pps->sps_id]->data;
-        if (last_sps && IS_IRAP(s) && s->nal_unit_type != NAL_CRA_NUT) {
+        if (last_sps && IS_IRAP(s) && s->nal_unit_type != HEVC_NAL_CRA_NUT) {
             if (s->sps->width !=  last_sps->width || s->sps->height != last_sps->height ||
                 s->sps->temporal_layer[s->sps->max_sub_layers - 1].max_dec_pic_buffering !=
                 last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
@@ -837,13 +838,13 @@ else
 
         /* 8.3.1 */
         if (s->temporal_id == 0 &&
-            s->nal_unit_type != NAL_TRAIL_N &&
-            s->nal_unit_type != NAL_TSA_N   &&
-            s->nal_unit_type != NAL_STSA_N  &&
-            s->nal_unit_type != NAL_RADL_N  &&
-            s->nal_unit_type != NAL_RADL_R  &&
-            s->nal_unit_type != NAL_RASL_N  &&
-            s->nal_unit_type != NAL_RASL_R)
+            s->nal_unit_type != HEVC_NAL_TRAIL_N &&
+            s->nal_unit_type != HEVC_NAL_TSA_N   &&
+            s->nal_unit_type != HEVC_NAL_STSA_N  &&
+            s->nal_unit_type != HEVC_NAL_RADL_N  &&
+            s->nal_unit_type != HEVC_NAL_RADL_R  &&
+            s->nal_unit_type != HEVC_NAL_RASL_N  &&
+            s->nal_unit_type != HEVC_NAL_RASL_R)
             s->pocTid0 = s->poc;
         s->sh.active_num_ILR_ref_idx = 0;
 
@@ -1178,7 +1179,7 @@ else
     s->HEVClc->tu.cu_qp_offset_cb = 0;
     s->HEVClc->tu.cu_qp_offset_cr = 0;
 
-    s->no_rasl_output_flag = IS_IDR(s) || IS_BLA(s) || (s->nal_unit_type == NAL_CRA_NUT && s->last_eos);
+    s->no_rasl_output_flag = IS_IDR(s) || IS_BLA(s) || (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos);
     return 0;
 }
 
@@ -2016,8 +2017,10 @@ static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
 {
     int y = (mv->y >> 2) + y0 + (1<<s->sps->log2_ctb_size)*2 + 9;
     int bl_y = (( (y  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
-    if (s->threads_type & FF_THREAD_FRAME )
+    if (s->threads_type & FF_THREAD_FRAME ){
+    	//ThreadFrame * blframe_tf = s->((HEVCFrame*)BL_frame)->tf;
         ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC
+    }
 }
 
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
@@ -3218,7 +3221,7 @@ static int hevc_frame_start(HEVCContext *s)
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
 
         if(s->pps->colour_mapping_enabled_flag) {
-            s->hevcdsp.colorMapping((void*)&s->pps->pc3DAsymLUT, s->BL_frame->frame, s->Ref_color_mapped_frame);
+            s->hevcdsp.colorMapping((void*)&s->pps->pc3DAsymLUT, &((H264Picture*)s->avctx->BL_frame)->f, s->Ref_color_mapped_frame);
             s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->Ref_color_mapped_frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
         } else
             s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
@@ -3279,55 +3282,55 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                s->nal_unit_type);
         goto fail;
-    } else if (ret != s->decoder_id && (s->nal_unit_type != NAL_VPS && s->nal_unit_type != NAL_SPS /*&& s->nal_unit_type != NAL_PPS*/))
+    } else if (ret != s->decoder_id && (s->nal_unit_type != HEVC_NAL_VPS && s->nal_unit_type != HEVC_NAL_SPS /*&& s->nal_unit_type != NAL_PPS*/))
         return 0;
 
     if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
         return 0;
     s->nuh_layer_id = ret;
     switch (s->nal_unit_type) {
-    case NAL_VPS:
+    case HEVC_NAL_VPS:
         ret = ff_hevc_decode_nal_vps(s);
         if (ret < 0)
             goto fail;
         break;
-    case NAL_SPS:
+    case HEVC_NAL_SPS:
         ret = ff_hevc_decode_nal_sps(s);
         if (ret < 0)
             goto fail;
         break;
-    case NAL_PPS:
+    case HEVC_NAL_PPS:
         ret = ff_hevc_decode_nal_pps(s);
         if (ret < 0)
             goto fail;
         break;
-    case NAL_SEI_PREFIX:
-    case NAL_SEI_SUFFIX:
+    case HEVC_NAL_SEI_PREFIX:
+    case HEVC_NAL_SEI_SUFFIX:
         ret = ff_hevc_decode_nal_sei(s);
         if (ret < 0)
             goto fail;
         break;
-    case NAL_TRAIL_R:
-    case NAL_TRAIL_N:
-    case NAL_TSA_N:
-    case NAL_TSA_R:
-    case NAL_STSA_N:
-    case NAL_STSA_R:
-    case NAL_BLA_W_LP:
-    case NAL_BLA_W_RADL:
-    case NAL_BLA_N_LP:
-    case NAL_IDR_W_RADL:
-    case NAL_IDR_N_LP:
-    case NAL_CRA_NUT:
-    case NAL_RADL_N:
-    case NAL_RADL_R:
-    case NAL_RASL_N:
-    case NAL_RASL_R:
+    case HEVC_NAL_TRAIL_R:
+    case HEVC_NAL_TRAIL_N:
+    case HEVC_NAL_TSA_N:
+    case HEVC_NAL_TSA_R:
+    case HEVC_NAL_STSA_N:
+    case HEVC_NAL_STSA_R:
+    case HEVC_NAL_BLA_W_LP:
+    case HEVC_NAL_BLA_W_RADL:
+    case HEVC_NAL_BLA_N_LP:
+    case HEVC_NAL_IDR_W_RADL:
+    case HEVC_NAL_IDR_N_LP:
+    case HEVC_NAL_CRA_NUT:
+    case HEVC_NAL_RADL_N:
+    case HEVC_NAL_RADL_R:
+    case HEVC_NAL_RASL_N:
+    case HEVC_NAL_RASL_R:
 #if 0
         {
             int loss_rate = 10;
             int var = (rand()%100);
-            if( var < loss_rate && (s->nal_unit_type != NAL_VPS) && (s->nal_unit_type != NAL_SPS) && (s->nal_unit_type != NAL_PPS))
+            if( var < loss_rate && (s->nal_unit_type != HEVC_NAL_VPS) && (s->nal_unit_type != HEVC_NAL_SPS) && (s->nal_unit_type != HEVC_NAL_PPS))
                 get_bits(gb, 3);
             //  Packet loss
             //return 0;
@@ -3349,7 +3352,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
         s->au_poc = s->poc;
         if (s->max_ra == INT_MAX) {
-            if (s->nal_unit_type == NAL_CRA_NUT || IS_BLA(s)) {
+            if (s->nal_unit_type == HEVC_NAL_CRA_NUT || IS_BLA(s)) {
                 s->max_ra = s->poc;
                 av_log(s->avctx, AV_LOG_WARNING,
                        "max_ra equal to s->max_ra %d \n", s->max_ra);
@@ -3364,12 +3367,12 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             }
         }
 
-        if ((s->nal_unit_type == NAL_RASL_R || s->nal_unit_type == NAL_RASL_N) &&
+        if ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
             s->poc <= s->max_ra) {
             s->is_decoded = 0;
                 return 0;
         } else {
-            if (s->nal_unit_type == NAL_RASL_R && s->poc > s->max_ra)
+            if (s->nal_unit_type == HEVC_NAL_RASL_R && s->poc > s->max_ra)
                 s->max_ra = INT_MIN;
         }
 
@@ -3451,13 +3454,13 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             goto fail;
         }
         break;
-    case NAL_EOS_NUT:
-    case NAL_EOB_NUT:
+    case HEVC_NAL_EOS_NUT:
+    case HEVC_NAL_EOB_NUT:
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
         break;
-    case NAL_AUD:
-    case NAL_FD_NUT:
+    case HEVC_NAL_AUD:
+    case HEVC_NAL_FD_NUT:
         break;
     default:
         av_log(s->avctx, AV_LOG_INFO,
@@ -3701,21 +3704,21 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         prv_nal_type = nal_type;
 #endif
 
-        if(!s->bl_decoder_el_exist && ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
+        if(!s->bl_decoder_el_exist && ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->nal_unit_type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->bl_decoder_el_exist = 1;
             s->poc_id++;
             s->poc_id &= (MAX_POC-1);
         }
-        if(!s->el_decoder_bl_exist && s->decoder_id && ret == s->decoder_id-1 && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
+        if(!s->el_decoder_bl_exist && s->decoder_id && ret == s->decoder_id-1 && s->nal_unit_type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->el_decoder_bl_exist=1;
         }
-        if(!s->el_decoder_el_exist && s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
+        if(!s->el_decoder_el_exist && s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->poc_id++;
             s->poc_id &= (MAX_POC-1);
             s->el_decoder_el_exist = 1;
         }
-        if (s->nal_unit_type == NAL_EOB_NUT ||
-            s->nal_unit_type == NAL_EOS_NUT)
+        if (s->nal_unit_type == HEVC_NAL_EOB_NUT ||
+            s->nal_unit_type == HEVC_NAL_EOS_NUT)
             s->eos = 1;
 
         buf    += consumed;
@@ -3725,7 +3728,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     /* parse the NAL units */
     if(!s->el_decoder_bl_exist) {
         s->el_decoder_el_exist = 0;
-    }
+    }//fixme: AVC
 #if PARALLEL_SLICE
     if (is_irap) {
         for(i = 0; i <= s->NbListElement; i++) {
@@ -3957,7 +3960,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 #endif
 //careful here segfault
     if(s->decoder_id == 1 && s->vps && s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
-        	av_freep(&s->BL_frame);
+        	//av_freep(&s->BL_frame);
 
     av_freep(&s->md5_ctx);
 

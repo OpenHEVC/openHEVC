@@ -291,7 +291,7 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
             max_layer = openHevcContexts->active_layer;
 
         for(i=max_layer; i>=0; i--) {
-            //if(got_picture[i]){
+            if(got_picture[i]){
                 if(i != openHevcContexts->display_layer) {
                     if (i >= 0 && i < openHevcContexts->nb_decoders)
                         openHevcContexts->display_layer = i;
