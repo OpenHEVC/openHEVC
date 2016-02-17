@@ -481,14 +481,16 @@ int set_el_parameter(HEVCContext *s) {
 //    const int phaseAlignFlag = 0; // TO DO ((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->phase_align_flag;
     const int phaseHorLuma = 0;
     const int phaseVerLuma = 0, refLayer = 0;
+    HEVCWindow scaled_ref_layer_window;
     int bl_avc = s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1;
     if(bl_avc){ // We consider BL is AVC
+    	//NOTE it would be better to check s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1] type
       s->BL_frame = av_mallocz(sizeof(HEVCFrame)); //BL-Frame is already allocated
       heightBL    = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset;
       widthBL     = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset;
     } else {
           HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
-          HEVCWindow scaled_ref_layer_window;
+
           if(bl_sps) {
               HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
               heightBL = bl_sps->height - base_layer_window.bottom_offset - base_layer_window.top_offset;
@@ -498,15 +500,16 @@ int set_el_parameter(HEVCContext *s) {
               ret = AVERROR(ENOMEM);
               goto fail;
           }
-          if(!heightBL || !widthBL) {
-              av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing heightBL: %d widthBL: %d \n", heightBL, widthBL);
-              ret = AVERROR(ENOMEM);
-              goto fail;
-          }
-          scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
+    }
+    if(!heightBL || !widthBL) {
+    	av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing heightBL: %d widthBL: %d \n", heightBL, widthBL);
+        ret = AVERROR(ENOMEM);
+        goto fail;
+     }
+     scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
 
-          heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
-          widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
+     heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
+     widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
     phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;
 #if !ACTIVE_PU_UPSAMPLING
     if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
@@ -543,8 +546,14 @@ int set_el_parameter(HEVCContext *s) {
     s->up_filter_inf.scaleXCr = s->up_filter_inf.scaleXLum;
     s->up_filter_inf.scaleYCr = s->up_filter_inf.scaleYLum;
     for(i = 0; i <= s->nuh_layer_id; i++) {
-      s->sh.Bit_Depth[i][CHANNEL_TYPE_LUMA  ] = getBitDepth(s, CHANNEL_TYPE_LUMA, i);
-      s->sh.Bit_Depth[i][CHANNEL_TYPE_CHROMA] = getBitDepth(s, CHANNEL_TYPE_CHROMA, i);
+    	//hack for avc base_layer // we suppose bitdepth = 8
+    	if(i==0){
+    		s->sh.Bit_Depth[i][CHANNEL_TYPE_LUMA  ] = 8;
+    	    s->sh.Bit_Depth[i][CHANNEL_TYPE_CHROMA] = 8;
+    	}else {
+            s->sh.Bit_Depth[i][CHANNEL_TYPE_LUMA  ] = getBitDepth(s, CHANNEL_TYPE_LUMA, i);
+            s->sh.Bit_Depth[i][CHANNEL_TYPE_CHROMA] = getBitDepth(s, CHANNEL_TYPE_CHROMA, i);
+    	}
     }
     for(i = 0; i < MAX_NUM_CHANNEL_TYPE; i++) {
       s->up_filter_inf.shift[i]    = s->sh.Bit_Depth[s->nuh_layer_id][i] - s->sh.Bit_Depth[refLayer][i];
@@ -569,7 +578,6 @@ int set_el_parameter(HEVCContext *s) {
             }
     fail:
     return ret;
-}
 }
 
 
@@ -2009,7 +2017,7 @@ static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
     int y = (mv->y >> 2) + y0 + (1<<s->sps->log2_ctb_size)*2 + 9;
     int bl_y = (( (y  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
     if (s->threads_type & FF_THREAD_FRAME )
-        ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);
+        ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC
 }
 
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
@@ -3186,7 +3194,7 @@ static int hevc_frame_start(HEVCContext *s)
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
         if (s->el_decoder_el_exist ){
-            ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
+            ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);//fixme AVC base
         } else
             if(s->threads_type&FF_THREAD_FRAME)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
@@ -3195,7 +3203,7 @@ static int hevc_frame_start(HEVCContext *s)
         	if(s->vps->vps_base_layer_internal_flag == 1 && s->vps->vps_base_layer_available_flag == 1)
         		s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
             else if(s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
-        		s->BL_frame->frame =  (AVFrame*)s->avctx->BL_frame;
+        	s->BL_frame->frame =  (AVFrame*)s->avctx->BL_frame;
 
 
         }
@@ -3203,7 +3211,7 @@ static int hevc_frame_start(HEVCContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
         }
-        s->poc = s->BL_frame->poc;
+        s->poc = s->BL_frame->poc; //fixme BL AVC poc
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
@@ -3220,7 +3228,7 @@ static int hevc_frame_start(HEVCContext *s)
 
     if (ret < 0)
         goto fail;
-    s->avctx->BL_frame = s->ref;
+    s->avctx->BL_frame = s->ref;//fixme AVC BL
     ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS. decoder_id %d \n", s->decoder_id);
