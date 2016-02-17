@@ -1329,7 +1329,8 @@ typedef struct HEVCContext {
     AVFrame     *EL_frame;
     short       *buffer_frame[3];
     UpsamplInf  up_filter_inf;
-    HEVCFrame   *BL_frame;
+    //BL_frame is void * since BL can also be H264 or others
+    void   *BL_frame;
     HEVCFrame   *inter_layer_ref;
 
     uint8_t         bl_decoder_el_exist;

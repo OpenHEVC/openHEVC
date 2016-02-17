@@ -2019,7 +2019,7 @@ static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
     int bl_y = (( (y  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
     if (s->threads_type & FF_THREAD_FRAME ){
     	//ThreadFrame * blframe_tf = s->((HEVCFrame*)BL_frame)->tf;
-        ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC
+        ff_thread_await_progress(&((HEVCFrame*)s->BL_frame)->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC
     }
 }
 
@@ -3203,10 +3203,10 @@ static int hevc_frame_start(HEVCContext *s)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
 
         if(s->avctx->BL_frame){
-        	if(s->vps->vps_base_layer_internal_flag == 1 && s->vps->vps_base_layer_available_flag == 1)
-        		s->BL_frame = (HEVCFrame*)s->avctx->BL_frame;
-            else if(s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
-        	s->BL_frame->frame =  (AVFrame*)s->avctx->BL_frame;
+        	//if(s->vps->vps_base_layer_internal_flag == 1 && s->vps->vps_base_layer_available_flag == 1)
+        		s->BL_frame = s->avctx->BL_frame;
+            //else if(s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
+        	//s->BL_frame = s->avctx->BL_frame;//fixme avc bl type is there a need to this else if
 
 
         }
@@ -3214,7 +3214,7 @@ static int hevc_frame_start(HEVCContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
         }
-        s->poc = s->BL_frame->poc; //fixme BL AVC poc
+        s->poc = ((HEVCFrame *)s->BL_frame)->poc; //fixme BL AVC poc & no BL frame
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
             goto fail;
