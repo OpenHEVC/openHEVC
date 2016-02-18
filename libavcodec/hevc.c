@@ -483,7 +483,7 @@ int set_el_parameter(HEVCContext *s) {
     const int phaseHorLuma = 0;
     const int phaseVerLuma = 0, refLayer = 0;
     HEVCWindow scaled_ref_layer_window;
-    int bl_avc = s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1;
+    int bl_avc = s->vps->vps_nonHEVCBaseLayerFlag;
     if(bl_avc){ // We consider BL is AVC
     	//NOTE fixme: it would be better to check s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1] type
         //s->BL_frame = av_mallocz(sizeof(HEVCFrame)); //BL-Frame is already allocated
