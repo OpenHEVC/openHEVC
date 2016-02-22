@@ -96,7 +96,7 @@ av_cold void ff_h264qpel_init(H264QpelContext *c, int bit_depth)
         break;
     }
 
-/*    if (ARCH_AARCH64)
+    if (ARCH_AARCH64)
         ff_h264qpel_init_aarch64(c, bit_depth);
     if (ARCH_ARM)
         ff_h264qpel_init_arm(c, bit_depth);
@@ -104,6 +104,6 @@ av_cold void ff_h264qpel_init(H264QpelContext *c, int bit_depth)
         ff_h264qpel_init_ppc(c, bit_depth);
     if (ARCH_X86)
         ff_h264qpel_init_x86(c, bit_depth);
- 
-*/
+    if (ARCH_MIPS)
+        ff_h264qpel_init_mips(c, bit_depth);
 }

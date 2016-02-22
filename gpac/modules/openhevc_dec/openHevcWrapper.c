@@ -67,10 +67,10 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
         openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
         openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
         openHevcContext->picture = avcodec_alloc_frame();
-        openHevcContext->c->flags |= CODEC_FLAG_UNALIGNED;
+        openHevcContext->c->flags |= AV_CODEC_FLAG_UNALIGNED;
 
-        if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
-            openHevcContext->c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+        if(openHevcContext->codec->capabilities&AV_CODEC_CAP_TRUNCATED)
+            openHevcContext->c->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
         /* For some codecs, such as msmpeg4 and mpeg4, width and height
          MUST be initialized there because this information is not
@@ -115,10 +115,10 @@ OpenHevc_Handle libOpenH264Init(int nb_pthreads, int thread_type)
         openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
         openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
         openHevcContext->picture = av_frame_alloc();
-        openHevcContext->c->flags |= CODEC_FLAG_UNALIGNED;
+        openHevcContext->c->flags |= AV_CODEC_FLAG_UNALIGNED;
 
-        if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
-            openHevcContext->c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+        if(openHevcContext->codec->capabilities&AV_CODEC_CAP_TRUNCATED)
+            openHevcContext->c->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
         /* For some codecs, such as msmpeg4 and mpeg4, width and height
          MUST be initialized there because this information is not
@@ -166,10 +166,10 @@ OpenHevc_Handle libOpenShvcInit(int nb_pthreads, int thread_type)
         openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
         openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
         openHevcContext->picture = av_frame_alloc();
-        openHevcContext->c->flags |= CODEC_FLAG_UNALIGNED;
+        openHevcContext->c->flags |= AV_CODEC_FLAG_UNALIGNED;
 
-        if(openHevcContext->codec->capabilities&CODEC_CAP_TRUNCATED)
-            openHevcContext->c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+        if(openHevcContext->codec->capabilities&AV_CODEC_CAP_TRUNCATED)
+            openHevcContext->c->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
         /* For some codecs, such as msmpeg4 and mpeg4, width and height
          MUST be initialized there because this information is not
