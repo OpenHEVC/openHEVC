@@ -3197,9 +3197,11 @@ static int hevc_frame_start(HEVCContext *s)
 #if ACTIVE_PU_UPSAMPLING
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
-        if (s->el_decoder_el_exist ){
+       if (s->el_decoder_el_exist/*||s->vps->vps_nonHEVCBaseLayerFlag*/){
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);//fixme AVC base
             //ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);//fixme AVC base
+        } else if(s->vps->vps_nonHEVCBaseLayerFlag && s->vps->vps_base_layer_available_flag){
+//        	ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
         } else
             if(s->threads_type & FF_THREAD_FRAME)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
@@ -3216,7 +3218,7 @@ static int hevc_frame_start(HEVCContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
         }
-        //s->poc = ((H264Picture *)s->BL_frame)->f.coded_picture_number; //fixme BL AVC poc & no BL frame
+        //s->poc = ((H264Picture *)s->BL_frame)->f->display_picture_number; //fixme BL AVC poc & no BL frame
         //s->poc = ((HEVCFrame *)s->BL_frame)->poc; //fixme BL AVC poc & no BL frame
         ret = ff_hevc_set_new_iter_layer_ref(s, &s->EL_frame, s->poc);
         if (ret < 0)
@@ -3224,10 +3226,10 @@ static int hevc_frame_start(HEVCContext *s)
 #if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
 
         if(s->pps->colour_mapping_enabled_flag) {
-            s->hevcdsp.colorMapping((void*)&s->pps->pc3DAsymLUT, &((H264Picture*)s->avctx->BL_frame)->f, s->Ref_color_mapped_frame);
+            s->hevcdsp.colorMapping((void*)&s->pps->pc3DAsymLUT, ((H264Picture*)s->avctx->BL_frame)->f, s->Ref_color_mapped_frame);
             s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->Ref_color_mapped_frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
         } else
-            s->hevcdsp.upsample_base_layer_frame(s->EL_frame, &((H264Picture *)s->BL_frame)->f, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
+            s->hevcdsp.upsample_base_layer_frame(s->EL_frame, ((H264Picture *)s->BL_frame)->f, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
         	//s->hevcdsp.upsample_base_layer_frame(s->EL_frame, s->BL_frame->frame, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
 #endif
     }
@@ -3235,8 +3237,8 @@ static int hevc_frame_start(HEVCContext *s)
 
     if (ret < 0)
         goto fail;
-    //s->avctx->BL_frame = s->ref;//fixme AVC BL reinterpret BLFrame to HEVC ??? hide for th moment
-    ret = ff_hevc_frame_rps(s);
+    s->avctx->BL_frame = s->ref;//fixme AVC BL reinterpret BLFrame to HEVC ??? hide for th moment
+    ret = ff_hevc_frame_rps(s);//fixme; note used in if BLFrame is AVC
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS. decoder_id %d \n", s->decoder_id);
         goto fail;

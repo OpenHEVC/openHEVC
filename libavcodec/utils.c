@@ -67,7 +67,7 @@
 #include "compat/os2threads.h"
 #endif
 
-#define EDGE_WIDTH 32
+//#define EDGE_WIDTH 32
 #define CODEC_FLAG_EMU_EDGE 1
 #if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 static int default_lockmgr_cb(void **arg, enum AVLockOp op)

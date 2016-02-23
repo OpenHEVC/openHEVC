@@ -732,6 +732,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
 {
     H264Picture *out = h->cur_pic_ptr;
     H264Picture *cur = h->cur_pic_ptr;
+    h->avctx->BL_frame=out;
     int i, pics, out_of_order, out_idx;
 
     h->cur_pic_ptr->f->pict_type = h->pict_type;
@@ -1699,6 +1700,7 @@ static int get_consumed_bytes(int pos, int buf_size)
 static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 {
     AVFrame *src = srcp->f;
+
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src->format);
     int i;
     int ret = av_frame_ref(dst, src);
