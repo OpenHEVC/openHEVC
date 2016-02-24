@@ -25,6 +25,9 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
+//TMP
+#include "libavcodec/h264.h"
+
 #define MAX_DECODERS 3
 #define ACTIVE_NAL
 typedef struct OpenHevcWrapperContext {
@@ -279,7 +282,8 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
 
         if(i+1 < openHevcContexts->nb_decoders)
            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
-
+        if(i==0)
+            fprintf(stderr, "H264 POC : %d\n",((H264Picture *)openHevcContexts->wraper[i]->c->BL_frame)->frame_num );
     }
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");
