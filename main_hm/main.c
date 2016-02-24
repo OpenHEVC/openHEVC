@@ -318,11 +318,12 @@ static void video_decode_example(const char *filename,const char *enh_filename)
             //got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
 #endif
         //if (got_picture > 0) {
-			if(enh_filename)
-				if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0)
-					stop_dec = 1;
-			if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0)
-				stop_dec = 1;
+		    if(enh_filename){
+			    if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0)
+			        stop_dec = 1;
+			}
+		    if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0)
+		        stop_dec = 1;
 			//printf("Stop dec : %d", stop_dec);
 			if ((packet[0].stream_index == video_stream_idx && (!enh_filename || packet[1].stream_index == video_stream_idx))
 					|| stop_dec == 1) {
