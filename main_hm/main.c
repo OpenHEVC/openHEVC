@@ -11,7 +11,6 @@
 #include "sdl_wrapper.h"
 
 //#define TIME2
-#define PL_DEV
 
 #ifdef TIME2
 #ifdef WIN32
@@ -115,20 +114,8 @@ typedef struct Info {
 
 static void video_decode_example(const char *filename,const char *enh_filename)
 {
-#ifndef PL_DEV
-	AVFormatContext **pFormatCtx = NULL;
-	AVPacket        *packet = NULL;
-	if(h264_flags && enh_filename){
-		pFormatCtx = malloc(sizeof(AVFormatContext*) * 2);
-		packet = malloc(sizeof(AVPacket) * 2);
-	} else{
-		pFormatCtx = malloc(sizeof(AVFormatContext*));
-		packet = malloc(sizeof(AVPacket));
-	}
-#else
 	AVFormatContext *pFormatCtx[2];
 	AVPacket        packet[2];
-#endif
 
 #if FRAME_CONCEALMENT
     FILE *fin_loss = NULL, *fin1 = NULL;
@@ -163,19 +150,10 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
     if (h264_flags && (enh_filename == NULL)){
         openHevcHandle = libOpenH264Init(nb_pthreads, thread_type/*, pFormatCtx*/);
-#ifndef PL_DEV
-        if(enh_filename) { //@FIXME: not supported at the moment, does nothing
-    	    //openHevcHandle = libOpenShvcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
-        }
-    }
-#else
     } else if (h264_flags && enh_filename){
     	printf("file name : %s\n", enhance_file);
     	openHevcHandle = libOpenShvcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
-    }
-#endif
-
-    else {
+    } else {
         openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     }
 
@@ -185,70 +163,23 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         fprintf(stderr, "could not open OpenHevc\n");
         exit(1);
     }
+
     av_register_all();
-#ifndef PL_DEV
-    if(h264_flags){
-        pFormatCtx[0] = avformat_alloc_context();
-        if(shvc_flags){ // EL is in a second file only if first file is AVC
-            pFormatCtx[1] = avformat_alloc_context();
-        }
-    }
-#else
     pFormatCtx[0] = avformat_alloc_context();
-    if(shvc_flags)
+
+    if(h264_flags && enh_filename)
     	pFormatCtx[1] = avformat_alloc_context();
-#endif
-#ifndef PL_DEV
-    if(avformat_open_input(pFormatCtx, filename, NULL, NULL)!=0) {
-#else
+
     if(avformat_open_input(&pFormatCtx[0], filename, NULL, NULL)!=0) {
-#endif
     	printf("%s",filename);
         exit(1); // Couldn't open file
     }
-#ifndef PL_DEV
-    if(enh_filename){ //@FIXME does nothing at the moment not supported
-    	//if(avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
-        //    printf("%s",enh_filename);
-        //    exit(1); // Couldn't open file
-        //}
-    }
-#else
+
     if(shvc_flags && avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
         printf("%s",enh_filename);
         exit(1); // Couldn't open file
     }
-#endif
 
-#ifndef PL_DEV
-	if ( (video_stream_idx = av_find_best_stream(*pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
-		fprintf(stderr, "Could not find video stream in input file\n");
-		exit(1);
-	}
-
-	const size_t extra_size_alloc = (*pFormatCtx)->streams[video_stream_idx]->codec->extradata_size > 0 ?
-	((*pFormatCtx)->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
-	if (extra_size_alloc)
-	{
-		libOpenHevcCopyExtraData(openHevcHandle, (*pFormatCtx)->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
-	}
-
-	if(enhance_file){
-		if ( (video_stream_idx = av_find_best_stream(pFormatCtx[1], AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
-				fprintf(stderr, "Could not find video stream in input file\n");
-				exit(1);
-		}
-		const size_t extra_size_alloc = pFormatCtx[1]->streams[video_stream_idx]->codec->extradata_size > 0 ?
-			(pFormatCtx[1]->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
-		if (extra_size_alloc)
-		{
-			libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx[1]->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
-		}
-	}
-
-
-
-#else
     for(i=0; i<2 ; i++){
 		if ( (video_stream_idx = av_find_best_stream(pFormatCtx[i], AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
 			fprintf(stderr, "Could not find video stream in input file\n");
@@ -259,22 +190,25 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
 		const size_t extra_size_alloc = pFormatCtx[i]->streams[video_stream_idx]->codec->extradata_size > 0 ?
 		(pFormatCtx[i]->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
+
 		if (extra_size_alloc)
 		{
 			libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx[i]->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
 		}
+
 		if(!shvc_flags){
 			break;
 		}
 
     }
-#endif
 
     libOpenHevcSetDebugMode(openHevcHandle, 0);
     libOpenHevcStartDecoder(openHevcHandle);
+
     openHevcFrameCpy.pvY = NULL;
     openHevcFrameCpy.pvU = NULL;
     openHevcFrameCpy.pvV = NULL;
+
 #if USE_SDL
     Init_Time();
     if (frame_rate > 0) {
@@ -289,6 +223,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
     libOpenHevcSetActiveDecoders(openHevcHandle, quality_layer_id);
     libOpenHevcSetViewLayers(openHevcHandle, quality_layer_id);
+
 #if FRAME_CONCEALMENT
     fin_loss = fopen( "/Users/wassim/Softwares/shvc_transmission/parser/hevc_parser/BascketBall_Loss.txt", "rb");
     fin1 = fopen( "/Users/wassim/Softwares/shvc_transmission/parser/hevc_parser/BascketBall.txt", "rb");
@@ -426,23 +361,11 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     printf("frame= %d fps= %.0f time= %.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
 #endif
 #endif
-#ifndef PL_DEV
-    free(packet);
-    free(pFormatCtx);
-#endif
 }
 
 int main(int argc, char *argv[]) {
     init_main(argc, argv);
-#ifndef PL_DEV
-    if(h264_flags){
-    	video_decode_example(input_file, enhance_file);
-    } else{
-    	video_decode_example(input_file, NULL);
-    }
-#else
     video_decode_example(input_file, enhance_file);
-#endif
 
     return 0;
 }
