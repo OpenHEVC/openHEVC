@@ -267,7 +267,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 	        stop_dec = 1;
 
 		if ((packet[0].stream_index == video_stream_idx && (!split_layers || packet[1].stream_index == video_stream_idx)) //
-				|| stop_dec == 1) {
+				|| stop_dec == 0) {
 		/* Try to decode corresponding packets into AVFrames
 		 * */
 			if(split_layers)
@@ -336,18 +336,17 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
 				if (nbFrame == num_frames)// we already decoded all the frames we wanted to
 					stop = 1;
-			} else { //stop_dec test
-			    if (stop_dec > 0 && nbFrame)
+			}
+			if (stop_dec > 0 && nbFrame)
 			    stop = 1;
 
-			    if (stop_dec >= nb_pthreads && nbFrame == 0) {
-		            av_free_packet(&packet[0]);
-				    if(split_layers)
-		                av_free_packet(&packet[1]);
-				    fprintf(stderr, "Error when reading first frame\n");
-				    exit(1);
-			    }
-			}//End of stop_dec test
+		    if (stop_dec >= nb_pthreads && nbFrame == 0) {
+		        av_free_packet(&packet[0]);
+			    if(split_layers)
+		            av_free_packet(&packet[1]);
+			    fprintf(stderr, "Error when reading first frame\n");
+				exit(1);
+			}
 		}// End of got_picture
     } //End of main loop
 #if USE_SDL
