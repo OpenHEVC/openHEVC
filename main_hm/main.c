@@ -117,6 +117,10 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 	AVFormatContext *pFormatCtx[2];
 	AVPacket        packet[2];
 
+	int AVC_BL = h264_flags;
+    int split_layers = enh_filename != NULL;//fixme: we do not check the -e option here
+    int AVC_BL_only = AVC_BL && !split_layers;
+
 #if FRAME_CONCEALMENT
     FILE *fin_loss = NULL, *fin1 = NULL;
     Info info;
@@ -147,10 +151,11 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         printf("No input file specified.\nSpecify it with: -i <filename>\n");
         exit(1);
     }
-
-    if (h264_flags && (enh_filename == NULL)){
+    /* Call corresponding codecs context initialization
+     * */
+    if (AVC_BL_only){
         openHevcHandle = libOpenH264Init(nb_pthreads, thread_type/*, pFormatCtx*/);
-    } else if (h264_flags && enh_filename){
+    } else if (AVC_BL && split_layers){
     	printf("file name : %s\n", enhance_file);
     	openHevcHandle = libOpenShvcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     } else {
@@ -167,17 +172,17 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     av_register_all();
     pFormatCtx[0] = avformat_alloc_context();
 
-    if(h264_flags && enh_filename)
+    if(AVC_BL && split_layers)
     	pFormatCtx[1] = avformat_alloc_context();
 
     if(avformat_open_input(&pFormatCtx[0], filename, NULL, NULL)!=0) {
-    	printf("%s",filename);
-        exit(1); // Couldn't open file
+    	fprintf(stderr,"Could not open base layer input file : %s\n",filename);
+        exit(1);
     }
 
-    if(shvc_flags && avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
-        printf("%s",enh_filename);
-        exit(1); // Couldn't open file
+    if(split_layers && avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
+        fprintf(stderr,"Could not open enhanced layer input file : %s\n",enh_filename);
+        exit(1);
     }
 
     for(i=0; i<2 ; i++){
@@ -191,12 +196,11 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 		const size_t extra_size_alloc = pFormatCtx[i]->streams[video_stream_idx]->codec->extradata_size > 0 ?
 		(pFormatCtx[i]->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
 
-		if (extra_size_alloc)
-		{
+        if (extra_size_alloc){
 			libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx[i]->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
 		}
 
-		if(!shvc_flags){
+		if(!split_layers){ //We only need one AVFormatContext layer
 			break;
 		}
 
@@ -231,7 +235,8 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     fread ( filename0, strlen(filename), 1, fin_loss);
     fread ( filename0, strlen(filename), 1, fin1);
 #endif
-
+    /* Main loop
+     * */
     while(!stop) {
 #if FRAME_CONCEALMENT
         // Get the corresponding frame in the trace
@@ -252,50 +257,61 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 #else
             //got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
 #endif
-        //if (got_picture > 0) {
-		    if(enh_filename){
-			    if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0)
-			        stop_dec = 1;
-			}
-		    if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0)
-		        stop_dec = 1;
-			//printf("Stop dec : %d", stop_dec);
-			if ((packet[0].stream_index == video_stream_idx && (!enh_filename || packet[1].stream_index == video_stream_idx))
-					|| stop_dec == 1) {
-				if(enh_filename)
-					got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
-				else
-					got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
-				if (got_picture > 0) {
-					fflush(stdout);
-					libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
-					if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
-						width  = openHevcFrame.frameInfo.nWidth;
-						height = openHevcFrame.frameInfo.nHeight;
-						if (fout)
-						   fclose(fout);
-						if (output_file) {
-							sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
-							fout = fopen(output_file2, "wb");
-						}
+        /* Try to read packets corresponding to the frames to be decoded
+         * */
+		if(split_layers){
+			if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0)
+                stop_dec = 1;
+	    }
+	    if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0)
+	        stop_dec = 1;
+
+		if ((packet[0].stream_index == video_stream_idx && (!split_layers || packet[1].stream_index == video_stream_idx)) //
+				|| stop_dec == 1) {
+		/* Try to decode corresponding packets into AVFrames
+		 * */
+			if(split_layers)
+				got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
+			else
+				got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
+
+			/* Output and display handling
+			 * */
+			if (got_picture > 0) {
+				fflush(stdout);
+				/* Frames parameters update (intended for first computation or in case of frame resizing)
+				* */
+				libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
+
+				if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
+				    width  = openHevcFrame.frameInfo.nWidth;
+				    height = openHevcFrame.frameInfo.nHeight;
+
+					if (fout)
+					   fclose(fout);
+
+					if (output_file) {
+						sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
+						fout = fopen(output_file2, "wb");
+					}
 	#if USE_SDL
 						if (display_flags == ENABLE) {
 							Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
 						}
 	#endif
-						if (fout) {
-							libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
-							int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
-							if(openHevcFrameCpy.pvY) {
-								free(openHevcFrameCpy.pvY);
-								free(openHevcFrameCpy.pvU);
-								free(openHevcFrameCpy.pvV);
-							}
-							openHevcFrameCpy.pvY = calloc (openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, sizeof(unsigned char));
-							openHevcFrameCpy.pvU = calloc (openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
-							openHevcFrameCpy.pvV = calloc (openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
+					if (fout) {
+						libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
+						int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
+						if(openHevcFrameCpy.pvY) {
+							free(openHevcFrameCpy.pvY);
+							free(openHevcFrameCpy.pvU);
+							free(openHevcFrameCpy.pvV);
 						}
+						openHevcFrameCpy.pvY = calloc (openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, sizeof(unsigned char));
+						openHevcFrameCpy.pvU = calloc (openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
+						openHevcFrameCpy.pvV = calloc (openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
 					}
+				}// end of frame resizing
 	#if USE_SDL
 					if (frame_rate > 0) {
 						framerateDelay_SDL();
@@ -307,31 +323,33 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 								openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
 					}
 	#endif
-					if (fout) {
-						int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
-						libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
-						fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, fout);
-						fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
-						fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
-					}
-					nbFrame++;
-					if (nbFrame == num_frames)
-						stop = 1;
-				} else {
-					if (stop_dec > 0 && nbFrame)
-					stop = 1;
-					if (stop_dec >= nb_pthreads && nbFrame == 0) {
-				av_free_packet(&packet[0]);
-						if(shvc_flags){
-				   av_free_packet(&packet[1]);
-						}
-						fprintf(stderr, "Error when reading first frame\n");
-						exit(1);
-					}
+				/* Write output file if any
+				 * */
+				if (fout) {
+					int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
+					libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
+					fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, fout);
+					fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
+					fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
 				}
-			}
-        //}
-    }
+				nbFrame++;
+
+				if (nbFrame == num_frames)// we already decoded all the frames we wanted to
+					stop = 1;
+			} else { //stop_dec test
+			    if (stop_dec > 0 && nbFrame)
+			    stop = 1;
+
+			    if (stop_dec >= nb_pthreads && nbFrame == 0) {
+		            av_free_packet(&packet[0]);
+				    if(split_layers)
+		                av_free_packet(&packet[1]);
+				    fprintf(stderr, "Error when reading first frame\n");
+				    exit(1);
+			    }
+			}//End of stop_dec test
+		}// End of got_picture
+    } //End of main loop
 #if USE_SDL
     time = SDL_GetTime()/1000.0;
 #ifdef TIME2
@@ -346,11 +364,11 @@ static void video_decode_example(const char *filename,const char *enh_filename)
             free(openHevcFrameCpy.pvU);
             free(openHevcFrameCpy.pvV);
         }
-    }printf("Close context AVC\n");
+    }
+    printf("Close AVC context base layer \n");
     avformat_close_input(&pFormatCtx[0]);
-
-    if(shvc_flags){
-    	printf("Close context HEVC\n");
+    if(split_layers){
+    	printf("Close context second layer \n");
     	avformat_close_input(&pFormatCtx[1]);
     }
     libOpenHevcClose(openHevcHandle);
