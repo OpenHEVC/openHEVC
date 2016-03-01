@@ -2431,7 +2431,7 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
     src_U          += src_stridec;
     src_V          += src_stridec;
   }
-  for(j = 0 ; j < (width>>1) ; j++ ) {
+  for(j = 0 ; j <= (width>>1) ; j++ ) {
     src_U[j] = src_U[j-src_stridec];
     src_V[j] = src_V[j-src_stridec];
   }
