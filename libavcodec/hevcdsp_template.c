@@ -2120,8 +2120,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
 {
     int i,j, k;
     
-    int widthBL =  FrameBL->width;
-    int heightBL = FrameBL->height;
+    int widthBL =  FrameBL->coded_width;
+    int heightBL = FrameBL->coded_height;
     int strideBL = FrameBL->linesize[0]/sizeof(pixel);
     int widthEL =  FrameEL->coded_width - Enhscal->left_offset - Enhscal->right_offset;
     int heightEL = FrameEL->coded_height - Enhscal->top_offset - Enhscal->bottom_offset;
@@ -2173,8 +2173,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     widthEL   = FrameEL->coded_width;  //pcUsPic->getWidth ();
     heightEL  = FrameEL->coded_height; //pcUsPic->getHeight();
 
-    widthBL   = FrameBL->width;
-    heightBL  = FrameBL->height <= heightEL ? FrameBL->height:heightEL;  // min( FrameBL->height, heightEL);
+    widthBL   = FrameBL->coded_width;
+    heightBL  = FrameBL->coded_height <= heightEL ? FrameBL->coded_height:heightEL;  // min( FrameBL->coded_height, heightEL);
 
     for( i = 0; i < widthEL; i++ ) {
         int x = i; //av_clip_c(i, leftStartL, rightEndL);
@@ -2247,8 +2247,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                         dstY++;
                     }
     }
-    widthBL   = FrameBL->width;
-    heightBL  = FrameBL->height;
+    widthBL   = FrameBL->coded_width;
+    heightBL  = FrameBL->coded_height;
     
     widthEL   = FrameEL->coded_width - Enhscal->right_offset - Enhscal->left_offset;
     heightEL  = FrameEL->coded_height - Enhscal->top_offset - Enhscal->bottom_offset;
@@ -2263,8 +2263,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     strideEL  = FrameEL->linesize[1]/sizeof(pixel);
     widthEL   = FrameEL->coded_width >> 1;
     heightEL  = FrameEL->coded_height >> 1;
-    widthBL   = FrameBL->width >> 1;
-    heightBL  = FrameBL->height > heightEL ? FrameBL->height:heightEL;
+    widthBL   = FrameBL->coded_width >> 1;
+    heightBL  = FrameBL->coded_height > heightEL ? FrameBL->coded_height:heightEL;
     
     
     heightBL >>= 1;

@@ -731,15 +731,16 @@ int ff_hevc_frame_rps(HEVCContext *s)
             ret = av_malloc(cmpt*sizeof(int));
             for(i=0; i < cmpt; i++)
                 arg[i] = i;
-
-            //s->avctx->execute(s->avctx, (void *) scale_upsampled_mv_field, arg, ret, cmpt, sizeof(int));//fixme: AVC BL can't be upsampled
+            if(!s->vps->vps_nonHEVCBaseLayerFlag)
+                s->avctx->execute(s->avctx, (void *) scale_upsampled_mv_field, arg, ret, cmpt, sizeof(int));//fixme: AVC BL can't be upsampled
             av_free(arg);
             av_free(ret);
 #else
             set_refindex_data(s);
 #endif
         } else {
-            //init_upsampled_mv_fields(s);//fixme: AVC BL can't be upsampled
+        	if(!s->vps->vps_nonHEVCBaseLayerFlag)
+                init_upsampled_mv_fields(s);//fixme: AVC BL can't be upsampled
         }
     }
     /* clear the reference flags on all frames except the current one */
