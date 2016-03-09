@@ -4295,20 +4295,21 @@ attribute_deprecated int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame
  */
 int avcodec_default_get_buffer2(AVCodecContext *s, AVFrame *frame, int flags);
 
+
 //#if FF_API_EMU_EDGE
-///**
- //* Return the amount of padding in pixels which the get_buffer callback must
- //* provide around the edge of the image for codecs which do not have the
- //* CODEC_FLAG_EMU_EDGE flag.
- //*
- //* @return Required padding in pixels.
- //*
- //* @deprecated CODEC_FLAG_EMU_EDGE is deprecated, so this function is no longer
- //* needed
- //*/
-//attribute_deprecated
-//unsigned avcodec_get_edge_width(void);
-//#endif
+/**
+ * Return the amount of padding in pixels which the get_buffer callback must
+ * provide around the edge of the image for codecs which do not have the
+ * CODEC_FLAG_EMU_EDGE flag.
+ *
+ * @return Required padding in pixels.
+ *
+ * @deprecated CODEC_FLAG_EMU_EDGE is deprecated, so this function is no longer
+ * needed
+ */
+attribute_deprecated
+unsigned avcodec_get_edge_width(void);
+
 
 /**
  * Modify width and height values so that they will result in a memory

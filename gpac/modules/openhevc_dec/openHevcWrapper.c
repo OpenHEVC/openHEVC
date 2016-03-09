@@ -294,14 +294,20 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
                                                              &got_picture[i], &openHevcContext->avpkt);
 
         if(i+1 < openHevcContexts->nb_decoders)
+
         	//Fixme: This way of passing base layer frame reference to each other is bad and should be corrected
         	//We don't know what the first decoder could be doing with its BL_frame (modifying or deleting it)
         	//A cleanest way to do things would be to handle the h264 decoder from the first decoder, but the main issue
         	//would be finding a way to keep giving AVPacket, to h264 when required until the BL_frames required by HEVC
         	//are decoded and available.
            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
+
         if(i==0)
             fprintf(stderr, "H264 POC : %d\n",((H264Picture *)openHevcContexts->wraper[i]->c->BL_frame)->frame_num );
+
+        //if(i==0)
+            //fprintf(stderr, "H264 POC : %d\n",((H264Picture *)openHevcContexts->wraper[i]->c->BL_frame)->frame_num );
+
     }
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");

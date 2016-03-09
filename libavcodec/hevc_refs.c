@@ -455,21 +455,24 @@ static void set_refindex_data(HEVCContext *s){
     int list, i;
     HEVCFrame  *refBL, *refEL, *ref;
     int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
-    refBL = s->BL_frame;
+    //if(!s->vps->vps_nonHEVCBaseLayerFlag){
+        refBL = s->BL_frame;
 
-    init_il_slice_rpl(s);
-    refEL = s->inter_layer_ref;
-    for( list=0; list < nb_list; list++) {
-        refEL->refPicList[s->slice_idx][list].nb_refs = 0;
-        for(i=0; refBL->refPicList[s->slice_idx] && i< refBL->refPicList[s->slice_idx][list].nb_refs; i++) {
-            ref = find_ref_idx(s, refBL->refPicList[s->slice_idx][list].list[i]);
-            if(ref) {
-                refEL->refPicList[s->slice_idx][list].list[refEL->refPicList[s->slice_idx][list].nb_refs]           = refBL->refPicList[s->slice_idx][list].list[i];
-                refEL->refPicList[s->slice_idx][list].ref[refEL->refPicList[s->slice_idx][list].nb_refs]            = ref;
-                refEL->refPicList[s->slice_idx][list].isLongTerm[refEL->refPicList[s->slice_idx][list].nb_refs++]   = refBL->refPicList[s->slice_idx][list].isLongTerm[i];
+        init_il_slice_rpl(s);
+        refEL = s->inter_layer_ref;
+        for( list=0; list < nb_list; list++) {
+            refEL->refPicList[s->slice_idx][list].nb_refs = 0;
+            for(i=0; refBL->refPicList[s->slice_idx] && i< refBL->refPicList[s->slice_idx][list].nb_refs; i++) {
+                //if(!s->vps->vps_nonHEVCBaseLayerFlag)
+            	   ref = find_ref_idx(s, refBL->refPicList[s->slice_idx][list].list[i]);
+                if(ref) {
+                    refEL->refPicList[s->slice_idx][list].list[refEL->refPicList[s->slice_idx][list].nb_refs]           = refBL->refPicList[s->slice_idx][list].list[i];
+                    refEL->refPicList[s->slice_idx][list].ref[refEL->refPicList[s->slice_idx][list].nb_refs]            = ref;
+                    refEL->refPicList[s->slice_idx][list].isLongTerm[refEL->refPicList[s->slice_idx][list].nb_refs++]   = refBL->refPicList[s->slice_idx][list].isLongTerm[i];
+                }
             }
         }
-    }
+    //}
 }
 #else
 static void scale_upsampled_mv_field(AVCodecContext *avctxt, void *input_ctb_row) {
@@ -736,7 +739,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
             av_free(arg);
             av_free(ret);
 #else
-            set_refindex_data(s);
+            if (!s->vps->vps_nonHEVCBaseLayerFlag)
+                set_refindex_data(s);
 #endif
         } else {
         	if(!s->vps->vps_nonHEVCBaseLayerFlag)

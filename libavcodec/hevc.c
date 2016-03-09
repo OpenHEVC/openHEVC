@@ -100,6 +100,11 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->buffer_frame[1]);
     av_freep(&s->buffer_frame[2]);
 #else
+//    if (s->vps->vps_nonHEVCBaseLayerFlag){
+//    	av_freep(&s->buffer_frame[0]);
+//    	av_freep(&s->buffer_frame[1]);
+//        av_freep(&s->buffer_frame[2]);
+//    }
     av_freep(&s->is_upsampled);
 #endif
 #endif    
@@ -176,6 +181,11 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
         s->buffer_frame[1] = av_malloc((pic_size>>2)*sizeof(short));
         s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
 #else
+//        if (s->vps->vps_nonHEVCBaseLayerFlag){
+//        	s->buffer_frame[0] = av_malloc(pic_size*sizeof(short));
+//        	s->buffer_frame[1] = av_malloc((pic_size>>2)*sizeof(short));
+//        	s->buffer_frame[2] = av_malloc((pic_size>>2)*sizeof(short));
+//        }
         s->is_upsampled = av_malloc(sps->ctb_width * sps->ctb_height);
 #endif
 #endif
@@ -547,7 +557,7 @@ int set_el_parameter(HEVCContext *s) {
     s->up_filter_inf.scaleXCr = s->up_filter_inf.scaleXLum;
     s->up_filter_inf.scaleYCr = s->up_filter_inf.scaleYLum;
     for(i = 0; i <= s->nuh_layer_id; i++) {
-    	//hack for avc base_layer // we suppose bitdepth = 8
+    	//fixme: hack for avc base_layer // we suppose bitdepth = 8
     	if(i==0 && s->vps->vps_nonHEVCBaseLayerFlag){
     		s->sh.Bit_Depth[i][CHANNEL_TYPE_LUMA  ] = 8;
     	    s->sh.Bit_Depth[i][CHANNEL_TYPE_CHROMA] = 8;
@@ -3233,6 +3243,8 @@ static int hevc_frame_start(HEVCContext *s)
         }
 #endif
     }
+    //if (s->vps->vps_nonHEVCBaseLayerFlag /*careful only in monothread*/)
+               // s->hevcdsp.upsample_base_layer_frame(s->EL_frame, ((H264Picture *)s->BL_frame)->f, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
 
     if (ret < 0)

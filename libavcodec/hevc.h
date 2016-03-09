@@ -88,7 +88,7 @@
 #define QPEL_EXTRA_BEFORE 3
 #define QPEL_EXTRA_AFTER  4
 #define QPEL_EXTRA        7
-#define ACTIVE_PU_UPSAMPLING     0
+#define ACTIVE_PU_UPSAMPLING     1
 #define ACTIVE_BOTH_FRAME_AND_PU 0
 
 #define EDGE_EMU_BUFFER_STRIDE 80
@@ -1193,6 +1193,7 @@ typedef struct HEVCLocalContext {
     DECLARE_ALIGNED(32, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
 
     DECLARE_ALIGNED(32, int16_t, edge_emu_buffer_up_v[MAX_EDGE_BUFFER_SIZE]);
+    DECLARE_ALIGNED(32, int16_t, edge_emu_buffer_up_h[MAX_EDGE_BUFFER_SIZE]);
 
     DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_y[MAX_EDGE_BUFFER_SIZE]);
     DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_u[MAX_EDGE_BUFFER_SIZE>>2]);
