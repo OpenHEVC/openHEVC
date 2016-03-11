@@ -79,7 +79,7 @@ typedef struct VideoDSPContext {
 
     int (*emulated_edge_up_h)(uint8_t *dst, uint8_t *src, ptrdiff_t linesize,
                               const struct HEVCWindow *Enhscal,
-                              int block_w, int block_h, int src_x, int wBL, int shift);
+                              int block_w, int block_h, int src_x, int wBL, int edge_top, int shift);
     int (*emulated_edge_up_cgs_h)(uint16_t *src, ptrdiff_t linesize,
                               const struct HEVCWindow *Enhscal,
                               int block_w, int block_h, int src_x, int wBL, int shift);

@@ -484,7 +484,7 @@ static int getBitDepth(HEVCContext *s, enum ChannelType channel, int layerId)
 
 int set_el_parameter(HEVCContext *s) {
     int ret = 0, i;
-    int phaseHorChroma = 0, phaseVerChroma;
+    int phaseHorChroma = 0, phaseVerChroma=0;
 
     int heightBL, widthBL, heightEL, widthEL;
 //    const int phaseXC = 0;
@@ -521,7 +521,7 @@ int set_el_parameter(HEVCContext *s) {
 
      heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
      widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
-    phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;
+    phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;//fixme +4 or -4??
 #if !ACTIVE_PU_UPSAMPLING //fixme : was this intended to avc base layer??
     if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
       av_frame_unref(s->Ref_color_mapped_frame);
