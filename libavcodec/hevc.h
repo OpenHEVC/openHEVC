@@ -916,6 +916,7 @@ typedef struct HEVCPPS {
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
     int *tile_id;           ///< TileId
+    int *tile_width;           ///< TileWidth
     int *tile_pos_rs;       ///< TilePosRS
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
@@ -1207,6 +1208,8 @@ typedef struct HEVCLocalContext {
     /* properties of the boundary of the current CTB for the purposes
      * of the deblocking filter */
     int boundary_flags;
+
+    int ctb_tile_rs;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {

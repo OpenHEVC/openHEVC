@@ -500,9 +500,9 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
 {
     if (s->pps->entropy_coding_sync_enabled_flag &&
-        (ctb_addr_ts % s->sps->ctb_width == 2 ||
-         (s->sps->ctb_width == 2 &&
-          ctb_addr_ts % s->sps->ctb_width == 0))) {
+        (s->HEVClc->ctb_tile_rs % s->pps->tile_width[ctb_addr_ts-1] == 2 ||
+         (s->pps->tile_width[ctb_addr_ts-1] == 2 &&
+          s->HEVClc->ctb_tile_rs % s->pps->tile_width[ctb_addr_ts-1] == 0))) {
         memcpy(s->cabac_state, s->HEVClc->cabac_state, HEVC_CONTEXTS);
     }
 }
@@ -562,8 +562,8 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
 
         if (!s->sh.first_slice_in_pic_flag &&
             s->pps->entropy_coding_sync_enabled_flag) {
-            if (ctb_addr_ts % s->sps->ctb_width == 0) {
-                if (s->sps->ctb_width == 1)
+             if (s->HEVClc->ctb_tile_rs % s->pps->tile_width[ctb_addr_ts] == 0) {
+                if (s->pps->tile_width[ctb_addr_ts] == 1)
                     cabac_init_state(s);
                 else if (s->sh.dependent_slice_segment_flag == 1)
                     load_states(s);
@@ -572,6 +572,8 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
     } else {
         if (s->pps->tiles_enabled_flag &&
             s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[ctb_addr_ts - 1]) {
+
+            s->HEVClc->ctb_tile_rs = 0;
             if (s->threads_number == 1)
                 cabac_reinit(s->HEVClc);
             else
@@ -579,17 +581,22 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             cabac_init_state(s);
         }
         if (s->pps->entropy_coding_sync_enabled_flag) {
-            if (ctb_addr_ts % s->sps->ctb_width == 0) {
-                get_cabac_terminate(&s->HEVClc->cc);
-                if (s->threads_number == 1)
-                    cabac_reinit(s->HEVClc);
-                else
-                    cabac_init_decoder(s);
+            if (s->HEVClc->ctb_tile_rs % s->pps->tile_width[ctb_addr_ts] == 0) {
+                if (!s->pps->tiles_enabled_flag ||
+                    (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[ctb_addr_ts - 1])) {
+                    get_cabac_terminate(&s->HEVClc->cc);
 
-                if (s->sps->ctb_width == 1)
-                    cabac_init_state(s);
-                else
-                    load_states(s);
+                    if (s->threads_number == 1)
+                        cabac_reinit(s->HEVClc);
+                    else
+                        cabac_init_decoder(s);
+
+
+                    if (s->pps->tile_width[ctb_addr_ts] == 1)
+                        cabac_init_state(s);
+                    else
+                        load_states(s);
+                }
             }
         }
     }
