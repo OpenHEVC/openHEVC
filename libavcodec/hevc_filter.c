@@ -1800,7 +1800,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     }
 
     int bl_width  =  bl_frame->coded_width  >>1;
-    int bl_height =  bl_frame->coded_height >>1 > el_height ? bl_frame->coded_height>>1:el_height;
+    int bl_height =  bl_frame->coded_height >>1;// > el_height ? bl_frame->coded_height>>1:el_height;
     int bl_stride =  bl_frame->linesize[1];
 
     int ret, cr, bl_edge_top0;
@@ -1823,7 +1823,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
         int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) /*-4*/ >> 4;
 
         int bPbW = 1+((( (x0 + ctb_size - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXCr) >> 12) >> 4) - bl_x;
-        int bPbH = 1+((( (y0 + ctb_size - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) /*-4*/ >> 4) - bl_y;
+        int bPbH = 2+((( (y0 + ctb_size - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) /*-4*/ >> 4) - bl_y;
 //        int bPbW = (((ctb_size /*+1*/) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)  >> 4;    /*    FIXME: check if this method is correct  */
 //        int bPbH = (((ctb_size /*+2*/) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYLum) >> 12)  >> 4;
 //
@@ -1838,8 +1838,8 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
 #endif
         int ref_layer_id = s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
 
-        bPbW = bl_x+bPbW > bl_width  ? bl_width - bl_x:bPbW;
-        bPbH = bl_y+bPbH > bl_height ? bl_height- bl_y:bPbH;
+        bPbW = bl_x+bPbW > bl_width  ? bl_width  - bl_x:bPbW;
+        bPbH = bl_y+bPbH > bl_height ? bl_height - bl_y:bPbH;
 
         bl_edge_top0 = bl_y < 0 ? bl_y:0;      // This for -4 the top can go in negative
 #if 0
@@ -1886,11 +1886,6 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
             	src= tmp1;
             	bl_stride = MAX_EDGE_BUFFER_STRIDE;
             }
-            //if(ret==4){
-            //	src= tmp1+= (MAX_EDGE_CR-1);
-            //	bl_stride = MAX_EDGE_BUFFER_STRIDE;
-            //}
-
 
             tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE_CR - 1) * MAX_EDGE_BUFFER_STRIDE);
 
