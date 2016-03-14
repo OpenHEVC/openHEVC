@@ -1006,7 +1006,7 @@ else
         sh->num_entry_point_offsets = get_ue_golomb_long(gb);
         print_cabac("num_entry_point_offsets", sh->num_entry_point_offsets);
         if(s->pps->entropy_coding_sync_enabled_flag) {
-            if(sh->num_entry_point_offsets > s->sps->ctb_height || sh->num_entry_point_offsets < 0) {
+            if(sh->num_entry_point_offsets < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                    "The number of entries %d is higher than the number of CTB rows %d \n",
                    sh->num_entry_point_offsets,
@@ -2650,6 +2650,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         }
 
         ctb_addr_ts++;
+        s->HEVClc->ctb_tile_rs++;
         ff_hevc_save_states(s, ctb_addr_ts);
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
     }
@@ -2939,7 +2940,9 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         ff_reset_entries(s->avctx);
     }
     s->data = nal;
+    s->HEVClc->ctb_tile_rs = 0;
     for (i = 1; i < s->threads_number; i++) {
+        s->sList[i]->HEVClc->ctb_tile_rs = 0;
         s->sList[i]->HEVClc->first_qp_group = 1;
         s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
         memcpy(s->sList[i], s, sizeof(HEVCContext));

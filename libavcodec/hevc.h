@@ -837,6 +837,7 @@ typedef struct HEVCPPS {
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
     int *tile_id;           ///< TileId
+    int *tile_width;           ///< TileWidth
     int *tile_pos_rs;       ///< TilePosRS
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
@@ -1093,6 +1094,7 @@ typedef struct HEVCLocalContext {
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
 
+    int ctb_tile_rs;
     
 } HEVCLocalContext;
 
