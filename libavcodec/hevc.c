@@ -498,8 +498,8 @@ int set_el_parameter(HEVCContext *s) {
     	//NOTE fixme: it would be better to check s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1] type
         //s->BL_frame = av_mallocz(sizeof(HEVCFrame)); //BL-Frame is already allocated
     	HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
-        heightBL = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples- base_layer_window.bottom_offset - base_layer_window.top_offset;
-        widthBL  =  s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - base_layer_window.left_offset   - base_layer_window.right_offset;
+        heightBL = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - base_layer_window.bottom_offset - base_layer_window.top_offset;
+        widthBL  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  - base_layer_window.left_offset   - base_layer_window.right_offset;
     } else {
           HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
 
@@ -3206,7 +3206,7 @@ static int hevc_frame_start(HEVCContext *s)
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
        if (s->el_decoder_el_exist/*||s->vps->vps_nonHEVCBaseLayerFlag*/){
-            ff_thread_await_il_progress(s->avctx, s->poc_id, &((HEVCFrame*)s->BL_frame)->tf);//fixme AVC base
+            ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);//fixme AVC base
             //ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);//fixme AVC base
         } else if(s->vps->vps_nonHEVCBaseLayerFlag && s->vps->vps_base_layer_available_flag){
 //        	ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
