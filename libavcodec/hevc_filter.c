@@ -1695,8 +1695,8 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
     HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
-    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples;// - base_layer_window.bottom_offset - base_layer_window.top_offset;
-    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples;//  - base_layer_window.left_offset   - base_layer_window.right_offset;
+    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples;
+    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples;
     //int bl_width  =  bl_frame->coded_width;
     //int bl_height =  bl_frame->coded_height;
     int bl_stride =  bl_frame->linesize[0];
@@ -1729,9 +1729,6 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
 #endif
         int ref_layer_id = s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
         int16_t *tmp0;
-
-        //ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size;
-        //ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
 
 #if 0
         bl_edge_right  =  (MAX_EDGE > (bl_width  - bl_x - bPbW))  ? bl_width  - bl_x - bPbW: MAX_EDGE;
@@ -1770,8 +1767,6 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
         s->hevcdsp.upsample_filter_block_luma_h[s->up_filter_inf.idx](tmp0, MAX_EDGE_BUFFER_STRIDE, src, bl_stride, x0, bl_x,
                                                                       ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
                                                                       &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
-        //if(ret==1)
-        //tmp0 += ((MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE);
 
         ret = s->vdsp.emulated_edge_up_v(tmp0, MAX_EDGE_BUFFER_STRIDE, &s->sps->scaled_ref_layer_window[ref_layer_id],
         		                         ePbW, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top ,
@@ -1801,10 +1796,8 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
     HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
-    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples >>1; // - base_layer_window.bottom_offset - base_layer_window.top_offset;
-    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  >>1;// - base_layer_window.left_offset   - base_layer_window.right_offset;
-    //int bl_width  = (s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples>>1 - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset);
-    //int bl_height = (s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples>>1  - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset);
+    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples >>1;//fixme: non 420 formats
+    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  >>1;
     //int bl_width  =  bl_frame->coded_width  >>1;
     //int bl_height =  bl_frame->coded_height >>1;// > el_height ? bl_frame->coded_height>>1:el_height;
     int bl_stride =  bl_frame->linesize[1];
@@ -1826,15 +1819,11 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     } else {
         int bl_edge_right, bl_edge_bottom;
         int bl_x = (( (x0  - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXCr) >> 12) >> 4;
-        int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) /*-4*/ >> 4;
+        int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) >> 4;
 
         int bPbW = 1+((( (x0 + ctb_size - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXCr) >> 12) >> 4) - bl_x;
-        int bPbH = 2+((( (y0 + ctb_size - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) /*-4*/ >> 4) - bl_y;
-//        int bPbW = (((ctb_size /*+1*/) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)  >> 4;    /*    FIXME: check if this method is correct  */
-//        int bPbH = (((ctb_size /*+2*/) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYLum) >> 12)  >> 4;
-//
-//        int bl_x = (((  x0 - (s->sps->pic_conf_win.left_offset>>1)) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)      >> 4;
-//        int bl_y = (((( y0 - (s->sps->pic_conf_win.top_offset >>1)) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYLum) >> 12) ) -4 >> 4;//fixme : no -4 ???
+        int bPbH = 2+((( (y0 + ctb_size - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) >> 4) - bl_y;
+
 #if 0
         int bl_edge_left  = (MAX_EDGE_CR - 1 - bl_x) > 0 ?  0 : MAX_EDGE_CR - 1;
         int bl_edge_top   = (MAX_EDGE_CR - 1 - bl_y) > 0 ?  0 : MAX_EDGE_CR - 1;
@@ -1855,20 +1844,12 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
         bl_edge_right  = bl_width  <=  bl_x + bPbW ? 0:MAX_EDGE_CR;
         bl_edge_bottom = bl_height <=  bl_y + bPbH ? 0:MAX_EDGE_CR;
 #endif
-//        if(bl_x+bPbW > bl_width)
-//            bPbW = bl_width - bl_x;
-//
-//        if(bl_y+bPbH > bl_height)
-//            bPbH = bl_height - bl_y;
 
         for (cr = 1; cr <= 2; cr++) {
 
         	bl_stride = bl_frame->linesize[1];
 
         	tmp1=s->HEVClc->edge_emu_buffer_up_h + ((MAX_EDGE_CR - 1)) + MAX_EDGE_BUFFER_STRIDE;
-
-//        	if(s->vps->vps_nonHEVCBaseLayerFlag)
-//        		bl_y = bl_y >= 0 ? bl_y :0;
 
             src = bl_frame->data[cr] + (bl_y - bl_edge_top0 - bl_edge_top) * bl_stride + ( bl_x - bl_edge_left);
 
