@@ -497,15 +497,20 @@ int set_el_parameter(HEVCContext *s) {
     if(bl_avc){ // We consider BL is AVC
     	//NOTE fixme: it would be better to check s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1] type
         //s->BL_frame = av_mallocz(sizeof(HEVCFrame)); //BL-Frame is already allocated
-      heightBL    = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset;
-      widthBL     = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset;
+    	HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
+        //heightBL    = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset;
+        //widthBL     = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset;
+        heightBL = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples- base_layer_window.bottom_offset - base_layer_window.top_offset;
+        widthBL  =  s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - base_layer_window.left_offset   - base_layer_window.right_offset;
     } else {
           HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
 
           if(bl_sps) {
               HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
-              heightBL = bl_sps->height - base_layer_window.bottom_offset - base_layer_window.top_offset;
-              widthBL  = bl_sps->width  - base_layer_window.left_offset   - base_layer_window.right_offset;
+              heightBL = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples/*bl_sps->height*/ - base_layer_window.bottom_offset - base_layer_window.top_offset;
+              widthBL  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples/*bl_sps->width*/  - base_layer_window.left_offset   - base_layer_window.right_offset;
+                //heightBL = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset;
+                //widthBL  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset;
           } else {
               av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
               ret = AVERROR(ENOMEM);
@@ -518,7 +523,6 @@ int set_el_parameter(HEVCContext *s) {
         goto fail;
      }
      scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
-
      heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
      widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
     phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;//fixme +4 or -4??

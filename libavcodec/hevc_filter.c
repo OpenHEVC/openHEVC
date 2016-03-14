@@ -1694,9 +1694,11 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
     } else {
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
-
-    int bl_width  =  bl_frame->coded_width;
-    int bl_height =  bl_frame->coded_height;
+    HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
+    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples;// - base_layer_window.bottom_offset - base_layer_window.top_offset;
+    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples;//  - base_layer_window.left_offset   - base_layer_window.right_offset;
+    //int bl_width  =  bl_frame->coded_width;
+    //int bl_height =  bl_frame->coded_height;
     int bl_stride =  bl_frame->linesize[0];
 
     int el_stride =  ref0->frame->linesize[0]/sizeof(pixel);
@@ -1715,7 +1717,7 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
     	int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12) >> 4;
 
     	int bPbW = 1+((( (x0 + ctb_size - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4) - bl_x;
-        int bPbH = 1+((( (y0 + ctb_size - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12) >> 4) - bl_y;
+        int bPbH = 2+((( (y0 + ctb_size - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12) >> 4) - bl_y;
 
 
 #if 0
@@ -1798,9 +1800,13 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     }else {
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
-
-    int bl_width  =  bl_frame->coded_width  >>1;
-    int bl_height =  bl_frame->coded_height >>1;// > el_height ? bl_frame->coded_height>>1:el_height;
+    HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
+    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples >>1; // - base_layer_window.bottom_offset - base_layer_window.top_offset;
+    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  >>1;// - base_layer_window.left_offset   - base_layer_window.right_offset;
+    //int bl_width  = (s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples>>1 - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_left_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_right_offset);
+    //int bl_height = (s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples>>1  - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_top_offset - s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].conf_win_vps_bottom_offset);
+    //int bl_width  =  bl_frame->coded_width  >>1;
+    //int bl_height =  bl_frame->coded_height >>1;// > el_height ? bl_frame->coded_height>>1:el_height;
     int bl_stride =  bl_frame->linesize[1];
 
     int ret, cr, bl_edge_top0;
