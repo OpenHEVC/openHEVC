@@ -50,7 +50,7 @@ static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
 static void display_md5(int poc, uint8_t md5[3][16], int chroma_idc);
 static void printf_ref_pic_list(HEVCContext *s);
 
-extern int shvc_flags;
+//extern int shvc_flags;
 
 /**
  * NOTE: Each function hls_foo correspond to the function foo in the

@@ -30,7 +30,7 @@
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
 
-extern int shvc_flags;
+//extern int shvc_flags;
 
 typedef struct HEVCParseContext {
     HEVCContext  h;
@@ -62,14 +62,14 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
         // Beginning of access unit
         if ((nut >= NAL_VPS && nut <= NAL_AUD) || nut == NAL_SEI_PREFIX ||
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
-            if (pc->frame_start_found && (!shvc_flags ? !layer_id : layer_id)) {
+            if (pc->frame_start_found && (/*!shvc_flags ?*/ !layer_id /*: layer_id*/)) {
                 pc->frame_start_found = 0;
                 return i - 5;
             }
         } else if (nut <= NAL_RASL_R ||
                    (nut >= NAL_BLA_W_LP && nut <= NAL_CRA_NUT)) {
             int first_slice_segment_in_pic_flag = buf[i] >> 7;
-            if (first_slice_segment_in_pic_flag && (!shvc_flags ? !layer_id : layer_id)) {
+            if (first_slice_segment_in_pic_flag && (/*!shvc_flags ?*/ !layer_id /*: layer_id*/)) {
                 if (!pc->frame_start_found) {
                     pc->frame_start_found = 1;
                 } else { // First slice of next frame found
