@@ -3039,13 +3039,9 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         ff_reset_entries(s->avctx);
     }
     s->data = nal;
-    if (s->sh.first_slice_in_pic_flag){
-        s->HEVClc->ctb_tile_rs = 0;
-    }
+    s->HEVClc->ctb_tile_rs = 0;
     for (i = 1; i < s->threads_number; i++) {
-        if (s->sh.first_slice_in_pic_flag){
-            s->sList[i]->HEVClc->ctb_tile_rs = 0;
-        }
+        s->sList[i]->HEVClc->ctb_tile_rs = 0;
         s->sList[i]->HEVClc->first_qp_group = 1;
         s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
         memcpy(s->sList[i], s, sizeof(HEVCContext));
