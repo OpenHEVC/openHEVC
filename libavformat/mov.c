@@ -1052,7 +1052,7 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
     if (st->codec->codec_id != codec_id)
         return 0; /* unexpected codec_id - don't mess with extradata */
 
-    size= (uint64_t)st->codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
+    size= (uint64_t)st->codec->extradata_size + atom.size + 8 + AV_INPUT_BUFFER_PADDING_SIZE;
     if (size > INT_MAX || (uint64_t)atom.size > INT_MAX)
         return AVERROR_INVALIDDATA;
     if ((err = av_reallocp(&st->codec->extradata, size)) < 0) {
@@ -1060,7 +1060,7 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
         return err;
     }
     buf = st->codec->extradata + st->codec->extradata_size;
-    st->codec->extradata_size= size - FF_INPUT_BUFFER_PADDING_SIZE;
+    st->codec->extradata_size= size - AV_INPUT_BUFFER_PADDING_SIZE;
     AV_WB32(       buf    , atom.size + 8);
     AV_WL32(       buf + 4, atom.type);
     err = avio_read(pb, buf + 8, atom.size);
@@ -1070,7 +1070,7 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
         av_log(c->fc, AV_LOG_WARNING, "truncated extradata\n");
         st->codec->extradata_size -= atom.size - err;
     }
-    memset(buf + 8 + err, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(buf + 8 + err, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     return 0;
 }
 
@@ -1604,7 +1604,7 @@ static int mov_rewrite_dvd_sub_extradata(AVStream *st)
 
     av_freep(&st->codec->extradata);
     st->codec->extradata_size = 0;
-    st->codec->extradata = av_mallocz(strlen(buf) + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(strlen(buf) + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = strlen(buf);
@@ -1626,7 +1626,7 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
             val = AV_RB32(st->codec->extradata + 4);
             tmcd_ctx->tmcd_flags = val;
             if (val & 1)
-                st->codec->flags2 |= CODEC_FLAG2_DROP_FRAME_TIMECODE;
+                st->codec->flags2 |= AV_CODEC_FLAG2_DROP_FRAME_TIMECODE;
             st->codec->time_base.den = st->codec->extradata[16]; /* number of frame */
             st->codec->time_base.num = 1;
             if (size > 30) {
@@ -2021,7 +2021,7 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     num_bytes = (entries*field_size+4)>>3;
 
-    buf = av_malloc(num_bytes+FF_INPUT_BUFFER_PADDING_SIZE);
+    buf = av_malloc(num_bytes+AV_INPUT_BUFFER_PADDING_SIZE);
     if (!buf) {
         av_freep(&sc->sample_sizes);
         return AVERROR(ENOMEM);

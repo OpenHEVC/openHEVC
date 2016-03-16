@@ -1805,11 +1805,11 @@ static void FUNC(upsample_filter_block_luma_h_all)( int16_t *_dst, ptrdiff_t _ds
         refPos   = (refPos16 >> 4) - x_BL;
         dst_tmp  = _dst  + i;
         src_tmp  = src   + refPos;
-        //srcY1 = buffer_frame + y_BL*widthEL+ x_EL+i;
+       // srcY1 = buffer_frame + y_BL*widthEL+ x_EL+i;
         for( j = 0; j < block_h ; j++ ) {
             *dst_tmp  = (LumHor_FILTER_Block(src_tmp, coeff)>>shift);
-            /*if(*srcY1 != *dst_tmp)
-                printf("--- %d %d %d %d %d %d %d %d %d \n",refPos, i, j, *srcY1, *dst_tmp, src_tmp[-3], src_tmp[-2], src_tmp[-1], src_tmp[0]);*/
+            //if(*srcY1 != *dst_tmp)
+                //printf("--- %d %d %d %d %d %d %d %d %d \n",refPos, i, j, *srcY1, *dst_tmp, src_tmp[-3], src_tmp[-2], src_tmp[-1], src_tmp[0]);
             src_tmp  += _srcstride;
             dst_tmp  += _dststride;
             //srcY1    += widthEL;
@@ -2174,7 +2174,7 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     heightEL  = FrameEL->coded_height; //pcUsPic->getHeight();
 
     widthBL   = FrameBL->coded_width;
-    heightBL  = FrameBL->coded_height <= heightEL ? FrameBL->coded_height:heightEL;  // min( FrameBL->height, heightEL);
+    heightBL  = FrameBL->coded_height <= heightEL ? FrameBL->coded_height:heightEL;  // min( FrameBL->coded_height, heightEL);
 
     for( i = 0; i < widthEL; i++ ) {
         int x = i; //av_clip_c(i, leftStartL, rightEndL);

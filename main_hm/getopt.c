@@ -61,6 +61,8 @@ void print_usage() {
     printf("     -l <Quality layer id> \n");
     printf("     -s <num> Stop after num frames \n");
     printf("     -r <num> Frame rate (FPS) \n");
+    printf("     -v : input is a h264 bitstream \n");
+    printf("     -e : <enhanced_layer> when using AVC base layer\n");
 }
 
 /*

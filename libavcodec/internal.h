@@ -33,6 +33,32 @@
 #include "avcodec.h"
 #include "config.h"
 
+/**
+ * The codec does not modify any global variables in the init function,
+ * allowing to call the init function without locking any global mutexes.
+ */
+#define FF_CODEC_CAP_INIT_THREADSAFE        (1 << 0)
+/**
+ * The codec allows calling the close function for deallocation even if
+ * the init function returned a failure. Without this capability flag, a
+ * codec does such cleanup internally when returning failures from the
+ * init function and does not expect the close function to be called at
+ * all.
+ */
+#define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
+
+
+#ifdef TRACE
+#   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
+#else
+#   define ff_tlog(ctx, ...) while(0)
+#endif
+
+
+#if !FF_API_QUANT_BIAS
+#define FF_DEFAULT_QUANT_BIAS 999999
+#endif
+
 #define FF_SANE_NB_CHANNELS 63U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
@@ -170,7 +196,7 @@ int avpriv_unlock_avformat(void);
  * This value was chosen such that every bit of the buffer is
  * addressable by a 32-bit signed integer as used by get_bits.
  */
-#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - FF_INPUT_BUFFER_PADDING_SIZE)
+#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - AV_INPUT_BUFFER_PADDING_SIZE)
 
 /**
  * Check AVPacket size and/or allocate data.
@@ -187,7 +213,16 @@ int avpriv_unlock_avformat(void);
  *                avpkt->size is set to the specified size.
  *                All other AVPacket fields will be reset with av_init_packet().
  * @param size    the minimum required packet size
- * @return        0 on success, negative error code on failure
+ * @param min_size This is a hint to the allocation algorithm, which indicates
+ *                to what minimal size the caller might later shrink the packet
+ *                to. Encoders often allocate packets which are larger than the
+ *                amount of data that is written into them as the exact amount is
+ *                not known at the time of allocation. min_size represents the
+ *                size a packet might be shrunk to by the caller. Can be set to
+ *                0. setting this roughly correctly allows the allocation code
+ *                to choose between several allocation strategies to improve
+ *                speed slightly.
+ * @return        non negative on success, negative error code on failure
  */
 int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
 

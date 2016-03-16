@@ -455,21 +455,24 @@ static void set_refindex_data(HEVCContext *s){
     int list, i;
     HEVCFrame  *refBL, *refEL, *ref;
     int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
-    refBL = s->BL_frame;
+    //if(!s->vps->vps_nonHEVCBaseLayerFlag){
+        refBL = s->BL_frame;
 
-    init_il_slice_rpl(s);
-    refEL = s->inter_layer_ref;
-    for( list=0; list < nb_list; list++) {
-        refEL->refPicList[s->slice_idx][list].nb_refs = 0;
-        for(i=0; refBL->refPicList[s->slice_idx] && i< refBL->refPicList[s->slice_idx][list].nb_refs; i++) {
-            ref = find_ref_idx(s, refBL->refPicList[s->slice_idx][list].list[i]);
-            if(ref) {
-                refEL->refPicList[s->slice_idx][list].list[refEL->refPicList[s->slice_idx][list].nb_refs]           = refBL->refPicList[s->slice_idx][list].list[i];
-                refEL->refPicList[s->slice_idx][list].ref[refEL->refPicList[s->slice_idx][list].nb_refs]            = ref;
-                refEL->refPicList[s->slice_idx][list].isLongTerm[refEL->refPicList[s->slice_idx][list].nb_refs++]   = refBL->refPicList[s->slice_idx][list].isLongTerm[i];
+        init_il_slice_rpl(s);
+        refEL = s->inter_layer_ref;
+        for( list=0; list < nb_list; list++) {
+            refEL->refPicList[s->slice_idx][list].nb_refs = 0;
+            for(i=0; refBL->refPicList[s->slice_idx] && i< refBL->refPicList[s->slice_idx][list].nb_refs; i++) {
+                //if(!s->vps->vps_nonHEVCBaseLayerFlag)
+            	   ref = find_ref_idx(s, refBL->refPicList[s->slice_idx][list].list[i]);
+                if(ref) {
+                    refEL->refPicList[s->slice_idx][list].list[refEL->refPicList[s->slice_idx][list].nb_refs]           = refBL->refPicList[s->slice_idx][list].list[i];
+                    refEL->refPicList[s->slice_idx][list].ref[refEL->refPicList[s->slice_idx][list].nb_refs]            = ref;
+                    refEL->refPicList[s->slice_idx][list].isLongTerm[refEL->refPicList[s->slice_idx][list].nb_refs++]   = refBL->refPicList[s->slice_idx][list].isLongTerm[i];
+                }
             }
         }
-    }
+    //}
 }
 #else
 static void scale_upsampled_mv_field(AVCodecContext *avctxt, void *input_ctb_row) {
@@ -722,7 +725,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
     }
 
     if (s->nuh_layer_id > 0 && s->vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag > 0) {
-        if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) &&
+        if (!(s->nal_unit_type >= HEVC_NAL_BLA_W_LP && s->nal_unit_type <= HEVC_NAL_CRA_NUT) &&
             s->sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
             int *arg, *ret, cmpt = (s->sps->ctb_height);
@@ -731,15 +734,17 @@ int ff_hevc_frame_rps(HEVCContext *s)
             ret = av_malloc(cmpt*sizeof(int));
             for(i=0; i < cmpt; i++)
                 arg[i] = i;
-
-            s->avctx->execute(s->avctx, (void *) scale_upsampled_mv_field, arg, ret, cmpt, sizeof(int));
+            if(!s->vps->vps_nonHEVCBaseLayerFlag)
+                s->avctx->execute(s->avctx, (void *) scale_upsampled_mv_field, arg, ret, cmpt, sizeof(int));//fixme: AVC BL can't be upsampled
             av_free(arg);
             av_free(ret);
 #else
-            set_refindex_data(s);
+            if (!s->vps->vps_nonHEVCBaseLayerFlag)
+                set_refindex_data(s);
 #endif
         } else {
-            init_upsampled_mv_fields(s);
+        	if(!s->vps->vps_nonHEVCBaseLayerFlag)
+                init_upsampled_mv_fields(s);//fixme: AVC BL can't be upsampled
         }
     }
     /* clear the reference flags on all frames except the current one */
@@ -754,8 +759,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
         rps[i].nb_refs = 0;
     if (!s->nuh_layer_id ||
         (s->nuh_layer_id > 0 &&
-        !(s->nal_unit_type >= NAL_BLA_W_LP &&
-        s->nal_unit_type <= NAL_CRA_NUT &&
+        !(s->nal_unit_type >= HEVC_NAL_BLA_W_LP &&
+        s->nal_unit_type <= HEVC_NAL_CRA_NUT &&
         s->sh.active_num_ILR_ref_idx))) {
         /* add the short refs */
         for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++)
@@ -844,9 +849,9 @@ int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
         poc_msb = prev_poc_msb;
 
     // For BLA picture types, POCmsb is set to 0.
-    if (s->nal_unit_type == NAL_BLA_W_LP   ||
-        s->nal_unit_type == NAL_BLA_W_RADL ||
-        s->nal_unit_type == NAL_BLA_N_LP)
+    if (s->nal_unit_type == HEVC_NAL_BLA_W_LP   ||
+        s->nal_unit_type == HEVC_NAL_BLA_W_RADL ||
+        s->nal_unit_type == HEVC_NAL_BLA_N_LP)
         poc_msb = 0;
 
     return poc_msb + poc_lsb;
@@ -860,8 +865,8 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
     LongTermRPS *long_rps   = &s->sh.long_term_rps;
 
     if (s->sh.slice_type == I_SLICE || (s->nuh_layer_id &&
-                                        (s->nal_unit_type >= NAL_BLA_W_LP) &&
-                                        (s->nal_unit_type<= NAL_CRA_NUT))) {
+                                        (s->nal_unit_type >= HEVC_NAL_BLA_W_LP) &&
+                                        (s->nal_unit_type<= HEVC_NAL_CRA_NUT))) {
         return s->sh.active_num_ILR_ref_idx;
     }
     if (rps) {
