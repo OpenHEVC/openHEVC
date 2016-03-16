@@ -251,12 +251,13 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
 
     for(i=max_layer; i>=0; i--) {
         if(got_picture[i]){
-            if(i != openHevcContexts->display_layer) {
+            if(i == openHevcContexts->display_layer) {
                 if (i >= 0 && i < openHevcContexts->nb_decoders)
                     openHevcContexts->display_layer = i;
+                return got_picture[i];
             }
          //   fprintf(stderr, "Display layer %d  \n", i);
-            return got_picture[i];
+
         }
 
     }
@@ -270,20 +271,24 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
  *    -Second one will be HEVC decoder
  *    -Third decoder is ignored since its not supported yet
  */
-int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], const int stop_dec)
+int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], const int stop_dec1, const int stop_dec2)
 {
-    int got_picture[MAX_DECODERS], len=0, i, max_layer, au_len;
+    int got_picture[MAX_DECODERS], len=0, i, max_layer, au_len, stop_dec;
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
     for(i =0; i < MAX_DECODERS; i++)  {
     	//fixme: au_len is unused
+    	if(i==0)
+    		stop_dec = stop_dec1;
+    	if(i==1)
+    		stop_dec = stop_dec2;
     	au_len = !stop_dec ? packet[i].size : 0;
         got_picture[i]                 = 0;
         openHevcContext                = openHevcContexts->wraper[i];
         openHevcContext->c->quality_id = openHevcContexts->active_layer;
 //        printf("quality_id %d \n", openHevcContext->c->quality_id);
         if (i <= openHevcContexts->active_layer) { // pour la auite remplacer par l = 1
-            openHevcContext->avpkt.size = packet[i].size;
+            openHevcContext->avpkt.size = au_len;
             openHevcContext->avpkt.data = (uint8_t *) packet[i].data;
         } else {
             openHevcContext->avpkt.size = 0;
@@ -320,12 +325,13 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
 
         for(i=max_layer; i>=0; i--) {
             if(got_picture[i]){
-                if(i != openHevcContexts->display_layer) {
+                if(i == openHevcContexts->display_layer) {
                     if (i >= 0 && i < openHevcContexts->nb_decoders)
                         openHevcContexts->display_layer = i;
+                    return got_picture[i];
                 }
              //   fprintf(stderr, "Display layer %d  \n", i);
-                return got_picture[i];
+
             }
 
         }

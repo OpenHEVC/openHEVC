@@ -125,7 +125,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     FILE *fin_loss = NULL, *fin1 = NULL;
     Info info;
     Info info_loss;
-    char filename0[1024];thread_type
+    char filename0[1024];
     int is_received = 1;
 #endif
     FILE *fout  = NULL;
@@ -134,6 +134,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     int nbFrame = 0;
     int stop    = 0;
     int stop_dec= 0;
+    int stop_dec2=0;
     int i= 0;
     int got_picture;
     float time  = 0.0;
@@ -260,18 +261,18 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         /* Try to read packets corresponding to the frames to be decoded
          * */
 		if(split_layers){
-			if (stop_dec == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0)
-                stop_dec = 1;
+			if (stop_dec2 == 0 && av_read_frame(pFormatCtx[1], &packet[1])<0)
+                stop_dec2 = 1;
 	    }
 	    if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0)
 	        stop_dec = 1;
 
 		if ((packet[0].stream_index == video_stream_idx && (!split_layers || packet[1].stream_index == video_stream_idx)) //
-				|| stop_dec == 0) {
+				|| stop_dec == 1 || stop_dec2==1) {
 		/* Try to decode corresponding packets into AVFrames
 		 * */
 			if(split_layers)
-				got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec);
+				got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec ,stop_dec2);
 			else
 				got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
 
@@ -336,9 +337,15 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
 				if (nbFrame == num_frames)// we already decoded all the frames we wanted to
 					stop = 1;
+
 			}
-			if (stop_dec > 0 && nbFrame)
-			    stop = 1;
+			if(split_layers){
+				if (stop_dec2 > 0 && stop_dec > 0 && nbFrame && !got_picture)
+					stop=1;
+			} else if (stop_dec > 0 && nbFrame && !got_picture){
+		        stop = 1;
+			}
+
 
 		    if (stop_dec >= nb_pthreads && nbFrame == 0) {
 		        av_free_packet(&packet[0]);
@@ -347,7 +354,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 			    fprintf(stderr, "Error when reading first frame\n");
 				exit(1);
 			}
-		}// End of got_picture
+		}// End of got_packet
     } //End of main loop
 #if USE_SDL
     time = SDL_GetTime()/1000.0;

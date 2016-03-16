@@ -3780,9 +3780,9 @@ int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf)
     return 0;
 }
 
-const uint8_t *avpriv_find_start_code(const uint8_t *av_restrict p,
+const uint8_t *avpriv_find_start_code(const uint8_t */*av_restrict*/ p,
                                       const uint8_t *end,
-                                      uint32_t *av_restrict state)
+                                      uint32_t */*av_restrict*/ state)
 {
     int i;
 

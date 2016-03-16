@@ -62,14 +62,14 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
         // Beginning of access unit
         if ((nut >= HEVC_NAL_VPS && nut <= HEVC_NAL_AUD) || nut == HEVC_NAL_SEI_PREFIX ||
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
-            if (pc->frame_start_found && (/*!shvc_flags ?*/ !layer_id /*: layer_id*/)) {
+            if (pc->frame_start_found /*&& (!shvc_flags ? !layer_id : layer_id)*/) {
                 pc->frame_start_found = 0;
                 return i - 5;
             }
         } else if (nut <= HEVC_NAL_RASL_R ||
                    (nut >= HEVC_NAL_BLA_W_LP && nut <= HEVC_NAL_CRA_NUT)) {
             int first_slice_segment_in_pic_flag = buf[i] >> 7;
-            if (first_slice_segment_in_pic_flag && (/*!shvc_flags ?*/ !layer_id /*: layer_id*/)) {
+            if (first_slice_segment_in_pic_flag /*&& (!shvc_flags ? !layer_id : layer_id)*/) {
                 if (!pc->frame_start_found) {
                     pc->frame_start_found = 1;
                 } else { // First slice of next frame found
