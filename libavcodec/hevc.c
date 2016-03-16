@@ -2727,6 +2727,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     int ret;
 
     s = s1->sList[self_id];
+    s->HEVClc->ctb_tile_rs = ctb_addr_rs;
     lc = s->HEVClc;
 
     if(ctb_row) {
@@ -2766,6 +2767,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         }
 
         ctb_addr_ts++;
+        s->HEVClc->ctb_tile_rs++;
 
         ff_hevc_save_states(s, ctb_addr_ts);
         ff_thread_report_progress2(s->avctx, ctb_row, thread, 1);
@@ -2809,6 +2811,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     int ret;
 
     s = s->sList[self_id];
+    s->HEVClc->ctb_tile_rs = ctb_addr_rs;
     lc = s->HEVClc;
 
     if(ctb_row) {
@@ -2836,6 +2839,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
             return more_data;
         }
         ctb_addr_ts++;
+        s->HEVClc->ctb_tile_rs++;
         if (x_ctb + ctb_size < s->sps->width || y_ctb + ctb_size < s->sps->height)
             if (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[ctb_addr_ts-1])
                 break;
