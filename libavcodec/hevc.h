@@ -902,6 +902,7 @@ typedef struct HEVCPPS {
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
+    int *ctb_row_to_rs;
     int *tile_id;           ///< TileId
     int *tile_width;           ///< TileWidth
     int *tile_pos_rs;       ///< TilePosRS
