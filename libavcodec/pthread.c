@@ -45,11 +45,11 @@
  */
 static void validate_thread_parameters(AVCodecContext *avctx)
 {
-    int frame_threading_supported      = (avctx->codec->capabilities & CODEC_CAP_FRAME_THREADS)
-                                        && !(avctx->flags  & CODEC_FLAG_TRUNCATED)
-                                        && !(avctx->flags  & CODEC_FLAG_LOW_DELAY)
-                                        && !(avctx->flags2 & CODEC_FLAG2_CHUNKS  );
-    int slice_threading_supported      = (avctx->codec->capabilities & CODEC_CAP_SLICE_THREADS);
+    int frame_threading_supported      = (avctx->codec->capabilities & AV_CODEC_CAP_FRAME_THREADS)
+                                        && !(avctx->flags  & AV_CODEC_FLAG_TRUNCATED)
+                                        && !(avctx->flags  & AV_CODEC_FLAG_LOW_DELAY)
+                                        && !(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS  );
+    int slice_threading_supported      = (avctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS);
     int frameslice_threading_supported = slice_threading_supported && frame_threading_supported;
 
     if (avctx->thread_count == 1) {
@@ -69,7 +69,7 @@ static void validate_thread_parameters(AVCodecContext *avctx)
             avctx->active_thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
         else
             avctx->active_thread_type  = FF_THREAD_SLICE;
-    } else if (!(avctx->codec->capabilities & CODEC_CAP_AUTO_THREADS)) {
+    } else if (!(avctx->codec->capabilities & AV_CODEC_CAP_AUTO_THREADS)) {
         avctx->thread_count       = 1;
         avctx->thread_count_frame = 1;
         avctx->active_thread_type = 0;
@@ -86,6 +86,7 @@ int ff_thread_init(AVCodecContext *avctx)
     int ret = 0;
 
     validate_thread_parameters(avctx);
+
     if (avctx->active_thread_type&FF_THREAD_FRAME)
         ret = ff_frame_thread_init(avctx);
     else if (avctx->active_thread_type&FF_THREAD_SLICE)

@@ -32,6 +32,9 @@
 #include "golomb.h"
 #include "hevc.h"
 #include "bit_depth_template.c"
+//temp
+#include "h264.h"
+
 
 #if HAVE_SSE2
 #include <emmintrin.h>
@@ -197,7 +200,7 @@ static void copy_CTB_to_hv(HEVCContext *s, const uint8_t *src,
                            int stride_src, int x, int y, int width, int height,
                            int c_idx, int x_ctb, int y_ctb)
 {
-    int sh = s->sps->pixel_shift;
+    int sh = s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
     int w = s->sps->width >> s->sps->hshift[c_idx];
     int h = s->sps->height >> s->sps->vshift[c_idx];
 
@@ -229,13 +232,13 @@ static void restore_tqb_pixels(HEVCContext *s,
         int y_min        = ((y0         ) >> s->sps->log2_min_pu_size);
         int x_max        = ((x0 + width ) >> s->sps->log2_min_pu_size);
         int y_max        = ((y0 + height) >> s->sps->log2_min_pu_size);
-        int len          = (min_pu_size >> hshift) << s->sps->pixel_shift;
+        int len          = (min_pu_size >> hshift) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
         for (y = y_min; y < y_max; y++) {
             for (x = x_min; x < x_max; x++) {
                 if (s->is_pcm[y * s->sps->min_pu_width + x]) {
                     int n;
-                    uint8_t *src = src1 + (((y << s->sps->log2_min_pu_size) - y0) >> vshift) * stride_src + ((((x << s->sps->log2_min_pu_size) - x0) >> hshift) << s->sps->pixel_shift);
-                    const uint8_t *dst = dst1 + (((y << s->sps->log2_min_pu_size) - y0) >> vshift) * stride_dst + ((((x << s->sps->log2_min_pu_size) - x0) >> hshift) << s->sps->pixel_shift);
+                    uint8_t *src = src1 + (((y << s->sps->log2_min_pu_size) - y0) >> vshift) * stride_src + ((((x << s->sps->log2_min_pu_size) - x0) >> hshift) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]);
+                    const uint8_t *dst = dst1 + (((y << s->sps->log2_min_pu_size) - y0) >> vshift) * stride_dst + ((((x << s->sps->log2_min_pu_size) - x0) >> hshift) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]);
                     for (n = 0; n < (min_pu_size >> vshift); n++) {
                         memcpy(src, dst, len);
                         src += stride_src;
@@ -318,9 +321,9 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         int ctb_size_v = (1 << (s->sps->log2_ctb_size)) >> s->sps->vshift[c_idx];
         int width    = FFMIN(ctb_size_h, (s->sps->width  >> s->sps->hshift[c_idx]) - x0);
         int height   = FFMIN(ctb_size_v, (s->sps->height >> s->sps->vshift[c_idx]) - y0);
-        uint8_t *src = &s->frame->data[c_idx][y0 * stride_src + (x0 << s->sps->pixel_shift)];
+        uint8_t *src = &s->frame->data[c_idx][y0 * stride_src + (x0 << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA])];
 #if defined(USE_SAO_SMALL_BUFFER)
-        int stride_dst = ((1 << (FFMAX(4, s->sps->log2_ctb_size))) + 16) << s->sps->pixel_shift;
+        int stride_dst = ((1 << (FFMAX(4, s->sps->log2_ctb_size))) + 32) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
         uint8_t *dst = lc->sao_pixel_buffer + (1 * stride_dst) + 16;
 #else
         int stride_dst = s->sao_frame->linesize[c_idx];
@@ -329,7 +332,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 
         switch (sao->type_idx[c_idx]) {
         case SAO_BAND:
-            copy_CTB(dst, src, width << s->sps->pixel_shift, height, stride_dst, stride_src);
+            copy_CTB(dst, src, width << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA], height, stride_dst, stride_src);
 #if defined(USE_SAO_SMALL_BUFFER)
             copy_CTB_to_hv(s, src, stride_src, x0, y0, width, height, c_idx,
                            x_ctb, y_ctb);
@@ -352,7 +355,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
             int top_edge = edges[1];
             int right_edge = edges[2];
             int bottom_edge = edges[3];
-            int sh = s->sps->pixel_shift;
+            int sh = s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA];
             int left_pixels, right_pixels;
 
             if (!top_edge) {
@@ -558,11 +561,10 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
             if (bs0 || bs1) {
                 const int qp = (get_qPy(s, x - 1, y)     + get_qPy(s, x, y)     + 1) >> 1;
 
-                beta = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
-
+                beta    = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
                 tc[0]   = bs0 ? TC_CALC(qp, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp, bs1) : 0;
-                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift)];
+                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift[CHANNEL_TYPE_LUMA])];
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x - 1, y);
                     no_p[1] = get_pcm(s, x - 1, y + 4);
@@ -608,8 +610,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     c_tc[1]  = (bs1 == 2) ? chroma_tc(s, qp1, 1, tc_offset) : 0;
                     c_tc2[0] = (bs0 == 2) ? chroma_tc(s, qp0, 2, tc_offset) : 0;
                     c_tc2[1] = (bs1 == 2) ? chroma_tc(s, qp1, 2, tc_offset) : 0;
-                    src      = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
-                    src2     = &s->frame->data[2][(y >> s->sps->vshift[2]) * s->frame->linesize[2] + ((x >> s->sps->hshift[2]) << s->sps->pixel_shift)];
+                    src      = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift[CHANNEL_TYPE_CHROMA])];
+                    src2     = &s->frame->data[2][(y >> s->sps->vshift[2]) * s->frame->linesize[2] + ((x >> s->sps->hshift[2]) << s->sps->pixel_shift[CHANNEL_TYPE_CHROMA])];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x - 1, y);
                         no_p[1] = get_pcm(s, x - 1, y + (4 * v));
@@ -661,7 +663,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                 beta    = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
                 tc[0]   = bs0 ? TC_CALC(qp, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp, bs1) : 0;
-                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift)];
+                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->sps->pixel_shift[CHANNEL_TYPE_LUMA])];
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x, y - 1);
                     no_p[1] = get_pcm(s, x + 4, y - 1);
@@ -709,8 +711,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     c_tc[1]   = bs1 == 2 ? chroma_tc(s, qp1, 1, cur_tc_offset) : 0;
                     c_tc2[0]  = bs0 == 2 ? chroma_tc(s, qp0, 2, tc_offset)     : 0;
                     c_tc2[1]  = bs1 == 2 ? chroma_tc(s, qp1, 2, cur_tc_offset) : 0;
-                    src       = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
-                    src2      = &s->frame->data[2][(y >> s->sps->vshift[1]) * s->frame->linesize[2] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift)];
+                    src       = &s->frame->data[1][(y >> s->sps->vshift[1]) * s->frame->linesize[1] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift[CHANNEL_TYPE_CHROMA])];
+                    src2      = &s->frame->data[2][(y >> s->sps->vshift[1]) * s->frame->linesize[2] + ((x >> s->sps->hshift[1]) << s->sps->pixel_shift[CHANNEL_TYPE_CHROMA])];
                     if (pcmf) {
                         no_p[0] = get_pcm(s, x,           y - 1);
                         no_p[1] = get_pcm(s, x + (4 * h), y - 1);
@@ -754,11 +756,19 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
 {
 #if HAVE_SSE42
     {
-        __m128i x0, x1;
+        __m128i x0, x1, x2, x3, x4;
+        unsigned char temp[4] = {0x00, 0x0F, 0xFF, 0xFF};
         x0 = _mm_loadu_si128((__m128i *) neigh);
         x1 = _mm_loadu_si128((__m128i *) curr);
+        x2 = _mm_loadl_epi64((__m128i *) &(neigh->pred_flag));
+        x3 = _mm_loadl_epi64((__m128i *) &(curr->pred_flag));
+
+        x4 = _mm_loadl_epi64((__m128i *) temp);
         x0 = _mm_cmpeq_epi64 (x0, x1);
-        if (_mm_test_all_ones(x0))
+        x2 = _mm_cmpeq_epi8 (x2, x3);
+
+        x2 = _mm_or_si128 (x2, x4);
+        if (_mm_test_all_ones(x0) && _mm_test_all_ones(x2))
             return 0;
     }
 #else
@@ -829,9 +839,8 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             else
                 return 0;
 #endif
-        } else {
+        } else
             return 1;
-        }
     } else if ((curr->pred_flag != PF_BI) && (neigh->pred_flag != PF_BI)){ // 1 MV
         Mv A, B;
         int ref_A, ref_B;
@@ -851,7 +860,6 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
             B     = neigh->mv[1];
             ref_B = neigh->poc[1];
         }
-
         if (ref_A == ref_B) {
             if (FFABS(A.x - B.x) >= 4 || FFABS(A.y - B.y) >= 4)
                 return 1;
@@ -860,17 +868,18 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
         } else
             return 1;
     }
-
     return 1;
 }
 #else
 static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
-                             RefPicList *neigh_refPicList)
+                             RefPicList *neigh_refPicList, RefPicList *refPicList)
 {
+    if ( !memcmp(curr, neigh, sizeof(MvField) ) && refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]] && refPicList[1].list[curr->ref_idx[1]] == neigh_refPicList[1].list[neigh->ref_idx[1]])
+        return 0;
     if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
         // same L0 and L1
-        if (s->ref->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
-            s->ref->refPicList[0].list[curr->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]] &&
+        if (refPicList[0].list[curr->ref_idx[0]]        == neigh_refPicList[0].list[neigh->ref_idx[0]] &&
+            refPicList[0].list[curr->ref_idx[0]]        == refPicList[1].list[curr->ref_idx[1]]        &&
             neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1, x2;
@@ -894,8 +903,8 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
             else
                 return 0;
 #endif
-        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                   neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == refPicList[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[1].list[neigh->ref_idx[1]] == refPicList[1].list[curr->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
@@ -912,8 +921,8 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
             else
                 return 0;
 #endif
-        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->ref->refPicList[0].list[curr->ref_idx[0]] &&
-                   neigh_refPicList[0].list[neigh->ref_idx[0]] == s->ref->refPicList[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == refPicList[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[0].list[neigh->ref_idx[0]] == refPicList[1].list[curr->ref_idx[1]]) {
 #if HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
@@ -931,19 +940,18 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
             else
                 return 0;
 #endif
-        } else {
+        } else
             return 1;
-        }
     } else if ((curr->pred_flag != PF_BI) && (neigh->pred_flag != PF_BI)){ // 1 MV
         Mv A, B;
         int ref_A, ref_B;
 
         if (curr->pred_flag & 1) {
             A     = curr->mv[0];
-            ref_A = s->ref->refPicList[0].list[curr->ref_idx[0]];
+            ref_A = refPicList[0].list[curr->ref_idx[0]];
         } else {
             A     = curr->mv[1];
-            ref_A = s->ref->refPicList[1].list[curr->ref_idx[1]];
+            ref_A = refPicList[1].list[curr->ref_idx[1]];
         }
 
         if (neigh->pred_flag & 1) {
@@ -962,7 +970,6 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
         } else
             return 1;
     }
-
     return 1;
 }
 #endif
@@ -1011,7 +1018,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #ifdef TEST_MV_POC
                     bs = boundary_strength(s, curr, top);
 #else
-                    bs = boundary_strength(s, curr, top, top_refPicList);
+                    bs = boundary_strength(s, curr, top, top_refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
                 s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
             }
@@ -1050,7 +1057,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #ifdef TEST_MV_POC
                     bs = boundary_strength(s, curr, left);
 #else
-                    bs = boundary_strength(s, curr, left, left_refPicList);
+                    bs = boundary_strength(s, curr, left, left_refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
                 s->vertical_bs[(x0 + (y0 + i) * s->bs_width) >> 2] = bs;
             }
@@ -1076,7 +1083,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #ifdef TEST_MV_POC
                 bs = boundary_strength(s, curr, top);
 #else
-                bs = boundary_strength(s, curr, top, refPicList);
+                bs = boundary_strength(s, curr, top, refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
                 top = curr;
@@ -1096,7 +1103,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #ifdef TEST_MV_POC
                 bs = boundary_strength(s, curr, left);
 #else
-                bs = boundary_strength(s, curr, left, refPicList);
+                bs = boundary_strength(s, curr, left, refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
                 s->vertical_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
                 left = curr;
@@ -1135,7 +1142,7 @@ void ff_hevc_deblocking_boundary_strengths_h(HEVCContext *s, int x0, int y0, int
 #ifdef TEST_MV_POC
                 bs = boundary_strength(s, curr, top);
 #else
-                bs = boundary_strength(s, curr, top, top_refPicList);
+                bs = boundary_strength(s, curr, top, top_refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
         if ((slice_up_boundary & 1) && (y0 % (1 << s->sps->log2_ctb_size)) == 0)
             bs = 0;
@@ -1176,7 +1183,7 @@ void ff_hevc_deblocking_boundary_strengths_v(HEVCContext *s, int x0, int y0, int
 #ifdef TEST_MV_POC
                 bs = boundary_strength(s, curr, left);
 #else
-                bs = boundary_strength(s, curr, left, left_refPicList);
+                bs = boundary_strength(s, curr, left, left_refPicList, ff_hevc_get_ref_list(s, s->ref, x0, y0));
 #endif
         if ((slice_left_boundary & 1) && (x0 % (1 << s->sps->log2_ctb_size)) == 0)
             bs = 0;
@@ -1232,60 +1239,560 @@ void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb, ctb_size);
 }
 
-static void copy_block(pixel *src, pixel * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW) {
-    int i;
+#if PARALLEL_FILTERS
+void ff_hevc_hls_filters_slice(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size) {
+    int x_slice_end = 0, y_slice_end = 0;
+    unsigned int x_end = x_ctb >= s->sps->width  - ctb_size;
+    unsigned int y_end = y_ctb >= s->sps->height - ctb_size;
+    int ctb_addr_rs = (x_ctb >> s->sps->log2_ctb_size) + (y_ctb >> s->sps->log2_ctb_size) * s->sps->ctb_width;
 
+    if (y_ctb && x_ctb && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1 - s->sps->ctb_width]))
+        ff_hevc_hls_filter_slice(s, x_ctb - ctb_size, y_ctb - ctb_size, ctb_size);
+
+    if (y_ctb && x_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]))
+        ff_hevc_hls_filter_slice(s, x_ctb, y_ctb - ctb_size, ctb_size);
+
+
+    if (x_ctb && y_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1]))
+        ff_hevc_hls_filter_slice(s, x_ctb - ctb_size, y_ctb, ctb_size);
+
+    if(!x_end)
+        x_slice_end = (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs + 1]);
+    if(!y_end)
+        y_slice_end = (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs + s->sps->ctb_width]);
+
+    if(x_slice_end && y_ctb && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]))
+        ff_hevc_hls_filter_slice(s, x_ctb , y_ctb - ctb_size, ctb_size);
+
+    if(y_slice_end && x_ctb && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs- 1]))
+        ff_hevc_hls_filter_slice(s, x_ctb - ctb_size , y_ctb, ctb_size);
+
+    if(x_end && y_slice_end)
+        ff_hevc_hls_filter_slice(s, x_ctb , y_ctb, ctb_size);
+    if(y_end && x_slice_end)
+        ff_hevc_hls_filter_slice(s, x_ctb , y_ctb, ctb_size);
+    if(y_end && x_end)
+        ff_hevc_hls_filter_slice(s, x_ctb , y_ctb, ctb_size);
+}
+void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
+{
+    int x_slice_end = 0, y_slice_end= 0;
+    deblocking_filter_CTB(s, x, y);
+    int ctb_addr_rs = (x >> s->sps->log2_ctb_size) + (y >> s->sps->log2_ctb_size) * s->sps->ctb_width;
+
+    if (s->sps->sao_enabled) {
+        int x_end = x >= s->sps->width  - ctb_size;
+        int y_end = y >= s->sps->height - ctb_size;
+        if (y && x && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1 - s->sps->ctb_width]))
+            sao_filter_CTB(s, x - ctb_size, y - ctb_size);
+        if (x && y_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1]))
+            sao_filter_CTB(s, x - ctb_size, y);
+        if (y && x_end && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width])) {
+            sao_filter_CTB(s, x, y - ctb_size);
+            if (s->threads_type & FF_THREAD_FRAME ) {
+                int i;
+                s->decoded_rows[(y - ctb_size)>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->decoded_rows[i]; i++);
+                ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
+            }
+        }
+
+        if(!x_end)
+            x_slice_end = (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs + 1]);
+        if(!y_end)
+            y_slice_end = (s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs + s->sps->ctb_width]);
+
+        if(x_slice_end && y && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width])) {
+            sao_filter_CTB(s, x , y - ctb_size);
+            if (s->threads_type & FF_THREAD_FRAME ) {
+                int i; 
+                s->decoded_rows[(y - ctb_size)>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->decoded_rows[i]; i++);
+                    ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
+            }
+        }
+
+        if(y_slice_end && x && (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs- 1]))
+            sao_filter_CTB(s, x - ctb_size , y);
+
+        if(x_end && y_slice_end)
+            sao_filter_CTB(s, x , y);
+
+        if(y_end && x_slice_end)
+            sao_filter_CTB(s, x , y);
+
+        if (x_end && y_end) {
+            sao_filter_CTB(s, x , y);
+            if (s->threads_type & FF_THREAD_FRAME )
+                ff_thread_report_progress(&s->ref->tf, y, 0);
+        }
+    } else {
+        if (y && x >= s->sps->width - ctb_size)
+            if (s->threads_type & FF_THREAD_FRAME ) {
+                int i;
+                s->decoded_rows[y>>s->sps->log2_ctb_size] = 1;
+                for(i = 0; i < s->sps->ctb_height && s->decoded_rows[i]; i++);
+                    ff_thread_report_progress(&s->ref->tf, i*ctb_size, 0);
+            }
+    }
+}
+#endif
+
+static void copy_block(HEVCContext *s, uint8_t *src, uint8_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
+    int i;
+#if 0
     for (i = 0; i < ePbH ; i++) {
         memcpy(dst, src, ePbW * sizeof(pixel));
         src += bl_stride;
         dst += el_stride;
     }
+#else
+    int j, refLayerId = 0;
+    int shift = s->up_filter_inf.shift[channel];
+    for (i = 0; i < ePbH ; i++) {
+        for (j = 0; j < ePbW ; j++)
+            dst[j] = src[j]<<shift;
+        src += bl_stride;
+        dst += el_stride;
+    }
+#endif
 }
 
-static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
-    uint8_t *src,  *dst = ref0->frame->data[0];
+static void copy_block_16(HEVCContext *s, uint16_t *src, uint16_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
+    int i;
+#if 0
+    for (i = 0; i < ePbH ; i++) {
+        memcpy(dst, src, ePbW * sizeof(pixel));
+        src += bl_stride;
+        dst += el_stride;
+    }
+#else
+    int j, refLayerId = 0;
+    int shift = s->up_filter_inf.shift[channel];
+    for (i = 0; i < ePbH ; i++) {
+        for (j = 0; j < ePbW ; j++){
+            dst[j] = src[j]<<shift;
+        }
+        src += bl_stride;
+        dst += el_stride;
+    }
+#endif
+}
+
+static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t *src_v, int src_stride, int src_stridec,int x0, int y0, int x0_cr, int y0_cr, int bl_width, int bl_height, int el_width, int el_height) {
+    int i, j, k;
+    int ctb_size  = 1<<s->sps->log2_ctb_size;
+    ctb_size = ((( ctb_size  ) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)  >> 4;
+    uint8_t srcYaver, tmpU, tmpV;
+    uint16_t val[6], val_dst[6], val_prev[2];
+    pixel *src_U_prev, *src_V_prev, *src_U_next, *src_V_next;
+    SCuboid rCuboid;
+    const HEVCPPS *pps   = s->pps;
+    uint16_t iMaxValY = (1<<pps->pc3DAsymLUT.cm_output_luma_bit_depth)  -1;
+    uint16_t iMaxValC = (1<<pps->pc3DAsymLUT.cm_output_chroma_bit_depth)-1;
+
+    int left_edge    =  x0 ? 1:0;
+    int up_edge      =  y0 ? 1:0;
+    int right_edge   =  x0 + ctb_size < bl_width  ? 1:0;
+    int bottom_edge  =  y0 + ctb_size < bl_height ? 1:0;
+
+    uint16_t * dst_y = s->HEVClc->color_mapping_cgs_y;
+    uint16_t * dst_u = s->HEVClc->color_mapping_cgs_u;
+    uint16_t * dst_v = s->HEVClc->color_mapping_cgs_v;
+
+    uint8_t *temp_u = src_u + src_stridec * (y0_cr );
+    uint8_t *temp_v = src_v + src_stridec * (y0_cr );
+
+    int size = bl_width>>1;
+    if( !right_edge ){ // add padding from right
+      for(i = 0 ; i < bottom_edge + up_edge + (ctb_size>>1); i++) {
+        temp_u[size]     = temp_u[size-1];
+        temp_v[size]     = temp_v[size-1];
+        temp_u          += src_stridec;
+        temp_v          += src_stridec;
+      }
+    }
+
+    if( !bottom_edge ) { // add padding from bottom
+      size = src_stridec * (bl_height>>1) + x0_cr - left_edge;
+      for(j = 0 ; j < left_edge + right_edge + (ctb_size>>1); j++) {
+        src_u[size+j] = src_u[size+j-src_stridec];
+        src_v[size+j] = src_v[size+j-src_stridec];
+      }
+    }
+
+    if( !right_edge && !bottom_edge){ // add padding from bottom right
+    	size = src_stridec * (bl_height>>1) + x0_cr + right_edge + (ctb_size>>1);
+    	src_u[size] = src_u[size-1];
+		src_v[size] = src_v[size-1];
+    }
+
+    src_y      = src_y + src_stride  * (y0)    + x0   ;
+    src_u      = src_u + src_stridec * (y0_cr) + x0_cr;
+    src_v      = src_v + src_stridec * (y0_cr) + x0_cr;
+    src_U_prev = src_u - src_stridec * up_edge;
+    src_V_prev = src_v - src_stridec * up_edge;
+    src_U_next = src_u + src_stridec;
+    src_V_next = src_v + src_stridec;
+
+    for(i = 0 ; i < ctb_size && i+y0 < el_height; i += 2 ) {
+      for(j = 0 , k = 0 ; j < ctb_size && j+x0 < el_width; j += 2 , k++ ) {
+        val[0] = src_y[j];
+        val[1] = src_y[j+1];
+        val[2] = src_y[j+src_stride];
+        val[3] = src_y[j+src_stride+1];
+        val[4] = src_u[k];
+        val[5] = src_v[k];
+        srcYaver = (val[0] + val[2] + 1 ) >> 1;;
+        val_prev[0]  = src_U_prev[k]; //srcUP0
+        val_prev[1]  = src_V_prev[k]; //srcVP0
+
+        tmpU =  (val_prev[0] + val[4] + (val[4]<<1) + 2 ) >> 2;
+        tmpV =  (val_prev[1] + val[5] + (val[5]<<1) + 2 ) >> 2;
+
+        rCuboid = pps->pc3DAsymLUT.S_Cuboid[val[0] >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpU>=pps->pc3DAsymLUT.nAdaptCThresholdU : tmpU>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpV>=pps->pc3DAsymLUT.nAdaptCThresholdV : tmpV>> pps->pc3DAsymLUT.VShift2Idx];
+        val_dst[0] = ( ( rCuboid.P[0].Y * val[0] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].Y;
+
+        short a = src_u[k+1] + val[4];
+        tmpU =  ((a<<1) + a + val_prev[0] + src_U_prev[k+1] + 4 ) >> 3;
+        short b = src_v[k+1] + val[5];
+        tmpV =  ((b<<1) + b + val_prev[1] + src_V_prev[k+1] + 4 ) >> 3;
+
+        rCuboid = pps->pc3DAsymLUT.S_Cuboid[val[1] >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpU>=pps->pc3DAsymLUT.nAdaptCThresholdU : tmpU>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpV>=pps->pc3DAsymLUT.nAdaptCThresholdV : tmpV>> pps->pc3DAsymLUT.VShift2Idx];
+        val_dst[1] = ( ( rCuboid.P[0].Y * val[1] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].Y;
+
+        tmpU =  (src_U_next[k] + val[4] + (val[4]<<1) + 2 ) >> 2;
+        tmpV =  (src_V_next[k] + val[5] + (val[5]<<1) + 2 ) >> 2;
+        rCuboid = pps->pc3DAsymLUT.S_Cuboid[val[2] >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpU>=pps->pc3DAsymLUT.nAdaptCThresholdU : tmpU>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpV>=pps->pc3DAsymLUT.nAdaptCThresholdV : tmpV>> pps->pc3DAsymLUT.VShift2Idx];
+        val_dst[2] = ( ( rCuboid.P[0].Y * val[2] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].Y;
+
+        tmpU =  ((a<<1) + a + src_U_next[k] + src_U_next[k+1] + 4 ) >> 3;
+        tmpV =  ((b<<1) + b + src_V_next[k] + src_V_next[k+1] + 4 ) >> 3;
+        rCuboid = pps->pc3DAsymLUT.S_Cuboid[val[3] >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpU>=pps->pc3DAsymLUT.nAdaptCThresholdU : tmpU>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpV>=pps->pc3DAsymLUT.nAdaptCThresholdV : tmpV>> pps->pc3DAsymLUT.VShift2Idx];
+        val_dst[3] = ( ( rCuboid.P[0].Y * val[3] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].Y;
+
+        SYUVP dstUV;
+        rCuboid = pps->pc3DAsymLUT.S_Cuboid[srcYaver >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? val[4]>=pps->pc3DAsymLUT.nAdaptCThresholdU : val[4]>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? val[5]>=pps->pc3DAsymLUT.nAdaptCThresholdV : val[5]>> pps->pc3DAsymLUT.VShift2Idx];
+        dstUV.Y = 0;
+        dstUV.U = ( ( rCuboid.P[0].U * srcYaver + rCuboid.P[1].U * val[4] + rCuboid.P[2].U * val[5] + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].U;
+        dstUV.V = ( ( rCuboid.P[0].V * srcYaver + rCuboid.P[1].V * val[4] + rCuboid.P[2].V * val[5] + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].V;
+
+        dst_y[j]   = av_clip(val_dst[0],0, iMaxValY);
+        dst_y[j+1] = av_clip(val_dst[1], 0, iMaxValY );
+        dst_y[j+MAX_EDGE_BUFFER_STRIDE] = av_clip(val_dst[2] , 0, iMaxValY);
+        dst_y[j+MAX_EDGE_BUFFER_STRIDE+1] = av_clip(val_dst[3] , 0, iMaxValY);
+        dst_u[k]   = av_clip(dstUV.U, 0, iMaxValC );
+        dst_v[k]   = av_clip(dstUV.V, 0, iMaxValC );
+      }
+      src_y += src_stride + src_stride;
+
+      src_U_prev = src_u;
+      src_V_prev = src_v;
+
+      src_u = src_U_next;
+      src_v = src_V_next;
+      src_U_next += src_stridec;
+      src_V_next += src_stridec;
+
+      dst_y += (MAX_EDGE_BUFFER_STRIDE + MAX_EDGE_BUFFER_STRIDE);
+      dst_u += (MAX_EDGE_BUFFER_STRIDE>>1);
+      dst_v += (MAX_EDGE_BUFFER_STRIDE>>1);
+    }
+}
+
+static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
+    uint16_t *src;
+    uint16_t *dst = ref0->frame->data[0];
+    uint16_t *tmp1;
+
     int ctb_size  = 1<<s->sps->log2_ctb_size;
     int el_width  =  s->sps->width;
     int el_height =  s->sps->height;
-    int bl_width  =  s->BL_frame->frame->coded_width;
-    int bl_height =  s->BL_frame->frame->coded_height;
-    int bl_stride =  s->BL_frame->frame->linesize[0];
-    int el_stride =  ref0->frame->linesize[0];
-    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size ;
+
+    //fixme: AVC BL
+    HEVCFrame *bl_frame = s->BL_frame;
+    //H264Picture *bl_frame = s->BL_frame;
+    //int bl_width  =  bl_frame->f->coded_width; //fixme: coded_width or width or blframe->width
+    //int bl_height =  bl_frame->f->coded_height;
+    //int bl_stride =  bl_frame->f->linesize[0];
+
+
+    int bl_width  =  bl_frame->frame->coded_width;
+    int bl_height =  bl_frame->frame->coded_height;
+    int bl_stride =  bl_frame->frame->linesize[0];
+
+    int el_stride =  ref0->frame->linesize[0]/sizeof(uint16_t);
+    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size;
     int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
 
     if (s->up_filter_inf.idx == SNR) { /* x1 quality (SNR) scalability */
-        copy_block (s->BL_frame->frame->data[0] + y0 * bl_stride + x0,
-                    ref0->frame->data[0] + y0 * el_stride + x0,
-                    bl_stride, el_stride, ePbH, ePbW );
-    } else { /* spatial scalability */
-        int bl_edge_bottom, bl_edge_right, ret;
-        int bPbW = ((( ePbW + 1 )*s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12) >> 4; /*    FIXME: check if this method is correct  */
-        int bPbH = ((( ePbH + 2 ) *s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
 
-        int bl_x = (( (x0  - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12) >> 4;
-        int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
-        int bl_edge_left   =  (MAX_EDGE - 1 - bl_x ) > 0 ?  0: MAX_EDGE - 1;
+      bl_stride = MAX_EDGE_BUFFER_STRIDE;
+      colorMapping( s, bl_frame->frame->data[0], bl_frame->frame->data[1], bl_frame->frame->data[2],
+    		  bl_frame->frame->linesize[0], bl_frame->frame->linesize[1], x0, y0, x0>>1, y0>>1,
+                    bl_width, bl_height, el_width, el_height);
+//      colorMapping( s, bl_frame->f->data[0], bl_frame->f->data[1], bl_frame->f->data[2],
+//          		  bl_frame->f->linesize[0], bl_frame->f->linesize[1], x0, y0, x0>>1, y0>>1,
+//                          bl_width, bl_height);
+      copy_block( s, s->HEVClc->color_mapping_cgs_y,
+                  ref0->frame->data[0] + y0 * el_stride + x0,
+                  bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_LUMA);
+    } else { /* spatial scalability */
+      int bl_edge_bottom, bl_edge_right, ret;
+      int bPbW = ((( ePbW + 1 ) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4; /*    FIXME: check if this method is correct  */
+      int bPbH = ((( ePbH + 2 ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12) >> 4;
+
+      int bl_x = (( (x0  - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4;
+      int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12)  >> 4;
+      int bl_x_cr = ((((x0>>1) - (s->sps->pic_conf_win.left_offset>>1)) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)      >> 4;
+      int bl_y_cr = (((((y0>>1)- (s->sps->pic_conf_win.top_offset >>1)) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYLum) >> 12) -4 ) >> 4;
+#if 0
+      int bl_edge_left   =  (MAX_EDGE - 1 - bl_x ) > 0 ?  0: MAX_EDGE - 1;
+      int bl_edge_top    = ( MAX_EDGE - 1 - bl_y ) > 0 ?  0: MAX_EDGE - 1;
+#else
+      int bl_edge_left   = !bl_x ?  0: MAX_EDGE - 1;
+      int bl_edge_top    = !bl_y ?  0: MAX_EDGE - 1;
+#endif
+      int ref_layer_id = s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
+      int16_t *tmp0;
+
+      if(bl_x+bPbW > bl_width)
+        bPbW = bl_width -bl_x;
+
+      if(bl_y+bPbH > bl_height)
+        bPbH = bl_height-bl_y;
+#if 0
+      bl_edge_right  =  (MAX_EDGE > (bl_width  - bl_x - bPbW))  ? bl_width  - bl_x - bPbW: MAX_EDGE;
+      bl_edge_bottom =  (MAX_EDGE > (bl_height - bl_y - bPbH))  ? bl_height - bl_y - bPbH: MAX_EDGE;
+#else
+      bl_edge_right  =  (bl_width <=  bl_x + bPbW)  ? 0: MAX_EDGE;
+      bl_edge_bottom =  (bl_height <= bl_y + bPbH)  ? 0: MAX_EDGE;
+#endif
+      bl_stride = MAX_EDGE_BUFFER_STRIDE;
+      colorMapping( s, bl_frame->frame->data[0], bl_frame->frame->data[1], bl_frame->frame->data[2],
+    		  bl_frame->frame->linesize[0], bl_frame->frame->linesize[1], bl_x, bl_y, bl_x_cr, bl_y_cr,
+                    bl_width, bl_height, el_width, el_height);
+//      colorMapping( s, bl_frame->f->data[0], bl_frame->f->data[1], bl_frame->f->data[2],
+//          		  bl_frame->f->linesize[0], bl_frame->f->linesize[1], bl_x, bl_y, bl_x_cr, bl_y_cr,
+//                          bl_width, bl_height);
+      src       = s->HEVClc->color_mapping_cgs_y + bl_stride * 3 + 3;
+
+      tmp1 = s->HEVClc->edge_emu_buffer_up_h;
+
+      ret = s->vdsp.emulated_edge_up_h(tmp1 , src , bl_stride, &s->sps->scaled_ref_layer_window[ref_layer_id],
+                                           bPbW + bl_edge_left + bl_edge_right, bPbH + bl_edge_top + bl_edge_bottom,
+                                           bl_edge_left , bl_edge_right,100, MAX_EDGE-1);
+
+      if(ret==2)//no edge
+          src += (MAX_EDGE-1);
+      if (ret==1) //right edge
+      	src += (MAX_EDGE-1);
+      if (ret==0) //left edge
+      	src= tmp1;
+
+      tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE);
+
+      s->hevcdsp.upsample_filter_block_luma_h[s->up_filter_inf.idx](tmp0, MAX_EDGE_BUFFER_STRIDE, src, bl_stride, x0, bl_x,
+                                                                    ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
+                                                                    &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
+
+      ret = s->vdsp.emulated_edge_up_v(tmp0, MAX_EDGE_BUFFER_STRIDE, &s->sps->scaled_ref_layer_window[ref_layer_id],
+                                       ePbW, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top ,
+                                       bl_edge_bottom, el_width, MAX_EDGE - 1);
+      if(ret)
+        tmp0 += ((MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE);
+
+      s->hevcdsp.upsample_filter_block_luma_v[s->up_filter_inf.idx](dst , ref0->frame->linesize[0], tmp0 , MAX_EDGE_BUFFER_STRIDE,
+                                                                    bl_y , x0, y0, ePbW, ePbH, el_width, el_height,
+                                                                    &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
+    }
+}
+
+static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
+    uint16_t   *src;
+    int16_t   *tmp0;
+    uint16_t *tmp1;
+
+    int el_width  =  s->sps->width>>1;
+    int el_height =  s->sps->height>>1;
+
+    HEVCFrame *bl_frame = s->BL_frame;
+    //H264Picture *bl_frame = s->BL_frame;
+    int bl_width  =  bl_frame->frame->coded_width  >>1;
+    int bl_height  = bl_frame->frame->coded_height  > el_height ? bl_frame->frame->coded_height>>1:el_height>>1;
+    //int bl_width  =  bl_frame->f->coded_width  >>1;
+    //int bl_height  = bl_frame->f->coded_height  > el_height ? bl_frame->f->coded_height>>1:el_height>>1;
+
+    int ret, cr, bl_edge_top0;
+    int ctb_size = 1<<(s->sps->log2_ctb_size-1);
+
+    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size ;
+    int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
+    int bl_stride = bl_frame->frame->linesize[1];
+    //int bl_stride = bl_frame->f->linesize[1];
+    int el_stride = ref0->frame->linesize[1]/sizeof(uint16_t);
+
+    if (s->up_filter_inf.idx == SNR) {
+      bl_stride = MAX_EDGE_BUFFER_STRIDE>>1;
+      copy_block( s, s->HEVClc->color_mapping_cgs_u,
+                  ref0->frame->data[1] + y0 * el_stride + x0,
+                  bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
+      copy_block( s, s->HEVClc->color_mapping_cgs_v,
+                  ref0->frame->data[2] + y0 * el_stride + x0,
+                  bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
+    } else {
+        int bl_edge_right, bl_edge_bottom;
+        int bPbW = ((( ePbW + 1 ) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)  >> 4;    /*    FIXME: check if this method is correct  */
+        int bPbH = ((( ePbH + 2 ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYLum) >> 12)  >> 4;
+
+        int bl_x = (((  x0 - (s->sps->pic_conf_win.left_offset>>1)) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)      >> 4;
+        int bl_y = (((( y0 - (s->sps->pic_conf_win.top_offset >>1)) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYLum) >> 12) -4 ) >> 4;
+#if 0
+        int bl_edge_left  = (MAX_EDGE_CR - 1 - bl_x) > 0 ?  0 : MAX_EDGE_CR - 1;
+        int bl_edge_top   = (MAX_EDGE_CR - 1 - bl_y) > 0 ?  0 : MAX_EDGE_CR - 1;
+#else
+        int bl_edge_left  = !bl_x ?  0 : MAX_EDGE_CR - 1;
+        int bl_edge_top   = bl_y<= 0?  0 : MAX_EDGE_CR - 1;
+#endif
+        int ref_layer_id = s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
+
+        bPbW = bl_x+bPbW > bl_width  ? bl_width - bl_x:bPbW;
+        bPbH = bl_y+bPbH > bl_height ? bl_height- bl_y:bPbH;
+
+        bl_edge_top0 = bl_y < 0 ? bl_y:0;       // This for -4 the top can go in negative
+#if 0
+        bl_edge_right  = MAX_EDGE_CR < (bl_width -  bl_x - bPbW) ? MAX_EDGE_CR:bl_width  - bl_x - bPbW;
+        bl_edge_bottom = MAX_EDGE_CR < (bl_height - bl_y - bPbH) ? MAX_EDGE_CR:bl_height - bl_y - bPbH;
+#else
+        bl_edge_right  = bl_width  <=  bl_x + bPbW ? 0:MAX_EDGE_CR;
+        bl_edge_bottom = bl_height <=  bl_y + bPbH ? 0:MAX_EDGE_CR;
+#endif
+        for (cr = 1; cr <= 2; cr++) {
+          bl_stride = MAX_EDGE_BUFFER_STRIDE>>1;
+          if(cr == 1)
+            src = s->HEVClc->color_mapping_cgs_u + bl_stride + 1;
+          else
+            src = s->HEVClc->color_mapping_cgs_v + bl_stride + 1;
+
+          tmp1 = s->HEVClc->edge_emu_buffer_up_h;
+          ret = s->vdsp.emulated_edge_up_h(tmp1,   src , bl_stride,
+                                             &s->sps->scaled_ref_layer_window[ref_layer_id],
+                                             bPbW + bl_edge_left+bl_edge_right, bPbH + bl_edge_top + bl_edge_bottom,
+                                             bl_edge_left , bl_edge_right,100, MAX_EDGE_CR-1);
+          if(ret==2)//no edge
+              src += (MAX_EDGE_CR-1);
+          if (ret==1) {//right edge
+          	src = tmp1;
+            bl_stride = bPbW + bl_edge_left+bl_edge_right + 2*MAX_EDGE_CR;
+          }
+          if (ret==0){ //left edge
+          	src= tmp1;
+          	bl_stride = bPbW + bl_edge_left+bl_edge_right + 2*MAX_EDGE_CR;
+          }
+
+          tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE_CR - 1) * MAX_EDGE_BUFFER_STRIDE);
+
+          s->hevcdsp.upsample_filter_block_cr_h[s->up_filter_inf.idx](  tmp0, MAX_EDGE_BUFFER_STRIDE, src, bl_stride,
+                                                                        x0, bl_x, ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
+                                                                        &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
+
+          ret = s->vdsp.emulated_edge_up_v(tmp0, MAX_EDGE_BUFFER_STRIDE, &s->sps->scaled_ref_layer_window[ref_layer_id],
+                                             ePbW, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top+bl_edge_top0 , bl_edge_bottom,
+                                             el_width, MAX_EDGE_CR-1);
+
+          if(ret)
+            tmp0 += ((MAX_EDGE_CR-1)*MAX_EDGE_BUFFER_STRIDE);
+
+          s->hevcdsp.upsample_filter_block_cr_v[s->up_filter_inf.idx](  ref0->frame->data[cr] , el_stride, tmp0 , MAX_EDGE_BUFFER_STRIDE,
+                                                                        bl_y, x0, y0, ePbW, ePbH, el_width, el_height,
+                                                                        &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
+        }
+    }
+    s->is_upsampled[((y0) / ctb_size * s->sps->ctb_width) + ((x0) / ctb_size)] = 1;
+}
+static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
+    uint8_t *src;
+    uint8_t *tmp1;
+
+    AVFrame *bl_frame;
+
+    pixel *dst = (pixel*)ref0->frame->data[0];
+    int ctb_size  = 1<<s->sps->log2_ctb_size;
+    int el_width  =  s->sps->width;
+    int el_height =  s->sps->height;
+
+    if(s->vps->vps_nonHEVCBaseLayerFlag){
+        bl_frame = ((H264Picture *)s->BL_frame)->f;
+    } else {
+        bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
+    }
+    HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
+    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples;
+    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples;
+    //int bl_width  =  bl_frame->coded_width;
+    //int bl_height =  bl_frame->coded_height;
+    int bl_stride =  bl_frame->linesize[0];
+
+    int el_stride =  ref0->frame->linesize[0]/sizeof(pixel);
+    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size;
+    int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
+
+    if (s->up_filter_inf.idx == SNR) { /* x1 quality (SNR) scalability */
+      copy_block ( s, bl_frame->data[0] + y0 * bl_stride + x0,
+                    ref0->frame->data[0] + y0 * el_stride + x0,
+                    bl_stride, el_stride, ePbH, ePbW , CHANNEL_TYPE_LUMA);
+    } else { /* spatial scalability */
+
+    	int bl_edge_bottom, bl_edge_right, ret;
+
+    	int bl_x = (( (x0  - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4;
+    	int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12) >> 4;
+
+    	int bPbW = 1+((( (x0 + ctb_size - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4) - bl_x;
+        int bPbH = 2+((( (y0 + ctb_size - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12) >> 4) - bl_y;
+
+
+#if 0
+        int bl_edge_left   = ( MAX_EDGE - 1 - bl_x ) > 0 ?  0: MAX_EDGE - 1;
         int bl_edge_top    = ( MAX_EDGE - 1 - bl_y ) > 0 ?  0: MAX_EDGE - 1;
+#else
+        int bl_edge_left   = !bl_x ?  0: MAX_EDGE - 1;
+        int bl_edge_top    = !bl_y ?  0: MAX_EDGE - 1;
+#endif
         int ref_layer_id = s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
         int16_t *tmp0;
 
-        if(bl_x+bPbW > bl_width)
-            bPbW = bl_width -bl_x;
-
-        if(bl_y+bPbH > bl_height)
-            bPbH = bl_height-bl_y;
-
+#if 0
         bl_edge_right  =  (MAX_EDGE > (bl_width  - bl_x - bPbW))  ? bl_width  - bl_x - bPbW: MAX_EDGE;
         bl_edge_bottom =  (MAX_EDGE > (bl_height - bl_y - bPbH))  ? bl_height - bl_y - bPbH: MAX_EDGE;
+#else
+        bl_edge_right  =  (bl_width  <= bl_x + bPbW)  ? 0: MAX_EDGE;
+        bl_edge_bottom =  (bl_height <= bl_y + bPbH)  ? 0: MAX_EDGE;
+#endif
+        if(bl_x + bPbW > bl_width)
+            bPbW = bl_width - bl_x;
 
-        src = s->BL_frame->frame->data[0] + (bl_y - bl_edge_top) * bl_stride + (bl_x - bl_edge_left);
-        ret = s->vdsp.emulated_edge_up_h(src , bl_stride, &s->sps->scaled_ref_layer_window[ref_layer_id],
+        if(bl_y + bPbH > bl_height)
+            bPbH = bl_height - bl_y;
+
+        tmp1 = s->HEVClc->edge_emu_buffer_up_h+ ((MAX_EDGE - 1));
+
+        src = bl_frame->data[0] + (bl_y - bl_edge_top) * bl_stride + (bl_x - bl_edge_left);
+
+        ret = s->vdsp.emulated_edge_up_h(tmp1, src , bl_stride, &s->sps->scaled_ref_layer_window[ref_layer_id],
                                          bPbW + bl_edge_left + bl_edge_right, bPbH + bl_edge_top + bl_edge_bottom,
-                                         bl_edge_left , bl_edge_right, MAX_EDGE-1);
+                                         bl_edge_left , bl_edge_right,100, MAX_EDGE-1);
 
-        if(ret)
+        if(ret==2)//no edge
             src += (MAX_EDGE-1);
+        if (ret==1) {//right edge
+        	src = tmp1+=(MAX_EDGE-1);
+            bl_stride = MAX_EDGE_BUFFER_STRIDE;
+        }
+        if (ret==0){ //left edge
+        	src = tmp1;
+        	bl_stride = MAX_EDGE_BUFFER_STRIDE;
+        }
 
         tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE);
 
@@ -1294,7 +1801,7 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
                                                                       &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
 
         ret = s->vdsp.emulated_edge_up_v(tmp0, MAX_EDGE_BUFFER_STRIDE, &s->sps->scaled_ref_layer_window[ref_layer_id],
-                                         ePbW, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top ,
+        		                         ePbW, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top ,
                                          bl_edge_bottom, el_width, MAX_EDGE - 1);
         if(ret)
             tmp0 += ((MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE);
@@ -1302,61 +1809,102 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
         s->hevcdsp.upsample_filter_block_luma_v[s->up_filter_inf.idx](dst , ref0->frame->linesize[0], tmp0 , MAX_EDGE_BUFFER_STRIDE,
                                                                       bl_y , x0, y0, ePbW, ePbH, el_width, el_height,
                                                                       &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
-
     }
-    s->is_upsampled[(y0 / ctb_size * s->sps->ctb_width) + (x0 / ctb_size)] = 1;
 }
-
 static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
-    uint8_t   *src;
+
+	uint8_t   *src;
     int16_t   *tmp0;
+    uint8_t   *tmp1;
+
+    AVFrame *bl_frame;
 
     int el_width  =  s->sps->width>>1;
     int el_height =  s->sps->height>>1;
-    int bl_width  =  s->BL_frame->frame->coded_width  >>1;
-    int bl_height  = s->BL_frame->frame->coded_height  > el_height ? s->BL_frame->frame->coded_height>>1:el_height>>1;
+
+    if(s->vps->vps_nonHEVCBaseLayerFlag){
+        bl_frame = ((H264Picture *)s->BL_frame)->f;
+    }else {
+        bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
+    }
+    HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
+    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples >>1;//fixme: non 420 formats
+    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  >>1;
+    //int bl_width  =  bl_frame->coded_width  >>1;
+    //int bl_height =  bl_frame->coded_height >>1;// > el_height ? bl_frame->coded_height>>1:el_height;
+    int bl_stride =  bl_frame->linesize[1];
 
     int ret, cr, bl_edge_top0;
     int ctb_size = 1<<(s->sps->log2_ctb_size-1);
 
-    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size ;
+    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size;
     int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
-    int bl_stride = s->BL_frame->frame->linesize[1];
-    int el_stride = ref0->frame->linesize[1];
+
+    int el_stride = ref0->frame->linesize[1]/sizeof(pixel);
 
     if (s->up_filter_inf.idx == SNR) {
-        for (cr = 1; cr <= 2; cr++)
-            copy_block(s->BL_frame->frame->data[cr] + y0 * bl_stride + x0,
-                       ref0->frame->data[cr] + y0 * el_stride + x0,
-                       bl_stride, el_stride, ePbH, ePbW );
+        for (cr = 1; cr <= 2; cr++) {
+          copy_block( s, bl_frame->data[cr] + y0 * bl_stride + x0,
+                      ref0->frame->data[cr] + y0 * el_stride + x0,
+                      bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
+        }
     } else {
         int bl_edge_right, bl_edge_bottom;
-        int bPbW = ((( ePbW + 1 ) * s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12)  >> 4;    /*    FIXME: check if this method is correct  */
-        int bPbH = ((( ePbH + 2 ) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12)  >> 4;
+        int bl_x = (( (x0  - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXCr) >> 12) >> 4;
+        int bl_y = (( (y0  - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) >> 4;
 
-        int bl_x = (((  x0 - (s->sps->pic_conf_win.left_offset>>1)) * s->up_filter_inf.scaleXLum + s->up_filter_inf.addXLum) >> 12)      >> 4;
-        int bl_y = (((( y0 - (s->sps->pic_conf_win.top_offset >>1)) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) -4 ) >> 4;
+        int bPbW = 1+((( (x0 + ctb_size - s->sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXCr) >> 12) >> 4) - bl_x;
+        int bPbH = 2+((( (y0 + ctb_size - s->sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYCr) >> 12) >> 4) - bl_y;
 
+#if 0
         int bl_edge_left  = (MAX_EDGE_CR - 1 - bl_x) > 0 ?  0 : MAX_EDGE_CR - 1;
         int bl_edge_top   = (MAX_EDGE_CR - 1 - bl_y) > 0 ?  0 : MAX_EDGE_CR - 1;
+#else
+        int bl_edge_left  = !bl_x ?  0 : MAX_EDGE_CR - 1;
+        int bl_edge_top   = bl_y<= 0?  0 : MAX_EDGE_CR - 1;
+#endif
         int ref_layer_id = s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
 
-        bPbW = bl_x+bPbW > bl_width  ? bl_width -bl_x:bPbW;
-        bPbH = bl_y+bPbH > bl_height ? bl_height-bl_y:bPbH;
+        bPbW = bl_x+bPbW > bl_width  ? bl_width  - bl_x:bPbW;
+        bPbH = bl_y+bPbH > bl_height ? bl_height - bl_y:bPbH;
 
-        bl_edge_top0 = bl_y < 0 ? bl_y:0;       // This for -4 the top can go in negative
-
+        bl_edge_top0 = bl_y < 0 ? bl_y:0;      // This for -4 the top can go in negative
+#if 0
         bl_edge_right  = MAX_EDGE_CR < (bl_width -  bl_x - bPbW) ? MAX_EDGE_CR:bl_width  - bl_x - bPbW;
         bl_edge_bottom = MAX_EDGE_CR < (bl_height - bl_y - bPbH) ? MAX_EDGE_CR:bl_height - bl_y - bPbH;
+#else
+        bl_edge_right  = bl_width  <=  bl_x + bPbW ? 0:MAX_EDGE_CR;
+        bl_edge_bottom = bl_height <=  bl_y + bPbH ? 0:MAX_EDGE_CR;
+#endif
 
         for (cr = 1; cr <= 2; cr++) {
-            src = s->BL_frame->frame->data[cr]+ (bl_y-bl_edge_top)*bl_stride+(bl_x-bl_edge_left);
-            ret = s->vdsp.emulated_edge_up_h(   src , bl_stride,
+
+        	bl_stride = bl_frame->linesize[1];
+
+        	tmp1=s->HEVClc->edge_emu_buffer_up_h + ((MAX_EDGE_CR - 1)) + MAX_EDGE_BUFFER_STRIDE;
+
+            src = bl_frame->data[cr] + (bl_y - bl_edge_top0 - bl_edge_top) * bl_stride + ( bl_x - bl_edge_left);
+
+
+            ret = s->vdsp.emulated_edge_up_h(tmp1,   src , bl_stride,
                                              &s->sps->scaled_ref_layer_window[ref_layer_id],
                                              bPbW + bl_edge_left+bl_edge_right, bPbH + bl_edge_top + bl_edge_bottom,
-                                             bl_edge_left , bl_edge_right, MAX_EDGE_CR-1);
-            if(ret)
-                src += (MAX_EDGE_CR - 1);
+                                             bl_edge_left , bl_edge_right,bl_edge_top, MAX_EDGE_CR-1);
+
+
+
+            if(ret==2){//no edge
+            	src = bl_frame->data[cr] + (bl_y - bl_edge_top0 - bl_edge_top) * bl_stride + ( bl_x - bl_edge_left);
+                src += (MAX_EDGE_CR-1);
+            }
+            if (ret==1||ret==4) {//right edge
+            	src = tmp1 += (MAX_EDGE_CR-1);
+                bl_stride = MAX_EDGE_BUFFER_STRIDE;
+            }
+            if (ret==0){ //left edge
+            	src= tmp1;
+            	bl_stride = MAX_EDGE_BUFFER_STRIDE;
+            }
 
             tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE_CR - 1) * MAX_EDGE_BUFFER_STRIDE);
 
@@ -1364,8 +1912,10 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
                                                                         x0, bl_x, ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
                                                                         &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
 
+
+
             ret = s->vdsp.emulated_edge_up_v(tmp0, MAX_EDGE_BUFFER_STRIDE, &s->sps->scaled_ref_layer_window[ref_layer_id],
-                                             ePbW, bPbH + bl_edge_top + bl_edge_bottom, x0, bl_edge_top+bl_edge_top0 , bl_edge_bottom,
+                                             ePbW, bPbH +bl_edge_top + bl_edge_bottom, x0, bl_edge_top + bl_edge_top0 , bl_edge_bottom,
                                              el_width, MAX_EDGE_CR-1);
 
             if(ret)
@@ -1376,24 +1926,32 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
                                                                         &s->sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
         }
     }
+    s->is_upsampled[((y0) / ctb_size * s->sps->ctb_width) + ((x0) / ctb_size)] = 1;
 }
 
 void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
-    int xEL, yEL, xBL, yBL, list, Ref_pre_unit, pre_unit, pre_unit_col;
+    HEVCFrame *bl_frame = s->BL_frame;//fixme : we don't have to enter this function for AVC base
+//    H264Picture *bl_frame = s->BL_frame;
+	int xEL, yEL, xBL, yBL, list, Ref_pre_unit, pre_unit, pre_unit_col;
     int pic_width_in_min_pu = s->sps->width>>s->sps->log2_min_pu_size;
     int pic_height_in_min_pu = s->sps->height>>s->sps->log2_min_pu_size;
-    int pic_width_in_min_puBL = s->BL_frame->frame->coded_width >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_puBL = bl_frame->frame->coded_width >> s->sps->log2_min_pu_size;
+//    int pic_width_in_min_puBL = bl_frame->f->coded_width >> s->sps->log2_min_pu_size;
     int ctb_size = 1 << s->sps->log2_ctb_size;
-    int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
+    int min_pu_size = 1 << s->sps->log2_min_pu_size;
+    int nb_list = s->sh.slice_type==B_SLICE ? 2:1, i, j;
     HEVCFrame *refBL = s->BL_frame;
     HEVCFrame *refEL = s->inter_layer_ref;
 
     for(yEL=ctb_y; yEL < ctb_y+ctb_size && yEL<s->sps->height; yEL+=16) {
         for(xEL=ctb_x; xEL < ctb_x+ctb_size && xEL<s->sps->width; xEL+=16) {
-            xBL = (((av_clip_c(xEL+8, 0, s->sps->width -1)  - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + (1<<15)) >> 16) + 4;
-            yBL = (((av_clip_c(yEL+8, 0, s->sps->height -1) - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + (1<<15)) >> 16) + 4;
+            xBL = (((av_clip_c(xEL, 0, s->sps->width  -1) + 8 - s->sps->pic_conf_win.left_offset)*s->up_filter_inf.scaleXLum + (1<<15)) >> 16) + 4;
+            yBL = (((av_clip_c(yEL, 0, s->sps->height -1) + 8 - s->sps->pic_conf_win.top_offset )*s->up_filter_inf.scaleYLum + (1<<15)) >> 16) + 4;
             pre_unit = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + (xEL>>s->sps->log2_min_pu_size);
-            if(xBL < s->BL_frame->frame->coded_width && yBL < s->BL_frame->frame->coded_height) {
+
+            if((xBL& 0xFFFFFFF0) < bl_frame->frame->width && (yBL& 0xFFFFFFF0) < bl_frame->frame->height) {
+//            if((xBL& 0xFFFFFFF0) < bl_frame->f->coded_width && (yBL& 0xFFFFFFF0) < bl_frame->f->coded_height) {
+
                 xBL >>= 4;
                 xBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> xBL & 0xFFFFFFF0
                 yBL >>= 4;
@@ -1403,10 +1961,9 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                     if (s->up_filter_inf.idx == SNR) {
                         memcpy(&refEL->tab_mvf[pre_unit], &refBL->tab_mvf[Ref_pre_unit], sizeof(MvField));
                     } else {
-
                         for( list=0; list < nb_list; list++) {
-                            refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->sh.ScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->sh.ScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
-                            refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->sh.ScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->sh.ScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
+                            refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->sh.MvScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->sh.MvScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
+                            refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->sh.MvScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->sh.MvScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
                             refEL->tab_mvf[pre_unit].ref_idx[list] = refBL->tab_mvf[Ref_pre_unit].ref_idx[list];
 #ifdef TEST_MV_POC
                             refEL->tab_mvf[pre_unit].poc[list] = refBL->tab_mvf[Ref_pre_unit].poc[list];
@@ -1416,22 +1973,37 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                     }
                 } else
                     memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
-
-
             } else
                 memset(&refEL->tab_mvf[pre_unit], 0, sizeof(MvField));
+            for(i=0; i < 16; i+=min_pu_size) {
+                for(j=0; j < 16; j+=min_pu_size) {
+                    if(!i && !j)
+                        continue;
+                    if(!i && ((yEL+j+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
+                        pre_unit_col = (((yEL+j+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
+                        memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                        continue;
+                    }
 
-            if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu && ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
-                pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
-                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-            }
-            if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
-                pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
-                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
-            }
-            if( ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
-                pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
-                memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                    if(!j && ((xEL+i+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
+                        pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+i+1)>>s->sps->log2_min_pu_size);
+                        memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                        continue;
+                    }
+
+                    if(((xEL+i+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu && ((yEL+j+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
+                        pre_unit_col = (((yEL+j+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+i+1)>>s->sps->log2_min_pu_size);
+                        memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                    }
+                }/*
+                if( ((xEL+1)>>s->sps->log2_min_pu_size) < pic_width_in_min_pu) {
+                    pre_unit_col = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL+1)>>s->sps->log2_min_pu_size);
+                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                }
+                if( ((yEL+1)>>s->sps->log2_min_pu_size) < pic_height_in_min_pu) {
+                    pre_unit_col = (((yEL+1)>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + ((xEL)>>s->sps->log2_min_pu_size);
+                    memcpy(&refEL->tab_mvf[pre_unit_col], &refEL->tab_mvf[pre_unit], sizeof(MvField));
+                }*/
             }
         }
     }
@@ -1447,31 +2019,54 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
     if ((x0 - ctb_x0) < MAX_EDGE &&
         ctb_x0 > ctb_size        &&
         !s->is_upsampled[(ctb_y0 / ctb_size * s->sps->ctb_width)+((ctb_x0 - ctb_size) / ctb_size)]){
-        ff_upscale_mv_block(s, ctb_x0 - ctb_size            , ctb_y0);
-        upsample_block_mc  (s, ref0, (ctb_x0-ctb_size) >> 1 , ctb_y0 >> 1);
+        if(!s->vps->vps_nonHEVCBaseLayerFlag)
+    	    ff_upscale_mv_block(s, ctb_x0 - ctb_size            , ctb_y0);
+        if(s->pps->colour_mapping_enabled_flag) {
+            upsample_block_luma_cgs(s, ref0, ctb_x0-ctb_size        , ctb_y0);
+            upsample_block_mc_cgs  (s, ref0, (ctb_x0-ctb_size) >> 1 , ctb_y0 >> 1);
+        } else {
         upsample_block_luma(s, ref0, ctb_x0-ctb_size        , ctb_y0);
+        upsample_block_mc  (s, ref0, (ctb_x0-ctb_size) >> 1 , ctb_y0 >> 1);
+        }
     }
 
     if ((y0 - ctb_y0) < MAX_EDGE &&
         ctb_y0 > ctb_size &&
         !s->is_upsampled[((ctb_y0 - ctb_size) / ctb_size * s->sps->ctb_width) + (ctb_x0 / ctb_size)]){
-        ff_upscale_mv_block(s, ctb_x0            , ctb_y0 - ctb_size);
-        upsample_block_mc  (s, ref0, ctb_x0 >> 1 , (ctb_y0 - ctb_size) >> 1);
-        upsample_block_luma(s, ref0, ctb_x0      , ctb_y0 - ctb_size);
+    	if(!s->vps->vps_nonHEVCBaseLayerFlag)
+    		ff_upscale_mv_block(s, ctb_x0            , ctb_y0 - ctb_size);
+        if(s->pps->colour_mapping_enabled_flag) {
+            upsample_block_luma_cgs(s, ref0, ctb_x0      , ctb_y0 - ctb_size);
+            upsample_block_mc_cgs  (s, ref0, ctb_x0 >> 1 , (ctb_y0 - ctb_size) >> 1);
+        } else {
+          upsample_block_luma(s, ref0, ctb_x0      , ctb_y0 - ctb_size);
+          upsample_block_mc  (s, ref0, ctb_x0 >> 1 , (ctb_y0 - ctb_size) >> 1);
+        }
     }
 
     if(!s->is_upsampled[(ctb_y0 / ctb_size * s->sps->ctb_width) + (ctb_x0 / ctb_size)]){
-        ff_upscale_mv_block(s, ctb_x0           , ctb_y0);
-        upsample_block_mc  (s, ref0, ctb_x0 >> 1, ctb_y0 >> 1);
-        upsample_block_luma(s, ref0, ctb_x0     , ctb_y0);
-
+    	if(!s->vps->vps_nonHEVCBaseLayerFlag)
+    		ff_upscale_mv_block(s, ctb_x0           , ctb_y0);
+        if(s->pps->colour_mapping_enabled_flag) {
+            upsample_block_luma_cgs(s, ref0, ctb_x0     , ctb_y0);
+            upsample_block_mc_cgs  (s, ref0, ctb_x0 >> 1, ctb_y0 >> 1);
+        } else {
+          upsample_block_luma(s, ref0, ctb_x0     , ctb_y0);
+          upsample_block_mc  (s, ref0, ctb_x0 >> 1, ctb_y0 >> 1);
+        }
     }
 
     if((((x0 + nPbW + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_x0 && ((ctb_x0 + ctb_size) < s->sps->width) &&
        !s->is_upsampled[(ctb_y0 / ctb_size * s->sps->ctb_width) + ((ctb_x0 + ctb_size) / ctb_size)]){
-        ff_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0);
-        upsample_block_mc  (s, ref0, (ctb_x0 + ctb_size) >> 1, ctb_y0 >> 1);
-        upsample_block_luma(s, ref0, ctb_x0 + ctb_size       , ctb_y0);
+    	if(!s->vps->vps_nonHEVCBaseLayerFlag)
+    	    ff_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0);
+        if(s->pps->colour_mapping_enabled_flag) {
+            upsample_block_luma_cgs(s, ref0, ctb_x0 + ctb_size       , ctb_y0);
+            upsample_block_mc_cgs  (s, ref0, (ctb_x0 + ctb_size) >> 1, ctb_y0 >> 1);
+        } else {
+          upsample_block_luma(s, ref0, ctb_x0 + ctb_size       , ctb_y0);
+          upsample_block_mc  (s, ref0, (ctb_x0 + ctb_size) >> 1, ctb_y0 >> 1);
+        }
     }
 
     if((((y0 + nPbH + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_y0 &&
@@ -1480,17 +2075,31 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
             if (s->threads_type & FF_THREAD_FRAME ) {
                 int bl_y = ctb_y0 + ctb_size + ctb_size * 2 + 9;
                 bl_y = (( (bl_y  - s->sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
-                ff_thread_await_progress(&s->BL_frame->tf, bl_y, 0);
+                ff_thread_await_progress(&((HEVCFrame *)s->BL_frame)->tf, bl_y, 0);
             }
-            ff_upscale_mv_block(s, ctb_x0, ctb_y0 + ctb_size);
-            upsample_block_mc  (s, ref0, ctb_x0 >> 1, (ctb_y0 + ctb_size) >> 1);
-            upsample_block_luma(s, ref0, ctb_x0     , ctb_y0 + ctb_size);
+            if(!s->vps->vps_nonHEVCBaseLayerFlag)
+                ff_upscale_mv_block(s, ctb_x0, ctb_y0 + ctb_size);
+            if(s->pps->colour_mapping_enabled_flag) {
+                upsample_block_luma_cgs(s, ref0, ctb_x0     , ctb_y0 + ctb_size);
+                upsample_block_mc_cgs  (s, ref0, ctb_x0 >> 1, (ctb_y0 + ctb_size) >> 1);
+            } else {
+              upsample_block_luma(s, ref0, ctb_x0     , ctb_y0 + ctb_size);
+              upsample_block_mc  (s, ref0, ctb_x0 >> 1, (ctb_y0 + ctb_size) >> 1);
+            }
         }
         if((((x0 + nPbW + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_x0 && ((ctb_x0 + ctb_size) < s->sps->width) &&
            !s->is_upsampled[((ctb_y0 + ctb_size) / ctb_size * s->sps->ctb_width) + ((ctb_x0 + ctb_size) / ctb_size)]){
-            ff_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0 + ctb_size);
-            upsample_block_mc  (s, ref0, (ctb_x0 + ctb_size) >> 1, (ctb_y0 + ctb_size) >> 1);
-            upsample_block_luma(s, ref0, (ctb_x0 + ctb_size)    , ctb_y0 + ctb_size);
+        	if(!s->vps->vps_nonHEVCBaseLayerFlag)
+                ff_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0 + ctb_size);
+            if(s->pps->colour_mapping_enabled_flag) {
+              upsample_block_luma_cgs(s, ref0, (ctb_x0 + ctb_size)    , ctb_y0 + ctb_size);
+              upsample_block_mc_cgs  (s, ref0, (ctb_x0 + ctb_size) >> 1, (ctb_y0 + ctb_size) >> 1);
+            } else {
+              upsample_block_luma(s, ref0, (ctb_x0 + ctb_size)    , ctb_y0 + ctb_size);
+              upsample_block_mc  (s, ref0, (ctb_x0 + ctb_size) >> 1, (ctb_y0 + ctb_size) >> 1);
+            }
         }
     }
 }
+
+

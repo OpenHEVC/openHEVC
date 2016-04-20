@@ -49,5 +49,5 @@ extern const xmm_reg  ff_pb_3;
 extern const xmm_reg  ff_pb_80;
 extern const xmm_reg  ff_pb_F8;
 extern const uint64_t ff_pb_FC;
-
+extern const ymm_reg  ff_pw_1023;
 #endif /* AVCODEC_X86_CONSTANTS_H */

@@ -43,9 +43,11 @@
 
 
 int h264_flags;
+int shvc_flags;
 int check_md5_flags;
 int thread_type;
 char *input_file;
+char *enhance_file;
 char display_flags;
 char *output_file;
 int nb_pthreads;
@@ -53,7 +55,7 @@ int temporal_layer_id;
 int quality_layer_id;
 int no_cropping;
 int num_frames;
-int frame_rate;
+float frame_rate;
 
 #if CONFIG_ECO
 char *eco_param;

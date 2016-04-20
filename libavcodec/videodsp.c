@@ -39,13 +39,15 @@ av_cold void ff_videodsp_init(VideoDSPContext *ctx, int bpc)
 {
     ctx->prefetch = just_return;
     if (bpc <= 8) {
-        ctx->emulated_edge_mc = ff_emulated_edge_mc_8;
-        ctx->emulated_edge_up_h = ff_emulated_edge_up_h_8;
-        ctx->emulated_edge_up_v = ff_emulated_edge_up_v_8;
+        ctx->emulated_edge_mc       = ff_emulated_edge_mc_8;
+        ctx->emulated_edge_up_h     = ff_emulated_edge_up_h_8;
+        ctx->emulated_edge_up_v     = ff_emulated_edge_up_v_8;
+        ctx->emulated_edge_up_cgs_h = ff_emulated_edge_up_cgs_h_8;
     } else {
-        ctx->emulated_edge_mc = ff_emulated_edge_mc_16;
-        ctx->emulated_edge_up_h = ff_emulated_edge_up_h_16;
-        ctx->emulated_edge_up_v = ff_emulated_edge_up_v_16;
+        ctx->emulated_edge_mc       = ff_emulated_edge_mc_16;
+        ctx->emulated_edge_up_h     = ff_emulated_edge_up_h_16;
+        ctx->emulated_edge_up_v     = ff_emulated_edge_up_v_16;
+        ctx->emulated_edge_up_cgs_h = ff_emulated_edge_up_cgs_h_16;
     }
 
     if (ARCH_AARCH64)

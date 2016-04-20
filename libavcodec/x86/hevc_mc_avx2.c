@@ -43,7 +43,7 @@
 #define CLPI_PIXEL_MAX_10 0x03FF
 #define CLPI_PIXEL_MAX_12 0x0FFF
 
-#ifndef OPTI_ASM
+//#ifndef OPTI_ASM
 DECLARE_ALIGNED(32, const int8_t, ff_hevc_epel_filters_avx2[7][2][32]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},
       { 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2} },
@@ -1717,7 +1717,7 @@ void ff_hevc_put_hevc_bi_w_qpel_h ## H ## _ ## D ## _avx2_ (                    
 
 #define PUT_HEVC_QPEL_V_VAR8_12()     PUT_HEVC_QPEL_V_VAR8_10()
 #define PUT_HEVC_QPEL_V_VAR16_12()     PUT_HEVC_QPEL_V_VAR16_10()
-#define PUT_HEVC_QPEL_V_VAR16_14()     PUT_HEVC_QPEL_V_VAR8_10()
+#define PUT_HEVC_QPEL_V_VAR8_14()     PUT_HEVC_QPEL_V_VAR8_10()
 #define PUT_HEVC_QPEL_V_VAR16_14()     PUT_HEVC_QPEL_V_VAR16_10()
 
 #define PUT_HEVC_QPEL_V(V, D)                                                  \
@@ -2059,46 +2059,46 @@ static PUT_HEVC_BI_W_ ## FUNC ##14(H,12)
 
 // ff_hevc_put_hevc_mc_pixelsX_X_avx2
 #if HAVE_AVX2
-GEN_FUNC(PEL_PIXELS, 32, 8)
-GEN_FUNC(PEL_PIXELS,  16, 10)
-GEN_FUNC(PEL_PIXELS,  16, 12)
-
-// ff_hevc_put_hevc_epel_hX_X_avx2
-GEN_FUNC(EPEL_H,  16, 10)
-GEN_FUNC(EPEL_H,  16, 12)
-
-// ff_hevc_put_hevc_epel_vX_X_avx2
-GEN_FUNC(EPEL_V,  16, 10)
-GEN_FUNC(EPEL_V,  16, 12)
-
-// ff_hevc_put_hevc_epel_hvX_X_avx2
-//GEN_FUNC(EPEL_HV,  8,  8)
-GEN_FUNC(EPEL_HV,  16, 10)
-
-GEN_FUNC(EPEL_HV,  16, 12)
-
-
-// ff_hevc_put_hevc_qpel_hX_X_X_avx2
+//GEN_FUNC(PEL_PIXELS, 32, 8)
+//GEN_FUNC(PEL_PIXELS,  16, 10)
+//GEN_FUNC(PEL_PIXELS,  16, 12)
+//
+//// ff_hevc_put_hevc_epel_hX_X_avx2
+//GEN_FUNC(EPEL_H,  16, 10)
+//GEN_FUNC(EPEL_H,  16, 12)
+//
+//// ff_hevc_put_hevc_epel_vX_X_avx2
+//GEN_FUNC(EPEL_V,  16, 10)
+//GEN_FUNC(EPEL_V,  16, 12)
+//
+//// ff_hevc_put_hevc_epel_hvX_X_avx2
+////GEN_FUNC(EPEL_HV,  8,  8)
+//GEN_FUNC(EPEL_HV,  16, 10)
+//
+//GEN_FUNC(EPEL_HV,  16, 12)
+//
+//
+//// ff_hevc_put_hevc_qpel_hX_X_X_avx2
 //GEN_FUNC(QPEL_H,  4,  8)
 //GEN_FUNC(QPEL_H,  8,  8)
 //GEN_FUNC(QPEL_H, 16,  8)
-GEN_FUNC(QPEL_H, 32,  8)
-GEN_FUNC(QPEL_H_10,  16, 10)
-GEN_FUNC(QPEL_H_10,  16, 12)
-
+//GEN_FUNC(QPEL_H, 32,  8)
+//GEN_FUNC(QPEL_H_10,  16, 10)
+//GEN_FUNC(QPEL_H_10,  16, 12)
+//
 // ff_hevc_put_hevc_qpel_vX_X_X_avx2
-GEN_FUNC(QPEL_V, 32,  8)
-
-GEN_FUNC(QPEL_V,  16, 10)
-
-GEN_FUNC(QPEL_V,  16, 12)
-
-GEN_FUNC_STATIC(QPEL_V, 16, 14)
-
-// ff_hevc_put_hevc_qpel_hvX_X_avx2
-GEN_FUNC(QPEL_HV,  32, 8)
-GEN_FUNC(QPEL_HV,  16, 10)
-GEN_FUNC(QPEL_HV,  16, 12)
+//GEN_FUNC(QPEL_V, 32,  8)
+//
+//GEN_FUNC(QPEL_V,  16, 10)
+//
+//GEN_FUNC(QPEL_V,  16, 12)
+//
+//GEN_FUNC_STATIC(QPEL_V, 16, 14)
+//
+//// ff_hevc_put_hevc_qpel_hvX_X_avx2
+//GEN_FUNC(QPEL_HV,  32, 8)
+//GEN_FUNC(QPEL_HV,  16, 10)
+//GEN_FUNC(QPEL_HV,  16, 12)
 
 #define mc_red_func(name, bitd, step, W)                                                                    \
 void ff_hevc_put_hevc_##name##W##_##bitd##_avx2_(                                                             \
@@ -2284,7 +2284,7 @@ mc_red_func(epel_hv,12, 8, 32);
 mc_red_func(epel_hv,12, 8, 48);
 mc_red_func(epel_hv,12, 8, 64);
 */
-#endif //OPTI_ASM
+//#endif //OPTI_ASM
 
 #endif // HAVE_AVX2
 

@@ -61,9 +61,11 @@ void print_usage() {
     printf("     -l <Quality layer id> \n");
     printf("     -s <num> Stop after num frames \n");
     printf("     -r <num> Frame rate (FPS) \n");
+    printf("     -v : input is a h264 bitstream \n");
+    printf("     -e : <enhanced_layer> when using AVC base layer\n");
 #if CONFIG_ECO
-    printf("     -e Eco mode <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;2;4] SAO [1;0] DBF [1;0] \n");
-    printf("     -E Eco mode verbose, same args as -e \n");
+    printf("     -g Eco mode <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;2;4] SAO [1;0] DBF [1;0] \n");
+    printf("     -G Eco mode verbose, same args as -e \n");
 #endif
 }
 
@@ -137,16 +139,18 @@ void init_main(int argc, char *argv[]) {
     // every command line option must be followed by ':' if it takes an
     // argument, and '::' if this argument is optional
 #if CONFIG_ECO
-    const char *ostr = "achi:no:p:f:s:t:v:wl:r:e:E:";
+    const char *ostr = "achvi:e:no:p:f:s:t:wl:r:g:G:";
 #else
-    const char *ostr = "achi:no:p:f:s:t:v:wl:r:";
+    const char *ostr = "achvi:e:no:p:f:s:t:wl:r:";
 #endif
 
     int c;
     h264_flags        = DISABLE;
+    shvc_flags		  = DISABLE;
     check_md5_flags   = ENABLE;
     thread_type       = 1;
     input_file        = NULL;
+    enhance_file 	  = NULL;
     display_flags     = ENABLE;
     output_file       = NULL;
     nb_pthreads       = 1;
@@ -179,11 +183,18 @@ void init_main(int argc, char *argv[]) {
         case 'i':
             input_file = strdup(optarg);
             break;
+        case 'e':
+        	enhance_file = strdup(optarg);
+        	shvc_flags = ENABLE;
+        	break;
         case 'n':
             display_flags = DISABLE;
             break;
         case 'o':
             output_file = strdup(optarg);
+            if(strlen(output_file) >= 4
+            		&& output_file[strlen(output_file)-4] == '.')
+                output_file[strlen(output_file)-4] = '\0';
             break;
         case 'p':
             nb_pthreads = atoi(optarg);
@@ -204,17 +215,17 @@ void init_main(int argc, char *argv[]) {
             num_frames = atoi(optarg);
             break;
         case 'r':
-            frame_rate = atoi(optarg);
+            frame_rate = atof(optarg);
             break;
 #if CONFIG_ECO
-        case 'e':	//< ECO
+        case 'g':	//< ECO
             if(strlen(optarg) < 5 || strlen(optarg) > 6){
                 print_usage();
                 exit(1);
             }
             eco_param = strdup(optarg);
             break;
-        case 'E':	//< ECO
+        case 'G':	//< ECO
 		   if(strlen(optarg) < 5 || strlen(optarg) > 6){
 			   print_usage();
 			   exit(1);

@@ -39,13 +39,13 @@ dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _ ## 
 dst ## _uni_w[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _ ## opt; \
 dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _ ## opt
 
-#ifdef OPTI_ASM
+//#ifdef OPTI_ASM
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
 PEL_LINK2(dst, idx1, idx2, idx3, name, D, opt)
-#else
-#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
-PEL_LINK2(dst, idx1, idx2, idx3, name, D, sse)
-#endif
+//#else
+//#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
+//PEL_LINK2(dst, idx1, idx2, idx3, name, D, sse)
+//#endif
 
 #define PEL_PROTOTYPE2(name, D, opt) \
 void ff_hevc_put_hevc_ ## name ## _ ## D ## _##opt(int16_t *dst, ptrdiff_t dststride,uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
@@ -59,32 +59,32 @@ void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t
 void ff_hevc_put_hevc_uni_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int height, int denom,  int _wx, int _ox); \
 void ff_hevc_put_hevc_bi_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, int16_t *_src2, ptrdiff_t _src2stride, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)
 
-#ifdef OPTI_ASM
+//#ifdef OPTI_ASM
 #define WEIGHTING_PROTOTYPE(width, bitd, opt) \
 		WEIGHTING_PROTOTYPE2(width, bitd, opt)
-#else
-#define WEIGHTING_PROTOTYPE(width, bitd, opt) \
-		WEIGHTING_PROTOTYPE2(width, bitd, sse)
-#endif
+//#else
+//#define WEIGHTING_PROTOTYPE(width, bitd, opt) \
+//		WEIGHTING_PROTOTYPE2(width, bitd, sse)
+//#endif
 
-#ifdef OPTI_ASM
+//#ifdef OPTI_ASM
 #define PEL_PROTOTYPE(name, D, opt) \
 PEL_PROTOTYPE2(name, D, opt)
-#else
-#define PEL_PROTOTYPE(name, D, opt) \
-PEL_PROTOTYPE2(name, D, sse)
-#endif
+//#else
+//#define PEL_PROTOTYPE(name, D, opt) \
+//PEL_PROTOTYPE2(name, D, sse)
+//#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 //IDCT functions
 ///////////////////////////////////////////////////////////////////////////////
 void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-void ff_hevc_transform_4x4_luma_8_sse4(int16_t *coeffs);
-void ff_hevc_transform_4x4_luma_10_sse4(int16_t *coeffs);
-void ff_hevc_transform_4x4_luma_12_sse4(int16_t *coeffs);
+void ff_hevc_transform_4x4_luma_8_sse2(int16_t *coeffs);
+void ff_hevc_transform_4x4_luma_10_sse2(int16_t *coeffs);
+void ff_hevc_transform_4x4_luma_12_sse2(int16_t *coeffs);
 
-#define IDCT_FUNC(s, b) void ff_hevc_transform_ ## s ## x ## s ##_## b ##_sse4\
+#define IDCT_FUNC(s, b) void ff_hevc_transform_ ## s ## x ## s ##_## b ##_sse2\
             (int16_t *coeffs, int col_limit);
 
 IDCT_FUNC(4, 8)
@@ -100,23 +100,53 @@ IDCT_FUNC(32, 8)
 IDCT_FUNC(32, 10)
 IDCT_FUNC(32, 12)
 
-void ff_hevc_transform_add4_8_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add8_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add32_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+#define TRANSFORM_ADD_FUNC_MMXEXT(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_mmxext\
+		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+#define TRANSFORM_ADD_FUNC_SSE2(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_sse2\
+		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+#define TRANSFORM_ADD_FUNC_AVX(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_avx\
+		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+#define TRANSFORM_ADD_FUNC_AVX2(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_avx2\
+		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+#define TRANSFORM_ADD2_FUNC_SSE2(s, b) void ff_hevc_transform_ ## s ## x ## s ##_add_## b ##_sse2\
+		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-void ff_hevc_transform_add4_10_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add8_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add16_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add32_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+TRANSFORM_ADD_FUNC_MMXEXT(4,8)
+TRANSFORM_ADD_FUNC_SSE2(8,8)
+TRANSFORM_ADD_FUNC_SSE2(16,8)
+TRANSFORM_ADD_FUNC_SSE2(32,8)
 
+TRANSFORM_ADD_FUNC_MMXEXT(4,10)
+TRANSFORM_ADD_FUNC_SSE2(8,10)
+TRANSFORM_ADD_FUNC_SSE2(16,10)
+TRANSFORM_ADD_FUNC_SSE2(32,10)
 
-void ff_hevc_transform_add8_10_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add16_10_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add32_10_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+TRANSFORM_ADD2_FUNC_SSE2(4,8)
+TRANSFORM_ADD2_FUNC_SSE2(8,8)
+TRANSFORM_ADD2_FUNC_SSE2(16,8)
+TRANSFORM_ADD2_FUNC_SSE2(32,8)
 
-void ff_hevc_transform_add16_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add32_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+TRANSFORM_ADD2_FUNC_SSE2(4,10)
+TRANSFORM_ADD2_FUNC_SSE2(8,10)
+TRANSFORM_ADD2_FUNC_SSE2(16,10)
+TRANSFORM_ADD2_FUNC_SSE2(32,10)
+
+TRANSFORM_ADD2_FUNC_SSE2(4,12)
+TRANSFORM_ADD2_FUNC_SSE2(8,12)
+TRANSFORM_ADD2_FUNC_SSE2(16,12)
+TRANSFORM_ADD2_FUNC_SSE2(32,12)
+
+TRANSFORM_ADD_FUNC_AVX(8,10)
+TRANSFORM_ADD_FUNC_AVX(16,10)
+TRANSFORM_ADD_FUNC_AVX(32,10)
+
+TRANSFORM_ADD_FUNC_AVX2(16,10)
+TRANSFORM_ADD_FUNC_AVX2(32,10)
+
+void ff_hevc_transform_4x4_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void ff_hevc_transform_8x8_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void ff_hevc_transform_16x16_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void ff_hevc_transform_32x32_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
 
 ///////////////////////////////////////////////////////////////////////////////
 // MC functions
@@ -209,7 +239,7 @@ EPEL_PROTOTYPES(epel_hv ,  8, sse4);
 EPEL_PROTOTYPES(epel_hv , 10, sse4);
 EPEL_PROTOTYPES(epel_hv , 12, sse4);
 
-#ifdef OPTI_ASM
+//#ifdef OPTI_ASM
 PEL_PROTOTYPE(epel_h16, 8, avx2);
 PEL_PROTOTYPE(epel_h24, 8, avx2);
 PEL_PROTOTYPE(epel_h32, 8, avx2);
@@ -245,7 +275,7 @@ PEL_PROTOTYPE(epel_hv24,10, avx2);
 PEL_PROTOTYPE(epel_hv32,10, avx2);
 PEL_PROTOTYPE(epel_hv48,10, avx2);
 PEL_PROTOTYPE(epel_hv64,10, avx2);
-#endif
+//#endif
 ///////////////////////////////////////////////////////////////////////////////
 // QPEL
 ///////////////////////////////////////////////////////////////////////////////
@@ -261,7 +291,7 @@ QPEL_PROTOTYPES(qpel_hv,  8, sse4);
 QPEL_PROTOTYPES(qpel_hv, 10, sse4);
 QPEL_PROTOTYPES(qpel_hv, 12, sse4);
 
-#ifdef OPTI_ASM
+//#ifdef OPTI_ASM
 PEL_PROTOTYPE(qpel_h16, 8, avx2);
 PEL_PROTOTYPE(qpel_h24, 8, avx2);
 PEL_PROTOTYPE(qpel_h32, 8, avx2);
@@ -297,7 +327,7 @@ PEL_PROTOTYPE(qpel_hv24,10, avx2);
 PEL_PROTOTYPE(qpel_hv32,10, avx2);
 PEL_PROTOTYPE(qpel_hv48,10, avx2);
 PEL_PROTOTYPE(qpel_hv64,10, avx2);
-#endif
+//#endif
 
 WEIGHTING_PROTOTYPES(8, sse4);
 WEIGHTING_PROTOTYPES(10, sse4);

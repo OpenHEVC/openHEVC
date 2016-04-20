@@ -69,6 +69,15 @@
     SWAP %2, %3
 %endmacro
 
+%macro TRANSPOSE2x4x4B 5
+    SBUTTERFLY bw,  %1, %2, %5
+    SBUTTERFLY bw,  %3, %4, %5
+    SBUTTERFLY wd,  %1, %3, %5
+    SBUTTERFLY wd,  %2, %4, %5
+    SBUTTERFLY dq,  %1, %2, %5
+    SBUTTERFLY dq,  %3, %4, %5
+%endmacro
+
 %macro TRANSPOSE2x4x4W 5
     SBUTTERFLY wd,  %1, %2, %5
     SBUTTERFLY wd,  %3, %4, %5
@@ -632,6 +641,11 @@
 %endif
 %endmacro
 
+%macro CLIPUB 3 ;(dst, min, max)
+    pmaxub %1, %2
+    pminub %1, %3
+%endmacro
+
 %macro CLIPW 3 ;(dst, min, max)
     pmaxsw %1, %2
     pminsw %1, %3
@@ -744,4 +758,20 @@ PMA_EMU PMADCSWD, pmadcswd, pmaddwd, paddd
         mulps   %1, %2, %3
         addps   %1, %4
     %endif
+%endmacro
+
+%macro LSHIFT 2
+%if mmsize > 8
+    pslldq  %1, %2
+%else
+    psllq   %1, 8*(%2)
+%endif
+%endmacro
+
+%macro RSHIFT 2
+%if mmsize > 8
+    psrldq  %1, %2
+%else
+    psrlq   %1, 8*(%2)
+%endif
 %endmacro

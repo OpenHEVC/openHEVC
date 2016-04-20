@@ -478,7 +478,7 @@ function ff_upsample_filter_block_luma_v_x1_5_neon, export=1
     add        r2, r5, #16
     bne        2b
     vpop {d8-d15}
-    pop {r4-r8}
+    pop {r4-r9}
     bx lr
 endfunc
 

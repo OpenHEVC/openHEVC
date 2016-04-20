@@ -28,13 +28,21 @@
 #ifndef AVCODEC_MPEGVIDEO_H
 #define AVCODEC_MPEGVIDEO_H
 
+#include <float.h>
+
 #include "avcodec.h"
-#include "dsputil.h"
+#include "blockdsp.h"
 //#include "error_resilience.h"
+//#include "fdctdsp.h"
 #include "get_bits.h"
 #include "h264chroma.h"
 //#include "h263dsp.h"
 #include "hpeldsp.h"
+#include "idctdsp.h"
+#include "me_cmp.h"
+//#include "mpegvideodsp.h"
+//#include "mpegvideoencdsp.h"
+//#include "pixblockdsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
 #include "parser.h"
@@ -56,11 +64,6 @@ enum OutputFormat {
     FMT_MJPEG,
 };
 
-#define MPEG_BUF_SIZE (16 * 1024)
-
-#define QMAT_SHIFT_MMX 16
-#define QMAT_SHIFT 21
-
 #define MAX_FCODE 7
 #define MAX_MV 4096
 
@@ -70,12 +73,12 @@ enum OutputFormat {
 #define MAX_B_FRAMES 16
 
 #define ME_MAP_SIZE 64
-#define ME_MAP_SHIFT 3
-#define ME_MAP_MV_BITS 11
 
 #define MAX_MB_BYTES (30*16*16*3/8 + 120)
 
 #define INPLACE_OFFSET 16
+
+#define EDGE_WIDTH 16
 
 /* Start codes. */
 #define SEQ_END_CODE            0x000001b7
@@ -143,6 +146,8 @@ typedef struct Picture{
 
     int reference;
     int shared;
+
+    uint64_t error[AV_NUM_DATA_POINTERS];
 } Picture;
 
 /**
@@ -354,9 +359,15 @@ typedef struct MpegEncContext {
     int unrestricted_mv;        ///< mv can point outside of the coded picture
     int h263_long_vectors;      ///< use horrible h263v1 long vector mode
 
-    DSPContext dsp;             ///< pointers for accelerated dsp functions
+    BlockDSPContext bdsp;
+//    FDCTDSPContext fdsp;
     H264ChromaContext h264chroma;
     HpelDSPContext hdsp;
+    IDCTDSPContext idsp;
+    MECmpContext mecc;
+//    MpegVideoDSPContext mdsp;
+//    MpegvideoEncDSPContext mpvencdsp;
+//    PixblockDSPContext pdsp;
     QpelDSPContext qdsp;
     VideoDSPContext vdsp;
 //    H263DSPContext h263dsp;
@@ -424,7 +435,7 @@ typedef struct MpegEncContext {
     uint16_t chroma_intra_matrix[64];
     uint16_t inter_matrix[64];
     uint16_t chroma_inter_matrix[64];
-#define QUANT_BIAS_SHIFT 8
+
     int intra_quant_bias;    ///< bias for the quantizer
     int inter_quant_bias;    ///< bias for the quantizer
     int min_qcoeff;          ///< minimum encodable coefficient
@@ -452,8 +463,6 @@ typedef struct MpegEncContext {
     int (*dct_error_sum)[64];
     int dct_count[2];
     uint16_t (*dct_offset)[64];
-
-    void *opaque;              ///< private data for the user
 
     /* bit rate control */
     int64_t total_bits;
@@ -525,7 +534,6 @@ typedef struct MpegEncContext {
     int partitioned_frame;           ///< is current frame partitioned
     int low_delay;                   ///< no reordering needed / has no b-frames
     int vo_type;
-    int vol_control_parameters;      ///< does the stream contain the low_delay flag, used to workaround buggy encoders
     PutBitContext tex_pb;            ///< used for data partitioned VOPs
     PutBitContext pb2;               ///< used for data partitioned VOPs
     int mpeg_quant;
@@ -540,7 +548,6 @@ typedef struct MpegEncContext {
     /* RV10 specific */
     int rv10_version; ///< RV10 version: 0 or 3
     int rv10_first_dc_coded[3];
-    int orig_width, orig_height;
 
     /* MJPEG specific */
     struct MJpegContext *mjpeg_ctx;
@@ -586,6 +593,7 @@ typedef struct MpegEncContext {
     int q_scale_type;
     int intra_vlc_format;
     int alternate_scan;
+    int seq_disp_ext;
     int repeat_first_field;
     int chroma_420_type;
     int chroma_format;
@@ -633,10 +641,6 @@ typedef struct MpegEncContext {
                            int16_t *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize_h263_inter)(struct MpegEncContext *s,
                            int16_t *block/*align 16*/, int n, int qscale);
-    void (*dct_unquantize_h261_intra)(struct MpegEncContext *s,
-                           int16_t *block/*align 16*/, int n, int qscale);
-    void (*dct_unquantize_h261_inter)(struct MpegEncContext *s,
-                           int16_t *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize_intra)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
                            int16_t *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize_inter)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
@@ -647,6 +651,20 @@ typedef struct MpegEncContext {
 
     int mpv_flags;      ///< flags set by private options
     int quantizer_noise_shaping;
+
+    /**
+     * ratecontrol qmin qmax limiting method
+     * 0-> clipping, 1-> use a nice continuous function to limit qscale within qmin/qmax.
+     */
+    float rc_qsquish;
+    float rc_qmod_amp;
+    int   rc_qmod_freq;
+    float rc_initial_cplx;
+    float rc_buffer_aggressivity;
+    float border_masking;
+    int lmin, lmax;
+
+    char *rc_eq;
 
     /* temp buffers for rate control */
     float *cplx_tab, *bits_tab;
@@ -676,7 +694,9 @@ typedef struct MpegEncContext {
 #define FF_MPV_FLAG_NAQ          0x0010
 #define FF_MPV_FLAG_MV0          0x0020
 
+#ifndef FF_MPV_OFFSET
 #define FF_MPV_OFFSET(x) offsetof(MpegEncContext, x)
+#endif
 #define FF_MPV_OPT_FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 #define FF_MPV_COMMON_OPTS \
 { "mpv_flags",      "Flags common for all mpegvideo-based encoders.", FF_MPV_OFFSET(mpv_flags), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "mpv_flags" },\
@@ -692,7 +712,21 @@ typedef struct MpegEncContext {
                                                                       FF_MPV_OFFSET(chroma_elim_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },\
 { "quantizer_noise_shaping", NULL,                                  FF_MPV_OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
 { "error_rate", "Simulate errors in the bitstream to test error concealment.",                                                                                                  \
-                                                                    FF_MPV_OFFSET(error_rate),              AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },
+                                                                    FF_MPV_OFFSET(error_rate),              AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
+{"qsquish", "how to keep quantizer between qmin and qmax (0 = clip, 1 = use differentiable function)",                                                                          \
+                                                                    FF_MPV_OFFSET(rc_qsquish), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, 99, FF_MPV_OPT_FLAGS},                        \
+{"rc_qmod_amp", "experimental quantizer modulation",                FF_MPV_OFFSET(rc_qmod_amp), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},           \
+{"rc_qmod_freq", "experimental quantizer modulation",               FF_MPV_OFFSET(rc_qmod_freq), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS},             \
+{"rc_eq", "Set rate control equation. When computing the expression, besides the standard functions "                                                                           \
+          "defined in the section 'Expression Evaluation', the following functions are available: "                                                                             \
+          "bits2qp(bits), qp2bits(qp). Also the following constants are available: iTex pTex tex mv "                                                                           \
+          "fCode iCount mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex avgTex.",                                                                         \
+                                                                    FF_MPV_OFFSET(rc_eq), AV_OPT_TYPE_STRING,                           .flags = FF_MPV_OPT_FLAGS },            \
+{"rc_init_cplx", "initial complexity for 1-pass encoding",          FF_MPV_OFFSET(rc_initial_cplx), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},       \
+{"rc_buf_aggressivity", "currently useless",                        FF_MPV_OFFSET(rc_buffer_aggressivity), AV_OPT_TYPE_FLOAT, {.dbl = 1.0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS}, \
+{"border_mask", "increase the quantizer for macroblocks close to borders", FF_MPV_OFFSET(border_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},    \
+{"lmin", "minimum Lagrange factor (VBR)",                           FF_MPV_OFFSET(lmin), AV_OPT_TYPE_INT, {.i64 =  2*FF_QP2LAMBDA }, 0, INT_MAX, FF_MPV_OPT_FLAGS },            \
+{"lmax", "maximum Lagrange factor (VBR)",                           FF_MPV_OFFSET(lmax), AV_OPT_TYPE_INT, {.i64 = 31*FF_QP2LAMBDA }, 0, INT_MAX, FF_MPV_OPT_FLAGS },            \
 
 extern const AVOption ff_mpv_generic_options[];
 
@@ -709,24 +743,37 @@ static const AVClass name ## _class = {\
  * and decoding).  The changed fields will not depend upon the prior
  * state of the MpegEncContext.
  */
-void ff_MPV_common_defaults(MpegEncContext *s);
+void ff_mpv_common_defaults(MpegEncContext *s);
 
-void ff_MPV_decode_defaults(MpegEncContext *s);
-int ff_MPV_common_init(MpegEncContext *s);
-int ff_MPV_common_frame_size_change(MpegEncContext *s);
-void ff_MPV_common_end(MpegEncContext *s);
-void ff_MPV_decode_mb(MpegEncContext *s, int16_t block[12][64]);
-int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx);
-void ff_MPV_frame_end(MpegEncContext *s);
-int ff_MPV_encode_init(AVCodecContext *avctx);
-int ff_MPV_encode_end(AVCodecContext *avctx);
-int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
-                          const AVFrame *frame, int *got_packet);
 void ff_dct_encode_init_x86(MpegEncContext *s);
-void ff_MPV_common_init_x86(MpegEncContext *s);
-void ff_MPV_common_init_axp(MpegEncContext *s);
-void ff_MPV_common_init_arm(MpegEncContext *s);
-void ff_MPV_common_init_ppc(MpegEncContext *s);
+
+int ff_mpv_common_init(MpegEncContext *s);
+void ff_mpv_common_init_arm(MpegEncContext *s);
+void ff_mpv_common_init_axp(MpegEncContext *s);
+void ff_mpv_common_init_neon(MpegEncContext *s);
+void ff_mpv_common_init_ppc(MpegEncContext *s);
+void ff_mpv_common_init_x86(MpegEncContext *s);
+
+int ff_mpv_common_frame_size_change(MpegEncContext *s);
+void ff_mpv_common_end(MpegEncContext *s);
+
+void ff_mpv_decode_defaults(MpegEncContext *s);
+void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx);
+void ff_mpv_decode_mb(MpegEncContext *s, int16_t block[12][64]);
+void ff_mpv_report_decode_progress(MpegEncContext *s);
+
+int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx);
+void ff_mpv_frame_end(MpegEncContext *s);
+
+int ff_mpv_lowest_referenced_row(MpegEncContext *s, int dir);
+
+int ff_mpv_encode_init(AVCodecContext *avctx);
+void ff_mpv_encode_init_x86(MpegEncContext *s);
+
+int ff_mpv_encode_end(AVCodecContext *avctx);
+int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
+                          const AVFrame *frame, int *got_packet);
+
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
@@ -743,24 +790,18 @@ void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
 void ff_denoise_dct(MpegEncContext *s, int16_t *block);
 int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
-int ff_MPV_lowest_referenced_row(MpegEncContext *s, int dir);
-void ff_MPV_report_decode_progress(MpegEncContext *s);
 int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 
-/* Error resilience */
-void ff_mpeg_er_frame_start(MpegEncContext *s);
-//void ff_mpeg_set_erpic(ERPicture *dst, Picture *src);
-
-int ff_dct_common_init(MpegEncContext *s);
+void ff_mpv_idct_init(MpegEncContext *s);
 int ff_dct_encode_init(MpegEncContext *s);
-void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
+void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[2][64],
                        const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra);
 int ff_dct_quantize_c(MpegEncContext *s, int16_t *block, int n, int qscale, int *overflow);
 
 void ff_init_block_index(MpegEncContext *s);
 
-void ff_MPV_motion(MpegEncContext *s,
+void ff_mpv_motion(MpegEncContext *s,
                    uint8_t *dest_y, uint8_t *dest_cb,
                    uint8_t *dest_cr, int dir,
                    uint8_t **ref_picture,
@@ -833,7 +874,7 @@ extern const uint8_t * const ff_mpeg2_dc_scale_table[4];
 
 void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_mpeg1_encode_mb(MpegEncContext *s,
-                        int16_t block[6][64],
+                        int16_t block[8][64],
                         int motion_x, int motion_y);
 void ff_mpeg1_encode_init(MpegEncContext *s);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);

@@ -625,7 +625,7 @@ uint8_t ff_hevc_sao_band_position_decode(HEVCContext *s)
 uint8_t ff_hevc_sao_offset_abs_decode(HEVCContext *s)
 {
     int i = 0;
-    int length = (1 << (FFMIN(s->sps->bit_depth, 10) - 5)) - 1;
+    int length = (1 << (FFMIN(s->sps->bit_depth[CHANNEL_TYPE_LUMA], 10) - 5)) - 1;
 
     while (i < length && get_cabac_bypass(&s->HEVClc->cc))
         i++;
@@ -706,7 +706,7 @@ int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s)
 
 int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s)
 {
-    int c_max= FFMAX(5, s->pps->chroma_qp_offset_list_len_minus1);
+    int c_max= FFMAX(5, s->pps->chroma_qp_adjustment_table_size_minus1);
     int i = 0;
 
     while (i < c_max && GET_CABAC(elem_offset[CU_CHROMA_QP_OFFSET_IDX]))
@@ -835,7 +835,7 @@ int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH)
 {
     if (nPbW + nPbH == 12)
         return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
-    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + s->HEVClc->ct_depth))
+    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + s->HEVClc->ct.depth))
         return PRED_BI;
 
     return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
@@ -1078,16 +1078,16 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int hshift = s->sps->hshift[c_idx];
     int vshift = s->sps->vshift[c_idx];
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
-                                          ((x0 >> hshift) << s->sps->pixel_shift)];
+                                          ((x0 >> hshift) << s->sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA])];
     int16_t *coeffs = lc->tu.coeffs[c_idx > 0];
     uint8_t significant_coeff_group_flag[8][8] = {{0}};
     int explicit_rdpcm_flag = 0;
-    int explicit_rdpcm_dir_flag;
+    int explicit_rdpcm_dir_flag = 0;
 
     int trafo_size = 1 << log2_trafo_size;
     int i;
     int qp,shift,add,scale,scale_m;
-    int log2_transform_range = 15; //FFMAX(15, s->sps->bit_depth + 6); // extended_precision_processing_flag ?  : 15
+    int log2_transform_range = 15; //FFMAX(15, s->sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6); // extended_precision_processing_flag ?  : 15
     const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
     const uint8_t *scale_matrix = NULL;
     uint8_t dc_scale;
@@ -1149,7 +1149,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             qp += s->sps->qp_bd_offset;
         }
 
-        shift    = s->sps->bit_depth + log2_trafo_size + 10 - log2_transform_range;
+        shift    = s->sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + log2_trafo_size + 10 - log2_transform_range;
         add      = 1 << (shift-1);
         scale    = level_scale[rem6[qp]] << (div6[qp]);
         scale_m  = 16; // default when no custom scaling lists.
@@ -1524,14 +1524,13 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 for (i = 0; i < 8; i++)
                     FFSWAP(int16_t, coeffs[i], coeffs[16 - i - 1]);
             }
-
             s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
-
-            if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag &&
-                                        lc->cu.pred_mode == MODE_INTRA &&
-                                        (pred_mode_intra == 10 || pred_mode_intra == 26))) {
-                int mode = explicit_rdpcm_flag ? explicit_rdpcm_dir_flag : (pred_mode_intra == 26);
-
+            if (explicit_rdpcm_flag) {
+                s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, explicit_rdpcm_dir_flag);
+            } else if ((s->sps->implicit_rdpcm_enabled_flag &&
+                        lc->cu.pred_mode == MODE_INTRA &&
+                       (pred_mode_intra == 10 || pred_mode_intra == 26))) {
+                int mode = s->sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : 0;
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
         } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {

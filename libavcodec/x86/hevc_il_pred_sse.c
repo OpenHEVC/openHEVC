@@ -192,6 +192,7 @@ void ff_upsample_filter_block_luma_v_x2_sse(uint8_t *_dst, ptrdiff_t _dststride,
     int16_t  *src;
     uint8_t  *dst    = (uint8_t *)_dst + y_EL * _dststride + x_EL;
     uint8_t  shift = 12;
+    _dststride /= sizeof(pixel);
     add  = _mm_set1_epi32((1 << (shift - 1)));
 
     c[0] = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_v_sse[0]);
@@ -312,6 +313,7 @@ void ff_upsample_filter_block_cr_v_x2_sse(uint8_t *_dst, ptrdiff_t dststride, in
     int16_t  *src;
     uint8_t  *dst    = (uint8_t *)_dst + y_EL * dststride + x_EL;
     uint8_t  shift = 12;
+    dststride /= sizeof(pixel);
     add  = _mm_set1_epi32((1 << (shift - 1)));
 
     c[0] = _mm_load_si128((__m128i *) up_sample_filter_chroma_x2_v_sse[0]);
@@ -422,6 +424,7 @@ void ff_upsample_filter_block_luma_v_x1_5_sse(uint8_t *_dst, ptrdiff_t dststride
     int16_t  *src;
     uint8_t  *dst    = (uint8_t *)_dst + y_EL * dststride + x_EL;
     uint8_t  shift = 12;
+    dststride /= sizeof(pixel);
     add  = _mm_set1_epi32((1 << (shift - 1)));
 
     c[0]  = _mm_load_si128((__m128i *) up_sample_filter_luma_x1_5_v_sse[0]);
@@ -548,7 +551,7 @@ void ff_upsample_filter_block_cr_v_x1_5_sse(uint8_t *_dst, ptrdiff_t dststride, 
     uint8_t  *dst    = (uint8_t *)_dst + y_EL * dststride + x_EL;
     uint8_t  shift = 12;
     add  = _mm_set1_epi32((1 << (shift - 1)));
-
+    dststride /= sizeof(pixel);
     c[0] = _mm_load_si128((__m128i *) up_sample_filter_chroma_x1_5_v_sse[0]);
     c[1] = _mm_load_si128((__m128i *) up_sample_filter_chroma_x1_5_v_sse[1]);
     c[2] = _mm_load_si128((__m128i *) up_sample_filter_chroma_x1_5_v_sse[2]);

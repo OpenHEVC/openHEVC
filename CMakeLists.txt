@@ -1,4 +1,10 @@
 cmake_minimum_required (VERSION 2.8)
+
+# Configure build type (Release when no one is selected)
+if (NOT DEFINED CMAKE_BUILD_TYPE)
+  set (CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+endif ()
+
 project (openHEVC)
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/MyCMakeScripts)
 
@@ -19,6 +25,9 @@ macro (my_check_include_files arg result)
   endif()
 endmacro (my_check_include_files)
 
+include(CheckTypeSize)
+check_type_size("void*" SIZEOF_VOID_P BUILTIN_TYPES_ONLY)
+message("DEBUG: SIZEOF_VOID_P      = ${SIZEOF_VOID_P}")
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(OptimizeForArchitecture)
@@ -31,6 +40,8 @@ my_check_function_exists(sched_getaffinity      SCHED_GETAFFINITY_FOUND)
 my_check_function_exists(strerror_r             STRERROR_R_FOUND)
 my_check_function_exists(sysconf                SYSCONF_FOUND)
 my_check_function_exists(usleep                 USLEEP_FOUND)
+my_check_function_exists(localtime_r            LOCALTIME_R_FOUND)
+my_check_function_exists(gmtime_r               GMTIME_R_FOUND)
 
 my_check_include_files(fcntl.h                  FCNTL_H_FOUND)
 my_check_include_files(pthread.h                PTHREADS_FOUND)
@@ -38,8 +49,10 @@ my_check_include_files(unistd.h                 UNISTD_H_FOUND)
 my_check_include_files(windows.h                WINDOWS_H_FOUND)
 
 #find asm compiler
-find_package(Yasm)
-set(USE_YASM   ${YASM_FOUND}   CACHE BOOL "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ${_force})
+option (USE_YASM "Use YASM. If YASM is not enabled the assembly implementation will be disabled." ON)
+if (USE_YASM)
+  find_package (Yasm)
+endif ()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
   configure_file(platform/arm/config.h ${PROJECT_SOURCE_DIR}/config.h)
@@ -63,13 +76,6 @@ if(WIN32)
         -Drestrict=__restrict
     )
 endif()
-# Configure build type (Release when no one is selected)
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-    set(BUILDTYPE_MSG "Release (set by default)")
-else()
-    set(BUILDTYPE_MSG "${CMAKE_BUILD_TYPE}")
-endif()
 
 #define asm sources
 if(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
@@ -79,7 +85,6 @@ set(YASM_NAMES
     libavutil/x86/emms.asm
     libavcodec/x86/dct32.asm
     libavcodec/x86/deinterlace.asm
-    libavcodec/x86/dsputil.asm
     libavcodec/x86/fft.asm
     libavcodec/x86/fpel.asm
     libavcodec/x86/h264_qpel_8bit.asm
@@ -105,6 +110,9 @@ set(COMMON_YASM_ARGS
     -I "${CMAKE_CURRENT_SOURCE_DIR}/libavutil/x86/"
     -DPIC
 )
+if(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
+set(COMMON_YASM_ARGS "${COMMON_YASM_ARGS} -g dwarf2")
+endif(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
 endif(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
 
 if(YASM_FOUND)
@@ -134,14 +142,31 @@ endforeach()
 endif(YASM_FOUND)
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+    # Linker option: turning off symbol preemption
+    if(MINGW OR NOT APPLE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-Bsymbolic")
+    endif()
+
+    # Add Compiler flags for MINGW
     if(MINGW)
         AddCompilerFlag("-arch x86_64 -m64" C_FLAGS Vc_ARCHITECTURE_FLAGS)
-        set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-Wl,-Bsymbolic")
-    elseif(NOT APPLE)
-        set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-Wl,-Bsymbolic")
+    endif()
+
+    # Add colored diagnostics 
+    if(NOT("${CMAKE_COLOR_MAKEFILE}" STREQUAL "OFF"))
+        if(MINGW)
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color")
+        elseif(NOT APPLE)
+            if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+                execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+                if (GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9)
+                    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fdiagnostics-color")
+                endif()
+            endif()
+        endif()
     endif()
 elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
-    add_definitions("-DX86_32")
+    #add_definitions("-DX86_32")
 endif()
 
 #ECO MODE
@@ -154,6 +179,11 @@ add_definitions("-DPIC")
 add_definitions("-DUSE_SDL")
 AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
+
+if(PROFILING)
+  add_definitions("-pg")
+  set(CMAKE_EXE_LINKER_FLAGS "-pg ${CMAKE_EXE_LINKER_FLAGS}")
+endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
 
@@ -274,13 +304,13 @@ libavcodec/h264qpel.h
     libavcodec/avpicture.c
     libavcodec/bitstream.c
     libavcodec/bitstream_filter.c
+    libavcodec/bswapdsp.c
     libavcodec/cabac.c
     libavcodec/codec_desc.c
     libavcodec/dct.c
     libavcodec/dct32_float.c
     libavcodec/dct32_template.c
     libavcodec/dirac.c
-    libavcodec/dsputil.c
     libavcodec/faanidct.c
     libavcodec/fft_template.c
     libavcodec/flac.c
@@ -300,6 +330,7 @@ libavcodec/h264qpel.h
     libavcodec/hpeldsp.c
     libavcodec/jrevdct.c
     libavcodec/mathtables.c
+    libavcodec/me_cmp.c
     libavcodec/mdct_template.c
     libavcodec/mpegaudiodata.c
     libavcodec/mpeg12data.c
@@ -325,12 +356,6 @@ if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 list(APPEND libfilenames
     libavutil/arm/cpu.c
     libavutil/arm/asm.S
-    libavcodec/arm/dsputil_arm.S
-    libavcodec/arm/dsputil_armv6.S    
-    libavcodec/arm/dsputil_init_armv6.c    
-    libavcodec/arm/dsputil_init_arm.c
-    libavcodec/arm/dsputil_init_neon.c
-    libavcodec/arm/dsputil_neon.S
     libavcodec/arm/fft_init_arm.c
     libavcodec/arm/fft_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
@@ -363,8 +388,6 @@ list(APPEND libfilenames
     libavutil/x86/cpu.c
     libavcodec/x86/constants.c
     libavcodec/x86/dct_init.c
-    libavcodec/x86/dsputil_init.c
-    libavcodec/x86/dsputil_mmx.c
     libavcodec/x86/fdct.c
     libavcodec/x86/fft_init.c
     libavcodec/x86/h264_qpel.c
@@ -391,16 +414,12 @@ list(APPEND libfilenames
 )
 endif()
 
-if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
-    option(ENABLE_STATIC "enabled static library instead of shared" ON)
-else()
-    option(ENABLE_STATIC "enabled static library instead of shared" OFF)
-endif()
-if(ENABLE_STATIC)
-    add_library (LibOpenHevcWrapper STATIC ${libfilenames} ${YASM_OBJECTS})
-else()
-    add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
-endif()
+#if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
+#    option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
+#else()
+    option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
+#endif()
+add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
 target_link_libraries(LibOpenHevcWrapper m)
 
@@ -450,11 +469,9 @@ install(FILES
 
 install(
     TARGETS LibOpenHevcWrapper
-    DESTINATION lib
-    PERMISSIONS
-        OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_EXECUTE
-        WORLD_READ WORLD_EXECUTE
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
 )
 
 configure_file(

@@ -99,9 +99,6 @@
     %endif
 %endmacro
 
-; Always use long nops (reduces 0x90 spam in disassembly on x86_32)
-CPUNOP amdnop
-
 ; Macros to eliminate most code duplication between x86_32 and x86_64:
 ; Currently this works only for leaf functions which load all their arguments
 ; into registers at the start, and make no other use of the stack. Luckily that
@@ -759,19 +756,26 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
 %define    cpuflag(x) ((cpuflags & (cpuflags_ %+ x)) == (cpuflags_ %+ x))
 %define notcpuflag(x) ((cpuflags & (cpuflags_ %+ x)) != (cpuflags_ %+ x))
 
-; Takes up to 2 cpuflags from the above list.
+; Takes an arbitrary number of cpuflags from the above list.
 ; All subsequent functions (up to the next INIT_CPUFLAGS) is built for the specified cpu.
 ; You shouldn't need to invoke this macro directly, it's a subroutine for INIT_MMX &co.
-%macro INIT_CPUFLAGS 0-2
-    CPUNOP amdnop
+%macro INIT_CPUFLAGS 0-*
+    %xdefine SUFFIX
+    %undef cpuname
+    %assign cpuflags 0
+
     %if %0 >= 1
-        %xdefine cpuname %1
-        %assign cpuflags cpuflags_%1
-        %if %0 >= 2
-            %xdefine cpuname %1_%2
-            %assign cpuflags cpuflags | cpuflags_%2
-        %endif
+        %rep %0
+            %ifdef cpuname
+                %xdefine cpuname cpuname %+ _%1
+            %else
+                %xdefine cpuname %1
+            %endif
+            %assign cpuflags cpuflags | cpuflags_%1
+            %rotate 1
+        %endrep
         %xdefine SUFFIX _ %+ cpuname
+
         %if cpuflag(avx)
             %assign avx_enabled 1
         %endif
@@ -782,23 +786,22 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
         %endif
         %if cpuflag(aligned)
             %define movu mova
-        %elifidn %1, sse3
+        %elif cpuflag(sse3) && notcpuflag(ssse3)
             %define movu lddqu
         %endif
-        %if notcpuflag(sse2)
-            CPUNOP basicnop
-        %endif
+    %endif
+
+    %if cpuflag(sse2)
+        CPUNOP amdnop
     %else
-        %xdefine SUFFIX
-        %undef cpuname
-        %undef cpuflags
+        CPUNOP basicnop
     %endif
 %endmacro
 
 ; Merge mmx and sse*
-; m# is a simd regsiter of the currently selected size
-; xm# is the corresponding xmmreg (if selcted xmm or ymm size), or mmreg (if selected mmx)
-; ym# is the corresponding ymmreg (if selcted xmm or ymm size), or mmreg (if selected mmx)
+; m# is a simd register of the currently selected size
+; xm# is the corresponding xmm register if mmsize >= 16, otherwise the same as m#
+; ym# is the corresponding ymm register if mmsize >= 32, otherwise the same as m#
 ; (All 3 remain in sync through SWAP.)
 
 %macro CAT_XDEFINE 3
@@ -892,7 +895,7 @@ INIT_XMM
     %define xmmxmm%1 xmm%1
     %define xmmymm%1 xmm%1
     %define ymmmm%1   mm%1
-    %define ymmxmm%1 ymm%1
+    %define ymmxmm%1 xmm%1
     %define ymmymm%1 ymm%1
     %define xm%1 xmm %+ m%1
     %define ym%1 ymm %+ m%1

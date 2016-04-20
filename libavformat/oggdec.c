@@ -76,7 +76,7 @@ static int ogg_save(AVFormatContext *s)
 
     for (i = 0; i < ogg->nstreams; i++) {
         struct ogg_stream *os = ogg->streams + i;
-        os->buf = av_mallocz(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
+        os->buf = av_mallocz(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
         memcpy(os->buf, ost->streams[i].buf, os->bufpos);
         os->new_metadata      = NULL;
         os->new_metadata_size = 0;
@@ -251,7 +251,7 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     memset(os, 0, sizeof(*os));
     os->serial        = serial;
     os->bufsize       = DECODER_BUFFER_SIZE;
-    os->buf           = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
+    os->buf           = av_malloc(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
     os->header        = -1;
     os->start_granule = OGG_NOGRANULE_VALUE;
     if (!os->buf)
@@ -273,7 +273,7 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
 static int ogg_new_buf(struct ogg *ogg, int idx)
 {
     struct ogg_stream *os = ogg->streams + idx;
-    uint8_t *nb = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
+    uint8_t *nb = av_malloc(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
     int size = os->bufpos - os->pstart;
 
     if (os->buf) {
@@ -331,7 +331,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
 
         c = avio_r8(bc);
 
-        if (url_feof(bc))
+        if (avio_feof(bc))
             return AVERROR_EOF;
 
         sync[sp++ & 3] = c;
@@ -406,7 +406,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     }
 
     if (os->bufsize - os->bufpos < size) {
-        uint8_t *nb = av_malloc((os->bufsize *= 2) + FF_INPUT_BUFFER_PADDING_SIZE);
+        uint8_t *nb = av_malloc((os->bufsize *= 2) + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!nb)
             return AVERROR(ENOMEM);
         memcpy(nb, os->buf, os->bufpos);
@@ -422,7 +422,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     os->granule = gp;
     os->flags   = flags;
 
-    memset(os->buf + os->bufpos, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(os->buf + os->bufpos, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     if (sid)
         *sid = idx;
 
@@ -796,7 +796,7 @@ retry:
         uint8_t *side_data = av_packet_new_side_data(pkt,
                                                      AV_PKT_DATA_SKIP_SAMPLES,
                                                      10);
-        if(side_data == NULL)
+        if(!side_data)
             goto fail;
         AV_WL32(side_data + 4, os->end_trimming);
         os->end_trimming = 0;
@@ -806,7 +806,7 @@ retry:
         uint8_t *side_data = av_packet_new_side_data(pkt,
                                                      AV_PKT_DATA_METADATA_UPDATE,
                                                      os->new_metadata_size);
-        if(side_data == NULL)
+        if(!side_data)
             goto fail;
 
         memcpy(side_data, os->new_metadata, os->new_metadata_size);
@@ -817,7 +817,6 @@ retry:
     return psize;
 fail:
     av_free_packet(pkt);
-    av_free(pkt);
     return AVERROR(ENOMEM);
 }
 

@@ -138,8 +138,8 @@ void initFramerate_SDL() {
     SDL_initFramerate(&fpsm);
 }
 
-void setFramerate_SDL(Uint32 rate) {
-    if (SDL_setFramerate(&fpsm,rate) < 0) {
+void setFramerate_SDL(float frate) {
+    if (SDL_setFramerate(&fpsm,frate) < 0) {
         printf("SDL_glx: Couldn't set frame rate\n");
         SDL_Quit();
         exit(0);

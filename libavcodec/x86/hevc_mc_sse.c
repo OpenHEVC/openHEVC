@@ -40,7 +40,7 @@
 #define CLPI_PIXEL_MAX_10 0x03FF
 #define CLPI_PIXEL_MAX_12 0x0FFF
 
-#ifndef OPTI_ASM
+//#ifndef OPTI_ASM
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters_sse[7][2][16]) = {
     { { -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58, -2, 58},
       { 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2, 10, -2} },
@@ -146,7 +146,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_filters_sse_10[3][4][8]) = {
     _mm_storel_epi64((__m128i *) &tab[x], x1);                                 \
     *((uint32_t *) &tab[x+4]) = _mm_cvtsi128_si32(_mm_srli_si128(x1, 8))
 #define PEL_STORE_8(tab)                                                       \
-    _mm_store_si128((__m128i *) &tab[x], x1)
+    _mm_storeu_si128((__m128i *) &tab[x], x1)
 #define PEL_STORE_16(tab)                                                      \
     _mm_store_si128((__m128i *) &tab[x    ], x1);                              \
     _mm_store_si128((__m128i *) &tab[x + 8], x2)
@@ -2147,159 +2147,159 @@ void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_sse(                     \
 }
 
 
-mc_red_func(pel_pixels, 8, 4, 12);
-mc_red_func(pel_pixels, 8, 8, 24);
-mc_red_func(pel_pixels, 8,16, 32);
-mc_red_func(pel_pixels, 8,16, 48);
-mc_red_func(pel_pixels, 8,16, 64);
+//mc_red_func(pel_pixels, 8, 4, 12);
+//mc_red_func(pel_pixels, 8, 8, 24);
+//mc_red_func(pel_pixels, 8,16, 32);
+//mc_red_func(pel_pixels, 8,16, 48);
+//mc_red_func(pel_pixels, 8,16, 64);
 
-mc_red_func(pel_pixels,10, 4, 12);
-mc_red_func(pel_pixels,10, 8, 16);
-mc_red_func(pel_pixels,10, 8, 24);
-mc_red_func(pel_pixels,10, 8, 32);
-mc_red_func(pel_pixels,10, 8, 48);
-mc_red_func(pel_pixels,10, 8, 64);
+//mc_red_func(pel_pixels,10, 4, 12);
+//mc_red_func(pel_pixels,10, 8, 16);
+//mc_red_func(pel_pixels,10, 8, 24);
+//mc_red_func(pel_pixels,10, 8, 32);
+//mc_red_func(pel_pixels,10, 8, 48);
+//mc_red_func(pel_pixels,10, 8, 64);
 
-mc_red_func(pel_pixels,12, 4, 12);
-mc_red_func(pel_pixels,12, 8, 16);
-mc_red_func(pel_pixels,12, 8, 24);
-mc_red_func(pel_pixels,12, 8, 32);
-mc_red_func(pel_pixels,12, 8, 48);
-mc_red_func(pel_pixels,12, 8, 64);
+//mc_red_func(pel_pixels,12, 4, 12);
+//mc_red_func(pel_pixels,12, 8, 16);
+//mc_red_func(pel_pixels,12, 8, 24);
+//mc_red_func(pel_pixels,12, 8, 32);
+//mc_red_func(pel_pixels,12, 8, 48);
+//mc_red_func(pel_pixels,12, 8, 64);
 
-mc_red_func(qpel_h, 8, 4, 12);
-mc_red_func(qpel_h, 8, 8, 24);
-mc_red_func(qpel_h, 8,16, 32);
-mc_red_func(qpel_h, 8,16, 48);
-mc_red_func(qpel_h, 8,16, 64);
+//mc_red_func(qpel_h, 8, 4, 12);
+//mc_red_func(qpel_h, 8, 8, 24);
+//mc_red_func(qpel_h, 8,16, 32);
+//mc_red_func(qpel_h, 8,16, 48);
+//mc_red_func(qpel_h, 8,16, 64);
 
-mc_red_func(qpel_h,10, 4, 12);
-mc_red_func(qpel_h,10, 8, 16);
-mc_red_func(qpel_h,10, 8, 24);
-mc_red_func(qpel_h,10, 8, 32);
-mc_red_func(qpel_h,10, 8, 48);
-mc_red_func(qpel_h,10, 8, 64);
+//mc_red_func(qpel_h,10, 4, 12);
+//mc_red_func(qpel_h,10, 8, 16);
+//mc_red_func(qpel_h,10, 8, 24);
+//mc_red_func(qpel_h,10, 8, 32);
+//mc_red_func(qpel_h,10, 8, 48);
+//mc_red_func(qpel_h,10, 8, 64);
 
-mc_red_func(qpel_h,12, 4, 12);
-mc_red_func(qpel_h,12, 8, 16);
-mc_red_func(qpel_h,12, 8, 24);
-mc_red_func(qpel_h,12, 8, 32);
-mc_red_func(qpel_h,12, 8, 48);
-mc_red_func(qpel_h,12, 8, 64);
+//mc_red_func(qpel_h,12, 4, 12);
+//mc_red_func(qpel_h,12, 8, 16);
+//mc_red_func(qpel_h,12, 8, 24);
+//mc_red_func(qpel_h,12, 8, 32);
+//mc_red_func(qpel_h,12, 8, 48);
+//mc_red_func(qpel_h,12, 8, 64);
 
-mc_red_func(qpel_v, 8, 4, 12);
-mc_red_func(qpel_v, 8, 8, 24);
-mc_red_func(qpel_v, 8,16, 32);
-mc_red_func(qpel_v, 8,16, 48);
-mc_red_func(qpel_v, 8,16, 64);
+//mc_red_func(qpel_v, 8, 4, 12);
+//mc_red_func(qpel_v, 8, 8, 24);
+//mc_red_func(qpel_v, 8,16, 32);
+//mc_red_func(qpel_v, 8,16, 48);
+//mc_red_func(qpel_v, 8,16, 64);
 
-mc_red_func(qpel_v,10, 4, 12);
-mc_red_func(qpel_v,10, 8, 16);
-mc_red_func(qpel_v,10, 8, 24);
-mc_red_func(qpel_v,10, 8, 32);
-mc_red_func(qpel_v,10, 8, 48);
-mc_red_func(qpel_v,10, 8, 64);
+//mc_red_func(qpel_v,10, 4, 12);
+//mc_red_func(qpel_v,10, 8, 16);
+//mc_red_func(qpel_v,10, 8, 24);
+//mc_red_func(qpel_v,10, 8, 32);
+//mc_red_func(qpel_v,10, 8, 48);
+//mc_red_func(qpel_v,10, 8, 64);
 
-mc_red_func(qpel_v,12, 4, 12);
-mc_red_func(qpel_v,12, 8, 16);
-mc_red_func(qpel_v,12, 8, 24);
-mc_red_func(qpel_v,12, 8, 32);
-mc_red_func(qpel_v,12, 8, 48);
-mc_red_func(qpel_v,12, 8, 64);
+//mc_red_func(qpel_v,12, 4, 12);
+//mc_red_func(qpel_v,12, 8, 16);
+//mc_red_func(qpel_v,12, 8, 24);
+//mc_red_func(qpel_v,12, 8, 32);
+//mc_red_func(qpel_v,12, 8, 48);
+//mc_red_func(qpel_v,12, 8, 64);
 
-#ifdef OPTI_ASM
-mc_red_func(qpel_hv, 8, 4, 12);
-mc_red_func(qpel_hv, 8, 8, 16);
-mc_red_func(qpel_hv, 8, 8, 24);
-mc_red_func(qpel_hv, 8, 8, 32);
-mc_red_func(qpel_hv, 8, 8, 48);
-mc_red_func(qpel_hv, 8, 8, 64);
-#else
-mc_red_func(qpel_hv, 8, 4, 12);
+//#ifdef OPTI_ASM
+//mc_red_func(qpel_hv, 8, 4, 12);
 //mc_red_func(qpel_hv, 8, 8, 16);
-mc_red_func(qpel_hv, 8, 8, 24);
-mc_red_func(qpel_hv, 8, 16, 32);
-mc_red_func(qpel_hv, 8, 16, 48);
-mc_red_func(qpel_hv, 8, 16, 64);
-#endif
-mc_red_func(qpel_hv,10, 4, 12);
-mc_red_func(qpel_hv,10, 8, 16);
-mc_red_func(qpel_hv,10, 8, 24);
-mc_red_func(qpel_hv,10, 8, 32);
-mc_red_func(qpel_hv,10, 8, 48);
-mc_red_func(qpel_hv,10, 8, 64);
+//mc_red_func(qpel_hv, 8, 8, 24);
+//mc_red_func(qpel_hv, 8, 8, 32);
+//mc_red_func(qpel_hv, 8, 8, 48);
+//mc_red_func(qpel_hv, 8, 8, 64);
+//#else
+//mc_red_func(qpel_hv, 8, 4, 12);
+////mc_red_func(qpel_hv, 8, 8, 16);
+//mc_red_func(qpel_hv, 8, 8, 24);
+//mc_red_func(qpel_hv, 8, 16, 32);
+//mc_red_func(qpel_hv, 8, 16, 48);
+//mc_red_func(qpel_hv, 8, 16, 64);
+//#endif
+//mc_red_func(qpel_hv,10, 4, 12);
+//mc_red_func(qpel_hv,10, 8, 16);
+//mc_red_func(qpel_hv,10, 8, 24);
+//mc_red_func(qpel_hv,10, 8, 32);
+//mc_red_func(qpel_hv,10, 8, 48);
+//mc_red_func(qpel_hv,10, 8, 64);
 
-mc_red_func(qpel_hv,12, 4, 12);
-mc_red_func(qpel_hv,12, 8, 16);
-mc_red_func(qpel_hv,12, 8, 24);
-mc_red_func(qpel_hv,12, 8, 32);
-mc_red_func(qpel_hv,12, 8, 48);
-mc_red_func(qpel_hv,12, 8, 64);
+//mc_red_func(qpel_hv,12, 4, 12);
+//mc_red_func(qpel_hv,12, 8, 16);
+//mc_red_func(qpel_hv,12, 8, 24);
+//mc_red_func(qpel_hv,12, 8, 32);
+//mc_red_func(qpel_hv,12, 8, 48);
+//mc_red_func(qpel_hv,12, 8, 64);
 
-mc_red_func(epel_h, 8, 4, 12);
-mc_red_func(epel_h, 8, 8, 16);
-mc_red_func(epel_h, 8, 8, 24);
-mc_red_func(epel_h, 8, 8, 32);
-mc_red_func(epel_h, 8, 8, 48);
-mc_red_func(epel_h, 8, 8, 64);
+//mc_red_func(epel_h, 8, 4, 12);
+//mc_red_func(epel_h, 8, 8, 16);
+//mc_red_func(epel_h, 8, 8, 24);
+//mc_red_func(epel_h, 8, 8, 32);
+//mc_red_func(epel_h, 8, 8, 48);
+//mc_red_func(epel_h, 8, 8, 64);
 
-mc_red_func(epel_h,10, 4, 12);
-mc_red_func(epel_h,10, 8, 16);
-mc_red_func(epel_h,10, 8, 24);
-mc_red_func(epel_h,10, 8, 32);
-mc_red_func(epel_h,10, 8, 48);
-mc_red_func(epel_h,10, 8, 64);
+//mc_red_func(epel_h,10, 4, 12);
+//mc_red_func(epel_h,10, 8, 16);
+//mc_red_func(epel_h,10, 8, 24);
+//mc_red_func(epel_h,10, 8, 32);
+//mc_red_func(epel_h,10, 8, 48);
+//mc_red_func(epel_h,10, 8, 64);
 
-mc_red_func(epel_h,12, 4, 12);
-mc_red_func(epel_h,12, 8, 16);
-mc_red_func(epel_h,12, 8, 24);
-mc_red_func(epel_h,12, 8, 32);
-mc_red_func(epel_h,12, 8, 48);
-mc_red_func(epel_h,12, 8, 64);
+//mc_red_func(epel_h,12, 4, 12);
+//mc_red_func(epel_h,12, 8, 16);
+//mc_red_func(epel_h,12, 8, 24);
+//mc_red_func(epel_h,12, 8, 32);
+//mc_red_func(epel_h,12, 8, 48);
+//mc_red_func(epel_h,12, 8, 64);
 
-mc_red_func(epel_v, 8, 4, 12);
-mc_red_func(epel_v, 8, 8, 16);
-mc_red_func(epel_v, 8, 8, 24);
-mc_red_func(epel_v, 8, 8, 32);
-mc_red_func(epel_v, 8, 8, 48);
-mc_red_func(epel_v, 8, 8, 64);
+//mc_red_func(epel_v, 8, 4, 12);
+//mc_red_func(epel_v, 8, 8, 16);
+//mc_red_func(epel_v, 8, 8, 24);
+//mc_red_func(epel_v, 8, 8, 32);
+//mc_red_func(epel_v, 8, 8, 48);
+//mc_red_func(epel_v, 8, 8, 64);
 
-mc_red_func(epel_v,10, 4, 12);
-mc_red_func(epel_v,10, 8, 16);
-mc_red_func(epel_v,10, 8, 24);
-mc_red_func(epel_v,10, 8, 32);
-mc_red_func(epel_v,10, 8, 48);
-mc_red_func(epel_v,10, 8, 64);
+//mc_red_func(epel_v,10, 4, 12);
+//mc_red_func(epel_v,10, 8, 16);
+//mc_red_func(epel_v,10, 8, 24);
+//mc_red_func(epel_v,10, 8, 32);
+//mc_red_func(epel_v,10, 8, 48);
+//mc_red_func(epel_v,10, 8, 64);
 
-mc_red_func(epel_v,12, 4, 12);
-mc_red_func(epel_v,12, 8, 16);
-mc_red_func(epel_v,12, 8, 24);
-mc_red_func(epel_v,12, 8, 32);
-mc_red_func(epel_v,12, 8, 48);
-mc_red_func(epel_v,12, 8, 64);
+//mc_red_func(epel_v,12, 4, 12);
+//mc_red_func(epel_v,12, 8, 16);
+//mc_red_func(epel_v,12, 8, 24);
+//mc_red_func(epel_v,12, 8, 32);
+//mc_red_func(epel_v,12, 8, 48);
+//mc_red_func(epel_v,12, 8, 64);
 
-mc_red_func(epel_hv, 8, 4, 12);
-mc_red_func(epel_hv, 8, 8, 16);
-mc_red_func(epel_hv, 8, 8, 24);
-mc_red_func(epel_hv, 8, 8, 32);
-mc_red_func(epel_hv, 8, 8, 48);
-mc_red_func(epel_hv, 8, 8, 64);
+//mc_red_func(epel_hv, 8, 4, 12);
+//mc_red_func(epel_hv, 8, 8, 16);
+//mc_red_func(epel_hv, 8, 8, 24);
+//mc_red_func(epel_hv, 8, 8, 32);
+//mc_red_func(epel_hv, 8, 8, 48);
+//mc_red_func(epel_hv, 8, 8, 64);
 
-mc_red_func(epel_hv,10, 4, 12);
-mc_red_func(epel_hv,10, 8, 16);
-mc_red_func(epel_hv,10, 8, 24);
-mc_red_func(epel_hv,10, 8, 32);
-mc_red_func(epel_hv,10, 8, 48);
-mc_red_func(epel_hv,10, 8, 64);
+//mc_red_func(epel_hv,10, 4, 12);
+//mc_red_func(epel_hv,10, 8, 16);
+//mc_red_func(epel_hv,10, 8, 24);
+//mc_red_func(epel_hv,10, 8, 32);
+//mc_red_func(epel_hv,10, 8, 48);
+//mc_red_func(epel_hv,10, 8, 64);
 
-mc_red_func(epel_hv,12, 4, 12);
-mc_red_func(epel_hv,12, 8, 16);
-mc_red_func(epel_hv,12, 8, 24);
-mc_red_func(epel_hv,12, 8, 32);
-mc_red_func(epel_hv,12, 8, 48);
-mc_red_func(epel_hv,12, 8, 64);
+//mc_red_func(epel_hv,12, 4, 12);
+//mc_red_func(epel_hv,12, 8, 16);
+//mc_red_func(epel_hv,12, 8, 24);
+//mc_red_func(epel_hv,12, 8, 32);
+//mc_red_func(epel_hv,12, 8, 48);
+//mc_red_func(epel_hv,12, 8, 64);
 
 #endif //HAVE_SSE4
 
-#endif //OPTI_ASM
+//#endif //OPTI_ASM
 
