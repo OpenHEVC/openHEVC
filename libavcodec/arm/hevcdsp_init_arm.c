@@ -421,6 +421,6 @@ av_cold void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth)
         hevcdsp_init_neon(c, bit_depth);
 }
 
-#if CONFIG_ECO
-#include "hevcdsp_arm_eco.c"
+#if CONFIG_GREEN
+#include "hevcdsp_arm_green.c"
 #endif

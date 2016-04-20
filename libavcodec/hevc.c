@@ -42,8 +42,8 @@
 
 #include "h264.h"
 
-#if CONFIG_ECO
-#include "hevc_eco.h" //ECO
+#if CONFIG_GREEN
+#include "hevc_green.h" 
 #endif
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
@@ -3442,9 +3442,9 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
             }
 #endif
-#if CONFIG_ECO
-		eco_get_activation(s); //ECO
-		eco_set_activation(s); //ECO
+#if CONFIG_GREEN
+		green_get_activation(s); // Green
+		green_set_activation(s); // Green
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -3962,8 +3962,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (s->is_decoded) {
         s->ref->frame->key_frame = IS_IRAP(s);
         av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
-#if CONFIG_ECO
-        eco_logs(s); //ECO
+#if CONFIG_GREEN
+        green_logs(s);
 #endif
         s->is_decoded = 0;
     }
@@ -4213,8 +4213,8 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
-#if CONFIG_ECO
-    eco_update_context(s,s0); //ECO
+#if CONFIG_GREEN
+    green_update_context(s,s0); 
 #endif
 
 
@@ -4361,18 +4361,18 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "quality_layer_id", "set the max quality id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
-#if CONFIG_ECO
-	{ "a-level", "Eco Activation level", OFFSET(eco_alevel),					//< ECO Activation Level
+#if CONFIG_GREEN
+	{ "green-a-level", "Green Activation level", OFFSET(green_alevel),			
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 12, PAR },
-	{ "eco-luma", "Eco Inter-prediction Luma nb taps", OFFSET(eco_luma),		//< ECO Luma
+	{ "green-luma", "Green Inter-prediction Luma nb taps", OFFSET(green_luma),		
 			AV_OPT_TYPE_INT, {.i64 = 7}, 1, 7, PAR },
-	{ "eco-chroma", "Eco Inter-prediction Chroma nb taps", OFFSET(eco_chroma),	//< ECO Chroma
+	{ "green-chroma", "Green Inter-prediction Chroma nb taps", OFFSET(green_chroma),
 			AV_OPT_TYPE_INT, {.i64 = 4}, 1, 4, PAR },
-	{ "eco-dbf-on", "Eco Deblocking filter on/off", OFFSET(eco_dbf_on),			//< ECO deblocking filter
+	{ "green-dbf-on", "Green Deblocking filter on/off", OFFSET(green_dbf_on),		
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-	{ "eco-sao-on", "Eco SAO filter on/off", OFFSET(eco_sao_on),				//< ECO SAO
+	{ "green-sao-on", "Green SAO filter on/off", OFFSET(green_sao_on),				
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
-	{ "eco-verbose", "Eco verbose", OFFSET(eco_verbose),						//< ECO Logs
+	{ "green-verbose", "Green verbose", OFFSET(green_verbose),						
 				AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
 #endif
     { NULL },

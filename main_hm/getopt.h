@@ -57,9 +57,9 @@ int no_cropping;
 int num_frames;
 float frame_rate;
 
-#if CONFIG_ECO
-char *eco_param;
-int eco_verbose;
+#if CONFIG_GREEN
+char *green_param;
+int green_verbose;
 #endif
 
 // initialize APR and parse command-line options

@@ -63,9 +63,9 @@ void print_usage() {
     printf("     -r <num> Frame rate (FPS) \n");
     printf("     -v : input is a h264 bitstream \n");
     printf("     -e : <enhanced_layer> when using AVC base layer\n");
-#if CONFIG_ECO
-    printf("     -g Eco mode <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;2;4] SAO [1;0] DBF [1;0] \n");
-    printf("     -G Eco mode verbose, same args as -e \n");
+#if CONFIG_GREEN
+    printf("     -g Green mode <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;2;4] SAO [1;0] DBF [1;0] \n");
+    printf("     -G Green mode verbose, same args as -g \n");
 #endif
 }
 
@@ -138,7 +138,7 @@ int getopt(int nargc, char * const *nargv, const char *ostr) {
 void init_main(int argc, char *argv[]) {
     // every command line option must be followed by ':' if it takes an
     // argument, and '::' if this argument is optional
-#if CONFIG_ECO
+#if CONFIG_GREEN
     const char *ostr = "achvi:e:no:p:f:s:t:wl:r:g:G:";
 #else
     const char *ostr = "achvi:e:no:p:f:s:t:wl:r:";
@@ -159,9 +159,9 @@ void init_main(int argc, char *argv[]) {
     quality_layer_id  = 0; // Base layer
     num_frames        = 0;
     frame_rate        = 0;
-#if CONFIG_ECO
-    eco_param = strdup("07411");	//< ECO args init
-    eco_verbose = 0;				//< ECO verbose flag
+#if CONFIG_GREEN
+    green_param = strdup("07411");	//< Green args init
+    green_verbose = 0;				//< Green verbose flag
 #endif
 
     program           = argv[0];
@@ -217,21 +217,21 @@ void init_main(int argc, char *argv[]) {
         case 'r':
             frame_rate = atof(optarg);
             break;
-#if CONFIG_ECO
-        case 'g':	//< ECO
+#if CONFIG_GREEN
+        case 'g':	//< Green
             if(strlen(optarg) < 5 || strlen(optarg) > 6){
                 print_usage();
                 exit(1);
             }
-            eco_param = strdup(optarg);
+            green_param = strdup(optarg);
             break;
-        case 'G':	//< ECO
+        case 'G':	//< Green
 		   if(strlen(optarg) < 5 || strlen(optarg) > 6){
 			   print_usage();
 			   exit(1);
 		   }
-		   eco_param = strdup(optarg);
-		   eco_verbose = 1;
+		   green_param = strdup(optarg);
+		   green_verbose = 1;
 		   break;
 #endif
         default:

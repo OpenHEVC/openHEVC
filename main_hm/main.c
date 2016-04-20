@@ -163,8 +163,8 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     }
 
-#if CONFIG_ECO
-    libOpenHevcInitECO(openHevcHandle, eco_param, eco_verbose);
+#if CONFIG_GREEN
+    libOpenHevcInitGreen(openHevcHandle, green_param, green_verbose);
 #endif
 
     libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);

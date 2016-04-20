@@ -169,11 +169,11 @@ elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
     #add_definitions("-DX86_32")
 endif()
 
-#ECO MODE
-IF(NOT DEFINED CONFIG_ECO)
-    SET(CONFIG_ECO 0)
+# GREEN MODE
+IF(NOT DEFINED CONFIG_GREEN)
+    SET(CONFIG_GREEN 0)
 ENDIF()
-ADD_DEFINITIONS(-DCONFIG_ECO=${CONFIG_ECO})
+ADD_DEFINITIONS(-DCONFIG_GREEN=${CONFIG_GREEN})
 
 add_definitions("-DPIC")
 add_definitions("-DUSE_SDL")
@@ -324,7 +324,7 @@ libavcodec/h264qpel.h
     libavcodec/hevc_sei.c
     libavcodec/hevc_filter.c
     libavcodec/hevc.c
-    libavcodec/hevc_eco.c
+    libavcodec/hevc_green.c
     libavcodec/hevcdsp.c
     libavcodec/hevcpred.c
     libavcodec/hpeldsp.c
@@ -363,11 +363,11 @@ list(APPEND libfilenames
     libavcodec/arm/hevcdsp_idct_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_qpel_neon.S
-    libavcodec/arm/hevcdsp_qpel_eco1_neon.S
-    libavcodec/arm/hevcdsp_qpel_eco3_neon.S
-	libavcodec/arm/hevcdsp_qpel_eco5_neon.S
+    libavcodec/arm/hevcdsp_qpel_green1_neon.S
+    libavcodec/arm/hevcdsp_qpel_green3_neon.S
+	libavcodec/arm/hevcdsp_qpel_green5_neon.S
     libavcodec/arm/hevcdsp_epel_neon.S
-    libavcodec/arm/hevcdsp_epel_eco_neon.S
+    libavcodec/arm/hevcdsp_epel_green_neon.S
     libavcodec/arm/hevcdsp_il_pred_neon.S
     libavcodec/arm/hevcdsp_sao_neon.S
     libavcodec/arm/hpeldsp_arm.S

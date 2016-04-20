@@ -99,8 +99,8 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId);
 
-/** ECO arguments parse and parameters init */
-void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param, int eco_verbose);
+/** Green arguments parse and parameters init */
+void libOpenHevcInitGreen(OpenHevc_Handle openHevcHandle, char *green_param, int green_verbose);
 
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 

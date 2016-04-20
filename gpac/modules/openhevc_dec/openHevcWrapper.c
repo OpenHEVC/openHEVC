@@ -649,51 +649,51 @@ void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val)
         av_opt_set_int(openHevcContext->c->priv_data, "no-cropping", val, 0);
     }
 }
-/** ECO arguments parse and parameters init */
-void libOpenHevcInitECO(OpenHevc_Handle openHevcHandle, char *eco_param, int eco_verbose)
+/** Green arguments parse and parameters init */
+void libOpenHevcInitGreen(OpenHevc_Handle openHevcHandle, char *green_param, int green_verbose)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
 
     int alevel=0;
-    int eco_luma=7;
-    int eco_chroma=4;
-    int eco_dbf_on=1;
-    int eco_sao_on=1;
+    int green_luma=7;
+    int green_chroma=4;
+    int green_dbf_on=1;
+    int green_sao_on=1;
 
-    int len = strlen(eco_param);
+    int len = strlen(green_param);
     char buffer[3]="0";
     int i = (len == 5) ? 0 : 1;
 
-    strncpy(buffer,eco_param,(1+i)*sizeof(char));
+    strncpy(buffer,green_param,(1+i)*sizeof(char));
     alevel = atoi(buffer);
 
     strcpy(buffer,"0");
 
     if( alevel != 0){
-        strncpy(buffer,eco_param+1+i,sizeof(char));
-        eco_luma = atoi(buffer);
+        strncpy(buffer,green_param+1+i,sizeof(char));
+        green_luma = atoi(buffer);
 
-        strncpy(buffer,eco_param+2+i,sizeof(char));
-        eco_chroma = atoi(buffer);
+        strncpy(buffer,green_param+2+i,sizeof(char));
+        green_chroma = atoi(buffer);
 
-        strncpy(buffer,eco_param+3+i,sizeof(char));
-        eco_sao_on = atoi(buffer);
+        strncpy(buffer,green_param+3+i,sizeof(char));
+        green_sao_on = atoi(buffer);
 
-        strncpy(buffer,eco_param+4+i,sizeof(char));
-        eco_dbf_on = atoi(buffer);
+        strncpy(buffer,green_param+4+i,sizeof(char));
+        green_dbf_on = atoi(buffer);
 
     }
 
 
     for (i = 0; i < openHevcContexts->nb_decoders; i++) {
         openHevcContext = openHevcContexts->wraper[i];
-        av_opt_set_int(openHevcContext->c->priv_data, "a-level", alevel, 0);
-        av_opt_set_int(openHevcContext->c->priv_data, "eco-luma", eco_luma, 0);
-        av_opt_set_int(openHevcContext->c->priv_data, "eco-chroma", eco_chroma, 0);
-        av_opt_set_int(openHevcContext->c->priv_data, "eco-dbf-on", eco_dbf_on, 0);
-        av_opt_set_int(openHevcContext->c->priv_data, "eco-sao-on", eco_sao_on, 0);
-        av_opt_set_int(openHevcContext->c->priv_data, "eco-verbose", eco_verbose, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "green-a-level", alevel, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "green-luma", green_luma, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "green-chroma", green_chroma, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "green-dbf-on", green_dbf_on, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "green-sao-on", green_sao_on, 0);
+        av_opt_set_int(openHevcContext->c->priv_data, "green-verbose", green_verbose, 0);
     }
 }
 

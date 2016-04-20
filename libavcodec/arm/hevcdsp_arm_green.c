@@ -2,7 +2,7 @@
  * HEVC video energy efficient decoder
  * Morgan Lacour 2015
  */
-#if CONFIG_ECO
+#if CONFIG_GREEN
 
 #define QPEL_FUNC(name) \
     void name(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride, \
@@ -128,7 +128,7 @@ void ff_hevc_put_epel2_hv_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src
                                 intptr_t mx, intptr_t my, int width);
 
 #if HAVE_NEON
-av_cold void eco_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth)
+av_cold void green_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth)
 {
     if (bit_depth == 8) {
         int x;
@@ -180,11 +180,11 @@ av_cold void eco_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth)
         }
     }
 
-    c->eco_cur_luma=1;
+    c->green_cur_luma=1;
 }
 
 
-av_cold void eco_reload_filter_luma3(HEVCDSPContext *c, const int bit_depth)
+av_cold void green_reload_filter_luma3(HEVCDSPContext *c, const int bit_depth)
 {
     if (bit_depth == 8) {
         int x;
@@ -235,10 +235,10 @@ av_cold void eco_reload_filter_luma3(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
         }
     }
-    c->eco_cur_luma=3;
+    c->green_cur_luma=3;
 }
 
-av_cold void eco_reload_filter_luma5(HEVCDSPContext *c, const int bit_depth)
+av_cold void green_reload_filter_luma5(HEVCDSPContext *c, const int bit_depth)
 {
     if (bit_depth == 8) {
         int x;
@@ -289,10 +289,10 @@ av_cold void eco_reload_filter_luma5(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
         }
     }
-    c->eco_cur_luma=5;
+    c->green_cur_luma=5;
 }
 
-av_cold void eco_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth)
+av_cold void green_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth)
 {
     if (bit_depth == 8) {
         int x;
@@ -343,10 +343,10 @@ av_cold void eco_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_bi_neon_wrapper;
         }
     }
-    c->eco_cur_luma=7;
+    c->green_cur_luma=7;
 }
 
-av_cold void eco_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth)
+av_cold void green_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth)
 {
     if (bit_depth == 8) {
         int x;
@@ -358,10 +358,10 @@ av_cold void eco_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_pixels_neon_8;
         }
     }
-    c->eco_cur_chroma=1;
+    c->green_cur_chroma=1;
 }
 
-av_cold void eco_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth)
+av_cold void green_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth)
 {
     if (bit_depth == 8) {
         int x;
@@ -373,10 +373,10 @@ av_cold void eco_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel2_hv_neon_8;
         }
     }
-    c->eco_cur_chroma=2;
+    c->green_cur_chroma=2;
 }
 
-av_cold void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
+av_cold void green_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
 {
     if (bit_depth == 8) {
         int x;
@@ -388,7 +388,7 @@ av_cold void eco_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[x][1][1]         = ff_hevc_put_epel_hv_neon_8;
         }
     }
-    c->eco_cur_chroma=4;
+    c->green_cur_chroma=4;
 }
 
 #endif

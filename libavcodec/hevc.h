@@ -976,7 +976,7 @@ typedef struct SliceHeader {
 
     uint8_t cabac_init_flag;
     uint8_t disable_deblocking_filter_flag; ///< slice_header_disable_deblocking_filter_flag
-#if CONFIG_ECO
+#if CONFIG_GREEN
     uint8_t disable_sao_filter_flag;
 #endif
     uint8_t slice_loop_filter_across_slices_enabled_flag;
@@ -1373,15 +1373,14 @@ typedef struct HEVCContext {
     int no_display_pic;
 #endif
     int     decode_checksum_sei;
-
-#if CONFIG_ECO
-    /** ECO parameters */
-    int eco_alevel; 	//< Activation Level [0-12]
-    int eco_luma;		//< Luma Interpolation filters taps number
-    int eco_chroma;		//< Chroma Interpolation filters taps number
-    int eco_dbf_on; 	//< Deblocking filter activation
-    int eco_sao_on;		//< SAO filter activation
-    int eco_verbose;	//< Show logs
+#if CONFIG_GREEN
+    /** Green parameters */
+    int green_alevel; 	//< Activation Level [0-12]
+    int green_luma;		//< Luma Interpolation filters taps number
+    int green_chroma;		//< Chroma Interpolation filters taps number
+    int green_dbf_on; 	//< Deblocking filter activation
+    int green_sao_on;		//< SAO filter activation
+    int green_verbose;	//< Show logs
 #endif
 
 #if PARALLEL_SLICE

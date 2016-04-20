@@ -212,7 +212,7 @@
         \filter 			// q7 = vect filtre
         vst1.16    {q7}, [r0], r1 	// *dst=q7, dst+=dststride
         regshuffle_d5 		//
-        vld1.8    {d21}, [r2], r3 //MODIF ECO
+        vld1.8    {d21}, [r2], r3 //MODIF Green
         bne 8b 				// height!=0 boucle
         subs  r5, #8 		// width-=8
         beq       99f 		// si width==0 fin
@@ -226,7 +226,7 @@
         \filter 			//q7 = vect filtre
         vst1.16    d14, [r0], r1 	// *dst=d14, dst+=dststride
         regshuffle_d5		//veillissement
-        vld1.32    {d21[0]}, [r2], r3 	// MODIF ECO
+        vld1.32    {d21[0]}, [r2], r3 	// MODIF Green
         bne 4b 
 99:     vpop {d8-d15}
         pop {r4, r5, r6, r7}
@@ -254,7 +254,7 @@
         vqrshrun.s16   d0, q7, #6
         vst1.8    d0, [r0], r1
         regshuffle_d5
-        vld1.8    {d21}, [r2], r3 	// MODIF ECO
+        vld1.8    {d21}, [r2], r3 	// MODIF Green
         bne 8b
         subs  r5, #8
         beq       99f
@@ -269,7 +269,7 @@
         vqrshrun.s16   d0, q7, #6
         vst1.32    d0[0], [r0], r1
         regshuffle_d5
-        vld1.32    {d21[0]}, [r2], r3 	//MODIF ECO
+        vld1.32    {d21[0]}, [r2], r3 	//MODIF Green
         bne 4b
         b   99f
 .Lbi\@: lsl       r9, #1
@@ -284,7 +284,7 @@
         vqrshrun.s16   d0, q0, #7
         vst1.8         d0, [r0], r1
         regshuffle_d5
-        vld1.8    {d21}, [r2], r3	//MODIF ECO
+        vld1.8    {d21}, [r2], r3	//MODIF Green
         bne 8b
         subs  r5, #8
         beq       99f
@@ -303,7 +303,7 @@
         vqrshrun.s16 d0, q0, #7
         vst1.32      d0[0], [r0], r1
         regshuffle_d5
-        vld1.32    {d21[0]}, [r2], r3	//MODIF ECO
+        vld1.32    {d21[0]}, [r2], r3	//MODIF Green
         bne 4b
 99:     vpop {d8-d15}
         pop {r4-r10}
@@ -514,7 +514,7 @@ endfunc
         vst1.16    {q8}, [r0], r1
         regshuffle_q5
         vextin5
-        \filterh q5 	//MODIF ECO
+        \filterh q5 	//MODIF Green
         bne 8b
         subs  r5, #8
         beq 99f
@@ -529,7 +529,7 @@ endfunc
         vst1.16    d16, [r0], r1
         regshuffle_q5
         vextin5
-        \filterh q5 	// MODIF ECO
+        \filterh q5 	// MODIF Green
         bne 4b
 99:     vpop {d8-d15}
         pop {r4, r5, r6, r7}
@@ -570,7 +570,7 @@ endfunc
         vst1.8    d0, [r0], r1
         regshuffle_q5
         vextin5
-        \filterh q5	//MODIF ECO
+        \filterh q5	//MODIF Green
         bne 8b
         subs  r5, #8
         beq 99f
@@ -586,7 +586,7 @@ endfunc
         vst1.32        d0[0], [r0], r1
         regshuffle_q5
         vextin5
-        \filterh q5 	//MODIF ECO
+        \filterh q5 	//MODIF Green
         bne 4b
         b   99f
 .Lbi\@: lsl      r9, #1 	// BIDIR PROCESS
@@ -613,7 +613,7 @@ endfunc
         vst1.8         d0, [r0], r1 	// *dst=d0, dst+=dststride
         regshuffle_q5
         vextin5
-        \filterh q5 	//MODIF ECO
+        \filterh q5 	//MODIF Green
         bne 8b
         subs  r5, #8
         beq 99f
@@ -633,7 +633,7 @@ endfunc
         vst1.32      d0[0], [r0], r1
         regshuffle_q5
         vextin5
-        \filterh q5 	//MODIF ECO
+        \filterh q5 	//MODIF Green
         bne 4b
 99:     vpop {d8-d15}
         pop {r4-r10}

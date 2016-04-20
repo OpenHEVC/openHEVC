@@ -90,7 +90,7 @@ function ff_hevc_put_epel2_h_neon_8, export=1
         adr    r12, epel_coeffs2
         add    r7, r12
         //sub       r2, #1
-        lsl       r1, #1    // Seule ligne a changer pour ECO
+        lsl       r1, #1    // Seule ligne a changer pour Green
         load_coeffs2_16b r7  //d0 et d1 coeffs
         mov   r12, r4       // _h
         mov   r6, r0        // _dst

@@ -147,11 +147,11 @@ typedef struct HEVCDSPContext {
                                            uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
                                            int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-#if CONFIG_ECO
-    /** ECO parameters */
-    int eco_cur_luma;	//< Current Luma Interpolation filters taps number
-    int eco_cur_chroma;	//< Current Chroma Interpolation filters taps number
-    int eco_on;			//< ECO mode activation flag
+#if CONFIG_GREEN
+    /** Green parameters */
+    int green_cur_luma;		//< Current Luma Interpolation filters taps number
+    int green_cur_chroma;	//< Current Chroma Interpolation filters taps number
+    int green_on;			//< Green mode activation flag
 #endif
 } HEVCDSPContext;
 

@@ -2,21 +2,21 @@
  * HEVC video energy efficient decoder
  * Morgan Lacour 2015
  */
-#if CONFIG_ECO
+#if CONFIG_GREEN
 #include "hevc.h"
 #include "hevcdsp.h"
-#include "hevcdsp_eco.h"
+#include "hevcdsp_green.h"
 
-void eco_dsp_init(HEVCDSPContext *hevcdsp)
+void green_dsp_init(HEVCDSPContext *hevcdsp)
 {
-    hevcdsp->eco_cur_luma=7;
-    hevcdsp->eco_cur_chroma=4;
-    hevcdsp->eco_on = 0;
+    hevcdsp->green_cur_luma=7;
+    hevcdsp->green_cur_chroma=4;
+    hevcdsp->green_on = 0;
 }
 
 #if !HAVE_NEON
-/** ECO filters reload functions */
-void eco_reload_filter_luma1(HEVCDSPContext *hevcdsp, int bit_depth)
+/** Green filters reload functions */
+void green_reload_filter_luma1(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #undef PEL_FUNC
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
@@ -64,10 +64,10 @@ int i = 0;
 
     HEVC_DSP(8);
 
-    hevcdsp->eco_cur_luma=1;
+    hevcdsp->green_cur_luma=1;
 }
 
-void eco_reload_filter_luma3(HEVCDSPContext *hevcdsp, int bit_depth)
+void green_reload_filter_luma3(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #undef PEL_FUNC
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
@@ -115,10 +115,10 @@ int i = 0;
 
 	HEVC_DSP(8);
 
-    hevcdsp->eco_cur_luma=3;
+    hevcdsp->green_cur_luma=3;
 }
 
-void eco_reload_filter_luma5(HEVCDSPContext *hevcdsp, int bit_depth)
+void green_reload_filter_luma5(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #undef PEL_FUNC
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
@@ -166,10 +166,10 @@ int i = 0;
 
 	HEVC_DSP(8);
 
-    hevcdsp->eco_cur_luma=5;
+    hevcdsp->green_cur_luma=5;
 }
 
-void eco_reload_filter_luma7(HEVCDSPContext *hevcdsp, int bit_depth)
+void green_reload_filter_luma7(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #undef PEL_FUNC
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
@@ -217,10 +217,10 @@ int i = 0;
 
 	HEVC_DSP(8);
 
-    hevcdsp->eco_cur_luma=7;
+    hevcdsp->green_cur_luma=7;
 }
 
-void eco_reload_filter_chroma1(HEVCDSPContext *hevcdsp, int bit_depth)
+void green_reload_filter_chroma1(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #undef PEL_FUNC
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
@@ -245,11 +245,11 @@ int i = 0;
 
 	HEVC_DSP(8);
 
-    hevcdsp->eco_cur_chroma=1;
+    hevcdsp->green_cur_chroma=1;
 }
 
 
-void eco_reload_filter_chroma2(HEVCDSPContext *hevcdsp, int bit_depth)
+void green_reload_filter_chroma2(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #undef PEL_FUNC
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
@@ -274,11 +274,11 @@ int i = 0;
 
 	HEVC_DSP(8);
 
-    hevcdsp->eco_cur_chroma=2;
+    hevcdsp->green_cur_chroma=2;
 }
 
 
-void eco_reload_filter_chroma4(HEVCDSPContext *hevcdsp, int bit_depth)
+void green_reload_filter_chroma4(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #undef PEL_FUNC
 #define PEL_FUNC(dst1, idx1, idx2, a, depth)                                   \
@@ -302,7 +302,7 @@ int i = 0;
 
 	HEVC_DSP(8);
 
-    hevcdsp->eco_cur_chroma=4;
+    hevcdsp->green_cur_chroma=4;
 }
 #endif
 

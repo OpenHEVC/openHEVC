@@ -22,7 +22,7 @@ What does openHEVC Green feature?
 
 How to compile openHEVC Green on linux from source code
 ----------
-`cmake -DCONFIG_ECO=1 -DCMAKE_BUILD_TYPE=RELEASE ..`
+`cmake -DCONFIG_GREEN=1 -DCMAKE_BUILD_TYPE=RELEASE ..`
 
 
 How to use openHEVC Green on linux from source code
@@ -54,6 +54,7 @@ openHEVC contributors
   + Fernando Pescador Del Oso (UPM)
   + Jesus Caño Velasco (UPM)
   + Morgan Lacour (IETR/INSA Rennes trainee)
+  + Julien Heulot (IETR/INSA Rennes)
 
 * Former contributors
   + Anand Meher Kotra (IETR/INSA Rennes)

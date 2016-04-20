@@ -2507,6 +2507,6 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
 }
 #endif
 
-#if CONFIG_ECO
-#include "hevcdsp_eco_template.c"
+#if CONFIG_GREEN
+#include "hevcdsp_green_template.c"
 #endif
