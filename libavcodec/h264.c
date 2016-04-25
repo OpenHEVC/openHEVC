@@ -1973,7 +1973,8 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
     av_frame_free(&h->last_pic_for_ec.f);
 #if SVC_EXTENSION
-    for (int i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
         ff_h264_unref_picture(h, &h->Add_ref[i]);
         av_frame_free(&h->Add_ref[i].f);
     }
