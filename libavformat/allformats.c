@@ -60,6 +60,7 @@ void av_register_all(void)
 
     REGISTER_DEMUXER(H264, h264);
     REGISTER_DEMUXER(HEVC, hevc);
+    REGISTER_DEMUXER(SHVC, shvc);
     REGISTER_DEMUXER(MOV, mov);
     REGISTER_DEMUXER(MPEGTS, mpegts);
     REGISTER_DEMUXER(MATROSKA, matroska);

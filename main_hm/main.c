@@ -174,7 +174,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     pFormatCtx[0] = avformat_alloc_context();
 
     if(AVC_BL && split_layers)
-    	pFormatCtx[1] = avformat_alloc_context();
+        pFormatCtx[1] = avformat_alloc_context();
 
     if(avformat_open_input(&pFormatCtx[0], filename, NULL, NULL)!=0) {
     	fprintf(stderr,"Could not open base layer input file : %s\n",filename);
@@ -185,6 +185,9 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         fprintf(stderr,"Could not open enhanced layer input file : %s\n",enh_filename);
         exit(1);
     }
+
+    if (!split_layers && quality_layer_id == 1)
+        pFormatCtx[0]->video_codec_id=AV_CODEC_ID_SHVC;
 
     for(i=0; i<2 ; i++){
 		if ( (video_stream_idx = av_find_best_stream(pFormatCtx[i], AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
@@ -371,11 +374,11 @@ static void video_decode_example(const char *filename,const char *enh_filename)
             free(openHevcFrameCpy.pvV);
         }
     }
-    printf("Close AVC context base layer \n");
-    avformat_close_input(&pFormatCtx[0]);
+    if(!split_layers)
+        avformat_close_input(&pFormatCtx[0]);
     if(split_layers){
-    	printf("Close context second layer \n");
-    	avformat_close_input(&pFormatCtx[1]);
+        avformat_close_input(&pFormatCtx[0]);
+        avformat_close_input(&pFormatCtx[1]);
     }
     libOpenHevcClose(openHevcHandle);
 #if USE_SDL

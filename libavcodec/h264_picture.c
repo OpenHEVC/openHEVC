@@ -226,10 +226,15 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
             memset(&sl->ref_list[0][0], 0, sizeof(sl->ref_list[0][0]));
     }
 #endif /* CONFIG_ERROR_RESILIENCE */
-
+#if SVC_EXTENSION
+    if (!in_setup /*&& !h->droppable*/)
+        ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
+                                  h->picture_structure == PICT_BOTTOM_FIELD);
+#else
     if (!in_setup && !h->droppable)
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
                                   h->picture_structure == PICT_BOTTOM_FIELD);
+#endif
     emms_c();
 
     h->current_slice = 0;

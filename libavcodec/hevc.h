@@ -1384,6 +1384,8 @@ typedef struct HEVCContext {
 
 	//uint8_t force_first_slice_in_pic;
 	//int64_t last_frame_pts;
+    int BL_width;
+    int BL_height;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,

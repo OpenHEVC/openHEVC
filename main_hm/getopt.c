@@ -138,7 +138,6 @@ void init_main(int argc, char *argv[]) {
 
     int c;
     h264_flags        = DISABLE;
-    shvc_flags		  = DISABLE;
     check_md5_flags   = ENABLE;
     thread_type       = 1;
     input_file        = NULL;
@@ -173,7 +172,6 @@ void init_main(int argc, char *argv[]) {
             break;
         case 'e':
         	enhance_file = strdup(optarg);
-        	shvc_flags = ENABLE;
         	break;
         case 'n':
             display_flags = DISABLE;

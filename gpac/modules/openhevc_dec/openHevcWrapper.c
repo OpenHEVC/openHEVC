@@ -166,7 +166,7 @@ OpenHevc_Handle libOpenShvcInit(int nb_pthreads, int thread_type)
         if(i == 0)
         	openHevcContext->codec = avcodec_find_decoder(AV_CODEC_ID_H264);
         else
-        	openHevcContext->codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
+            openHevcContext->codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
         if (!openHevcContext->codec) {
             fprintf(stderr, "codec not found\n");
             return NULL;
@@ -306,13 +306,6 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
         	//would be finding a way to keep giving AVPacket, to h264 when required until the BL_frames required by HEVC
         	//are decoded and available.
            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
-
-        if(i==0)
-            fprintf(stderr, "H264 POC : %d\n",((H264Picture *)openHevcContexts->wraper[i]->c->BL_frame)->frame_num );
-
-        //if(i==0)
-            //fprintf(stderr, "H264 POC : %d\n",((H264Picture *)openHevcContexts->wraper[i]->c->BL_frame)->frame_num );
-
     }
     if (len < 0) {
         fprintf(stderr, "Error while decoding frame \n");

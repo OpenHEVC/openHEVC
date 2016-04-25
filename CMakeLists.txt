@@ -97,6 +97,16 @@ set(YASM_NAMES
     libavcodec/x86/qpel.asm
     libavcodec/x86/qpeldsp.asm
     libavcodec/x86/videodsp.asm
+libavcodec/x86/h264_chromamc.asm
+libavcodec/x86/h264_chromamc_10bit.asm
+libavcodec/x86/h264_deblock.asm
+libavcodec/x86/h264_deblock_10bit.asm
+libavcodec/x86/h264_idct.asm
+libavcodec/x86/h264_idct_10bit.asm
+libavcodec/x86/h264_intrapred.asm
+libavcodec/x86/h264_intrapred_10bit.asm
+libavcodec/x86/h264_weight.asm
+libavcodec/x86/h264_weight_10bit.asm
 )
 endif(YASM_FOUND)
 endif(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
@@ -259,6 +269,12 @@ libavformat/h264dec.c
     libavformat/rmsipr.c
     libavformat/utils.c
     libavformat/vorbiscomment.c
+#libavcodec/vdpau.c
+#libavcodec/vdpau_h264.c
+#libavcodec/vdpau_compat.h
+#libavcodec/vdpau_internal.h
+#libavcodec/intrax8.h
+#libavcodec/intrax8.h
 libavcodec/h264_cabac.c
 libavcodec/h264_cavlc.c
 libavcodec/h264_direct.c
@@ -394,6 +410,8 @@ list(APPEND libfilenames
     libavcodec/x86/qpeldsp_init.c
     libavcodec/x86/simple_idct.c
     libavcodec/x86/videodsp_init.c
+libavcodec/x86/h264dsp_init.c
+libavcodec/x86/h264_intrapred_init.c
 )
 endif()
 if(WIN32)

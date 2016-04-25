@@ -499,7 +499,9 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->backup_width         = h1->backup_width;
     h->backup_height        = h1->backup_height;
     h->backup_pix_fmt       = h1->backup_pix_fmt;
-
+#if SVC_EXTENSION
+    h->poc_id               = h1->poc_id;
+#endif
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         ff_h264_unref_picture(h, &h->DPB[i]);
         if (h1->DPB[i].f->buf[0] &&
@@ -599,6 +601,10 @@ static int h264_frame_start(H264Context *h)
     pic->f->coded_picture_number = h->coded_picture_number++;
     pic->field_picture          = h->picture_structure != PICT_FRAME;
 
+#if SVC_EXTENSION
+    h->poc_id++;
+    h->poc_id &= 1023;
+#endif
     /*
      * Zero key_frame here; IDR markings per slice in frame or fields are ORed
      * in later.
@@ -1206,7 +1212,11 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         }
 
         if (!h->first_field) {
+#if SVC_EXTENSION
+            if (h->cur_pic_ptr /*&& !h->droppable*/) {
+#else
             if (h->cur_pic_ptr && !h->droppable) {
+#endif
                 ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
                                           h->picture_structure == PICT_BOTTOM_FIELD);
             }
@@ -1590,6 +1600,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             ret = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
+
             /* Error concealment: If a ref is missing, copy the previous ref
              * in its place.
              * FIXME: Avoiding a memcpy would be nice, but ref handling makes
@@ -1956,7 +1967,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                sl->use_weight == 1 && sl->use_weight_chroma ? "c" : "",
                sl->slice_type == AV_PICTURE_TYPE_B ? (sl->direct_spatial_mv_pred ? "SPAT" : "TEMP") : "");
     }
-
     return 0;
 }
 
