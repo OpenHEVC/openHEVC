@@ -512,9 +512,10 @@ int set_el_parameter(HEVCContext *s) {
         ret = AVERROR(ENOMEM);
         goto fail;
      }
+
      scaled_ref_layer_window = s->sps->scaled_ref_layer_window[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]];
-     heightEL = vps->Hevc_VPS_Ext.rep_format[s->decoder_id].pic_height_vps_in_luma_samples - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
-     widthEL  = vps->Hevc_VPS_Ext.rep_format[s->decoder_id].pic_width_vps_in_luma_samples  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
+     heightEL = /*vps->Hevc_VPS_Ext.rep_format[s->decoder_id].pic_height_vps_in_luma_samples*/s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
+     widthEL  = /*vps->Hevc_VPS_Ext.rep_format[s->decoder_id].pic_width_vps_in_luma_samples*/ s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
      phaseVerChroma = (4 * heightEL + (s->BL_height >> 1)) / s->BL_height - 4;
 #if !ACTIVE_PU_UPSAMPLING //fixme : was this intended to avc base layer??
     if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
