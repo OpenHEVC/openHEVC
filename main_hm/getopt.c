@@ -63,6 +63,7 @@ void print_usage() {
     printf("     -r <num> Frame rate (FPS) \n");
     printf("     -v : input is a h264 bitstream \n");
     printf("     -e : <enhanced_layer> when using AVC base layer\n");
+    printf("     -d : <display_id> 0 for windowed, else fullscreen in specific display\n");
 #if CONFIG_GREEN
     printf("     -g Green mode <Activation:Luma:Chroma:SAO:DBF> Activation [0-12] Luma [1;3;7] Chroma [1;2;4] SAO [1;0] DBF [1;0] \n");
     printf("     -G Green mode verbose, same args as -g \n");
@@ -139,9 +140,9 @@ void init_main(int argc, char *argv[]) {
     // every command line option must be followed by ':' if it takes an
     // argument, and '::' if this argument is optional
 #if CONFIG_GREEN
-    const char *ostr = "achvi:e:no:p:f:s:t:wl:r:g:G:";
+    const char *ostr = "achvi:e:no:p:f:s:t:wl:r:g:G:d:";
 #else
-    const char *ostr = "achvi:e:no:p:f:s:t:wl:r:";
+    const char *ostr = "achvi:e:no:p:f:s:t:wl:r:d:";
 #endif
 
     int c;
@@ -159,6 +160,7 @@ void init_main(int argc, char *argv[]) {
     quality_layer_id  = 0; // Base layer
     num_frames        = 0;
     frame_rate        = 0;
+    display 		  = 0;
 #if CONFIG_GREEN
     green_param = strdup("07411");	//< Green args init
     green_verbose = 0;				//< Green verbose flag
@@ -232,6 +234,9 @@ void init_main(int argc, char *argv[]) {
 		   }
 		   green_param = strdup(optarg);
 		   green_verbose = 1;
+		   break;
+        case 'd':	//< Green
+           display = atoi(optarg);
 		   break;
 #endif
         default:

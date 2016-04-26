@@ -28,6 +28,8 @@
 #include <SDL.h>
 #include <stdio.h>
 #include "SDL_framerate.h"
+#include "getopt.h"
+#include "libavutil/log.h"
 
 /* SDL variables */
 SDL_Window        *pWindow1;
@@ -50,14 +52,33 @@ void Init_Time() {
 int Init_SDL(int edge, int frame_width, int frame_height){
 
 #ifndef SDL_NO_DISPLAY
+	int windowFlags, windowPos;
+
     /* First, initialize SDL's video subsystem. */
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         /* Failed, exit. */
         printf("Video initialization failed: %s\n", SDL_GetError( ) );
     }
+
+	if(display > SDL_GetNumVideoDisplays()){
+		av_log(NULL, AV_LOG_WARNING, "Bad display index %d, start windowed", display-1);
+		display = 0;
+	}
+
+    windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
+	switch(display){
+	case 0:
+	    windowPos = SDL_WINDOWPOS_UNDEFINED;
+		break;
+	default:
+    	windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    	windowPos = SDL_WINDOWPOS_CENTERED_DISPLAY(display-1);
+    	break;
+	}
+
     // allocate window, renderer, texture
-    pWindow1    = SDL_CreateWindow( "YUV", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                    (frame_width + 2 * edge), frame_height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+    pWindow1    = SDL_CreateWindow( "YUV", windowPos, windowPos,
+                    (frame_width + 2 * edge), frame_height,  windowFlags);
     pRenderer1  = SDL_CreateRenderer(pWindow1, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     bmpTex1     = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12,
                     SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);

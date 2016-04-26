@@ -56,6 +56,7 @@ int quality_layer_id;
 int no_cropping;
 int num_frames;
 float frame_rate;
+int display;
 
 #if CONFIG_GREEN
 char *green_param;
