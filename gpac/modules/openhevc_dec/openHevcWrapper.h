@@ -110,7 +110,6 @@ void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId);
 /** Green arguments parse and parameters init */
 void libOpenHevcInitGreen(OpenHevc_Handle openHevcHandle, char *green_param, int green_verbose);
 void libOpenHevcOnSliceTypeDecodeCallback(SliceTypeDecodeCallback callback);
-void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);
 
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 
