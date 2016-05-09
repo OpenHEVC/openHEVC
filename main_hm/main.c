@@ -306,7 +306,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 	#endif
 					if (fout) {
 						libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
-						int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
+						int format = openHevcFrameCpy.frameInfo.color_format== YUV420 ? 1 : 0;
 						if(openHevcFrameCpy.pvY) {
 							free(openHevcFrameCpy.pvY);
 							free(openHevcFrameCpy.pvU);
@@ -331,7 +331,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 				/* Write output file if any
 				 * */
 				if (fout) {
-					int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
+					int format = openHevcFrameCpy.frameInfo.color_format == YUV420 ? 1 : 0;
 					libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
 					fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, fout);
 					fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);

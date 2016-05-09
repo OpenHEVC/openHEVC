@@ -39,11 +39,11 @@ typedef struct OpenHevc_Rational{
 } OpenHevc_Rational;
 
 
-enum ChromaFormat {
+typedef enum OpenHevc_ColorFormat {
     YUV420 = 0,
     YUV422,
     YUV444,
-};
+} OpenHevc_ColorFormat;
 
 typedef struct OpenHevc_FrameInfo
 {
@@ -53,7 +53,7 @@ typedef struct OpenHevc_FrameInfo
    int         nBitDepth;
    int         nWidth;
    int         nHeight;
-   int        chromat_format;
+   OpenHevc_ColorFormat  color_format;
    OpenHevc_Rational  sample_aspect_ratio;
    OpenHevc_Rational  frameRate;
    int         display_picture_number;

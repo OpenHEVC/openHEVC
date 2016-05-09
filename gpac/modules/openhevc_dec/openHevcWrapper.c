@@ -369,7 +369,7 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
         case PIX_FMT_YUV420P12 :
             openHevcFrameInfo->nUPitch    = picture->linesize[1];
             openHevcFrameInfo->nVPitch    = picture->linesize[2];
-            openHevcFrameInfo->chromat_format = YUV420;
+            openHevcFrameInfo->color_format = YUV420;
             break;
         case PIX_FMT_YUV422P   :
         case PIX_FMT_YUV422P9  :
@@ -377,7 +377,7 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
         case PIX_FMT_YUV422P12 :
             openHevcFrameInfo->nUPitch    = picture->linesize[1];
             openHevcFrameInfo->nVPitch    = picture->linesize[2];
-            openHevcFrameInfo->chromat_format = YUV422;
+            openHevcFrameInfo->color_format = YUV422;
             break;
         case PIX_FMT_YUV444P   :
         case PIX_FMT_YUV444P9  :
@@ -385,7 +385,7 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
         case PIX_FMT_YUV444P12 :
             openHevcFrameInfo->nUPitch    = picture->linesize[1];
             openHevcFrameInfo->nVPitch    = picture->linesize[2];
-            openHevcFrameInfo->chromat_format = YUV444;
+            openHevcFrameInfo->color_format = YUV444;
             break;
         default :
             openHevcFrameInfo->nUPitch    = picture->linesize[1];
@@ -437,7 +437,7 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
 
     switch (picture->format) {
         case PIX_FMT_YUV420P   :
-            openHevcFrameInfo->chromat_format = YUV420;
+            openHevcFrameInfo->color_format = YUV420;
             openHevcFrameInfo->nYPitch    = picture->width;
             openHevcFrameInfo->nUPitch    = picture->width >> 1;
             openHevcFrameInfo->nVPitch    = picture->width >> 1;
@@ -445,13 +445,13 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
         case PIX_FMT_YUV420P9  :
         case PIX_FMT_YUV420P10 :
         case PIX_FMT_YUV420P12 :
-            openHevcFrameInfo->chromat_format = YUV420;
+            openHevcFrameInfo->color_format = YUV420;
             openHevcFrameInfo->nYPitch    = picture->width << 1;
             openHevcFrameInfo->nUPitch    = picture->width;
             openHevcFrameInfo->nVPitch    = picture->width;
             break;
         case PIX_FMT_YUV422P   :
-            openHevcFrameInfo->chromat_format = YUV422;
+            openHevcFrameInfo->color_format = YUV422;
             openHevcFrameInfo->nYPitch    = picture->width;
             openHevcFrameInfo->nUPitch    = picture->width >> 1;
             openHevcFrameInfo->nVPitch    = picture->width >> 1;
@@ -459,13 +459,13 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
         case PIX_FMT_YUV422P9  :
         case PIX_FMT_YUV422P10 :
         case PIX_FMT_YUV422P12 :
-            openHevcFrameInfo->chromat_format = YUV422;
+            openHevcFrameInfo->color_format = YUV422;
             openHevcFrameInfo->nYPitch    = picture->width << 1;
             openHevcFrameInfo->nUPitch    = picture->width;
             openHevcFrameInfo->nVPitch    = picture->width;
             break;
         case PIX_FMT_YUV444P   :
-            openHevcFrameInfo->chromat_format = YUV444;
+            openHevcFrameInfo->color_format = YUV444;
             openHevcFrameInfo->nYPitch    = picture->width;
             openHevcFrameInfo->nUPitch    = picture->width;
             openHevcFrameInfo->nVPitch    = picture->width;
@@ -473,13 +473,13 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
         case PIX_FMT_YUV444P9  :
         case PIX_FMT_YUV444P10 :
         case PIX_FMT_YUV444P12 :
-            openHevcFrameInfo->chromat_format = YUV444;
+            openHevcFrameInfo->color_format = YUV444;
             openHevcFrameInfo->nYPitch    = picture->width << 1;
             openHevcFrameInfo->nUPitch    = picture->width << 1;
             openHevcFrameInfo->nVPitch    = picture->width << 1;
             break;
         default :
-            openHevcFrameInfo->chromat_format = YUV420;
+            openHevcFrameInfo->color_format = YUV420;
             openHevcFrameInfo->nYPitch    = picture->width;
             openHevcFrameInfo->nUPitch    = picture->width >> 1;
             openHevcFrameInfo->nVPitch    = picture->width >> 1;
@@ -554,7 +554,7 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
         int dst_stride_c;
 
         libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame->frameInfo);
-        format = openHevcFrame->frameInfo.chromat_format == YUV420 ? 1 : 0;
+        format = openHevcFrame->frameInfo.color_format == YUV420 ? 1 : 0;
         src_stride = openHevcFrame->frameInfo.nYPitch;
         src_stride_c = openHevcFrame->frameInfo.nUPitch;
         height = openHevcFrame->frameInfo.nHeight;
