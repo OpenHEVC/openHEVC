@@ -200,6 +200,18 @@ OpenHevc_Handle libOpenShvcInit(int nb_pthreads, int thread_type)
     return (OpenHevc_Handle) openHevcContexts;
 }
 
+
+void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[openHevcContexts->display_layer];
+
+    libOpenHevcGetPictureInfo(openHevcHandle, openHevcFrameInfo);
+    openHevcFrameInfo->nYPitch = openHevcContext->picture->linesize[0];
+    openHevcFrameInfo->nUPitch = openHevcContext->picture->linesize[1];
+    openHevcFrameInfo->nVPitch = openHevcContext->picture->linesize[2];
+}
+
 int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
