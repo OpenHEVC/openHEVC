@@ -47,6 +47,8 @@ typedef struct OpenHevcWrapperContexts {
     int set_vps;
 } OpenHevcWrapperContexts;
 
+SliceTypeDecodeCallback OpenHevcSliceTypeDecodeCallback = NULL;
+
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
 {
     /* register all the codecs */
@@ -210,6 +212,10 @@ void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameIn
     openHevcFrameInfo->nYPitch = openHevcContext->picture->linesize[0];
     openHevcFrameInfo->nUPitch = openHevcContext->picture->linesize[1];
     openHevcFrameInfo->nVPitch = openHevcContext->picture->linesize[2];
+}
+
+void libOpenHevcOnSliceTypeDecodeCallback(SliceTypeDecodeCallback callback){
+	OpenHevcSliceTypeDecodeCallback = callback;
 }
 
 int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)

@@ -45,6 +45,12 @@ typedef enum OpenHevc_ColorFormat {
     YUV444,
 } OpenHevc_ColorFormat;
 
+typedef enum OpenHevc_SliceType {
+    SLICE_TYPE_I = 0,
+	SLICE_TYPE_P,
+	SLICE_TYPE_B,
+} OpenHevc_SliceType;
+
 typedef struct OpenHevc_FrameInfo
 {
    int         nYPitch;
@@ -77,6 +83,8 @@ typedef struct OpenHevc_Frame_cpy
    OpenHevc_FrameInfo frameInfo;
 } OpenHevc_Frame_cpy;
 
+typedef void (*SliceTypeDecodeCallback)(OpenHevc_SliceType);
+
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type);
 OpenHevc_Handle libOpenShvcInit(int nb_pthreads, int thread_type);
 OpenHevc_Handle libOpenH264Init(int nb_pthreads, int thread_type);
@@ -101,6 +109,7 @@ void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId);
 
 /** Green arguments parse and parameters init */
 void libOpenHevcInitGreen(OpenHevc_Handle openHevcHandle, char *green_param, int green_verbose);
+void libOpenHevcOnSliceTypeDecodeCallback(SliceTypeDecodeCallback callback);
 void libOpenHevcGetPictureSize2(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);
 
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
