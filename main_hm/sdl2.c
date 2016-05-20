@@ -86,6 +86,8 @@ int Init_SDL(int edge, int frame_width, int frame_height){
         printf("Could not open window1\n");
         return -1;
     }
+
+	SDL_ShowCursor(0);
 #endif
     return 0;
 }
