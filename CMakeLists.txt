@@ -204,30 +204,12 @@ set(libfilenames
     libavformat/aviobuf.c
     libavformat/cutils.c
     libavformat/file.c
-    libavformat/flac_picture.c
     libavformat/format.c
     libavformat/id3v1.c
     libavformat/id3v2.c
-    libavformat/isom.c
     libavformat/hevcdec.c
-    libavformat/matroska.c
-    libavformat/matroskadec.c
     libavformat/metadata.c
-    libavformat/mov.c
-    libavformat/mov_chan.c
-    libavformat/mpegts.c
     libavformat/mux.c
-    libavformat/oggdec.c
-    libavformat/oggparsecelt.c
-    libavformat/oggparsedirac.c
-    libavformat/oggparseflac.c
-    libavformat/oggparseogm.c
-    libavformat/oggparseopus.c
-    libavformat/oggparseskeleton.c
-    libavformat/oggparsespeex.c
-    libavformat/oggparsetheora.c
-    libavformat/oggparsevorbis.c
-    libavformat/oggparsevp8.c
     libavformat/options.c
     libavformat/os_support.c
     libavformat/rawdec.c
@@ -236,8 +218,6 @@ set(libfilenames
     libavformat/riff.c
     libavformat/rmsipr.c
     libavformat/utils.c
-    libavformat/vorbiscomment.c
-    libavcodec/ac3tab.c
     libavcodec/allcodecs.c
     libavcodec/avfft.c
     libavcodec/avpacket.c
@@ -250,11 +230,7 @@ set(libfilenames
     libavcodec/dct.c
     libavcodec/dct32_float.c
     libavcodec/dct32_template.c
-    libavcodec/dirac.c
-    libavcodec/faanidct.c
     libavcodec/fft_template.c
-    libavcodec/flac.c
-    libavcodec/flacdata.c
     libavcodec/golomb.c
     libavcodec/hevc_cabac.c
     libavcodec/hevc_mvs.c
@@ -269,12 +245,7 @@ set(libfilenames
     libavcodec/hpeldsp.c
     libavcodec/jrevdct.c
     libavcodec/mathtables.c
-    libavcodec/me_cmp.c
     libavcodec/mdct_template.c
-    libavcodec/mpegaudiodata.c
-    libavcodec/mpeg12data.c
-    libavcodec/mpeg4audio.c
-    libavcodec/imgconvert.c
     libavcodec/options.c
     libavcodec/parser.c
     libavcodec/pthread_slice.c
@@ -284,11 +255,8 @@ set(libfilenames
     libavcodec/raw.c
     libavcodec/rawdec.c
     libavcodec/rdft.c
-    libavcodec/simple_idct.c
     libavcodec/utils.c
     libavcodec/videodsp.c
-    libavcodec/vorbis_parser.c
-    libavcodec/xiph.c
 )
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 list(APPEND libfilenames
@@ -322,7 +290,6 @@ list(APPEND libfilenames
     libavcodec/x86/dct_init.c
     libavcodec/x86/fdct.c
     libavcodec/x86/fft_init.c
-    libavcodec/x86/h264_qpel.c
     libavcodec/x86/hevcdsp_init.c
     libavcodec/x86/hevcpred_init.c
     libavcodec/x86/hevc_idct_sse.c
@@ -348,7 +315,7 @@ endif()
 if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
     option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
 else()
-    option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
+    option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
 endif()
 add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
