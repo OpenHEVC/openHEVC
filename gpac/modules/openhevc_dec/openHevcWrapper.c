@@ -25,7 +25,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
-#define MAX_DECODERS 2
+#define MAX_DECODERS 1
 #define ACTIVE_NAL
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
