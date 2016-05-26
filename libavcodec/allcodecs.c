@@ -75,6 +75,8 @@ void avcodec_register_all(void)
 
     REGISTER_DECODER(H264, h264);
     REGISTER_DECODER(HEVC, hevc);
+    REGISTER_DECODER(SHVC, shvc);
+    REGISTER_PARSER(SHVC, shvc);
     REGISTER_PARSER(H264, h264);
     REGISTER_PARSER(HEVC, hevc);
 }

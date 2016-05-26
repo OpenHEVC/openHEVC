@@ -1721,16 +1721,15 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
     int el_width  =  s->sps->width;
     int el_height =  s->sps->height;
 
-    if(s->vps->vps_nonHEVCBaseLayerFlag){
+    if(s->vps->vps_nonHEVCBaseLayerFlag){ // fixme: Not very efficient the cast could be done before instead of doing it for each block
         bl_frame = ((H264Picture *)s->BL_frame)->f;
     } else {
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
     HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
-    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples;
-    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples;
-    //int bl_width  =  bl_frame->coded_width;
-    //int bl_height =  bl_frame->coded_height;
+    int bl_height =  s->BL_height;
+    int bl_width  =  s->BL_width;
+
     int bl_stride =  bl_frame->linesize[0];
 
     int el_stride =  ref0->frame->linesize[0]/sizeof(pixel);
@@ -1822,14 +1821,14 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     int el_width  =  s->sps->width>>1;
     int el_height =  s->sps->height>>1;
 
-    if(s->vps->vps_nonHEVCBaseLayerFlag){
+    if(s->vps->vps_nonHEVCBaseLayerFlag){// fixme: Not very efficient the cast could be done before instead of doing it for each block
         bl_frame = ((H264Picture *)s->BL_frame)->f;
     }else {
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
     HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
-    int bl_height = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples >>1;//fixme: non 420 formats
-    int bl_width  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  >>1;
+    int bl_height = s->BL_height >> 1;
+    int bl_width  = s->BL_width  >> 1;
     //int bl_width  =  bl_frame->coded_width  >>1;
     //int bl_height =  bl_frame->coded_height >>1;// > el_height ? bl_frame->coded_height>>1:el_height;
     int bl_stride =  bl_frame->linesize[1];

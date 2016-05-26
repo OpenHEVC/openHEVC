@@ -48,6 +48,7 @@
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavcodec/hevc.h"
+#include "libavcodec/h264.h"
 
 #define MAX_POC      1024
 /**
@@ -414,7 +415,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     /*
      * Submit a packet to the next decoding thread.
      */
-//    printf("decode thread\n");
+    //printf("decode thread\n");
     p = &fctx->threads[fctx->next_decoding];
     err = update_context_from_user(p->avctx, avctx);
     if (err) return err;
@@ -542,25 +543,6 @@ void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in_ref, 
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 
-int ff_thread_get_il_up_status(AVCodecContext *avxt, int poc)
-{
-    /*
-     - Get the status of the lower layer picture used as reference for inter-layer prediction.
-     */
-    int res;
-    PerThreadContext *p;
-    FrameThreadContext *fctx;
-    p = avxt->internal->thread_ctx_frame;
-    fctx = p->parent;
-    poc = poc & (MAX_POC-1);
-    if (avxt->debug&FF_DEBUG_THREADS)
-        av_log(avxt, AV_LOG_DEBUG, "ff_thread_get_il_up_status %d \n", poc);
-    pthread_mutex_lock(&fctx->il_progress_mutex);
-    res = fctx->is_decoded[poc];
-    pthread_mutex_unlock(&fctx->il_progress_mutex);
-    return res;
-}
-
 void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out) {
     /*
      - Wait untill the lower layer picture used for inter-layer reference picture is either allocated or decoded
@@ -591,8 +573,12 @@ void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status) {
         av_log(avxt, AV_LOG_DEBUG, "ff_thread_report_il_status poc %d status %d\n", poc, status);
     pthread_mutex_lock(&fctx->il_progress_mutex);
     if(fctx->is_decoded[poc]==1 ) {
-        if(fctx->frames_ref[poc])
+        if(fctx->frames_ref[poc]){
             ff_hevc_unref_frame(avxt_bl->priv_data, fctx->frames_ref[poc], ~0);
+            //ff_h264_unref_picture(avxt_bl->priv_data, fctx->frames_ref[poc]);
+            //fixme ff_hevc_unref and ff_h264_unref do the same thing so we can use ff_hevc_unref for both cases.
+            // it would be better to dissociate both cases though.
+        }
         fctx->is_decoded[poc] = 0;
     } else
         fctx->is_decoded[poc] = 3;
@@ -601,26 +587,6 @@ void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status) {
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 
-void ff_thread_report_il_status2(AVCodecContext *avxt, int poc, int status) {
-    /*
-    - Called by the lower layer decoder to report the new status of the picture as removed
-     
-    */
-    PerThreadContext *p;
-    FrameThreadContext *fctx;
-    p = avxt->internal->thread_ctx_frame;
-    fctx = p->parent;
-    poc = poc & (MAX_POC-1);
-    if (avxt->debug&FF_DEBUG_THREADS)
-        av_log(avxt, AV_LOG_DEBUG, "ff_thread_report_il_status2\n");
-    pthread_mutex_lock(&fctx->il_progress_mutex);
-    fctx->is_decoded[poc] = status;
-    if(!status) {
-        fctx->frames_data[poc] = NULL;
-                fctx->frames_ref[poc] = NULL;
-    }
-    pthread_mutex_unlock(&fctx->il_progress_mutex);
-}
 #endif
 
 void ff_thread_finish_setup(AVCodecContext *avctx) {

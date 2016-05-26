@@ -473,16 +473,19 @@ fail:
 static int getBitDepth(HEVCContext *s, enum ChannelType channel, int layerId)
 {
   const HEVCVPS *vps = s->vps;
-  const HEVCSPS *sps = (HEVCSPS*)s->sps_list[layerId]->data;
+  const HEVCSPS *sps;
   int retVal;
 
-  if ( !layerId || sps->v1_compatible) {
+  if ( !layerId /*|| sps->v1_compatible*/) {
     if( !layerId && vps->vps_nonHEVCBaseLayerFlag)
       retVal = vps->Hevc_VPS_Ext.rep_format[layerId].bit_depth_vps[channel];
-    else
+    else if(s->sps_list[layerId]){
+      sps = (HEVCSPS*)s->sps_list[layerId]->data;
       retVal = sps->bit_depth[channel];
+    }
   }
-  else {
+  else if(s->sps_list[layerId]) {
+	sps = (HEVCSPS*)s->sps_list[layerId]->data;
     retVal = sps->update_rep_format_flag ? sps->update_rep_format_index : vps->Hevc_VPS_Ext.vps_rep_format_idx[vps->Hevc_VPS_Ext.layer_id_in_vps[layerId]];
     retVal = vps->Hevc_VPS_Ext.rep_format[retVal].bit_depth_vps[channel];
   }
@@ -493,42 +496,33 @@ int set_el_parameter(HEVCContext *s) {
     int ret = 0, i;
     int phaseHorChroma = 0, phaseVerChroma=0;
 
-    int heightBL, widthBL, heightEL, widthEL;
+    int heightEL, widthEL;
 //    const int phaseXC = 0;
 //    const int phaseYC = 1;
 //    const int phaseAlignFlag = 0; // TO DO ((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->phase_align_flag;
     const int phaseHorLuma = 0;
     const int phaseVerLuma = 0, refLayer = 0;
     HEVCWindow scaled_ref_layer_window;
-    int bl_avc = s->vps->vps_nonHEVCBaseLayerFlag;
-    if(bl_avc){ // We consider BL is AVC
-    	//NOTE fixme: it would be better to check s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1] type
-        //s->BL_frame = av_mallocz(sizeof(HEVCFrame)); //BL-Frame is already allocated
-    	HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
-        heightBL = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - base_layer_window.bottom_offset - base_layer_window.top_offset;
-        widthBL  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  - base_layer_window.left_offset   - base_layer_window.right_offset;
+    HEVCVPS *vps = s->vps;
+    if(vps){
+      HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
+      s->BL_height = vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - base_layer_window.bottom_offset - base_layer_window.top_offset;
+      s->BL_width  = vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  - base_layer_window.left_offset   - base_layer_window.right_offset;
     } else {
-          HEVCSPS *bl_sps = (HEVCSPS*) s->sps_list[s->decoder_id-1]->data;
-
-          if(bl_sps) {
-              HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
-              heightBL = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - base_layer_window.bottom_offset - base_layer_window.top_offset;
-              widthBL  = s->vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  - base_layer_window.left_offset   - base_layer_window.right_offset;
-          } else {
-              av_log(s->avctx, AV_LOG_ERROR, "SPS Informations related to the inter layer refrence frame are missing -- \n");
-              ret = AVERROR(ENOMEM);
-              goto fail;
-          }
+      av_log(s->avctx, AV_LOG_ERROR, "VPS Informations related to the inter layer reference frame are missing -- \n");
+      ret = AVERROR(ENOMEM);
+      goto fail;
     }
-    if(!heightBL || !widthBL) {
-    	av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer refrence frame are missing heightBL: %d widthBL: %d \n", heightBL, widthBL);
+
+    if(!s->BL_height || !s->BL_width) {
+        av_log(s->avctx, AV_LOG_ERROR, "Informations related to the inter layer reference frame are missing heightBL: %d widthBL: %d \n", s->BL_height,s->BL_width);
         ret = AVERROR(ENOMEM);
         goto fail;
      }
-     scaled_ref_layer_window = s->sps->scaled_ref_layer_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]]; // m_phaseAlignFlag;
-     heightEL = s->sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
-     widthEL  = s->sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
-    phaseVerChroma = (4 * heightEL + (heightBL >> 1)) / heightBL - 4;//fixme +4 or -4??
+     scaled_ref_layer_window = s->sps->scaled_ref_layer_window[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]];
+     heightEL = vps->Hevc_VPS_Ext.rep_format[s->decoder_id].pic_height_vps_in_luma_samples - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
+     widthEL  = vps->Hevc_VPS_Ext.rep_format[s->decoder_id].pic_width_vps_in_luma_samples  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
+     phaseVerChroma = (4 * heightEL + (s->BL_height >> 1)) / s->BL_height - 4;
 #if !ACTIVE_PU_UPSAMPLING //fixme : was this intended to avc base layer??
     if(s->pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
       av_frame_unref(s->Ref_color_mapped_frame);
@@ -543,11 +537,11 @@ int set_el_parameter(HEVCContext *s) {
     s->sh.ScalingFactor[s->nuh_layer_id][0]   = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095 );
     s->sh.ScalingFactor[s->nuh_layer_id][1]   = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095 );
 #else
-    s->sh.ScalingFactor[s->nuh_layer_id][0]   = ((widthBL  << 16) + (widthEL  >> 1)) / widthEL;
-    s->sh.ScalingFactor[s->nuh_layer_id][1]   = ((heightBL << 16) + (heightEL >> 1)) / heightEL;
+    s->sh.ScalingFactor[s->nuh_layer_id][0]   = ((s->BL_width  << 16) + (widthEL  >> 1)) / widthEL;
+    s->sh.ScalingFactor[s->nuh_layer_id][1]   = ((s->BL_height << 16) + (heightEL >> 1)) / heightEL;
 
-    s->sh.MvScalingFactor[s->nuh_layer_id][0] = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095 );;
-    s->sh.MvScalingFactor[s->nuh_layer_id][1] = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095 );;
+    s->sh.MvScalingFactor[s->nuh_layer_id][0] = av_clip_c(((widthEL  << 8) + (s->BL_width  >> 1)) / s->BL_width,  -4096, 4095 );;
+    s->sh.MvScalingFactor[s->nuh_layer_id][1] = av_clip_c(((heightEL << 8) + (s->BL_height >> 1)) / s->BL_height, -4096, 4095 );;
 #endif
 
     s->up_filter_inf.scaleXLum = s->sh.ScalingFactor[s->nuh_layer_id][0];
@@ -556,22 +550,14 @@ int set_el_parameter(HEVCContext *s) {
     s->up_filter_inf.addXLum   = (( phaseHorLuma * s->up_filter_inf.scaleXLum + 8 ) >> 4 ) - ( 1 << 11 );
     s->up_filter_inf.addYLum   = (( phaseVerLuma * s->up_filter_inf.scaleYLum + 8 ) >> 4 ) - ( 1 << 11 );
 
-    widthBL  >>= 1;
-    heightBL >>= 1;
     s->up_filter_inf.addXCr   = ((phaseHorChroma * s->up_filter_inf.scaleXLum + 8) >> 4) - ( 1 << 11 );
     s->up_filter_inf.addYCr   = ((phaseVerChroma * s->up_filter_inf.scaleYLum + 8) >> 4) - ( 1 << 11 );
 
     s->up_filter_inf.scaleXCr = s->up_filter_inf.scaleXLum;
     s->up_filter_inf.scaleYCr = s->up_filter_inf.scaleYLum;
     for(i = 0; i <= s->nuh_layer_id; i++) {
-    	//fixme: hack for avc base_layer // we suppose bitdepth = 8
-    	if(i==0 && s->vps->vps_nonHEVCBaseLayerFlag){
-    		s->sh.Bit_Depth[i][CHANNEL_TYPE_LUMA  ] = 8;
-    	    s->sh.Bit_Depth[i][CHANNEL_TYPE_CHROMA] = 8;
-    	}else {
             s->sh.Bit_Depth[i][CHANNEL_TYPE_LUMA  ] = getBitDepth(s, CHANNEL_TYPE_LUMA, i);
             s->sh.Bit_Depth[i][CHANNEL_TYPE_CHROMA] = getBitDepth(s, CHANNEL_TYPE_CHROMA, i);
-    	}
     }
     for(i = 0; i < MAX_NUM_CHANNEL_TYPE; i++) {
       s->up_filter_inf.shift[i]    = s->sh.Bit_Depth[s->nuh_layer_id][i] - s->sh.Bit_Depth[refLayer][i];
@@ -581,7 +567,10 @@ int set_el_parameter(HEVCContext *s) {
         s->up_filter_inf.shift_up[i] = s->pps->m_nCGSOutputBitDepth[i] - 8;
       }
     }
-
+    if (!vps->vps_nonHEVCBaseLayerFlag){//fixme: the way we compute BL dimension should be the same with non HEVC BL
+            s->BL_height = vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples;
+            s->BL_width  = vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples;
+    }
     if(s->up_filter_inf.scaleXLum == 65536 && s->up_filter_inf.scaleYLum == 65536)
         s->up_filter_inf.idx = SNR;
     else
@@ -592,7 +581,7 @@ int set_el_parameter(HEVCContext *s) {
                 s->up_filter_inf.idx = X1_5;
             else {
                 s->up_filter_inf.idx = DEFAULT;
-                av_log(s->avctx, AV_LOG_INFO, "DEFAULT mode: SSE optimizations are not implemented for spatial scalability with a ratio different from x2 and x1.5 widthBL %d heightBL %d \n", widthBL<<1, heightBL<<1);
+                av_log(s->avctx, AV_LOG_INFO, "DEFAULT mode: SSE optimizations are not implemented for spatial scalability with a ratio different from x2 and x1.5 widthBL %d heightBL %d \n", s->BL_width <<1, s->BL_height<<1);
             }
     fail:
     return ret;
@@ -3212,26 +3201,21 @@ static int hevc_frame_start(HEVCContext *s)
 #if ACTIVE_PU_UPSAMPLING
         memset (s->is_upsampled, 0, s->sps->ctb_width * s->sps->ctb_height);
 #endif
-       if (s->el_decoder_el_exist/*||s->vps->vps_nonHEVCBaseLayerFlag*/){
-            ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);//fixme AVC base
-            //ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);//fixme AVC base
-        } else if(s->vps->vps_nonHEVCBaseLayerFlag && s->vps->vps_base_layer_available_flag){
-//        	ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
+       if (s->el_decoder_el_exist){
+            ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
+        } else if(s->vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME)){
+            ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
         } else
             if(s->threads_type & FF_THREAD_FRAME)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
 
         if(s->avctx->BL_frame){
-        	//if(s->vps->vps_base_layer_internal_flag == 1 && s->vps->vps_base_layer_available_flag == 1)
         		s->BL_frame = s->avctx->BL_frame;
-            //else if(s->vps->vps_base_layer_internal_flag == 0 && s->vps->vps_base_layer_available_flag == 1)
-        	//s->BL_frame = s->avctx->BL_frame;//fixme avc bl type is there a need to this else if
-        }
-        else {
+        }else {
             av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
         }
-        //s->poc = ((H264Picture *)s->BL_frame)->f->display_picture_number; //fixme BL AVC poc & no BL frame
+
         if(!s->vps->vps_nonHEVCBaseLayerFlag)
             s->poc = ((HEVCFrame *)s->BL_frame)->poc; //fixme BL AVC poc & no BL frame
 
@@ -3250,14 +3234,13 @@ static int hevc_frame_start(HEVCContext *s)
         }
 #endif
     }
-    //if (s->vps->vps_nonHEVCBaseLayerFlag /*careful only in monothread*/)
-               // s->hevcdsp.upsample_base_layer_frame(s->EL_frame, ((H264Picture *)s->BL_frame)->f, s->buffer_frame, &s->sps->scaled_ref_layer_window[s->vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]], &s->up_filter_inf, 1);
+
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
 
     if (ret < 0)
         goto fail;
-    s->avctx->BL_frame = s->ref;//fixme AVC BL reinterpret BLFrame to HEVC ??? hide for the moment
-    ret = ff_hevc_frame_rps(s);//fixme; note used in if BLFrame is AVC
+    s->avctx->BL_frame = s->ref;
+    ret = ff_hevc_frame_rps(s);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS. decoder_id %d \n", s->decoder_id);
         goto fail;
@@ -3285,6 +3268,10 @@ fail:
     if (s->decoder_id) {
         if(s->el_decoder_el_exist)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
+#if SVC_EXTENSION
+        if(s->vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
+            ff_thread_report_il_status(s->avctx, s->poc_id, 2);
+#endif
         if (s->inter_layer_ref)
             ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
     }
@@ -3834,6 +3821,10 @@ fail:
     if (s->decoder_id) {
         if(s->el_decoder_el_exist)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
+#if SVC_EXTENSION
+        if(s->vps && s->vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
+            ff_thread_report_il_status(s->avctx, s->poc_id, 2);
+#endif
     }
     if (s->bl_decoder_el_exist)
         ff_thread_report_il_progress(s->avctx, s->poc_id, NULL, NULL);
@@ -4421,6 +4412,23 @@ AVCodec ff_hevc_decoder = {
     .profiles              = NULL_IF_CONFIG_SMALL(profiles),
 };
 
+AVCodec ff_shvc_decoder = {
+    .name                  = "shvc",
+    .long_name             = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
+    .type                  = AVMEDIA_TYPE_VIDEO,
+    .id                    = AV_CODEC_ID_SHVC,
+    .priv_data_size        = sizeof(HEVCContext),
+    .priv_class            = &hevc_decoder_class,
+    .init                  = hevc_decode_init,
+    .close                 = hevc_decode_free,
+    .decode                = hevc_decode_frame,
+    .flush                 = hevc_decode_flush,
+    .update_thread_context = hevc_update_thread_context,
+    .init_thread_copy      = hevc_init_thread_copy,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                             AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
+    .profiles              = NULL_IF_CONFIG_SMALL(profiles),
+};
 
 #ifdef POC_DISPLAY_MD5
 

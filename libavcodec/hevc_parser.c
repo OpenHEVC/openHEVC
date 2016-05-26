@@ -25,12 +25,10 @@
 #include "parser.h"
 #include "hevc.h"
 #include "golomb.h"
-#include "getopt.h"
 
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
 
-//extern int shvc_flags;
 
 typedef struct HEVCParseContext {
     HEVCContext  h;
@@ -57,19 +55,18 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
         frame_counter++;
 
         nut = (pc->state64 >> 2 * 8 + 1) & 0x3F;
-        layer_id  =  (((pc->state64 >> 2 * 8) &0x01)<<5) + (((pc->state64 >> 1 * 8)&0xF8)>>3);
-        //printf("Frame_counter : %d\nNAL Unit : %d \nLayer ID : %d\n", frame_counter, nut, layer_id);
+
         // Beginning of access unit
         if ((nut >= HEVC_NAL_VPS && nut <= HEVC_NAL_AUD) || nut == HEVC_NAL_SEI_PREFIX ||
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
-            if (pc->frame_start_found && !layer_id/*&& (!shvc_flags ? !layer_id : layer_id)*/) {
+            if (pc->frame_start_found) {
                 pc->frame_start_found = 0;
                 return i - 5;
             }
         } else if (nut <= HEVC_NAL_RASL_R ||
                    (nut >= HEVC_NAL_BLA_W_LP && nut <= HEVC_NAL_CRA_NUT)) {
             int first_slice_segment_in_pic_flag = buf[i] >> 7;
-            if (first_slice_segment_in_pic_flag && !layer_id/*&& (!shvc_flags ? !layer_id : layer_id)*/) {
+            if (first_slice_segment_in_pic_flag) {
                 if (!pc->frame_start_found) {
                     pc->frame_start_found = 1;
                 } else { // First slice of next frame found
@@ -83,6 +80,47 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
     return END_NOT_FOUND;
 }
 
+static int hevc_find_frame_end2(AVCodecParserContext *s, const uint8_t *buf,
+                               int buf_size)
+{
+    int i;
+    ParseContext *pc = &((HEVCParseContext *)s->priv_data)->pc;
+    static frame_counter = 0;
+    for (i = 0; i < buf_size; i++) {
+        int nut, layer_id;
+
+        pc->state64 = (pc->state64 << 8) | buf[i];
+
+        if (((pc->state64 >> 3 * 8) & 0xFFFFFF) != START_CODE)
+            continue;
+        frame_counter++;
+
+        nut = (pc->state64 >> 2 * 8 + 1) & 0x3F;
+        layer_id  =  (((pc->state64 >> 2 * 8) &0x01)<<5) + (((pc->state64 >> 1 * 8)&0xF8)>>3);
+        //printf("Frame_counter : %d\nNAL Unit : %d \nLayer ID : %d\n", frame_counter, nut, layer_id);
+        // Beginning of access unit
+        if ((nut >= HEVC_NAL_VPS && nut <= HEVC_NAL_AUD) || nut == HEVC_NAL_SEI_PREFIX ||
+            (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
+            if (pc->frame_start_found && !layer_id) {
+                pc->frame_start_found = 0;
+                return i - 5;
+            }
+        } else if (nut <= HEVC_NAL_RASL_R ||
+                   (nut >= HEVC_NAL_BLA_W_LP && nut <= HEVC_NAL_CRA_NUT)) {
+            int first_slice_segment_in_pic_flag = buf[i] >> 7;
+            if (first_slice_segment_in_pic_flag && !layer_id) {
+                if (!pc->frame_start_found) {
+                    pc->frame_start_found = 1;
+                } else { // First slice of next frame found
+                    pc->frame_start_found = 0;
+                    return i - 5;
+                }
+            }
+        }
+    }
+
+    return END_NOT_FOUND;
+}
 /**
  * Parse NAL units of found picture and decode some basic information.
  *
@@ -307,6 +345,31 @@ static int hevc_parse(AVCodecParserContext *s,
     return next;
 }
 
+static int hevc_parse2(AVCodecParserContext *s,
+                      AVCodecContext *avctx,
+                      const uint8_t **poutbuf, int *poutbuf_size,
+                      const uint8_t *buf, int buf_size)
+{
+    int next;
+    ParseContext *pc = &((HEVCParseContext *)s->priv_data)->pc;
+    if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        next = buf_size;
+    } else {
+        next = hevc_find_frame_end2(s, buf, buf_size);
+        //printf("Position of next frame : %d\n", next);
+        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
+            *poutbuf      = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
+    }
+
+    parse_nal_units(s, avctx, buf, buf_size);
+
+    *poutbuf      = buf;
+    *poutbuf_size = buf_size;
+    return next;
+}
 // Split after the parameter sets at the beginning of the stream if they exist.
 static int hevc_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
 {
@@ -366,6 +429,16 @@ AVCodecParser ff_hevc_parser = {
     .priv_data_size = sizeof(HEVCParseContext),
     .parser_init    = hevc_init,
     .parser_parse   = hevc_parse,
+    .parser_close   = hevc_close,
+    .split          = hevc_split,
+};
+
+
+AVCodecParser ff_shvc_parser = {
+    .codec_ids      = { AV_CODEC_ID_SHVC },
+    .priv_data_size = sizeof(HEVCParseContext),
+    .parser_init    = hevc_init,
+    .parser_parse   = hevc_parse2,
     .parser_close   = hevc_close,
     .split          = hevc_split,
 };

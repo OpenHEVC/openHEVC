@@ -609,6 +609,16 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->prev_frame_num        = -1;
     h->sei_fpa.frame_packing_arrangement_cancel_flag = -1;
 
+#if SVC_EXTENSION
+    h->poc_id = 0;
+    for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
+        h->Add_ref[i].f = av_frame_alloc();
+        if (!h->Add_ref[i].f)
+            break;
+        h->Add_ref[i].tf.f = h->Add_ref[i].f;
+    }
+#endif
+
     h->next_outputed_poc = INT_MIN;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
@@ -1521,7 +1531,23 @@ again:
 
                 if ((err = ff_h264_decode_slice_header(h, sl)))
                     break;
-
+#if SVC_EXTENSION
+            int i;
+            if(h->avctx->active_thread_type & FF_THREAD_FRAME){
+                for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
+                    H264Picture *frame = &h->Add_ref[i];
+                    if (frame->f->buf[0])
+                        continue;
+                    ret = ff_h264_ref_picture(h, &h->Add_ref[i], h->cur_pic_ptr);
+                    if (ret < 0)
+                        return ret;
+                    ff_thread_report_il_progress(h->avctx, h->poc_id, &h->Add_ref[i], &h->Add_ref[i]);
+                    break;
+                }
+            if(i==FF_ARRAY_ELEMS(h->Add_ref))
+               av_log(h->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", 0);
+    }
+#endif
                 if (h->sei_recovery_frame_cnt >= 0) {
                     if (h->frame_num != h->sei_recovery_frame_cnt || sl->slice_type_nos != AV_PICTURE_TYPE_I)
                         h->valid_recovery_point = 1;
@@ -1676,7 +1702,11 @@ again:
     ret = 0;
 end:
     /* clean up */
+#if SVC_EXTENSION
+    if (h->cur_pic_ptr /*&& !h->droppable*/) {
+#else
     if (h->cur_pic_ptr && !h->droppable) {
+#endif
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
                                   h->picture_structure == PICT_BOTTOM_FIELD);
     }
@@ -1942,7 +1972,12 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     av_frame_free(&h->cur_pic.f);
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
     av_frame_free(&h->last_pic_for_ec.f);
-
+#if SVC_EXTENSION
+    for (int i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
+        ff_h264_unref_picture(h, &h->Add_ref[i]);
+        av_frame_free(&h->Add_ref[i].f);
+    }
+#endif
     return 0;
 }
 
