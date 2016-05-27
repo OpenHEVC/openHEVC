@@ -363,9 +363,13 @@ int i = 0;
         break;
     }
 #endif
+#if OPTI_ENABLED
+    printf("Opti ENABLED\n");
     if (ARCH_X86) ff_hevc_dsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
+#endif
 #if CONFIG_GREEN
+    printf("Green ENABLED\n");
     green_dsp_init(hevcdsp); 
 #endif
 }
