@@ -7,6 +7,16 @@
 
 #include "hevcdsp.h"
 
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green1_filters[7][1]) = {
+	{ 64 },
+	{ 64 },
+	{ 64 },
+	{ 64 },
+	{ 64 },
+	{ 64 },
+	{ 64 },
+};
+
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green2_filters[7][2]) = {
     { 54, 10},
     { 54, 10},
@@ -15,6 +25,16 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green2_filters[7][2]) = {
     { 10, 54},
     { 10, 54},
     { 10, 54}
+};
+
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green3_filters[7][3]) = {
+	{ -3, 62,  5 },
+	{ -5, 58, 11 },
+	{ -7, 51, 20 },
+	{ -6, 42, 28 },
+	{ 20, 51, -7 },
+	{ 11, 58, -5 },
+	{  5, 62, -3 },
 };
 
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green5_filters[3][5]) = {

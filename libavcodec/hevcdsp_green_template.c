@@ -1393,77 +1393,456 @@ static void FUNC(put_hevc_qpel1_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, ui
     }
 }
 
+/* Generic CHROMA Functions */
+
+#if BIT_DEPTH < 14
+    #define CHROMA_OFFSET int offset = 1 << (shift - 1);
+#else
+	#define CHROMA_OFFSET int offset = 0;
+#endif
+
+#define EPEL_H(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _h)(int16_t *dst, ptrdiff_t dststride,				\
+								  uint8_t *_src, ptrdiff_t _srcstride,				\
+								  int height, intptr_t mx, intptr_t my, int width)	\
+{																					\
+	int x, y;																		\
+	pixel *src = (pixel *)_src;														\
+	ptrdiff_t srcstride  = _srcstride / sizeof(pixel);								\
+	const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];							\
+	for (y = 0; y < height; y++) {													\
+		for (x = 0; x < width; x++)													\
+			dst[x] = EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8);								\
+		src += srcstride;															\
+		dst += dststride;															\
+	}																				\
+}																					\
+
+#define EPEL_V(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _v)(int16_t *dst, ptrdiff_t dststride,               \
+                                  uint8_t *_src, ptrdiff_t _srcstride,              \
+                                  int height, intptr_t mx, intptr_t my, int width)  \
+{                                                                                   \
+    int x, y;                                                                       \
+    pixel *src = (pixel *)_src;                                                     \
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);                               \
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];                            \
+                                                                                    \
+    for (y = 0; y < height; y++) {                                                  \
+        for (x = 0; x < width; x++)                                                 \
+            dst[x] = EPEL_FILTER_GREEN(NTAP)(src, srcstride) >> (BIT_DEPTH - 8);               		\
+        src += srcstride;                                                           \
+        dst += dststride;                                                           \
+    }                                                                               \
+}\
+
+#define EPEL_HV(NTAP)\
+static void FUNC(put_hevc_epel ## NTAP ## _hv)(int16_t *dst, ptrdiff_t dststride,\
+                                   uint8_t *_src, ptrdiff_t _srcstride,\
+                                   int height, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];\
+    int16_t *tmp = tmp_array;\
+\
+    src -= EPEL_EXTRA_BEFORE * srcstride;\
+\
+    for (y = 0; y < height + EPEL_EXTRA; y++) {\
+        for (x = 0; x < width; x++)\
+            tmp[x] = EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8);\
+        src += srcstride;\
+        tmp += MAX_PB_SIZE;\
+    }\
+\
+    tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;\
+    filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = EPEL_FILTER_GREEN(NTAP)(tmp, MAX_PB_SIZE) >> 6;\
+        tmp += MAX_PB_SIZE;\
+        dst += dststride;\
+    }\
+}\
+
+#define EPEL_UNI_H(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _uni_h)(uint8_t *_dst, ptrdiff_t _dststride, \
+									   uint8_t *_src, ptrdiff_t _srcstride, \
+                                      int height, intptr_t mx, intptr_t my, int width) \
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int shift = 14 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8)) + offset) >> shift);\
+        src += srcstride;\
+        dst += dststride;\
+    }\
+}\
+
+#define EPEL_BI_H(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                     int16_t *src2, ptrdiff_t src2stride,\
+                                     int height, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int shift = 14 + 1 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++) {\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);\
+        }\
+        dst  += dststride;\
+        src  += srcstride;\
+        src2 += src2stride;\
+    }\
+}\
+
+#define EPEL_UNI_V(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _uni_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                      int height, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+    int shift = 14 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, srcstride) >> (BIT_DEPTH - 8)) + offset) >> shift);\
+        src += srcstride;\
+        dst += dststride;\
+    }\
+}\
+
+#define EPEL_BI_V(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                     int16_t *src2, ptrdiff_t src2stride,\
+                                     int height, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    int shift = 14 + 1 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);\
+        dst  += dststride;\
+        src  += srcstride;\
+        src2 += src2stride;\
+    }\
+}\
+
+#define EPEL_UNI_HV(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _uni_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                       int height, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];\
+    int16_t *tmp = tmp_array;\
+    int shift = 14 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+\
+    src -= EPEL_EXTRA_BEFORE * srcstride;\
+\
+    for (y = 0; y < height + EPEL_EXTRA; y++) {\
+        for (x = 0; x < width; x++)\
+            tmp[x] = EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8);\
+        src += srcstride;\
+        tmp += MAX_PB_SIZE;\
+    }\
+\
+    tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;\
+    filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(tmp, MAX_PB_SIZE) >> 6) + offset) >> shift);\
+        tmp += MAX_PB_SIZE;\
+        dst += dststride;\
+    }\
+}\
+
+#define EPEL_BI_HV(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                      int16_t *src2, ptrdiff_t src2stride,\
+                                      int height, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];\
+    int16_t *tmp = tmp_array;\
+    int shift = 14 + 1 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+\
+    src -= EPEL_EXTRA_BEFORE * srcstride;\
+\
+    for (y = 0; y < height + EPEL_EXTRA; y++) {\
+        for (x = 0; x < width; x++)\
+            tmp[x] = EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8);\
+        src += srcstride;\
+        tmp += MAX_PB_SIZE;\
+    }\
+\
+    tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;\
+    filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);\
+        tmp  += MAX_PB_SIZE;\
+        dst  += dststride;\
+        src2 += src2stride;\
+    }\
+}\
+
+#define EPEL_UNI_W_H(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _uni_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                        int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int shift = denom + 14 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+\
+    ox     = ox * (1 << (BIT_DEPTH - 8));\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++) {\
+            dst[x] = av_clip_pixel((((EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);\
+        }\
+        dst += dststride;\
+        src += srcstride;\
+    }\
+}\
+
+#define EPEL_BI_W_H(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                       int16_t *src2, ptrdiff_t src2stride,\
+                                       int height, int denom, int wx0, int wx1,\
+                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int shift = 14 + 1 - BIT_DEPTH;\
+    int log2Wd = denom + shift - 1;\
+\
+    ox0     = ox0 * (1 << (BIT_DEPTH - 8));\
+    ox1     = ox1 * (1 << (BIT_DEPTH - 8));\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +\
+                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));\
+        src  += srcstride;\
+        dst  += dststride;\
+        src2 += src2stride;\
+    }\
+}\
+
+#define EPEL_UNI_W_V(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _uni_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                        int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+    int shift = denom + 14 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+\
+    ox     = ox * (1 << (BIT_DEPTH - 8));\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++) {\
+            dst[x] = av_clip_pixel((((EPEL_FILTER_GREEN(NTAP)(src, srcstride) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);\
+        }\
+        dst += dststride;\
+        src += srcstride;\
+    }\
+}\
+
+#define EPEL_BI_W_V(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                       int16_t *src2, ptrdiff_t src2stride,\
+                                       int height, int denom, int wx0, int wx1,\
+                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    int shift = 14 + 1 - BIT_DEPTH;\
+    int log2Wd = denom + shift - 1;\
+\
+    ox0     = ox0 * (1 << (BIT_DEPTH - 8));\
+    ox1     = ox1 * (1 << (BIT_DEPTH - 8));\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, srcstride) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +\
+                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));\
+        src  += srcstride;\
+        dst  += dststride;\
+        src2 += src2stride;\
+    }\
+}\
+
+#define EPEL_UNI_W_HV(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _uni_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                         int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];\
+    int16_t *tmp = tmp_array;\
+    int shift = denom + 14 - BIT_DEPTH;\
+    CHROMA_OFFSET\
+\
+    src -= EPEL_EXTRA_BEFORE * srcstride;\
+\
+    for (y = 0; y < height + EPEL_EXTRA; y++) {\
+        for (x = 0; x < width; x++)\
+            tmp[x] = EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8);\
+        src += srcstride;\
+        tmp += MAX_PB_SIZE;\
+    }\
+\
+    tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;\
+    filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+\
+    ox     = ox * (1 << (BIT_DEPTH - 8));\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel((((EPEL_FILTER_GREEN(NTAP)(tmp, MAX_PB_SIZE) >> 6) * wx + offset) >> shift) + ox);\
+        tmp += MAX_PB_SIZE;\
+        dst += dststride;\
+    }\
+}\
+
+#define EPEL_BI_W_HV(NTAP) \
+static void FUNC(put_hevc_epel ## NTAP ## _bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,\
+                                        int16_t *src2, ptrdiff_t src2stride,\
+                                        int height, int denom, int wx0, int wx1,\
+                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)\
+{\
+    int x, y;\
+    pixel *src = (pixel *)_src;\
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);\
+    pixel *dst          = (pixel *)_dst;\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);\
+    const int8_t *filter = ff_hevc_epel_green ## NTAP ##_filters[mx - 1];\
+    int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];\
+    int16_t *tmp = tmp_array;\
+    int shift = 14 + 1 - BIT_DEPTH;\
+    int log2Wd = denom + shift - 1;\
+\
+    src -= EPEL_EXTRA_BEFORE * srcstride;\
+\
+    for (y = 0; y < height + EPEL_EXTRA; y++) {\
+        for (x = 0; x < width; x++)\
+            tmp[x] = EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8);\
+        src += srcstride;\
+        tmp += MAX_PB_SIZE;\
+    }\
+\
+    tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;\
+    filter = ff_hevc_epel_green ## NTAP ##_filters[my - 1];\
+\
+    ox0     = ox0 * (1 << (BIT_DEPTH - 8));\
+    ox1     = ox1 * (1 << (BIT_DEPTH - 8));\
+    for (y = 0; y < height; y++) {\
+        for (x = 0; x < width; x++)\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(tmp, MAX_PB_SIZE) >> 6) * wx1 + src2[x] * wx0 +\
+                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));\
+        tmp  += MAX_PB_SIZE;\
+        dst  += dststride;\
+        src2 += src2stride;\
+    }\
+}\
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-/** Green Chroma 2taps interpolation filter */
-#define EPEL_FILTER2(src, stride)                                               \
+
+#define CHROMA_FUNC(NTAP) \
+		EPEL_H(NTAP) \
+		EPEL_V(NTAP) \
+		EPEL_HV(NTAP) \
+		EPEL_UNI_H(NTAP) \
+		EPEL_UNI_V(NTAP) \
+		EPEL_UNI_HV(NTAP) \
+		EPEL_BI_H(NTAP) \
+		EPEL_BI_V(NTAP) \
+		EPEL_BI_HV(NTAP) \
+		EPEL_UNI_W_H(NTAP) \
+		EPEL_UNI_W_V(NTAP) \
+		EPEL_UNI_W_HV(NTAP) \
+		EPEL_BI_W_H(NTAP) \
+		EPEL_BI_W_V(NTAP) \
+		EPEL_BI_W_HV(NTAP)
+
+#define EPEL_FILTER_GREEN(N) EPEL_FILTER_GREEN ## N
+
+#define EPEL_FILTER_GREEN1(src, stride)                                               \
+    (filter[0] * src[x])
+
+#define EPEL_FILTER_GREEN2(src, stride)                                               \
     (filter[0] * src[x] +                                             \
      filter[1] * src[x + stride])
 
+#define EPEL_FILTER_GREEN3(src, stride)                                     \
+    (filter[0] * src[x - stride] +                                             \
+	 filter[1] * src[x] 		 +	                                   \
+	 filter[2] * src[x + stride])
 
-/** Green Chroma 2taps H interpolation filter */
-static void FUNC(put_hevc_epel2_h)(int16_t *dst, ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel *src = (pixel *)_src;
-    ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_green2_filters[mx - 1];
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = EPEL_FILTER2(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        dst += dststride;
-    }
-}
+CHROMA_FUNC(1)
+CHROMA_FUNC(2)
+CHROMA_FUNC(3)
 
-/** Green Chroma 2taps V interpolation filter */
-static void FUNC(put_hevc_epel2_v)(int16_t *dst, ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel *src = (pixel *)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_green2_filters[my - 1];
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = EPEL_FILTER2(src, srcstride) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Chroma 2taps HV interpolation filter */
-static void FUNC(put_hevc_epel2_hv)(int16_t *dst, ptrdiff_t dststride,
-                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                   int height, intptr_t mx, intptr_t my, int width)
-{
-	int x, y;
-	pixel *src = (pixel *)_src;
-	ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-	const int8_t *filter = ff_hevc_epel_green2_filters[mx - 1];
-	int16_t tmp_array[(MAX_PB_SIZE + 1/*EPEL_EXTRA*/) * MAX_PB_SIZE];
-	int16_t *tmp = tmp_array;
-
-	for (y = 0; y < height + 1; y++) {
-	   for (x = 0; x < width; x++)
-		   tmp[x] = EPEL_FILTER2(src, 1) >> (BIT_DEPTH - 8);
-	   src += srcstride;
-	   tmp += MAX_PB_SIZE;
-	}
-
-	tmp      = tmp_array ;
-	filter = ff_hevc_epel_green2_filters[my - 1];
-
-	for (y = 0; y < height; y++) {
-	   for (x = 0; x < width; x++)
-		   dst[x] = EPEL_FILTER2(tmp, MAX_PB_SIZE) >> 6;
-	   tmp += MAX_PB_SIZE;
-	   dst += dststride;
-	}
-}
 #endif

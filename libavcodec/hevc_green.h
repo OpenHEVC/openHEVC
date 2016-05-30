@@ -22,6 +22,7 @@ void green_update_context(HEVCContext *s, HEVCContext *s0);
 #define LUMA7 7
 #define CHROMA1 1
 #define CHROMA2 2
+#define CHROMA3 3
 #define CHROMA4 4
 
 #endif

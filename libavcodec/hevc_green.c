@@ -136,6 +136,11 @@ void green_set_activation(HEVCContext *s)
 				green_reload_filter_chroma2(&(s->hevcdsp), s->sps->bit_depth);
 			}
 			break;
+		case CHROMA3:									// Green: 2taps chroma interpolation
+			if (s->hevcdsp.green_cur_chroma != CHROMA3){
+				green_reload_filter_chroma3(&(s->hevcdsp), s->sps->bit_depth);
+			}
+			break;
 		case CHROMA4: // Green: no need to reload if 4taps filter is selected
 			break;
 		default:
