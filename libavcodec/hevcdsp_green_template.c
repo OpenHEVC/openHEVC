@@ -1265,7 +1265,7 @@ static void FUNC(put_hevc_qpel1_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
     ox = ox * (1 << (BIT_DEPTH - 8));
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER(tmp, MAX_PB_SIZE) >> 6) * wx + offset) >> shift) + ox);
+            dst[x] = av_clip_pixel((((QPEL_FILTER1(tmp, MAX_PB_SIZE) >> 6) * wx + offset) >> shift) + ox);
         tmp += MAX_PB_SIZE;
         dst += dststride;
     }
