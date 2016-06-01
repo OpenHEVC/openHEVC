@@ -153,10 +153,14 @@ elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
     #add_definitions("-DX86_32")
 endif()
 
-add_definitions("-DPIC")
-add_definitions("-DUSE_SDL")
-AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
-AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
+# For Kalray MPPA Clusters purpose : Remove some flags
+get_filename_component(compiler_name ${CMAKE_C_COMPILER} NAME)
+if(NOT "${compiler_name}" STREQUAL "k1-gcc")
+    add_definitions("-DPIC")
+    add_definitions("-DUSE_SDL")
+    AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
+    AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
+endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
 
