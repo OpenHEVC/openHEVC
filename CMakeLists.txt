@@ -353,7 +353,7 @@ else()
 endif()
 add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
-target_link_libraries(LibOpenHevcWrapper m)
+target_link_libraries(LibOpenHevcWrapper cryptopp)
 
 include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
 

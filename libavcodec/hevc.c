@@ -4072,7 +4072,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     pic_arrays_free(s);
-
+    DeleteCryptoC(s->HEVClc->dbs_g);
     av_freep(&s->md5_ctx);
 
     for(i=0; i < s->nals_allocated; i++) {
@@ -4148,7 +4148,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->dynamic_alloc += HEVC_CONTEXTS;
     if (!s->cabac_state)
         goto fail;
-
+     s->HEVClc->dbs_g = InitC();
     s->tmp_frame = av_frame_alloc();
     s->dynamic_alloc += sizeof(AVFrame); 
     if (!s->tmp_frame)
@@ -4367,6 +4367,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         return ret;
 
     s->picture_struct = 0;
+    s->prev_pos = 0;
+    s->encrypt_params = HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS;
 
     if (avctx->extradata_size > 0 && avctx->extradata) {
         ret = hevc_decode_extradata(s);
