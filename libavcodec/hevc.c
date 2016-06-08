@@ -4368,7 +4368,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 
     s->picture_struct = 0;
     s->prev_pos = 0;
-    s->encrypt_params = HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS;
+    s->encrypt_params = 0; //HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS;
 
     if (avctx->extradata_size > 0 && avctx->extradata) {
         ret = hevc_decode_extradata(s);

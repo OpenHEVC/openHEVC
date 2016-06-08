@@ -159,7 +159,7 @@ AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
-find_package(CRYPTOPP)
+#find_package(CRYPTOPP_FOUND)
 find_package(SDL)
 find_package(SDL2)
 
@@ -289,7 +289,6 @@ set(libfilenames
     libavcodec/videodsp.c
     libavcodec/vorbis_parser.c
     libavcodec/xiph.c
-    libavcodec/crypto.cpp
 )
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 list(APPEND libfilenames
@@ -345,7 +344,11 @@ list(APPEND libfilenames
     compat/msvcrt/snprintf.c
 )
 endif()
-
+if(CRYPTOPP_FOUND)
+list(APPEND libfilenames
+    libavcodec/crypto.cpp
+)
+endif()
 if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
     option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
 else()
@@ -353,7 +356,12 @@ else()
 endif()
 add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
+
+if(CRYPTOPP_FOUND)
 target_link_libraries(LibOpenHevcWrapper cryptopp)
+else()
+target_link_libraries(LibOpenHevcWrapper)
+endif()
 
 include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
 
