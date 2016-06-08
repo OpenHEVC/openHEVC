@@ -159,7 +159,7 @@ AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
-
+find_package(CRYPTOPP)
 find_package(SDL)
 find_package(SDL2)
 
@@ -289,6 +289,7 @@ set(libfilenames
     libavcodec/videodsp.c
     libavcodec/vorbis_parser.c
     libavcodec/xiph.c
+    libavcodec/crypto.cpp
 )
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 list(APPEND libfilenames
