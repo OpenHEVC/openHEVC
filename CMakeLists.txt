@@ -374,6 +374,15 @@ list(APPEND libfilenames
     libavutil/arm/asm.S
     libavcodec/arm/fft_init_arm.c
     libavcodec/arm/fft_neon.S
+    libavcodec/arm/h264chroma_init_arm.c
+    libavcodec/arm/h264cmc_neon.S
+    libavcodec/arm/h264dsp_init_arm.c
+    libavcodec/arm/h264dsp_neon.S
+    libavcodec/arm/h264idct_neon.S
+    libavcodec/arm/h264pred_init_arm.c
+    libavcodec/arm/h264pred_neon.S
+    libavcodec/arm/h264qpel_init_arm.c
+    libavcodec/arm/h264qpel_neon.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_deblock_neon.S
     libavcodec/arm/hevcdsp_idct_neon.S
