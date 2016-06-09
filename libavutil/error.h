@@ -36,8 +36,13 @@
 
 /* error handling */
 #if EDOM > 0
+#ifndef __k1__
 #define AVERROR(e) (-(e))   ///< Returns a negative error code from a POSIX error code, to return from library functions.
 #define AVUNERROR(e) (-(e)) ///< Returns a POSIX error code from a library function error return value.
+#else
+#define AVERROR(e) (e)
+#define AVUNERROR(e) (e)
+#endif
 #else
 /* Some platforms have E* and errno already negated. */
 #define AVERROR(e) (e)
