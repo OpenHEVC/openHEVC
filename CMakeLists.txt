@@ -5,7 +5,6 @@ option (BUILD_FOR_MPPA "Build static library for MPPA Cluster binaries linking."
 if (BUILD_FOR_MPPA)
     message("Set flags for MPPA Cross Compilation")
     set(CMAKE_SYSTEM_NAME Generic CACHE STRING "")
-    set(USE_YASM OFF)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
     set(CMAKE_CROSSCOMPILING TRUE CACHE BOOL "")
     set(CMAKE_AR $ENV{K1_TOOLCHAIN_DIR}/bin/k1-ar CACHE FILEPATH "")
@@ -105,10 +104,10 @@ else()
 endif()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
-    enable_language(ASM)
-    add_definitions(
-        -DEXTERN_ASM=
-    )
+	enable_language(ASM)
+	add_definitions(
+		-DEXTERN_ASM=
+	)
 endif()
 
 if(WIN32)
@@ -205,7 +204,7 @@ if(NOT BUILD_FOR_MPPA)
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
-
+#find_package(CRYPTOPP_FOUND)
 find_package(SDL)
 find_package(SDL2)
 
@@ -304,6 +303,42 @@ set(libfilenames
     libavcodec/utils.c
     libavcodec/videodsp.c
 )
+if(NOT BUILD_FOR_MPPA)
+list(APPEND libfilenames
+    libavformat/flac_picture.c
+    libavformat/isom.c
+    libavformat/matroska.c
+    libavformat/matroskadec.c
+    libavformat/mov.c
+    libavformat/mov_chan.c
+    libavformat/mpegts.c
+    libavformat/oggdec.c
+    libavformat/oggparsecelt.c
+    libavformat/oggparsedirac.c
+    libavformat/oggparseflac.c
+    libavformat/oggparseogm.c
+    libavformat/oggparseopus.c
+    libavformat/oggparseskeleton.c
+    libavformat/oggparsespeex.c
+    libavformat/oggparsetheora.c
+    libavformat/oggparsevorbis.c
+    libavformat/oggparsevp8.c
+    libavformat/vorbiscomment.c
+    libavcodec/ac3tab.c
+    libavcodec/dirac.c
+    libavcodec/faanidct.c
+    libavcodec/flac.c
+    libavcodec/flacdata.c
+    libavcodec/me_cmp.c
+    libavcodec/mpegaudiodata.c
+    libavcodec/mpeg12data.c
+    libavcodec/mpeg4audio.c
+    libavcodec/imgconvert.c
+    libavcodec/simple_idct.c
+    libavcodec/vorbis_parser.c
+    libavcodec/xiph.c
+)
+endif()
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 list(APPEND libfilenames
     libavutil/arm/cpu.c
@@ -351,21 +386,37 @@ list(APPEND libfilenames
     libavcodec/x86/videodsp_init.c
 )
 endif()
+if(NOT BUILD_FOR_MPPA)
+list(APPEND libfilenames
+    libavcodec/x86/h264_qpel.c
+)
+endif()
 if(WIN32)
 list(APPEND libfilenames
     compat/strtod.c
     compat/msvcrt/snprintf.c
 )
 endif()
-
+if(CRYPTOPP_FOUND)
+list(APPEND libfilenames
+    libavcodec/crypto.cpp
+)
+endif()
 if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
     option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
+elseif(BUILD_FOR_MPPA)
+    option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
 else()
     option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
 endif()
 add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
-target_link_libraries(LibOpenHevcWrapper m)
+
+if(CRYPTOPP_FOUND)
+target_link_libraries(LibOpenHevcWrapper cryptopp)
+else()
+target_link_libraries(LibOpenHevcWrapper)
+endif()
 
 include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
 

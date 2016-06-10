@@ -36,6 +36,10 @@
 #include "thread.h"
 #include "videodsp.h"
 #include "hevc_defs.h"
+#include "crypto.h"
+
+#define EncryptMVDiffSign 1
+
 
 #define PARALLEL_SLICE   0
 #define PARALLEL_FILTERS 0
@@ -434,6 +438,18 @@ enum ChromaFormat
 #if AUXILIARY_PICTURES
     ,NUM_CHROMA_FORMAT = 4
 #endif
+};
+
+/*
+ Encryption configuration
+ */
+enum hevc_crypto_features {
+    HEVC_CRYPTO_OFF = 0,
+    HEVC_CRYPTO_MVs = (1 << 0),
+    HEVC_CRYPTO_MV_SIGNS = (1 << 1),
+    HEVC_CRYPTO_TRANSF_COEFFS = (1 << 2),
+    HEVC_CRYPTO_TRANSF_COEFF_SIGNS = (1 << 3),
+    HEVC_CRYPTO_ON = (1 << 4) - 1,
 };
 
 #if REPN_FORMAT_IN_VPS
@@ -836,7 +852,6 @@ typedef struct HEVCPPS {
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
-    int *ctb_row_to_rs;
     int *tile_id;           ///< TileId
     int *tile_width;           ///< TileWidth
     int *tile_pos_rs;       ///< TilePosRS
@@ -1096,6 +1111,7 @@ typedef struct HEVCLocalContext {
     uint8_t slice_or_tiles_up_boundary;
 
     int ctb_tile_rs;
+    Crypto_Handle       dbs_g;
     
 } HEVCLocalContext;
 
@@ -1264,6 +1280,8 @@ typedef struct HEVCContext {
 
 	uint8_t force_first_slice_in_pic;
 	int64_t last_frame_pts;
+    uint8_t encrypt_params;
+    uint32_t prev_pos;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,

@@ -2067,7 +2067,6 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
     av_freep(&pps->col_idxX);
     av_freep(&pps->ctb_addr_rs_to_ts);
     av_freep(&pps->ctb_addr_ts_to_rs);
-    av_freep(&pps->ctb_row_to_rs);
     av_freep(&pps->tile_pos_rs);
     av_freep(&pps->tile_id);
     av_freep(&pps->tile_width);
@@ -2472,11 +2471,10 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
 
     pps->ctb_addr_rs_to_ts = av_malloc_array(pic_area_in_ctbs,    sizeof(*pps->ctb_addr_rs_to_ts));
     pps->ctb_addr_ts_to_rs = av_malloc_array(pic_area_in_ctbs,    sizeof(*pps->ctb_addr_ts_to_rs));
-    pps->ctb_row_to_rs = av_malloc_array(sps->ctb_height * pps->num_tile_columns,    sizeof(*pps->ctb_row_to_rs));
     pps->tile_id           = av_malloc_array(pic_area_in_ctbs,    sizeof(*pps->tile_id));
     pps->min_tb_addr_zs_tab = av_malloc_array((sps->tb_mask+2) * (sps->tb_mask+2), sizeof(*pps->min_tb_addr_zs_tab));
     pps->tile_width        = av_malloc_array(pic_area_in_ctbs,    sizeof(*pps->tile_width));
-    if (!pps->ctb_addr_rs_to_ts || !pps->ctb_addr_ts_to_rs || !pps->ctb_row_to_rs ||
+    if (!pps->ctb_addr_rs_to_ts || !pps->ctb_addr_ts_to_rs ||
         !pps->tile_id || !pps->min_tb_addr_zs_tab || !pps->tile_width) {
         ret = AVERROR(ENOMEM);
         goto err;
@@ -2515,30 +2513,23 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         pps->ctb_addr_ts_to_rs[val]         = ctb_addr_rs;
     }
 
-    pps->tile_pos_rs = av_malloc_array(pps->num_tile_rows*pps->num_tile_columns, sizeof(*pps->tile_pos_rs));
+    for (j = 0, tile_id = 0; j < pps->num_tile_rows; j++)
+        for (i = 0; i < pps->num_tile_columns; i++, tile_id++)
+            for (y = row_bd[j]; y < row_bd[j + 1]; y++)
+                for (x = col_bd[i]; x < col_bd[i + 1]; x++) {
+                    pps->tile_id[pps->ctb_addr_rs_to_ts[y * sps->ctb_width + x]] = tile_id;
+                    pps->tile_width[pps->ctb_addr_rs_to_ts[y * sps->ctb_width + x]] = pps->column_width[tile_id % pps->num_tile_columns];
+                }
+
+    pps->tile_pos_rs = av_malloc_array(tile_id, sizeof(*pps->tile_pos_rs));
     if (!pps->tile_pos_rs) {
         ret = AVERROR(ENOMEM);
         goto err;
     }
 
-    int ctb_row = 0;
-    for (j = 0, tile_id = 0; j < pps->num_tile_rows; j++) {
-        for (i = 0; i < pps->num_tile_columns; i++, tile_id++) {
+    for (j = 0; j < pps->num_tile_rows; j++)
+        for (i = 0; i < pps->num_tile_columns; i++)
             pps->tile_pos_rs[j * pps->num_tile_columns + i] = row_bd[j] * sps->ctb_width + col_bd[i];
-
-            for (y = 0; y < pps->row_height[j]; y++) {
-                pps->ctb_row_to_rs[ctb_row] = pps->ctb_addr_ts_to_rs[ctb_row * pps->column_width[i]];
-                ctb_row++;
-            }
-
-            for (y = row_bd[j]; y < row_bd[j + 1]; y++) {
-                for (x = col_bd[i]; x < col_bd[i + 1]; x++) {
-                    pps->tile_id[pps->ctb_addr_rs_to_ts[y * sps->ctb_width + x]] = tile_id;
-                    pps->tile_width[pps->ctb_addr_rs_to_ts[y * sps->ctb_width + x]] = pps->column_width[tile_id % pps->num_tile_columns];
-                }
-            }
-        }
-    }
 
     log2_diff_ctb_min_tb_size = sps->log2_ctb_size - sps->log2_min_tb_size;
     pps->min_tb_addr_zs = &pps->min_tb_addr_zs_tab[1*(sps->tb_mask+2)+1];

@@ -42,6 +42,10 @@
 #include "libavutil/dict.h"
 #include "avcodec.h"
 #include "libavutil/opt.h"
+#ifndef __k1__
+#include "me_cmp.h"
+#include "mpegvideo.h"
+#endif
 #include "thread.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"
@@ -177,8 +181,10 @@ static av_cold void avcodec_init(void)
         return;
     initialized = 1;
 
-//    if (CONFIG_ME_CMP)
-//        ff_me_cmp_init_static();
+#ifndef __k1__
+    if (CONFIG_ME_CMP)
+        ff_me_cmp_init_static();
+#endif
 }
 
 int av_codec_is_encoder(const AVCodec *codec)
