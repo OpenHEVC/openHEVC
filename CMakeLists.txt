@@ -98,6 +98,8 @@ endif ()
 
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
   configure_file(platform/arm/config.h ${PROJECT_SOURCE_DIR}/config.h)
+elseif(BUILD_FOR_MPPA)
+  configure_file(platform/mppa/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
 else()
   configure_file(platform/x86/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
   configure_file(platform/x86/config.asm.in ${PROJECT_SOURCE_DIR}/config.asm)
