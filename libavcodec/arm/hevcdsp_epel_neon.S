@@ -109,7 +109,7 @@ function ff_hevc_put_epel_h_neon_8, export=1
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adr    r12, epel_coeffs
+        adrl    r12, epel_coeffs
         add    r7, r12
         sub       r2, #1
         lsl       r1, #1
@@ -169,7 +169,7 @@ function ff_hevc_put_epel_v_neon_8, export=1
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adr    r12, epel_coeffs
+        adrl    r12, epel_coeffs
         add    r7, r12
         load_coeffs_16b r7
         sub       r2, r3
@@ -246,7 +246,7 @@ function ff_hevc_put_epel_hv_neon_8, export=1
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adr    r12, epel_coeffs
+        adrl    r12, epel_coeffs
         sub    r6, #1
         lsl    r6, #2
         add    r6, r12 // mx epel coeff offset

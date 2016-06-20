@@ -18,9 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
 #include "libavutil/arm/asm.S"
 #include "neon.S"
+
+#define MAX_PB_SIZE #64
 
 .macro regshuffle_d8
     vmov d16, d17
@@ -784,66 +785,35 @@ function ff_hevc_put_qpel_uw_h3v3_neon_8, export=1
         hevc_put_qpel_uw_hXvY_neon_8 qpel_filter_3 qpel_filter_3_32b
 endfunc
 
-
-
-function ff_hevc_put_pixels_neon_8, export=1
+.macro init_put_pixels
         pld    [r2]
         push   {r4, r5, r6}
         pld    [r2, r3]
         ldr    r4, [sp, #12] // height
         ldr    r5, [sp, #24] // width
-
+//        mov    r12, MAX_PB_SIZE
         lsl    r1, #1
-        cmp    r5, #2
-        beq    .Lw2
-        cmp    r5, #6
-        beq    .Lw6
-        cmp    r5, #48
-        beq    .Lw48
-        bgt    .Lw64
-        adr    r6, .Ltable
-        add    r6, r6, r5, lsr #1
-        mov    pc, r6
-.Ltable:
-        b .Lendput
-        b .Lw4
-        b .Lw8
-        b .Lw12
-        b .Lw16
-        b .Lendput
-        b .Lw24
-        b .Lendput
-        b .Lw32
+.endm
 
-.Lw2:
+function ff_hevc_put_pixels_w2_neon_8, export=1
+        init_put_pixels
         vmov.u8      d5, #255
         vshr.u64     d5, #32
-.LwX2:
-        subs r4, #1
+0:      subs r4, #1
         vld1.32     {d0[0]}, [r2], r3
         pld [r2]
         vld1.32     d6, [r0]
         vshll.u8    q0, d0, #6
         vbit        d6, d0, d5
         vst1.32     d6, [r0], r1
-        bne .LwX2
-        b .Lendput
-.Lw6:
-        vmov.u8      q10, #255
-        vshr.u64     d21, #32
-.LwX6:
-        subs r4, #1
-        vld1.16     {d0}, [r2], r3
-        pld [r2]
-        vshll.u8    q0, d0, #6
-        vld1.8      {q12}, [r0]
-        vbit        q12, q0, q10
-        vst1.8      {q12}, [r0], r1
-        bne .LwX6
-        b .Lendput
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
 
-.Lw4:
-        subs r4, #2
+function ff_hevc_put_pixels_w4_neon_8, export=1
+        init_put_pixels
+0:      subs r4, #2
         vld1.32   {d0[0]}, [r2], r3
         vld1.32   {d0[1]}, [r2], r3
         pld       [r2]
@@ -851,10 +821,30 @@ function ff_hevc_put_pixels_neon_8, export=1
         vshll.u8   q0, d0, #6
         vst1.64   {d0}, [r0], r1
         vst1.64   {d1}, [r0], r1
-        bne .Lw4
-        b .Lendput
-.Lw8:
-        subs r4, #2
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
+
+function ff_hevc_put_pixels_w6_neon_8, export=1
+        init_put_pixels
+        vmov.u8      q10, #255
+        vshr.u64     d21, #32
+0:      subs r4, #1
+        vld1.16     {d0}, [r2], r3
+        pld [r2]
+        vshll.u8    q0, d0, #6
+        vld1.8      {q12}, [r0]
+        vbit        q12, q0, q10
+        vst1.8      {q12}, [r0], r1
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
+
+function ff_hevc_put_pixels_w8_neon_8, export=1
+        init_put_pixels
+0:      subs r4, #2
         vld1.8   {d0}, [r2], r3
         vld1.8   {d2}, [r2], r3
         pld        [r2]
@@ -863,10 +853,14 @@ function ff_hevc_put_pixels_neon_8, export=1
         vshll.u8   q1, d2, #6
         vst1.16   {q0}, [r0], r1
         vst1.16   {q1}, [r0], r1
-        bne .Lw8
-        b .Lendput
-.Lw12:
-        subs r4, #2
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
+
+function ff_hevc_put_pixels_w12_neon_8, export=1
+        init_put_pixels
+0:      subs r4, #2
         vld1.64    {d0}, [r2]
         add       r2, #8
         vld1.32   {d1[0]}, [r2], r3
@@ -883,10 +877,14 @@ function ff_hevc_put_pixels_neon_8, export=1
         vmov      d22, d19
         vst1.64   {d16, d17, d18}, [r0], r1
         vst1.64   {d20, d21, d22}, [r0], r1
-        bne       .Lw12
-        b       .Lendput
-.Lw16:
-        subs r4, #2
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
+
+function ff_hevc_put_pixels_w16_neon_8, export=1
+        init_put_pixels
+0:      subs r4, #2
         vld1.8   {q0}, [r2], r3
         vld1.8   {q1}, [r2], r3
         pld       [r2]
@@ -897,10 +895,14 @@ function ff_hevc_put_pixels_neon_8, export=1
         vshll.u8  q11, d3, #6
         vst1.8    {q8, q9}, [r0], r1
         vst1.8    {q10, q11}, [r0], r1
-        bne .Lw16
-        b .Lendput
-.Lw24:
-        subs r4, #1
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
+
+function ff_hevc_put_pixels_w24_neon_8, export=1
+        init_put_pixels
+0:      subs r4, #1
         vld1.8   {d0, d1, d2}, [r2], r3
         pld       [r2]
         vshll.u8  q10, d0, #6
@@ -908,10 +910,14 @@ function ff_hevc_put_pixels_neon_8, export=1
         vshll.u8  q12, d2, #6
         vstm     r0, {q10, q11, q12}
         add      r0, r1
-        bne .Lw24
-        b .Lendput
-.Lw32:
-        subs r4, #1
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
+
+function ff_hevc_put_pixels_w32_neon_8, export=1
+        init_put_pixels
+0:      subs r4, #1
         vld1.8 {q0, q1}, [r2], r3
         pld       [r2]
         vshll.u8  q8, d0, #6
@@ -920,10 +926,14 @@ function ff_hevc_put_pixels_neon_8, export=1
         vshll.u8  q11, d3, #6
         vstm    r0, {q8, q9, q10, q11}
         add     r0, r1
-        bne .Lw32
-        b .Lendput
-.Lw48:
-        subs r4, #1
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
+
+function ff_hevc_put_pixels_w48_neon_8, export=1
+        init_put_pixels
+0:      subs r4, #1
         vld1.8    {q0, q1}, [r2]
         add r2, #32
         vld1.8    {q2}, [r2], r3
@@ -937,12 +947,16 @@ function ff_hevc_put_pixels_neon_8, export=1
         vshll.u8  q13, d5, #6
         vstm r0, {q8, q9, q10, q11, q12, q13}
         add  r0, r1
-        bne .Lw48
-        b .Lendput
-.Lw64:
-        subs r4, #1
+        bne 0b
+        pop {r4, r5, r6}
+        bx lr
+endfunc
+
+function ff_hevc_put_pixels_w64_neon_8, export=1
+        init_put_pixels
+0:      subs r4, #1
         vld1.8    {q0, q1}, [r2]
-        add r2, #32
+        add      r2, #32
         vld1.8    {q2, q3}, [r2], r3
         sub      r2, #32
         pld       [r2]
@@ -956,15 +970,10 @@ function ff_hevc_put_pixels_neon_8, export=1
         vshll.u8  q15, d7, #6
         vstm    r0, {q8, q9, q10, q11, q12, q13, q14, q15}
         add r0, r1
-        bne .Lw64
-        b .Lendput
-.Lendput:
+        bne 0b
         pop {r4, r5, r6}
         bx lr
 endfunc
-
-halt:
-        b halt
 
 function ff_hevc_put_qpel_uw_pixels_neon_8, export=1
         push   {r4-r9}
@@ -995,268 +1004,55 @@ function ff_hevc_put_qpel_uw_pixels_neon_8, export=1
         bx lr
 endfunc
 
-.macro put_qpel_uw_pixels width regs
-function ff_hevc_put_qpel_uw_pixels_neon_8_w\width, export=1
-        push   {r4-r9}
-        ldr    r5, [sp, #36] // width
-        ldr    r4, [sp, #24] // height
-        vpush {d8-d15}
-1:      subs r4, #1
-        pld    [r2]
-        vld1.32     \regs , [r2], r3
-        pld    [r0]
-        vst1.32     \regs , [r0], r1
+.macro put_qpel_uw_pixels width, regs, regs2, regs3, regs4
+function ff_hevc_put_qpel_uw_pixels_w\width\()_neon_8, export=1
+        ldr    r12, [sp] // height
+1:      subs   r12, #4
+        vld1.32     {\regs}  , [r2], r3
+        vld1.32     {\regs2} , [r2], r3
+        vld1.32     {\regs3} , [r2], r3
+        vld1.32     {\regs4} , [r2], r3
+        vst1.32     {\regs}  , [r0], r1
+        vst1.32     {\regs2} , [r0], r1
+        vst1.32     {\regs3} , [r0], r1
+        vst1.32     {\regs4} , [r0], r1
         bne 1b
-        vpop {d8-d15}
-        pop   {r4-r9}
         bx lr
 endfunc
 .endm
 
-.macro put_qpel_uw_pixels_m width regs regs2
-function ff_hevc_put_qpel_uw_pixels_neon_8_w\width, export=1
-        push   {r4-r9}
-        ldr    r5, [sp, #36] // width
-        ldr    r4, [sp, #24] // height
-        vpush {d8-d15}
-1:      subs r4, #1
-        pld    [r2]
-        mov      r6, r2
-        vld1.32   \regs , [r2]!
-        vld1.32   \regs2, [r2]
-        add      r2, r6, r3
-        mov      r7, r0
-        pld    [r0]
-        vst1.32   \regs , [r0]!
-        vst1.32   \regs2, [r0]
-        add      r0, r7, r1
+.macro put_qpel_uw_pixels_m width, regs, regs2, regs3, regs4
+function ff_hevc_put_qpel_uw_pixels_w\width\()_neon_8, export=1
+        push   {r4-r5}
+        ldr    r12, [sp, #8] // height
+1:      subs r12, #2
+        mov      r4, r2
+        vld1.32   {\regs} , [r2]!
+        vld1.32   {\regs2} , [r2]
+        add      r2, r4, r3
+        mov      r4, r2
+        vld1.32   {\regs3} , [r2]!
+        vld1.32   {\regs4} , [r2]
+        add      r2, r4, r3
+        mov      r5, r0
+        vst1.32   {\regs} , [r0]!
+        vst1.32   {\regs2} , [r0]
+        add      r0, r5, r1
+        mov      r5, r0
+        vst1.32   {\regs3} , [r0]!
+        vst1.32   {\regs4} , [r0]
+        add      r0, r5, r1
         bne 1b
-        vpop {d8-d15}
-        pop   {r4-r9}
+        pop   {r4-r5}
         bx lr
 endfunc
 .endm
 
-put_qpel_uw_pixels    4 "{d0[0]}"
-put_qpel_uw_pixels    8 "{d0}"
-put_qpel_uw_pixels_m 12 "{d0}" {d1[0]}
-put_qpel_uw_pixels   16 "{q0}"
-put_qpel_uw_pixels   24 "{d0-d2}"
-put_qpel_uw_pixels   32 "{q0,q1}"
-put_qpel_uw_pixels_m 48 "{q0,q1}" {q2}
-put_qpel_uw_pixels_m 64 "{q0-q1}" {q2-q3}
-
-function ff_hevc_put_weighted_pred_avg_neon_8, export=1
-        pld    [r2]
-        pld    [r3]
-        push   {r4, r5, r6, r7}
-        ldr    r7, [sp, #16] // srcstride
-        ldr    r5, [sp, #20] // width
-        ldr    r4, [sp, #24] // height
-        lsl    r7, #1
-
-        cmp    r5, #48
-        blt    .Ll48
-        vpush {d8-d15}
-        bgt    .La64
-        b      .La48
-.Ll48:
-        cmp    r5, #2
-        beq    .La2
-        cmp    r5, #6
-        beq    .La6
-        adr    r6, .Latable
-        add    r6, r6, r5, lsr #1
-        mov    pc, r6
-.Latable:
-        b .Lendavg
-        b .La4
-        b .La8
-        b .La12
-        b .La16
-        b .Lendavg
-        b .La24
-        b .Lendavg
-        b .La32
-.La2:
-        vmov.u8      d5, #255
-        vshr.u64     d5, #48
-.LaX2:
-        subs r4, #1
-        vld1.16     {d0}, [r2], r7
-        pld [r2]
-        vld1.16     {d1}, [r3], r7
-        pld [r3]
-        vld1.32     d6[0], [r0]
-        vqadd.s16   d0, d1
-        vqrshrun.s16 d0, q0, #7
-        vbit        d6, d0, d5
-        vst1.32     d6[0], [r0], r1
-        bne .LaX2
-        b .Lendavg
-.La6:
-        vmov.u8      d5, #255
-        vshr.u64     d5, #16
-.LaX6:
-        subs r4, #1
-        vld1.16     {q0}, [r2,:128], r7
-        pld [r2]
-        vld1.16     {q1}, [r3,:128], r7
-        pld [r3]
-        vld1.8       d6, [r0]
-        vqadd.s16   q0, q1
-        vqrshrun.s16 d0, q0, #7
-        vbit        d6, d0, d5
-        vst1.8      d6, [r0], r1
-        bne .LaX6
-        b .Lendavg
-.La4:
-        subs r4, #2
-        vld1.16     {d0}, [r2], r7
-        vld1.16     {d1}, [r2], r7
-        pld         [r2]
-        pld         [r2, r7]
-        vld1.16     {d2}, [r3], r7
-        vld1.16     {d3}, [r3], r7
-        pld         [r3]
-        pld         [r3, r7]
-        vqadd.s16   q0, q1
-        vqrshrun.s16 d0, q0, #7
-        vst1.32     d0[0], [r0], r1
-        vst1.32     d0[1], [r0], r1
-        bne .La4
-        b .Lendavg
-.La8:
-        subs r4, #1
-        vld1.16     {q0}, [r2], r7
-        pld [r2]
-        vld1.16     {q1}, [r3], r7
-        pld [r3]
-        vqadd.s16   q0, q1
-        vqrshrun.s16 d0, q0, #7
-        vst1.8      d0, [r0], r1
-        bne .La8
-        b .Lendavg
-.La12:
-        subs r4, #1
-        vld1.16     {d0, d1, d2}, [r2], r7
-        pld [r2]
-        vld1.16     {d4, d5, d6}, [r3], r7
-        pld [r3]
-        vqadd.s16   q0, q2
-        vqadd.s16   d2, d6
-        vqrshrun.s16 d0, q0, #7
-        vqrshrun.s16 d2, q1, #7
-        vst1.8      d0, [r0]
-        add         r0, #8
-        vst1.32     d2[0], [r0], r1
-        sub         r0, #8
-        bne .La12
-        b .Lendavg
-.La16:
-        subs r4, #1
-        vld1.16   {q0, q1}, [r2,:128], r7
-        pld       [r2]
-        vld1.16   {q2, q3}, [r3,:128], r7
-        pld       [r3]
-        vqadd.s16  q0, q2
-        vqadd.s16  q1, q3
-        vqrshrun.s16   d20, q0, #7
-        vqrshrun.s16   d21, q1, #7
-        vst1.8    {d20, d21}, [r0], r1
-        bne .La16
-        b .Lendavg
-.La24:
-        subs r4, #1
-        vldm      r2, {q0-q2}
-        add       r2, r7
-        pld       [r2]
-        vldm      r3, {q8-q10}
-        add       r3, r7
-        pld       [r3]
-        vqadd.s16  q0, q8
-        vqadd.s16  q1, q9
-        vqadd.s16  q2, q10
-        vqrshrun.s16   d20, q0, #7
-        vqrshrun.s16   d21, q1, #7
-        vqrshrun.s16   d22, q2, #7
-        vst1.8    {d20-d22}, [r0], r1
-        bne .La24
-        b .Lendavg
-.La32:
-        subs r4, #1
-        vldm      r2, {q0-q3}
-        add       r2, r7
-        pld       [r2]
-        vldm      r3, {q8-q11}
-        add       r3, r7
-        pld       [r3]
-        vqadd.s16  q0, q8
-        vqadd.s16  q1, q9
-        vqadd.s16  q2, q10
-        vqadd.s16  q3, q11
-        vqrshrun.s16   d20, q0, #7
-        vqrshrun.s16   d21, q1, #7
-        vqrshrun.s16   d22, q2, #7
-        vqrshrun.s16   d23, q3, #7
-        vst1.8    {d20-d23}, [r0], r1
-        bne .La32
-        b .Lendavg
-.La48:
-        subs r4, #1
-        vldm      r2, {q0-q5}
-        add       r2, r7
-        pld       [r2]
-        vldm      r3, {q10-q15}
-        add       r3, r7
-        pld       [r3]
-        vqadd.s16  q0, q10
-        vqadd.s16  q1, q11
-        vqadd.s16  q2, q12
-        vqadd.s16  q3, q13
-        vqadd.s16  q4, q14
-        vqadd.s16  q5, q15
-        vqrshrun.s16   d0, q0, #7
-        vqrshrun.s16   d1, q1, #7
-        vqrshrun.s16   d2, q2, #7
-        vqrshrun.s16   d3, q3, #7
-        vqrshrun.s16   d4, q4, #7
-        vqrshrun.s16   d5, q5, #7
-        vstm    r0, {q0-q2}
-        add r0, r1
-        bne .La48
-        b   .Lendavgl
-.La64:
-        subs r4, #1
-        vldm      r2, {q0-q7}
-        add       r2, r7
-        pld       [r2]
-        vldm      r3, {q8-q15}
-        add       r3, r7
-        pld       [r3]
-        vqadd.s16  q0, q8
-        vqadd.s16  q1, q9
-        vqadd.s16  q2, q10
-        vqadd.s16  q3, q11
-        vqadd.s16  q4, q12
-        vqadd.s16  q5, q13
-        vqadd.s16  q6, q14
-        vqadd.s16  q7, q15
-        vqrshrun.s16   d24, q0, #7
-        vqrshrun.s16   d25, q1, #7
-        vqrshrun.s16   d26, q2, #7
-        vqrshrun.s16   d27, q3, #7
-        vqrshrun.s16   d28, q4, #7
-        vqrshrun.s16   d29, q5, #7
-        vqrshrun.s16   d30, q6, #7
-        vqrshrun.s16   d31, q7, #7
-        vstm    r0, {q12-q15}
-        add r0, r1
-        bne .La64
-        b .Lendavgl
-.Lendavgl:
-        vpop {d8-d15}
-.Lendavg:
-        pop {r4, r5, r6, r7}
-        bx lr
-endfunc
+put_qpel_uw_pixels    4, d0[0], d0[1], d1[0], d1[1]
+put_qpel_uw_pixels    8, d0,    d1,    d2,    d3
+put_qpel_uw_pixels_m 12, d0,    d1[0], d2,    d3[0]
+put_qpel_uw_pixels   16, q0,    q1,    q2,    q3
+put_qpel_uw_pixels   24, d0-d2, d3-d5, d16-d18, d19-d21
+put_qpel_uw_pixels   32, q0-q1, q2-q3, q8-q9, q10-q11
+put_qpel_uw_pixels_m 48, q0-q1, q2,    q8-q9, q10
+put_qpel_uw_pixels_m 64, q0-q1, q2-q3, q8-q9, q10-q11
