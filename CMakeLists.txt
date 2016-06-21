@@ -446,7 +446,9 @@ endif()
 #else()
     option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
 #endif()
-add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
+add_library (LibOpenHevcWrapper SHARED ${libfilenames} ${YASM_OBJECTS})
+add_library (LibOpenHevcWrapper_static STATIC ${libfilenames} ${YASM_OBJECTS})
+set_target_properties(LibOpenHevcWrapper_static PROPERTIES OUTPUT_NAME LibOpenHevcWrapper)
 
 target_link_libraries(LibOpenHevcWrapper m)
 
