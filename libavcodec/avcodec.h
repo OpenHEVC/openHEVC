@@ -1130,7 +1130,14 @@ typedef struct AVPacket {
      * stored.
      * May be NULL, then the packet data is not reference-counted.
      */
+#ifdef __k1__
+    union{
+        AVBufferRef *buf;
+        uint64_t buf_addr;
+    };
+#else
     AVBufferRef *buf;
+#endif
     /**
      * Presentation timestamp in AVStream->time_base units; the time at which
      * the decompressed packet will be presented to the user.
@@ -1147,7 +1154,14 @@ typedef struct AVPacket {
      * Can be AV_NOPTS_VALUE if it is not stored in the file.
      */
     int64_t dts;
+#ifdef __k1__
+    union{
+        uint8_t *data;
+        uint64_t data_addr;
+    };
+#else
     uint8_t *data;
+#endif
     int   size;
     int   stream_index;
     /**
@@ -1158,7 +1172,14 @@ typedef struct AVPacket {
      * Additional packet data that can be provided by the container.
      * Packet can contain several types of side information.
      */
+#ifdef __k1__
+    union{
+        AVPacketSideData *side_data;
+        uint64_t side_data_addr;
+    };
+#else
     AVPacketSideData *side_data;
+#endif
     int side_data_elems;
 
     /**
@@ -1168,9 +1189,23 @@ typedef struct AVPacket {
     int   duration;
 #if FF_API_DESTRUCT_PACKET
     attribute_deprecated
+#ifdef __k1__
+    union{
+        void  (*destruct)(struct AVPacket *);
+        uint64_t destruct_addr;
+    };
+#else
     void  (*destruct)(struct AVPacket *);
+#endif
     attribute_deprecated
+#ifdef __k1__
+    union{
+        void  *priv;
+        uint64_t priv_addr;
+    };
+#else
     void  *priv;
+#endif
 #endif
     int64_t pos;                            ///< byte position in stream, -1 if unknown
 
