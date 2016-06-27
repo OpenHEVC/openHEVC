@@ -62,17 +62,47 @@ typedef struct OpenHevc_FrameInfo
 
 typedef struct OpenHevc_Frame
 {
+#ifdef __k1__
+  union {
+   void**      pvY;
+   uint64_t   pvy_data;
+  };
+  union {
+   void**      pvU;
+   uint64_t   pvu_data;
+  };
+  union {
+   void**      pvV;
+   uint64_t   pvv_data;
+  };
+#else
    void**      pvY;
    void**      pvU;
    void**      pvV;
+#endif
    OpenHevc_FrameInfo frameInfo;
 } OpenHevc_Frame;
 
 typedef struct OpenHevc_Frame_cpy
 {
+#ifdef __k1__
+  union {
+   void*      pvY;
+   uint64_t   pvy_data;
+  };
+  union {
+   void*      pvU;
+   uint64_t   pvu_data;
+  };
+  union {
+   void*      pvV;
+   uint64_t   pvv_data;
+  };
+#else
    void*        pvY;
    void*        pvU;
    void*        pvV;
+#endif
    OpenHevc_FrameInfo frameInfo;
 } OpenHevc_Frame_cpy;
 

@@ -5,7 +5,7 @@ option (BUILD_FOR_MPPA "Build static library for MPPA Cluster binaries linking."
 if (BUILD_FOR_MPPA)
     message("Set flags for MPPA Cross Compilation")
     set(K1_TOOLCHAIN_DIR "/usr/local/k1tools")
-    set(KALRAY_COMPILER_FLAGS "-march=k1b -O2 -DNDEBUG -mos=nodeos -ffunction-sections -fdata-sections -fno-common -fno-PIC")
+    set(KALRAY_COMPILER_FLAGS "-g -march=k1b -O2 -DNDEBUG -mos=nodeos -ffunction-sections -fdata-sections -fno-common -fno-PIC")
     set(KALRAY_LINKER_FLAGS "-Wl,--gc-sections")
 
     set(CMAKE_SYSTEM_NAME Generic CACHE STRING "")
@@ -413,7 +413,7 @@ if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
 elseif(BUILD_FOR_MPPA)
     option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
 else()
-    option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
+    option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
 endif()
 add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
