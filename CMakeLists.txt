@@ -360,7 +360,7 @@ add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 if(CRYPTOPP_FOUND)
 target_link_libraries(LibOpenHevcWrapper cryptopp)
 else()
-target_link_libraries(LibOpenHevcWrapper)
+target_link_libraries(LibOpenHevcWrapper m)
 endif()
 
 include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
