@@ -296,6 +296,7 @@ list(APPEND libfilenames
     libavutil/arm/asm.S
     libavcodec/arm/fft_init_arm.c
     libavcodec/arm/fft_neon.S
+    libavcodec/arm/fft_vfp.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_deblock_neon.S
     libavcodec/arm/hevcdsp_idct_neon.S
@@ -305,10 +306,13 @@ list(APPEND libfilenames
     libavcodec/arm/hpeldsp_arm.S
     libavcodec/arm/hpeldsp_init_arm.c
     libavcodec/arm/hpeldsp_init_neon.c
+    libavcodec/arm/hpeldsp_init_armv6.c
     libavcodec/arm/hpeldsp_neon.S
+    libavcodec/arm/hpeldsp_armv6.S
     libavcodec/arm/int_neon.S
     libavcodec/arm/jrevdct_arm.S
     libavcodec/arm/mdct_neon.S
+    libavcodec/arm/mdct_vfp.S
     libavcodec/arm/rdft_neon.S
     libavcodec/arm/simple_idct_arm.S
     libavcodec/arm/simple_idct_armv6.S
