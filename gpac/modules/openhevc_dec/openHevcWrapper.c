@@ -587,6 +587,19 @@ void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val)
     if (val == 1)
         av_log_set_level(AV_LOG_DEBUG);
 }
+
+void libOpenHevcSetThreadAffinity(OpenHevc_Handle openHevcHandle, uint32_t val){
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext;
+    int i;
+
+    for (i = 0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+
+        av_opt_set_int(openHevcContext->c->priv_data, "thread-affinity", val, 0);
+    }
+}
+
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;

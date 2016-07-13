@@ -1368,6 +1368,7 @@ typedef struct HEVCContext {
 
     uint8_t threads_type;
     uint8_t threads_number;
+    uint32_t thread_affinity;
 #if FRAME_CONCEALMENT
     int prev_display_poc;
     int no_display_pic;
