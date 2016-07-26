@@ -286,7 +286,7 @@ do {                                  \
     top[-1] = left[-1];
 
     // Filtering process
-    if (!s->sps->intra_smoothing_disabled_flag && (c_idx == 0  || s->sps->chroma_array_type == 3)) {
+    if (!s->sps->spsRext.intra_smoothing_disabled_flag && (c_idx == 0  || s->sps->chroma_array_type == 3)) {
         if (mode != INTRA_DC && size != 4){
             int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
             int min_dist_vert_hor = FFMIN(FFABS((int)(mode - 26U)),

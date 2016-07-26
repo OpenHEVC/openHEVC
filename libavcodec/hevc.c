@@ -1284,7 +1284,11 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         lc->tu.cross_pf = 0;
 
         if (cbf_luma)
-            ff_hevc_hls_residual_coding(s, x0, y0, log2_trafo_size, scan_idx, 0);
+            ff_hevc_hls_residual_coding(s, x0, y0, log2_trafo_size, scan_idx, 0
+#if COM16_C806_EMT
+            		, log2_cb_size
+#endif
+            );
         if (log2_trafo_size > 2 || s->sps->chroma_array_type == 3) {
             int trafo_size_h = 1 << (log2_trafo_size_c + s->sps->hshift[1]);
             int trafo_size_v = 1 << (log2_trafo_size_c + s->sps->vshift[1]);
@@ -1302,7 +1306,11 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 }
                 if (cbf_cb[i])
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
-                                                log2_trafo_size_c, scan_idx_c, 1);
+                                                log2_trafo_size_c, scan_idx_c, 1
+#if COM16_C806_EMT
+            		, log2_cb_size
+#endif
+                    );
                 else
                     if (lc->tu.cross_pf) {
                         ptrdiff_t stride = s->frame->linesize[1];
@@ -1331,7 +1339,11 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 }
                 if (cbf_cr[i])
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
-                                                log2_trafo_size_c, scan_idx_c, 2);
+                                                log2_trafo_size_c, scan_idx_c, 2
+#if COM16_C806_EMT
+            		, log2_cb_size
+#endif
+                    );
                 else
                     if (lc->tu.cross_pf) {
                         ptrdiff_t stride = s->frame->linesize[2];
@@ -1360,7 +1372,11 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 }
                 if (cbf_cb[i])
                     ff_hevc_hls_residual_coding(s, xBase, yBase + (i << log2_trafo_size),
-                                                log2_trafo_size, scan_idx_c, 1);
+                                                log2_trafo_size, scan_idx_c, 1
+#if COM16_C806_EMT
+            		, log2_cb_size
+#endif
+            		);
             }
             for (i = 0; i < (s->sps->chroma_array_type  ==  2 ? 2 : 1 ); i++ ) {
                 if (lc->cu.pred_mode == MODE_INTRA) {
@@ -1370,7 +1386,11 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 }
                 if (cbf_cr[i])
                     ff_hevc_hls_residual_coding(s, xBase, yBase + (i << log2_trafo_size),
-                                                log2_trafo_size, scan_idx_c, 2);
+                                                log2_trafo_size, scan_idx_c, 2
+#if COM16_C806_EMT
+            		, log2_cb_size
+#endif
+                    );
             }
         }
     } else if (lc->cu.pred_mode == MODE_INTRA) {
@@ -1497,6 +1517,13 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
         const int x1 = x0 + trafo_size_split;
         const int y1 = y0 + trafo_size_split;
 
+#if COM16_C806_EMT
+        if (0==trafo_depth)
+        {
+        	s->HEVClc->cu.emt_cu_flag = ff_hevc_emt_cu_flag_decode(s, log2_cb_size, 1);
+        }
+#endif
+
 #define SUBDIVIDE(x, y, idx)                                                    \
 do {                                                                            \
     ret = hls_transform_tree(s, x, y, x0, y0, cb_xBase, cb_yBase, log2_cb_size, \
@@ -1523,6 +1550,16 @@ do {                                                                            
             (s->sps->chroma_format_idc == 2 && (cbf_cb[1] || cbf_cr[1]))) {
             cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth);
         }
+
+#if COM16_C806_EMT
+
+        if (0 == trafo_depth)
+        {
+        	s->HEVClc->cu.emt_cu_flag = ff_hevc_emt_cu_flag_decode(s, log2_cb_size, cbf_luma);
+        }
+
+#endif
+
 
         ret = hls_transform_unit(s, x0, y0, xBase, yBase, cb_xBase, cb_yBase,
                                  log2_cb_size, log2_trafo_size, trafo_depth,

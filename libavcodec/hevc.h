@@ -31,12 +31,33 @@
 #include "cabac.h"
 #include "get_bits.h"
 #include "hevcpred.h"
-#include "hevcdsp.h"
+
 #include "internal.h"
 #include "thread.h"
 #include "videodsp.h"
 #include "hevc_defs.h"
 #include "crypto.h"
+
+#define COM16_C806_EMT			 0
+#if COM16_C806_EMT
+// Constantes
+#define EMT_INTRA_MAX_CU		32
+#define EMT_INTER_MAX_CU		32
+#define EMT_SIGNUM_THR			 2
+#define INTER_MODE_IDX		   255
+#define MAX_TU_SIZE				32
+// Integer transform matrix precision
+#define COM16_C806_TRANS_PREC	 2
+#endif
+/*
+ * Fin Macros Stage
+ */
+/*
+ * Macros Stage Aurélien Biatek
+ */
+
+#include "hevcdsp.h"
+
 
 #define EncryptMVDiffSign 1
 
@@ -45,6 +66,9 @@
 #define PARALLEL_FILTERS 0
 
 #define MAX_SLICES_FRAME 64
+
+
+
 
 #define TEST_MV_POC
 #define MAX_DPB_SIZE 16 // A.4.1
@@ -216,6 +240,10 @@ enum SyntaxElement {
     RES_SCALE_SIGN_FLAG,
     CU_CHROMA_QP_OFFSET_FLAG,
     CU_CHROMA_QP_OFFSET_IDX,
+#if COM16_C806_EMT
+    EMT_CU_FLAG,
+    EMT_TU_IDX,
+#endif
 };
 
 enum PartMode {
@@ -429,6 +457,18 @@ typedef struct PTL {
     int sub_layer_level_idc[MAX_SUB_LAYERS];
 } PTL;
 
+typedef struct SPSRext {
+	 uint8_t             transform_skip_rotation_enabled_flag;
+	 uint8_t             transform_skip_context_enabled_flag;
+	 uint8_t             implicit_rdpcm_enabled_flag;
+	 uint8_t			 explicit_rdpcm_enabled_flag;
+	 uint8_t             intra_smoothing_disabled_flag;
+	 uint8_t             persistent_rice_adaptation_enabled_flag;
+	 uint8_t             cabac_bypass_alignment_enabled_flag;
+	 uint8_t             extended_precision_processing_flag;
+	 uint8_t             high_precision_offsets_enabled_flag;
+} SPSRext;
+
 enum ChromaFormat
 {
     CHROMA_400  = 0,
@@ -470,6 +510,17 @@ typedef struct RepFormat
     int  m_bitDepthVpsChroma;             // coded as minus8
 } RepFormat;
 #endif
+
+typedef struct SAOParams {
+    uint8_t offset_abs[3][4];   ///< sao_offset_abs
+    uint8_t offset_sign[3][4];  ///< sao_offset_sign
+    
+    uint8_t band_position[3];   ///< sao_band_position
+    int16_t offset_val[3][5];   ///<SaoOffsetVal
+    
+    uint8_t eo_class[3];        ///< sao_eo_class
+    uint8_t type_idx[3];        ///< sao_type_idx
+} SAOParams;
 
 typedef struct HEVCVPS {
     uint8_t vps_temporal_id_nesting_flag;
@@ -744,12 +795,7 @@ typedef struct HEVCSPS {
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
 
-    int transform_skip_rotation_enabled_flag;
-    int transform_skip_context_enabled_flag;
-    int implicit_rdpcm_enabled_flag;
-    int explicit_rdpcm_enabled_flag;
-    int intra_smoothing_disabled_flag;
-    int persistent_rice_adaptation_enabled_flag;
+    SPSRext spsRext;
 
     ///< coded frame dimension in various units
     int width;
@@ -780,6 +826,10 @@ typedef struct HEVCSPS {
 #endif
 #ifdef REF_IDX_MFM
     int set_mfm_enabled_flag;
+#endif
+#if COM16_C806_EMT
+    uint8_t use_intra_emt;
+    uint8_t use_inter_emt;
 #endif
 } HEVCSPS;
 
@@ -964,7 +1014,9 @@ typedef struct CodingUnit {
     uint8_t rqt_root_cbf;
 
     uint8_t pcm_flag;
-
+#if COM16_C806_EMT
+    uint8_t emt_cu_flag;
+#endif
     // Inferred parameters
     uint8_t intra_split_flag;   ///< IntraSplitFlag
     uint8_t max_trafo_depth;    ///< MaxTrafoDepth
@@ -1022,6 +1074,9 @@ typedef struct TransformUnit {
     int8_t  cu_qp_offset_cb;
     int8_t  cu_qp_offset_cr;
     uint8_t cross_pf;
+#if COM16_C806_EMT
+    uint8_t emt_tu_idx;
+#endif
 } TransformUnit;
 
 typedef struct DBParams {
@@ -1334,6 +1389,18 @@ int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0,
                              int x_cb, int y_cb);
+/*
+ * Fonctions codées stage Biatek A.
+ */
+#if COM16_C806_EMT
+uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma);
+uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size);
+int g_aucConvertTobit(int size);
+#endif
+
+/*
+ * Fin fonctions Stage
+ */
 int ff_hevc_pred_mode_decode(HEVCContext *s);
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth,
                                           int x0, int y0);
@@ -1403,7 +1470,11 @@ void ff_hevc_hls_filter_slice(  HEVCContext *s, int x, int y, int ctb_size);
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH);
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
-                                 int c_idx);
+                                 int c_idx
+#if COM16_C806_EMT
+                                 , int log2_cb_size
+#endif
+);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 

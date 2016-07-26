@@ -27,7 +27,6 @@
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
 
-
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height,
                           GetBitContext *gb, int pcm_bit_depth)
 {
@@ -568,6 +567,42 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
 }
 
 #undef CMP
+
+////////////////////////////////////////////////////////////////////////////////
+// EMT -> STAGE
+////////////////////////////////////////////////////////////////////////////////
+#if COM16_C806_EMT
+static void FUNC(idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, int TRANSFORM_MATRIX_SHIFT, int nLog2SizeMinus2, int maxLog2TrDynamicRange, int bitDepth, int ucMode, int intra_pred_mode, int emt_tu_idx)
+{
+  int size = (1 << log2_trafo_size) ;
+  const int shift_1st                = TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC;
+  const int shift_2nd                = (TRANSFORM_MATRIX_SHIFT + maxLog2TrDynamicRange - 1) - bitDepth + COM16_C806_TRANS_PREC;
+  const int clipMinimum         	 = -(1 << maxLog2TrDynamicRange);
+  const int clipMaximum         	 =  (1 << maxLog2TrDynamicRange) - 1;
+  int bZeroOut                		 = ( ucMode == INTER_MODE_IDX ? 1 : 0 );
+
+  int16_t tmp[ MAX_TU_SIZE * MAX_TU_SIZE ];
+
+  int  nTrIdxHor = DCT_II, nTrIdxVer = DCT_II;
+  if ( ucMode != INTER_MODE_IDX )
+  {
+    int  nTrSubsetHor = emt_Tr_Set_H[intra_pred_mode];
+    int  nTrSubsetVer = emt_Tr_Set_V[intra_pred_mode];
+    nTrIdxHor = g_aiTrSubSetIntra[nTrSubsetHor][(emt_tu_idx) & 1];
+    nTrIdxVer = g_aiTrSubSetIntra[nTrSubsetVer][(emt_tu_idx) >> 1];
+  }
+  if ( ucMode == INTER_MODE_IDX )
+  {
+    nTrIdxHor = g_aiTrSubSetInter[(emt_tu_idx) & 1];
+    nTrIdxVer = g_aiTrSubSetInter[(emt_tu_idx) >> 1];
+    //printf("call ucMode == INTER_MODE_IDX \n nTrIdxHor ===> %d \n nTrIdxVer ===> %d \n\n",nTrIdxHor,nTrIdxVer);
+  }
+  int zo_f1 = ( bZeroOut == 1 ) ? 2 : 0 ;
+  int zo_f2 = ( bZeroOut == 1 ) ? 1 : 0 ;
+  fastInvTrans[nTrIdxVer][nLog2SizeMinus2]( coeffs, tmp, shift_1st, size, zo_f1, 1, clipMinimum, clipMaximum );
+  fastInvTrans[nTrIdxHor][nLog2SizeMinus2]( tmp, dst, shift_2nd, size, zo_f2, 1, clipMinimum, clipMaximum );
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 //

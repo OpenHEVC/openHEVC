@@ -26,6 +26,7 @@
 
 #include "cabac_functions.h"
 #include "hevc.h"
+#include "avfft.h"
 
 
 #define CABAC_MAX_BIN 31
@@ -83,6 +84,10 @@ av_unused static const int8_t num_bins_in_se[] = {
      2, // res_scale_sign_flag
      1, // cu_chroma_qp_offset_flag
      1, // cu_chroma_qp_offset_idx
+#if COM16_C806_EMT
+     4, // emt_cu_flag
+     4, // emt_tu_idx
+#endif
 };
 
 /**
@@ -138,6 +143,10 @@ static const int elem_offset[sizeof(num_bins_in_se)] = {
     174, // res_scale_sign_flag
     176, // cu_chroma_qp_offset_flag
     177, // cu_chroma_qp_offset_idx
+#if COM16_C806_EMT
+    178, // emt_cu_flag
+    182, // emt_tu_idx
+#endif
 };
 
 #define CNU 154
@@ -221,6 +230,12 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154,
       // cu_chroma_qp_offset_idx
       154,
+#if COM16_C806_EMT
+      // emt_cu_flag
+      CNU, CNU, CNU, CNU,
+      // emt_tu_idx
+      CNU, CNU, CNU, CNU,
+#endif
     },
     { // sao_merge_flag
       153,
@@ -298,6 +313,12 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154,
       // cu_chroma_qp_offset_idx
       154,
+#if COM16_C806_EMT
+      // emt_cu_flag
+      CNU, CNU, CNU, CNU,
+      // emt_tu_idx
+      CNU, CNU, CNU, CNU,
+#endif
     },
     { // sao_merge_flag
       153,
@@ -375,6 +396,12 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154,
       // cu_chroma_qp_offset_idx
       154,
+#if COM16_C806_EMT
+      // emt_cu_flag
+      CNU, CNU, CNU, CNU,
+      // emt_tu_idx
+      CNU, CNU, CNU, CNU,
+#endif
     },
 };
 
@@ -497,6 +524,28 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
     { 21, 29, 37, 44, 50, 55, 59, 62, },
     { 28, 36, 43, 49, 54, 58, 61, 63, },
 };
+
+#if COM16_C806_EMT
+#ifndef MAX
+#define max(a,b) (a>=b?a:b)
+#endif
+int g_aucConvertTobit(int size)
+{
+	int inc, c_value;
+	int g_aucConvertToBit[MAX_CU_SIZE+1];
+
+	memset(g_aucConvertToBit, -1, sizeof(g_aucConvertToBit));
+	c_value = 0 ;
+
+	for ( inc = 4 ; inc <= MAX_CU_SIZE ; inc*=2 )
+	{
+		g_aucConvertToBit[inc] = c_value ;
+		c_value++ ;
+	}
+	return g_aucConvertToBit[size];
+}
+static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
+#endif
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
 {
@@ -722,6 +771,56 @@ int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s)
 
     return i;
 }
+
+#if COM16_C806_EMT
+/*
+ * Définition de la fonction emt_cu_flag_decode
+ */
+uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma)
+{
+	uint8_t inc = 0;
+	uint8_t flag_value = 0;
+	if ( (s->HEVClc->cu.pred_mode == MODE_INTRA ) && (s->sps->use_intra_emt) && ( 1 << log2_cb_size <= EMT_INTRA_MAX_CU ) && ( cbfLuma != 0 ) )
+	{
+		inc = 5 - log2_cb_size;
+		flag_value = GET_CABAC( elem_offset[EMT_CU_FLAG] + inc );
+	}
+	if ( (s->HEVClc->cu.pred_mode == MODE_INTER ) && (s->sps->use_inter_emt) && ( 1 << log2_cb_size <= EMT_INTER_MAX_CU ) && ( cbfLuma != 0 ) )
+	{
+		inc = 5 - log2_cb_size;
+		flag_value = GET_CABAC( elem_offset[EMT_CU_FLAG] + inc );
+	}
+	return flag_value ;
+}
+/*
+ * Etape 2
+ */
+uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size)
+{
+	uint8_t trIdx = 0;
+	uint8_t uiSymbol1 = 0;
+	uint8_t uiSymbol2 = 0;
+
+	if ( (s->HEVClc->cu.pred_mode == MODE_INTRA) && ((1 << log2_cb_size) <= EMT_INTRA_MAX_CU ))
+	{
+		uiSymbol1 = GET_CABAC(elem_offset[EMT_TU_IDX]);
+		uiSymbol2 = GET_CABAC(elem_offset[EMT_TU_IDX]+1);
+		trIdx = (uiSymbol2 << 1) | uiSymbol1 ;
+	}
+
+	if ( (s->HEVClc->cu.pred_mode == MODE_INTER) && ((1 << log2_cb_size) <= EMT_INTER_MAX_CU ))
+	{
+		uiSymbol1 = GET_CABAC(elem_offset[EMT_TU_IDX]+2);
+		uiSymbol2 = GET_CABAC(elem_offset[EMT_TU_IDX]+3);
+		trIdx = (uiSymbol2 << 1) | uiSymbol1 ;
+	}
+return trIdx ;
+}
+#endif
+/*
+ * Fin des fonctions
+ */
+
 
 int ff_hevc_pred_mode_decode(HEVCContext *s)
 {
@@ -1280,7 +1379,11 @@ static av_always_inline int coeff_sign_flag_decode(HEVCContext *s, uint8_t nb)
 
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                 int log2_trafo_size, enum ScanType scan_idx,
-                                int c_idx)
+                                int c_idx
+#if COM16_C806_EMT
+                                , int log2_cb_size
+#endif
+)
 {
 #define GET_COORD(offset, n)                                    \
     do {                                                        \
@@ -1295,6 +1398,10 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int n_end;
     int num_coeff = 0;
     int greater1_ctx = 1;
+
+#if COM16_C806_EMT
+    uint8_t uiNumSig = 0;
+#endif
 
     int num_last_subset;
     int x_cg_last_sig, y_cg_last_sig;
@@ -1400,7 +1507,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         dc_scale     = 0;
     }
 
-    if (lc->cu.pred_mode == MODE_INTER && s->sps->explicit_rdpcm_enabled_flag &&
+    if (lc->cu.pred_mode == MODE_INTER && s->sps->spsRext.explicit_rdpcm_enabled_flag &&
         (transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
         explicit_rdpcm_flag = explicit_rdpcm_flag_decode(s, c_idx);
         if (explicit_rdpcm_flag) {
@@ -1531,7 +1638,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             };
             const uint8_t *ctx_idx_map_p;
             int scf_offset = 0;
-            if (s->sps->transform_skip_context_enabled_flag &&
+            if (s->sps->spsRext.transform_skip_context_enabled_flag &&
                 (transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
                 ctx_idx_map_p = (uint8_t*) &ctx_idx_map[4 * 16];
                 if (c_idx == 0) {
@@ -1572,7 +1679,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 }
             }
             if (implicit_non_zero_coeff == 0) {
-                if (s->sps->transform_skip_context_enabled_flag &&
+                if (s->sps->spsRext.transform_skip_context_enabled_flag &&
                     (transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
                     if (c_idx == 0) {
                         scf_offset = 42;
@@ -1617,7 +1724,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             // initialize first elem of coeff_bas_level_greater1_flag
             int ctx_set = (i > 0 && c_idx == 0) ? 2 : 0;
 
-            if (s->sps->persistent_rice_adaptation_enabled_flag) {
+            if (s->sps->spsRext.persistent_rice_adaptation_enabled_flag) {
                 if (!transform_skip_flag && !lc->cu.cu_transquant_bypass_flag)
                     sb_type = 2 * (c_idx == 0 ? 1 : 0);
                 else
@@ -1646,7 +1753,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
             if (lc->cu.cu_transquant_bypass_flag ||
                 (lc->cu.pred_mode ==  MODE_INTRA  &&
-                 s->sps->implicit_rdpcm_enabled_flag  &&  transform_skip_flag  &&
+                 s->sps->spsRext.implicit_rdpcm_enabled_flag  &&  transform_skip_flag  &&
                  (pred_mode_intra == 10 || pred_mode_intra  ==  26 )) ||
                  explicit_rdpcm_flag)
                 sign_hidden = 0;
@@ -1677,8 +1784,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
                         trans_coeff_level += last_coeff_abs_level_remaining;
                         if (trans_coeff_level > (3 << c_rice_param))
-                            c_rice_param = s->sps->persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
-                        if (s->sps->persistent_rice_adaptation_enabled_flag && !rice_init) {
+                            c_rice_param = s->sps->spsRext.persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
+                        if (s->sps->spsRext.persistent_rice_adaptation_enabled_flag && !rice_init) {
                             int c_rice_p_init = lc->stat_coeff[sb_type] / 4;
                             if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
                                 lc->stat_coeff[sb_type]++;
@@ -1697,8 +1804,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
                     trans_coeff_level = 1 + last_coeff_abs_level_remaining;
                     if (trans_coeff_level > (3 << c_rice_param))
-                        c_rice_param = s->sps->persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
-                    if (s->sps->persistent_rice_adaptation_enabled_flag && !rice_init) {
+                        c_rice_param = s->sps->spsRext.persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
+                    if (s->sps->spsRext.persistent_rice_adaptation_enabled_flag && !rice_init) {
                         int c_rice_p_init = lc->stat_coeff[sb_type] / 4;
                         if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
                             lc->stat_coeff[sb_type]++;
@@ -1742,18 +1849,68 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 coeffs[y_c * trafo_size + x_c] = trans_coeff_level;
             }
         }
+#if COM16_C806_EMT
+        uiNumSig += n_end ;
+#endif
     }
 
+    /*
+     * Appel de la fonction ff_hevc_tu_idx_decode
+     */
+    #if COM16_C806_EMT
+        if ( (!transform_skip_flag) && (c_idx == 0) )
+        {
+        	if ( (s->HEVClc->cu.emt_cu_flag) && (s->HEVClc->cu.pred_mode == MODE_INTRA ))
+        	{
+        		if ( uiNumSig > EMT_SIGNUM_THR )
+        		{
+    			s->HEVClc->tu.emt_tu_idx = ff_hevc_emt_tu_idx_decode(s, log2_cb_size);
+        		}else{
+        			s->HEVClc->tu.emt_tu_idx = 0 ;
+        		}
+        	}
+        	if ((s->HEVClc->cu.emt_cu_flag) && (s->HEVClc->cu.pred_mode == MODE_INTER))
+        	{
+    		s->HEVClc->tu.emt_tu_idx = ff_hevc_emt_tu_idx_decode(s, log2_cb_size);
+        	}
+        }
+    #endif
+    /*
+     * Fin des appels de la fonction
+     */
+
     if (lc->cu.cu_transquant_bypass_flag) {
-        if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag &&
+        if (explicit_rdpcm_flag || (s->sps->spsRext.implicit_rdpcm_enabled_flag &&
                                     (pred_mode_intra == 10 || pred_mode_intra == 26))) {
-            int mode = s->sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : explicit_rdpcm_dir_flag;
+            int mode = s->sps->spsRext.implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : explicit_rdpcm_dir_flag;
 
             s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
         }
+#if COM16_C806_EMT
+		}else{
+			if( s->HEVClc->cu.emt_cu_flag == 1)
+			{
+				enum IntraPredMode ucMode;
+				int maxLog2TrDynamicRange 			= s->sps->spsRext.extended_precision_processing_flag ? max(15, (s->sps->bit_depth + 6) ) : 15 ;
+				const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
+				int bitDepthEMT					 	= (s->sps->bit_depth);
+				const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
+
+				if (s->HEVClc->cu.pred_mode == MODE_INTRA)
+				{
+					ucMode = c_idx ? s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
+				}
+				else{
+					ucMode = INTER_MODE_IDX ;
+				}
+
+				int intraMode 						= s->HEVClc->tu.intra_pred_mode;
+				int tu_emt_Idx 						= s->HEVClc->tu.emt_tu_idx;
+				s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, TRANSFORM_MATRIX_SHIFT, nLog2SizeMinus2, maxLog2TrDynamicRange, bitDepthEMT, ucMode, intraMode, tu_emt_Idx);
+#endif
     } else {
         if (transform_skip_flag) {
-            int rot = s->sps->transform_skip_rotation_enabled_flag &&
+            int rot = s->sps->spsRext.transform_skip_rotation_enabled_flag &&
                       log2_trafo_size == 2 &&
                       lc->cu.pred_mode == MODE_INTRA;
             if (rot) {
@@ -1763,7 +1920,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
             s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
 
-            if (explicit_rdpcm_flag || (s->sps->implicit_rdpcm_enabled_flag &&
+            if (explicit_rdpcm_flag || (s->sps->spsRext.transform_skip_rotation_enabled_flag &&
                                         lc->cu.pred_mode == MODE_INTRA &&
                                         (pred_mode_intra == 10 || pred_mode_intra == 26))) {
                 int mode = explicit_rdpcm_flag ? explicit_rdpcm_dir_flag : (pred_mode_intra == 26);
@@ -1796,6 +1953,10 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         }
     }
     s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
+#if COM16_C806_EMT
+	}
+#endif
+
 }
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
