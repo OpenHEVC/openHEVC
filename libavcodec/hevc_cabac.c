@@ -26,8 +26,10 @@
 
 #include "cabac_functions.h"
 #include "hevc.h"
-#include "avfft.h"
 
+#if COM16_C806_EMT
+#include "avfft.h"
+#endif
 
 #define CABAC_MAX_BIN 31
 
@@ -773,9 +775,6 @@ int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s)
 }
 
 #if COM16_C806_EMT
-/*
- * Définition de la fonction emt_cu_flag_decode
- */
 uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma)
 {
 	uint8_t inc = 0;
@@ -792,9 +791,6 @@ uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma
 	}
 	return flag_value ;
 }
-/*
- * Etape 2
- */
 uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size)
 {
 	uint8_t trIdx = 0;
@@ -817,10 +813,6 @@ uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size)
 return trIdx ;
 }
 #endif
-/*
- * Fin des fonctions
- */
-
 
 int ff_hevc_pred_mode_decode(HEVCContext *s)
 {
@@ -1854,9 +1846,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #endif
     }
 
-    /*
-     * Appel de la fonction ff_hevc_tu_idx_decode
-     */
     #if COM16_C806_EMT
         if ( (!transform_skip_flag) && (c_idx == 0) )
         {
@@ -1875,9 +1864,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         	}
         }
     #endif
-    /*
-     * Fin des appels de la fonction
-     */
 
     if (lc->cu.cu_transquant_bypass_flag) {
         if (explicit_rdpcm_flag || (s->sps->spsRext.implicit_rdpcm_enabled_flag &&
@@ -1886,6 +1872,25 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
             s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
         }
+    } else {
+        if (transform_skip_flag) {
+            int rot = s->sps->spsRext.transform_skip_rotation_enabled_flag &&
+                      log2_trafo_size == 2 &&
+                      lc->cu.pred_mode == MODE_INTRA;
+            if (rot) {
+                for (i = 0; i < 8; i++)
+                    FFSWAP(int16_t, coeffs[i], coeffs[16 - i - 1]);
+            }
+
+            s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
+
+            if (explicit_rdpcm_flag || (s->sps->spsRext.transform_skip_rotation_enabled_flag &&
+                                        lc->cu.pred_mode == MODE_INTRA &&
+                                        (pred_mode_intra == 10 || pred_mode_intra == 26))) {
+                int mode = explicit_rdpcm_flag ? explicit_rdpcm_dir_flag : (pred_mode_intra == 26);
+
+                s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
+            }
 #if COM16_C806_EMT
 		}else{
 			if( s->HEVClc->cu.emt_cu_flag == 1)
@@ -1908,26 +1913,11 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 				int tu_emt_Idx 						= s->HEVClc->tu.emt_tu_idx;
 				s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, TRANSFORM_MATRIX_SHIFT, nLog2SizeMinus2, maxLog2TrDynamicRange, bitDepthEMT, ucMode, intraMode, tu_emt_Idx);
 #endif
-    } else {
-        if (transform_skip_flag) {
-            int rot = s->sps->spsRext.transform_skip_rotation_enabled_flag &&
-                      log2_trafo_size == 2 &&
-                      lc->cu.pred_mode == MODE_INTRA;
-            if (rot) {
-                for (i = 0; i < 8; i++)
-                    FFSWAP(int16_t, coeffs[i], coeffs[16 - i - 1]);
-            }
-
-            s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
-
-            if (explicit_rdpcm_flag || (s->sps->spsRext.transform_skip_rotation_enabled_flag &&
-                                        lc->cu.pred_mode == MODE_INTRA &&
-                                        (pred_mode_intra == 10 || pred_mode_intra == 26))) {
-                int mode = explicit_rdpcm_flag ? explicit_rdpcm_dir_flag : (pred_mode_intra == 26);
-
-                s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
-            }
-        } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
+        } else
+#if COM16_C806_EMT
+        {
+#endif
+        	if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
             s->hevcdsp.idct_4x4_luma(coeffs);
         } else {
             int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
@@ -1943,8 +1933,12 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     col_limit = FFMIN(24, col_limit);
                 s->hevcdsp.idct[log2_trafo_size-2](coeffs, col_limit);
             }
+#if COM16_C806_EMT
         }
-    }
+        }
+#endif
+      }
+  }
     if (lc->tu.cross_pf) {
         int16_t *coeffs_y = lc->tu.coeffs[0];
 
@@ -1953,10 +1947,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         }
     }
     s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
-#if COM16_C806_EMT
-	}
-#endif
-
 }
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)

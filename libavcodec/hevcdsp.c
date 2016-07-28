@@ -23,9 +23,11 @@
 
 #include "hevc.h"
 #include "hevcdsp.h"
-#include "dct.h"
 
 #if COM16_C806_EMT
+
+#include "dct.h"
+
 const int emt_Tr_Set_V[35] =
 {
 	2, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0

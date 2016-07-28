@@ -1552,12 +1552,10 @@ do {                                                                            
         }
 
 #if COM16_C806_EMT
-
         if (0 == trafo_depth)
         {
         	s->HEVClc->cu.emt_cu_flag = ff_hevc_emt_cu_flag_decode(s, log2_cb_size, cbf_luma);
         }
-
 #endif
 
 
