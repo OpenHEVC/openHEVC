@@ -12,6 +12,16 @@ void green_dsp_init(HEVCDSPContext *hevcdsp)
     hevcdsp->green_cur_luma=7;
     hevcdsp->green_cur_chroma=4;
     hevcdsp->green_on = 0;
+
+    static const char* green_coeffs_text[3] = {
+		"OLD",
+		"ASYMMETRIC",
+		"SYMMETRIC"
+    };
+
+    printf("Current Coefs config:\n");
+    printf("%s\n", green_coeffs_text[GREEN_FILTER_TYPE]);
+    printf("Legacy config %d:%d\n", LUMA_TAPS, CHROMA_TAPS);
 }
 
 #if !HAVE_NEON

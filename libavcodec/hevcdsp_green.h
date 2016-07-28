@@ -7,10 +7,6 @@
 
 #include "hevcdsp.h"
 
-#define LEGACY 0
-#define ASYMMETRIC 1
-#define SYMMETRIC 2
-
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green1_filters[7][2]) = {
 	{ 64 , 0 },
 	{ 64 , 0 },
@@ -21,7 +17,7 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green1_filters[7][2]) = {
 	{ 0 , 64 },
 };
 
-#if GREEN_FILTER_TYPE == LEGACY
+#if GREEN_FILTER_TYPE == OLD
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green2_filters[7][2]) = {
     { 54, 10 },
     { 54, 10 },
@@ -53,7 +49,7 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green2_filters[7][2]) = {
 };
 #endif
 
-#if GREEN_FILTER_TYPE == LEGACY
+#if GREEN_FILTER_TYPE == OLD
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green3_filters[7][4]) = {
 	{ -3, 62,  5,  0},
 	{ -5, 58, 11,  0},
@@ -85,7 +81,7 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green3_filters[7][4]) = {
 };
 #endif
 
-#if GREEN_FILTER_TYPE == LEGACY
+#if GREEN_FILTER_TYPE == OLD
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green5_filters[3][6]) = {
 	{ 1, -8, 58, 16, -3, 0 },
 	{ 2, -9, 40, 40, -9, 0 },
@@ -106,7 +102,7 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green5_filters[3][6]) = {
 #endif
 
 
-#if GREEN_FILTER_TYPE == LEGACY
+#if GREEN_FILTER_TYPE == OLD
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green3_filters[3][4]) = {
 	{ -8, 58, 14, 0},
 	{ -8, 40, 32, 0},
