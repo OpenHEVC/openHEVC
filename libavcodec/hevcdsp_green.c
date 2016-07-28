@@ -232,9 +232,9 @@ void green_reload_filter_chroma1(HEVCDSPContext *hevcdsp, int bit_depth)
 #undef EPEL_FUNCS
 #define EPEL_FUNCS(depth)                                                       \
     PEL_FUNC(put_hevc_epel, 0, 0, put_hevc_pel_pixels, depth);                  \
-    PEL_FUNC(put_hevc_epel, 0, 1, put_hevc_pel_pixels, depth);                  \
-    PEL_FUNC(put_hevc_epel, 1, 0, put_hevc_pel_pixels, depth);                  \
-    PEL_FUNC(put_hevc_epel, 1, 1, put_hevc_pel_pixels, depth)
+    PEL_FUNC(put_hevc_epel, 0, 1, put_hevc_epel1_h, depth);                  \
+    PEL_FUNC(put_hevc_epel, 1, 0, put_hevc_epel1_v, depth);                  \
+    PEL_FUNC(put_hevc_epel, 1, 1, put_hevc_epel1_hv, depth)
 
 
 #undef EPEL_UNI_FUNCS
