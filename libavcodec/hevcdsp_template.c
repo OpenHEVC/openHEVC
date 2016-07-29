@@ -2120,11 +2120,11 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
 {
     int i,j, k;
     
-    int widthBL =  FrameBL->coded_width;
-    int heightBL = FrameBL->coded_height;
+    int widthBL =  FrameBL->width;
+    int heightBL = FrameBL->height;
     int strideBL = FrameBL->linesize[0]/sizeof(pixel);
-    int widthEL =  FrameEL->coded_width - Enhscal->left_offset - Enhscal->right_offset;
-    int heightEL = FrameEL->coded_height - Enhscal->top_offset - Enhscal->bottom_offset;
+    int widthEL =  FrameEL->width - Enhscal->left_offset - Enhscal->right_offset;
+    int heightEL = FrameEL->height - Enhscal->top_offset - Enhscal->bottom_offset;
     int strideEL = FrameEL->linesize[0]/sizeof(pixel);
     pixel *srcBufY = (pixel*)FrameBL->data[0];
     pixel *dstBufY = (pixel*)FrameEL->data[0];
@@ -2154,9 +2154,9 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     int refPos   = 0;
     const int8_t* coeff;
     int leftStartL = Enhscal->left_offset;
-    int rightEndL  = FrameEL->coded_width - Enhscal->right_offset;
+    int rightEndL  = FrameEL->width - Enhscal->right_offset;
     int topStartL  = Enhscal->top_offset;
-    int bottomEndL = FrameEL->coded_height - Enhscal->bottom_offset;
+    int bottomEndL = FrameEL->height - Enhscal->bottom_offset;
     pixel buffer[8];
 
     const int nShift = 20-BIT_DEPTH;// TO DO ass the appropiate bit depth  bit  depth
@@ -2165,16 +2165,16 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     short buffer1[8];
 
     int leftStartC = Enhscal->left_offset>>1;
-    int rightEndC  = (FrameEL->coded_width>>1) - (Enhscal->right_offset>>1);
+    int rightEndC  = (FrameEL->width>>1) - (Enhscal->right_offset>>1);
     int topStartC  = Enhscal->top_offset>>1;
-    int bottomEndC = (FrameEL->coded_height>>1) - (Enhscal->bottom_offset>>1);
+    int bottomEndC = (FrameEL->height>>1) - (Enhscal->bottom_offset>>1);
     int shift1 = up_info->shift_up[0];
 
-    widthEL   = FrameEL->coded_width;  //pcUsPic->getWidth ();
-    heightEL  = FrameEL->coded_height; //pcUsPic->getHeight();
+    widthEL   = FrameEL->width;  //pcUsPic->getWidth ();
+    heightEL  = FrameEL->height; //pcUsPic->getHeight();
 
-    widthBL   = FrameBL->coded_width;
-    heightBL  = FrameBL->coded_height <= heightEL ? FrameBL->coded_height:heightEL;  // min( FrameBL->coded_height, heightEL);
+    widthBL   = FrameBL->width;
+    heightBL  = FrameBL->height <= heightEL ? FrameBL->height:heightEL;  // min( FrameBL->height, heightEL);
 
     for( i = 0; i < widthEL; i++ ) {
         int x = i; //av_clip_c(i, leftStartL, rightEndL);
@@ -2247,11 +2247,11 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
                         dstY++;
                     }
     }
-    widthBL   = FrameBL->coded_width;
-    heightBL  = FrameBL->coded_height;
+    widthBL   = FrameBL->width;
+    heightBL  = FrameBL->height;
     
-    widthEL   = FrameEL->coded_width - Enhscal->right_offset - Enhscal->left_offset;
-    heightEL  = FrameEL->coded_height - Enhscal->top_offset - Enhscal->bottom_offset;
+    widthEL   = FrameEL->width - Enhscal->right_offset - Enhscal->left_offset;
+    heightEL  = FrameEL->height - Enhscal->top_offset - Enhscal->bottom_offset;
     
     shift1 = up_info->shift_up[1];
 
@@ -2261,10 +2261,10 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     heightBL >>= 1;
     strideBL  = FrameBL->linesize[1]/sizeof(pixel);
     strideEL  = FrameEL->linesize[1]/sizeof(pixel);
-    widthEL   = FrameEL->coded_width >> 1;
-    heightEL  = FrameEL->coded_height >> 1;
-    widthBL   = FrameBL->coded_width >> 1;
-    heightBL  = FrameBL->coded_height > heightEL ? FrameBL->coded_height:heightEL;
+    widthEL   = FrameEL->width >> 1;
+    heightEL  = FrameEL->height >> 1;
+    widthBL   = FrameBL->width >> 1;
+    heightBL  = FrameBL->height > heightEL ? FrameBL->height:heightEL;
     
     
     heightBL >>= 1;

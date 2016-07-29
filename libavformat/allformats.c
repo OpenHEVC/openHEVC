@@ -25,6 +25,8 @@
 #include "url.h"
 #include "version.h"
 
+#include "config.h" //TMP_PL_DEV
+
 #define REGISTER_MUXER(X, x)                                            \
     {                                                                   \
         extern AVOutputFormat ff_##x##_muxer;                           \
@@ -41,20 +43,12 @@
 
 #define REGISTER_MUXDEMUX(X, x) REGISTER_MUXER(X, x); REGISTER_DEMUXER(X, x)
 
-#define REGISTER_PROTOCOL(X, x)                                         \
-    {                                                                   \
-        extern URLProtocol ff_##x##_protocol;                           \
-        if (CONFIG_##X##_PROTOCOL)                                      \
-            ffurl_register_protocol(&ff_##x##_protocol);                \
-    }
-
 void av_register_all(void)
 {
     static int initialized;
 
     if (initialized)
         return;
-    initialized = 1;
 
     avcodec_register_all();
 
@@ -66,5 +60,5 @@ void av_register_all(void)
     REGISTER_DEMUXER(MATROSKA, matroska);
 
 	/* protocols */
-	REGISTER_PROTOCOL(FILE, file);
+//	REGISTER_PROTOCOL(FILE, file);
 }

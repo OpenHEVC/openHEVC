@@ -36,11 +36,14 @@
 #include "internal.h"
 #include "vorbiscomment.h"
 
+#include "libavutil/internal.h" //TMP_PL_DEV 
+
 #define MAX_PAGE_SIZE 65307
 #define DECODER_BUFFER_SIZE MAX_PAGE_SIZE
 
 static const struct ogg_codec * const ogg_codecs[] = {
     &ff_skeleton_codec,
+    &ff_daala_codec,
     &ff_dirac_codec,
     &ff_speex_codec,
     &ff_vorbis_codec,
@@ -60,6 +63,7 @@ static const struct ogg_codec * const ogg_codecs[] = {
 
 static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts);
 static int ogg_new_stream(AVFormatContext *s, uint32_t serial);
+static int ogg_restore(AVFormatContext *s, int discard);
 
 //FIXME We could avoid some structure duplication
 static int ogg_save(AVFormatContext *s)
@@ -68,6 +72,11 @@ static int ogg_save(AVFormatContext *s)
     struct ogg_state *ost =
         av_malloc(sizeof(*ost) + (ogg->nstreams - 1) * sizeof(*ogg->streams));
     int i;
+    int ret = 0;
+
+    if (!ost)
+        return AVERROR(ENOMEM);
+
     ost->pos      = avio_tell(s->pb);
     ost->curidx   = ogg->curidx;
     ost->next     = ogg->state;
@@ -77,14 +86,20 @@ static int ogg_save(AVFormatContext *s)
     for (i = 0; i < ogg->nstreams; i++) {
         struct ogg_stream *os = ogg->streams + i;
         os->buf = av_mallocz(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
-        memcpy(os->buf, ost->streams[i].buf, os->bufpos);
+        if (os->buf)
+            memcpy(os->buf, ost->streams[i].buf, os->bufpos);
+        else
+            ret = AVERROR(ENOMEM);
         os->new_metadata      = NULL;
         os->new_metadata_size = 0;
     }
 
     ogg->state = ost;
 
-    return 0;
+    if (ret < 0)
+        ogg_restore(s, 0);
+
+    return ret;
 }
 
 static int ogg_restore(AVFormatContext *s, int discard)
@@ -142,7 +157,7 @@ static int ogg_reset(AVFormatContext *s)
         os->segp       = 0;
         os->incomplete = 0;
         os->got_data = 0;
-        if (start_pos <= s->data_offset) {
+        if (start_pos <= s->internal->data_offset) {
             os->lastpts = 0;
         }
         os->end_trimming = 0;
@@ -276,6 +291,9 @@ static int ogg_new_buf(struct ogg *ogg, int idx)
     uint8_t *nb = av_malloc(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
     int size = os->bufpos - os->pstart;
 
+    if (!nb)
+        return AVERROR(ENOMEM);
+
     if (os->buf) {
         memcpy(nb, os->buf + os->pstart, size);
         av_free(os->buf);
@@ -370,8 +388,11 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     ogg->page_pos =
     os->page_pos = avio_tell(bc) - 27;
 
-    if (os->psize > 0)
-        ogg_new_buf(ogg, idx);
+    if (os->psize > 0) {
+        ret = ogg_new_buf(ogg, idx);
+        if (ret < 0)
+            return ret;
+    }
 
     ret = avio_read(bc, os->segments, nsegs);
     if (ret < nsegs)
@@ -445,7 +466,7 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
     int complete = 0;
     int segp     = 0, psize = 0;
 
-    av_dlog(s, "ogg_packet: curidx=%i\n", ogg->curidx);
+    av_log(s, AV_LOG_TRACE, "ogg_packet: curidx=%i\n", ogg->curidx);
     if (sid)
         *sid = -1;
 
@@ -460,7 +481,7 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
 
         os = ogg->streams + idx;
 
-        av_dlog(s, "ogg_packet: idx=%d pstart=%d psize=%d segp=%d nsegs=%d\n",
+        av_log(s, AV_LOG_TRACE, "ogg_packet: idx=%d pstart=%d psize=%d segp=%d nsegs=%d\n",
                 idx, os->pstart, os->psize, os->segp, os->nsegs);
 
         if (!os->codec) {
@@ -520,8 +541,8 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
 
             // Update the header state for all streams and
             // compute the data_offset.
-            if (!s->data_offset)
-                s->data_offset = os->sync_pos;
+            if (!s->internal->data_offset)
+                s->internal->data_offset = os->sync_pos;
 
             for (i = 0; i < ogg->nstreams; i++) {
                 struct ogg_stream *cur_os = ogg->streams + i;
@@ -529,7 +550,7 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
                 // if we have a partial non-header packet, its start is
                 // obviously at or after the data start
                 if (cur_os->incomplete)
-                    s->data_offset = FFMIN(s->data_offset, cur_os->sync_pos);
+                    s->internal->data_offset = FFMIN(s->internal->data_offset, cur_os->sync_pos);
             }
         } else {
             os->nb_header++;
@@ -574,7 +595,7 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
 static int ogg_get_length(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
-    int i;
+    int i, ret;
     int64_t size, end;
     int streams_left=0;
 
@@ -590,7 +611,9 @@ static int ogg_get_length(AVFormatContext *s)
         return 0;
     end = size > MAX_PAGE_SIZE ? size - MAX_PAGE_SIZE : 0;
 
-    ogg_save(s);
+    ret = ogg_save(s);
+    if (ret < 0)
+        return ret;
     avio_seek(s->pb, end, SEEK_SET);
     ogg->page_pos = -1;
 
@@ -612,8 +635,11 @@ static int ogg_get_length(AVFormatContext *s)
 
     ogg_restore(s, 0);
 
-    ogg_save (s);
-    avio_seek (s->pb, s->data_offset, SEEK_SET);
+    ret = ogg_save(s);
+    if (ret < 0)
+        return ret;
+
+    avio_seek (s->pb, s->internal->data_offset, SEEK_SET);
     ogg_reset(s);
     while (streams_left > 0 && !ogg_packet(s, &i, NULL, NULL, NULL)) {
         int64_t pts;
@@ -669,7 +695,7 @@ static int ogg_read_header(AVFormatContext *s)
             return ret;
         }
     } while (!ogg->headers);
-    av_dlog(s, "found headers\n");
+    av_log(s, AV_LOG_TRACE, "found headers\n");
 
     for (i = 0; i < ogg->nstreams; i++) {
         struct ogg_stream *os = ogg->streams + i;
@@ -677,6 +703,7 @@ static int ogg_read_header(AVFormatContext *s)
         if (ogg->streams[i].header < 0) {
             av_log(s, AV_LOG_ERROR, "Header parsing failed for stream %d\n", i);
             ogg->streams[i].codec = NULL;
+            av_freep(&ogg->streams[i].private);
         } else if (os->codec && os->nb_header < os->codec->nb_header) {
             av_log(s, AV_LOG_WARNING,
                    "Headers mismatch for stream %d: "
@@ -691,7 +718,11 @@ static int ogg_read_header(AVFormatContext *s)
     }
 
     //linear granulepos seek from end
-    ogg_get_length(s);
+    ret = ogg_get_length(s);
+    if (ret < 0) {
+        ogg_read_close(s);
+        return ret;
+    }
 
     return 0;
 }
@@ -732,7 +763,7 @@ static void ogg_validate_keyframe(AVFormatContext *s, int idx, int pstart, int p
     struct ogg_stream *os = ogg->streams + idx;
     int invalid = 0;
     if (psize) {
-        switch (s->streams[idx]->codec->codec_id) {
+        switch (s->streams[idx]->codecpar->codec_id) {
         case AV_CODEC_ID_THEORA:
             invalid = !!(os->pflags & AV_PKT_FLAG_KEY) != !(os->buf[pstart] & 0x40);
         break;
@@ -816,7 +847,7 @@ retry:
 
     return psize;
 fail:
-    av_free_packet(pkt);
+    av_packet_unref(pkt);
     return AVERROR(ENOMEM);
 }
 
@@ -836,7 +867,7 @@ static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
            && !ogg_packet(s, &i, &pstart, &psize, pos_arg)) {
         if (i == stream_index) {
             struct ogg_stream *os = ogg->streams + stream_index;
-            // Do not trust the last timestamps of a ogm video
+            // Do not trust the last timestamps of an ogm video
             if (    (os->flags & OGG_FLAG_EOS)
                 && !(os->flags & OGG_FLAG_BOS)
                 && os->codec == &ff_ogm_video_codec)
@@ -875,11 +906,12 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
 
     // Try seeking to a keyframe first. If this fails (very possible),
     // av_seek_frame will fall back to ignoring keyframes
-    if (s->streams[stream_index]->codec->codec_type == AVMEDIA_TYPE_VIDEO
+    if (s->streams[stream_index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO
         && !(flags & AVSEEK_FLAG_ANY))
         os->keyframe_seek = 1;
 
     ret = ff_seek_frame_binary(s, stream_index, timestamp, flags);
+    ogg_reset(s);
     os  = ogg->streams + stream_index;
     if (ret < 0)
         os->keyframe_seek = 0;

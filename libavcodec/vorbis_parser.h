@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -24,8 +23,8 @@
  * Determines the duration for each packet.
  */
 
-#ifndef AVCODEC_VORBIS_PARSE_H
-#define AVCODEC_VORBIS_PARSE_H
+#ifndef AVCODEC_VORBIS_PARSER_H
+#define AVCODEC_VORBIS_PARSER_H
 
 #include <stdint.h>
 
@@ -47,6 +46,7 @@ void av_vorbis_parse_free(AVVorbisParseContext **s);
 
 #define VORBIS_FLAG_HEADER  0x00000001
 #define VORBIS_FLAG_COMMENT 0x00000002
+#define VORBIS_FLAG_SETUP   0x00000004
 
 /**
  * Get the duration for a Vorbis packet.
@@ -74,4 +74,4 @@ int av_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
 
 void av_vorbis_parse_reset(AVVorbisParseContext *s);
 
-#endif /* AVCODEC_VORBIS_PARSE_H */
+#endif /* AVCODEC_VORBIS_PARSER_H */

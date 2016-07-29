@@ -144,6 +144,7 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
  *          The situation is undefined according to POSIX and may crash with
  *          some libc implementations.
  */
+av_warn_unused_result
 int av_reallocp(void *ptr, size_t size);
 
 /**
@@ -304,6 +305,7 @@ void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem);
  * @return >=0 on success, negative otherwise.
  * @see av_dynarray_add(), av_dynarray2_add()
  */
+av_warn_unused_result
 int av_dynarray_add_nofree(void *tab_ptr, int *nb_ptr, void *elem);
 
 /**
@@ -337,8 +339,8 @@ void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
 static inline int av_size_mult(size_t a, size_t b, size_t *r)
 {
     size_t t = a * b;
-    /* Hack inspired from glibc: only try the division if nelem and elsize
-     * are both greater than sqrt(SIZE_MAX). */
+    /* Hack inspired from glibc: don't try the division if nelem and elsize
+     * are both less than sqrt(SIZE_MAX). */
     if ((a | b) >= ((size_t)1 << (sizeof(size_t) * 4)) && a && t / a != b)
         return AVERROR(EINVAL);
     *r = t;
@@ -381,6 +383,21 @@ void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size);
  *                 *size 0 if an error occurred.
  */
 void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
+
+/**
+ * Allocate a buffer, reusing the given one if large enough.
+ *
+ * All newly allocated space is initially cleared
+ * Contrary to av_fast_realloc the current buffer contents might not be
+ * preserved and on error the old buffer is freed, thus no special
+ * handling to avoid memleaks is necessary.
+ *
+ * @param ptr pointer to pointer to already allocated buffer, overwritten with pointer to new buffer
+ * @param size size of the buffer *ptr points to
+ * @param min_size minimum size of *ptr buffer after returning, *ptr will be NULL and
+ *                 *size 0 if an error occurred.
+ */
+void av_fast_mallocz(void *ptr, unsigned int *size, size_t min_size);
 
 /**
  * @}

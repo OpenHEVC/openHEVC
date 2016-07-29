@@ -1505,13 +1505,13 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
     //fixme: AVC BL
     HEVCFrame *bl_frame = s->BL_frame;
     //H264Picture *bl_frame = s->BL_frame;
-    //int bl_width  =  bl_frame->f->coded_width; //fixme: coded_width or width or blframe->width
-    //int bl_height =  bl_frame->f->coded_height;
+    //int bl_width  =  bl_frame->f->width; //fixme: width or width or blframe->width
+    //int bl_height =  bl_frame->f->height;
     //int bl_stride =  bl_frame->f->linesize[0];
 
 
-    int bl_width  =  bl_frame->frame->coded_width;
-    int bl_height =  bl_frame->frame->coded_height;
+    int bl_width  =  bl_frame->frame->width;
+    int bl_height =  bl_frame->frame->height;
     int bl_stride =  bl_frame->frame->linesize[0];
 
     int el_stride =  ref0->frame->linesize[0]/sizeof(uint16_t);
@@ -1611,10 +1611,10 @@ static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y
 
     HEVCFrame *bl_frame = s->BL_frame;
     //H264Picture *bl_frame = s->BL_frame;
-    int bl_width  =  bl_frame->frame->coded_width  >>1;
-    int bl_height  = bl_frame->frame->coded_height  > el_height ? bl_frame->frame->coded_height>>1:el_height>>1;
-    //int bl_width  =  bl_frame->f->coded_width  >>1;
-    //int bl_height  = bl_frame->f->coded_height  > el_height ? bl_frame->f->coded_height>>1:el_height>>1;
+    int bl_width  =  bl_frame->frame->width  >>1;
+    int bl_height  = bl_frame->frame->height  > el_height ? bl_frame->frame->height>>1:el_height>>1;
+    //int bl_width  =  bl_frame->f->width  >>1;
+    //int bl_height  = bl_frame->f->height  > el_height ? bl_frame->f->height>>1:el_height>>1;
 
     int ret, cr, bl_edge_top0;
     int ctb_size = 1<<(s->sps->log2_ctb_size-1);
@@ -1822,8 +1822,8 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     HEVCWindow base_layer_window = s->pps->ref_window[((HEVCVPS*)s->vps_list[s->sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
     int bl_height = s->BL_height >> 1;
     int bl_width  = s->BL_width  >> 1;
-    //int bl_width  =  bl_frame->coded_width  >>1;
-    //int bl_height =  bl_frame->coded_height >>1;// > el_height ? bl_frame->coded_height>>1:el_height;
+    //int bl_width  =  bl_frame->width  >>1;
+    //int bl_height =  bl_frame->height >>1;// > el_height ? bl_frame->height>>1:el_height;
     int bl_stride =  bl_frame->linesize[1];
 
     int ret, cr, bl_edge_top0;
@@ -1927,8 +1927,8 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
 	int xEL, yEL, xBL, yBL, list, Ref_pre_unit, pre_unit, pre_unit_col;
     int pic_width_in_min_pu = s->sps->width>>s->sps->log2_min_pu_size;
     int pic_height_in_min_pu = s->sps->height>>s->sps->log2_min_pu_size;
-    int pic_width_in_min_puBL = bl_frame->frame->coded_width >> s->sps->log2_min_pu_size;
-//    int pic_width_in_min_puBL = bl_frame->f->coded_width >> s->sps->log2_min_pu_size;
+    int pic_width_in_min_puBL = bl_frame->frame->width >> s->sps->log2_min_pu_size;
+//    int pic_width_in_min_puBL = bl_frame->f->width >> s->sps->log2_min_pu_size;
     int ctb_size = 1 << s->sps->log2_ctb_size;
     int min_pu_size = 1 << s->sps->log2_min_pu_size;
     int nb_list = s->sh.slice_type==B_SLICE ? 2:1, i, j;
@@ -1942,7 +1942,7 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
             pre_unit = ((yEL>>s->sps->log2_min_pu_size)*pic_width_in_min_pu) + (xEL>>s->sps->log2_min_pu_size);
 
             if((xBL& 0xFFFFFFF0) < bl_frame->frame->width && (yBL& 0xFFFFFFF0) < bl_frame->frame->height) {
-//            if((xBL& 0xFFFFFFF0) < bl_frame->f->coded_width && (yBL& 0xFFFFFFF0) < bl_frame->f->coded_height) {
+//            if((xBL& 0xFFFFFFF0) < bl_frame->f->width && (yBL& 0xFFFFFFF0) < bl_frame->f->height) {
 
                 xBL >>= 4;
                 xBL <<= 4-s->sps->log2_min_pu_size; // 4 <==> xBL & 0xFFFFFFF0

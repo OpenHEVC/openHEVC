@@ -29,6 +29,8 @@
 #include "libavcodec/x86/hevcdsp.h"
 #include "libavcodec/hevc_defs.h"
 
+#include "libavutil/internal.h" //TMP_DEV_PL
+
 #define LFC_FUNC(DIR, DEPTH, OPT) \
 void ff_hevc_ ## DIR ## _loop_filter_chroma_ ## DEPTH ## _ ## OPT(uint8_t *pix, ptrdiff_t stride, int *tc, uint8_t *no_p, uint8_t *no_q);
 
