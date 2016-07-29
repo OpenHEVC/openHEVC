@@ -55,6 +55,9 @@
 
 #include "libavutil/internal.h" //TMP_DEV_PL
 #include "libavutil/x86/emms.h"
+#include "hevc_defs.h"
+
+#include "h264_nal.h"
 
 static int h264_decode_end(AVCodecContext *avctx);
 

@@ -26,7 +26,7 @@
 #include "libavutil/opt.h"
 
 //TMP
-#include "libavcodec/h264.h"
+//#include "libavcodec/h264.h"
 
 #define MAX_DECODERS 3
 #define ACTIVE_NAL

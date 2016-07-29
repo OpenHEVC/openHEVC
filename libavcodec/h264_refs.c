@@ -36,6 +36,8 @@
 
 #include <assert.h>
 
+#include "h264_nal.h"
+
 static void pic_as_field(H264Ref *pic, const int parity)
 {
     int i;

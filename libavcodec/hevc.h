@@ -99,9 +99,9 @@
 #define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->width + (x)])
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
 
-#define IS_IDR(s) ((s)->nal_unit_type == HEVC_NAL_IDR_W_RADL || (s)->nal_unit_type == HEVC_NAL_IDR_N_LP)
-#define IS_BLA(s) ((s)->nal_unit_type == HEVC_NAL_BLA_W_RADL || (s)->nal_unit_type == HEVC_NAL_BLA_W_LP || \
-                    (s)->nal_unit_type == HEVC_NAL_BLA_N_LP )
+#define IS_IDR(s) ((s)->nal_unit_type == NAL_IDR_W_RADL || (s)->nal_unit_type == NAL_IDR_N_LP)
+#define IS_BLA(s) ((s)->nal_unit_type == NAL_BLA_W_RADL || (s)->nal_unit_type == NAL_BLA_W_LP || \
+                   (s)->nal_unit_type == NAL_BLA_N_LP)
 #define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
 
 
@@ -115,31 +115,31 @@ enum ScalabilityType
  * Table 7-3: NAL unit type codes
  */
 enum NALUnitType {
-	HEVC_NAL_TRAIL_N    = 0,
-	HEVC_NAL_TRAIL_R    = 1,
-	HEVC_NAL_TSA_N      = 2,
-	HEVC_NAL_TSA_R      = 3,
-	HEVC_NAL_STSA_N     = 4,
-	HEVC_NAL_STSA_R     = 5,
-	HEVC_NAL_RADL_N     = 6,
-	HEVC_NAL_RADL_R     = 7,
-	HEVC_NAL_RASL_N     = 8,
-	HEVC_NAL_RASL_R     = 9,
-	HEVC_NAL_BLA_W_LP   = 16,
-	HEVC_NAL_BLA_W_RADL = 17,
-	HEVC_NAL_BLA_N_LP   = 18,
-	HEVC_NAL_IDR_W_RADL = 19,
-	HEVC_NAL_IDR_N_LP   = 20,
-	HEVC_NAL_CRA_NUT    = 21,
-    HEVC_NAL_VPS        = 32,
-    HEVC_NAL_SPS        = 33,
-    HEVC_NAL_PPS        = 34,
-    HEVC_NAL_AUD        = 35,
-	HEVC_NAL_EOS_NUT    = 36,
-	HEVC_NAL_EOB_NUT    = 37,
-	HEVC_NAL_FD_NUT     = 38,
-	HEVC_NAL_SEI_PREFIX = 39,
-	HEVC_NAL_SEI_SUFFIX = 40,
+    NAL_TRAIL_N    = 0,
+    NAL_TRAIL_R    = 1,
+    NAL_TSA_N      = 2,
+    NAL_TSA_R      = 3,
+    NAL_STSA_N     = 4,
+    NAL_STSA_R     = 5,
+    NAL_RADL_N     = 6,
+    NAL_RADL_R     = 7,
+    NAL_RASL_N     = 8,
+    NAL_RASL_R     = 9,
+    NAL_BLA_W_LP   = 16,
+    NAL_BLA_W_RADL = 17,
+    NAL_BLA_N_LP   = 18,
+    NAL_IDR_W_RADL = 19,
+    NAL_IDR_N_LP   = 20,
+    NAL_CRA_NUT    = 21,
+    NAL_VPS        = 32,
+    NAL_SPS        = 33,
+    NAL_PPS        = 34,
+    NAL_AUD        = 35,
+    NAL_EOS_NUT    = 36,
+    NAL_EOB_NUT    = 37,
+    NAL_FD_NUT     = 38,
+    NAL_SEI_PREFIX = 39,
+    NAL_SEI_SUFFIX = 40,
 };
 #if 0
 #define print_cabac(string, val) \

@@ -27,7 +27,7 @@
 #define cabac_tableinit()
 #include "libavcodec/cabac_tables.h"
 #else
-uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
+//uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
 
 static const uint8_t lps_range[64][4]= {
 {128,176,208,240}, {128,167,197,227}, {128,158,187,216}, {123,150,178,205},

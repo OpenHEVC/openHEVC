@@ -26,7 +26,7 @@
 #undef CONFIG_HARDCODED_TABLES
 #define CONFIG_HARDCODED_TABLES 0
 av_const int av_log2(unsigned v) { int r = 0; while (v >>= 1) r++; return r; }
-#include "cabac_tablegen.h"
+//#include "cabac_tablegen.h"
 #include "tableprint.h"
 
 int main(void)

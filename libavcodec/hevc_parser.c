@@ -57,14 +57,14 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
         nut = (pc->state64 >> 2 * 8 + 1) & 0x3F;
 
         // Beginning of access unit
-        if ((nut >= HEVC_NAL_VPS && nut <= HEVC_NAL_AUD) || nut == HEVC_NAL_SEI_PREFIX ||
+        if ((nut >= NAL_VPS && nut <= NAL_AUD) || nut == NAL_SEI_PREFIX ||
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
             if (pc->frame_start_found) {
                 pc->frame_start_found = 0;
                 return i - 5;
             }
-        } else if (nut <= HEVC_NAL_RASL_R ||
-                   (nut >= HEVC_NAL_BLA_W_LP && nut <= HEVC_NAL_CRA_NUT)) {
+        } else if (nut <= NAL_RASL_R ||
+                   (nut >= NAL_BLA_W_LP && nut <= NAL_CRA_NUT)) {
             int first_slice_segment_in_pic_flag = buf[i] >> 7;
             if (first_slice_segment_in_pic_flag) {
                 if (!pc->frame_start_found) {
@@ -99,14 +99,14 @@ static int hevc_find_frame_end2(AVCodecParserContext *s, const uint8_t *buf,
         layer_id  =  (((pc->state64 >> 2 * 8) &0x01)<<5) + (((pc->state64 >> 1 * 8)&0xF8)>>3);
         //printf("Frame_counter : %d\nNAL Unit : %d \nLayer ID : %d\n", frame_counter, nut, layer_id);
         // Beginning of access unit
-        if ((nut >= HEVC_NAL_VPS && nut <= HEVC_NAL_AUD) || nut == HEVC_NAL_SEI_PREFIX ||
+        if ((nut >= NAL_VPS && nut <= NAL_AUD) || nut == NAL_SEI_PREFIX ||
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
             if (pc->frame_start_found && !layer_id) {
                 pc->frame_start_found = 0;
                 return i - 5;
             }
-        } else if (nut <= HEVC_NAL_RASL_R ||
-                   (nut >= HEVC_NAL_BLA_W_LP && nut <= HEVC_NAL_CRA_NUT)) {
+        } else if (nut <= NAL_RASL_R ||
+                   (nut >= NAL_BLA_W_LP && nut <= NAL_CRA_NUT)) {
             int first_slice_segment_in_pic_flag = buf[i] >> 7;
             if (first_slice_segment_in_pic_flag && !layer_id) {
                 if (!pc->frame_start_found) {
@@ -170,7 +170,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
         h->nal_unit_type = (*buf >> 1) & 0x3f;
         h->temporal_id   = (*(buf + 1) & 0x07) - 1;
         h->nuh_layer_id  =  (((*buf)&0x01)<<5) + (((*(buf+1))&0xF8)>>3);
-        if (h->nal_unit_type <= HEVC_NAL_CRA_NUT) {
+        if (h->nal_unit_type <= NAL_CRA_NUT) {
             // Do not walk the whole buffer just to decode slice segment header
             if (src_length > 20)
                 src_length = 20;
@@ -182,35 +182,35 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
 
         init_get_bits8(gb, nal->data + 2, nal->size);
         switch (h->nal_unit_type) {
-        case HEVC_NAL_VPS:
+        case NAL_VPS:
             ff_hevc_decode_nal_vps(h);
             break;
-        case HEVC_NAL_SPS:
+        case NAL_SPS:
             ff_hevc_decode_nal_sps(h);
             break;
-        case HEVC_NAL_PPS:
+        case NAL_PPS:
             ff_hevc_decode_nal_pps(h);
             break;
-        case HEVC_NAL_SEI_PREFIX:
-        case HEVC_NAL_SEI_SUFFIX:
+        case NAL_SEI_PREFIX:
+        case NAL_SEI_SUFFIX:
             ff_hevc_decode_nal_sei(h);
             break;
-        case HEVC_NAL_TRAIL_N:
-        case HEVC_NAL_TRAIL_R:
-        case HEVC_NAL_TSA_N:
-        case HEVC_NAL_TSA_R:
-        case HEVC_NAL_STSA_N:
-        case HEVC_NAL_STSA_R:
-        case HEVC_NAL_RADL_N:
-        case HEVC_NAL_RADL_R:
-        case HEVC_NAL_RASL_N:
-        case HEVC_NAL_RASL_R:
-        case HEVC_NAL_BLA_W_LP:
-        case HEVC_NAL_BLA_W_RADL:
-        case HEVC_NAL_BLA_N_LP:
-        case HEVC_NAL_IDR_W_RADL:
-        case HEVC_NAL_IDR_N_LP:
-        case HEVC_NAL_CRA_NUT:
+        case NAL_TRAIL_N:
+        case NAL_TRAIL_R:
+        case NAL_TSA_N:
+        case NAL_TSA_R:
+        case NAL_STSA_N:
+        case NAL_STSA_R:
+        case NAL_RADL_N:
+        case NAL_RADL_R:
+        case NAL_RASL_N:
+        case NAL_RASL_R:
+        case NAL_BLA_W_LP:
+        case NAL_BLA_W_RADL:
+        case NAL_BLA_N_LP:
+        case NAL_IDR_W_RADL:
+        case NAL_IDR_N_LP:
+        case NAL_CRA_NUT:
             av_log(h->avctx, AV_LOG_DEBUG, "parsing NALU %d\n", h->decoder_id);
             sh->first_slice_in_pic_flag = get_bits1(gb);
             switch(h->picture_struct) {
@@ -300,13 +300,13 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
                 s->output_picture_number = h->poc = 0;
 
             if (h->temporal_id == 0 &&
-                h->nal_unit_type != HEVC_NAL_TRAIL_N &&
-                h->nal_unit_type != HEVC_NAL_TSA_N &&
-                h->nal_unit_type != HEVC_NAL_STSA_N &&
-                h->nal_unit_type != HEVC_NAL_RADL_N &&
-                h->nal_unit_type != HEVC_NAL_RASL_N &&
-                h->nal_unit_type != HEVC_NAL_RADL_R &&
-                h->nal_unit_type != HEVC_NAL_RASL_R)
+                h->nal_unit_type != NAL_TRAIL_N &&
+                h->nal_unit_type != NAL_TSA_N &&
+                h->nal_unit_type != NAL_STSA_N &&
+                h->nal_unit_type != NAL_RADL_N &&
+                h->nal_unit_type != NAL_RASL_N &&
+                h->nal_unit_type != NAL_RADL_R &&
+                h->nal_unit_type != NAL_RASL_R)
                 h->pocTid0 = h->poc;
 
             return 0; /* no need to evaluate the rest */
@@ -381,7 +381,7 @@ static int hevc_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
         state = (state << 8) | buf[i];
         if (((state >> 8) & 0xFFFFFF) == START_CODE) {
             int nut = (state >> 1) & 0x3F;
-            if (nut >= HEVC_NAL_VPS && nut <= HEVC_NAL_PPS)
+            if (nut >= NAL_VPS && nut <= NAL_PPS)
                 has_ps = 1;
             else if (has_ps)
                 return i - 3;

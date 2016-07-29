@@ -45,6 +45,8 @@
 #include "mpegutils.h"
 #include "parser.h"
 
+#include "h264_nal.h"
+
 typedef struct H264ParseContext {
     ParseContext pc;
     H264ParamSets ps;
