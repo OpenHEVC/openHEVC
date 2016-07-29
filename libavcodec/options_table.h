@@ -30,6 +30,9 @@
 #include "avcodec.h"
 #include "version.h"
 
+#define EDGE_WIDTH 32
+#define CODEC_FLAG_EMU_EDGE 1
+
 #define OFFSET(x) offsetof(AVCodecContext,x)
 #define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
@@ -500,10 +503,11 @@ static const AVOption avcodec_options[] = {
 {"bottomleft",  "Bottom-left", 0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_BOTTOMLEFT },  INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
 {"bottom",      "Bottom",      0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_BOTTOM },      INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
 {"log_level_offset", "set the log level offset", OFFSET(log_level_offset), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX },
-{"slices", "set the number of slices, used in parallelized encoding", OFFSET(slices), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, V|E},
-{"thread_type", "select multithreading type", OFFSET(thread_type), AV_OPT_TYPE_FLAGS, {.i64 = FF_THREAD_SLICE|FF_THREAD_FRAME }, 0, INT_MAX, V|A|E|D, "thread_type"},
+{"slices", "number of slices, used in parallelized encoding", OFFSET(slices), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, V|E},
+{"thread_type", "select multithreading type", OFFSET(thread_type), AV_OPT_TYPE_FLAGS, {.i64 = FF_THREAD_SLICE|FF_THREAD_FRAME|FF_THREAD_FRAME_SLICE }, 0, INT_MAX, V|A|E|D, "thread_type"},
 {"slice", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_THREAD_SLICE }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
 {"frame", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_THREAD_FRAME }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
+{"frameslice", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_THREAD_FRAME_SLICE }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
 {"audio_service_type", "audio service type", OFFSET(audio_service_type), AV_OPT_TYPE_INT, {.i64 = AV_AUDIO_SERVICE_TYPE_MAIN }, 0, AV_AUDIO_SERVICE_TYPE_NB-1, A|E, "audio_service_type"},
 {"ma", "Main Audio Service", 0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_MAIN },              INT_MIN, INT_MAX, A|E, "audio_service_type"},
 {"ef", "Effects",            0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_EFFECTS },           INT_MIN, INT_MAX, A|E, "audio_service_type"},

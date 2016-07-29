@@ -532,6 +532,24 @@ static int h264_frame_start(H264Context *h)
     if ((ret = ff_h264_ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
         return ret;
 
+#if SVC_EXTENSION
+           //{int i;
+            if(h->avctx->active_thread_type & FF_THREAD_FRAME){
+                for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
+                    H264Picture *frame = &h->Add_ref[i];
+                    if (frame->f->buf[0])
+                        continue;
+                    ret = ff_h264_ref_picture(h, &h->Add_ref[i], h->cur_pic_ptr);
+                    if (ret < 0)
+                        return ret;
+                    ff_thread_report_il_progress(h->avctx, h->poc_id, &h->Add_ref[i], &h->Add_ref[i]);
+                    break;
+                }
+            if(i==FF_ARRAY_ELEMS(h->Add_ref))
+               av_log(h->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", 0);
+    }
+#endif
+
     for (i = 0; i < h->nb_slice_ctx; i++) {
         h->slice_ctx[i].linesize   = h->cur_pic_ptr->f->linesize[0];
         h->slice_ctx[i].uvlinesize = h->cur_pic_ptr->f->linesize[1];
