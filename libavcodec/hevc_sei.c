@@ -79,9 +79,9 @@ static int decode_pic_timing(HEVCContext *s)
     GetBitContext *gb = &s->HEVClc->gb;
     HEVCSPS *sps;
 
-    if (!s->sps_list[s->active_seq_parameter_set_id])
+    if (!s->ps.sps_list[s->active_seq_parameter_set_id])
         return(AVERROR(ENOMEM));
-    sps = (HEVCSPS*)s->sps_list[s->active_seq_parameter_set_id]->data;
+    sps = (HEVCSPS*)s->ps.sps_list[s->active_seq_parameter_set_id]->data;
     s->picture_struct = AV_PICTURE_STRUCTURE_UNKNOWN;
     if (sps->vui.frame_field_info_present_flag) {
         s->picture_struct = get_bits(gb, 4);

@@ -31,6 +31,7 @@
 #include "cabac.h"
 #include "get_bits.h"
 #include "hevcpred.h"
+#include "h2645_parse.h"
 #include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
@@ -247,8 +248,6 @@ enum PredFlag {
     PF_BI,
 };
 
-
-
 enum IntraPredMode {
     INTRA_PLANAR = 0,
     INTRA_DC,
@@ -337,6 +336,7 @@ typedef struct UpsamplInf {
 typedef struct ShortTermRPS {
     unsigned int num_negative_pics;
     int num_delta_pocs;
+    int rps_idx_num_delta_pocs;
     int32_t delta_poc[32];
     uint8_t used[32];
 } ShortTermRPS;
@@ -408,28 +408,36 @@ typedef struct VUI {
     int log2_max_mv_length_vertical;
 } VUI;
 
-typedef struct PTL {
+typedef struct PTLCommon {
     uint8_t profile_space;
     uint8_t tier_flag;
     uint8_t profile_idc;
     uint8_t profile_compatibility_flag[32];
+    uint8_t level_idc;
     uint8_t progressive_source_flag;
     uint8_t interlaced_source_flag;
     uint8_t non_packed_constraint_flag;
     uint8_t frame_only_constraint_flag;
-    uint8_t level_idc;
+    //PTL Ptl_general;
     uint8_t setProfileIdc;
     uint8_t general_inbld_flag; 
+} PTLCommon;
+
+typedef struct PTL {
+    PTLCommon general_ptl;
+    PTLCommon sub_layer_ptl[MAX_SUB_LAYERS];
+
+    uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
+    uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
+    //PTL Ptl_sublayer[16];
+
+    //uint8_t level_idc;
+    //uint8_t setProfileIdc;
+    //uint8_t general_inbld_flag; 
 } PTL;
 
 
-typedef struct PTLCommon {
-    PTL Ptl_general;
-    uint8_t sub_layer_profile_present_flag[16];
-    uint8_t sub_layer_level_present_flag[16];
-    PTL Ptl_sublayer[16];
 
-} PTLCommon;
 
 enum ChromaFormat
 {
@@ -662,32 +670,25 @@ typedef struct HEVCVPS {
     uint8_t     vps_base_layer_internal_flag;
     uint8_t     vps_base_layer_available_flag;
     uint8_t     vps_nonHEVCBaseLayerFlag;
+    uint8_t vps_temporal_id_nesting_flag;
+    int vps_max_layers;
+    int vps_max_sub_layers; ///< vps_max_temporal_layers_minus1 + 1
 
-    int         vps_max_layers;
-    int         vps_max_sub_layers;
-    
-    uint8_t     vps_temporal_id_nesting_flag;
-    
-    PTLCommon   ptl;
-
+    PTL ptl;
+    int vps_sub_layer_ordering_info_present_flag;
     uint8_t     vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
     uint8_t     vps_num_reorder_pics[MAX_SUB_LAYERS];
     int16_t     vps_max_latency_increase[MAX_SUB_LAYERS];
 
-    uint8_t     vps_max_layer_id;
+    int vps_max_layer_id;
     int16_t     vps_num_layer_sets; ///< vps_num_layer_sets_minus1 + 1
     uint8_t     vps_timing_info_present_flag;
-
-    uint8_t     vps_sub_layer_ordering_info_present_flag; 
     uint32_t    vps_num_units_in_tick;
     uint32_t    vps_time_scale;
     uint8_t     vps_poc_proportional_to_timing_flag;
-
-    uint8_t     layer_id_included_flag[16][16];
-
-
     int         vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int16_t     vps_num_hrd_parameters;
+    uint8_t     layer_id_included_flag[16][16];
     unsigned int hrd_layer_set_idx[16];
     HRDParameter HrdParam;
     int         vps_extension_flag;
@@ -730,7 +731,7 @@ typedef struct HEVCSPS {
     } temporal_layer[MAX_SUB_LAYERS];
 
     VUI vui;
-    PTLCommon ptl;
+    PTL ptl;
 
     uint8_t scaling_list_enable_flag;
     uint8_t m_inferScalingListFlag;
@@ -840,8 +841,6 @@ typedef struct TCom3DAsymLUT {
 
 } TCom3DAsymLUT;
 
-
-
 typedef struct HEVCPPS {
     unsigned int sps_id; ///< seq_parameter_set_id
 
@@ -893,17 +892,15 @@ typedef struct HEVCPPS {
     int log2_parallel_merge_level; ///< log2_parallel_merge_level_minus2 + 2
     int num_extra_slice_header_bits;
     uint8_t slice_header_extension_present_flag;
-
     uint8_t log2_max_transform_skip_block_size;
     uint8_t cross_component_prediction_enabled_flag;
-
-    uint8_t chroma_qp_adjustment_enabled_flag;
+    uint8_t chroma_qp_offset_list_enabled_flag;
     uint8_t  m_ChromaQpAdjTableSize;
     uint8_t  m_MaxCuChromaQpAdjDepth;
-    uint8_t diff_cu_chroma_qp_adjustment_depth;
-    uint8_t chroma_qp_adjustment_table_size_minus1;
-    int8_t  cb_qp_adjustnemt[5];
-    int8_t  cr_qp_adjustnemt[5];
+    uint8_t diff_cu_chroma_qp_offset_depth;
+    uint8_t chroma_qp_offset_list_len_minus1;
+    int8_t  cb_qp_offset_list[5];
+    int8_t  cr_qp_offset_list[5];
     uint8_t sao_luma_bit_shift;
     uint8_t sao_chroma_bit_shift;
 
@@ -911,6 +908,8 @@ typedef struct HEVCPPS {
     // Inferred parameters
     unsigned int *column_width;  ///< ColumnWidth
     unsigned int *row_height;    ///< RowHeight
+    unsigned int *col_bd;        ///< ColBd
+    unsigned int *row_bd;        ///< RowBd
     int *col_idxX;
 
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
@@ -919,7 +918,6 @@ typedef struct HEVCPPS {
     int *tile_pos_rs;       ///< TilePosRS
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
-
 
 
     uint8_t poc_reset_info_present_flag;
@@ -942,6 +940,17 @@ typedef struct HEVCPPS {
     uint8_t m_nCGSOutputBitDepth[MAX_NUM_CHANNEL_TYPE];
 } HEVCPPS;
 
+typedef struct HEVCParamSets {
+    AVBufferRef *vps_list[MAX_VPS_COUNT];
+    AVBufferRef *sps_list[MAX_SPS_COUNT];
+    AVBufferRef *pps_list[MAX_PPS_COUNT];
+
+    /* currently active parameter sets */
+    const HEVCVPS *vps;
+    const HEVCSPS *sps;
+    const HEVCPPS *pps;
+} HEVCParamSets;
+
 typedef struct SliceHeader {
     unsigned int pps_id;
 
@@ -960,8 +969,11 @@ typedef struct SliceHeader {
     uint8_t colour_plane_id;
 
     ///< RPS coded in the slice header itself is stored here
+    int short_term_ref_pic_set_sps_flag;
+    int short_term_ref_pic_set_size;
     ShortTermRPS slice_rps;
     const ShortTermRPS *short_term_rps;
+    int long_term_ref_pic_set_size;
     LongTermRPS long_term_rps;
     unsigned int list_entry_lx[2][32];
 
@@ -1057,7 +1069,7 @@ typedef struct Mv {
 } Mv;
 
 typedef struct MvField {
-    Mv mv[2];
+    DECLARE_ALIGNED(4, Mv, mv)[2];
 #ifdef TEST_MV_POC
     int32_t poc[2];
     uint8_t pred_flag;
@@ -1131,6 +1143,9 @@ typedef struct HEVCFrame {
     AVBufferRef *rpl_tab_buf;
     AVBufferRef *rpl_buf;
 
+    AVBufferRef *hwaccel_priv_buf;
+    void *hwaccel_picture_private;
+
     /**
      * A sequence counter, so that old frames are output first
      * after a POC reset
@@ -1159,13 +1174,7 @@ typedef struct HEVCNAL {
 } HEVCNAL;
 
 typedef struct HEVCLocalContext {
-    GetBitContext       gb;
-    CABACContext        cc;
-    TransformUnit       tu;
     CodingTree          ct;
-    CodingUnit          cu;
-    PredictionUnit      pu;
-    NeighbourAvailable  na;
 #ifdef USE_SAO_SMALL_BUFFER
     uint8_t *sao_pixel_buffer;
 #endif
@@ -1175,11 +1184,15 @@ typedef struct HEVCLocalContext {
 
     uint8_t first_qp_group;
 
+    GetBitContext gb;
+    CABACContext cc;
 
     int8_t qp_y;
     int8_t curr_qp_y;
 
     int qPy_pred;
+
+    TransformUnit tu;
 
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;
@@ -1201,6 +1214,11 @@ typedef struct HEVCLocalContext {
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
 
+    int ct_depth;
+    CodingUnit cu;
+    PredictionUnit pu;
+    NeighbourAvailable na;
+
 #define BOUNDARY_LEFT_SLICE     (1 << 0)
 #define BOUNDARY_LEFT_TILE      (1 << 1)
 #define BOUNDARY_UPPER_SLICE    (1 << 2)
@@ -1218,7 +1236,17 @@ typedef struct HEVCContext {
 
     HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
     HEVCLocalContext    *HEVClc;
+
+    uint8_t             threads_type;
+    uint8_t             threads_number;
+
+    int                 width;
+    int                 height;
+
     uint8_t *cabac_state;
+
+    /** 1 if the independent slice segment header was successfully parsed */
+    uint8_t slice_initialized;
 
     AVFrame *frame;
     AVFrame *output_frame;
@@ -1230,22 +1258,17 @@ typedef struct HEVCContext {
     AVFrame *sao_frame;
 #endif
 
-    const HEVCVPS *vps;
-    const HEVCSPS *sps;
-    const HEVCPPS *pps;
-    AVBufferRef *vps_list[MAX_VPS_COUNT];
-    AVBufferRef *sps_list[MAX_SPS_COUNT];
-    AVBufferRef *pps_list[MAX_PPS_COUNT];
+    HEVCParamSets ps;
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
 
-    SAOParams *sao;
-    DBParams *deblock;
-
     ///< candidate references for the current frame
     RefPicList rps[5+2]; // 2 for inter layer reference pictures
 
+    SliceHeader sh;
+    SAOParams *sao;
+    DBParams *deblock;
     enum NALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
     uint8_t force_first_slice_in_pic;
@@ -1267,11 +1290,12 @@ typedef struct HEVCContext {
 
     int is_decoded;
     int no_rasl_output_flag;
+
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
     BswapDSPContext bdsp;
-    int8_t  *qp_y_tab;
+    int8_t *qp_y_tab;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
 
@@ -1300,6 +1324,7 @@ typedef struct HEVCContext {
     uint16_t seq_decode;
     uint16_t seq_output;
 
+    int enable_parallel_tiles;
     int wpp_err;
     int skipped_bytes;
     int *skipped_bytes_pos;
@@ -1311,6 +1336,7 @@ typedef struct HEVCContext {
 
     const uint8_t *data;
 
+    H2645Packet pkt;
     HEVCNAL *nals;
     int nb_nals;
     int nals_allocated;
@@ -1325,6 +1351,7 @@ typedef struct HEVCContext {
     uint8_t context_initialized;
     uint8_t is_nalff;       ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
+    int apply_defdispwin;
 
 
     AVFrame     *EL_frame;
@@ -1343,7 +1370,6 @@ typedef struct HEVCContext {
 #endif
     int temporal_layer_id;
     int decoder_id;
-    int apply_defdispwin;
     int quality_layer_id;
     int active_seq_parameter_set_id;
 
@@ -1356,15 +1382,25 @@ typedef struct HEVCContext {
     int content_interpretation_type;
     int quincunx_subsampling;
 
+    /** display orientation */
+    int sei_display_orientation_present;
+    int sei_anticlockwise_rotation;
+    int sei_hflip, sei_vflip;
+
     int picture_struct;
     int field_order;
     int interlaced;
 
-    /** 1 if the independent slice segment header was successfully parsed */
-    uint8_t slice_initialized;
+    uint8_t* a53_caption;
+    int a53_caption_size;
 
-    uint8_t threads_type;
-    uint8_t threads_number;
+    /** mastering display */
+    int sei_mastering_display_info_present;
+    uint16_t display_primaries[3][2];
+    uint16_t white_point[2];
+    uint32_t max_mastering_luminance;
+    uint32_t min_mastering_luminance;
+
 #if FRAME_CONCEALMENT
     int prev_display_poc;
     int no_display_pic;
@@ -1380,7 +1416,6 @@ typedef struct HEVCContext {
     int max_slices;
     uint8_t *decoded_rows; 
 #endif
-    SliceHeader sh;
 
 	//uint8_t force_first_slice_in_pic;
 	//int64_t last_frame_pts;
@@ -1388,11 +1423,24 @@ typedef struct HEVCContext {
     int BL_height;
 } HEVCContext;
 
-int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
-                                  const HEVCSPS *sps, int is_slice_header);
-int ff_hevc_decode_nal_vps(HEVCContext *s);
-int ff_hevc_decode_nal_sps(HEVCContext *s);
-int ff_hevc_decode_nal_pps(HEVCContext *s);
+int ff_hevc_decode_short_term_rps(HEVCContext *avctx,
+                                  ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header);
+
+/**
+ * Parse the SPS from the bitstream into the provided HEVCSPS struct.
+ *
+ * @param sps_id the SPS id will be written here
+ * @param apply_defdispwin if set 1, the default display window from the VUI
+ *                         will be applied to the video dimensions
+ * @param vps_list if non-NULL, this function will validate that the SPS refers
+ *                 to an existing VPS
+ */
+int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
+                      int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx);
+
+int ff_hevc_decode_nal_vps(HEVCContext *avctx);
+int ff_hevc_decode_nal_sps(HEVCContext *avctx);
+int ff_hevc_decode_nal_pps(HEVCContext *avctx);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
 
 int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
@@ -1463,6 +1511,7 @@ int ff_hevc_res_scale_sign_flag(HEVCContext *s, int idx);
  * Get the number of candidate references for the current frame.
  */
 int ff_hevc_frame_nb_refs(HEVCContext *s);
+
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc);
 
@@ -1512,6 +1561,19 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int c_idx);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
+
+
+int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
+                           uint8_t *buf, int buf_size);
+
+/**
+ * Reset SEI values that are stored on the Context.
+ * e.g. Caption data that was extracted during NAL
+ * parsing.
+ *
+ * @param s HEVCContext.
+ */
+void ff_hevc_reset_sei(HEVCContext *s);
 void Free3DArray(HEVCPPS * pc3DAsymLUT);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];

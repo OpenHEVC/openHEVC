@@ -69,6 +69,44 @@ static const AVRational vui_sar[] = {
     {  2,   1 },
 };
 
+static void remove_pps(HEVCParamSets *s, int id)
+{
+    if (s->pps_list[id] && s->pps == (const HEVCPPS*)s->pps_list[id]->data)
+        s->pps = NULL;
+    av_buffer_unref(&s->pps_list[id]);
+}
+
+static void remove_sps(HEVCParamSets *s, int id)
+{
+    int i;
+    if (s->sps_list[id]) {
+        if (s->sps == (const HEVCSPS*)s->sps_list[id]->data)
+            s->sps = NULL;
+
+        /* drop all PPS that depend on this SPS */
+        for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
+            if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == id)
+                remove_pps(s, i);
+
+        av_assert0(!(s->sps_list[id] && s->sps == (HEVCSPS*)s->sps_list[id]->data));
+    }
+    av_buffer_unref(&s->sps_list[id]);
+}
+
+static void remove_vps(HEVCParamSets *s, int id)
+{
+    int i;
+    if (s->vps_list[id]) {
+        if (s->vps == (const HEVCVPS*)s->vps_list[id]->data)
+            s->vps = NULL;
+
+        for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
+            if (s->sps_list[i] && ((HEVCSPS*)s->sps_list[i]->data)->vps_id == id)
+                remove_sps(s, i);
+    }
+    av_buffer_unref(&s->vps_list[id]);
+}
+
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
                                   const HEVCSPS *sps, int is_slice_header)
 {
@@ -101,6 +139,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
                 return AVERROR_INVALIDDATA;
             }
             rps_ridx = &sps->st_rps[sps->nb_st_rps - delta_idx];
+            rps->rps_idx_num_delta_pocs = rps_ridx->num_delta_pocs;
         } else
             rps_ridx = &sps->st_rps[rps - sps->st_rps - 1];
 
@@ -199,7 +238,166 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 }
 
 
-static int profile_tier (GetBitContext *gb, PTL *ptl) {
+static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
+                                      PTLCommon *ptl)
+{
+    int i;
+
+    if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 16 + 16 + 12)
+        return -1;
+
+    ptl->profile_space = get_bits(gb, 2);
+    ptl->tier_flag     = get_bits1(gb);
+    ptl->profile_idc   = get_bits(gb, 5);
+    if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN)
+        av_log(avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_10)
+        av_log(avctx, AV_LOG_DEBUG, "Main 10 profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_STILL_PICTURE)
+        av_log(avctx, AV_LOG_DEBUG, "Main Still Picture profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_REXT)
+        av_log(avctx, AV_LOG_DEBUG, "Range Extension profile bitstream\n");
+    else
+        av_log(avctx, AV_LOG_WARNING, "Unknown HEVC profile: %d\n", ptl->profile_idc);
+
+    for (i = 0; i < 32; i++) {
+        ptl->profile_compatibility_flag[i] = get_bits1(gb);
+
+        if (ptl->profile_idc == 0 && i > 0 && ptl->profile_compatibility_flag[i])
+            ptl->profile_idc = i;
+    }
+    ptl->progressive_source_flag    = get_bits1(gb);
+    ptl->interlaced_source_flag     = get_bits1(gb);
+    ptl->non_packed_constraint_flag = get_bits1(gb);
+    ptl->frame_only_constraint_flag = get_bits1(gb);
+
+    skip_bits(gb, 16); // XXX_reserved_zero_44bits[0..15]
+    skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
+    skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
+
+    return 0;
+}
+
+static int parse_ptl(GetBitContext *gb, AVCodecContext *avctx,
+                      PTL *ptl, int max_num_sub_layers)
+{
+    int i;
+    if (decode_profile_tier_level(gb, avctx, &ptl->general_ptl) < 0 ||
+        get_bits_left(gb) < 8 + (8*2 * (max_num_sub_layers - 1 > 0))) {
+        av_log(avctx, AV_LOG_ERROR, "PTL information too short\n");
+        return -1;
+    }
+
+    ptl->general_ptl.level_idc = get_bits(gb, 8);
+
+    for (i = 0; i < max_num_sub_layers - 1; i++) {
+        ptl->sub_layer_profile_present_flag[i] = get_bits1(gb);
+        ptl->sub_layer_level_present_flag[i]   = get_bits1(gb);
+    }
+
+    if (max_num_sub_layers - 1> 0)
+        for (i = max_num_sub_layers - 1; i < 8; i++)
+            skip_bits(gb, 2); // reserved_zero_2bits[i]
+    for (i = 0; i < max_num_sub_layers - 1; i++) {
+        if (ptl->sub_layer_profile_present_flag[i] &&
+            decode_profile_tier_level(gb, avctx, &ptl->sub_layer_ptl[i]) < 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "PTL information for sublayer %i too short\n", i);
+            return -1;
+        }
+        if (ptl->sub_layer_level_present_flag[i]) {
+            if (get_bits_left(gb) < 8) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Not enough data for sublayer %i level_idc\n", i);
+                return -1;
+            } else
+                ptl->sub_layer_ptl[i].level_idc = get_bits(gb, 8);
+        }
+    }
+
+    return 0;
+}
+
+static void decode_sublayer_hrd(GetBitContext *gb, unsigned int nb_cpb,
+                                int subpic_params_present)
+{
+    int i;
+
+    for (i = 0; i < nb_cpb; i++) {
+        get_ue_golomb_long(gb); // bit_rate_value_minus1
+        get_ue_golomb_long(gb); // cpb_size_value_minus1
+
+        if (subpic_params_present) {
+            get_ue_golomb_long(gb); // cpb_size_du_value_minus1
+            get_ue_golomb_long(gb); // bit_rate_du_value_minus1
+        }
+        skip_bits1(gb); // cbr_flag
+    }
+}
+
+static int decode_hrd(GetBitContext *gb, int common_inf_present,
+                       int max_sublayers)
+{
+    int nal_params_present = 0, vcl_params_present = 0;
+    int subpic_params_present = 0;
+    int i;
+
+    if (common_inf_present) {
+        nal_params_present = get_bits1(gb);
+        vcl_params_present = get_bits1(gb);
+
+        if (nal_params_present || vcl_params_present) {
+            subpic_params_present = get_bits1(gb);
+
+            if (subpic_params_present) {
+                skip_bits(gb, 8); // tick_divisor_minus2
+                skip_bits(gb, 5); // du_cpb_removal_delay_increment_length_minus1
+                skip_bits(gb, 1); // sub_pic_cpb_params_in_pic_timing_sei_flag
+                skip_bits(gb, 5); // dpb_output_delay_du_length_minus1
+            }
+
+            skip_bits(gb, 4); // bit_rate_scale
+            skip_bits(gb, 4); // cpb_size_scale
+
+            if (subpic_params_present)
+                skip_bits(gb, 4);  // cpb_size_du_scale
+
+            skip_bits(gb, 5); // initial_cpb_removal_delay_length_minus1
+            skip_bits(gb, 5); // au_cpb_removal_delay_length_minus1
+            skip_bits(gb, 5); // dpb_output_delay_length_minus1
+        }
+    }
+
+    for (i = 0; i < max_sublayers; i++) {
+        int low_delay = 0;
+        unsigned int nb_cpb = 1;
+        int fixed_rate = get_bits1(gb);
+
+        if (!fixed_rate)
+            fixed_rate = get_bits1(gb);
+
+        if (fixed_rate)
+            get_ue_golomb_long(gb);  // elemental_duration_in_tc_minus1
+        else
+            low_delay = get_bits1(gb);
+
+        if (!low_delay) {
+            nb_cpb = get_ue_golomb_long(gb) + 1;
+            if (nb_cpb < 1 || nb_cpb > 32) {
+                av_log(NULL, AV_LOG_ERROR, "nb_cpb %d invalid\n", nb_cpb);
+                return AVERROR_INVALIDDATA;
+            }
+        }
+
+        if (nal_params_present)
+            decode_sublayer_hrd(gb, nb_cpb, subpic_params_present);
+        if (vcl_params_present)
+            decode_sublayer_hrd(gb, nb_cpb, subpic_params_present);
+    }
+    return 0;
+}
+
+static int profile_tier (GetBitContext *gb, PTLCommon *ptl) {
     int j;
     if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 16 + 16 + 12)
         return -1;
@@ -282,16 +480,16 @@ static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParameter *Su
 }
 
 
-static int profile_tier_level(HEVCContext *s, int prPrFlag, PTLCommon *ptl, int maxNumSubLayersMinus1) {
+static int profile_tier_level(HEVCContext *s, int prPrFlag, PTL *ptl, int maxNumSubLayersMinus1) {
     int i;
     GetBitContext   *gb             = &s->HEVClc->gb;
     if(prPrFlag)
-        if (profile_tier(gb, &ptl->Ptl_general) < 0 || get_bits_left(gb) < 8 + 8*2) {
+        if (profile_tier(gb, &ptl->general_ptl) < 0 || get_bits_left(gb) < 8 + 8*2) {
             av_log(s->avctx, AV_LOG_ERROR, "PTL information too short\n");
             return -1;
         }
 
-    ptl->Ptl_general.level_idc = get_bits(gb, 8);
+    ptl->general_ptl.level_idc = get_bits(gb, 8);
     print_cabac("general_level_idc", ptl->Ptl_general.level_idc);
     for( i = 0; i < maxNumSubLayersMinus1; i++ ) {
 #if MULTIPLE_PTL_SUPPORT
@@ -316,13 +514,13 @@ static int profile_tier_level(HEVCContext *s, int prPrFlag, PTLCommon *ptl, int 
 #else
         if( prPrFlag && ptl->sub_layer_profile_present_flag[i] )
 #endif
-            if(profile_tier(gb, &ptl->Ptl_sublayer[i]) < 0) {
+            if(profile_tier(gb, &ptl->sub_layer_ptl[i]) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "PTL information too short\n");
                 return -1;
             }
 
         if( ptl->sub_layer_level_present_flag[i] ) {
-            ptl->Ptl_sublayer[i].level_idc = get_bits(gb, 8);
+            ptl->sub_layer_ptl[i].level_idc = get_bits(gb, 8);
             print_cabac("sub_layer_level_idc", ptl->Ptl_sublayer[i].level_idc);
         }
     }
@@ -1215,13 +1413,13 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         parse_vps_extension(s, vps);
     }
 
-    if (s->vps_list[vps_id] &&
-        !memcmp(s->vps_list[vps_id]->data, vps_buf->data, vps_buf->size)) {
+    if (s->ps.vps_list[vps_id] &&
+        !memcmp(s->ps.vps_list[vps_id]->data, vps_buf->data, vps_buf->size)) {
         av_buffer_unref(&vps_buf);
         av_log(s->avctx, AV_LOG_DEBUG, "ignore VPS duplicated\n");
     } else {
-        av_buffer_unref(&s->vps_list[vps_id]);
-        s->vps_list[vps_id] = vps_buf;
+        av_buffer_unref(&s->ps.vps_list[vps_id]);
+        s->ps.vps_list[vps_id] = vps_buf;
     }
     return 0;
 err:
@@ -1566,13 +1764,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    if (!s->vps_list[sps->vps_id]) {
+    if (!s->ps.vps_list[sps->vps_id]) {
         av_log(s->avctx, AV_LOG_ERROR, "VPS %d does not exist\n",
                sps->vps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    vps = ((HEVCVPS*)s->vps_list[sps->vps_id]->data);
+    vps = ((HEVCVPS*)s->ps.vps_list[sps->vps_id]->data);
     
     if (!s->nuh_layer_id) {
         sps->max_sub_layers = get_bits(gb, 3) + 1;
@@ -2056,12 +2254,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     /* check if this is a repeat of an already parsed SPS, then keep the
      * original one.
      * otherwise drop all PPSes that depend on it */
-    if (s->sps_list[sps_id] &&
-        !memcmp(s->sps_list[sps_id]->data, sps_buf->data, sps_buf->size)) {
+    if (s->ps.sps_list[sps_id] &&
+        !memcmp(s->ps.sps_list[sps_id]->data, sps_buf->data, sps_buf->size)) {
         av_buffer_unref(&sps_buf);
     } else {
-        av_buffer_unref(&s->sps_list[sps_id]);
-        s->sps_list[sps_id] = sps_buf;
+        av_buffer_unref(&s->ps.sps_list[sps_id]);
+        s->ps.sps_list[sps_id] = sps_buf;
     }
     return 0;
 
@@ -2099,26 +2297,26 @@ static int pps_range_extensions(HEVCContext *s, HEVCPPS *pps, HEVCSPS *sps) {
     }
     pps->cross_component_prediction_enabled_flag = get_bits1(gb);
     print_cabac("cross_component_prediction_enabled_flag", pps->cross_component_prediction_enabled_flag);
-    pps->chroma_qp_adjustment_enabled_flag = get_bits1(gb);
-    print_cabac("chroma_qp_adjustment_enabled_flag", pps->chroma_qp_adjustment_enabled_flag);
+    pps->chroma_qp_offset_list_enabled_flag = get_bits1(gb);
+    print_cabac("chroma_qp_offset_list_enabled_flag", pps->chroma_qp_offset_list_enabled_flag);
 
-    if(!pps->chroma_qp_adjustment_enabled_flag) {
+    if(!pps->chroma_qp_offset_list_enabled_flag) {
         pps->m_ChromaQpAdjTableSize  = 0;
         pps->m_MaxCuChromaQpAdjDepth = 0;
     } else {
-        pps->diff_cu_chroma_qp_adjustment_depth= get_ue_golomb_long(gb);
-        print_cabac("diff_cu_chroma_qp_adjustment_depth", pps->diff_cu_chroma_qp_adjustment_depth);
+        pps->diff_cu_chroma_qp_offset_depth= get_ue_golomb_long(gb);
+        print_cabac("diff_cu_chroma_qp_offset_depth", pps->diff_cu_chroma_qp_offset_depth);
 
-        pps->chroma_qp_adjustment_table_size_minus1 = get_ue_golomb_long(gb);
-        print_cabac("chroma_qp_adjustment_table_size_minus1", pps->chroma_qp_adjustment_table_size_minus1);
+        pps->chroma_qp_offset_list_len_minus1 = get_ue_golomb_long(gb);
+        print_cabac("chroma_qp_offset_list_len_minus1", pps->chroma_qp_offset_list_len_minus1);
 
-        for (i= 0; i <= (pps->chroma_qp_adjustment_table_size_minus1 ); i++) {
-            pps->cb_qp_adjustnemt[i] = get_se_golomb_long(gb);
-            print_cabac("cb_qp_adjustnemt[i]", pps->cb_qp_adjustnemt[i]);
-            pps->cr_qp_adjustnemt[i] = get_se_golomb_long(gb);
-            print_cabac("cr_qp_adjustnemt[i]", pps->cr_qp_adjustnemt[i]);
+        for (i= 0; i <= pps->chroma_qp_offset_list_len_minus1; i++) {
+            pps->cb_qp_offset_list[i] = get_se_golomb_long(gb);
+            print_cabac("cb_offset_list[i]", pps->cb_qp_offset_list[i]);
+            pps->cr_qp_offset_list[i] = get_se_golomb_long(gb);
+            print_cabac("cr_qp_offset_list[i]", pps->cr_qp_offset_list[i]);
         }
-        pps->m_ChromaQpAdjTableSize = pps->chroma_qp_adjustment_table_size_minus1 + 1;
+        pps->m_ChromaQpAdjTableSize = pps->chroma_qp_offset_list_len_minus1 + 1;
     }
 
     pps->sao_luma_bit_shift = get_ue_golomb_long(gb);
@@ -2457,12 +2655,12 @@ int ff_hevc_decode_nal_pps(HEVCContext *s) {
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    if (!s->sps_list[pps->sps_id]) {
+    if (!s->ps.sps_list[pps->sps_id]) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS %u does not exist.\n", pps->sps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    sps = (HEVCSPS *)s->sps_list[pps->sps_id]->data;
+    sps = (HEVCSPS *)s->ps.sps_list[pps->sps_id]->data;
 
     pps->dependent_slice_segments_enabled_flag = get_bits1(gb);
     pps->output_flag_present_flag              = get_bits1(gb);
@@ -2669,7 +2867,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s) {
         print_cabac("pps_range_extensions_flag",     pps_range_extensions_flag);
         print_cabac("pps_multilayer_extension_flag", pps_multilayer_extension_flag);
         print_cabac("pps_extension_6bits",           pps_extension_6bits);
-        if (sps->ptl.Ptl_general.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
+        if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "PPS extension flag is partially implemented.\n");
             pps_range_extensions(s, pps, sps);
@@ -2819,8 +3017,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s) {
 
     av_freep(&col_bd);
     av_freep(&row_bd);
-    av_buffer_unref(&s->pps_list[pps_id]);
-    s->pps_list[pps_id] = pps_buf;
+    av_buffer_unref(&s->ps.pps_list[pps_id]);
+    s->ps.pps_list[pps_id] = pps_buf;
     return 0;
 
 err:

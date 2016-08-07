@@ -242,6 +242,7 @@ libavutil/hmac.c
 libavutil/sha512.c
 libavutil/tree.c
 libavutil/lfg.c
+libavutil/mastering_display_metadata.c
     gpac/modules/openhevc_dec/openHevcWrapper.c
     libavformat/allformats.c
     libavformat/avio.c

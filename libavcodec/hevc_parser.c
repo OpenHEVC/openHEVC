@@ -236,33 +236,33 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             }
 
             sh->pps_id = get_ue_golomb(gb);
-            if (sh->pps_id >= MAX_PPS_COUNT || !h->pps_list[sh->pps_id]) {
+            if (sh->pps_id >= MAX_PPS_COUNT || !h->ps.pps_list[sh->pps_id]) {
                 av_log(h->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
                 return AVERROR_INVALIDDATA;
             }
-            h->pps = (HEVCPPS*)h->pps_list[sh->pps_id]->data;
+            h->ps.pps = (HEVCPPS*)h->ps.pps_list[sh->pps_id]->data;
 
-            if (h->pps->sps_id >= MAX_SPS_COUNT || !h->sps_list[h->pps->sps_id]) {
-                av_log(h->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", h->pps->sps_id);
+            if (h->ps.pps->sps_id >= MAX_SPS_COUNT || !h->ps.sps_list[h->ps.pps->sps_id]) {
+                av_log(h->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", h->ps.pps->sps_id);
                 return AVERROR_INVALIDDATA;
             }
-            if (h->sps != (HEVCSPS*)h->sps_list[h->pps->sps_id]->data) {
-                h->sps = (HEVCSPS*)h->sps_list[h->pps->sps_id]->data;
-                h->vps = (HEVCVPS*)h->vps_list[h->sps->vps_id]->data;
+            if (h->ps.sps != (HEVCSPS*)h->ps.sps_list[h->ps.pps->sps_id]->data) {
+                h->ps.sps = (HEVCSPS*)h->ps.sps_list[h->ps.pps->sps_id]->data;
+                h->ps.vps = (HEVCVPS*)h->ps.vps_list[h->ps.sps->vps_id]->data;
             }
 
             if (!sh->first_slice_in_pic_flag) {
                 int slice_address_length;
 
-                if (h->pps->dependent_slice_segments_enabled_flag)
+                if (h->ps.pps->dependent_slice_segments_enabled_flag)
                     sh->dependent_slice_segment_flag = get_bits1(gb);
                 else
                     sh->dependent_slice_segment_flag = 0;
 
-                slice_address_length = av_ceil_log2_c(h->sps->ctb_width *
-                                                      h->sps->ctb_height);
+                slice_address_length = av_ceil_log2_c(h->ps.sps->ctb_width *
+                                                      h->ps.sps->ctb_height);
                 sh->slice_segment_addr = get_bits(gb, slice_address_length);
-                if (sh->slice_segment_addr >= h->sps->ctb_width * h->sps->ctb_height) {
+                if (sh->slice_segment_addr >= h->ps.sps->ctb_width * h->ps.sps->ctb_height) {
                     av_log(h->avctx, AV_LOG_ERROR, "Invalid slice segment address: %u.\n",
                            sh->slice_segment_addr);
                     return AVERROR_INVALIDDATA;
@@ -273,7 +273,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             if (sh->dependent_slice_segment_flag)
                 break;
 
-            for (i = 0; i < h->pps->num_extra_slice_header_bits; i++)
+            for (i = 0; i < h->ps.pps->num_extra_slice_header_bits; i++)
                 skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
 
             sh->slice_type = get_ue_golomb(gb);
@@ -287,14 +287,14 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
                            sh->slice_type == P_SLICE ? AV_PICTURE_TYPE_P :
                                                        AV_PICTURE_TYPE_I;
 
-            if (h->pps->output_flag_present_flag)
+            if (h->ps.pps->output_flag_present_flag)
                 sh->pic_output_flag = get_bits1(gb);
 
-            if (h->sps->separate_colour_plane_flag)
+            if (h->ps.sps->separate_colour_plane_flag)
                 sh->colour_plane_id = get_bits(gb, 2);
 
             if (!IS_IDR(h)) {
-                sh->pic_order_cnt_lsb = get_bits(gb, h->sps->log2_max_poc_lsb);
+                sh->pic_order_cnt_lsb = get_bits(gb, h->ps.sps->log2_max_poc_lsb);
                 s->output_picture_number = h->poc = ff_hevc_compute_poc(h, sh->pic_order_cnt_lsb);
             } else
                 s->output_picture_number = h->poc = 0;
@@ -411,12 +411,12 @@ static void hevc_close(AVCodecParserContext *s)
     av_freep(&h->HEVClc);
     av_freep(&pc->buffer);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(h->vps_list); i++)
-        av_buffer_unref(&h->vps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(h->sps_list); i++)
-        av_buffer_unref(&h->sps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(h->pps_list); i++)
-        av_buffer_unref(&h->pps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(h->ps.vps_list); i++)
+        av_buffer_unref(&h->ps.vps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(h->ps.sps_list); i++)
+        av_buffer_unref(&h->ps.sps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(h->ps.pps_list); i++)
+        av_buffer_unref(&h->ps.pps_list[i]);
 
     for (i = 0; i < h->nals_allocated; i++)
         av_freep(&h->nals[i].rbsp_buffer);
