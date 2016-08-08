@@ -27,9 +27,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/time.h"
 
-//#include "libavformat/os_support.h" //TMP_DEV_PL
-//#include "config.h"
-
 int ff_tls_init(void)
 {
 #if CONFIG_TLS_OPENSSL_PROTOCOL

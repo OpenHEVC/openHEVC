@@ -26,9 +26,9 @@
 #include "libavutil/avassert.h"
 #include "os_support.h"
 #include "avformat.h"
-//#if CONFIG_NETWORK
-//#include "network.h"
-//#endif
+#if CONFIG_NETWORK
+#include "network.h"
+#endif
 #include "url.h"
 
 /** @name Logging context. */

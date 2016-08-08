@@ -26,6 +26,8 @@
 #include "get_bits.h"
 #include "put_bits.h"
 
+#include "libavutil/internal.h" //TMP_DEV_PL
+
 typedef struct MPEG4AudioConfig {
     int object_type;
     int sampling_index;
@@ -41,7 +43,7 @@ typedef struct MPEG4AudioConfig {
     int frame_length_short;
 } MPEG4AudioConfig;
 
-extern /*av_export*/ const int avpriv_mpeg4audio_sample_rates[16];
+extern av_export const int avpriv_mpeg4audio_sample_rates[16];
 extern const uint8_t ff_mpeg4audio_channels[8];
 
 /**

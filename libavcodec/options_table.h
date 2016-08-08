@@ -30,9 +30,6 @@
 #include "avcodec.h"
 #include "version.h"
 
-#define EDGE_WIDTH 32
-#define CODEC_FLAG_EMU_EDGE 1
-
 #define OFFSET(x) offsetof(AVCodecContext,x)
 #define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
