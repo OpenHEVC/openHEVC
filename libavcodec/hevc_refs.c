@@ -479,7 +479,7 @@ static void scale_upsampled_mv_field(AVCodecContext *avctxt, void *input_ctb_row
     HEVCContext *s = avctxt->priv_data;
 
     int *index   = input_ctb_row, i, list;
-    int ctb_size = 1 << s->sps->log2_ctb_size;
+    int ctb_size = 1 << s->ps.sps->log2_ctb_size;
     int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
 
     
@@ -502,7 +502,7 @@ static void scale_upsampled_mv_field(AVCodecContext *avctxt, void *input_ctb_row
             }
         }
     }
-    for(i=0; i < s->sps->ctb_width; i++)
+    for(i=0; i < s->ps.sps->ctb_width; i++)
         ff_upscale_mv_block(s,  i*ctb_size, start);
 }
 #endif
@@ -728,13 +728,13 @@ int ff_hevc_frame_rps(HEVCContext *s)
         if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) &&
             s->ps.sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
-            int *arg, *ret, cmpt = (s->sps->ctb_height);
+            int *arg, *ret, cmpt = (s->ps.sps->ctb_height);
 
             arg = av_malloc(cmpt*sizeof(int));
             ret = av_malloc(cmpt*sizeof(int));
             for(i=0; i < cmpt; i++)
                 arg[i] = i;
-            if(!s->vps->vps_nonHEVCBaseLayerFlag)
+            if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
                 s->avctx->execute(s->avctx, (void *) scale_upsampled_mv_field, arg, ret, cmpt, sizeof(int));//fixme: AVC BL can't be upsampled
             av_free(arg);
             av_free(ret);

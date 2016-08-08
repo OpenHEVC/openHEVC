@@ -118,6 +118,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     int log2_min_cb_size = sps->log2_min_cb_size;
     int width            = sps->width;
     int height           = sps->height;
+    int pic_size=width*height;
     int pic_size_in_ctb  = ((width  >> log2_min_cb_size) + 1) *
                            ((height >> log2_min_cb_size) + 1);
     int ctb_count        = sps->ctb_width * sps->ctb_height;
@@ -525,8 +526,8 @@ int set_el_parameter(HEVCContext *s) {
 #if !ACTIVE_PU_UPSAMPLING //fixme : was this intended to avc base layer??
     if(s->ps.pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
       av_frame_unref(s->Ref_color_mapped_frame);
-      s->Ref_color_mapped_frame->coded_width  = s->Ref_color_mapped_frame->width  = widthBL;
-      s->Ref_color_mapped_frame->coded_height = s->Ref_color_mapped_frame->height = heightBL;
+      s->Ref_color_mapped_frame->width  = s->BL_height;
+      s->Ref_color_mapped_frame->height = s->BL_height;
       ret = ff_get_buffer(s->avctx, s->Ref_color_mapped_frame, AV_GET_BUFFER_FLAG_REF);
       if(ret < 0)
         av_log(s->avctx, AV_LOG_ERROR, "Error in CGS allocation \n");

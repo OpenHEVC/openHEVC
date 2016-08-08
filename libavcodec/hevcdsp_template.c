@@ -2119,7 +2119,7 @@ static void FUNC(upsample_filter_block_cr_v_x1_5)( uint8_t *_dst, ptrdiff_t dsts
 static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFrame *FrameBL, short *Buffer[3], const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info, int channel)
 {
     int i,j, k;
-    
+
     int widthBL =  FrameBL->width;
     int heightBL = FrameBL->height;
     int strideBL = FrameBL->linesize[0]/sizeof(pixel);
