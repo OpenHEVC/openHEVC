@@ -107,18 +107,15 @@ static void remove_vps(HEVCParamSets *s, int id)
     av_buffer_unref(&s->vps_list[id]);
 }
 
-int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
-                                  const HEVCSPS *sps, int is_slice_header)
+int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
+                                  ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header)
 {
-    HEVCLocalContext *lc = s->HEVClc;
     uint8_t rps_predict = 0;
     int delta_poc;
     int k0 = 0;
     int k1 = 0;
     int k  = 0;
     int i;
-
-    GetBitContext *gb = &lc->gb;
 
     if (rps != sps->st_rps && sps->nb_st_rps)
         rps_predict = get_bits1(gb);
@@ -133,7 +130,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
         if (is_slice_header) {
             unsigned int delta_idx = get_ue_golomb_long(gb) + 1;
             if (delta_idx > sps->nb_st_rps) {
-                av_log(s->avctx, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "Invalid value of delta_idx in slice header RPS: %d > %d.\n",
                        delta_idx, sps->nb_st_rps);
                 return AVERROR_INVALIDDATA;
@@ -146,7 +143,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
         delta_rps_sign = get_bits1(gb);
         abs_delta_rps  = get_ue_golomb_long(gb) + 1;
         if (abs_delta_rps < 1 || abs_delta_rps > 32768) {
-            av_log(s->avctx, AV_LOG_ERROR,
+            av_log(avctx, AV_LOG_ERROR,
                    "Invalid value of abs_delta_rps: %d\n",
                    abs_delta_rps);
             return AVERROR_INVALIDDATA;
@@ -212,7 +209,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 
         if (rps->num_negative_pics >= MAX_REFS ||
             nb_positive_pics >= MAX_REFS) {
-            av_log(s->avctx, AV_LOG_ERROR, "Too many refs in a short term RPS.\n");
+            av_log(avctx, AV_LOG_ERROR, "Too many refs in a short term RPS.\n");
             return AVERROR_INVALIDDATA;
         }
 
@@ -2103,7 +2100,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         goto err;
     }
     for (i = 0; i < sps->nb_st_rps; i++) {
-        if ((ret = ff_hevc_decode_short_term_rps(s, &sps->st_rps[i],
+        if ((ret = ff_hevc_decode_short_term_rps(gb, s->avctx, &sps->st_rps[i],
                                                  sps, 0)) < 0)
             goto err;
     }

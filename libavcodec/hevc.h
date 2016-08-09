@@ -1423,7 +1423,7 @@ typedef struct HEVCContext {
     int BL_height;
 } HEVCContext;
 
-int ff_hevc_decode_short_term_rps(HEVCContext *avctx,
+int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
                                   ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header);
 
 /**

@@ -351,6 +351,52 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
+static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
+                                 const HEVCSPS *sps)
+{
+    const HEVCVPS *vps = (const HEVCVPS*)ps->vps_list[sps->vps_id]->data;
+    unsigned int num = 0, den = 0;
+
+    avctx->pix_fmt             = sps->pix_fmt;
+    avctx->coded_width         = sps->width;
+    avctx->coded_height        = sps->height;
+    avctx->width               = sps->output_width;
+    avctx->height              = sps->output_height;
+    avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
+    avctx->profile             = sps->ptl.general_ptl.profile_idc;
+    avctx->level               = sps->ptl.general_ptl.level_idc;
+
+    ff_set_sar(avctx, sps->vui.sar);
+
+    if (sps->vui.video_signal_type_present_flag)
+        avctx->color_range = sps->vui.video_full_range_flag ? AVCOL_RANGE_JPEG
+                                                            : AVCOL_RANGE_MPEG;
+    else
+        avctx->color_range = AVCOL_RANGE_MPEG;
+
+    if (sps->vui.colour_description_present_flag) {
+        avctx->color_primaries = sps->vui.colour_primaries;
+        avctx->color_trc       = sps->vui.transfer_characteristic;
+        avctx->colorspace      = sps->vui.matrix_coeffs;
+    } else {
+        avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
+        avctx->color_trc       = AVCOL_TRC_UNSPECIFIED;
+        avctx->colorspace      = AVCOL_SPC_UNSPECIFIED;
+    }
+
+    if (vps->vps_timing_info_present_flag) {
+        num = vps->vps_num_units_in_tick;
+        den = vps->vps_time_scale;
+    } else if (sps->vui.vui_timing_info_present_flag) {
+        num = sps->vui.vui_num_units_in_tick;
+        den = sps->vui.vui_time_scale;
+    }
+
+    if (num != 0 && den != 0)
+        av_reduce(&avctx->framerate.den, &avctx->framerate.num,
+                  num, den, 1 << 30);
+}
+
 static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
 {
     int ret, i;
@@ -370,7 +416,7 @@ static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
     return 0;
 }
 
-static int set_sps(HEVCContext *s, const HEVCSPS *sps)
+static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fmt)
 {
     int ret;
     unsigned int num = 0, den = 0;
@@ -386,35 +432,13 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     if (ret < 0)
         goto fail;
 
-    s->avctx->coded_width         = sps->width;
-    s->avctx->coded_height        = sps->height;
-    s->avctx->width               = sps->output_width;
-    s->avctx->height              = sps->output_height;
-    s->avctx->pix_fmt             = sps->pix_fmt;
-    s->avctx->sample_aspect_ratio = sps->vui.sar;
-    s->avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
-
-    if (sps->vui.video_signal_type_present_flag)
-        s->avctx->color_range = sps->vui.video_full_range_flag ? AVCOL_RANGE_JPEG
-                                                               : AVCOL_RANGE_MPEG;
-    else
-        s->avctx->color_range = AVCOL_RANGE_MPEG;
-
-    if (sps->vui.colour_description_present_flag) {
-        s->avctx->color_primaries = sps->vui.colour_primaries;
-        s->avctx->color_trc       = sps->vui.transfer_characteristic;
-        s->avctx->colorspace      = sps->vui.matrix_coeffs;
-    } else {
-        s->avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
-        s->avctx->color_trc       = AVCOL_TRC_UNSPECIFIED;
-        s->avctx->colorspace      = AVCOL_SPC_UNSPECIFIED;
-    }
+    export_stream_params(s->avctx, &s->ps, sps);
 
     ff_hevc_pred_init(&s->hpc,     sps->bit_depth[CHANNEL_TYPE_LUMA]);
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth[CHANNEL_TYPE_LUMA]);
     ff_videodsp_init (&s->vdsp,    sps->bit_depth[CHANNEL_TYPE_LUMA]);
 
-    if (sps->sao_enabled) {
+    if (sps->sao_enabled && !s->avctx->hwaccel) {
 #ifdef USE_SAO_SMALL_BUFFER
         {
             int ctb_size = 1 << sps->log2_ctb_size;
@@ -448,17 +472,6 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     s->ps.sps = sps;
     s->ps.vps = (HEVCVPS*) s->ps.vps_list[s->ps.sps->vps_id]->data;
 
-    if (s->ps.vps->vps_timing_info_present_flag) {
-        num = s->ps.vps->vps_num_units_in_tick;
-        den = s->ps.vps->vps_time_scale;
-    } else if (sps->vui.vui_timing_info_present_flag) {
-        num = sps->vui.vui_num_units_in_tick;
-        den = sps->vui.vui_time_scale;
-    }
-
-    if (num != 0 && den != 0)
-        av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
-                  num, den, 1 << 30);
     return 0;
 
 fail:
@@ -671,7 +684,7 @@ static int hls_slice_header(HEVCContext *s)
                 sh->no_output_of_prior_pics_flag = 0;
         }
         ff_hevc_clear_refs(s);
-        ret = set_sps(s, s->ps.sps/*, AV_PIX_FMT_NONE*/);
+        ret = set_sps(s, s->ps.sps, AV_PIX_FMT_NONE);
         if (ret < 0)
             return ret;
 
@@ -807,7 +820,7 @@ else
             pos = get_bits_left(gb);
             print_cabac("short_term_ref_pic_set_sps_flag", short_term_ref_pic_set_sps_flag);
             if (!sh->short_term_ref_pic_set_sps_flag) {
-                ret = ff_hevc_decode_short_term_rps(s, &sh->slice_rps, s->ps.sps, 1);
+                ret = ff_hevc_decode_short_term_rps(gb, s->avctx, &sh->slice_rps, s->ps.sps, 1);
                 if (ret < 0)
                     return ret;
 
@@ -2888,6 +2901,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
 
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->ps.sps->log2_ctb_size, 0);
+
         if (more_data < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
             avpriv_atomic_int_set(&s1->wpp_err,  1);
@@ -2922,6 +2936,104 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
 
     return ctb_addr_ts;
+}
+
+static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
+{
+    const uint8_t *data = nal->data;
+    int length          = nal->size;
+    HEVCLocalContext *lc = s->HEVClc;
+    int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
+    int *arg = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
+    int64_t offset;
+    int64_t startheader, cmpt = 0;
+    int i, j, res = 0;
+
+    if (!ret || !arg) {
+        av_free(ret);
+        av_free(arg);
+        return AVERROR(ENOMEM);
+    }
+
+    if (s->sh.slice_ctb_addr_rs + s->sh.num_entry_point_offsets * s->ps.sps->ctb_width >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
+        av_log(s->avctx, AV_LOG_ERROR, "WPP ctb addresses are wrong (%d %d %d %d)\n",
+            s->sh.slice_ctb_addr_rs, s->sh.num_entry_point_offsets,
+            s->ps.sps->ctb_width, s->ps.sps->ctb_height
+        );
+        res = AVERROR_INVALIDDATA;
+        goto error;
+    }
+
+    ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
+
+    if (!s->sList[1]) {
+        for (i = 1; i < s->threads_number; i++) {
+            s->sList[i] = av_malloc(sizeof(HEVCContext));
+            memcpy(s->sList[i], s, sizeof(HEVCContext));
+            s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
+            s->sList[i]->HEVClc = s->HEVClcList[i];
+        }
+    }
+
+    offset = (lc->gb.index >> 3);
+
+    for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < nal->skipped_bytes; j++) {
+        if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
+            startheader--;
+            cmpt++;
+        }
+    }
+
+    for (i = 1; i < s->sh.num_entry_point_offsets; i++) {
+        offset += (s->sh.entry_point_offset[i - 1] - cmpt);
+        for (j = 0, cmpt = 0, startheader = offset
+             + s->sh.entry_point_offset[i]; j < nal->skipped_bytes; j++) {
+            if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
+                startheader--;
+                cmpt++;
+            }
+        }
+        s->sh.size[i - 1] = s->sh.entry_point_offset[i] - cmpt;
+        s->sh.offset[i - 1] = offset;
+
+    }
+    if (s->sh.num_entry_point_offsets != 0) {
+        offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
+        if (length < offset) {
+            av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
+            res = AVERROR_INVALIDDATA;
+            goto error;
+        }
+        s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
+        s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
+
+    }
+    s->data = data;
+
+    for (i = 1; i < s->threads_number; i++) {
+        s->sList[i]->HEVClc->first_qp_group = 1;
+        s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
+        memcpy(s->sList[i], s, sizeof(HEVCContext));
+        s->sList[i]->HEVClc = s->HEVClcList[i];
+    }
+
+    avpriv_atomic_int_set(&s->wpp_err, 0);
+    ff_reset_entries(s->avctx);
+
+    for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
+        arg[i] = i;
+        ret[i] = 0;
+    }
+
+    if (s->ps.pps->entropy_coding_sync_enabled_flag)
+        s->avctx->execute2(s->avctx, hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
+
+    for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
+        res += ret[i];
+error:
+    av_free(ret);
+    av_free(arg);
+    return res;
 }
 
 static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, int job, int self_id)
@@ -3155,6 +3267,82 @@ static int set_side_data(HEVCContext *s)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
     }
 
+    if (s->sei_display_orientation_present &&
+        (s->sei_anticlockwise_rotation || s->sei_hflip || s->sei_vflip)) {
+        double angle = s->sei_anticlockwise_rotation * 360 / (double) (1 << 16);
+        AVFrameSideData *rotation = av_frame_new_side_data(out,
+                                                           AV_FRAME_DATA_DISPLAYMATRIX,
+                                                           sizeof(int32_t) * 9);
+        if (!rotation)
+            return AVERROR(ENOMEM);
+
+        av_display_rotation_set((int32_t *)rotation->data, angle);
+        av_display_matrix_flip((int32_t *)rotation->data,
+                               s->sei_hflip, s->sei_vflip);
+    }
+
+    // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
+    // so the side data persists for the entire coded video sequence.
+    if (s->sei_mastering_display_info_present > 0 &&
+        IS_IRAP(s) && s->no_rasl_output_flag) {
+        s->sei_mastering_display_info_present--;
+    }
+    if (s->sei_mastering_display_info_present) {
+        // HEVC uses a g,b,r ordering, which we convert to a more natural r,g,b
+        const int mapping[3] = {2, 0, 1};
+        const int chroma_den = 50000;
+        const int luma_den = 10000;
+        int i;
+        AVMasteringDisplayMetadata *metadata =
+            av_mastering_display_metadata_create_side_data(out);
+        if (!metadata)
+            return AVERROR(ENOMEM);
+
+        for (i = 0; i < 3; i++) {
+            const int j = mapping[i];
+            metadata->display_primaries[i][0].num = s->display_primaries[j][0];
+            metadata->display_primaries[i][0].den = chroma_den;
+            metadata->display_primaries[i][1].num = s->display_primaries[j][1];
+            metadata->display_primaries[i][1].den = chroma_den;
+        }
+        metadata->white_point[0].num = s->white_point[0];
+        metadata->white_point[0].den = chroma_den;
+        metadata->white_point[1].num = s->white_point[1];
+        metadata->white_point[1].den = chroma_den;
+
+        metadata->max_luminance.num = s->max_mastering_luminance;
+        metadata->max_luminance.den = luma_den;
+        metadata->min_luminance.num = s->min_mastering_luminance;
+        metadata->min_luminance.den = luma_den;
+        metadata->has_luminance = 1;
+        metadata->has_primaries = 1;
+
+        av_log(s->avctx, AV_LOG_DEBUG, "Mastering Display Metadata:\n");
+        av_log(s->avctx, AV_LOG_DEBUG,
+               "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f)\n",
+               av_q2d(metadata->display_primaries[0][0]),
+               av_q2d(metadata->display_primaries[0][1]),
+               av_q2d(metadata->display_primaries[1][0]),
+               av_q2d(metadata->display_primaries[1][1]),
+               av_q2d(metadata->display_primaries[2][0]),
+               av_q2d(metadata->display_primaries[2][1]),
+               av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]));
+        av_log(s->avctx, AV_LOG_DEBUG,
+               "min_luminance=%f, max_luminance=%f\n",
+               av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
+    }
+
+    if (s->a53_caption) {
+        AVFrameSideData* sd = av_frame_new_side_data(out,
+                                                     AV_FRAME_DATA_A53_CC,
+                                                     s->a53_caption_size);
+        if (sd)
+            memcpy(sd->data, s->a53_caption, s->a53_caption_size);
+        av_freep(&s->a53_caption);
+        s->a53_caption_size = 0;
+        s->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+    }
+
     return 0;
 }
 
@@ -3267,6 +3455,8 @@ static int hevc_frame_start(HEVCContext *s)
         goto fail;
     }
 
+    s->ref->frame->key_frame = IS_IRAP(s);
+
     ret = set_side_data(s);
     if (ret < 0)
         goto fail;
@@ -3280,7 +3470,10 @@ static int hevc_frame_start(HEVCContext *s)
     ret = ff_hevc_output_frame(s, s->output_frame, 0);
     if (ret < 0)
         goto fail;
-    ff_thread_finish_setup(s->avctx);
+
+    if (!s->avctx->hwaccel)
+        ff_thread_finish_setup(s->avctx);
+
     return 0;
 
 fail:
@@ -3453,31 +3646,44 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
                     av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
             }
 #endif
-        ctb_addr_ts = hls_slice_data(s, nal, length);
+        if (s->sh.first_slice_in_pic_flag && s->avctx->hwaccel) {
+            ret = s->avctx->hwaccel->start_frame(s->avctx, NULL, 0);
+            if (ret < 0)
+                goto fail;
+        }
 
-        if (ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height)) {
-            s->is_decoded = 1;
-            if (s->ps.pps->tiles_enabled_flag && s->threads_number!=1)
-                tiles_filters(s);
+        if (s->avctx->hwaccel) {
+            av_log(s->avctx, AV_LOG_WARNING, "Hardware acceleration not handled yet");
+            //ret = s->avctx->hwaccel->decode_slice(s->avctx, nal->raw_data, nal->raw_size);
+            //if (ret < 0)
+                goto fail;
+        } else {
+            //if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
+            //    ctb_addr_ts = hls_slice_data_wpp(s, nal);
+            //else
+                ctb_addr_ts = hls_slice_data(s, nal, length);
+            if (ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height)) {
+                s->is_decoded = 1;
+                if (s->ps.pps->tiles_enabled_flag && s->threads_number!=1)
+                    tiles_filters(s);
 #if !ACTIVE_PU_UPSAMPLING
-            if (s->bl_decoder_el_exist) {
-                int i;
-                s->bl_decoder_el_exist = 0;
-                for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
-                    HEVCFrame *frame = &s->Add_ref[i];
-                    if (frame->frame->buf[0])
-                        continue;
-                    ret = hevc_ref_frame(s, &s->Add_ref[i], s->ref);
-                    if (ret < 0)
-                        return ret;
-                    ff_thread_report_il_progress(s->avctx, s->poc_id, &s->Add_ref[i], s->ref);
-                    break;
+                if (s->bl_decoder_el_exist) {
+                    int i;
+                    s->bl_decoder_el_exist = 0;
+                    for (i = 0; i < FF_ARRAY_ELEMS(s->Add_ref); i++) {
+                        HEVCFrame *frame = &s->Add_ref[i];
+                        if (frame->frame->buf[0])
+                            continue;
+                        ret = hevc_ref_frame(s, &s->Add_ref[i], s->ref);
+                        if (ret < 0)
+                            return ret;
+                        ff_thread_report_il_progress(s->avctx, s->poc_id, &s->Add_ref[i], s->ref);
+                        break;
+                    }
+                    if(i==FF_ARRAY_ELEMS(s->Add_ref))
+                        av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
                 }
-                if(i==FF_ARRAY_ELEMS(s->Add_ref))
-                    av_log(s->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", s->decoder_id);
-            }
 #endif
-
             if(s->decoder_id > 0)
                 ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
         }
@@ -3486,6 +3692,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             ret = ctb_addr_ts;
             goto fail;
         }
+    }
         break;
     case NAL_EOS_NUT:
     case NAL_EOB_NUT:
@@ -3987,7 +4194,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 }
 
 
-
 static av_cold int hevc_decode_free(AVCodecContext *avctx)
 {
     HEVCContext       *s = avctx->priv_data;
@@ -4006,6 +4212,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for(i=0; i < s->nals_allocated; i++) {
         av_freep(&s->skipped_bytes_pos_nal[i]);
     }
+
+    av_freep(&s->cabac_state);
 
     av_freep(&s->skipped_bytes_pos_size_nal);
     av_freep(&s->skipped_bytes_nal);
@@ -4240,7 +4448,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->interlaced           = s0->interlaced;
 
     if (s->ps.sps != s0->ps.sps)
-        ret = set_sps(s, s0->ps.sps);
+        ret = set_sps(s, s0->ps.sps, src->pix_fmt);
 
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
@@ -4386,10 +4594,12 @@ static const AVProfile profiles[] = {
 };
 
 static const AVOption options[] = {
+    { "apply_defdispwin", "Apply default display window from VUI", OFFSET(apply_defdispwin),
+        AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, PAR },
     { "decode-checksum", "decode picture checksum SEI message", OFFSET(decode_checksum_sei),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "strict-displaywin", "stricly apply default display window size", OFFSET(apply_defdispwin),
-        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
+        AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, PAR },
     { "decoder-id", "set the decoder id", OFFSET(decoder_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "temporal-layer-id", "set the max temporal id", OFFSET(temporal_layer_id),
