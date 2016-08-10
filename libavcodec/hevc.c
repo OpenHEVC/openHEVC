@@ -3516,17 +3516,18 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
     s->nuh_layer_id = ret;
     switch (s->nal_unit_type) {
     case NAL_VPS:
-        ret = ff_hevc_decode_nal_vps(s);
+        ret = ff_hevc_decode_nal_vps(gb, s->avctx, &s->ps);
         if (ret < 0)
             goto fail;
         break;
     case NAL_SPS:
-        ret = ff_hevc_decode_nal_sps(s);
+        ret = ff_hevc_decode_nal_sps(gb, s->avctx, &s->ps,
+                                     s->apply_defdispwin, s->nuh_layer_id);
         if (ret < 0)
             goto fail;
         break;
     case NAL_PPS:
-        ret = ff_hevc_decode_nal_pps(s);
+        ret = ff_hevc_decode_nal_pps(gb, s->avctx, &s->ps);
         if (ret < 0)
             goto fail;
         break;

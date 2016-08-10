@@ -294,13 +294,13 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
         switch (h->nal_unit_type) {
         case NAL_VPS:
-            ff_hevc_decode_nal_vps(h);
+            ff_hevc_decode_nal_vps(gb, avctx, ps);
             break;
         case NAL_SPS:
-            ff_hevc_decode_nal_sps(h);
+            ff_hevc_decode_nal_sps(gb, avctx, ps, 1, h->nuh_layer_id);
             break;
         case NAL_PPS:
-            ff_hevc_decode_nal_pps(h);
+            ff_hevc_decode_nal_pps(gb, avctx, ps);
             break;
         case NAL_SEI_PREFIX:
         case NAL_SEI_SUFFIX:
