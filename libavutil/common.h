@@ -44,6 +44,8 @@
 #include "version.h"
 #include "libavutil/avconfig.h"
 
+#include "intmath.h" //TMP_DEV_PL
+
 #if AV_HAVE_BIGENDIAN
 #   define AV_NE(be, le) (be)
 #else

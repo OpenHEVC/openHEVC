@@ -608,7 +608,7 @@ typedef struct DPBSize {
 } DPBSize;
 
 typedef struct HEVCVPSExt {
-    PTLCommon   ptl[16];
+    PTL   ptl[16];
     uint8_t     splitting_flag;
     uint8_t     scalability_mask[16];
     uint8_t     dimension_id_len[16];

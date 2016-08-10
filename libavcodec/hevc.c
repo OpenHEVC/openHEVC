@@ -513,11 +513,11 @@ int set_el_parameter(HEVCContext *s) {
     const int phaseHorLuma = 0;
     const int phaseVerLuma = 0, refLayer = 0;
     HEVCWindow scaled_ref_layer_window;
-    HEVCVPS *vps = s->ps.vps;
-    if(vps){
+    //HEVCVPS *vps = s->ps.vps;
+    if(s->ps.vps){
       HEVCWindow base_layer_window = s->ps.pps->ref_window[((HEVCVPS*)s->ps.vps_list[s->ps.sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];
-      s->BL_height = vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - base_layer_window.bottom_offset - base_layer_window.top_offset;
-      s->BL_width  = vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  - base_layer_window.left_offset   - base_layer_window.right_offset;
+      s->BL_height = s->ps.vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples - base_layer_window.bottom_offset - base_layer_window.top_offset;
+      s->BL_width  = s->ps.vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples  - base_layer_window.left_offset   - base_layer_window.right_offset;
     } else {
       av_log(s->avctx, AV_LOG_ERROR, "VPS Informations related to the inter layer reference frame are missing -- \n");
       ret = AVERROR(ENOMEM);
@@ -530,7 +530,7 @@ int set_el_parameter(HEVCContext *s) {
         goto fail;
      }
 
-     scaled_ref_layer_window = s->ps.sps->scaled_ref_layer_window[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]];
+     scaled_ref_layer_window = s->ps.sps->scaled_ref_layer_window[s->ps.vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0]];
      heightEL = /*vps->Hevc_VPS_Ext.rep_format[s->decoder_id].pic_height_vps_in_luma_samples*/s->ps.sps->height - scaled_ref_layer_window.bottom_offset   - scaled_ref_layer_window.top_offset;
      widthEL  = /*vps->Hevc_VPS_Ext.rep_format[s->decoder_id].pic_width_vps_in_luma_samples*/ s->ps.sps->width  - scaled_ref_layer_window.left_offset     - scaled_ref_layer_window.right_offset;
      phaseVerChroma = (4 * heightEL + (s->BL_height >> 1)) / s->BL_height - 4;
@@ -578,9 +578,9 @@ int set_el_parameter(HEVCContext *s) {
         s->up_filter_inf.shift_up[i] = s->ps.pps->m_nCGSOutputBitDepth[i] - 8;
       }
     }
-    if (!vps->vps_nonHEVCBaseLayerFlag){//fixme: the way we compute BL dimension should be the same with non HEVC BL
-            s->BL_height = vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples;
-            s->BL_width  = vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples;
+    if (!s->ps.vps->vps_nonHEVCBaseLayerFlag){//fixme: the way we compute BL dimension should be the same with non HEVC BL
+            s->BL_height = s->ps.vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_height_vps_in_luma_samples;
+            s->BL_width  = s->ps.vps->Hevc_VPS_Ext.rep_format[s->decoder_id-1].pic_width_vps_in_luma_samples;
     }
     if(s->up_filter_inf.scaleXLum == 65536 && s->up_filter_inf.scaleYLum == 65536)
         s->up_filter_inf.idx = SNR;
