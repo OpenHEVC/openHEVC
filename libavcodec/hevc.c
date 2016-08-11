@@ -348,6 +348,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
             prev_delta_msb = delta;
         }
     }
+
     return 0;
 }
 
@@ -1318,8 +1319,7 @@ static int hls_cross_component_pred(HEVCContext *s, int idx) {
 static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
                               int log2_cb_size, int log2_trafo_size,
-                              int trafo_depth, int blk_idx,
-                              int cbf_luma, int *cbf_cb, int *cbf_cr)
+                              int blk_idx, int cbf_luma, int *cbf_cb, int *cbf_cr)
 {
     HEVCLocalContext *lc = s->HEVClc;
     const int log2_trafo_size_c = log2_trafo_size - s->ps.sps->hshift[1];
@@ -1642,7 +1642,7 @@ do {                                                                            
         }
 
         ret = hls_transform_unit(s, x0, y0, xBase, yBase, cb_xBase, cb_yBase,
-                                 log2_cb_size, log2_trafo_size, trafo_depth,
+                                 log2_cb_size, log2_trafo_size,
                                  blk_idx, cbf_luma, cbf_cb, cbf_cr);
         if (ret < 0)
             return ret;
@@ -2594,7 +2594,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         lc->qPy_pred = lc->qp_y;
     }
 
-    set_ct_depth(s, x0, y0, log2_cb_size, lc->ct.depth);
+    set_ct_depth(s, x0, y0, log2_cb_size, lc->ct_depth);
 
     return 0;
 }
@@ -2607,7 +2607,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     int ret;
     int split_cu;
 
-    lc->ct.depth = cb_depth;
+    lc->ct_depth = cb_depth;
     if (x0 + cb_size <= s->ps.sps->width  &&
         y0 + cb_size <= s->ps.sps->height &&
         log2_cb_size > s->ps.sps->log2_min_cb_size) {
@@ -3408,7 +3408,8 @@ static int hevc_frame_start(HEVCContext *s)
 #if ACTIVE_PU_UPSAMPLING
         //if(!s->is_upsampled)
           //  s->is_upsampled = av_malloc(s->ps.sps->ctb_width * s->ps.sps->ctb_height);
-        memset (s->is_upsampled, 0, s->ps.sps->ctb_width * s->ps.sps->ctb_height);
+        if(s->is_upsampled)
+           memset (s->is_upsampled, 0, s->ps.sps->ctb_width * s->ps.sps->ctb_height);
 #endif
        if (s->el_decoder_el_exist){
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
@@ -4256,9 +4257,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_buffer_unref(&s->ps.pps_list[i]);
     }
 
-    //s->ps.sps = NULL;
-    //s->ps.pps = NULL;
-    //s->ps.vps = NULL;
+    s->ps.sps = NULL;
+    s->ps.pps = NULL;
+    s->ps.vps = NULL;
 
     av_freep(&s->sh.entry_point_offset); // TODO Free for each slice
     av_freep(&s->sh.offset);
@@ -4422,7 +4423,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     }
 
     //if (s->ps.sps != s0->ps.sps)
-    //    if ((ret = set_sps(s, s0->ps.sps/*, src->pix_fmt*/)) < 0)
+    //   if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)
     //        return ret;
 
     s->seq_decode = s0->seq_decode;

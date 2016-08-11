@@ -658,8 +658,8 @@ int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb)
 {
     int min_cb_width = s->ps.sps->min_cb_width;
     int inc = 0;
-    int x0b = x0 & ((1 << s->ps.sps->log2_ctb_size) - 1);
-    int y0b = y0 & ((1 << s->ps.sps->log2_ctb_size) - 1);
+    int x0b = av_mod_uintp2(x0, s->ps.sps->log2_ctb_size);
+    int y0b = av_mod_uintp2(y0, s->ps.sps->log2_ctb_size);
 
     if (s->HEVClc->ctb_left_flag || x0b)
         inc = !!SAMPLE_CTB(s->skip_flag, x_cb - 1, y_cb);
@@ -723,8 +723,8 @@ int ff_hevc_pred_mode_decode(HEVCContext *s)
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0)
 {
     int inc = 0, depth_left = 0, depth_top = 0;
-    int x0b  = x0 & ((1 << s->ps.sps->log2_ctb_size) - 1);
-    int y0b  = y0 & ((1 << s->ps.sps->log2_ctb_size) - 1);
+    int x0b  = av_mod_uintp2(x0, s->ps.sps->log2_ctb_size);
+    int y0b  = av_mod_uintp2(y0, s->ps.sps->log2_ctb_size);
     int x_cb = x0 >> s->ps.sps->log2_min_cb_size;
     int y_cb = y0 >> s->ps.sps->log2_min_cb_size;
 
@@ -835,7 +835,7 @@ int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH)
 {
     if (nPbW + nPbH == 12)
         return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
-    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + s->HEVClc->ct.depth))
+    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + s->HEVClc->ct_depth))
         return PRED_BI;
 
     return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
@@ -886,8 +886,10 @@ static av_always_inline int mvd_decode(HEVCContext *s)
         ret += 1 << k;
         k++;
     }
-    if (k == CABAC_MAX_BIN)
+    if (k == CABAC_MAX_BIN) {
         av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", k);
+        return 0;
+    }
     while (k--)
         ret += get_cabac_bypass(&s->HEVClc->cc) << k;
     return get_cabac_bypass_sign(&s->HEVClc->cc, -ret);
@@ -1088,7 +1090,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int i;
     int qp,shift,add,scale,scale_m;
     int log2_transform_range = 15; //FFMAX(15, s->sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6); // extended_precision_processing_flag ?  : 15
-    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
+    static const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
     const uint8_t *scale_matrix = NULL;
     uint8_t dc_scale;
     int pred_mode_intra = (c_idx == 0) ? lc->tu.intra_pred_mode :
