@@ -246,6 +246,11 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
     ptl->profile_space = get_bits(gb, 2);
     ptl->tier_flag     = get_bits1(gb);
     ptl->profile_idc   = get_bits(gb, 5);
+
+    print_cabac("XXX_profile_idc", ptl->profile_idc);
+    print_cabac("XXX_profile_space", ptl->profile_space);
+    print_cabac("XXX_tier_flag", ptl->tier_flag);
+
     if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN)
         av_log(avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
     else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_10)
@@ -259,30 +264,68 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
 
     for (i = 0; i < 32; i++) {
         ptl->profile_compatibility_flag[i] = get_bits1(gb);
-
-        if (ptl->profile_idc == 0 && i > 0 && ptl->profile_compatibility_flag[i])
-            ptl->profile_idc = i;
+        print_cabac("XXX_profile_compatibility_flag", ptl->profile_compatibility_flag[i]);
     }
     ptl->progressive_source_flag    = get_bits1(gb);
     ptl->interlaced_source_flag     = get_bits1(gb);
     ptl->non_packed_constraint_flag = get_bits1(gb);
     ptl->frame_only_constraint_flag = get_bits1(gb);
 
+    print_cabac("general_frame_only_constraint_flag", ptl->frame_only_constraint_flag);
+    print_cabac("general_non_packed_constraint_flag", ptl->non_packed_constraint_flag);
+    print_cabac("general_progressive_source_flag", ptl->progressive_source_flag);
+    print_cabac("general_interlaced_source_flag", ptl->interlaced_source_flag);
+
+#if MULTIPLE_PTL_SUPPORT
+    if( ptl->profile_idc == FF_PROFILE_HEVC_REXT || ptl->profile_compatibility_flag[4] ||
+        ptl->profile_idc == FF_PROFILE_HEVC_HIGHTHROUGHPUTREXT || ptl->profile_compatibility_flag[5] ||
+        ptl->profile_idc == FF_PROFILE_HEVC_MULTIVIEWMAIN || ptl->profile_compatibility_flag[6] ||
+        ptl->profile_idc == FF_PROFILE_HEVC_SCALABLEMAIN || ptl->profile_compatibility_flag[7] ) {
+        get_bits1(gb); // general_max_12bit_constraint_flag
+        get_bits1(gb); //general_max_10bit_constraint_flag
+        ptl->setProfileIdc = (get_bits1(gb)) ? FF_PROFILE_HEVC_SCALABLEMAIN : FF_PROFILE_HEVC_SCALABLEMAIN10; //general_max_8bit_constraint_flag
+        print_cabac("general_max_8bit_constraint_flag", ptl->setProfileIdc);
+        get_bits1(gb);   //general_max_422chroma_constraint_flag
+        get_bits1(gb);   //general_max_420chroma_constraint_flag
+        get_bits1(gb);   //general_max_monochrome_constraint_flag
+        get_bits1(gb);   //general_intra_constraint_flag
+        get_bits1(gb);   //general_one_picture_only_constraint_flag
+        get_bits1(gb);   //general_lower_bit_rate_constraint_flag
+       
+        skip_bits(gb, 32); //general_reserved_zero_34bits
+        skip_bits(gb, 2);//general_reserved_zero_34bits
+    } else {
+        skip_bits(gb, 32); // general_reserved_zero_43bits
+        skip_bits(gb, 11); // general_reserved_zero_43bits
+    }
+    if( ( ptl->profile_idc >= 1 && ptl->profile_idc <= 5 ) ||
+        ptl->profile_compatibility_flag[1] || ptl->profile_compatibility_flag[2] ||
+        ptl->profile_compatibility_flag[3] || ptl->profile_compatibility_flag[4] ||
+        ptl->profile_compatibility_flag[5]) {
+
+        ptl->general_inbld_flag = get_bits1(gb);
+        print_cabac("general_inbld_flag", ptl->general_inbld_flag)
+    } else {
+        get_bits1(gb);// general_reserved_zero_bit
+    }
+#else
     skip_bits(gb, 16); // XXX_reserved_zero_44bits[0..15]
     skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
     skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
-
+#endif
     return 0;
 }
 
 static int parse_ptl(GetBitContext *gb, AVCodecContext *avctx,
-                      PTL *ptl, int max_num_sub_layers)
+                      PTL *ptl, int max_num_sub_layers, int profile_present_flag)
 {
     int i;
-    if (decode_profile_tier_level(gb, avctx, &ptl->general_ptl) < 0 ||
-        get_bits_left(gb) < 8 + (8*2 * (max_num_sub_layers - 1 > 0))) {
-        av_log(avctx, AV_LOG_ERROR, "PTL information too short\n");
-        return -1;
+    if (profile_present_flag){
+        if (decode_profile_tier_level(gb, avctx, &ptl->general_ptl) < 0 ||
+            get_bits_left(gb) < 8 + (8*2 * (max_num_sub_layers - 1 > 0))) {
+            av_log(avctx, AV_LOG_ERROR, "PTL information too short\n");
+            return -1;
+        }
     }
 
     ptl->general_ptl.level_idc = get_bits(gb, 8);
@@ -332,144 +375,6 @@ static void decode_sublayer_hrd(GetBitContext *gb, unsigned int nb_cpb,
     }
 }
 
-static int decode_hrd(GetBitContext *gb, int common_inf_present,
-                       int max_sublayers)
-{
-    int nal_params_present = 0, vcl_params_present = 0;
-    int subpic_params_present = 0;
-    int i;
-
-    if (common_inf_present) {
-        nal_params_present = get_bits1(gb);
-        vcl_params_present = get_bits1(gb);
-
-        if (nal_params_present || vcl_params_present) {
-            subpic_params_present = get_bits1(gb);
-
-            if (subpic_params_present) {
-                skip_bits(gb, 8); // tick_divisor_minus2
-                skip_bits(gb, 5); // du_cpb_removal_delay_increment_length_minus1
-                skip_bits(gb, 1); // sub_pic_cpb_params_in_pic_timing_sei_flag
-                skip_bits(gb, 5); // dpb_output_delay_du_length_minus1
-            }
-
-            skip_bits(gb, 4); // bit_rate_scale
-            skip_bits(gb, 4); // cpb_size_scale
-
-            if (subpic_params_present)
-                skip_bits(gb, 4);  // cpb_size_du_scale
-
-            skip_bits(gb, 5); // initial_cpb_removal_delay_length_minus1
-            skip_bits(gb, 5); // au_cpb_removal_delay_length_minus1
-            skip_bits(gb, 5); // dpb_output_delay_length_minus1
-        }
-    }
-
-    for (i = 0; i < max_sublayers; i++) {
-        int low_delay = 0;
-        unsigned int nb_cpb = 1;
-        int fixed_rate = get_bits1(gb);
-
-        if (!fixed_rate)
-            fixed_rate = get_bits1(gb);
-
-        if (fixed_rate)
-            get_ue_golomb_long(gb);  // elemental_duration_in_tc_minus1
-        else
-            low_delay = get_bits1(gb);
-
-        if (!low_delay) {
-            nb_cpb = get_ue_golomb_long(gb) + 1;
-            if (nb_cpb < 1 || nb_cpb > 32) {
-                av_log(NULL, AV_LOG_ERROR, "nb_cpb %d invalid\n", nb_cpb);
-                return AVERROR_INVALIDDATA;
-            }
-        }
-
-        if (nal_params_present)
-            decode_sublayer_hrd(gb, nb_cpb, subpic_params_present);
-        if (vcl_params_present)
-            decode_sublayer_hrd(gb, nb_cpb, subpic_params_present);
-    }
-    return 0;
-}
-
-static int profile_tier (GetBitContext *gb, PTLCommon *ptl) {
-    int j;
-    if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 16 + 16 + 12)
-        return -1;
-    ptl->profile_space   = get_bits(gb, 2);
-    print_cabac("XXX_profile_space", ptl->profile_space);
-    ptl->tier_flag       = get_bits1(gb);
-
-    print_cabac("XXX_tier_flag", ptl->tier_flag);
-    ptl->profile_idc     = get_bits(gb, 5);
-    print_cabac("XXX_profile_idc", ptl->profile_idc);
-
-    //if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN)
-    //   av_log(avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
-    //else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_10)
-    //    av_log(avctx, AV_LOG_DEBUG, "Main 10 profile bitstream\n");
-    //else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_STILL_PICTURE)
-    //    av_log(avctx, AV_LOG_DEBUG, "Main Still Picture profile bitstream\n");
-    //else if (ptl->profile_idc == FF_PROFILE_HEVC_REXT)
-    //    av_log(avctx, AV_LOG_DEBUG, "Range Extension profile bitstream\n");
-    //else
-    //    av_log(avctx, AV_LOG_WARNING, "Unknown HEVC profile: %d\n", ptl->profile_idc);
-
-    for( j = 0; j < 32; j++ ) {
-        ptl->profile_compatibility_flag[j] = get_bits1(gb);
-        print_cabac("XXX_profile_compatibility_flag", ptl->profile_compatibility_flag[j]);
-    }
-    ptl->progressive_source_flag    = get_bits1(gb);
-    print_cabac("general_progressive_source_flag", ptl->progressive_source_flag);
-    ptl->interlaced_source_flag     = get_bits1(gb);
-    print_cabac("general_interlaced_source_flag", ptl->interlaced_source_flag);
-    ptl->non_packed_constraint_flag = get_bits1(gb);
-    print_cabac("general_non_packed_constraint_flag", ptl->non_packed_constraint_flag);
-    ptl->frame_only_constraint_flag = get_bits1(gb);
-    print_cabac("general_frame_only_constraint_flag", ptl->frame_only_constraint_flag);
-
-
-#if MULTIPLE_PTL_SUPPORT
-    if( ptl->profile_idc == FF_PROFILE_HEVC_REXT || ptl->profile_compatibility_flag[4] ||
-        ptl->profile_idc == FF_PROFILE_HEVC_HIGHTHROUGHPUTREXT || ptl->profile_compatibility_flag[5] ||
-        ptl->profile_idc == FF_PROFILE_HEVC_MULTIVIEWMAIN || ptl->profile_compatibility_flag[6] ||
-        ptl->profile_idc == FF_PROFILE_HEVC_SCALABLEMAIN || ptl->profile_compatibility_flag[7] ) {
-        get_bits1(gb); // general_max_12bit_constraint_flag
-        get_bits1(gb); //general_max_10bit_constraint_flag
-        ptl->setProfileIdc = (get_bits1(gb)) ? FF_PROFILE_HEVC_SCALABLEMAIN : FF_PROFILE_HEVC_SCALABLEMAIN10; //general_max_8bit_constraint_flag
-        print_cabac("general_max_8bit_constraint_flag", ptl->setProfileIdc);
-        get_bits1(gb);   //general_max_422chroma_constraint_flag
-        get_bits1(gb);   //general_max_420chroma_constraint_flag
-        get_bits1(gb);   //general_max_monochrome_constraint_flag
-        get_bits1(gb);   //general_intra_constraint_flag
-        get_bits1(gb);   //general_one_picture_only_constraint_flag
-        get_bits1(gb);   //general_lower_bit_rate_constraint_flag
-       
-        skip_bits(gb, 32); //general_reserved_zero_34bits
-        skip_bits(gb, 2);//general_reserved_zero_34bits
-    } else {
-        skip_bits(gb, 32); // general_reserved_zero_43bits
-        skip_bits(gb, 11); // general_reserved_zero_43bits
-    }
-    if( ( ptl->profile_idc >= 1 && ptl->profile_idc <= 5 ) ||
-        ptl->profile_compatibility_flag[1] || ptl->profile_compatibility_flag[2] ||
-        ptl->profile_compatibility_flag[3] || ptl->profile_compatibility_flag[4] ||
-        ptl->profile_compatibility_flag[5]) {
-
-        ptl->general_inbld_flag = get_bits1(gb);
-        print_cabac("general_inbld_flag", ptl->general_inbld_flag)
-    } else {
-        get_bits1(gb);// general_reserved_zero_bit
-    }
-#else
-    skip_bits(gb, 16); // XXX_reserved_zero_44bits[0..15]
-    skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
-    skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
-#endif
-    return 0;
-}
 
 static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParameter *Sublayer_HRDPar, int CpbCnt, int sub_pic_hrd_params_present_flag ) {
     int i;
@@ -488,98 +393,51 @@ static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParameter *Su
 	}
 }
 
-
-static int profile_tier_level(GetBitContext *gb, AVCodecContext *avctx, int prPrFlag, PTL *ptl, int maxNumSubLayersMinus1) {
-    int i;
-    //GetBitContext   *gb             = &s->HEVClc->gb;
-    if(prPrFlag)
-        if (profile_tier(gb, &ptl->general_ptl) < 0 || get_bits_left(gb) < 8 + 8*2) {
-            av_log(avctx, AV_LOG_ERROR, "PTL information too short\n");
-            return -1;
-        }
-
-    ptl->general_ptl.level_idc = get_bits(gb, 8);
-    print_cabac("general_level_idc", ptl->Ptl_general.level_idc);
-    for( i = 0; i < maxNumSubLayersMinus1; i++ ) {
-#if MULTIPLE_PTL_SUPPORT
-        ptl->sub_layer_profile_present_flag[i] = get_bits1(gb);
-        print_cabac("sub_layer_profile_present_flag", ptl->sub_layer_profile_present_flag[ i ]);
-#else
-        if(prPrFlag) {
-            ptl->sub_layer_profile_present_flag[i] = get_bits1(gb);
-            print_cabac("sub_layer_profile_present_flag", ptl->sub_layer_profile_present_flag[ i ]);
-        }
-#endif
-        ptl->sub_layer_level_present_flag[i]   = get_bits1(gb);
-        print_cabac("sub_layer_level_present_flag", ptl->sub_layer_level_present_flag[i]);
-    }
-	if( maxNumSubLayersMinus1 > 0 )
-        for( i = maxNumSubLayersMinus1; i < 8; i++ )
-            get_bits(gb, 2); // reserved_zero_2bits 
-
-    for( i = 0; i < maxNumSubLayersMinus1; i++ ) {
-#if MULTIPLE_PTL_SUPPORT
-        if( ptl->sub_layer_profile_present_flag[i] )
-#else
-        if( prPrFlag && ptl->sub_layer_profile_present_flag[i] )
-#endif
-            if(profile_tier(gb, &ptl->sub_layer_ptl[i]) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "PTL information too short\n");
-                return -1;
-            }
-
-        if( ptl->sub_layer_level_present_flag[i] ) {
-            ptl->sub_layer_ptl[i].level_idc = get_bits(gb, 8);
-            print_cabac("sub_layer_level_idc", ptl->Ptl_sublayer[i].level_idc);
-        }
-    }
-
-    return 0;
-}
-
-static int hrd_parameters(GetBitContext *gb, AVCodecContext *avctx, HRDParameter *HrdParam, int commonInfPresentFlag, int maxNumSubLayersMinus1 ) {
+static int decode_hrd(GetBitContext *gb, AVCodecContext *avctx, HRDParameter *HrdParam, int common_inf_present,
+                       int max_sublayers)
+{
     int i;
     //GetBitContext   *gb   = &s->HEVClc->gb;  
-	if( commonInfPresentFlag ) {
-		HrdParam->nal_hrd_parameters_present_flag = get_bits1(gb);
-        print_cabac("nal_hrd_parameters_present_flag", HrdParam->nal_hrd_parameters_present_flag);
-		HrdParam->vcl_hrd_parameters_present_flag = get_bits1(gb);
+    if (common_inf_present) {
+        HrdParam->nal_hrd_parameters_present_flag = get_bits1(gb);
+        HrdParam->vcl_hrd_parameters_present_flag = get_bits1(gb);
         print_cabac("vcl_hrd_parameters_present_flag", HrdParam->vcl_hrd_parameters_present_flag);
-		if( HrdParam->nal_hrd_parameters_present_flag  ||  HrdParam->vcl_hrd_parameters_present_flag ) {
-			HrdParam->sub_pic_hrd_params_present_flag = get_bits1(gb);
+        print_cabac("nal_hrd_parameters_present_flag", HrdParam->nal_hrd_parameters_present_flag);
+        if (HrdParam->nal_hrd_parameters_present_flag  ||  HrdParam->vcl_hrd_parameters_present_flag ) {
+            HrdParam->sub_pic_hrd_params_present_flag = get_bits1(gb);
             print_cabac("sub_pic_hrd_params_present_flag", HrdParam->sub_pic_hrd_params_present_flag);
-			if( HrdParam->sub_pic_hrd_params_present_flag ) {
-				HrdParam->tick_divisor_minus2 = get_bits(gb, 8);
-                print_cabac("tick_divisor_minus2", HrdParam->tick_divisor_minus2);
-				HrdParam->du_cpb_removal_delay_increment_length_minus1 = get_bits(gb, 5);
-                print_cabac("du_cpb_removal_delay_increment_length_minus1", HrdParam->du_cpb_removal_delay_increment_length_minus1);
-				HrdParam->sub_pic_cpb_params_in_pic_timing_sei_flag = get_bits1(gb);
-                print_cabac("sub_pic_cpb_params_in_pic_timing_sei_flag", HrdParam->sub_pic_cpb_params_in_pic_timing_sei_flag);
-				HrdParam->dpb_output_delay_du_length_minus1 = get_bits(gb, 5);
+            if( HrdParam->sub_pic_hrd_params_present_flag ) {
+                HrdParam->tick_divisor_minus2 = get_bits(gb, 8);
+                HrdParam->du_cpb_removal_delay_increment_length_minus1 = get_bits(gb, 5);
+                HrdParam->sub_pic_cpb_params_in_pic_timing_sei_flag = get_bits1(gb);
+                HrdParam->dpb_output_delay_du_length_minus1 = get_bits(gb, 5);
                 print_cabac("dpb_output_delay_du_length_minus1", HrdParam->dpb_output_delay_du_length_minus1);
-			}
-			HrdParam->bit_rate_scale = get_bits(gb, 4);
+                print_cabac("tick_divisor_minus2", HrdParam->tick_divisor_minus2);
+                print_cabac("du_cpb_removal_delay_increment_length_minus1", HrdParam->du_cpb_removal_delay_increment_length_minus1);
+                print_cabac("sub_pic_cpb_params_in_pic_timing_sei_flag", HrdParam->sub_pic_cpb_params_in_pic_timing_sei_flag);
+            }
+            HrdParam->bit_rate_scale = get_bits(gb, 4);
+            HrdParam->cpb_size_scale = get_bits(gb, 4);
             print_cabac("bit_rate_scale", HrdParam->bit_rate_scale);
-			HrdParam->cpb_size_scale = get_bits(gb, 4);
             print_cabac("cpb_size_scale", HrdParam->cpb_size_scale);
-			if( HrdParam->sub_pic_hrd_params_present_flag ) {
-				HrdParam->cpb_size_du_scale = get_bits(gb, 4);
+            if( HrdParam->sub_pic_hrd_params_present_flag ) {
+                HrdParam->cpb_size_du_scale = get_bits(gb, 4);
                 print_cabac("sub_pic_hrd_params_present_flag", HrdParam->sub_pic_hrd_params_present_flag);
             }
             HrdParam->initial_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
-            print_cabac("initial_cpb_removal_delay_length_minus1", HrdParam->initial_cpb_removal_delay_length_minus1);
             HrdParam->au_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
-            print_cabac("au_cpb_removal_delay_length_minus1", HrdParam->au_cpb_removal_delay_length_minus1);
             HrdParam->dpb_output_delay_length_minus1 = get_bits(gb, 5);
+            print_cabac("initial_cpb_removal_delay_length_minus1", HrdParam->initial_cpb_removal_delay_length_minus1);
+            print_cabac("au_cpb_removal_delay_length_minus1", HrdParam->au_cpb_removal_delay_length_minus1);
             print_cabac("dpb_output_delay_length_minus1", HrdParam->dpb_output_delay_length_minus1);
         } else
             HrdParam->initial_cpb_removal_delay_length_minus1 = 23;
-	}
-	for( i = 0; i  <=  maxNumSubLayersMinus1; i++ ) {
-		HrdParam->fixed_pic_rate_general_flag[i] = get_bits1(gb);
+    }
+    for( i = 0; i  <=  max_sublayers; i++ ) {
+        HrdParam->fixed_pic_rate_general_flag[i] = get_bits1(gb);
         print_cabac("fixed_pic_rate_general_flag", HrdParam->fixed_pic_rate_general_flag[i]);
-		if(!HrdParam->fixed_pic_rate_general_flag[i]) {
-			HrdParam->fixed_pic_rate_within_cvs_flag[i] = get_bits1(gb);
+        if(!HrdParam->fixed_pic_rate_general_flag[i]) {
+            HrdParam->fixed_pic_rate_within_cvs_flag[i] = get_bits1(gb);
             print_cabac("fixed_pic_rate_within_cvs_flag", HrdParam->fixed_pic_rate_within_cvs_flag[i]);
         } else {
             HrdParam->fixed_pic_rate_within_cvs_flag[i] = 1;
@@ -605,7 +463,7 @@ static int hrd_parameters(GetBitContext *gb, AVCodecContext *avctx, HRDParameter
         }
         if( HrdParam->nal_hrd_parameters_present_flag )
             sub_layer_hrd_parameters(gb, &HrdParam->Sublayer_HRDPar[i], HrdParam->cpb_cnt_minus1[i], HrdParam->sub_pic_hrd_params_present_flag);
-        
+
         if( HrdParam->vcl_hrd_parameters_present_flag )
             sub_layer_hrd_parameters(gb, &HrdParam->Sublayer_HRDPar[i], HrdParam->cpb_cnt_minus1[i], HrdParam->sub_pic_hrd_params_present_flag);
     }
@@ -627,7 +485,7 @@ static void vps_vui_bsp_hrd_params(GetBitContext *gb, AVCodecContext *avctx, HEV
             }
         }
         Bsp_Hrd_Params->num_sub_layer_hrd_minus1[i] = get_ue_golomb_long(gb);
-        hrd_parameters(gb, avctx, &Bsp_Hrd_Params->HrdParam[i], Bsp_Hrd_Params->cprms_add_present_flag[i], vps->vps_max_sub_layers );
+        decode_hrd(gb, avctx, &Bsp_Hrd_Params->HrdParam[i], Bsp_Hrd_Params->cprms_add_present_flag[i], vps->vps_max_sub_layers );
     }
 	if( (vps->vps_num_hrd_parameters + Bsp_Hrd_Params->vps_num_add_hrd_params) > 0 )
         for( h = 1; h < Hevc_VPS_Ext->NumOutputLayerSets; h++ ) {
@@ -1035,8 +893,8 @@ static void parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCV
     print_cabac(" \n --- parse vps extention  --- \n ", s->nuh_layer_id);
 
     if( vps->vps_max_layers > 1  &&  vps->vps_base_layer_internal_flag )
-        profile_tier_level(gb, avctx, 0, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers-1);
-
+        //profile_tier_level(gb, avctx, 0, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers);
+        parse_ptl(gb, avctx, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers-1, 0);
     Hevc_VPS_Ext->splitting_flag = get_bits1(gb);
     print_cabac("splitting_flag", Hevc_VPS_Ext->splitting_flag);
     
@@ -1157,7 +1015,8 @@ static void parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCV
         //  TO Do  Copy profile from previous one 
 		Hevc_VPS_Ext->vps_profile_present_flag[i] = get_bits1(gb);
         print_cabac("vps_profile_present_flag", Hevc_VPS_Ext->vps_profile_present_flag[i]);
-        profile_tier_level(gb, avctx, Hevc_VPS_Ext->vps_profile_present_flag[i], &Hevc_VPS_Ext->ptl[i], vps->vps_max_sub_layers-1);
+        //profile_tier_level(gb, avctx, Hevc_VPS_Ext->vps_profile_present_flag[i], &Hevc_VPS_Ext->ptl[i], vps->vps_max_sub_layers);
+        parse_ptl(gb, avctx, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers-1, Hevc_VPS_Ext->vps_profile_present_flag[i]);
 	}
 
     
@@ -1340,7 +1199,8 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
         goto err;
     }
 
-    profile_tier_level(gb, avctx, 1, &vps->ptl, vps->vps_max_sub_layers-1);
+    if (parse_ptl(gb, avctx, &vps->ptl, vps->vps_max_sub_layers-1, 1) < 0)
+        goto err;
 
     vps->vps_sub_layer_ordering_info_present_flag = get_bits1(gb);
     print_cabac("vps_sub_layer_ordering_info_present_flag", vps->vps_sub_layer_ordering_info_present_flag);
@@ -1423,7 +1283,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
                 common_inf_present = get_bits1(gb);
                 print_cabac("cprms_present_flag", common_inf_present); 
             }
-            hrd_parameters(gb, avctx, &vps->HrdParam, common_inf_present, vps->vps_max_sub_layers -1);
+            decode_hrd(gb, avctx, &vps->HrdParam, common_inf_present, vps->vps_max_sub_layers -1);
         }
     }
     vps->vps_extension_flag = get_bits1(gb);
@@ -1506,7 +1366,6 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
             vui->colour_primaries        = 9; get_bits(gb, 8);
             vui->transfer_characteristic = 2; get_bits(gb, 8);
             vui->matrix_coeffs           = 2; get_bits(gb, 8);
-
             print_cabac("colour_primaries", vui->colour_primaries);
             print_cabac("transfer_characteristics", vui->transfer_characteristic);
             print_cabac("matrix_coefficients", vui->matrix_coeffs);
@@ -1609,11 +1468,9 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
                    vui->vui_time_scale, vui->vui_num_units_in_tick);
         }
         vui->vui_poc_proportional_to_timing_flag = get_bits1(gb);
-
         print_cabac("vui_num_units_in_tick", vui->vui_num_units_in_tick);
         print_cabac("vui_time_scale", vui->vui_time_scale);
         print_cabac("vui_poc_proportional_to_timing_flag", vui->vui_poc_proportional_to_timing_flag);
-
         if (vui->vui_poc_proportional_to_timing_flag) {
             vui->vui_num_ticks_poc_diff_one_minus1 = get_ue_golomb_long(gb);
             print_cabac("vui_num_ticks_poc_diff_one_minus1", vui->vui_num_ticks_poc_diff_one_minus1);
@@ -1621,7 +1478,7 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
         vui->vui_hrd_parameters_present_flag = get_bits1(gb);
         print_cabac("hrd_parameters_present_flag", vui->vui_hrd_parameters_present_flag);
         if (vui->vui_hrd_parameters_present_flag)
-            hrd_parameters(gb, avctx, &sps->HrdParam, vui->vui_hrd_parameters_present_flag, sps->max_sub_layers -1 );
+            decode_hrd(gb, avctx, &sps->HrdParam, vui->vui_hrd_parameters_present_flag, sps->max_sub_layers -1 );
     }
 
     vui->bitstream_restriction_flag = get_bits1(gb);
@@ -1680,7 +1537,6 @@ static void set_default_scaling_list_data(ScalingList *sl)
 
 static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingList *sl, HEVCSPS *sps)
 {
-    //GetBitContext *gb = &s->HEVClc->gb;
     uint8_t scaling_list_pred_mode_flag;
     int32_t scaling_list_dc_coef[2][6];
     int size_id, matrix_id, pos;
@@ -1861,7 +1717,9 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     if(!bMultiLayerExtSpsFlag) {
         sps->m_bTemporalIdNestingFlag = get_bits1(gb);
         print_cabac("sps_temporal_id_nesting_flag", sps->m_bTemporalIdNestingFlag);
-        profile_tier_level(gb, avctx, 1, &sps->ptl, sps->max_sub_layers-1);
+        //profile_tier_level(gb, avctx, 1, &sps->ptl, sps->max_sub_layers-1);
+        if ((ret = parse_ptl(gb, avctx, &sps->ptl, sps->max_sub_layers-1, 1)) < 0)
+            return ret;
     } else { // Not sure for this
         if (sps->max_sub_layers > 1)
             sps->m_bTemporalIdNestingFlag = vps->vps_temporal_id_nesting_flag;

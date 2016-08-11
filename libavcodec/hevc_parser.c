@@ -178,8 +178,8 @@ static int hevc_find_frame_end2(AVCodecParserContext *s, const uint8_t *buf,
                                int buf_size)
 {
     int i;
-    ParseContext *pc = &((HEVCParserContext *)s->priv_data)->pc;
-    //static frame_counter = 0;
+    ParseContext *pc = s->priv_data;
+
     for (i = 0; i < buf_size; i++) {
         int nut, layer_id;
 
@@ -323,7 +323,6 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         case NAL_IDR_N_LP:
         case NAL_CRA_NUT:
             av_log(h->avctx, AV_LOG_DEBUG, "parsing NALU %d\n", h->decoder_id);
-            sh->first_slice_in_pic_flag = get_bits1(gb);
             switch(h->picture_struct) {
                 case  0 : s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;        av_log(h->avctx, AV_LOG_DEBUG, "(progressive) frame \n"); break;
                 case  1 : s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;    av_log(h->avctx, AV_LOG_DEBUG, "top field\n"); break;
@@ -447,10 +446,10 @@ static int hevc_parse(AVCodecParserContext *s,
     HEVCParserContext *ctx = s->priv_data;
     ParseContext *pc = &ctx->pc;
 
-    //if (avctx->extradata && !ctx->parsed_extradata) {
-    //    parse_nal_units(s, avctx, avctx->extradata, avctx->extradata_size);
-    //    ctx->parsed_extradata = 1;
-    //}
+    if (avctx->extradata && !ctx->parsed_extradata) {
+        parse_nal_units(s, avctx->extradata, avctx->extradata_size, avctx);
+        ctx->parsed_extradata = 1;
+    }
 
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
@@ -479,6 +478,11 @@ static int hevc_parse2(AVCodecParserContext *s,
     int next;
     HEVCParserContext *ctx = s->priv_data;
     ParseContext *pc = &ctx->pc;
+
+    if (avctx->extradata && !ctx->parsed_extradata) {
+        parse_nal_units(s, avctx->extradata, avctx->extradata_size, avctx);
+        ctx->parsed_extradata = 1;
+    }
 
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
