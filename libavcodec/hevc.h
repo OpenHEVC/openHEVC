@@ -1436,7 +1436,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
  *                 to an existing VPS
  */
 int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
-                      int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx);
+                      int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx, int nuh_layer_id);
 
 int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
                            HEVCParamSets *ps);

@@ -25,6 +25,8 @@
 #include "mem.h"
 #include "thread.h"
 
+#include "internal.h" //TMP_DEV_PL
+
 AVBufferRef *av_buffer_create(uint8_t *data, int size,
                               void (*free)(void *opaque, uint8_t *data),
                               void *opaque, int flags)
@@ -326,9 +328,9 @@ static void pool_release_buffer(void *opaque, uint8_t *data)
 {
     BufferPoolEntry *buf = opaque;
     AVBufferPool *pool = buf->pool;
-//TMP_DEV_PL
-//    if(CONFIG_MEMORY_POISONING)
-//        memset(buf->data, FF_MEMORY_POISON, pool->size);
+
+    if(CONFIG_MEMORY_POISONING)
+        memset(buf->data, FF_MEMORY_POISON, pool->size);
 
 #if USE_ATOMICS
     add_to_pool(buf);
