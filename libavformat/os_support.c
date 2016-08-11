@@ -28,7 +28,7 @@
 #include "avformat.h"
 #include "os_support.h"
 
-#if CONFIG_NETWORK
+//#if CONFIG_NETWORK
 #include <fcntl.h>
 #if !HAVE_POLL_H
 #if HAVE_SYS_TIME_H
@@ -332,4 +332,4 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout)
 }
 #endif /* !HAVE_POLL_H */
 
-#endif /* CONFIG_NETWORK */
+//#endif /* CONFIG_NETWORK */

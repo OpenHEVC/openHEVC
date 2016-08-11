@@ -23,8 +23,6 @@
 
 #include "url.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 extern const URLProtocol ff_async_protocol;
 extern const URLProtocol ff_bluray_protocol;
 extern const URLProtocol ff_cache_protocol;
@@ -37,14 +35,14 @@ extern const URLProtocol ff_file_protocol;
 extern const URLProtocol ff_ftp_protocol;
 extern const URLProtocol ff_gopher_protocol;
 extern const URLProtocol ff_hls_protocol;
-//extern const URLProtocol ff_http_protocol;
-//extern const URLProtocol ff_httpproxy_protocol;
+extern const URLProtocol ff_http_protocol;
+extern const URLProtocol ff_httpproxy_protocol;
 extern const URLProtocol ff_https_protocol;
 extern const URLProtocol ff_icecast_protocol;
 extern const URLProtocol ff_mmsh_protocol;
 extern const URLProtocol ff_mmst_protocol;
 extern const URLProtocol ff_md5_protocol;
-//extern const URLProtocol ff_pipe_protocol;
+extern const URLProtocol ff_pipe_protocol;
 extern const URLProtocol ff_rtmp_protocol;
 extern const URLProtocol ff_rtmpe_protocol;
 extern const URLProtocol ff_rtmps_protocol;

@@ -398,8 +398,8 @@ static int udp_socket_create(URLContext *h, struct sockaddr_storage *addr,
     return udp_fd;
 
  fail:
-    //if (udp_fd >= 0)
-        //closesocket(udp_fd);
+    if (udp_fd >= 0)
+        closesocket(udp_fd);
     if(res0)
         freeaddrinfo(res0);
     return -1;
@@ -500,11 +500,11 @@ static void *circular_buffer_task_rx( void *_URLContext)
 
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
     pthread_mutex_lock(&s->mutex);
-/*    if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
+    if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
         av_log(h, AV_LOG_ERROR, "Failed to set blocking mode");
         s->circular_buffer_error = AVERROR(EIO);
         goto end;
-    }*/
+    }
     while(1) {
         int len;
 
@@ -562,13 +562,13 @@ static void *circular_buffer_task_tx( void *_URLContext)
 
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
     pthread_mutex_lock(&s->mutex);
-/*
+
     if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
         av_log(h, AV_LOG_ERROR, "Failed to set blocking mode");
         s->circular_buffer_error = AVERROR(EIO);
         goto end;
     }
-*/
+
     for(;;) {
         int len;
         const uint8_t *p;
@@ -931,7 +931,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
 
         /* make the socket non-blocking */
-       // ff_socket_nonblock(udp_fd, 1);
+        ff_socket_nonblock(udp_fd, 1);
     }
     if (s->is_connected) {
         if (connect(udp_fd, (struct sockaddr *) &s->dest_addr, s->dest_addr_len)) {
@@ -992,7 +992,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 #endif
  fail:
     if (udp_fd >= 0)
-        //closesocket(udp_fd);
+        closesocket(udp_fd);
     av_fifo_freep(&s->fifo);
     for (i = 0; i < num_include_sources; i++)
         av_freep(&include_sources[i]);
@@ -1149,7 +1149,7 @@ static int udp_close(URLContext *h)
         pthread_cond_destroy(&s->cond);
     }
 #endif
-    //closesocket(s->udp_fd);
+    closesocket(s->udp_fd);
     av_fifo_freep(&s->fifo);
     return 0;
 }

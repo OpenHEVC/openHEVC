@@ -95,8 +95,8 @@ static int unix_open(URLContext *h, const char *filename, int flags)
 fail:
     if (s->listen && AVUNERROR(ret) != EADDRINUSE)
         unlink(s->addr.sun_path);
-    //if (fd >= 0)
-        //closesocket(fd);
+    if (fd >= 0)
+        closesocket(fd);
     return ret;
 }
 
@@ -133,7 +133,7 @@ static int unix_close(URLContext *h)
     UnixContext *s = h->priv_data;
     if (s->listen)
         unlink(s->addr.sun_path);
-    //closesocket(s->fd);
+    closesocket(s->fd);
     return 0;
 }
 

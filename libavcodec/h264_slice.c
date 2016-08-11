@@ -44,8 +44,6 @@
 #include "thread.h"
 
 #include "libavutil/internal.h" //TMP_DEV_PL
-
-#include "hevc_defs.h"
 #include "h264_nal.h"
 
 static const uint8_t field_scan[16+1] = {

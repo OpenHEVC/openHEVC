@@ -170,14 +170,14 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (cur_ai->ai_next) {
         /* Retry with the next sockaddr */
         cur_ai = cur_ai->ai_next;
-        //if (fd >= 0)
-           // closesocket(fd);
+        if (fd >= 0)
+            closesocket(fd);
         ret = 0;
         goto restart;
     }
  fail1:
-    //if (fd >= 0)
-        //closesocket(fd);
+    if (fd >= 0)
+        closesocket(fd);
     freeaddrinfo(ai);
     return ret;
 }
@@ -245,7 +245,7 @@ static int tcp_shutdown(URLContext *h, int flags)
 static int tcp_close(URLContext *h)
 {
     TCPContext *s = h->priv_data;
-    //closesocket(s->fd);
+    closesocket(s->fd);
     return 0;
 }
 
