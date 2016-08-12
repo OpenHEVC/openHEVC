@@ -1157,14 +1157,20 @@ else
                 sh->entry_point_offset[i] = val + 1; // +1; // +1 to get the size
                 print_cabac("entry_point_offset_minus1", sh->entry_point_offset[i] - 1);
             }
-        }
+            if (s->threads_number > 1 && (s->ps.pps->num_tile_rows > 1 || s->ps.pps->num_tile_columns > 1)) {
+                s->enable_parallel_tiles = 0; // TODO: you can enable tiles in parallel here
+                s->threads_number = 1;
+            } else
+                s->enable_parallel_tiles = 0;
+        } else
+            s->enable_parallel_tiles = 0;
     }
 
     if (s->ps.pps->slice_header_extension_present_flag) {
         unsigned int length = get_ue_golomb_long(gb);
         if (length*8LL > get_bits_left(gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "too many slice_header_extension_data_bytes\n");
-            //return AVERROR_INVALIDDATA;
+            return AVERROR_INVALIDDATA;
         }
         print_cabac("slice_header_extension_length", length);
         av_log(s->avctx, AV_LOG_ERROR,
@@ -2842,20 +2848,6 @@ static int hls_decode_entry_slice(HEVCContext *s)
 }
 #endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
 {
     HEVCContext *s1  = avctxt->priv_data, *s;
@@ -3375,6 +3367,13 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
     dst->sequence   = src->sequence;
     dst->field_order= src->field_order;
 
+    if (src->hwaccel_picture_private) {
+        dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
+        if (!dst->hwaccel_priv_buf)
+            goto fail;
+        dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
+    }
+
     return 0;
 fail:
     ff_hevc_unref_frame(s, dst, ~0);
@@ -3408,7 +3407,7 @@ static int hevc_frame_start(HEVCContext *s)
 #if ACTIVE_PU_UPSAMPLING
         if(!s->is_upsampled)
             s->is_upsampled = av_mallocz(s->ps.sps->ctb_width * s->ps.sps->ctb_height);
-        else
+        else//if(s->is_upsampled)
            memset (s->is_upsampled, 0, s->ps.sps->ctb_width * s->ps.sps->ctb_height);
 #endif
        if (s->el_decoder_el_exist){
@@ -4423,7 +4422,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     }
 
     if (s->ps.sps != s0->ps.sps)
-       if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)
+        if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)
             return ret;
 
     s->seq_decode = s0->seq_decode;
@@ -4521,6 +4520,16 @@ static int hevc_decode_extradata(HEVCContext *s)
         if (ret < 0)
             return ret;
     }
+
+    /* export stream parameters from the first SPS */
+    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++) {
+        if (s->ps.sps_list[i]) {
+            const HEVCSPS *sps = (const HEVCSPS*)s->ps.sps_list[i]->data;
+            export_stream_params(s->avctx, &s->ps, sps);
+            break;
+        }
+    }
+
     return 0;
 }
 
@@ -4539,10 +4548,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->picture_struct = 0;
     s->eos = 1;
 
-    if(avctx->active_thread_type & FF_THREAD_SLICE)
-        s->threads_number = avctx->thread_count;
-    else
-        s->threads_number = 1;
+//    if(avctx->active_thread_type & FF_THREAD_SLICE)
+//        s->threads_number = avctx->thread_count;
+//    else
+//        s->threads_number = 1;
 
     if (avctx->extradata_size > 0 && avctx->extradata) {
         ret = hevc_decode_extradata(s);
@@ -4552,10 +4561,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         }
     }
 
-    if((avctx->active_thread_type & FF_THREAD_FRAME) && avctx->thread_count_frame > 1)
-            s->threads_type = FF_THREAD_FRAME;
-        else
-            s->threads_type = FF_THREAD_SLICE;
+//    if((avctx->active_thread_type & FF_THREAD_FRAME) && avctx->thread_count > 1)
+//        else
+//            s->threads_type = FF_THREAD_SLICE;
 
     return 0;
 }

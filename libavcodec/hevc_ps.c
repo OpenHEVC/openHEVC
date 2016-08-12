@@ -894,7 +894,7 @@ static void parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCV
 
     if( vps->vps_max_layers > 1  &&  vps->vps_base_layer_internal_flag )
         //profile_tier_level(gb, avctx, 0, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers);
-        parse_ptl(gb, avctx, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers-1, 0);
+        parse_ptl(gb, avctx, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers, 0);
     Hevc_VPS_Ext->splitting_flag = get_bits1(gb);
     print_cabac("splitting_flag", Hevc_VPS_Ext->splitting_flag);
     
@@ -1016,7 +1016,7 @@ static void parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCV
 		Hevc_VPS_Ext->vps_profile_present_flag[i] = get_bits1(gb);
         print_cabac("vps_profile_present_flag", Hevc_VPS_Ext->vps_profile_present_flag[i]);
         //profile_tier_level(gb, avctx, Hevc_VPS_Ext->vps_profile_present_flag[i], &Hevc_VPS_Ext->ptl[i], vps->vps_max_sub_layers);
-        parse_ptl(gb, avctx, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers-1, Hevc_VPS_Ext->vps_profile_present_flag[i]);
+        parse_ptl(gb, avctx, &Hevc_VPS_Ext->ptl[0], vps->vps_max_sub_layers, Hevc_VPS_Ext->vps_profile_present_flag[i]);
 	}
 
     
@@ -1199,7 +1199,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
         goto err;
     }
 
-    if (parse_ptl(gb, avctx, &vps->ptl, vps->vps_max_sub_layers-1, 1) < 0)
+    if (parse_ptl(gb, avctx, &vps->ptl, vps->vps_max_sub_layers, 1) < 0)
         goto err;
 
     vps->vps_sub_layer_ordering_info_present_flag = get_bits1(gb);
@@ -1718,7 +1718,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         sps->m_bTemporalIdNestingFlag = get_bits1(gb);
         print_cabac("sps_temporal_id_nesting_flag", sps->m_bTemporalIdNestingFlag);
         //profile_tier_level(gb, avctx, 1, &sps->ptl, sps->max_sub_layers-1);
-        if ((ret = parse_ptl(gb, avctx, &sps->ptl, sps->max_sub_layers-1, 1)) < 0)
+        if ((ret = parse_ptl(gb, avctx, &sps->ptl, sps->max_sub_layers, 1)) < 0)
             return ret;
     } else { // Not sure for this
         if (sps->max_sub_layers > 1)
