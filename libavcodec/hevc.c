@@ -3406,9 +3406,9 @@ static int hevc_frame_start(HEVCContext *s)
         lc->end_of_tiles_x = s->ps.pps->column_width[0] << s->ps.sps->log2_ctb_size;
     if (s->nuh_layer_id) {
 #if ACTIVE_PU_UPSAMPLING
-        //if(!s->is_upsampled)
-          //  s->is_upsampled = av_malloc(s->ps.sps->ctb_width * s->ps.sps->ctb_height);
-        if(s->is_upsampled)
+        if(!s->is_upsampled)
+            s->is_upsampled = av_mallocz(s->ps.sps->ctb_width * s->ps.sps->ctb_height);
+        else
            memset (s->is_upsampled, 0, s->ps.sps->ctb_width * s->ps.sps->ctb_height);
 #endif
        if (s->el_decoder_el_exist){
@@ -4422,9 +4422,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         }
     }
 
-    //if (s->ps.sps != s0->ps.sps)
-    //   if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)
-    //        return ret;
+    if (s->ps.sps != s0->ps.sps)
+       if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)
+            return ret;
 
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;
@@ -4539,10 +4539,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->picture_struct = 0;
     s->eos = 1;
 
-//    if(avctx->active_thread_type & FF_THREAD_SLICE)
-//        s->threads_number = avctx->thread_count;
-//    else
-//        s->threads_number = 1;
+    if(avctx->active_thread_type & FF_THREAD_SLICE)
+        s->threads_number = avctx->thread_count;
+    else
+        s->threads_number = 1;
 
     if (avctx->extradata_size > 0 && avctx->extradata) {
         ret = hevc_decode_extradata(s);
@@ -4552,10 +4552,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         }
     }
 
-//    if((avctx->active_thread_type & FF_THREAD_FRAME) && avctx->thread_count > 1)
-//            s->threads_type = FF_THREAD_FRAME;
-//        else
-//            s->threads_type = FF_THREAD_SLICE;
+    if((avctx->active_thread_type & FF_THREAD_FRAME) && avctx->thread_count_frame > 1)
+            s->threads_type = FF_THREAD_FRAME;
+        else
+            s->threads_type = FF_THREAD_SLICE;
 
     return 0;
 }
