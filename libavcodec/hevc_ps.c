@@ -358,24 +358,6 @@ static int parse_ptl(GetBitContext *gb, AVCodecContext *avctx,
     return 0;
 }
 
-static void decode_sublayer_hrd(GetBitContext *gb, unsigned int nb_cpb,
-                                int subpic_params_present)
-{
-    int i;
-
-    for (i = 0; i < nb_cpb; i++) {
-        get_ue_golomb_long(gb); // bit_rate_value_minus1
-        get_ue_golomb_long(gb); // cpb_size_value_minus1
-
-        if (subpic_params_present) {
-            get_ue_golomb_long(gb); // cpb_size_du_value_minus1
-            get_ue_golomb_long(gb); // bit_rate_du_value_minus1
-        }
-        skip_bits1(gb); // cbr_flag
-    }
-}
-
-
 static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParameter *Sublayer_HRDPar, int CpbCnt, int sub_pic_hrd_params_present_flag ) {
     int i;
 	for( i = 0; i  <=  CpbCnt; i++ ) {
@@ -2960,6 +2942,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     pps->m_inferScalingListFlag = 0;
     pps->scaling_list_data_present_flag = get_bits1(gb);
     if (pps->scaling_list_data_present_flag) {
+        set_default_scaling_list_data(&pps->scaling_list);
         ret = scaling_list_data(gb, avctx, &pps->scaling_list, sps);
         if (ret < 0)
             goto err;

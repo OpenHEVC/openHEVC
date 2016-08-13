@@ -211,10 +211,10 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb)
     luma_log2_weight_denom = get_ue_golomb_long(gb);
     if (luma_log2_weight_denom < 0 || luma_log2_weight_denom > 7)
         av_log(s->avctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is invalid\n", luma_log2_weight_denom);
-    s->sh.luma_log2_weight_denom = av_clip_uintp2(luma_log2_weight_denom, 3);
+    s->sh.luma_log2_weight_denom = av_clip_uintp2(luma_log2_weight_denom, 7);
     if (s->ps.sps->chroma_format_idc != 0) {
         int delta = get_se_golomb(gb);
-        s->sh.chroma_log2_weight_denom = av_clip_uintp2(s->sh.luma_log2_weight_denom + delta, 3);
+        s->sh.chroma_log2_weight_denom = av_clip_uintp2(s->sh.luma_log2_weight_denom + delta, 7);
     }
 
     for (i = 0; i < s->sh.nb_refs[L0]; i++) {
@@ -1431,8 +1431,8 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                         ptrdiff_t stride = s->frame->linesize[1];
                         int hshift = s->ps.sps->hshift[1];
                         int vshift = s->ps.sps->vshift[1];
-                        int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
-                        int16_t *coeffs   = (int16_t*)lc->edge_emu_buffer2;
+                        int16_t *coeffs_y = lc->tu.coeffs[0];
+                        int16_t *coeffs =   lc->tu.coeffs[1];
                         int size = 1 << log2_trafo_size_c;
 
                         uint8_t *dst = &s->frame->data[1][(y0 >> vshift) * stride +
@@ -1460,8 +1460,8 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                         ptrdiff_t stride = s->frame->linesize[2];
                         int hshift = s->ps.sps->hshift[2];
                         int vshift = s->ps.sps->vshift[2];
-                        int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
-                        int16_t *coeffs   = (int16_t*)lc->edge_emu_buffer2;
+                        int16_t *coeffs_y = lc->tu.coeffs[0];
+                        int16_t *coeffs =   lc->tu.coeffs[1];
                         int size = 1 << log2_trafo_size_c;
 
                         uint8_t *dst = &s->frame->data[2][(y0 >> vshift) * stride +
@@ -2457,9 +2457,11 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
     lc->cu.x                = x0;
     lc->cu.y                = y0;
+    lc->cu.rqt_root_cbf     = 1;
     lc->cu.pred_mode        = MODE_INTRA;
     lc->cu.part_mode        = PART_2Nx2N;
     lc->cu.intra_split_flag = 0;
+    lc->cu.pcm_flag         = 0;
 
     SAMPLE_CTB(s->skip_flag, x_cb, y_cb) = 0;
     for (x = 0; x < 4; x++)
@@ -2495,8 +2497,6 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         if (!s->sh.disable_deblocking_filter_flag)
             ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
     } else {
-        int pcm_flag = 0;
-
         if (s->sh.slice_type != I_SLICE)
             lc->cu.pred_mode = ff_hevc_pred_mode_decode(s);
         if (lc->cu.pred_mode != MODE_INTRA ||
@@ -2510,9 +2510,9 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
             if (lc->cu.part_mode == PART_2Nx2N && s->ps.sps->pcm_enabled_flag &&
                 log2_cb_size >= s->ps.sps->pcm.log2_min_pcm_cb_size &&
                 log2_cb_size <= s->ps.sps->pcm.log2_max_pcm_cb_size) {
-                pcm_flag = ff_hevc_pcm_flag_decode(s);
+                lc->cu.pcm_flag = ff_hevc_pcm_flag_decode(s);
             }
-            if (pcm_flag) {
+            if (lc->cu.pcm_flag) {
                 intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
                 ret = hls_pcm_sample(s, x0, y0, log2_cb_size);
                 if (s->ps.sps->pcm.loop_filter_disable_flag)
@@ -2562,14 +2562,12 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
             }
         }
 
-        if (!pcm_flag) {
-            int rqt_root_cbf = 1;
-
+        if (!lc->cu.pcm_flag) {
             if (lc->cu.pred_mode != MODE_INTRA &&
                 !(lc->cu.part_mode == PART_2Nx2N && lc->pu.merge_flag)) {
-                rqt_root_cbf = ff_hevc_no_residual_syntax_flag_decode(s);
+                lc->cu.rqt_root_cbf = ff_hevc_no_residual_syntax_flag_decode(s);
             }
-            if (rqt_root_cbf) {
+            if (lc->cu.rqt_root_cbf) {
                 const static int cbf[2] = { 0 };
                 lc->cu.max_trafo_depth = lc->cu.pred_mode == MODE_INTRA ?
                                          s->ps.sps->max_transform_hierarchy_depth_intra + lc->cu.intra_split_flag :
