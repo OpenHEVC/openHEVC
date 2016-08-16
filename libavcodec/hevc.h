@@ -705,6 +705,7 @@ typedef struct ScalingList {
 typedef struct HEVCSPS {
     unsigned vps_id;
     int chroma_format_idc;
+    int chroma_array_type;
     uint8_t separate_colour_plane_flag;
 
     ///< output (i.e. cropped) values
@@ -915,6 +916,7 @@ typedef struct HEVCPPS {
     int *ctb_addr_rs_to_ts; ///< CtbAddrRSToTS
     int *ctb_addr_ts_to_rs; ///< CtbAddrTSToRS
     int *tile_id;           ///< TileId
+    int *tile_width;           ///< TileWidth
     int *tile_pos_rs;       ///< TilePosRS
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
@@ -1213,6 +1215,8 @@ typedef struct HEVCLocalContext {
     DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_v[MAX_EDGE_BUFFER_SIZE>>2]);
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
+
+    int ctb_tile_rs;
 
     int ct_depth;
     CodingUnit cu;
