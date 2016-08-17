@@ -1684,7 +1684,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         if (sps->max_sub_layers > MAX_SUB_LAYERS) {
             av_log(avctx, AV_LOG_ERROR, "sps_max_sub_layers out of range: %d\n",
                    sps->max_sub_layers);
-            ret = AVERROR_INVALIDDATA;
+            return AVERROR_INVALIDDATA;
         }
     } else {
         uint8_t sps_ext_or_max_sub_layers = get_bits(gb, 3) + 1;
@@ -2065,6 +2065,18 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     print_cabac("sps_strong_intra_smoothing_enable_flag", sps->sps_strong_intra_smoothing_enable_flag);
     if (vui_present)
         decode_vui(gb, avctx, apply_defdispwin, sps);
+
+#if COM16_C806_EMT
+    // intra
+    sps->use_intra_emt = get_bits1(gb);
+    print_cabac(" use_intra_emt ",sps.use_intra_emt);
+    printf("%d \n",sps->use_intra_emt);
+    // inter
+    sps->use_inter_emt = get_bits1(gb);
+    print_cabac(" use_inter_emt ",sps.use_inter_emt);
+    printf("%d \n",sps->use_inter_emt);
+#endif
+
     int sps_extension_flag = get_bits1(gb); 
     print_cabac("sps_extension_flag", sps_extension_flag);
     if (sps_extension_flag) {
@@ -2156,6 +2168,11 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         return AVERROR_INVALIDDATA;
     }
 
+    if (sps->log2_ctb_size > MAX_LOG2_CTB_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "CTB size out of range: 2^%d\n", sps->log2_ctb_size);
+        return AVERROR_INVALIDDATA;
+        //goto err;
+    }
     if (sps->max_transform_hierarchy_depth_inter > sps->log2_ctb_size - sps->log2_min_tb_size) {
         av_log(avctx, AV_LOG_ERROR, "max_transform_hierarchy_depth_inter out of range: %d\n",
                sps->max_transform_hierarchy_depth_inter);

@@ -37,6 +37,7 @@
 #include "thread.h"
 #include "videodsp.h"
 #include "hevc_defs.h"
+#include "crypto.h"
 
 #define PARALLEL_SLICE   0
 #define PARALLEL_FILTERS 0
@@ -306,6 +307,7 @@ enum ScanType {
     SCAN_VERT,
 };
 
+#ifdef SVC_EXTENSION
 enum {
     DEFAULT=0,
     X2,
@@ -332,6 +334,7 @@ typedef struct UpsamplInf {
     int shift[MAX_NUM_CHANNEL_TYPE];
     int shift_up[MAX_NUM_CHANNEL_TYPE];
 } UpsamplInf;
+#endif
 
 typedef struct ShortTermRPS {
     unsigned int num_negative_pics;
@@ -431,9 +434,11 @@ typedef struct PTL {
     uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
     //PTL Ptl_sublayer[16];
 
-    //uint8_t level_idc;
-    //uint8_t setProfileIdc;
-    //uint8_t general_inbld_flag; 
+    int sub_layer_profile_space[MAX_SUB_LAYERS];
+    uint8_t sub_layer_tier_flag[MAX_SUB_LAYERS];
+    int sub_layer_profile_idc[MAX_SUB_LAYERS];
+    uint8_t sub_layer_profile_compatibility_flags[MAX_SUB_LAYERS][32];
+    int sub_layer_level_idc[MAX_SUB_LAYERS];
 } PTL;
 
 
@@ -485,6 +490,18 @@ enum Level   {
 enum Tier   {
     T_MAIN = 0,
     T_HIGH = 1,
+};
+
+/*
+ Encryption configuration
+ */
+enum hevc_crypto_features {
+    HEVC_CRYPTO_OFF = 0,
+    HEVC_CRYPTO_MVs = (1 << 0),
+    HEVC_CRYPTO_MV_SIGNS = (1 << 1),
+    HEVC_CRYPTO_TRANSF_COEFFS = (1 << 2),
+    HEVC_CRYPTO_TRANSF_COEFF_SIGNS = (1 << 3),
+    HEVC_CRYPTO_ON = (1 << 4) - 1,
 };
 
 
@@ -801,6 +818,11 @@ typedef struct HEVCSPS {
     HEVCWindow scaled_ref_layer_window[MAX_LAYERS];
     uint8_t    set_mfm_enabled_flag;
     uint8_t    v1_compatible;
+
+#if COM16_C806_EMT
+    uint8_t use_intra_emt;
+    uint8_t use_inter_emt;
+#endif
 } HEVCSPS;
 
 typedef struct SYUVP {
@@ -1218,6 +1240,8 @@ typedef struct HEVCLocalContext {
 
     int ctb_tile_rs;
 
+    Crypto_Handle       dbs_g;
+
     int ct_depth;
     CodingUnit cu;
     PredictionUnit pu;
@@ -1425,6 +1449,8 @@ typedef struct HEVCContext {
 	//int64_t last_frame_pts;
     int BL_width;
     int BL_height;
+    uint8_t encrypt_params;
+    uint32_t prev_pos;
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
@@ -1493,6 +1519,18 @@ int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0,
                              int x_cb, int y_cb);
+/*
+ * Fonctions codées stage Biatek A.
+ */
+#if COM16_C806_EMT
+uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma);
+uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size);
+int g_aucConvertTobit(int size);
+#endif
+
+/*
+ * Fin fonctions Stage
+ */
 int ff_hevc_pred_mode_decode(HEVCContext *s);
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth,
                                           int x0, int y0);
@@ -1565,7 +1603,11 @@ void ff_hevc_hls_filter_slice(  HEVCContext *s, int x, int y, int ctb_size);
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH);
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
-                                 int c_idx);
+                                 int c_idx
+#if COM16_C806_EMT
+                                 , int log2_cb_size
+#endif
+);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 

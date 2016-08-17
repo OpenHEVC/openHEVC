@@ -631,7 +631,7 @@ void ff_hevc_put_hevc_qpel_h16_8_sse2 (                          \
                                     int16_t *dst, ptrdiff_t dststride,         \
                                     uint8_t *_src, ptrdiff_t _srcstride,       \
                                     int height, intptr_t mx, intptr_t my, int width);
-void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
+void ff_hevcdsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
 

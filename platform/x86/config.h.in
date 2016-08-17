@@ -11,7 +11,7 @@
 #define FFMPEG_DATADIR "/usr/local/share/ffmpeg"
 #define AVCONV_DATADIR "/usr/local/share/ffmpeg"
 #define CC_IDENT "gcc 5.2.1 (Ubuntu 5.2.1-22ubuntu2) 20151010"
-#define av_restrict restrict
+#define av_restrict
 #define EXTERN_PREFIX ""
 #if defined(WIN32)
 #define EXTERN_ASM 
@@ -2251,4 +2251,5 @@
 #define CONFIG_LIBRTMPTE_PROTOCOL 0
 #define CONFIG_LIBSSH_PROTOCOL 0
 #define CONFIG_LIBSMBCLIENT_PROTOCOL 0
+#define HEVC_ENCRYPTION 0
 #endif /* FFMPEG_CONFIG_H */

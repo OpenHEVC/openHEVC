@@ -194,7 +194,7 @@ if(PROFILING)
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
-
+#find_package(CRYPTOPP_FOUND)
 find_package(SDL)
 find_package(SDL2)
 
@@ -453,6 +453,7 @@ list(APPEND libfilenames
     libavutil/arm/asm.S
     libavcodec/arm/fft_init_arm.c
     libavcodec/arm/fft_neon.S
+    libavcodec/arm/fft_vfp.S
     libavcodec/arm/hevcdsp_init_arm.c
     libavcodec/arm/hevcdsp_deblock_neon.S
     libavcodec/arm/hevcdsp_idct_neon.S
@@ -464,10 +465,13 @@ list(APPEND libfilenames
     libavcodec/arm/hpeldsp_arm.S
     libavcodec/arm/hpeldsp_init_arm.c
     libavcodec/arm/hpeldsp_init_neon.c
+    libavcodec/arm/hpeldsp_init_armv6.c
     libavcodec/arm/hpeldsp_neon.S
+    libavcodec/arm/hpeldsp_armv6.S
     libavcodec/arm/int_neon.S
     libavcodec/arm/jrevdct_arm.S
     libavcodec/arm/mdct_neon.S
+    libavcodec/arm/mdct_vfp.S
     libavcodec/arm/rdft_neon.S
     libavcodec/arm/simple_idct_arm.S
     libavcodec/arm/simple_idct_armv6.S
@@ -508,6 +512,11 @@ list(APPEND libfilenames
     compat/msvcrt/snprintf.c
 )
 endif()
+if(CRYPTOPP_FOUND)
+list(APPEND libfilenames
+    libavcodec/crypto.cpp
+)
+endif()
 
 #if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
 #    option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
@@ -516,7 +525,12 @@ endif()
 #endif()
 add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
+
+if(CRYPTOPP_FOUND)
+target_link_libraries(LibOpenHevcWrapper cryptopp)
+else()
 target_link_libraries(LibOpenHevcWrapper m)
+endif()
 
 include_directories(. gpac/modules/openhevc_dec/ platform/x86/)
 
