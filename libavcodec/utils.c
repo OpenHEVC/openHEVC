@@ -61,7 +61,7 @@
 # include <iconv.h>
 #endif
 
-#include "libavutil/x86/emms.h" //TMP_DEV_PL
+#include "libavutil/internal.h" //TMP_DEV_PL
 
 #include "libavutil/ffversion.h"
 const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;

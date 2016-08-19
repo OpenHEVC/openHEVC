@@ -368,7 +368,6 @@ libavcodec/h264qpel.h
 libavcodec/h264_parse.c
 libavcodec/h264data.c
 libavcodec/h2645_parse.c
-libavcodec/x86/h264chroma_init.c
     libavcodec/ac3tab.c
     libavcodec/allcodecs.c
     libavcodec/avfft.c
@@ -432,7 +431,6 @@ libavcodec/profiles.c
 libavcodec/mp3_header_decompress_bsf.c
 libavcodec/jpegtables.c
 libavcodec/movsub_bsf.c
-libavcodec/x86/idctdsp_init.c
 libavcodec/remove_extradata_bsf.c
 libavcodec/dump_extradata_bsf.c
 libavcodec/dca_core_bsf.c
@@ -504,6 +502,8 @@ libavcodec/x86/h264dsp_init.c
 libavcodec/x86/h264_intrapred_init.c
 libavcodec/x86/bswapdsp_init.c
 libavcodec/x86/me_cmp_init.c
+libavcodec/x86/idctdsp_init.c
+libavcodec/x86/h264chroma_init.c
 )
 endif()
 if(WIN32)
