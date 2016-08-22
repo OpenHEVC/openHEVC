@@ -1495,7 +1495,7 @@ static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t
 
 static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     uint16_t *src;
-    uint16_t *dst = ref0->frame->data[0];
+    uint16_t *dst = (uint16_t *)ref0->frame->data[0];
     uint16_t *tmp1;
 
     int ctb_size  = 1<<s->ps.sps->log2_ctb_size;
@@ -1527,7 +1527,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
 //      colorMapping( s, bl_frame->f->data[0], bl_frame->f->data[1], bl_frame->f->data[2],
 //          		  bl_frame->f->linesize[0], bl_frame->f->linesize[1], x0, y0, x0>>1, y0>>1,
 //                          bl_width, bl_height);
-      copy_block( s, s->HEVClc->color_mapping_cgs_y,
+      copy_block( s, (uint8_t *)s->HEVClc->color_mapping_cgs_y,
                   ref0->frame->data[0] + y0 * el_stride + x0,
                   bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_LUMA);
     } else { /* spatial scalability */
@@ -1572,7 +1572,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
 
       tmp1 = s->HEVClc->edge_emu_buffer_up_h;
 
-      ret = s->vdsp.emulated_edge_up_h(tmp1 , src , bl_stride, &s->ps.sps->scaled_ref_layer_window[ref_layer_id],
+      ret = s->vdsp.emulated_edge_up_h((uint8_t *)tmp1 , (uint8_t *)src , bl_stride, &s->ps.sps->scaled_ref_layer_window[ref_layer_id],
                                            bPbW + bl_edge_left + bl_edge_right, bPbH + bl_edge_top + bl_edge_bottom,
                                            bl_edge_left , bl_edge_right,100, MAX_EDGE-1);
 
@@ -1585,7 +1585,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
 
       tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE);
 
-      s->hevcdsp.upsample_filter_block_luma_h[s->up_filter_inf.idx](tmp0, MAX_EDGE_BUFFER_STRIDE, src, bl_stride, x0, bl_x,
+      s->hevcdsp.upsample_filter_block_luma_h[s->up_filter_inf.idx]((int16_t *)tmp0, MAX_EDGE_BUFFER_STRIDE, (uint8_t *)src, bl_stride, x0, bl_x,
                                                                     ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
                                                                     &s->ps.sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
 
@@ -1595,7 +1595,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
       if(ret)
         tmp0 += ((MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE);
 
-      s->hevcdsp.upsample_filter_block_luma_v[s->up_filter_inf.idx](dst , ref0->frame->linesize[0], tmp0 , MAX_EDGE_BUFFER_STRIDE,
+      s->hevcdsp.upsample_filter_block_luma_v[s->up_filter_inf.idx]((uint8_t *)dst , ref0->frame->linesize[0], tmp0 , MAX_EDGE_BUFFER_STRIDE,
                                                                     bl_y , x0, y0, ePbW, ePbH, el_width, el_height,
                                                                     &s->ps.sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
     }
@@ -1627,10 +1627,10 @@ static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y
 
     if (s->up_filter_inf.idx == SNR) {
       bl_stride = MAX_EDGE_BUFFER_STRIDE>>1;
-      copy_block( s, s->HEVClc->color_mapping_cgs_u,
+      copy_block( s, (uint8_t *)s->HEVClc->color_mapping_cgs_u,
                   ref0->frame->data[1] + y0 * el_stride + x0,
                   bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
-      copy_block( s, s->HEVClc->color_mapping_cgs_v,
+      copy_block( s, (uint8_t *)s->HEVClc->color_mapping_cgs_v,
                   ref0->frame->data[2] + y0 * el_stride + x0,
                   bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
     } else {
@@ -1668,7 +1668,7 @@ static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y
             src = s->HEVClc->color_mapping_cgs_v + bl_stride + 1;
 
           tmp1 = s->HEVClc->edge_emu_buffer_up_h;
-          ret = s->vdsp.emulated_edge_up_h(tmp1,   src , bl_stride,
+          ret = s->vdsp.emulated_edge_up_h((uint8_t *)tmp1,   (uint8_t *)src , bl_stride,
                                              &s->ps.sps->scaled_ref_layer_window[ref_layer_id],
                                              bPbW + bl_edge_left+bl_edge_right, bPbH + bl_edge_top + bl_edge_bottom,
                                              bl_edge_left , bl_edge_right,100, MAX_EDGE_CR-1);
@@ -1685,7 +1685,7 @@ static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y
 
           tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE_CR - 1) * MAX_EDGE_BUFFER_STRIDE);
 
-          s->hevcdsp.upsample_filter_block_cr_h[s->up_filter_inf.idx](  tmp0, MAX_EDGE_BUFFER_STRIDE, src, bl_stride,
+          s->hevcdsp.upsample_filter_block_cr_h[s->up_filter_inf.idx](  tmp0, MAX_EDGE_BUFFER_STRIDE, (uint8_t *)src, bl_stride,
                                                                         x0, bl_x, ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
                                                                         &s->ps.sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
 
@@ -1767,7 +1767,7 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
         if(bl_y + bPbH > bl_height)
             bPbH = bl_height - bl_y;
 
-        tmp1 = s->HEVClc->edge_emu_buffer_up_h+ ((MAX_EDGE - 1));
+        tmp1 = (uint8_t *)(s->HEVClc->edge_emu_buffer_up_h+ ((MAX_EDGE - 1)));
 
         src = bl_frame->data[0] + (bl_y - bl_edge_top) * bl_stride + (bl_x - bl_edge_left);
 
@@ -1873,7 +1873,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
 
         	bl_stride = bl_frame->linesize[1];
 
-        	tmp1=s->HEVClc->edge_emu_buffer_up_h + ((MAX_EDGE_CR - 1)) + MAX_EDGE_BUFFER_STRIDE;
+            tmp1=(uint8_t *)s->HEVClc->edge_emu_buffer_up_h + ((MAX_EDGE_CR - 1)) + MAX_EDGE_BUFFER_STRIDE;
 
             src = bl_frame->data[cr] + (bl_y - bl_edge_top0 - bl_edge_top) * bl_stride + ( bl_x - bl_edge_left);
 
