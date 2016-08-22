@@ -266,7 +266,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             AVFrame *dst = out;
             AVFrame *src = frame->frame;
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src->format);
-            int pixel_shift = !!(desc->comp[0].depth_minus1 > 7);
+            int pixel_shift = !!(desc->comp[0].depth > 8);
 
             if (frame->field_order == AV_FIELD_TT ||
                 frame->field_order == AV_FIELD_BB) {
