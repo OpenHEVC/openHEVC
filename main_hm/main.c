@@ -324,7 +324,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 						libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
 						libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
 						SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
-								openHevcFrame.pvY, openHevcFrame.pvU, openHevcFrame.pvV);
+                                (uint8_t *)openHevcFrame.pvY, (uint8_t *)openHevcFrame.pvU, (uint8_t *)openHevcFrame.pvV);
 					}
 	#endif
 				/* Write output file if any
