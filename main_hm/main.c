@@ -198,10 +198,10 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 		//av_dump_format(pFormatCtx[i], 0, filename, 0);
 
 		const size_t extra_size_alloc = pFormatCtx[i]->streams[video_stream_idx]->codec->extradata_size > 0 ?
-		(pFormatCtx[i]->streams[video_stream_idx]->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
+        (pFormatCtx[i]->streams[video_stream_idx]->codecpar->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
 
         if (extra_size_alloc){
-			libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx[i]->streams[video_stream_idx]->codec->extradata, extra_size_alloc);
+            libOpenHevcCopyExtraData(openHevcHandle, pFormatCtx[i]->streams[video_stream_idx]->codecpar->extradata, extra_size_alloc);
 		}
 
 		if(!split_layers){ //We only need one AVFormatContext layer
