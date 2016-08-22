@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "golomb.h"
 #include "hevc.h"
 
