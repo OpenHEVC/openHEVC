@@ -51,13 +51,13 @@ void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t
 ///////////////////////////////////////////////////////////////////////////////
 //IDCT functions
 ///////////////////////////////////////////////////////////////////////////////
-void ff_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+void oh_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-void ff_hevc_transform_4x4_luma_8_sse2(int16_t *coeffs);
-void ff_hevc_transform_4x4_luma_10_sse2(int16_t *coeffs);
-void ff_hevc_transform_4x4_luma_12_sse2(int16_t *coeffs);
+void oh_hevc_transform_4x4_luma_8_sse2(int16_t *coeffs);
+void oh_hevc_transform_4x4_luma_10_sse2(int16_t *coeffs);
+void oh_hevc_transform_4x4_luma_12_sse2(int16_t *coeffs);
 
-#define IDCT_FUNC(s, b) void ff_hevc_transform_ ## s ## x ## s ##_## b ##_sse2\
+#define IDCT_FUNC(s, b) void oh_hevc_transform_ ## s ## x ## s ##_## b ##_sse2\
             (int16_t *coeffs, int col_limit);
 
 IDCT_FUNC(4, 8)
@@ -81,45 +81,52 @@ IDCT_FUNC(32, 12)
 		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 #define TRANSFORM_ADD_FUNC_AVX2(s, b) void ff_hevc_transform_add ## s ## _ ## b ##_avx2\
 		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-#define TRANSFORM_ADD2_FUNC_SSE2(s, b) void ff_hevc_transform_ ## s ## x ## s ##_add_## b ##_sse2\
-		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
 TRANSFORM_ADD_FUNC_MMXEXT(4,8)
 TRANSFORM_ADD_FUNC_SSE2(8,8)
 TRANSFORM_ADD_FUNC_SSE2(16,8)
 TRANSFORM_ADD_FUNC_SSE2(32,8)
 
+TRANSFORM_ADD_FUNC_AVX(8,8)
+TRANSFORM_ADD_FUNC_AVX(16,8)
+TRANSFORM_ADD_FUNC_AVX(32,8)
+
 TRANSFORM_ADD_FUNC_MMXEXT(4,10)
 TRANSFORM_ADD_FUNC_SSE2(8,10)
 TRANSFORM_ADD_FUNC_SSE2(16,10)
 TRANSFORM_ADD_FUNC_SSE2(32,10)
 
-TRANSFORM_ADD2_FUNC_SSE2(4,8)
-TRANSFORM_ADD2_FUNC_SSE2(8,8)
-TRANSFORM_ADD2_FUNC_SSE2(16,8)
-TRANSFORM_ADD2_FUNC_SSE2(32,8)
-
-TRANSFORM_ADD2_FUNC_SSE2(4,10)
-TRANSFORM_ADD2_FUNC_SSE2(8,10)
-TRANSFORM_ADD2_FUNC_SSE2(16,10)
-TRANSFORM_ADD2_FUNC_SSE2(32,10)
-
-TRANSFORM_ADD2_FUNC_SSE2(4,12)
-TRANSFORM_ADD2_FUNC_SSE2(8,12)
-TRANSFORM_ADD2_FUNC_SSE2(16,12)
-TRANSFORM_ADD2_FUNC_SSE2(32,12)
-
 TRANSFORM_ADD_FUNC_AVX(8,10)
 TRANSFORM_ADD_FUNC_AVX(16,10)
 TRANSFORM_ADD_FUNC_AVX(32,10)
 
+TRANSFORM_ADD_FUNC_AVX2(16,8)
+
 TRANSFORM_ADD_FUNC_AVX2(16,10)
 TRANSFORM_ADD_FUNC_AVX2(32,10)
 
-void ff_hevc_transform_4x4_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
-void ff_hevc_transform_8x8_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
-void ff_hevc_transform_16x16_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
-void ff_hevc_transform_32x32_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+#define OH_TRANSFORM_ADD_FUNC_SSE2(s, b) void oh_hevc_transform_ ## s ## x ## s ##_add_## b ##_sse2\
+		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+
+OH_TRANSFORM_ADD_FUNC_SSE2(4,8)
+OH_TRANSFORM_ADD_FUNC_SSE2(8,8)
+OH_TRANSFORM_ADD_FUNC_SSE2(16,8)
+OH_TRANSFORM_ADD_FUNC_SSE2(32,8)
+
+OH_TRANSFORM_ADD_FUNC_SSE2(4,10)
+OH_TRANSFORM_ADD_FUNC_SSE2(8,10)
+OH_TRANSFORM_ADD_FUNC_SSE2(16,10)
+OH_TRANSFORM_ADD_FUNC_SSE2(32,10)
+
+OH_TRANSFORM_ADD_FUNC_SSE2(4,12)
+OH_TRANSFORM_ADD_FUNC_SSE2(8,12)
+OH_TRANSFORM_ADD_FUNC_SSE2(16,12)
+OH_TRANSFORM_ADD_FUNC_SSE2(32,12)
+
+void oh_hevc_transform_4x4_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void oh_hevc_transform_8x8_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void oh_hevc_transform_16x16_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void oh_hevc_transform_32x32_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
 
 ///////////////////////////////////////////////////////////////////////////////
 // MC functions
