@@ -698,8 +698,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
 
-            c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
-            c->sao_edge_filter    = ff_hevc_sao_edge_filter_8_sse;
+            c->sao_band_filter    = oh_hevc_sao_band_filter_0_8_sse;
+            c->sao_edge_filter    = oh_hevc_sao_edge_filter_8_sse;
 
             // c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
             // c->sao_edge_filter[0] = sao_edge_filter_0_sse_8;
@@ -869,8 +869,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4);
 
-            c->sao_band_filter    = ff_hevc_sao_band_filter_0_10_sse;
-            c->sao_edge_filter    = ff_hevc_sao_edge_filter_10_sse;
+            c->sao_band_filter    = oh_hevc_sao_band_filter_0_10_sse;
+            c->sao_edge_filter    = oh_hevc_sao_edge_filter_10_sse;
         }
         if (EXTERNAL_AVX(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_avx;
@@ -1062,8 +1062,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_12_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_ssse3;
 
-            c->sao_band_filter = ff_hevc_sao_band_filter_0_12_sse;
-            c->sao_edge_filter = ff_hevc_sao_edge_filter_12_sse;
+            c->sao_band_filter = oh_hevc_sao_band_filter_0_12_sse;
+            c->sao_edge_filter = oh_hevc_sao_edge_filter_12_sse;
         }
         if (EXTERNAL_SSE4(cpu_flags) && ARCH_X86_64) {
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 12, sse4);

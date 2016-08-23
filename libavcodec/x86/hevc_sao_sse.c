@@ -149,7 +149,7 @@ static inline __m128i _MM_CVTEPI8_EPI16(__m128i m0) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define SAO_BAND_FILTER(W, D)                                                  \
-void ff_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
+void oh_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
         uint8_t *_dst, uint8_t *_src,                                          \
         ptrdiff_t _stride_dst, ptrdiff_t _stride_src,                          \
         struct SAOParams *sao,                                                 \
@@ -250,7 +250,7 @@ SAO_BAND_FILTER( 8, 12)
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define SAO_EDGE_FILTER(D)                                                     \
-void ff_hevc_sao_edge_filter_ ## D ##_sse(             \
+void oh_hevc_sao_edge_filter_ ## D ##_sse(             \
         uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst,                   \
         ptrdiff_t _stride_src, SAOParams *sao, int width,                      \
         int height, int c_idx) {                                               \
@@ -290,7 +290,7 @@ void ff_hevc_sao_edge_filter_ ## D ##_sse(             \
 
 //SAO_EDGE_FILTER( 8)
 
-void ff_hevc_sao_edge_filter_8_sse(uint8_t *dst, uint8_t *src,
+void oh_hevc_sao_edge_filter_8_sse(uint8_t *dst, uint8_t *src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                   SAOParams *sao,
                                   int width, int height,
