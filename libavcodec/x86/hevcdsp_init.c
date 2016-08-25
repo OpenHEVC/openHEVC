@@ -666,7 +666,12 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_sse2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_sse2;
 
-
+//Fixme ffmpeg or openHEVC optim
+/*
+            c->transform_add[1]    = ff_hevc_transform_add8_8_sse2;
+            c->transform_add[2]    = ff_hevc_transform_add16_8_sse2;
+            c->transform_add[3]    = ff_hevc_transform_add32_8_sse2;
+*/
 
 
 #if HAVE_SSE2
@@ -733,6 +738,10 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_avx;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_avx;
             }
+
+            c->transform_add[1]    = ff_hevc_transform_add8_8_avx;
+            c->transform_add[2]    = ff_hevc_transform_add16_8_avx;
+            c->transform_add[3]    = ff_hevc_transform_add32_8_avx;
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
 
@@ -825,6 +834,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_qpel_bi[8][1][0] = ff_hevc_put_hevc_bi_qpel_v48_8_avx2;
                 c->put_hevc_qpel_bi[9][1][0] = ff_hevc_put_hevc_bi_qpel_v64_8_avx2;
             }
+
+            c->transform_add[3]    = ff_hevc_transform_add32_8_avx2;
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
@@ -838,14 +849,15 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (ARCH_X86_64) {
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_sse2;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_sse2;
-                c->transform_add[1]    = ff_hevc_transform_add8_10_sse2;
-                c->transform_add[2]    = ff_hevc_transform_add16_10_sse2;
-                c->transform_add[3]    = ff_hevc_transform_add32_10_sse2;
             }
 
             c->idct_dc[1] = ff_hevc_idct8x8_dc_10_sse2;
             c->idct_dc[2] = ff_hevc_idct16x16_dc_10_sse2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_10_sse2;
+
+            c->transform_add[1]    = ff_hevc_transform_add8_10_sse2;
+            c->transform_add[2]    = ff_hevc_transform_add16_10_sse2;
+            c->transform_add[3]    = ff_hevc_transform_add32_10_sse2;
 
             c->idct_4x4_luma = oh_hevc_transform_4x4_luma_10_sse2;
             c->idct[0] = oh_hevc_transform_4x4_10_sse2;
@@ -888,9 +900,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct16x16_dc_10_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_10_avx2;
             if (ARCH_X86_64) {
-                c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
-                c->transform_add[3] = ff_hevc_transform_add32_10_avx2;
-            
                 c->put_hevc_epel[5][0][0] = ff_hevc_put_hevc_pel_pixels16_10_avx2;
                 c->put_hevc_epel[6][0][0] = ff_hevc_put_hevc_pel_pixels24_10_avx2;
                 c->put_hevc_epel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_10_avx2;
@@ -1034,6 +1043,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_qpel_bi[8][1][1] = ff_hevc_put_hevc_bi_qpel_hv48_10_avx2;
                 c->put_hevc_qpel_bi[9][1][1] = ff_hevc_put_hevc_bi_qpel_hv64_10_avx2;
             }
+            c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
+            c->transform_add[3] = ff_hevc_transform_add32_10_avx2;
 
         }
     } else if (bit_depth == 12) {
