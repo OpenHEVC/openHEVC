@@ -152,42 +152,95 @@ DECLARE_ALIGNED(32, const int16_t, oh_hevc_qpel_filters_avx2_16[3][4][16]) = {
 #define QPEL_FILTER_14(idx)              QPEL_FILTER_16(idx)
 
 #define EPEL_FILTER_8(idx)                                                                         \
-        const __m256i f1 = _mm256_load_si256((__m256i *) oh_hevc_epel_filters_avx2[idx][0]);       \
-        const __m256i f2 = _mm256_load_si256((__m256i *) oh_hevc_epel_filters_avx2[idx][1])
+    const __m256i f1 = _mm256_load_si256((__m256i *) oh_hevc_epel_filters_avx2[idx][0]);       \
+    const __m256i f2 = _mm256_load_si256((__m256i *) oh_hevc_epel_filters_avx2[idx][1])
 
 #define EPEL_FILTER_16(idx)                                                                        \
-        const __m256i f1 = _mm256_set1_epi32(*((int32_t *) oh_hevc_epel_filters_avx2_16[idx][0])); \
-        const __m256i f2 = _mm256_set1_epi32(*((int32_t *) oh_hevc_epel_filters_avx2_16[idx][1]))
+    const __m256i f1 = _mm256_set1_epi32(*((int32_t *) oh_hevc_epel_filters_avx2_16[idx][0])); \
+    const __m256i f2 = _mm256_set1_epi32(*((int32_t *) oh_hevc_epel_filters_avx2_16[idx][1]))
 
 #define EPEL_FILTER_10(idx)  EPEL_FILTER_16(idx)
 #define EPEL_FILTER_12(idx)  EPEL_FILTER_16(idx)
 #define EPEL_FILTER_14(idx)  EPEL_FILTER_16(idx)
 
 ////////////////////////////////////////////////////////////////////////////////
-//
+// Source and destination initialization
 ////////////////////////////////////////////////////////////////////////////////
 #define SRC_INIT_8()                                                           \
     uint8_t  *src       = (uint8_t*) _src;                                     \
     const int srcstride = _srcstride
-#define SRC_INIT_10()                                                          \
+
+#define SRC_INIT_16()                                                          \
     uint16_t *src       = (uint16_t*) _src;                                    \
     const int srcstride = _srcstride >> 1
-#define SRC_INIT_12() SRC_INIT_10()
-#define SRC_INIT_14() SRC_INIT_10()
+
+#define SRC_INIT_10() SRC_INIT_16()
+#define SRC_INIT_12() SRC_INIT_16()
+#define SRC_INIT_14() SRC_INIT_16()
+
+#define SRC_INIT_H_8()                                                         \
+    uint8_t  *src = ((uint8_t*) _src) - 1;                                     \
+    ptrdiff_t srcstride = _srcstride
+
+#define SRC_INIT_H_16()                                                        \
+    uint16_t *src = ((uint16_t*) _src) - 1;                                    \
+    ptrdiff_t srcstride  = _srcstride >> 1
+
+#define SRC_INIT_H_10() SRC_INIT_H_16()
+#define SRC_INIT_H_12() SRC_INIT_H_16()
+#define SRC_INIT_H_14() SRC_INIT_H_16()
+
+#define SRC_INIT_V_8()                                                         \
+    ptrdiff_t srcstride = _srcstride;                                          \
+    uint8_t  *src       = ((uint8_t*) _src) - srcstride
+
+#define SRC_INIT_V_16()                                                        \
+    ptrdiff_t srcstride = _srcstride >> 1;                                     \
+    uint16_t *src       = ((uint16_t*) _src) - srcstride
+
+#define SRC_INIT_V_10() SRC_INIT_V_16()
+#define SRC_INIT_V_12() SRC_INIT_V_16()
+#define SRC_INIT_V_14() SRC_INIT_V_16()
+
+#define SRC_INIT_HV_8()                                                        \
+    uint8_t  *src_bis, *src = ((uint8_t*) _src) - 1;                           \
+    ptrdiff_t srcstride = _srcstride
+
+#define SRC_INIT_HV_16()                                                       \
+    uint16_t *src_bis, *src = ((uint16_t*) _src) - 1;                          \
+    ptrdiff_t srcstride  = _srcstride >> 1
+
+#define SRC_INIT_HV_10() SRC_INIT_HV_16()
+#define SRC_INIT_HV_12() SRC_INIT_HV_16()
+#define SRC_INIT_HV_14() SRC_INIT_HV_16()
+
+#define SRC_INIT_WEIGHTED_HV_8()                                               \
+    uint8_t *dst_bis  = dst;                                                   \
+    uint8_t  *src_bis, *src = ((uint8_t*) _src) - 1;                           \
+    ptrdiff_t srcstride = _srcstride
+
+#define SRC_INIT_WEIGHTED_HV_16()                                              \
+    uint16_t *dst_bis  = dst;                                                  \
+    uint16_t *src_bis, *src = ((uint16_t*) _src) - 1;                          \
+    ptrdiff_t srcstride  = _srcstride >> 1
+
+#define SRC_INIT_WEIGHTED_HV_10() SRC_INIT_WEIGHTED_HV_16()
+#define SRC_INIT_WEIGHTED_HV_12() SRC_INIT_WEIGHTED_HV_16()
+#define SRC_INIT_WEIGHTED_HV_14() SRC_INIT_WEIGHTED_HV_16()
+
 #define DST_INIT_8()                                                           \
     uint8_t *dst        = (uint8_t *) _dst;                                    \
     const int dststride = _dststride
-#define DST_INIT_10()                                                          \
+
+#define DST_INIT_16()                                                          \
     uint16_t *dst       = (uint16_t *) _dst;                                   \
     const int dststride = _dststride >> 1
-#define DST_INIT_12() DST_INIT_10()
-#define DST_INIT_14() DST_INIT_10()
 
-#define SRC_INIT1_8()                                                          \
-        src       = (uint8_t*) _src
-#define SRC_INIT1_10()                                                         \
-        src       = (uint16_t*) _src
-#define SRC_INIT1_12() SRC_INIT1_10()
+#define DST_INIT_10() DST_INIT_16()
+#define DST_INIT_12() DST_INIT_16()
+#define DST_INIT_14() DST_INIT_16()
+
+
 
 #define PEL_STORE_2(tab)                                                       \
     *((uint32_t *) &tab[x]) = _mm_cvtsi128_si32(x1)
@@ -614,13 +667,7 @@ void oh_hevc_put_hevc_bi_w_pel_pixels ## H ## _ ## D ## _avx2_ (                
 ////////////////////////////////////////////////////////////////////////////////
 // oh_hevc_put_hevc_epel_hX_X_avx2
 ////////////////////////////////////////////////////////////////////////////////
-#define SRC_INIT_H_8()                                                         \
-    uint8_t  *src = ((uint8_t*) _src) - 1;                                     \
-    ptrdiff_t srcstride = _srcstride
-#define SRC_INIT_H_10()                                                        \
-    uint16_t *src = ((uint16_t*) _src) - 1;                                    \
-    ptrdiff_t srcstride  = _srcstride >> 1
-#define SRC_INIT_H_12() SRC_INIT_H_10()
+
 
 #define EPEL_LOAD_8(src, stride)                                               \
     x1 = _mm_loadl_epi64((__m128i *) &src[x]);                                 \
@@ -797,14 +844,6 @@ void oh_hevc_put_hevc_bi_w_epel_h ## H ## _ ## D ## _avx2_ (                    
 ////////////////////////////////////////////////////////////////////////////////
 // oh_hevc_put_hevc_epel_vX_X_avx2
 ////////////////////////////////////////////////////////////////////////////////
-#define SRC_INIT_V_8()                                                         \
-    ptrdiff_t srcstride = _srcstride;                                          \
-    uint8_t  *src       = ((uint8_t*) _src) - srcstride
-#define SRC_INIT_V_10()                                                        \
-    ptrdiff_t srcstride = _srcstride >> 1;                                     \
-    uint16_t *src       = ((uint16_t*) _src) - srcstride
-#define SRC_INIT_V_12() SRC_INIT_V_10()
-
 #define PUT_HEVC_EPEL_V_VAR2_8()                                               \
     __m256i x1, x2, x3, x4, f1, f2
 #define PUT_HEVC_EPEL_V_VAR4_8()  PUT_HEVC_EPEL_V_VAR2_8()
@@ -944,13 +983,7 @@ void oh_hevc_put_hevc_bi_w_epel_v ## H ## _ ## D ## _avx2_ (                    
 ////////////////////////////////////////////////////////////////////////////////
 // oh_hevc_put_hevc_epel_hvX_X_avx2
 ////////////////////////////////////////////////////////////////////////////////
-#define SRC_INIT_HV_8()                                                        \
-    uint8_t  *src_bis, *src = ((uint8_t*) _src) - 1;                           \
-    ptrdiff_t srcstride = _srcstride
-#define SRC_INIT_HV_10()                                                       \
-    uint16_t *src_bis, *src = ((uint16_t*) _src) - 1;                          \
-    ptrdiff_t srcstride  = _srcstride >> 1
-#define SRC_INIT_HV_12() SRC_INIT_HV_10()
+
 
 #define PUT_HEVC_EPEL_HV(H, D)                                                 \
 void oh_hevc_put_hevc_epel_hv ## H ## _ ## D ## _avx2_ (                         \
@@ -997,16 +1030,6 @@ void oh_hevc_put_hevc_epel_hv ## H ## _ ## D ## _avx2_ (                        
         dst = dst_bis;                                                         \
     }                                                                          \
 }
-
-#define SRC_INIT_WEIGHTED_HV_8()                                               \
-    uint8_t *dst_bis  = dst;                                                   \
-    uint8_t  *src_bis, *src = ((uint8_t*) _src) - 1;                           \
-    ptrdiff_t srcstride = _srcstride
-#define SRC_INIT_WEIGHTED_HV_10()                                              \
-    uint16_t *dst_bis  = dst;                                                  \
-    uint16_t *src_bis, *src = ((uint16_t*) _src) - 1;                          \
-    ptrdiff_t srcstride  = _srcstride >> 1
-#define SRC_INIT_WEIGHTED_HV_12() SRC_INIT_WEIGHTED_HV_10()
 
 #define PUT_HEVC_BI_EPEL_HV(H, D)                                              \
 void oh_hevc_put_hevc_bi_epel_hv ## H ## _ ## D ## _avx2_ (                      \
