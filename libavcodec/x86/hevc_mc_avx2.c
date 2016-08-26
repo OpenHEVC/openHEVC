@@ -482,6 +482,8 @@ DECLARE_ALIGNED(32, const int16_t, oh_hevc_qpel_filters_avx2_16[3][4][16]) = {
     t2 = _mm256_unpackhi_epi16(x3, x4);                                        \
     x2 = _mm256_unpacklo_epi16(x3, x4)
 
+#define QPEL_LOAD_LO_10(src, srcstride) QPEL_LOAD_LO_16(_mm256_loadu_si256, src, srcstride)
+
 #define QPEL_LOAD_LO16_10(src, srcstride) QPEL_LOAD_LO_16(_mm256_loadu_si256, src, srcstride)
 #define QPEL_LOAD_LO16_12(src, srcstride) QPEL_LOAD_LO_16(_mm256_loadu_si256, src, srcstride)
 //???
@@ -508,9 +510,12 @@ DECLARE_ALIGNED(32, const int16_t, oh_hevc_qpel_filters_avx2_16[3][4][16]) = {
     t2 = _mm256_unpackhi_epi16(x3, x4);                                        \
     x2 = _mm256_unpacklo_epi16(x3, x4)
 
+#define QPEL_LOAD_HI_10(src, srcstride) QPEL_LOAD_HI_16(_mm256_loadu_si256, src, srcstride)
+
 #define QPEL_LOAD_HI16_10(src, srcstride) QPEL_LOAD_HI_16(_mm256_loadu_si256, src, srcstride)
-#define QPEL_LOAD_HI8_14(src, srcstride)  QPEL_LOAD_HI_16(_mm_load_si128 ,    src, srcstride)
 #define QPEL_LOAD_HI16_12(src, srcstride) QPEL_LOAD_HI_16(_mm256_loadu_si256, src, srcstride)
+
+#define QPEL_LOAD_HI8_14(src, srcstride)  QPEL_LOAD_HI_16(_mm_load_si128 ,    src, srcstride)
 
 //QPEL LOAD 4
 #define QPEL_LOAD_LO_4_10(inst, src, srcstride)                                \
@@ -1028,7 +1033,7 @@ void oh_hevc_put_hevc_bi_pel_pixels ## H ## _ ## D ## _avx2_ (                 \
     int x, y;                                                                  \
     PUT_HEVC_PEL_PIXELS_VAR ## H ## _ ## D();                                  \
     SRC_INIT_ ## D();                                                          \
-    BI_UNWEIGHTED_INIT(D);                                                     \
+    BI_INIT(D);                                                                \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
             PUT_HEVC_PEL_PIXELS_BI_LOOP_VAR ## H ## _ ## D();                  \
@@ -1142,7 +1147,7 @@ void oh_hevc_put_hevc_bi_epel_h ## H ## _ ## D ## _avx2_ (                     \
     int x, y;                                                                  \
     PUT_HEVC_EPEL_H_VAR ## H ## _ ## D();                                      \
     SRC_INIT_H_ ## D();                                                        \
-    BI_UNWEIGHTED_INIT(D);                                                     \
+    BI_INIT(D);                                                                \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -1167,7 +1172,7 @@ void oh_hevc_put_hevc_uni_epel_h ## H ## _ ## D ## _avx2_ (                    \
     int x, y;                                                                  \
     PUT_HEVC_EPEL_H_VAR ## H ## _ ## D();                                      \
     SRC_INIT_H_ ## D();                                                        \
-    UNI_UNWEIGHTED_INIT(D);                                                    \
+    UNI_INIT(D);                                                               \
     EPEL_FILTER_ ## D(f1, f2, mx - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -1266,7 +1271,7 @@ void oh_hevc_put_hevc_bi_epel_v ## H ## _ ## D ## _avx2_ (                     \
     int x, y;                                                                  \
     PUT_HEVC_EPEL_V_VAR ## H ## _ ## D();                                      \
     SRC_INIT_V_ ## D();                                                        \
-    BI_UNWEIGHTED_INIT(D);                                                     \
+    BI_INIT(D);                                                                \
     EPEL_FILTER_ ## D(f1, f2, my - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -1291,7 +1296,7 @@ void oh_hevc_put_hevc_uni_epel_v ## H ## _ ## D ## _avx2_ (                    \
     int x, y;                                                                  \
     PUT_HEVC_EPEL_V_VAR ## H ## _ ## D();                                      \
     SRC_INIT_V_ ## D();                                                        \
-    UNI_UNWEIGHTED_INIT(D);                                                    \
+    UNI_INIT(D);                                                               \
     EPEL_FILTER_ ## D(f1, f2, my - 1);                                         \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -1414,7 +1419,7 @@ void oh_hevc_put_hevc_bi_epel_hv ## H ## _ ## D ## _avx2_ (                    \
                                         intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     __m256i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;            \
-    BI_UNWEIGHTED_INIT(D);                                                     \
+    BI_INIT(D);                                                                \
     int16_t *src2_bis = src2;                                                  \
     SRC_INIT_WEIGHTED_HV_ ## D();                                              \
     src -= EPEL_EXTRA_BEFORE * srcstride;                                      \
@@ -1465,7 +1470,7 @@ void oh_hevc_put_hevc_uni_epel_hv ## H ## _ ## D ## _avx2_ (                   \
                                         intptr_t mx, intptr_t my, int width) { \
     int x, y;                                                                  \
     __m256i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;            \
-    UNI_UNWEIGHTED_INIT(D);                                                    \
+    UNI_INIT(D);                                                               \
     SRC_INIT_WEIGHTED_HV_ ## D();                                              \
     src -= EPEL_EXTRA_BEFORE * srcstride;                                      \
     src_bis = src;                                                             \
@@ -1638,7 +1643,7 @@ void oh_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _avx2_ (                     \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_H_VAR ## H ## _ ## D();                                      \
     SRC_INIT_ ## D();                                                          \
-    BI_UNWEIGHTED_INIT(D);                                                     \
+    BI_INIT(D);                                                                \
     QPEL_H_FILTER_ ## D(mx - 1);                                               \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -1663,7 +1668,7 @@ void oh_hevc_put_hevc_uni_qpel_h ## H ## _ ## D ## _avx2_ (                    \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_H_VAR ## H ## _ ## D();                                      \
     SRC_INIT_ ## D();                                                          \
-    UNI_UNWEIGHTED_INIT(D);                                                    \
+    UNI_INIT(D);                                                               \
     QPEL_H_FILTER_ ## D(mx - 1);                                               \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -1766,7 +1771,7 @@ void oh_hevc_put_hevc_bi_qpel_h ## H ## _ ## D ## _avx2_ (                     \
     int shift = D - 8;                                                         \
     PUT_HEVC_QPEL_H_10_VAR ## H ## _ ## D();                                   \
     SRC_INIT_ ## D();                                                          \
-    BI_UNWEIGHTED_INIT(D);                                                     \
+    BI_INIT(D);                                                                \
     QPEL_FILTER_ ## D(mx - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -1795,7 +1800,7 @@ void oh_hevc_put_hevc_uni_qpel_h ## H ## _ ## D ## _avx2_ (                    \
     int shift = D - 8;                                                         \
     PUT_HEVC_QPEL_H_10_VAR ## H ## _ ## D();                                   \
     SRC_INIT_ ## D();                                                          \
-    UNI_UNWEIGHTED_INIT(D);                                                    \
+    UNI_INIT(D);                                                               \
     QPEL_FILTER_ ## D(mx - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += H) {                                       \
@@ -1904,7 +1909,7 @@ void oh_hevc_put_hevc_bi_qpel_v ## V ## _ ## D ## _avx2_ (                     \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_V_VAR ## V ## _ ## D();                                      \
     SRC_INIT_ ## D();                                                          \
-    BI_UNWEIGHTED_INIT(D);                                                     \
+    BI_INIT(D);                                                                \
     QPEL_FILTER_ ## D(my - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
@@ -1929,7 +1934,7 @@ void oh_hevc_put_hevc_uni_qpel_v ## V ## _ ## D ## _avx2_ (                    \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_V_VAR ## V ## _ ## D();                                      \
     SRC_INIT_ ## D();                                                          \
-    UNI_UNWEIGHTED_INIT(D);                                                    \
+    UNI_INIT(D);                                                               \
     QPEL_FILTER_ ## D(my - 1);                                                 \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
@@ -2004,7 +2009,7 @@ void oh_hevc_put_hevc_bi_qpel_v ## V ## _14_ ## D ## _avx2_ (                  \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_V_VAR ## V ## _14();                                         \
     SRC_INIT_14();                                                             \
-    BI_UNWEIGHTED_INIT(D);                                                     \
+    BI_INIT(D);                                                                \
     QPEL_FILTER_14(my - 1);                                                    \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
@@ -2029,7 +2034,7 @@ void oh_hevc_put_hevc_uni_qpel_v ## V ## _14_ ## D ## _avx2_ (                 \
     int x, y;                                                                  \
     PUT_HEVC_QPEL_V_VAR ## V ## _14();                                         \
     SRC_INIT_14();                                                             \
-    UNI_UNWEIGHTED_INIT(D);                                                    \
+    UNI_INIT(D);                                                               \
     QPEL_FILTER_14(my - 1);                                                    \
     for (y = 0; y < height; y++) {                                             \
         for (x = 0; x < width; x += V) {                                       \
