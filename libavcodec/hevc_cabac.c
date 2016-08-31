@@ -778,12 +778,12 @@ uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma
 {
 	uint8_t inc = 0;
 	uint8_t flag_value = 0;
-	if ( (s->HEVClc->cu.pred_mode == MODE_INTRA ) && (s->sps->use_intra_emt) && ( 1 << log2_cb_size <= EMT_INTRA_MAX_CU ) && ( cbfLuma != 0 ) )
+	if ( (s->HEVClc->cu.pred_mode == MODE_INTRA ) && (s->ps.sps->use_intra_emt) && ( 1 << log2_cb_size <= EMT_INTRA_MAX_CU ) && ( cbfLuma != 0 ) )
 	{
 		inc = 5 - log2_cb_size;
 		flag_value = GET_CABAC( elem_offset[EMT_CU_FLAG] + inc );
 	}
-	if ( (s->HEVClc->cu.pred_mode == MODE_INTER ) && (s->sps->use_inter_emt) && ( 1 << log2_cb_size <= EMT_INTER_MAX_CU ) && ( cbfLuma != 0 ) )
+	if ( (s->HEVClc->cu.pred_mode == MODE_INTER ) && (s->ps.sps->use_inter_emt) && ( 1 << log2_cb_size <= EMT_INTER_MAX_CU ) && ( cbfLuma != 0 ) )
 	{
 		inc = 5 - log2_cb_size;
 		flag_value = GET_CABAC( elem_offset[EMT_CU_FLAG] + inc );
@@ -1892,9 +1892,9 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 			if( s->HEVClc->cu.emt_cu_flag == 1)
 			{
 				enum IntraPredMode ucMode;
-				int maxLog2TrDynamicRange 			= s->sps->spsRext.extended_precision_processing_flag ? max(15, (s->sps->bit_depth + 6) ) : 15 ;
+				int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? max(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
 				const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
-				int bitDepthEMT					 	= (s->sps->bit_depth);
+				int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx]);
 				const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
 
 				if (s->HEVClc->cu.pred_mode == MODE_INTRA)

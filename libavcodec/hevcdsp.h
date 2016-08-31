@@ -22,6 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "hevc.h"
+
 #ifndef AVCODEC_HEVCDSP_H
 #define AVCODEC_HEVCDSP_H
 
@@ -38,16 +40,6 @@ struct HEVCWindow;
 #define N_SHIFT (20-8)
 #define I_OFFSET (1 << (N_SHIFT - 1))
 
-typedef struct SAOParams {
-    uint8_t offset_abs[3][4];   ///< sao_offset_abs
-    uint8_t offset_sign[3][4];  ///< sao_offset_sign
-
-    uint8_t band_position[3];   ///< sao_band_position
-    int16_t offset_val[3][5];   ///<SaoOffsetVal
-
-    uint8_t eo_class[3];        ///< sao_eo_class
-    uint8_t type_idx[3];        ///< sao_type_idx
-} SAOParams;
 
 typedef struct HEVCDSPContext {
     void (*put_pcm)(uint8_t *_dst, ptrdiff_t _stride, int width, int height,
@@ -68,7 +60,7 @@ typedef struct HEVCDSPContext {
     void (*sao_band_filter)( uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src, struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 
     void (*sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst,
-                            ptrdiff_t stride_src, SAOParams *sao, int width,
+                            ptrdiff_t stride_src, struct SAOParams *sao, int width,
                             int height, int c_idx);
 #if COM16_C806_EMT
     void (*idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, int TRANSFORM_MATRIX_SHIFT, int nLog2SizeMinus2, int maxLog2TrDynamicRange, int bitDepth, int ucMode, int intra_pred_mode, int emt_tu_idx);

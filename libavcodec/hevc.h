@@ -32,12 +32,31 @@
 #include "get_bits.h"
 #include "hevcpred.h"
 #include "h2645_parse.h"
-#include "hevcdsp.h"
+//#include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
 #include "videodsp.h"
 #include "hevc_defs.h"
 #include "crypto.h"
+
+#define COM16_C806_EMT			 0
+#if COM16_C806_EMT
+// Constantes
+#define EMT_INTRA_MAX_CU		32
+#define EMT_INTER_MAX_CU		32
+#define EMT_SIGNUM_THR			 2
+#define INTER_MODE_IDX		   255
+#define MAX_TU_SIZE				32
+// Integer transform matrix precision
+#define COM16_C806_TRANS_PREC	 2
+#endif
+/*
+ * Fin Macros Stage
+ */
+/*
+ * Macros Stage Aurélien Biatek
+ */
+#include "hevcdsp.h"
 
 #define PARALLEL_SLICE   0
 #define PARALLEL_FILTERS 0
@@ -217,6 +236,10 @@ enum SyntaxElement {
     RES_SCALE_SIGN_FLAG,
     CU_CHROMA_QP_OFFSET_FLAG,
     CU_CHROMA_QP_OFFSET_IDX,
+#if COM16_C806_EMT
+    EMT_CU_FLAG,
+    EMT_TU_IDX,
+#endif
 };
 
 enum PartMode {
@@ -522,6 +545,17 @@ typedef struct RepFormat
     int     conf_win_vps_bottom_offset;
 } RepFormat;
 
+typedef struct SAOParams {
+    uint8_t offset_abs[3][4];   ///< sao_offset_abs
+    uint8_t offset_sign[3][4];  ///< sao_offset_sign
+    
+    uint8_t band_position[3];   ///< sao_band_position
+    int16_t offset_val[3][5];   ///<SaoOffsetVal
+    
+    uint8_t eo_class[3];        ///< sao_eo_class
+    uint8_t type_idx[3];        ///< sao_type_idx
+} SAOParams;
+
 typedef struct SubLayerHRDParameter {
     int bit_rate_value_minus1[16];
     int cpb_size_value_minus1[16];
@@ -788,12 +822,24 @@ typedef struct HEVCSPS {
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
 
-    int transform_skip_rotation_enabled_flag;
-    int transform_skip_context_enabled_flag;
-    int implicit_rdpcm_enabled_flag;
-    int explicit_rdpcm_enabled_flag;
-    int intra_smoothing_disabled_flag;
-    int persistent_rice_adaptation_enabled_flag;
+    uint8_t transform_skip_rotation_enabled_flag;
+    uint8_t transform_skip_context_enabled_flag;
+    uint8_t implicit_rdpcm_enabled_flag;
+    uint8_t explicit_rdpcm_enabled_flag;
+    uint8_t intra_smoothing_disabled_flag;
+    uint8_t persistent_rice_adaptation_enabled_flag;
+
+    uint8_t extended_precision_processing_flag;
+    uint8_t high_precision_offsets_enabled_flag;
+    uint8_t cabac_bypass_alignment_enabled_flag;
+    
+    /* int extended_precision_processing_flag;
+     int high_precision_offsets_enabled_flag;
+     int cabac_bypass_alignment_enabled_flag;*/
+
+    
+    
+    
 
     ///< coded frame dimension in various units
     int width;
@@ -1080,7 +1126,9 @@ typedef struct CodingUnit {
     uint8_t rqt_root_cbf;
 
     uint8_t pcm_flag;
-
+#if COM16_C806_EMT
+    uint8_t emt_cu_flag;
+#endif
     // Inferred parameters
     uint8_t intra_split_flag;   ///< IntraSplitFlag
     uint8_t max_trafo_depth;    ///< MaxTrafoDepth
@@ -1138,6 +1186,9 @@ typedef struct TransformUnit {
     int8_t  cu_qp_offset_cb;
     int8_t  cu_qp_offset_cr;
     uint8_t cross_pf;
+#if COM16_C806_EMT
+    uint8_t emt_tu_idx;
+#endif
 } TransformUnit;
 
 typedef struct DBParams {

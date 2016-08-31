@@ -1430,7 +1430,11 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 }
                 if (cbf_cb[i])
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
-                                                log2_trafo_size_c, scan_idx_c, 1);
+                                                log2_trafo_size_c, scan_idx_c, 1
+#if COM16_C806_EMT
+            		, log2_cb_size
+#endif
+                    );
                 else
                     if (lc->tu.cross_pf) {
                         ptrdiff_t stride = s->frame->linesize[1];
@@ -1636,6 +1640,13 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
         const int trafo_size_split = 1 << (log2_trafo_size - 1);
         const int x1 = x0 + trafo_size_split;
         const int y1 = y0 + trafo_size_split;
+
+#if COM16_C806_EMT
+        if (0==trafo_depth)
+        {
+        	s->HEVClc->cu.emt_cu_flag = ff_hevc_emt_cu_flag_decode(s, log2_cb_size, 1);
+        }
+#endif
 
 #define SUBDIVIDE(x, y, idx)                                                    \
 do {                                                                            \
