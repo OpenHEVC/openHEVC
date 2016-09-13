@@ -32,7 +32,7 @@
 #include "cabac.h"
 #include "cabac_functions.h"
 
-#include "cabac_tablegen.h"
+//#include "cabac_tablegen.h"
 
 /**
  *
@@ -76,7 +76,7 @@ void ff_init_cabac_states(void)
     if (initialized)
         return;
 
-    cabac_tableinit();
+    //cabac_tableinit();
 
     initialized = 1;
 }
