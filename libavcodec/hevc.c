@@ -616,9 +616,11 @@ static int hls_slice_header(HEVCContext *s)
 #endif
     sh->first_slice_in_pic_flag   = first_slice_in_pic_flag;
     if (s1->force_first_slice_in_pic) {
-      av_log(s->avctx, AV_LOG_DEBUG, "First_slice_in_pic_flag forced\n");
+      if (!sh->first_slice_in_pic_flag) {
+        av_log(s->avctx, AV_LOG_DEBUG, "First_slice_in_pic_flag forced\n");
+        sh->first_slice_in_pic_flag = 1;
+      }
       s1->force_first_slice_in_pic = 0;
-      sh->first_slice_in_pic_flag = 1;
     }
 
     print_cabac("first_slice_segment_in_pic_flag", sh->first_slice_in_pic_flag);
@@ -717,6 +719,12 @@ else
             s->slice_idx++;
 #endif
         }
+
+        if (sh->first_slice_in_pic_flag != first_slice_in_pic_flag) {
+            s->slice_idx           = 0;
+            s->slice_initialized   = 0;
+        }
+
     } else {
         sh->slice_segment_addr = sh->slice_addr = 0;
         s->slice_idx           = 0;
@@ -3906,6 +3914,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     if (avpkt->pts != AV_NOPTS_VALUE) {
       if (! s->last_frame_pts || (s->last_frame_pts!=avpkt->pts)) {
+        av_log(s->avctx, AV_LOG_DEBUG, "Forcing first_slice_in_pic_flag for pts %lld\n", avpkt->pts);
         s->force_first_slice_in_pic = 1;
       }
       s->last_frame_pts = avpkt->pts;
