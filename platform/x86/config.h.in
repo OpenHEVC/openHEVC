@@ -12,7 +12,6 @@
 #define AVCONV_DATADIR "/usr/local/share/ffmpeg"
 #define CC_IDENT "gcc 5.2.1 (Ubuntu 5.2.1-22ubuntu2) 20151010"
 #define av_restrict restrict
-#define EXTERN_PREFIX ""
 #if defined(WIN32)
 #define EXTERN_ASM 
 #else
@@ -21,8 +20,6 @@
 #define BUILDSUF ""
 #define SLIBSUF ".dylib"
 
-
-#ifndef EXTERN_PREFIX
 #ifdef __APPLE_CC__
 #define EXTERN_PREFIX "_"
 #else
@@ -35,7 +32,6 @@
     #else
         #define EXTERN_PREFIX ""
     #endif
-#endif
 #endif
 
 #define GCC_VERSION (__GNUC__ * 10000 \

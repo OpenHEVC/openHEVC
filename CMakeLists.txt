@@ -421,11 +421,11 @@ list(APPEND libfilenames
 )
 endif()
 
-#if(WIN32 OR ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l"))
-#    option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
-#else()
+if (ENABLE_STATIC)
     option (BUILD_SHARED_LIBS "enabled static library instead of shared" OFF)
-#endif()
+else()
+    option (BUILD_SHARED_LIBS "enabled static library instead of shared" ON)
+endif()
 add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
 target_link_libraries(LibOpenHevcWrapper m)
