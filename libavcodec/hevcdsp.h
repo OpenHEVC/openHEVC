@@ -30,6 +30,7 @@
 struct AVFrame;
 struct UpsamplInf;
 struct HEVCWindow;
+struct SAOParams;
 
 #define NTAPS_LUMA 8
 #define NTAPS_CHROMA 4
