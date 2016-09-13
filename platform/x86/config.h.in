@@ -20,6 +20,9 @@
 #endif
 #define BUILDSUF ""
 #define SLIBSUF ".dylib"
+
+
+#ifndef EXTERN_PREFIX
 #ifdef __APPLE_CC__
 #define EXTERN_PREFIX "_"
 #else
@@ -32,6 +35,7 @@
     #else
         #define EXTERN_PREFIX ""
     #endif
+#endif
 #endif
 
 #define GCC_VERSION (__GNUC__ * 10000 \
@@ -256,7 +260,11 @@
 #define HAVE_MACH_MACH_TIME_H 0
 #define HAVE_MACHINE_IOCTL_BT848_H 0
 #define HAVE_MACHINE_IOCTL_METEOR_H 0
+#ifdef __APPLE_CC__
+#define HAVE_MALLOC_H 0
+#else
 #define HAVE_MALLOC_H 1
+#endif
 #define HAVE_OPENJPEG_1_5_OPENJPEG_H 0
 #define HAVE_OPENGL_GL3_H 0
 #define HAVE_POLL_H 1
@@ -486,7 +494,7 @@
 #define CONFIG_DECKLINK 0
 #define CONFIG_FREI0R 0
 #define CONFIG_GNUTLS 0
-#define CONFIG_ICONV 1
+#define CONFIG_ICONV 0
 #define CONFIG_LADSPA 0
 #define CONFIG_LIBAACPLUS 0
 #define CONFIG_LIBASS 0
