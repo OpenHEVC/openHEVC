@@ -32,7 +32,7 @@
 #include "cabac.h"
 #include "cabac_functions.h"
 
-//#include "cabac_tablegen.h"
+#include "cabac_tablegen.h"
 
 /**
  *
