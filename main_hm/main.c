@@ -275,7 +275,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 		/* Try to decode corresponding packets into AVFrames
 		 * */
 			if(split_layers)
-				got_picture = libOpenShvcDecode(openHevcHandle, packet, stop_dec ,stop_dec2);
+                got_picture = libOpenShvcDecode2(openHevcHandle, packet[0].data, packet[1].data, !stop_dec ? packet[0].size : 0 ,!stop_dec2 ? packet[1].size : 0, packet[0].pts, packet[1].pts);
 			else
 				got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
 
