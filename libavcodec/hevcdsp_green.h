@@ -128,14 +128,4 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green1_filters[3][2]) = {
 	{ 0, 64}
 };
 
-
-/** Green reload functions */
-void green_reload_filter_luma1(HEVCDSPContext *c, const int bit_depth);
-void green_reload_filter_luma3(HEVCDSPContext *c, const int bit_depth);
-void green_reload_filter_luma5(HEVCDSPContext *c, const int bit_depth);
-void green_reload_filter_luma7(HEVCDSPContext *c, const int bit_depth);
-void green_reload_filter_chroma1(HEVCDSPContext *c, const int bit_depth);
-void green_reload_filter_chroma2(HEVCDSPContext *c, const int bit_depth);
-void green_reload_filter_chroma4(HEVCDSPContext *c, const int bit_depth);
-
 #endif

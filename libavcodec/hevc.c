@@ -3449,8 +3449,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             }
 #endif
 #if CONFIG_GREEN
-		green_get_activation(s); // Green
-		green_set_activation(s); // Green
+		green_update(s); // Green
 #endif
         ctb_addr_ts = hls_slice_data(s, nal, length);
 
@@ -4377,7 +4376,7 @@ static const AVOption options[] = {
 	{ "green-a-level", "Green Activation level", OFFSET(green_alevel),			
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 12, PAR },
 	{ "green-luma", "Green Inter-prediction Luma nb taps", OFFSET(green_luma),		
-			AV_OPT_TYPE_INT, {.i64 = 7}, 1, 7, PAR },
+			AV_OPT_TYPE_INT, {.i64 = 8}, 1, 8, PAR },
 	{ "green-chroma", "Green Inter-prediction Chroma nb taps", OFFSET(green_chroma),
 			AV_OPT_TYPE_INT, {.i64 = 4}, 1, 4, PAR },
 	{ "green-dbf-on", "Green Deblocking filter on/off", OFFSET(green_dbf_on),		

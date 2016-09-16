@@ -499,6 +499,7 @@ int i = 0;
 #endif
 #if CONFIG_GREEN
     printf("Green ENABLED\n");
+    void green_dsp_init(HEVCDSPContext *hevcdsp);
     green_dsp_init(hevcdsp); 
 #else
     printf("Green DISABLED\n");
