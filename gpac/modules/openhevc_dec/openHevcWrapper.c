@@ -69,7 +69,7 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
 
         openHevcContext->parser  = av_parser_init( openHevcContext->codec->id );
         openHevcContext->c       = avcodec_alloc_context3(openHevcContext->codec);
-        openHevcContext->picture = avcodec_alloc_frame();
+        openHevcContext->picture = av_frame_alloc();
         openHevcContext->c->flags |= AV_CODEC_FLAG_UNALIGNED;
 
         if(openHevcContext->codec->capabilities&AV_CODEC_CAP_TRUNCATED)
@@ -356,26 +356,26 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
     openHevcFrameInfo->nYPitch    = picture->linesize[0];
 
     switch (picture->format) {
-        case PIX_FMT_YUV420P   :
-        case PIX_FMT_YUV420P9  :
-        case PIX_FMT_YUV420P10 :
-        case PIX_FMT_YUV420P12 :
+        case AV_PIX_FMT_YUV420P   :
+        case AV_PIX_FMT_YUV420P9  :
+        case AV_PIX_FMT_YUV420P10 :
+        case AV_PIX_FMT_YUV420P12 :
             openHevcFrameInfo->nUPitch    = picture->linesize[1];
             openHevcFrameInfo->nVPitch    = picture->linesize[2];
             openHevcFrameInfo->chromat_format = YUV420;
             break;
-        case PIX_FMT_YUV422P   :
-        case PIX_FMT_YUV422P9  :
-        case PIX_FMT_YUV422P10 :
-        case PIX_FMT_YUV422P12 :
+        case AV_PIX_FMT_YUV422P   :
+        case AV_PIX_FMT_YUV422P9  :
+        case AV_PIX_FMT_YUV422P10 :
+        case AV_PIX_FMT_YUV422P12 :
             openHevcFrameInfo->nUPitch    = picture->linesize[1];
             openHevcFrameInfo->nVPitch    = picture->linesize[2];
             openHevcFrameInfo->chromat_format = YUV422;
             break;
-        case PIX_FMT_YUV444P   :
-        case PIX_FMT_YUV444P9  :
-        case PIX_FMT_YUV444P10 :
-        case PIX_FMT_YUV444P12 :
+        case AV_PIX_FMT_YUV444P   :
+        case AV_PIX_FMT_YUV444P9  :
+        case AV_PIX_FMT_YUV444P10 :
+        case AV_PIX_FMT_YUV444P12 :
             openHevcFrameInfo->nUPitch    = picture->linesize[1];
             openHevcFrameInfo->nVPitch    = picture->linesize[2];
             openHevcFrameInfo->chromat_format = YUV444;
@@ -387,24 +387,24 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
     }
 
     switch (picture->format) {
-        case PIX_FMT_YUV420P   :
-        case PIX_FMT_YUV422P   :
-        case PIX_FMT_YUV444P   :
+        case AV_PIX_FMT_YUV420P   :
+        case AV_PIX_FMT_YUV422P   :
+        case AV_PIX_FMT_YUV444P   :
             openHevcFrameInfo->nBitDepth  =  8;
             break;
-        case PIX_FMT_YUV420P9  :
-        case PIX_FMT_YUV422P9  :
-        case PIX_FMT_YUV444P9  :
+        case AV_PIX_FMT_YUV420P9  :
+        case AV_PIX_FMT_YUV422P9  :
+        case AV_PIX_FMT_YUV444P9  :
             openHevcFrameInfo->nBitDepth  =  9;
             break;
-        case PIX_FMT_YUV420P10 :
-        case PIX_FMT_YUV422P10 :
-        case PIX_FMT_YUV444P10 :
+        case AV_PIX_FMT_YUV420P10 :
+        case AV_PIX_FMT_YUV422P10 :
+        case AV_PIX_FMT_YUV444P10 :
             openHevcFrameInfo->nBitDepth  = 10;
             break;
-        case PIX_FMT_YUV420P12 :
-        case PIX_FMT_YUV422P12 :
-        case PIX_FMT_YUV444P12 :
+        case AV_PIX_FMT_YUV420P12 :
+        case AV_PIX_FMT_YUV422P12 :
+        case AV_PIX_FMT_YUV444P12 :
             openHevcFrameInfo->nBitDepth  = 12;
             break;
         default               : openHevcFrameInfo->nBitDepth   =  8; break;
@@ -429,43 +429,43 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
     AVFrame                 *picture          = openHevcContext->picture;
 
     switch (picture->format) {
-        case PIX_FMT_YUV420P   :
+        case AV_PIX_FMT_YUV420P   :
             openHevcFrameInfo->chromat_format = YUV420;
             openHevcFrameInfo->nYPitch    = picture->width;
             openHevcFrameInfo->nUPitch    = picture->width >> 1;
             openHevcFrameInfo->nVPitch    = picture->width >> 1;
             break;
-        case PIX_FMT_YUV420P9  :
-        case PIX_FMT_YUV420P10 :
-        case PIX_FMT_YUV420P12 :
+        case AV_PIX_FMT_YUV420P9  :
+        case AV_PIX_FMT_YUV420P10 :
+        case AV_PIX_FMT_YUV420P12 :
             openHevcFrameInfo->chromat_format = YUV420;
             openHevcFrameInfo->nYPitch    = picture->width << 1;
             openHevcFrameInfo->nUPitch    = picture->width;
             openHevcFrameInfo->nVPitch    = picture->width;
             break;
-        case PIX_FMT_YUV422P   :
+        case AV_PIX_FMT_YUV422P   :
             openHevcFrameInfo->chromat_format = YUV422;
             openHevcFrameInfo->nYPitch    = picture->width;
             openHevcFrameInfo->nUPitch    = picture->width >> 1;
             openHevcFrameInfo->nVPitch    = picture->width >> 1;
             break;
-        case PIX_FMT_YUV422P9  :
-        case PIX_FMT_YUV422P10 :
-        case PIX_FMT_YUV422P12 :
+        case AV_PIX_FMT_YUV422P9  :
+        case AV_PIX_FMT_YUV422P10 :
+        case AV_PIX_FMT_YUV422P12 :
             openHevcFrameInfo->chromat_format = YUV422;
             openHevcFrameInfo->nYPitch    = picture->width << 1;
             openHevcFrameInfo->nUPitch    = picture->width;
             openHevcFrameInfo->nVPitch    = picture->width;
             break;
-        case PIX_FMT_YUV444P   :
+        case AV_PIX_FMT_YUV444P   :
             openHevcFrameInfo->chromat_format = YUV444;
             openHevcFrameInfo->nYPitch    = picture->width;
             openHevcFrameInfo->nUPitch    = picture->width;
             openHevcFrameInfo->nVPitch    = picture->width;
             break;
-        case PIX_FMT_YUV444P9  :
-        case PIX_FMT_YUV444P10 :
-        case PIX_FMT_YUV444P12 :
+        case AV_PIX_FMT_YUV444P9  :
+        case AV_PIX_FMT_YUV444P10 :
+        case AV_PIX_FMT_YUV444P12 :
             openHevcFrameInfo->chromat_format = YUV444;
             openHevcFrameInfo->nYPitch    = picture->width << 1;
             openHevcFrameInfo->nUPitch    = picture->width << 1;
@@ -480,24 +480,24 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
     }
 
     switch (picture->format) {
-        case PIX_FMT_YUV420P   :
-        case PIX_FMT_YUV422P   :
-        case PIX_FMT_YUV444P   :
+        case AV_PIX_FMT_YUV420P   :
+        case AV_PIX_FMT_YUV422P   :
+        case AV_PIX_FMT_YUV444P   :
             openHevcFrameInfo->nBitDepth  =  8;
             break;
-        case PIX_FMT_YUV420P9  :
-        case PIX_FMT_YUV422P9  :
-        case PIX_FMT_YUV444P9  :
+        case AV_PIX_FMT_YUV420P9  :
+        case AV_PIX_FMT_YUV422P9  :
+        case AV_PIX_FMT_YUV444P9  :
             openHevcFrameInfo->nBitDepth  =  9;
             break;
-        case PIX_FMT_YUV420P10 :
-        case PIX_FMT_YUV422P10 :
-        case PIX_FMT_YUV444P10 :
+        case AV_PIX_FMT_YUV420P10 :
+        case AV_PIX_FMT_YUV422P10 :
+        case AV_PIX_FMT_YUV444P10 :
             openHevcFrameInfo->nBitDepth  = 10;
             break;
-        case PIX_FMT_YUV420P12 :
-        case PIX_FMT_YUV422P12 :
-        case PIX_FMT_YUV444P12 :
+        case AV_PIX_FMT_YUV420P12 :
+        case AV_PIX_FMT_YUV422P12 :
+        case AV_PIX_FMT_YUV444P12 :
             openHevcFrameInfo->nBitDepth  = 12;
             break;
         default               : openHevcFrameInfo->nBitDepth   =  8; break;
