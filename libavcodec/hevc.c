@@ -1147,7 +1147,7 @@ else
     if (s->pps->slice_header_extension_present_flag) {
         unsigned int length = get_ue_golomb_long(gb);
         print_cabac("slice_header_extension_length", length);
-        av_log(s->avctx, AV_LOG_ERROR,
+        av_log(s->avctx, AV_LOG_WARNING,
                "========= SLICE HEADER extension not supported yet\n");
         for (i = 0; i < length; i++)
             skip_bits(gb, 8);  // slice_header_extension_data_byte
