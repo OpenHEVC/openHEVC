@@ -360,7 +360,7 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
             openHevcContext->avpkt.size = 0;
             openHevcContext->avpkt.data = NULL;
         }
-        av_log(openHevcContext->c,AV_LOG_ERROR,"PTS DIFF: %d", (int)((int)pts-(int)pts2) );
+        //av_log(openHevcContext->c,AV_LOG_ERROR,"PTS DIFF: %d", (int)((int)pts-(int)pts2) );
         //openHevcContext->avpkt.pts  = pts;
         len                         = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture,
                                                              &got_picture[i], &openHevcContext->avpkt);
