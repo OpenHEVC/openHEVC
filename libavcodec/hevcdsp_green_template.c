@@ -13,6 +13,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
+
+
+/** Green Luma 7taps interpolation filter */
+#define QPEL_FILTER7(src, stride)                                              \
+    (filter[0] * src[x - 3 * stride] +                                         \
+     filter[1] * src[x - 2 * stride] +                                         \
+     filter[2] * src[x - 1 * stride] +                                         \
+     filter[3] * src[x 			   ] +                                         \
+     filter[4] * src[x + 	 stride] +                                         \
+     filter[5] * src[x + 2 * stride] +                                         \
+     filter[6] * src[x + 3 * stride] +                                         \
+     filter[7] * src[x + 4 * stride])
 /** Green Luma 5taps interpolation filter */
 #define QPEL_FILTER5(src, stride)                                               \
     (filter[0] * src[x - 2 * stride] +                                         \
@@ -31,1369 +43,466 @@
 #define QPEL_FILTER1(src, stride)                                               \
 	    (filter[0] * src[x] +                                         \
 	     filter[1] * src[x +     stride])
+#define QPEL_GREEN_FILTER(ntaps) QPEL_FILTER##ntaps
 
-/** Green Luma 5taps H interpolation filter */
-static void FUNC(put_hevc_qpel5_h)(int16_t *dst,  ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[mx - 1];
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 3taps H interpolation filter */
-static void FUNC(put_hevc_qpel3_h)(int16_t *dst,  ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[mx - 1];
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap H interpolation filter */
-static void FUNC(put_hevc_qpel1_h)(int16_t *dst,  ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[mx - 1];
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 5taps V interpolation filter */
-static void FUNC(put_hevc_qpel5_v)(int16_t *dst,  ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[my - 1];
-    for (y = 0; y < height; y++)  {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER5(src, srcstride) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 3taps V interpolation filter */
-static void FUNC(put_hevc_qpel3_v)(int16_t *dst,  ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[my - 1];
-    for (y = 0; y < height; y++)  {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER3(src, srcstride) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap V interpolation filter */
-static void FUNC(put_hevc_qpel1_v)(int16_t *dst,  ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[my - 1];
-    for (y = 0; y < height; y++)  {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER1(src, srcstride) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 5taps HV interpolation filter */
-static void FUNC(put_hevc_qpel5_hv)(int16_t *dst,
-                                   ptrdiff_t dststride,
-                                   uint8_t *_src,
-                                   ptrdiff_t _srcstride,
-                                   int height, intptr_t mx,
-                                   intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green5_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green5_filters[my - 1];
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER5(tmp, MAX_PB_SIZE) >> 6;
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 3taps HV interpolation filter */
-static void FUNC(put_hevc_qpel3_hv)(int16_t *dst,
-                                   ptrdiff_t dststride,
-                                   uint8_t *_src,
-                                   ptrdiff_t _srcstride,
-                                   int height, intptr_t mx,
-                                   intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green3_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green3_filters[my - 1];
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER3(tmp, MAX_PB_SIZE) >> 6;
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap HV interpolation filter */
-static void FUNC(put_hevc_qpel1_hv)(int16_t *dst,
-                                   ptrdiff_t dststride,
-                                   uint8_t *_src,
-                                   ptrdiff_t _srcstride,
-                                   int height, intptr_t mx,
-                                   intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green1_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green1_filters[my - 1];
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = QPEL_FILTER1(tmp, MAX_PB_SIZE) >> 6;
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 5taps uni H interpolation filter */
-static void FUNC(put_hevc_qpel5_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                      uint8_t *_src, ptrdiff_t _srcstride,
-                                      int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[mx - 1];
-    int shift = 14 - BIT_DEPTH;
+#define LUMA_FUNC(NTAP) 			\
+		FUNC_QPEL_H(NTAP) 			\
+		FUNC_QPEL_V(NTAP) 			\
+		FUNC_QPEL_HV(NTAP) 			\
+		FUNC_QPEL_UNI_H(NTAP) 		\
+		FUNC_QPEL_UNI_V(NTAP) 		\
+		FUNC_QPEL_UNI_HV(NTAP) 		\
+		FUNC_QPEL_BI_H(NTAP) 		\
+		FUNC_QPEL_BI_V(NTAP) 		\
+		FUNC_QPEL_BI_HV(NTAP) 		\
+		FUNC_QPEL_UNI_W_H(NTAP) 	\
+		FUNC_QPEL_UNI_W_V(NTAP) 	\
+		FUNC_QPEL_UNI_W_HV(NTAP)	\
+		FUNC_QPEL_BI_W_H(NTAP) 		\
+		FUNC_QPEL_BI_W_V(NTAP) 		\
+		FUNC_QPEL_BI_W_HV(NTAP)
 
 #if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
+    #define LUMA_OFFSET int offset = 1 << (shift - 1);
 #else
-    int offset = 0;
+	#define LUMA_OFFSET int offset = 0;
 #endif
 
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8)) + offset) >> shift);
-        src += srcstride;
-        dst += dststride;
-    }
+/** Green Luma Ntaps H interpolation filter */
+#define FUNC_QPEL_H(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_h)(int16_t *dst,  ptrdiff_t dststride, 	\
+                                  uint8_t *_src, ptrdiff_t _srcstride,				\
+                                  int height, intptr_t mx, intptr_t my, int width)	\
+{																					\
+    int x, y;																		\
+    pixel        *src       = (pixel*)_src;											\
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);							\
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];		\
+    for (y = 0; y < height; y++) {													\
+        for (x = 0; x < width; x++)													\
+            dst[x] = QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8);			\
+        src += srcstride;															\
+        dst += dststride;															\
+    }																				\
 }
 
-/** Green Luma 3taps uni H interpolation filter */
-static void FUNC(put_hevc_qpel3_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                      uint8_t *_src, ptrdiff_t _srcstride,
-                                      int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[mx - 1];
-    int shift = 14 - BIT_DEPTH;
-
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8)) + offset) >> shift);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap uni H interpolation filter */
-static void FUNC(put_hevc_qpel1_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                      uint8_t *_src, ptrdiff_t _srcstride,
-                                      int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[mx - 1];
-    int shift = 14 - BIT_DEPTH;
-
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8)) + offset) >> shift);
-        src += srcstride;
-        dst += dststride;
-    }
+#define FUNC_QPEL_V(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_v)(int16_t *dst,  ptrdiff_t dststride,	\
+                                  uint8_t *_src, ptrdiff_t _srcstride,				\
+                                  int height, intptr_t mx, intptr_t my, int width)	\
+{																					\
+    int x, y;																		\
+    pixel        *src       = (pixel*)_src;											\
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);							\
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[my - 1];		\
+    for (y = 0; y < height; y++)  {													\
+        for (x = 0; x < width; x++)													\
+            dst[x] = QPEL_GREEN_FILTER(ntaps)(src, srcstride) >> (BIT_DEPTH - 8);	\
+        src += srcstride;															\
+        dst += dststride;															\
+    }																				\
 }
 
-/** Green Luma 5taps bi H interpolation filter */
-static void FUNC(put_hevc_qpel5_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
+#define FUNC_QPEL_HV(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_hv)(int16_t *dst,							\
+                                   ptrdiff_t dststride,								\
+                                   uint8_t *_src,									\
+                                   ptrdiff_t _srcstride,							\
+                                   int height, intptr_t mx,							\
+                                   intptr_t my, int width)							\
+{																					\
+    int x, y;																		\
+    const int8_t *filter;															\
+    pixel *src = (pixel*)_src;														\
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);								\
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];					\
+    int16_t *tmp = tmp_array;														\
+    																				\
+    src   -= QPEL_EXTRA_BEFORE * srcstride;											\
+    filter = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];							\
+    for (y = 0; y < height + QPEL_EXTRA; y++) {										\
+        for (x = 0; x < width; x++)													\
+            tmp[x] = QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8);			\
+        src += srcstride;															\
+        tmp += MAX_PB_SIZE;															\
+    }																				\
+																					\
+    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;							\
+    filter = ff_hevc_qpel_green## ntaps ##_filters[my - 1];							\
+    for (y = 0; y < height; y++) {													\
+        for (x = 0; x < width; x++)													\
+            dst[x] = QPEL_GREEN_FILTER(ntaps)(tmp, MAX_PB_SIZE) >> 6;						\
+        tmp += MAX_PB_SIZE;															\
+        dst += dststride;															\
+    }																				\
+}
 
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[mx - 1];
+#define FUNC_QPEL_UNI_H(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,	\
+                                      uint8_t *_src, ptrdiff_t _srcstride,				\
+                                      int height, intptr_t mx, intptr_t my, int width)	\
+{																						\
+    int x, y;																			\
+    pixel        *src       = (pixel*)_src;												\
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);								\
+    pixel *dst          = (pixel *)_dst;												\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);									\
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];			\
+    int shift = 14 - BIT_DEPTH;															\
+    																					\
+    LUMA_OFFSET																			\
+																						\
+    for (y = 0; y < height; y++) {														\
+        for (x = 0; x < width; x++)														\
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8)) + offset) >> shift);	\
+        src += srcstride;																\
+        dst += dststride;																\
+    }																					\
+}
 
-    int shift = 14  + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
+#define FUNC_QPEL_BI_H(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_bi_h)(uint8_t *_dst, ptrdiff_t _dststride,	\
+									 uint8_t *_src, ptrdiff_t _srcstride,				\
+                                     int16_t *src2, ptrdiff_t src2stride,				\
+                                     int height, intptr_t mx, intptr_t my, int width)	\
+{																						\
+    int x, y;																			\
+    pixel        *src       = (pixel*)_src;												\
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);								\
+    pixel *dst          = (pixel *)_dst;												\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);									\
+    																					\
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];			\
+    																					\
+    int shift = 14  + 1 - BIT_DEPTH;													\
+    LUMA_OFFSET																			\
+																						\
+    for (y = 0; y < height; y++) {														\
+        for (x = 0; x < width; x++)														\
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);	\
+        src  += srcstride;																\
+        dst  += dststride;																\
+        src2 += src2stride;																\
+    }																					\
+}
 
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
+#define FUNC_QPEL_UNI_V(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,	\
+                                      uint8_t *_src, ptrdiff_t _srcstride,				\
+                                      int height, intptr_t mx, intptr_t my, int width)	\
+{																						\
+    int x, y;																			\
+    pixel        *src       = (pixel*)_src;												\
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);								\
+    pixel *dst          = (pixel *)_dst;												\
+    ptrdiff_t dststride = _dststride / sizeof(pixel);									\
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[my - 1];			\
+    int shift = 14 - BIT_DEPTH;															\
+    LUMA_OFFSET																			\
+																						\
+    for (y = 0; y < height; y++) {														\
+        for (x = 0; x < width; x++)														\
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(src, srcstride) >> (BIT_DEPTH - 8)) + offset) >> shift);	\
+        src += srcstride;																\
+        dst += dststride;																\
+    }																					\
 }
 
 
-/** Green Luma 3taps bi H interpolation filter */
-static void FUNC(put_hevc_qpel3_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[mx - 1];
-
-    int shift = 14  + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-/** Green Luma 1tap bi H interpolation filter */
-static void FUNC(put_hevc_qpel1_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[mx - 1];
-
-    int shift = 14  + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
+#define FUNC_QPEL_BI_V(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_bi_v)(uint8_t *_dst, ptrdiff_t _dststride,	\
+									 uint8_t *_src, ptrdiff_t _srcstride,				\
+                                     int16_t *src2, ptrdiff_t src2stride,				\
+                                     int height, intptr_t mx, intptr_t my, int width)	\
+{																						\
+    int x, y;                                                                           \
+    pixel        *src       = (pixel*)_src;                                             \
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);                               \
+    pixel *dst          = (pixel *)_dst;                                                \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                   \
+                                                                                        \
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[my - 1];            \
+                                                                                        \
+    int shift = 14 + 1 - BIT_DEPTH;                                                     \
+    LUMA_OFFSET																			\
+                                                                                        \
+    for (y = 0; y < height; y++) {                                                      \
+        for (x = 0; x < width; x++)                                                     \
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);  \
+        src  += srcstride;                                                              \
+        dst  += dststride;                                                              \
+        src2 += src2stride;                                                             \
+    }                                                                                   \
 }
 
-/** Green Luma 5taps uni V interpolation filter */
-static void FUNC(put_hevc_qpel5_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                     uint8_t *_src, ptrdiff_t _srcstride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[my - 1];
-    int shift = 14 - BIT_DEPTH;
 
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(src, srcstride) >> (BIT_DEPTH - 8)) + offset) >> shift);
-        src += srcstride;
-        dst += dststride;
-    }
+#define FUNC_QPEL_UNI_HV(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride, \
+                                       uint8_t *_src, ptrdiff_t _srcstride,             \
+                                       int height, intptr_t mx, intptr_t my, int width) \
+{                                                                                       \
+    int x, y;                                                                           \
+    const int8_t *filter;                                                               \
+    pixel *src = (pixel*)_src;                                                          \
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);                                   \
+    pixel *dst          = (pixel *)_dst;                                                \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                   \
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];                        \
+    int16_t *tmp = tmp_array;                                                           \
+    int shift =  14 - BIT_DEPTH;                                                        \
+    LUMA_OFFSET																			\
+                                                                                        \
+    src   -= QPEL_EXTRA_BEFORE * srcstride;                                             \
+    filter = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];                             \
+    for (y = 0; y < height + QPEL_EXTRA; y++) {                                         \
+        for (x = 0; x < width; x++)                                                     \
+            tmp[x] = QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8);               \
+        src += srcstride;                                                               \
+        tmp += MAX_PB_SIZE;                                                             \
+    }                                                                                   \
+                                                                                        \
+    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                               \
+    filter = ff_hevc_qpel_green## ntaps ##_filters[my - 1];                             \
+                                                                                        \
+    for (y = 0; y < height; y++) {                                                      \
+        for (x = 0; x < width; x++)                                                     \
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(tmp, MAX_PB_SIZE) >> 6) + offset) >> shift); \
+        tmp += MAX_PB_SIZE;                                                             \
+        dst += dststride;                                                               \
+    }                                                                                   \
 }
 
-/** Green Luma 3taps uni V interpolation filter */
-static void FUNC(put_hevc_qpel3_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                     uint8_t *_src, ptrdiff_t _srcstride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[my - 1];
-    int shift = 14 - BIT_DEPTH;
 
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(src, srcstride) >> (BIT_DEPTH - 8)) + offset) >> shift);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap uni V interpolation filter */
-static void FUNC(put_hevc_qpel1_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                     uint8_t *_src, ptrdiff_t _srcstride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[my - 1];
-    int shift = 14 - BIT_DEPTH;
-
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(src, srcstride) >> (BIT_DEPTH - 8)) + offset) >> shift);
-        src += srcstride;
-        dst += dststride;
-    }
+#define FUNC_QPEL_BI_HV(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride,   \
+                                      uint8_t *_src, ptrdiff_t _srcstride,              \
+                                      int16_t *src2, ptrdiff_t src2stride,              \
+                                      int height, intptr_t mx, intptr_t my, int width)  \
+{                                                                                       \
+    int x, y;                                                                           \
+    const int8_t *filter;                                                               \
+    pixel *src = (pixel*)_src;                                                          \
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);                                   \
+    pixel *dst          = (pixel *)_dst;                                                \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                   \
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];                        \
+    int16_t *tmp = tmp_array;                                                           \
+    int shift = 14 + 1 - BIT_DEPTH;                                                     \
+    LUMA_OFFSET																			\
+                                                                                        \
+    src   -= QPEL_EXTRA_BEFORE * srcstride;                                             \
+    filter = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];                             \
+    for (y = 0; y < height + QPEL_EXTRA; y++) {                                         \
+        for (x = 0; x < width; x++)                                                     \
+            tmp[x] = QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8);               \
+        src += srcstride;                                                               \
+        tmp += MAX_PB_SIZE;                                                             \
+    }                                                                                   \
+                                                                                        \
+    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                               \
+    filter = ff_hevc_qpel_green## ntaps ##_filters[my - 1];                             \
+                                                                                        \
+    for (y = 0; y < height; y++) {                                                      \
+        for (x = 0; x < width; x++)                                                     \
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);    \
+        tmp  += MAX_PB_SIZE;                                                            \
+        dst  += dststride;                                                              \
+        src2 += src2stride;                                                             \
+    }                                                                                   \
 }
 
-/** Green Luma 5taps bi V interpolation filter */
-static void FUNC(put_hevc_qpel5_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[my - 1];
-
-    int shift = 14 + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
+#define FUNC_QPEL_UNI_W_H(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,\
+                                        uint8_t *_src, ptrdiff_t _srcstride,            \
+                                        int height, int denom, int wx, int ox,          \
+                                        intptr_t mx, intptr_t my, int width)            \
+{                                                                                       \
+    int x, y;                                                                           \
+    pixel        *src       = (pixel*)_src;                                             \
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);                               \
+    pixel *dst          = (pixel *)_dst;                                                \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                   \
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];            \
+    int shift = denom + 14 - BIT_DEPTH;                                                 \
+    LUMA_OFFSET																			\
+                                                                                        \
+    ox = ox * (1 << (BIT_DEPTH - 8));                                                   \
+    for (y = 0; y < height; y++) {                                                      \
+        for (x = 0; x < width; x++)                                                     \
+            dst[x] = av_clip_pixel((((QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox); \
+        src += srcstride;                                                               \
+        dst += dststride;                                                               \
+    }                                                                                   \
 }
 
-/** Green Luma 3taps bi V interpolation filter */
-static void FUNC(put_hevc_qpel3_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[my - 1];
-
-    int shift = 14 + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-/** Green Luma 1tap bi V interpolation filter */
-static void FUNC(put_hevc_qpel1_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
-                                     int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[my - 1];
-
-    int shift = 14 + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
+#define FUNC_QPEL_BI_W_H(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride,         \
+                                       uint8_t *_src, ptrdiff_t _srcstride,                    \
+                                       int16_t *src2, ptrdiff_t src2stride,                    \
+                                       int height, int denom, int wx0, int wx1,                \
+                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)  \
+{                                                                                              \
+    int x, y;                                                                                  \
+    pixel        *src       = (pixel*)_src;                                                    \
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);                                      \
+    pixel *dst          = (pixel *)_dst;                                                       \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                          \
+                                                                                               \
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];                   \
+                                                                                               \
+    int shift = 14  + 1 - BIT_DEPTH;                                                           \
+    int log2Wd = denom + shift - 1;                                                            \
+                                                                                               \
+    ox0     = ox0 * (1 << (BIT_DEPTH - 8));                                                    \
+    ox1     = ox1 * (1 << (BIT_DEPTH - 8));                                                    \
+    for (y = 0; y < height; y++) {                                                             \
+        for (x = 0; x < width; x++)                                                            \
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 + \
+                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));             \
+        src  += srcstride;                                                                     \
+        dst  += dststride;                                                                     \
+        src2 += src2stride;                                                                    \
+    }                                                                                          \
 }
 
-/** Green Luma 5taps uni HV interpolation filter */
-static void FUNC(put_hevc_qpel5_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                       uint8_t *_src, ptrdiff_t _srcstride,
-                                       int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift =  14 - BIT_DEPTH;
-
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green5_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green5_filters[my - 1];
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(tmp, MAX_PB_SIZE) >> 6) + offset) >> shift);
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
+#define FUNC_QPEL_UNI_W_V(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,                                             \
+                                        uint8_t *_src, ptrdiff_t _srcstride,                                                         \
+                                        int height, int denom, int wx, int ox,                                                       \
+                                        intptr_t mx, intptr_t my, int width)                                                         \
+{                                                                                                                                    \
+    int x, y;                                                                                                                        \
+    pixel        *src       = (pixel*)_src;                                                                                          \
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);                                                                            \
+    pixel *dst          = (pixel *)_dst;                                                                                             \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                                                                \
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[my - 1];                                                         \
+    int shift = denom + 14 - BIT_DEPTH;                                                                                              \
+    LUMA_OFFSET																														 \
+                                                                                                                                     \
+    ox = ox * (1 << (BIT_DEPTH - 8));                                                                                                \
+    for (y = 0; y < height; y++) {                                                                                                   \
+        for (x = 0; x < width; x++)                                                                                                  \
+            dst[x] = av_clip_pixel((((QPEL_GREEN_FILTER(ntaps)(src, srcstride) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);   \
+        src += srcstride;                                                                                                            \
+        dst += dststride;                                                                                                            \
+    }                                                                                                                                \
 }
 
-/** Green Luma 3taps uni HV interpolation filter */
-static void FUNC(put_hevc_qpel3_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                       uint8_t *_src, ptrdiff_t _srcstride,
-                                       int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift =  14 - BIT_DEPTH;
-
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green3_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green3_filters[my - 1];
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(tmp, MAX_PB_SIZE) >> 6) + offset) >> shift);
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap uni HV interpolation filter */
-static void FUNC(put_hevc_qpel1_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                       uint8_t *_src, ptrdiff_t _srcstride,
-                                       int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift =  14 - BIT_DEPTH;
-
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green1_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green1_filters[my - 1];
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(tmp, MAX_PB_SIZE) >> 6) + offset) >> shift);
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
+#define FUNC_QPEL_BI_W_V(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride,                                               \
+                                       uint8_t *_src, ptrdiff_t _srcstride,                                                          \
+                                       int16_t *src2, ptrdiff_t src2stride,                                                          \
+                                       int height, int denom, int wx0, int wx1,                                                      \
+                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)                                        \
+{                                                                                                                                    \
+    int x, y;                                                                                                                        \
+    pixel        *src       = (pixel*)_src;                                                                                          \
+    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);                                                                            \
+    pixel *dst          = (pixel *)_dst;                                                                                             \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                                                                \
+                                                                                                                                     \
+    const int8_t *filter    = ff_hevc_qpel_green## ntaps ##_filters[my - 1];                                                         \
+                                                                                                                                     \
+    int shift = 14 + 1 - BIT_DEPTH;                                                                                                  \
+    int log2Wd = denom + shift - 1;                                                                                                  \
+                                                                                                                                     \
+    ox0     = ox0 * (1 << (BIT_DEPTH - 8));                                                                                          \
+    ox1     = ox1 * (1 << (BIT_DEPTH - 8));                                                                                          \
+    for (y = 0; y < height; y++) {                                                                                                   \
+        for (x = 0; x < width; x++)                                                                                                  \
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(src, srcstride) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +            \
+                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));                                                   \
+        src  += srcstride;                                                                                                           \
+        dst  += dststride;                                                                                                           \
+        src2 += src2stride;                                                                                                          \
+    }                                                                                                                                \
 }
 
-/** Green Luma 5taps bi HV interpolation filter */
-static void FUNC(put_hevc_qpel5_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                      int16_t *src2, ptrdiff_t src2stride,
-                                      int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = 14 + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green5_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green5_filters[my - 1];
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);
-        tmp  += MAX_PB_SIZE;
-        dst  += dststride;
-        src2 += src2stride;
-    }
+#define FUNC_QPEL_UNI_W_HV(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,                                            \
+                                         uint8_t *_src, ptrdiff_t _srcstride,                                                        \
+                                         int height, int denom, int wx, int ox,                                                      \
+                                         intptr_t mx, intptr_t my, int width)                                                        \
+{                                                                                                                                    \
+    int x, y;                                                                                                                        \
+    const int8_t *filter;                                                                                                            \
+    pixel *src = (pixel*)_src;                                                                                                       \
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);                                                                                \
+    pixel *dst          = (pixel *)_dst;                                                                                             \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                                                                \
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];                                                                     \
+    int16_t *tmp = tmp_array;                                                                                                        \
+    int shift = denom + 14 - BIT_DEPTH;                                                                                              \
+    LUMA_OFFSET																														 \
+                                                                                                                                     \
+    src   -= QPEL_EXTRA_BEFORE * srcstride;                                                                                          \
+    filter = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];                                                                          \
+    for (y = 0; y < height + QPEL_EXTRA; y++) {                                                                                      \
+        for (x = 0; x < width; x++)                                                                                                  \
+            tmp[x] = QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8);                                                            \
+        src += srcstride;                                                                                                            \
+        tmp += MAX_PB_SIZE;                                                                                                          \
+    }                                                                                                                                \
+                                                                                                                                     \
+    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                                                                            \
+    filter = ff_hevc_qpel_green## ntaps ##_filters[my - 1];                                                                          \
+                                                                                                                                     \
+    ox = ox * (1 << (BIT_DEPTH - 8));                                                                                                \
+    for (y = 0; y < height; y++) {                                                                                                   \
+        for (x = 0; x < width; x++)                                                                                                  \
+            dst[x] = av_clip_pixel((((QPEL_GREEN_FILTER(ntaps)(tmp, MAX_PB_SIZE) >> 6) * wx + offset) >> shift) + ox);               \
+        tmp += MAX_PB_SIZE;                                                                                                          \
+        dst += dststride;                                                                                                            \
+    }                                                                                                                                \
 }
 
-/** Green Luma 3taps bi HV interpolation filter */
-static void FUNC(put_hevc_qpel3_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                      int16_t *src2, ptrdiff_t src2stride,
-                                      int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = 14 + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green3_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green3_filters[my - 1];
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);
-        tmp  += MAX_PB_SIZE;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-/** Green Luma 1tap bi HV interpolation filter */
-static void FUNC(put_hevc_qpel1_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                      int16_t *src2, ptrdiff_t src2stride,
-                                      int height, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = 14 + 1 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green1_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green1_filters[my - 1];
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);
-        tmp  += MAX_PB_SIZE;
-        dst  += dststride;
-        src2 += src2stride;
-    }
+#define FUNC_QPEL_BI_W_HV(ntaps) \
+static void FUNC(put_hevc_qpel## ntaps ##_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,                                              \
+                                        uint8_t *_src, ptrdiff_t _srcstride,                                                         \
+                                        int16_t *src2, ptrdiff_t src2stride,                                                         \
+                                        int height, int denom, int wx0, int wx1,                                                     \
+                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)                                       \
+{                                                                                                                                    \
+    int x, y;                                                                                                                        \
+    const int8_t *filter;                                                                                                            \
+    pixel *src = (pixel*)_src;                                                                                                       \
+    ptrdiff_t srcstride = _srcstride / sizeof(pixel);                                                                                \
+    pixel *dst          = (pixel *)_dst;                                                                                             \
+    ptrdiff_t dststride = _dststride / sizeof(pixel);                                                                                \
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];                                                                     \
+    int16_t *tmp = tmp_array;                                                                                                        \
+    int shift = 14 + 1 - BIT_DEPTH;                                                                                                  \
+    int log2Wd = denom + shift - 1;                                                                                                  \
+                                                                                                                                     \
+    src   -= QPEL_EXTRA_BEFORE * srcstride;                                                                                          \
+    filter = ff_hevc_qpel_green## ntaps ##_filters[mx - 1];                                                                          \
+    for (y = 0; y < height + QPEL_EXTRA; y++) {                                                                                      \
+        for (x = 0; x < width; x++)                                                                                                  \
+            tmp[x] = QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8);                                                            \
+        src += srcstride;                                                                                                            \
+        tmp += MAX_PB_SIZE;                                                                                                          \
+    }                                                                                                                                \
+                                                                                                                                     \
+    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;                                                                            \
+    filter = ff_hevc_qpel_green## ntaps ##_filters[my - 1];                                                                          \
+                                                                                                                                     \
+    ox0     = ox0 * (1 << (BIT_DEPTH - 8));                                                                                          \
+    ox1     = ox1 * (1 << (BIT_DEPTH - 8));                                                                                          \
+    for (y = 0; y < height; y++) {                                                                                                   \
+        for (x = 0; x < width; x++)                                                                                                  \
+            dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(tmp, MAX_PB_SIZE) >> 6) * wx1 + src2[x] * wx0 +                        \
+                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));                                                   \
+        tmp  += MAX_PB_SIZE;                                                                                                         \
+        dst  += dststride;                                                                                                           \
+        src2 += src2stride;                                                                                                          \
+    }                                                                                                                                \
 }
 
-/** Green Luma 5taps uni H weighted interpolation filter */
-static void FUNC(put_hevc_qpel5_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                        int height, int denom, int wx, int ox,
-                                        intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[mx - 1];
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 3taps uni H weighted interpolation filter */
-static void FUNC(put_hevc_qpel3_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                        int height, int denom, int wx, int ox,
-                                        intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[mx - 1];
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap uni H weighted interpolation filter */
-static void FUNC(put_hevc_qpel1_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                        int height, int denom, int wx, int ox,
-                                        intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[mx - 1];
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 5taps bi H weighted interpolation filter */
-static void FUNC(put_hevc_qpel5_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, int denom, int wx0, int wx1,
-                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[mx - 1];
-
-    int shift = 14  + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-
-/** Green Luma 3taps bi H weighted interpolation filter */
-static void FUNC(put_hevc_qpel3_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, int denom, int wx0, int wx1,
-                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[mx - 1];
-
-    int shift = 14  + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-/** Green Luma 1tap bi H weighted interpolation filter */
-static void FUNC(put_hevc_qpel1_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, int denom, int wx0, int wx1,
-                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[mx - 1];
-
-    int shift = 14  + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-
-/** Green Luma 5taps uni V weighted interpolation filter */
-static void FUNC(put_hevc_qpel5_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                        int height, int denom, int wx, int ox,
-                                        intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[my - 1];
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER5(src, srcstride) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 3taps uni V weighted interpolation filter */
-static void FUNC(put_hevc_qpel3_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                        int height, int denom, int wx, int ox,
-                                        intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[my - 1];
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER3(src, srcstride) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap uni V weighted interpolation filter */
-static void FUNC(put_hevc_qpel1_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                        uint8_t *_src, ptrdiff_t _srcstride,
-                                        int height, int denom, int wx, int ox,
-                                        intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[my - 1];
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER1(src, srcstride) >> (BIT_DEPTH - 8)) * wx + offset) >> shift) + ox);
-        src += srcstride;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 5taps bi V weighted interpolation filter */
-static void FUNC(put_hevc_qpel5_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, int denom, int wx0, int wx1,
-                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green5_filters[my - 1];
-
-    int shift = 14 + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(src, srcstride) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-
-/** Green Luma 3taps bi V weighted interpolation filter */
-static void FUNC(put_hevc_qpel3_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, int denom, int wx0, int wx1,
-                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green3_filters[my - 1];
-
-    int shift = 14 + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(src, srcstride) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-/** Green Luma 1tap bi V weighted interpolation filter */
-static void FUNC(put_hevc_qpel1_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, int denom, int wx0, int wx1,
-                                       int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    pixel        *src       = (pixel*)_src;
-    ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-
-    const int8_t *filter    = ff_hevc_qpel_green1_filters[my - 1];
-
-    int shift = 14 + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(src, srcstride) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        src  += srcstride;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-
-/** Green Luma 5taps uni HV weighted interpolation filter */
-static void FUNC(put_hevc_qpel5_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                         uint8_t *_src, ptrdiff_t _srcstride,
-                                         int height, int denom, int wx, int ox,
-                                         intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green5_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green5_filters[my - 1];
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER5(tmp, MAX_PB_SIZE) >> 6) * wx + offset) >> shift) + ox);
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 3taps uni HV weighted interpolation filter */
-static void FUNC(put_hevc_qpel3_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                         uint8_t *_src, ptrdiff_t _srcstride,
-                                         int height, int denom, int wx, int ox,
-                                         intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green3_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green3_filters[my - 1];
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER3(tmp, MAX_PB_SIZE) >> 6) * wx + offset) >> shift) + ox);
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-}
-/** Green Luma 1tap uni HV weighted interpolation filter */
-static void FUNC(put_hevc_qpel1_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                         uint8_t *_src, ptrdiff_t _srcstride,
-                                         int height, int denom, int wx, int ox,
-                                         intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = denom + 14 - BIT_DEPTH;
-#if BIT_DEPTH < 14
-    int offset = 1 << (shift - 1);
-#else
-    int offset = 0;
-#endif
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green1_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green1_filters[my - 1];
-
-    ox = ox * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel((((QPEL_FILTER1(tmp, MAX_PB_SIZE) >> 6) * wx + offset) >> shift) + ox);
-        tmp += MAX_PB_SIZE;
-        dst += dststride;
-    }
-}
-
-/** Green Luma 5taps bi HV weighted interpolation filter */
-static void FUNC(put_hevc_qpel5_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                        int16_t *src2, ptrdiff_t src2stride,
-                                        int height, int denom, int wx0, int wx1,
-                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = 14 + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green5_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER5(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green5_filters[my - 1];
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER5(tmp, MAX_PB_SIZE) >> 6) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        tmp  += MAX_PB_SIZE;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-
-/** Green Luma 3taps bi HV weighted interpolation filter */
-static void FUNC(put_hevc_qpel3_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                        int16_t *src2, ptrdiff_t src2stride,
-                                        int height, int denom, int wx0, int wx1,
-                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = 14 + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green3_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER3(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green3_filters[my - 1];
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER3(tmp, MAX_PB_SIZE) >> 6) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        tmp  += MAX_PB_SIZE;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
-/** Green Luma 1tap bi HV weighted interpolation filter */
-static void FUNC(put_hevc_qpel1_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                        int16_t *src2, ptrdiff_t src2stride,
-                                        int height, int denom, int wx0, int wx1,
-                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
-{
-    int x, y;
-    const int8_t *filter;
-    pixel *src = (pixel*)_src;
-    ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    pixel *dst          = (pixel *)_dst;
-    ptrdiff_t dststride = _dststride / sizeof(pixel);
-    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
-    int16_t *tmp = tmp_array;
-    int shift = 14 + 1 - BIT_DEPTH;
-    int log2Wd = denom + shift - 1;
-
-    src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_green1_filters[mx - 1];
-    for (y = 0; y < height + QPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++)
-            tmp[x] = QPEL_FILTER1(src, 1) >> (BIT_DEPTH - 8);
-        src += srcstride;
-        tmp += MAX_PB_SIZE;
-    }
-
-    tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_green1_filters[my - 1];
-
-    ox0     = ox0 * (1 << (BIT_DEPTH - 8));
-    ox1     = ox1 * (1 << (BIT_DEPTH - 8));
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(((QPEL_FILTER1(tmp, MAX_PB_SIZE) >> 6) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
-        tmp  += MAX_PB_SIZE;
-        dst  += dststride;
-        src2 += src2stride;
-    }
-}
+LUMA_FUNC(1)
+LUMA_FUNC(3)
+LUMA_FUNC(5)
+LUMA_FUNC(7)
 
 /* Generic CHROMA Functions */
 
@@ -1403,7 +512,7 @@ static void FUNC(put_hevc_qpel1_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, ui
 	#define CHROMA_OFFSET int offset = 0;
 #endif
 
-#define EPEL_H(NTAP) \
+#define FUNC_EPEL_H(NTAP) \
 static void FUNC(put_hevc_epel ## NTAP ## _h)(int16_t *dst, ptrdiff_t dststride,	\
 								  uint8_t *_src, ptrdiff_t _srcstride,				\
 								  int height, intptr_t mx, intptr_t my, int width)	\
@@ -1418,9 +527,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _h)(int16_t *dst, ptrdiff_t dststride,
 		src += srcstride;															\
 		dst += dststride;															\
 	}																				\
-}																					\
+}
 
-#define EPEL_V(NTAP) \
+#define FUNC_EPEL_V(NTAP) \
 static void FUNC(put_hevc_epel ## NTAP ## _v)(int16_t *dst, ptrdiff_t dststride,    \
                                   uint8_t *_src, ptrdiff_t _srcstride,              \
                                   int height, intptr_t mx, intptr_t my, int width)  \
@@ -1436,9 +545,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _v)(int16_t *dst, ptrdiff_t dststride,
         src += srcstride;                                                           \
         dst += dststride;                                                           \
     }                                                                               \
-}\
+}
 
-#define EPEL_HV(NTAP)\
+#define FUNC_EPEL_HV(NTAP)\
 static void FUNC(put_hevc_epel ## NTAP ## _hv)(int16_t *dst, ptrdiff_t dststride,	\
                                    uint8_t *_src, ptrdiff_t _srcstride,				\
                                    int height, intptr_t mx, intptr_t my, int width)	\
@@ -1468,9 +577,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _hv)(int16_t *dst, ptrdiff_t dststride
         tmp += MAX_PB_SIZE;															\
         dst += dststride;															\
     }																				\
-}																					\
+}
 
-#define EPEL_UNI_H(NTAP) 																\
+#define FUNC_EPEL_UNI_H(NTAP) 															\
 static void FUNC(put_hevc_epel ## NTAP ## _uni_h)(uint8_t *_dst, ptrdiff_t _dststride, 	\
 									   uint8_t *_src, ptrdiff_t _srcstride, 			\
                                       int height, intptr_t mx, intptr_t my, int width) 	\
@@ -1485,13 +594,13 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_h)(uint8_t *_dst, ptrdiff_t _dsts
     CHROMA_OFFSET																		\
     for (y = 0; y < height; y++) {														\
         for (x = 0; x < width; x++)														\
-            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8)) + offset) >> shift);\
+            dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8)) + offset) >> shift); \
         src += srcstride;																\
         dst += dststride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_BI_H(NTAP) 																\
+#define FUNC_EPEL_BI_H(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_h)(uint8_t *_dst, ptrdiff_t _dststride,   \
 									 uint8_t *_src, ptrdiff_t _srcstride,				\
                                      int16_t *src2, ptrdiff_t src2stride,				\
@@ -1514,9 +623,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_h)(uint8_t *_dst, ptrdiff_t _dstst
         src  += srcstride;																\
         src2 += src2stride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_UNI_V(NTAP) \
+#define FUNC_EPEL_UNI_V(NTAP) \
 static void FUNC(put_hevc_epel ## NTAP ## _uni_v)(uint8_t *_dst, ptrdiff_t _dststride,	\
 												  uint8_t *_src, ptrdiff_t _srcstride,	\
 												  int height, intptr_t mx, intptr_t my, int width)\
@@ -1538,7 +647,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_v)(uint8_t *_dst, ptrdiff_t _dsts
     }																					\
 }																						\
 
-#define EPEL_BI_V(NTAP) 																\
+#define FUNC_EPEL_BI_V(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_v)(uint8_t *_dst, ptrdiff_t _dststride,	\
 										uint8_t *_src, ptrdiff_t _srcstride,			\
 										int16_t *src2, ptrdiff_t src2stride,			\
@@ -1560,9 +669,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_v)(uint8_t *_dst, ptrdiff_t _dstst
         src  += srcstride;																\
         src2 += src2stride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_UNI_HV(NTAP) 																\
+#define FUNC_EPEL_UNI_HV(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _uni_hv)(uint8_t *_dst, ptrdiff_t _dststride, \
 												uint8_t *_src, ptrdiff_t _srcstride,	\
                                        int height, intptr_t mx, intptr_t my, int width)	\
@@ -1596,9 +705,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_hv)(uint8_t *_dst, ptrdiff_t _dst
         tmp += MAX_PB_SIZE;																\
         dst += dststride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_BI_HV(NTAP) 																\
+#define FUNC_EPEL_BI_HV(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, 	\
 										uint8_t *_src, ptrdiff_t _srcstride,			\
 										int16_t *src2, ptrdiff_t src2stride,			\
@@ -1634,9 +743,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_hv)(uint8_t *_dst, ptrdiff_t _dsts
         dst  += dststride;																\
         src2 += src2stride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_UNI_W_H(NTAP) \
+#define FUNC_EPEL_UNI_W_H(NTAP) \
 static void FUNC(put_hevc_epel ## NTAP ## _uni_w_h)(uint8_t *_dst, ptrdiff_t _dststride,\
 													uint8_t *_src, ptrdiff_t _srcstride,\
 													int height, int denom, int wx, int ox, \
@@ -1659,9 +768,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_w_h)(uint8_t *_dst, ptrdiff_t _ds
         dst += dststride;																\
         src += srcstride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_BI_W_H(NTAP) 																\
+#define FUNC_EPEL_BI_W_H(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, \
 												uint8_t *_src, ptrdiff_t _srcstride,	\
 												int16_t *src2, ptrdiff_t src2stride,	\
@@ -1687,9 +796,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_w_h)(uint8_t *_dst, ptrdiff_t _dst
         dst  += dststride;																\
         src2 += src2stride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_UNI_W_V(NTAP) \
+#define FUNC_EPEL_UNI_W_V(NTAP) \
 static void FUNC(put_hevc_epel ## NTAP ## _uni_w_v)(uint8_t *_dst, ptrdiff_t _dststride,\
 													uint8_t *_src, ptrdiff_t _srcstride,\
                                         int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)\
@@ -1711,9 +820,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_w_v)(uint8_t *_dst, ptrdiff_t _ds
         dst += dststride;																\
         src += srcstride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_BI_W_V(NTAP) 																\
+#define FUNC_EPEL_BI_W_V(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, \
 													uint8_t *_src, ptrdiff_t _srcstride,\
 													int16_t *src2, ptrdiff_t src2stride,\
@@ -1739,9 +848,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_w_v)(uint8_t *_dst, ptrdiff_t _dst
         dst  += dststride;																\
         src2 += src2stride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_UNI_W_HV(NTAP) 															\
+#define FUNC_EPEL_UNI_W_HV(NTAP) 															\
 static void FUNC(put_hevc_epel ## NTAP ## _uni_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,\
 													uint8_t *_src, ptrdiff_t _srcstride,\
                                          int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)\
@@ -1776,9 +885,9 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_w_hv)(uint8_t *_dst, ptrdiff_t _d
         tmp += MAX_PB_SIZE;																\
         dst += dststride;																\
     }																					\
-}																						\
+}
 
-#define EPEL_BI_W_HV(NTAP) 																\
+#define FUNC_EPEL_BI_W_HV(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,\
 										uint8_t *_src, ptrdiff_t _srcstride,			\
                                         int16_t *src2, ptrdiff_t src2stride,			\
@@ -1818,28 +927,29 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_w_hv)(uint8_t *_dst, ptrdiff_t _ds
         dst  += dststride;																\
         src2 += src2stride;																\
     }																					\
-}																						\
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#define CHROMA_FUNC(NTAP) 	\
-		EPEL_H(NTAP) 		\
-		EPEL_V(NTAP) 		\
-		EPEL_HV(NTAP) 		\
-		EPEL_UNI_H(NTAP) 	\
-		EPEL_UNI_V(NTAP) 	\
-		EPEL_UNI_HV(NTAP) 	\
-		EPEL_BI_H(NTAP) 	\
-		EPEL_BI_V(NTAP) 	\
-		EPEL_BI_HV(NTAP) 	\
-		EPEL_UNI_W_H(NTAP) 	\
-		EPEL_UNI_W_V(NTAP) 	\
-		EPEL_UNI_W_HV(NTAP) \
-		EPEL_BI_W_H(NTAP) 	\
-		EPEL_BI_W_V(NTAP) 	\
-		EPEL_BI_W_HV(NTAP)
+#define CHROMA_FUNC(NTAP) 			\
+		FUNC_EPEL_H(NTAP) 			\
+		FUNC_EPEL_V(NTAP) 			\
+		FUNC_EPEL_HV(NTAP) 			\
+		FUNC_EPEL_UNI_H(NTAP) 		\
+		FUNC_EPEL_UNI_V(NTAP) 		\
+		FUNC_EPEL_UNI_HV(NTAP) 		\
+		FUNC_EPEL_BI_H(NTAP) 		\
+		FUNC_EPEL_BI_V(NTAP) 		\
+		FUNC_EPEL_BI_HV(NTAP) 		\
+		FUNC_EPEL_UNI_W_H(NTAP) 	\
+		FUNC_EPEL_UNI_W_V(NTAP) 	\
+		FUNC_EPEL_UNI_W_HV(NTAP) 	\
+		FUNC_EPEL_BI_W_H(NTAP) 		\
+		FUNC_EPEL_BI_W_V(NTAP) 		\
+		FUNC_EPEL_BI_W_HV(NTAP)
 
 #define EPEL_FILTER_GREEN(N) EPEL_FILTER_GREEN ## N
 

@@ -82,6 +82,26 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green3_filters[7][4]) = {
 #endif
 
 #if GREEN_FILTER_TYPE == OLD
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green7_filters[3][8]) = {
+	{ -1,  4,-10, 58, 17, -5,  1,  0},
+	{ -1,  4,-11, 40, 40,-11,  3,  0},
+	{  0,  1, -5, 17, 58,-10,  4, -1}
+};
+#elif GREEN_FILTER_TYPE == SYMMETRIC
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green7_filters[3][8]) = {
+	{ -1,  4,-10, 58, 17, -5,  1,  0},
+	{ -1,  4,-11, 40, 40,-11,  3,  0},
+	{  0,  1, -5, 17, 58,-10,  4, -1}
+};
+#elif GREEN_FILTER_TYPE == ASYMMETRIC
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green7_filters[3][8]) = {
+	{ -1,  4,-10, 58, 17, -5,  1,  0},
+	{ -1,  4,-11, 40, 40,-11,  3,  0},
+	{ -1,  3, -7, 19, 56, -8,  2,  0}
+};
+#endif
+
+#if GREEN_FILTER_TYPE == OLD
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_green5_filters[3][6]) = {
 	{ 1, -8, 58, 16, -3, 0 },
 	{ 2, -9, 40, 40, -9, 0 },

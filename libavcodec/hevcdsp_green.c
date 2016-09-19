@@ -122,8 +122,7 @@ static void init_green_filter_luma5(luma_config* cfg){
 }
 static void init_green_filter_luma7(luma_config* cfg){
 	int i;
-	printf("LUMA 7 Not described\n");
-//	HEVC_DSP_LUMA_GREEN(8, 8)
+	HEVC_DSP_LUMA_GREEN(7, 8)
 }
 
 #undef HEVC_DSP_CHROMA_GREEN
