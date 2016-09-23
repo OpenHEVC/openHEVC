@@ -390,7 +390,7 @@ static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,
     pixel *src = (pixel *)_src;
     int16_t *sao_offset_val = sao->offset_val[c_idx];
     uint8_t sao_eo_class    = sao->eo_class[c_idx];
-    int init_x = 0, init_y = 0, width = _width, height = _height;
+    int init_x = 0, /*init_y = 0,*/ width = _width, height = _height;
 
     stride_src /= sizeof(pixel);
     stride_dst /= sizeof(pixel);
@@ -1920,7 +1920,7 @@ static void FUNC(upsample_filter_block_cr_v_all)( uint8_t *_dst, ptrdiff_t dstst
 static void FUNC(upsample_filter_block_luma_h_x2)( int16_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                                   int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                                                   const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
-    int rightEndL  = widthEL - Enhscal->right_offset;
+    //int rightEndL  = widthEL - Enhscal->right_offset;
     int leftStartL = Enhscal->left_offset;
     int x, i, j, shift = up_info->shift_up[0];
     int16_t*   dst_tmp;
@@ -1942,8 +1942,8 @@ static void FUNC(upsample_filter_block_luma_h_x2)( int16_t *_dst, ptrdiff_t _dst
 static void FUNC(upsample_filter_block_cr_h_x2)(  int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                                 int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                                                 const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
-    int leftStartC = Enhscal->left_offset>>1;
-    int rightEndC  = widthEL - (Enhscal->right_offset>>1);
+    //int leftStartC = Enhscal->left_offset>>1;
+    //int rightEndC  = widthEL - (Enhscal->right_offset>>1);
     int x, i, j, shift = up_info->shift_up[1];
     int16_t*  dst_tmp;
     pixel*   src_tmp, *src = (pixel *) _src - x_BL;
@@ -1968,7 +1968,7 @@ static void FUNC(upsample_filter_block_luma_v_x2)( uint8_t *_dst, ptrdiff_t _dst
                                                   int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                                   const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
     int topStartL  = Enhscal->top_offset;
-    int bottomEndL = heightEL - Enhscal->bottom_offset;
+    //int bottomEndL = heightEL - Enhscal->bottom_offset;
     int rightEndL  = widthEL - Enhscal->right_offset;
     int leftStartL = Enhscal->left_offset;
     int y, i, j;
@@ -2000,7 +2000,7 @@ static void FUNC(upsample_filter_block_cr_v_x2)( uint8_t *_dst, ptrdiff_t dststr
     int leftStartC = Enhscal->left_offset>>1;
     int rightEndC  = widthEL - (Enhscal->right_offset>>1);
     int topStartC  = Enhscal->top_offset>>1;
-    int bottomEndC = heightEL - (Enhscal->bottom_offset>>1);
+    //int bottomEndC = heightEL - (Enhscal->bottom_offset>>1);
     int y, i, j, refPos16, refPos;
     const int8_t* coeff;
     int16_t *   src_tmp;
@@ -2049,10 +2049,10 @@ static void FUNC(upsample_filter_block_luma_h_x1_5)( int16_t *_dst, ptrdiff_t _d
 static void FUNC(upsample_filter_block_cr_h_x1_5)(  int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                                                   int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                                                   const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
+    int16_t*  dst_tmp;
     int leftStartC = Enhscal->left_offset>>1;
     int rightEndC  = widthEL - (Enhscal->right_offset>>1);
     int x, i, j, shift = up_info->shift_up[1];;
-    int16_t*  dst_tmp;
     pixel*   src_tmp, *src = (pixel *) _src - x_BL;
     const int8_t*  coeff;
 
@@ -2163,8 +2163,8 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     const int8_t* coeff;
     int leftStartL = Enhscal->left_offset;
     int rightEndL  = FrameEL->width - Enhscal->right_offset;
-    int topStartL  = Enhscal->top_offset;
-    int bottomEndL = FrameEL->height - Enhscal->bottom_offset;
+    //int topStartL  = Enhscal->top_offset;
+    //int bottomEndL = FrameEL->height - Enhscal->bottom_offset;
     pixel buffer[8];
 
     const int nShift = 20-BIT_DEPTH;// TO DO ass the appropiate bit depth  bit  depth
@@ -2173,9 +2173,9 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
     short buffer1[8];
 
     int leftStartC = Enhscal->left_offset>>1;
-    int rightEndC  = (FrameEL->width>>1) - (Enhscal->right_offset>>1);
+    //int rightEndC  = (FrameEL->width>>1) - (Enhscal->right_offset>>1);
     int topStartC  = Enhscal->top_offset>>1;
-    int bottomEndC = (FrameEL->height>>1) - (Enhscal->bottom_offset>>1);
+    //int bottomEndC = (FrameEL->height>>1) - (Enhscal->bottom_offset>>1);
     int shift1 = up_info->shift_up[0];
 
     widthEL   = FrameEL->width;  //pcUsPic->getWidth ();
@@ -2448,6 +2448,8 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
 
   for(i = 0 ; i < height ; i += 2 ) {
     for(j = 0 , k = 0 ; j < width ; j += 2 , k++ ) {
+        short a, b;
+        SYUVP dstUV;
         val[0] = src_Y[j];
         val[1] = src_Y[j+1];
         val[2] = src_Y[j+src_stride];
@@ -2466,9 +2468,9 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
         rCuboid = pc3DAsymLUT->S_Cuboid[val[0] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
         val_dst[0] = ( ( rCuboid.P[0].Y * val[0] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
-        short a = src_U[k+1] + val[4];
+        a = src_U[k+1] + val[4];
         tmpU =  ((a<<1) + a + val_prev[0] + src_U_prev[k+1] + 4 ) >> 3;
-        short b = src_V[k+1] + val[5];
+        b = src_V[k+1] + val[5];
         tmpV =  ((b<<1) + b + val_prev[1] + src_V_prev[k+1] + 4 ) >> 3;
 
         rCuboid = pc3DAsymLUT->S_Cuboid[val[1] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
@@ -2485,7 +2487,6 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
         rCuboid = pc3DAsymLUT->S_Cuboid[val[3] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
         val_dst[3] = ( ( rCuboid.P[0].Y * val[3] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
-        SYUVP dstUV;
         rCuboid = pc3DAsymLUT->S_Cuboid[srcYaver >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? val[4]>=pc3DAsymLUT->nAdaptCThresholdU : val[4]>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? val[5]>=pc3DAsymLUT->nAdaptCThresholdV : val[5]>> pc3DAsymLUT->VShift2Idx];
         dstUV.Y = 0;
         dstUV.U = ( ( rCuboid.P[0].U * srcYaver + rCuboid.P[1].U * val[4] + rCuboid.P[2].U * val[5] + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].U;

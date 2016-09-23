@@ -62,3 +62,4 @@ static int hevc_probe(AVProbeData *p)
 }
 
 FF_DEF_RAWVIDEO_DEMUXER(hevc, "raw HEVC video", hevc_probe, "hevc,h265,265,shvc", AV_CODEC_ID_HEVC)
+FF_DEF_RAWVIDEO_DEMUXER(shvc, "raw HEVC video", hevc_probe, "shvc", AV_CODEC_ID_SHVC)

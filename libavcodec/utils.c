@@ -786,6 +786,12 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
             }
         }
         add_metadata_from_side_data(pkt, frame);
+
+        if (pkt->flags & AV_PKT_FLAG_DISCARD) {
+            frame->flags |= AV_FRAME_FLAG_DISCARD;
+        } else {
+            frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
+        }
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         av_frame_set_pkt_pos     (frame, -1);
@@ -1391,10 +1397,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         avctx->thread_count = 1;
 
     if (avctx->codec->max_lowres < avctx->lowres || avctx->lowres < 0) {
-        av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
+        av_log(avctx, AV_LOG_WARNING, "The maximum value for lowres supported by the decoder is %d\n",
                avctx->codec->max_lowres);
-        ret = AVERROR(EINVAL);
-        goto free_and_end;
+        avctx->lowres = avctx->codec->max_lowres;
     }
 
 #if FF_API_VISMV
@@ -2250,7 +2255,9 @@ fail:
             if(ret == tmp.size)
                 ret = avpkt->size;
         }
-
+        if (picture->flags & AV_FRAME_FLAG_DISCARD) {
+            *got_picture_ptr = 0;
+        }
         if (*got_picture_ptr) {
             if (!avctx->refcounted_frames) {
                 int err = unrefcount_frame(avci, picture);
@@ -2315,6 +2322,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         uint32_t discard_padding = 0;
         uint8_t skip_reason = 0;
         uint8_t discard_reason = 0;
+        int demuxer_skip_samples = 0;
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
@@ -2322,6 +2330,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         if (ret < 0)
             goto fail;
 
+        demuxer_skip_samples = avctx->internal->skip_samples;
         avctx->internal->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
             ret = ff_thread_decode_frame(avctx, frame, got_frame_ptr, &tmp);
@@ -2344,6 +2353,13 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 av_frame_set_channels(frame, avctx->channels);
             if (!frame->sample_rate)
                 frame->sample_rate = avctx->sample_rate;
+        }
+
+
+        if (frame->flags & AV_FRAME_FLAG_DISCARD) {
+            // If using discard frame flag, ignore skip_samples set by the decoder.
+            avctx->internal->skip_samples = demuxer_skip_samples;
+            *got_frame_ptr = 0;
         }
 
         side= av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
@@ -3261,6 +3277,14 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             && enc->bits_per_raw_sample != av_get_bytes_per_sample(enc->sample_fmt) * 8)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      " (%d bit)", enc->bits_per_raw_sample);
+        if (av_log_get_level() >= AV_LOG_VERBOSE) {
+            if (enc->initial_padding)
+                snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                         ", delay %d", enc->initial_padding);
+            if (enc->trailing_padding)
+                snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                         ", padding %d", enc->trailing_padding);
+        }
         break;
     case AVMEDIA_TYPE_DATA:
         if (av_log_get_level() >= AV_LOG_DEBUG) {
@@ -3418,6 +3442,8 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
         return 32;
     case AV_CODEC_ID_PCM_F64BE:
     case AV_CODEC_ID_PCM_F64LE:
+    case AV_CODEC_ID_PCM_S64BE:
+    case AV_CODEC_ID_PCM_S64LE:
         return 64;
     default:
         return 0;
@@ -3435,6 +3461,7 @@ enum AVCodecID av_get_pcm_codec(enum AVSampleFormat fmt, int be)
         [AV_SAMPLE_FMT_U8P ] = { AV_CODEC_ID_PCM_U8,    AV_CODEC_ID_PCM_U8    },
         [AV_SAMPLE_FMT_S16P] = { AV_CODEC_ID_PCM_S16LE, AV_CODEC_ID_PCM_S16BE },
         [AV_SAMPLE_FMT_S32P] = { AV_CODEC_ID_PCM_S32LE, AV_CODEC_ID_PCM_S32BE },
+        [AV_SAMPLE_FMT_S64P] = { AV_CODEC_ID_PCM_S64LE, AV_CODEC_ID_PCM_S64BE },
         [AV_SAMPLE_FMT_FLTP] = { AV_CODEC_ID_PCM_F32LE, AV_CODEC_ID_PCM_F32BE },
         [AV_SAMPLE_FMT_DBLP] = { AV_CODEC_ID_PCM_F64LE, AV_CODEC_ID_PCM_F64BE },
     };
@@ -4106,14 +4133,15 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
         par->video_delay         = codec->has_b_frames;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        par->format          = codec->sample_fmt;
-        par->channel_layout  = codec->channel_layout;
-        par->channels        = codec->channels;
-        par->sample_rate     = codec->sample_rate;
-        par->block_align     = codec->block_align;
-        par->frame_size      = codec->frame_size;
-        par->initial_padding = codec->initial_padding;
-        par->seek_preroll    = codec->seek_preroll;
+        par->format           = codec->sample_fmt;
+        par->channel_layout   = codec->channel_layout;
+        par->channels         = codec->channels;
+        par->sample_rate      = codec->sample_rate;
+        par->block_align      = codec->block_align;
+        par->frame_size       = codec->frame_size;
+        par->initial_padding  = codec->initial_padding;
+        par->trailing_padding = codec->trailing_padding;
+        par->seek_preroll     = codec->seek_preroll;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
         par->width  = codec->width;
@@ -4160,15 +4188,16 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
         codec->has_b_frames           = par->video_delay;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        codec->sample_fmt      = par->format;
-        codec->channel_layout  = par->channel_layout;
-        codec->channels        = par->channels;
-        codec->sample_rate     = par->sample_rate;
-        codec->block_align     = par->block_align;
-        codec->frame_size      = par->frame_size;
-        codec->delay           =
-        codec->initial_padding = par->initial_padding;
-        codec->seek_preroll    = par->seek_preroll;
+        codec->sample_fmt       = par->format;
+        codec->channel_layout   = par->channel_layout;
+        codec->channels         = par->channels;
+        codec->sample_rate      = par->sample_rate;
+        codec->block_align      = par->block_align;
+        codec->frame_size       = par->frame_size;
+        codec->delay            =
+        codec->initial_padding  = par->initial_padding;
+        codec->trailing_padding = par->trailing_padding;
+        codec->seek_preroll     = par->seek_preroll;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
         codec->width  = par->width;

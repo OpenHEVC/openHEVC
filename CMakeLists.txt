@@ -199,6 +199,7 @@ find_package(SDL)
 find_package(SDL2)
 
 set(libfilenames
+libavutil/avassert.h
     libavutil/avstring.c
     libavutil/atomic.c
     libavutil/base64.c
@@ -302,8 +303,9 @@ libavformat/rtp.c
 libavformat/rtmphttp.c
 libavformat/rtpproto.c
 libavformat/tcp.c
-libavformat/tee.c
-libavformat/teeproto.c
+#libavformat/tee_common.c
+#libavformat/tee.c
+#libavformat/teeproto.c
 libavformat/udp.c
 libavformat/unix.c
 libavformat/mms.c
@@ -347,7 +349,7 @@ libavcodec/h264_ps.c
 libavcodec/h264_refs.c
 libavcodec/h264_sei.c
 libavcodec/h264_slice.c
-libavcodec/h264.c
+libavcodec/h264dec.c
 libavcodec/h264.h
 #libavcodec/h264chroma_template.c
 libavcodec/h264chroma.c

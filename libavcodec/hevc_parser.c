@@ -90,7 +90,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     int ret, i;
 
     ret = ff_h2645_packet_split(&ctx->pkt, buf, buf_size, avctx, 0, 0,
-                                AV_CODEC_ID_HEVC);
+                                AV_CODEC_ID_HEVC, 1);
     if (ret < 0)
         return ret;
 
@@ -253,6 +253,8 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
     h->avctx = avctx;
 
+    ff_hevc_reset_sei(h);
+
     if (!buf_size)
         return 0;
 
@@ -284,7 +286,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 src_length = 20;
         }
 
-        consumed = ff_h2645_extract_rbsp(buf, src_length, nal);
+        consumed = ff_h2645_extract_rbsp(buf, src_length, nal, 1);
         if (consumed < 0)
             return consumed;
 
@@ -535,27 +537,13 @@ static int hevc_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
     return 0;
 }
 
-static int hevc_init(AVCodecParserContext *s)
-{
-    HEVCContext  *h  = &((HEVCParserContext *)s->priv_data)->h;
-    h->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
-    h->skipped_bytes_pos_size = INT_MAX;
-
-    return 0;
-}
-
 static void hevc_parser_close(AVCodecParserContext *s)
 {
     HEVCParserContext *ctx = s->priv_data;
     int i;
 
-    //HEVCContext  *h  = &((HEVCParserContext *)s->priv_data)->h;
-    ParseContext *pc = &((HEVCParserContext *)s->priv_data)->pc;
 #if ADVANCED_PARSER
     HEVCContext  *h  = &ctx->h;
-    av_freep(&h->skipped_bytes_pos);
-    av_freep(&h->HEVClc);
-    av_freep(&pc->buffer);
 
     for (i = 0; i < FF_ARRAY_ELEMS(h->ps.vps_list); i++)
         av_buffer_unref(&h->ps.vps_list[i]);
@@ -586,7 +574,6 @@ static void hevc_parser_close(AVCodecParserContext *s)
 AVCodecParser ff_hevc_parser = {
     .codec_ids      = { AV_CODEC_ID_HEVC },
     .priv_data_size = sizeof(HEVCParserContext),
-    .parser_init    = hevc_init,
     .parser_parse   = hevc_parse,
     .parser_close   = hevc_parser_close,
     .split          = hevc_split,
@@ -596,7 +583,6 @@ AVCodecParser ff_hevc_parser = {
 AVCodecParser ff_shvc_parser = {
     .codec_ids      = { AV_CODEC_ID_SHVC },
     .priv_data_size = sizeof(HEVCParserContext),
-    .parser_init    = hevc_init,
     .parser_parse   = hevc_parse2,
     .parser_close   = hevc_parser_close,
     .split          = hevc_split,

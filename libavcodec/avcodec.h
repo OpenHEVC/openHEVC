@@ -43,7 +43,9 @@
 #include "version.h"
 
 /**
- * @defgroup libavc Encoding/Decoding Library
+ * @defgroup libavc libavcodec
+ * Encoding/Decoding Library
+ *
  * @{
  *
  * @defgroup lavc_decoding Decoding
@@ -444,9 +446,9 @@ enum AVCodecID {
     AV_CODEC_ID_PCM_S24LE_PLANAR,
     AV_CODEC_ID_PCM_S32LE_PLANAR,
     AV_CODEC_ID_PCM_S16BE_PLANAR,
-    /* new PCM "codecs" should be added right below this line starting with
-     * an explicit value of for example 0x10800
-     */
+
+    AV_CODEC_ID_PCM_S64LE = 0x10800,
+    AV_CODEC_ID_PCM_S64BE,
 
     /* various ADPCM codecs */
     AV_CODEC_ID_ADPCM_IMA_QT = 0x11000,
@@ -1620,6 +1622,12 @@ typedef struct AVPacket {
 } AVPacket;
 #define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe
 #define AV_PKT_FLAG_CORRUPT 0x0002 ///< The packet content is corrupted
+/**
+ * Flag is used to discard packets which are required to maintain valid
+ * decoder state but are not required for output and should be dropped
+ * after decoding.
+ **/
+#define AV_PKT_FLAG_DISCARD   0x0004
 
 enum AVSideDataParamChangeFlags {
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT  = 0x0001,
@@ -2092,22 +2100,23 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int ildct_cmp;
-#define FF_CMP_SAD    0
-#define FF_CMP_SSE    1
-#define FF_CMP_SATD   2
-#define FF_CMP_DCT    3
-#define FF_CMP_PSNR   4
-#define FF_CMP_BIT    5
-#define FF_CMP_RD     6
-#define FF_CMP_ZERO   7
-#define FF_CMP_VSAD   8
-#define FF_CMP_VSSE   9
-#define FF_CMP_NSSE   10
-#define FF_CMP_W53    11
-#define FF_CMP_W97    12
-#define FF_CMP_DCTMAX 13
-#define FF_CMP_DCT264 14
-#define FF_CMP_CHROMA 256
+#define FF_CMP_SAD          0
+#define FF_CMP_SSE          1
+#define FF_CMP_SATD         2
+#define FF_CMP_DCT          3
+#define FF_CMP_PSNR         4
+#define FF_CMP_BIT          5
+#define FF_CMP_RD           6
+#define FF_CMP_ZERO         7
+#define FF_CMP_VSAD         8
+#define FF_CMP_VSSE         9
+#define FF_CMP_NSSE         10
+#define FF_CMP_W53          11
+#define FF_CMP_W97          12
+#define FF_CMP_DCTMAX       13
+#define FF_CMP_DCT264       14
+#define FF_CMP_MEDIAN_SAD   15
+#define FF_CMP_CHROMA       256
 
     /**
      * ME diamond size & shape
@@ -3543,6 +3552,17 @@ typedef struct AVCodecContext {
 #if FF_API_ASS_TIMING
 #define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
 #endif
+
+    /**
+     * Audio only. The amount of padding (in samples) appended by the encoder to
+     * the end of the audio. I.e. this number of decoded samples must be
+     * discarded by the caller from the end of the stream to get the original
+     * audio without any trailing padding.
+     *
+     * - decoding: unused
+     * - encoding: unused
+     */
+    int trailing_padding;
 
 } AVCodecContext;
 
@@ -5154,7 +5174,10 @@ AVCodecParserContext *av_parser_init(int codec_id);
  * @param poutbuf       set to pointer to parsed buffer or NULL if not yet finished.
  * @param poutbuf_size  set to size of parsed buffer or zero if not yet finished.
  * @param buf           input buffer.
- * @param buf_size      input length, to signal EOF, this should be 0 (so that the last frame can be output).
+ * @param buf_size      buffer size in bytes without the padding. I.e. the full buffer
+                        size is assumed to be buf_size + AV_INPUT_BUFFER_PADDING_SIZE.
+                        To signal EOF, this should be 0 (so that the last frame
+                        can be output).
  * @param pts           input presentation timestamp.
  * @param dts           input decoding timestamp.
  * @param pos           input byte position in stream.
@@ -5920,7 +5943,8 @@ int av_bsf_init(AVBSFContext *ctx);
  * av_bsf_receive_packet() repeatedly until it returns AVERROR(EAGAIN) or
  * AVERROR_EOF.
  *
- * @param pkt the packet to filter. The bitstream filter will take ownership of
+ * @param pkt the packet to filter. pkt must contain some payload (i.e data or
+ * side data must be present in pkt). The bitstream filter will take ownership of
  * the packet and reset the contents of pkt. pkt is not touched if an error occurs.
  * This parameter may be NULL, which signals the end of the stream (i.e. no more
  * packets will be sent). That will cause the filter to output any packets it
@@ -5969,6 +5993,91 @@ void av_bsf_free(AVBSFContext **ctx);
  * @see av_opt_find().
  */
 const AVClass *av_bsf_get_class(void);
+
+/**
+ * Structure for chain/list of bitstream filters.
+ * Empty list can be allocated by av_bsf_list_alloc().
+ */
+typedef struct AVBSFList AVBSFList;
+
+/**
+ * Allocate empty list of bitstream filters.
+ * The list must be later freed by av_bsf_list_free()
+ * or finalized by av_bsf_list_finalize().
+ *
+ * @return Pointer to @ref AVBSFList on success, NULL in case of failure
+ */
+AVBSFList *av_bsf_list_alloc(void);
+
+/**
+ * Free list of bitstream filters.
+ *
+ * @param lst Pointer to pointer returned by av_bsf_list_alloc()
+ */
+void av_bsf_list_free(AVBSFList **lst);
+
+/**
+ * Append bitstream filter to the list of bitstream filters.
+ *
+ * @param lst List to append to
+ * @param bsf Filter context to be appended
+ *
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int av_bsf_list_append(AVBSFList *lst, AVBSFContext *bsf);
+
+/**
+ * Construct new bitstream filter context given it's name and options
+ * and append it to the list of bitstream filters.
+ *
+ * @param lst      List to append to
+ * @param bsf_name Name of the bitstream filter
+ * @param options  Options for the bitstream filter, can be set to NULL
+ *
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int av_bsf_list_append2(AVBSFList *lst, const char * bsf_name, AVDictionary **options);
+/**
+ * Finalize list of bitstream filters.
+ *
+ * This function will transform @ref AVBSFList to single @ref AVBSFContext,
+ * so the whole chain of bitstream filters can be treated as single filter
+ * freshly allocated by av_bsf_alloc().
+ * If the call is successful, @ref AVBSFList structure is freed and lst
+ * will be set to NULL. In case of failure, caller is responsible for
+ * freeing the structure by av_bsf_list_free()
+ *
+ * @param      lst Filter list structure to be transformed
+ * @param[out] bsf Pointer to be set to newly created @ref AVBSFContext structure
+ *                 representing the chain of bitstream filters
+ *
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int av_bsf_list_finalize(AVBSFList **lst, AVBSFContext **bsf);
+
+/**
+ * Parse string describing list of bitstream filters and create single
+ * @ref AVBSFContext describing the whole chain of bitstream filters.
+ * Resulting @ref AVBSFContext can be treated as any other @ref AVBSFContext freshly
+ * allocated by av_bsf_alloc().
+ *
+ * @param      str String describing chain of bitstream filters in format
+ *                 `bsf1[=opt1=val1:opt2=val2][,bsf2]`
+ * @param[out] bsf Pointer to be set to newly created @ref AVBSFContext structure
+ *                 representing the chain of bitstream filters
+ *
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf);
+
+/**
+ * Get null/pass-through bitstream filter.
+ *
+ * @param[out] bsf Pointer to be set to new instance of pass-through bitstream filter
+ *
+ * @return
+ */
+int av_bsf_get_null_filter(AVBSFContext **bsf);
 
 /* memory */
 

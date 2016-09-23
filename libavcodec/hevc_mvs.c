@@ -22,7 +22,7 @@
  */
 
 #include "hevc.h"
-#include "h264.h"
+#include "h264dec.h"
 
 static const uint8_t l0_l1_cand_idx[12][2] = {
     { 0, 1, },

@@ -33,10 +33,10 @@
 #include "hevc.h"
 #include "bit_depth_template.c"
 //temp
-#include "h264.h"
+#include "h264dec.h"
 
-
-#if HAVE_SSE2
+//TODO move intrinsics to x86 funcions
+/*#if HAVE_SSE2
 #include <emmintrin.h>
 #endif
 #if HAVE_SSSE3
@@ -45,7 +45,7 @@
 #if HAVE_SSE42
 #include <smmintrin.h>
 #endif
-
+*/
 #define LUMA 0
 #define CB 1
 #define CR 2
@@ -517,7 +517,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
 {
     uint8_t *src;
     int x, y;
-    int chroma;
+    //int chroma;
     int c_tc[2], tc[2], beta;
     uint8_t no_p[2] = { 0 };
     uint8_t no_q[2] = { 0 };
@@ -754,7 +754,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
 #ifdef TEST_MV_POC
 static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
 {
-#if HAVE_SSE42
+#if 0 //HAVE_SSE42
     {
         __m128i x0, x1, x2, x3, x4;
         unsigned char temp[4] = {0x00, 0x0F, 0xFF, 0xFF};
@@ -780,7 +780,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
         if (curr->poc[0] == neigh->poc[0]  &&
             curr->poc[0] == curr->poc[1] &&
             neigh->poc[0] == neigh->poc[1]) {
-#if HAVE_SSE42
+#if 0 //HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -804,7 +804,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
 #endif
         } else if (neigh->poc[0] == curr->poc[0] &&
                    neigh->poc[1] == curr->poc[1]) {
-#if HAVE_SSE42
+#if 0 //HAVE_SSE42
             __m128i x0, x1;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -822,7 +822,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh)
 #endif
         } else if (neigh->poc[1] == curr->poc[0] &&
                    neigh->poc[0] == curr->poc[1]) {
-#if HAVE_SSE42
+#if 0 //HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -881,7 +881,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
         if (refPicList[0].list[curr->ref_idx[0]]        == neigh_refPicList[0].list[neigh->ref_idx[0]] &&
             refPicList[0].list[curr->ref_idx[0]]        == refPicList[1].list[curr->ref_idx[1]]        &&
             neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
-#if HAVE_SSE42
+#if 0 //HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -905,7 +905,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 #endif
         } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == refPicList[0].list[curr->ref_idx[0]] &&
                    neigh_refPicList[1].list[neigh->ref_idx[1]] == refPicList[1].list[curr->ref_idx[1]]) {
-#if HAVE_SSE42
+#if 0 //HAVE_SSE42
             __m128i x0, x1;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -923,7 +923,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
 #endif
         } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == refPicList[0].list[curr->ref_idx[0]] &&
                    neigh_refPicList[0].list[neigh->ref_idx[0]] == refPicList[1].list[curr->ref_idx[1]]) {
-#if HAVE_SSE42
+#if 0 //HAVE_SSE42
             __m128i x0, x1, x2;
             x0 = _mm_loadl_epi64((__m128i *) neigh);
             x1 = _mm_loadl_epi64((__m128i *) curr);
@@ -1340,7 +1340,7 @@ static void copy_block(HEVCContext *s, uint8_t *src, uint8_t * dst, ptrdiff_t bl
         dst += el_stride;
     }
 #else
-    int j, refLayerId = 0;
+    int j/*, refLayerId*/ = 0;
     int shift = s->up_filter_inf.shift[channel];
     for (i = 0; i < ePbH ; i++) {
         for (j = 0; j < ePbW ; j++)
@@ -1351,31 +1351,30 @@ static void copy_block(HEVCContext *s, uint8_t *src, uint8_t * dst, ptrdiff_t bl
 #endif
 }
 
-static void copy_block_16(HEVCContext *s, uint16_t *src, uint16_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
-    int i;
-#if 0
-    for (i = 0; i < ePbH ; i++) {
-        memcpy(dst, src, ePbW * sizeof(pixel));
-        src += bl_stride;
-        dst += el_stride;
-    }
-#else
-    int j, refLayerId = 0;
-    int shift = s->up_filter_inf.shift[channel];
-    for (i = 0; i < ePbH ; i++) {
-        for (j = 0; j < ePbW ; j++){
-            dst[j] = src[j]<<shift;
-        }
-        src += bl_stride;
-        dst += el_stride;
-    }
-#endif
-}
+//static void copy_block_16(HEVCContext *s, uint16_t *src, uint16_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
+//    int i;
+//#if 0
+//    for (i = 0; i < ePbH ; i++) {
+//        memcpy(dst, src, ePbW * sizeof(pixel));
+//        src += bl_stride;
+//        dst += el_stride;
+//    }
+//#else
+//    int j/*, refLayerId*/ = 0;
+//    int shift = s->up_filter_inf.shift[channel];
+//    for (i = 0; i < ePbH ; i++) {
+//        for (j = 0; j < ePbW ; j++){
+//            dst[j] = src[j]<<shift;
+//        }
+//        src += bl_stride;
+//        dst += el_stride;
+//    }
+//#endif
+//}
 
 static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t *src_v, int src_stride, int src_stridec,int x0, int y0, int x0_cr, int y0_cr, int bl_width, int bl_height, int el_width, int el_height) {
     int i, j, k;
-    int ctb_size  = 1<<s->ps.sps->log2_ctb_size;
-    ctb_size = ((( ctb_size  ) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)  >> 4;
+    int ctb_size  = ((( 1<<s->ps.sps->log2_ctb_size) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)  >> 4;
     uint8_t srcYaver, tmpU, tmpV;
     uint16_t val[6], val_dst[6], val_prev[2];
     pixel *src_U_prev, *src_V_prev, *src_U_next, *src_V_next;
@@ -1430,6 +1429,8 @@ static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t
 
     for(i = 0 ; i < ctb_size && i+y0 < el_height; i += 2 ) {
       for(j = 0 , k = 0 ; j < ctb_size && j+x0 < el_width; j += 2 , k++ ) {
+        short a ,b;
+        SYUVP dstUV;
         val[0] = src_y[j];
         val[1] = src_y[j+1];
         val[2] = src_y[j+src_stride];
@@ -1446,9 +1447,9 @@ static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t
         rCuboid = pps->pc3DAsymLUT.S_Cuboid[val[0] >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpU>=pps->pc3DAsymLUT.nAdaptCThresholdU : tmpU>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpV>=pps->pc3DAsymLUT.nAdaptCThresholdV : tmpV>> pps->pc3DAsymLUT.VShift2Idx];
         val_dst[0] = ( ( rCuboid.P[0].Y * val[0] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].Y;
 
-        short a = src_u[k+1] + val[4];
+        a = src_u[k+1] + val[4];
         tmpU =  ((a<<1) + a + val_prev[0] + src_U_prev[k+1] + 4 ) >> 3;
-        short b = src_v[k+1] + val[5];
+        b = src_v[k+1] + val[5];
         tmpV =  ((b<<1) + b + val_prev[1] + src_V_prev[k+1] + 4 ) >> 3;
 
         rCuboid = pps->pc3DAsymLUT.S_Cuboid[val[1] >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpU>=pps->pc3DAsymLUT.nAdaptCThresholdU : tmpU>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpV>=pps->pc3DAsymLUT.nAdaptCThresholdV : tmpV>> pps->pc3DAsymLUT.VShift2Idx];
@@ -1464,7 +1465,6 @@ static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t
         rCuboid = pps->pc3DAsymLUT.S_Cuboid[val[3] >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpU>=pps->pc3DAsymLUT.nAdaptCThresholdU : tmpU>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? tmpV>=pps->pc3DAsymLUT.nAdaptCThresholdV : tmpV>> pps->pc3DAsymLUT.VShift2Idx];
         val_dst[3] = ( ( rCuboid.P[0].Y * val[3] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].Y;
 
-        SYUVP dstUV;
         rCuboid = pps->pc3DAsymLUT.S_Cuboid[srcYaver >> pps->pc3DAsymLUT.YShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? val[4]>=pps->pc3DAsymLUT.nAdaptCThresholdU : val[4]>> pps->pc3DAsymLUT.UShift2Idx][pps->pc3DAsymLUT.cm_octant_depth==1? val[5]>=pps->pc3DAsymLUT.nAdaptCThresholdV : val[5]>> pps->pc3DAsymLUT.VShift2Idx];
         dstUV.Y = 0;
         dstUV.U = ( ( rCuboid.P[0].U * srcYaver + rCuboid.P[1].U * val[4] + rCuboid.P[2].U * val[5] + pps->pc3DAsymLUT.nMappingOffset ) >> pps->pc3DAsymLUT.nMappingShift ) + rCuboid.P[3].U;
@@ -1709,25 +1709,29 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
 
     AVFrame *bl_frame;
 
+
     pixel *dst = (pixel*)ref0->frame->data[0];
     int ctb_size  = 1<<s->ps.sps->log2_ctb_size;
     int el_width  =  s->ps.sps->width;
     int el_height =  s->ps.sps->height;
+
+    //HEVCWindow base_layer_window = s->ps.pps->ref_window[((HEVCVPS*)s->ps.vps_list[s->ps.sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
+    int bl_height =  s->BL_height;
+    int bl_width  =  s->BL_width;
+
+    int bl_stride;
+
+    int el_stride =  ref0->frame->linesize[0]/sizeof(pixel);
+    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size;
+    int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
 
     if(s->ps.vps->vps_nonHEVCBaseLayerFlag){ // fixme: Not very efficient the cast could be done before instead of doing it for each block
         bl_frame = ((H264Picture *)s->BL_frame)->f;
     } else {
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
-    HEVCWindow base_layer_window = s->ps.pps->ref_window[((HEVCVPS*)s->ps.vps_list[s->ps.sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
-    int bl_height =  s->BL_height;
-    int bl_width  =  s->BL_width;
 
-    int bl_stride =  bl_frame->linesize[0];
-
-    int el_stride =  ref0->frame->linesize[0]/sizeof(pixel);
-    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size;
-    int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
+    bl_stride =  bl_frame->linesize[0];
 
     if (s->up_filter_inf.idx == SNR) { /* x1 quality (SNR) scalability */
       copy_block ( s, bl_frame->data[0] + y0 * bl_stride + x0,
@@ -1814,17 +1818,14 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     int el_width  =  s->ps.sps->width>>1;
     int el_height =  s->ps.sps->height>>1;
 
-    if(s->ps.vps->vps_nonHEVCBaseLayerFlag){// fixme: Not very efficient the cast could be done before instead of doing it for each block
-        bl_frame = ((H264Picture *)s->BL_frame)->f;
-    }else {
-        bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
-    }
-    HEVCWindow base_layer_window = s->ps.pps->ref_window[((HEVCVPS*)s->ps.vps_list[s->ps.sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
     int bl_height = s->BL_height >> 1;
     int bl_width  = s->BL_width  >> 1;
+
+    //HEVCWindow base_layer_window = s->ps.pps->ref_window[((HEVCVPS*)s->ps.vps_list[s->ps.sps->vps_id]->data)->Hevc_VPS_Ext.ref_layer_id[0][0]];//TODO: reflayerID could be other than 0;
+
     //int bl_width  =  bl_frame->width  >>1;
     //int bl_height =  bl_frame->height >>1;// > el_height ? bl_frame->height>>1:el_height;
-    int bl_stride =  bl_frame->linesize[1];
+    int bl_stride;
 
     int ret, cr, bl_edge_top0;
     int ctb_size = 1<<(s->ps.sps->log2_ctb_size-1);
@@ -1833,6 +1834,14 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
 
     int el_stride = ref0->frame->linesize[1]/sizeof(pixel);
+
+    if(s->ps.vps->vps_nonHEVCBaseLayerFlag){// fixme: Not very efficient the cast could be done before instead of doing it for each block
+        bl_frame = ((H264Picture *)s->BL_frame)->f;
+    }else {
+        bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
+    }
+
+    bl_stride =  bl_frame->linesize[0];
 
     if (s->up_filter_inf.idx == SNR) {
         for (cr = 1; cr <= 2; cr++) {

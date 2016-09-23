@@ -125,6 +125,11 @@ struct AVFormatInternal {
      */
     int header_written;
     int write_header_ret;
+
+    /**
+     * Timestamp of the end of the shortest stream.
+     */
+    int64_t shortest_end;
 };
 
 struct AVStreamInternal {
@@ -561,7 +566,7 @@ enum AVWriteUncodedFrameFlags {
 /**
  * Copies the whilelists from one context to the other
  */
-int ff_copy_whiteblacklists(AVFormatContext *dst, AVFormatContext *src);
+int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src);
 
 int ffio_open2_wrapper(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
                        const AVIOInterruptCB *int_cb, AVDictionary **options);

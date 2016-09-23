@@ -28,11 +28,10 @@
  */
 
 /**
- * @defgroup lswr Libswresample
+ * @defgroup lswr libswresample
  * @{
  *
- * Libswresample (lswr) is a library that handles audio resampling, sample
- * format conversion and mixing.
+ * Audio resampling, sample format conversion and mixing library.
  *
  * Interaction with lswr is done through SwrContext, which is
  * allocated with swr_alloc() or swr_alloc_set_opts(). It is opaque, so all parameters
@@ -169,8 +168,8 @@ enum SwrEngine {
 /** Resampling Filter Types */
 enum SwrFilterType {
     SWR_FILTER_TYPE_CUBIC,              /**< Cubic */
-    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
-    SWR_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
+    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall windowed sinc */
+    SWR_FILTER_TYPE_KAISER,             /**< Kaiser windowed sinc */
 };
 
 /**

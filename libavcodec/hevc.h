@@ -32,14 +32,15 @@
 #include "get_bits.h"
 #include "hevcpred.h"
 #include "h2645_parse.h"
-//#include "hevcdsp.h"
+#include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
 #include "videodsp.h"
 #include "hevc_defs.h"
+#if HEVC_ENCRYPTION
 #include "crypto.h"
-
-#define COM16_C806_EMT			 0
+#endif
+//#define COM16_C806_EMT			 0
 #if COM16_C806_EMT
 // Constantes
 #define EMT_INTRA_MAX_CU		32
@@ -548,10 +549,10 @@ typedef struct RepFormat
 typedef struct SAOParams {
     uint8_t offset_abs[3][4];   ///< sao_offset_abs
     uint8_t offset_sign[3][4];  ///< sao_offset_sign
-    
+
     uint8_t band_position[3];   ///< sao_band_position
     int16_t offset_val[3][5];   ///<SaoOffsetVal
-    
+
     uint8_t eo_class[3];        ///< sao_eo_class
     uint8_t type_idx[3];        ///< sao_type_idx
 } SAOParams;
@@ -832,14 +833,14 @@ typedef struct HEVCSPS {
     uint8_t extended_precision_processing_flag;
     uint8_t high_precision_offsets_enabled_flag;
     uint8_t cabac_bypass_alignment_enabled_flag;
-    
+
     /* int extended_precision_processing_flag;
      int high_precision_offsets_enabled_flag;
      int cabac_bypass_alignment_enabled_flag;*/
 
-    
-    
-    
+
+
+
 
     ///< coded frame dimension in various units
     int width;
@@ -1290,9 +1291,9 @@ typedef struct HEVCLocalContext {
     uint8_t slice_or_tiles_up_boundary;
 
     int ctb_tile_rs;
-
+#if HEVC_ENCRYPTION
     Crypto_Handle       dbs_g;
-
+#endif
     int ct_depth;
     CodingUnit cu;
     PredictionUnit pu;
@@ -1611,6 +1612,7 @@ int ff_hevc_frame_nb_refs(HEVCContext *s);
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc);
 
+SYUVP  GetCuboidVertexPredAll(TCom3DAsymLUT * pc3DAsymLUT, int yIdx , int uIdx , int vIdx , int nVertexIdx);
 /**
  * Find next frame in output order and put a reference to it in frame.
  * @return 1 if a frame was output, 0 otherwise

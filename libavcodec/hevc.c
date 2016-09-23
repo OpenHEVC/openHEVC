@@ -120,7 +120,9 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     int log2_min_cb_size = sps->log2_min_cb_size;
     int width            = sps->width;
     int height           = sps->height;
+#if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
     int pic_size         = width * height;
+#endif
     int pic_size_in_ctb  = ((width  >> log2_min_cb_size) + 1) *
                            ((height >> log2_min_cb_size) + 1);
     int ctb_count        = sps->ctb_width * sps->ctb_height;
@@ -397,6 +399,7 @@ static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
                   num, den, 1 << 30);
 }
 
+#ifndef USE_SAO_SMALL_BUFFER
 static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
 {
     int ret, i;
@@ -415,11 +418,12 @@ static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
 
     return 0;
 }
+#endif
 
 static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fmt)
 {
     int ret;
-    unsigned int num = 0, den = 0;
+    //unsigned int num = 0, den = 0;
 
     pic_arrays_free(s);
     s->ps.sps = NULL;
@@ -1139,9 +1143,9 @@ else
         }
         if (sh->num_entry_point_offsets > 0) {
             int offset_len = get_ue_golomb_long(gb) + 1;
-            print_cabac("offset_len_minus1", offset_len-1);
             int segments = offset_len >> 4;
             int rest = (offset_len & 15);
+            print_cabac("offset_len_minus1", offset_len-1);
             av_freep(&sh->entry_point_offset);
             av_freep(&sh->offset);
             av_freep(&sh->size);
@@ -1418,7 +1422,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         if (cbf_luma)
             ff_hevc_hls_residual_coding(s, x0, y0, log2_trafo_size, scan_idx, 0
 #if COM16_C806_EMT
-            		, log2_cb_size
+                                        , log2_cb_size
 #endif
             );
         if (s->ps.sps->chroma_format_idc && (log2_trafo_size > 2 || s->ps.sps->chroma_format_idc == 3)) {
@@ -1440,7 +1444,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 1
 #if COM16_C806_EMT
-            		, log2_cb_size
+                                                , log2_cb_size
 #endif
                     );
                 else
@@ -1473,7 +1477,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 2
 #if COM16_C806_EMT
-            		, log2_cb_size
+                                                , log2_cb_size
 #endif
                     );
                 else
@@ -1506,7 +1510,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     ff_hevc_hls_residual_coding(s, xBase, yBase + (i << log2_trafo_size),
                                                 log2_trafo_size, scan_idx_c, 1
 #if COM16_C806_EMT
-            		, log2_cb_size
+                                                , log2_cb_size
 #endif
             		);
             }
@@ -1520,7 +1524,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     ff_hevc_hls_residual_coding(s, xBase, yBase + (i << log2_trafo_size),
                                                 log2_trafo_size, scan_idx_c, 2
 #if COM16_C806_EMT
-            		, log2_cb_size
+                                                , log2_cb_size
 #endif
                     );
             }
@@ -1652,7 +1656,7 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
 #if COM16_C806_EMT
         if (0==trafo_depth)
         {
-        	s->HEVClc->cu.emt_cu_flag = ff_hevc_emt_cu_flag_decode(s, log2_cb_size, 1);
+            s->HEVClc->cu.emt_cu_flag = ff_hevc_emt_cu_flag_decode(s, log2_cb_size, 1);
         }
 #endif
 
@@ -1840,7 +1844,7 @@ static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
                        int block_w, int block_h, AVFrame *ref1, const Mv *mv1, struct MvField *current_mv)
 {
     HEVCLocalContext *lc = s->HEVClc;
-    DECLARE_ALIGNED(16, int16_t,  tmp[MAX_PB_SIZE * MAX_PB_SIZE]);
+    //DECLARE_ALIGNED(16, int16_t,  tmp[MAX_PB_SIZE * MAX_PB_SIZE]);
     ptrdiff_t src0stride  = ref0->linesize[0];
     ptrdiff_t src1stride  = ref1->linesize[0];
     int pic_width        = s->ps.sps->width;
@@ -1995,8 +1999,8 @@ static void chroma_mc_uni(HEVCContext *s, uint8_t *dst0,
 static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVFrame *ref0, AVFrame *ref1,
                          int x_off, int y_off, int block_w, int block_h, struct MvField *current_mv, int cidx)
 {
-    DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
-    int tmpstride = MAX_PB_SIZE;
+    //DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
+    //int tmpstride = MAX_PB_SIZE;
     HEVCLocalContext *lc = s->HEVClc;
     uint8_t *src1        = ref0->data[cidx+1];
     uint8_t *src2        = ref1->data[cidx+1];
@@ -2975,103 +2979,103 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     return ctb_addr_ts;
 }
 
-static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
-{
-    const uint8_t *data = nal->data;
-    int length          = nal->size;
-    HEVCLocalContext *lc = s->HEVClc;
-    int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
-    int *arg = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
-    int64_t offset;
-    int64_t startheader, cmpt = 0;
-    int i, j, res = 0;
+//static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
+//{
+//    const uint8_t *data = nal->data;
+//    int length          = nal->size;
+//    HEVCLocalContext *lc = s->HEVClc;
+//    int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
+//    int *arg = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
+//    int64_t offset;
+//    int64_t startheader, cmpt = 0;
+//    int i, j, res = 0;
 
-    if (!ret || !arg) {
-        av_free(ret);
-        av_free(arg);
-        return AVERROR(ENOMEM);
-    }
+//    if (!ret || !arg) {
+//        av_free(ret);
+//        av_free(arg);
+//        return AVERROR(ENOMEM);
+//    }
 
-    if (s->sh.slice_ctb_addr_rs + s->sh.num_entry_point_offsets * s->ps.sps->ctb_width >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
-        av_log(s->avctx, AV_LOG_ERROR, "WPP ctb addresses are wrong (%d %d %d %d)\n",
-            s->sh.slice_ctb_addr_rs, s->sh.num_entry_point_offsets,
-            s->ps.sps->ctb_width, s->ps.sps->ctb_height
-        );
-        res = AVERROR_INVALIDDATA;
-        goto error;
-    }
+//    if (s->sh.slice_ctb_addr_rs + s->sh.num_entry_point_offsets * s->ps.sps->ctb_width >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
+//        av_log(s->avctx, AV_LOG_ERROR, "WPP ctb addresses are wrong (%d %d %d %d)\n",
+//            s->sh.slice_ctb_addr_rs, s->sh.num_entry_point_offsets,
+//            s->ps.sps->ctb_width, s->ps.sps->ctb_height
+//        );
+//        res = AVERROR_INVALIDDATA;
+//        goto error;
+//    }
 
-    ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
+//    ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
 
-    if (!s->sList[1]) {
-        for (i = 1; i < s->threads_number; i++) {
-            s->sList[i] = av_malloc(sizeof(HEVCContext));
-            memcpy(s->sList[i], s, sizeof(HEVCContext));
-            s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
-            s->sList[i]->HEVClc = s->HEVClcList[i];
-        }
-    }
+//    if (!s->sList[1]) {
+//        for (i = 1; i < s->threads_number; i++) {
+//            s->sList[i] = av_malloc(sizeof(HEVCContext));
+//            memcpy(s->sList[i], s, sizeof(HEVCContext));
+//            s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
+//            s->sList[i]->HEVClc = s->HEVClcList[i];
+//        }
+//    }
 
-    offset = (lc->gb.index >> 3);
+//    offset = (lc->gb.index >> 3);
 
-    for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < nal->skipped_bytes; j++) {
-        if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
-            startheader--;
-            cmpt++;
-        }
-    }
+//    for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < nal->skipped_bytes; j++) {
+//        if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
+//            startheader--;
+//            cmpt++;
+//        }
+//    }
 
-    for (i = 1; i < s->sh.num_entry_point_offsets; i++) {
-        offset += (s->sh.entry_point_offset[i - 1] - cmpt);
-        for (j = 0, cmpt = 0, startheader = offset
-             + s->sh.entry_point_offset[i]; j < nal->skipped_bytes; j++) {
-            if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
-                startheader--;
-                cmpt++;
-            }
-        }
-        s->sh.size[i - 1] = s->sh.entry_point_offset[i] - cmpt;
-        s->sh.offset[i - 1] = offset;
+//    for (i = 1; i < s->sh.num_entry_point_offsets; i++) {
+//        offset += (s->sh.entry_point_offset[i - 1] - cmpt);
+//        for (j = 0, cmpt = 0, startheader = offset
+//             + s->sh.entry_point_offset[i]; j < nal->skipped_bytes; j++) {
+//            if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
+//                startheader--;
+//                cmpt++;
+//            }
+//        }
+//        s->sh.size[i - 1] = s->sh.entry_point_offset[i] - cmpt;
+//        s->sh.offset[i - 1] = offset;
 
-    }
-    if (s->sh.num_entry_point_offsets != 0) {
-        offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
-        if (length < offset) {
-            av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
-            res = AVERROR_INVALIDDATA;
-            goto error;
-        }
-        s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
-        s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
+//    }
+//    if (s->sh.num_entry_point_offsets != 0) {
+//        offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
+//        if (length < offset) {
+//            av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
+//            res = AVERROR_INVALIDDATA;
+//            goto error;
+//        }
+//        s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
+//        s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
 
-    }
-    s->data = data;
+//    }
+//    s->data = data;
 
-    for (i = 1; i < s->threads_number; i++) {
-        s->sList[i]->HEVClc->first_qp_group = 1;
-        s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
-        memcpy(s->sList[i], s, sizeof(HEVCContext));
-        s->sList[i]->HEVClc = s->HEVClcList[i];
-    }
+//    for (i = 1; i < s->threads_number; i++) {
+//        s->sList[i]->HEVClc->first_qp_group = 1;
+//        s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
+//        memcpy(s->sList[i], s, sizeof(HEVCContext));
+//        s->sList[i]->HEVClc = s->HEVClcList[i];
+//    }
 
-    avpriv_atomic_int_set(&s->wpp_err, 0);
-    ff_reset_entries(s->avctx);
+//    avpriv_atomic_int_set(&s->wpp_err, 0);
+//    ff_reset_entries(s->avctx);
 
-    for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
-        arg[i] = i;
-        ret[i] = 0;
-    }
+//    for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
+//        arg[i] = i;
+//        ret[i] = 0;
+//    }
 
-    if (s->ps.pps->entropy_coding_sync_enabled_flag)
-        s->avctx->execute2(s->avctx, hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
+//    if (s->ps.pps->entropy_coding_sync_enabled_flag)
+//        s->avctx->execute2(s->avctx, hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
 
-    for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
-        res += ret[i];
-error:
-    av_free(ret);
-    av_free(arg);
-    return res;
-}
+//    for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
+//        res += ret[i];
+//error:
+//    av_free(ret);
+//    av_free(arg);
+//    return res;
+//}
 
 static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, int job, int self_id)
 {
@@ -3161,7 +3165,7 @@ static void tiles_filters(HEVCContext *s)
         for (x0 = 0; x0 < s->ps.sps->width; x0 += ctb_size)
             ff_hevc_hls_filter(s, x0, y0, ctb_size);
 }
-#if !PARALLEL_FILTERS
+#if PARALLEL_SLICE && !PARALLEL_FILTERS
 static void slices_filters(HEVCContext *s)
 {
     uint16_t ctb_size        = 1 << s->ps.sps->log2_ctb_size;
@@ -4095,78 +4099,78 @@ fail:
     return ret;
 }
 
-static void print_md5(void *log_ctx, int level, uint8_t md5[16])
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        av_log(log_ctx, level, "%02"PRIx8, md5[i]);
-}
+//static void print_md5(void *log_ctx, int level, uint8_t md5[16])
+//{
+//    int i;
+//    for (i = 0; i < 16; i++)
+//        av_log(log_ctx, level, "%02"PRIx8, md5[i]);
+//}
 
-static int verify_md5(HEVCContext *s, AVFrame *frame)
-{
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-    int pixel_shift;
-    int i, j;
+//static int verify_md5(HEVCContext *s, AVFrame *frame)
+//{
+//    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+//    int pixel_shift;
+//    int i, j;
 
-    if (!desc)
-        return AVERROR(EINVAL);
+//    if (!desc)
+//        return AVERROR(EINVAL);
 
-    pixel_shift = desc->comp[0].depth > 8;
+//    pixel_shift = desc->comp[0].depth > 8;
 
-    av_log(s->avctx, AV_LOG_DEBUG, "Verifying checksum for frame with POC %d: ",
-           s->poc);
+//    av_log(s->avctx, AV_LOG_DEBUG, "Verifying checksum for frame with POC %d: ",
+//           s->poc);
 
-    /* the checksums are LE, so we have to byteswap for >8bpp formats
-     * on BE arches */
-#if HAVE_BIGENDIAN
-    if (pixel_shift && !s->checksum_buf) {
-        av_fast_malloc(&s->checksum_buf, &s->checksum_buf_size,
-                       FFMAX3(frame->linesize[0], frame->linesize[1],
-                              frame->linesize[2]));
-        if (!s->checksum_buf)
-            return AVERROR(ENOMEM);
-    }
-#endif
+//    /* the checksums are LE, so we have to byteswap for >8bpp formats
+//     * on BE arches */
+//#if HAVE_BIGENDIAN
+//    if (pixel_shift && !s->checksum_buf) {
+//        av_fast_malloc(&s->checksum_buf, &s->checksum_buf_size,
+//                       FFMAX3(frame->linesize[0], frame->linesize[1],
+//                              frame->linesize[2]));
+//        if (!s->checksum_buf)
+//            return AVERROR(ENOMEM);
+//    }
+//#endif
 
-    for (i = 0; frame->data[i]; i++) {
-        int width  = s->avctx->coded_width;
-        int height = s->avctx->coded_height;
-        int w = (i == 1 || i == 2) ? (width  >> desc->log2_chroma_w) : width;
-        int h = (i == 1 || i == 2) ? (height >> desc->log2_chroma_h) : height;
-        uint8_t md5[16];
+//    for (i = 0; frame->data[i]; i++) {
+//        int width  = s->avctx->coded_width;
+//        int height = s->avctx->coded_height;
+//        int w = (i == 1 || i == 2) ? (width  >> desc->log2_chroma_w) : width;
+//        int h = (i == 1 || i == 2) ? (height >> desc->log2_chroma_h) : height;
+//        uint8_t md5[16];
 
-        av_md5_init(s->md5_ctx);
-        for (j = 0; j < h; j++) {
-            const uint8_t *src = frame->data[i] + j * frame->linesize[i];
-#if HAVE_BIGENDIAN
-            if (pixel_shift) {
-                s->bdsp.bswap16_buf((uint16_t *) s->checksum_buf,
-                                    (const uint16_t *) src, w);
-                src = s->checksum_buf;
-            }
-#endif
-            av_md5_update(s->md5_ctx, src, w << pixel_shift);
-        }
-        av_md5_final(s->md5_ctx, md5);
+//        av_md5_init(s->md5_ctx);
+//        for (j = 0; j < h; j++) {
+//            const uint8_t *src = frame->data[i] + j * frame->linesize[i];
+//#if HAVE_BIGENDIAN
+//            if (pixel_shift) {
+//                s->bdsp.bswap16_buf((uint16_t *) s->checksum_buf,
+//                                    (const uint16_t *) src, w);
+//                src = s->checksum_buf;
+//            }
+//#endif
+//            av_md5_update(s->md5_ctx, src, w << pixel_shift);
+//        }
+//        av_md5_final(s->md5_ctx, md5);
 
-        if (!memcmp(md5, s->md5[i], 16)) {
-            av_log   (s->avctx, AV_LOG_DEBUG, "plane %d - correct ", i);
-            print_md5(s->avctx, AV_LOG_DEBUG, md5);
-            av_log   (s->avctx, AV_LOG_DEBUG, "; ");
-        } else {
-            av_log   (s->avctx, AV_LOG_ERROR, "mismatching checksum of plane %d - ", i);
-            print_md5(s->avctx, AV_LOG_ERROR, md5);
-            av_log   (s->avctx, AV_LOG_ERROR, " != ");
-            print_md5(s->avctx, AV_LOG_ERROR, s->md5[i]);
-            av_log   (s->avctx, AV_LOG_ERROR, "\n");
-            return AVERROR_INVALIDDATA;
-        }
-    }
+//        if (!memcmp(md5, s->md5[i], 16)) {
+//            av_log   (s->avctx, AV_LOG_DEBUG, "plane %d - correct ", i);
+//            print_md5(s->avctx, AV_LOG_DEBUG, md5);
+//            av_log   (s->avctx, AV_LOG_DEBUG, "; ");
+//        } else {
+//            av_log   (s->avctx, AV_LOG_ERROR, "mismatching checksum of plane %d - ", i);
+//            print_md5(s->avctx, AV_LOG_ERROR, md5);
+//            av_log   (s->avctx, AV_LOG_ERROR, " != ");
+//            print_md5(s->avctx, AV_LOG_ERROR, s->md5[i]);
+//            av_log   (s->avctx, AV_LOG_ERROR, "\n");
+//            return AVERROR_INVALIDDATA;
+//        }
+//    }
 
-    av_log(s->avctx, AV_LOG_DEBUG, "\n");
+//    av_log(s->avctx, AV_LOG_DEBUG, "\n");
 
-    return 0;
-}
+//    return 0;
+//}
 
 static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                              AVPacket *avpkt)
@@ -4254,7 +4258,9 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     pic_arrays_free(s);
+#if HEVC_ENCRYPTION
     DeleteCryptoC(s->HEVClc->dbs_g);
+#endif
     av_freep(&s->md5_ctx);
 
     for(i=0; i < s->nals_allocated; i++) {
@@ -4650,6 +4656,9 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+#define OFFSET(x) offsetof(HEVCContext, x)
+#define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
+
 static const AVOption options[] = {
     { "apply_defdispwin", "Apply default display window from VUI", OFFSET(apply_defdispwin),
         AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, PAR },
@@ -4688,16 +4697,23 @@ AVCodec ff_hevc_decoder = {
     .init_thread_copy      = hevc_init_thread_copy,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
-    .profiles              = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles              = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
+};
+
+static const AVClass shvc_decoder_class = {
+    .class_name = "SHVC decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_shvc_decoder = {
     .name                  = "shvc",
-    .long_name             = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
+    .long_name             = NULL_IF_CONFIG_SMALL("SHVC (High Efficiency Video Coding)"),
     .type                  = AVMEDIA_TYPE_VIDEO,
     .id                    = AV_CODEC_ID_SHVC,
     .priv_data_size        = sizeof(HEVCContext),
-    .priv_class            = &hevc_decoder_class,
+    .priv_class            = &shvc_decoder_class,
     .init                  = hevc_decode_init,
     .close                 = hevc_decode_free,
     .decode                = hevc_decode_frame,

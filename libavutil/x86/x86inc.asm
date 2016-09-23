@@ -93,14 +93,6 @@
     %endif
 %endmacro
 
-%macro SECTION_TEXT 0-1 16
-    %ifidn __OUTPUT_FORMAT__,aout
-        SECTION .text
-    %else
-        SECTION .text align=%1
-    %endif
-%endmacro
-
 %if WIN64
     %define PIC
 %elif ARCH_X86_64 == 0
@@ -910,14 +902,6 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
         %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
-%endmacro
-
-; FIXME: INIT_AVX can be replaced by INIT_XMM avx
-%macro INIT_AVX 0
-    INIT_XMM
-    %assign avx_enabled 1
-    %define PALIGNR PALIGNR_SSSE3
-    %define RESET_MM_PERMUTATION INIT_AVX
 %endmacro
 
 %macro INIT_YMM 0-1+
