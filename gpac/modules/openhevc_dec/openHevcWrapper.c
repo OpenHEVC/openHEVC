@@ -412,6 +412,23 @@ void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *ext
 	}
 }
 
+void libOpenShvcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data_linf, unsigned char *extra_data_lsup, int extra_size_alloc_linf, int extra_size_alloc_lsup)
+{
+    int i;
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext;
+    openHevcContext = openHevcContexts->wraper[0];
+    openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc_linf);
+    memcpy( openHevcContext->c->extradata, extra_data_linf, extra_size_alloc_linf);
+    openHevcContext->c->extradata_size = extra_size_alloc_linf;
+    for(i =1; i <= openHevcContexts->active_layer; i++)  {
+        openHevcContext = openHevcContexts->wraper[i];
+        openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc_lsup);
+        memcpy( openHevcContext->c->extradata, extra_data_lsup, extra_size_alloc_lsup);
+        openHevcContext->c->extradata_size = extra_size_alloc_lsup;
+    }
+}
+
 
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {

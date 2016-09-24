@@ -86,6 +86,7 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
 int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff, const unsigned char *buff2, int nal_len, int nal_len2, int64_t pts, int64_t pts2);
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc);
+void libOpenShvcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data_linf, unsigned char *extra_data_lsup, int extra_size_alloc_linf, int extra_size_allocl_sup);
 
 void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);
 int  libOpenHevcGetOutput(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame *openHevcFrame);
