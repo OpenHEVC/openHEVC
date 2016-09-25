@@ -113,10 +113,7 @@ Configuration options:
 
 Program options:
   --disable-programs       do not build command line programs
-  --disable-ffmpeg         disable ffmpeg build
-  --disable-ffplay         disable ffplay build
-  --disable-ffprobe        disable ffprobe build
-  --disable-ffserver       disable ffserver build
+  --disable-ohplay         disable ohplay build
 
 OpenHEVC options:
   --openhevc-only          only build openhevc
@@ -1601,14 +1598,8 @@ FEATURE_LIST="
 
 LIBRARY_LIST="
     avcodec
-    avdevice
-    avfilter
     avformat
-    avresample
     avutil
-    postproc
-    swresample
-    swscale
     openhevc
 "
 
@@ -1619,10 +1610,6 @@ LICENSE_LIST="
 "
 
 PROGRAM_LIST="
-    ffplay
-    ffprobe
-    ffserver
-    ffmpeg
     ohplay
 "
 
@@ -3131,26 +3118,11 @@ transcoding_example_deps="avfilter avcodec avformat avutil"
 
 # libraries, in linking order
 avcodec_deps="avutil"
-avdevice_deps="avformat avcodec avutil"
-avfilter_deps="avutil"
 avformat_deps="avcodec avutil"
 avresample_deps="avutil"
-postproc_deps="avutil gpl"
-swresample_deps="avutil"
-swscale_deps="avutil"
 openhevc_deps="avformat avcodec avutil"
 
 # programs
-ffmpeg_deps="avcodec avfilter avformat swresample"
-ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
-               null_filter
-               setpts_filter trim_filter"
-ffplay_deps="avcodec avformat swscale swresample sdl"
-ffplay_libs='$sdl_libs'
-ffplay_select="rdft crop_filter transpose_filter hflip_filter vflip_filter rotate_filter"
-ffprobe_deps="avcodec avformat"
-ffserver_deps="avformat fork sarestart"
-ffserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 ohplay_deps="avformat avcodec avutil openhevc sdl"
 ohplay_libs='$sdl_libs'
 
@@ -3318,9 +3290,7 @@ HWACCEL_LIST=$(find_things  hwaccel  HWACCEL  libavcodec/allcodecs.c)
 PARSER_LIST=$(find_things   parser   PARSER   libavcodec/allcodecs.c)
 MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
 DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
-OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
-INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
-FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
+
 
 find_things_extern(){
     thing=$1
@@ -3337,11 +3307,8 @@ ALL_COMPONENTS="
     $DECODER_LIST
     $DEMUXER_LIST
     $ENCODER_LIST
-    $FILTER_LIST
     $HWACCEL_LIST
-    $INDEV_LIST
     $MUXER_LIST
-    $OUTDEV_LIST
     $PARSER_LIST
     $PROTOCOL_LIST
 "
@@ -4891,7 +4858,6 @@ case $target_os in
         add_compat strtod.o strtod=avpriv_strtod
         network_extralibs='-lbsd'
         exeobjs=compat/plan9/main.o
-        disable ffserver
         cp_f='cp'
         ;;
     none)
@@ -6330,7 +6296,6 @@ if test $target_os = "haiku"; then
 fi
 
 enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
-    prepend ffmpeg_libs $($ldflags_filter "-lole32" "-luser32") &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
@@ -6843,12 +6808,6 @@ EOF
 }
 
 pkgconfig_generate libavutil     "FFmpeg utility library"               "$LIBAVUTIL_VERSION"     "$LIBRT $LIBM"
-pkgconfig_generate libavcodec    "FFmpeg codec library"                 "$LIBAVCODEC_VERSION"    "$extralibs"
+pkgconfig_generate libavcodec    "FFmpeg codec library"                 "$LIBAVCODEC_VERSION"    "$extralibs"git
 pkgconfig_generate libavformat   "FFmpeg container format library"      "$LIBAVFORMAT_VERSION"   "$extralibs"
 pkgconfig_generate libopenhevc   "Openhevc wrapper library"             "$LIBOPENHEVC_VERSION"   "$LIBM"
-pkgconfig_generate libavdevice   "FFmpeg device handling library"       "$LIBAVDEVICE_VERSION"   "$extralibs"
-pkgconfig_generate libavfilter   "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION"   "$extralibs"
-pkgconfig_generate libpostproc   "FFmpeg postprocessing library"        "$LIBPOSTPROC_VERSION"   ""
-pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$LIBM"
-pkgconfig_generate libswscale    "FFmpeg image rescaling library"       "$LIBSWSCALE_VERSION"    "$LIBM"
-pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM $LIBSOXR"
