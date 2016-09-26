@@ -4616,9 +4616,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         }
     }
 
-//    if((avctx->active_thread_type & FF_THREAD_FRAME) && avctx->thread_count > 1)
-//        else
-//            s->threads_type = FF_THREAD_SLICE;
+//    if((avctx->active_thread_type & FF_THREAD_FRAME) && avctx->thread_count_frame > 1)
+//        s->threads_type = FF_THREAD_FRAME;
+//    else
+//        s->threads_type = FF_THREAD_SLICE;
 
     return 0;
 }
