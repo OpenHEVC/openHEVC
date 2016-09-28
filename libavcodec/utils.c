@@ -2987,7 +2987,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
             avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
             ff_frame_thread_encoder_free(avctx);
         }
-        if (HAVE_THREADS && avctx->internal->thread_ctx)
+        if (HAVE_THREADS && avctx->internal->thread_ctx_frame)
             ff_thread_free(avctx);
         if (avctx->codec && avctx->codec->close)
             avctx->codec->close(avctx);
