@@ -117,7 +117,6 @@ static const uint8_t zigzag_scan8x8_cavlc[64+1] = {
 static void release_unused_pictures(H264Context *h, int remove_current)
 {
     int i;
-
     /* release non reference frames */
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         if (h->DPB[i].f->buf[0] && !h->DPB[i].reference &&
@@ -534,19 +533,23 @@ static int h264_frame_start(H264Context *h)
 
 #if SVC_EXTENSION
            //{int i;
-            if(h->avctx->active_thread_type & FF_THREAD_FRAME){
-                for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
-                    H264Picture *frame = &h->Add_ref[i];
-                    if (frame->f->buf[0])
-                        continue;
-                    ret = ff_h264_ref_picture(h, &h->Add_ref[i], h->cur_pic_ptr);
-                    if (ret < 0)
-                        return ret;
-                    ff_thread_report_il_progress(h->avctx, h->poc_id, &h->Add_ref[i], &h->Add_ref[i]);
-                    break;
-                }
-            if(i==FF_ARRAY_ELEMS(h->Add_ref))
-               av_log(h->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", 0);
+    if(h->avctx->active_thread_type & FF_THREAD_FRAME){
+        for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
+            H264Picture *frame = &h->Add_ref[i];
+            if (frame->f->buf[0])
+                continue;
+            ret = ff_h264_ref_picture(h, &h->Add_ref[i], h->cur_pic_ptr);
+            if (ret < 0)
+                return ret;
+            ff_thread_report_il_progress(h->avctx, h->poc_id, &h->Add_ref[i], &h->Add_ref[i]);
+            break;
+        }
+        if(i==FF_ARRAY_ELEMS(h->Add_ref)){
+            av_log(h->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", 0);
+            //if(h->avctx->active_thread_type & FF_THREAD_FRAME){
+                ff_thread_report_il_progress(h->avctx, h->poc_id, NULL, NULL);
+            //}
+        }
     }
 #endif
 
