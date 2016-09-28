@@ -31,6 +31,8 @@ extern "C" {
 #include <stdint.h>
 #include <libavformat/avformat.h>
 
+#define OPENHEVC_HAS_AVC_BASE
+
 typedef void* OpenHevc_Handle;
 
 typedef struct OpenHevc_Rational{
