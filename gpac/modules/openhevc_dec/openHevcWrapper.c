@@ -363,17 +363,6 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
         //av_log(openHevcContext->c,AV_LOG_ERROR,"PTS DIFF: %d", (int)((int)pts-(int)pts2) );
         len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture[i], &openHevcContext->avpkt);
 
-#if 0
-		got_picture[i] = 0;
-		if (openHevcContext->avpkt.data && openHevcContext->avpkt.size) {
-			fprintf(stdout, "Decode PIC for layer %d\n", i);
-			len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture[i], &openHevcContext->avpkt);
-			if (got_picture[i]) fprintf(stdout, "GOT PIC on layer %d!!\n", i);
-		} else {
-			len = 0;
-		}
-
-#endif
         if(i+1 < openHevcContexts->nb_decoders)
             openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
         //Fixme: This way of passing base layer frame reference to each other is bad and should be corrected
@@ -677,15 +666,13 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
 
 void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, OHEVC_LogLevel val)
 {
-    if (val)
-        av_log_set_level(val);
+	av_log_set_level(val);
 }
 
 void libOpenHevcSetLogCallback(OpenHevc_Handle openHevcHandle, void (*callback)(void*, int, const char*, va_list))
 {
 	av_log_set_callback(callback);
 }
-
 
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val)
 {
