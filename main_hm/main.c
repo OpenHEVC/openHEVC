@@ -246,6 +246,9 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     /* Main loop
      * */
     while(!stop) {
+        if (IsCloseWindowEvent())
+            break;
+
 #if FRAME_CONCEALMENT
         // Get the corresponding frame in the trace
         if(is_received)
