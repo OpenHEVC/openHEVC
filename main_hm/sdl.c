@@ -25,6 +25,9 @@
 #define SDL_NO_DISPLAY_
 
 #include <SDL.h>
+#include <SDL_events.h>
+#include <stdio.h>
+#include <signal.h>
 #include "SDL_framerate.h"
 
 /* SDL variables */
@@ -36,9 +39,32 @@ int          ticksSDL;
 /* SDL_gfx variable */
 FPSmanager   fpsm;
 
+int IsCloseWindowEvent(){
+#ifndef SDL_NO_DISPLAY
+    int ret = 0;
+    SDL_Event event;
+    SDL_PollEvent(&event);
+    if (event.type == SDL_QUIT)
+        ret = 1;
+    return ret;
+#endif
+}
+
 void Init_Time() {
 #ifndef SDL_NO_DISPLAY
     /* First, initialize SDL's video subsystem. */
+
+    struct sigaction action;
+    sigaction(SIGINT, NULL, &action);
+    sigaction(SIGTERM, NULL, &action);
+    sigaction(SIGKILL, NULL, &action);
+    sigaction(SIGHUP, NULL, &action);
+    SDL_Init(SDL_INIT_EVERYTHING);
+    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGTERM, &action, NULL);
+    sigaction(SIGKILL, &action, NULL);
+    sigaction(SIGHUP, &action, NULL);
+
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         /* Failed, exit. */
         printf("Video initialization failed: %s\n", SDL_GetError( ) );
@@ -49,6 +75,7 @@ void Init_Time() {
     ticksSDL = SDL_GetTicks();
 #endif
 }
+
 
 int Init_SDL(int edge, int frame_width, int frame_height){
 

@@ -202,6 +202,8 @@ static void video_decode_example(const char *filename)
 #endif
 
     while(!stop) {
+        if (IsCloseWindowEvent())
+            break;
         if (stop_dec == 0 && av_read_frame(pFormatCtx, &packet)<0) stop_dec = 1;
 #if FRAME_CONCEALMENT
         // Get the corresponding frame in the trace
