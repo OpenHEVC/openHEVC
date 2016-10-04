@@ -242,8 +242,13 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     /* Main loop
      * */
     while(!stop) {
-        if (IsCloseWindowEvent())
+        oh_event event_code = IsCloseWindowEvent();
+        if (event_code == OH_QUIT)
             break;
+        else if (event_code == OH_LAYER0 || event_code == OH_LAYER1) {
+            libOpenHevcSetActiveDecoders(openHevcHandle, event_code-1);
+            libOpenHevcSetViewLayers(openHevcHandle, event_code-1);
+        }
 
 #if FRAME_CONCEALMENT
         // Get the corresponding frame in the trace

@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include "SDL_framerate.h"
+#include "sdl_wrapper.h"
 
 /* SDL variables */
 SDL_Window        *pWindow1;
@@ -43,13 +44,31 @@ int               ticksSDL;
 FPSmanager   fpsm;
 #endif
 
-int IsCloseWindowEvent(){
+oh_event IsCloseWindowEvent(){
 #ifndef SDL_NO_DISPLAY
-    int ret = 0;
+    int ret = OH_NOEVENT;
     SDL_Event event;
     SDL_PollEvent(&event);
-    if (event.type == SDL_QUIT)
-        ret = 1;
+
+    switch( event.type ){
+        /* Keyboard event */
+        case SDL_KEYDOWN:
+            if( event.key.keysym.sym == SDLK_UP) {
+                ret = OH_LAYER1;
+            } else if( event.key.keysym.sym == SDLK_DOWN) {
+                ret = OH_LAYER0;
+            }
+            break;
+
+        /* SDL_QUIT event (window close) */
+        case SDL_QUIT:
+            ret = OH_QUIT;
+            break;
+
+        default:
+            break;
+    }
+
     return ret;
 #endif
 }
