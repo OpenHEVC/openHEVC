@@ -1841,7 +1841,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
 
-    bl_stride =  bl_frame->linesize[0];
+    bl_stride =  bl_frame->linesize[1];
 
     if (s->up_filter_inf.idx == SNR) {
         for (cr = 1; cr <= 2; cr++) {
