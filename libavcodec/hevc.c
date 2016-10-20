@@ -3541,7 +3541,7 @@ fail:
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if SVC_EXTENSION
         if(s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
-            ff_thread_report_il_status(s->avctx, s->poc_id2, 2);
+            ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif
         if (s->inter_layer_ref)
             ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
@@ -4090,7 +4090,7 @@ fail:
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if SVC_EXTENSION
         if(s->ps.vps && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
-            ff_thread_report_il_status(s->avctx, s->poc_id2, 2);
+            ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif
     }
     if (s->bl_decoder_el_exist)
