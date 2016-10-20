@@ -338,11 +338,14 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
  *    -Second one will be HEVC decoder
  *    -Third decoder is ignored since its not supported yet
  */
+static int poc_id;
 int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff, const unsigned char *buff2, int nal_len, int nal_len2, int64_t pts, int64_t pts2)
 {
     int got_picture[MAX_DECODERS], len=0, i, max_layer, au_len, stop_dec;
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
+    poc_id++;
+    poc_id&=1023;
     for(i =0; i < MAX_DECODERS; i++)  {
         got_picture[i] = 0;
         len = 0;
@@ -352,10 +355,23 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
             openHevcContext->avpkt.size = nal_len;
             openHevcContext->avpkt.data = buff;
             openHevcContext->avpkt.pts  = pts;
+            openHevcContext->avpkt.poc_id = poc_id;
+            if(buff2 && openHevcContexts->active_layer){
+                openHevcContext->avpkt.el_available=1;
+            }else {
+                openHevcContext->avpkt.el_available=0;
+            }
         } else if(i > 0 && i <= openHevcContexts->active_layer){
             openHevcContext->avpkt.size = nal_len2;
             openHevcContext->avpkt.data = buff2;
             openHevcContext->avpkt.pts  = pts2;
+            openHevcContext->avpkt.poc_id = poc_id;
+            if(buff){
+                openHevcContext->avpkt.bl_available=1;
+            }
+            else {
+                openHevcContext->avpkt.bl_available=0;
+            }
         } else {
             openHevcContext->avpkt.size = 0;
             openHevcContext->avpkt.data = NULL;

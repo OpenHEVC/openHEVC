@@ -1101,6 +1101,11 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
 
+#if SVC_EXTENSION
+    h->poc_id=avpkt->poc_id;
+    h->el_available=avpkt->el_available;
+#endif
+
     /* end of stream, output what is still in the buffers */
     if (buf_size == 0) {
  out:

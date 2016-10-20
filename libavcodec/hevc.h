@@ -1360,6 +1360,7 @@ typedef struct HEVCContext {
     int au_poc;
     int poc;
     int poc_id;
+    int poc_id2;
     int pocTid0;
     int slice_idx; ///< number of the slice being currently decoded
     int eos;       ///< current packet contains an EOS/EOB NAL
