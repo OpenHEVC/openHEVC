@@ -2404,7 +2404,12 @@ static void FUNC(upsample_base_layer_frame)(struct AVFrame *FrameEL, struct AVFr
 #undef CroVer_FILTER
 
 static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct AVFrame *dst) {
-    int width  = src->width, i, j, k;
+
+    TCom3DAsymLUT *pc3DAsymLUT = (TCom3DAsymLUT *)pc3DAsymLUT_;
+
+    int i, j, k;
+
+    int width  = src->width;
     int height = src->height;
 
     int src_stride  = src->linesize[0]/sizeof(pixel);
@@ -2414,9 +2419,6 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
     int dst_stridec = dst->linesize[1]/sizeof(pixel);
 
     pixel srcYaver, tmpU, tmpV;
-    uint16_t val[6], val_dst[6], val_prev[2];
-    SCuboid rCuboid;
-    TCom3DAsymLUT *pc3DAsymLUT = (TCom3DAsymLUT *)pc3DAsymLUT_;
 
     pixel *src_Y = (pixel*)src->data[0];
     pixel *src_U = (pixel*)src->data[1];
@@ -2429,28 +2431,35 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
     pixel *src_U_prev = (pixel*)src->data[1];
     pixel *src_V_prev = (pixel*)src->data[2];
 
-    pixel *src_U_next = (pixel*)src->data[1]+src_stridec;
-    pixel *src_V_next = (pixel*)src->data[2]+src_stridec;
+    pixel *src_U_next = (pixel*)src->data[1] + src_stridec;
+    pixel *src_V_next = (pixel*)src->data[2] + src_stridec;
 
-    int iMaxValY = (1<<pc3DAsymLUT->cm_output_luma_bit_depth)  -1;
-    int iMaxValC = (1<<pc3DAsymLUT->cm_output_chroma_bit_depth)-1;
+    int iMaxValY = (1 << pc3DAsymLUT->cm_output_luma_bit_depth  ) - 1;
+    int iMaxValC = (1 << pc3DAsymLUT->cm_output_chroma_bit_depth) - 1;
 
     for(i = 0 ; i < height ; i += 2 ) {
         for(j = 0 , k = 0 ; j < width ; j += 2 , k++ ) {
-            short a, b;
+            SCuboid rCuboid;
             SYUVP dstUV;
+            short a, b;
+
             int knext = (k == (width >> 1) - 1) ? k : k+1;
+
+            uint16_t val[6], val_dst[6], val_prev[2];
+
             val[0] = src_Y[j];
             val[1] = src_Y[j+1];
+
             val[2] = src_Y[j+src_stride];
-            val[3] = src_Y[j+src_stride+1];
+            val[3] = src_Y[j+src_stride + 1];
 
             val[4] = src_U[k];
             val[5] = src_V[k];
+
             srcYaver = (val[0] + val[2] + 1 ) >> 1;;
 
-            val_prev[0]  = src_U_prev[k]; //srcUP0
-            val_prev[1]  = src_V_prev[k]; //srcVP0
+            val_prev[0]  = src_U_prev[k];
+            val_prev[1]  = src_V_prev[k];
 
             tmpU =  (val_prev[0] + val[4] + (val[4]<<1) + 2 ) >> 2;
             tmpV =  (val_prev[1] + val[5] + (val[5]<<1) + 2 ) >> 2;
@@ -2459,42 +2468,46 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
             val_dst[0] = ( ( rCuboid.P[0].Y * val[0] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
             a = src_U[knext] + val[4];
-            tmpU =  ((a<<1) + a + val_prev[0] + src_U_prev[knext] + 4 ) >> 3;
             b = src_V[knext] + val[5];
+
+            tmpU =  ((a<<1) + a + val_prev[0] + src_U_prev[knext] + 4 ) >> 3;
             tmpV =  ((b<<1) + b + val_prev[1] + src_V_prev[knext] + 4 ) >> 3;
 
             rCuboid = pc3DAsymLUT->S_Cuboid[val[1] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
             val_dst[1] = ( ( rCuboid.P[0].Y * val[1] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
-
             tmpU =  (src_U_next[k] + val[4] + (val[4]<<1) + 2 ) >> 2;
             tmpV =  (src_V_next[k] + val[5] + (val[5]<<1) + 2 ) >> 2;
+
             rCuboid = pc3DAsymLUT->S_Cuboid[val[2] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
             val_dst[2] = ( ( rCuboid.P[0].Y * val[2] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
             tmpU =  ((a<<1) + a + src_U_next[k] + src_U_next[knext] + 4 ) >> 3;
             tmpV =  ((b<<1) + b + src_V_next[k] + src_V_next[knext] + 4 ) >> 3;
+
             rCuboid = pc3DAsymLUT->S_Cuboid[val[3] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
             val_dst[3] = ( ( rCuboid.P[0].Y * val[3] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
             rCuboid = pc3DAsymLUT->S_Cuboid[srcYaver >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? val[4]>=pc3DAsymLUT->nAdaptCThresholdU : val[4]>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? val[5]>=pc3DAsymLUT->nAdaptCThresholdV : val[5]>> pc3DAsymLUT->VShift2Idx];
+
             dstUV.Y = 0;
             dstUV.U = ( ( rCuboid.P[0].U * srcYaver + rCuboid.P[1].U * val[4] + rCuboid.P[2].U * val[5] + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].U;
             dstUV.V = ( ( rCuboid.P[0].V * srcYaver + rCuboid.P[1].V * val[4] + rCuboid.P[2].V * val[5] + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].V;
 
-            dst_Y[j] = av_clip(val_dst[0],0, iMaxValY);
-            dst_Y[j+1] = av_clip(val_dst[1], 0, iMaxValY );
-            dst_Y[j+dst_stride] = av_clip(val_dst[2] , 0, iMaxValY);
+            dst_Y[j]   = av_clip(val_dst[0], 0, iMaxValY);
+            dst_Y[j+1] = av_clip(val_dst[1], 0, iMaxValY);
+
+            dst_Y[j+dst_stride]   = av_clip(val_dst[2] , 0, iMaxValY);
             dst_Y[j+dst_stride+1] = av_clip(val_dst[3] , 0, iMaxValY);
+
             dst_U[k] = av_clip(dstUV.U, 0, iMaxValC );
             dst_V[k] = av_clip(dstUV.V, 0, iMaxValC );
         }
 
-        src_Y += src_stride + src_stride;
+        src_Y += src_stride << 1;
 
         src_U_prev = src_U;
         src_V_prev = src_V;
-
 
         src_U = src_U_next;
         src_V = src_V_next;
@@ -2504,7 +2517,7 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
             src_V_next += src_stridec;
         }
 
-        dst_Y += dst_stride + dst_stride;
+        dst_Y += dst_stride << 1;
         dst_U += dst_stridec;
         dst_V += dst_stridec;
     }
