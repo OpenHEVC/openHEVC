@@ -2435,22 +2435,6 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
     int iMaxValY = (1<<pc3DAsymLUT->cm_output_luma_bit_depth)  -1;
     int iMaxValC = (1<<pc3DAsymLUT->cm_output_chroma_bit_depth)-1;
 
-    // add padding for chroma
-    for(i = 0 ; i < height>>1 ; i++ ){
-        src_U[width>>1] = src_U[(width>>1)-1];
-        src_V[width>>1] = src_V[(width>>1)-1];
-        src_U          += src_stridec;
-        src_V          += src_stridec;
-    }
-
-    for(j = 0 ; j <= (width>>1) ; j++ ) {
-        src_U[j] = src_U[j-src_stridec];
-        src_V[j] = src_V[j-src_stridec];
-    }
-
-    src_U = (pixel*)src->data[1];
-    src_V = (pixel*)src->data[2];
-
     for(i = 0 ; i < height ; i += 2 ) {
         for(j = 0 , k = 0 ; j < width ; j += 2 , k++ ) {
             short a, b;
