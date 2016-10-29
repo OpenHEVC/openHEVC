@@ -2407,33 +2407,33 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
     int width  = src->width, i, j, k;
     int height = src->height;
 
-    int src_stride  = src->linesize[0];
-    int src_stridec = src->linesize[1];
+    int src_stride  = src->linesize[0]/sizeof(pixel);
+    int src_stridec = src->linesize[1]/sizeof(pixel);
 
     int dst_stride  = dst->linesize[0]/sizeof(pixel);
     int dst_stridec = dst->linesize[1]/sizeof(pixel);
 
-    uint8_t srcYaver, tmpU, tmpV;
+    pixel srcYaver, tmpU, tmpV;
     uint16_t val[6], val_dst[6], val_prev[2];
     SCuboid rCuboid;
     TCom3DAsymLUT *pc3DAsymLUT = (TCom3DAsymLUT *)pc3DAsymLUT_;
 
-    uint8_t *src_Y = (uint8_t*)src->data[0];
-    uint8_t *src_U = (uint8_t*)src->data[1];
-    uint8_t *src_V = (uint8_t*)src->data[2];
+    pixel *src_Y = (pixel*)src->data[0];
+    pixel *src_U = (pixel*)src->data[1];
+    pixel *src_V = (pixel*)src->data[2];
 
-    uint16_t *dst_Y = (uint16_t*)dst->data[0];
-    uint16_t *dst_U = (uint16_t*)dst->data[1];
-    uint16_t *dst_V = (uint16_t*)dst->data[2];
+    pixel *dst_Y = (pixel*)dst->data[0];
+    pixel *dst_U = (pixel*)dst->data[1];
+    pixel *dst_V = (pixel*)dst->data[2];
 
-    uint8_t *src_U_prev = (uint8_t*)src->data[1];
-    uint8_t *src_V_prev = (uint8_t*)src->data[2];
+    pixel *src_U_prev = (pixel*)src->data[1];
+    pixel *src_V_prev = (pixel*)src->data[2];
 
-    uint8_t *src_U_next = (uint8_t*)src->data[1]+src_stridec;
-    uint8_t *src_V_next = (uint8_t*)src->data[2]+src_stridec;
+    pixel *src_U_next = (pixel*)src->data[1]+src_stridec;
+    pixel *src_V_next = (pixel*)src->data[2]+src_stridec;
 
-    pixel iMaxValY = (1<<pc3DAsymLUT->cm_output_luma_bit_depth)  -1;
-    pixel iMaxValC = (1<<pc3DAsymLUT->cm_output_chroma_bit_depth)-1;
+    int iMaxValY = (1<<pc3DAsymLUT->cm_output_luma_bit_depth)  -1;
+    int iMaxValC = (1<<pc3DAsymLUT->cm_output_chroma_bit_depth)-1;
 
     // add padding for chroma
     for(i = 0 ; i < height>>1 ; i++ ){
@@ -2448,8 +2448,8 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
         src_V[j] = src_V[j-src_stridec];
     }
 
-    src_U = (uint8_t*)src->data[1];
-    src_V = (uint8_t*)src->data[2];
+    src_U = (pixel*)src->data[1];
+    src_V = (pixel*)src->data[2];
 
     for(i = 0 ; i < height ; i += 2 ) {
         for(j = 0 , k = 0 ; j < width ; j += 2 , k++ ) {
