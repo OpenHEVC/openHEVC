@@ -2439,6 +2439,7 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
         for(j = 0 , k = 0 ; j < width ; j += 2 , k++ ) {
             short a, b;
             SYUVP dstUV;
+            int knext = (k == (width >> 1) - 1) ? k : k+1;
             val[0] = src_Y[j];
             val[1] = src_Y[j+1];
             val[2] = src_Y[j+src_stride];
@@ -2457,10 +2458,10 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
             rCuboid = pc3DAsymLUT->S_Cuboid[val[0] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
             val_dst[0] = ( ( rCuboid.P[0].Y * val[0] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
-            a = src_U[k+1] + val[4];
-            tmpU =  ((a<<1) + a + val_prev[0] + src_U_prev[k+1] + 4 ) >> 3;
-            b = src_V[k+1] + val[5];
-            tmpV =  ((b<<1) + b + val_prev[1] + src_V_prev[k+1] + 4 ) >> 3;
+            a = src_U[knext] + val[4];
+            tmpU =  ((a<<1) + a + val_prev[0] + src_U_prev[knext] + 4 ) >> 3;
+            b = src_V[knext] + val[5];
+            tmpV =  ((b<<1) + b + val_prev[1] + src_V_prev[knext] + 4 ) >> 3;
 
             rCuboid = pc3DAsymLUT->S_Cuboid[val[1] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
             val_dst[1] = ( ( rCuboid.P[0].Y * val[1] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
@@ -2471,8 +2472,8 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
             rCuboid = pc3DAsymLUT->S_Cuboid[val[2] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
             val_dst[2] = ( ( rCuboid.P[0].Y * val[2] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
-            tmpU =  ((a<<1) + a + src_U_next[k] + src_U_next[k+1] + 4 ) >> 3;
-            tmpV =  ((b<<1) + b + src_V_next[k] + src_V_next[k+1] + 4 ) >> 3;
+            tmpU =  ((a<<1) + a + src_U_next[k] + src_U_next[knext] + 4 ) >> 3;
+            tmpV =  ((b<<1) + b + src_V_next[k] + src_V_next[knext] + 4 ) >> 3;
             rCuboid = pc3DAsymLUT->S_Cuboid[val[3] >> pc3DAsymLUT->YShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpU>=pc3DAsymLUT->nAdaptCThresholdU : tmpU>> pc3DAsymLUT->UShift2Idx][pc3DAsymLUT->cm_octant_depth==1? tmpV>=pc3DAsymLUT->nAdaptCThresholdV : tmpV>> pc3DAsymLUT->VShift2Idx];
             val_dst[3] = ( ( rCuboid.P[0].Y * val[3] + rCuboid.P[1].Y * tmpU + rCuboid.P[2].Y * tmpV + pc3DAsymLUT->nMappingOffset ) >> pc3DAsymLUT->nMappingShift ) + rCuboid.P[3].Y;
 
@@ -2494,11 +2495,14 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
         src_U_prev = src_U;
         src_V_prev = src_V;
 
+
         src_U = src_U_next;
         src_V = src_V_next;
 
-        src_U_next += src_stridec;
-        src_V_next += src_stridec;
+        if((i < height - 4)){
+            src_U_next += src_stridec;
+            src_V_next += src_stridec;
+        }
 
         dst_Y += dst_stride + dst_stride;
         dst_U += dst_stridec;
