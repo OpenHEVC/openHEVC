@@ -541,7 +541,7 @@ int set_el_parameter(HEVCContext *s) {
 #if !ACTIVE_PU_UPSAMPLING //fixme : was this intended to avc base layer??
     if(s->ps.pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
       av_frame_unref(s->Ref_color_mapped_frame);
-      s->Ref_color_mapped_frame->width  = s->BL_height;
+      s->Ref_color_mapped_frame->width  = s->BL_width;
       s->Ref_color_mapped_frame->height = s->BL_height;
       ret = ff_get_buffer(s->avctx, s->Ref_color_mapped_frame, AV_GET_BUFFER_FLAG_REF);
       if(ret < 0)
