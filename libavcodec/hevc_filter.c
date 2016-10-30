@@ -1331,11 +1331,11 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
 }
 #endif
 
-static void copy_block(HEVCContext *s, uint8_t *src, uint8_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
+static void copy_block(HEVCContext *s, uint16_t *src, uint16_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
     int i;
-#if 0
+#if 1
     for (i = 0; i < ePbH ; i++) {
-        memcpy(dst, src, ePbW * sizeof(pixel));
+        memcpy(dst, src, ePbW * sizeof(uint16_t));
         src += bl_stride;
         dst += el_stride;
     }
@@ -1498,7 +1498,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
     uint16_t *dst = (uint16_t *)ref0->frame->data[0];
     uint16_t *tmp1;
 
-    int ctb_size  = 1<<s->ps.sps->log2_ctb_size;
+    int ctb_size  = 1 << s->ps.sps->log2_ctb_size;
     int el_width  =  s->ps.sps->width;
     int el_height =  s->ps.sps->height;
 
@@ -1512,24 +1512,48 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
 
     int bl_width  =  bl_frame->frame->width;
     int bl_height =  bl_frame->frame->height;
-    int bl_stride =  bl_frame->frame->linesize[0];
+    int bl_stride =  bl_frame->frame->linesize[0]/sizeof(uint16_t);
+
+    int bl_stride_c = bl_frame->frame->linesize[1]/sizeof(uint16_t);
 
     int el_stride =  ref0->frame->linesize[0]/sizeof(uint16_t);
     int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size;
     int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
 
+    int bottom = y0 + ctb_size >= el_height ? 1 : 0;
+    int right = x0 + ctb_size >= el_width ? 1 : 0;
+    int top =  !y0 ? 1 : 0;
+    int left = !x0 ? 1 : 0;
+
     if (s->up_filter_inf.idx == SNR) { /* x1 quality (SNR) scalability */
 
-      bl_stride = MAX_EDGE_BUFFER_STRIDE;
-      colorMapping( s, bl_frame->frame->data[0], bl_frame->frame->data[1], bl_frame->frame->data[2],
-    		  bl_frame->frame->linesize[0], bl_frame->frame->linesize[1], x0, y0, x0>>1, y0>>1,
-                    bl_width, bl_height, el_width, el_height);
-//      colorMapping( s, bl_frame->f->data[0], bl_frame->f->data[1], bl_frame->f->data[2],
-//          		  bl_frame->f->linesize[0], bl_frame->f->linesize[1], x0, y0, x0>>1, y0>>1,
-//                          bl_width, bl_height);
-      copy_block( s, (uint8_t *)s->HEVClc->color_mapping_cgs_y,
-                  ref0->frame->data[0] + y0 * el_stride + x0,
-                  bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_LUMA);
+      uint16_t *src_y = bl_frame->frame->data[0];
+      uint16_t *src_u = bl_frame->frame->data[1];
+      uint16_t *src_v = bl_frame->frame->data[2];
+
+      src_y += x0 + y0 * bl_stride;
+      src_u += (x0>>1) + (y0>>1) * (bl_stride_c);
+      src_v += (x0>>1) + (y0>>1) * (bl_stride_c);
+
+      //NOTE we can padd those buffers here
+//      pixel *dst_y = s->HEVClc->color_mapping_cgs_y;
+//      pixel *dst_u = s->HEVClc->color_mapping_cgs_u;
+//      pixel *dst_v = s->HEVClc->color_mapping_cgs_v;
+
+      uint16_t *dst_y = ref0->frame->data[0];
+      uint16_t *dst_u = ref0->frame->data[1];
+      uint16_t *dst_v = ref0->frame->data[2];
+
+      dst_y += x0 + y0 * el_stride;
+      dst_u += (x0>>1) + (y0>>1) * (el_stride>>1);
+      dst_v += (x0>>1) + (y0>>1) * (el_stride>>1);
+
+      s->hevcdsp.map_color_block(&s->ps.pps->pc3DAsymLUT, src_y, src_u, src_v,
+                                 dst_y, dst_u, dst_v,
+                                 bl_stride, bl_stride_c,
+                                 el_stride, el_stride>>1,
+                                 ePbW,ePbH,
+                                 right,bottom,top,left);
     } else { /* spatial scalability */
       int bl_edge_bottom, bl_edge_right, ret;
       int bPbW = ((( ePbW + 1 ) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4; /*    FIXME: check if this method is correct  */
@@ -1538,7 +1562,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
       int bl_x = (( (x0  - s->ps.sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4;
       int bl_y = (( (y0  - s->ps.sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12)  >> 4;
       int bl_x_cr = ((((x0>>1) - (s->ps.sps->pic_conf_win.left_offset>>1)) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)      >> 4;
-      int bl_y_cr = (((((y0>>1)- (s->ps.sps->pic_conf_win.top_offset >>1)) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYLum) >> 12) -4 ) >> 4;
+      int bl_y_cr = (((((y0>>1)- (s->ps.sps->pic_conf_win.top_offset >>1)) * s->up_filter_inf.scaleYCr - s->up_filter_inf.addYLum) >> 12)  ) >> 4;
 #if 0
       int bl_edge_left   =  (MAX_EDGE - 1 - bl_x ) > 0 ?  0: MAX_EDGE - 1;
       int bl_edge_top    = ( MAX_EDGE - 1 - bl_y ) > 0 ?  0: MAX_EDGE - 1;
@@ -1561,31 +1585,55 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
       bl_edge_right  =  (bl_width <=  bl_x + bPbW)  ? 0: MAX_EDGE;
       bl_edge_bottom =  (bl_height <= bl_y + bPbH)  ? 0: MAX_EDGE;
 #endif
-      bl_stride = MAX_EDGE_BUFFER_STRIDE;
-      colorMapping( s, bl_frame->frame->data[0], bl_frame->frame->data[1], bl_frame->frame->data[2],
-    		  bl_frame->frame->linesize[0], bl_frame->frame->linesize[1], bl_x, bl_y, bl_x_cr, bl_y_cr,
-                    bl_width, bl_height, el_width, el_height);
+
+      uint16_t *src_y = bl_frame->frame->data[0];
+      uint16_t *src_u = bl_frame->frame->data[1];
+      uint16_t *src_v = bl_frame->frame->data[2];
+
+      src_y += bl_x + bl_y * bl_stride;
+      src_u += (bl_x>>1) + (bl_y>>1) * (bl_stride_c);
+      src_v += (bl_x>>1) + (bl_y>>1) * (bl_stride_c);
+
+      //NOTE we can padd those buffers here
+      pixel *dst_y = s->HEVClc->color_mapping_cgs_y+3*MAX_EDGE_BUFFER_STRIDE+3;
+      pixel *dst_u = s->HEVClc->color_mapping_cgs_u+3*MAX_EDGE_BUFFER_STRIDE+3;
+      pixel *dst_v = s->HEVClc->color_mapping_cgs_v+3*MAX_EDGE_BUFFER_STRIDE+3;
+
+//      uint16_t *dst_y = ref0->frame->data[0];
+//      uint16_t *dst_u = ref0->frame->data[1];
+//      uint16_t *dst_v = ref0->frame->data[2];
+
+//      dst_y += x0 + y0 * el_stride;
+//      dst_u += (x0>>1) + (y0>>1) * (el_stride>>1);
+//      dst_v += (x0>>1) + (y0>>1) * (el_stride>>1);
+
+      s->hevcdsp.map_color_block(&s->ps.pps->pc3DAsymLUT, src_y, src_u, src_v,
+                                 dst_y, dst_u, dst_v,
+                                 bl_stride, bl_stride_c,
+                                 MAX_EDGE_BUFFER_STRIDE, MAX_EDGE_BUFFER_STRIDE>>1,
+                                 bPbW,bPbH,
+                                 right,bottom,top,left);
 //      colorMapping( s, bl_frame->f->data[0], bl_frame->f->data[1], bl_frame->f->data[2],
 //          		  bl_frame->f->linesize[0], bl_frame->f->linesize[1], bl_x, bl_y, bl_x_cr, bl_y_cr,
 //                          bl_width, bl_height);
-      src       = s->HEVClc->color_mapping_cgs_y + bl_stride * 3 + 3;
+      src       = s->HEVClc->color_mapping_cgs_y+3*MAX_EDGE_BUFFER_STRIDE+3;
 
       tmp1 = s->HEVClc->edge_emu_buffer_up_h;
 
-      ret = s->vdsp.emulated_edge_up_h((uint8_t *)tmp1 , (uint8_t *)src , bl_stride, &s->ps.sps->scaled_ref_layer_window[ref_layer_id],
+      ret = s->vdsp.emulated_edge_up_h((uint8_t *)tmp1 , (uint8_t *)src , MAX_EDGE_BUFFER_STRIDE, &s->ps.sps->scaled_ref_layer_window[ref_layer_id],
                                            bPbW + bl_edge_left + bl_edge_right, bPbH + bl_edge_top + bl_edge_bottom,
                                            bl_edge_left , bl_edge_right,100, MAX_EDGE-1);
 
-      if(ret==2)//no edge
-          src += (MAX_EDGE-1);
-      if (ret==1) //right edge
-      	src += (MAX_EDGE-1);
-      if (ret==0) //left edge
-      	src= tmp1;
+//      if(ret==2)//no edge
+//          src += (MAX_EDGE-1);
+//      if (ret==1) //right edge
+//      	src += (MAX_EDGE-1);
+//      if (ret==0) //left edge
+//      	src= tmp1;
 
       tmp0 = s->HEVClc->edge_emu_buffer_up_v+ ((MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE);
 
-      s->hevcdsp.upsample_filter_block_luma_h[s->up_filter_inf.idx]((int16_t *)tmp0, MAX_EDGE_BUFFER_STRIDE, (uint8_t *)src, bl_stride, x0, bl_x,
+      s->hevcdsp.upsample_filter_block_luma_h[s->up_filter_inf.idx]((int16_t *)tmp0, MAX_EDGE_BUFFER_STRIDE, (uint8_t *)src, MAX_EDGE_BUFFER_STRIDE, x0, bl_x,
                                                                     ePbW, bPbH + bl_edge_top + bl_edge_bottom, el_width,
                                                                     &s->ps.sps->scaled_ref_layer_window[ref_layer_id], &s->up_filter_inf);
 
@@ -1619,20 +1667,20 @@ static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y
     int ret, cr, bl_edge_top0;
     int ctb_size = 1<<(s->ps.sps->log2_ctb_size-1);
 
-    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size ;
+    int ePbW = x0 + ctb_size > el_width  ? el_width  - x0 : ctb_size;
     int ePbH = y0 + ctb_size > el_height ? el_height - y0 : ctb_size;
     int bl_stride = bl_frame->frame->linesize[1];
     //int bl_stride = bl_frame->f->linesize[1];
     int el_stride = ref0->frame->linesize[1]/sizeof(uint16_t);
 
     if (s->up_filter_inf.idx == SNR) {
-      bl_stride = MAX_EDGE_BUFFER_STRIDE>>1;
-      copy_block( s, (uint8_t *)s->HEVClc->color_mapping_cgs_u,
-                  ref0->frame->data[1] + y0 * el_stride + x0,
-                  bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
-      copy_block( s, (uint8_t *)s->HEVClc->color_mapping_cgs_v,
-                  ref0->frame->data[2] + y0 * el_stride + x0,
-                  bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
+      bl_stride = MAX_EDGE_BUFFER_STRIDE >> 1;
+//      copy_block( s, (uint16_t *)s->HEVClc->color_mapping_cgs_u,
+//                  (uint16_t *)ref0->frame->data[1] + y0 * el_stride + x0,
+//                  MAX_EDGE_BUFFER_STRIDE >> 1, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
+//      copy_block( s, (uint16_t *)s->HEVClc->color_mapping_cgs_v,
+//                  (uint16_t *)ref0->frame->data[2] + y0 * el_stride + x0,
+//                  MAX_EDGE_BUFFER_STRIDE >> 1, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
     } else {
         int bl_edge_right, bl_edge_bottom;
         int bPbW = ((( ePbW + 1 ) * s->up_filter_inf.scaleXCr - s->up_filter_inf.addXLum) >> 12)  >> 4;    /*    FIXME: check if this method is correct  */

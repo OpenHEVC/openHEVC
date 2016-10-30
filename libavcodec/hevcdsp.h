@@ -147,7 +147,9 @@ typedef struct HEVCDSPContext {
                             uint8_t *dst_y, uint8_t *dst_u, uint8_t *dst_v,
                             int src_stride, int src_stride_c,
                             int dst_stride, int dst_stride_c,
-                            int dst_width, int dst_height);
+                            int dst_width, int dst_height,
+                            int is_bound_r,int is_bound_b, int is_bound_t,
+                            int is_bound_l);
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);

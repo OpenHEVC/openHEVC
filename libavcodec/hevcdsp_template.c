@@ -2568,7 +2568,9 @@ static void FUNC(map_color_block)(void *pc3DAsymLUT_,
                                    uint8_t *dst_y, uint8_t *dst_u, uint8_t *dst_v,
                                    int src_stride, int src_stride_c,
                                    int dst_stride, int dst_stride_c,
-                                   int dst_width, int dst_height){
+                                   int dst_width, int dst_height,
+                                   int is_bound_r,int is_bound_b, int is_bound_t,
+                                   int is_bound_l){
 
     TCom3DAsymLUT *pc3DAsymLUT = (TCom3DAsymLUT *)pc3DAsymLUT_;
 
@@ -2593,8 +2595,8 @@ static void FUNC(map_color_block)(void *pc3DAsymLUT_,
     pixel *dst_U = (pixel*)dst_u;
     pixel *dst_V = (pixel*)dst_v;
 
-    pixel *src_U_prev = (pixel*)src_u;
-    pixel *src_V_prev = (pixel*)src_v;
+    pixel *src_U_prev;
+    pixel *src_V_prev;
 
     pixel *src_U_next = (pixel*)src_u + src_stride_c;
     pixel *src_V_next = (pixel*)src_v + src_stride_c;
@@ -2614,13 +2616,21 @@ static void FUNC(map_color_block)(void *pc3DAsymLUT_,
     const int iMaxValY = (1 << pc3DAsymLUT->cm_output_luma_bit_depth  ) - 1;
     const int iMaxValC = (1 << pc3DAsymLUT->cm_output_chroma_bit_depth) - 1;
 
+    if(!is_bound_t){
+        src_U_prev = (pixel*)src_u - src_stride_c;
+        src_V_prev = (pixel*)src_v - src_stride_c;
+    } else {
+        src_U_prev = (pixel*)src_u;
+        src_V_prev = (pixel*)src_v;
+    }
+
     for(i = 0; i < dst_height; i += 2){
         for(j = 0, k = 0; j < dst_width; j += 2, k++){
             SCuboid rCuboid;
             SYUVP dstUV;
             short a, b;
 
-            int knext = (k == (dst_width >> 1) - 1) ? k : k+1;
+            int knext = (is_bound_r && (k == (dst_width >> 1) - 1)) ? k : k+1;
 
             uint16_t val[6], val_dst[6], val_prev[2];
 
@@ -2717,7 +2727,7 @@ static void FUNC(map_color_block)(void *pc3DAsymLUT_,
         src_U = src_U_next;
         src_V = src_V_next;
 
-        if((i < dst_height - 4)){
+        if(!is_bound_b || (is_bound_b && (i < dst_height - 4))){
             src_U_next += src_stride_c;
             src_V_next += src_stride_c;
         }
