@@ -100,109 +100,174 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
     }
 }
 
-static int FUNC(ff_emulated_edge_up_h)(uint8_t *dst, uint8_t *src, ptrdiff_t linesize,
-                                    const struct HEVCWindow *Enhscal,
-                                    int block_w, int block_h, int bl_edge_left,
-                                    int bl_edge_right, int bl_edge_up, int shift)
+static void FUNC(ff_emulated_edge_up_cgs_h)(uint8_t *src,
+                                       int src_width, int src_height,
+                                       int edge_left, int edge_right)
 {
     int i, j;
-    uint8_t   *src_tmp = src;
-    uint8_t   *dst_tmp = dst;
-    int dst_stride = MAX_EDGE_BUFFER_STRIDE;
+    pixel   *src_tmp = (pixel *)src;
+    pixel   *dst_tmp = (pixel *)src;
 
-    if( bl_edge_up < shift){
-    	memcpy(dst_tmp-bl_edge_left-MAX_EDGE_BUFFER_STRIDE, src_tmp-bl_edge_left, block_w);
-    	dst_tmp += dst_stride;
-    	for (j=0; j<block_h; ++j){
-    	    memcpy(dst_tmp-bl_edge_left, src_tmp-bl_edge_left, block_w);
-    	    dst_tmp += dst_stride;
-    	    src_tmp += linesize;
-    	}
-    	src_tmp = src;
-    	dst_tmp = dst;
-    	dst_tmp += dst_stride;
+    if(edge_left){
+        dst_tmp -= MAX_EDGE;
+        for (i = 0; i <= src_height; ++i){
+            dst_tmp[0]=*src_tmp;
+            dst_tmp[1]=*src_tmp;
+            dst_tmp[2]=*src_tmp;
+            dst_tmp[3]=*src_tmp;
+            dst_tmp += MAX_EDGE_BUFFER_STRIDE;
+            src_tmp += MAX_EDGE_BUFFER_STRIDE;
+        }
     }
 
-    if(bl_edge_left < shift ) {
-
-      for(i=0; i < block_h; i++) {
-          for(j=0; j < shift+1; j++){
-    	      *(dst_tmp-j) = *src_tmp;
-          }
-        memcpy(dst_tmp, src_tmp, (block_w)*sizeof(uint8_t));
-        src_tmp += linesize;
-        dst_tmp += dst_stride;
-      }
-      return 0;
+    if(edge_right) {
+        src_tmp = (pixel *)src;
+        dst_tmp = (pixel *)src;
+        src_tmp += src_width;
+        dst_tmp =  src_tmp + 1;
+        for (i = 0; i <= src_height; ++i){
+            dst_tmp[0]=*src_tmp;
+            dst_tmp[1]=*src_tmp;
+            dst_tmp[2]=*src_tmp;
+            dst_tmp[3]=*src_tmp;
+            dst_tmp += MAX_EDGE_BUFFER_STRIDE;
+            src_tmp += MAX_EDGE_BUFFER_STRIDE;
+        }
     }
-
-    if(bl_edge_right<(shift+1)) {
-      for( i = 0; i < block_h ; i++ ) {
-    	  memcpy(dst_tmp,    src_tmp, (block_w)*sizeof(uint8_t));
-          for(j=0; j < shift+1; j++)
-              dst_tmp[block_w+j] = src_tmp[block_w-1];
-          src_tmp += linesize;
-          dst_tmp += dst_stride;
-      }
-      return 1;
-    }
-    if(bl_edge_up<shift)
-    	return 4;
-    return 2;
 }
 
-static int FUNC(ff_emulated_edge_up_cgs_h)(uint16_t *src, ptrdiff_t linesize,
-                                           const struct HEVCWindow *Enhscal,
-                                           int block_w, int block_h, int bl_edge_left,
-                                           int bl_edge_right, int shift)
+static void FUNC(ff_emulated_edge_up_h)(uint8_t *dst, uint8_t *src, ptrdiff_t linesize,
+                                    int block_w, int block_h,
+                                    int bl_edge_left, int bl_edge_right)
 {
     int i, j;
-    uint16_t   *src_tmp = src;
 
-    if(bl_edge_left < shift) {
-        for(i=0; i < block_h; i++) {
-            for(j=0; j < shift; j++)
-                src_tmp[j-shift] = src_tmp[0];
-            src_tmp += linesize;
-        }
-        return 0;
-    }
+    pixel   *src_tmp = (pixel *)src;
+    pixel   *dst_tmp = (pixel *)dst;
 
-    if(bl_edge_right<(shift+1)) {
-        for( i = 0; i < block_h ; i++ ) {
-            for(j=0; j < shift+1; j++)
-                src_tmp[block_w+j] = src_tmp[block_w-1];
-            src_tmp += linesize;
-        }
-    }
-    return 1;
-}
-
-static int FUNC(ff_emulated_edge_up_v)(int16_t *src, ptrdiff_t linesize,
-                                    const struct HEVCWindow *Enhscal,
-                                    int block_w, int block_h, int src_x, int bl_edge_up, int bl_edge_bottom, int wEL, int shift)
-{
-    int  i, j;
-
-    int16_t *src_tmp = src;
-    int16_t *dst     = src;
-
-    if(bl_edge_up < shift)  {
-        for( i = 0; i < block_w; i++ ) {
-            for(j= bl_edge_up; j<shift ; j++)
-                dst[(-j-1)*linesize] = src_tmp[-bl_edge_up*linesize];
-            src_tmp++;
-            dst++;
-        }
-        return 0;
-    }
-
-    if(bl_edge_bottom < (shift+1) )    {
-        for( i = 0; i < block_w; i++ )	{
-            for(j= 0; j< shift +1; j++) {
-                dst[(block_h+j)*linesize+i] = src_tmp[(block_h-1)*linesize+i];
+    if(bl_edge_left){
+        for( i = 0; i < block_h; i++) {
+            for(j = 0; j < MAX_EDGE - 1; j++){
+                dst_tmp--;
+                *dst_tmp = *src_tmp;
             }
+            dst_tmp += MAX_EDGE - 1;
+            memcpy(dst_tmp, src_tmp, block_w * sizeof(pixel));
+            src_tmp += linesize;
+            dst_tmp += MAX_EDGE_BUFFER_STRIDE;
         }
     }
-    return 1;
+
+    if(bl_edge_right){
+        for( i = 0; i < block_h; i++) {
+            memcpy(dst_tmp, src_tmp, (block_w) * sizeof(pixel));
+            src_tmp += block_w - 1;
+            dst_tmp += block_w;
+            for(j = 0; j < MAX_EDGE; j++){
+                *dst_tmp = *src_tmp;
+                dst_tmp++;
+            }
+            src_tmp += linesize - block_w + 1;
+            dst_tmp += MAX_EDGE_BUFFER_STRIDE - block_w - MAX_EDGE ;
+        }
+    }
+}
+
+static void FUNC(ff_emulated_edge_up_cr_h)(uint8_t *dst, uint8_t *src, ptrdiff_t linesize,
+                                          int block_w, int block_h,
+                                          int bl_edge_left, int bl_edge_right)
+{
+    int i, j;
+
+    pixel   *src_tmp = (pixel *)src;
+    pixel   *dst_tmp = (pixel *)dst;
+
+    if(bl_edge_left){
+        for( i = 0; i < block_h; i++) {
+            for(j = 0; j < MAX_EDGE_CR; j++){
+                dst_tmp--;
+                *dst_tmp = *src_tmp;
+            }
+            dst_tmp += MAX_EDGE_CR;
+            memcpy(dst_tmp, src_tmp, block_w * sizeof(pixel));
+            src_tmp += linesize;
+            dst_tmp += MAX_EDGE_BUFFER_STRIDE;
+        }
+    }
+
+    if(bl_edge_right){
+        for( i = 0; i < block_h; i++) {
+            memcpy(dst_tmp, src_tmp, (block_w) * sizeof(pixel));
+            src_tmp += block_w-1;
+            dst_tmp += block_w;
+            for(j = 0; j < MAX_EDGE_CR; j++){
+                *dst_tmp = *src_tmp;
+                dst_tmp++;
+            }
+            src_tmp += linesize - block_w + 1;
+            dst_tmp += MAX_EDGE_BUFFER_STRIDE - block_w - MAX_EDGE_CR;
+        }
+    }
+}
+
+static void FUNC(ff_emulated_edge_up_v)(uint8_t *src,
+                                    int block_w, int block_h,
+                                    int bl_edge_top, int bl_edge_bottom)
+{
+    int i, j;
+
+    uint16_t   *src_tmp = (uint16_t *)src;
+    uint16_t   *dst_tmp = (uint16_t *)src;
+
+    if (bl_edge_top){
+        for(j = 0; j < MAX_EDGE - 1; j++){
+            dst_tmp -= MAX_EDGE_BUFFER_STRIDE;
+            memcpy(dst_tmp, src_tmp, block_w * sizeof(uint16_t));
+        }
+        dst_tmp += (MAX_EDGE - 1) * MAX_EDGE_BUFFER_STRIDE;
+    }
+
+    if (bl_edge_bottom){
+        dst_tmp += (block_h    ) * MAX_EDGE_BUFFER_STRIDE;
+        src_tmp += (block_h - 1) * MAX_EDGE_BUFFER_STRIDE;
+        for(j = 0; j < MAX_EDGE; j++){
+            memcpy(dst_tmp, src_tmp, block_w * sizeof(uint16_t));
+            dst_tmp += MAX_EDGE_BUFFER_STRIDE;
+        }
+    }
+}
+
+static void FUNC(ff_emulated_edge_up_cr_v)(uint8_t *src, int block_w, int block_h,
+                                          int bl_edge_top, int bl_edge_bottom)
+{
+    int i, j;
+
+    uint16_t   *src_tmp = (uint16_t *)src;
+    uint16_t   *dst_tmp = (uint16_t *)src;
+
+    if (bl_edge_top){
+        for(j = 0; j < MAX_EDGE_CR; j++){
+            dst_tmp -= MAX_EDGE_BUFFER_STRIDE;
+            memcpy(dst_tmp, src_tmp, block_w * sizeof(uint16_t));
+        }
+        dst_tmp += (MAX_EDGE_CR) * MAX_EDGE_BUFFER_STRIDE;
+    }
+
+    if (bl_edge_bottom){
+        dst_tmp += (block_h    ) * MAX_EDGE_BUFFER_STRIDE;
+        src_tmp += (block_h - 1) * MAX_EDGE_BUFFER_STRIDE;
+        for(j = 0; j < MAX_EDGE_CR; j++){
+            memcpy(dst_tmp, src_tmp, block_w * sizeof(uint16_t));
+            dst_tmp += MAX_EDGE_BUFFER_STRIDE;
+        }
+    }
+}
+
+static void FUNC(ff_copy_block)(uint8_t *src, uint8_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW) {
+    int i;
+    for (i = 0; i < ePbH ; i++) {
+        memcpy(dst, src, ePbW * sizeof(pixel));
+        src += bl_stride * sizeof(pixel);
+        dst += el_stride * sizeof(pixel);
+    }
 }

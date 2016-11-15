@@ -464,6 +464,7 @@ typedef struct H264Context {
     H264POCContext poc;
 #if SVC_EXTENSION
     int poc_id;
+    int el_available;
 #endif
     H264Ref default_ref[2];
     H264Picture *short_ref[32];

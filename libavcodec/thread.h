@@ -100,11 +100,13 @@ void ff_thread_await_progress(ThreadFrame *f, int progress, int field);
 
 #ifdef SVC_EXTENSION
 void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in, void *in_dat);
+void ff_thread_report_il_progress_avc(AVCodecContext *avxt, int poc, void * in, void *in_dat);
 void ff_thread_await_il_progress ( AVCodecContext *avxt, int poc, void ** out);
 //int ff_thread_get_last_Tid(AVCodecContext *avxt);
 //void ff_thread_report_last_Tid(AVCodecContext *avxt, int last_Tid);
 int ff_thread_get_il_up_status(AVCodecContext *avxt, int poc);
 void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status);
+void ff_thread_report_il_status_avc(AVCodecContext *avxt, int poc, int status);
 void ff_thread_report_il_status2(AVCodecContext *avxt, int poc, int status);
 #endif
 

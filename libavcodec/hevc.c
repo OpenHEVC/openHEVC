@@ -43,7 +43,7 @@
 #include "profiles.h"
 #include "getopt.h"
 
-#include "h264.h"
+#include "h264dec.h"
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
@@ -541,7 +541,7 @@ int set_el_parameter(HEVCContext *s) {
 #if !ACTIVE_PU_UPSAMPLING //fixme : was this intended to avc base layer??
     if(s->ps.pps->colour_mapping_enabled_flag) { // allocate frame with BL parameters
       av_frame_unref(s->Ref_color_mapped_frame);
-      s->Ref_color_mapped_frame->width  = s->BL_height;
+      s->Ref_color_mapped_frame->width  = s->BL_width;
       s->Ref_color_mapped_frame->height = s->BL_height;
       ret = ff_get_buffer(s->avctx, s->Ref_color_mapped_frame, AV_GET_BUFFER_FLAG_REF);
       if(ret < 0)
@@ -3474,7 +3474,7 @@ static int hevc_frame_start(HEVCContext *s)
        if (s->el_decoder_el_exist){
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
         } else if(s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME)){
-            ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
+            ff_thread_await_il_progress(s->avctx, s->poc_id2, &s->avctx->BL_frame);
         } else
             if(s->threads_type & FF_THREAD_FRAME)
                 s->avctx->BL_frame = NULL; // Base Layer does not exist
@@ -3545,7 +3545,7 @@ fail:
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if SVC_EXTENSION
         if(s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
-            ff_thread_report_il_status(s->avctx, s->poc_id, 2);
+            ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif
         if (s->inter_layer_ref)
             ff_hevc_unref_frame(s, s->inter_layer_ref, ~0);
@@ -4094,7 +4094,7 @@ fail:
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if SVC_EXTENSION
         if(s->ps.vps && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
-            ff_thread_report_il_status(s->avctx, s->poc_id, 2);
+            ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif
     }
     if (s->bl_decoder_el_exist)
@@ -4181,6 +4181,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 {
     int ret;
     HEVCContext *s = avctx->priv_data;
+
+    s->poc_id2 = avpkt->poc_id;
 
     if (!avpkt->size) {
         ret = ff_hevc_output_frame(s, data, 1);
@@ -4513,6 +4515,8 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
+
+    s->poc_id2              = s0->poc_id2;
 
     if (s->ps.sps != s0->ps.sps)
         ret = set_sps(s, s0->ps.sps, src->pix_fmt);

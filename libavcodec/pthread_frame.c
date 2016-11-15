@@ -543,6 +543,35 @@ void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in_ref, 
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 
+void ff_thread_report_il_progress_avc(AVCodecContext *avxt, int poc, void * in_ref, void *in_data) {
+/*
+    - Called by the  lower layer decoder to report that the frame used as reference at upper layers
+      is either decoded or allocated in the frame-based.
+    - Set the status to 1.
+    - This operation is signaled at the parent the frame-based thread.
+*/
+    PerThreadContext *p;
+    FrameThreadContext *fctx;
+    p = avxt->internal->thread_ctx_frame;
+    fctx = p->parent;
+
+    poc = poc & (MAX_POC-1);
+    if (avxt->debug&FF_DEBUG_THREADS)
+        av_log(avxt, AV_LOG_DEBUG, "ff_thread_report_il_progress %d\n", poc);
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    if(fctx->is_decoded[poc] == 3 && in_ref) {
+        ff_h264_unref_picture(avxt->priv_data, in_ref);
+        fctx->is_decoded[poc] = 0;
+    } else {
+            fctx->is_decoded[poc]     = 1;
+            fctx->frames_ref[poc]     = in_ref;
+            fctx->frames_data[poc]    = in_data;
+            pthread_cond_broadcast(&fctx->il_progress_cond);
+    }
+
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+}
+
 void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out) {
     /*
      - Wait untill the lower layer picture used for inter-layer reference picture is either allocated or decoded
@@ -575,9 +604,6 @@ void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status) {
     if(fctx->is_decoded[poc]==1 ) {
         if(fctx->frames_ref[poc]){
             ff_hevc_unref_frame(avxt_bl->priv_data, fctx->frames_ref[poc], ~0);
-            //ff_h264_unref_picture(avxt_bl->priv_data, fctx->frames_ref[poc]);
-            //fixme ff_hevc_unref and ff_h264_unref do the same thing so we can use ff_hevc_unref for both cases.
-            // it would be better to dissociate both cases though.
         }
         fctx->is_decoded[poc] = 0;
     } else
@@ -587,6 +613,27 @@ void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status) {
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 
+void ff_thread_report_il_status_avc(AVCodecContext *avxt, int poc, int status) {
+    /*
+     - Called by the upper layer decoder to report that the picture using this reference frame is decoded and the lower layer is not any more required by upper layer decoder
+     */
+    FrameThreadContext *fctx = ((AVCodecContext *)avxt->BL_avcontext)->internal->thread_ctx_frame;
+    AVCodecContext *avxt_bl = (AVCodecContext *)avxt->BL_avcontext;
+    poc = poc & (MAX_POC-1);
+    if (avxt->debug&FF_DEBUG_THREADS)
+        av_log(avxt, AV_LOG_DEBUG, "ff_thread_report_il_status poc %d status %d\n", poc, status);
+    pthread_mutex_lock(&fctx->il_progress_mutex);
+    if(fctx->is_decoded[poc]==1 ) {
+        if(fctx->frames_ref[poc]){
+            ff_h264_unref_picture(avxt_bl->priv_data, fctx->frames_ref[poc]);
+        }
+        fctx->is_decoded[poc] = 0;
+    } else
+        fctx->is_decoded[poc] = 3;
+    fctx->frames_data[poc] = NULL;
+    fctx->frames_ref[poc] = NULL;
+    pthread_mutex_unlock(&fctx->il_progress_mutex);
+}
 #endif
 
 void ff_thread_finish_setup(AVCodecContext *avctx) {

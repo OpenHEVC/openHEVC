@@ -1308,6 +1308,7 @@ int i = 0;
     hevcdsp->upsample_filter_block_cr_v[0]   = FUNC(upsample_filter_block_cr_v_all, depth); \
     hevcdsp->upsample_filter_block_cr_v[1]   = FUNC(upsample_filter_block_cr_v_x2, depth); \
     hevcdsp->upsample_filter_block_cr_v[2]   = FUNC(upsample_filter_block_cr_v_x1_5, depth); \
+    hevcdsp->map_color_block                 = FUNC(map_color_block,depth);\
     
     switch (bit_depth) {
     case 9:

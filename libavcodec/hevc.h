@@ -1285,8 +1285,8 @@ typedef struct HEVCLocalContext {
     DECLARE_ALIGNED(32, int16_t, edge_emu_buffer_up_h[MAX_EDGE_BUFFER_SIZE]);
 
     DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_y[MAX_EDGE_BUFFER_SIZE]);
-    DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_u[MAX_EDGE_BUFFER_SIZE>>2]);
-    DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_v[MAX_EDGE_BUFFER_SIZE>>2]);
+    DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_u[MAX_EDGE_BUFFER_SIZE]);
+    DECLARE_ALIGNED(32, int16_t, color_mapping_cgs_v[MAX_EDGE_BUFFER_SIZE]);
     uint8_t slice_or_tiles_left_boundary;
     uint8_t slice_or_tiles_up_boundary;
 
@@ -1361,6 +1361,7 @@ typedef struct HEVCContext {
     int au_poc;
     int poc;
     int poc_id;
+    int poc_id2;
     int pocTid0;
     int slice_idx; ///< number of the slice being currently decoded
     int eos;       ///< current packet contains an EOS/EOB NAL
@@ -1446,7 +1447,7 @@ typedef struct HEVCContext {
     uint8_t         el_decoder_el_exist; // wheither the el exist or not at the el decoder
     uint8_t         el_decoder_bl_exist;
     uint8_t     *is_upsampled;
-#if !ACTIVE_PU_UPSAMPLING
+#if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
     AVFrame *Ref_color_mapped_frame;
 #endif
     int temporal_layer_id;
