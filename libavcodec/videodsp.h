@@ -91,6 +91,10 @@ typedef struct VideoDSPContext {
     void (*emulated_edge_up_cgs_v)(uint8_t *src,
                                   int src_width, int src_height,
                                   int edge_left, int edge_right);
+
+    void (*copy_block)(uint8_t *src, uint8_t * dst,
+                       ptrdiff_t bl_stride, ptrdiff_t el_stride,
+                       int ePbH, int ePbW);
     /**
      * Prefetch memory into cache (if supported by hardware).
      *

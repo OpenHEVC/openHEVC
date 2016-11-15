@@ -262,3 +262,12 @@ static void FUNC(ff_emulated_edge_up_cr_v)(uint8_t *src, int block_w, int block_
         }
     }
 }
+
+static void FUNC(ff_copy_block)(uint8_t *src, uint8_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW) {
+    int i;
+    for (i = 0; i < ePbH ; i++) {
+        memcpy(dst, src, ePbW * sizeof(pixel));
+        src += bl_stride * sizeof(pixel);
+        dst += el_stride * sizeof(pixel);
+    }
+}

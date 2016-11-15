@@ -1331,11 +1331,11 @@ void ff_hevc_hls_filter_slice(HEVCContext *s, int x, int y, int ctb_size)
 }
 #endif
 
-static void copy_block(HEVCContext *s, uint16_t *src, uint16_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
+static void copy_block(HEVCContext *s, uint8_t *src, uint8_t * dst, ptrdiff_t bl_stride, ptrdiff_t el_stride, int ePbH, int ePbW, enum ChannelType channel ) {
     int i;
 #if 1
     for (i = 0; i < ePbH ; i++) {
-        memcpy(dst, src, ePbW * sizeof(uint16_t));
+        memcpy(dst, src, ePbW * sizeof(uint8_t));
         src += bl_stride;
         dst += el_stride;
     }
@@ -1756,9 +1756,9 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
 
 
     if (s->up_filter_inf.idx == SNR) { /* x1 quality (SNR) scalability */
-      copy_block ( s, (uint16_t *)bl_frame->data[0]  + y0 * bl_stride + x0,
-                    (uint16_t *)ref0->frame->data[0] + y0 * el_stride + x0,
-                    bl_stride, el_stride, ePbH, ePbW , CHANNEL_TYPE_LUMA);
+      s->vdsp.copy_block (((uint8_t *)bl_frame->data[0]  + (y0 * bl_stride + x0) * bl_sample_size),
+                    ((uint8_t *)ref0->frame->data[0] + (y0 * el_stride + x0) * sample_size),
+                    bl_stride, el_stride, ePbH, ePbW);
     } else { /* spatial scalability */
         uint16_t *tmp0;
 
@@ -1856,9 +1856,9 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
 
     if (s->up_filter_inf.idx == SNR) {
         for (cr = 1; cr <= 2; cr++) {
-          copy_block( s, (uint16_t *)bl_frame->data[cr] + y0 * bl_stride + x0 / sample_size,
-                      (uint16_t *)ref0->frame->data[cr] + y0 * el_stride + x0 / sample_size,
-                      bl_stride, el_stride, ePbH, ePbW, CHANNEL_TYPE_CHROMA);
+            s->vdsp.copy_block((uint8_t *)bl_frame->data[cr] + (y0 * bl_stride + x0) * sample_size ,
+                      (uint8_t *)ref0->frame->data[cr] + (y0 * el_stride + x0) * sample_size ,
+                      bl_stride, el_stride, ePbH, ePbW);
         }
     } else {
 
