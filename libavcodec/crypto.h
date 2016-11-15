@@ -28,10 +28,6 @@ static av_always_inline Crypto_Handle CreateC() {
 static av_always_inline void InitC(Crypto_Handle hdl) {
     assert(0);
 }
-Crypto_Handle ();
-    Crypto_Handle InitC(Crypto_Handle hdl);
-
-
 static av_always_inline void DecryptC(Crypto_Handle hdl, const unsigned char *in_stream,
                             int size_bits, unsigned char  *out_stream)
 {
