@@ -3458,6 +3458,10 @@ static int hevc_frame_start(HEVCContext *s)
     s->is_decoded        = 0;
     s->first_nal_type    = s->nal_unit_type;
 
+#if HEVC_ENCRYPTION
+    InitC(s->HEVClc->dbs_g);
+    s->HEVClc->prev_pos = 0;
+#endif
     if (s->ps.pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->ps.pps->column_width[0] << s->ps.sps->log2_ctb_size;
     if (s->nuh_layer_id) {
@@ -4258,9 +4262,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     pic_arrays_free(s);
-#if HEVC_ENCRYPTION
-    DeleteCryptoC(s->HEVClc->dbs_g);
-#endif
+
     av_freep(&s->md5_ctx);
 
     for(i=0; i < s->nals_allocated; i++) {
@@ -4320,12 +4322,18 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for (i = 1; i < s->threads_number; i++) {
         HEVCLocalContext *lc = s->HEVClcList[i];
         if (lc) {
+#if HEVC_ENCRYPTION
+    DeleteCryptoC(s->HEVClcList[i]->dbs_g);
+#endif
             av_freep(&s->HEVClcList[i]);
             av_freep(&s->sList[i]);
         }
     }
     if (s->HEVClc == s->HEVClcList[0])
         s->HEVClc = NULL;
+#if HEVC_ENCRYPTION
+    DeleteCryptoC(s->HEVClcList[0]->dbs_g);
+#endif
     av_freep(&s->HEVClcList[0]);
 
     for (i = 0; i < s->nals_allocated; i++)
@@ -4356,6 +4364,11 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->cabac_state = av_malloc(HEVC_CONTEXTS);
     if (!s->cabac_state)
         goto fail;
+#if HEVC_ENCRYPTION
+    s->HEVClc->dbs_g = CreateC();
+    s->HEVClc->prev_pos = 0;
+#endif
+
 #if !ACTIVE_PU_UPSAMPLING
     s->Ref_color_mapped_frame  = av_frame_alloc();
 #endif
@@ -4599,8 +4612,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 
     s->enable_parallel_tiles = 0;
     s->picture_struct = 0;
-    s->prev_pos = 0;
-    s->encrypt_params = 0; //HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS;
+#if HEVC_ENCRYPTION
+    s->encrypt_params =  0; //HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS;
+#endif
     s->eos = 1;
 
 //    if(avctx->active_thread_type & FF_THREAD_SLICE)

@@ -18,7 +18,7 @@ FIND_PATH(CRYPTOPP_INCLUDE_DIR
         PATHS
                 /usr/include/cryptopp
                 /usr/include
-		/opt/local/include
+		/opt/local/include/cryptopp
 )
 
 FIND_LIBRARY(CRYPTOPP_LIBRARIES

@@ -1293,6 +1293,7 @@ typedef struct HEVCLocalContext {
     int ctb_tile_rs;
 #if HEVC_ENCRYPTION
     Crypto_Handle       dbs_g;
+    uint32_t prev_pos;
 #endif
     int ct_depth;
     CodingUnit cu;
@@ -1501,8 +1502,9 @@ typedef struct HEVCContext {
 	//int64_t last_frame_pts;
     int BL_width;
     int BL_height;
+#if HEVC_ENCRYPTION
     uint8_t encrypt_params;
-    uint32_t prev_pos;
+#endif
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,

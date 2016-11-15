@@ -514,6 +514,7 @@ list(APPEND libfilenames
     compat/msvcrt/snprintf.c
 )
 endif()
+message (STATUS "CRYPTOPP_FOUND  = ${CRYPTOPP_FOUND}")
 if(CRYPTOPP_FOUND)
 list(APPEND libfilenames
     libavcodec/crypto.cpp

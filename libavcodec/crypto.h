@@ -8,7 +8,8 @@
 extern "C" {
 #endif
     typedef void* Crypto_Handle;
-    Crypto_Handle InitC();
+    Crypto_Handle CreateC();
+    void InitC(Crypto_Handle hdl);
     void DecryptC(Crypto_Handle hdl, const unsigned char *in_stream, int size_bits, unsigned char  *out_stream);
 #if AESEncryptionStreamMode
     unsigned int ff_get_key (Crypto_Handle *hdl, int nb_bits);
@@ -20,10 +21,16 @@ extern "C" {
 #else
 #include <assert.h>
 typedef void* Crypto_Handle;
-static av_always_inline Crypto_Handle InitC() {
+static av_always_inline Crypto_Handle CreateC() {
     assert(0);
     return 0;
 }
+static av_always_inline void InitC(Crypto_Handle hdl) {
+    assert(0);
+}
+Crypto_Handle ();
+    Crypto_Handle InitC(Crypto_Handle hdl);
+
 
 static av_always_inline void DecryptC(Crypto_Handle hdl, const unsigned char *in_stream,
                             int size_bits, unsigned char  *out_stream)
