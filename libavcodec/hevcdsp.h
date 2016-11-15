@@ -38,7 +38,7 @@ struct SAOParams;
 
 #define MAX_EDGE  4
 #define MAX_EDGE_CR  2
-#define N_SHIFT (20-8)
+#define N_SHIFT (20 - BIT_DEPTH)
 #define I_OFFSET (1 << (N_SHIFT - 1))
 
 
