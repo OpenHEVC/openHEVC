@@ -20,6 +20,8 @@ extern "C" {
 #endif
 #else
 #include <assert.h>
+#include "libavutil/attributes.h"
+
 typedef void* Crypto_Handle;
 static av_always_inline Crypto_Handle CreateC() {
     assert(0);

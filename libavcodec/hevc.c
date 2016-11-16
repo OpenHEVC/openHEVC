@@ -3224,6 +3224,10 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         avpriv_atomic_int_set(&s->wpp_err, 0);
         ff_reset_entries(s->avctx);
     }
+#if HEVC_ENCRYPTION
+    InitC(s->HEVClc->dbs_g);
+    s->HEVClc->prev_pos = 0;
+#endif
     s->data = nal;
     if (s->sh.first_slice_in_pic_flag){
         s->HEVClc->ctb_tile_rs = 0;
@@ -3236,6 +3240,10 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
+#if HEVC_ENCRYPTION
+        InitC(s->sList[i]->HEVClc->dbs_g);
+        s->sList[i]->HEVClc->prev_pos = 0;
+#endif
     }
 
     avpriv_atomic_int_set(&s->wpp_err, 0);
@@ -3458,10 +3466,7 @@ static int hevc_frame_start(HEVCContext *s)
     s->is_decoded        = 0;
     s->first_nal_type    = s->nal_unit_type;
 
-#if HEVC_ENCRYPTION
-    InitC(s->HEVClc->dbs_g);
-    s->HEVClc->prev_pos = 0;
-#endif
+
     if (s->ps.pps->tiles_enabled_flag)
         lc->end_of_tiles_x = s->ps.pps->column_width[0] << s->ps.sps->log2_ctb_size;
     if (s->nuh_layer_id) {
@@ -4424,6 +4429,10 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->sList[i] = av_mallocz(sizeof(HEVCContext));
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
+#if HEVC_ENCRYPTION
+        s->HEVClcList[i]->dbs_g = CreateC();
+        s->HEVClcList[i]->prev_pos = 0;
+#endif
         s->sList[i]->HEVClc = s->HEVClcList[i];
     }
 
@@ -4515,9 +4524,10 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->field_order          = s0->field_order;
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
-
+#if HEVC_ENCRYPTION
+    s->encrypt_params       = s0->encrypt_params;
+#endif
     s->poc_id2              = s0->poc_id2;
-
     if (s->ps.sps != s0->ps.sps)
         ret = set_sps(s, s0->ps.sps, src->pix_fmt);
 
@@ -4617,7 +4627,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->enable_parallel_tiles = 0;
     s->picture_struct = 0;
 #if HEVC_ENCRYPTION
-    s->encrypt_params = 0; //HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS;
+    s->encrypt_params = HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS; //HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS;
 #endif
     s->eos = 1;
 

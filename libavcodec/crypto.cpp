@@ -1,5 +1,6 @@
-#if HEVC_ENCRYPTION
 #include <libavcodec/crypto.h>
+
+#if HEVC_ENCRYPTION
 #include <cryptopp/aes.h>
 #include <cryptopp/modes.h>
 #include <cryptopp/osrng.h>
@@ -13,6 +14,18 @@ typedef struct AESDecoder {
     byte key[CryptoPP::AES::DEFAULT_KEYLENGTH], iv[CryptoPP::AES::BLOCKSIZE], out_stream_counter[CryptoPP::AES::BLOCKSIZE], counter[CryptoPP::AES::BLOCKSIZE];
     int couter_avail, counter_index, counter_index_pos;
 } AESDecoder;
+
+AESDecoder* Create(void);
+void  Init(AESDecoder* AESdecoder);
+void DeleteCrypto(AESDecoder * AESdecoder);
+void Decrypt(AESDecoder *AESdecoder, const unsigned char *in_stream, int size_bits, unsigned char  *out_stream);
+void Incr_counter (unsigned char *counter);
+#if AESEncryptionStreamMode
+void Decrypt_counter(AESDecoder * AESdecoder);
+#endif
+#if AESEncryptionStreamMode
+unsigned int get_key (AESDecoder * AESdecoder, int nb_bits);
+#endif
 
 AESDecoder* Create() {
 	AESDecoder * AESdecoder = (AESDecoder *)malloc(sizeof(AESDecoder));
