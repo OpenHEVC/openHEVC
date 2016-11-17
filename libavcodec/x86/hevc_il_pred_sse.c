@@ -176,7 +176,9 @@ void oh_upsample_filter_block_luma_h_x2_sse(int16_t *dst, ptrdiff_t dststride, u
 
             x1 = _mm_add_epi16(x1, x2);
             x2 = _mm_add_epi16(x3, x4);
+
             r1 = _mm_add_epi16(x1, x2);
+
             _mm_store_si128((__m128i *) &dst[x], r1);
         }
         src += srcstride;
@@ -597,4 +599,165 @@ void oh_upsample_filter_block_cr_v_x1_5_sse(uint8_t *_dst, ptrdiff_t dststride, 
         dst += dststride;
     }
 }
+
+
+DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_luma_x2_h_sse_16[4][8] )= /*0 , 8 */
+{
+    { 0,  0,  -1,   4,  0,  0,  -1,   4},
+    { 0, 64, -11,  40,  0, 64, -11,  40},
+    { 0,  0,  40, -11,  0,  0,  40, -11},
+    { 0,  0,   4,  -1,  0,  0,   4,  -1}
+};
+
+DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_luma_x2_v_sse_16[5][8] )= /*0 , 8 */
+{
+    {   0,  64,   0,  64,   0,  64,   0,  64},
+    {  -1,   4,  -1,   4,  -1,   4,  -1,   4},
+    { -11,  40, -11,  40, -11,  40, -11,  40},
+    {  40, -11,  40, -11,  40, -11,  40, -11},
+    {   4,  -1,   4,  -1,   4,  -1,   4,  -1}
+};
+
+DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_chroma_x2_h_sse_16[2][8])=
+{
+    { 0, 64, -4, 36, 0, 64, -4, 36},
+    { 0,  0, 36, -4, 0,  0, 36, -4}
+};
+
+DECLARE_ALIGNED(16, static const int16_t, up_sample_filter_chroma_x2_v_sse_16[4][8])=
+{
+    { -2, 10, -2, 10, -2, 10, -2, 10},
+    { 58, -2, 58, -2, 58, -2, 58, -2},
+    { -6, 46, -6, 46, -6, 46, -6, 46},
+    { 28, -4, 28, -4, 28, -4, 28, -4}
+};
+
+void oh_upsample_filter_block_luma_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, uint16_t *_src, ptrdiff_t srcstride,
+            int x_EL, int x_BL, int width, int height, int widthEL,
+            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info){
+    int x, y, ref;
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, r1, r12, c1, c2, c3, c4, x12, x22, x32, x42;
+    //uint16_t  *src       = (uint16_t*) _src - x_BL;
+    uint16_t  *src       = (uint16_t*) _src - x_BL;
+
+    c1 = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_h_sse_16[0]);
+    c2 = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_h_sse_16[1]);
+    c3 = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_h_sse_16[2]);
+    c4 = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_h_sse_16[3]);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x += 8) {
+
+            ref = (x + x_EL) >> 1;
+
+            x1 = _mm_loadu_si128((__m128i *) &src[ref - 3]);
+            x2 = _mm_loadu_si128((__m128i *) &src[ref - 2]);
+            x3 = _mm_loadu_si128((__m128i *) &src[ref - 1]);
+            x4 = _mm_loadu_si128((__m128i *) &src[ref    ]);
+            x5 = _mm_loadu_si128((__m128i *) &src[ref + 1]);
+            x6 = _mm_loadu_si128((__m128i *) &src[ref + 2]);
+            x7 = _mm_loadu_si128((__m128i *) &src[ref + 3]);
+            x8 = _mm_loadu_si128((__m128i *) &src[ref + 4]);
+
+            x1 = _mm_unpacklo_epi16(x1, x1);
+            x2 = _mm_unpacklo_epi16(x2, x2);
+            x3 = _mm_unpacklo_epi16(x3, x3);
+            x4 = _mm_unpacklo_epi16(x4, x4);
+            x5 = _mm_unpacklo_epi16(x5, x5);
+            x6 = _mm_unpacklo_epi16(x6, x6);
+            x7 = _mm_unpacklo_epi16(x7, x7);
+            x8 = _mm_unpacklo_epi16(x8, x8);
+
+            x12 = _mm_unpackhi_epi16(x1, x2);
+            x22 = _mm_unpackhi_epi16(x3, x4);
+            x32 = _mm_unpackhi_epi16(x5, x6);
+            x42 = _mm_unpackhi_epi16(x7, x8);
+
+            x1 = _mm_unpacklo_epi16(x1, x2);
+            x2 = _mm_unpacklo_epi16(x3, x4);
+            x3 = _mm_unpacklo_epi16(x5, x6);
+            x4 = _mm_unpacklo_epi16(x7, x8);
+
+            x22 = _mm_madd_epi16(x22,c2);
+            x32 = _mm_madd_epi16(x32,c3);
+            x12 = _mm_madd_epi16(x12,c1);
+            x42 = _mm_madd_epi16(x42,c4);
+
+            x2 = _mm_madd_epi16(x2,c2);
+            x3 = _mm_madd_epi16(x3,c3);
+            x1 = _mm_madd_epi16(x1,c1);
+            x4 = _mm_madd_epi16(x4,c4);
+
+            x12= _mm_add_epi32(x12, x22);
+            x22= _mm_add_epi32(x32, x42);
+
+            x1 = _mm_add_epi32(x1, x2);
+            x2 = _mm_add_epi32(x3, x4);
+
+            r1  = _mm_add_epi32(x1,  x2 );
+            r12 = _mm_add_epi32(x12, x22);
+
+            r1  = _mm_srli_epi32(r1,  2);
+            r12 = _mm_srli_epi32(r12, 2);
+
+            r1 = _mm_packus_epi32(r1,r12);
+
+            _mm_store_si128((__m128i *) &dst[x], r1);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+void oh_upsample_filter_block_cr_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+            int x_EL, int x_BL, int width, int height, int widthEL,
+            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
+    int x, y;
+    __m128i x1, x2, x3, x4, x12, x22, f1, f2, r1;
+    uint16_t  *src = (uint16_t*) _src - x_BL;
+    ptrdiff_t srcstride = _srcstride;
+
+    f1 = _mm_load_si128((__m128i *) up_sample_filter_chroma_x2_h_sse_16[0]);
+    f2 = _mm_load_si128((__m128i *) up_sample_filter_chroma_x2_h_sse_16[1]);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x += 8) {
+            int e = (x + x_EL) >> 1;
+                x1 = _mm_loadu_si128((__m128i *) &src[e - 1]);
+                x2 = _mm_loadu_si128((__m128i *) &src[e    ]);
+                x3 = _mm_loadu_si128((__m128i *) &src[e + 1]);
+                x4 = _mm_loadu_si128((__m128i *) &src[e + 2]);
+
+                x1 = _mm_unpacklo_epi16(x1, x1);
+                x2 = _mm_unpacklo_epi16(x2, x2);
+                x3 = _mm_unpacklo_epi16(x3, x3);
+                x4 = _mm_unpacklo_epi16(x4, x4);
+
+                x12 = _mm_unpackhi_epi16(x1, x2);
+                x22 = _mm_unpackhi_epi16(x3, x4);
+
+                x1 = _mm_unpacklo_epi16(x1, x2);
+                x2 = _mm_unpacklo_epi16(x3, x4);
+
+                x2 = _mm_madd_epi16(x2,f2);
+                x1 = _mm_madd_epi16(x1,f1);
+
+                x3 = _mm_madd_epi16(x12,f1);
+                x4 = _mm_madd_epi16(x22,f2);
+
+                x1  = _mm_add_epi32(x1, x2);
+                x2 = _mm_add_epi32(x3, x4);
+
+                x1 = _mm_srli_epi32(x1, 2);
+                x2 = _mm_srli_epi32(x2, 2);
+
+                r1 = _mm_packus_epi32(x1,x2);
+
+                _mm_store_si128((__m128i *) &dst[x], r1);
+            }
+            src += srcstride;
+            dst += dststride;
+        }
+}
+
 #endif //HAVE_SSE42
