@@ -67,3 +67,12 @@ av_cold void ff_videodsp_init(VideoDSPContext *ctx, int bpc)
     if (ARCH_X86)
         ff_videodsp_init_x86(ctx, bpc);
 }
+
+av_cold void ff_videodsp_update(VideoDSPContext *ctx)
+{
+    ctx->emulated_edge_up_h     = ff_emulated_edge_up_h_8;
+    ctx->emulated_edge_up_cr_h  = ff_emulated_edge_up_cr_h_8;
+    ctx->emulated_edge_up_cgs_h = ff_emulated_edge_up_cgs_h_8;
+    //ctx->copy_block             = ff_copy_block_8;
+}
+

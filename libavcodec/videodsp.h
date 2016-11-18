@@ -106,6 +106,7 @@ typedef struct VideoDSPContext {
 } VideoDSPContext;
 
 void ff_videodsp_init(VideoDSPContext *ctx, int bpc);
+void ff_videodsp_update(VideoDSPContext *ctx);
 
 /* for internal use only (i.e. called by ff_videodsp_init() */
 void ff_videodsp_init_aarch64(VideoDSPContext *ctx, int bpc);
