@@ -574,6 +574,14 @@ int set_el_parameter(HEVCContext *s) {
             s->sh.Bit_Depth[i][CHANNEL_TYPE_LUMA  ] = getBitDepth(s, CHANNEL_TYPE_LUMA, i);
             s->sh.Bit_Depth[i][CHANNEL_TYPE_CHROMA] = getBitDepth(s, CHANNEL_TYPE_CHROMA, i);
     }
+    if(s->nuh_layer_id){
+        int bl_bit_depth = getBitDepth(s, CHANNEL_TYPE_LUMA, s->nuh_layer_id - 1);
+        int bit_depth = getBitDepth(s, CHANNEL_TYPE_LUMA, s->nuh_layer_id);
+        if(bl_bit_depth == 8 && bit_depth > 8){
+            ff_shvc_dsp_update(&s->hevcdsp,bit_depth);
+            ff_videodsp_update(&s->vdsp);
+        }
+    }
     for(i = 0; i < MAX_NUM_CHANNEL_TYPE; i++) {
       s->up_filter_inf.shift[i]    = s->sh.Bit_Depth[s->nuh_layer_id][i] - s->sh.Bit_Depth[refLayer][i];
       s->up_filter_inf.shift_up[i] = s->sh.Bit_Depth[refLayer][i] - 8;

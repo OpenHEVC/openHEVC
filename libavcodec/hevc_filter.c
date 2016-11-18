@@ -1827,8 +1827,10 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     uint8_t   *tmp1;
 
     AVFrame *bl_frame;
-    int sample_size = s->ps.sps->bit_depth[0] > 8 ? 2 : 1;
 
+    int ref_layer_id = s->ps.vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
+    int sample_size = s->ps.sps->bit_depth[0] > 8 ? 2 : 1;
+    int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
     int el_width  =  s->ps.sps->width  >> 1;
     int el_height =  s->ps.sps->height >> 1;
 
@@ -1852,7 +1854,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
         bl_frame = ((HEVCFrame *)s->BL_frame)->frame;
     }
 
-    bl_stride =  bl_frame->linesize[1] / sample_size;
+    bl_stride =  bl_frame->linesize[1] / bl_sample_size;
 
     if (s->up_filter_inf.idx == SNR) {
         for (cr = 1; cr <= 2; cr++) {
@@ -1880,19 +1882,16 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
         int bl_edge_bottom = bl_y2 == bl_height ? MAX_EDGE_CR : 0;
         int bl_edge_right  = bl_x2 == bl_width  ? MAX_EDGE_CR : 0;
 
-
-        int ref_layer_id = s->ps.vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
-
         bPbH = bl_y2 - bl_y;
         bPbW = bl_x2 - bl_x;
 
         for (cr = 1; cr <= 2; cr++) {
 
-            bl_stride = bl_frame->linesize[cr] / sample_size;
+            bl_stride = bl_frame->linesize[cr] / bl_sample_size;
 
             tmp1 = ((uint8_t *)s->HEVClc->edge_emu_buffer_up_h);
 
-            src =  ((uint8_t *)bl_frame->data[cr]) + (bl_y * bl_stride + bl_x) * sample_size;
+            src =  ((uint8_t *)bl_frame->data[cr]) + (bl_y * bl_stride + bl_x) * bl_sample_size;
 
             if(bl_edge_left || bl_edge_right){
 
