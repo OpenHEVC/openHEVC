@@ -1333,3 +1333,34 @@ int i = 0;
     if (ARCH_ARM)
         ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 }
+
+void ff_shvc_dsp_update(HEVCDSPContext *hevcdsp,int bit_depth)
+{
+#ifdef SVC_EXTENSION
+#define HEVC_DSP_UP2(depth)                                                                        \
+    hevcdsp->upsample_filter_block_luma_h[1] = FUNC(upsample_filter_block_luma_h_x2_8, depth);\
+    hevcdsp->upsample_filter_block_cr_h[1]   = FUNC(upsample_filter_block_cr_h_x2_8, depth);\
+    //        hevcdsp->upsample_filter_block_luma_h[0] = FUNC(upsample_filter_block_luma_h_all_8, depth);\
+        hevcdsp->upsample_filter_block_luma_h[2] = FUNC(upsample_filter_block_luma_h_x1_5_8, depth);\
+        hevcdsp->upsample_filter_block_cr_h[0]   = FUNC(upsample_filter_block_cr_h_all_8, depth);\
+        hevcdsp->upsample_filter_block_cr_h[2]   = FUNC(upsample_filter_block_cr_h_x1_5_8, depth);\
+
+        switch (bit_depth) {
+        case 9:
+            HEVC_DSP_UP2(9);
+            break;
+        case 10:
+            HEVC_DSP_UP2(10);
+            break;
+        case 12:
+            HEVC_DSP_UP2(12);
+            break;
+        case 14:
+            HEVC_DSP_UP2(14);
+            break;
+        default:
+            HEVC_DSP_UP2(8);
+            break;
+        }
+#endif
+}
