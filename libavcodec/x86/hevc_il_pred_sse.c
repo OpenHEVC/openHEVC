@@ -697,8 +697,8 @@ void oh_upsample_filter_block_luma_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride
             r1  = _mm_add_epi32(x1,  x2 );
             r12 = _mm_add_epi32(x12, x22);
 
-            r1  = _mm_srli_epi32(r1,  2);
-            r12 = _mm_srli_epi32(r12, 2);
+            r1  = _mm_srai_epi32(r1,  2);
+            r12 = _mm_srai_epi32(r12, 2);
 
             r1 = _mm_packus_epi32(r1,r12);
 
@@ -748,8 +748,8 @@ void oh_upsample_filter_block_cr_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, 
                 x1  = _mm_add_epi32(x1, x2);
                 x2 = _mm_add_epi32(x3, x4);
 
-                x1 = _mm_srli_epi32(x1, 2);
-                x2 = _mm_srli_epi32(x2, 2);
+                x1 = _mm_srai_epi32(x1, 2);
+                x2 = _mm_srai_epi32(x2, 2);
 
                 r1 = _mm_packus_epi32(x1,x2);
 
@@ -758,6 +758,147 @@ void oh_upsample_filter_block_cr_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, 
             src += srcstride;
             dst += dststride;
         }
+}
+
+void oh_upsample_filter_block_luma_v_x2_sse_16(uint16_t *_dst, ptrdiff_t _dststride, int16_t *_src, ptrdiff_t srcstride,
+            int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
+            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info){
+    int x, y, ret;
+    __m128i x1, x2, x3, x4, x5, x6, x7, x8, x0, c[5], add, ceil;
+    int16_t  *src;
+    _dststride /= sizeof(uint16_t);
+    uint16_t  *dst    = (uint16_t *)_dst + y_EL * _dststride + x_EL;
+    int  shift = 10;
+    add  = _mm_set1_epi32((1 << (shift - 1)));
+    ceil  = _mm_set1_epi16((1 << 10) - 1);
+
+    c[0] = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_v_sse[0]);
+    c[1] = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_v_sse[1]);
+    c[2] = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_v_sse[2]);
+    c[3] = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_v_sse[3]);
+    c[4] = _mm_load_si128((__m128i *) up_sample_filter_luma_x2_v_sse[4]);
+    for (y = 0; y < height; y++) {
+        src  = _src  + (((y_EL+y)>>1) - y_BL)  * srcstride;
+        ret = ((y+y_EL)&0x1)*2;
+        for (x = 0; x < width; x += 8) {
+            x1 = _mm_loadu_si128((__m128i *) &src[x - 3 * srcstride]);
+            x2 = _mm_loadu_si128((__m128i *) &src[x - 2 * srcstride]);
+            x3 = _mm_loadu_si128((__m128i *) &src[x -     srcstride]);
+            x4 = _mm_loadu_si128((__m128i *) &src[x                ]);
+            x5 = _mm_loadu_si128((__m128i *) &src[x +     srcstride]);
+            x6 = _mm_loadu_si128((__m128i *) &src[x + 2 * srcstride]);
+            x7 = _mm_loadu_si128((__m128i *) &src[x + 3 * srcstride]);
+            x8 = _mm_loadu_si128((__m128i *) &src[x + 4 * srcstride]);
+
+            x0 = x1;
+            x1 = _mm_unpacklo_epi16(x0, x2);
+            x2 = _mm_unpackhi_epi16(x0, x2);
+            x0 = x3;
+            x3 = _mm_unpacklo_epi16(x0, x4);
+            x4 = _mm_unpackhi_epi16(x0, x4);
+            x0 = x5;
+            x5 = _mm_unpacklo_epi16(x0, x6);
+            x6 = _mm_unpackhi_epi16(x0, x6);
+            x0 = x7;
+            x7 = _mm_unpacklo_epi16(x0, x8);
+            x8 = _mm_unpackhi_epi16(x0, x8);
+
+            if(!ret) {
+                x3 = _mm_madd_epi16(x3,c[0]);
+                x4 = _mm_madd_epi16(x4,c[0]);
+
+                x1 = x3;
+                x3 = _mm_setzero_si128();
+                x2 =  x4;
+                x4 = x3;
+            } else {
+                x1 = _mm_madd_epi16(x1,c[1]);
+                x3 = _mm_madd_epi16(x3,c[2]);
+                x5 = _mm_madd_epi16(x5,c[3]);
+                x7 = _mm_madd_epi16(x7,c[4]);
+                x2 = _mm_madd_epi16(x2,c[1]);
+                x4 = _mm_madd_epi16(x4,c[2]);
+                x6 = _mm_madd_epi16(x6,c[3]);
+                x8 = _mm_madd_epi16(x8,c[4]);
+
+                x1 = _mm_add_epi32(x1, x3);
+                x3 = _mm_add_epi32(x5, x7);
+                x2 = _mm_add_epi32(x2, x4);
+                x4 = _mm_add_epi32(x6, x8);
+            }
+            x8 = _mm_add_epi32(x1, x3);
+            x7 = _mm_add_epi32(x2, x4);
+            x8 = _mm_add_epi32(x8, add);
+            x7 = _mm_add_epi32(x7, add);
+
+            x8 = _mm_srai_epi32(x8, shift);
+            x7 = _mm_srai_epi32(x7, shift);
+
+            x8 = _mm_packus_epi32(x8, x7);
+            x8 = _mm_min_epi16(x8,ceil);
+
+            _mm_store_si128((__m128i *) &dst[x], x8);
+        }
+        dst += _dststride;
+    }
+}
+
+void oh_upsample_filter_block_cr_v_x2_sse_16(uint16_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
+        int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
+        const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info){
+    int x, y, ret;
+    __m128i x1, x2, x3, x4, x0, c[4], add, ceil;
+    int16_t  *src;
+        dststride /= sizeof(uint16_t);
+    uint16_t  *dst    = (uint16_t *)_dst + y_EL * dststride + x_EL;
+    uint8_t  shift = 10;
+    ceil = _mm_set1_epi16((1 << 10) - 1);
+
+    add  = _mm_set1_epi32((1 << (shift - 1)));
+
+    c[0] = _mm_load_si128((__m128i *) up_sample_filter_chroma_x2_v_sse[0]);
+    c[1] = _mm_load_si128((__m128i *) up_sample_filter_chroma_x2_v_sse[1]);
+    c[2] = _mm_load_si128((__m128i *) up_sample_filter_chroma_x2_v_sse[2]);
+    c[3] = _mm_load_si128((__m128i *) up_sample_filter_chroma_x2_v_sse[3]);
+
+    for (y = 0; y < height; y++) {
+        int refPos16 = ( ((y+y_EL) * up_info->scaleYCr + up_info->addYCr) >> 12)-4;
+        src  = _src  + ((refPos16>>4) - y_BL)  * srcstride;
+        ret = ((y+y_EL)&0x1)*2;
+        for (x = 0; x < width; x += 8) {
+            x1 = _mm_loadu_si128((__m128i *) &src[x -     srcstride]);
+            x2 = _mm_loadu_si128((__m128i *) &src[x                ]);
+            x3 = _mm_loadu_si128((__m128i *) &src[x +     srcstride]);
+            x4 = _mm_loadu_si128((__m128i *) &src[x + 2 * srcstride]);
+
+            x0 = x1;
+            x1 = _mm_unpacklo_epi16(x0, x2);
+            x2 = _mm_unpackhi_epi16(x0, x2);
+            x0 = x3;
+            x3 = _mm_unpacklo_epi16(x0, x4);
+            x4 = _mm_unpackhi_epi16(x0, x4);
+
+            x1 = _mm_madd_epi16(x1,c[ret]);
+            x3 = _mm_madd_epi16(x3,c[ret+1]);
+            x2 = _mm_madd_epi16(x2,c[ret]);
+            x4 = _mm_madd_epi16(x4,c[ret+1]);
+
+            x1 = _mm_add_epi32(x1, x3);
+            x2 = _mm_add_epi32(x2, x4);
+
+            x1 = _mm_add_epi32(x1, add);
+            x2 = _mm_add_epi32(x2, add);
+
+            x1 = _mm_srai_epi32(x1, shift);
+            x2 = _mm_srai_epi32(x2, shift);
+
+            x1 = _mm_packus_epi32(x1, x2);
+            x1 = _mm_min_epi16(x1,ceil);
+
+            _mm_store_si128((__m128i *) &dst[x], x1);
+        }
+        dst += dststride;
+    }
 }
 
 #endif //HAVE_SSE42
