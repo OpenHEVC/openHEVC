@@ -1114,3 +1114,13 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         }
     }
 }
+
+void ff_shvc_dsp_update_x86(HEVCDSPContext *c, const int bit_depth, const int have_CGS)
+{
+    if(!have_CGS){
+        c->upsample_filter_block_luma_h[1] = oh_upsample_filter_block_luma_h_x2_sse;
+        c->upsample_filter_block_cr_h[1]   = oh_upsample_filter_block_cr_h_x2_sse;
+    } else if (have_CGS){
+
+    }
+}

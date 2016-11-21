@@ -1334,17 +1334,26 @@ int i = 0;
         ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 }
 
-void ff_shvc_dsp_update(HEVCDSPContext *hevcdsp,int bit_depth)
+void ff_shvc_dsp_update(HEVCDSPContext *hevcdsp, int bit_depth, int have_CGS)
 {
 #ifdef SVC_EXTENSION
-#define HEVC_DSP_UP2(depth)                                                                        \
+#define HEVC_DSP_UP2(depth)\
+    hevcdsp->map_color_block   = FUNC(map_color_block_8, depth);\
     hevcdsp->upsample_filter_block_luma_h[1] = FUNC(upsample_filter_block_luma_h_x2_8, depth);\
     hevcdsp->upsample_filter_block_cr_h[1]   = FUNC(upsample_filter_block_cr_h_x2_8, depth);\
-    //        hevcdsp->upsample_filter_block_luma_h[0] = FUNC(upsample_filter_block_luma_h_all_8, depth);\
-        hevcdsp->upsample_filter_block_luma_h[2] = FUNC(upsample_filter_block_luma_h_x1_5_8, depth);\
-        hevcdsp->upsample_filter_block_cr_h[0]   = FUNC(upsample_filter_block_cr_h_all_8, depth);\
-        hevcdsp->upsample_filter_block_cr_h[2]   = FUNC(upsample_filter_block_cr_h_x1_5_8, depth);\
+    hevcdsp->upsample_filter_block_luma_h[0] = FUNC(upsample_filter_block_luma_h_all_8, depth);\
+    hevcdsp->upsample_filter_block_cr_h[0]   = FUNC(upsample_filter_block_cr_h_all_8, depth);\
+//    hevcdsp->upsample_filter_block_luma_h[2] = FUNC(upsample_filter_block_luma_h_x1_5_8, depth);\
+//    hevcdsp->upsample_filter_block_cr_h[2]   = FUNC(upsample_filter_block_cr_h_x1_5_8, depth);\
 
+#define HEVC_DSP_UP2_CGS(depth)\
+    hevcdsp->map_color_block   = FUNC(map_color_block_8, depth);\
+//    hevcdsp->upsample_filter_block_luma_h[1] = FUNC(upsample_filter_block_luma_h_x2_8, depth);\
+//    hevcdsp->upsample_filter_block_cr_h[1]   = FUNC(upsample_filter_block_cr_h_x2_8, depth);\
+//    hevcdsp->upsample_filter_block_luma_h[0] = FUNC(upsample_filter_block_luma_h_all_8, depth);\
+//    hevcdsp->upsample_filter_block_cr_h[0]   = FUNC(upsample_filter_block_cr_h_all_8, depth);\
+
+    if(!have_CGS){
         switch (bit_depth) {
         case 9:
             HEVC_DSP_UP2(9);
@@ -1362,5 +1371,27 @@ void ff_shvc_dsp_update(HEVCDSPContext *hevcdsp,int bit_depth)
             HEVC_DSP_UP2(8);
             break;
         }
+    } else{
+        switch (bit_depth) {
+        case 9:
+            HEVC_DSP_UP2_CGS(9);
+            break;
+        case 10:
+            HEVC_DSP_UP2_CGS(10);
+            break;
+        case 12:
+            HEVC_DSP_UP2_CGS(12);
+            break;
+        case 14:
+            HEVC_DSP_UP2_CGS(14);
+            break;
+        default:
+            HEVC_DSP_UP2_CGS(8);
+            break;
+        }
+    }
+
+    if (ARCH_X86)
+        ff_shvc_dsp_update_x86( hevcdsp,  bit_depth,  have_CGS);
 #endif
 }

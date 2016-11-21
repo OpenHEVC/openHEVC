@@ -577,9 +577,10 @@ int set_el_parameter(HEVCContext *s) {
     if(s->nuh_layer_id){
         int bl_bit_depth = getBitDepth(s, CHANNEL_TYPE_LUMA, s->nuh_layer_id - 1);
         int bit_depth = getBitDepth(s, CHANNEL_TYPE_LUMA, s->nuh_layer_id);
+        int have_CGS = s->ps.pps->colour_mapping_enabled_flag;
         if(bl_bit_depth == 8 && bit_depth > 8){
-            ff_shvc_dsp_update(&s->hevcdsp,bit_depth);
-            ff_videodsp_update(&s->vdsp);
+            ff_shvc_dsp_update(&s->hevcdsp, bit_depth, have_CGS);
+            ff_videodsp_update(&s->vdsp, have_CGS);
         }
     }
     for(i = 0; i < MAX_NUM_CHANNEL_TYPE; i++) {
