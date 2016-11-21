@@ -1616,7 +1616,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
                                  padd_right,padd_bottom,padd_top,padd_left);
 
       if(bl_edge_left || bl_edge_right)
-          s->vdsp.emulated_edge_up_h((uint8_t *)dst_y,(uint8_t *)dst_y,MAX_EDGE_BUFFER_STRIDE,
+          s->vdsp.emulated_edge_up_h((uint8_t *)dst_y,(uint8_t *)dst_y, MAX_EDGE_BUFFER_STRIDE,
                                             bPbW, bPbH,
                                             padd_left, padd_right);
 
@@ -1689,9 +1689,9 @@ static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y
         for (cr = 1; cr <= 2; cr++) {
 
           if(cr == 1)
-            src = (uint8_t*)s->HEVClc->color_mapping_cgs_u + (MAX_EDGE * MAX_EDGE_BUFFER_STRIDE + MAX_EDGE) * 2 * bl_sample_size ;
+            src = (uint8_t*)s->HEVClc->color_mapping_cgs_u + (MAX_EDGE * MAX_EDGE_BUFFER_STRIDE + MAX_EDGE) * 2 * sample_size ;
           else
-            src = (uint8_t*)s->HEVClc->color_mapping_cgs_v + (MAX_EDGE * MAX_EDGE_BUFFER_STRIDE + MAX_EDGE) * 2 * bl_sample_size ;
+            src = (uint8_t*)s->HEVClc->color_mapping_cgs_v + (MAX_EDGE * MAX_EDGE_BUFFER_STRIDE + MAX_EDGE) * 2 * sample_size ;
 
           if(bl_edge_left || bl_edge_right)
               s->vdsp.emulated_edge_up_cr_h((uint8_t *)src,(uint8_t *)src,
