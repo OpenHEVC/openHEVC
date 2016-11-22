@@ -945,8 +945,11 @@ DECLARE_ALIGNED(16, static const uint8_t, masks2_16[3][16] )= {
 void oh_upsample_filter_block_luma_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststride, uint16_t *_src, ptrdiff_t srcstride,
             int x_EL, int x_BL, int width, int height, int widthEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info) {
+
     int x, y, ref, ret;
+
     __m128i x1, x2, x3, x4, x12, x22, x32, x42, c[12], c2[12], mask;
+
     uint16_t  *src       = (uint16_t*) _src - x_BL;
 
     c[0]  = _mm_load_si128((__m128i *) up_sample_filter_luma_x1_5_h_sse_16[0]);
@@ -983,8 +986,6 @@ void oh_upsample_filter_block_luma_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststri
         for (x = 0; x < width; x += 8 ) {
             ref = (((x + x_EL) << 1) / 3);
             ret = (( x + x_EL) %  3);
-
-            //x0 = _mm_setzero_si128();
 
             x1 = _mm_loadu_si128((__m128i *) &src[ref - 3]);
             x2 = _mm_loadu_si128((__m128i *) &src[ref - 1]);
@@ -1041,8 +1042,11 @@ void oh_upsample_filter_block_luma_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststri
 void oh_upsample_filter_block_cr_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t srcstride,
             int x_EL, int x_BL, int width, int height, int widthEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info){
+
     int x, y, ref, ret;
+
     __m128i x1, x2, x12, x22, r1, r2, c[6],c2[6], mask;
+
     uint16_t  *src       = (uint16_t*) _src - x_BL;
 
     c[0]  = _mm_load_si128((__m128i *) up_sample_filter_chroma_x1_5_h_sse_16[0]);
@@ -1180,8 +1184,6 @@ void oh_upsample_filter_block_luma_v_x1_5_sse_16(uint16_t *_dst, ptrdiff_t dstst
             x8 = _mm_packus_epi32(x8, x7);
             x8 = _mm_min_epi16(x8,ceil);
 
-//            x8 = _mm_packus_epi16(x8, x8);
-
             _mm_store_si128((__m128i *) &dst[x], x8);
         }
         dst += dststride;
@@ -1193,11 +1195,17 @@ void oh_upsample_filter_block_cr_v_x1_5_sse_16(uint16_t *_dst, ptrdiff_t dststri
         const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info){
 
     int x, y, ret;
+
     __m128i x1, x2, x3, x4, x0, c[6], add, ceil;
+
     int16_t  *src;
+
     dststride /= sizeof(uint16_t);
+
     uint16_t  *dst    = (uint16_t *)_dst + y_EL * dststride + x_EL;
+
     uint8_t  shift = 10;
+
     add  = _mm_set1_epi32((1 << (shift - 1)));
     ceil = _mm_set1_epi16((1 << 10) - 1);
 
