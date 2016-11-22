@@ -2182,9 +2182,9 @@ static void FUNC(upsample_filter_block_luma_v_x1_5)( uint8_t *_dst, ptrdiff_t _d
     int leftStartL = Enhscal->left_offset;
     int y, i, j;
     const int8_t  *   coeff;
+    _dststride /= sizeof(pixel);
     pixel *dst_tmp, *dst    = (pixel *)_dst + x_EL + y_EL * _dststride;
     int16_t *   src_tmp;
-    _dststride /= sizeof(pixel);
     for( j = 0; j < block_h; j++ )	{
     	y        =   av_clip_c(y_EL+j, topStartL, bottomEndL-1);
         coeff    = up_sample_filter_luma_x1_5[(y - topStartL)%3];
