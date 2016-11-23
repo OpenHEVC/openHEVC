@@ -1564,6 +1564,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
       int bl_x0  = (( (x0  - s->ps.sps->pic_conf_win.left_offset) * s->up_filter_inf.scaleXLum - s->up_filter_inf.addXLum) >> 12) >> 4;
       int bl_y0 =  (( (y0  - s->ps.sps->pic_conf_win.top_offset ) * s->up_filter_inf.scaleYLum - s->up_filter_inf.addYLum) >> 12) >> 4;
 
+
       int bl_y = av_clip_c(bl_y0 - MAX_EDGE, 0, bl_height);
       int bl_x = av_clip_c(bl_x0 - MAX_EDGE, 0, bl_width );
 
@@ -1604,9 +1605,28 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
       int cm_width  = bPbW;
       int cm_height = bPbH;
 
-      src_y += (bl_x + bl_y * bl_stride) * bl_sample_size;
-      src_u += ((bl_x_cr) + (bl_y_cr) * bl_stride_c) * bl_sample_size;
-      src_v += ((bl_x_cr) + (bl_y_cr) * bl_stride_c) * bl_sample_size;
+      int bl_x_cm = bl_x;
+      int bl_y_cm = bl_y;
+
+      int bl_x_cr_cm = bl_x_cr;
+      int bl_y_cr_cm = bl_y_cr;
+
+      //FIXME not sure about this (color mapping is based on pair bl_x and bl_y coordinates)
+      if(bl_x%2 ){
+          bl_x_cm -= 1;
+          cm_width += 1;
+          bl_x_cr_cm = bl_x_cm >> 1;
+      }
+
+      if(bl_y%2){
+          bl_y_cm   -= 1;
+          cm_height += 1;
+          bl_y_cr_cm = bl_y_cm >> 1;
+      }
+
+      src_y += (bl_x_cm + bl_y_cm * bl_stride) * bl_sample_size;
+      src_u += ((bl_x_cr_cm) + (bl_y_cr_cm) * bl_stride_c) * bl_sample_size;
+      src_v += ((bl_x_cr_cm) + (bl_y_cr_cm) * bl_stride_c) * bl_sample_size;
 
       s->hevcdsp.map_color_block(&s->ps.pps->pc3DAsymLUT, src_y, src_u, src_v,
                                  dst_y, dst_u, dst_v,
@@ -1614,6 +1634,13 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
                                  MAX_EDGE_BUFFER_STRIDE, MAX_EDGE_BUFFER_STRIDE,
                                  cm_width, cm_height,
                                  padd_right,padd_bottom,padd_top,padd_left);
+      if(bl_x%2 ){
+          dst_y += sample_size;
+      }
+
+      if(bl_y%2){
+         dst_y += MAX_EDGE_BUFFER_STRIDE * sample_size;
+      }
 
       if(bl_edge_left || bl_edge_right)
           s->vdsp.emulated_edge_up_h((uint8_t *)dst_y,(uint8_t *)dst_y, MAX_EDGE_BUFFER_STRIDE,
@@ -1692,6 +1719,15 @@ static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y
             src = (uint8_t*)s->HEVClc->color_mapping_cgs_u + (MAX_EDGE * MAX_EDGE_BUFFER_STRIDE + MAX_EDGE) * 2 * sample_size ;
           else
             src = (uint8_t*)s->HEVClc->color_mapping_cgs_v + (MAX_EDGE * MAX_EDGE_BUFFER_STRIDE + MAX_EDGE) * 2 * sample_size ;
+
+          //FIXME not sure about this (color mapping is based on pair bl_x and bl_y coordinates)
+          if((bl_x>>1)%2 && bl_x%2){
+//              src += sample_size;
+          }
+
+          if(((bl_y>>1)%2 && bl_y%2)|| (!(bl_y%2) && !bl_edge_top)){
+              src += MAX_EDGE_BUFFER_STRIDE * sample_size;
+          }
 
           if(bl_edge_left || bl_edge_right)
               s->vdsp.emulated_edge_up_cr_h((uint8_t *)src,(uint8_t *)src,
