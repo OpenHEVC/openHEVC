@@ -117,6 +117,7 @@ static const uint8_t zigzag_scan8x8_cavlc[64+1] = {
 static void release_unused_pictures(H264Context *h, int remove_current)
 {
     int i;
+
     /* release non reference frames */
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         if (h->DPB[i].f->buf[0] && !h->DPB[i].reference &&
@@ -1066,7 +1067,7 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
         h->ps.sps = (const SPS*)h->ps.sps_ref->data;
 
         if (h->mb_width  != h->ps.sps->mb_width ||
-            h->mb_height != h->ps.sps->mb_height * (2 - h->ps.sps->frame_mbs_only_flag) ||
+            h->mb_height != h->ps.sps->mb_height ||
             h->cur_bit_depth_luma    != h->ps.sps->bit_depth_luma ||
             h->cur_chroma_format_idc != h->ps.sps->chroma_format_idc
         )
@@ -1080,11 +1081,11 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
 
     must_reinit = (h->context_initialized &&
                     (   16*sps->mb_width != h->avctx->coded_width
-                     || 16*sps->mb_height * (2 - sps->frame_mbs_only_flag) != h->avctx->coded_height
+                     || 16*sps->mb_height != h->avctx->coded_height
                      || h->cur_bit_depth_luma    != sps->bit_depth_luma
                      || h->cur_chroma_format_idc != sps->chroma_format_idc
                      || h->mb_width  != sps->mb_width
-                     || h->mb_height != sps->mb_height * (2 - sps->frame_mbs_only_flag)
+                     || h->mb_height != sps->mb_height
                     ));
     if (h->avctx->pix_fmt == AV_PIX_FMT_NONE
         || (non_j_pixfmt(h->avctx->pix_fmt) != non_j_pixfmt(get_pixel_format(h, 0))))
@@ -1099,7 +1100,7 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
         h->avctx->refs    = sps->ref_frame_count;
 
         h->mb_width  = sps->mb_width;
-        h->mb_height = sps->mb_height * (2 - sps->frame_mbs_only_flag);
+        h->mb_height = sps->mb_height;
         h->mb_num    = h->mb_width * h->mb_height;
         h->mb_stride = h->mb_width + 1;
 

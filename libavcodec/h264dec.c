@@ -378,7 +378,6 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     ff_h264_free_tables(h);
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
-
         ff_h264_unref_picture(h, &h->DPB[i]);
         av_frame_free(&h->DPB[i].f);
     }
@@ -393,6 +392,7 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     ff_h264_ps_uninit(&h->ps);
 
     ff_h2645_packet_uninit(&h->pkt);
+
     ff_h264_unref_picture(h, &h->cur_pic);
     av_frame_free(&h->cur_pic.f);
     ff_h264_unref_picture(h, &h->last_pic_for_ec);

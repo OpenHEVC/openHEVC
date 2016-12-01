@@ -131,7 +131,6 @@ int64_t av_rescale(int64_t a, int64_t b, int64_t c) av_const;
 
 /**
  * Rescale a 64-bit integer with specified rounding.
- * A simple a*b/c isn't possible as it can overflow.
  *
  * The operation is mathematically equivalent to `a * b / c`, but writing that
  * directly can overflow, and does not support different rounding methods.

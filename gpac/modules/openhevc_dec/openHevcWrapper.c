@@ -522,7 +522,7 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
     openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
     openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
     openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
-    openHevcFrameInfo->nTimeStamp              = picture->pkt_pts;
+    openHevcFrameInfo->nTimeStamp              = picture->pts;
 }
 
 void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
@@ -615,7 +615,7 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
     openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
     openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
     openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
-    openHevcFrameInfo->nTimeStamp              = picture->pkt_pts;
+    openHevcFrameInfo->nTimeStamp              = picture->pts;
 }
 
 int libOpenHevcGetOutput(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame *openHevcFrame)

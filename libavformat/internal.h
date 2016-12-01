@@ -130,6 +130,16 @@ struct AVFormatInternal {
      * Timestamp of the end of the shortest stream.
      */
     int64_t shortest_end;
+
+    /**
+     * Whether or not avformat_init_output has already been called
+     */
+    int initialized;
+
+    /**
+     * Whether or not avformat_init_output fully initialized streams
+     */
+    int streams_initialized;
 };
 
 struct AVStreamInternal {
@@ -647,14 +657,13 @@ int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf
 
 /**
  * Find the next packet in the interleaving queue for the given stream.
- * The packet is not removed from the interleaving queue, but only
- * a pointer to it is returned.
+ * The pkt parameter is filled in with the queued packet, including
+ * references to the data (which the caller is not allowed to keep or
+ * modify).
  *
- * @param ts_offset the ts difference between packet in the que and the muxer.
- *
- * @return a pointer to the next packet, or NULL if no packet is queued
- *         for this stream.
+ * @return 0 if a packet was found, a negative value if no packet was found
  */
-const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream, int64_t *ts_offset);
+int ff_interleaved_peek(AVFormatContext *s, int stream,
+                        AVPacket *pkt, int add_offset);
 
 #endif /* AVFORMAT_INTERNAL_H */

@@ -34,7 +34,6 @@ extern "C" {
 
 #define OPENHEVC_HAS_AVC_BASE
 
-#define OPENHEVC_HAS_AVC_BASE
 
 typedef void* OpenHevc_Handle;
 
@@ -87,7 +86,7 @@ OpenHevc_Handle libOpenShvcInit(int nb_pthreads, int thread_type);
 OpenHevc_Handle libOpenH264Init(int nb_pthreads, int thread_type);
 int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle);
 int  libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int nal_len, int64_t pts);
-//int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], const int stop_dec, const int stop_dec2);
+int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], const int stop_dec, const int stop_dec2);
 int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff, const unsigned char *buff2, int nal_len, int nal_len2, int64_t pts, int64_t pts2);
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc);
