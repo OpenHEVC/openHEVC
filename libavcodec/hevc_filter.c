@@ -1893,6 +1893,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     bl_stride =  bl_frame->linesize[1] / bl_sample_size;
 
     if (s->up_filter_inf.idx == SNR) {
+        el_stride/=sample_size;
         for (cr = 1; cr <= 2; cr++) {
             s->vdsp.copy_block((uint8_t *)bl_frame->data[cr] + (y0 * bl_stride + x0) * sample_size ,
                       (uint8_t *)ref0->frame->data[cr] + (y0 * el_stride + x0) * sample_size ,
