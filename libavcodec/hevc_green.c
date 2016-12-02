@@ -11,17 +11,17 @@ void green_update_filter_chroma(HEVCDSPContext *c, int type);
 
 static int a_level_old[13] = {
 		0,
-		1,
+		1, // 2,    // High
 		65,
-		273,
+		546,  // Inter
 		585,
 		2698,
 		1365,
 		1397,
 		3510,
-		3822,
+		3822, // Middle
 		4030,
-		4031,
+		4031, // 4094, // Low
 		4095,
 };
 

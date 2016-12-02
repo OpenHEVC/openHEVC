@@ -161,7 +161,7 @@ void init_main(int argc, char *argv[]) {
     frame_rate        = 0;
     display 		  = 0;
 #if CONFIG_GREEN
-    green_param = strdup("07411");	//< Green args init
+    green_param = strdup("08411");	//< Green args init
     green_verbose = 0;				//< Green verbose flag
 #endif
 
