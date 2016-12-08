@@ -525,7 +525,8 @@ enum hevc_crypto_features {
     HEVC_CRYPTO_MV_SIGNS = (1 << 1),
     HEVC_CRYPTO_TRANSF_COEFFS = (1 << 2),
     HEVC_CRYPTO_TRANSF_COEFF_SIGNS = (1 << 3),
-    HEVC_CRYPTO_ON = (1 << 4) - 1,
+	HEVC_CRYPTO_INTRA_PRED_MODE = (1 << 4),
+    HEVC_CRYPTO_ON = (1 << 5) - 1,
 };
 
 
@@ -1388,6 +1389,10 @@ typedef struct HEVCContext {
     uint8_t *tab_ct_depth;
     // PU
     uint8_t *tab_ipm;
+
+#if HEVC_ENCRYPTION
+    uint8_t *tab_ipm_encry;
+#endif
 
     uint8_t *cbf_luma; // cbf_luma of colocated TU
     uint8_t *is_pcm;

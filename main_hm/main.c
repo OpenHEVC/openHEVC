@@ -210,7 +210,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
     }
 
-    libOpenHevcSetDebugMode(openHevcHandle, 0);
+    libOpenHevcSetDebugMode(openHevcHandle, 0);//OHEVC_LOG_INFO
     libOpenHevcStartDecoder(openHevcHandle);
 
     openHevcFrameCpy.pvY = NULL;

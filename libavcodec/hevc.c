@@ -75,6 +75,10 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->tab_ct_depth);
 
     av_freep(&s->tab_ipm);
+
+#if HEVC_ENCRYPTION
+    av_freep(&s-> tab_ipm_encry);
+#endif
     av_freep(&s->cbf_luma);
     av_freep(&s->is_pcm);
 
@@ -147,6 +151,13 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
     s->tab_ipm  = av_mallocz(min_pu_size);
+
+#if HEVC_ENCRYPTION
+    s->tab_ipm_encry = av_mallocz(min_pu_size);
+    if (!s->tab_ipm_encry)
+      goto fail;
+#endif
+
     s->is_pcm   = av_malloc_array(sps->min_pu_width + 1, sps->min_pu_height + 1);
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
@@ -2333,7 +2344,14 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int intra_pred_mode;
     int candidate[3];
     int i, j;
-
+#if HEVC_ENCRYPTION
+   if(s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE) {
+     cand_up   = (lc->ctb_up_flag || y0b) ?
+	                       s->tab_ipm_encry[(y_pu - 1) * min_pu_width + x_pu] : INTRA_DC;
+	 cand_left = (lc->ctb_left_flag || x0b) ?
+	                       s->tab_ipm_encry[y_pu * min_pu_width + x_pu - 1]   : INTRA_DC;
+   }
+#endif
     // intra_pred_mode prediction does not cross vertical CTB boundaries
     if ((y0 - 1) < y_ctb)
         cand_up = INTRA_DC;
@@ -2379,16 +2397,50 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     /* write the intra prediction units into the mv array */
     if (!size_in_pus)
         size_in_pus = 1;
-    for (i = 0; i < size_in_pus; i++) {
-        memset(&s->tab_ipm[(y_pu + i) * min_pu_width + x_pu],
+
+#if HEVC_ENCRYPTION
+   if(s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE) {
+	 if(intra_pred_mode != INTRA_ANGULAR_26 && intra_pred_mode != INTRA_ANGULAR_10) {/* for correct chroma Inra prediction mode */
+
+       int Sets[3][17] = { { 0,  1,  2,  3,  4,  5, 15, 16, 17, 18, 19, 20, 21, 31, 32, 33, 34},/* 17 */
+		                   { 22, 23, 24, 25, 27, 28, 29, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1},  /* 9 */
+		                   {  6,  7,  8,  9, 11, 12, 13, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1} /* 9 */
+		                   };
+       uint8_t nb_elems[3] = {17, 8, 8};
+       uint8_t keybits, Dir, Index=0;
+	   for (i = 0; i < size_in_pus; i++)
+	     memset(&s->tab_ipm_encry[(y_pu + i) * min_pu_width + x_pu], intra_pred_mode, size_in_pus);
+	     keybits = ff_get_key (&s->HEVClc->dbs_g, 5);
+	     Dir = SCAN_DIAG;
+	     if  (intra_pred_mode >5 && intra_pred_mode < 15 )
+	       Dir = SCAN_VERT;
+	     if( intra_pred_mode > 21 && intra_pred_mode < 31 )
+	       Dir = SCAN_HORIZ;
+	     Index = 0;
+	     for(int i = 0; i < nb_elems[Dir]; i++) {
+	       if(intra_pred_mode == Sets[Dir][i]) {
+	         Index = i;
+	         break;
+	       }
+	     }
+	     keybits = keybits % nb_elems[Dir];
+	     keybits = ( Index >= keybits ? (Index-keybits) : (nb_elems[Dir] - (keybits-Index)));
+	     intra_pred_mode = Sets[Dir][keybits];
+	 } else
+	   for (i = 0; i < size_in_pus; i++)
+	     memset( &s->tab_ipm_encry[(y_pu + i) * min_pu_width + x_pu],
+	        	 	     intra_pred_mode, size_in_pus);
+   }
+#endif
+   for (i = 0; i < size_in_pus; i++) {
+     memset(&s->tab_ipm[(y_pu + i) * min_pu_width + x_pu],
                intra_pred_mode, size_in_pus);
 
-        for (j = 0; j < size_in_pus; j++) {
+     for (j = 0; j < size_in_pus; j++) {
             tab_mvf[(y_pu + j) * min_pu_width + x_pu + i].pred_flag = PF_INTRA;
-        }
-    }
-
-    return intra_pred_mode;
+     }
+   }
+   return intra_pred_mode;
 }
 
 static av_always_inline void set_ct_depth(HEVCContext *s, int x0, int y0,
@@ -2493,6 +2545,14 @@ static void intra_prediction_unit_default_value(HEVCContext *s,
         size_in_pus = 1;
     for (j = 0; j < size_in_pus; j++)
         memset(&s->tab_ipm[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
+
+#if HEVC_ENCRYPTION
+   if(s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE) {
+    for (j = 0; j < size_in_pus; j++)
+            memset(&s->tab_ipm_encry[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
+   }
+#endif
+
     if (lc->cu.pred_mode == MODE_INTRA)
         for (j = 0; j < size_in_pus; j++)
             for (k = 0; k < size_in_pus; k++)
@@ -4635,7 +4695,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->enable_parallel_tiles = 0;
     s->picture_struct = 0;
 #if HEVC_ENCRYPTION
-    s->encrypt_params = HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS; //HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS;
+    s->encrypt_params = HEVC_CRYPTO_INTRA_PRED_MODE; // HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS | HEVC_CRYPTO_INTRA_PRED_MODE;
 #endif
     s->eos = 1;
 
