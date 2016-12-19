@@ -8,39 +8,6 @@
 #include "hevcdsp.h"
 #include "hevcdsp_green.h"
 
-typedef struct luma_config{
-    void (*put_hevc_qpel[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                    int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                        int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_uni_w[10][2][2])(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                          int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
-
-    void (*put_hevc_qpel_bi[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_qpel_bi_w[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int16_t *src2, ptrdiff_t src2stride,
-                                         int height, int denom, int wx0, int wx1,
-                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width);
-} luma_config;
-
-typedef struct chroma_config{
-    void (*put_hevc_epel[10][2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                    int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_epel_uni[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                        int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_epel_uni_w[10][2][2])(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                          int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_epel_bi[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
-                                       int height, intptr_t mx, intptr_t my, int width);
-    void (*put_hevc_epel_bi_w[10][2][2])(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int16_t *src2, ptrdiff_t src2stride,
-                                         int height, int denom, int wx0, int ox0, int wx1,
-                                         int ox1, intptr_t mx, intptr_t my, int width);
-} chroma_config;
-
 static luma_config luma_configs[N_LUMA];
 static chroma_config chroma_configs[N_CHROMA];
 
@@ -192,8 +159,7 @@ void green_dsp_init(HEVCDSPContext *hevcdsp)
     init_green_filter_chroma2(&chroma_configs[CHROMA2]);
     init_green_filter_chroma3(&chroma_configs[CHROMA3]);
 
-    printf("Current Coefs config:\n");
-    printf("%s\n", green_coeffs_text[GREEN_FILTER_TYPE]);
+    printf("Current Coefs config: %s\n", green_coeffs_text[GREEN_FILTER_TYPE]);
     printf("Legacy config %d:%d\n", LUMA_TAPS, CHROMA_TAPS);
 }
 
