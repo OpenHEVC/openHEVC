@@ -40,7 +40,7 @@
     vdup.i8  d0, \coeffs
     lsr      \coeffs, #8
     vdup.i8  d1, \coeffs
-.endm    
+.endm
 
 .macro epel_filter2_16b out=q12
     vmull.u8 q3, d16, d0
@@ -69,15 +69,12 @@
     vqshrn.s32  d7, q4, #6
 .endm
 
-
 .macro epel_filter2_32b_4
     vmull.s16 q3, d24, d4[0] //q12
     vmull.s16 q7, d26, d4[1] // q13
     vadd.s32 q7, q3
     vqshrn.s32  d6, q7, #6
 .endm
-
-
 
 function ff_hevc_put_epel2_h_neon_8, export=1
         push   {r4-r8}
@@ -303,10 +300,10 @@ function ff_hevc_put_epel2_hv_neon_8, export=1
 endfunc
 
 epel_coeffs2:
-       .byte 54, 10
-       .byte 54, 10
-       .byte 54, 10
-       .byte 54, 10
-       .byte 10, 54
-       .byte 10, 54
-       .byte 10, 54
+       .byte 57,  7
+       .byte 49, 15
+       .byte 41, 23
+       .byte 32, 32
+       .byte 23, 41
+       .byte 15, 49
+       .byte  7, 57

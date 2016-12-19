@@ -56,46 +56,49 @@
 
 
 
-// 14 cycles
-// -8*a + 58*b + 14*c
+// 15 cycles
+// -6*a + 58*b + 12*c
 // q0      q1      q2 
 // d0,1    d2,3    d4,5
 // QPEL32
 .macro qpel_filter3_1_32b
 	vmov.i16   d16, #58
-	vmov.i16   d17, #14
-	vshll.s16  q11, d0, #3    // 8 * a0
-	vshll.s16  q12, d1, #3    // 8 * a1
+	vmov.i16   d17, #12
+	vmov.i16   d18, #6
+	vmull.s16  q11, d0, d18   // 6 * a0
+	vmull.s16  q12, d1, d18   // 6 * a1
 	vmull.s16   q9, d2, d16   // 58 * b0
 	vmull.s16  q10, d3, d16   // 58 * b1
-	vmull.s16  q13, d4, d17   // 14 * c0
-	vmull.s16  q14, d5, d17   // 14 * c1
-	vadd.s32    q9, q13       // 58*b0 + 14*c0
-	vadd.s32   q10, q14       // 58*b1 + 14*c1
-	vsub.s32   q9, q11       // 58*b0 + 14*c0 - 8*a0
-	vsub.s32   q10, q12        // 58*b1 + 14*c1 - 8*a1
+	vmull.s16  q13, d4, d17   // 12 * c0
+	vmull.s16  q14, d5, d17   // 12 * c1
+	vadd.s32    q9, q13       // 58*b0 + 12*c0
+	vadd.s32   q10, q14       // 58*b1 + 12*c1
+	vsub.s32   q9, q11        // 58*b0 + 12*c0 - 6*a0
+	vsub.s32   q10, q12       // 58*b1 + 12*c1 - 6*a1
 	vqshrn.s32  d16, q9, #6
 	vqshrn.s32  d17, q10, #6
 .endm
 
 
-// 13 cycles
-// -8*a + 40*b + 32*c
+// 15 cycless
+// -7*a + 42*b + 29*c
 // q0      q1      q2 
 // d0,1    d2,3    d4,5
 // HPEL32
 .macro qpel_filter3_2_32b
-	vmov.i16   d16, #40
-	vshll.s16  q11, d4, #5    // 32 * c0
-	vshll.s16  q12, d5, #5    // 32 * c1
-	vmull.s16   q9, d2, d16   // 40 * b0
-	vmull.s16  q10, d3, d16   // 40 * b1
-    vshll.s16  q13, d0, #3    // 8 * a0
-    vshll.s16  q14, d1, #3    // 8 * a1
-	vadd.s32    q9, q11       // 40*b0 + 32*c0
-	vadd.s32   q10, q12       // 40*b1 + 32*c1
-	vsub.s32   q9, q13       // 40*b0 + 32*c0 - 8*a0
-	vsub.s32   q10, q14        // 40*b0 + 32*c0 - 8*a1
+	vmov.i16   d16, #42
+	vmov.i16   d17, #29
+	vmov.i16   d18, #7
+	vmull.s16  q11, d0, d18   // 6 * a0
+	vmull.s16  q12, d1, d18   // 6 * a1
+	vmull.s16   q9, d2, d16   // 58 * b0
+	vmull.s16  q10, d3, d16   // 58 * b1
+	vmull.s16  q13, d4, d17   // 12 * c0
+	vmull.s16  q14, d5, d17   // 12 * c1
+	vadd.s32    q9, q13       // 58*b0 + 12*c0
+	vadd.s32   q10, q14       // 58*b1 + 12*c1
+	vsub.s32   q9, q11        // 58*b0 + 12*c0 - 6*a0
+	vsub.s32   q10, q12       // 58*b1 + 12*c1 - 6*a1
 	vqshrn.s32  d16, q9, #6
 	vqshrn.s32  d17, q10, #6
 .endm
@@ -104,72 +107,75 @@
 	vmov.s16 q8, q1
 .endm
 
-// 14 cycles
-// -4*a + 20*b + 48*c
+// 15 cycles
+// -6*a + 12*b + 58*c
 // q0      q1      q2 
 // d0,1    d2,3    d4,5
 // QPEL32 ret
 .macro qpel_filter3_3_32b
-	vmov.i16   d16, #20
-	vmov.i16   d17, #48
-	vshll.s16  q11, d0, #2    // 4 * a0
-	vshll.s16  q12, d1, #2    // 4 * a1
-	vmull.s16   q9, d2, d16   // 20 * b0
-	vmull.s16  q10, d3, d16   // 20 * b1
-	vmull.s16  q13, d4, d17   // 48 * c0
-	vmull.s16  q14, d5, d17   // 48 * c1
-	vadd.s32    q9, q13       // 20*b0 + 48*c0
-	vadd.s32   q10, q14       // 20*b1 + 48*c1
-	vsub.s32   q9, q11       // 20*b0 + 48*c0 - 4*a0
-	vsub.s32   q10, q12        // 20*b1 + 48*c1 - 4*a1
+	vmov.i16   d16, #58
+	vmov.i16   d17, #6
+	vmov.i16   d18, #12
+	vmull.s16  q11, d0, d18   // 6 * a0
+	vmull.s16  q12, d1, d18   // 6 * a1
+	vmull.s16   q9, d2, d16   // 58 * b0
+	vmull.s16  q10, d3, d16   // 58 * b1
+	vmull.s16  q13, d4, d17   // 12 * c0
+	vmull.s16  q14, d5, d17   // 12 * c1
+	vadd.s32    q9, q11       // 58*b0 + 12*c0
+	vadd.s32   q10, q12       // 58*b1 + 12*c1
+	vsub.s32   q9, q13        // 58*b0 + 12*c0 - 6*a0
+	vsub.s32   q10, q14       // 58*b1 + 12*c1 - 6*a1
 	vqshrn.s32  d16, q9, #6
 	vqshrn.s32  d17, q10, #6
 .endm
 
-//      -8*a  +  58*b +  14*c
+// -6*a + 58*b + 12*c
 // input  d16      d17     d18
 // QPEL
-// 7 cycles
+// 8 cycles
 .macro qpel_filter3_1 out=q7
 	vmov.u8   d24, #58
-	vmov.u8   d25, #14
-	vshll.u8  q13, d16, #3     // 8*a
-	vmull.u8   \out, d17, d24    // 58*b
-	vmull.u8  q15, d18, d25    // 14*c
-	vadd.u16  \out, q15    // 58*b + 14*c
-	vsub.s16  \out, q13    // 58*b + 14*c - 8*a
+	vmov.u8   d25, #12
+	vmov.u8   d26, #6
+	vmull.u8  q13, d16, d26    // 6*a
+	vmull.u8 \out, d17, d24    // 58*b
+	vmull.u8  q15, d18, d25    // 12*c
+	vadd.u16 \out, q15    // 58*b + 12*c
+	vsub.s16 \out, q13    // 58*b + 12*c - 6*a
 .endm
 
 
-//      -8*a  + 40*b +  32*c  d e f g
+// -7*a + 42*b + 29*c
 // input  d16    d17     d18
 // HPEL
-// 6 cycles
+// 8 cycles
 .macro qpel_filter3_2 out=q7
-	vmov.u8   d24, #40
-	vshll.u8  q13, d18, #5     // 32*c
-	vmull.u8   \out, d17, d24    // 40*b
-    vshll.u8  q15, d16, #3     // 8*a
-	vadd.u16  \out, q13    // 40*b + 32*c
-	vsub.s16  \out, q15    // 40*b + 32*c - 8*a
+	vmov.u8   d24, #42
+	vmov.u8   d25, #29
+	vmov.u8   d26, #7
+	vmull.u8  q13, d16, d26    // 7*a
+	vmull.u8 \out, d17, d24    // 42*b
+	vmull.u8  q15, d18, d25    // 29*c
+	vadd.u16 \out, q15    // 42*b + 29*c
+	vsub.s16 \out, q13    // 42*b + 29*c - 7*a
 .endm
 
 
-//      -4*a  +  20*b +  48*c 
+// -6*a + 12*b + 58*c
 // input  d16      d17     d18
 // QPEL ret
-// 7 cycles
+// 8 cycles
 .macro qpel_filter3_3 out=q7
-	vmov.u8   d24, #20
-	vmov.u8   d25, #48
-	vshll.u8  q13, d16, #2     // 4*a
-	vmull.u8   \out, d17, d24    // 20*b
-	vmull.u8  q15, d18, d25    // 48*c
-	vadd.u16  \out, q15    // 20*b + 48*c
-	vsub.s16  \out, q13    // 20*b + 48*c - 4*a
+	vmov.u8   d24, #58
+	vmov.u8   d25, #12
+	vmov.u8   d26, #6
+	vmull.u8  q13, d18, d26    // 6*c
+	vmull.u8 \out, d17, d24    // 58*b
+	vmull.u8  q15, d16, d25    // 12*a
+	vadd.u16 \out, q15    // 12*b + 58*c
+	vsub.s16 \out, q13    // 12*b + 58*c - 6*a
 .endm
-
-
 
 .macro  hevc_put_qpel3_vX_neon_8 filter
         push   {r4, r5, r6, r7}
