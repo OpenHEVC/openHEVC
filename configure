@@ -73,7 +73,6 @@ Help options:
   --list-bsfs              show all available bitstream filters
   --list-indevs            show all available input devices
   --list-outdevs           show all available output devices
-  --list-filters           show all available filters
 
 Standard options:
   --logfile=FILE           log tests and output to FILE [config.log]
@@ -93,13 +92,6 @@ Standard options:
                            use rpath when linking programs [USE WITH CARE]
   --install-name-dir=DIR   Darwin directory name for installed targets
 
-Licensing options:
-  --enable-gpl             allow use of GPL code, the resulting libs
-                           and binaries will be under GPL [no]
-  --enable-version3        upgrade (L)GPL to version 3 [no]
-  --enable-nonfree         allow use of nonfree code, the resulting libs
-                           and binaries will be unredistributable [no]
-
 Configuration options:
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
@@ -117,13 +109,6 @@ Program options:
 
 OpenHEVC options:
   --openhevc-only          only build openhevc
-
-Documentation options:
-  --disable-doc            do not build documentation
-  --disable-htmlpages      do not build HTML documentation pages
-  --disable-manpages       do not build man documentation pages
-  --disable-podpages       do not build POD documentation pages
-  --disable-txtpages       do not build text documentation pages
 
 Component options:
   --disable-avdevice       disable libavdevice build
@@ -182,9 +167,6 @@ Individual component options:
   --disable-outdev=NAME    disable output device NAME
   --disable-outdevs        disable output devices
   --disable-devices        disable all devices
-  --enable-filter=NAME     enable filter NAME
-  --disable-filter=NAME    disable filter NAME
-  --disable-filters        disable all filters
 
 External library support:
 
@@ -201,10 +183,7 @@ External library support:
   Also note that the following help text describes the purpose of the libraries
   themselves, not all their features will necessarily be usable by FFmpeg.
 
-  --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
-  --enable-chromaprint     enable audio fingerprinting with chromaprint [no]
-  --enable-frei0r          enable frei0r video filtering [no]
   --enable-gcrypt          enable gcrypt, needed for rtmp(t)e support
                            if openssl, librtmp or gmp is not used [no]
   --enable-gmp             enable gmp, needed for rtmp(t)e support
@@ -212,83 +191,17 @@ External library support:
   --enable-gnutls          enable gnutls, needed for https support
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
-  --enable-jni             enable JNI support [no]
-  --enable-ladspa          enable LADSPA audio filtering [no]
-  --enable-libass          enable libass subtitles rendering,
-                           needed for subtitles and ass filter [no]
-  --enable-libbluray       enable BluRay reading using libbluray [no]
-  --enable-libbs2b         enable bs2b DSP library [no]
-  --enable-libcaca         enable textual display using libcaca [no]
-  --enable-libcelt         enable CELT decoding via libcelt [no]
-  --enable-libcdio         enable audio CD grabbing with libcdio [no]
-  --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
-                           and libraw1394 [no]
-  --enable-libebur128      enable libebur128 for EBU R128 measurement,
-                           needed for loudnorm filter [no]
-  --enable-libfaac         enable AAC encoding via libfaac [no]
-  --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
-  --enable-libflite        enable flite (voice synthesis) support via libflite [no]
-  --enable-libfontconfig   enable libfontconfig, useful for drawtext filter [no]
-  --enable-libfreetype     enable libfreetype, needed for drawtext filter [no]
-  --enable-libfribidi      enable libfribidi, improves drawtext filter [no]
-  --enable-libgme          enable Game Music Emu via libgme [no]
-  --enable-libgsm          enable GSM de/encoding via libgsm [no]
-  --enable-libiec61883     enable iec61883 via libiec61883 [no]
-  --enable-libilbc         enable iLBC de/encoding via libilbc [no]
-  --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
-  --enable-libmodplug      enable ModPlug via libmodplug [no]
-  --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
-  --enable-libnut          enable NUT (de)muxing via libnut,
-                           native (de)muxer exists [no]
-  --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
-  --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
-  --enable-libopencv       enable video filtering via libopencv [no]
-  --enable-libopenh264     enable H.264 encoding via OpenH264 [no]
-  --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
-  --enable-libopenmpt      enable decoding tracked files via libopenmpt [no]
-  --enable-libopus         enable Opus de/encoding via libopus [no]
-  --enable-libpulse        enable Pulseaudio input via libpulse [no]
-  --enable-librubberband   enable rubberband needed for rubberband filter [no]
-  --enable-librtmp         enable RTMP[E] support via librtmp [no]
-  --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
-  --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
-  --enable-libsmbclient    enable Samba protocol via libsmbclient [no]
-  --enable-libsnappy       enable Snappy compression, needed for hap encoding [no]
-  --enable-libsoxr         enable Include libsoxr resampling [no]
-  --enable-libspeex        enable Speex de/encoding via libspeex [no]
-  --enable-libssh          enable SFTP protocol via libssh [no]
-  --enable-libtesseract    enable Tesseract, needed for ocr filter [no]
-  --enable-libtheora       enable Theora encoding via libtheora [no]
-  --enable-libtwolame      enable MP2 encoding via libtwolame [no]
-  --enable-libv4l2         enable libv4l2/v4l-utils [no]
-  --enable-libvidstab      enable video stabilization using vid.stab [no]
-  --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
-  --enable-libvorbis       enable Vorbis en/decoding via libvorbis,
-                           native implementation exists [no]
-  --enable-libvpx          enable VP8 and VP9 de/encoding via libvpx [no]
-  --enable-libwavpack      enable wavpack encoding via libwavpack [no]
-  --enable-libwebp         enable WebP encoding via libwebp [no]
-  --enable-libx264         enable H.264 encoding via x264 [no]
-  --enable-libx265         enable HEVC encoding via x265 [no]
-  --enable-libxavs         enable AVS encoding via xavs [no]
+
   --enable-libxcb          enable X11 grabbing using XCB [autodetect]
   --enable-libxcb-shm      enable X11 grabbing shm communication [autodetect]
   --enable-libxcb-xfixes   enable X11 grabbing mouse rendering [autodetect]
   --enable-libxcb-shape    enable X11 grabbing shape rendering [autodetect]
-  --enable-libxvid         enable Xvid encoding via xvidcore,
-                           native MPEG-4/Xvid encoder exists [no]
-  --enable-libzimg         enable z.lib, needed for zscale filter [no]
-  --enable-libzmq          enable message passing via libzmq [no]
-  --enable-libzvbi         enable teletext support via libzvbi [no]
   --disable-lzma           disable lzma [autodetect]
-  --enable-decklink        enable Blackmagic DeckLink I/O support [no]
-  --enable-mediacodec      enable Android MediaCodec support [no]
-  --enable-netcdf          enable NetCDF, needed for sofalizer filter [no]
-  --enable-openal          enable OpenAL 1.1 capture support [no]
-  --enable-opencl          enable OpenCL code
+
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl, needed for https support
                            if gnutls is not used [no]
+
   --disable-schannel       disable SChannel SSP, needed for TLS support on
                            Windows if openssl and gnutls are not used [autodetect]
   --disable-sdl            disable sdl [autodetect]
@@ -300,16 +213,6 @@ External library support:
 
   The following libraries provide various hardware acceleration features:
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
-  --enable-cuda            enable dynamically linked Nvidia CUDA code [no]
-  --enable-cuvid           enable Nvidia CUVID support [autodetect]
-  --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
-  --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
-  --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
-  --enable-libnpp          enable Nvidia Performance Primitives-based code [no]
-  --enable-mmal            enable Broadcom Multi-Media Abstraction Layer (Raspberry Pi) via MMAL [no]
-  --disable-nvenc          disable Nvidia video encoding code [autodetect]
-  --enable-omx             enable OpenMAX IL code [no]
-  --enable-omx-rpi         enable OpenMAX IL code for Raspberry Pi [no]
   --disable-vaapi          disable Video Acceleration API (mainly Unix/Intel) code [autodetect]
   --disable-vda            disable Apple Video Decode Acceleration code [autodetect]
   --disable-vdpau          disable Nvidia Video Decode and Presentation API for Unix code [autodetect]
@@ -380,6 +283,9 @@ Advanced options (experts only):
   --sws-max-filter-size=N  the max filter size swscale uses [$sws_max_filter_size_default]
 
 Optimization options (experts only):
+
+  Please note that we may not support some of the following optimizations
+
   --disable-asm            disable all assembly optimizations
   --disable-altivec        disable AltiVec optimizations
   --disable-vsx            disable VSX optimizations
@@ -433,14 +339,6 @@ Developer options (useful when working on FFmpeg itself):
                            used only for debugging purposes)
   --enable-xmm-clobber-test check XMM registers for clobbering (Win64-only;
                            should be used only for debugging purposes)
-  --enable-random          randomly enable/disable components
-  --disable-random
-  --enable-random=LIST     randomly enable/disable specific components or
-  --disable-random=LIST    component groups. LIST is a comma-separated list
-                           of NAME[:PROB] entries where NAME is a component
-                           (group) and PROB the probability associated with
-                           NAME (default 0.5).
-  --random-seed=VALUE      seed value for --enable/disable-random
   --disable-valgrind-backtrace do not print a backtrace under Valgrind
                            (only applies to --disable-optimizations builds)
 
