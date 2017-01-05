@@ -528,9 +528,11 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 };
 
 #if COM16_C806_EMT
-#ifndef MAX
-#define max(a,b) (a>=b?a:b)
-#endif
+
+//#ifndef MAX
+//#define max(a,b) (a>=b?a:b)
+//#endif
+
 int g_aucConvertTobit(int size)
 {
 	int inc, c_value;
@@ -546,7 +548,9 @@ int g_aucConvertTobit(int size)
 	}
 	return g_aucConvertToBit[size];
 }
+
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
+
 #endif
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
@@ -1898,7 +1902,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #if COM16_C806_EMT
         } else if ( s->HEVClc->cu.emt_cu_flag ) {
             enum IntraPredMode ucMode;
-            int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? max(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
+            int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
             const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
             //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
             const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
@@ -1918,7 +1922,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, TRANSFORM_MATRIX_SHIFT, nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
         } else if (s->ps.sps->use_intra_emt== 1 || s->ps.sps->use_inter_emt == 1){
             enum IntraPredMode ucMode;
-            int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? max(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
+            int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
             const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
             //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
             const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
