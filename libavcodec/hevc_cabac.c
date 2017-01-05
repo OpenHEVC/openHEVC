@@ -27,10 +27,6 @@
 #include "cabac_functions.h"
 #include "hevc.h"
 
-#if COM16_C806_EMT
-#include "avfft.h"
-#endif
-
 #define CABAC_MAX_BIN 31
 
 /**

@@ -128,6 +128,26 @@
                    (s)->nal_unit_type == NAL_BLA_N_LP)
 #define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
 
+#if COM16_C806_EMT
+enum EMT_DCTTransformType {
+    DCT_II = 0,
+    DCT_III,
+    DCT_I,
+    DST_I, // subset 1
+    DST_VII, // subset 0, 1 et 2
+    DCT_VIII, // subset 0
+    DCT_V, // subset 2
+    NUM_TRANS_TYPE,
+    DCT2_HEVC,
+    DCT2_EMT,
+};
+
+enum TransformDirection {
+  TRANSFORM_FORWARD              = 0,
+  TRANSFORM_INVERSE              = 1,
+  TRANSFORM_NUMBER_OF_DIRECTIONS = 2
+};
+#endif
 
 enum ScalabilityType
 {
