@@ -48,6 +48,8 @@
 #define EMT_SIGNUM_THR			 2
 #define INTER_MODE_IDX		   255
 #define MAX_TU_SIZE				32
+
+#define EMT_TRANSFORM_MATRIX_SHIFT 6
 // Integer transform matrix precision
 #define COM16_C806_TRANS_PREC	 2
 #endif

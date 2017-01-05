@@ -1883,7 +1883,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         } else if ( s->HEVClc->cu.emt_cu_flag ) {
             enum IntraPredMode ucMode;
             int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
-            const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
+            //const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
             //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
             const unsigned int nLog2SizeMinus2 	= log2_trafo_size - 2;
             int intraMode 						=  0;
@@ -1899,11 +1899,11 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
             int tu_emt_Idx 						=  c_idx != 0 ? DCT2_EMT : (s->HEVClc->tu.emt_tu_idx);
 
-            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, TRANSFORM_MATRIX_SHIFT, nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
+            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, /*TRANSFORM_MATRIX_SHIFT,*/ nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
         } else if (s->ps.sps->use_intra_emt== 1 || s->ps.sps->use_inter_emt == 1){
             enum IntraPredMode ucMode;
             int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
-            const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
+            //const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
             //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
             const unsigned int nLog2SizeMinus2 	= log2_trafo_size - 2;
             int intraMode = 0;
@@ -1920,7 +1920,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             //int intraMode 						=  s->HEVClc->tu.intra_pred_mode;
             int tu_emt_Idx 						=  DCT2_EMT;
             //printf("tu_emt_Idx = %d\n",s->HEVClc->tu.emt_tu_idx);
-            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, TRANSFORM_MATRIX_SHIFT, nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
+            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, /*TRANSFORM_MATRIX_SHIFT,*/ nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
 #endif
             } else {
                 if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
