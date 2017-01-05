@@ -2066,14 +2066,10 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         decode_vui(gb, avctx, apply_defdispwin, sps);
 
 #if COM16_C806_EMT
-    // intra
     sps->use_intra_emt = get_bits1(gb);
-    print_cabac(" use_intra_emt ",sps.use_intra_emt);
-    printf("%d \n",sps->use_intra_emt);
-    // inter
+    print_cabac(" use_intra_emt ",sps->use_intra_emt);
     sps->use_inter_emt = get_bits1(gb);
-    print_cabac(" use_inter_emt ",sps.use_inter_emt);
-    printf("%d \n",sps->use_inter_emt);
+    print_cabac(" use_inter_emt ",sps->use_inter_emt);
 #endif
 
     sps_extension_flag = get_bits1(gb);
