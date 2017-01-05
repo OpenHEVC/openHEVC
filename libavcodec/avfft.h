@@ -31,6 +31,7 @@
  *
  * @{
  */
+#include "config.h"
 
 typedef float FFTSample;
 
@@ -100,6 +101,8 @@ enum DCTTransformType {
 	DCT_VIII, // subset 0
     DCT_V, // subset 2
     NUM_TRANS_TYPE,
+    DCT2_HEVC,
+    DCT2_EMT,
 #else
     DCT_II = 0,
     DCT_III,

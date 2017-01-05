@@ -1850,24 +1850,24 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #endif
     }
 
-    #if COM16_C806_EMT
-        if ( (!transform_skip_flag) && (c_idx == 0) )
+#if COM16_C806_EMT
+    if ( (!transform_skip_flag) && (c_idx == 0) )
+    {
+        if ( (s->HEVClc->cu.emt_cu_flag) && (s->HEVClc->cu.pred_mode == MODE_INTRA ))
         {
-        	if ( (s->HEVClc->cu.emt_cu_flag) && (s->HEVClc->cu.pred_mode == MODE_INTRA ))
-        	{
-        		if ( uiNumSig > EMT_SIGNUM_THR )
-        		{
-    			s->HEVClc->tu.emt_tu_idx = ff_hevc_emt_tu_idx_decode(s, log2_cb_size);
-        		}else{
-        			s->HEVClc->tu.emt_tu_idx = 0 ;
-        		}
-        	}
-        	if ((s->HEVClc->cu.emt_cu_flag) && (s->HEVClc->cu.pred_mode == MODE_INTER))
-        	{
-    		s->HEVClc->tu.emt_tu_idx = ff_hevc_emt_tu_idx_decode(s, log2_cb_size);
-        	}
+            if ( uiNumSig > EMT_SIGNUM_THR )
+            {
+                s->HEVClc->tu.emt_tu_idx = ff_hevc_emt_tu_idx_decode(s, log2_cb_size);
+            }else{
+                s->HEVClc->tu.emt_tu_idx = 0 ;
+            }
         }
-    #endif
+        if ((s->HEVClc->cu.emt_cu_flag) && (s->HEVClc->cu.pred_mode == MODE_INTER))
+        {
+            s->HEVClc->tu.emt_tu_idx = ff_hevc_emt_tu_idx_decode(s, log2_cb_size);
+        }
+    }
+#endif
 
     if (lc->cu.cu_transquant_bypass_flag) {
         if (explicit_rdpcm_flag || (s->ps.sps->implicit_rdpcm_enabled_flag &&
@@ -1896,53 +1896,69 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
 #if COM16_C806_EMT
-		}else{
-			if( s->HEVClc->cu.emt_cu_flag == 1)
-			{
-				enum IntraPredMode ucMode;
-				int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? max(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
-				const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
-				int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx]);
-				const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
+        } else if ( s->HEVClc->cu.emt_cu_flag ) {
+            enum IntraPredMode ucMode;
+            int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? max(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
+            const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
+            //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
+            const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
+            int intraMode 						=  0;
 
-				if (s->HEVClc->cu.pred_mode == MODE_INTRA)
-				{
-					ucMode = c_idx ? s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
-				}
-				else{
-					ucMode = INTER_MODE_IDX ;
-				}
-
-				int intraMode 						= s->HEVClc->tu.intra_pred_mode;
-				int tu_emt_Idx 						= s->HEVClc->tu.emt_tu_idx;
-				s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, TRANSFORM_MATRIX_SHIFT, nLog2SizeMinus2, maxLog2TrDynamicRange, bitDepthEMT, ucMode, intraMode, tu_emt_Idx);
-#endif
-        } else
-#if COM16_C806_EMT
-        {
-#endif
-        	if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
-            s->hevcdsp.idct_4x4_luma(coeffs);
-        } else {
-            int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
-            if (max_xy == 0)
-                s->hevcdsp.idct_dc[log2_trafo_size-2](coeffs);
-            else {
-                int col_limit = last_significant_coeff_x + last_significant_coeff_y + 4;
-                if (max_xy < 4)
-                    col_limit = FFMIN(4, col_limit);
-                else if (max_xy < 8)
-                    col_limit = FFMIN(8, col_limit);
-                else if (max_xy < 12)
-                    col_limit = FFMIN(24, col_limit);
-                s->hevcdsp.idct[log2_trafo_size-2](coeffs, col_limit);
+            if (s->HEVClc->cu.pred_mode == MODE_INTRA)
+            {
+                ucMode = c_idx != 0 ? s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
+                intraMode 						= c_idx != 0 ?  s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
             }
-#if COM16_C806_EMT
-        }
-        }
+            else{
+                ucMode = INTER_MODE_IDX ;
+            }
+
+            int tu_emt_Idx 						=  c_idx != 0 ? DCT2_EMT : (s->HEVClc->tu.emt_tu_idx);
+
+            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, TRANSFORM_MATRIX_SHIFT, nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
+        } else if (s->ps.sps->use_intra_emt== 1 || s->ps.sps->use_inter_emt == 1){
+            enum IntraPredMode ucMode;
+            int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? max(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
+            const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
+            //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
+            const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
+            int intraMode = 0;
+
+            if (s->HEVClc->cu.pred_mode == MODE_INTRA)
+            {
+                ucMode = c_idx!=0 ? s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
+                intraMode 						= c_idx!=0 ?  s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
+            }
+            else{
+                ucMode = INTER_MODE_IDX ;
+            }
+
+            //int intraMode 						=  s->HEVClc->tu.intra_pred_mode;
+            int tu_emt_Idx 						=  DCT2_EMT;
+            //printf("tu_emt_Idx = %d\n",s->HEVClc->tu.emt_tu_idx);
+            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, TRANSFORM_MATRIX_SHIFT, nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
 #endif
-      }
-  }
+            } else {
+                if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
+                    s->hevcdsp.idct_4x4_luma(coeffs);
+                } else {
+                    int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
+                    if (max_xy == 0){
+                        s->hevcdsp.idct_dc[log2_trafo_size-2](coeffs);
+
+                    } else {
+                        int col_limit = last_significant_coeff_x + last_significant_coeff_y + 4;
+                        if (max_xy < 4)
+                            col_limit = FFMIN(4, col_limit);
+                        else if (max_xy < 8)
+                            col_limit = FFMIN(8, col_limit);
+                        else if (max_xy < 12)
+                            col_limit = FFMIN(24, col_limit);
+                        s->hevcdsp.idct[log2_trafo_size-2](coeffs, col_limit);
+                    }
+            }
+            }
+    }
     if (lc->tu.cross_pf) {
         int16_t *coeffs_y = lc->tu.coeffs[0];
 

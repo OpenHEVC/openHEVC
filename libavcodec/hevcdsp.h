@@ -64,7 +64,7 @@ typedef struct HEVCDSPContext {
                             ptrdiff_t stride_src, struct SAOParams *sao, int width,
                             int height, int c_idx);
 #if COM16_C806_EMT
-    void (*idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, int TRANSFORM_MATRIX_SHIFT, int nLog2SizeMinus2, int maxLog2TrDynamicRange, int bitDepth, int ucMode, int intra_pred_mode, int emt_tu_idx);
+    void (*idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, int TRANSFORM_MATRIX_SHIFT, int nLog2SizeMinus2, int maxLog2TrDynamicRange, /*int bitDepth,*/ int ucMode, int intra_pred_mode, int emt_tu_idx);
 #endif
 
     void (*sao_edge_restore[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);

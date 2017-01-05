@@ -355,7 +355,7 @@ void fastInverseDCT2_B64(int16_t *coeff, int16_t *block, int shift, int line, in
   int rnd_factor = ( 1<<(shift-1) );
   const int uiTrSize = 64;
   const int16_t *iT = NULL;
-  assert(0);
+  //av_assert2(0);
 
   int j, k;
   int E[32],O[32];
@@ -1076,7 +1076,7 @@ int c = 4;
 for ( int i=0; i<4; i++ )
 	{
 	short *iT = NULL;
-	const double s = sqrt((double)c) * ( 64 << COM16_C806_TRANS_PREC );
+    const double s = sqrt((double)c) * ( 64 << COM16_C806_TRANS_PREC );
 	const double PI = 3.14159265358979323846;
 
 	switch(i)
@@ -1094,9 +1094,9 @@ for ( int i=0; i<4; i++ )
 		  double w0, w1, v;
 
 		  // DCT-II
-		  w0 = k==0 ? sqrt(0.5) : 1;
-		  v = cos(PI*(n+0.5)*k/c ) * w0 * sqrt(2.0/c);
-		  iT[(DCT_II)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
+          w0 = k==0 ? sqrt(0.5) : 1;
+          v = cos(PI*(n+0.5)*k/c ) * w0 * sqrt(2.0/c);
+          iT[(DCT_II)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
 
 		  // DCT-V
 		  w0 = ( k==0 ) ? sqrt(0.5) : 1.0;
