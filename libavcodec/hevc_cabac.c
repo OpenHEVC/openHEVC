@@ -529,26 +529,6 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 
 #if COM16_C806_EMT
 
-//#ifndef MAX
-//#define max(a,b) (a>=b?a:b)
-//#endif
-
-int g_aucConvertTobit(int size)
-{
-	int inc, c_value;
-	int g_aucConvertToBit[MAX_CU_SIZE+1];
-
-	memset(g_aucConvertToBit, -1, sizeof(g_aucConvertToBit));
-	c_value = 0 ;
-
-	for ( inc = 4 ; inc <= MAX_CU_SIZE ; inc*=2 )
-	{
-		g_aucConvertToBit[inc] = c_value ;
-		c_value++ ;
-	}
-	return g_aucConvertToBit[size];
-}
-
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
 
 #endif
@@ -1905,7 +1885,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
             const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
             //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
-            const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
+            const unsigned int nLog2SizeMinus2 	= log2_trafo_size - 2;
             int intraMode 						=  0;
 
             if (s->HEVClc->cu.pred_mode == MODE_INTRA)
@@ -1925,7 +1905,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
             const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
             //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
-            const unsigned int nLog2SizeMinus2 	= g_aucConvertTobit(1<<log2_trafo_size);
+            const unsigned int nLog2SizeMinus2 	= log2_trafo_size - 2;
             int intraMode = 0;
 
             if (s->HEVClc->cu.pred_mode == MODE_INTRA)
