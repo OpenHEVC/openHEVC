@@ -160,43 +160,53 @@ extern const int8_t ff_hevc_qpel_filters[3][16];
 
 #if COM16_C806_EMT
 // ******************************************** Mode intra et SubSet ********************************************
-extern const int emt_Tr_Set_H[35];
-extern const int emt_Tr_Set_V[35];
-extern const int g_aiTrSubSetIntra[3][2];
-extern const int g_aiTrSubSetInter[2];
+//  int emt_Tr_Set_H[35];
+//  int emt_Tr_Set_V[35];
+//  int g_aiTrSubSetIntra[3][2];
+//  int g_aiTrSubSetInter[2];
+  extern const int emt_Tr_Set_V[35];
+  extern const int emt_Tr_Set_H[35];
+
+  extern const int g_aiTrSubSetIntra[3][2];
+  extern const int g_aiTrSubSetInter[2];
 // ************************************************* Initialisation du tableau fastInvTrans *************************************************
 typedef void InvTrans(int16_t*, int16_t*, int, int, int, int, int, int);
 // ************************************************* Initialisation des transformées *************************************************
-extern int16_t g_aiTr4 [8][ 4][ 4];
-extern int16_t g_aiTr8 [8][ 8][ 8];
-extern int16_t g_aiTr16[8][16][16];
-extern int16_t g_aiTr32[8][32][32];
+  extern int16_t g_aiTr4 [8][ 4][ 4];
+  extern int16_t g_aiTr8 [8][ 8][ 8];
+  extern int16_t g_aiTr16[8][16][16];
+  extern int16_t g_aiTr32[8][32][32];
+
+//  extern int16_t g_aiT4 [8][ 4][ 4];
+//  extern int16_t g_aiT8 [8][ 8][ 8];
+//  extern int16_t g_aiT16[8][16][16];
+//  extern int16_t g_aiT32[8][32][32];
 // ****************************************************************** DCT_II ******************************************************************
-void fastInverseDCT2_B4(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT2_B8(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT2_B16(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT2_B32(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT2_B64(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-// ****************************************************************** DCT_V ******************************************************************
-void fastInverseDCT5_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT5_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT5_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT5_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-// ****************************************************************** DCT_VIII ******************************************************************
-void fastInverseDCT8_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT8_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT8_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDCT8_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-// ****************************************************************** DST_I ******************************************************************
-void fastInverseDST1_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDST1_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDST1_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDST1_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-// ****************************************************************** DST_VII ******************************************************************
-void fastInverseDST7_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDST7_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDST7_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-void fastInverseDST7_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT2_B4(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT2_B8(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT2_B16(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT2_B32(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT2_B64(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//// ****************************************************************** DCT_V ******************************************************************
+//void fastInverseDCT5_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT5_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT5_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT5_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//// ****************************************************************** DCT_VIII ******************************************************************
+//void fastInverseDCT8_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT8_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT8_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDCT8_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//// ****************************************************************** DST_I ******************************************************************
+//void fastInverseDST1_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDST1_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDST1_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDST1_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//// ****************************************************************** DST_VII ******************************************************************
+//void fastInverseDST7_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDST7_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDST7_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
+//void fastInverseDST7_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
 // *********************************************************************************************************************************************
 #endif
 
