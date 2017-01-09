@@ -531,47 +531,23 @@ static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
 
 #undef CMP
 
-////////////////////////////////////////////////////////////////////////////////
-// EMT -> STAGE
-////////////////////////////////////////////////////////////////////////////////
 #if COM16_C806_EMT
-static void FUNC(idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size,/* int TRANSFORM_MATRIX_SHIFT,*/ int nLog2SizeMinus2, int maxLog2TrDynamicRange, /*int bitDepth,*/ int ucMode, int intra_pred_mode, int emt_tu_idx)
+static void FUNC(idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, int nLog2SizeMinus2, int maxLog2TrDynamicRange, int emt_tu_idx_h,int emt_tu_idx_v, int z0_h,int z0_v)
 {
-    int size               = (1 << log2_trafo_size) ;
-    const int shift_1st    = EMT_TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC;
-    const int shift_2nd    = (EMT_TRANSFORM_MATRIX_SHIFT + maxLog2TrDynamicRange - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    int tr_size          = (1 << log2_trafo_size) ;
+    const int shift_v    = EMT_TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC;
+    const int shift_h    = (EMT_TRANSFORM_MATRIX_SHIFT + maxLog2TrDynamicRange - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+
     const int clipMinimum  = -(1 << maxLog2TrDynamicRange);
     const int clipMaximum  =  (1 << maxLog2TrDynamicRange) - 1;
-    int bZeroOut           = ( ucMode == INTER_MODE_IDX ? 1 : 0 );
 
     int16_t tmp[ MAX_TU_SIZE * MAX_TU_SIZE ];
 
-    int  nTrIdxHor = DCT_II;
-    int  nTrIdxVer = DCT_II;
-
-    if ( ucMode != INTER_MODE_IDX && emt_tu_idx != DCT2_EMT)
-    {
-        int  nTrSubsetHor = emt_Tr_Set_H[intra_pred_mode];
-        int  nTrSubsetVer = emt_Tr_Set_V[intra_pred_mode];
-        nTrIdxHor = g_aiTrSubSetIntra[nTrSubsetHor][(emt_tu_idx) & 1];
-        nTrIdxVer = g_aiTrSubSetIntra[nTrSubsetVer][(emt_tu_idx) >> 1];
-    }
-
-    if ( ucMode == INTER_MODE_IDX && emt_tu_idx != DCT2_EMT)
-    {
-        nTrIdxHor = g_aiTrSubSetInter[(emt_tu_idx) & 1];
-        nTrIdxVer = g_aiTrSubSetInter[(emt_tu_idx) >> 1];
-    }
-    int zo_f1 = ( bZeroOut == 1 ) ? 2 : 0 ;
-    int zo_f2 = ( bZeroOut == 1 ) ? 1 : 0 ;
-    fastInvTrans[nTrIdxVer][nLog2SizeMinus2]( coeffs, tmp, shift_1st, size, zo_f1, 1, clipMinimum, clipMaximum );
-    fastInvTrans[nTrIdxHor][nLog2SizeMinus2]( tmp, dst, shift_2nd, size, zo_f2, 1, clipMinimum, clipMaximum );
+    fastInvTrans[emt_tu_idx_v][nLog2SizeMinus2]( coeffs, tmp, shift_v, tr_size, z0_v, 1, clipMinimum, clipMaximum );
+    fastInvTrans[emt_tu_idx_h][nLog2SizeMinus2]( tmp,    dst, shift_h, tr_size, z0_h, 1, clipMinimum, clipMaximum );
 }
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
-//
-////////////////////////////////////////////////////////////////////////////////
 static void FUNC(put_hevc_pel_pixels)(int16_t *dst,
                                       uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)

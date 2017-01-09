@@ -525,7 +525,7 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 
 #if COM16_C806_EMT
 
-static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
+//static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
 
 #endif
 
@@ -772,24 +772,18 @@ uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma
 }
 uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size)
 {
-	uint8_t trIdx = 0;
-	uint8_t uiSymbol1 = 0;
-	uint8_t uiSymbol2 = 0;
+    uint8_t trIdx = 0;
 
-	if ( (s->HEVClc->cu.pred_mode == MODE_INTRA) && ((1 << log2_cb_size) <= EMT_INTRA_MAX_CU ))
-	{
-		uiSymbol1 = GET_CABAC(elem_offset[EMT_TU_IDX]);
-		uiSymbol2 = GET_CABAC(elem_offset[EMT_TU_IDX]+1);
-		trIdx = (uiSymbol2 << 1) | uiSymbol1 ;
-	}
-
-	if ( (s->HEVClc->cu.pred_mode == MODE_INTER) && ((1 << log2_cb_size) <= EMT_INTER_MAX_CU ))
-	{
-		uiSymbol1 = GET_CABAC(elem_offset[EMT_TU_IDX]+2);
-		uiSymbol2 = GET_CABAC(elem_offset[EMT_TU_IDX]+3);
-		trIdx = (uiSymbol2 << 1) | uiSymbol1 ;
-	}
-return trIdx ;
+    if ( (s->HEVClc->cu.pred_mode == MODE_INTER) && ((1 << log2_cb_size) <= EMT_INTER_MAX_CU )){
+        uint8_t uiSymbol1 = GET_CABAC(elem_offset[EMT_TU_IDX]+2);
+        uint8_t uiSymbol2 = GET_CABAC(elem_offset[EMT_TU_IDX]+3);
+        trIdx = (uiSymbol2 << 1) | uiSymbol1 ;
+    } else if ( (s->HEVClc->cu.pred_mode == MODE_INTRA) && ((1 << log2_cb_size) <= EMT_INTRA_MAX_CU )){
+        uint8_t uiSymbol1 = GET_CABAC(elem_offset[EMT_TU_IDX]);
+        uint8_t uiSymbol2 = GET_CABAC(elem_offset[EMT_TU_IDX]+1);
+        trIdx = (uiSymbol2 << 1) | uiSymbol1 ;
+    }
+    return trIdx ;
 }
 #endif
 
@@ -1393,7 +1387,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int trafo_size = 1 << log2_trafo_size;
     int i;
     int qp,shift,add,scale,scale_m;
-    int log2_transform_range = 15; //FFMAX(15, s->sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6); // extended_precision_processing_flag ?  : 15
+    int log2_transform_range = s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6) ) : 15;//15;
     static const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
     const uint8_t *scale_matrix = NULL;
     uint8_t dc_scale;
@@ -1831,20 +1825,12 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     }
 
 #if COM16_C806_EMT
-    if ( (!transform_skip_flag) && (c_idx == 0) )
+    if ( !transform_skip_flag && !c_idx && s->HEVClc->cu.emt_cu_flag )
     {
-        if ( (s->HEVClc->cu.emt_cu_flag) && (s->HEVClc->cu.pred_mode == MODE_INTRA ))
-        {
-            if ( uiNumSig > EMT_SIGNUM_THR )
-            {
-                s->HEVClc->tu.emt_tu_idx = ff_hevc_emt_tu_idx_decode(s, log2_cb_size);
-            }else{
-                s->HEVClc->tu.emt_tu_idx = 0 ;
-            }
-        }
-        if ((s->HEVClc->cu.emt_cu_flag) && (s->HEVClc->cu.pred_mode == MODE_INTER))
-        {
+        if (s->HEVClc->cu.pred_mode == MODE_INTER){
             s->HEVClc->tu.emt_tu_idx = ff_hevc_emt_tu_idx_decode(s, log2_cb_size);
+        } else if (s->HEVClc->cu.pred_mode == MODE_INTRA) {
+            s->HEVClc->tu.emt_tu_idx =  uiNumSig > EMT_SIGNUM_THR ? ff_hevc_emt_tu_idx_decode(s, log2_cb_size) : 0;
         }
     }
 #endif
@@ -1876,68 +1862,49 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
 #if COM16_C806_EMT
-        } else if ( s->HEVClc->cu.emt_cu_flag ) {
-            enum IntraPredMode ucMode;
-            int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
-            //const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
-            //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
-            const unsigned int nLog2SizeMinus2 	= log2_trafo_size - 2;
-            int intraMode 						=  0;
+        } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
+            enum IntraPredMode ucMode = INTER_MODE_IDX;
+            int zo_v = 2;
+            int zo_h = 1;
+            int tu_emt_Idx =  (c_idx || !s->HEVClc->cu.emt_cu_flag ) ? DCT2_EMT : s->HEVClc->tu.emt_tu_idx;
+            int tr_idx_h  = DCT_II;
+            int tr_idx_v  = DCT_II;
 
-            if (s->HEVClc->cu.pred_mode == MODE_INTRA)
-            {
-                ucMode = c_idx != 0 ? s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
-                intraMode 						= c_idx != 0 ?  s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
+            if (s->HEVClc->cu.pred_mode == MODE_INTRA){
+                ucMode = pred_mode_intra;
+                zo_v = zo_h = 0;
             }
-            else{
-                ucMode = INTER_MODE_IDX ;
-            }
-
-            int tu_emt_Idx 						=  c_idx != 0 ? DCT2_EMT : (s->HEVClc->tu.emt_tu_idx);
-
-            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, /*TRANSFORM_MATRIX_SHIFT,*/ nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
-        } else if (s->ps.sps->use_intra_emt== 1 || s->ps.sps->use_inter_emt == 1){
-            enum IntraPredMode ucMode;
-            int maxLog2TrDynamicRange 			= s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx] + 6) ) : 15 ;
-            //const int TRANSFORM_MATRIX_SHIFT   	= g_transformMatrixShift[TRANSFORM_INVERSE];
-            //int bitDepthEMT					 	= (s->ps.sps->bit_depth[c_idx ?1:0]);
-            const unsigned int nLog2SizeMinus2 	= log2_trafo_size - 2;
-            int intraMode = 0;
-
-            if (s->HEVClc->cu.pred_mode == MODE_INTRA)
-            {
-                ucMode = c_idx!=0 ? s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
-                intraMode 						= c_idx!=0 ?  s->HEVClc->tu.intra_pred_mode_c : s->HEVClc->tu.intra_pred_mode;
-            }
-            else{
-                ucMode = INTER_MODE_IDX ;
-            }
-
-            //int intraMode 						=  s->HEVClc->tu.intra_pred_mode;
-            int tu_emt_Idx 						=  DCT2_EMT;
-            //printf("tu_emt_Idx = %d\n",s->HEVClc->tu.emt_tu_idx);
-            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, /*TRANSFORM_MATRIX_SHIFT,*/ nLog2SizeMinus2, maxLog2TrDynamicRange, /*bitDepthEMT,*/ ucMode, intraMode, tu_emt_Idx);
-#endif
-            } else {
-                if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
-                    s->hevcdsp.idct_4x4_luma(coeffs);
+            if (tu_emt_Idx != DCT2_EMT){
+                if ( ucMode != INTER_MODE_IDX){
+                    tr_idx_h = g_aiTrSubSetIntra[emt_Tr_Set_H[ucMode]][(tu_emt_Idx) & 1];
+                    tr_idx_v = g_aiTrSubSetIntra[emt_Tr_Set_V[ucMode]][(tu_emt_Idx) >> 1];
                 } else {
-                    int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
-                    if (max_xy == 0){
-                        s->hevcdsp.idct_dc[log2_trafo_size-2](coeffs);
+                    tr_idx_h = g_aiTrSubSetInter[(tu_emt_Idx) & 1];
+                    tr_idx_v = g_aiTrSubSetInter[(tu_emt_Idx) >> 1];
+                }
+            }
+            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, log2_trafo_size - 2, log2_transform_range, tr_idx_h, tr_idx_v,zo_h,zo_v);
+#endif
+        } else {
+            if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
+                s->hevcdsp.idct_4x4_luma(coeffs);
+            } else {
+                int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
+                if (max_xy == 0){
+                    s->hevcdsp.idct_dc[log2_trafo_size - 2](coeffs);
 
-                    } else {
-                        int col_limit = last_significant_coeff_x + last_significant_coeff_y + 4;
-                        if (max_xy < 4)
-                            col_limit = FFMIN(4, col_limit);
-                        else if (max_xy < 8)
-                            col_limit = FFMIN(8, col_limit);
-                        else if (max_xy < 12)
-                            col_limit = FFMIN(24, col_limit);
-                        s->hevcdsp.idct[log2_trafo_size-2](coeffs, col_limit);
-                    }
+                } else {
+                    int col_limit = last_significant_coeff_x + last_significant_coeff_y + 4;
+                    if (max_xy < 4)
+                        col_limit = FFMIN(4, col_limit);
+                    else if (max_xy < 8)
+                        col_limit = FFMIN(8, col_limit);
+                    else if (max_xy < 12)
+                        col_limit = FFMIN(24, col_limit);
+                    s->hevcdsp.idct[log2_trafo_size - 2](coeffs, col_limit);
+                }
             }
-            }
+        }
     }
     if (lc->tu.cross_pf) {
         int16_t *coeffs_y = lc->tu.coeffs[0];

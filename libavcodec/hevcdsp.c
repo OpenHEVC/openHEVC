@@ -1227,7 +1227,7 @@ for ( int i=0; i<4; i++ )
     hevcdsp->hevc_v_loop_filter_luma_c   = FUNC(hevc_v_loop_filter_luma, depth);   \
     hevcdsp->hevc_h_loop_filter_chroma_c = FUNC(hevc_h_loop_filter_chroma, depth); \
     hevcdsp->hevc_v_loop_filter_chroma_c = FUNC(hevc_v_loop_filter_chroma, depth); \
-	hevcdsp->idct_emt					 = FUNC(idct_emt, depth);                  
+    hevcdsp->idct_emt					 = FUNC(idct_emt, depth);
 #else
 #define HEVC_DSP(depth)                                                     \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                 \
