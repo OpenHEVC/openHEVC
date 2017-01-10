@@ -170,7 +170,7 @@ extern const int8_t ff_hevc_qpel_filters[3][16];
   extern const int g_aiTrSubSetIntra[3][2];
   extern const int g_aiTrSubSetInter[2];
 // ************************************************* Initialisation du tableau fastInvTrans *************************************************
-typedef void InvTrans(int16_t*, int16_t*, int, /*int,*/ int, int, int, int);
+typedef void InvTrans(int16_t*, int16_t*, int, /*int,*/ int, /*int,*/ int, int);
 // ************************************************* Initialisation des transformées *************************************************
   extern int16_t g_aiTr4 [8][ 4][ 4];
   extern int16_t g_aiTr8 [8][ 8][ 8];

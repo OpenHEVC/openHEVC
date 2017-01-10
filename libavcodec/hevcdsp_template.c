@@ -663,7 +663,7 @@ const int emt_Tr_Set_H[35] =
 /*
  * Fast inverse DCT2 4-8-16-32-64
  */
-static void FUNC(fastInverseDCT2_B4)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B4)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int j;
@@ -671,7 +671,9 @@ static void FUNC(fastInverseDCT2_B4)(int16_t *src, int16_t *dst, int shift, /*in
     int add = ( 1<<(shift-1) );
 
 #if COM16_C806_EMT
-    const int16_t *iT = use ? g_aiTr4[DCT_II][0] : g_aiT4[0][0];
+    // Note that this function is always called with use = 1
+    //const int16_t *iT = use ? g_aiTr4[DCT_II][0] : g_aiT4[0][0];
+    const int16_t *iT = g_aiTr4[DCT_II][0];
 #else
     const uint16_t *iT = g_aiT4[0][0];
 #endif
@@ -694,7 +696,7 @@ static void FUNC(fastInverseDCT2_B4)(int16_t *src, int16_t *dst, int shift, /*in
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B8)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B8)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int j,k;
@@ -703,7 +705,9 @@ static void FUNC(fastInverseDCT2_B8)(int16_t *src, int16_t *dst, int shift, /*in
     int add = ( 1<<(shift-1) );
 
 #if COM16_C806_EMT
-    const int16_t *iT = use ? g_aiTr8[DCT_II][0] : g_aiT8[0][0];
+    const int16_t *iT = g_aiTr8[DCT_II][0];
+    // Note that this function is always called with use = 1
+    //const int16_t *iT = use ? g_aiTr8[DCT_II][0] : g_aiT8[0][0];
 #else
     const uint16_t *iT = g_aiT8[0][0];
 #endif
@@ -735,7 +739,7 @@ static void FUNC(fastInverseDCT2_B8)(int16_t *src, int16_t *dst, int shift, /*in
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B16)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B16)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int j,k;
@@ -745,7 +749,9 @@ static void FUNC(fastInverseDCT2_B16)(int16_t *src, int16_t *dst, int shift, /*i
     int add = ( 1<<(shift-1) );
 
 #if COM16_C806_EMT
-    const int16_t *iT = use ? g_aiTr16[DCT_II][0] : g_aiT16[0][0];
+    const int16_t *iT = g_aiTr16[DCT_II][0];
+    // Note that this function is always called with use = 1
+    //const int16_t *iT = use ? g_aiTr16[DCT_II][0] : g_aiT16[0][0];
 #else
     const uint16_t *iT = g_aiT16[0][0];
 #endif
@@ -786,7 +792,7 @@ static void FUNC(fastInverseDCT2_B16)(int16_t *src, int16_t *dst, int shift, /*i
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B32)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B32)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int j,k;
@@ -797,7 +803,9 @@ static void FUNC(fastInverseDCT2_B32)(int16_t *src, int16_t *dst, int shift, /*i
     int add = ( 1<<(shift-1) );
 
 #if COM16_C806_EMT
-    const int16_t *iT = use ? g_aiTr32[DCT_II][0] : g_aiT32[0][0];
+    const int16_t *iT = g_aiTr32[DCT_II][0];
+    // Note that this function is always called with use = 1
+    //const int16_t *iT = use ? g_aiTr32[DCT_II][0] : g_aiT32[0][0];
 #else
     const uint16_t *iT = g_aiT32[0][0];
 #endif
@@ -852,7 +860,7 @@ static void FUNC(fastInverseDCT2_B32)(int16_t *src, int16_t *dst, int shift, /*i
 }
 
 // We don't use these function yet since we don't use CTUs larger than 64x64
-static void FUNC(fastInverseDCT2_B64)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B64)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 64
     int rnd_factor = ( 1<<(shift-1) );
@@ -940,7 +948,7 @@ static void FUNC(fastInverseDCT2_B64)(int16_t *coeff, int16_t *block, int shift,
 /*
  * Fast inverse DCT5 4-8-16-32
  */
-static void FUNC(fastInverseDCT5_B4)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B4)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i, j, k, iSum;
@@ -966,7 +974,7 @@ static void FUNC(fastInverseDCT5_B4)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B8)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B8)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -992,7 +1000,7 @@ static void FUNC(fastInverseDCT5_B8)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B16)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B16)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1018,7 +1026,7 @@ static void FUNC(fastInverseDCT5_B16)(int16_t *coeff, int16_t *block, int shift,
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B32)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B32)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1050,7 +1058,7 @@ static void FUNC(fastInverseDCT5_B32)(int16_t *coeff, int16_t *block, int shift,
 /*
  * Fast inverse DCT8 4-8-16-32
  */
-static void FUNC(fastInverseDCT8_B4)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B4)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i;
@@ -1077,7 +1085,7 @@ static void FUNC(fastInverseDCT8_B4)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B8)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B8)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1103,7 +1111,7 @@ static void FUNC(fastInverseDCT8_B8)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B16)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B16)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1129,7 +1137,7 @@ static void FUNC(fastInverseDCT8_B16)(int16_t *coeff, int16_t *block, int shift,
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B32)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B32)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1185,7 +1193,7 @@ static void FUNC(fastInverseDCT8_B32)(int16_t *coeff, int16_t *block, int shift,
 /*
  * Fast inverse DST1 4-8-16-32
  */
-static void FUNC(fastInverseDST1_B4)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B4)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i;
@@ -1212,7 +1220,7 @@ static void FUNC(fastInverseDST1_B4)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B8)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B8)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1236,7 +1244,7 @@ static void FUNC(fastInverseDST1_B8)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B16)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B16)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1260,7 +1268,7 @@ static void FUNC(fastInverseDST1_B16)(int16_t *coeff, int16_t *block, int shift,
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B32)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B32)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1290,14 +1298,16 @@ static void FUNC(fastInverseDST1_B32)(int16_t *coeff, int16_t *block, int shift,
 /*
  * Fast inverse DSTVII 4-8-16-32
  */
-static void FUNC(fastInverseDST7_B4)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B4)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i, c[4];
     int rnd_factor = ( 1<<(shift-1) );
 
 #if COM16_C806_EMT
-    const int16_t *iT = use ? g_aiTr4[DST_VII][0] : g_as_DST_MAT_4[0][0];
+    const int16_t *iT = g_aiTr4[DST_VII][0];
+    // Note that this function is always called with use = 1
+   // const int16_t *iT = use ? g_aiTr4[DST_VII][0] : g_as_DST_MAT_4[0][0];
 #else
     const uint16_t *iT = g_as_DST_MAT_4[0][0];
 #endif
@@ -1320,7 +1330,7 @@ static void FUNC(fastInverseDST7_B4)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B8)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B8)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1346,7 +1356,7 @@ static void FUNC(fastInverseDST7_B8)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B16)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B16)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1371,7 +1381,7 @@ static void FUNC(fastInverseDST7_B16)(int16_t *coeff, int16_t *block, int shift,
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B32)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, int use, const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B32)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1442,8 +1452,8 @@ static void FUNC(idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, i
 
     int16_t tmp[ MAX_TU_SIZE * MAX_TU_SIZE ];
 
-    FUNC(fastInvTrans)[emt_tu_idx_v][nLog2SizeMinus2]( coeffs, tmp, shift_v, /*tr_size,*/ z0_v, 1, clipMinimum, clipMaximum );
-    FUNC(fastInvTrans)[emt_tu_idx_h][nLog2SizeMinus2]( tmp,    dst, shift_h, /*tr_size,*/ z0_h, 1, clipMinimum, clipMaximum );
+    FUNC(fastInvTrans)[emt_tu_idx_v][nLog2SizeMinus2]( coeffs, tmp, shift_v, /*tr_size,*/ z0_v,/* 1,*/ clipMinimum, clipMaximum );
+    FUNC(fastInvTrans)[emt_tu_idx_h][nLog2SizeMinus2]( tmp,    dst, shift_h, /*tr_size,*/ z0_h,/* 1,*/ clipMinimum, clipMaximum );
 }
 #endif
 
