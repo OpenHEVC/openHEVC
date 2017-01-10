@@ -756,20 +756,23 @@ int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s)
 #if COM16_C806_EMT
 uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma)
 {
-	uint8_t inc = 0;
+    //uint8_t inc = ;
 	uint8_t flag_value = 0;
-	if ( (s->HEVClc->cu.pred_mode == MODE_INTRA ) && (s->ps.sps->use_intra_emt) && ( 1 << log2_cb_size <= EMT_INTRA_MAX_CU ) && ( cbfLuma != 0 ) )
+    if ( (s->HEVClc->cu.pred_mode == MODE_INTRA ) && s->ps.sps->use_intra_emt && ( 1 << log2_cb_size <= EMT_INTRA_MAX_CU ) && cbfLuma)
 	{
-		inc = 5 - log2_cb_size;
-		flag_value = GET_CABAC( elem_offset[EMT_CU_FLAG] + inc );
+        //inc = ;
+        flag_value = GET_CABAC( elem_offset[EMT_CU_FLAG] + 5 - log2_cb_size );
+        return flag_value ;
 	}
-	if ( (s->HEVClc->cu.pred_mode == MODE_INTER ) && (s->ps.sps->use_inter_emt) && ( 1 << log2_cb_size <= EMT_INTER_MAX_CU ) && ( cbfLuma != 0 ) )
+    if ( (s->HEVClc->cu.pred_mode == MODE_INTER ) && s->ps.sps->use_inter_emt && ( 1 << log2_cb_size <= EMT_INTER_MAX_CU ) &&  cbfLuma)
 	{
-		inc = 5 - log2_cb_size;
-		flag_value = GET_CABAC( elem_offset[EMT_CU_FLAG] + inc );
+        //inc = 5 - log2_cb_size;
+        flag_value = GET_CABAC( elem_offset[EMT_CU_FLAG] + 5 - log2_cb_size );
+        return flag_value ;
 	}
 	return flag_value ;
 }
+
 uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size)
 {
     uint8_t trIdx = 0;
@@ -778,10 +781,12 @@ uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size)
         uint8_t uiSymbol1 = GET_CABAC(elem_offset[EMT_TU_IDX]+2);
         uint8_t uiSymbol2 = GET_CABAC(elem_offset[EMT_TU_IDX]+3);
         trIdx = (uiSymbol2 << 1) | uiSymbol1 ;
+        return trIdx ;
     } else if ( (s->HEVClc->cu.pred_mode == MODE_INTRA) && ((1 << log2_cb_size) <= EMT_INTRA_MAX_CU )){
         uint8_t uiSymbol1 = GET_CABAC(elem_offset[EMT_TU_IDX]);
         uint8_t uiSymbol2 = GET_CABAC(elem_offset[EMT_TU_IDX]+1);
         trIdx = (uiSymbol2 << 1) | uiSymbol1 ;
+        return trIdx ;
     }
     return trIdx ;
 }
