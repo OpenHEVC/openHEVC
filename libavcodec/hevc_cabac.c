@@ -1869,15 +1869,15 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #if COM16_C806_EMT
         } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
             enum IntraPredMode ucMode = INTER_MODE_IDX;
-            int zo_v = 2;
-            int zo_h = 1;
+//            int zo_v = 2;
+            int zo = 1;
             int tu_emt_Idx =  (c_idx || !s->HEVClc->cu.emt_cu_flag ) ? DCT2_EMT : s->HEVClc->tu.emt_tu_idx;
             int tr_idx_h  = DCT_II;
             int tr_idx_v  = DCT_II;
 
             if (s->HEVClc->cu.pred_mode == MODE_INTRA){
                 ucMode = pred_mode_intra;
-                zo_v = zo_h = 0;
+                zo = 0;
             }
             if (tu_emt_Idx != DCT2_EMT){
                 if ( ucMode != INTER_MODE_IDX){
@@ -1888,7 +1888,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     tr_idx_v = g_aiTrSubSetInter[(tu_emt_Idx) >> 1];
                 }
             }
-            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, log2_trafo_size - 2, log2_transform_range, tr_idx_h, tr_idx_v,zo_h,zo_v);
+            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, log2_trafo_size - 2, log2_transform_range, tr_idx_h, tr_idx_v, zo/*,zo_v*/);
 #endif
         } else {
             if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {

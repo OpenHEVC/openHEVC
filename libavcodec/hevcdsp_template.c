@@ -667,7 +667,7 @@ const int emt_Tr_Set_H[35] =
 #define SHIFT_EMT_V (EMT_TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC)
 #define ADD_EMT_V (1 << (SHIFT_EMT_V - 1))
 
-static void FUNC(fastInverseDCT2_B4_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B4_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int j;
@@ -700,7 +700,7 @@ static void FUNC(fastInverseDCT2_B4_h)(int16_t *src, int16_t *dst, int shift, /*
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B4_v)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B4_v)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int j;
@@ -733,7 +733,7 @@ static void FUNC(fastInverseDCT2_B4_v)(int16_t *src, int16_t *dst, int shift, /*
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B8_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B8_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int j,k;
@@ -776,7 +776,7 @@ static void FUNC(fastInverseDCT2_B8_h)(int16_t *src, int16_t *dst, int shift, /*
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B8_v)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B8_v)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int j,k;
@@ -819,7 +819,7 @@ static void FUNC(fastInverseDCT2_B8_v)(int16_t *src, int16_t *dst, int shift, /*
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B16_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B16_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int j,k;
@@ -872,7 +872,7 @@ static void FUNC(fastInverseDCT2_B16_h)(int16_t *src, int16_t *dst, int shift, /
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B16_v)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B16_v)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int j,k;
@@ -925,7 +925,7 @@ static void FUNC(fastInverseDCT2_B16_v)(int16_t *src, int16_t *dst, int shift, /
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B32_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B32_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int j,k;
@@ -992,7 +992,7 @@ static void FUNC(fastInverseDCT2_B32_h)(int16_t *src, int16_t *dst, int shift, /
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B32_v)(int16_t *src, int16_t *dst, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B32_v)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int j,k;
@@ -1060,7 +1060,7 @@ static void FUNC(fastInverseDCT2_B32_v)(int16_t *src, int16_t *dst, int shift, /
 }
 
 // We don't use these function yet since we don't use CTUs larger than 64x64
-static void FUNC(fastInverseDCT2_B64_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B64_h_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 64
     int rnd_factor = ( 1<<(shift-1) );
@@ -1074,7 +1074,7 @@ static void FUNC(fastInverseDCT2_B64_h)(int16_t *coeff, int16_t *block, int shif
     int EEE[8],EEO[8];
     int EEEE[4],EEEO[4];
     int EEEEE[2],EEEEO[2];
-    for (j=0; j<(CB_SIZE>>(2==zo?1:0)); j++)
+    for (j=0; j<CB_SIZE; j++)
     {
         for (k=0;k<32;k++)
         {
@@ -1082,34 +1082,31 @@ static void FUNC(fastInverseDCT2_B64_h)(int16_t *coeff, int16_t *block, int shif
                     iT[ 9*64+k]*coeff[ 9*CB_SIZE  ] + iT[11*64+k]*coeff[ 11*CB_SIZE ] + iT[13*64+k]*coeff[ 13*CB_SIZE ] + iT[15*64+k]*coeff[ 15*CB_SIZE ] +
                     iT[17*64+k]*coeff[ 17*CB_SIZE ] + iT[19*64+k]*coeff[ 19*CB_SIZE ] + iT[21*64+k]*coeff[ 21*CB_SIZE ] + iT[23*64+k]*coeff[ 23*CB_SIZE ] +
                     iT[25*64+k]*coeff[ 25*CB_SIZE ] + iT[27*64+k]*coeff[ 27*CB_SIZE ] + iT[29*64+k]*coeff[ 29*CB_SIZE ] + iT[31*64+k]*coeff[ 31*CB_SIZE ] +
-                    ( zo ? 0 : (
-                               iT[33*64+k]*coeff[ 33*CB_SIZE ] + iT[35*64+k]*coeff[ 35*CB_SIZE ] + iT[37*64+k]*coeff[ 37*CB_SIZE ] + iT[39*64+k]*coeff[ 39*CB_SIZE ] +
+                    iT[33*64+k]*coeff[ 33*CB_SIZE ] + iT[35*64+k]*coeff[ 35*CB_SIZE ] + iT[37*64+k]*coeff[ 37*CB_SIZE ] + iT[39*64+k]*coeff[ 39*CB_SIZE ] +
                     iT[41*64+k]*coeff[ 41*CB_SIZE ] + iT[43*64+k]*coeff[ 43*CB_SIZE ] + iT[45*64+k]*coeff[ 45*CB_SIZE ] + iT[47*64+k]*coeff[ 47*CB_SIZE ] +
                     iT[49*64+k]*coeff[ 49*CB_SIZE ] + iT[51*64+k]*coeff[ 51*CB_SIZE ] + iT[53*64+k]*coeff[ 53*CB_SIZE ] + iT[55*64+k]*coeff[ 55*CB_SIZE ] +
-                    iT[57*64+k]*coeff[ 57*CB_SIZE ] + iT[59*64+k]*coeff[ 59*CB_SIZE ] + iT[61*64+k]*coeff[ 61*CB_SIZE ] + iT[63*64+k]*coeff[ 63*CB_SIZE ] ) );
+                    iT[57*64+k]*coeff[ 57*CB_SIZE ] + iT[59*64+k]*coeff[ 59*CB_SIZE ] + iT[61*64+k]*coeff[ 61*CB_SIZE ] + iT[63*64+k]*coeff[ 63*CB_SIZE ];
         }
         for (k=0;k<16;k++)
         {
             EO[k] = iT[ 2*64+k]*coeff[ 2*CB_SIZE  ] + iT[ 6*64+k]*coeff[ 6*CB_SIZE  ] + iT[10*64+k]*coeff[ 10*CB_SIZE ] + iT[14*64+k]*coeff[ 14*CB_SIZE ] +
                     iT[18*64+k]*coeff[ 18*CB_SIZE ] + iT[22*64+k]*coeff[ 22*CB_SIZE ] + iT[26*64+k]*coeff[ 26*CB_SIZE ] + iT[30*64+k]*coeff[ 30*CB_SIZE ] +
-                    ( zo ? 0 : (
-                               iT[34*64+k]*coeff[ 34*CB_SIZE ] + iT[38*64+k]*coeff[ 38*CB_SIZE ] + iT[42*64+k]*coeff[ 42*CB_SIZE ] + iT[46*64+k]*coeff[ 46*CB_SIZE ] +
-                    iT[50*64+k]*coeff[ 50*CB_SIZE ] + iT[54*64+k]*coeff[ 54*CB_SIZE ] + iT[58*64+k]*coeff[ 58*CB_SIZE ] + iT[62*64+k]*coeff[ 62*CB_SIZE ] ) );
+                    iT[34*64+k]*coeff[ 34*CB_SIZE ] + iT[38*64+k]*coeff[ 38*CB_SIZE ] + iT[42*64+k]*coeff[ 42*CB_SIZE ] + iT[46*64+k]*coeff[ 46*CB_SIZE ] +
+                    iT[50*64+k]*coeff[ 50*CB_SIZE ] + iT[54*64+k]*coeff[ 54*CB_SIZE ] + iT[58*64+k]*coeff[ 58*CB_SIZE ] + iT[62*64+k]*coeff[ 62*CB_SIZE ];
         }
         for (k=0;k<8;k++)
         {
             EEO[k] = iT[4*64+k]*coeff[ 4*CB_SIZE ] + iT[12*64+k]*coeff[ 12*CB_SIZE ] + iT[20*64+k]*coeff[ 20*CB_SIZE ] + iT[28*64+k]*coeff[ 28*CB_SIZE ] +
-                    ( zo ? 0 : (
-                               iT[36*64+k]*coeff[ 36*CB_SIZE ] + iT[44*64+k]*coeff[ 44*CB_SIZE ] + iT[52*64+k]*coeff[ 52*CB_SIZE ] + iT[60*64+k]*coeff[ 60*CB_SIZE ] ) );
+                      iT[36*64+k]*coeff[ 36*CB_SIZE ] + iT[44*64+k]*coeff[ 44*CB_SIZE ] + iT[52*64+k]*coeff[ 52*CB_SIZE ] + iT[60*64+k]*coeff[ 60*CB_SIZE ] ;
         }
         for (k=0;k<4;k++)
         {
-            EEEO[k] = iT[8*64+k]*coeff[ 8*CB_SIZE ] + iT[24*64+k]*coeff[ 24*CB_SIZE ] + ( zo ? 0 : ( iT[40*64+k]*coeff[ 40*CB_SIZE ] + iT[56*64+k]*coeff[ 56*CB_SIZE ] ) );
+            EEEO[k] = iT[8*64+k]*coeff[ 8*CB_SIZE ] + iT[24*64+k]*coeff[ 24*CB_SIZE ] +  iT[40*64+k]*coeff[ 40*CB_SIZE ] + iT[56*64+k]*coeff[ 56*CB_SIZE ];
         }
-        EEEEO[0] = iT[16*64+0]*coeff[ 16*CB_SIZE ] + ( zo ? 0 : iT[48*64+0]*coeff[ 48*CB_SIZE ] );
-        EEEEO[1] = iT[16*64+1]*coeff[ 16*CB_SIZE ] + ( zo ? 0 : iT[48*64+1]*coeff[ 48*CB_SIZE ] );
-        EEEEE[0] = iT[ 0*64+0]*coeff[  0      ] + ( zo ? 0 : iT[32*64+0]*coeff[ 32*CB_SIZE ] );
-        EEEEE[1] = iT[ 0*64+1]*coeff[  0      ] + ( zo ? 0 : iT[32*64+1]*coeff[ 32*CB_SIZE ] );
+        EEEEO[0] = iT[16*64+0]*coeff[ 16*CB_SIZE ] +   iT[48*64+0]*coeff[ 48*CB_SIZE ] ;
+        EEEEO[1] = iT[16*64+1]*coeff[ 16*CB_SIZE ] +   iT[48*64+1]*coeff[ 48*CB_SIZE ] ;
+        EEEEE[0] = iT[ 0*64+0]*coeff[  0      ] +  iT[32*64+0]*coeff[ 32*CB_SIZE ] ;
+        EEEEE[1] = iT[ 0*64+1]*coeff[  0      ] +  iT[32*64+1]*coeff[ 32*CB_SIZE ] ;
 
         for (k=0;k<2;k++)
         {
@@ -1142,7 +1139,7 @@ static void FUNC(fastInverseDCT2_B64_h)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B64_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B64_v_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 64
     //int rnd_factor = ( 1<<(shift-1) );
@@ -1156,7 +1153,7 @@ static void FUNC(fastInverseDCT2_B64_v)(int16_t *coeff, int16_t *block, int shif
     int EEE[8],EEO[8];
     int EEEE[4],EEEO[4];
     int EEEEE[2],EEEEO[2];
-    for (j=0; j<(CB_SIZE>>(2==zo?1:0)); j++)
+    for (j=0; j<CB_SIZE; j++)
     {
         for (k=0;k<32;k++)
         {
@@ -1164,34 +1161,176 @@ static void FUNC(fastInverseDCT2_B64_v)(int16_t *coeff, int16_t *block, int shif
                     iT[ 9*64+k]*coeff[ 9*CB_SIZE  ] + iT[11*64+k]*coeff[ 11*CB_SIZE ] + iT[13*64+k]*coeff[ 13*CB_SIZE ] + iT[15*64+k]*coeff[ 15*CB_SIZE ] +
                     iT[17*64+k]*coeff[ 17*CB_SIZE ] + iT[19*64+k]*coeff[ 19*CB_SIZE ] + iT[21*64+k]*coeff[ 21*CB_SIZE ] + iT[23*64+k]*coeff[ 23*CB_SIZE ] +
                     iT[25*64+k]*coeff[ 25*CB_SIZE ] + iT[27*64+k]*coeff[ 27*CB_SIZE ] + iT[29*64+k]*coeff[ 29*CB_SIZE ] + iT[31*64+k]*coeff[ 31*CB_SIZE ] +
-                    ( zo ? 0 : (
-                               iT[33*64+k]*coeff[ 33*CB_SIZE ] + iT[35*64+k]*coeff[ 35*CB_SIZE ] + iT[37*64+k]*coeff[ 37*CB_SIZE ] + iT[39*64+k]*coeff[ 39*CB_SIZE ] +
+                    iT[33*64+k]*coeff[ 33*CB_SIZE ] + iT[35*64+k]*coeff[ 35*CB_SIZE ] + iT[37*64+k]*coeff[ 37*CB_SIZE ] + iT[39*64+k]*coeff[ 39*CB_SIZE ] +
                     iT[41*64+k]*coeff[ 41*CB_SIZE ] + iT[43*64+k]*coeff[ 43*CB_SIZE ] + iT[45*64+k]*coeff[ 45*CB_SIZE ] + iT[47*64+k]*coeff[ 47*CB_SIZE ] +
                     iT[49*64+k]*coeff[ 49*CB_SIZE ] + iT[51*64+k]*coeff[ 51*CB_SIZE ] + iT[53*64+k]*coeff[ 53*CB_SIZE ] + iT[55*64+k]*coeff[ 55*CB_SIZE ] +
-                    iT[57*64+k]*coeff[ 57*CB_SIZE ] + iT[59*64+k]*coeff[ 59*CB_SIZE ] + iT[61*64+k]*coeff[ 61*CB_SIZE ] + iT[63*64+k]*coeff[ 63*CB_SIZE ] ) );
+                    iT[57*64+k]*coeff[ 57*CB_SIZE ] + iT[59*64+k]*coeff[ 59*CB_SIZE ] + iT[61*64+k]*coeff[ 61*CB_SIZE ] + iT[63*64+k]*coeff[ 63*CB_SIZE ];
         }
         for (k=0;k<16;k++)
         {
             EO[k] = iT[ 2*64+k]*coeff[ 2*CB_SIZE  ] + iT[ 6*64+k]*coeff[ 6*CB_SIZE  ] + iT[10*64+k]*coeff[ 10*CB_SIZE ] + iT[14*64+k]*coeff[ 14*CB_SIZE ] +
                     iT[18*64+k]*coeff[ 18*CB_SIZE ] + iT[22*64+k]*coeff[ 22*CB_SIZE ] + iT[26*64+k]*coeff[ 26*CB_SIZE ] + iT[30*64+k]*coeff[ 30*CB_SIZE ] +
-                    ( zo ? 0 : (
-                               iT[34*64+k]*coeff[ 34*CB_SIZE ] + iT[38*64+k]*coeff[ 38*CB_SIZE ] + iT[42*64+k]*coeff[ 42*CB_SIZE ] + iT[46*64+k]*coeff[ 46*CB_SIZE ] +
-                    iT[50*64+k]*coeff[ 50*CB_SIZE ] + iT[54*64+k]*coeff[ 54*CB_SIZE ] + iT[58*64+k]*coeff[ 58*CB_SIZE ] + iT[62*64+k]*coeff[ 62*CB_SIZE ] ) );
+                    iT[34*64+k]*coeff[ 34*CB_SIZE ] + iT[38*64+k]*coeff[ 38*CB_SIZE ] + iT[42*64+k]*coeff[ 42*CB_SIZE ] + iT[46*64+k]*coeff[ 46*CB_SIZE ] +
+                    iT[50*64+k]*coeff[ 50*CB_SIZE ] + iT[54*64+k]*coeff[ 54*CB_SIZE ] + iT[58*64+k]*coeff[ 58*CB_SIZE ] + iT[62*64+k]*coeff[ 62*CB_SIZE ];
         }
         for (k=0;k<8;k++)
         {
             EEO[k] = iT[4*64+k]*coeff[ 4*CB_SIZE ] + iT[12*64+k]*coeff[ 12*CB_SIZE ] + iT[20*64+k]*coeff[ 20*CB_SIZE ] + iT[28*64+k]*coeff[ 28*CB_SIZE ] +
-                    ( zo ? 0 : (
-                               iT[36*64+k]*coeff[ 36*CB_SIZE ] + iT[44*64+k]*coeff[ 44*CB_SIZE ] + iT[52*64+k]*coeff[ 52*CB_SIZE ] + iT[60*64+k]*coeff[ 60*CB_SIZE ] ) );
+                     iT[36*64+k]*coeff[ 36*CB_SIZE ] + iT[44*64+k]*coeff[ 44*CB_SIZE ] + iT[52*64+k]*coeff[ 52*CB_SIZE ] + iT[60*64+k]*coeff[ 60*CB_SIZE ];
         }
         for (k=0;k<4;k++)
         {
-            EEEO[k] = iT[8*64+k]*coeff[ 8*CB_SIZE ] + iT[24*64+k]*coeff[ 24*CB_SIZE ] + ( zo ? 0 : ( iT[40*64+k]*coeff[ 40*CB_SIZE ] + iT[56*64+k]*coeff[ 56*CB_SIZE ] ) );
+            EEEO[k] = iT[8*64+k]*coeff[ 8*CB_SIZE ] + iT[24*64+k]*coeff[ 24*CB_SIZE ] + iT[40*64+k]*coeff[ 40*CB_SIZE ] + iT[56*64+k]*coeff[ 56*CB_SIZE ];
         }
-        EEEEO[0] = iT[16*64+0]*coeff[ 16*CB_SIZE ] + ( zo ? 0 : iT[48*64+0]*coeff[ 48*CB_SIZE ] );
-        EEEEO[1] = iT[16*64+1]*coeff[ 16*CB_SIZE ] + ( zo ? 0 : iT[48*64+1]*coeff[ 48*CB_SIZE ] );
-        EEEEE[0] = iT[ 0*64+0]*coeff[  0      ] + ( zo ? 0 : iT[32*64+0]*coeff[ 32*CB_SIZE ] );
-        EEEEE[1] = iT[ 0*64+1]*coeff[  0      ] + ( zo ? 0 : iT[32*64+1]*coeff[ 32*CB_SIZE ] );
+        EEEEO[0] = iT[16*64+0]*coeff[ 16*CB_SIZE ] + iT[48*64+0]*coeff[ 48*CB_SIZE ];
+        EEEEO[1] = iT[16*64+1]*coeff[ 16*CB_SIZE ] + iT[48*64+1]*coeff[ 48*CB_SIZE ];
+        EEEEE[0] = iT[ 0*64+0]*coeff[  0      ] + iT[32*64+0]*coeff[ 32*CB_SIZE ];
+        EEEEE[1] = iT[ 0*64+1]*coeff[  0      ] + iT[32*64+1]*coeff[ 32*CB_SIZE ];
+
+        for (k=0;k<2;k++)
+        {
+            EEEE[k] = EEEEE[k] + EEEEO[k];
+            EEEE[k+2] = EEEEE[1-k] - EEEEO[1-k];
+        }
+        for (k=0;k<4;k++)
+        {
+            EEE[k] = EEEE[k] + EEEO[k];
+            EEE[k+4] = EEEE[3-k] - EEEO[3-k];
+        }
+        for (k=0;k<8;k++)
+        {
+            EE[k] = EEE[k] + EEO[k];
+            EE[k+8] = EEE[7-k] - EEO[7-k];
+        }
+        for (k=0;k<16;k++)
+        {
+            E[k] = EE[k] + EO[k];
+            E[k+16] = EE[15-k] - EO[15-k];
+        }
+        for (k=0;k<32;k++)
+        {
+            block[k]    = av_clip( ((E[k] + O[k]       + ADD_EMT_V) >> SHIFT_EMT_V), outputMinimum, outputMaximum);
+            block[k+32] = av_clip( ((E[31-k] - O[31-k] + ADD_EMT_V) >> SHIFT_EMT_V), outputMinimum, outputMaximum);
+        }
+        coeff ++;
+        block += uiTrSize;
+    }
+#undef CB_SIZE
+}
+
+// We don't use these function yet since we don't use CTUs larger than 64x64
+static void FUNC(fastInverseDCT2_B64_h_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+{
+#define CB_SIZE 64
+    int rnd_factor = ( 1<<(shift-1) );
+    const int uiTrSize = 64;
+    const int16_t *iT = NULL;
+    //av_assert2(0);
+
+    int j, k;
+    int E[32],O[32];
+    int EE[16],EO[16];
+    int EEE[8],EEO[8];
+    int EEEE[4],EEEO[4];
+    int EEEEE[2],EEEEO[2];
+    for (j=0; j<CB_SIZE; j++)
+    {
+        for (k=0;k<32;k++)
+        {
+            O[k] = iT[ 1*64+k]*coeff[ CB_SIZE  ] + iT[ 3*64+k]*coeff[ 3*CB_SIZE  ] + iT[ 5*64+k]*coeff[ 5*CB_SIZE  ] + iT[ 7*64+k]*coeff[ 7*CB_SIZE  ] +
+                    iT[ 9*64+k]*coeff[ 9*CB_SIZE  ] + iT[11*64+k]*coeff[ 11*CB_SIZE ] + iT[13*64+k]*coeff[ 13*CB_SIZE ] + iT[15*64+k]*coeff[ 15*CB_SIZE ] +
+                    iT[17*64+k]*coeff[ 17*CB_SIZE ] + iT[19*64+k]*coeff[ 19*CB_SIZE ] + iT[21*64+k]*coeff[ 21*CB_SIZE ] + iT[23*64+k]*coeff[ 23*CB_SIZE ] +
+                    iT[25*64+k]*coeff[ 25*CB_SIZE ] + iT[27*64+k]*coeff[ 27*CB_SIZE ] + iT[29*64+k]*coeff[ 29*CB_SIZE ] + iT[31*64+k]*coeff[ 31*CB_SIZE ];
+        }
+        for (k=0;k<16;k++)
+        {
+            EO[k] = iT[ 2*64+k]*coeff[ 2*CB_SIZE  ] + iT[ 6*64+k]*coeff[ 6*CB_SIZE  ] + iT[10*64+k]*coeff[ 10*CB_SIZE ] + iT[14*64+k]*coeff[ 14*CB_SIZE ] +
+                    iT[18*64+k]*coeff[ 18*CB_SIZE ] + iT[22*64+k]*coeff[ 22*CB_SIZE ] + iT[26*64+k]*coeff[ 26*CB_SIZE ] + iT[30*64+k]*coeff[ 30*CB_SIZE ];
+        }
+        for (k=0;k<8;k++)
+        {
+            EEO[k] = iT[4*64+k]*coeff[ 4*CB_SIZE ] + iT[12*64+k]*coeff[ 12*CB_SIZE ] + iT[20*64+k]*coeff[ 20*CB_SIZE ] + iT[28*64+k]*coeff[ 28*CB_SIZE ];
+        }
+        for (k=0;k<4;k++)
+        {
+            EEEO[k] = iT[8*64+k]*coeff[ 8*CB_SIZE ] + iT[24*64+k]*coeff[ 24*CB_SIZE ];
+        }
+        EEEEO[0] = iT[16*64+0]*coeff[ 16*CB_SIZE ];
+        EEEEO[1] = iT[16*64+1]*coeff[ 16*CB_SIZE ];
+        EEEEE[0] = iT[ 0*64+0]*coeff[  0      ];
+        EEEEE[1] = iT[ 0*64+1]*coeff[  0      ];
+
+        for (k=0;k<2;k++)
+        {
+            EEEE[k] = EEEEE[k] + EEEEO[k];
+            EEEE[k+2] = EEEEE[1-k] - EEEEO[1-k];
+        }
+        for (k=0;k<4;k++)
+        {
+            EEE[k] = EEEE[k] + EEEO[k];
+            EEE[k+4] = EEEE[3-k] - EEEO[3-k];
+        }
+        for (k=0;k<8;k++)
+        {
+            EE[k] = EEE[k] + EEO[k];
+            EE[k+8] = EEE[7-k] - EEO[7-k];
+        }
+        for (k=0;k<16;k++)
+        {
+            E[k] = EE[k] + EO[k];
+            E[k+16] = EE[15-k] - EO[15-k];
+        }
+        for (k=0;k<32;k++)
+        {
+            block[k] = av_clip( ((E[k] + O[k] + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[k+32] = av_clip( ((E[31-k] - O[31-k] + rnd_factor)>>shift), outputMinimum, outputMaximum);
+        }
+        coeff ++;
+        block += uiTrSize;
+    }
+#undef CB_SIZE
+}
+
+static void FUNC(fastInverseDCT2_B64_v_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+{
+#define CB_SIZE 64
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int uiTrSize = 64;
+    const int16_t *iT = NULL;
+    //av_assert2(0);
+
+    int j, k;
+    int E[32],O[32];
+    int EE[16],EO[16];
+    int EEE[8],EEO[8];
+    int EEEE[4],EEEO[4];
+    int EEEEE[2],EEEEO[2];
+    for (j=0; j < (CB_SIZE >> 1); j++)
+    {
+        for (k=0;k<32;k++)
+        {
+            O[k] = iT[ 1*64+k]*coeff[ CB_SIZE  ] + iT[ 3*64+k]*coeff[ 3*CB_SIZE  ] + iT[ 5*64+k]*coeff[ 5*CB_SIZE  ] + iT[ 7*64+k]*coeff[ 7*CB_SIZE  ] +
+                    iT[ 9*64+k]*coeff[ 9*CB_SIZE  ] + iT[11*64+k]*coeff[ 11*CB_SIZE ] + iT[13*64+k]*coeff[ 13*CB_SIZE ] + iT[15*64+k]*coeff[ 15*CB_SIZE ] +
+                    iT[17*64+k]*coeff[ 17*CB_SIZE ] + iT[19*64+k]*coeff[ 19*CB_SIZE ] + iT[21*64+k]*coeff[ 21*CB_SIZE ] + iT[23*64+k]*coeff[ 23*CB_SIZE ] +
+                    iT[25*64+k]*coeff[ 25*CB_SIZE ] + iT[27*64+k]*coeff[ 27*CB_SIZE ] + iT[29*64+k]*coeff[ 29*CB_SIZE ] + iT[31*64+k]*coeff[ 31*CB_SIZE ];
+        }
+        for (k=0;k<16;k++)
+        {
+            EO[k] = iT[ 2*64+k]*coeff[ 2*CB_SIZE  ] + iT[ 6*64+k]*coeff[ 6*CB_SIZE  ] + iT[10*64+k]*coeff[ 10*CB_SIZE ] + iT[14*64+k]*coeff[ 14*CB_SIZE ] +
+                    iT[18*64+k]*coeff[ 18*CB_SIZE ] + iT[22*64+k]*coeff[ 22*CB_SIZE ] + iT[26*64+k]*coeff[ 26*CB_SIZE ] + iT[30*64+k]*coeff[ 30*CB_SIZE ];
+        }
+        for (k=0;k<8;k++)
+        {
+            EEO[k] = iT[4*64+k]*coeff[ 4*CB_SIZE ] + iT[12*64+k]*coeff[ 12*CB_SIZE ] + iT[20*64+k]*coeff[ 20*CB_SIZE ] + iT[28*64+k]*coeff[ 28*CB_SIZE ];
+        }
+        for (k=0;k<4;k++)
+        {
+            EEEO[k] = iT[8*64+k]*coeff[ 8*CB_SIZE ] + iT[24*64+k]*coeff[ 24*CB_SIZE ];
+        }
+        EEEEO[0] = iT[16*64+0]*coeff[ 16*CB_SIZE ];
+        EEEEO[1] = iT[16*64+1]*coeff[ 16*CB_SIZE ];
+        EEEEE[0] = iT[ 0*64+0]*coeff[  0      ];
+        EEEEE[1] = iT[ 0*64+1]*coeff[  0      ];
 
         for (k=0;k<2;k++)
         {
@@ -1230,7 +1369,7 @@ static void FUNC(fastInverseDCT2_B64_v)(int16_t *coeff, int16_t *block, int shif
 /*
  * Fast inverse DCT5 4-8-16-32
  */
-static void FUNC(fastInverseDCT5_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i, j, k, iSum;
@@ -1256,7 +1395,7 @@ static void FUNC(fastInverseDCT5_B4_h)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B4_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B4_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i, j, k, iSum;
@@ -1282,7 +1421,7 @@ static void FUNC(fastInverseDCT5_B4_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1308,7 +1447,7 @@ static void FUNC(fastInverseDCT5_B8_h)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B8_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B8_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1334,7 +1473,7 @@ static void FUNC(fastInverseDCT5_B8_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1360,7 +1499,7 @@ static void FUNC(fastInverseDCT5_B16_h)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B16_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B16_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1386,7 +1525,7 @@ static void FUNC(fastInverseDCT5_B16_v)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1412,7 +1551,7 @@ static void FUNC(fastInverseDCT5_B32_h)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B32_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B32_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1444,7 +1583,7 @@ static void FUNC(fastInverseDCT5_B32_v)(int16_t *coeff, int16_t *block, int shif
 /*
  * Fast inverse DCT8 4-8-16-32
  */
-static void FUNC(fastInverseDCT8_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i;
@@ -1471,7 +1610,7 @@ static void FUNC(fastInverseDCT8_B4_h)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B4_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B4_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i;
@@ -1498,7 +1637,7 @@ static void FUNC(fastInverseDCT8_B4_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1524,7 +1663,7 @@ static void FUNC(fastInverseDCT8_B8_h)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B8_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B8_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1550,7 +1689,7 @@ static void FUNC(fastInverseDCT8_B8_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1576,7 +1715,7 @@ static void FUNC(fastInverseDCT8_B16_h)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B16_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B16_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1602,7 +1741,7 @@ static void FUNC(fastInverseDCT8_B16_v)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B32_h_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1611,29 +1750,7 @@ static void FUNC(fastInverseDCT8_B32_h)(int16_t *coeff, int16_t *block, int shif
     const int uiTrSize = 32;
     const int16_t *iT = g_aiTr32[DCT_VIII][0];
 
-    if ( zo )
-    {
-        for (i=0; i<(CB_SIZE >> (zo-1) ); i++)
-        {
-            for (j=0; j<uiTrSize; j++)
-            {
-                iSum = 0;
-                for (k=0; k<( uiTrSize / 2 ); k++)
-                {
-                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
-                }
-                block[j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
-            }
-            block+=uiTrSize;
-            coeff++;
-        }
-        if( zo==2 )
-        {
-            memset( block, 0, sizeof(int16_t)*uiTrSize*uiTrSize/2 );
-        }
-    }
-    else
-    {
+
         for (i=0; i<CB_SIZE; i++)
         {
             for (j=0; j<uiTrSize; j++)
@@ -1648,11 +1765,11 @@ static void FUNC(fastInverseDCT8_B32_h)(int16_t *coeff, int16_t *block, int shif
             block+=uiTrSize;
             coeff++;
         }
-    }
+
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B32_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B32_v_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1661,29 +1778,6 @@ static void FUNC(fastInverseDCT8_B32_v)(int16_t *coeff, int16_t *block, int shif
     const int uiTrSize = 32;
     const int16_t *iT = g_aiTr32[DCT_VIII][0];
 
-    if ( zo )
-    {
-        for (i=0; i<(CB_SIZE >> (zo-1) ); i++)
-        {
-            for (j=0; j<uiTrSize; j++)
-            {
-                iSum = 0;
-                for (k=0; k<( uiTrSize / 2 ); k++)
-                {
-                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
-                }
-                block[j] = av_clip(((iSum + ADD_EMT_V) >> SHIFT_EMT_V), outputMinimum, outputMaximum);
-            }
-            block+=uiTrSize;
-            coeff++;
-        }
-        if( zo==2 )
-        {
-            memset( block, 0, sizeof(int16_t)*uiTrSize*uiTrSize/2 );
-        }
-    }
-    else
-    {
         for (i=0; i<CB_SIZE; i++)
         {
             for (j=0; j<uiTrSize; j++)
@@ -1698,7 +1792,58 @@ static void FUNC(fastInverseDCT8_B32_v)(int16_t *coeff, int16_t *block, int shif
             block+=uiTrSize;
             coeff++;
         }
-    }
+#undef CB_SIZE
+}
+
+static void FUNC(fastInverseDCT8_B32_h_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+{
+#define CB_SIZE 32
+    int i, j, k, iSum;
+    int rnd_factor = ( 1<<(shift-1) );
+
+    const int uiTrSize = 32;
+    const int16_t *iT = g_aiTr32[DCT_VIII][0];
+
+        for (i=0; i < CB_SIZE ; i++)
+        {
+            for (j=0; j<uiTrSize; j++)
+            {
+                iSum = 0;
+                for (k=0; k<( uiTrSize / 2 ); k++)
+                {
+                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
+                }
+                block[j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            }
+            block+=uiTrSize;
+            coeff++;
+        }
+#undef CB_SIZE
+}
+
+static void FUNC(fastInverseDCT8_B32_v_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+{
+#define CB_SIZE 32
+    int i, j, k, iSum;
+    //int rnd_factor = ( 1<<(shift-1) );
+
+    const int uiTrSize = 32;
+    const int16_t *iT = g_aiTr32[DCT_VIII][0];
+
+        for (i=0; i < (CB_SIZE >> 1); i++)
+        {
+            for (j=0; j<uiTrSize; j++)
+            {
+                iSum = 0;
+                for (k=0; k<( uiTrSize / 2 ); k++)
+                {
+                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
+                }
+                block[j] = av_clip(((iSum + ADD_EMT_V) >> SHIFT_EMT_V), outputMinimum, outputMaximum);
+            }
+            block+=uiTrSize;
+            coeff++;
+        }
 #undef CB_SIZE
 }
 /*
@@ -1708,7 +1853,7 @@ static void FUNC(fastInverseDCT8_B32_v)(int16_t *coeff, int16_t *block, int shif
 /*
  * Fast inverse DST1 4-8-16-32
  */
-static void FUNC(fastInverseDST1_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i;
@@ -1735,7 +1880,7 @@ static void FUNC(fastInverseDST1_B4_h)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B4_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B4_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i;
@@ -1762,7 +1907,7 @@ static void FUNC(fastInverseDST1_B4_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1786,7 +1931,7 @@ static void FUNC(fastInverseDST1_B8_h)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B8_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B8_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -1810,7 +1955,7 @@ static void FUNC(fastInverseDST1_B8_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1834,7 +1979,7 @@ static void FUNC(fastInverseDST1_B16_h)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B16_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B16_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -1858,7 +2003,7 @@ static void FUNC(fastInverseDST1_B16_v)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1882,7 +2027,7 @@ static void FUNC(fastInverseDST1_B32_h)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B32_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B32_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -1912,7 +2057,7 @@ static void FUNC(fastInverseDST1_B32_v)(int16_t *coeff, int16_t *block, int shif
 /*
  * Fast inverse DSTVII 4-8-16-32
  */
-static void FUNC(fastInverseDST7_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i, c[4];
@@ -1944,7 +2089,7 @@ static void FUNC(fastInverseDST7_B4_h)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B4_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B4_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i, c[4];
@@ -1976,7 +2121,7 @@ static void FUNC(fastInverseDST7_B4_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -2002,7 +2147,7 @@ static void FUNC(fastInverseDST7_B8_h)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B8_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B8_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
@@ -2028,7 +2173,7 @@ static void FUNC(fastInverseDST7_B8_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -2053,7 +2198,7 @@ static void FUNC(fastInverseDST7_B16_h)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B16_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B16_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
@@ -2078,7 +2223,7 @@ static void FUNC(fastInverseDST7_B16_v)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B32_h_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -2087,25 +2232,6 @@ static void FUNC(fastInverseDST7_B32_h)(int16_t *coeff, int16_t *block, int shif
     const int uiTrSize = 32;
     const int16_t *iT = g_aiTr32[DST_VII][0];
 
-    if ( zo )
-    {
-        for (i=0; i<(CB_SIZE>>(zo-1)); i++)
-        {
-            for (j=0; j<uiTrSize; j++)
-            {
-                iSum = 0;
-                for (k=0; k<( uiTrSize / 2 ); k++)
-                {
-                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
-                }
-                block[j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
-            }
-            block+=uiTrSize;
-            coeff++;
-        }
-    }
-    else
-    {
         for (i=0; i<CB_SIZE; i++)
         {
             for (j=0; j<uiTrSize; j++)
@@ -2120,11 +2246,82 @@ static void FUNC(fastInverseDST7_B32_h)(int16_t *coeff, int16_t *block, int shif
             block+=uiTrSize;
             coeff++;
         }
-    }
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B32_v)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ int zo, /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B32_h_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+{
+#define CB_SIZE 32
+    int i, j, k, iSum;
+    int rnd_factor = ( 1<<(shift-1) );
+
+    const int uiTrSize = 32;
+    const int16_t *iT = g_aiTr32[DST_VII][0];
+
+        for (i=0; i< CB_SIZE; i++)
+        {
+            for (j=0; j<uiTrSize; j++)
+            {
+                iSum = 0;
+                for (k=0; k<( uiTrSize / 2 ); k++)
+                {
+                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
+                }
+                block[j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            }
+            block+=uiTrSize;
+            coeff++;
+        }
+#undef CB_SIZE
+}
+
+//static void FUNC(fastInverseDST7_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+//{
+//#define CB_SIZE 32
+//    int i, j, k, iSum;
+//    int rnd_factor = ( 1<<(shift-1) );
+
+//    const int uiTrSize = 32;
+//    const int16_t *iT = g_aiTr32[DST_VII][0];
+
+//    if ( zo )
+//    {
+//        for (i=0; i< CB_SIZE; i++)
+//        {
+//            for (j=0; j<uiTrSize; j++)
+//            {
+//                iSum = 0;
+//                for (k=0; k<( uiTrSize / 2 ); k++)
+//                {
+//                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
+//                }
+//                block[j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+//            }
+//            block+=uiTrSize;
+//            coeff++;
+//        }
+//    }
+//    else
+//    {
+//        for (i=0; i<CB_SIZE; i++)
+//        {
+//            for (j=0; j<uiTrSize; j++)
+//            {
+//                iSum = 0;
+//                for (k=0; k<uiTrSize; k++)
+//                {
+//                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
+//                }
+//                block[j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+//            }
+//            block+=uiTrSize;
+//            coeff++;
+//        }
+//    }
+//#undef CB_SIZE
+//}
+
+static void FUNC(fastInverseDST7_B32_v_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
@@ -2133,25 +2330,7 @@ static void FUNC(fastInverseDST7_B32_v)(int16_t *coeff, int16_t *block, int shif
     const int uiTrSize = 32;
     const int16_t *iT = g_aiTr32[DST_VII][0];
 
-    if ( zo )
-    {
-        for (i=0; i<(CB_SIZE>>(zo-1)); i++)
-        {
-            for (j=0; j<uiTrSize; j++)
-            {
-                iSum = 0;
-                for (k=0; k<( uiTrSize / 2 ); k++)
-                {
-                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
-                }
-                block[j] = av_clip( ((iSum + ADD_EMT_V) >> SHIFT_EMT_V), outputMinimum, outputMaximum);
-            }
-            block+=uiTrSize;
-            coeff++;
-        }
-    }
-    else
-    {
+
         for (i=0; i<CB_SIZE; i++)
         {
             for (j=0; j<uiTrSize; j++)
@@ -2166,39 +2345,80 @@ static void FUNC(fastInverseDST7_B32_v)(int16_t *coeff, int16_t *block, int shif
             block+=uiTrSize;
             coeff++;
         }
-    }
 #undef CB_SIZE
 }
 
-InvTrans FUNC(*fastInvTrans_h)[7][5] =
+static void FUNC(fastInverseDST7_B32_v_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
-  {FUNC(fastInverseDCT2_B4_h), FUNC(fastInverseDCT2_B8_h), FUNC(fastInverseDCT2_B16_h), FUNC(fastInverseDCT2_B32_h), FUNC(fastInverseDCT2_B64_h)},//DCT_II
+#define CB_SIZE 32
+    int i, j, k, iSum;
+    //int rnd_factor = ( 1<<(shift-1) );
+
+    const int uiTrSize = 32;
+    const int16_t *iT = g_aiTr32[DST_VII][0];
+
+        for (i=0; i < (CB_SIZE >> 1); i++)
+        {
+            for (j=0; j<uiTrSize; j++)
+            {
+                iSum = 0;
+                for (k=0; k<( uiTrSize / 2 ); k++)
+                {
+                    iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
+                }
+                block[j] = av_clip( ((iSum + ADD_EMT_V) >> SHIFT_EMT_V), outputMinimum, outputMaximum);
+            }
+            block+=uiTrSize;
+            coeff++;
+        }
+
+#undef CB_SIZE
+}
+
+InvTrans FUNC(*fastInvTrans_h)[2][7][5] =
+{
+ {{FUNC(fastInverseDCT2_B4_h), FUNC(fastInverseDCT2_B8_h), FUNC(fastInverseDCT2_B16_h), FUNC(fastInverseDCT2_B32_h), FUNC(fastInverseDCT2_B64_h_intra)},//DCT_II
   {NULL			     , NULL			     , NULL			      , NULL			   , NULL               },//DCT_III
   {NULL			     , NULL			     , NULL			      , NULL			   , NULL               },//DCT_I
   {FUNC(fastInverseDST1_B4_h), FUNC(fastInverseDST1_B8_h), FUNC(fastInverseDST1_B16_h), FUNC(fastInverseDST1_B32_h), NULL               },//DST_I
-  {FUNC(fastInverseDST7_B4_h), FUNC(fastInverseDST7_B8_h), FUNC(fastInverseDST7_B16_h), FUNC(fastInverseDST7_B32_h), NULL               },//DST_VII
-  {FUNC(fastInverseDCT8_B4_h), FUNC(fastInverseDCT8_B8_h), FUNC(fastInverseDCT8_B16_h), FUNC(fastInverseDCT8_B32_h), NULL               },//DCT_VIII
-  {FUNC(fastInverseDCT5_B4_h), FUNC(fastInverseDCT5_B8_h), FUNC(fastInverseDCT5_B16_h), FUNC(fastInverseDCT5_B32_h), NULL               },//DCT_V
+  {FUNC(fastInverseDST7_B4_h), FUNC(fastInverseDST7_B8_h), FUNC(fastInverseDST7_B16_h), FUNC(fastInverseDST7_B32_h_intra), NULL               },//DST_VII
+  {FUNC(fastInverseDCT8_B4_h), FUNC(fastInverseDCT8_B8_h), FUNC(fastInverseDCT8_B16_h), FUNC(fastInverseDCT8_B32_h_intra), NULL               },//DCT_VIII
+  {FUNC(fastInverseDCT5_B4_h), FUNC(fastInverseDCT5_B8_h), FUNC(fastInverseDCT5_B16_h), FUNC(fastInverseDCT5_B32_h), NULL               }},//DCT_V
+ {{FUNC(fastInverseDCT2_B4_h), FUNC(fastInverseDCT2_B8_h), FUNC(fastInverseDCT2_B16_h), FUNC(fastInverseDCT2_B32_h), FUNC(fastInverseDCT2_B64_h_intra)},//DCT_II
+  {NULL			     , NULL			     , NULL			      , NULL			   , NULL               },//DCT_III
+  {NULL			     , NULL			     , NULL			      , NULL			   , NULL               },//DCT_I
+  {FUNC(fastInverseDST1_B4_h), FUNC(fastInverseDST1_B8_h), FUNC(fastInverseDST1_B16_h), FUNC(fastInverseDST1_B32_h), NULL               },//DST_I
+  {FUNC(fastInverseDST7_B4_h), FUNC(fastInverseDST7_B8_h), FUNC(fastInverseDST7_B16_h), FUNC(fastInverseDST7_B32_h_inter), NULL               },//DST_VII
+  {FUNC(fastInverseDCT8_B4_h), FUNC(fastInverseDCT8_B8_h), FUNC(fastInverseDCT8_B16_h), FUNC(fastInverseDCT8_B32_h_inter), NULL               },//DCT_VIII
+  {FUNC(fastInverseDCT5_B4_h), FUNC(fastInverseDCT5_B8_h), FUNC(fastInverseDCT5_B16_h), FUNC(fastInverseDCT5_B32_h), NULL               }}//DCT_V
 };
 
-InvTrans FUNC(*fastInvTrans_v)[7][5] =
+InvTrans FUNC(*fastInvTrans_v)[2][7][5] =
 {
-  {FUNC(fastInverseDCT2_B4_v), FUNC(fastInverseDCT2_B8_v), FUNC(fastInverseDCT2_B16_v), FUNC(fastInverseDCT2_B32_v), FUNC(fastInverseDCT2_B64_v)},//DCT_II
+ {{FUNC(fastInverseDCT2_B4_v), FUNC(fastInverseDCT2_B8_v), FUNC(fastInverseDCT2_B16_v), FUNC(fastInverseDCT2_B32_v), FUNC(fastInverseDCT2_B64_v_inter)},//DCT_II
   {NULL			     , NULL			     , NULL			      , NULL			   , NULL               },//DCT_III
   {NULL			     , NULL			     , NULL			      , NULL			   , NULL               },//DCT_I
   {FUNC(fastInverseDST1_B4_v), FUNC(fastInverseDST1_B8_v), FUNC(fastInverseDST1_B16_v), FUNC(fastInverseDST1_B32_v), NULL               },//DST_I
-  {FUNC(fastInverseDST7_B4_v), FUNC(fastInverseDST7_B8_v), FUNC(fastInverseDST7_B16_v), FUNC(fastInverseDST7_B32_v), NULL               },//DST_VII
-  {FUNC(fastInverseDCT8_B4_v), FUNC(fastInverseDCT8_B8_v), FUNC(fastInverseDCT8_B16_v), FUNC(fastInverseDCT8_B32_v), NULL               },//DCT_VIII
-  {FUNC(fastInverseDCT5_B4_v), FUNC(fastInverseDCT5_B8_v), FUNC(fastInverseDCT5_B16_v), FUNC(fastInverseDCT5_B32_v), NULL               },//DCT_V
+  {FUNC(fastInverseDST7_B4_v), FUNC(fastInverseDST7_B8_v), FUNC(fastInverseDST7_B16_v), FUNC(fastInverseDST7_B32_v_intra), NULL               },//DST_VII
+  {FUNC(fastInverseDCT8_B4_v), FUNC(fastInverseDCT8_B8_v), FUNC(fastInverseDCT8_B16_v), FUNC(fastInverseDCT8_B32_v_intra), NULL               },//DCT_VIII
+  {FUNC(fastInverseDCT5_B4_v), FUNC(fastInverseDCT5_B8_v), FUNC(fastInverseDCT5_B16_v), FUNC(fastInverseDCT5_B32_v), NULL               }//DCT_V
+},
+ {{FUNC(fastInverseDCT2_B4_v), FUNC(fastInverseDCT2_B8_v), FUNC(fastInverseDCT2_B16_v), FUNC(fastInverseDCT2_B32_v), FUNC(fastInverseDCT2_B64_v_inter)},//DCT_II
+  {NULL			     , NULL			     , NULL			      , NULL			   , NULL               },//DCT_III
+  {NULL			     , NULL			     , NULL			      , NULL			   , NULL               },//DCT_I
+  {FUNC(fastInverseDST1_B4_v), FUNC(fastInverseDST1_B8_v), FUNC(fastInverseDST1_B16_v), FUNC(fastInverseDST1_B32_v), NULL               },//DST_I
+  {FUNC(fastInverseDST7_B4_v), FUNC(fastInverseDST7_B8_v), FUNC(fastInverseDST7_B16_v), FUNC(fastInverseDST7_B32_v_inter), NULL               },//DST_VII
+  {FUNC(fastInverseDCT8_B4_v), FUNC(fastInverseDCT8_B8_v), FUNC(fastInverseDCT8_B16_v), FUNC(fastInverseDCT8_B32_v_inter), NULL               },//DCT_VIII
+  {FUNC(fastInverseDCT5_B4_v), FUNC(fastInverseDCT5_B8_v), FUNC(fastInverseDCT5_B16_v), FUNC(fastInverseDCT5_B32_v), NULL               }}//DCT_V
 };
 /*
  * End DSTVII
  */
 
-static void FUNC(idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, int nLog2SizeMinus2, int maxLog2TrDynamicRange, int emt_tu_idx_h,int emt_tu_idx_v, int z0_h,int z0_v)
+static void FUNC(idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, int nLog2SizeMinus2, int maxLog2TrDynamicRange, int emt_tu_idx_h,int emt_tu_idx_v, int z0/*,int z0_v*/)
 {
     int tr_size          = (1 << log2_trafo_size) ;
-    const int shift_v    = EMT_TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC;
+    //const int shift_v    = EMT_TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC;
     const int shift_h    = (EMT_TRANSFORM_MATRIX_SHIFT + maxLog2TrDynamicRange - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
 
     const int clipMinimum  = -(1 << maxLog2TrDynamicRange);
@@ -2206,8 +2426,8 @@ static void FUNC(idct_emt)(int16_t *coeffs, int16_t *dst, int log2_trafo_size, i
 
     int16_t tmp[ MAX_TU_SIZE * MAX_TU_SIZE ];
 
-    FUNC(fastInvTrans_v)[emt_tu_idx_v][nLog2SizeMinus2]( coeffs, tmp, shift_v, /*tr_size,*/ z0_v,/* 1,*/ clipMinimum, clipMaximum );
-    FUNC(fastInvTrans_h)[emt_tu_idx_h][nLog2SizeMinus2]( tmp,    dst, shift_h, /*tr_size,*/ z0_h,/* 1,*/ clipMinimum, clipMaximum );
+    FUNC(fastInvTrans_v)[z0][emt_tu_idx_v][nLog2SizeMinus2]( coeffs, tmp, 0, /*tr_size,*/ /*z0_v,*//* 1,*/ clipMinimum, clipMaximum );
+    FUNC(fastInvTrans_h)[z0][emt_tu_idx_h][nLog2SizeMinus2]( tmp,    dst, shift_h, /*tr_size,*//* z0_h,*//* 1,*/ clipMinimum, clipMaximum );
 }
 #endif
 
