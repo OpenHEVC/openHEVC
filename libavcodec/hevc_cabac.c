@@ -1888,7 +1888,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     tr_idx_v = g_aiTrSubSetInter[(tu_emt_Idx) >> 1];
                 }
             }
-            s->hevcdsp.idct_emt(coeffs, coeffs, log2_trafo_size, log2_trafo_size - 2, log2_transform_range, tr_idx_h, tr_idx_v, zo/*,zo_v*/);
+            s->hevcdsp.idct_emt(coeffs, coeffs, /*log2_trafo_size,*/ log2_trafo_size - 2, log2_transform_range, tr_idx_h, tr_idx_v, zo/*,zo_v*/);
 #endif
         } else {
             if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {

@@ -235,55 +235,60 @@ const  int g_aiTrSubSetInter[2] =
 void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #if COM16_C806_EMT
-int c = 4;
-for ( int i=0; i<4; i++ )
-	{
-	short *iT = NULL;
-    const double s = sqrt((double)c) * ( 64 << COM16_C806_TRANS_PREC );
-	const double PI = 3.14159265358979323846;
+//int c = 4;
+//for ( int i=0; i<4; i++ )
+//    {
+//    short *iT = NULL;
+//    const double s = sqrt((double)c) * ( 64 << COM16_C806_TRANS_PREC );
+//    //printf("%f\n",s);
+//    const double PI = 3.14159265358979323846;
+//    printf("{\n");
+//    switch(i)
+//      {
+//      case 0: iT = g_aiTr4 [0][0]; break;
+//      case 1: iT = g_aiTr8 [0][0]; break;
+//      case 2: iT = g_aiTr16[0][0]; break;
+//      case 3: iT = g_aiTr32[0][0]; break;
+//      case 4: printf("Cas 4\n"); break;
+//      }
 
-	switch(i)
-	  {
-	  case 0: iT = g_aiTr4 [0][0]; break;
-	  case 1: iT = g_aiTr8 [0][0]; break;
-	  case 2: iT = g_aiTr16[0][0]; break;
-	  case 3: iT = g_aiTr32[0][0]; break;
-	  case 4: printf("Cas 4\n"); break;
-	  }
-	for( int k=0; k<c; k++ )
-	  {
-		for( int n=0; n<c; n++ )
-		{
-		  double w0, w1, v;
+//    for( int k=0; k<c; k++ )
+//      {
+//        printf("{ ");
+//        for( int n=0; n<c; n++ )
+//        {
+//          double w0, w1, v;
 
-		  // DCT-II
-          w0 = k==0 ? sqrt(0.5) : 1;
-          v = cos(PI*(n+0.5)*k/c ) * w0 * sqrt(2.0/c);
-          iT[(DCT_II)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
+//          // DCT-II
+//          w0 = k==0 ? sqrt(0.5) : 1;
+//          v = cos(PI*(n+0.5)*k/c ) * w0 * sqrt(2.0/c);
+//          iT[(DCT_II)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
+//          //printf("%d ",iT[(DCT_II)*c*c + k*c + n]);
+//          // DCT-V
+//          w0 = ( k==0 ) ? sqrt(0.5) : 1.0;
+//          w1 = ( n==0 ) ? sqrt(0.5) : 1.0;
+//          v = cos(PI*n*k/(c-0.5)) * w0 * w1 * sqrt(2.0/(c-0.5));
+//          iT[(DCT_V)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
+//         //printf("%d ",iT[(DCT_V)*c*c + k*c + n]);
 
-		  // DCT-V
-		  w0 = ( k==0 ) ? sqrt(0.5) : 1.0;
-		  w1 = ( n==0 ) ? sqrt(0.5) : 1.0;
-		  v = cos(PI*n*k/(c-0.5)) * w0 * w1 * sqrt(2.0/(c-0.5));
-		  iT[(DCT_V)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
-		  //printf("%f \t",v);
+//          // DCT-VIII
+//          v = cos(PI*(k+0.5)*(n+0.5)/(c+0.5) ) * sqrt(2.0/(c+0.5));
+//          iT[(DCT_VIII)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
 
-		  // DCT-VIII
-		  v = cos(PI*(k+0.5)*(n+0.5)/(c+0.5) ) * sqrt(2.0/(c+0.5));
-		  iT[(DCT_VIII)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
+//          // DST-I
+//          v = sin(PI*(n+1)*(k+1)/(c+1)) * sqrt(2.0/(c+1));
+//          iT[(DST_I)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
+//          //printf("%0.4d, ",iT[(DST_I)*c*c + k*c + n]);
 
-		  // DST-I
-		  v = sin(PI*(n+1)*(k+1)/(c+1)) * sqrt(2.0/(c+1));
-		  iT[(DST_I)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
-
-		  // DST-VII
-		  v = sin(PI*(k+0.5)*(n+1)/(c+0.5)) * sqrt(2.0/(c+0.5));
-		  iT[(DST_VII)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
-		}
-		//printf("\n\n");
-	  }
-	c <<= 1;
-	}
+//          // DST-VII
+//          v = sin(PI*(k+0.5)*(n+1)/(c+0.5)) * sqrt(2.0/(c+0.5));
+//          iT[(DST_VII)*c*c + k*c + n] = (short) ( s * v + ( v > 0 ? 0.5 : -0.5) );
+//          printf("%0.4d, ",iT[(DST_VII)*c*c + k*c + n]);
+//        }
+//        printf("},\n");
+//      }
+//    c <<= 1;
+//    }
 #endif
 
 #undef FUNC
@@ -472,7 +477,7 @@ int i = 0;
     hevcdsp->upsample_filter_block_cr_v[1]   = FUNC(upsample_filter_block_cr_v_x2, depth); \
     hevcdsp->upsample_filter_block_cr_v[2]   = FUNC(upsample_filter_block_cr_v_x1_5, depth); \
     hevcdsp->map_color_block                 = FUNC(map_color_block,depth);\
-    
+
     switch (bit_depth) {
     case 9:
         HEVC_DSP_UP(9);
