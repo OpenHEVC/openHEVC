@@ -1048,12 +1048,13 @@ const int emt_Tr_Set_H[35] =
 #define SHIFT_EMT_V (EMT_TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC)
 #define ADD_EMT_V (1 << (SHIFT_EMT_V - 1))
 
-static void FUNC(fastInverseDCT2_B4_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B4_h)(int16_t *src, int16_t *dst, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int j;
     int E[2],O[2];
-    int add = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
 #if COM16_C806_EMT
     // Note that this function is always called with use = 1
@@ -1070,10 +1071,10 @@ static void FUNC(fastInverseDCT2_B4_h)(int16_t *src, int16_t *dst, int shift, /*
         E[0] = iT[0*4+0]*src[0] + iT[2*4+0]*src[2*CB_SIZE];
         E[1] = iT[0*4+1]*src[0] + iT[2*4+1]*src[2*CB_SIZE];
 
-        dst[0] = av_clip(((E[0] + O[0] + add)>>shift), outputMinimum, outputMaximum);
-        dst[1] = av_clip(((E[1] + O[1] + add)>>shift), outputMinimum, outputMaximum);
-        dst[2] = av_clip(((E[1] - O[1] + add)>>shift), outputMinimum, outputMaximum);
-        dst[3] = av_clip(((E[0] - O[0] + add)>>shift), outputMinimum, outputMaximum);
+        dst[0] = av_clip(((E[0] + O[0] + add) >> shift), outputMinimum, outputMaximum);
+        dst[1] = av_clip(((E[1] + O[1] + add) >> shift), outputMinimum, outputMaximum);
+        dst[2] = av_clip(((E[1] - O[1] + add) >> shift), outputMinimum, outputMaximum);
+        dst[3] = av_clip(((E[0] - O[0] + add) >> shift), outputMinimum, outputMaximum);
 
         src   ++;
         dst += 4;
@@ -1114,13 +1115,14 @@ static void FUNC(fastInverseDCT2_B4_v)(int16_t *src, int16_t *dst, int shift, /*
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B8_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B8_h)(int16_t *src, int16_t *dst, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int j,k;
     int E[4],O[4];
     int EE[2],EO[2];
-    int add = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
 #if COM16_C806_EMT
     const int16_t *iT = DCT_II_8x8[0];//g_aiTr8[DCT_II][0];
@@ -1148,8 +1150,8 @@ static void FUNC(fastInverseDCT2_B8_h)(int16_t *src, int16_t *dst, int shift, /*
         E[2] = EE[1] - EO[1];
         for (k=0;k<4;k++)
         {
-            dst[k] = av_clip( ((E[k] + O[k] + add)>>shift), outputMinimum, outputMaximum);
-            dst[k+4] = av_clip( ((E[3-k] - O[3-k] + add)>>shift), outputMinimum, outputMaximum);
+            dst[k]   = av_clip( ((E[k] + O[k]     + add) >> shift), outputMinimum, outputMaximum);
+            dst[k+4] = av_clip( ((E[3-k] - O[3-k] + add) >> shift), outputMinimum, outputMaximum);
         }
         src ++;
         dst += 8;
@@ -1200,14 +1202,15 @@ static void FUNC(fastInverseDCT2_B8_v)(int16_t *src, int16_t *dst, int shift, /*
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B16_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B16_h)(int16_t *src, int16_t *dst, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int j,k;
     int E[8],O[8];
     int EE[4],EO[4];
     int EEE[2],EEO[2];
-    int add = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
 #if COM16_C806_EMT
     const int16_t *iT = DCT_II_16x16[0];//g_aiTr16[DCT_II][0];
@@ -1244,8 +1247,8 @@ static void FUNC(fastInverseDCT2_B16_h)(int16_t *src, int16_t *dst, int shift, /
         }
         for (k=0;k<8;k++)
         {
-            dst[k] = av_clip( ((E[k] + O[k] + add)>>shift), outputMinimum, outputMaximum);
-            dst[k+8] = av_clip( ((E[7-k] - O[7-k] + add)>>shift), outputMinimum, outputMaximum);
+            dst[k] = av_clip( ((E[k] + O[k]       + add) >> shift), outputMinimum, outputMaximum);
+            dst[k+8] = av_clip( ((E[7-k] - O[7-k] + add) >> shift), outputMinimum, outputMaximum);
         }
         src ++;
         dst += 16;
@@ -1306,7 +1309,7 @@ static void FUNC(fastInverseDCT2_B16_v)(int16_t *src, int16_t *dst, int shift, /
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT2_B32_h)(int16_t *src, int16_t *dst, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B32_h)(int16_t *src, int16_t *dst, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int j,k;
@@ -1314,7 +1317,8 @@ static void FUNC(fastInverseDCT2_B32_h)(int16_t *src, int16_t *dst, int shift, /
     int EE[8],EO[8];
     int EEE[4],EEO[4];
     int EEEE[2],EEEO[2];
-    int add = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
 #if COM16_C806_EMT
     const int16_t *iT = DCT_II_32x32[0];//g_aiTr32[DCT_II][0];
@@ -1364,8 +1368,8 @@ static void FUNC(fastInverseDCT2_B32_h)(int16_t *src, int16_t *dst, int shift, /
         }
         for (k=0;k<16;k++)
         {
-            dst[k] = av_clip( ((E[k] + O[k] + add)>>shift), outputMinimum, outputMaximum);
-            dst[k+16] = av_clip( ((E[15-k] - O[15-k] + add)>>shift), outputMinimum, outputMaximum);
+            dst[k]    = av_clip( ((E[k] + O[k]       + add) >> shift), outputMinimum, outputMaximum);
+            dst[k+16] = av_clip( ((E[15-k] - O[15-k] + add) >> shift), outputMinimum, outputMaximum);
         }
         src ++;
         dst += 32;
@@ -1441,12 +1445,14 @@ static void FUNC(fastInverseDCT2_B32_v)(int16_t *src, int16_t *dst, int shift, /
 }
 
 // We don't use these function yet since we don't use CTUs larger than 64x64
-static void FUNC(fastInverseDCT2_B64_h_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B64_h_intra)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 64
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
     const int uiTrSize = 64;
     const int16_t *iT = NULL;
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
     //av_assert2(0);
 
     int j, k;
@@ -1511,8 +1517,8 @@ static void FUNC(fastInverseDCT2_B64_h_intra)(int16_t *coeff, int16_t *block, in
         }
         for (k=0;k<32;k++)
         {
-            block[k] = av_clip( ((E[k] + O[k] + rnd_factor)>>shift), outputMinimum, outputMaximum);
-            block[k+32] = av_clip( ((E[31-k] - O[31-k] + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[k]    = av_clip( ((E[k] + O[k]       + add) >> shift), outputMinimum, outputMaximum);
+            block[k+32] = av_clip( ((E[31-k] - O[31-k] + add) >> shift), outputMinimum, outputMaximum);
         }
         coeff ++;
         block += uiTrSize;
@@ -1600,12 +1606,14 @@ static void FUNC(fastInverseDCT2_B64_v_intra)(int16_t *coeff, int16_t *block, in
 }
 
 // We don't use these function yet since we don't use CTUs larger than 64x64
-static void FUNC(fastInverseDCT2_B64_h_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT2_B64_h_inter)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 64
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
     const int uiTrSize = 64;
     const int16_t *iT = NULL;
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
     //av_assert2(0);
 
     int j, k;
@@ -1663,8 +1671,8 @@ static void FUNC(fastInverseDCT2_B64_h_inter)(int16_t *coeff, int16_t *block, in
         }
         for (k=0;k<32;k++)
         {
-            block[k] = av_clip( ((E[k] + O[k] + rnd_factor)>>shift), outputMinimum, outputMaximum);
-            block[k+32] = av_clip( ((E[31-k] - O[31-k] + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[k]    = av_clip( ((E[k] + O[k]       + add) >> shift), outputMinimum, outputMaximum);
+            block[k+32] = av_clip( ((E[31-k] - O[31-k] + add) >> shift), outputMinimum, outputMaximum);
         }
         coeff ++;
         block += uiTrSize;
@@ -1750,11 +1758,13 @@ static void FUNC(fastInverseDCT2_B64_v_inter)(int16_t *coeff, int16_t *block, in
 /*
  * Fast inverse DCT5 4-8-16-32
  */
-static void FUNC(fastInverseDCT5_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B4_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i, j, k, iSum;
-    int rnd_factor = 1<<(shift-1);
+    //int rnd_factor = 1<<(shift-1);
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int16_t *iT = DCT_V_4x4[0];//g_aiTr4[DCT_V][0];
     const int uiTrSize = 4;
@@ -1768,7 +1778,7 @@ static void FUNC(fastInverseDCT5_B4_h)(int16_t *coeff, int16_t *block, int shift
             {
                 iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
             }
-            block[j] = av_clip(((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[j] = av_clip(((iSum + add)>>shift), outputMinimum, outputMaximum);
         }
         block+=uiTrSize;
         coeff++;
@@ -1802,11 +1812,13 @@ static void FUNC(fastInverseDCT5_B4_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B8_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
-    int rnd_factor = 1<<(shift-1);
+    //int rnd_factor = 1<<(shift-1);
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 8;
     const int16_t *iT = DCT_V_8x8[0];//g_aiTr8[DCT_V][0];
@@ -1820,7 +1832,7 @@ static void FUNC(fastInverseDCT5_B8_h)(int16_t *coeff, int16_t *block, int shift
             {
                 iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
             }
-            block[j] = av_clip(((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[j] = av_clip(((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
         block+=uiTrSize;
         coeff++;
@@ -1854,11 +1866,13 @@ static void FUNC(fastInverseDCT5_B8_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B16_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
-    int rnd_factor = (1<<(shift-1));
+    //int rnd_factor = (1<<(shift-1));
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 16;
     const int16_t *iT = DCT_V_16x16[0];//g_aiTr16[DCT_V][0];
@@ -1872,7 +1886,7 @@ static void FUNC(fastInverseDCT5_B16_h)(int16_t *coeff, int16_t *block, int shif
             {
                 iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
             }
-            block[j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[j] = av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
         block+=uiTrSize;
         coeff++;
@@ -1906,11 +1920,13 @@ static void FUNC(fastInverseDCT5_B16_v)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT5_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT5_B32_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
-    int rnd_factor = (1<<(shift-1));
+    //int rnd_factor = (1<<(shift-1));
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 32;
     const int16_t *iT = DCT_V_32x32[0];//g_aiTr32[DCT_V][0];
@@ -1924,7 +1940,7 @@ static void FUNC(fastInverseDCT5_B32_h)(int16_t *coeff, int16_t *block, int shif
             {
                 iSum += (coeff[k*CB_SIZE] * iT[k*uiTrSize+j]);
             }
-            block[j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[j] = av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
         block+=uiTrSize;
         coeff++;
@@ -1964,11 +1980,13 @@ static void FUNC(fastInverseDCT5_B32_v)(int16_t *coeff, int16_t *block, int shif
 /*
  * Fast inverse DCT8 4-8-16-32
  */
-static void FUNC(fastInverseDCT8_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B4_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int16_t *iT = DCT_VIII_4x4[0];//g_aiTr4[DCT_VIII][0];
 
@@ -1980,10 +1998,10 @@ static void FUNC(fastInverseDCT8_B4_h)(int16_t *coeff, int16_t *block, int shift
         c[2] = coeff[12] - coeff[ 8];
         c[3] = iT[1]* coeff[4];
 
-        block[0] = av_clip( ((iT[3] * c[0] + iT[2] * c[1] + c[3] + rnd_factor ) >> shift), outputMinimum, outputMaximum);
-        block[1] = av_clip( ((iT[1] * (coeff[0] - coeff[8] - coeff[12]) + rnd_factor ) >> shift), outputMinimum, outputMaximum);
-        block[2] = av_clip( ((iT[3] * c[2] + iT[2] * c[0] - c[3] + rnd_factor) >> shift), outputMinimum, outputMaximum);
-        block[3] = av_clip( ((iT[3] * c[1] - iT[2] * c[2] - c[3] + rnd_factor ) >> shift), outputMinimum, outputMaximum);
+        block[0] = av_clip( ((iT[3] * c[0] + iT[2] * c[1] + c[3]        + add) >> shift), outputMinimum, outputMaximum);
+        block[1] = av_clip( ((iT[1] * (coeff[0] - coeff[8] - coeff[12]) + add) >> shift), outputMinimum, outputMaximum);
+        block[2] = av_clip( ((iT[3] * c[2] + iT[2] * c[0] - c[3]        + add) >> shift), outputMinimum, outputMaximum);
+        block[3] = av_clip( ((iT[3] * c[1] - iT[2] * c[2] - c[3]        + add) >> shift), outputMinimum, outputMaximum);
 
         block+=4;
         coeff++;
@@ -2018,11 +2036,13 @@ static void FUNC(fastInverseDCT8_B4_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B8_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 8;
     const int16_t *iT = DCT_VIII_8x8[0];//g_aiTr8[DCT_VIII][0];
@@ -2036,7 +2056,7 @@ static void FUNC(fastInverseDCT8_B8_h)(int16_t *coeff, int16_t *block, int shift
             {
                 iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
             }
-            block[j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[j] =  av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
         block+=uiTrSize;
         coeff++;
@@ -2070,11 +2090,13 @@ static void FUNC(fastInverseDCT8_B8_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B16_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 16;
     const int16_t *iT = DCT_VIII_16x16[0];//g_aiTr16[DCT_VIII][0];
@@ -2088,7 +2110,7 @@ static void FUNC(fastInverseDCT8_B16_h)(int16_t *coeff, int16_t *block, int shif
             {
                 iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
             }
-            block[j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[j] =  av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
         block+=uiTrSize;
         coeff++;
@@ -2122,11 +2144,13 @@ static void FUNC(fastInverseDCT8_B16_v)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B32_h_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B32_h_intra)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 32;
     const int16_t *iT = DCT_VIII_32x32[0];//g_aiTr32[DCT_VIII][0];
@@ -2141,7 +2165,7 @@ static void FUNC(fastInverseDCT8_B32_h_intra)(int16_t *coeff, int16_t *block, in
                 {
                     iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
                 }
-                block[j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+                block[j] =  av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
             }
             block+=uiTrSize;
             coeff++;
@@ -2176,11 +2200,13 @@ static void FUNC(fastInverseDCT8_B32_v_intra)(int16_t *coeff, int16_t *block, in
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDCT8_B32_h_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDCT8_B32_h_inter)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 32;
     const int16_t *iT = DCT_VIII_32x32[0];//g_aiTr32[DCT_VIII][0];
@@ -2194,7 +2220,7 @@ static void FUNC(fastInverseDCT8_B32_h_inter)(int16_t *coeff, int16_t *block, in
                 {
                     iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
                 }
-                block[j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+                block[j] =  av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
             }
             block+=uiTrSize;
             coeff++;
@@ -2234,11 +2260,13 @@ static void FUNC(fastInverseDCT8_B32_v_inter)(int16_t *coeff, int16_t *block, in
 /*
  * Fast inverse DST1 4-8-16-32
  */
-static void FUNC(fastInverseDST1_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B4_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int16_t *iT = DST_I_4x4[0];//g_aiTr4[DST_I][0];
 
@@ -2250,10 +2278,10 @@ static void FUNC(fastInverseDST1_B4_h)(int16_t *coeff, int16_t *block, int shift
         E[1] = coeff[1*4] + coeff[2*4];
         O[1] = coeff[1*4] - coeff[2*4];
 
-        block[0] = av_clip( ((E[0]*iT[0] + E[1]*iT[1] + rnd_factor)>>shift), outputMinimum, outputMaximum);
-        block[1] = av_clip( ((O[0]*iT[1] + O[1]*iT[0] + rnd_factor)>>shift), outputMinimum, outputMaximum);
-        block[2] = av_clip( ((E[0]*iT[1] - E[1]*iT[0] + rnd_factor)>>shift), outputMinimum, outputMaximum);
-        block[3] = av_clip( ((O[0]*iT[0] - O[1]*iT[1] + rnd_factor)>>shift), outputMinimum, outputMaximum);
+        block[0] = av_clip( ((E[0]*iT[0] + E[1]*iT[1] + add) >> shift), outputMinimum, outputMaximum);
+        block[1] = av_clip( ((O[0]*iT[1] + O[1]*iT[0] + add) >> shift), outputMinimum, outputMaximum);
+        block[2] = av_clip( ((E[0]*iT[1] - E[1]*iT[0] + add) >> shift), outputMinimum, outputMaximum);
+        block[3] = av_clip( ((O[0]*iT[0] - O[1]*iT[1] + add) >> shift), outputMinimum, outputMaximum);
 
         block += 4;
         coeff ++;
@@ -2288,11 +2316,13 @@ static void FUNC(fastInverseDST1_B4_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B8_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 8;
     const int16_t *iT = DST_I_8x8[0];//g_aiTr8[DST_I][0];
@@ -2306,7 +2336,7 @@ static void FUNC(fastInverseDST1_B8_h)(int16_t *coeff, int16_t *block, int shift
             {
                 iSum += coeff[k*CB_SIZE+i]*iT[k*uiTrSize+j];
             }
-            block[i*uiTrSize+j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[i*uiTrSize+j] = av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
     }
 #undef CB_SIZE
@@ -2336,11 +2366,13 @@ static void FUNC(fastInverseDST1_B8_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B16_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 16;
     const int16_t *iT = DST_I_16x16[0];//g_aiTr16[DST_I][0];
@@ -2354,7 +2386,7 @@ static void FUNC(fastInverseDST1_B16_h)(int16_t *coeff, int16_t *block, int shif
             {
                 iSum += coeff[k*CB_SIZE+i]*iT[k*uiTrSize+j];
             }
-            block[i*uiTrSize+j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[i*uiTrSize+j] =  av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
     }
 #undef CB_SIZE
@@ -2384,11 +2416,13 @@ static void FUNC(fastInverseDST1_B16_v)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST1_B32_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST1_B32_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 32;
     const int16_t *iT = DST_I_32x32[0];//g_aiTr32[DST_I][0];
@@ -2402,7 +2436,7 @@ static void FUNC(fastInverseDST1_B32_h)(int16_t *coeff, int16_t *block, int shif
             {
                 iSum += coeff[k*CB_SIZE+i]*iT[k*uiTrSize+j];
             }
-            block[i*uiTrSize+j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[i*uiTrSize+j] =  av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
     }
 #undef CB_SIZE
@@ -2438,11 +2472,13 @@ static void FUNC(fastInverseDST1_B32_v)(int16_t *coeff, int16_t *block, int shif
 /*
  * Fast inverse DSTVII 4-8-16-32
  */
-static void FUNC(fastInverseDST7_B4_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B4_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 4
     int i, c[4];
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
 #if COM16_C806_EMT
     const int16_t *iT = DST_VII_4x4[0];//g_aiTr4[DST_VII][0];
@@ -2459,10 +2495,10 @@ static void FUNC(fastInverseDST7_B4_h)(int16_t *coeff, int16_t *block, int shift
         c[2] = coeff[0] - coeff[12];
         c[3] = iT[2]* coeff[4];
 
-        block[0] = av_clip( (( iT[0] * c[0] + iT[1] * c[1] + c[3] + rnd_factor ) >> shift), outputMinimum, outputMaximum);
-        block[1] = av_clip( (( iT[1] * c[2] - iT[0] * c[1] + c[3] + rnd_factor ) >> shift), outputMinimum, outputMaximum);
-        block[2] = av_clip( (( iT[2] * (coeff[0] - coeff[8]  + coeff[12]) + rnd_factor ) >> shift ), outputMinimum, outputMaximum);
-        block[3] = av_clip( (( iT[1] * c[0] + iT[0] * c[2] - c[3] + rnd_factor ) >> shift ), outputMinimum, outputMaximum);
+        block[0] = av_clip( (( iT[0] * c[0] + iT[1] * c[1] + c[3]         + add ) >> shift), outputMinimum, outputMaximum);
+        block[1] = av_clip( (( iT[1] * c[2] - iT[0] * c[1] + c[3]         + add ) >> shift), outputMinimum, outputMaximum);
+        block[2] = av_clip( (( iT[2] * (coeff[0] - coeff[8]  + coeff[12]) + add ) >> shift), outputMinimum, outputMaximum);
+        block[3] = av_clip( (( iT[1] * c[0] + iT[0] * c[2] - c[3]         + add ) >> shift), outputMinimum, outputMaximum);
 
         block+=4;
         coeff++;
@@ -2502,11 +2538,13 @@ static void FUNC(fastInverseDST7_B4_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B8_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B8_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 8;
     const int16_t *iT = DST_VII_8x8[0];//g_aiTr8[DST_VII][0];
@@ -2520,7 +2558,7 @@ static void FUNC(fastInverseDST7_B8_h)(int16_t *coeff, int16_t *block, int shift
             {
                 iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
             }
-            block[j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[j] =  av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
         block+=uiTrSize;
         coeff++;
@@ -2554,11 +2592,13 @@ static void FUNC(fastInverseDST7_B8_v)(int16_t *coeff, int16_t *block, int shift
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B16_h)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B16_h)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 16
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 16;
     const int16_t *iT = DST_VII_16x16[0];//g_aiTr16[DST_VII][0];
@@ -2571,7 +2611,7 @@ static void FUNC(fastInverseDST7_B16_h)(int16_t *coeff, int16_t *block, int shif
             {
                 iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
             }
-            block[j] =  av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+            block[j] =  av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
         }
         block+=uiTrSize;
         coeff++;
@@ -2604,11 +2644,13 @@ static void FUNC(fastInverseDST7_B16_v)(int16_t *coeff, int16_t *block, int shif
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B32_h_intra)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B32_h_intra)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 32;
     const int16_t *iT = DST_VII_32x32[0];//g_aiTr32[DST_VII][0];
@@ -2622,7 +2664,7 @@ static void FUNC(fastInverseDST7_B32_h_intra)(int16_t *coeff, int16_t *block, in
                 {
                     iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
                 }
-                block[j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+                block[j] = av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
             }
             block+=uiTrSize;
             coeff++;
@@ -2630,11 +2672,13 @@ static void FUNC(fastInverseDST7_B32_h_intra)(int16_t *coeff, int16_t *block, in
 #undef CB_SIZE
 }
 
-static void FUNC(fastInverseDST7_B32_h_inter)(int16_t *coeff, int16_t *block, int shift, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
+static void FUNC(fastInverseDST7_B32_h_inter)(int16_t *coeff, int16_t *block, int log2_transform_range, /*int line,*/ /*int zo,*/ /*int use,*/ const int outputMinimum, const int outputMaximum)
 {
 #define CB_SIZE 32
     int i, j, k, iSum;
-    int rnd_factor = ( 1<<(shift-1) );
+    //int rnd_factor = ( 1<<(shift-1) );
+    const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const int add = 1 << (shift - 1);
 
     const int uiTrSize = 32;
     const int16_t *iT = DST_VII_32x32[0];//g_aiTr32[DST_VII][0];
@@ -2648,7 +2692,7 @@ static void FUNC(fastInverseDST7_B32_h_inter)(int16_t *coeff, int16_t *block, in
                 {
                     iSum += coeff[k*CB_SIZE]*iT[k*uiTrSize+j];
                 }
-                block[j] = av_clip( ((iSum + rnd_factor)>>shift), outputMinimum, outputMaximum);
+                block[j] = av_clip( ((iSum + add) >> shift), outputMinimum, outputMaximum);
             }
             block+=uiTrSize;
             coeff++;
