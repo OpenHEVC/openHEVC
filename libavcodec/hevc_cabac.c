@@ -1888,7 +1888,18 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     tr_idx_v = g_aiTrSubSetInter[(tu_emt_Idx) >> 1];
                 }
             }
-            s->hevcdsp.idct_emt(coeffs, coeffs, /*log2_trafo_size,*/ log2_trafo_size - 2, log2_transform_range, tr_idx_h, tr_idx_v, zo/*,zo_v*/);
+            const int shift_h    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - 8 + COM16_C806_TRANS_PREC;
+
+            const int clipMinimum  = -(1 << log2_transform_range);
+            const int clipMaximum  =  (1 << log2_transform_range) - 1;
+
+            int16_t tmp[ MAX_TU_SIZE * MAX_TU_SIZE ];
+
+            //s->hevcdsp.idct_emt(coeffs, coeffs, /*log2_trafo_size,*/ log2_trafo_size - 2, log2_transform_range, tr_idx_h, tr_idx_v, zo/*,zo_v*/);
+            s->hevcdsp.idct2_emt_v[zo][tr_idx_v][log2_trafo_size - 2](coeffs, tmp, /*log2_trafo_size,*/ 0, clipMinimum, clipMaximum);
+            s->hevcdsp.idct2_emt_h[zo][tr_idx_h][log2_trafo_size - 2](tmp, coeffs, /*log2_trafo_size,*/ shift_h, clipMinimum, clipMaximum);
+
+
 #endif
         } else {
             if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {

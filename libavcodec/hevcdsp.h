@@ -150,6 +150,9 @@ typedef struct HEVCDSPContext {
                             int dst_width, int dst_height,
                             int is_bound_r,int is_bound_b, int is_bound_t,
                             int is_bound_l);
+    //typedef void InvTrans(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
+    void (*idct2_emt_h[2][7][5])(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
+    void (*idct2_emt_v[2][7][5])(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
