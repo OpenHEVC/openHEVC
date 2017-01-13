@@ -524,9 +524,25 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
 };
 
 #if COM16_C806_EMT
+static const int emt_intra_subset_select[3][2] = {
+    {DST_VII, DCT_VIII},
+    {DST_VII, DST_I   },
+    {DST_VII, DCT_V   }
+};
 
-//static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
+static const int emt_inter_subset_select[2] = {
+    DCT_VIII, DST_VII
+};
 
+static const int emt_intra_mode2tr_idx_v[35] =
+{
+    2, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0
+};
+
+static const int emt_intra_mode2tr_idx_h[35] =
+{
+    2, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0
+};
 #endif
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
@@ -1869,11 +1885,13 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #if COM16_C806_EMT
         } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
             enum IntraPredMode ucMode = INTER_MODE_IDX;
-//            int zo_v = 2;
+            DECLARE_ALIGNED(16, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE]);
             int zo = 1;
             int tu_emt_Idx =  (c_idx || !s->HEVClc->cu.emt_cu_flag ) ? DCT2_EMT : s->HEVClc->tu.emt_tu_idx;
             int tr_idx_h  = DCT_II;
             int tr_idx_v  = DCT_II;
+            const int clip_min  = -(1 << log2_transform_range);
+            const int clip_max  =  (1 << log2_transform_range) - 1;
 
             if (s->HEVClc->cu.pred_mode == MODE_INTRA){
                 ucMode = pred_mode_intra;
@@ -1881,24 +1899,15 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             }
             if (tu_emt_Idx != DCT2_EMT){
                 if ( ucMode != INTER_MODE_IDX){
-                    tr_idx_h = g_aiTrSubSetIntra[emt_Tr_Set_H[ucMode]][(tu_emt_Idx) & 1];
-                    tr_idx_v = g_aiTrSubSetIntra[emt_Tr_Set_V[ucMode]][(tu_emt_Idx) >> 1];
+                    tr_idx_h = emt_intra_subset_select[emt_intra_mode2tr_idx_h[ucMode]][(tu_emt_Idx) & 1];
+                    tr_idx_v = emt_intra_subset_select[emt_intra_mode2tr_idx_v[ucMode]][(tu_emt_Idx) >> 1];
                 } else {
-                    tr_idx_h = g_aiTrSubSetInter[(tu_emt_Idx) & 1];
-                    tr_idx_v = g_aiTrSubSetInter[(tu_emt_Idx) >> 1];
+                    tr_idx_h = emt_inter_subset_select[(tu_emt_Idx) & 1];
+                    tr_idx_v = emt_inter_subset_select[(tu_emt_Idx) >> 1];
                 }
             }
-
-            const int clipMinimum  = -(1 << log2_transform_range);
-            const int clipMaximum  =  (1 << log2_transform_range) - 1;
-
-            int16_t tmp[ MAX_TU_SIZE * MAX_TU_SIZE ];
-
-            //s->hevcdsp.idct_emt(coeffs, coeffs, /*log2_trafo_size,*/ log2_trafo_size - 2, log2_transform_range, tr_idx_h, tr_idx_v, zo/*,zo_v*/);
-            s->hevcdsp.idct2_emt_v[zo][tr_idx_v][log2_trafo_size - 2](coeffs, tmp, /*log2_trafo_size,*/ 0, clipMinimum, clipMaximum);
-            s->hevcdsp.idct2_emt_h[zo][tr_idx_h][log2_trafo_size - 2](tmp, coeffs, /*log2_trafo_size,*/ log2_transform_range, clipMinimum, clipMaximum);
-
-
+            s->hevcdsp.idct2_emt_v[zo][tr_idx_v][log2_trafo_size - 2](coeffs, tmp, 0, clip_min, clip_max);
+            s->hevcdsp.idct2_emt_h[zo][tr_idx_h][log2_trafo_size - 2](tmp, coeffs, log2_transform_range, clip_min, clip_max);
 #endif
         } else {
             if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {

@@ -40,25 +40,17 @@
 #if HEVC_ENCRYPTION
 #include "crypto.h"
 #endif
-//#define COM16_C806_EMT			 0
+
 #if COM16_C806_EMT
-// Constantes
 #define EMT_INTRA_MAX_CU		32
 #define EMT_INTER_MAX_CU		32
 #define EMT_SIGNUM_THR			 2
 #define INTER_MODE_IDX		   255
 #define MAX_TU_SIZE				32
-
 #define EMT_TRANSFORM_MATRIX_SHIFT 6
-// Integer transform matrix precision
 #define COM16_C806_TRANS_PREC	 2
 #endif
-/*
- * Fin Macros Stage
- */
-/*
- * Macros Stage Aurélien Biatek
- */
+
 #include "hevcdsp.h"
 
 #define PARALLEL_SLICE   0
@@ -133,19 +125,13 @@ enum EMT_DCTTransformType {
     DCT_II = 0,
     DCT_III,
     DCT_I,
-    DST_I, // subset 1
-    DST_VII, // subset 0, 1 et 2
-    DCT_VIII, // subset 0
-    DCT_V, // subset 2
+    DST_I,     // subset 1
+    DST_VII,   // subset 0, 1 et 2
+    DCT_VIII,  // subset 0
+    DCT_V,     // subset 2
     NUM_TRANS_TYPE,
     DCT2_HEVC,
     DCT2_EMT,
-};
-
-enum TransformDirection {
-  TRANSFORM_FORWARD              = 0,
-  TRANSFORM_INVERSE              = 1,
-  TRANSFORM_NUMBER_OF_DIRECTIONS = 2
 };
 #endif
 
@@ -1601,18 +1587,12 @@ int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0,
                              int x_cb, int y_cb);
-/*
- * Fonctions codées stage Biatek A.
- */
+
 #if COM16_C806_EMT
 uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma);
 uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size);
-int g_aucConvertTobit(int size);
 #endif
 
-/*
- * Fin fonctions Stage
- */
 int ff_hevc_pred_mode_decode(HEVCContext *s);
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth,
                                           int x0, int y0);

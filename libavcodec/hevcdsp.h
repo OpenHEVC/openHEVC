@@ -64,7 +64,9 @@ typedef struct HEVCDSPContext {
                             ptrdiff_t stride_src, struct SAOParams *sao, int width,
                             int height, int c_idx);
 #if COM16_C806_EMT
-    void (*idct_emt)(int16_t *coeffs, int16_t *dst,/* int log2_trafo_size,*/ int nLog2SizeMinus2, int maxLog2TrDynamicRange, int emt_tu_idx_h,int emt_tu_idx_v, int z0/*,int z0_v*/);
+    ///* idct_emt[pred_mode][emt_tr_idx][log2_tr_size_minus2](...) *///
+    void (*idct2_emt_v[2][7][5])(int16_t *coeffs, int16_t *tmp, int log2_transform_range, int clip_min, int clip_max);
+    void (*idct2_emt_h[2][7][5])(int16_t *tmp,    int16_t *dst, int log2_transform_range, int clip_min, int clip_max);
 #endif
 
     void (*sao_edge_restore[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
@@ -150,9 +152,6 @@ typedef struct HEVCDSPContext {
                             int dst_width, int dst_height,
                             int is_bound_r,int is_bound_b, int is_bound_t,
                             int is_bound_l);
-    //typedef void InvTrans(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
-    void (*idct2_emt_h[2][7][5])(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
-    void (*idct2_emt_v[2][7][5])(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
 } HEVCDSPContext;
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
@@ -167,18 +166,18 @@ extern const int8_t ff_hevc_qpel_filters[3][16];
 //  int emt_Tr_Set_V[35];
 //  int g_aiTrSubSetIntra[3][2];
 //  int g_aiTrSubSetInter[2];
-  extern const int emt_Tr_Set_V[35];
-  extern const int emt_Tr_Set_H[35];
+//  extern const int emt_intra_mode2tr_idx_v[35];
+//  extern const int emt_intra_mode2tr_idx_h[35];
 
-  extern const int g_aiTrSubSetIntra[3][2];
-  extern const int g_aiTrSubSetInter[2];
+//  extern const int emt_intra_subset_select[3][2];
+//  extern const int emt_inter_subset_select[2];
 // ************************************************* Initialisation du tableau fastInvTrans *************************************************
-typedef void InvTrans(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
+//typedef void InvTrans(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
 // ************************************************* Initialisation des transformées *************************************************
-  extern int16_t g_aiTr4 [8][ 4][ 4];
-  extern int16_t g_aiTr8 [8][ 8][ 8];
-  extern int16_t g_aiTr16[8][16][16];
-  extern int16_t g_aiTr32[8][32][32];
+//  extern int16_t g_aiTr4 [8][ 4][ 4];
+//  extern int16_t g_aiTr8 [8][ 8][ 8];
+//  extern int16_t g_aiTr16[8][16][16];
+//  extern int16_t g_aiTr32[8][32][32];
 
 //  extern int16_t g_aiT4 [8][ 4][ 4];
 //  extern int16_t g_aiT8 [8][ 8][ 8];
