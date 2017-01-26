@@ -161,6 +161,68 @@ function ff_hevc_put_epel_h_neon_8, export=1
         bx lr
 endfunc
 
+function ff_hevc_epel_uni_h_neon_8, export=1
+        push   {r4-r8}
+        ldr    r4, [sp, #20] // height
+        ldr    r5, [sp, #32] // width
+        ldr    r7, [sp, #24] // mx
+        sub    r7, #1
+        lsl    r7, #2
+        vpush {d8-d15}
+        adrl   r12, epel_coeffs
+        add    r7, r12
+        sub       r2, #1
+        load_coeffs_16b r7
+        mov   r12, r4
+        mov   r6, r0
+        mov   r7, r2
+        cmp       r5, #6
+        bgt       8f
+        cmp       r5, #4
+        blt       2f
+        b         4f
+8:      subs r4, #1
+        pld [r2]
+        vextin_d4
+        epel_filter_16b
+        vqrshrun.s16   d24, q12, #6
+        vst1.8    d24, [r0], r1
+        bne       8b
+        subs      r5, #8
+        beq      99f
+        mov       r4, r12
+        add       r6, #8
+        mov       r0, r6
+        add       r7, #8
+        mov       r2, r7
+        cmp       r5, #4
+        bgt       8b
+4:      subs r4, #1
+        pld [r2]
+        vextin_d4_8
+        epel_filter_16b
+        vqrshrun.s16   d24, q12, #6
+        vst1.32    d24[0], [r0], r1
+        bne 4b
+        subs      r5, #4
+        beq       99f
+        mov       r4, r12
+        add       r6, #4
+        mov       r0, r6
+        add       r7, #4
+        mov       r2, r7
+2:      subs r4, #1
+        pld [r2]
+        vextin_d4_8
+        epel_filter_16b
+        vqrshrun.s16   d24, q12, #6
+        vst1.16    d24[0], [r0], r1
+        bne 2b
+99:     vpop {d8-d15}
+        pop {r4-r8}
+        bx lr
+endfunc
+
 function ff_hevc_put_epel_v_neon_8, export=1
         push   {r4-r8}
         ldr    r4, [sp, #20] // height
@@ -228,6 +290,83 @@ function ff_hevc_put_epel_v_neon_8, export=1
         subs r4, #1
         epel_filter_16b
         vst1.32    d24[0], [r0], r1
+        vmov d16, d17
+        vmov d17, d18
+        vmov d18, d19
+        bne 2b
+99:     vpop {d8-d15}
+        pop {r4-r8}
+        bx lr
+endfunc
+
+function ff_hevc_epel_uni_v_neon_8, export=1
+        push   {r4-r8}
+        ldr    r4, [sp, #20] // height
+        ldr    r5, [sp, #32] // width
+        ldr    r7, [sp, #28] // my
+        sub    r7, #1
+        lsl    r7, #2
+        vpush {d8-d15}
+        adrl   r12, epel_coeffs
+        add    r7, r12
+        sub       r2, r3
+        load_coeffs_16b r7
+        mov   r12, r4
+        mov   r6, r0
+        mov   r7, r2
+0:      pld [r2]
+        vld1.8    {d16}, [r2], r3
+        pld [r2]
+        vld1.8    {d17}, [r2], r3
+        pld [r2]
+        vld1.8    {d18}, [r2], r3
+        cmp       r5, #6
+        bgt       8f
+        cmp       r5, #4
+        blt       2f
+        b         4f
+8:      pld [r2]
+        vld1.8    {d19}, [r2], r3
+        subs r4, #1
+        epel_filter_16b
+        vqrshrun.s16   d24, q12, #6
+        vst1.8    d24, [r0], r1
+        vmov d16, d17
+        vmov d17, d18
+        vmov d18, d19
+        bne       8b
+        subs      r5, #8
+        beq      99f
+        mov       r4, r12
+        add       r6, #8
+        mov       r0, r6
+        add       r7, #8
+        mov       r2, r7
+        b         0b
+4:      pld       [r2]
+        vld1.8    {d19}, [r2], r3
+        subs r4, #1
+        epel_filter_16b
+        vqrshrun.s16   d24, q12, #6
+        vst1.32    d24[0], [r0], r1
+        vmov d16, d17
+        vmov d17, d18
+        vmov d18, d19
+        bne 4b
+        subs      r5, #4
+        beq       99f
+        mov       r4, r12
+        add       r6, #4
+        mov       r0, r6
+        add       r7, #4
+        mov       r2, r7
+        b         0b
+2:      pld [r2]
+        vld1.8    {d19}, [r2], r3
+        subs r4, #1
+        epel_filter_16b
+        vqrshrun.s16   d24, q12, #6
+        vst1.16    d24[0], [r0], r1
         vmov d16, d17
         vmov d17, d18
         vmov d18, d19
@@ -315,6 +454,95 @@ function ff_hevc_put_epel_hv_neon_8, export=1
         subs r4, #1
         epel_filter_32b_4
         vst1.32    d6[0], [r0], r1
+        vmov q12, q13
+        vmov q13, q14
+        vmov q14, q15
+        bne 2b
+99:     vpop {d8-d15}
+        pop {r4-r8}
+        bx lr
+endfunc
+
+function ff_hevc_epel_uni_hv_neon_8, export=1
+        push   {r4-r8}
+        ldr    r4, [sp, #20] // height
+        ldr    r5, [sp, #32] // width
+        ldr    r6, [sp, #24] // mx
+        ldr    r7, [sp, #28] // my
+        sub    r7, #1
+        lsl    r7, #2
+        vpush {d8-d15}
+        adrl    r12, epel_coeffs
+        sub    r6, #1
+        lsl    r6, #2
+        add    r6, r12 // mx epel coeff offset
+        add    r7, r12
+        sub       r2, #1
+        sub       r2, r3
+        load_coeffs_16b r6
+        load_coeffs_32b r7
+        mov   r12, r4
+        mov   r6, r0
+        mov   r7, r2
+0:      pld   [r2]
+        vextin_d4
+        epel_filter_16b q12
+        pld   [r2]
+        vextin_d4
+        epel_filter_16b q13
+        pld   [r2]
+        vextin_d4
+        epel_filter_16b q14
+        cmp       r5, #6
+        bgt       8f
+        cmp       r5, #4
+        blt       2f
+        b         4f
+8:      pld     [r2]
+        vextin_d4
+        epel_filter_16b q15
+        subs r4, #1
+        epel_filter_32b
+        vqrshrun.s16   d6, q3, #6
+        vst1.8    d6, [r0], r1
+        vmov q12, q13
+        vmov q13, q14
+        vmov q14, q15
+        bne 8b
+        subs    r5, #8
+        beq  99f
+        mov       r4, r12
+        add       r6, #8
+        mov       r0, r6
+        add       r7, #8
+        mov       r2, r7
+        b         0b
+4:      pld      [r2]
+        vextin_d4_8
+        epel_filter_16b q15
+        subs r4, #1
+        epel_filter_32b_4
+        vqrshrun.s16   d6, q3, #6
+        vst1.32    d6[0], [r0], r1
+        vmov q12, q13
+        vmov q13, q14
+        vmov q14, q15
+        bne 4b
+        subs      r5, #4
+        beq       99f
+        mov       r4, r12
+        add       r6, #4
+        mov       r0, r6
+        add       r7, #4
+        mov       r2, r7
+        b         0b
+2:      pld      [r2]
+        vextin_d4_8
+        epel_filter_16b q15
+        subs r4, #1
+        epel_filter_32b_4
+        vqrshrun.s16   d6, q3, #6
+        vst1.16    d6[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
         vmov q14, q15
