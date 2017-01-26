@@ -496,6 +496,78 @@ endfunc
 .endm
 
 
+function ff_hevc_put_qpel_uw_pixels_green1_neon_8, export=1
+        push     {r4-r10}
+        ldr       r5, [sp, #28] // width
+        ldr       r4, [sp, #32] // height
+        ldr       r8, [sp, #36] // src2
+        ldr       r9, [sp, #40] // src2stride
+        vpush    {d8-d15}
+        mov      r12, r4
+        mov       r6, r0
+        mov       r7, r2
+
+        lsl       r9, #1
+        cmp       r5, #4
+        beq       4f
+        mov       r10, r8
+8:      subs      r4, #1
+        vextin2
+		vshll.u8  q7, d16, #6
+        vld1.16        {q0}, [r8], r9
+        vqadd.s16      q0, q7
+        vqrshrun.s16   d0, q0, #7
+        vst1.8         d0, [r0], r1
+        bne       8b
+        subs      r5, #8
+        beq      99f
+        mov       r4, r12
+        add       r6, #8
+        add       r10, #16
+        mov       r8, r10
+        mov       r0, r6
+        add       r7, #8
+        mov       r2, r7
+        cmp       r5, #4
+        bne       8b
+4:      subs      r4, #1
+        vextin2
+        vshll.u8  q7, d16, #6
+        vld1.16      d0, [r8], r9
+        vqadd.s16    d0, d14
+        vqrshrun.s16 d0, q0, #7
+        vst1.32      d0[0], [r0], r1
+        bne       4b
+99:     vpop     {d8-d15}
+        pop      {r4-r10}
+        bx lr
+endfunc
+
+/*
+function ff_hevc_put_qpel_uw_pixels_green1_neon_8, export=1
+        push   {r4-r9}
+        // r0 = dst (uint8)
+        // r1 = dst_stride
+        // r2 = src (uint8)
+        // r3 = src_stride
+        ldr    r5, [sp, #24] // r5 = width
+        ldr    r4, [sp, #28] // r4 = height
+        ldr    r8, [sp, #32] // r8 = src2 (uint16)
+        ldr    r9, [sp, #36] // r9 = src2stride
+        vpush {d8-d15}
+2:      subs  r4, #1
+        vld1.8         {d0}, [r2], r3
+        vld1.16        {q1}, [r8], r9
+        vshll.u8       q0, d0, #6
+        vqadd.s16      q0, q1
+        vqrshrun.s16   d0, q0, #7
+        vst1.8      d0, [r0], r1
+        bne 2b
+        vpop {d8-d15}
+        pop   {r4-r9}
+        bx lr
+endfunc
+*/
 
 function ff_hevc_put_qpel1_h1v1_neon_8, export=1
         hevc_put_qpel1_hXvY_neon_8 qpel_filter1_1 qpel_filter1_1_32b
