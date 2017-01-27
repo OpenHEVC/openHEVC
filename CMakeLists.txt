@@ -110,7 +110,8 @@ libavcodec/x86/h264_weight_10bit.asm
 libavcodec/x86/idctdsp.asm
 libavcodec/x86/simple_idct10.asm
 libavcodec/x86/bswapdsp.asm
-libavcodec/x86/me_cmp.asm
+#libavcodec/x86/me_cmp.asm
+#libavcodec/x86/xvididct.asm
 )
 endif(YASM_FOUND)
 endif(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
@@ -199,7 +200,7 @@ find_package(SDL)
 find_package(SDL2)
 
 set(libfilenames
-libavutil/avassert.h
+# libavutil
     libavutil/avstring.c
     libavutil/atomic.c
     libavutil/base64.c
@@ -213,7 +214,7 @@ libavutil/avassert.h
     libavutil/display.c
     libavutil/error.c
     libavutil/eval.c
-    #libavutil/file_open.c
+    libavutil/file_open.c
     libavutil/frame.c
     libavutil/imgutils.c
     libavutil/intmath.c
@@ -234,161 +235,125 @@ libavutil/avassert.h
     libavutil/time.c
     libavutil/timecode.c
     libavutil/utils.c
-libavutil/aes.c
-libavutil/aes_ctr.c
-libavutil/fifo.c
-libavutil/file.c
-libavutil/reverse.c
-libavutil/hmac.c
-libavutil/sha512.c
-libavutil/tree.c
-libavutil/lfg.c
-libavutil/mastering_display_metadata.c
-    gpac/modules/openhevc_dec/openHevcWrapper.c
+    libavutil/aes.c
+    libavutil/aes_ctr.c
+    libavutil/fifo.c
+    libavutil/file.c
+    libavutil/reverse.c
+    libavutil/hmac.c
+    libavutil/sha512.c
+    libavutil/tree.c
+    libavutil/lfg.c
+    libavutil/mastering_display_metadata.c
+
+#libavformat
     libavformat/allformats.c
     libavformat/avio.c
     libavformat/aviobuf.c
     libavformat/cutils.c
     libavformat/file.c
-    libavformat/flac_picture.c
     libavformat/format.c
     libavformat/id3v1.c
     libavformat/id3v2.c
-    libavformat/isom.c
-libavformat/h264dec.c
-    libavformat/hevcdec.c
-    libavformat/matroska.c
-    libavformat/matroskadec.c
     libavformat/metadata.c
+    #libavformat/mux.c
+    libavformat/options.c
+    #libavformat/os_support.c
+    libavformat/qtpalette.c
+    libavformat/protocols.c
+    libavformat/riff.c
+    libavformat/url.c
+    libavformat/utils.c
+    
+# for raw h264 and hevc bitstreams
+    libavformat/h264dec.c
+    libavformat/hevcdec.c
+    libavformat/rawdec.c
+# isomedia mov and ts    
+    libavformat/isom.c
+    libavformat/riffdec.c
+
     libavformat/mov.c
     libavformat/mov_chan.c
-    libavformat/mpegts.c
-    libavformat/mux.c
-    libavformat/oggdec.c
-    libavformat/oggparsecelt.c
-    libavformat/oggparsedirac.c
-    libavformat/oggparseflac.c
-    libavformat/oggparseogm.c
-    libavformat/oggparseopus.c
-    libavformat/oggparseskeleton.c
-    libavformat/oggparsespeex.c
-    libavformat/oggparsetheora.c
-    libavformat/oggparsevorbis.c
-    libavformat/oggparsevp8.c
-    libavformat/options.c
-    libavformat/os_support.c
-    libavformat/rawdec.c
     libavformat/replaygain.c
-    libavformat/riffdec.c
-    libavformat/riff.c
-    libavformat/rmsipr.c
-    libavformat/utils.c
-    libavformat/vorbiscomment.c
-libavformat/oggparsedaala.c
-libavformat/subfile.c
-libavformat/async.c
-libavformat/url.c
-libavformat/http.c
-libavformat/protocols.c
-libavformat/httpauth.c
-libavformat/urldecode.c
-libavformat/network.c
-libavformat/qtpalette.c
-libavformat/os_support.c
-libavformat/ftp.c
-libavformat/data_uri.c
-libavformat/file_open.c
-libavformat/mmsh.c
-libavformat/rtp.c
-libavformat/rtmphttp.c
-libavformat/rtpproto.c
-libavformat/tcp.c
-#libavformat/tee_common.c
-#libavformat/tee.c
-#libavformat/teeproto.c
-libavformat/udp.c
-libavformat/unix.c
-libavformat/mms.c
-libavformat/mmst.c
-libavformat/cache.c
-libavformat/rtmphttp.c
-libavformat/rtmpproto.c
-libavformat/md5proto.c
-libavformat/srtp.c
-libavformat/srtpproto.c
-libavformat/gopher.c
-libavformat/hls.c
-libavformat/hlsproto.c
-libavformat/crypto.c
-libavformat/concat.c
-libavformat/icecast.c
-libavformat/rtmppkt.c
-libavformat/asf.c
-libavformat/tls.c
-#libavformat/tls_schannel.c
-#libavformat/sctp.c
-#libavformat/protocol_list.c
-#libavformat/file.c
-#libavcodec/vdpau.c
-#libavcodec/vdpau_h264.c
-#libavcodec/vdpau_compat.h
-#libavcodec/vdpau_internal.h
-#libavcodec/intrax8.h
-#libavcodec/intrax8.h
-libavcodec/h264_cabac.c
-libavcodec/h264_cavlc.c
-libavcodec/h264_direct.c
-libavcodec/h264_loopfilter.c
-libavcodec/h264_mb.c
-#libavcodec/h264_mb_template.c
-#libavcodec/h264_mc_template.c
-libavcodec/h264_mvpred.h
-libavcodec/h264_parser.c
-libavcodec/h264_picture.c
-libavcodec/h264_ps.c
-libavcodec/h264_refs.c
-libavcodec/h264_sei.c
-libavcodec/h264_slice.c
-libavcodec/h264dec.c
-libavcodec/h264.h
-#libavcodec/h264chroma_template.c
-libavcodec/h264chroma.c
-libavcodec/h264chroma.h
-libavcodec/h264data.h
-#libavcodec/h264dsp_template.c
-libavcodec/h264dsp.c
-libavcodec/h264dsp.h
-#libavcodec/h264idct_template.c
-libavcodec/h264idct.c
-libavcodec/h264idct.h
-#libavcodec/h264pred_template.c
-libavcodec/h264pred.c
-libavcodec/h264pred.h
-#libavcodec/h264qpel_template.c
-libavcodec/h264qpel.c
-libavcodec/h264qpel.h
-libavcodec/h264_parse.c
-libavcodec/h264data.c
-libavcodec/h2645_parse.c
-    libavcodec/ac3tab.c
+
+    libavformat/mpegts.c
+
+    libavformat/cache.c
+
+# libavcodec main files
     libavcodec/allcodecs.c
-    libavcodec/avfft.c
     libavcodec/avpacket.c
     libavcodec/avpicture.c
     libavcodec/bitstream.c
     libavcodec/bitstream_filter.c
+    libavcodec/bitstream_filters.c
+    libavcodec/bsf.c  
+    libavcodec/codec_desc.c
+    libavcodec/parser.c
+    libavcodec/profiles.c
+    libavcodec/options.c
+    libavcodec/raw.c
+    libavcodec/utils.c
+    libavcodec/xiph.c
+    
+# libavcodec sub systems
     libavcodec/bswapdsp.c
     libavcodec/cabac.c
-    libavcodec/codec_desc.c
+    libavcodec/avfft.c
     libavcodec/dct.c
     libavcodec/dct32_float.c
     libavcodec/dct32_template.c
-    libavcodec/dirac.c
     libavcodec/faanidct.c
     libavcodec/fft_template.c
-    libavcodec/flac.c
-    libavcodec/flacdata.c
     libavcodec/golomb.c
+    libavcodec/hpeldsp.c
+    libavcodec/idctdsp.c
+    libavcodec/simple_idct.c
+    libavcodec/jrevdct.c
+    libavcodec/mathtables.c
+    libavcodec/qpeldsp.c
+    libavcodec/rdft.c    
+    libavcodec/startcode.c
+
+# h264 decoder
+    libavcodec/h264_cabac.c
+    libavcodec/h264_cavlc.c
+    libavcodec/h264_direct.c
+    libavcodec/h264_loopfilter.c
+    libavcodec/h264_mb.c
+    #libavcodec/h264_mb_template.c
+    #libavcodec/h264_mc_template.c
+    libavcodec/h264_mvpred.h
+    libavcodec/h264_parser.c
+    libavcodec/h264_picture.c
+    libavcodec/h264_ps.c
+    libavcodec/h264_refs.c
+    libavcodec/h264_sei.c
+    libavcodec/h264_slice.c
+    libavcodec/h264dec.c
+    libavcodec/h264.h
+    #libavcodec/h264chroma_template.c
+    libavcodec/h264chroma.c
+    libavcodec/h264chroma.h
+    libavcodec/h264data.h
+    #libavcodec/h264dsp_template.c
+    libavcodec/h264dsp.c
+    libavcodec/h264dsp.h
+    #libavcodec/h264idct_template.c
+    libavcodec/h264idct.c
+    libavcodec/h264idct.h
+    #libavcodec/h264pred_template.c
+    libavcodec/h264pred.c
+    libavcodec/h264pred.h
+    #libavcodec/h264qpel_template.c
+    libavcodec/h264qpel.c
+    libavcodec/h264qpel.h
+    libavcodec/h264_parse.c
+    libavcodec/h264data.c
+    libavcodec/h2645_parse.c
+
+#hevc decoder
     libavcodec/hevc_cabac.c
     libavcodec/hevc_mvs.c
     libavcodec/hevc_parser.c
@@ -399,53 +364,20 @@ libavcodec/h2645_parse.c
     libavcodec/hevc.c
     libavcodec/hevcdsp.c
     libavcodec/hevcpred.c
-    libavcodec/hpeldsp.c
-    libavcodec/jrevdct.c
-    libavcodec/mathtables.c
-    libavcodec/me_cmp.c
-    libavcodec/mdct_template.c
-    libavcodec/mpegaudiodata.c
-    libavcodec/mpeg12data.c
-    libavcodec/mpeg4audio.c
-    libavcodec/imgconvert.c
-    libavcodec/options.c
-    libavcodec/parser.c
+
+    libavcodec/pthread.c
     libavcodec/pthread_slice.c
     libavcodec/pthread_frame.c
-    libavcodec/pthread.c
-    libavcodec/qpeldsp.c
-    libavcodec/raw.c
+
+# mov and isomedia decoder
     libavcodec/rawdec.c
-    libavcodec/rdft.c
-    libavcodec/simple_idct.c
-libavcodec/startcode.c
-    libavcodec/utils.c
     libavcodec/videodsp.c
-    libavcodec/vorbis_parser.c
-    libavcodec/xiph.c
-libavcodec/idctdsp.c
-libavcodec/bsf.c
-libavcodec/bitstream_filters.c
-libavcodec/mpeg4_unpack_bframes_bsf.c
-libavcodec/mjpeg2jpeg_bsf.c
-libavcodec/mjpega_dump_header_bsf.c
-libavcodec/profiles.c
-libavcodec/mp3_header_decompress_bsf.c
-libavcodec/jpegtables.c
-libavcodec/movsub_bsf.c
-libavcodec/remove_extradata_bsf.c
-libavcodec/dump_extradata_bsf.c
-libavcodec/dca_core_bsf.c
-libavcodec/vp9_superframe_bsf.c
-libavcodec/imx_dump_header_bsf.c
-libavcodec/chomp_bsf.c
-libavcodec/hevc_mp4toannexb_bsf.c
-libavcodec/aac_adtstoasc_bsf.c
-libavcodec/aacadtsdec.c
-libavcodec/noise_bsf.c
-libavcodec/h264_mp4toannexb_bsf.c
-#libavcodec/tests/dct.c
-#libavcodec/tests/x86/dct.c
+    libavcodec/ac3tab.c
+    libavcodec/mpegaudiodata.c
+    libavcodec/mpeg4audio.c
+
+# openHEVC wrapper
+    gpac/modules/openhevc_dec/openHevcWrapper.c
 )
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 list(APPEND libfilenames
@@ -469,7 +401,7 @@ list(APPEND libfilenames
     libavcodec/arm/hpeldsp_neon.S
     libavcodec/arm/hpeldsp_armv6.S
     libavcodec/arm/int_neon.S
-    libavcodec/arm/jrevdct_arm.S
+    #libavcodec/arm/jrevdct_arm.S
     libavcodec/arm/mdct_neon.S
     libavcodec/arm/mdct_vfp.S
     libavcodec/arm/rdft_neon.S
@@ -500,21 +432,25 @@ list(APPEND libfilenames
     libavcodec/x86/qpeldsp_init.c
     libavcodec/x86/simple_idct.c
     libavcodec/x86/videodsp_init.c
-libavcodec/x86/h264dsp_init.c
-libavcodec/x86/h264_intrapred_init.c
-libavcodec/x86/bswapdsp_init.c
-libavcodec/x86/me_cmp_init.c
-libavcodec/x86/idctdsp_init.c
-libavcodec/x86/h264chroma_init.c
+    libavcodec/x86/h264dsp_init.c
+    libavcodec/x86/h264_intrapred_init.c
+    libavcodec/x86/bswapdsp_init.c
+    #libavcodec/x86/me_cmp_init.c
+    libavcodec/x86/idctdsp_init.c
+    libavcodec/x86/h264chroma_init.c
+    #libavcodec/x86/xvididct_init.c
 )
 endif()
+
 if(WIN32)
 list(APPEND libfilenames
     compat/strtod.c
     compat/msvcrt/snprintf.c
 )
 endif()
+
 message (STATUS "CRYPTOPP_FOUND  = ${CRYPTOPP_FOUND}")
+
 if(CRYPTOPP_FOUND)
 list(APPEND libfilenames
     libavcodec/crypto.cpp
