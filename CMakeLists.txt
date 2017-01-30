@@ -364,7 +364,6 @@ set(libfilenames
     libavcodec/h264_mb.c
     #libavcodec/h264_mb_template.c
     #libavcodec/h264_mc_template.c
-    libavcodec/h264_mvpred.h
     libavcodec/h264_parser.c
     libavcodec/h264_picture.c
     libavcodec/h264_ps.c
@@ -372,23 +371,16 @@ set(libfilenames
     libavcodec/h264_sei.c
     libavcodec/h264_slice.c
     libavcodec/h264dec.c
-    libavcodec/h264.h
     #libavcodec/h264chroma_template.c
     libavcodec/h264chroma.c
-    libavcodec/h264chroma.h
-    libavcodec/h264data.h
     #libavcodec/h264dsp_template.c
     libavcodec/h264dsp.c
-    libavcodec/h264dsp.h
     #libavcodec/h264idct_template.c
     libavcodec/h264idct.c
-    libavcodec/h264idct.h
     #libavcodec/h264pred_template.c
     libavcodec/h264pred.c
-    libavcodec/h264pred.h
     #libavcodec/h264qpel_template.c
     libavcodec/h264qpel.c
-    libavcodec/h264qpel.h
     libavcodec/h264_parse.c
     libavcodec/h264data.c
     libavcodec/h2645_parse.c
