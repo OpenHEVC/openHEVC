@@ -201,57 +201,77 @@ find_package(SDL2)
 
 set(libfilenames
 # libavutil
+    #libavutil/adler32.c
+    libavutil/aes.c
+    libavutil/aes_ctr.c
+    #libavutil/audio_fifo.c
     libavutil/avstring.c
-    libavutil/atomic.c
     libavutil/base64.c
+    #libavutil/blowfish.c
     libavutil/bprint.c
     libavutil/buffer.c
+    #libavutil/cast5.c
+    #libavutil/camellia.c
     libavutil/channel_layout.c
     libavutil/cpu.c
     libavutil/crc.c
     libavutil/des.c
     libavutil/dict.c
     libavutil/display.c
+    #libavutil/downmix_info.c
     libavutil/error.c
     libavutil/eval.c
+    libavutil/fifo.c
+    libavutil/file.c
     libavutil/file_open.c
+    #libavutil/float_dsp.c
+    #libavutil/fixed_dsp.c
     libavutil/frame.c
+    #libavutil/hash.c
+    libavutil/hmac.c
+    #libavutil/hwcontext.c
     libavutil/imgutils.c
+    #libavutil/integer.c
     libavutil/intmath.c
+    libavutil/lfg.c
+    #libavutil/lls.c
     libavutil/log.c
     libavutil/log2_tab.c
     libavutil/mathematics.c
+    libavutil/mastering_display_metadata.c
     libavutil/md5.c
     libavutil/mem.c
+    #libavutil/murmur3.c
     libavutil/opt.c
     libavutil/parseutils.c
     libavutil/pixdesc.c
-    libavutil/rational.c
     libavutil/random_seed.c
+    libavutil/rational.c
+    libavutil/reverse.c
     libavutil/rc4.c
+    #libavutil/ripemd.c
     libavutil/samplefmt.c
     libavutil/sha.c
+    libavutil/sha512.c
     libavutil/stereo3d.c
+    #libavutil/threadmessage.c
     libavutil/time.c
     libavutil/timecode.c
-    libavutil/utils.c
-    libavutil/aes.c
-    libavutil/aes_ctr.c
-    libavutil/fifo.c
-    libavutil/file.c
-    libavutil/reverse.c
-    libavutil/hmac.c
-    libavutil/sha512.c
     libavutil/tree.c
-    libavutil/lfg.c
-    libavutil/mastering_display_metadata.c
+    #libavutil/twofish.c
+    libavutil/utils.c
+    #libavutil/xga_font_data.c
+    #libavutil/xtea.c
+    #libavutil/tea
 
-#libavformat
+    libavutil/atomic.c
+
+# libavformat main files
     libavformat/allformats.c
     libavformat/avio.c
     libavformat/aviobuf.c
     libavformat/cutils.c
-    libavformat/file.c
+    #libavformat/dump.c
     libavformat/format.c
     libavformat/id3v1.c
     libavformat/id3v2.c
@@ -262,27 +282,35 @@ set(libfilenames
     libavformat/qtpalette.c
     libavformat/protocols.c
     libavformat/riff.c
+    #libavformat/sdp.c
     libavformat/url.c
     libavformat/utils.c
-    
-# for raw h264 and hevc bitstreams
+ 
+# libavformat subsystems    
+    libavformat/isom.c
+    libavformat/riffdec.c
+   
+# raw h264 and hevc demuxers
     libavformat/h264dec.c
     libavformat/hevcdec.c
     libavformat/rawdec.c
-# isomedia mov and ts    
-    libavformat/isom.c
-    libavformat/riffdec.c
 
+    # .mov .mp4 demuxers
     libavformat/mov.c
     libavformat/mov_chan.c
     libavformat/replaygain.c
 
+    # MPEG-TS demuxer
     libavformat/mpegts.c
 
-    libavformat/cache.c
+    #libavformat/cache.c
+    #file protocol
+    libavformat/file.c
 
 # libavcodec main files
     libavcodec/allcodecs.c
+    #libavcodec/audioconvert.c
+    #libavcodec/avdct.c
     libavcodec/avpacket.c
     libavcodec/avpicture.c
     libavcodec/bitstream.c
@@ -290,11 +318,23 @@ set(libfilenames
     libavcodec/bitstream_filters.c
     libavcodec/bsf.c  
     libavcodec/codec_desc.c
+    #libavcodec/d3d11va.c
+    #libavcodec/dirac.c
+    #libavcodec/dv_profile.c
+    #libavcodec/imgconvert.c
+    #libavcodec/jni.c
+    #libavcodec/mathtables.c
+    #libavcodec/mediacodec.c
+    #libavcodec/mpeg12framerate.c
+    libavcodec/options.c
     libavcodec/parser.c
     libavcodec/profiles.c
-    libavcodec/options.c
+    #libavcodec/qsv_api.c
     libavcodec/raw.c
+    #libavcodec/resample.c
+    #libavcodec/resample2.c
     libavcodec/utils.c
+    #libavcodec/vorbis_parser.c
     libavcodec/xiph.c
     
 # libavcodec sub systems
@@ -353,7 +393,7 @@ set(libfilenames
     libavcodec/h264data.c
     libavcodec/h2645_parse.c
 
-#hevc decoder
+# hevc decoder
     libavcodec/hevc_cabac.c
     libavcodec/hevc_mvs.c
     libavcodec/hevc_parser.c
