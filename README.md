@@ -33,7 +33,7 @@ Where is the source code of openHEVC?
 
 Where is the source code of GPAC?
 --------
-* gpac is located at http://gpac.wp.mines-telecom.fr.
+* gpac is located at http://gpac.io.
 * gpac is under LGPL license
 
 How to compile openHEVC on linux from source code
