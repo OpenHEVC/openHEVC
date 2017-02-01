@@ -47,6 +47,20 @@ char *optarg;                /* argument associated with option */
 static const char *usage = "%s: -i <file> [-n]\n";
 static char *program;
 
+extern int h264_flags;
+extern int check_md5_flags;
+extern int thread_type;
+extern char *input_file;
+extern char *enhance_file;
+extern char display_flags;
+extern char *output_file;
+extern int nb_pthreads;
+extern int temporal_layer_id;
+extern int quality_layer_id;
+extern int no_cropping;
+extern int num_frames;
+extern float frame_rate;
+
 void print_usage() {
     printf(usage, program);
     printf("     -a : disable AU\n");
