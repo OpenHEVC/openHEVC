@@ -893,6 +893,76 @@ put_epel_uni_pixels   16, q0,    q1,
 put_epel_uni_pixels   24, d0-d2, d3-d5
 put_epel_uni_pixels   32, q0-q1, q2-q3
 
+.macro put_epel_bi_pixels width, regs, regs2
+function ff_hevc_put_epel_bi_pixels_w\width\()_neon_8, export=1
+        ldr    r12, [sp, #8] // height
+1:      subs   r12, #2
+        vld1.32     {\regs}  , [r2], r3
+        vld1.32     {\regs2} , [r2], r3
+        vst1.32     {\regs}  , [r0], r1
+        vst1.32     {\regs2} , [r0], r1
+        bne 1b
+        bx lr
+endfunc
+.endm
+
+function ff_hevc_put_epel_bi_pixels_w2_neon_8, export=1
+        ldr    r12, [sp, #8] // height
+1:      subs   r12, #1
+        vld1.16     d0[0] , [r2], r3
+        vst1.16     d0[0] , [r0], r1
+        bne 1b
+        bx lr
+endfunc
+
+function ff_hevc_put_epel_bi_pixels_w6_neon_8, export=1
+        push   {r4-r5}
+        ldr    r12, [sp, #16] // height
+1:      subs r12, #1
+        mov      r4, r2
+        vld1.32   d0[0] , [r2]!
+        vld1.16   d1[0] , [r2]
+        add      r2, r4, r3
+        mov      r5, r0
+        vst1.32   d0[0] , [r0]!
+        vst1.16   d1[0] , [r0]
+        add      r0, r5, r1
+        bne 1b
+        pop   {r4-r5}
+        bx lr
+endfunc
+
+function ff_hevc_put_epel_bi_pixels_w12_neon_8, export=1
+        push   {r4-r5}
+        ldr    r12, [sp, #16] // height
+1:      subs r12, #2
+        mov      r4, r2
+        vld1.32   {d0} , [r2]!
+        vld1.32   {d1[0]} , [r2]
+        add      r2, r4, r3
+        mov      r4, r2
+        vld1.32   {d2} , [r2]!
+        vld1.32   {d3[0]} , [r2]
+        add      r2, r4, r3
+        mov      r5, r0
+        vst1.32   {d0} , [r0]!
+        vst1.32   {d1[0]} , [r0]
+        add      r0, r5, r1
+        mov      r5, r0
+        vst1.32   {d2} , [r0]!
+        vst1.32   {d3[0]} , [r0]
+        add      r0, r5, r1
+        bne 1b
+        pop   {r4-r5}
+        bx lr
+endfunc
+
+put_epel_bi_pixels    4, d0[0], d0[1]
+put_epel_bi_pixels    8, d0,    d1,
+put_epel_bi_pixels   16, q0,    q1,
+put_epel_bi_pixels   24, d0-d2, d3-d5
+put_epel_bi_pixels   32, q0-q1, q2-q3
+
 epel_coeffs:
        .byte 2, 58, 10, 2
        .byte 4, 54, 16, 2
