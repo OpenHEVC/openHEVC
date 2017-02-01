@@ -213,6 +213,7 @@ set(libfilenames
     #libavutil/cast5.c
     #libavutil/camellia.c
     libavutil/channel_layout.c
+    #libavutil/color_utils.c
     libavutil/cpu.c
     libavutil/crc.c
     libavutil/des.c
@@ -245,6 +246,7 @@ set(libfilenames
     libavutil/opt.c
     libavutil/parseutils.c
     libavutil/pixdesc.c
+    #libavutil/pixelutils.c
     libavutil/random_seed.c
     libavutil/rational.c
     libavutil/reverse.c
@@ -262,7 +264,7 @@ set(libfilenames
     libavutil/utils.c
     #libavutil/xga_font_data.c
     #libavutil/xtea.c
-    #libavutil/tea
+    #libavutil/tea.c
 
     libavutil/atomic.c
 
@@ -340,10 +342,14 @@ set(libfilenames
 # libavcodec sub systems
     libavcodec/bswapdsp.c
     libavcodec/cabac.c
+  #if config fft
     libavcodec/avfft.c
+  #if config dct
     libavcodec/dct.c
+    #libavcodec/dct32_fixed.c
     libavcodec/dct32_float.c
     libavcodec/dct32_template.c
+
     libavcodec/faanidct.c
     libavcodec/fft_template.c
     libavcodec/golomb.c
