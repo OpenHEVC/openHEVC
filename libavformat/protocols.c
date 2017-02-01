@@ -25,6 +25,7 @@
 
 
 extern const URLProtocol ff_file_protocol;
+extern const URLProtocol ff_pipe_protocol;
 
 
 #include "libavformat/protocol_list.c"
