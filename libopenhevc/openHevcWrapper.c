@@ -331,6 +331,86 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
     return 0;
 }
 
+/**
+ * Pass the packets to the corresponding decoders and loop over running decoders untill one of them
+ * output a got_picture.
+ *    -First decoder will be h264 decoder
+ *    -Second one will be HEVC decoder
+ *    -Third decoder is ignored since its not supported yet
+ */
+static int poc_id;
+int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff, const unsigned char *buff2, int nal_len, int nal_len2, int64_t pts, int64_t pts2)
+{
+    int got_picture[MAX_DECODERS], len=0, i, max_layer, au_len, stop_dec;
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext;
+    poc_id++;
+    poc_id&=1023;
+    for(i =0; i < MAX_DECODERS; i++)  {
+        got_picture[i] = 0;
+        len = 0;
+        openHevcContext                = openHevcContexts->wraper[i];
+        openHevcContext->c->quality_id = openHevcContexts->active_layer;
+        if(i==0){
+            openHevcContext->avpkt.size = nal_len;
+            openHevcContext->avpkt.data = buff;
+            openHevcContext->avpkt.pts  = pts;
+            openHevcContext->avpkt.poc_id = poc_id;
+            if(buff2 && openHevcContexts->active_layer){
+                openHevcContext->avpkt.el_available=1;
+            }else {
+                openHevcContext->avpkt.el_available=0;
+            }
+        } else if(i > 0 && i <= openHevcContexts->active_layer){
+            openHevcContext->avpkt.size = nal_len2;
+            openHevcContext->avpkt.data = buff2;
+            openHevcContext->avpkt.pts  = pts2;
+            openHevcContext->avpkt.poc_id = poc_id;
+            if(buff){
+                openHevcContext->avpkt.bl_available=1;
+            }
+            else {
+                openHevcContext->avpkt.bl_available=0;
+            }
+        } else {
+            openHevcContext->avpkt.size = 0;
+            openHevcContext->avpkt.data = NULL;
+        }
+        //av_log(openHevcContext->c,AV_LOG_ERROR,"PTS DIFF: %d", (int)((int)pts-(int)pts2) );
+        len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture[i], &openHevcContext->avpkt);
+
+        if(i+1 < openHevcContexts->nb_decoders)
+            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
+        //Fixme: This way of passing base layer frame reference to each other is bad and should be corrected
+        //We don't know what the first decoder could be doing with its BL_frame (modifying or deleting it)
+        //A cleanest way to do things would be to handle the h264 decoder from the first decoder, but the main issue
+        //would be finding a way to keep giving AVPacket, to h264 when required until the BL_frames required by HEVC
+        //are decoded and available.
+        if (len < 0) {
+            fprintf(stderr, "Error while decoding frame \n");
+            return -1;
+        }
+    }
+
+    if(openHevcContexts->set_display)
+            max_layer = openHevcContexts->display_layer;
+        else
+            max_layer = openHevcContexts->active_layer;
+
+        for(i=max_layer; i>=0; i--) {
+            if(got_picture[i]){
+                if(i == openHevcContexts->display_layer) {
+                    if (i >= 0 && i < openHevcContexts->nb_decoders)
+                        openHevcContexts->display_layer = i;
+                    return got_picture[i];
+                }
+             //   fprintf(stderr, "Display layer %d  \n", i);
+
+            }
+
+        }
+    return 0;
+}
 
 
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc)
@@ -343,6 +423,30 @@ void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *ext
         openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
         memcpy( openHevcContext->c->extradata, extra_data, extra_size_alloc);
         openHevcContext->c->extradata_size = extra_size_alloc;
+	}
+}
+
+void libOpenShvcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data_linf, unsigned char *extra_data_lsup, int extra_size_alloc_linf, int extra_size_alloc_lsup)
+{
+    int i;
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext;
+    if (extra_data_linf && extra_size_alloc_linf) {
+        openHevcContext = openHevcContexts->wraper[0];
+        if (openHevcContext->c->extradata) av_freep(&openHevcContext->c->extradata);
+        openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc_linf);
+        memcpy( openHevcContext->c->extradata, extra_data_linf, extra_size_alloc_linf);
+        openHevcContext->c->extradata_size = extra_size_alloc_linf;
+    }
+
+    if (extra_data_lsup && extra_size_alloc_lsup) {
+        for(i =1; i <= openHevcContexts->active_layer; i++)  {
+            openHevcContext = openHevcContexts->wraper[i];
+            if (openHevcContext->c->extradata) av_freep(&openHevcContext->c->extradata);
+            openHevcContext->c->extradata = (uint8_t*)av_mallocz(extra_size_alloc_lsup);
+            memcpy( openHevcContext->c->extradata, extra_data_lsup, extra_size_alloc_lsup);
+            openHevcContext->c->extradata_size = extra_size_alloc_lsup;
+        }
 	}
 }
 
@@ -418,7 +522,7 @@ void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInf
     openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
     openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
     openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
-    openHevcFrameInfo->nTimeStamp              = picture->pkt_pts;
+    openHevcFrameInfo->nTimeStamp              = picture->pts;
 }
 
 void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
@@ -511,7 +615,7 @@ void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame
     openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
     openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
     openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
-    openHevcFrameInfo->nTimeStamp              = picture->pkt_pts;
+    openHevcFrameInfo->nTimeStamp              = picture->pts;
 }
 
 int libOpenHevcGetOutput(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame *openHevcFrame)
@@ -576,11 +680,16 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
     return 1;
 }
 
-void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val)
+void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, OHEVC_LogLevel val)
 {
-    if (val == 1)
-        av_log_set_level(AV_LOG_DEBUG);
+	av_log_set_level(val);
 }
+
+void libOpenHevcSetLogCallback(OpenHevc_Handle openHevcHandle, void (*callback)(void*, int, const char*, va_list))
+{
+	av_log_set_callback(callback);
+}
+
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;

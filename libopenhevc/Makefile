@@ -3,6 +3,7 @@ include $(SUBDIR)../config.mak
 NAME = openhevc
 
 HEADERS = openHevcWrapper.h                             \
+          libavutil/version.h\
           version.h                                     \
 
 OBJS = openHevcWrapper.o                                \
