@@ -67,7 +67,8 @@ void avcodec_register_all(void)
     initialized = 1;
 
     /* video codecs */
-
+    //REGISTER_DECODER(H261,              h261);
+    //REGISTER_DECODER(H263,              h263);
     REGISTER_DECODER(H264,              h264);
 #if FF_API_VDPAU
     //REGISTER_DECODER(H264_VDPAU,        h264_vdpau);
