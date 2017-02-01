@@ -85,76 +85,55 @@ ARCH_HEADERS = bswap.h                                                  \
 BUILT_HEADERS = avconfig.h                                              \
                 ffversion.h
 
-OBJS = adler32.o                                                        \
-       aes.o                                                            \
+OBJS = aes.o                                                            \
        aes_ctr.o                                                        \
-       audio_fifo.o                                                     \
        avstring.o                                                       \
        base64.o                                                         \
-       blowfish.o                                                       \
        bprint.o                                                         \
        buffer.o                                                         \
-       cast5.o                                                          \
-       camellia.o                                                       \
        channel_layout.o                                                 \
-       color_utils.o                                                    \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \
        dict.o                                                           \
        display.o                                                        \
-       downmix_info.o                                                   \
        error.o                                                          \
        eval.o                                                           \
        fifo.o                                                           \
        file.o                                                           \
        file_open.o                                                      \
-       float_dsp.o                                                      \
-       fixed_dsp.o                                                      \
        frame.o                                                          \
-       hash.o                                                           \
        hmac.o                                                           \
-       hwcontext.o                                                      \
        imgutils.o                                                       \
-       integer.o                                                        \
        intmath.o                                                        \
        lfg.o                                                            \
-       lls.o                                                            \
        log.o                                                            \
        log2_tab.o                                                       \
        mathematics.o                                                    \
        mastering_display_metadata.o                                     \
        md5.o                                                            \
        mem.o                                                            \
-       murmur3.o                                                        \
        opt.o                                                            \
        parseutils.o                                                     \
        pixdesc.o                                                        \
-       pixelutils.o                                                     \
        random_seed.o                                                    \
        rational.o                                                       \
        reverse.o                                                        \
        rc4.o                                                            \
-       ripemd.o                                                         \
        samplefmt.o                                                      \
        sha.o                                                            \
        sha512.o                                                         \
        stereo3d.o                                                       \
-       threadmessage.o                                                  \
        time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \
-       twofish.o                                                        \
        utils.o                                                          \
-       xga_font_data.o                                                  \
-       xtea.o                                                           \
-       tea.o                                                            \
 
-OBJS-$(!HAVE_ATOMICS_NATIVE)            += atomic.o                     \
+
+OBJS-$(!HAVE_ATOMICS_NATIVE)            += atomic.o
 
 OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
-OBJS-$(CONFIG_LZO)                      += lzo.o
 OBJS-$(CONFIG_OPENCL)                   += opencl.o opencl_internal.o
 OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
 OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
@@ -173,55 +152,3 @@ SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h
 SKIPHEADERS-$(HAVE_ATOMICS_WIN32)      += atomic_win32.h
 SKIPHEADERS-$(CONFIG_OPENCL)           += opencl.h
 
-TESTPROGS = adler32                                                     \
-            aes                                                         \
-            atomic                                                      \
-            avstring                                                    \
-            base64                                                      \
-            blowfish                                                    \
-            bprint                                                      \
-            cast5                                                       \
-            camellia                                                    \
-            color_utils                                                 \
-            cpu                                                         \
-            crc                                                         \
-            des                                                         \
-            dict                                                        \
-            display                                                     \
-            error                                                       \
-            eval                                                        \
-            file                                                        \
-            fifo                                                        \
-            float_dsp                                                   \
-            hash                                                        \
-            hmac                                                        \
-            lfg                                                         \
-            lls                                                         \
-            log                                                         \
-            md5                                                         \
-            murmur3                                                     \
-            opt                                                         \
-            pca                                                         \
-            parseutils                                                  \
-            pixdesc                                                     \
-            pixelutils                                                  \
-            random_seed                                                 \
-            rational                                                    \
-            ripemd                                                      \
-            sha                                                         \
-            sha512                                                      \
-            softfloat                                                   \
-            tree                                                        \
-            twofish                                                     \
-            utf8                                                        \
-            xtea                                                        \
-            tea                                                         \
-
-TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
-
-TOOLS = crypto_bench ffhash ffeval ffescape
-
-tools/crypto_bench$(EXESUF): ELIBS += $(if $(VERSUS),$(subst +, -l,+$(VERSUS)),)
-tools/crypto_bench$(EXESUF): CFLAGS += -DUSE_EXT_LIBS=0$(if $(VERSUS),$(subst +,+USE_,+$(VERSUS)),)
-
-$(SUBDIR)tests/lzo$(EXESUF): ELIBS = -llzo2
