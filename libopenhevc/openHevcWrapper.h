@@ -86,7 +86,6 @@ OpenHevc_Handle libOpenShvcInit(int nb_pthreads, int thread_type);
 OpenHevc_Handle libOpenH264Init(int nb_pthreads, int thread_type);
 int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle);
 int  libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int nal_len, int64_t pts);
-//int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], const int stop_dec, const int stop_dec2);
 int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff, const unsigned char *buff2, int nal_len, int nal_len2, int64_t pts, int64_t pts2);
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo);
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc);
@@ -108,6 +107,7 @@ typedef enum
 	OHEVC_LOG_DEBUG = 48,
 	OHEVC_LOG_TRACE = 56
 } OHEVC_LogLevel;
+
 
 //val is log level used
 void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, OHEVC_LogLevel val);
