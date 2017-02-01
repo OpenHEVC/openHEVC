@@ -42,14 +42,14 @@ static void (*ff_hevc_put_epel_uni_pixels_neon_green_8_fcts[])
 		(uint8_t *dst, ptrdiff_t dststride,
 		 uint8_t *_src, ptrdiff_t _srcstride,
          int height, intptr_t mx, intptr_t my, int width) = {
-        		 ff_hevc_put_epel_uw_pixels_w2_neon_8,
-				 ff_hevc_put_epel_uw_pixels_w4_neon_8,
-				 ff_hevc_put_epel_uw_pixels_w6_neon_8,
-				 ff_hevc_put_epel_uw_pixels_w8_neon_8,
-				 ff_hevc_put_epel_uw_pixels_w12_neon_8,
-				 ff_hevc_put_epel_uw_pixels_w16_neon_8,
-				 ff_hevc_put_epel_uw_pixels_w24_neon_8,
-				 ff_hevc_put_epel_uw_pixels_w32_neon_8,
+        		 ff_hevc_put_epel_uni_pixels_w2_neon_8,
+				 ff_hevc_put_epel_uni_pixels_w4_neon_8,
+				 ff_hevc_put_epel_uni_pixels_w6_neon_8,
+				 ff_hevc_put_epel_uni_pixels_w8_neon_8,
+				 ff_hevc_put_epel_uni_pixels_w12_neon_8,
+				 ff_hevc_put_epel_uni_pixels_w16_neon_8,
+				 ff_hevc_put_epel_uni_pixels_w24_neon_8,
+				 ff_hevc_put_epel_uni_pixels_w32_neon_8,
 		 0,
 		 0
 };
@@ -586,14 +586,14 @@ av_cold void green_reload_filter_chroma2(chroma_config *c, const int bit_depth)
             c->put_hevc_epel_uni[x][1][1]	  = ff_hevc_epel2_uni_hv_neon_8;
         }
 
-        c->put_hevc_epel_uni[0][0][0]  = ff_hevc_put_epel_uw_pixels_w2_neon_8;
-        c->put_hevc_epel_uni[1][0][0]  = ff_hevc_put_epel_uw_pixels_w4_neon_8;
-        c->put_hevc_epel_uni[2][0][0]  = ff_hevc_put_epel_uw_pixels_w6_neon_8;
-        c->put_hevc_epel_uni[3][0][0]  = ff_hevc_put_epel_uw_pixels_w8_neon_8;
-        c->put_hevc_epel_uni[4][0][0]  = ff_hevc_put_epel_uw_pixels_w12_neon_8;
-        c->put_hevc_epel_uni[5][0][0]  = ff_hevc_put_epel_uw_pixels_w16_neon_8;
-        c->put_hevc_epel_uni[6][0][0]  = ff_hevc_put_epel_uw_pixels_w24_neon_8;
-        c->put_hevc_epel_uni[7][0][0]  = ff_hevc_put_epel_uw_pixels_w32_neon_8;
+        c->put_hevc_epel_uni[0][0][0]  = ff_hevc_put_epel_uni_pixels_w2_neon_8;
+        c->put_hevc_epel_uni[1][0][0]  = ff_hevc_put_epel_uni_pixels_w4_neon_8;
+        c->put_hevc_epel_uni[2][0][0]  = ff_hevc_put_epel_uni_pixels_w6_neon_8;
+        c->put_hevc_epel_uni[3][0][0]  = ff_hevc_put_epel_uni_pixels_w8_neon_8;
+        c->put_hevc_epel_uni[4][0][0]  = ff_hevc_put_epel_uni_pixels_w12_neon_8;
+        c->put_hevc_epel_uni[5][0][0]  = ff_hevc_put_epel_uni_pixels_w16_neon_8;
+        c->put_hevc_epel_uni[6][0][0]  = ff_hevc_put_epel_uni_pixels_w24_neon_8;
+        c->put_hevc_epel_uni[7][0][0]  = ff_hevc_put_epel_uni_pixels_w32_neon_8;
     }
 }
 
@@ -612,14 +612,14 @@ av_cold void green_reload_filter_chroma3(chroma_config *c, const int bit_depth)
             c->put_hevc_epel_uni[x][1][1]	  = ff_hevc_epel3_uni_hv_neon_8;
         }
 
-        c->put_hevc_epel_uni[0][0][0]  = ff_hevc_put_epel_uw_pixels_w2_neon_8;
-        c->put_hevc_epel_uni[1][0][0]  = ff_hevc_put_epel_uw_pixels_w4_neon_8;
-        c->put_hevc_epel_uni[2][0][0]  = ff_hevc_put_epel_uw_pixels_w6_neon_8;
-        c->put_hevc_epel_uni[3][0][0]  = ff_hevc_put_epel_uw_pixels_w8_neon_8;
-        c->put_hevc_epel_uni[4][0][0]  = ff_hevc_put_epel_uw_pixels_w12_neon_8;
-        c->put_hevc_epel_uni[5][0][0]  = ff_hevc_put_epel_uw_pixels_w16_neon_8;
-        c->put_hevc_epel_uni[6][0][0]  = ff_hevc_put_epel_uw_pixels_w24_neon_8;
-        c->put_hevc_epel_uni[7][0][0]  = ff_hevc_put_epel_uw_pixels_w32_neon_8;
+        c->put_hevc_epel_uni[0][0][0]  = ff_hevc_put_epel_uni_pixels_w2_neon_8;
+        c->put_hevc_epel_uni[1][0][0]  = ff_hevc_put_epel_uni_pixels_w4_neon_8;
+        c->put_hevc_epel_uni[2][0][0]  = ff_hevc_put_epel_uni_pixels_w6_neon_8;
+        c->put_hevc_epel_uni[3][0][0]  = ff_hevc_put_epel_uni_pixels_w8_neon_8;
+        c->put_hevc_epel_uni[4][0][0]  = ff_hevc_put_epel_uni_pixels_w12_neon_8;
+        c->put_hevc_epel_uni[5][0][0]  = ff_hevc_put_epel_uni_pixels_w16_neon_8;
+        c->put_hevc_epel_uni[6][0][0]  = ff_hevc_put_epel_uni_pixels_w24_neon_8;
+        c->put_hevc_epel_uni[7][0][0]  = ff_hevc_put_epel_uni_pixels_w32_neon_8;
     }
 }
 

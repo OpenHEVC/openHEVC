@@ -110,17 +110,27 @@ QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_w24_neon_8);
 QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_w32_neon_8);
 QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_w48_neon_8);
 QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_w64_neon_8);
-
-QPEL_FUNC_UW_PIX(ff_hevc_put_epel_uw_pixels_w2_neon_8);
-QPEL_FUNC_UW_PIX(ff_hevc_put_epel_uw_pixels_w4_neon_8);
-QPEL_FUNC_UW_PIX(ff_hevc_put_epel_uw_pixels_w6_neon_8);
-QPEL_FUNC_UW_PIX(ff_hevc_put_epel_uw_pixels_w8_neon_8);
-QPEL_FUNC_UW_PIX(ff_hevc_put_epel_uw_pixels_w12_neon_8);
-QPEL_FUNC_UW_PIX(ff_hevc_put_epel_uw_pixels_w16_neon_8);
-QPEL_FUNC_UW_PIX(ff_hevc_put_epel_uw_pixels_w24_neon_8);
-QPEL_FUNC_UW_PIX(ff_hevc_put_epel_uw_pixels_w32_neon_8);
 #undef QPEL_FUNC_UW_PIX
 
+#define QPEL_FUNC_UNI_PIX(name) \
+    void name(  uint8_t *dst, ptrdiff_t dststride, \
+				uint8_t *src, ptrdiff_t srcstride, \
+				int height, intptr_t mx, intptr_t my, int width);
+
+QPEL_FUNC_UNI_PIX(ff_hevc_put_epel_uni_pixels_w2_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_put_epel_uni_pixels_w4_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_put_epel_uni_pixels_w6_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_put_epel_uni_pixels_w8_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_put_epel_uni_pixels_w12_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_put_epel_uni_pixels_w16_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_put_epel_uni_pixels_w24_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_put_epel_uni_pixels_w32_neon_8);
+
+QPEL_FUNC_UNI_PIX(ff_hevc_epel_uni_h_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_epel_uni_v_neon_8);
+QPEL_FUNC_UNI_PIX(ff_hevc_epel_uni_hv_neon_8);
+
+#undef QPEL_FUNC_UNI_PIX
 #define QPEL_FUNC_UW(name) \
     void name(uint8_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride, \
                                    int width, int height, int16_t* src2, ptrdiff_t src2stride);
@@ -146,15 +156,6 @@ void ff_hevc_put_epel_h_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
                                 ptrdiff_t srcstride, int height,
                                 intptr_t mx, intptr_t my, int width);
 void ff_hevc_put_epel_v_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
-                                ptrdiff_t srcstride, int height,
-                                intptr_t mx, intptr_t my, int width);
-void ff_hevc_epel_uni_h_neon_8(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
-                                ptrdiff_t srcstride, int height,
-                                intptr_t mx, intptr_t my, int width);
-void ff_hevc_epel_uni_v_neon_8(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
-                                ptrdiff_t srcstride, int height,
-                                intptr_t mx, intptr_t my, int width);
-void ff_hevc_epel_uni_hv_neon_8(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
                                 ptrdiff_t srcstride, int height,
                                 intptr_t mx, intptr_t my, int width);
 void ff_hevc_put_epel_hv_neon_8(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
@@ -446,14 +447,14 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         c->put_hevc_qpel_uni[8][0][0]  = ff_hevc_put_qpel_uw_pixels_w48_neon_8;
         c->put_hevc_qpel_uni[9][0][0]  = ff_hevc_put_qpel_uw_pixels_w64_neon_8;
 
-        c->put_hevc_epel_uni[0][0][0]  = ff_hevc_put_epel_uw_pixels_w2_neon_8;
-        c->put_hevc_epel_uni[1][0][0]  = ff_hevc_put_epel_uw_pixels_w4_neon_8;
-        c->put_hevc_epel_uni[2][0][0]  = ff_hevc_put_epel_uw_pixels_w6_neon_8;
-        c->put_hevc_epel_uni[3][0][0]  = ff_hevc_put_epel_uw_pixels_w8_neon_8;
-        c->put_hevc_epel_uni[4][0][0]  = ff_hevc_put_epel_uw_pixels_w12_neon_8;
-        c->put_hevc_epel_uni[5][0][0]  = ff_hevc_put_epel_uw_pixels_w16_neon_8;
-        c->put_hevc_epel_uni[6][0][0]  = ff_hevc_put_epel_uw_pixels_w24_neon_8;
-        c->put_hevc_epel_uni[7][0][0]  = ff_hevc_put_epel_uw_pixels_w32_neon_8;
+        c->put_hevc_epel_uni[0][0][0]  = ff_hevc_put_epel_uni_pixels_w2_neon_8;
+        c->put_hevc_epel_uni[1][0][0]  = ff_hevc_put_epel_uni_pixels_w4_neon_8;
+        c->put_hevc_epel_uni[2][0][0]  = ff_hevc_put_epel_uni_pixels_w6_neon_8;
+        c->put_hevc_epel_uni[3][0][0]  = ff_hevc_put_epel_uni_pixels_w8_neon_8;
+        c->put_hevc_epel_uni[4][0][0]  = ff_hevc_put_epel_uni_pixels_w12_neon_8;
+        c->put_hevc_epel_uni[5][0][0]  = ff_hevc_put_epel_uni_pixels_w16_neon_8;
+        c->put_hevc_epel_uni[6][0][0]  = ff_hevc_put_epel_uni_pixels_w24_neon_8;
+        c->put_hevc_epel_uni[7][0][0]  = ff_hevc_put_epel_uni_pixels_w32_neon_8;
 
         c->idct[0]                         = ff_hevc_transform_4x4_neon_8;
         c->idct[1]                         = ff_hevc_transform_8x8_neon_8;
