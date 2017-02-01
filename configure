@@ -2116,6 +2116,8 @@ mpegtsraw_demuxer_select="mpegts_demuxer"
 avcodec_deps="avutil"
 avformat_deps="avcodec avutil"
 openhevc_deps="avformat avcodec avutil"
+openhevc_select="hevc_decoder hevc_demuxer hevc_parser file_protocol "
+openhevc_suggest="mov_demuxer mpegts_demuxer h264_decoder h264_demuxer h264_parser"
 
 # programs
 ohplay_deps="avformat avcodec avutil openhevc sdl"
@@ -2355,6 +2357,12 @@ do_random(){
 }
 
 
+
+################################################################################
+# openHEVC config init special
+# (disable stuff we don't need in openHEVC)
+################################################################################
+map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
 
 
 for opt do
@@ -5039,7 +5047,7 @@ check_disable_warning -Wno-unused-const-variable
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
-check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
+check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libopenhevc:libavformat:libavcodec:libavutil:libavresample
 enabled rpath && add_ldexeflags -Wl,-rpath,$libdir
 enabled rpath && add_ldlibflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
