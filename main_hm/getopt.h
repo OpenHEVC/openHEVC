@@ -44,6 +44,7 @@
 
 // initialize APR and parse command-line options
 void init_main(int argc, char *argv[]);
+void print_usage(void);
 int getopt(int nargc, char * const *nargv, const char *ostr);
 
 #endif

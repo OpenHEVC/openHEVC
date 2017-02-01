@@ -38,7 +38,7 @@ Andreas Schiffler -- aschiffler at ferzkopp dot net
 
 \return The tick count.
 */
-Uint32 _getTicks()
+static Uint32 _getTicks()
 {
 	Uint32 ticks = SDL_GetTicks();
 
