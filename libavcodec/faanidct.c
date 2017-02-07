@@ -21,8 +21,6 @@
 #include "faanidct.h"
 #include "libavutil/common.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 /* To allow switching to double. */
 typedef float FLOAT;
 

@@ -26,8 +26,6 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
-#include "libavutil/internal.h" //TMP_PL_DEV 
-
 typedef struct FFRawVideoDemuxerContext {
     const AVClass *class;     /**< Class for private options. */
     char *video_size;         /**< String describing video size, set by a private option. */

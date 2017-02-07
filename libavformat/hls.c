@@ -38,8 +38,6 @@
 #include "avio_internal.h"
 #include "id3v2.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 #define INITIAL_BUFFER_SIZE 32768
 
 #define MAX_FIELD_LEN 64

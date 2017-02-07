@@ -43,8 +43,6 @@
 #include "thread.h"
 #include "vdpau_compat.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 {
     int off = offsetof(H264Picture, tf) + sizeof(pic->tf);

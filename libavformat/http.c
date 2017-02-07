@@ -38,9 +38,6 @@
 #include "os_support.h"
 #include "url.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-#include "libavformat/internal.h" //TMP_DEV_PL
-
 /* XXX: POST protocol is not completely implemented because ffmpeg uses
  * only a subset of it. */
 

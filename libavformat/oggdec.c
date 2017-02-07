@@ -36,8 +36,6 @@
 #include "internal.h"
 #include "vorbiscomment.h"
 
-#include "libavutil/internal.h" //TMP_PL_DEV 
-
 #define MAX_PAGE_SIZE 65307
 #define DECODER_BUFFER_SIZE MAX_PAGE_SIZE
 

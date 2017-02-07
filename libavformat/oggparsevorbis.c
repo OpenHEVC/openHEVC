@@ -39,8 +39,6 @@
 #include "vorbiscomment.h"
 #include "replaygain.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
 {
     int i, cnum, h, m, s, ms, keylen = strlen(key);

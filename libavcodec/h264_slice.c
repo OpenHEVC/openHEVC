@@ -47,8 +47,6 @@
 #include "rectangle.h"
 #include "thread.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 static const uint8_t field_scan[16+1] = {
     0 + 0 * 4, 0 + 1 * 4, 1 + 0 * 4, 0 + 2 * 4,
     0 + 3 * 4, 1 + 1 * 4, 1 + 2 * 4, 1 + 3 * 4,

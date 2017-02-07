@@ -25,8 +25,6 @@
 #include "mem.h"
 #include "thread.h"
 
-#include "internal.h" //TMP_DEV_PL
-
 AVBufferRef *av_buffer_create(uint8_t *data, int size,
                               void (*free)(void *opaque, uint8_t *data),
                               void *opaque, int flags)

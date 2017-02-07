@@ -26,8 +26,6 @@
 #include "mem.h"
 #include "samplefmt.h"
 
-#include "internal.h" //TMP_PL_DEV
-
 MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_duration)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_pos)

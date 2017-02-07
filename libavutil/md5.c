@@ -37,7 +37,6 @@
 #include "mem.h"
 #include "md5.h"
 
-#include "../config.h" //TMP_DEV_PL
 typedef struct AVMD5 {
     uint64_t len;
     uint8_t  block[64];

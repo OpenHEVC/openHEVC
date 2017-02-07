@@ -44,8 +44,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/time_internal.h"
 
-#include "libavutil/internal.h" //TMP_PL_DEV
-
 #include "libavcodec/bytestream.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/mpeg4audio.h"
@@ -68,8 +66,6 @@
 #endif
 
 #include "qtpalette.h"
-
-#include "libavutil/intmath.h" //TMP_PL_DEV 
 
 typedef enum {
     EBML_NONE,

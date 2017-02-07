@@ -186,6 +186,7 @@ endif()
 
 add_definitions("-DPIC")
 add_definitions("-DUSE_SDL")
+add_definitions("-DHAVE_AV_CONFIG_H")
 AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 

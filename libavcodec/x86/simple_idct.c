@@ -28,8 +28,6 @@
 #include "idctdsp.h"
 #include "simple_idct.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 #if HAVE_INLINE_ASM
 
 /*

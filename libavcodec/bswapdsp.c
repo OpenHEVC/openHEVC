@@ -22,8 +22,6 @@
 #include "libavutil/bswap.h"
 #include "bswapdsp.h"
 
-#include "config.h" //TMP_DEV_PL
-
 static void bswap_buf(uint32_t *dst, const uint32_t *src, int w)
 {
     int i;

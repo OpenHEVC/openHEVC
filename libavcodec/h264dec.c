@@ -55,8 +55,6 @@
 #include "thread.h"
 #include "vdpau_compat.h"
 
-#include "libavutil/internal.h"
-
 static int h264_decode_end(AVCodecContext *avctx);
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };

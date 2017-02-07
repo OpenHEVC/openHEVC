@@ -28,9 +28,6 @@
 #include "libavcodec/pixels.h"
 #include "fpel.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-#include "libavutil/avassert.h"
-
 #if HAVE_YASM
 void ff_put_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
                               int dstStride, int src1Stride, int h);

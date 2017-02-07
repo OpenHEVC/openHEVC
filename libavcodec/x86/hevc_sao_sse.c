@@ -65,7 +65,7 @@ static av_always_inline __m128i logical_bitwise_select(__m128i a, __m128i b, __m
     return a;
 }
 
-__m128i _MM_MIN_EPU16(__m128i a, __m128i b)
+static __m128i _MM_MIN_EPU16(__m128i a, __m128i b)
 {
      __m128i mask = comlt_epu16(a, b);
      a = logical_bitwise_select(a, b, mask);

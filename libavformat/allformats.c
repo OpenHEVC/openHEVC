@@ -25,8 +25,6 @@
 #include "url.h"
 #include "version.h"
 
-#include "config.h" //TMP_PL_DEV
-
 #define REGISTER_MUXER(X, x)                                            \
     {                                                                   \
         extern AVOutputFormat ff_##x##_muxer;                           \

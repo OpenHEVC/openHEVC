@@ -61,8 +61,6 @@ void  free(void *ptr);
 
 #include "mem_internal.h"
 
-#include "internal.h" //TMP_DEV_PL
-
 #define ALIGN (HAVE_AVX ? 32 : 16)
 
 /* NOTE: if you want to override these functions with your own

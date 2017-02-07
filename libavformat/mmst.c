@@ -37,8 +37,6 @@
 #include "network.h"
 #include "url.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 #define LOCAL_ADDRESS 0xc0a80081    // FIXME get and use correct local ip address.
 #define LOCAL_PORT    1037          // as above.
 /** Client to server packet types. */

@@ -26,8 +26,6 @@
 #include "get_bits.h"
 #include "put_bits.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 typedef struct MPEG4AudioConfig {
     int object_type;
     int sampling_index;

@@ -35,8 +35,6 @@
 #include "http.h"
 #include "url.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 #define CHUNK_HEADER_LENGTH 4   // 2bytes chunk type and 2bytes chunk length.
 #define EXT_HEADER_LENGTH   8   // 4bytes sequence, 2bytes useless and 2bytes chunk length.
 

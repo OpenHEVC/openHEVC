@@ -37,8 +37,6 @@
 #include "put_bits.h"
 #include "vlc.h"
 
-#include "libavutil/internal.h" //TMP_DEV_PL
-
 const uint8_t ff_log2_run[41]={
  0, 0, 0, 0, 1, 1, 1, 1,
  2, 2, 2, 2, 3, 3, 3, 3,

@@ -40,8 +40,6 @@
 #include "id3v1.h"
 #include "id3v2.h"
 
-#include "libavutil/internal.h" //TMP_PL_DEV 
-
 const AVMetadataConv ff_id3v2_34_metadata_conv[] = {
     { "TALB", "album"        },
     { "TCOM", "composer"     },
