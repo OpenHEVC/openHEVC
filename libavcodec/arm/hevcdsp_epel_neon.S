@@ -102,10 +102,10 @@
 .endm
 
 function ff_hevc_put_epel_h_neon_8, export=1
-        push   {r4-r8}
-        ldr    r4, [sp, #20] // height
-        ldr    r7, [sp, #24] // mx
-        ldr    r5, [sp, #32] // width
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r7, [sp, #40] // mx
+        ldr    r5, [sp, #48] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -141,7 +141,7 @@ function ff_hevc_put_epel_h_neon_8, export=1
         pld [r2]
         vextin_d4_8
         epel_filter_16b
-        vst1.16    d24, [r0], r1
+		vst1.16    d24, [r0], r1
         bne 4b
         subs      r5, #4
         beq       99f
@@ -157,15 +157,15 @@ function ff_hevc_put_epel_h_neon_8, export=1
         vst1.32    d24[0], [r0], r1
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r8}
+        pop {r4-r12}
         bx lr
 endfunc
 
 function ff_hevc_epel_uni_h_neon_8, export=1
-        push   {r4-r8}
-        ldr    r4, [sp, #20] // height
-        ldr    r5, [sp, #32] // width
-        ldr    r7, [sp, #24] // mx
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r5, [sp, #48] // width
+        ldr    r7, [sp, #40] // mx
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -219,17 +219,17 @@ function ff_hevc_epel_uni_h_neon_8, export=1
         vst1.16    d24[0], [r0], r1
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r8}
+        pop {r4-r12}
         bx lr
 endfunc
 
 function ff_hevc_epel_bi_h_neon_8, export=1
-        push   {r4-r10}
-        ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
-        ldr    r4, [sp, #36] // height
-        ldr    r7, [sp, #40] // mx
-        ldr    r5, [sp, #48] // width
+        push   {r4-r12}
+        ldr    r8, [sp, #36] // src2
+        ldr    r9, [sp, #40] // src2stride
+        ldr    r4, [sp, #44] // height
+        ldr    r7, [sp, #48] // mx
+        ldr    r5, [sp, #56] // width
         sub    r7, #1
         lsl    r7, #2
         vpush  {d8-d15}
@@ -251,10 +251,10 @@ function ff_hevc_epel_bi_h_neon_8, export=1
         pld [r2]
         vextin_d4
         epel_filter_16b
-        vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q12
-        vqrshrun.s16   d0, q0, #7
-        vst1.8         d0, [r0], r1
+        vld1.16        {q3}, [r8], r9
+        vqadd.s16      q3, q12
+        vqrshrun.s16   d6, q3, #7
+        vst1.8         d6, [r0], r1
         bne       8b
         subs      r5, #8
         beq      99f
@@ -271,10 +271,10 @@ function ff_hevc_epel_bi_h_neon_8, export=1
         pld [r2]
         vextin_d4_8
         epel_filter_16b
-        vld1.16      d0, [r8], r9
-        vqadd.s16    d0, d24
-        vqrshrun.s16 d0, q0, #7
-        vst1.32      d0[0], [r0], r1
+        vld1.16      d6, [r8], r9
+        vqadd.s16    d6, d24
+        vqrshrun.s16 d6, q3, #7
+        vst1.32      d6[0], [r0], r1
         bne       4b
         subs      r5, #4
         beq       99f
@@ -289,21 +289,21 @@ function ff_hevc_epel_bi_h_neon_8, export=1
         pld [r2]
         vextin_d4_8
         epel_filter_16b
-        vld1.16      d0, [r8], r9
-        vqadd.s16    d0, d24
-        vqrshrun.s16 d0, q0, #7
-        vst1.32      d0[0], [r0], r1
+        vld1.16      d6, [r8], r9
+        vqadd.s16    d6, d24
+        vqrshrun.s16 d6, q3, #7
+        vst1.32      d6[0], [r0], r1
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r10}
+        pop {r4-r12}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_v_neon_8, export=1
-        push   {r4-r8}
-        ldr    r4, [sp, #20] // height
-        ldr    r7, [sp, #28] // my
-        ldr    r5, [sp, #32] // width
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r7, [sp, #44] // my
+        ldr    r5, [sp, #48] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -315,7 +315,6 @@ function ff_hevc_put_epel_v_neon_8, export=1
         mov   r12, r4
         mov   r6, r0
         mov   r7, r2
-
 0:      pld [r2]
         vld1.8    {d16}, [r2], r3
         pld [r2]
@@ -371,15 +370,15 @@ function ff_hevc_put_epel_v_neon_8, export=1
         vmov d18, d19
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r8}
+        pop {r4-r12}
         bx lr
 endfunc
 
 function ff_hevc_epel_uni_v_neon_8, export=1
-        push   {r4-r8}
-        ldr    r4, [sp, #20] // height
-        ldr    r5, [sp, #32] // width
-        ldr    r7, [sp, #28] // my
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r5, [sp, #48] // width
+        ldr    r7, [sp, #44] // my
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -448,17 +447,17 @@ function ff_hevc_epel_uni_v_neon_8, export=1
         vmov d18, d19
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r8}
+        pop {r4-r12}
         bx lr
 endfunc
 
 function ff_hevc_epel_bi_v_neon_8, export=1
-        push   {r4-r10}
-        ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
-        ldr    r4, [sp, #36] // height
-        ldr    r7, [sp, #44] // my
-        ldr    r5, [sp, #48] // width
+        push   {r4-r12}
+        ldr    r8, [sp, #36] // src2
+        ldr    r9, [sp, #40] // src2stride
+        ldr    r4, [sp, #44] // height
+        ldr    r7, [sp, #52] // my
+        ldr    r5, [sp, #56] // width
         sub    r7, #1
         lsl    r7, #2
         vpush  {d8-d15}
@@ -470,7 +469,6 @@ function ff_hevc_epel_bi_v_neon_8, export=1
         mov   r12, r4
         mov   r6, r0
         mov   r7, r2
-        lsl   r9, #1
 0:		pld [r2]
         vld1.8    {d16}, [r2], r3
         pld [r2]
@@ -487,10 +485,10 @@ function ff_hevc_epel_bi_v_neon_8, export=1
         pld [r2]
         vld1.8    {d19}, [r2], r3
         epel_filter_16b
-        vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q12
-        vqrshrun.s16   d0, q0, #7
-        vst1.8         d0, [r0], r1
+        vld1.16        {q3}, [r8], r9
+        vqadd.s16      q3, q12
+        vqrshrun.s16   d6, q3, #7
+        vst1.8         d6, [r0], r1
         vmov d16, d17
         vmov d17, d18
         vmov d18, d19
@@ -509,10 +507,10 @@ function ff_hevc_epel_bi_v_neon_8, export=1
         pld [r2]
         vld1.8    {d19}, [r2], r3
         epel_filter_16b
-        vld1.16      d0, [r8], r9
-        vqadd.s16    d0, d24
-        vqrshrun.s16 d0, q0, #7
-        vst1.32      d0[0], [r0], r1
+        vld1.16      d6, [r8], r9
+        vqadd.s16    d6, d24
+        vqrshrun.s16 d6, q3, #7
+        vst1.32      d6[0], [r0], r1
         vmov d16, d17
         vmov d17, d18
         vmov d18, d19
@@ -531,25 +529,25 @@ function ff_hevc_epel_bi_v_neon_8, export=1
         pld [r2]
         vld1.8    {d19}, [r2], r3
         epel_filter_16b
-        vld1.16      d0, [r8], r9
-        vqadd.s16    d0, d24
-        vqrshrun.s16 d0, q0, #7
-        vst1.32      d0[0], [r0], r1
+        vld1.16      d6, [r8], r9
+        vqadd.s16    d6, d24
+        vqrshrun.s16 d6, q3, #7
+        vst1.32      d6[0], [r0], r1
         vmov d16, d17
         vmov d17, d18
         vmov d18, d19
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r10}
+        pop {r4-r12}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_hv_neon_8, export=1
-        push   {r4-r8}
-        ldr    r4, [sp, #20] // height
-        ldr    r6, [sp, #24] // mx
-        ldr    r7, [sp, #28] // my
-        ldr    r5, [sp, #32] // width
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r6, [sp, #40] // mx
+        ldr    r7, [sp, #44] // my
+        ldr    r5, [sp, #48] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -627,16 +625,16 @@ function ff_hevc_put_epel_hv_neon_8, export=1
         vmov q14, q15
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r8}
+        pop {r4-r12}
         bx lr
 endfunc
 
 function ff_hevc_epel_uni_hv_neon_8, export=1
-        push   {r4-r8}
-        ldr    r4, [sp, #20] // height
-        ldr    r5, [sp, #32] // width
-        ldr    r6, [sp, #24] // mx
-        ldr    r7, [sp, #28] // my
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r5, [sp, #48] // width
+        ldr    r6, [sp, #40] // mx
+        ldr    r7, [sp, #44] // my
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -716,18 +714,18 @@ function ff_hevc_epel_uni_hv_neon_8, export=1
         vmov q14, q15
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r8}
+        pop {r4-r12}
         bx lr
 endfunc
 
 function ff_hevc_epel_bi_hv_neon_8, export=1
-        push   {r4-r10}
-        ldr    r4, [sp, #36] // height
-        ldr    r5, [sp, #48] // width
-        ldr    r6, [sp, #40] // mx
-        ldr    r7, [sp, #44] // my
-        ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        push   {r4-r12}
+        ldr    r4, [sp, #44] // height
+        ldr    r5, [sp, #56] // width
+        ldr    r6, [sp, #48] // mx
+        ldr    r7, [sp, #52] // my
+        ldr    r8, [sp, #36] // src2
+        ldr    r9, [sp, #40] // src2stride
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
@@ -764,10 +762,10 @@ function ff_hevc_epel_bi_hv_neon_8, export=1
         epel_filter_16b q15
         subs r4, #1
         epel_filter_32b
-		vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q3
-        vqrshrun.s16   d0, q0, #7
-        vst1.8         d0, [r0], r1
+		vld1.16        {q4}, [r8], r9
+        vqadd.s16      q4, q3
+        vqrshrun.s16   d8, q4, #7
+        vst1.8         d8, [r0], r1
         vmov q12, q13
         vmov q13, q14
         vmov q14, q15
@@ -787,10 +785,10 @@ function ff_hevc_epel_bi_hv_neon_8, export=1
         epel_filter_16b q15
         subs r4, #1
         epel_filter_32b_4
-		vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q3
-        vqrshrun.s16   d0, q0, #7
-        vst1.32        d0[0], [r0], r1
+		vld1.16        {q4}, [r8], r9
+        vqadd.s16      q4, q3
+        vqrshrun.s16   d8, q4, #7
+        vst1.32        d8[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
         vmov q14, q15
@@ -810,16 +808,16 @@ function ff_hevc_epel_bi_hv_neon_8, export=1
         epel_filter_16b q15
         subs r4, #1
         epel_filter_32b_4
-		vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q3
-        vqrshrun.s16   d0, q0, #7
-        vst1.16        d0[0], [r0], r1
+		vld1.16        {q4}, [r8], r9
+        vqadd.s16      q4, q3
+        vqrshrun.s16   d8, q4, #7
+        vst1.16        d8[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
         vmov q14, q15
         bne 2b
 99:     vpop {d8-d15}
-        pop {r4-r10}
+        pop {r4-r12}
         bx lr
 endfunc
 
@@ -895,11 +893,13 @@ put_epel_uni_pixels   32, q0-q1, q2-q3
 
 
 function ff_hevc_put_epel_bi_pixels_w2_neon_8, export=1
-        ldr    r12, [sp, #8]// height
-        ldr    r8, [sp] 	// src2
-        ldr    r9, [sp, #4] // src2stride
+        push   {r4-r10}
+        ldr    r10,[sp, #36] // height
+        ldr    r8, [sp, #28] // src2
+        ldr    r9, [sp, #32] // src2stride
+        vpush {d8-d15}
         lsl	   r9, #1
-1:      subs   r12, #1
+1:      subs   r10, #1
         vld1.16     d0[0] , [r2], r3
         vld1.16     {d2}, [r8], r9
         vshll.u8       q0, d0, #6
@@ -907,15 +907,19 @@ function ff_hevc_put_epel_bi_pixels_w2_neon_8, export=1
         vqrshrun.s16   d0, q0, #7
         vst1.16     d0[0] , [r0], r1
         bne 1b
+        vpop {d8-d15}
+        pop   {r4-r10}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_bi_pixels_w4_neon_8, export=1
-        ldr    r12, [sp, #8]// height
-        ldr    r8, [sp] 	// src2
-        ldr    r9, [sp, #4] // src2stride
+        push   {r4-r10}
+        ldr    r10,[sp, #36] // height
+        ldr    r8, [sp, #28] // src2
+        ldr    r9, [sp, #32] // src2stride
+        vpush {d8-d15}
         lsl	   r9, #1
-1:      subs   r12, #1
+1:      subs   r10, #1
         vld1.8   {d0}, [r2], r3
         vld1.8   {q1}, [r8], r9
         vshll.u8  q0, d0, #6
@@ -923,16 +927,19 @@ function ff_hevc_put_epel_bi_pixels_w4_neon_8, export=1
         vqrshrun.s16   d0, q0, #7
         vst1.8   d0, [r0], r1
         bne 1b
+        vpop {d8-d15}
+        pop   {r4-r10}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_bi_pixels_w6_neon_8, export=1
-        push   {r4-r5}
-        ldr    r12, [sp, #16] // height
-        ldr    r8, [sp, #8] 	// src2
-        ldr    r9, [sp, #12] // src2stride
+        push   {r4-r10}
+        ldr    r10,[sp, #36] // height
+        ldr    r8, [sp, #28] // src2
+        ldr    r9, [sp, #32] // src2stride
+        vpush {d8-d15}
         lsl	   r9, #1
-1:      subs r12, #1
+1:      subs r10, #1
         mov      r5, r0
         vld1.8   {d0,d1}, [r2], r3
         vld1.8   {d4,d5,d6}, [r8], r9
@@ -946,17 +953,19 @@ function ff_hevc_put_epel_bi_pixels_w6_neon_8, export=1
         vst1.8   d1[0], [r0]
         add      r0, r5, r1
         bne 1b
-        pop   {r4-r5}
+        vpop {d8-d15}
+        pop   {r4-r10}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_bi_pixels_w8_neon_8, export=1
-        push   {r4-r5}
-        ldr    r12, [sp, #16] // height
-        ldr    r8, [sp, #8] 	// src2
-        ldr    r9, [sp, #12] // src2stride
+        push   {r4-r10}
+        ldr    r10,[sp, #36] // height
+        ldr    r8, [sp, #28] // src2
+        ldr    r9, [sp, #32] // src2stride
+        vpush {d8-d15}
         lsl	   r9, #1
-1:      subs r12, #1
+1:      subs r10, #1
         vld1.8   {d0,d1}, [r2], r3
         vld1.8   {q2,q3}, [r8], r9
         vshll.u8  q1, d1, #6
@@ -967,18 +976,20 @@ function ff_hevc_put_epel_bi_pixels_w8_neon_8, export=1
         vqrshrun.s16   d1, q1, #7
         vst1.8   {d0,d1}, [r0], r1
         bne 1b
-        pop   {r4-r5}
+        vpop {d8-d15}
+        pop   {r4-r10}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_bi_pixels_w12_neon_8, export=1
-        push   {r4-r5}
-        ldr    r12, [sp, #16] // height
-        ldr    r8, [sp, #8] 	// src2
-        ldr    r9, [sp, #12] // src2stride
+        push   {r4-r10}
+        ldr    r10,[sp, #36] // height
+        ldr    r8, [sp, #28] // src2
+        ldr    r9, [sp, #32] // src2stride
+        vpush {d8-d15}
         lsl	   r9, #1
         sub    r9, #32
-1:      subs r12, #1
+1:      subs r10, #1
         vld1.8   {d0,d1,d2}, [r2], r3
         vld1.8   {q3,q4}, [r8]!
         vld1.8   {q5}, [r8], r9
@@ -993,18 +1004,20 @@ function ff_hevc_put_epel_bi_pixels_w12_neon_8, export=1
         vqrshrun.s16   d2, q2, #7
         vst1.8   {d0,d1,d2}, [r0], r1
         bne 1b
-        pop   {r4-r5}
+        vpop {d8-d15}
+        pop   {r4-r10}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_bi_pixels_w16_neon_8, export=1
-        push   {r4-r5}
-        ldr    r12, [sp, #16] // height
-        ldr    r8, [sp, #8] 	// src2
-        ldr    r9, [sp, #12] // src2stride
+        push   {r4-r10}
+        ldr    r10,[sp, #36] // height
+        ldr    r8, [sp, #28] // src2
+        ldr    r9, [sp, #32] // src2stride
+        vpush {d8-d15}
         lsl	   r9, #1
         sub    r9, #32
-1:      subs r12, #1
+1:      subs r10, #1
         vld1.8   {q0,q1}, [r2], r3
         vld1.8   {q4,q5}, [r8]!
         vld1.8   {q6,q7}, [r8], r9
@@ -1022,20 +1035,22 @@ function ff_hevc_put_epel_bi_pixels_w16_neon_8, export=1
         vqrshrun.s16   d3, q3, #7
         vst1.8   {q0,q1}, [r0], r1
         bne 1b
-        pop   {r4-r5}
+        vpop {d8-d15}
+        pop   {r4-r10}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_bi_pixels_w24_neon_8, export=1
-        push   {r4-r5}
-        ldr    r12, [sp, #16] // height
-        ldr    r8, [sp, #8] 	// src2
-        ldr    r9, [sp, #12] // src2stride
+        push   {r4-r10}
+        ldr    r10,[sp, #36] // height
+        ldr    r8, [sp, #28] // src2
+        ldr    r9, [sp, #32] // src2stride
+        vpush {d8-d15}
         lsl	   r9, #1
         sub    r1, #32
         sub    r3, #32
         sub    r9, #64
-1:      subs r12, #1
+1:      subs r10, #1
         vld1.8   {q0,q1}, [r2]!
         vld1.8   {q2}, [r2], r3
         vld1.8   {q6,q7}, [r8]!
@@ -1062,20 +1077,22 @@ function ff_hevc_put_epel_bi_pixels_w24_neon_8, export=1
         vst1.8   {q0,q1}, [r0]!
         vst1.8   {q2}, [r0], r1
         bne 1b
-        pop   {r4-r5}
+        vpop {d8-d15}
+        pop   {r4-r10}
         bx lr
 endfunc
 
 function ff_hevc_put_epel_bi_pixels_w32_neon_8, export=1
-        push   {r4-r5}
-        ldr    r12, [sp, #16] // height
-        ldr    r8, [sp, #8] 	// src2
-        ldr    r9, [sp, #12] // src2stride
+        push   {r4-r10}
+        ldr    r10,[sp, #36] // height
+        ldr    r8, [sp, #28] // src2
+        ldr    r9, [sp, #32] // src2stride
+        vpush {d8-d15}
         lsl	   r9, #1
         sub    r1, #32
         sub    r3, #32
         sub    r9, #96
-1:      subs r12, #1
+1:      subs r10, #1
         vld1.8   {q0,q1}, [r2]!
         vld1.8   {q2,q3}, [r2], r3
         vld1.8   {q8,q9}, [r8]!
@@ -1109,7 +1126,8 @@ function ff_hevc_put_epel_bi_pixels_w32_neon_8, export=1
         vst1.8   {q0,q1}, [r0]!
         vst1.8   {q2,q3}, [r0], r1
         bne 1b
-        pop   {r4-r5}
+        vpop {d8-d15}
+        pop  {r4-r10}
         bx lr
 endfunc
 
