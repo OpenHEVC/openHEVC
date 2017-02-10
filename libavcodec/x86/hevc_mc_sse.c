@@ -2147,157 +2147,157 @@ void oh_hevc_put_hevc_bi_w_##name##W##_##bitd##_sse(                     \
 }
 
 
-//mc_red_func(pel_pixels, 8, 4, 12);
-//mc_red_func(pel_pixels, 8, 8, 24);
-//mc_red_func(pel_pixels, 8,16, 32);
-//mc_red_func(pel_pixels, 8,16, 48);
-//mc_red_func(pel_pixels, 8,16, 64);
+mc_red_func(pel_pixels, 8, 4, 12);
+mc_red_func(pel_pixels, 8, 8, 24);
+mc_red_func(pel_pixels, 8,16, 32);
+mc_red_func(pel_pixels, 8,16, 48);
+mc_red_func(pel_pixels, 8,16, 64);
 
-//mc_red_func(pel_pixels,10, 4, 12);
-//mc_red_func(pel_pixels,10, 8, 16);
-//mc_red_func(pel_pixels,10, 8, 24);
-//mc_red_func(pel_pixels,10, 8, 32);
-//mc_red_func(pel_pixels,10, 8, 48);
-//mc_red_func(pel_pixels,10, 8, 64);
+mc_red_func(pel_pixels,10, 4, 12);
+mc_red_func(pel_pixels,10, 8, 16);
+mc_red_func(pel_pixels,10, 8, 24);
+mc_red_func(pel_pixels,10, 8, 32);
+mc_red_func(pel_pixels,10, 8, 48);
+mc_red_func(pel_pixels,10, 8, 64);
 
-//mc_red_func(pel_pixels,12, 4, 12);
-//mc_red_func(pel_pixels,12, 8, 16);
-//mc_red_func(pel_pixels,12, 8, 24);
-//mc_red_func(pel_pixels,12, 8, 32);
-//mc_red_func(pel_pixels,12, 8, 48);
-//mc_red_func(pel_pixels,12, 8, 64);
+mc_red_func(pel_pixels,12, 4, 12);
+mc_red_func(pel_pixels,12, 8, 16);
+mc_red_func(pel_pixels,12, 8, 24);
+mc_red_func(pel_pixels,12, 8, 32);
+mc_red_func(pel_pixels,12, 8, 48);
+mc_red_func(pel_pixels,12, 8, 64);
 
-//mc_red_func(qpel_h, 8, 4, 12);
-//mc_red_func(qpel_h, 8, 8, 24);
-//mc_red_func(qpel_h, 8,16, 32);
-//mc_red_func(qpel_h, 8,16, 48);
-//mc_red_func(qpel_h, 8,16, 64);
+mc_red_func(qpel_h, 8, 4, 12);
+mc_red_func(qpel_h, 8, 8, 24);
+mc_red_func(qpel_h, 8,16, 32);
+mc_red_func(qpel_h, 8,16, 48);
+mc_red_func(qpel_h, 8,16, 64);
 
-//mc_red_func(qpel_h,10, 4, 12);
-//mc_red_func(qpel_h,10, 8, 16);
-//mc_red_func(qpel_h,10, 8, 24);
-//mc_red_func(qpel_h,10, 8, 32);
-//mc_red_func(qpel_h,10, 8, 48);
-//mc_red_func(qpel_h,10, 8, 64);
+mc_red_func(qpel_h,10, 4, 12);
+mc_red_func(qpel_h,10, 8, 16);
+mc_red_func(qpel_h,10, 8, 24);
+mc_red_func(qpel_h,10, 8, 32);
+mc_red_func(qpel_h,10, 8, 48);
+mc_red_func(qpel_h,10, 8, 64);
 
-//mc_red_func(qpel_h,12, 4, 12);
-//mc_red_func(qpel_h,12, 8, 16);
-//mc_red_func(qpel_h,12, 8, 24);
-//mc_red_func(qpel_h,12, 8, 32);
-//mc_red_func(qpel_h,12, 8, 48);
-//mc_red_func(qpel_h,12, 8, 64);
+mc_red_func(qpel_h,12, 4, 12);
+mc_red_func(qpel_h,12, 8, 16);
+mc_red_func(qpel_h,12, 8, 24);
+mc_red_func(qpel_h,12, 8, 32);
+mc_red_func(qpel_h,12, 8, 48);
+mc_red_func(qpel_h,12, 8, 64);
 
-//mc_red_func(qpel_v, 8, 4, 12);
-//mc_red_func(qpel_v, 8, 8, 24);
-//mc_red_func(qpel_v, 8,16, 32);
-//mc_red_func(qpel_v, 8,16, 48);
-//mc_red_func(qpel_v, 8,16, 64);
+mc_red_func(qpel_v, 8, 4, 12);
+mc_red_func(qpel_v, 8, 8, 24);
+mc_red_func(qpel_v, 8,16, 32);
+mc_red_func(qpel_v, 8,16, 48);
+mc_red_func(qpel_v, 8,16, 64);
 
-//mc_red_func(qpel_v,10, 4, 12);
-//mc_red_func(qpel_v,10, 8, 16);
-//mc_red_func(qpel_v,10, 8, 24);
-//mc_red_func(qpel_v,10, 8, 32);
-//mc_red_func(qpel_v,10, 8, 48);
-//mc_red_func(qpel_v,10, 8, 64);
+mc_red_func(qpel_v,10, 4, 12);
+mc_red_func(qpel_v,10, 8, 16);
+mc_red_func(qpel_v,10, 8, 24);
+mc_red_func(qpel_v,10, 8, 32);
+mc_red_func(qpel_v,10, 8, 48);
+mc_red_func(qpel_v,10, 8, 64);
 
-//mc_red_func(qpel_v,12, 4, 12);
-//mc_red_func(qpel_v,12, 8, 16);
-//mc_red_func(qpel_v,12, 8, 24);
-//mc_red_func(qpel_v,12, 8, 32);
-//mc_red_func(qpel_v,12, 8, 48);
-//mc_red_func(qpel_v,12, 8, 64);
+mc_red_func(qpel_v,12, 4, 12);
+mc_red_func(qpel_v,12, 8, 16);
+mc_red_func(qpel_v,12, 8, 24);
+mc_red_func(qpel_v,12, 8, 32);
+mc_red_func(qpel_v,12, 8, 48);
+mc_red_func(qpel_v,12, 8, 64);
 
-//#ifdef OPTI_ASM
-//mc_red_func(qpel_hv, 8, 4, 12);
+#ifdef OPTI_ASM
+mc_red_func(qpel_hv, 8, 4, 12);
+mc_red_func(qpel_hv, 8, 8, 16);
+mc_red_func(qpel_hv, 8, 8, 24);
+mc_red_func(qpel_hv, 8, 8, 32);
+mc_red_func(qpel_hv, 8, 8, 48);
+mc_red_func(qpel_hv, 8, 8, 64);
+#else
+mc_red_func(qpel_hv, 8, 4, 12);
 //mc_red_func(qpel_hv, 8, 8, 16);
-//mc_red_func(qpel_hv, 8, 8, 24);
-//mc_red_func(qpel_hv, 8, 8, 32);
-//mc_red_func(qpel_hv, 8, 8, 48);
-//mc_red_func(qpel_hv, 8, 8, 64);
-//#else
-//mc_red_func(qpel_hv, 8, 4, 12);
-////mc_red_func(qpel_hv, 8, 8, 16);
-//mc_red_func(qpel_hv, 8, 8, 24);
-//mc_red_func(qpel_hv, 8, 16, 32);
-//mc_red_func(qpel_hv, 8, 16, 48);
-//mc_red_func(qpel_hv, 8, 16, 64);
-//#endif
-//mc_red_func(qpel_hv,10, 4, 12);
-//mc_red_func(qpel_hv,10, 8, 16);
-//mc_red_func(qpel_hv,10, 8, 24);
-//mc_red_func(qpel_hv,10, 8, 32);
-//mc_red_func(qpel_hv,10, 8, 48);
-//mc_red_func(qpel_hv,10, 8, 64);
+mc_red_func(qpel_hv, 8, 8, 24);
+mc_red_func(qpel_hv, 8, 16, 32);
+mc_red_func(qpel_hv, 8, 16, 48);
+mc_red_func(qpel_hv, 8, 16, 64);
+#endif
+mc_red_func(qpel_hv,10, 4, 12);
+mc_red_func(qpel_hv,10, 8, 16);
+mc_red_func(qpel_hv,10, 8, 24);
+mc_red_func(qpel_hv,10, 8, 32);
+mc_red_func(qpel_hv,10, 8, 48);
+mc_red_func(qpel_hv,10, 8, 64);
 
-//mc_red_func(qpel_hv,12, 4, 12);
-//mc_red_func(qpel_hv,12, 8, 16);
-//mc_red_func(qpel_hv,12, 8, 24);
-//mc_red_func(qpel_hv,12, 8, 32);
-//mc_red_func(qpel_hv,12, 8, 48);
-//mc_red_func(qpel_hv,12, 8, 64);
+mc_red_func(qpel_hv,12, 4, 12);
+mc_red_func(qpel_hv,12, 8, 16);
+mc_red_func(qpel_hv,12, 8, 24);
+mc_red_func(qpel_hv,12, 8, 32);
+mc_red_func(qpel_hv,12, 8, 48);
+mc_red_func(qpel_hv,12, 8, 64);
 
-//mc_red_func(epel_h, 8, 4, 12);
-//mc_red_func(epel_h, 8, 8, 16);
-//mc_red_func(epel_h, 8, 8, 24);
-//mc_red_func(epel_h, 8, 8, 32);
-//mc_red_func(epel_h, 8, 8, 48);
-//mc_red_func(epel_h, 8, 8, 64);
+mc_red_func(epel_h, 8, 4, 12);
+mc_red_func(epel_h, 8, 8, 16);
+mc_red_func(epel_h, 8, 8, 24);
+mc_red_func(epel_h, 8, 8, 32);
+mc_red_func(epel_h, 8, 8, 48);
+mc_red_func(epel_h, 8, 8, 64);
 
-//mc_red_func(epel_h,10, 4, 12);
-//mc_red_func(epel_h,10, 8, 16);
-//mc_red_func(epel_h,10, 8, 24);
-//mc_red_func(epel_h,10, 8, 32);
-//mc_red_func(epel_h,10, 8, 48);
-//mc_red_func(epel_h,10, 8, 64);
+mc_red_func(epel_h,10, 4, 12);
+mc_red_func(epel_h,10, 8, 16);
+mc_red_func(epel_h,10, 8, 24);
+mc_red_func(epel_h,10, 8, 32);
+mc_red_func(epel_h,10, 8, 48);
+mc_red_func(epel_h,10, 8, 64);
 
-//mc_red_func(epel_h,12, 4, 12);
-//mc_red_func(epel_h,12, 8, 16);
-//mc_red_func(epel_h,12, 8, 24);
-//mc_red_func(epel_h,12, 8, 32);
-//mc_red_func(epel_h,12, 8, 48);
-//mc_red_func(epel_h,12, 8, 64);
+mc_red_func(epel_h,12, 4, 12);
+mc_red_func(epel_h,12, 8, 16);
+mc_red_func(epel_h,12, 8, 24);
+mc_red_func(epel_h,12, 8, 32);
+mc_red_func(epel_h,12, 8, 48);
+mc_red_func(epel_h,12, 8, 64);
 
-//mc_red_func(epel_v, 8, 4, 12);
-//mc_red_func(epel_v, 8, 8, 16);
-//mc_red_func(epel_v, 8, 8, 24);
-//mc_red_func(epel_v, 8, 8, 32);
-//mc_red_func(epel_v, 8, 8, 48);
-//mc_red_func(epel_v, 8, 8, 64);
+mc_red_func(epel_v, 8, 4, 12);
+mc_red_func(epel_v, 8, 8, 16);
+mc_red_func(epel_v, 8, 8, 24);
+mc_red_func(epel_v, 8, 8, 32);
+mc_red_func(epel_v, 8, 8, 48);
+mc_red_func(epel_v, 8, 8, 64);
 
-//mc_red_func(epel_v,10, 4, 12);
-//mc_red_func(epel_v,10, 8, 16);
-//mc_red_func(epel_v,10, 8, 24);
-//mc_red_func(epel_v,10, 8, 32);
-//mc_red_func(epel_v,10, 8, 48);
-//mc_red_func(epel_v,10, 8, 64);
+mc_red_func(epel_v,10, 4, 12);
+mc_red_func(epel_v,10, 8, 16);
+mc_red_func(epel_v,10, 8, 24);
+mc_red_func(epel_v,10, 8, 32);
+mc_red_func(epel_v,10, 8, 48);
+mc_red_func(epel_v,10, 8, 64);
 
-//mc_red_func(epel_v,12, 4, 12);
-//mc_red_func(epel_v,12, 8, 16);
-//mc_red_func(epel_v,12, 8, 24);
-//mc_red_func(epel_v,12, 8, 32);
-//mc_red_func(epel_v,12, 8, 48);
-//mc_red_func(epel_v,12, 8, 64);
+mc_red_func(epel_v,12, 4, 12);
+mc_red_func(epel_v,12, 8, 16);
+mc_red_func(epel_v,12, 8, 24);
+mc_red_func(epel_v,12, 8, 32);
+mc_red_func(epel_v,12, 8, 48);
+mc_red_func(epel_v,12, 8, 64);
 
-//mc_red_func(epel_hv, 8, 4, 12);
-//mc_red_func(epel_hv, 8, 8, 16);
-//mc_red_func(epel_hv, 8, 8, 24);
-//mc_red_func(epel_hv, 8, 8, 32);
-//mc_red_func(epel_hv, 8, 8, 48);
-//mc_red_func(epel_hv, 8, 8, 64);
+mc_red_func(epel_hv, 8, 4, 12);
+mc_red_func(epel_hv, 8, 8, 16);
+mc_red_func(epel_hv, 8, 8, 24);
+mc_red_func(epel_hv, 8, 8, 32);
+mc_red_func(epel_hv, 8, 8, 48);
+mc_red_func(epel_hv, 8, 8, 64);
 
-//mc_red_func(epel_hv,10, 4, 12);
-//mc_red_func(epel_hv,10, 8, 16);
-//mc_red_func(epel_hv,10, 8, 24);
-//mc_red_func(epel_hv,10, 8, 32);
-//mc_red_func(epel_hv,10, 8, 48);
-//mc_red_func(epel_hv,10, 8, 64);
+mc_red_func(epel_hv,10, 4, 12);
+mc_red_func(epel_hv,10, 8, 16);
+mc_red_func(epel_hv,10, 8, 24);
+mc_red_func(epel_hv,10, 8, 32);
+mc_red_func(epel_hv,10, 8, 48);
+mc_red_func(epel_hv,10, 8, 64);
 
-//mc_red_func(epel_hv,12, 4, 12);
-//mc_red_func(epel_hv,12, 8, 16);
-//mc_red_func(epel_hv,12, 8, 24);
-//mc_red_func(epel_hv,12, 8, 32);
-//mc_red_func(epel_hv,12, 8, 48);
-//mc_red_func(epel_hv,12, 8, 64);
+mc_red_func(epel_hv,12, 4, 12);
+mc_red_func(epel_hv,12, 8, 16);
+mc_red_func(epel_hv,12, 8, 24);
+mc_red_func(epel_hv,12, 8, 32);
+mc_red_func(epel_hv,12, 8, 48);
+mc_red_func(epel_hv,12, 8, 64);
 
 #endif //HAVE_SSE4
 

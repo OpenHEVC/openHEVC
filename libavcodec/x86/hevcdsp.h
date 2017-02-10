@@ -36,6 +36,14 @@ dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _##op
 dst ## _uni_w[idx1][idx2][idx3] = ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt; \
 dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt
 
+#if CONFIG_OH_OPTIM
+#define OH_PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
+dst[idx1][idx2][idx3] = oh_hevc_put_hevc_ ## name ## _ ## D ## _##opt; \
+dst ## _bi[idx1][idx2][idx3] = oh_hevc_put_hevc_bi_ ## name ## _ ## D ## _##opt; \
+dst ## _uni[idx1][idx2][idx3] = oh_hevc_put_hevc_uni_ ## name ## _ ## D ## _##opt; \
+dst ## _uni_w[idx1][idx2][idx3] = oh_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt; \
+dst ## _bi_w[idx1][idx2][idx3] = oh_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt
+#endif
 
 #define PEL_PROTOTYPE(name, D, opt) \
 void ff_hevc_put_hevc_ ## name ## _ ## D ## _##opt(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
@@ -44,7 +52,14 @@ void ff_hevc_put_hevc_uni_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t 
 void ff_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width); \
 void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 
-
+#if CONFIG_OH_OPTIM
+#define OH_PEL_PROTOTYPE(name, D, opt) \
+void oh_hevc_put_hevc_ ## name ## _ ## D ## _##opt(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
+void oh_hevc_put_hevc_bi_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, intptr_t mx, intptr_t my, int width); \
+void oh_hevc_put_hevc_uni_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
+void oh_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width); \
+void oh_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 //IDCT functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,6 +164,28 @@ void oh_hevc_transform_32x32_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_
         PEL_PROTOTYPE(fname##48, bitd, opt); \
         PEL_PROTOTYPE(fname##64, bitd, opt)
 
+#define OH_EPEL_PROTOTYPES(fname, bitd, opt) \
+        OH_PEL_PROTOTYPE(fname##4,  bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##6,  bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##8,  bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##12, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##16, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##24, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##32, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##48, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##64, bitd, opt)
+
+#define OH_QPEL_PROTOTYPES(fname, bitd, opt) \
+        OH_PEL_PROTOTYPE(fname##4,  bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##8,  bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##12, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##16, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##24, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##32, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##48, bitd, opt); \
+        OH_PEL_PROTOTYPE(fname##64, bitd, opt)
+
+
 #define WEIGHTING_PROTOTYPE(width, bitd, opt) \
 void ff_hevc_put_hevc_uni_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, int height, int denom,  int _wx, int _ox); \
 void ff_hevc_put_hevc_bi_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, int16_t *_src2, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)
@@ -221,6 +258,24 @@ EPEL_PROTOTYPES(epel_hv ,  8, sse4);
 EPEL_PROTOTYPES(epel_hv , 10, sse4);
 EPEL_PROTOTYPES(epel_hv , 12, sse4);
 
+#if CONFIG_OH_OPTIM
+OH_EPEL_PROTOTYPES(epel_h ,  8, sse);
+OH_EPEL_PROTOTYPES(epel_h , 10, sse);
+OH_EPEL_PROTOTYPES(epel_h , 12, sse);
+
+OH_EPEL_PROTOTYPES(epel_v ,  8, sse);
+OH_EPEL_PROTOTYPES(epel_v , 10, sse);
+OH_EPEL_PROTOTYPES(epel_v , 12, sse);
+
+OH_EPEL_PROTOTYPES(epel_hv ,  8, sse);
+OH_EPEL_PROTOTYPES(epel_hv , 10, sse);
+OH_EPEL_PROTOTYPES(epel_hv , 12, sse);
+
+OH_EPEL_PROTOTYPES(pel_pixels ,  8, sse);
+OH_EPEL_PROTOTYPES(pel_pixels , 10, sse);
+OH_EPEL_PROTOTYPES(pel_pixels , 12, sse);
+#endif
+
 PEL_PROTOTYPE(epel_h16, 8, avx2);
 PEL_PROTOTYPE(epel_h24, 8, avx2);
 PEL_PROTOTYPE(epel_h32, 8, avx2);
@@ -272,6 +327,19 @@ QPEL_PROTOTYPES(qpel_hv,  8, sse4);
 QPEL_PROTOTYPES(qpel_hv, 10, sse4);
 QPEL_PROTOTYPES(qpel_hv, 12, sse4);
 
+#if CONFIG_OH_OPTIM
+OH_QPEL_PROTOTYPES(qpel_h ,  8, sse);
+OH_QPEL_PROTOTYPES(qpel_h , 10, sse);
+OH_QPEL_PROTOTYPES(qpel_h , 12, sse);
+
+OH_QPEL_PROTOTYPES(qpel_v,  8, sse);
+OH_QPEL_PROTOTYPES(qpel_v, 10, sse);
+OH_QPEL_PROTOTYPES(qpel_v, 12, sse);
+
+OH_QPEL_PROTOTYPES(qpel_hv,  8, sse);
+OH_QPEL_PROTOTYPES(qpel_hv, 10, sse);
+OH_QPEL_PROTOTYPES(qpel_hv, 12, sse);
+#endif
 PEL_PROTOTYPE(qpel_h16, 8, avx2);
 PEL_PROTOTYPE(qpel_h24, 8, avx2);
 PEL_PROTOTYPE(qpel_h32, 8, avx2);

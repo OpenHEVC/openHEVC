@@ -638,7 +638,28 @@ mc_bi_w_funcs(qpel_hv, 12, sse4)
         PEL_LINK(pointer, 7, my , mx , fname##32,  bitd, opt ); \
         PEL_LINK(pointer, 8, my , mx , fname##48,  bitd, opt ); \
         PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
+#if CONFIG_OH_OPTIM
+#define OH_EPEL_LINKS(pointer, my, mx, fname, bitd, opt )           \
+        OH_PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 2, my , mx , fname##6 ,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 3, my , mx , fname##8 ,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 4, my , mx , fname##12,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 5, my , mx , fname##16,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 6, my , mx , fname##24,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 7, my , mx , fname##32,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 8, my , mx , fname##48,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
 
+#define OH_QPEL_LINKS(pointer, my, mx, fname, bitd, opt)           \
+        OH_PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 3, my , mx , fname##8 ,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 4, my , mx , fname##12,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 5, my , mx , fname##16,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 6, my , mx , fname##24,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 7, my , mx , fname##32,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 8, my , mx , fname##48,  bitd, opt ); \
+        OH_PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
+#endif
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -702,6 +723,18 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     8, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
+
+#if CONFIG_OH_OPTIM
+            OH_EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels,  8, sse);
+            OH_EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,      8, sse);
+            OH_EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,      8, sse);
+            OH_EPEL_LINKS(c->put_hevc_epel, 1, 1, epel_hv,     8, sse);
+
+            OH_QPEL_LINKS(c->put_hevc_qpel, 0, 0, pel_pixels, 8, sse);
+            OH_QPEL_LINKS(c->put_hevc_qpel, 0, 1, qpel_h,     8, sse);
+            OH_QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse);
+            OH_QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse);
+#endif
 
             c->sao_band_filter    = oh_hevc_sao_band_filter_0_8_sse;
             c->sao_edge_filter    = oh_hevc_sao_edge_filter_8_sse;
