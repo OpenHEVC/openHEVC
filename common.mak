@@ -55,6 +55,7 @@ COMPILE_CXX = $(call COMPILE,CXX)
 COMPILE_S = $(call COMPILE,AS)
 COMPILE_M = $(call COMPILE,OBJCC)
 COMPILE_HOSTC = $(call COMPILE,HOSTCC)
+COMPILE_INTRINSICS = $(call COMPILE,CC)
 
 %.o: %.c
 	$(COMPILE_C)
@@ -73,6 +74,18 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 
 %_host.o: %.c
 	$(COMPILE_HOSTC)
+
+%_sse.o: %_sse.c
+	$(COMPILE_INTRINSICS) -msse4
+
+%_sse2.o: %_sse2.c
+	$(COMPILE_INTRINSICS) -msse4
+
+%_avx.o: %_avx.c
+	$(COMPILE_INTRINSICS) -mavx2
+
+%_avx2.o: %_avx2.c
+	$(COMPILE_INTRINSICS) -mavx2
 
 %.o: %.rc
 	$(WINDRES) $(IFLAGS) --preprocessor "$(DEPWINDRES) -E -xc-header -DRC_INVOKED $(CC_DEPFLAGS)" -o $@ $<

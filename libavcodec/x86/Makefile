@@ -12,10 +12,7 @@ OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
 OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o
 OBJS-$(CONFIG_H264PRED)                += x86/h264_intrapred_init.o
 OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
-OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevc_idct_sse.o          \
-                                          x86/hevc_il_pred_sse.o       \
-                                          x86/hevc_intra_pred_sse.o    \
-                                          x86/hevc_sao_sse.o
+
 OBJS-$(CONFIG_HPELDSP)                 += x86/hpeldsp_init.o
 OBJS-$(CONFIG_IDCTDSP)                 += x86/idctdsp_init.o
 OBJS-$(CONFIG_ME_CMP)                  += x86/me_cmp_init.o
@@ -35,6 +32,17 @@ OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcpred_init.o          \
 # subsystems
 MMX-OBJS-$(CONFIG_FDCTDSP)             += x86/fdct.o
 MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/simple_idct.o
+
+SSE-OBJS-$(CONFIG_HEVC_DECODER)        += x86/hevc_idct_sse.o          \
+                                          x86/hevc_il_pred_sse.o       \
+                                          x86/hevc_intra_pred_sse.o    \
+                                          x86/hevc_sao_sse.o           \
+
+ifeq (CONFIG_OH_OPTIM,0)
+SSE-OBJS-$(CONFIG_HEVC_DECODER)        += x86/hevc_mc_sse.o
+endif
+#TODO fix broken x86_mc_sse
+AVX-OBJS-$(CONFIG_HEVC_DECODER)        += x86/hevc_mc_avx2.o  
 
 # subsystems
 YASM-OBJS-$(CONFIG_BLOCKDSP)           += x86/blockdsp.o

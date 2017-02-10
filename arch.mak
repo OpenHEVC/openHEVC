@@ -15,3 +15,7 @@ OBJS-$(HAVE_VSX)     += $(VSX-OBJS) $(VSX-OBJS-yes)
 
 OBJS-$(HAVE_MMX)     += $(MMX-OBJS)     $(MMX-OBJS-yes)
 OBJS-$(HAVE_YASM)    += $(YASM-OBJS)    $(YASM-OBJS-yes)
+
+OBJS-$(HAVE_SSE)    += $(SSE-OBJS)    $(SSE-OBJS-yes)
+OBJS-$(HAVE_AVX)    += $(AVX-OBJS)    $(AVX-OBJS-yes)
+
