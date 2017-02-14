@@ -82,6 +82,7 @@ void avcodec_register_all(void)
     //REGISTER_DECODER(MPEG4,             mpeg4);
 
     //REGISTER_DECODER(VP3,               vp3);
+    //REGISTER_ENCODER(SNOW,              snow);
     
 
     /* hardware acceleration */
