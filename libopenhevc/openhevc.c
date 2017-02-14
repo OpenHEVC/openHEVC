@@ -278,7 +278,7 @@ int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
                    const unsigned char *buff2, int nal_len, int nal_len2,
                    int64_t pts, int64_t pts2)
 {
-    int got_picture[MAX_DECODERS], len=0, i, max_layer, au_len, stop_dec, gpic;
+    int got_picture[MAX_DECODERS], len=0, i, max_layer, gpic;
     OHContextList *oh_ctx_list = (OHContextList *) openHevcHandle;
     OHContext  *oh_ctx;
 
