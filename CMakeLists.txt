@@ -83,9 +83,9 @@ if(YASM_FOUND)
 set(YASM_NAMES
     libavutil/x86/cpuid.asm
     libavutil/x86/emms.asm
-    libavcodec/x86/dct32.asm
-    libavcodec/x86/deinterlace.asm
-    libavcodec/x86/fft.asm
+    #libavcodec/x86/dct32.asm
+    #libavcodec/x86/deinterlace.asm
+    #libavcodec/x86/fft.asm
     libavcodec/x86/fpel.asm
     libavcodec/x86/h264_qpel_8bit.asm
     libavcodec/x86/h264_qpel_10bit.asm
@@ -93,9 +93,9 @@ set(YASM_NAMES
     libavcodec/x86/hevc_deblock.asm
     libavcodec/x86/hevc_idct.asm
     libavcodec/x86/hevc_res_add.asm
-    libavcodec/x86/hpeldsp.asm
+    #libavcodec/x86/hpeldsp.asm
     libavcodec/x86/qpel.asm
-    libavcodec/x86/qpeldsp.asm
+    #libavcodec/x86/qpeldsp.asm
     libavcodec/x86/videodsp.asm
 libavcodec/x86/h264_chromamc.asm
 libavcodec/x86/h264_chromamc_10bit.asm
@@ -107,8 +107,8 @@ libavcodec/x86/h264_intrapred.asm
 libavcodec/x86/h264_intrapred_10bit.asm
 libavcodec/x86/h264_weight.asm
 libavcodec/x86/h264_weight_10bit.asm
-libavcodec/x86/idctdsp.asm
-libavcodec/x86/simple_idct10.asm
+#libavcodec/x86/idctdsp.asm
+#libavcodec/x86/simple_idct10.asm
 libavcodec/x86/bswapdsp.asm
 #libavcodec/x86/me_cmp.asm
 #libavcodec/x86/xvididct.asm
@@ -267,7 +267,7 @@ set(libfilenames
     #libavutil/xtea.c
     #libavutil/tea.c
 
-    libavutil/atomic.c
+    #libavutil/atomic.c
 
 # libavformat main files
     libavformat/allformats.c
@@ -338,29 +338,29 @@ set(libfilenames
     #libavcodec/resample2.c
     libavcodec/utils.c
     #libavcodec/vorbis_parser.c
-    libavcodec/xiph.c
+    #libavcodec/xiph.c
     
 # libavcodec sub systems
     libavcodec/bswapdsp.c
     libavcodec/cabac.c
   #if config fft
-    libavcodec/avfft.c
+    #libavcodec/avfft.c
   #if config dct
-    libavcodec/dct.c
+    #libavcodec/dct.c
     #libavcodec/dct32_fixed.c
-    libavcodec/dct32_float.c
-    libavcodec/dct32_template.c
+    #libavcodec/dct32_float.c
+    #libavcodec/dct32_template.c
 
-    libavcodec/faanidct.c
-    libavcodec/fft_template.c
+    #libavcodec/faanidct.c
+    #libavcodec/fft_template.c
     libavcodec/golomb.c
-    libavcodec/hpeldsp.c
-    libavcodec/idctdsp.c
-    libavcodec/simple_idct.c
-    libavcodec/jrevdct.c
+    #libavcodec/hpeldsp.c
+    #libavcodec/idctdsp.c
+    #libavcodec/simple_idct.c
+    #libavcodec/jrevdct.c
     libavcodec/mathtables.c
-    libavcodec/qpeldsp.c
-    libavcodec/rdft.c    
+    #libavcodec/qpeldsp.c
+    #libavcodec/rdft.c
     libavcodec/startcode.c
 
 # h264 decoder
@@ -409,7 +409,7 @@ set(libfilenames
     libavcodec/pthread_frame.c
 
 # mov and isomedia decoder
-    libavcodec/rawdec.c
+    #libavcodec/rawdec.c
     libavcodec/videodsp.c
     libavcodec/ac3tab.c
     libavcodec/mpegaudiodata.c
@@ -453,9 +453,9 @@ else()
 list(APPEND libfilenames
     libavutil/x86/cpu.c
     libavcodec/x86/constants.c
-    libavcodec/x86/dct_init.c
-    libavcodec/x86/fdct.c
-    libavcodec/x86/fft_init.c
+    #libavcodec/x86/dct_init.c
+    #libavcodec/x86/fdct.c
+    #libavcodec/x86/fft_init.c
     libavcodec/x86/h264_qpel.c
     libavcodec/x86/hevcdsp_init.c
     libavcodec/x86/hevcpred_init.c
@@ -465,17 +465,17 @@ list(APPEND libfilenames
     libavcodec/x86/hevc_mc_avx2.c
     libavcodec/x86/hevc_sao_sse.c
     libavcodec/x86/hevc_intra_pred_sse.c
-    libavcodec/x86/hpeldsp_init.c
-    libavcodec/x86/idct_mmx_xvid.c
-    libavcodec/x86/idct_sse2_xvid.c
-    libavcodec/x86/qpeldsp_init.c
-    libavcodec/x86/simple_idct.c
+    #libavcodec/x86/hpeldsp_init.c
+    #libavcodec/x86/idct_mmx_xvid.c
+    #libavcodec/x86/idct_sse2_xvid.c
+    #libavcodec/x86/qpeldsp_init.c
+    #libavcodec/x86/simple_idct.c
     libavcodec/x86/videodsp_init.c
     libavcodec/x86/h264dsp_init.c
     libavcodec/x86/h264_intrapred_init.c
     libavcodec/x86/bswapdsp_init.c
     #libavcodec/x86/me_cmp_init.c
-    libavcodec/x86/idctdsp_init.c
+    #libavcodec/x86/idctdsp_init.c
     libavcodec/x86/h264chroma_init.c
     #libavcodec/x86/xvididct_init.c
 )
