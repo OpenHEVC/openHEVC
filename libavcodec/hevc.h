@@ -1120,6 +1120,7 @@ typedef struct SliceHeader {
 #endif
 
     int slice_ctb_addr_rs;
+    uint8_t discardable_flag;
 } SliceHeader;
 
 typedef struct CodingTree {

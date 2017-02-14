@@ -778,9 +778,11 @@ else
         s->slice_initialized = 0;
 
         {
+            //Fixme those unused variable generate some warnings add these to appropriate structure
             int iBits = 0;
             if(s->ps.pps->num_extra_slice_header_bits > iBits) {
-                uint8_t discardable_flag = get_bits1(gb);
+                sh->discardable_flag = get_bits1(gb);
+                //uint8_t discardable_flag = get_bits1(gb);
                 print_cabac("discardable_flag  ", discardable_flag);
                 iBits++;
             }
@@ -3709,7 +3711,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             return ret;
         if(s->au_poc !=-1 && s->au_poc != s->poc) {
             av_log(s->avctx, AV_LOG_ERROR, "Receive different poc in one AU. \n");
-            s->max_ra == INT_MAX;
+            s->max_ra = INT_MAX;
             goto fail;
         }
         s->au_poc = s->poc;
@@ -4352,7 +4354,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
     if (avpkt->pts != AV_NOPTS_VALUE) {
       if (! s->last_frame_pts || (s->last_frame_pts!=avpkt->pts)) {
-          av_log(s->avctx, AV_LOG_DEBUG, "Forcing first_slice_in_pic_flag for pts %lld\n", avpkt->pts);
+          av_log(s->avctx, AV_LOG_DEBUG, "Forcing first_slice_in_pic_flag for pts %ld\n", avpkt->pts);
           s->force_first_slice_in_pic = 1;
       }
       s->last_frame_pts = avpkt->pts;
