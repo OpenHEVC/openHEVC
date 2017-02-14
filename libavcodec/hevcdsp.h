@@ -40,6 +40,7 @@ struct SAOParams;
 #define MAX_EDGE_CR  2
 #define N_SHIFT (20 - BIT_DEPTH)
 #define I_OFFSET (1 << (N_SHIFT - 1))
+#define CONFIG_OH_OPTIM 0
 
 
 typedef struct HEVCDSPContext {
@@ -145,7 +146,7 @@ typedef struct HEVCDSPContext {
                                            uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
                                            int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
                                            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void (*map_color_block)(void *pc3DAsymLUT, uint8_t *src_y, uint8_t *src_u, uint8_t *src_v,
+    void (*map_color_block)(const void *pc3DAsymLUT, uint8_t *src_y, uint8_t *src_u, uint8_t *src_v,
                             uint8_t *dst_y, uint8_t *dst_u, uint8_t *dst_v,
                             int src_stride, int src_stride_c,
                             int dst_stride, int dst_stride_c,

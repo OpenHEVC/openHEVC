@@ -104,7 +104,7 @@ static void FUNC(ff_emulated_edge_up_cgs_h)(uint8_t *src,
                                        int src_width, int src_height,
                                        int edge_left, int edge_right)
 {
-    int i, j;
+    int i;
     pixel   *src_tmp = (pixel *)src;
     pixel   *dst_tmp = (pixel *)src;
 
@@ -214,7 +214,7 @@ static void FUNC(ff_emulated_edge_up_v)(uint8_t *src,
                                     int block_w, int block_h,
                                     int bl_edge_top, int bl_edge_bottom)
 {
-    int i, j;
+    int j;
 
     uint16_t   *src_tmp = (uint16_t *)src;
     uint16_t   *dst_tmp = (uint16_t *)src;
@@ -240,7 +240,7 @@ static void FUNC(ff_emulated_edge_up_v)(uint8_t *src,
 static void FUNC(ff_emulated_edge_up_cr_v)(uint8_t *src, int block_w, int block_h,
                                           int bl_edge_top, int bl_edge_bottom)
 {
-    int i, j;
+    int j;
 
     uint16_t   *src_tmp = (uint16_t *)src;
     uint16_t   *dst_tmp = (uint16_t *)src;

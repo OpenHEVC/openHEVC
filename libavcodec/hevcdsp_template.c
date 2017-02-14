@@ -3680,11 +3680,11 @@ static void FUNC(upsample_filter_block_luma_v_all)( uint8_t *_dst, ptrdiff_t _ds
     int bottomEndL = heightEL - Enhscal->bottom_offset;
     int rightEndL  = widthEL - Enhscal->right_offset;
     int leftStartL = Enhscal->left_offset;
-    _dststride /= sizeof(pixel);
     int y, i, j, phase, refPos16, refPos;
     const int8_t  *   coeff;
-    uint16_t *dst_tmp, *dst    = (uint16_t *)_dst;
     int16_t *   src_tmp;
+    uint16_t *dst_tmp, *dst    = (uint16_t *)_dst;
+    _dststride /= sizeof(pixel);
     for( j = 0; j < block_h; j++ )	{
     	y        =   av_clip_c(y_EL+j, topStartL, bottomEndL-1);
     	refPos16 = ((( y - topStartL )* up_info->scaleYLum - up_info->addYLum) >> 12);
@@ -3840,9 +3840,11 @@ static void FUNC(upsample_filter_block_luma_v_x2)( uint8_t *_dst, ptrdiff_t _dst
     int leftStartL = Enhscal->left_offset;
     int y, i, j;
     const int8_t  *   coeff;
-    _dststride /= sizeof(pixel);
-    pixel *dst_tmp, *dst    = (pixel *)_dst + y_EL * _dststride + x_EL;
+    pixel *dst_tmp, *dst;
     int16_t *   src_tmp;
+
+    _dststride /= sizeof(pixel);
+    dst = (pixel *)_dst + y_EL * _dststride + x_EL;
 
     for( j = 0; j < block_h; j++ ) {
     	y        = y_EL+j; //av_clip_c(y_EL+j, topStartL, bottomEndL-1);
@@ -3943,10 +3945,12 @@ static void FUNC(upsample_filter_block_cr_h_x1_5)(  int16_t *dst, ptrdiff_t dsts
     int16_t*  dst_tmp;
     int leftStartC = Enhscal->left_offset>>1;
     int rightEndC  = widthEL - (Enhscal->right_offset>>1);
-    int x, i, j, shift = up_info->shift_up[1];;
-    pixel*   src_tmp, *src = (pixel *) _src - x_BL;
+    int x, i, j;
     const int8_t*  coeff;
 
+    int shift = up_info->shift_up[1];
+    pixel*   src_tmp, *src;
+    src = (pixel *) _src - x_BL;
     for( i = 0; i < block_w; i++ )	{
         x        = av_clip_c(i+x_EL, leftStartC, rightEndC);
         coeff    = up_sample_filter_chroma_x1_5_h[(x-leftStartC)%3];
@@ -3966,9 +3970,11 @@ static void FUNC(upsample_filter_block_cr_h_x1_5_8)(  int16_t *dst, ptrdiff_t ds
     int16_t*  dst_tmp;
     int leftStartC = Enhscal->left_offset>>1;
     int rightEndC  = widthEL - (Enhscal->right_offset>>1);
-    int x, i, j, shift = up_info->shift_up[1];;
-    uint8_t*   src_tmp, *src = (uint8_t *) _src - x_BL;
+    int x, i, j, shift;
+    uint8_t*   src_tmp, *src;
     const int8_t*  coeff;
+    shift = up_info->shift_up[1];
+    src = (uint8_t *) _src - x_BL;
 
     for( i = 0; i < block_w; i++ )	{
         x        = av_clip_c(i+x_EL, leftStartC, rightEndC);
@@ -3992,9 +3998,11 @@ static void FUNC(upsample_filter_block_luma_v_x1_5)( uint8_t *_dst, ptrdiff_t _d
     int leftStartL = Enhscal->left_offset;
     int y, i, j;
     const int8_t  *   coeff;
-    _dststride /= sizeof(pixel);
-    pixel *dst_tmp, *dst    = (pixel *)_dst + x_EL + y_EL * _dststride;
+    pixel *dst_tmp, *dst;
     int16_t *   src_tmp;
+    _dststride /= sizeof(pixel);
+    dst    = (pixel *)_dst + x_EL + y_EL * _dststride;
+
     for( j = 0; j < block_h; j++ )	{
     	y        =   av_clip_c(y_EL+j, topStartL, bottomEndL-1);
         coeff    = up_sample_filter_luma_x1_5[(y - topStartL)%3];
@@ -4477,7 +4485,7 @@ static void FUNC(colorMapping)(void * pc3DAsymLUT_, struct AVFrame *src, struct 
     }
 }
 
-static void FUNC(map_color_block)(void *pc3DAsymLUT_,
+static void FUNC(map_color_block)(const void *pc3DAsymLUT_,
                                    uint8_t *src_y, uint8_t *src_u, uint8_t *src_v,
                                    uint8_t *dst_y, uint8_t *dst_u, uint8_t *dst_v,
                                    int src_stride, int src_stride_c,
@@ -4652,7 +4660,7 @@ static void FUNC(map_color_block)(void *pc3DAsymLUT_,
     }
 }
 
-static void FUNC(map_color_block_8)(void *pc3DAsymLUT_,
+static void FUNC(map_color_block_8)(const void *pc3DAsymLUT_,
                                    uint8_t *src_y, uint8_t *src_u, uint8_t *src_v,
                                    uint8_t *dst_y, uint8_t *dst_u, uint8_t *dst_v,
                                    int src_stride, int src_stride_c,

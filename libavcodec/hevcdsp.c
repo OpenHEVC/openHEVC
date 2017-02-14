@@ -541,10 +541,10 @@ void ff_shvc_dsp_update(HEVCDSPContext *hevcdsp, int bit_depth, int have_CGS)
 
 #define HEVC_DSP_UP2_CGS(depth)\
     hevcdsp->map_color_block   = FUNC(map_color_block_8, depth);\
-//    hevcdsp->upsample_filter_block_luma_h[1] = FUNC(upsample_filter_block_luma_h_x2_8, depth);\
-//    hevcdsp->upsample_filter_block_cr_h[1]   = FUNC(upsample_filter_block_cr_h_x2_8, depth);\
-//    hevcdsp->upsample_filter_block_luma_h[0] = FUNC(upsample_filter_block_luma_h_all_8, depth);\
-//    hevcdsp->upsample_filter_block_cr_h[0]   = FUNC(upsample_filter_block_cr_h_all_8, depth);\
+//    hevcdsp->upsample_filter_block_luma_h[1] = FUNC(upsample_filter_block_luma_h_x2_8, depth);
+//    hevcdsp->upsample_filter_block_cr_h[1]   = FUNC(upsample_filter_block_cr_h_x2_8, depth);
+//    hevcdsp->upsample_filter_block_luma_h[0] = FUNC(upsample_filter_block_luma_h_all_8, depth);
+//    hevcdsp->upsample_filter_block_cr_h[0]   = FUNC(upsample_filter_block_cr_h_all_8, depth);
 
     if(!have_CGS){
         switch (bit_depth) {
