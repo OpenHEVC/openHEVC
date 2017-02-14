@@ -24,8 +24,8 @@
 
 #define SDL_NO_DISPLAY_
 
-#include <SDL.h>
-#include <SDL_events.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_events.h>
 #include <stdio.h>
 #include <signal.h>
 #include "SDL_framerate.h"
@@ -40,11 +40,15 @@ int          ticksSDL;
 /* SDL_gfx variable */
 FPSmanager   fpsm;
 
-oh_event IsCloseWindowEvent(){
+oh_event IsCloseWindowEvent(void){
 #ifndef SDL_NO_DISPLAY
-    int ret = OH_NOEVENT;
     SDL_Event event;
-    SDL_PollEvent(&event);
+
+
+    int ret = OH_NOEVENT;
+    //SDL_Event event;
+    event.type = 0;
+    while(SDL_PollEvent(&event)){
 
     switch( event.type ){
         /* Keyboard event */
@@ -64,6 +68,7 @@ oh_event IsCloseWindowEvent(){
         default:
             break;
     }
+    }
 
     return ret;
 #endif
@@ -78,13 +83,13 @@ void Init_Time() {
     sigaction(SIGTERM, NULL, &action);
     sigaction(SIGKILL, NULL, &action);
     sigaction(SIGHUP, NULL, &action);
-    SDL_Init(SDL_INIT_EVERYTHING);
+    //SDL_Init(SDL_INIT_TIMER);
     sigaction(SIGINT, &action, NULL);
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGKILL, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
-    if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
+    if( SDL_Init( SDL_INIT_VIDEO|SDL_INIT_TIMER) < 0 ) {
         /* Failed, exit. */
         printf("Video initialization failed: %s\n", SDL_GetError( ) );
         SDL_Quit();
@@ -112,6 +117,7 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     }
     
     bpp = info->vfmt->BitsPerPixel;
+
     if(info->hw_available)
         vflags = SDL_HWSURFACE;
     else
@@ -148,7 +154,53 @@ int Init_SDL(int edge, int frame_width, int frame_height){
 void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
 
 #ifndef SDL_NO_DISPLAY
-    if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
+if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
+    if(yuv_overlay->w != frame_width || yuv_overlay->h != frame_height){
+        //Resize YUVoverlay
+        Uint8 bpp;
+        Uint32 vflags;
+        const SDL_VideoInfo* info;
+        info = SDL_GetVideoInfo();
+
+        if( !info ) {
+            printf("SDL ERROR Video query failed: %s\n", SDL_GetError() );
+            SDL_Quit();
+            exit(0);
+        }
+
+        bpp = info->vfmt->BitsPerPixel;
+
+        if(info->hw_available)
+            vflags = SDL_HWSURFACE;
+        else
+            vflags = SDL_SWSURFACE;
+
+        SDL_FreeSurface(screen);
+
+        screen = SDL_SetVideoMode(frame_width, frame_height, bpp, vflags);
+
+        if ( screen == NULL ) {
+            printf("SDL: Couldn't set %dx%d: %s", frame_width, frame_height, SDL_GetError());
+            SDL_Quit();
+            exit(0);
+        }
+
+        SDL_FreeYUVOverlay(yuv_overlay);
+
+        yuv_overlay = SDL_CreateYUVOverlay(frame_width + 2 * edge, frame_height, SDL_YV12_OVERLAY, screen);
+        if ( yuv_overlay == NULL ) {
+            printf("SDL: Couldn't create SDL_yuv_overlay: %s",SDL_GetError());
+            SDL_Quit();
+            exit(0);
+        }
+
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = frame_width + 2 * edge;
+        rect.h = frame_height;
+    }
+
+
     // let's draw the data (*yuv[3]) on a SDL screen (*screen)
     memcpy(yuv_overlay->pixels[0], Y, (frame_width + 2 * edge) * frame_height);
     if (V)
@@ -171,6 +223,7 @@ void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, 
 void CloseSDLDisplay(){
 #ifndef SDL_NO_DISPLAY
     SDL_FreeYUVOverlay(yuv_overlay);
+    SDL_FreeSurface(screen);
     SDL_Quit();
 #endif
 }

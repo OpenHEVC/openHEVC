@@ -10,6 +10,8 @@
 #include <libavformat/avformat.h>
 #include "main_hm/sdl_wrapper.h"
 
+#include <SDL/SDL_events.h>
+
 //#define TIME2
 
 #ifdef TIME2
@@ -86,7 +88,7 @@ float frame_rate;
 static void video_decode_example(const char *filename,const char *enh_filename)
 {
     AVFormatContext *avfctx[2];
-    AVPacket        avpkt[2];
+    AVPacket        *avpkt[2];
 
     OHHandle    oh_hdl;
     OHFrame     oh_frame;
@@ -139,9 +141,12 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
     av_register_all();
     avfctx[0] = avformat_alloc_context();
+    avpkt[0]  = av_packet_alloc();
 
-    if(AVC_BL && split_layers)
+    if(AVC_BL && split_layers){
         avfctx[1] = avformat_alloc_context();
+        avpkt[1]  = av_packet_alloc();
+    }
 
     if(avformat_open_input(&avfctx[0], filename, NULL, NULL)!=0) {
     	fprintf(stderr,"Could not open base layer input file : %s\n",filename);
@@ -157,6 +162,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         avfctx[0]->video_codec_id=AV_CODEC_ID_SHVC;
 
     for(i=0; i<2 ; i++){
+        size_t extra_size_alloc;
         if ( (video_stream_idx = av_find_best_stream(avfctx[i], AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) < 0) {
 			fprintf(stderr, "Could not find video stream in input file\n");
 			exit(1);
@@ -164,7 +170,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 		//test
         //av_dump_format(avfctx[i], 0, filename, 0);
 
-        const size_t extra_size_alloc = avfctx[i]->streams[video_stream_idx]->codecpar->extradata_size > 0 ?
+        extra_size_alloc = avfctx[i]->streams[video_stream_idx]->codecpar->extradata_size > 0 ?
         (avfctx[i]->streams[video_stream_idx]->codecpar->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE) : 0;
 
         if (extra_size_alloc){
@@ -189,6 +195,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     oh_select_view_layer(oh_hdl, quality_layer_id);
 
 #if USE_SDL
+
     Init_Time();
     if (frame_rate > 0) {
         initFramerate_SDL();
@@ -198,7 +205,12 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 #ifdef TIME2
     time_us = GetTimeMs64();
 #endif
-   
+
+#if USE_SDL
+    if (display_flags == ENABLE) {
+        Init_SDL(0, 1920, 1080);
+    }
+#endif
     /* Main loop
      * */
     while(!stop) {
@@ -212,20 +224,25 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
         // Next packet search with avformat
 		if(split_layers){
-            if (stop_dec2 == 0 && av_read_frame(avfctx[1], &avpkt[1])<0)
+            if (stop_dec2 == 0 && av_read_frame(avfctx[1], avpkt[1])<0)
                 stop_dec2 = 1;
 	    }
-        if (stop_dec == 0 && av_read_frame(avfctx[0], &avpkt[0])<0)
+        if (stop_dec == 0 && av_read_frame(avfctx[0], avpkt[0])<0)
 	        stop_dec = 1;
 
-        if ((avpkt[0].stream_index == video_stream_idx && (!split_layers || avpkt[1].stream_index == video_stream_idx)) //
+        if ((avpkt[0]->stream_index == video_stream_idx && (!split_layers || avpkt[1]->stream_index == video_stream_idx)) //
                 || stop_dec == 1 || stop_dec2==1) {
 
             // OpenHEVC decoding
-			if(split_layers)
-                got_picture = oh_decode_lhvc(oh_hdl, avpkt[0].data, avpkt[1].data, !stop_dec ? avpkt[0].size : 0 ,!stop_dec2 ? avpkt[1].size : 0, avpkt[0].pts, avpkt[1].pts);
-			else
-                got_picture = oh_decode(oh_hdl, avpkt[0].data, !stop_dec ? avpkt[0].size : 0, avpkt[0].pts);
+            if(split_layers){
+                got_picture = oh_decode_lhvc(oh_hdl, avpkt[0]->data, avpkt[1]->data, !stop_dec ? avpkt[0]->size : 0 ,!stop_dec2 ? avpkt[1]->size : 0, avpkt[0]->pts, avpkt[1]->pts);
+                av_packet_unref(avpkt[0]);
+                av_packet_unref(avpkt[1]);
+            }
+            else {
+                got_picture = oh_decode(oh_hdl, avpkt[0]->data, !stop_dec ? avpkt[0]->size : 0, avpkt[0]->pts);
+                av_packet_unref(avpkt[0]);
+            }
 
             // OpenHEVC display and output handling
 			if (got_picture > 0) {
@@ -244,16 +261,13 @@ static void video_decode_example(const char *filename,const char *enh_filename)
                         sprintf(output_file2, "%s_%dx%d.yuv", output_file, curr_width, curr_height);
 						fout = fopen(output_file2, "wb");
 					}
-#if USE_SDL
-                    if (display_flags == ENABLE) {
-                        Init_SDL((oh_frame.frame_par.linesize_y - oh_frame.frame_par.width)/2, oh_frame.frame_par.width, oh_frame.frame_par.height);
-                    }
-#endif
+
 					if (fout) {
+                        int chroma_format;
 
                         oh_frameinfo_update(oh_hdl, &oh_framecpy.frame_par);
 
-                        int format = oh_framecpy.frame_par.chromat_format == OH_YUV420 ? 1 : 0;
+                        chroma_format = oh_framecpy.frame_par.chromat_format == OH_YUV420 ? 1 : 0;
 
                         if(oh_framecpy.data_y) {
                             free(oh_framecpy.data_y);
@@ -261,8 +275,8 @@ static void video_decode_example(const char *filename,const char *enh_filename)
                             free(oh_framecpy.data_cr);
 						}                        
                         oh_framecpy.data_y =  calloc (oh_framecpy.frame_par.linesize_y * oh_framecpy.frame_par.height, sizeof(unsigned char));
-                        oh_framecpy.data_cb = calloc (oh_framecpy.frame_par.linesize_cb * oh_framecpy.frame_par.height >> format, sizeof(unsigned char));
-                        oh_framecpy.data_cr = calloc (oh_framecpy.frame_par.linesize_cr * oh_framecpy.frame_par.height >> format, sizeof(unsigned char));
+                        oh_framecpy.data_cb = calloc (oh_framecpy.frame_par.linesize_cb * oh_framecpy.frame_par.height >> chroma_format, sizeof(unsigned char));
+                        oh_framecpy.data_cr = calloc (oh_framecpy.frame_par.linesize_cr * oh_framecpy.frame_par.height >> chroma_format, sizeof(unsigned char));
 					}
                 }
 #if USE_SDL
@@ -299,9 +313,12 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
 
 		    if (stop_dec >= nb_pthreads && nbFrame == 0) {
-                av_packet_unref(&avpkt[0]);
-			    if(split_layers)
-                    av_packet_unref(&avpkt[1]);
+                av_packet_unref(avpkt[0]);
+                av_packet_free(&avpkt[0]);
+                if(split_layers){
+                    av_packet_unref(avpkt[1]);
+                    av_packet_free(&avpkt[1]);
+                }
 			    fprintf(stderr, "Error when reading first frame\n");
 				exit(1);
 			}
@@ -322,12 +339,21 @@ static void video_decode_example(const char *filename,const char *enh_filename)
             free(oh_framecpy.data_cr);
         }
     }
+
+    av_packet_unref(avpkt[0]);
+    av_packet_free(&avpkt[0]);
+    if(split_layers){
+        av_packet_unref(avpkt[1]);
+        av_packet_free(&avpkt[1]);
+    }
+
     if(!split_layers)
         avformat_close_input(&avfctx[0]);
     if(split_layers){
         avformat_close_input(&avfctx[0]);
         avformat_close_input(&avfctx[1]);
     }
+
     oh_close(oh_hdl);
 #if USE_SDL
 #ifdef TIME2

@@ -1,6 +1,7 @@
 #ifndef _sdl_wrapper_h
 #define _sdl_wrapper_h
 
+
 typedef enum oh_event_t {OH_NOEVENT=0, OH_LAYER0, OH_LAYER1, OH_QUIT} oh_event;
 
 oh_event IsCloseWindowEvent(void);
