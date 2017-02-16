@@ -284,7 +284,7 @@ hb2:	lsl    r7, #2
         vld1.16      d6, [r8], r9
         vqadd.s16    d6, d24
         vqrshrun.s16 d6, q3, #7
-        vst1.32      d6[0], [r0], r1
+        vst1.16      d6[0], [r0], r1
         bne 2b
 99:     vpop {d8-d15}
         pop {r4-r12}
@@ -525,7 +525,7 @@ vb2:	lsl    r7, #2
         vld1.16      d6, [r8], r9
         vqadd.s16    d6, d24
         vqrshrun.s16 d6, q3, #7
-        vst1.32      d6[0], [r0], r1
+        vst1.16      d6[0], [r0], r1
         vmov d16, d17
         vmov d17, d18
         bne 2b
