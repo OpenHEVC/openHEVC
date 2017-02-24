@@ -42,9 +42,8 @@
 .endm
 
 .macro epel_filter2_16b out=q12
-    vmull.u8 q3, d16, d0
-    vmull.u8 \out, d17, d1
-    vadd.s16 \out, q3
+    vmull.u8 \out, d16, d0
+    vmlal.u8 \out, d17, d1
 .endm
 
 .macro load_coeffs2_32b coeffs
@@ -58,19 +57,16 @@
 .macro epel_filter2_32b
     vmull.s16 q3, d24, d4[0] //q12
     vmull.s16 q4, d25, d4[0]
-    vmull.s16 q7, d26, d4[1] // q13
-    vmull.s16 q8, d27, d4[1]
-    vadd.s32 q3, q7
-    vadd.s32 q4, q8
+    vmlal.s16 q3, d26, d4[1] // q13
+    vmlal.s16 q4, d27, d4[1]
     vqshrn.s32  d6, q3, #6
     vqshrn.s32  d7, q4, #6
 .endm
 
 .macro epel_filter2_32b_4
     vmull.s16 q3, d24, d4[0] //q12
-    vmull.s16 q7, d26, d4[1] // q13
-    vadd.s32 q7, q3
-    vqshrn.s32  d6, q7, #6
+    vmlal.s16 q3, d26, d4[1] // q13
+    vqshrn.s32  d6, q3, #6
 .endm
 
 function ff_hevc_put_epel2_h_neon_8, export=1
@@ -83,7 +79,6 @@ function ff_hevc_put_epel2_h_neon_8, export=1
         vpush {d8-d15}
         adrl    r12, epel_coeffs2
         add    r7, r12
-        //sub       r2, #1
         lsl       r1, #1
         load_coeffs2_16b r7
         mov   r12, r4
@@ -143,7 +138,6 @@ function ff_hevc_epel2_uni_h_neon_8, export=1
         vpush {d8-d15}
         adrl   r12, epel_coeffs2
         add    r7, r12
-        //sub       r2, #1
         load_coeffs2_16b r7
         mov   r12, r4
         mov   r6, r0
@@ -207,7 +201,6 @@ function ff_hevc_epel2_bi_h_neon_8, export=1
         vpush  {d8-d15}
         adrl   r12, epel_coeffs2
         add    r7, r12
-        //sub    r2, #1
         load_coeffs2_16b r7
         mov   r12, r4
         mov   r6, r0
@@ -282,30 +275,23 @@ function ff_hevc_put_epel2_v_neon_8, export=1
         adrl    r12, epel_coeffs2
         add    r7, r12
         load_coeffs2_16b r7
-        //sub       r2, r3
         lsl       r1, #1
         mov   r12, r4
         mov   r6, r0
         mov   r7, r2
 0:      pld [r2]
         vld1.8    {d16}, [r2], r3
-        pld [r2]
-        vld1.8    {d17}, [r2], r3
-        pld [r2]
-        vld1.8    {d18}, [r2], r3
         cmp       r5, #6
         bgt       8f
         cmp       r5, #4
         blt       2f
         b         4f
 8:      pld [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         subs r4, #1
         epel_filter2_16b
         vst1.16    {q12}, [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne 8b
         subs    r5, #8
         beq  99f
@@ -316,13 +302,11 @@ function ff_hevc_put_epel2_v_neon_8, export=1
         mov       r2, r7
         b         0b
 4:      pld       [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         subs r4, #1
         epel_filter2_16b
         vst1.16    d24, [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne 4b
         subs      r5, #4
         beq       99f
@@ -333,13 +317,11 @@ function ff_hevc_put_epel2_v_neon_8, export=1
         mov       r2, r7
         b         0b
 2:      pld [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         subs r4, #1
         epel_filter2_16b
         vst1.32    d24[0], [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne 2b
 99:     vpop {d8-d15}
         pop {r4-r12}
@@ -363,24 +345,18 @@ function ff_hevc_epel2_uni_v_neon_8, export=1
         mov   r7, r2
 0:      pld [r2]
         vld1.8    {d16}, [r2], r3
-        pld [r2]
-        vld1.8    {d17}, [r2], r3
-        pld [r2]
-        vld1.8    {d18}, [r2], r3
         cmp       r5, #6
         bgt       8f
         cmp       r5, #4
         blt       2f
         b         4f
 8:      pld [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         subs r4, #1
         epel_filter2_16b
         vqrshrun.s16   d24, q12, #6
         vst1.8    d24, [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne       8b
         subs      r5, #8
         beq      99f
@@ -391,14 +367,12 @@ function ff_hevc_epel2_uni_v_neon_8, export=1
         mov       r2, r7
         b         0b
 4:      pld       [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         subs r4, #1
         epel_filter2_16b
         vqrshrun.s16   d24, q12, #6
         vst1.32    d24[0], [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne 4b
         subs      r5, #4
         beq       99f
@@ -409,14 +383,12 @@ function ff_hevc_epel2_uni_v_neon_8, export=1
         mov       r2, r7
         b         0b
 2:      pld [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         subs r4, #1
         epel_filter2_16b
         vqrshrun.s16   d24, q12, #6
         vst1.16    d24[0], [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne 2b
 99:     vpop {d8-d15}
         pop {r4-r12}
@@ -443,10 +415,6 @@ function ff_hevc_epel2_bi_v_neon_8, export=1
         mov   r7, r2
 0:		pld [r2]
         vld1.8    {d16}, [r2], r3
-        pld [r2]
-        vld1.8    {d17}, [r2], r3
-        pld [r2]
-        vld1.8    {d18}, [r2], r3
         mov   r10, r8
         cmp   r5, #6
         bgt       8f
@@ -455,15 +423,13 @@ function ff_hevc_epel2_bi_v_neon_8, export=1
         b     4f
 8:      subs r4, #1
         pld [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         epel_filter2_16b
         vld1.16        {q3}, [r8], r9
         vqadd.s16      q3, q12
         vqrshrun.s16   d6, q3, #7
         vst1.8         d6, [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne       8b
         subs      r5, #8
         beq      99f
@@ -477,15 +443,13 @@ function ff_hevc_epel2_bi_v_neon_8, export=1
 		b 		  0b
 4:      subs r4, #1
         pld [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         epel_filter2_16b
         vld1.16      d6, [r8], r9
         vqadd.s16    d6, d24
         vqrshrun.s16 d6, q3, #7
         vst1.32      d6[0], [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne       4b
         subs      r5, #4
         beq       99f
@@ -499,15 +463,13 @@ function ff_hevc_epel2_bi_v_neon_8, export=1
         b         0b
 2:      subs r4, #1
         pld [r2]
-        vld1.8    {d19}, [r2], r3
+        vld1.8    {d17}, [r2], r3
         epel_filter2_16b
         vld1.16      d6, [r8], r9
         vqadd.s16    d6, d24
         vqrshrun.s16 d6, q3, #7
         vst1.16      d6[0], [r0], r1
         vmov d16, d17
-        vmov d17, d18
-        vmov d18, d19
         bne 2b
 99:     vpop {d8-d15}
         pop {r4-r12}
@@ -528,8 +490,6 @@ function ff_hevc_put_epel2_hv_neon_8, export=1
         lsl    r6, #1
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
-        //sub       r2, #1
-        //sub       r2, r3
         lsl       r1, #1
         load_coeffs2_16b r6
         load_coeffs2_32b r7
@@ -543,8 +503,6 @@ function ff_hevc_put_epel2_hv_neon_8, export=1
         vextin_d2
         epel_filter2_16b q13
         pld   [r2]
-        vextin_d2
-        epel_filter2_16b q14
         cmp       r5, #6
         bgt       8f
         cmp       r5, #4
@@ -552,13 +510,12 @@ function ff_hevc_put_epel2_hv_neon_8, export=1
         b         4f
 8:      pld     [r2]
         vextin_d2
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b
         vst1.16    {q3}, [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 8b
         subs    r5, #8
         beq  99f
@@ -570,13 +527,12 @@ function ff_hevc_put_epel2_hv_neon_8, export=1
         b         0b
 4:      pld      [r2]
         vextin_d2_8
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b_4
         vst1.16    d6, [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 4b
         subs      r5, #4
         beq       99f
@@ -588,13 +544,12 @@ function ff_hevc_put_epel2_hv_neon_8, export=1
         b         0b
 2:      pld      [r2]
         vextin_d2_8
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b_4
         vst1.32    d6[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 2b
 99:     vpop {d8-d15}
         pop {r4-r12}
@@ -615,8 +570,6 @@ function ff_hevc_epel2_uni_hv_neon_8, export=1
         lsl    r6, #1
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
-        //sub       r2, #1
-        //sub       r2, r3
         load_coeffs2_16b r6
         load_coeffs2_32b r7
         mov   r12, r4
@@ -628,9 +581,6 @@ function ff_hevc_epel2_uni_hv_neon_8, export=1
         pld   [r2]
         vextin_d2
         epel_filter2_16b q13
-        pld   [r2]
-        vextin_d2
-        epel_filter2_16b q14
         cmp       r5, #6
         bgt       8f
         cmp       r5, #4
@@ -638,14 +588,13 @@ function ff_hevc_epel2_uni_hv_neon_8, export=1
         b         4f
 8:      pld     [r2]
         vextin_d2
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b
         vqrshrun.s16   d6, q3, #6
         vst1.8    d6, [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 8b
         subs    r5, #8
         beq  99f
@@ -657,14 +606,13 @@ function ff_hevc_epel2_uni_hv_neon_8, export=1
         b         0b
 4:      pld      [r2]
         vextin_d2_8
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b_4
         vqrshrun.s16   d6, q3, #6
         vst1.32    d6[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 4b
         subs      r5, #4
         beq       99f
@@ -676,14 +624,13 @@ function ff_hevc_epel2_uni_hv_neon_8, export=1
         b         0b
 2:      pld      [r2]
         vextin_d2_8
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b_4
         vqrshrun.s16   d6, q3, #6
         vst1.16    d6[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 2b
 99:     vpop {d8-d15}
         pop {r4-r12}
@@ -706,8 +653,6 @@ function ff_hevc_epel2_bi_hv_neon_8, export=1
         lsl    r6, #1
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
-//        sub       r2, #1
-//        sub       r2, r3
         load_coeffs2_16b r6
         load_coeffs2_32b r7
         mov   r12, r4
@@ -720,9 +665,6 @@ function ff_hevc_epel2_bi_hv_neon_8, export=1
         pld   [r2]
         vextin_d2
         epel_filter2_16b q13
-        pld   [r2]
-        vextin_d2
-        epel_filter2_16b q14
         mov   r10, r8
         cmp       r5, #6
         bgt       8f
@@ -731,7 +673,7 @@ function ff_hevc_epel2_bi_hv_neon_8, export=1
         b         4f
 8:      pld     [r2]
         vextin_d2
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b
 		vld1.16        {q4}, [r8], r9
@@ -740,7 +682,6 @@ function ff_hevc_epel2_bi_hv_neon_8, export=1
         vst1.8         d8, [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 8b
         subs    r5, #8
         beq  99f
@@ -754,7 +695,7 @@ function ff_hevc_epel2_bi_hv_neon_8, export=1
         b         0b
 4:      pld      [r2]
         vextin_d2_8
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b_4
 		vld1.16        {q4}, [r8], r9
@@ -763,7 +704,6 @@ function ff_hevc_epel2_bi_hv_neon_8, export=1
         vst1.32        d8[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 4b
         subs      r5, #4
         beq       99f
@@ -777,7 +717,7 @@ function ff_hevc_epel2_bi_hv_neon_8, export=1
         b         0b
 2:      pld      [r2]
         vextin_d2_8
-        epel_filter2_16b q15
+        epel_filter2_16b q14
         subs r4, #1
         epel_filter2_32b_4
 		vld1.16        {q4}, [r8], r9
@@ -786,7 +726,6 @@ function ff_hevc_epel2_bi_hv_neon_8, export=1
         vst1.16        d8[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
-        vmov q14, q15
         bne 2b
 99:     vpop {d8-d15}
         pop {r4-r12}

@@ -54,45 +54,43 @@
     vmov.8   d4[4], \coeffs
 .endm
 
-
-// Signess correction stored in q15
-.macro filter_16b out=q12 sig=q15
-        vmull.u8 \out, d16, d0
-		vmlsl.u8 \out, d18, d2
-		vmul.i16 \out, \sig
-        vmlal.u8 \out, d17, d1
+.macro filter_16b_0 out=q12
+    vmull.u8  \out, d18, d2
+    vmlsl.u8  \out, d16, d0
+    vmlal.u8  \out, d17, d1
 .endm
 
-// Signess correction stored in q15
-.macro filter_32b sig
-    	vmull.s16 q7, d24, d4[0]
-    	vmull.s16 q8, d25, d4[0]
-    	vmlsl.s16 q7, d28, d4[2]
-    	vmlsl.s16 q8, d29, d4[2]
-    	vmul.i32  q7, \sig
-    	vmul.i32  q8, \sig
+.macro filter_16b_1 out=q12
+    vmull.u8  \out, d16, d0
+    vmlsl.u8  \out, d18, d2
+    vmlal.u8  \out, d17, d1
+.endm
+
+.macro filter_32b_0
+    	vmull.s16 q7, d28, d4[2]
+    	vmull.s16 q8, d29, d4[2]
+    	vmlsl.s16 q7, d24, d4[0]
+    	vmlsl.s16 q8, d25, d4[0]
     	vmlal.s16 q7, d26, d4[1]
     	vmlal.s16 q8, d27, d4[1]
 	    vqshrn.s32  d6, q7, #6
 	    vqshrn.s32  d7, q8, #6
 .endm
 
+.macro filter_32b_1
+    	vmull.s16 q7, d24, d4[0]
+    	vmull.s16 q8, d25, d4[0]
+    	vmlsl.s16 q7, d28, d4[2]
+    	vmlsl.s16 q8, d29, d4[2]
+    	vmlal.s16 q7, d26, d4[1]
+    	vmlal.s16 q8, d27, d4[1]
+	    vqshrn.s32  d6, q7, #6
+	    vqshrn.s32  d7, q8, #6
+.endm
 
-function ff_hevc_put_epel3_h_neon_8, export=1
-        push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r7, [sp, #40] // mx
-        ldr    r5, [sp, #48] // width
-        sub    r7, #1
-        lsrs   r8, r7, #2
-		bne h1
-		sub    r2, #1
-        vmov.i16 q15, #0xFFFF
-        b h2
-h1:     vmov.i16 q15, #1
-h2:		lsl    r7, #2
-        vpush {d8-d15}
-        adrl    r12, epel_coeffs3
+.macro hevc_put_epel3_h filter
+        lsl    r7, #2
+        adrl   r12, epel_coeffs3
         add    r7, r12
         lsl       r1, #1
         load_coeffs3_16b r7
@@ -107,7 +105,7 @@ h2:		lsl    r7, #2
 8:      subs r4, #1
         pld [r2]
         vextin_d3
-        filter_16b
+        \filter
         vst1.16    {q12}, [r0], r1
         bne 8b
         subs    r5, #8
@@ -122,7 +120,7 @@ h2:		lsl    r7, #2
 4:      subs r4, #1
         pld [r2]
         vextin_d3_8
-        filter_16b
+        \filter
 		vst1.16    d24, [r0], r1
         bne 4b
         subs      r5, #4
@@ -135,28 +133,31 @@ h2:		lsl    r7, #2
 2:      subs r4, #1
         pld [r2]
         vextin_d3_8
-        filter_16b
+        \filter
         vst1.32    d24[0], [r0], r1
         bne 2b
+.endm
+
+function ff_hevc_put_epel3_h_neon_8, export=1
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r7, [sp, #40] // mx
+        ldr    r5, [sp, #48] // width
+        vpush {d8-d15}
+        sub    r7, #1
+        lsrs   r8, r7, #2
+        bne 1f
+0:      sub    r2, #1
+        hevc_put_epel3_h filter_16b_0
+        b 99f
+1:      hevc_put_epel3_h filter_16b_1
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr
 endfunc
 
-function ff_hevc_epel3_uni_h_neon_8, export=1
-        push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r5, [sp, #48] // width
-        ldr    r7, [sp, #40] // mx
-        sub    r7, #1
-        lsrs   r8, r7, #2
-		bne hu1
-		sub    r2, #1
-        vmov.i16 q5, #0xFFFF
-        b hu2
-hu1:    vmov.i16 q5, #1
-hu2:	lsl    r7, #2
-        vpush {d8-d15}
+.macro hevc_epel3_uni_h filter
+        lsl    r7, #2
         adrl   r12, epel_coeffs3
         add    r7, r12
         load_coeffs3_16b r7
@@ -171,7 +172,7 @@ hu2:	lsl    r7, #2
 8:      subs r4, #1
         pld [r2]
         vextin_d3
-        filter_16b q12 q5
+        \filter
         vqrshrun.s16   d24, q12, #6
         vst1.8    d24, [r0], r1
         bne       8b
@@ -187,7 +188,7 @@ hu2:	lsl    r7, #2
 4:      subs r4, #1
         pld [r2]
         vextin_d3_8
-        filter_16b q12 q5
+        \filter
         vqrshrun.s16   d24, q12, #6
         vst1.32    d24[0], [r0], r1
         bne 4b
@@ -201,31 +202,32 @@ hu2:	lsl    r7, #2
 2:      subs r4, #1
         pld [r2]
         vextin_d3_8
-        filter_16b q12 q5
+        \filter
         vqrshrun.s16   d24, q12, #6
         vst1.16    d24[0], [r0], r1
         bne 2b
+.endm
+
+function ff_hevc_epel3_uni_h_neon_8, export=1
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r7, [sp, #40] // mx
+        ldr    r5, [sp, #48] // width
+        vpush {d8-d15}
+        sub    r7, #1
+        lsrs   r8, r7, #2
+        bne 1f
+0:      sub    r2, #1
+        hevc_epel3_uni_h filter_16b_0
+		b 99f
+1:      hevc_epel3_uni_h filter_16b_1
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr
 endfunc
 
-function ff_hevc_epel3_bi_h_neon_8, export=1
-        push   {r4-r12}
-        ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
-        ldr    r4, [sp, #44] // height
-        ldr    r7, [sp, #48] // mx
-        ldr    r5, [sp, #56] // width
-        sub    r7, #1
-        lsrs   r10, r7, #2
-		bne hb1
-		sub    r2, #1
-        vmov.i16 q5, #0xFFFF
-        b hb2
-hb1:    vmov.i16 q5, #1
-hb2:	lsl    r7, #2
-        vpush  {d8-d15}
+.macro hevc_epel3_bi_h filter
+        lsl    r7, #2
         adrl   r12, epel_coeffs3
         add    r7, r12
         load_coeffs3_16b r7
@@ -242,7 +244,7 @@ hb2:	lsl    r7, #2
 8:      subs r4, #1
         pld [r2]
         vextin_d3
-        filter_16b q12 q5
+        \filter
         vld1.16        {q3}, [r8], r9
         vqadd.s16      q3, q12
         vqrshrun.s16   d6, q3, #7
@@ -262,7 +264,7 @@ hb2:	lsl    r7, #2
 4:      subs r4, #1
         pld [r2]
         vextin_d3_8
-        filter_16b q12 q5
+        \filter
         vld1.16      d6, [r8], r9
         vqadd.s16    d6, d24
         vqrshrun.s16 d6, q3, #7
@@ -280,31 +282,36 @@ hb2:	lsl    r7, #2
 2:      subs r4, #1
         pld [r2]
         vextin_d3_8
-        filter_16b q12 q5
+        \filter
         vld1.16      d6, [r8], r9
         vqadd.s16    d6, d24
         vqrshrun.s16 d6, q3, #7
         vst1.16      d6[0], [r0], r1
         bne 2b
+.endm
+
+function ff_hevc_epel3_bi_h_neon_8, export=1
+        push   {r4-r12}
+        ldr    r8, [sp, #36] // src2
+        ldr    r9, [sp, #40] // src2stride
+        ldr    r4, [sp, #44] // height
+        ldr    r7, [sp, #48] // mx
+        ldr    r5, [sp, #56] // width
+        vpush  {d8-d15}
+        sub    r7, #1
+        lsrs   r10, r7, #2
+        bne 1f
+0:      sub    r2, #1
+        hevc_epel3_bi_h filter_16b_0
+		b 99f
+1:      hevc_epel3_bi_h filter_16b_1
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr
 endfunc
 
-function ff_hevc_put_epel3_v_neon_8, export=1
-        push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r7, [sp, #44] // my
-        ldr    r5, [sp, #48] // width
-        sub    r7, #1
-        lsrs   r8, r7, #2
-		bne v1
-		sub  r2, r3
-        vmov.i16 q15, #0xFFFF
-        b v2
-v1:     vmov.i16 q15, #1
-v2:		lsl    r7, #2
-        vpush {d8-d15}
+.macro hevc_put_epel3_v filter
+		lsl    r7, #2
         adrl    r12, epel_coeffs3
         add    r7, r12
         load_coeffs3_16b r7
@@ -324,7 +331,7 @@ v2:		lsl    r7, #2
 8:      pld [r2]
         vld1.8    {d18}, [r2], r3
         subs r4, #1
-        filter_16b
+        \filter
         vst1.16    {q12}, [r0], r1
         vmov d16, d17
         vmov d17, d18
@@ -340,7 +347,7 @@ v2:		lsl    r7, #2
 4:      pld       [r2]
         vld1.8    {d18}, [r2], r3
         subs r4, #1
-        filter_16b
+        \filter
         vst1.16    d24, [r0], r1
         vmov d16, d17
         vmov d17, d18
@@ -356,30 +363,33 @@ v2:		lsl    r7, #2
 2:      pld [r2]
         vld1.8    {d18}, [r2], r3
         subs r4, #1
-        filter_16b
+        \filter
         vst1.32    d24[0], [r0], r1
         vmov d16, d17
         vmov d17, d18
         bne 2b
+.endm
+
+function ff_hevc_put_epel3_v_neon_8, export=1
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r7, [sp, #44] // my
+        ldr    r5, [sp, #48] // width
+        vpush {d8-d15}
+        sub    r7, #1
+        lsrs   r8, r7, #2
+        bne 1f
+0:      sub    r2, r3
+        hevc_put_epel3_v filter_16b_0
+		b 99f
+1:      hevc_put_epel3_v filter_16b_1
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr
 endfunc
 
-function ff_hevc_epel3_uni_v_neon_8, export=1
-        push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r5, [sp, #48] // width
-        ldr    r7, [sp, #44] // my
-        sub    r7, #1
-        lsrs   r8, r7, #2
-		bne vu1
-		sub  r2, r3
-        vmov.i16 q15, #0xFFFF
-        b vu2
-vu1:    vmov.i16 q15, #1
-vu2:	lsl    r7, #2
-        vpush {d8-d15}
+.macro hevc_epel3_uni_v filter
+		lsl    r7, #2
         adrl   r12, epel_coeffs3
         add    r7, r12
         load_coeffs3_16b r7
@@ -398,7 +408,7 @@ vu2:	lsl    r7, #2
 8:      pld [r2]
         vld1.8    {d18}, [r2], r3
         subs r4, #1
-        filter_16b
+        \filter
         vqrshrun.s16   d24, q12, #6
         vst1.8    d24, [r0], r1
         vmov d16, d17
@@ -415,7 +425,7 @@ vu2:	lsl    r7, #2
 4:      pld       [r2]
         vld1.8    {d18}, [r2], r3
         subs r4, #1
-        filter_16b
+        \filter
         vqrshrun.s16   d24, q12, #6
         vst1.32    d24[0], [r0], r1
         vmov d16, d17
@@ -432,33 +442,34 @@ vu2:	lsl    r7, #2
 2:      pld [r2]
         vld1.8    {d18}, [r2], r3
         subs r4, #1
-        filter_16b
+        \filter
         vqrshrun.s16   d24, q12, #6
         vst1.16    d24[0], [r0], r1
         vmov d16, d17
         vmov d17, d18
         bne 2b
+.endm
+
+function ff_hevc_epel3_uni_v_neon_8, export=1
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r7, [sp, #44] // my
+        ldr    r5, [sp, #48] // width
+        vpush {d8-d15}
+        sub    r7, #1
+        lsrs   r8, r7, #2
+        bne 1f
+0:      sub    r2, r3
+        hevc_epel3_uni_v filter_16b_0
+		b 99f
+1:      hevc_epel3_uni_v filter_16b_1
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr
 endfunc
 
-function ff_hevc_epel3_bi_v_neon_8, export=1
-        push   {r4-r12}
-        ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
-        ldr    r4, [sp, #44] // height
-        ldr    r7, [sp, #52] // my
-        ldr    r5, [sp, #56] // width
-        sub    r7, #1
-        lsrs   r10, r7, #2
-		bne vb1
-		sub  r2, r3
-        vmov.i16 q15, #0xFFFF
-        b vb2
-vb1:    vmov.i16 q15, #1
-vb2:	lsl    r7, #2
-        vpush  {d8-d15}
+.macro hevc_epel3_bi_v filter
+		lsl    r7, #2
         adrl   r12, epel_coeffs3
         add    r7, r12
 		lsl    r9, #1
@@ -479,7 +490,7 @@ vb2:	lsl    r7, #2
 8:      subs r4, #1
         pld [r2]
         vld1.8    {d18}, [r2], r3
-        filter_16b
+        \filter
         vld1.16        {q3}, [r8], r9
         vqadd.s16      q3, q12
         vqrshrun.s16   d6, q3, #7
@@ -500,7 +511,7 @@ vb2:	lsl    r7, #2
 4:      subs r4, #1
         pld [r2]
         vld1.8    {d18}, [r2], r3
-        filter_16b
+        \filter
         vld1.16      d6, [r8], r9
         vqadd.s16    d6, d24
         vqrshrun.s16 d6, q3, #7
@@ -521,7 +532,7 @@ vb2:	lsl    r7, #2
 2:      subs r4, #1
         pld [r2]
         vld1.8    {d18}, [r2], r3
-        filter_16b
+        \filter
         vld1.16      d6, [r8], r9
         vqadd.s16    d6, d24
         vqrshrun.s16 d6, q3, #7
@@ -529,35 +540,32 @@ vb2:	lsl    r7, #2
         vmov d16, d17
         vmov d17, d18
         bne 2b
+.endm
+
+function ff_hevc_epel3_bi_v_neon_8, export=1
+        push   {r4-r12}
+        ldr    r8, [sp, #36] // src2
+        ldr    r9, [sp, #40] // src2stride
+        ldr    r4, [sp, #44] // height
+        ldr    r7, [sp, #52] // my
+        ldr    r5, [sp, #56] // width
+        vpush {d8-d15}
+        sub    r7, #1
+        lsrs   r10, r7, #2
+        bne 1f
+0:      sub    r2, r3
+        hevc_epel3_bi_v filter_16b_0
+		b 99f
+1:      hevc_epel3_bi_v filter_16b_1
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr
 endfunc
 
-function ff_hevc_put_epel3_hv_neon_8, export=1
-        push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r6, [sp, #40] // mx
-        ldr    r7, [sp, #44] // my
-        ldr    r5, [sp, #48] // width
-        sub    r7, #1
-        lsrs   r8, r7, #2
-		bne hv0
-		sub  r2, r3
-        vmov.i32 q5, #0xFFFFFFFF
-        b hv1
-hv0:    vmov.i32 q5, #1
-hv1:    lsl    r7, #2
-        vpush {d8-d15}
+.macro hevc_put_epel3_hv filter filter32b
+		lsl    r7, #2
         adrl   r12, epel_coeffs3
-        sub    r6, #1
-        lsrs   r8, r6, #2
-        bne hv2
-        sub  r2, 1
-        vmov.i16 q6, #0xFFFF
-		b hv3
-hv2:    vmov.i16 q6, #1
-hv3:    lsl    r6, #2
+		lsl    r6, #2
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
         lsl       r1, #1
@@ -568,13 +576,13 @@ hv3:    lsl    r6, #2
         mov   r7, r2
 0:      pld   [r2]
         vextin_d3
-        filter_16b q12 q6
+        \filter q12
         pld   [r2]
         vextin_d3
-        filter_16b q13 q6
+        \filter q13
         pld   [r2]
         vextin_d3
-        filter_16b q14 q6
+        \filter q14
         cmp       r5, #6
         bgt       8f
         cmp       r5, #4
@@ -582,9 +590,9 @@ hv3:    lsl    r6, #2
         b         4f
 8:      pld     [r2]
         vextin_d3
-        filter_16b q15 q6
+        \filter q15
         subs r4, #1
-        filter_32b q5
+        \filter32b
         vst1.16    {q3}, [r0], r1
         vmov q12, q13
         vmov q13, q14
@@ -600,9 +608,9 @@ hv3:    lsl    r6, #2
         b         0b
 4:      pld      [r2]
         vextin_d3_8
-        filter_16b q15 q6
+        \filter q15
         subs r4, #1
-        filter_32b q5
+        \filter32b
         vst1.16    d6, [r0], r1
         vmov q12, q13
         vmov q13, q14
@@ -618,43 +626,51 @@ hv3:    lsl    r6, #2
         b         0b
 2:      pld      [r2]
         vextin_d3_8
-        filter_16b q15 q6
+        \filter q15
         subs r4, #1
-        filter_32b q5
+        \filter32b
         vst1.32    d6[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
         vmov q14, q15
         bne 2b
+.endm 
+
+function ff_hevc_put_epel3_hv_neon_8, export=1
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r6, [sp, #40] // mx
+        ldr    r7, [sp, #44] // my
+        ldr    r5, [sp, #48] // width
+		vpush {d8-d15}
+        sub    r7, #1
+        sub    r6, #1
+        lsrs   r10, r7, #2
+		bne hv1
+hv0:	sub  r2, r3
+		lsrs   r10, r6, #2
+		bne hv01
+hv00:	sub  r2, 1
+		hevc_put_epel3_hv filter_16b_0 filter_32b_0 
+		b 99f
+hv01:	hevc_put_epel3_hv filter_16b_1 filter_32b_0  
+		b 99f
+hv1:    lsrs   r10, r6, #2
+		bne hv11
+hv10:	sub  r2, 1
+		hevc_put_epel3_hv filter_16b_0 filter_32b_1  
+		b 99f
+hv11:	hevc_put_epel3_hv filter_16b_1 filter_32b_1  
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr
 endfunc
 
-function ff_hevc_epel3_uni_hv_neon_8, export=1
-        push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r5, [sp, #48] // width
-        ldr    r6, [sp, #40] // mx
-        ldr    r7, [sp, #44] // my
-        sub    r7, #1
-        lsrs   r8, r7, #2
-		bne hvu0
-		sub  r2, r3
-        vmov.i32 q5, #0xFFFFFFFF
-        b hvu1
-hvu0:   vmov.i32 q5, #1
-hvu1:   lsl    r7, #2
-        vpush {d8-d15}
+
+.macro hevc_epel3_uni_hv filter filter32b
+		lsl    r7, #2
+		lsl    r6, #2
         adrl    r12, epel_coeffs3
-        sub    r6, #1
-        lsrs   r8, r6, #2
-        bne hvu2
-        sub  r2, 1
-        vmov.i16 q6, #0xFFFF
-		b hvu3
-hvu2:   vmov.i16 q6, #1
-hvu3:   lsl    r6, #2
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
         load_coeffs3_16b r6
@@ -664,13 +680,13 @@ hvu3:   lsl    r6, #2
         mov   r7, r2
 0:      pld   [r2]
         vextin_d3
-        filter_16b q12 q6
+        \filter q12 
         pld   [r2]
         vextin_d3
-        filter_16b q13 q6
+        \filter q13 
         pld   [r2]
         vextin_d3
-        filter_16b q14 q6
+        \filter q14 
         cmp       r5, #6
         bgt       8f
         cmp       r5, #4
@@ -678,9 +694,9 @@ hvu3:   lsl    r6, #2
         b         4f
 8:      pld     [r2]
         vextin_d3
-        filter_16b q15 q6
+        \filter q15 
         subs r4, #1
-        filter_32b q5
+        \filter32b
         vqrshrun.s16   d6, q3, #6
         vst1.8    d6, [r0], r1
         vmov q12, q13
@@ -697,9 +713,9 @@ hvu3:   lsl    r6, #2
         b         0b
 4:      pld      [r2]
         vextin_d3_8
-        filter_16b q15 q6
+        \filter q15 
         subs r4, #1
-        filter_32b q5
+        \filter32b
         vqrshrun.s16   d6, q3, #6
         vst1.32    d6[0], [r0], r1
         vmov q12, q13
@@ -716,46 +732,51 @@ hvu3:   lsl    r6, #2
         b         0b
 2:      pld      [r2]
         vextin_d3_8
-        filter_16b q15 q6
+        \filter q15 
         subs r4, #1
-        filter_32b q5
+        \filter32b
         vqrshrun.s16   d6, q3, #6
         vst1.16    d6[0], [r0], r1
         vmov q12, q13
         vmov q13, q14
         vmov q14, q15
         bne 2b
+.endm 
+
+function ff_hevc_epel3_uni_hv_neon_8, export=1
+        push   {r4-r12}
+        ldr    r4, [sp, #36] // height
+        ldr    r6, [sp, #40] // mx
+        ldr    r7, [sp, #44] // my
+        ldr    r5, [sp, #48] // width
+		vpush {d8-d15}
+        sub    r7, #1
+        sub    r6, #1
+        lsrs   r10, r7, #2
+		bne hvu1
+hvu0:	sub  r2, r3
+		lsrs   r10, r6, #2
+		bne hvu01
+hvu00:	sub  r2, 1
+		hevc_epel3_uni_hv filter_16b_0 filter_32b_0 
+		b 99f
+hvu01:	hevc_epel3_uni_hv filter_16b_1 filter_32b_0  
+		b 99f
+hvu1:   lsrs   r10, r6, #2
+		bne hvu11
+hvu10:	sub  r2, 1
+		hevc_epel3_uni_hv filter_16b_0 filter_32b_1  
+		b 99f
+hvu11:	hevc_epel3_uni_hv filter_16b_1 filter_32b_1  
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr
 endfunc
 
-function ff_hevc_epel3_bi_hv_neon_8, export=1
-        push   {r4-r12}
-        ldr    r4, [sp, #44] // height
-        ldr    r5, [sp, #56] // width
-        ldr    r6, [sp, #48] // mx
-        ldr    r7, [sp, #52] // my
-        ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
-        sub    r7, #1
-        lsrs   r10, r7, #2
-		bne hvb0
-		sub  r2, r3
-        vmov.i32 q5, #0xFFFFFFFF
-        b hvb1
-hvb0:   vmov.i32 q5, #1
-hvb1:   lsl    r7, #2
-        vpush {d8-d15}
-        adrl    r12, epel_coeffs3
-        sub    r6, #1
-        lsrs   r10, r6, #2
-        bne hvb2
-        sub  r2, #1
-        vmov.i16 q6, #0xFFFF
-		b hvb3
-hvb2:   vmov.i16 q6, #1
-hvb3:   lsl    r6, #2
+.macro hevc_epel3_bi_hv filter filter32b
+        lsl    r6, #2
+        lsl    r7, #2
+        adrl   r12, epel_coeffs3
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
         load_coeffs3_16b r6
@@ -766,13 +787,13 @@ hvb3:   lsl    r6, #2
         lsl   r9, #1
 0:      pld   [r2]
         vextin_d3
-        filter_16b q12 q6
+        \filter q12
         pld   [r2]
         vextin_d3
-        filter_16b q13 q6
+        \filter q13
         pld   [r2]
         vextin_d3
-        filter_16b q14 q6
+        \filter q14
         mov   r10, r8
         cmp       r5, #6
         bgt       8f
@@ -781,9 +802,9 @@ hvb3:   lsl    r6, #2
         b         4f
 8:      pld     [r2]
         vextin_d3
-        filter_16b q15 q6
+        \filter q15
         subs r4, #1
-        filter_32b q5
+        \filter32b
 		vld1.16        {q4}, [r8], r9
         vqadd.s16      q4, q3
         vqrshrun.s16   d8, q4, #7
@@ -804,9 +825,9 @@ hvb3:   lsl    r6, #2
         b         0b
 4:      pld      [r2]
         vextin_d3_8
-        filter_16b q15 q6
+        \filter q15 
         subs r4, #1
-        filter_32b q5
+        \filter32b
 		vld1.16        {q4}, [r8], r9
         vqadd.s16      q4, q3
         vqrshrun.s16   d8, q4, #7
@@ -827,9 +848,9 @@ hvb3:   lsl    r6, #2
         b         0b
 2:      pld      [r2]
         vextin_d3_8
-        filter_16b q15 q6
+        \filter q15 
         subs r4, #1
-        filter_32b q5
+        \filter32b
 		vld1.16        {q4}, [r8], r9
         vqadd.s16      q4, q3
         vqrshrun.s16   d8, q4, #7
@@ -838,6 +859,35 @@ hvb3:   lsl    r6, #2
         vmov q13, q14
         vmov q14, q15
         bne 2b
+.endm 
+
+function ff_hevc_epel3_bi_hv_neon_8, export=1
+        push   {r4-r12}
+        ldr    r4, [sp, #44] // height
+        ldr    r5, [sp, #56] // width
+        ldr    r6, [sp, #48] // mx
+        ldr    r7, [sp, #52] // my
+        ldr    r8, [sp, #36] // src2
+        ldr    r9, [sp, #40] // src2stride
+		vpush {d8-d15}
+        sub    r6, #1
+        sub    r7, #1
+        lsrs   r10, r7, #2
+		bne hvb1
+hvb0:	sub  r2, r3
+		lsrs   r10, r6, #2
+		bne hvb01
+hvb00:	sub  r2, 1
+		hevc_epel3_bi_hv filter_16b_0 filter_32b_0 
+		b 99f
+hvb01:	hevc_epel3_bi_hv filter_16b_1 filter_32b_0  
+		b 99f
+hvb1:   lsrs   r10, r6, #2
+		bne hvb11
+hvb10:	sub  r2, 1
+		hevc_epel3_bi_hv filter_16b_0 filter_32b_1  
+		b 99f
+hvb11:	hevc_epel3_bi_hv filter_16b_1 filter_32b_1  
 99:     vpop {d8-d15}
         pop {r4-r12}
         bx lr

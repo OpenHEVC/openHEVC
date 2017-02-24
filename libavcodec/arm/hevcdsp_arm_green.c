@@ -290,6 +290,24 @@ av_cold void green_reload_filter_luma1(luma_config *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][0][1]     = ff_hevc_put_qpel1_bi_neon_wrapper1;
             c->put_hevc_qpel_bi[x][1][1]     = ff_hevc_put_qpel1_bi_neon_wrapper1;
         }
+
+        c->put_hevc_qpel_uni[1][0][0]  = ff_hevc_put_qpel_uw_pixels_w4_neon_8;
+        c->put_hevc_qpel_uni[3][0][0]  = ff_hevc_put_qpel_uw_pixels_w8_neon_8;
+        c->put_hevc_qpel_uni[4][0][0]  = ff_hevc_put_qpel_uw_pixels_w12_neon_8;
+        c->put_hevc_qpel_uni[5][0][0]  = ff_hevc_put_qpel_uw_pixels_w16_neon_8;
+        c->put_hevc_qpel_uni[6][0][0]  = ff_hevc_put_qpel_uw_pixels_w24_neon_8;
+        c->put_hevc_qpel_uni[7][0][0]  = ff_hevc_put_qpel_uw_pixels_w32_neon_8;
+        c->put_hevc_qpel_uni[8][0][0]  = ff_hevc_put_qpel_uw_pixels_w48_neon_8;
+        c->put_hevc_qpel_uni[9][0][0]  = ff_hevc_put_qpel_uw_pixels_w64_neon_8;
+
+        c->put_hevc_qpel_bi[1][0][0]  = ff_hevc_put_qpel_bi_pixels_w4_neon_8;
+        c->put_hevc_qpel_bi[3][0][0]  = ff_hevc_put_qpel_bi_pixels_w8_neon_8;
+        c->put_hevc_qpel_bi[4][0][0]  = ff_hevc_put_qpel_bi_pixels_w12_neon_8;
+        c->put_hevc_qpel_bi[5][0][0]  = ff_hevc_put_qpel_bi_pixels_w16_neon_8;
+        c->put_hevc_qpel_bi[6][0][0]  = ff_hevc_put_qpel_bi_pixels_w24_neon_8;
+        c->put_hevc_qpel_bi[7][0][0]  = ff_hevc_put_qpel_bi_pixels_w32_neon_8;
+        c->put_hevc_qpel_bi[8][0][0]  = ff_hevc_put_qpel_bi_pixels_w48_neon_8;
+        c->put_hevc_qpel_bi[9][0][0]  = ff_hevc_put_qpel_bi_pixels_w64_neon_8;
     }
 }
 
@@ -392,6 +410,24 @@ av_cold void green_reload_filter_luma3(luma_config *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][0][1]      = ff_hevc_put_qpel_green3_bi_neon_wrapper;
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_green3_bi_neon_wrapper;
         }
+
+        c->put_hevc_qpel_uni[1][0][0]  = ff_hevc_put_qpel_uw_pixels_w4_neon_8;
+        c->put_hevc_qpel_uni[3][0][0]  = ff_hevc_put_qpel_uw_pixels_w8_neon_8;
+        c->put_hevc_qpel_uni[4][0][0]  = ff_hevc_put_qpel_uw_pixels_w12_neon_8;
+        c->put_hevc_qpel_uni[5][0][0]  = ff_hevc_put_qpel_uw_pixels_w16_neon_8;
+        c->put_hevc_qpel_uni[6][0][0]  = ff_hevc_put_qpel_uw_pixels_w24_neon_8;
+        c->put_hevc_qpel_uni[7][0][0]  = ff_hevc_put_qpel_uw_pixels_w32_neon_8;
+        c->put_hevc_qpel_uni[8][0][0]  = ff_hevc_put_qpel_uw_pixels_w48_neon_8;
+        c->put_hevc_qpel_uni[9][0][0]  = ff_hevc_put_qpel_uw_pixels_w64_neon_8;
+
+        c->put_hevc_qpel_bi[1][0][0]  = ff_hevc_put_qpel_bi_pixels_w4_neon_8;
+        c->put_hevc_qpel_bi[3][0][0]  = ff_hevc_put_qpel_bi_pixels_w8_neon_8;
+        c->put_hevc_qpel_bi[4][0][0]  = ff_hevc_put_qpel_bi_pixels_w12_neon_8;
+        c->put_hevc_qpel_bi[5][0][0]  = ff_hevc_put_qpel_bi_pixels_w16_neon_8;
+        c->put_hevc_qpel_bi[6][0][0]  = ff_hevc_put_qpel_bi_pixels_w24_neon_8;
+        c->put_hevc_qpel_bi[7][0][0]  = ff_hevc_put_qpel_bi_pixels_w32_neon_8;
+        c->put_hevc_qpel_bi[8][0][0]  = ff_hevc_put_qpel_bi_pixels_w48_neon_8;
+        c->put_hevc_qpel_bi[9][0][0]  = ff_hevc_put_qpel_bi_pixels_w64_neon_8;
     }
 }
 
@@ -492,6 +528,24 @@ av_cold void green_reload_filter_luma5(luma_config *c, const int bit_depth)
             c->put_hevc_qpel_bi[x][0][1]      = ff_hevc_put_qpel_green5_bi_neon_wrapper;
             c->put_hevc_qpel_bi[x][1][1]      = ff_hevc_put_qpel_green5_bi_neon_wrapper;
         }
+
+        c->put_hevc_qpel_uni[1][0][0]  = ff_hevc_put_qpel_uw_pixels_w4_neon_8;
+        c->put_hevc_qpel_uni[3][0][0]  = ff_hevc_put_qpel_uw_pixels_w8_neon_8;
+        c->put_hevc_qpel_uni[4][0][0]  = ff_hevc_put_qpel_uw_pixels_w12_neon_8;
+        c->put_hevc_qpel_uni[5][0][0]  = ff_hevc_put_qpel_uw_pixels_w16_neon_8;
+        c->put_hevc_qpel_uni[6][0][0]  = ff_hevc_put_qpel_uw_pixels_w24_neon_8;
+        c->put_hevc_qpel_uni[7][0][0]  = ff_hevc_put_qpel_uw_pixels_w32_neon_8;
+        c->put_hevc_qpel_uni[8][0][0]  = ff_hevc_put_qpel_uw_pixels_w48_neon_8;
+        c->put_hevc_qpel_uni[9][0][0]  = ff_hevc_put_qpel_uw_pixels_w64_neon_8;
+
+        c->put_hevc_qpel_bi[1][0][0]  = ff_hevc_put_qpel_bi_pixels_w4_neon_8;
+        c->put_hevc_qpel_bi[3][0][0]  = ff_hevc_put_qpel_bi_pixels_w8_neon_8;
+        c->put_hevc_qpel_bi[4][0][0]  = ff_hevc_put_qpel_bi_pixels_w12_neon_8;
+        c->put_hevc_qpel_bi[5][0][0]  = ff_hevc_put_qpel_bi_pixels_w16_neon_8;
+        c->put_hevc_qpel_bi[6][0][0]  = ff_hevc_put_qpel_bi_pixels_w24_neon_8;
+        c->put_hevc_qpel_bi[7][0][0]  = ff_hevc_put_qpel_bi_pixels_w32_neon_8;
+        c->put_hevc_qpel_bi[8][0][0]  = ff_hevc_put_qpel_bi_pixels_w48_neon_8;
+        c->put_hevc_qpel_bi[9][0][0]  = ff_hevc_put_qpel_bi_pixels_w64_neon_8;
     }
 }
 
@@ -597,6 +651,24 @@ av_cold void green_reload_filter_chroma1(chroma_config *c, const int bit_depth)
             c->put_hevc_epel_bi[x][0][1]	  = ff_hevc_put_epel1_bi_neon_wrapper;
             c->put_hevc_epel_bi[x][1][1]	  = ff_hevc_put_epel1_bi_neon_wrapper;
         }
+
+        c->put_hevc_epel_uni[0][0][0]  = ff_hevc_put_epel_uni_pixels_w2_neon_8;
+        c->put_hevc_epel_uni[1][0][0]  = ff_hevc_put_epel_uni_pixels_w4_neon_8;
+        c->put_hevc_epel_uni[2][0][0]  = ff_hevc_put_epel_uni_pixels_w6_neon_8;
+        c->put_hevc_epel_uni[3][0][0]  = ff_hevc_put_epel_uni_pixels_w8_neon_8;
+        c->put_hevc_epel_uni[4][0][0]  = ff_hevc_put_epel_uni_pixels_w12_neon_8;
+        c->put_hevc_epel_uni[5][0][0]  = ff_hevc_put_epel_uni_pixels_w16_neon_8;
+        c->put_hevc_epel_uni[6][0][0]  = ff_hevc_put_epel_uni_pixels_w24_neon_8;
+        c->put_hevc_epel_uni[7][0][0]  = ff_hevc_put_epel_uni_pixels_w32_neon_8;
+
+        c->put_hevc_epel_bi[0][0][0]  = ff_hevc_put_epel_bi_pixels_w2_neon_8;
+        c->put_hevc_epel_bi[1][0][0]  = ff_hevc_put_epel_bi_pixels_w4_neon_8;
+        c->put_hevc_epel_bi[2][0][0]  = ff_hevc_put_epel_bi_pixels_w6_neon_8;
+        c->put_hevc_epel_bi[3][0][0]  = ff_hevc_put_epel_bi_pixels_w8_neon_8;
+        c->put_hevc_epel_bi[4][0][0]  = ff_hevc_put_epel_bi_pixels_w12_neon_8;
+        c->put_hevc_epel_bi[5][0][0]  = ff_hevc_put_epel_bi_pixels_w16_neon_8;
+        c->put_hevc_epel_bi[6][0][0]  = ff_hevc_put_epel_bi_pixels_w24_neon_8;
+        c->put_hevc_epel_bi[7][0][0]  = ff_hevc_put_epel_bi_pixels_w32_neon_8;
     }
 }
 
