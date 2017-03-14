@@ -295,7 +295,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
                         ff_thread_await_progress(&field->tf, s->ps.sps->height, 0);
 
                     copy_field(s, src, field->frame, s->ps.sps->height);
-                }
+                } else return 0;
             }
 
             ret = av_frame_ref(dst, src);
