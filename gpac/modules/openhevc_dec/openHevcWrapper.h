@@ -99,7 +99,6 @@ int  libOpenHevcGetOutput(OpenHevc_Handle openHevcHandle, int got_picture, OpenH
 int  libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame_cpy *openHevcFrame);
 void libOpenHevcSetCheckMD5(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, int val);
-void libOpenHevcSetThreadAffinity(OpenHevc_Handle openHevcHandle, uint32_t val);
 void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val);

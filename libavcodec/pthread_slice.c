@@ -25,13 +25,7 @@
 #include "config.h"
 
 #if HAVE_PTHREADS
-#ifndef __USE_GNU
-#define __USE_GNU
-#endif
-#define _GNU_SOURCE
-#include <sched.h>
 #include <pthread.h>
-#include <unistd.h>
 #elif HAVE_W32THREADS
 #include "compat/w32pthreads.h"
 #elif HAVE_OS2THREADS
@@ -42,7 +36,6 @@
 #include "internal.h"
 #include "pthread_internal.h"
 #include "thread.h"
-#include "hevc.h"
 
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
@@ -233,25 +226,6 @@ int ff_slice_thread_init(AVCodecContext *avctx)
            pthread_mutex_unlock(&c->current_job_lock);
            ff_thread_free(avctx);
            return -1;
-        }
-
-        if(strcmp(avcodec_get_class()->class_name, "HEVC decoder") == 0){
-			/* Set thread affinity */
-			cpu_set_t *cpu_set;
-			int i, ncpu = sysconf(_SC_NPROCESSORS_ONLN);
-			cpu_set = CPU_ALLOC(ncpu);
-			HEVCContext *s = avctx->priv_data;
-			CPU_ZERO_S(CPU_ALLOC_SIZE(ncpu),cpu_set);
-			for(i=0; i<ncpu; i++){
-				if((s->thread_affinity >> i) & 0x1)
-					CPU_SET(i, cpu_set);
-			}
-			if(pthread_setaffinity_np(c->workers[i], ncpu, cpu_set)){
-				pthread_mutex_unlock(&c->current_job_lock);
-				ff_thread_free(avctx);
-				return -1;
-			}
-			CPU_FREE(cpu_set);
         }
     }
 

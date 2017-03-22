@@ -4370,8 +4370,6 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "quality_layer_id", "set the max quality id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
-	{ "thread-affinity", "set thread core affinity", OFFSET(thread_affinity),
-		AV_OPT_TYPE_INT, {.i64 = 0xFFFFFFFF}, 0, 0xFFFFFFFF, PAR },
 #if CONFIG_GREEN
 	{ "green-a-level", "Green Activation level", OFFSET(green_alevel),			
 			AV_OPT_TYPE_INT, {.i64 = 0}, 0, 12, PAR },

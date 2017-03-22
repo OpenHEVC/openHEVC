@@ -27,13 +27,7 @@
 #include <stdint.h>
 
 #if HAVE_PTHREADS
-#ifndef __USE_GNU
-#define __USE_GNU
-#endif
-#define _GNU_SOURCE
-#include <sched.h>
 #include <pthread.h>
-#include <unistd.h>
 #elif HAVE_W32THREADS
 #include "compat/w32pthreads.h"
 #elif HAVE_OS2THREADS
@@ -44,7 +38,6 @@
 #include "internal.h"
 #include "pthread_internal.h"
 #include "thread.h"
-#include "hevc.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
@@ -793,23 +786,6 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         p->thread_init= !err;
         if(!p->thread_init)
             goto error;
-
-        if(strcmp(avcodec_get_class()->class_name, "HEVC decoder") == 0){
-			/* Set thread affinity */
-			cpu_set_t *cpu_set;
-			int i, ncpu = sysconf(_SC_NPROCESSORS_ONLN);
-			cpu_set = CPU_ALLOC(ncpu);
-			HEVCContext *s = avctx->priv_data;
-			CPU_ZERO_S(CPU_ALLOC_SIZE(ncpu),cpu_set);
-			for(i=0; i<ncpu; i++){
-				if((s->thread_affinity >> i) & 0x1)
-					CPU_SET(i, cpu_set);
-			}
-			if(pthread_setaffinity_np(p->thread, ncpu, cpu_set)){
-				goto error;
-			}
-			CPU_FREE(cpu_set);
-        }
     }
 
     return 0;

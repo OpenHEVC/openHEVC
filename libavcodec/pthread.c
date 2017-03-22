@@ -35,8 +35,6 @@
 #include "thread.h"
 #include "hevc.h"
 
-#include <unistd.h>
-
 /**
  * Set the threading algorithms used.
  *
@@ -86,29 +84,18 @@ static void validate_thread_parameters(AVCodecContext *avctx)
 
 int ff_thread_init(AVCodecContext *avctx)
 {
-    int ret = 0, i;
+    int ret = 0;
 
     validate_thread_parameters(avctx);
-
-    char* affinity_mask;
-    int ncpu = sysconf(_SC_NPROCESSORS_ONLN);
-    affinity_mask = calloc(ncpu+1, sizeof(char));
-    HEVCContext *s = avctx->priv_data;
-	for(i=0; i<ncpu; i++){
-		affinity_mask[i] = ((s->thread_affinity >> i) & 0x1) + '0';
-	}
-	affinity_mask[ncpu] = '\0';
 
     if (avctx->active_thread_type&FF_THREAD_FRAME)
         ret = ff_frame_thread_init(avctx);
     else if (avctx->active_thread_type&FF_THREAD_SLICE)
         ret = ff_slice_thread_init(avctx);
-    av_log(avctx, AV_LOG_INFO, "nb threads_frame = %d, nb threads_slice %d, thread_type = %s%s, affinity = %s\n",
+    av_log(avctx, AV_LOG_INFO, "nb threads_frame = %d, nb threads_slice %d, thread_type = %s%s\n",
            avctx->thread_count_frame, avctx->thread_count,
            (avctx->active_thread_type == 0 ? "null" : (avctx->active_thread_type & FF_THREAD_FRAME ? "frame" : "")),
-           (avctx->active_thread_type & FF_THREAD_SLICE ? "slice" : ""), affinity_mask);
-
-    free(affinity_mask);
+           (avctx->active_thread_type & FF_THREAD_SLICE ? "slice" : ""));
 
     return ret;
 }
