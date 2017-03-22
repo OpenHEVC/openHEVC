@@ -78,34 +78,26 @@ static void load_chroma_config(chroma_config* src, HEVCDSPContext* dst){
 static void init_green_filter_luma1(luma_config* cfg){
 	int i;
 	HEVC_DSP_LUMA_GREEN(1, 8)
-#if OPTI_ENABLED
     if (ARCH_ARM)
     	green_reload_filter_luma1(cfg, 8);
-#endif
 }
 static void init_green_filter_luma3(luma_config* cfg){
 	int i;
 	HEVC_DSP_LUMA_GREEN(3, 8)
-#if OPTI_ENABLED
     if (ARCH_ARM)
     	green_reload_filter_luma3(cfg, 8);
-#endif
 }
 static void init_green_filter_luma5(luma_config* cfg){
 	int i;
 	HEVC_DSP_LUMA_GREEN(5, 8)
-#if OPTI_ENABLED
     if (ARCH_ARM)
     	green_reload_filter_luma5(cfg, 8);
-#endif
 }
 static void init_green_filter_luma7(luma_config* cfg){
 	int i;
 	HEVC_DSP_LUMA_GREEN(7, 8)
-//#if OPTI_ENABLED
 //    if (ARCH_ARM)
 //    	green_reload_filter_luma7(cfg, 8);
-//#endif
 }
 
 #undef HEVC_DSP_CHROMA_GREEN
@@ -140,26 +132,20 @@ static void init_green_filter_luma7(luma_config* cfg){
 static void init_green_filter_chroma1(chroma_config* cfg){
 	int i;
 	HEVC_DSP_CHROMA_GREEN(1, 8)
-#if OPTI_ENABLED
     if (ARCH_ARM)
     	green_reload_filter_chroma1(cfg, 8);
-#endif
 }
 static void init_green_filter_chroma2(chroma_config* cfg){
 	int i;
 	HEVC_DSP_CHROMA_GREEN(2, 8)
-#if OPTI_ENABLED
     if (ARCH_ARM)
     	green_reload_filter_chroma2(cfg, 8);
-#endif
 }
 static void init_green_filter_chroma3(chroma_config* cfg){
 	int i;
 	HEVC_DSP_CHROMA_GREEN(3, 8)
-#if OPTI_ENABLED
     if (ARCH_ARM)
     	green_reload_filter_chroma3(cfg, 8);
-#endif
 }
 
 void green_dsp_init(HEVCDSPContext *hevcdsp)
@@ -167,12 +153,6 @@ void green_dsp_init(HEVCDSPContext *hevcdsp)
     hevcdsp->green_cur_luma = LUMA_LEG;
     hevcdsp->green_cur_chroma = CHROMA_LEG;
     hevcdsp->green_on = 0;
-
-    static const char* green_coeffs_text[3] = {
-		"OLD",
-		"ASYMMETRIC",
-		"SYMMETRIC"
-    };
 
     /* Store Legacy Config */
     store_luma_config(hevcdsp, &luma_configs[LUMA_LEG]);
@@ -187,9 +167,6 @@ void green_dsp_init(HEVCDSPContext *hevcdsp)
     init_green_filter_chroma1(&chroma_configs[CHROMA1]);
     init_green_filter_chroma2(&chroma_configs[CHROMA2]);
     init_green_filter_chroma3(&chroma_configs[CHROMA3]);
-
-    printf("Current Coefs config: %s\n", green_coeffs_text[GREEN_FILTER_TYPE]);
-    printf("Legacy config %d:%d\n", LUMA_TAPS, CHROMA_TAPS);
 }
 
 void green_update_filter_luma(HEVCDSPContext *c, int type){
