@@ -38,7 +38,6 @@
 #include "cabac_functions.h"
 #include "golomb.h"
 #include "hevc.h"
-#include "../gpac/modules/openhevc_dec/openHevcWrapper.h"
 #include "getopt.h"
 
 #include "h264.h"
@@ -50,8 +49,6 @@
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
 #define POC_DISPLAY_MD5
-
-extern SliceTypeDecodeCallback OpenHevcSliceTypeDecodeCallback;
 
 static void calc_md5(uint8_t *md5, uint8_t* src, int stride, int width, int height, int pixel_shift);
 static int compare_md5(uint8_t *md5_in1, uint8_t *md5_in2);
@@ -3350,21 +3347,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 #endif
         ret = hls_slice_header(s);
-
-        if(OpenHevcSliceTypeDecodeCallback){
-        	switch(s->sh.slice_type){
-        	case I_SLICE:
-        		OpenHevcSliceTypeDecodeCallback(SLICE_TYPE_I);
-        		break;
-        	case P_SLICE:
-        		OpenHevcSliceTypeDecodeCallback(SLICE_TYPE_P);
-        		break;
-        	case B_SLICE:
-        		OpenHevcSliceTypeDecodeCallback(SLICE_TYPE_B);
-        		break;
-        	}
-        }
-
 
 #if 0
         if (ret == -10)

@@ -47,8 +47,6 @@ typedef struct OpenHevcWrapperContexts {
     int set_vps;
 } OpenHevcWrapperContexts;
 
-SliceTypeDecodeCallback OpenHevcSliceTypeDecodeCallback = NULL;
-
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
 {
     /* register all the codecs */
@@ -200,10 +198,6 @@ OpenHevc_Handle libOpenShvcInit(int nb_pthreads, int thread_type)
         av_opt_set_int(openHevcContext->c->priv_data, "decoder-id", i, 0);
     }
     return (OpenHevc_Handle) openHevcContexts;
-}
-
-void libOpenHevcOnSliceTypeDecodeCallback(SliceTypeDecodeCallback callback){
-	OpenHevcSliceTypeDecodeCallback = callback;
 }
 
 int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
