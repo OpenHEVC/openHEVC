@@ -57,21 +57,6 @@ COMPILE_M = $(call COMPILE,OBJCC)
 COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 COMPILE_INTRINSICS = $(call COMPILE,CC)
 
-%.o: %.c
-	$(COMPILE_C)
-
-%.o: %.cpp
-	$(COMPILE_CXX)
-
-%.o: %.m
-	$(COMPILE_M)
-
-%.s: %.c
-	$(CC) $(CCFLAGS) -S -o $@ $<
-
-%.o: %.S
-	$(COMPILE_S)
-
 %_host.o: %.c
 	$(COMPILE_HOSTC)
 
@@ -86,6 +71,21 @@ COMPILE_INTRINSICS = $(call COMPILE,CC)
 
 %_avx2.o: %_avx2.c
 	$(COMPILE_INTRINSICS) -mavx2
+
+%.o: %.c
+	$(COMPILE_C)
+
+%.o: %.cpp
+	$(COMPILE_CXX)
+
+%.o: %.m
+	$(COMPILE_M)
+
+%.s: %.c
+	$(CC) $(CCFLAGS) -S -o $@ $<
+
+%.o: %.S
+	$(COMPILE_S)
 
 %.o: %.rc
 	$(WINDRES) $(IFLAGS) --preprocessor "$(DEPWINDRES) -E -xc-header -DRC_INVOKED $(CC_DEPFLAGS)" -o $@ $<
