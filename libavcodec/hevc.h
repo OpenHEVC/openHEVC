@@ -996,6 +996,7 @@ typedef struct HEVCPPS {
     int *tile_id;           ///< TileId
     int *tile_width;           ///< TileWidth
     int *tile_pos_rs;       ///< TilePosRS
+    int *wpp_pos_ts;
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
 
