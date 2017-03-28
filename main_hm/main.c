@@ -162,6 +162,8 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     OpenHevc_Frame_cpy openHevcFrameCpy;
     OpenHevc_Handle    openHevcHandle;
 
+    OHMouse oh_mouse;
+
     if (filename == NULL) {
         printf("No input file specified.\nSpecify it with: -i <filename>\n");
         exit(1);
@@ -262,6 +264,9 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         else if (event_code == OH_LAYER0 || event_code == OH_LAYER1) {
             libOpenHevcSetActiveDecoders(openHevcHandle, event_code-1);
             libOpenHevcSetViewLayers(openHevcHandle, event_code-1);
+        } else if (event_code == OH_MOUSE) {
+            oh_mouse = get_mouseevent();
+            libOpenHevcSetMouseClick(openHevcHandle,oh_mouse.x,oh_mouse.y);
         }
 
 #if FRAME_CONCEALMENT

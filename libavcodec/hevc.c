@@ -3415,6 +3415,17 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         arg[i] = i;
         ret[i] = 0;
     }
+#if HEVC_ENCRYPTION
+    if(s->ps.pps->tiles_enabled_flag && (s->last_click_pos.den != 0 || s->last_click_pos.num != 0)){
+        int x,y, tmptile_id= 0;
+        x = (s->last_click_pos.den) >> s->ps.sps->log2_ctb_size;
+        y = (s->last_click_pos.num) >> s->ps.sps->log2_ctb_size;
+
+        tmptile_id = s->ps.pps->tile_id[s->ps.pps->ctb_addr_rs_to_ts[x * s->ps.sps->ctb_width + y]];
+
+        s->last_click_pos.num = s->last_click_pos.den = 0;
+    }
+#endif
 
     if (s->ps.pps->entropy_coding_sync_enabled_flag && s->ps.pps->tiles_enabled_flag && s->threads_number!=1)
         s->avctx->execute2(s->avctx, (void *) hls_decode_entry_wpp_in_tiles  , arg, ret, s->sh.num_entry_point_offsets + 1);
