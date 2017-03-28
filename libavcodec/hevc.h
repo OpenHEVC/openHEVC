@@ -1019,6 +1019,9 @@ typedef struct HEVCPPS {
     HEVCWindow ref_window[16];
     uint8_t colour_mapping_enabled_flag;
     uint8_t m_nCGSOutputBitDepth[MAX_NUM_CHANNEL_TYPE];
+#if HEVC_ENCRYPTION
+    uint8_t *tile_table_encry;
+#endif
 } HEVCPPS;
 
 typedef struct HEVCParamSets {
@@ -1318,6 +1321,7 @@ typedef struct HEVCLocalContext {
     /* properties of the boundary of the current CTB for the purposes
      * of the deblocking filter */
     int boundary_flags;
+    int tile_id;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {

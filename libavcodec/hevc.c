@@ -2347,7 +2347,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int candidate[3];
     int i, j;
 #if HEVC_ENCRYPTION
-   if(s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE) {
+   if(s->ps.pps->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE)) {
      cand_up   = (lc->ctb_up_flag || y0b) ?
 	                       s->tab_ipm_encry[(y_pu - 1) * min_pu_width + x_pu] : INTRA_DC;
 	 cand_left = (lc->ctb_left_flag || x0b) ?
@@ -2401,7 +2401,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
         size_in_pus = 1;
 
 #if HEVC_ENCRYPTION
-   if(s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE) {
+   if( s->ps.pps->tile_table_encry[s->HEVClc->tile_id]  && (s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE)) {
 	 if(intra_pred_mode != INTRA_ANGULAR_26 && intra_pred_mode != INTRA_ANGULAR_10) {/* for correct chroma Inra prediction mode */
 
        int Sets[3][17] = { { 0,  1,  2,  3,  4,  5, 15, 16, 17, 18, 19, 20, 21, 31, 32, 33, 34},/* 17 */
@@ -2549,7 +2549,7 @@ static void intra_prediction_unit_default_value(HEVCContext *s,
         memset(&s->tab_ipm[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
 
 #if HEVC_ENCRYPTION
-   if(s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE) {
+   if(s->ps.pps->tile_table_encry[s->HEVClc->tile_id]  && (s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE)) {
     for (j = 0; j < size_in_pus; j++)
             memset(&s->tab_ipm_encry[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
    }
@@ -2880,6 +2880,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
     while (more_data && ctb_addr_ts < s->ps.sps->ctb_size) {
         int ctb_addr_rs = s->ps.pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+        s->HEVClc->tile_id = s->ps.pps->tile_id[ctb_addr_ts];
 
         x_ctb = FFUMOD(ctb_addr_rs, s->ps.sps->ctb_width) << s->ps.sps->log2_ctb_size;
         y_ctb = FFUDIV(ctb_addr_rs, s->ps.sps->ctb_width) << s->ps.sps->log2_ctb_size;
@@ -3165,6 +3166,7 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
     s = s->sList[self_id];
     s->HEVClc->ctb_tile_rs = ctb_addr_rs;
     lc = s->HEVClc;
+    lc->tile_id = s->ps.pps->tile_id[ctb_addr_ts];
 
     if(ctb_row) {
         ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row - 1], s->sh.size[ctb_row - 1]);
@@ -3423,6 +3425,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 
         tmptile_id = s->ps.pps->tile_id[s->ps.pps->ctb_addr_rs_to_ts[x * s->ps.sps->ctb_width + y]];
 
+        s->ps.pps->tile_table_encry[tmptile_id]= (s->ps.pps->tile_table_encry[tmptile_id] == 0)? 1 : 0;
         s->last_click_pos.num = s->last_click_pos.den = 0;
     }
 #endif
