@@ -4790,7 +4790,9 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->enable_parallel_tiles = 0;
     s->picture_struct = 0;
 #if HEVC_ENCRYPTION
-    s->encrypt_params = HEVC_CRYPTO_INTRA_PRED_MODE; // HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS | HEVC_CRYPTO_INTRA_PRED_MODE;
+    s->encrypt_params =  HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS | HEVC_CRYPTO_INTRA_PRED_MODE;
+    s->last_click_pos.den = 0;
+    s->last_click_pos.num = 0;
 #endif
     s->eos = 1;
 
@@ -4864,6 +4866,10 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "quality_layer_id", "set the max quality id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
+#if HEVC_ENCRYPTION
+    { "mouse-click-pos", "select tile from last click position and enable/disable encryption",OFFSET(last_click_pos),
+       AV_OPT_TYPE_RATIONAL,{.dbl = 0},0,INT_MAX,PAR },
+#endif
     { NULL },
 };
 

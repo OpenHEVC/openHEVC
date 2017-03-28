@@ -752,6 +752,24 @@ void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val)
     }
 }
 
+void libOpenHevcSetMouseClick(OpenHevc_Handle openHevcHandle, int val_x,int val_y)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext;
+
+    AVRational tmp;
+    tmp.num=val_x;
+    tmp.den=val_y;
+
+    int i;
+
+    for (i = 0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_q(openHevcContext->c->priv_data, "mouse-click-pos", tmp, 0);
+    }
+
+}
+
 void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;

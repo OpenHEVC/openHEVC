@@ -1520,6 +1520,7 @@ typedef struct HEVCContext {
     int BL_height;
 #if HEVC_ENCRYPTION
     uint8_t encrypt_params;
+    AVRational last_click_pos;
 #endif
 } HEVCContext;
 
