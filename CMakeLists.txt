@@ -506,6 +506,7 @@ add_library (LibOpenHevcWrapper ${libfilenames} ${YASM_OBJECTS})
 
 if(CRYPTOPP_FOUND)
 target_link_libraries(LibOpenHevcWrapper cryptopp)
+AddCompilerFlag("-Wl,-Bsymbolic")
 else()
 target_link_libraries(LibOpenHevcWrapper m)
 endif()
