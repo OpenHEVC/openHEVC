@@ -2,7 +2,15 @@
 #define _sdl_wrapper_h
 
 
-typedef enum oh_event_t {OH_NOEVENT=0, OH_LAYER0, OH_LAYER1, OH_QUIT} oh_event;
+typedef enum oh_event_t {OH_NOEVENT=0, OH_LAYER0, OH_LAYER1, OH_QUIT, OH_MOUSE} oh_event;
+
+typedef struct OHMouse{
+    int x;
+    int y;
+    int on;
+}OHMouse;
+
+OHMouse get_mouseevent(void);
 
 oh_event IsCloseWindowEvent(void);
 void Init_Time(void);

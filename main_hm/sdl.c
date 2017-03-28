@@ -40,13 +40,19 @@ int          ticksSDL;
 /* SDL_gfx variable */
 FPSmanager   fpsm;
 
+OHMouse oh_mouse;
+
+OHMouse get_mouseevent(){
+    return oh_mouse;
+}
+
 oh_event IsCloseWindowEvent(void){
 #ifndef SDL_NO_DISPLAY
     SDL_Event event;
 
 
     int ret = OH_NOEVENT;
-    //SDL_Event event;
+
     event.type = 0;
     while(SDL_PollEvent(&event)){
 
@@ -64,7 +70,12 @@ oh_event IsCloseWindowEvent(void){
         case SDL_QUIT:
             ret = OH_QUIT;
             break;
-
+        case SDL_MOUSEBUTTONDOWN:
+            oh_mouse.on = 1;
+            oh_mouse.x=event.button.x;
+            oh_mouse.y=event.button.y;
+            ret = OH_MOUSE;
+            break;
         default:
             break;
     }
