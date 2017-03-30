@@ -34,6 +34,7 @@ extern "C" {
 
 #define OPENHEVC_HAS_AVC_BASE
 
+#define OH_SELECTIVE_ENCRYPTION
 
 typedef void* OpenHevc_Handle;
 
@@ -113,7 +114,7 @@ typedef enum
 void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, OHEVC_LogLevel val);
 void libOpenHevcSetLogCallback(OpenHevc_Handle openHevcHandle, void (*callback)(void*, int, const char*, va_list));
 
-
+void libOpenHevcSetMouseClick(OpenHevc_Handle openHevcHandle, int val_x,int val_y);
 void libOpenHevcSetTemporalLayer_id(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetNoCropping(OpenHevc_Handle openHevcHandle, int val);
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val);
