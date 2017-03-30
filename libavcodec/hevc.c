@@ -3420,12 +3420,19 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 #if HEVC_ENCRYPTION
     if(s->ps.pps->tiles_enabled_flag && (s->last_click_pos.den != 0 || s->last_click_pos.num != 0)){
         int x,y, tmptile_id= 0;
-        x = (s->last_click_pos.den) >> s->ps.sps->log2_ctb_size;
-        y = (s->last_click_pos.num) >> s->ps.sps->log2_ctb_size;
 
-        tmptile_id = s->ps.pps->tile_id[s->ps.pps->ctb_addr_rs_to_ts[x * s->ps.sps->ctb_width + y]];
+        if(s->last_click_pos.num < s->ps.sps->width && s->last_click_pos.den < s->ps.sps->height){
+            x = (s->last_click_pos.den) >> s->ps.sps->log2_ctb_size;
+            y = (s->last_click_pos.num) >> s->ps.sps->log2_ctb_size;
+            printf("Click position inside picture boundary, %d,%d\n", x,y);
 
-        s->ps.pps->tile_table_encry[tmptile_id]= (s->ps.pps->tile_table_encry[tmptile_id] == 0)? 1 : 0;
+            tmptile_id = s->ps.pps->tile_id[s->ps.pps->ctb_addr_rs_to_ts[x * s->ps.sps->ctb_width + y]];
+
+            s->ps.pps->tile_table_encry[tmptile_id]= (s->ps.pps->tile_table_encry[tmptile_id] == 0)? 1 : 0;
+        } else {
+            av_log(s,AV_LOG_ERROR, "Click position outside picture boundary, %d,%d\n", x,y);
+            printf("Click position outside picture boundary, %d,%d\n", x,y);
+        }
         s->last_click_pos.num = s->last_click_pos.den = 0;
     }
 #endif
