@@ -1,55 +1,55 @@
 /*
- *  yuvplay - play YUV data using SDL
+ * Copyright (c) 2017, IETR/INSA of Rennes
+ * All rights reserved.
  *
- *  Copyright (C) 2000, Ronald Bultje <rbultje@ronald.bitfreak.net>
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the IETR/INSA of Rennes nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#define SDL_NO_DISPLAY_
-
 #include <SDL/SDL.h>
 #include <SDL/SDL_events.h>
 #include <stdio.h>
 #include <signal.h>
-#include "SDL_framerate.h"
-#include "sdl_wrapper.h"
+#include "ohtimer_wrapper.h"
+#include "ohdisplay_wrapper.h"
 
 /* SDL variables */
 SDL_Surface *screen;
 SDL_Overlay *yuv_overlay;
 SDL_Rect     rect;
-int          ticksSDL;
-
-/* SDL_gfx variable */
-FPSmanager   fpsm;
 
 OHMouse oh_mouse;
-
-OHMouse get_mouseevent(){
+OHMouse oh_display_getMouseEvent(){
     return oh_mouse;
 }
 
-oh_event IsCloseWindowEvent(void){
-#ifndef SDL_NO_DISPLAY
+OHEvent oh_display_getWindowEvent(void){
     SDL_Event event;
-
 
     int ret = OH_NOEVENT;
 
@@ -82,19 +82,20 @@ oh_event IsCloseWindowEvent(void){
     }
 
     return ret;
-#endif
 }
 
-void Init_Time() {
-#ifndef SDL_NO_DISPLAY
-    /* First, initialize SDL's video subsystem. */
-
+int oh_display_init(int edge, int frame_width, int frame_height){
+    int screenwidth = 0, screenheight = 0;
+    const char *window_title = "SDL Display";
+    const SDL_VideoInfo* info;
+    Uint8 bpp;
+    Uint32 vflags;
+    
     struct sigaction action;
     sigaction(SIGINT, NULL, &action);
     sigaction(SIGTERM, NULL, &action);
     sigaction(SIGKILL, NULL, &action);
     sigaction(SIGHUP, NULL, &action);
-    //SDL_Init(SDL_INIT_TIMER);
     sigaction(SIGINT, &action, NULL);
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGKILL, &action, NULL);
@@ -107,19 +108,6 @@ void Init_Time() {
         exit(0);
     }
 
-    ticksSDL = SDL_GetTicks();
-#endif
-}
-
-int Init_SDL(int edge, int frame_width, int frame_height){
-
-#ifndef SDL_NO_DISPLAY
-    int screenwidth = 0, screenheight = 0;
-    char *window_title = "SDL Display";
-    const SDL_VideoInfo* info;
-    Uint8 bpp;
-    Uint32 vflags;
-    
     info = SDL_GetVideoInfo();
     if( !info ) {
         printf("SDL ERROR Video query failed: %s\n", SDL_GetError() );
@@ -158,14 +146,12 @@ int Init_SDL(int edge, int frame_width, int frame_height){
     rect.w = screenwidth + 2 * edge;
     rect.h = screenheight;
     SDL_DisplayYUVOverlay(yuv_overlay, &rect);
-#endif
     return 0;
 }
 
-void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
-
-#ifndef SDL_NO_DISPLAY
-if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
+void oh_display_display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
+    printf("%dx%d\n", frame_width, frame_height);
+	if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
     if(yuv_overlay->w != frame_width || yuv_overlay->h != frame_height){
         //Resize YUVoverlay
         Uint8 bpp;
@@ -174,7 +160,7 @@ if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
         info = SDL_GetVideoInfo();
 
         if( !info ) {
-            printf("SDL ERROR Video query failed: %s\n", SDL_GetError() );
+            printf("SDL ERROR Video query failed: %s %d\n", SDL_GetError(), (int)info );
             SDL_Quit();
             exit(0);
         }
@@ -228,37 +214,10 @@ if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
     SDL_UnlockYUVOverlay(yuv_overlay);
     // Show, baby, show!
     SDL_DisplayYUVOverlay(yuv_overlay, &rect);
-#endif
 }
 
-void CloseSDLDisplay(){
-#ifndef SDL_NO_DISPLAY
+void oh_display_close(){
     SDL_FreeYUVOverlay(yuv_overlay);
     SDL_FreeSurface(screen);
     SDL_Quit();
-#endif
-}
-int SDL_GetTime() {
-    return SDL_GetTicks() - ticksSDL;
-}
-
-// Frame rate managment
-void initFramerate_SDL() {
-    SDL_initFramerate(&fpsm);
-}
-
-void setFramerate_SDL(float frate) {
-    if (SDL_setFramerate(&fpsm,frate) < 0) {
-        printf("SDL_glx: Couldn't set frame rate\n");
-        SDL_Quit();
-        exit(0);
-    }
-}
-
-void framerateDelay_SDL() {
-    if (SDL_framerateDelay(&fpsm) < 0) {
-        printf("SDL_glx: Couldn't set frame rate delay\n");
-        SDL_Quit();
-        exit(0);
-    }
 }

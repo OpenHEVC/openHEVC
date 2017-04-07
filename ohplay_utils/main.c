@@ -8,7 +8,8 @@
 #include "openHevcWrapper.h"
 #include "getopt.h"
 #include <libavformat/avformat.h>
-#include "sdl_wrapper.h"
+
+#include "ohdisplay_wrapper.h"
 
 //#define TIME2
 

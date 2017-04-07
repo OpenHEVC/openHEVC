@@ -1,36 +1,38 @@
 /*
- *  yuvplay - play YUV data using SDL
+ * Copyright (c) 2017, IETR/INSA of Rennes
+ * All rights reserved.
  *
- *  Copyright (C) 2000, Ronald Bultje <rbultje@ronald.bitfreak.net>
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the IETR/INSA of Rennes nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#define SDL_NO_DISPLAY_
-
-#ifndef SDL_NO_DISPLAY
 #include <SDL.h>
 #include <SDL_events.h>
 #include <stdio.h>
 #include <signal.h>
-#include "SDL_framerate.h"
-#include "sdl_wrapper.h"
+#include "ohtimer_wrapper.h"
+#include "ohdisplay_wrapper.h"
 
 /* SDL variables */
 SDL_Window        *pWindow1;
@@ -38,20 +40,14 @@ SDL_Renderer      *pRenderer1;
 SDL_Texture       *bmpTex1;
 uint8_t           *pixels1;
 int               pitch1, size1;
-int               ticksSDL;
-
-/* SDL_gfx variable */
-FPSmanager   fpsm;
-#endif
 
 OHMouse oh_mouse;
 
-OHMouse get_mouseevent(){
+OHMouse oh_display_getMouseEvent(){
     return oh_mouse;
 }
 
-oh_event IsCloseWindowEvent(){
-#ifndef SDL_NO_DISPLAY
+OHEvent oh_display_getWindowEvent(){
     int ret = OH_NOEVENT;
     SDL_Event event;
     while(SDL_PollEvent(&event)){
@@ -82,18 +78,9 @@ oh_event IsCloseWindowEvent(){
     }
 
     return ret;
-#endif
 }
 
-void Init_Time() {
-#ifndef SDL_NO_DISPLAY
-    ticksSDL = SDL_GetTicks();
-#endif
-}
-
-int Init_SDL(int edge, int frame_width, int frame_height){
-
-#ifndef SDL_NO_DISPLAY
+int oh_display_init(int edge, int frame_width, int frame_height){
     /* First, initialize SDL's video subsystem. */
     struct sigaction action;
     sigaction(SIGINT, NULL, &action);
@@ -120,13 +107,19 @@ int Init_SDL(int edge, int frame_width, int frame_height){
         printf("Could not open window1\n");
         return -1;
     }
-#endif
     return 0;
 }
 
-void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
+void oh_display_display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
+	int win_height, win_width;
+	SDL_GetWindowSize(pWindow1, &win_width, &win_height );
 
-#ifndef SDL_NO_DISPLAY	
+	if(frame_width != win_width || frame_height != win_height){
+		SDL_SetWindowSize(pWindow1, frame_width, frame_height );
+		SDL_DestroyTexture(bmpTex1);
+		bmpTex1 = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);
+	}
+
     size1 = (frame_width + 2 * edge) * frame_height;
 
     SDL_LockTexture(bmpTex1, NULL, (void **)&pixels1, &pitch1);
@@ -145,35 +138,8 @@ void SDL_Display(int edge, int frame_width, int frame_height, unsigned char *Y, 
     //    SDL_RenderClear(pRenderer1);
     SDL_RenderCopy(pRenderer1, bmpTex1, NULL, NULL);
     SDL_RenderPresent(pRenderer1);
-#endif
 }
 
-void CloseSDLDisplay(){
-#ifndef SDL_NO_DISPLAY
+void oh_display_close(){
     SDL_Quit();
-#endif
-}
-int SDL_GetTime() {
-    return SDL_GetTicks() - ticksSDL;
-}
-
-// Frame rate managment
-void initFramerate_SDL() {
-    SDL_initFramerate(&fpsm);
-}
-
-void setFramerate_SDL(float rate) {
-    if (SDL_setFramerate(&fpsm,rate) < 0) {
-        printf("SDL_glx: Couldn't set frame rate\n");
-        SDL_Quit();
-        exit(0);
-    }
-}
-
-void framerateDelay_SDL() {
-    if (SDL_framerateDelay(&fpsm) < 0) {
-        printf("SDL_glx: Couldn't set frame rate delay\n");
-        SDL_Quit();
-        exit(0);
-    }
 }

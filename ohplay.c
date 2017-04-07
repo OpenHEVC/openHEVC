@@ -1,91 +1,98 @@
-//
-//  main.c
-//  libavHEVC
-//
-//  Created by Mickaël Raulet on 11/10/12.
-//
-//
-#include "libopenhevc/openhevc.h"
-#include "main_hm/getopt.h"
-#include <libavformat/avformat.h>
-#include "main_hm/sdl_wrapper.h"
+/*
+ * Copyright (c) 2017, IETR/INSA of Rennes
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the IETR/INSA of Rennes nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
+#include "libopenhevc/openhevc.h"
+#include <libavformat/avformat.h>
 #include <SDL/SDL_events.h>
 
-//#define TIME2
+#define CONFIG_OPENCL 0
+#define CONFIG_AVDEVICE 0
+#include "cmdutils.h"
 
-#ifdef TIME2
-#ifdef WIN32
-#include <Windows.h>
-#else
-#include <sys/time.h>
-//#include <ctime>
-#endif
+#include "config.h"
+#include "libavutil/opt.h"
+#include "ohplay_utils/ohdisplay_wrapper.h"
+#include "ohplay_utils/ohtimer_wrapper.h"
 
+const char program_name[] = "ohplay";
+const int program_birth_year = 2003;
 
-/* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
- * windows and linux. */
+/* options specified by the user */
+static char *program;
+static int h264_flags;
+static int no_md5;
+static int thread_type;
+static char *input_file;
+static char *enhance_file;
+static char no_display;
+static char *output_file;
+static int nb_pthreads;
+static int temporal_layer_id;
+static int quality_layer_id;
+static int num_frames;
+static float frame_rate;
 
-static unsigned long int GetTimeMs64()
+static const OptionDef options[] = {
+	{ "h", OPT_EXIT, {.func_arg = show_help}, "show help" },
+	{ "-help", OPT_EXIT, {.func_arg = show_help}, "show help" },
+    { "c", OPT_BOOL, { &no_md5 }, "no check md5" },
+    { "f", HAS_ARG | OPT_INT, { &thread_type }, "1-frame, 2-slice, 4-frameslice", "thread type" },
+    { "i", HAS_ARG | OPT_STRING, { &input_file }, "Input file", "file" },
+    { "n", OPT_BOOL, { &no_display }, "no display" },
+    { "o", HAS_ARG | OPT_STRING, { &output_file }, "Output file", "file" },
+    { "p", HAS_ARG | OPT_INT, { &nb_pthreads }, "Pthreads number", "n" },
+    { "t", HAS_ARG | OPT_INT, { &temporal_layer_id }, "Temporal layer id", "id" },
+    { "l", HAS_ARG | OPT_INT, { &quality_layer_id }, "Quality layer id", "id" },
+    { "s", HAS_ARG | OPT_INT, { &num_frames }, "Stop after \"n\" frames", "n" },
+    { "r", HAS_ARG | OPT_FLOAT, { &frame_rate }, "Frame rate (FPS)", "n"},
+    { "v", OPT_BOOL, { &h264_flags }, "Input is a h264 bitstream" },
+    { "e", HAS_ARG | OPT_STRING, { &enhance_file }, "Enhanced layer file (with AVC base)", "file" },
+    { NULL, },
+};
+
+static void show_usage(void)
 {
-#ifdef WIN32
-    /* Windows */
-    FILETIME ft;
-    LARGE_INTEGER li;
-    
-    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
-     * to a LARGE_INTEGER structure. */
-    GetSystemTimeAsFileTime(&ft);
-    li.LowPart = ft.dwLowDateTime;
-    li.HighPart = ft.dwHighDateTime;
-    
-    uint64_t ret = li.QuadPart;
-    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
-    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
-    
-    return ret;
-#else
-    /* Linux */
-    struct timeval tv;
-    
-    gettimeofday(&tv, NULL);
-    
-    unsigned long int ret = tv.tv_usec;
-    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
-    //ret /= 1000;
-    
-    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
-    ret += (tv.tv_sec * 1000000);
-    
-    return ret;
-#endif
+    av_log(NULL, AV_LOG_INFO, "OpenHEVC player\n");
+    av_log(NULL, AV_LOG_INFO, "usage: %s [options] -i input_file\n", program_name);
+    av_log(NULL, AV_LOG_INFO, "\n");
 }
-#endif
 
-//typedef struct OHContext {
-//    AVCodec *codec;
-//    AVCodecContext *c;
-//    AVFrame *picture;
-//    AVPacket avpkt;
-//    AVCodecParserContext *parser;
-//} OHContext;
+void show_help_default(const char *opt, const char *arg)
+{
+    av_log_set_callback(log_callback_help);
+    show_usage();
+    show_help_options(options, "Main options:", 0, OPT_EXPERT, 0);
+    show_help_options(options, "Advanced options:", OPT_EXPERT, 0, 0);
+}
 
 
-int h264_flags;
-int check_md5_flags;
-int thread_type;
-char *input_file;
-char *enhance_file;
-char display_flags;
-char *output_file;
-int nb_pthreads;
-int temporal_layer_id;
-int quality_layer_id;
-int no_cropping;
-int num_frames;
-float frame_rate;
-
-static void video_decode_example(const char *filename,const char *enh_filename)
+static void video_decode(const char *filename,const char *enh_filename)
 {
     AVFormatContext *avfctx[2];
     AVPacket        *avpkt[2];
@@ -109,9 +116,6 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     int i= 0;
     int got_picture;
     float time  = 0.0;
-#ifdef TIME2
-    long unsigned int time_us = 0;
-#endif
     int video_stream_idx;
     char output_file2[256];
 
@@ -184,7 +188,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     }
     // OpenHEVC option settings
     oh_set_log_level(oh_hdl, OHEVC_LOG_INFO);
-    oh_enable_sei_checksum(oh_hdl, check_md5_flags);
+    oh_enable_sei_checksum(oh_hdl, !no_md5);
 
     // OpenHEVC decoder start
     oh_start(oh_hdl);
@@ -194,27 +198,19 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     oh_select_active_layer(oh_hdl, quality_layer_id);
     oh_select_view_layer(oh_hdl, quality_layer_id);
 
-#if USE_SDL
 
-    Init_Time();
-    if (frame_rate > 0) {
-        initFramerate_SDL();
-        setFramerate_SDL(frame_rate);
+    if (!no_display) {
+        oh_display_init(0, 1920, 1080);
     }
-#endif
-#ifdef TIME2
-    time_us = GetTimeMs64();
-#endif
 
-#if USE_SDL
-    if (display_flags == ENABLE) {
-        Init_SDL(0, 1920, 1080);
-    }
-#endif
+    oh_timer_init();
+    if(frame_rate > 0)
+    	oh_timer_setFPS(frame_rate);
+
     /* Main loop
      * */
     while(!stop) {
-        oh_event event_code = IsCloseWindowEvent();
+        OHEvent event_code = oh_display_getWindowEvent();
         if (event_code == OH_QUIT)
             break;
         else if (event_code == OH_LAYER0 || event_code == OH_LAYER1) {
@@ -279,18 +275,18 @@ static void video_decode_example(const char *filename,const char *enh_filename)
                         oh_framecpy.data_cr = calloc (oh_framecpy.frame_par.linesize_cr * oh_framecpy.frame_par.height >> chroma_format, sizeof(unsigned char));
 					}
                 }
-#if USE_SDL
-                if (frame_rate > 0) {
-                    framerateDelay_SDL();
-                }
 
-                if (display_flags == ENABLE) {
-                    oh_output_update(oh_hdl, 1, &oh_frame);
-                    //oh_frameinfo_update(oh_hdl, &oh_frame.frame_par);
-                    SDL_Display((oh_frame.frame_par.linesize_y - oh_frame.frame_par.width)>>1, oh_frame.frame_par.width, oh_frame.frame_par.height,
-                                (uint8_t *)oh_frame.data_y_p, (uint8_t *)oh_frame.data_cb_p, (uint8_t *)oh_frame.data_cr_p);
-                }
-#endif
+				if (frame_rate > 0) {
+					oh_timer_delay();
+				}
+
+				if (!no_display) {
+					oh_output_update(oh_hdl, 1, &oh_frame);
+					//oh_frameinfo_update(oh_hdl, &oh_frame.frame_par);
+					oh_display_display((oh_frame.frame_par.linesize_y - oh_frame.frame_par.width)>>1, oh_frame.frame_par.width, oh_frame.frame_par.height,
+								(uint8_t *)oh_frame.data_y_p, (uint8_t *)oh_frame.data_cb_p, (uint8_t *)oh_frame.data_cr_p);
+				}
+
 				if (fout) {
                     int format = oh_framecpy.frame_par.chromat_format == OH_YUV420 ? 1 : 0;
                     oh_output_cpy(oh_hdl, 1, &oh_framecpy);
@@ -324,13 +320,11 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 			}
         }
     } //End of main loop
-#if USE_SDL
-    time = SDL_GetTime()/1000.0;
-#ifdef TIME2
-    time_us = GetTimeMs64() - time_us;
-#endif
-    CloseSDLDisplay();
-#endif
+
+
+    time = oh_timer_getTimeMs()/1000.0;
+    oh_display_close();
+
     if (fout) {
         fclose(fout);
         if(oh_framecpy.data_y) {
@@ -355,18 +349,36 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     }
 
     oh_close(oh_hdl);
-#if USE_SDL
-#ifdef TIME2
-    printf("frame= %d fps= %.0f time= %ld video_size= %dx%d\n", nbFrame, nbFrame/time, time_us, oh_frame.frame_par.width, oh_frame.frame_par.height);
-#else
     printf("frame= %d fps= %.0f time= %.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, oh_frame.frame_par.width, oh_frame.frame_par.height);
-#endif
-#endif
 }
 
 int main(int argc, char *argv[]) {
-    init_main(argc, argv);
-    video_decode_example(input_file, enhance_file);
+    h264_flags        = 0;
+    no_md5			  = 0;
+    thread_type       = 1;
+    input_file        = NULL;
+    enhance_file 	  = NULL;
+    no_display	      = 0;
+    output_file       = NULL;
+    nb_pthreads       = 1;
+    temporal_layer_id = 7;
+    quality_layer_id  = 0; // Base layer
+    num_frames        = 0;
+    frame_rate        = 0;
+
+    program           = argv[0];
+
+    parse_loglevel(argc, argv, options);
+    av_register_all();
+    avformat_network_init();
+
+    init_opts();
+
+    show_banner(argc, argv, options);
+
+    parse_options(NULL, argc, argv, options, NULL);
+
+    video_decode(input_file, enhance_file);
 
     return 0;
 }

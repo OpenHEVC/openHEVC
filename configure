@@ -150,7 +150,8 @@ External library support:
   --disable-iconv          disable iconv [autodetect]
 
   --enable-opengl          enable OpenGL rendering [no]
-
+  --disable-sdl            disable sdl1.2 [autodetect]
+  --disable-sdl2           disable sdl2 [autodetect]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
 
@@ -1282,6 +1283,7 @@ EXTERNAL_LIBRARY_LIST="
     iconv
     opengl
     sdl
+    sdl2
     videotoolbox
     zlib
 "
@@ -1354,6 +1356,7 @@ CONFIG_LIST="
     thumb
     valgrind_backtrace
     xmm_clobber_test
+    novideo
 "
 
 THREADS_LIST="
@@ -1722,7 +1725,8 @@ HAVE_LIST="
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     perl
     pod2man
-    sdl
+	sdl
+    sdl2
     section_data_rel_ro
     texi2html
     threads
@@ -2120,8 +2124,8 @@ openhevc_select="hevc_decoder hevc_demuxer hevc_parser file_protocol "
 openhevc_suggest="mov_demuxer mpegts_demuxer h264_decoder h264_demuxer h264_parser"
 
 # programs
-ohplay_deps="avformat avcodec avutil openhevc sdl"
-ohplay_libs='$sdl_libs'
+ohplay_deps="avformat avcodec avutil openhevc"
+ohplay_suggest="sdl sdl2"
 
 # documentation
 podpages_deps="perl"
@@ -4830,31 +4834,53 @@ if enabled gcrypt; then
 fi
 
 #TODO check SDL 1.2 and SDL 2
-if ! disabled sdl; then
-    SDL_CONFIG="${cross_prefix}sdl-config"
-    if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
-        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
-        enable sdl
+if ! disabled sdl2; then
+    SDL2_CONFIG="${cross_prefix}sdl2-config"
+    if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
+        check_func SDL_Init $sdl2_libs $sdl2_cflags && enable sdl2
     else
-        if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
-            sdl_cflags=$("${SDL_CONFIG}" --cflags)
-            sdl_libs=$("${SDL_CONFIG}" --libs)
-            check_func_headers SDL_version.h SDL_Linked_Version $sdl_cflags $sdl_libs &&
-            check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-            check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
-            enable sdl
-        elif enabled sdl ; then
-            die "ERROR: SDL not found"
-        else
-            disable sdl
-        fi
+      if "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
+        sdl2_cflags=$("${SDL2_CONFIG}" --cflags)
+        sdl2_libs=$("${SDL2_CONFIG}" --libs)
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
+        check_func SDL_Init $sdl2_libs $sdl2_cflags && enable sdl2
+      fi
     fi
     if test $target_os = "mingw32"; then
-        sdl_libs="$sdl_libs -mconsole"
+        sdl2_libs="$sdl2_libs -mconsole"
     fi
 fi
-enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
+enabled sdl2 && disable sdl && disable novideo && add_cflags $sdl2_cflags && add_extralibs $sdl2_libs
+
+if ! disabled sdl; then
+   SDL_CONFIG="${cross_prefix}sdl-config"
+   if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
+       check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
+       check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
+       enable sdl
+   else
+       if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
+           sdl_cflags=$("${SDL_CONFIG}" --cflags)
+           sdl_libs=$("${SDL_CONFIG}" --libs)
+           check_func_headers SDL_version.h SDL_Linked_Version $sdl1_cflags $sdl1_libs &&
+           check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
+           check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
+           enable sdl
+       elif enabled sdl ; then
+           die "ERROR: SDL not found"
+       else
+           disable sdl
+       fi
+   fi
+   if test $target_os = "mingw32"; then
+       sdl_libs="$sdl1_libs -mconsole"
+   fi
+fi
+enabled sdl && disable novideo && add_cflags $sdl_cflags && add_extralibs $sdl_libs
+disabled sdl && disabled sdl2 && enable novideo
 
 disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
     check_lib2 "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
@@ -5458,7 +5484,8 @@ echo "new filter support        ${avfilter-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
-echo "SDL support               ${sdl-no}"
+echo "SDL  support              ${sdl-no}"
+echo "SDL2 support              ${sdl2-no}"
 echo "opencl enabled            ${opencl-no}"
 echo "JNI support               ${jni-no}"
 echo "texi2html enabled         ${texi2html-no}"

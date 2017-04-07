@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009, IETR/INSA of Rennes
+ * Copyright (c) 2017, IETR/INSA of Rennes
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *   * Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above copyright notice,
@@ -13,7 +13,7 @@
  *   * Neither the name of the IETR/INSA of Rennes nor the names of its
  *     contributors may be used to endorse or promote products derived from this
  *     software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -27,24 +27,22 @@
  * SUCH DAMAGE.
  */
 
-#ifndef GETOPT_H
-#define GETOPT_H
+#ifndef _ohdisplay_wrapper_h
+#define _ohdisplay_wrapper_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+typedef enum OHEvent_t {OH_NOEVENT=0, OH_LAYER0, OH_LAYER1, OH_QUIT, OH_MOUSE} OHEvent;
 
-#define	BADCH	(int)'?'
-#define	BADARG	(int)':'
-#define	EMSG	""
+typedef struct OHMouse{
+    int x;
+    int y;
+    int on;
+}OHMouse;
 
-#define DISABLE 0
-#define ENABLE  1
+int  oh_display_init(int edge, int frame_width, int frame_height);
+void oh_display_display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V);
+void oh_display_close(void);
 
+OHMouse oh_display_getMouseEvent(void);
+OHEvent oh_display_getWindowEvent(void);
 
-// initialize APR and parse command-line options
-void init_main(int argc, char *argv[]);
-void print_usage(void);
-int getopt(int nargc, char * const *nargv, const char *ostr);
-
-#endif
+#endif/* _ohdisplay_wrapper_h */

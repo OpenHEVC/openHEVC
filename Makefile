@@ -38,9 +38,10 @@ ALLAVPROGS_G = $(AVBASENAMES:%=%$(PROGSSUF)_g$(EXESUF))
 #OBJS-ffserver                 += ffserver_config.o
 
 # OpenHEVC Simple Player 
-OBJS-ohplay                   := main_hm/getopt.o
-OBJS-ohplay                   += main_hm/SDL_framerate.o
-OBJS-ohplay                   += main_hm/sdl.o
+OBJS-ohplay-${CONFIG_SDL} += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl.o
+OBJS-ohplay-${CONFIG_SDL2} += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl2.o
+OBJS-ohplay-${CONFIG_NOVIDEO} += ohplay_utils/ohtimer_sys.o ohplay_utils/ohdisplay_none.o
+OBJS-ohplay                   += cmdutils.o
 
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
