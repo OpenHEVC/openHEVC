@@ -45,6 +45,7 @@ typedef struct OpenHevcWrapperContexts {
     int display_layer;
     int set_display;
     int set_vps;
+    int got_picture_mask;
 } OpenHevcWrapperContexts;
 
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
@@ -219,14 +220,27 @@ int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
 
 int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
 {
-    int got_picture[MAX_DECODERS], len=0, i, max_layer;
+    int i, max_layer;
+    int ret = 0;
+    int err = 0;
+
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
-    for(i =0; i < MAX_DECODERS; i++)  {
-        got_picture[i]                 = 0;
+
+    openHevcContexts->got_picture_mask = 0;
+
+    if(openHevcContexts->set_display)
+        max_layer = openHevcContexts->display_layer;
+    else
+        max_layer = openHevcContexts->active_layer;
+
+    for( i = 0; i < MAX_DECODERS; i++)  {
+
+        int got_picture = 0;
+
         openHevcContext                = openHevcContexts->wraper[i];
         openHevcContext->c->quality_id = openHevcContexts->active_layer;
-//        printf("quality_id %d \n", openHevcContext->c->quality_id);
+
         if (i <= openHevcContexts->active_layer) {
             openHevcContext->avpkt.size = au_len;
             openHevcContext->avpkt.data = (uint8_t *) buff;
@@ -235,33 +249,22 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
             openHevcContext->avpkt.data = NULL;
         }
         openHevcContext->avpkt.pts  = pts;
-        len                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
-                                                             &got_picture[i], &openHevcContext->avpkt);
-        if(i+1 < openHevcContexts->nb_decoders)
+        err                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
+                                                             &got_picture, &openHevcContext->avpkt);
+        ret |= (got_picture << i);
+
+        if(i < openHevcContexts->active_layer)
             openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
-    if (len < 0) {
+
+    openHevcContexts->got_picture_mask = ret;
+
+    if (err < 0) {
         fprintf(stderr, "Error while decoding frame \n");
-        return -1;
+        return err;
     }
-    if(openHevcContexts->set_display)
-        max_layer = openHevcContexts->display_layer;
-    else
-        max_layer = openHevcContexts->active_layer;
 
-    for(i=max_layer; i>=0; i--) {
-        if(got_picture[i]){
-            if(i == openHevcContexts->display_layer) {
-                if (i >= 0 && i < openHevcContexts->nb_decoders)
-                    openHevcContexts->display_layer = i;
-                return got_picture[i];
-            }
-         //   fprintf(stderr, "Display layer %d  \n", i);
-
-        }
-
-    }
-    return 0;
+    return ret;
 }
 
 /**
@@ -298,13 +301,14 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
         len                         = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture,
                                                              &got_picture[i], &openHevcContext->avpkt);
 
-        if(i+1 < openHevcContexts->nb_decoders)
+
 
         	//Fixme: This way of passing base layer frame reference to each other is bad and should be corrected
         	//We don't know what the first decoder could be doing with its BL_frame (modifying or deleting it)
         	//A cleanest way to do things would be to handle the h264 decoder from the first decoder, but the main issue
         	//would be finding a way to keep giving AVPacket, to h264 when required until the BL_frames required by HEVC
         	//are decoded and available.
+                if(i < openHevcContexts->active_layer)
            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
     if (len < 0) {
@@ -331,6 +335,10 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
     return 0;
 }
 
+//FIXME: this variable is used as a frame counter in order to synchronize packets from AVC and HEVC frames
+//We don't have a cleaner way of doing things at the moment.
+static int poc_id;
+
 /**
  * Pass the packets to the corresponding decoders and loop over running decoders untill one of them
  * output a got_picture.
@@ -338,17 +346,27 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
  *    -Second one will be HEVC decoder
  *    -Third decoder is ignored since its not supported yet
  */
-static int poc_id;
 int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff, const unsigned char *buff2, int nal_len, int nal_len2, int64_t pts, int64_t pts2)
 {
-    int got_picture[MAX_DECODERS], len=0, i, max_layer, au_len, stop_dec;
+    int i, max_layer;
+    int ret = 0;
+    int err = 0;
+
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
     OpenHevcWrapperContext  *openHevcContext;
+
+    openHevcContexts->got_picture_mask = 0;
+
+    if(openHevcContexts->set_display)
+        max_layer = openHevcContexts->display_layer;
+    else
+        max_layer = openHevcContexts->active_layer;
+
     poc_id++;
     poc_id&=1023;
+
     for(i =0; i < MAX_DECODERS; i++)  {
-        got_picture[i] = 0;
-        len = 0;
+        int got_picture = 0;
         openHevcContext                = openHevcContexts->wraper[i];
         openHevcContext->c->quality_id = openHevcContexts->active_layer;
         if(i==0){
@@ -376,41 +394,31 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
             openHevcContext->avpkt.size = 0;
             openHevcContext->avpkt.data = NULL;
         }
-        //av_log(openHevcContext->c,AV_LOG_ERROR,"PTS DIFF: %d", (int)((int)pts-(int)pts2) );
-        len = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture[i], &openHevcContext->avpkt);
 
-        if(i+1 < openHevcContexts->nb_decoders)
-            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
+        err = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture, &openHevcContext->avpkt);
+
+        ret |= (got_picture << i);
+
         //Fixme: This way of passing base layer frame reference to each other is bad and should be corrected
         //We don't know what the first decoder could be doing with its BL_frame (modifying or deleting it)
         //A cleanest way to do things would be to handle the h264 decoder from the first decoder, but the main issue
         //would be finding a way to keep giving AVPacket, to h264 when required until the BL_frames required by HEVC
         //are decoded and available.
-        if (len < 0) {
-            fprintf(stderr, "Error while decoding frame \n");
-            return -1;
-        }
+
+        openHevcContexts->got_picture_mask = ret;
+
+        if(i < openHevcContexts->active_layer)
+            openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
 
-    if(openHevcContexts->set_display)
-            max_layer = openHevcContexts->display_layer;
-        else
-            max_layer = openHevcContexts->active_layer;
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error while decoding frame %d", err);
+        return err;
+    }
 
-        for(i=max_layer; i>=0; i--) {
-            if(got_picture[i]){
-                if(i == openHevcContexts->display_layer) {
-                    if (i >= 0 && i < openHevcContexts->nb_decoders)
-                        openHevcContexts->display_layer = i;
-                    return got_picture[i];
-                }
-             //   fprintf(stderr, "Display layer %d  \n", i);
-
-            }
-
-        }
-    return 0;
+    return ret;
 }
+
 
 
 void libOpenHevcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *extra_data, int extra_size_alloc)
@@ -450,213 +458,290 @@ void libOpenShvcCopyExtraData(OpenHevc_Handle openHevcHandle, unsigned char *ext
 	}
 }
 
+static int get_picture_bitdepth(int format){
+
+    switch (format) {
+        case AV_PIX_FMT_YUV420P   :
+        case AV_PIX_FMT_YUV422P   :
+        case AV_PIX_FMT_YUV444P   :
+            return  8;
+        case AV_PIX_FMT_YUV420P9  :
+        case AV_PIX_FMT_YUV422P9  :
+        case AV_PIX_FMT_YUV444P9  :
+            return  9;
+        case AV_PIX_FMT_YUV420P10 :
+        case AV_PIX_FMT_YUV422P10 :
+        case AV_PIX_FMT_YUV444P10 :
+            return  10;
+        case AV_PIX_FMT_YUV420P12 :
+        case AV_PIX_FMT_YUV422P12 :
+            return  12;
+        default :
+            return  8;
+    }
+}
+
+static int get_chroma_format(int format){
+
+    switch (format) {
+        case AV_PIX_FMT_YUV420P   :
+        case AV_PIX_FMT_YUV420P9  :
+        case AV_PIX_FMT_YUV420P10 :
+        case AV_PIX_FMT_YUV420P12 :
+            return  YUV420;
+        case AV_PIX_FMT_YUV422P   :
+        case AV_PIX_FMT_YUV422P9  :
+        case AV_PIX_FMT_YUV422P10 :
+        case AV_PIX_FMT_YUV422P12 :
+            return  YUV422;
+        case AV_PIX_FMT_YUV444P   :
+        case AV_PIX_FMT_YUV444P9  :
+        case AV_PIX_FMT_YUV444P10 :
+        case AV_PIX_FMT_YUV444P12 :
+            return YUV444;
+        default :
+            return UNKNOWN_CHROMA_FORMAT;
+    }
+}
+
+static void get_cropped_picture_size_info(AVFrame *picture, OpenHevc_FrameInfo *openHevcFrameInfo){
+    switch (picture->format) {
+    case AV_PIX_FMT_YUV420P   :
+        openHevcFrameInfo->chromat_format = YUV420;
+        openHevcFrameInfo->nYPitch    = picture->width;
+        openHevcFrameInfo->nUPitch    = picture->width >> 1;
+        openHevcFrameInfo->nVPitch    = picture->width >> 1;
+        break;
+    case AV_PIX_FMT_YUV420P9  :
+    case AV_PIX_FMT_YUV420P10 :
+    case AV_PIX_FMT_YUV420P12 :
+        openHevcFrameInfo->chromat_format = YUV420;
+        openHevcFrameInfo->nYPitch    = picture->width << 1;
+        openHevcFrameInfo->nUPitch    = picture->width;
+        openHevcFrameInfo->nVPitch    = picture->width;
+        break;
+    case AV_PIX_FMT_YUV422P   :
+        openHevcFrameInfo->chromat_format = YUV422;
+        openHevcFrameInfo->nYPitch    = picture->width;
+        openHevcFrameInfo->nUPitch    = picture->width >> 1;
+        openHevcFrameInfo->nVPitch    = picture->width >> 1;
+        break;
+    case AV_PIX_FMT_YUV422P9  :
+    case AV_PIX_FMT_YUV422P10 :
+    case AV_PIX_FMT_YUV422P12 :
+        openHevcFrameInfo->chromat_format = YUV422;
+        openHevcFrameInfo->nYPitch    = picture->width << 1;
+        openHevcFrameInfo->nUPitch    = picture->width;
+        openHevcFrameInfo->nVPitch    = picture->width;
+        break;
+    case AV_PIX_FMT_YUV444P   :
+        openHevcFrameInfo->chromat_format = YUV444;
+        openHevcFrameInfo->nYPitch    = picture->width;
+        openHevcFrameInfo->nUPitch    = picture->width;
+        openHevcFrameInfo->nVPitch    = picture->width;
+        break;
+    case AV_PIX_FMT_YUV444P9  :
+    case AV_PIX_FMT_YUV444P10 :
+    case AV_PIX_FMT_YUV444P12 :
+        openHevcFrameInfo->chromat_format = YUV444;
+        openHevcFrameInfo->nYPitch    = picture->width << 1;
+        openHevcFrameInfo->nUPitch    = picture->width << 1;
+        openHevcFrameInfo->nVPitch    = picture->width << 1;
+        break;
+    default :
+        openHevcFrameInfo->chromat_format = YUV420;
+        openHevcFrameInfo->nYPitch    = picture->width;
+        openHevcFrameInfo->nUPitch    = picture->width >> 1;
+        openHevcFrameInfo->nVPitch    = picture->width >> 1;
+        break;
+    }
+}
+
+int oh_get_picture_params_from_layer(OpenHevc_Handle openHevcHandle, unsigned int layer_id, OpenHevc_FrameInfo *openHevcFrameInfo){
+
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+
+    int got_picture = openHevcContexts->got_picture_mask & (1 << layer_id);
+
+    if (got_picture){
+
+        OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[layer_id];
+        AVFrame                 *picture          = openHevcContext->picture;
+
+        openHevcFrameInfo->nYPitch    = picture->linesize[0];
+        openHevcFrameInfo->nUPitch    = picture->linesize[1];
+        openHevcFrameInfo->nVPitch    = picture->linesize[2];
+
+        openHevcFrameInfo->chromat_format = get_chroma_format(picture->format);
+        openHevcFrameInfo->nBitDepth      = get_picture_bitdepth(picture->format);
+
+        openHevcFrameInfo->nWidth                  = picture->width;
+        openHevcFrameInfo->nHeight                 = picture->height;
+        openHevcFrameInfo->sample_aspect_ratio.num = picture->sample_aspect_ratio.num;
+        openHevcFrameInfo->sample_aspect_ratio.den = picture->sample_aspect_ratio.den;
+        openHevcFrameInfo->frameRate.num           = openHevcContext->c->time_base.den;
+        openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
+        openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
+        openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
+        openHevcFrameInfo->nTimeStamp              = picture->pts;
+
+        return got_picture;
+    }
+    av_log(NULL,AV_LOG_DEBUG,"Could not get parameters for picture in layer %d , no such a picture\n",layer_id);
+    return 0;
+}
 
 void libOpenHevcGetPictureInfo(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[openHevcContexts->display_layer];
-    AVFrame                 *picture          = openHevcContext->picture;
 
-    openHevcFrameInfo->nYPitch    = picture->linesize[0];
+    unsigned int layer_id = openHevcContexts->display_layer;
 
-    switch (picture->format) {
-        case AV_PIX_FMT_YUV420P   :
-        case AV_PIX_FMT_YUV420P9  :
-        case AV_PIX_FMT_YUV420P10 :
-        case AV_PIX_FMT_YUV420P12 :
-            openHevcFrameInfo->nUPitch    = picture->linesize[1];
-            openHevcFrameInfo->nVPitch    = picture->linesize[2];
-            openHevcFrameInfo->chromat_format = YUV420;
+    while (layer_id >= 0) {
+        if (oh_get_picture_params_from_layer(openHevcHandle, layer_id, openHevcFrameInfo))
             break;
-        case AV_PIX_FMT_YUV422P   :
-        case AV_PIX_FMT_YUV422P9  :
-        case AV_PIX_FMT_YUV422P10 :
-        case AV_PIX_FMT_YUV422P12 :
-            openHevcFrameInfo->nUPitch    = picture->linesize[1];
-            openHevcFrameInfo->nVPitch    = picture->linesize[2];
-            openHevcFrameInfo->chromat_format = YUV422;
-            break;
-        case AV_PIX_FMT_YUV444P   :
-        case AV_PIX_FMT_YUV444P9  :
-        case AV_PIX_FMT_YUV444P10 :
-        case AV_PIX_FMT_YUV444P12 :
-            openHevcFrameInfo->nUPitch    = picture->linesize[1];
-            openHevcFrameInfo->nVPitch    = picture->linesize[2];
-            openHevcFrameInfo->chromat_format = YUV444;
-            break;
-        default :
-            openHevcFrameInfo->nUPitch    = picture->linesize[1];
-            openHevcFrameInfo->nVPitch    = picture->linesize[2];
-            break;
+        --layer_id;
+        av_log(NULL,AV_LOG_DEBUG,"Trying a lower layer_id %d\n",layer_id);
     }
+}
 
-    switch (picture->format) {
-        case AV_PIX_FMT_YUV420P   :
-        case AV_PIX_FMT_YUV422P   :
-        case AV_PIX_FMT_YUV444P   :
-            openHevcFrameInfo->nBitDepth  =  8;
-            break;
-        case AV_PIX_FMT_YUV420P9  :
-        case AV_PIX_FMT_YUV422P9  :
-        case AV_PIX_FMT_YUV444P9  :
-            openHevcFrameInfo->nBitDepth  =  9;
-            break;
-        case AV_PIX_FMT_YUV420P10 :
-        case AV_PIX_FMT_YUV422P10 :
-        case AV_PIX_FMT_YUV444P10 :
-            openHevcFrameInfo->nBitDepth  = 10;
-            break;
-        case AV_PIX_FMT_YUV420P12 :
-        case AV_PIX_FMT_YUV422P12 :
-        case AV_PIX_FMT_YUV444P12 :
-            openHevcFrameInfo->nBitDepth  = 12;
-            break;
-        default               : openHevcFrameInfo->nBitDepth   =  8; break;
+
+
+
+
+int oh_get_cropped_picture_params_from_layer(OpenHevc_Handle openHevcHandle, unsigned int layer_id, OpenHevc_FrameInfo *openHevcFrameInfo)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+
+    unsigned int got_picture = openHevcContexts->got_picture_mask & (1 << layer_id);
+
+    if (got_picture){
+        OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[layer_id];
+        AVFrame                 *picture          = openHevcContext->picture;
+
+        get_cropped_picture_size_info(picture,openHevcFrameInfo);
+
+        openHevcFrameInfo->chromat_format = get_chroma_format(picture->format);
+
+        openHevcFrameInfo->nBitDepth = get_picture_bitdepth(picture->format);
+
+        openHevcFrameInfo->nWidth                  = picture->width;
+        openHevcFrameInfo->nHeight                 = picture->height;
+        openHevcFrameInfo->sample_aspect_ratio.num = picture->sample_aspect_ratio.num;
+        openHevcFrameInfo->sample_aspect_ratio.den = picture->sample_aspect_ratio.den;
+        openHevcFrameInfo->frameRate.num           = openHevcContext->c->time_base.den;
+        openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
+        openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
+        openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
+        openHevcFrameInfo->nTimeStamp              = picture->pts;
+        return got_picture;
     }
+    av_log(NULL,AV_LOG_DEBUG,"Could not get cropped parameters for picture in layer %d , no such a picture\n",layer_id);
+    return 0;
 
-    openHevcFrameInfo->nWidth                  = picture->width;
-    openHevcFrameInfo->nHeight                 = picture->height;
-    openHevcFrameInfo->sample_aspect_ratio.num = picture->sample_aspect_ratio.num;
-    openHevcFrameInfo->sample_aspect_ratio.den = picture->sample_aspect_ratio.den;
-    openHevcFrameInfo->frameRate.num           = openHevcContext->c->time_base.den;
-    openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
-    openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
-    openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
-    openHevcFrameInfo->nTimeStamp              = picture->pts;
 }
 
 void libOpenHevcGetPictureInfoCpy(OpenHevc_Handle openHevcHandle, OpenHevc_FrameInfo *openHevcFrameInfo)
 {
-
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[openHevcContexts->display_layer];
-    AVFrame                 *picture          = openHevcContext->picture;
 
-    switch (picture->format) {
-        case AV_PIX_FMT_YUV420P   :
-            openHevcFrameInfo->chromat_format = YUV420;
-            openHevcFrameInfo->nYPitch    = picture->width;
-            openHevcFrameInfo->nUPitch    = picture->width >> 1;
-            openHevcFrameInfo->nVPitch    = picture->width >> 1;
+    int layer_id = openHevcContexts->display_layer;
+
+    while (layer_id >= 0) {
+        if(oh_get_cropped_picture_params_from_layer(openHevcHandle, layer_id ,openHevcFrameInfo))
             break;
-        case AV_PIX_FMT_YUV420P9  :
-        case AV_PIX_FMT_YUV420P10 :
-        case AV_PIX_FMT_YUV420P12 :
-            openHevcFrameInfo->chromat_format = YUV420;
-            openHevcFrameInfo->nYPitch    = picture->width << 1;
-            openHevcFrameInfo->nUPitch    = picture->width;
-            openHevcFrameInfo->nVPitch    = picture->width;
-            break;
-        case AV_PIX_FMT_YUV422P   :
-            openHevcFrameInfo->chromat_format = YUV422;
-            openHevcFrameInfo->nYPitch    = picture->width;
-            openHevcFrameInfo->nUPitch    = picture->width >> 1;
-            openHevcFrameInfo->nVPitch    = picture->width >> 1;
-            break;
-        case AV_PIX_FMT_YUV422P9  :
-        case AV_PIX_FMT_YUV422P10 :
-        case AV_PIX_FMT_YUV422P12 :
-            openHevcFrameInfo->chromat_format = YUV422;
-            openHevcFrameInfo->nYPitch    = picture->width << 1;
-            openHevcFrameInfo->nUPitch    = picture->width;
-            openHevcFrameInfo->nVPitch    = picture->width;
-            break;
-        case AV_PIX_FMT_YUV444P   :
-            openHevcFrameInfo->chromat_format = YUV444;
-            openHevcFrameInfo->nYPitch    = picture->width;
-            openHevcFrameInfo->nUPitch    = picture->width;
-            openHevcFrameInfo->nVPitch    = picture->width;
-            break;
-        case AV_PIX_FMT_YUV444P9  :
-        case AV_PIX_FMT_YUV444P10 :
-        case AV_PIX_FMT_YUV444P12 :
-            openHevcFrameInfo->chromat_format = YUV444;
-            openHevcFrameInfo->nYPitch    = picture->width << 1;
-            openHevcFrameInfo->nUPitch    = picture->width << 1;
-            openHevcFrameInfo->nVPitch    = picture->width << 1;
-            break;
-        default :
-            openHevcFrameInfo->chromat_format = YUV420;
-            openHevcFrameInfo->nYPitch    = picture->width;
-            openHevcFrameInfo->nUPitch    = picture->width >> 1;
-            openHevcFrameInfo->nVPitch    = picture->width >> 1;
-            break;
+        --layer_id;
+        av_log(NULL,AV_LOG_DEBUG,"Trying a lower layer_id %d \n",layer_id);
     }
+}
 
-    switch (picture->format) {
-        case AV_PIX_FMT_YUV420P   :
-        case AV_PIX_FMT_YUV422P   :
-        case AV_PIX_FMT_YUV444P   :
-            openHevcFrameInfo->nBitDepth  =  8;
-            break;
-        case AV_PIX_FMT_YUV420P9  :
-        case AV_PIX_FMT_YUV422P9  :
-        case AV_PIX_FMT_YUV444P9  :
-            openHevcFrameInfo->nBitDepth  =  9;
-            break;
-        case AV_PIX_FMT_YUV420P10 :
-        case AV_PIX_FMT_YUV422P10 :
-        case AV_PIX_FMT_YUV444P10 :
-            openHevcFrameInfo->nBitDepth  = 10;
-            break;
-        case AV_PIX_FMT_YUV420P12 :
-        case AV_PIX_FMT_YUV422P12 :
-        case AV_PIX_FMT_YUV444P12 :
-            openHevcFrameInfo->nBitDepth  = 12;
-            break;
-        default               : openHevcFrameInfo->nBitDepth   =  8; break;
+
+int oh_get_output_picture_from_layer(OpenHevc_Handle openHevcHandle, int layer_id, OpenHevc_Frame *openHevcFrame)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+
+    int got_picture = openHevcContexts->got_picture_mask & (1 << layer_id);
+
+    if (got_picture){
+
+        OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[layer_id];
+
+        openHevcFrame->pvY       = (void *) openHevcContext->picture->data[0];
+        openHevcFrame->pvU       = (void *) openHevcContext->picture->data[1];
+        openHevcFrame->pvV       = (void *) openHevcContext->picture->data[2];
+
+        if(oh_get_picture_params_from_layer(openHevcHandle, layer_id, &openHevcFrame->frameInfo));
+           return got_picture;
     }
+    av_log(NULL, AV_LOG_DEBUG, "No frame found in output while trying to get picture from layer %d\n ", layer_id);
+    return 0;
+}
 
-    openHevcFrameInfo->nWidth                  = picture->width;
-    openHevcFrameInfo->nHeight                 = picture->height;
-    openHevcFrameInfo->sample_aspect_ratio.num = picture->sample_aspect_ratio.num;
-    openHevcFrameInfo->sample_aspect_ratio.den = picture->sample_aspect_ratio.den;
-    openHevcFrameInfo->frameRate.num           = openHevcContext->c->time_base.den;
-    openHevcFrameInfo->frameRate.den           = openHevcContext->c->time_base.num;
-    openHevcFrameInfo->display_picture_number  = picture->display_picture_number;
-    openHevcFrameInfo->flag                    = (picture->top_field_first << 2) | picture->interlaced_frame; //progressive, interlaced, interlaced bottom field first, interlaced top field first.
-    openHevcFrameInfo->nTimeStamp              = picture->pts;
+int oh_get_output_picture(OpenHevc_Handle openHevcHandle, OpenHevc_Frame *openHevcFrame)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+
+    int layer_id =  openHevcContexts->display_layer;
+
+    while (layer_id >= 0) {
+        if(oh_get_output_picture_from_layer(openHevcHandle, layer_id, openHevcFrame))
+            return 1;
+        --layer_id;
+        av_log(NULL,AV_LOG_DEBUG,"Trying a lower layer_id %d \n",layer_id);
+    }
+    return 0;
 }
 
 int libOpenHevcGetOutput(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame *openHevcFrame)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[openHevcContexts->display_layer];
+    int ret = 0;
 
-    if (got_picture) {
-        openHevcFrame->pvY       = (void *) openHevcContext->picture->data[0];
-        openHevcFrame->pvU       = (void *) openHevcContext->picture->data[1];
-        openHevcFrame->pvV       = (void *) openHevcContext->picture->data[2];
+    int layer_id =  openHevcContexts->display_layer;
 
-        libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame->frameInfo);
+    if (got_picture){
+        while (layer_id >= 0) {
+           if (ret = oh_get_output_picture_from_layer(openHevcHandle, layer_id, openHevcFrame))
+               return ret;
+
+        --layer_id;
+        av_log(NULL,AV_LOG_DEBUG,"Trying a lower layer_id for output %d \n",layer_id);
+        }
+
     }
-    return 1;
+    return 0;
 }
 
-int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame_cpy *openHevcFrame)
+int oh_get__cropped_picture_copy_from_layer(OpenHevc_Handle openHevcHandle, int layer_id, OpenHevc_Frame_cpy *openHevcFrame)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
-    OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[openHevcContexts->display_layer];
 
-    int y;
-    int y_offset, y_offset2;
-    if( got_picture ) {
-        unsigned char *Y = (unsigned char *) openHevcFrame->pvY;
-        unsigned char *U = (unsigned char *) openHevcFrame->pvU;
-        unsigned char *V = (unsigned char *) openHevcFrame->pvV;
+    int got_picture = openHevcContexts->got_picture_mask & (1 << layer_id);
+
+    if (got_picture){
+
+        OpenHevcWrapperContext  *openHevcContext  = openHevcContexts->wraper[layer_id];
+
+        int y;
+        int y_offset, y_offset2;
         int height, format;
+
         int src_stride;
         int dst_stride;
         int src_stride_c;
         int dst_stride_c;
 
-        libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame->frameInfo);
+        unsigned char *Y = (unsigned char *) openHevcFrame->pvY;
+        unsigned char *U = (unsigned char *) openHevcFrame->pvU;
+        unsigned char *V = (unsigned char *) openHevcFrame->pvV;
+
+        oh_get_picture_params_from_layer(openHevcHandle,layer_id, &openHevcFrame->frameInfo);
         format = openHevcFrame->frameInfo.chromat_format == YUV420 ? 1 : 0;
         src_stride = openHevcFrame->frameInfo.nYPitch;
         src_stride_c = openHevcFrame->frameInfo.nUPitch;
         height = openHevcFrame->frameInfo.nHeight;
 
-        libOpenHevcGetPictureInfoCpy(openHevcHandle, &openHevcFrame->frameInfo);
+        oh_get_cropped_picture_params_from_layer(openHevcHandle,layer_id, &openHevcFrame->frameInfo);
         dst_stride = openHevcFrame->frameInfo.nYPitch;
         dst_stride_c = openHevcFrame->frameInfo.nUPitch;
 
@@ -670,14 +755,51 @@ int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, Ope
 
         y_offset = y_offset2 = 0;
 
-        for (y = 0; y < height >> format; y++) {
+        for (y = 0; y < (height >> format); y++) {
             memcpy(&U[y_offset2], &openHevcContext->picture->data[1][y_offset], dst_stride_c);
             memcpy(&V[y_offset2], &openHevcContext->picture->data[2][y_offset], dst_stride_c);
             y_offset  += src_stride_c;
             y_offset2 += dst_stride_c;
         }
+        return got_picture;
+    } else {
+        av_log(NULL,AV_LOG_DEBUG,"No picture found for copy in layer %d\n",layer_id);
+        return 0;
     }
-    return 1;
+}
+
+int oh_get_cropped_picture_copy(OpenHevc_Handle openHevcHandle, OpenHevc_Frame_cpy *openHevcFrame)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+
+    int layer_id =  openHevcContexts->display_layer;
+    int ret = 0;
+
+    while (layer_id >= 0) {
+        if (ret = oh_get__cropped_picture_copy_from_layer(openHevcHandle,layer_id,openHevcFrame))
+            return ret;
+
+        --layer_id;
+        av_log(NULL,AV_LOG_DEBUG,"Trying a lower layer_id for copy %d \n",layer_id);
+    }
+    return 0;
+}
+
+int libOpenHevcGetOutputCpy(OpenHevc_Handle openHevcHandle, int got_picture, OpenHevc_Frame_cpy *openHevcFrame)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+
+    int layer_id =  openHevcContexts->display_layer;
+    int ret = 0;
+    if (got_picture){
+        while (layer_id >= 0) {
+            if (ret = oh_get__cropped_picture_copy_from_layer(openHevcHandle,layer_id,openHevcFrame))
+                return ret;
+            --layer_id;
+            av_log(NULL,AV_LOG_DEBUG,"Trying a lower layer_id for copy %d \n",layer_id);
+        }
+    }
+    return 0;
 }
 
 void libOpenHevcSetDebugMode(OpenHevc_Handle openHevcHandle, OHEVC_LogLevel val)
