@@ -185,7 +185,6 @@ elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686")
 endif()
 
 add_definitions("-DPIC")
-add_definitions("-DUSE_SDL")
 add_definitions("-DHAVE_AV_CONFIG_H")
 AddCompilerFlag("-fpic" C_FLAGS Vc_ARCHITECTURE_FLAGS)
 AddCompilerFlag("-fno-tree-vectorize" C_FLAGS Vc_ARCHITECTURE_FLAGS)
@@ -199,6 +198,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
 #find_package(CRYPTOPP_FOUND)
 find_package(SDL)
 find_package(SDL2)
+find_package(Threads)
 
 set(libfilenames
 # libavutil
@@ -519,8 +519,8 @@ if(ENABLE_EXECUTABLE)
 
     set(LINK_LIBRARIES_LIST LibOpenHevcWrapper)
     set(HEVC_SOURCES_FILES
-        main_hm/getopt.c
-        main_hm/main.c
+        cmdutils.c
+        ohplay_utils/main.c
     )
     if(MINGW)
         list(APPEND LINK_LIBRARIES_LIST -lwinmm)
@@ -528,24 +528,28 @@ if(ENABLE_EXECUTABLE)
 
     if(SDL_FOUND)
         # Build executable
-        add_executable(hevc ${HEVC_SOURCES_FILES} main_hm/sdl.c main_hm/SDL_framerate.c)
+        add_executable(hevc ${HEVC_SOURCES_FILES} ohplay_utils/ohdisplay_sdl.c ohplay_utils/ohtimer_sdl.c)
         # Link executable
         target_link_libraries(hevc ${LINK_LIBRARIES_LIST} ${SDL_LIBRARY})
         # Set include directory specific for this file. Avoid conflicts when including SDL.h
         # if both SDL and SDL2 are installed
-        set_source_files_properties(main_hm/sdl.c main_hm/SDL_framerate.c PROPERTIES COMPILE_FLAGS -I"${SDL_INCLUDE_DIR}")
+        set_source_files_properties(ohplay_utils/ohdisplay_sdl.c ohplay_utils/ohtimer_sdl.c PROPERTIES COMPILE_FLAGS -I"${SDL_INCLUDE_DIR}")
     endif()
 
     if(SDL2_FOUND)
         # Build executable
-        add_executable(hevc_sdl2 ${HEVC_SOURCES_FILES} main_hm/sdl2.c main_hm/SDL_framerate.c)
+        add_executable(hevc_sdl2 ${HEVC_SOURCES_FILES} ohplay_utils/ohdisplay_sdl2.c ohplay_utils/ohtimer_sdl.c)
         # Link executable
         target_link_libraries(hevc_sdl2 ${LINK_LIBRARIES_LIST} ${SDL2_LIBRARY})
         # Set include directory specific for this file. Avoid conflicts when including SDL.h
         # if both SDL and SDL2 are installed
-        set_source_files_properties(main_hm/sdl2.c main_hm/SDL_framerate.c PROPERTIES COMPILE_FLAGS -I"${SDL2_INCLUDE_DIR}")
+        set_source_files_properties(ohplay_utils/ohdisplay_sdl2.c ohplay_utils/ohtimer_sdl.c PROPERTIES COMPILE_FLAGS -I"${SDL2_INCLUDE_DIR}")
     endif()
-
+    
+	# Build executable
+    add_executable(hevc_nodisplay ${HEVC_SOURCES_FILES} ohplay_utils/ohdisplay_none.c ohplay_utils/ohtimer_sys.c)
+    # Link executable
+    target_link_libraries(hevc_nodisplay ${LINK_LIBRARIES_LIST} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 install(FILES

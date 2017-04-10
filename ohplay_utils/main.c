@@ -1,80 +1,92 @@
-//
-//  main.c
-//  libavHEVC
-//
-//  Created by Mickaël Raulet on 11/10/12.
-//
-//
+/*
+ * Copyright (c) 2017, IETR/INSA of Rennes
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the IETR/INSA of Rennes nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
 #include "openHevcWrapper.h"
-#include "getopt.h"
 #include <libavformat/avformat.h>
 
-#include "ohdisplay_wrapper.h"
+#define CONFIG_OPENCL 0
+#define CONFIG_AVDEVICE 0
+#include "cmdutils.h"
 
-//#define TIME2
+#include "ohplay_utils/ohdisplay_wrapper.h"
+#include "ohplay_utils/ohtimer_wrapper.h"
 
-#ifdef TIME2
-#ifdef WIN32
-#include <Windows.h>
-#else
-#include <sys/time.h>
-//#include <ctime>
-#endif
-#define FRAME_CONCEALMENT   0
+const char program_name[] = "ohplay";
+const int program_birth_year = 2003;
 
+/* options specified by the user */
+static char *program;
+static int h264_flags;
+static int no_md5;
+static int thread_type;
+static char *input_file;
+static char *enhance_file;
+static char no_display;
+static char *output_file;
+static int nb_pthreads;
+static int temporal_layer_id;
+static int quality_layer_id;
+static int num_frames;
+static float frame_rate;
 
-/* Returns the amount of milliseconds elapsed since the UNIX epoch. Works on both
- * windows and linux. */
+static const OptionDef options[] = {
+	{ "h", OPT_EXIT, {.func_arg = show_help}, "show help" },
+	{ "-help", OPT_EXIT, {.func_arg = show_help}, "show help" },
+    { "c", OPT_BOOL, { &no_md5 }, "no check md5" },
+    { "f", HAS_ARG | OPT_INT, { &thread_type }, "1-frame, 2-slice, 4-frameslice", "thread type" },
+    { "i", HAS_ARG | OPT_STRING, { &input_file }, "Input file", "file" },
+    { "n", OPT_BOOL, { &no_display }, "no display" },
+    { "o", HAS_ARG | OPT_STRING, { &output_file }, "Output file", "file" },
+    { "p", HAS_ARG | OPT_INT, { &nb_pthreads }, "Pthreads number", "n" },
+    { "t", HAS_ARG | OPT_INT, { &temporal_layer_id }, "Temporal layer id", "id" },
+    { "l", HAS_ARG | OPT_INT, { &quality_layer_id }, "Quality layer id", "id" },
+    { "s", HAS_ARG | OPT_INT, { &num_frames }, "Stop after \"n\" frames", "n" },
+    { "r", HAS_ARG | OPT_FLOAT, { &frame_rate }, "Frame rate (FPS)", "n"},
+    { "v", OPT_BOOL, { &h264_flags }, "Input is a h264 bitstream" },
+    { "e", HAS_ARG | OPT_STRING, { &enhance_file }, "Enhanced layer file (with AVC base)", "file" },
+    { NULL, },
+};
 
-static unsigned long int GetTimeMs64()
+static void show_usage(void)
 {
-#ifdef WIN32
-    /* Windows */
-    FILETIME ft;
-    LARGE_INTEGER li;
-    
-    /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
-     * to a LARGE_INTEGER structure. */
-    GetSystemTimeAsFileTime(&ft);
-    li.LowPart = ft.dwLowDateTime;
-    li.HighPart = ft.dwHighDateTime;
-    
-    uint64_t ret = li.QuadPart;
-    ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
-    ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
-    
-    return ret;
-#else
-    /* Linux */
-    struct timeval tv;
-    
-    gettimeofday(&tv, NULL);
-    
-    unsigned long int ret = tv.tv_usec;
-    /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
-    //ret /= 1000;
-    
-    /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
-    ret += (tv.tv_sec * 1000000);
-    
-    return ret;
-#endif
+    av_log(NULL, AV_LOG_INFO, "OpenHEVC player\n");
+    av_log(NULL, AV_LOG_INFO, "usage: %s [options] -i input_file\n", program_name);
+    av_log(NULL, AV_LOG_INFO, "\n");
 }
-#endif
 
-int h264_flags;
-int check_md5_flags;
-int thread_type;
-char *input_file;
-char *enhance_file;
-char display_flags;
-char *output_file;
-int nb_pthreads;
-int temporal_layer_id;
-int quality_layer_id;
-int no_cropping;
-int num_frames;
-float frame_rate;
+void show_help_default(const char *opt, const char *arg)
+{
+    av_log_set_callback(log_callback_help);
+    show_usage();
+    show_help_options(options, "Main options:", 0, OPT_EXPERT, 0);
+    show_help_options(options, "Advanced options:", OPT_EXPERT, 0, 0);
+}
 
 typedef struct OpenHevcWrapperContext {
     AVCodec *codec;
@@ -136,13 +148,6 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     int split_layers = enh_filename != NULL;//fixme: we do not check the -e option here
     int AVC_BL_only = AVC_BL && !split_layers;
 
-#if FRAME_CONCEALMENT
-    FILE *fin_loss = NULL, *fin1 = NULL;
-    Info info;
-    Info info_loss;
-    char filename0[1024];
-    int is_received = 1;
-#endif
     FILE *fout  = NULL;
     int width   = -1;
     int height  = -1;
@@ -153,9 +158,6 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     int i= 0;
     int got_picture;
     float time  = 0.0;
-#ifdef TIME2
-    long unsigned int time_us = 0;
-#endif
     int video_stream_idx;
     char output_file2[256];
 
@@ -180,7 +182,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     }
 
-    libOpenHevcSetCheckMD5(openHevcHandle, check_md5_flags);
+    libOpenHevcSetCheckMD5(openHevcHandle, !no_md5);
 
     if (!openHevcHandle) {
         fprintf(stderr, "could not open OpenHevc\n");
@@ -234,61 +236,35 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     openHevcFrameCpy.pvU = NULL;
     openHevcFrameCpy.pvV = NULL;
 
-#if USE_SDL
-    Init_Time();
-    if (frame_rate > 0) {
-        initFramerate_SDL();
-        setFramerate_SDL(frame_rate);
+	if (!no_display) {
+        oh_display_init(0, 1920, 1080);
     }
-#endif
-#ifdef TIME2
-    time_us = GetTimeMs64();
-#endif
+
+    oh_timer_init();
+    if(frame_rate > 0)
+    	oh_timer_setFPS(frame_rate);
    
     libOpenHevcSetTemporalLayer_id(openHevcHandle, temporal_layer_id);
     libOpenHevcSetActiveDecoders(openHevcHandle, quality_layer_id);
     libOpenHevcSetViewLayers(openHevcHandle, quality_layer_id);
 
-#if FRAME_CONCEALMENT
-    fin_loss = fopen( "/Users/wassim/Softwares/shvc_transmission/parser/hevc_parser/BascketBall_Loss.txt", "rb");
-    fin1 = fopen( "/Users/wassim/Softwares/shvc_transmission/parser/hevc_parser/BascketBall.txt", "rb");
-    sprintf(filename0, "%s \n", "Nbframe  Poc Tid  Qid  NalType Length");
-    fread ( filename0, strlen(filename), 1, fin_loss);
-    fread ( filename0, strlen(filename), 1, fin1);
-#endif
     /* Main loop
      * */
     while(!stop) {
-        oh_event event_code = IsCloseWindowEvent();
+        OHEvent event_code = oh_display_getWindowEvent();
         if (event_code == OH_QUIT)
             break;
         else if (event_code == OH_LAYER0 || event_code == OH_LAYER1) {
             libOpenHevcSetActiveDecoders(openHevcHandle, event_code-1);
             libOpenHevcSetViewLayers(openHevcHandle, event_code-1);
         } else if (event_code == OH_MOUSE) {
-            oh_mouse = get_mouseevent();
+            oh_mouse = oh_display_getMouseEvent();
             libOpenHevcSetMouseClick(openHevcHandle,oh_mouse.x,oh_mouse.y);
         }
 
-#if FRAME_CONCEALMENT
-        // Get the corresponding frame in the trace
-        if(is_received)
-            fscanf(fin_loss, "%d    %d    %d    %d    %d        %d \n", &info_loss.NbFrame, &info_loss.Poc, &info_loss.Tid, &info_loss.Qid, &info_loss.type, &info_loss.size);
-        fscanf(fin1, "%d    %d    %d    %d    %d        %d \n", &info.NbFrame, &info.Poc, &info.Tid, &info.Qid, &info.type, &info.size);
-        if(info_loss.NbFrame == info.NbFrame)
-            is_received = 1;
-        else
-            is_received = 0;
-#endif
         //if (packet[0].stream_index && packet[1].stream_index == video_stream_idx || stop_dec > 0) {
-#if FRAME_CONCEALMENT
-            if(is_received)
-                got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
-            else
-                got_picture = libOpenHevcDecode(openHevcHandle, NULL,  0, packet.pts);
-#else
-            //got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
-#endif
+        //got_picture = libOpenHevcDecode(openHevcHandle, packet.data, !stop_dec ? packet.size : 0, packet.pts);
+
         /* Try to read packets corresponding to the frames to be decoded
          * */
 		if(split_layers){
@@ -326,11 +302,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 						sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
 						fout = fopen(output_file2, "wb");
 					}
-	#if USE_SDL
-						if (display_flags == ENABLE) {
-							Init_SDL((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
-						}
-	#endif
+
 					if (fout) {
 						libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
 						int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
@@ -344,17 +316,18 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 						openHevcFrameCpy.pvV = calloc (openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
 					}
 				}// end of frame resizing
-	#if USE_SDL
-					if (frame_rate > 0) {
-						framerateDelay_SDL();
-					}
-					if (display_flags == ENABLE) {
-						libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
-						libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
-						SDL_Display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
+
+				if (frame_rate > 0) {
+					oh_timer_delay();
+				}
+
+				if (!no_display) {
+					libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
+					libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
+					oh_display_display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
                                 (uint8_t *)openHevcFrame.pvY, (uint8_t *)openHevcFrame.pvU, (uint8_t *)openHevcFrame.pvV);
-					}
-	#endif
+				}
+
 				/* Write output file if any
 				 * */
 				if (fout) {
@@ -387,13 +360,10 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 			}
 		}// End of got_packet
     } //End of main loop
-#if USE_SDL
-    time = SDL_GetTime()/1000.0;
-#ifdef TIME2
-    time_us = GetTimeMs64() - time_us;
-#endif
-    CloseSDLDisplay();
-#endif
+
+    time = oh_timer_getTimeMs()/1000.0;
+    oh_display_close();
+
     if (fout) {
         fclose(fout);
         if(openHevcFrameCpy.pvY) {
@@ -409,17 +379,36 @@ static void video_decode_example(const char *filename,const char *enh_filename)
         avformat_close_input(&pFormatCtx[1]);
     }
     libOpenHevcClose(openHevcHandle);
-#if USE_SDL
-#ifdef TIME2
-    printf("frame= %d fps= %.0f time= %ld video_size= %dx%d\n", nbFrame, nbFrame/time, time_us, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
-#else
+
     printf("frame= %d fps= %.0f time= %.2f video_size= %dx%d\n", nbFrame, nbFrame/time, time, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight);
-#endif
-#endif
 }
 
 int main(int argc, char *argv[]) {
-    init_main(argc, argv);
+    h264_flags        = 0;
+    no_md5			  = 0;
+    thread_type       = 1;
+    input_file        = NULL;
+    enhance_file 	  = NULL;
+    no_display	      = 0;
+    output_file       = NULL;
+    nb_pthreads       = 1;
+    temporal_layer_id = 7;
+    quality_layer_id  = 0; // Base layer
+    num_frames        = 0;
+    frame_rate        = 0;
+
+    program           = argv[0];
+
+    parse_loglevel(argc, argv, options);
+    av_register_all();
+    avformat_network_init();
+
+    init_opts();
+
+    show_banner(argc, argv, options);
+
+    parse_options(NULL, argc, argv, options, NULL);
+
     video_decode_example(input_file, enhance_file);
 
     return 0;

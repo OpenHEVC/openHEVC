@@ -29,7 +29,15 @@
    Studio) will not omit unused inline functions and create undefined
    references to libraries that are not being built. */
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#else
+#define CONFIG_AVUTIL 1
+#define CONFIG_AVCODEC 1
+#define CONFIG_AVFORMAT 1
+#endif
+
+
 #include "compat/va_copy.h"
 #include "libavformat/avformat.h"
 #define CONFIG_OPENCL 0
