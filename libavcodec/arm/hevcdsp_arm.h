@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2014 Seppo Tomperi <seppo.tomperi@vtt.fi>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,15 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/attributes.h"
-#include "libavutil/arm/cpu.h"
+#ifndef AVCODEC_ARM_HEVCDSP_ARM_H
+#define AVCODEC_ARM_HEVCDSP_ARM_H
+
 #include "libavcodec/hevcdsp.h"
-#include "hevcdsp_arm.h"
 
-av_cold void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth)
-{
-    int cpu_flags = av_get_cpu_flags();
+void ff_hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth);
 
-    if (have_neon(cpu_flags))
-        ff_hevcdsp_init_neon(c, bit_depth);
-}
+#endif /* AVCODEC_ARM_HEVCDSP_ARM_H */
