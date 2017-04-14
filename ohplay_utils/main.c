@@ -349,7 +349,9 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 			} else if (stop_dec > 0 && nbFrame && !got_picture){
 		        stop = 1;
 			}
-
+            av_packet_unref(&packet[0]);
+            if(split_layers)
+                av_packet_unref(&packet[1]);
 
 		    if (stop_dec >= nb_pthreads && nbFrame == 0) {
                 av_packet_unref(&packet[0]);
