@@ -150,7 +150,6 @@ int oh_display_init(int edge, int frame_width, int frame_height){
 }
 
 void oh_display_display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
-    printf("%dx%d\n", frame_width, frame_height);
 	if (SDL_LockYUVOverlay(yuv_overlay) < 0) return;
     if(yuv_overlay->w != frame_width || yuv_overlay->h != frame_height){
         //Resize YUVoverlay
