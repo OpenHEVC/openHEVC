@@ -609,7 +609,8 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             cabac_init_state(s);
 
 #if HEVC_ENCRYPTION
-            if (s->ps.pps->tile_table_encry[s->ps.pps->tile_id[ctb_addr_ts]]){
+            //if(s->tile_table_encry)
+            if (s->tile_table_encry[s->ps.pps->tile_id[ctb_addr_ts]]){
                 InitC(s->HEVClc->dbs_g);
                 s->HEVClc->prev_pos = 0;
             }
@@ -635,7 +636,7 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
                 cabac_init_decoder(s);
             cabac_init_state(s);
 #if HEVC_ENCRYPTION
-            if (s->ps.pps->tile_table_encry[s->ps.pps->tile_id[ctb_addr_ts]]){
+            if (s->tile_table_encry[s->ps.pps->tile_id[ctb_addr_ts]]){
                 InitC(s->HEVClc->dbs_g);
                 s->HEVClc->prev_pos = 0;
             }
@@ -1018,7 +1019,7 @@ static av_always_inline int mvd_decode(HEVCContext *s)
     int ret = 2;
     int k = 1;
 #if HEVC_ENCRYPTION
-    if( s->ps.pps->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MVs))
+    if( s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MVs))
       return mvd_decode_enc (s);
 #endif
     while (k < CABAC_MAX_BIN && get_cabac_bypass(&s->HEVClc->cc)) {
@@ -1371,7 +1372,7 @@ static av_always_inline int coeff_sign_flag_decode(HEVCContext *s, uint8_t nb)
     for (i = 0; i < nb; i++)
         ret = (ret << 1) | get_cabac_bypass(&s->HEVClc->cc);
 #if HEVC_ENCRYPTION
-    if(s->ps.pps->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFF_SIGNS))
+    if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFF_SIGNS))
       return ret^ff_get_key (&s->HEVClc->dbs_g, nb);
 #endif
     return ret;
@@ -1777,7 +1778,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     if (trans_coeff_level == ((m == first_greater1_coeff_idx) ? 3 : 2)) {
                         int last_coeff_abs_level_remaining;
 #if HEVC_ENCRYPTION
-                        if(s->ps.pps->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFFS))
+                        if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFFS))
                             last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode_enc(s, c_rice_param, trans_coeff_level);
                         else
 #endif
@@ -1800,7 +1801,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 } else {
                     int last_coeff_abs_level_remaining;
 #if HEVC_ENCRYPTION
-                    if(s->ps.pps->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFFS))
+                    if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFFS))
                         last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode_enc(s, c_rice_param, 1);
                     else
 #endif
@@ -1973,7 +1974,7 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
         case 0: lc->pu.mvd.x = 0;                       break;
     }
 #if HEVC_ENCRYPTION
-    if(s->ps.pps->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MV_SIGNS)) {
+    if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MV_SIGNS)) {
       if(x) {
         mvd_sign_flag_x = lc->pu.mvd.x < 0 ? 1:0;
         mvd_sign_flag_x = mvd_sign_flag_x^(ff_get_key (&s->HEVClc->dbs_g, 1));
@@ -1986,7 +1987,7 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
         case 0: lc->pu.mvd.y = 0;                       break;
     }
 #if HEVC_ENCRYPTION
-    if(s->ps.pps->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MV_SIGNS)) {
+    if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MV_SIGNS)) {
       if(y) {
         mvd_sign_flag_y = lc->pu.mvd.y < 0 ? 1:0;
         mvd_sign_flag_y = mvd_sign_flag_y^(ff_get_key (&s->HEVClc->dbs_g, 1));

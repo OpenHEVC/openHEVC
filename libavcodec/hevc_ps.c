@@ -2246,9 +2246,6 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
     av_freep(&pps->wpp_pos_ts);
     av_freep(&pps->tile_width);
     av_freep(&pps->min_tb_addr_zs_tab);
-#if HEVC_ENCRYPTION
-    av_freep(&pps->tile_table_encry);
-#endif
     av_freep(&pps);
 }
 
@@ -2364,9 +2361,6 @@ static inline int setup_pps(AVCodecContext *avctx, GetBitContext *gb,
         pps->col_idxX[i] = j;
     }
 
-#if HEVC_ENCRYPTION
-    pps->tile_table_encry = av_mallocz(sizeof(uint8_t)*pps->num_tile_columns*pps->num_tile_rows);
-#endif
     /**
      * 6.5
      */

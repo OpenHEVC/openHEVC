@@ -1019,9 +1019,6 @@ typedef struct HEVCPPS {
     HEVCWindow ref_window[16];
     uint8_t colour_mapping_enabled_flag;
     uint8_t m_nCGSOutputBitDepth[MAX_NUM_CHANNEL_TYPE];
-#if HEVC_ENCRYPTION
-    uint8_t *tile_table_encry;
-#endif
 } HEVCPPS;
 
 typedef struct HEVCParamSets {
@@ -1525,6 +1522,9 @@ typedef struct HEVCContext {
 #if HEVC_ENCRYPTION
     uint8_t encrypt_params;
     AVRational last_click_pos;
+    uint8_t prev_num_tile_rows;
+    uint8_t prev_num_tile_columns;
+    uint8_t *tile_table_encry;
 #endif
 } HEVCContext;
 
