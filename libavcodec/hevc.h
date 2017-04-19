@@ -728,32 +728,42 @@ typedef struct HEVCVPSExt {
 } HEVCVPSExt;
 
 typedef struct HEVCVPS {
-    uint8_t     vps_base_layer_internal_flag;
-    uint8_t     vps_base_layer_available_flag;
-    uint8_t     vps_nonHEVCBaseLayerFlag;
-    uint8_t vps_temporal_id_nesting_flag;
-    int vps_max_layers;
-    int vps_max_sub_layers; ///< vps_max_temporal_layers_minus1 + 1
+    uint8_t  vps_id;
+    uint8_t  vps_base_layer_internal_flag;
+    uint8_t  vps_base_layer_available_flag;
+    uint8_t  vps_nonHEVCBaseLayerFlag; ///< not standard but helpfull
+    uint8_t  vps_max_layers;     ///< vps_max_layers_minus1 + 1
+    uint8_t  vps_max_sub_layers; ///< vps_max_temporal_layers_minus1 + 1
+    uint8_t  vps_temporal_id_nesting_flag;
+    uint16_t vps_reserved_0xffff_16bits;
 
-    PTL ptl;
-    int vps_sub_layer_ordering_info_present_flag;
-    uint8_t     vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
-    uint8_t     vps_num_reorder_pics[MAX_SUB_LAYERS];
-    int16_t     vps_max_latency_increase[MAX_SUB_LAYERS];
+    PTL ptl; //TODO profile teir level could be a pointer to a PTL to reduce VPS
+    // footprint however we have to be carefull while comparing VPS NAL
 
-    int vps_max_layer_id;
-    int16_t     vps_num_layer_sets; ///< vps_num_layer_sets_minus1 + 1
-    uint8_t     vps_timing_info_present_flag;
-    uint32_t    vps_num_units_in_tick;
-    uint32_t    vps_time_scale;
-    uint8_t     vps_poc_proportional_to_timing_flag;
-    int         vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
-    int16_t     vps_num_hrd_parameters;
-    uint8_t     layer_id_included_flag[16][16];
+    uint8_t  vps_sub_layer_ordering_info_present_flag;
+    //FIXME structure + dyn malloc for sub_layers ordering info ???
+    uint8_t    vps_max_dec_pic_buffering[MAX_SUB_LAYERS]; ///< vps_max_dec_pic_buffering_minus1 + 1
+    uint8_t    vps_max_num_reorder_pics [MAX_SUB_LAYERS];
+    int32_t    vps_max_latency_increase [MAX_SUB_LAYERS]; ///< vps_max_dec_pic_buffering_plus1 - 1
+
+    uint8_t  vps_max_layer_id;
+    int16_t  vps_num_layer_sets; ///< vps_num_layer_sets_minus1 + 1
+    uint8_t    layer_id_included_flag[16][16];
+
+    uint8_t  vps_timing_info_present_flag;
+    //FIXME structure + dyn malloc for vps timing info ???
+    uint32_t   vps_num_units_in_tick;
+    uint32_t   vps_time_scale;
+    uint8_t    vps_poc_proportional_to_timing_flag;
+    int          vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
+    int16_t    vps_num_hrd_parameters;
     unsigned int hrd_layer_set_idx[16];
+    //FIXME keep cprms_present_flag table ???
     HRDParameter HrdParam;
+
+    //FIXME vps_extension2_flag etc..
     int         vps_extension_flag;
-    HEVCVPSExt  Hevc_VPS_Ext;
+    HEVCVPSExt  vps_ext;
 } HEVCVPS;
 
 typedef struct ScalingList {

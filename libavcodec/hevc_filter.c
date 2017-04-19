@@ -1506,7 +1506,7 @@ static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int
 
     //fixme: AVC BL
     HEVCFrame *bl_frame = s->BL_frame;
-    int ref_layer_id = s->ps.vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
+    int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
     int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
     //int bl_sample_size = sample_size;//((HEVCContext*)s->avctx->BL_avcontext)->ps.sps->bit_depth[0];
     //H264Picture *bl_frame = s->BL_frame;
@@ -1680,7 +1680,7 @@ static void upsample_block_mc_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y
     int bl_width  =  bl_frame->frame->width  >> 1;
     int bl_height  = bl_frame->frame->height >> 1 > el_height>>1 ? bl_frame->frame->height>>1:el_height>>1;
 
-    int ref_layer_id = s->ps.vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
+    int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
     int sample_size = s->ps.sps->bit_depth[1] > 8 ? 2 : 1;
     //int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
 
@@ -1769,7 +1769,7 @@ static void upsample_block_luma(HEVCContext *s, HEVCFrame *ref0, int x0, int y0)
     uint8_t *dst = (uint8_t*)ref0->frame->data[0];
     uint8_t *tmp1;
 
-    int ref_layer_id = s->ps.vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
+    int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
 
     int sample_size = s->ps.sps->bit_depth[0] > 8 ? 2 : 1;
     int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
@@ -1868,7 +1868,7 @@ static void upsample_block_mc(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
 
     AVFrame *bl_frame;
 
-    int ref_layer_id = s->ps.vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][0];
+    int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
     int sample_size = s->ps.sps->bit_depth[0] > 8 ? 2 : 1;
     int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
     int el_width  =  s->ps.sps->width  >> 1;

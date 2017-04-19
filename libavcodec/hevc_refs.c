@@ -256,7 +256,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 
         /* wait for more frames before output */
         if (!flush && s->seq_output == s->seq_decode && s->ps.sps &&
-            nb_output <= s->ps.vps->vps_num_reorder_pics[s->ps.vps->vps_max_sub_layers - 1] + s->interlaced) {
+            nb_output <= s->ps.vps->vps_max_num_reorder_pics[s->ps.vps->vps_max_sub_layers - 1] + s->interlaced) {
             return 0;
         }
 
@@ -724,7 +724,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
             return 0;
     }
 
-    if (s->nuh_layer_id > 0 && s->ps.vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag > 0) {
+    if (s->nuh_layer_id > 0 && s->ps.vps->vps_ext.max_one_active_ref_layer_flag > 0) {
         if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) &&
             s->ps.sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
@@ -817,8 +817,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
 */
     if (s->nuh_layer_id) {
         for (i = 0; i < s->sh.active_num_ILR_ref_idx; i ++) {
-            if ((vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[0]) &&
-                (vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
+            if ((vps->vps_ext.view_id_val[s->nuh_layer_id] <= vps->vps_ext.view_id_val[0]) &&
+                (vps->vps_ext.view_id_val[s->nuh_layer_id] <= vps->vps_ext.view_id_val[vps->vps_ext.ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
                 //IL_REF0 , IL_REF1
                 ret = add_candidate_ref(s, &rps[IL_REF0], s->poc, HEVC_FRAME_FLAG_LONG_REF);
             }
