@@ -737,8 +737,9 @@ typedef struct HEVCVPS {
     uint8_t  vps_temporal_id_nesting_flag;
     uint16_t vps_reserved_0xffff_16bits;
 
-    PTL ptl; //TODO profile teir level could be a pointer to a PTL to reduce VPS
-    // footprint however we have to be carefull while comparing VPS NAL
+    PTL ptl; //TODO profile their level could be a pointer to a PTL to reduce VPS
+    // footprint however we have to be carefull while comparing VPS NAL for
+    // removal from vps list
 
     uint8_t  vps_sub_layer_ordering_info_present_flag;
     //FIXME structure + dyn malloc for sub_layers ordering info ???
@@ -766,6 +767,7 @@ typedef struct HEVCVPS {
     HEVCVPSExt  vps_ext;
 } HEVCVPS;
 
+
 typedef struct ScalingList {
     /* This is a little wasteful, since sizeID 0 only needs 8 coeffs,
      * and size ID 3 only has 2 arrays, not 6. */
@@ -773,54 +775,74 @@ typedef struct ScalingList {
     uint8_t sl_dc[2][6];
 } ScalingList;
 
+
 typedef struct HEVCSPS {
-    unsigned vps_id;
-    int chroma_format_idc;
-    int chroma_array_type;
-    uint8_t separate_colour_plane_flag;
+    uint8_t vps_id;
 
-    ///< output (i.e. cropped) values
-    int output_width, output_height;
-    HEVCWindow output_window;
+    uint8_t   max_sub_layers; ///<sps_max_sub_layers_minus1 + 1
+    uint8_t   sps_ext_or_max_sub_layers; ///< sps_ext_or_max_sub_layers_minus1 + 1
 
-    HEVCWindow pic_conf_win;
+    // This is added to SPS in order to know if
+    // wether or not we are in a multi_layer context
+    //value is set to (nuh_layer_id && max_sub_layers == 7)
+    uint8_t is_multi_layer_ext_sps;
 
-    int bit_depth[MAX_NUM_CHANNEL_TYPE];
-    int pixel_shift[MAX_NUM_CHANNEL_TYPE];
-    enum AVPixelFormat pix_fmt;
-    uint8_t update_rep_format_flag;
-    uint8_t update_rep_format_index;
+    uint8_t sps_id;
 
-    unsigned int log2_max_poc_lsb;
-    int pcm_enabled_flag;
+    union{
+        struct{ // !multi_layer_ext_flag
+            uint8_t   sps_temporal_id_nesting_flag;
+            PTL       ptl;
 
-    int max_sub_layers;
-    int m_bTemporalIdNestingFlag;
-    struct {
-        uint16_t max_dec_pic_buffering;
-        uint16_t num_reorder_pics;
-        uint16_t max_latency_increase;
-    } temporal_layer[MAX_SUB_LAYERS];
+            uint8_t chroma_format_idc;
+            uint8_t   separate_colour_plane_flag;
 
-    VUI vui;
-    PTL ptl;
+            //uint16_t width_in_luma_samples == width
+            //uint16_t height_in_luma_samples == height
+
+            uint8_t conformance_window_flag;
+            HEVCWindow pic_conf_win;
+
+            //FIXME the use of table is sometimes troubling into the code
+            // we should use bitdepth and bit depth_c as specified by the standard
+            int bit_depth[MAX_NUM_CHANNEL_TYPE];
+            int pixel_shift[MAX_NUM_CHANNEL_TYPE]; // Not in the standard but usefull
+
+            uint8_t sps_sub_layer_ordering_info_present_flag;
+            struct {
+                uint16_t max_dec_pic_buffering;
+                uint16_t num_reorder_pics;
+                uint16_t max_latency_increase;
+            } temporal_layer[MAX_SUB_LAYERS];
+        };
+        struct{ // multi_layer_ext_flag == 1
+            uint8_t update_rep_format_flag;
+            uint8_t   sps_rep_format_idx;
+            uint8_t sps_infer_scaling_list_flag;
+            uint8_t   sps_scaling_list_ref_layer_id;
+        };
+    };
+
+    unsigned int log2_max_poc_lsb; ///< log2_max_pic_order_cnt_lsb_minus4 + 4
+
+    unsigned int log2_min_cb_size;
+    unsigned int log2_diff_max_min_cb_size;
+    unsigned int log2_min_tb_size;
+    unsigned int log2_diff_max_min_tb_size;
+
+    int max_transform_hierarchy_depth_inter;
+    int max_transform_hierarchy_depth_intra;
+
 
     uint8_t scaling_list_enable_flag;
-    uint8_t m_inferScalingListFlag;
-    uint8_t m_scalingListPresentFlag; 
-    int m_scalingListRefLayerId; 
+
+    //TODO  rename those
+    uint8_t sps_scaling_list_data_present_flag;
     ScalingList scaling_list;
 
-    unsigned int nb_st_rps;
-    ShortTermRPS st_rps[MAX_SHORT_TERM_RPS_COUNT];
-
     uint8_t amp_enabled_flag;
-    uint8_t sao_enabled;
-
-    uint8_t long_term_ref_pics_present_flag;
-    uint16_t lt_ref_pic_poc_lsb_sps[32];
-    uint8_t used_by_curr_pic_lt_sps_flag[32];
-    uint8_t num_long_term_ref_pics_sps;
+    uint8_t sao_enabled_flag;
+    uint8_t pcm_enabled_flag;
 
     struct {
         uint8_t bit_depth;
@@ -829,19 +851,30 @@ typedef struct HEVCSPS {
         unsigned int log2_max_pcm_cb_size;
         uint8_t loop_filter_disable_flag;
     } pcm;
+
+    unsigned int num_short_term_rps;
+    ShortTermRPS st_rps[MAX_SHORT_TERM_RPS_COUNT];
+
+    uint8_t long_term_ref_pics_present_flag;
+    uint8_t   num_long_term_ref_pics_sps;
+    uint16_t  lt_ref_pic_poc_lsb_sps      [32];
+    uint8_t   used_by_curr_pic_lt_sps_flag[32];
+
     uint8_t sps_temporal_mvp_enabled_flag;
     uint8_t sps_strong_intra_smoothing_enable_flag;
 
-    unsigned int log2_min_cb_size;
-    unsigned int log2_diff_max_min_coding_block_size;
-    unsigned int log2_min_tb_size;
-    unsigned int log2_max_trafo_size;
-    unsigned int log2_ctb_size;
-    unsigned int log2_min_pu_size;
+    uint8_t vui_parameters_present_flag;
+    VUI vui;
 
-    int max_transform_hierarchy_depth_inter;
-    int max_transform_hierarchy_depth_intra;
+    uint8_t sps_extension_present_flag;
+    uint8_t   sps_range_extension_flag;
+    uint8_t   sps_multilayer_extension_flag;
+    uint8_t   sps_3d_extension_flag;
+    uint8_t   sps_extension_5bits;
 
+    //TODO HEVCSPSExt struct;
+
+    // Range extensions
     uint8_t transform_skip_rotation_enabled_flag;
     uint8_t transform_skip_context_enabled_flag;
     uint8_t implicit_rdpcm_enabled_flag;
@@ -853,13 +886,20 @@ typedef struct HEVCSPS {
     uint8_t high_precision_offsets_enabled_flag;
     uint8_t cabac_bypass_alignment_enabled_flag;
 
-    /* int extended_precision_processing_flag;
-     int high_precision_offsets_enabled_flag;
-     int cabac_bypass_alignment_enabled_flag;*/
+    // Multi-layer extensions
+    uint8_t inter_view_mv_vert_constraint_flag;
 
+    //Those are some useful computed values which could be added to the HEVCContext
+    //instead
+    ///< output (i.e. cropped) values
+    int output_width, output_height;
+    HEVCWindow output_window;
 
+    enum AVPixelFormat pix_fmt;
 
-
+    unsigned int log2_ctb_size;
+    unsigned int log2_min_pu_size;
+    unsigned int log2_max_trafo_size;
 
     ///< coded frame dimension in various units
     int width;
@@ -881,7 +921,10 @@ typedef struct HEVCSPS {
     int qp_bd_offset;
 
     HRDParameter HrdParam;
+
+    //FIXME scaled_ref_layer is used but not set ???
     HEVCWindow scaled_ref_layer_window[MAX_LAYERS];
+    //FIXME: This flag could probably be removed without any harm
     uint8_t    set_mfm_enabled_flag;
     uint8_t    v1_compatible;
 

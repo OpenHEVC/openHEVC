@@ -453,7 +453,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fm
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth[CHANNEL_TYPE_LUMA]);
     ff_videodsp_init (&s->vdsp,    sps->bit_depth[CHANNEL_TYPE_LUMA]);
 
-    if (sps->sao_enabled && !s->avctx->hwaccel) {
+    if (sps->sao_enabled_flag && !s->avctx->hwaccel) {
 #ifdef USE_SAO_SMALL_BUFFER
         {
             int ctb_size = 1 << sps->log2_ctb_size;
@@ -511,7 +511,7 @@ static int getBitDepth(HEVCContext *s, enum ChannelType channel, int layerId)
   }
   else if(s->ps.sps_list[layerId]) {
     sps = (HEVCSPS*)s->ps.sps_list[layerId]->data;
-    retVal = sps->update_rep_format_flag ? sps->update_rep_format_index : vps->vps_ext.vps_rep_format_idx[vps->vps_ext.layer_id_in_vps[layerId]];
+    retVal = sps->update_rep_format_flag ? sps->sps_rep_format_idx : vps->vps_ext.vps_rep_format_idx[vps->vps_ext.layer_id_in_vps[layerId]];
     retVal = vps->vps_ext.rep_format[retVal].bit_depth_vps[channel];
   }
   return retVal;
@@ -864,12 +864,12 @@ else
             } else {
                 int numbits, rps_idx;
 
-                if (!s->ps.sps->nb_st_rps) {
+                if (!s->ps.sps->num_short_term_rps) {
                     av_log(s->avctx, AV_LOG_ERROR, "No ref lists in the SPS.\n");
                     return AVERROR_INVALIDDATA;
                 }
 
-                numbits = av_ceil_log2(s->ps.sps->nb_st_rps);
+                numbits = av_ceil_log2(s->ps.sps->num_short_term_rps);
                 rps_idx = numbits > 0 ? get_bits(gb, numbits) : 0;
                 print_cabac("short_term_ref_pic_set_idx", rps_idx);
                 sh->short_term_rps = &s->ps.sps->st_rps[rps_idx];
@@ -963,14 +963,14 @@ else
         sh->slice_sample_adaptive_offset_flag[0] =
         sh->slice_sample_adaptive_offset_flag[1] =
         sh->slice_sample_adaptive_offset_flag[2] = 0;
-        if (s->ps.sps->sao_enabled) {
+        if (s->ps.sps->sao_enabled_flag) {
             enum ChromaFormat format;
             sh->slice_sample_adaptive_offset_flag[0] = get_bits1(gb);
             print_cabac("slice_sao_luma_flag", sh->slice_sample_adaptive_offset_flag[0]);
             if(!s->nuh_layer_id) {
                 format = s->ps.sps->chroma_format_idc;
             } else {
-                int idex  =  s->ps.sps->update_rep_format_flag ? s->ps.sps->update_rep_format_index : s->ps.vps->vps_ext.vps_rep_format_idx [s->ps.vps->vps_ext.layer_id_in_vps[s->nuh_layer_id]];
+                int idex  =  s->ps.sps->update_rep_format_flag ? s->ps.sps->sps_rep_format_idx : s->ps.vps->vps_ext.vps_rep_format_idx [s->ps.vps->vps_ext.layer_id_in_vps[s->nuh_layer_id]];
                 format = s->ps.vps->vps_ext.rep_format[idex].chroma_format_vps_idc;
             }
             if (format != CHROMA_400)  {

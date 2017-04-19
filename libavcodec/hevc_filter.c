@@ -1200,7 +1200,7 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 {
     int x_end = x >= s->ps.sps->width  - ctb_size;
     deblocking_filter_CTB(s, x, y);
-    if (s->ps.sps->sao_enabled) {
+    if (s->ps.sps->sao_enabled_flag) {
         int y_end = y >= s->ps.sps->height - ctb_size;
         if (y && x)
             sao_filter_CTB(s, x - ctb_size, y - ctb_size);
