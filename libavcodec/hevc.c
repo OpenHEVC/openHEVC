@@ -375,7 +375,7 @@ static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
     avctx->coded_height        = sps->height;
     avctx->width               = sps->output_width;
     avctx->height              = sps->output_height;
-    avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
+    avctx->has_b_frames        = sps->temporal_layer[sps->sps_max_sub_layers - 1].num_reorder_pics;
     avctx->profile             = sps->ptl.general_ptl.profile_idc;
     avctx->level               = sps->ptl.general_ptl.level_idc;
 
@@ -707,8 +707,8 @@ static int hls_slice_header(HEVCContext *s)
         s->ps.sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
         if (last_sps && IS_IRAP(s) && s->nal_unit_type != NAL_CRA_NUT) {
             if (s->ps.sps->width !=  last_sps->width || s->ps.sps->height != last_sps->height ||
-                s->ps.sps->temporal_layer[s->ps.sps->max_sub_layers - 1].max_dec_pic_buffering !=
-                last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
+                s->ps.sps->temporal_layer[s->ps.sps->sps_max_sub_layers - 1].max_dec_pic_buffering !=
+                last_sps->temporal_layer[last_sps->sps_max_sub_layers - 1].max_dec_pic_buffering)
                 sh->no_output_of_prior_pics_flag = 0;
         }
         ff_hevc_clear_refs(s);
@@ -1085,7 +1085,7 @@ else
 
         sh->slice_qp_delta = get_se_golomb(gb);
         print_cabac("slice_qp_delta", sh->slice_qp_delta);
-        if (s->ps.pps->pic_slice_level_chroma_qp_offsets_present_flag) {
+        if (s->ps.pps->pps_slice_chroma_qp_offsets_present_flag) {
             sh->slice_cb_qp_offset = get_se_golomb(gb);
             print_cabac("slice_qp_delta_cb", sh->slice_cb_qp_offset);
             sh->slice_cr_qp_offset = get_se_golomb(gb);
@@ -1118,9 +1118,9 @@ else
                     print_cabac("slice_tc_offset_div2", sh->tc_offset);
                 }
             } else {
-                sh->disable_deblocking_filter_flag = s->ps.pps->disable_dbf;
-                sh->beta_offset                    = s->ps.pps->beta_offset;
-                sh->tc_offset                      = s->ps.pps->tc_offset;
+                sh->disable_deblocking_filter_flag = s->ps.pps->pps_deblocking_filter_disabled_flag;
+                sh->beta_offset                    = s->ps.pps->pps_beta_offset;
+                sh->tc_offset                      = s->ps.pps->pps_tc_offset;
             }
         } else {
             sh->disable_deblocking_filter_flag = 0;
@@ -1128,14 +1128,14 @@ else
             sh->tc_offset                      = 0;
         }
 
-        if (s->ps.pps->seq_loop_filter_across_slices_enabled_flag &&
+        if (s->ps.pps->pps_loop_filter_across_slices_enabled_flag &&
             (sh->slice_sample_adaptive_offset_flag[0] ||
              sh->slice_sample_adaptive_offset_flag[1] ||
              !sh->disable_deblocking_filter_flag)) {
             sh->slice_loop_filter_across_slices_enabled_flag = get_bits1(gb);
             print_cabac("slice_loop_filter_across_slices_enabled_flag", sh->slice_loop_filter_across_slices_enabled_flag);
         } else {
-            sh->slice_loop_filter_across_slices_enabled_flag = s->ps.pps->seq_loop_filter_across_slices_enabled_flag;
+            sh->slice_loop_filter_across_slices_enabled_flag = s->ps.pps->pps_loop_filter_across_slices_enabled_flag;
         }
     } else if (!s->slice_initialized) {
         av_log(s->avctx, AV_LOG_ERROR, "Independent slice segment missing.\n");
@@ -1201,7 +1201,7 @@ else
             s->enable_parallel_tiles = 0;
     }
 
-    if (s->ps.pps->slice_header_extension_present_flag) {
+    if (s->ps.pps->slice_segment_header_extension_present_flag) {
         unsigned int length = get_ue_golomb_long(gb);
         if (length*8LL > get_bits_left(gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "too many slice_header_extension_data_bytes\n");
@@ -1215,7 +1215,7 @@ else
     }
 
     // Inferred parameters
-    sh->slice_qp = 26U + s->ps.pps->pic_init_qp_minus26 + sh->slice_qp_delta;
+    sh->slice_qp = 26U + s->ps.pps->init_qp_minus26 + sh->slice_qp_delta;
     if (sh->slice_qp > 51 ||
         sh->slice_qp < -s->ps.sps->qp_bd_offset) {
         av_log(s->avctx, AV_LOG_ERROR,
@@ -1288,8 +1288,8 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
     }
 
     for (c_idx = 0; c_idx < (s->ps.sps->chroma_format_idc ? 3 : 1); c_idx++) {
-        int sao_offset_scale = c_idx == 0 ? s->ps.pps->sao_luma_bit_shift:
-                                                 s->ps.pps->sao_chroma_bit_shift;
+        int sao_offset_scale = c_idx == 0 ? s->ps.pps->log2_sao_offset_scale_luma:
+                                                 s->ps.pps->log2_sao_offset_scale_chroma;
 
         if (!s->sh.slice_sample_adaptive_offset_flag[c_idx]) {
             sao->type_idx[c_idx] = SAO_NOT_APPLIED;
@@ -2122,7 +2122,7 @@ static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0)
 {
     int y = (mv->y >> 2) + y0 + (1<<s->ps.sps->log2_ctb_size)*2 + 9;
-    int bl_y = (( (y  - s->ps.sps->pic_conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
+    int bl_y = (( (y  - s->ps.sps->conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
     if (s->threads_type & FF_THREAD_FRAME ){
         ff_thread_await_progress(&((HEVCFrame*)s->BL_frame)->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC
     }
@@ -4747,6 +4747,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     if (s->ps.sps != s0->ps.sps)
         s->ps.sps = NULL;
+
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.vps_list); i++) {
         av_buffer_unref(&s->ps.vps_list[i]);
         if (s0->ps.vps_list[i]) {

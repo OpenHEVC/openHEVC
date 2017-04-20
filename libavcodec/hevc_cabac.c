@@ -1460,10 +1460,10 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             int qp_i, offset;
 
             if (c_idx == 1)
-                offset = s->ps.pps->cb_qp_offset + s->sh.slice_cb_qp_offset +
+                offset = s->ps.pps->pps_cb_qp_offset + s->sh.slice_cb_qp_offset +
                          lc->tu.cu_qp_offset_cb;
             else
-                offset = s->ps.pps->cr_qp_offset + s->sh.slice_cr_qp_offset +
+                offset = s->ps.pps->pps_cr_qp_offset + s->sh.slice_cr_qp_offset +
                          lc->tu.cu_qp_offset_cr;
 
             qp_i = av_clip(qp_y + offset, - s->ps.sps->qp_bd_offset, 57);
@@ -1490,8 +1490,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         scale_m  = 16; // default when no custom scaling lists.
         dc_scale = 16;
 
-        if (s->ps.sps->scaling_list_enable_flag && !(transform_skip_flag && log2_trafo_size > 2)) {
-            const ScalingList *sl = s->ps.pps->scaling_list_data_present_flag ?
+        if (s->ps.sps->scaling_list_enabled_flag && !(transform_skip_flag && log2_trafo_size > 2)) {
+            const ScalingList *sl = s->ps.pps->pps_scaling_list_data_present_flag ?
             &s->ps.pps->scaling_list : &s->ps.sps->scaling_list;
             int matrix_id = lc->cu.pred_mode != MODE_INTRA;
 
@@ -1829,7 +1829,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     trans_coeff_level = -trans_coeff_level;
                 coeff_sign_flag <<= 1;
                 if(!lc->cu.cu_transquant_bypass_flag) {
-                    if (s->ps.sps->scaling_list_enable_flag && !(transform_skip_flag && log2_trafo_size > 2)) {
+                    if (s->ps.sps->scaling_list_enabled_flag && !(transform_skip_flag && log2_trafo_size > 2)) {
                         if(y_c || x_c || log2_trafo_size < 4) {
                             switch(log2_trafo_size) {
                                 case 3: pos = (y_c << 3) + x_c; break;
