@@ -694,11 +694,14 @@ static int hls_slice_header(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
         return AVERROR_INVALIDDATA;
     }
-
+    //TODO setup_pps function
     if(s->ps.pps != (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data)
         change_pps = 1;
 
     s->ps.pps = (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data;
+
+
+
     if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
 
@@ -719,6 +722,8 @@ static int hls_slice_header(HEVCContext *s)
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
     }
+
+    setup_pps(s->avctx, s->ps.pps, s->ps.sps);
 
     if(change_pps && s->decoder_id)
         set_el_parameter(s);
@@ -4817,8 +4822,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->prev_num_tile_columns = s0->prev_num_tile_columns;
 #endif
     s->poc_id2              = s0->poc_id2;
-    if (s->ps.sps != s0->ps.sps)
-        ret = set_sps(s, s0->ps.sps, src->pix_fmt);
+    //duplicated
+//    if (s->ps.sps != s0->ps.sps)
+//        ret = set_sps(s, s0->ps.sps, src->pix_fmt);
 
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;

@@ -1094,6 +1094,8 @@ typedef struct HEVCPPS {
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
 
+    uint8_t is_setup;
+
 } HEVCPPS;
 
 typedef struct HEVCParamSets {
@@ -1778,5 +1780,6 @@ extern const uint8_t ff_hevc_diag_scan4x4_x[16];
 extern const uint8_t ff_hevc_diag_scan4x4_y[16];
 extern const uint8_t ff_hevc_diag_scan8x8_x[64];
 extern const uint8_t ff_hevc_diag_scan8x8_y[64];
-
+ int setup_pps(AVCodecContext *avctx,
+                            HEVCPPS *pps, HEVCSPS *sps);
 #endif /* AVCODEC_HEVC_H */

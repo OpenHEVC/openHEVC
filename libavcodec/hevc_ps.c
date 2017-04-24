@@ -1585,7 +1585,7 @@ static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingLi
             }
         }
 
-    if (sps->chroma_format_idc == 3) {
+    if (sps && sps->chroma_format_idc == 3) {
         for (i = 0; i < 64; i++) {
             sl->sl[3][1][i] = sl->sl[2][1][i];
             sl->sl[3][2][i] = sl->sl[2][2][i];
@@ -1677,10 +1677,10 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     if (vps_list && !vps_list[sps->vps_id]) {
         av_log(avctx, AV_LOG_ERROR, "VPS %d does not exist\n",
                sps->vps_id);
-        return AVERROR_INVALIDDATA;
+        //return AVERROR_INVALIDDATA;
     }
-
-    vps = (HEVCVPS *) vps_list[sps->vps_id]->data;
+    if((HEVCVPS *) vps_list[sps->vps_id])
+        vps = (HEVCVPS *) vps_list[sps->vps_id]->data;
     
     if (!nuh_layer_id) {
         sps->sps_max_sub_layers = get_bits(gb, 3) + 1;
@@ -1696,7 +1696,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         sps->v1_compatible = sps->sps_ext_or_max_sub_layers - 1;
         //FIXME This should be done outside of SPS decoding in case the VPS is
         //not available yet
-        if ( (sps->sps_ext_or_max_sub_layers - 1) == 7 )
+        if ( vps && (sps->sps_ext_or_max_sub_layers - 1) == 7 )
             sps->sps_max_sub_layers = vps->vps_max_sub_layers;
          else
             sps->sps_max_sub_layers = sps->sps_ext_or_max_sub_layers;
@@ -1710,7 +1710,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         if ((ret = parse_ptl(gb, avctx, &sps->ptl, sps->sps_max_sub_layers, 1)) < 0)
             return ret;
     } else { // Not sure for this
-        if (sps->sps_max_sub_layers > 1)
+        if (vps && sps->sps_max_sub_layers > 1)
             //FIXME This should be done outside of SPS decoding in case the VPS is
             //not available yet
             sps->sps_temporal_id_nesting_flag = vps->vps_temporal_id_nesting_flag;
@@ -1854,12 +1854,12 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                    "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10, 12 and 14 bits.\n");
             return AVERROR_PATCHWELCOME;
         }
-    } else {
+    } else if(vps) {
         RepFormat Rep;
-        if (sps->update_rep_format_flag)
+        if (vps && sps->update_rep_format_flag)
             Rep = vps->vps_ext.rep_format[sps->sps_rep_format_idx];
         else {
-            if ((vps->vps_ext.vps_num_rep_formats_minus1+1) > 1)
+            if (vps && (vps->vps_ext.vps_num_rep_formats_minus1+1) > 1)
                 Rep = vps->vps_ext.rep_format[vps->vps_ext.vps_rep_format_idx[nuh_layer_id]];
             else
                 Rep = vps->vps_ext.rep_format[0];
@@ -2302,7 +2302,7 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
 }
 
 static int pps_range_extensions(GetBitContext *gb, AVCodecContext *avctx,
-                                HEVCPPS *pps, HEVCSPS *sps) {
+                                HEVCPPS *pps) {
     int i;
 
     if (pps->transform_skip_enabled_flag) {
@@ -2359,13 +2359,13 @@ static int pps_range_extensions(GetBitContext *gb, AVCodecContext *avctx,
     return 0;
 }
 
-static inline int setup_pps(AVCodecContext *avctx, GetBitContext *gb,
+int setup_pps(AVCodecContext *avctx,
                             HEVCPPS *pps, HEVCSPS *sps)
 {
     int log2_diff;
     int pic_area_in_ctbs;
     int i, j, x, y, ctb_addr_rs, tile_id;
-
+if(!pps->is_setup && sps){
     // Inferred parameters
     pps->col_bd   = av_malloc_array(pps->num_tile_columns + 1, sizeof(*pps->col_bd));
     pps->row_bd   = av_malloc_array(pps->num_tile_rows    + 1, sizeof(*pps->row_bd));
@@ -2505,7 +2505,8 @@ static inline int setup_pps(AVCodecContext *avctx, GetBitContext *gb,
             pps->min_tb_addr_zs[y * (sps->tb_mask+2) + x] = val;
         }
     }
-
+    pps->is_setup = 1;
+}
     return 0;
 }
 
@@ -2550,6 +2551,7 @@ static int ReadParam( GetBitContext   *gb, int rParam ) {
   else
     return 0;
 }
+
 static void xParse3DAsymLUTOctant( GetBitContext *gb , TCom3DAsymLUT * pc3DAsymLUT , int nDepth , int yIdx , int uIdx , int vIdx , int length) {
     uint8_t split_octant_flag = nDepth < pc3DAsymLUT->cm_octant_depth;
     int l,m,n, nYPartNum;
@@ -2690,7 +2692,7 @@ static void xParse3DAsymLUT(GetBitContext *gb, TCom3DAsymLUT * pc3DAsymLUT) {
 }
 
 static int pps_multilayer_extensions(GetBitContext *gb, AVCodecContext *avctx,
-                                HEVCPPS *pps, HEVCSPS *sps) {
+                                HEVCPPS *pps) {
     int i;
 
     pps->poc_reset_info_present_flag = get_bits1(gb);
@@ -2830,12 +2832,12 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     pps->log2_max_transform_skip_block_size    = 2;
 
     // Coded parameters
-    pps_id = get_ue_golomb_long(gb);
-    av_log(NULL, AV_LOG_INFO, "Parsing PPS : id:%d \n", pps_id);
+    pps->pps_id = get_ue_golomb_long(gb);
+    av_log(NULL, AV_LOG_INFO, "Parsing PPS : id:%d \n", pps->pps_id);
 
-    print_cabac("pps_pic_parameter_set_id", pps_id);
-    if (pps_id >= MAX_PPS_COUNT) {
-        av_log(avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", pps_id);
+    print_cabac("pps_pic_parameter_set_id", pps->pps_id);
+    if (pps->pps_id >= MAX_PPS_COUNT) {
+        av_log(avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", pps->pps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
@@ -2848,11 +2850,11 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     }
     if (!ps->sps_list[pps->sps_id]) {
         av_log(avctx, AV_LOG_ERROR, "SPS %u does not exist.\n", pps->sps_id);
-        ret = AVERROR_INVALIDDATA;
-        goto err;
+        //ret = AVERROR_INVALIDDATA;
+        //goto err;
     }
-
-    sps = (HEVCSPS *)ps->sps_list[pps->sps_id]->data;
+    if ((HEVCSPS *)ps->sps_list[pps->sps_id])
+        sps = (HEVCSPS *)ps->sps_list[pps->sps_id]->data;
 
     pps->dependent_slice_segments_enabled_flag = get_bits1(gb);
     pps->output_flag_present_flag              = get_bits1(gb);
@@ -2884,8 +2886,8 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         print_cabac("diff_cu_qp_delta_depth", pps->diff_cu_qp_delta_depth);
     }   
 
-    if (pps->diff_cu_qp_delta_depth < 0 ||
-        pps->diff_cu_qp_delta_depth > sps->log2_diff_max_min_cb_size) {
+    if (sps && (pps->diff_cu_qp_delta_depth < 0 ||
+        pps->diff_cu_qp_delta_depth > sps->log2_diff_max_min_cb_size)) {
         av_log(avctx, AV_LOG_ERROR, "diff_cu_qp_delta_depth %d is invalid\n",
                pps->diff_cu_qp_delta_depth);
         ret = AVERROR_INVALIDDATA;
@@ -2933,14 +2935,14 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         print_cabac("num_tile_columns_minus1", pps->num_tile_columns - 1);
         print_cabac("num_tile_rows_minus1", pps->num_tile_rows - 1);
 
-        if (pps->num_tile_columns <= 0 ||
+        if (sps && pps->num_tile_columns <= 0 ||
             pps->num_tile_columns >= sps->width) {
             av_log(avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
                    pps->num_tile_columns - 1);
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
-        if (pps->num_tile_rows <= 0 ||
+        if (sps && pps->num_tile_rows <= 0 ||
             pps->num_tile_rows >= sps->height) {
             av_log(avctx, AV_LOG_ERROR, "num_tile_rows_minus1 out of range: %d\n",
                    pps->num_tile_rows - 1);
@@ -2967,12 +2969,13 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
                 print_cabac("column_width_minus1", pps->column_width[i]-1);
 
             }
-            if (sum >= sps->ctb_width) {
+            if (sps && sum >= sps->ctb_width) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid tile widths.\n");
                 ret = AVERROR_INVALIDDATA;
                 goto err;
             }
-            pps->column_width[pps->num_tile_columns - 1] = sps->ctb_width - sum;
+            if(sps)
+                pps->column_width[pps->num_tile_columns - 1] = sps->ctb_width - sum;
 
             sum = 0;
             for (i = 0; i < pps->num_tile_rows - 1; i++) {
@@ -2980,12 +2983,13 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
                 print_cabac("row_height_minus1", pps->row_height[i]-1);
                 sum               += pps->row_height[i];
             }
-            if (sum >= sps->ctb_height) {
+            if (sps && sum >= sps->ctb_height) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid tile heights.\n");
                 ret = AVERROR_INVALIDDATA;
                 goto err;
             }
-            pps->row_height[pps->num_tile_rows - 1] = sps->ctb_height - sum;
+            if(sps)
+                pps->row_height[pps->num_tile_rows - 1] = sps->ctb_height - sum;
         }
         pps->loop_filter_across_tiles_enabled_flag = get_bits1(gb);
         print_cabac("loop_filter_across_tiles_enabled_flag",  pps->loop_filter_across_tiles_enabled_flag);
@@ -3038,7 +3042,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     print_cabac("lists_modification_present_flag", pps->lists_modification_present_flag);
     print_cabac("log2_parallel_merge_level_minus2", pps->log2_parallel_merge_level-2 );
 
-    if (pps->log2_parallel_merge_level > sps->log2_ctb_size) {
+    if (sps && pps->log2_parallel_merge_level > sps->log2_ctb_size) {
         av_log(avctx, AV_LOG_ERROR, "log2_parallel_merge_level_minus2 out of range: %d\n",
                pps->log2_parallel_merge_level - 2);
         ret = AVERROR_INVALIDDATA;
@@ -3063,10 +3067,10 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         print_cabac("pps_multilayer_extension_flag", pps_multilayer_extension_flag);
         print_cabac("pps_extension_6bits",           pps_extension_6bits);
 
-        if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
+        if (sps && sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
             av_log(avctx, AV_LOG_ERROR,
                    "PPS extension flag is partially implemented.\n");
-            if ((ret = pps_range_extensions(gb, avctx, pps, sps)) < 0)
+            if ((ret = pps_range_extensions(gb, avctx, pps)) < 0)
                 goto err;
         }
         if (pps_multilayer_extension_flag) {
@@ -3074,11 +3078,11 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
                    "hack with the spec.\n"
                    "use pps_range_extensions_flag instead of pps_multilayer_extension_flag\n."
                    "PPS multilayer extension flag is partially implemented.\n");
-            pps_multilayer_extensions(gb, avctx, pps, sps);
+            pps_multilayer_extensions(gb, avctx, pps);
         }
     }
 
-    ret = setup_pps(avctx, gb, pps, sps);
+    ret = setup_pps(avctx, pps, sps);
     if (ret < 0)
         goto err;
 
@@ -3088,9 +3092,8 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
       /*  goto err; */ /* TODO with  EXT_A_ericsson_4.bit */
     }
 
-    remove_pps(ps, pps_id);
-
-    ps->pps_list[pps_id] = pps_buf;
+    remove_pps(ps, pps->pps_id);
+    ps->pps_list[pps->pps_id] = pps_buf;
 
     return 0;
 
