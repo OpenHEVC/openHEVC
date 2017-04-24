@@ -686,7 +686,7 @@ static int hls_slice_header(HEVCContext *s)
     sh->pps_id = get_ue_golomb_long(gb);
     print_cabac("slice_pic_parameter_set_id", sh->pps_id);
     if (sh->pps_id >= MAX_PPS_COUNT || !s->ps.pps_list[sh->pps_id]) {
-        av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
+        av_log(s->avctx, AV_LOG_ERROR, "PPS %d does not exist.\n", sh->pps_id);
         return AVERROR_INVALIDDATA;
     }
     if (!sh->first_slice_in_pic_flag &&
@@ -723,7 +723,7 @@ static int hls_slice_header(HEVCContext *s)
         s->max_ra     = INT_MAX;
     }
 
-    setup_pps(s->avctx, s->ps.pps, s->ps.sps);
+    setup_pps(s->avctx, (HEVCPPS*)s->ps.pps, (HEVCSPS*)s->ps.sps);
 
     if(change_pps && s->decoder_id)
         set_el_parameter(s);
