@@ -1141,7 +1141,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
     int i,j;
     HEVCVPS *vps;
     AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
-    av_log(NULL, AV_LOG_INFO, "Parsing VPS : size:%d %d\n", gb->size_in_bits, gb->buffer_end - gb->buffer);
+    av_log(NULL, AV_LOG_TRACE, "Parsing VPS : size:%d %ld\n", gb->size_in_bits, gb->buffer_end - gb->buffer);
     if (!vps_buf)
         return AVERROR(ENOMEM);
 
@@ -1154,7 +1154,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "VPS id out of range: %d\n", vps->vps_id);
         goto err;
     }
-    av_log(NULL, AV_LOG_INFO, "Parsing VPS : id:%d \n", vps->vps_id);
+    av_log(NULL, AV_LOG_TRACE, "Parsing VPS : id:%d \n", vps->vps_id);
     print_cabac("vps_video_parameter_set_id", vps->vps_id);
 
     vps->vps_base_layer_internal_flag  = get_bits(gb, 1);
@@ -1656,7 +1656,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     int ret    = 0;
     int start;
     int i;
-    av_log(NULL, AV_LOG_INFO, "Parsing SPS : size:%d %d \n", gb->size_in_bits >> 3, gb->buffer_end - gb->buffer);
+    av_log(NULL, AV_LOG_TRACE, "Parsing SPS : size:%d %ld \n", gb->size_in_bits >> 3, gb->buffer_end - gb->buffer);
     print_cabac(" \n --- parse sps --- \n ", nuh_layer_id);
 
     //FIXME: We should not need to init those since sps use allocz
@@ -1720,7 +1720,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
     sps->sps_id = *sps_id = get_ue_golomb_long(gb);
 
-    av_log(NULL, AV_LOG_INFO, "Parsing SPS : id:%d \n", sps->sps_id);
+    av_log(NULL, AV_LOG_TRACE, "Parsing SPS : id:%d \n", sps->sps_id);
 
     print_cabac("sps_seq_parameter_set_id", sps_id);
 
@@ -2800,7 +2800,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     HEVCSPS     *sps = NULL;
     HEVCPPS     *pps = av_mallocz(sizeof(*pps));
 
-    av_log(NULL, AV_LOG_INFO, "Parsing PPS : size:%d %d\n", gb->size_in_bits, gb->buffer_end - gb->buffer);
+    av_log(NULL, AV_LOG_TRACE, "Parsing PPS : size:%d %ld\n", gb->size_in_bits, gb->buffer_end - gb->buffer);
 
     int i, ret = 0;
     unsigned int pps_id = 0;
@@ -2833,7 +2833,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
 
     // Coded parameters
     pps->pps_id = get_ue_golomb_long(gb);
-    av_log(NULL, AV_LOG_INFO, "Parsing PPS : id:%d \n", pps->pps_id);
+    av_log(NULL, AV_LOG_TRACE, "Parsing PPS : id:%d \n", pps->pps_id);
 
     print_cabac("pps_pic_parameter_set_id", pps->pps_id);
     if (pps->pps_id >= MAX_PPS_COUNT) {
@@ -3055,7 +3055,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     print_cabac("slice_segment_header_extension_present_flag", pps->slice_segment_header_extension_present_flag);
     print_cabac("pps_extension_present_flag", pps_extension_present_flag);
 
-        av_log(avctx, AV_LOG_ERROR,
+        av_log(avctx, AV_LOG_TRACE,
                "Remaining bits PPS before extensions %d bits\n", get_bits_left(gb));
 
     if (pps_extension_present_flag) { // pps_extension_present_flag
