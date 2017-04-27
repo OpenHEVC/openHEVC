@@ -479,7 +479,17 @@ list(APPEND libfilenames
     libavcodec/x86/h264chroma_init.c
     #libavcodec/x86/xvididct_init.c
 )
+#EMT
+option(EMT_ENABLED "" ON)
+if(EMT_ENABLED)
+list(APPEND libfilenames
+   libavcodec/x86/emt_idct_avx2.c
+)
 endif()
+
+endif()
+
+
 
 if(WIN32)
 list(APPEND libfilenames
