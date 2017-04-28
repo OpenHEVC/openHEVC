@@ -1899,7 +1899,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #if COM16_C806_EMT
         } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
             enum IntraPredMode ucMode = INTER_MODE_IDX;
-            DECLARE_ALIGNED(16, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE]);
+            DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE]);
             int zo = 1;
             int tu_emt_Idx =  (c_idx || !s->HEVClc->cu.emt_cu_flag ) ? DCT2_EMT : s->HEVClc->tu.emt_tu_idx;
             int tr_idx_h  = DCT_II;

@@ -660,9 +660,13 @@ mc_bi_w_funcs(qpel_hv, 12, sse4)
         OH_PEL_LINK(pointer, 8, my , mx , fname##48,  bitd, opt ); \
         OH_PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
 #endif
+
+
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
+
+
 
     if (bit_depth == 8) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
@@ -686,7 +690,17 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_8_sse2;
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_sse2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_sse2;
+#if COM16_C806_EMT
+            c->idct2_emt_v[0][4][0] = emt_idst_VII_4x4_v_avx2_8;
+            c->idct2_emt_v[1][4][0] = emt_idst_VII_4x4_v_avx2_8;
+            c->idct2_emt_h[0][4][0] = emt_idst_VII_4x4_h_avx2_8;
+            c->idct2_emt_h[1][4][0] = emt_idst_VII_4x4_h_avx2_8;
 
+            c->idct2_emt_v[0][5][0] = emt_idct_VIII_4x4_v_avx2_8;
+            c->idct2_emt_v[1][5][0] = emt_idct_VIII_4x4_v_avx2_8;
+            c->idct2_emt_h[0][5][0] = emt_idct_VIII_4x4_h_avx2_8;
+            c->idct2_emt_h[1][5][0] = emt_idct_VIII_4x4_h_avx2_8;
+#endif
 //Fixme ffmpeg or openHEVC optim
 /*
             c->transform_add[1]    = ff_hevc_transform_add8_8_sse2;
@@ -738,6 +752,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
             c->sao_band_filter    = oh_hevc_sao_band_filter_0_8_sse;
             c->sao_edge_filter    = oh_hevc_sao_edge_filter_8_sse;
+
 
             // c->sao_band_filter    = ff_hevc_sao_band_filter_0_8_sse;
             // c->sao_edge_filter[0] = sao_edge_filter_0_sse_8;
@@ -897,7 +912,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct[1] = oh_hevc_transform_8x8_10_sse2;
             c->idct[2] = oh_hevc_transform_16x16_10_sse2;
             c->idct[3] = oh_hevc_transform_32x32_10_sse2;
-
         }
         if (EXTERNAL_SSSE3(cpu_flags) && ARCH_X86_64) {
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
