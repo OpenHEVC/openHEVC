@@ -4554,7 +4554,7 @@ static void FUNC(map_color_block)(const void *pc3DAsymLUT_,
 
             int knext = (is_bound_r && (k == (dst_width >> 1) - 1)) ? k : k+1;
 
-            uint16_t val[6], val_dst[6], val_prev[2];
+            int16_t val[6], val_dst[6], val_prev[2];
 
             val[0] = src_Y[j];
             val[1] = src_Y[j+1];
@@ -4729,7 +4729,7 @@ static void FUNC(map_color_block_8)(const void *pc3DAsymLUT_,
 
             int knext = (is_bound_r && (k == (dst_width >> 1) - 1)) ? k : k+1;
 
-            uint16_t val[6], val_dst[6], val_prev[2];
+            int16_t val[6], val_dst[6], val_prev[2];
 
             val[0] = src_Y[j];
             val[1] = src_Y[j+1];
