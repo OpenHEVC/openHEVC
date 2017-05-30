@@ -42,6 +42,7 @@ How to compile openHEVC on linux from source code
 
 ```sh
 git clone git://github.com/OpenHEVC/openHEVC.git
+cd openHEVC
 git checkout hevc_rext
 ```
 * install yasm
