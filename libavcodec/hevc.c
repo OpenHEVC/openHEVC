@@ -704,8 +704,8 @@ static int hls_slice_header(HEVCContext *s)
 
     if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
-
-    if (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data) {
+//if (s->ps.sps_list[s->ps.pps->sps_id]!=NULL)
+    if (s->ps.sps_list[s->ps.pps->sps_id] && (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data)) {
         const HEVCSPS* last_sps = s->ps.sps;
         s->ps.sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
         if (last_sps && IS_IRAP(s) && s->nal_unit_type != NAL_CRA_NUT) {
@@ -721,6 +721,9 @@ static int hls_slice_header(HEVCContext *s)
 
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
+    } else if ((HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]==NULL) {
+        av_log(s,AV_LOG_ERROR, "Can't find SPS %d. Aborting...\n",s->ps.pps->sps_id);
+        return -1;
     }
 
     setup_pps(s->avctx, (HEVCPPS*)s->ps.pps, (HEVCSPS*)s->ps.sps);
