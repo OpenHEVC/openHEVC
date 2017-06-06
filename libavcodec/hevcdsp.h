@@ -22,7 +22,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-//#include "hevc.h"
+#ifndef OHVZ
+#include "hevc.h"
+#endif
 
 #ifndef AVCODEC_HEVCDSP_H
 #define AVCODEC_HEVCDSP_H

@@ -11,6 +11,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = ohvisualizer
 TEMPLATE = app
 
+DEFINES += "OHVZ"
+
 LIBS += -L../build -lLibOpenHevcWrapper
 
 INCLUDEPATH += ..\

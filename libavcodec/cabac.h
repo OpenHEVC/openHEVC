@@ -29,7 +29,9 @@
 
 #include <stdint.h>
 
-//#include "put_bits.h"
+#ifndef OHVZ
+#include "put_bits.h"
+#endif
 
 extern const uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
 #define H264_NORM_SHIFT_OFFSET 0
@@ -47,7 +49,9 @@ typedef struct CABACContext{
     const uint8_t *bytestream_start;
     const uint8_t *bytestream;
     const uint8_t *bytestream_end;
-//    PutBitContext pb;
+#ifndef OHVZ
+    PutBitContext pb;
+#endif
 }CABACContext;
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);

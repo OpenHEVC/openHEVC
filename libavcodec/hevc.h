@@ -475,17 +475,18 @@ typedef struct PTL {
 
 
 
-
-//enum ChromaFormat
-//{
-//    CHROMA_400  = 0,
-//    CHROMA_420  = 1,
-//    CHROMA_422  = 2,
-//    CHROMA_444  = 3
-//#if AUXILIARY_PICTURES
-//    ,NUM_CHROMA_FORMAT = 4
-//#endif
-//};
+#ifndef OHVZ
+enum ChromaFormat
+{
+   CHROMA_400  = 0,
+   CHROMA_420  = 1,
+   CHROMA_422  = 2,
+   CHROMA_444  = 3
+#if AUXILIARY_PICTURES
+   ,NUM_CHROMA_FORMAT = 4
+#endif
+};
+#endif
 
 #define MULTIPLE_PTL_SUPPORT 1
 enum Profiles   {
