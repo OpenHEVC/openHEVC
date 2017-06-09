@@ -59,7 +59,7 @@
         vst1.16     d22[0], [r0], r1
 .endm
 
-.macro loop_epel_neon_8 funtype dirtype
+.macro loop_epel_neon_8 funtype dirtype load_coeffs load_coeffs_32 preload_data_v preload_data_hv load_data_h8 load_data_h42 load_data_v load_data_hv8 load_data_hv42 exec_filter exec_filter_hv8 exec_filter_hv42
         // Retreive arguments
         push   {r4-r12}
 .if \funtype == fun_pre
@@ -114,10 +114,10 @@
 
         // Initialize Filter Coefficients
         sub  r6, #1
-        load_coeffs r6 \dirtype
+        \load_coeffs r6 \dirtype
 .if \dirtype == dir_hv
         sub  r7, #1
-        load_coeffs_32 r7
+        \load_coeffs_32 r7
 .endif
         // Initialize Indexes
 .if \funtype == fun_pre
@@ -132,10 +132,10 @@
 .endif
         // Preload data in memory
 .if \dirtype == dir_v
-        preload_data_v
+        \preload_data_v
 .endif
 .if \dirtype == dir_hv
-        preload_data_hv
+        \preload_data_hv
 .endif
         cmp  r5, #6
         bgt  8f
@@ -144,19 +144,19 @@
         b    4f
 8:
 .if \dirtype == dir_h
-        load_data_h8
+        \load_data_h8
 .endif
 .if \dirtype == dir_v
-        load_data_v
+        \load_data_v
 .endif
 .if \dirtype == dir_hv
-        load_data_hv8
+        \load_data_hv8
 .endif
 .if \dirtype != dir_hv
-        exec_filter q11
+        \exec_filter q11
 .else
-        exec_filter q12
-        exec_filter_hv8 d22 d23
+        \exec_filter q12
+        \exec_filter_hv8 d22 d23
 .endif
         subs r4, #1
 .if \funtype == fun_uni
@@ -189,28 +189,28 @@
         mov       r8, r10
 .endif
 .if \dirtype == dir_v
-        preload_data_v
+        \preload_data_v
 .endif
 .if \dirtype == dir_hv
-        preload_data_hv
+        \preload_data_hv
 .endif
         cmp       r5, #4
         bgt       8b
 4:
 .if \dirtype == dir_h
-        load_data_h42
+        \load_data_h42
 .endif
 .if \dirtype == dir_v
-        load_data_v
+        \load_data_v
 .endif
 .if \dirtype == dir_hv
-        load_data_hv42
+        \load_data_hv42
 .endif
 .if \dirtype != dir_hv
-        exec_filter q11
+        \exec_filter q11
 .else
-        exec_filter q12
-        exec_filter_hv42 d22
+        \exec_filter q12
+        \exec_filter_hv42 d22
 .endif
         subs r4, #1
 .if \funtype == fun_uni
@@ -243,26 +243,26 @@
         mov       r8, r10
 .endif
 .if \dirtype == dir_v
-        preload_data_v
+        \preload_data_v
 .endif
 .if \dirtype == dir_hv
-        preload_data_hv
+        \preload_data_hv
 .endif
 2:
 .if \dirtype == dir_h
-        load_data_h42
+        \load_data_h42
 .endif
 .if \dirtype == dir_v
-        load_data_v
+        \load_data_v
 .endif
 .if \dirtype == dir_hv
-        load_data_hv42
+        \load_data_hv42
 .endif
 .if \dirtype != dir_hv
-        exec_filter q11
+        \exec_filter q11
 .else
-        exec_filter q12
-        exec_filter_hv42 d22
+        \exec_filter q12
+        \exec_filter_hv42 d22
 .endif
         subs r4, #1
 .if \funtype == fun_uni
