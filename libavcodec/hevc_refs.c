@@ -256,6 +256,11 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 
         /* wait for more frames before output */
         if (!flush && s->seq_output == s->seq_decode && s->ps.sps &&
+            nb_output <= s->ps.sps->temporal_layer[s->ps.sps->sps_max_sub_layers - 1].num_reorder_pics  + s->interlaced) {
+            return 0;
+        }
+
+        if (!flush && s->seq_output == s->seq_decode && s->ps.sps &&
             nb_output <= s->ps.vps->vps_max_num_reorder_pics[s->ps.vps->vps_max_sub_layers - 1] + s->interlaced) {
             return 0;
         }
