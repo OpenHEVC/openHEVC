@@ -931,3 +931,16 @@ const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle)
     return "OpenHEVC v"NV_VERSION;
 }
 
+void oh_set_crypto_mode(OpenHevc_Handle openHevcHandle, int val)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext;
+    int i;
+
+    for (i = 0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_int(openHevcContext->c->priv_data, "crypto-param", val, 0);
+    }
+
+}
+

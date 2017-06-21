@@ -3837,11 +3837,13 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 #if HEVC_ENCRYPTION
     if(!s->tile_table_encry){
         s->tile_table_encry = av_mallocz(sizeof(uint8_t)*s->ps.pps->num_tile_columns * s->ps.pps->num_tile_rows);
+        s->tile_table_encry[0]=1;
     } else if (s->ps.pps->num_tile_columns != s->prev_num_tile_columns ||
                s->ps.pps->num_tile_rows != s->prev_num_tile_rows){
         if(s->tile_table_encry)
             av_freep(&s->tile_table_encry);
         s->tile_table_encry = av_mallocz(sizeof(uint8_t)*s->ps.pps->num_tile_columns*s->ps.pps->num_tile_rows);
+        s->tile_table_encry[0]=1;
     }
 
     s->prev_num_tile_columns = s->ps.pps->num_tile_columns;
@@ -4851,7 +4853,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->enable_parallel_tiles = 0;
     s->picture_struct = 0;
 #if HEVC_ENCRYPTION
-    s->encrypt_params =  HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS | HEVC_CRYPTO_INTRA_PRED_MODE;
+    //s->encrypt_params =  HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS | HEVC_CRYPTO_INTRA_PRED_MODE;
     s->last_click_pos.den = 0;
     s->last_click_pos.num = 0;
     s->tile_table_encry = NULL;
@@ -4933,6 +4935,8 @@ static const AVOption options[] = {
 #if HEVC_ENCRYPTION
     { "mouse-click-pos", "select tile from last click position and enable/disable encryption",OFFSET(last_click_pos),
        AV_OPT_TYPE_RATIONAL,{.dbl = 0},0,INT_MAX,PAR },
+       { "crypto-param", "",OFFSET(encrypt_params),
+       AV_OPT_TYPE_INT,{.i64 = 0},0,32,PAR },
 #endif
     { NULL },
 };

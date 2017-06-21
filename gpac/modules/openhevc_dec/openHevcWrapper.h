@@ -243,6 +243,8 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlush(OpenHevc_Handle openHevcHandle);
 void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId);
 
+void oh_set_crypto_mode(OpenHevc_Handle openHevcHandle, int val);
+
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 
 #ifdef __cplusplus

@@ -80,6 +80,10 @@
 #include <windows.h>
 #endif
 
+#ifdef HEVC_ENCRYPTION
+#include "libavcodec/hevc.h"
+#endif
+
 static int init_report(const char *env);
 
 AVDictionary *sws_dict;
@@ -187,6 +191,36 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
     }
     return us;
 }
+
+#ifdef HEVC_ENCRYPTION
+int parse_crypto_args_or_die(const char *context, const char *crystr,
+                             int min, int max)
+{
+    int encrypt_params = 0;
+    char delim[] = "+|";
+    char *str;
+    char *token;
+    str = av_strdup(crystr);   
+    token = strtok(str, delim);
+    while(token!=NULL){
+        if(strcmp(token,"mv_signs")==0)
+            encrypt_params|=HEVC_CRYPTO_MV_SIGNS;
+        else if(strcmp(token,"mvs")==0)
+            encrypt_params|=HEVC_CRYPTO_MVs;
+        else if(strcmp(token,"trans_coeffs")==0)
+            encrypt_params|=HEVC_CRYPTO_TRANSF_COEFFS;
+        else if(strcmp(token,"trans_coeff_signs")==0)
+            encrypt_params|=HEVC_CRYPTO_TRANSF_COEFF_SIGNS;
+        else if(strcmp(token,"intra_pred_modes")==0)
+            encrypt_params|=HEVC_CRYPTO_INTRA_PRED_MODE;
+        else if(strcmp(token,"on")==0)
+            encrypt_params|=HEVC_CRYPTO_ON;
+        
+        token = strtok(NULL,delim);
+    }
+    return encrypt_params;
+}
+#endif
 
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
                        int rej_flags, int alt_flags)
@@ -328,7 +362,6 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         (*so)[*dstcount - 1].specifier = str;
         dst = &(*so)[*dstcount - 1].u;
     }
-
     if (po->flags & OPT_STRING) {
         char *str;
         str = av_strdup(arg);
@@ -346,6 +379,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         *(float *)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
     } else if (po->flags & OPT_DOUBLE) {
         *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
+    } else if (po->flags & OPT_CRYPTO) {
+        *(int *)dst = parse_crypto_args_or_die(opt, arg, 0, INT_MAX);
     } else if (po->u.func_arg) {
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {
@@ -354,7 +389,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
                    arg, opt, av_err2str(ret));
             return ret;
         }
-    }
+    } 
     if (po->flags & OPT_EXIT)
         exit_program(0);
 
@@ -364,6 +399,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
 int parse_option(void *optctx, const char *opt, const char *arg,
                  const OptionDef *options)
 {
+
     const OptionDef *po;
     int ret;
 
