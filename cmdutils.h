@@ -148,7 +148,7 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
                           int is_duration);
 
 /**
- * Parse a string  containing the crypto args 
+ * Parse a string  containing the args of an enum 
  * and return its corresponding value as an int.
  * Exit from the application if the string cannot be correctly
  * parsed or the corresponding value is invalid.
@@ -159,7 +159,7 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
  * @param min the minimum valid accepted value
  * @param max the maximum valid accepted value
  */
-int parse_crypto_args_or_die(const char *context, const char *crystr,
+int parse_enum_args(const char *context, const char *enumstr, char *name,
                              int min, int max);
 
 typedef struct SpecifierOpt {
@@ -182,7 +182,7 @@ typedef struct OptionDef {
 #define OPT_STRING 0x0008
 #define OPT_VIDEO  0x0010
 #define OPT_AUDIO  0x0020
-#define OPT_CRYPTO 0x0040
+#define OPT_ENUM   0x0040
 #define OPT_INT    0x0080
 #define OPT_FLOAT  0x0100
 #define OPT_SUBTITLE 0x0200

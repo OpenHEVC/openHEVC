@@ -71,7 +71,7 @@ static const OptionDef options[] = {
     { "r", HAS_ARG | OPT_FLOAT, { &frame_rate }, "Frame rate (FPS)", "n"},
     { "v", OPT_BOOL, { &h264_flags }, "Input is a h264 bitstream" },
     { "e", HAS_ARG | OPT_STRING, { &enhance_file }, "Enhanced layer file (with AVC base)", "file" },
-    {"-crypto", HAS_ARG | OPT_CRYPTO, {&crypto_args}, " Encryption configuration","params"},
+    {"-crypto", HAS_ARG | OPT_ENUM, {&crypto_args}, " Encryption configuration","params"},
     { NULL, },
 };
 

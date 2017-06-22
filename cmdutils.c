@@ -192,35 +192,82 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
     return us;
 }
 
-#ifdef HEVC_ENCRYPTION
-int parse_crypto_args_or_die(const char *context, const char *crystr,
+static int parse_enum_n(const char *arg, unsigned num_chars, const char * const *names, int8_t *dst)
+{
+  int8_t i;
+  for (i = 0; names[i]; i++) {
+    if (!strncmp(arg, names[i], num_chars)) {
+      *dst = i;
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+static int parse_enum(const char *arg, const char * const *names, int8_t *dst)
+{
+  return parse_enum_n(arg, 255, names, dst);
+}
+
+int parse_enum_args(const char *context, const char *enumstr, char *name,
                              int min, int max)
 {
-    int encrypt_params = 0;
-    char delim[] = "+|";
-    char *str;
-    char *token;
-    str = av_strdup(crystr);   
-    token = strtok(str, delim);
-    while(token!=NULL){
-        if(strcmp(token,"mv_signs")==0)
-            encrypt_params|=HEVC_CRYPTO_MV_SIGNS;
-        else if(strcmp(token,"mvs")==0)
-            encrypt_params|=HEVC_CRYPTO_MVs;
-        else if(strcmp(token,"trans_coeffs")==0)
-            encrypt_params|=HEVC_CRYPTO_TRANSF_COEFFS;
-        else if(strcmp(token,"trans_coeff_signs")==0)
-            encrypt_params|=HEVC_CRYPTO_TRANSF_COEFF_SIGNS;
-        else if(strcmp(token,"intra_pred_modes")==0)
-            encrypt_params|=HEVC_CRYPTO_INTRA_PRED_MODE;
-        else if(strcmp(token,"on")==0)
-            encrypt_params|=HEVC_CRYPTO_ON;
-        
-        token = strtok(NULL,delim);
+    static const char * const crypto_toggle_names[] = { "off", "on", NULL };
+    static const char * const crypto_feature_names[] = { "mvs", "mv_signs", "trans_coeffs", "trans_coeff_signs", "intra_pred_modes", NULL };
+
+
+    int valToReturn = 0;
+
+#define OPT(STR) (!strcmp(name, STR))
+    if OPT("crypto")
+    {
+        // Disallow turning on the encryption when it's not compiled in.
+    if(!HEVC_ENCRYPTION){
+        fprintf(stderr, "\x1B[31m--crypto cannot be enabled because it's not compiled in.\n\x1B[0m");
+        return 0;
     }
-    return encrypt_params;
+        fprintf(stderr,"test\n");
+        // on, off, feature1+feature2
+
+        const char *token_begin = av_strdup(enumstr);
+        const char *cur = token_begin;
+
+        valToReturn = HEVC_CRYPTO_OFF;
+
+        // If value is on or off, set all features to on or off.
+        int8_t toggle = 0;
+        if (parse_enum(token_begin, crypto_toggle_names, &toggle)) {
+            if (toggle == 1) {
+                valToReturn = HEVC_CRYPTO_ON;
+            }
+        } else {
+        // Try and parse "feature1+feature2" type list.
+            for (;;) {
+                if (*cur == '+' || *cur == '\0' || *cur == '|') {
+                    int8_t feature = 0;
+                    int num_chars = cur - token_begin;
+                    if (parse_enum_n(token_begin, num_chars, crypto_feature_names, &feature)) {
+                        valToReturn |= (1 << feature);
+                    } else {
+                        valToReturn = HEVC_CRYPTO_OFF;
+                        return valToReturn;
+                    }
+                    token_begin = cur + 1;
+                }
+
+                if (*cur == '\0') {
+                    break;
+                } else {
+                    ++cur;
+                }
+            }
+        }
+    
+    }
+    return valToReturn;
 }
-#endif
+
 
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
                        int rej_flags, int alt_flags)
@@ -379,8 +426,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         *(float *)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
     } else if (po->flags & OPT_DOUBLE) {
         *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
-    } else if (po->flags & OPT_CRYPTO) {
-        *(int *)dst = parse_crypto_args_or_die(opt, arg, 0, INT_MAX);
+    } else if (po->flags & OPT_ENUM) {
+        *(int *)dst = parse_enum_args(opt, arg, "crypto", 0, INT_MAX);
     } else if (po->u.func_arg) {
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {
