@@ -16,7 +16,7 @@ typedef struct AESDecoder {
 } AESDecoder;
 
 AESDecoder* Create(void);
-void  Init(AESDecoder* AESdecoder);
+void  Init(AESDecoder* AESdecoder, uint8_t *key);
 void DeleteCrypto(AESDecoder * AESdecoder);
 void Decrypt(AESDecoder *AESdecoder, const unsigned char *in_stream, int size_bits, unsigned char  *out_stream);
 void Incr_counter (unsigned char *counter);
@@ -31,13 +31,23 @@ AESDecoder* Create() {
 	AESDecoder * AESdecoder = (AESDecoder *)malloc(sizeof(AESDecoder));
 	return AESdecoder;
 }
-void  Init(AESDecoder* AESdecoder) {
-    int init_val[32] = {201, 75, 219, 152, 6, 245, 237, 107, 179, 194, 81, 29, 66, 98, 198, 0, 16, 213, 27, 56, 255, 127, 242, 112, 97, 126, 197, 204, 25, 59, 38, 30};
+void  Init(AESDecoder* AESdecoder, uint8_t *opt_key) {
+
+    uint8_t *key;
+    uint8_t default_IV[16] = {201, 75, 219, 152, 6, 245, 237, 107, 179, 194, 81, 29, 66, 98, 198, 0};
+    uint8_t default_key[16] = {16, 213, 27, 56, 255, 127, 242, 112, 97, 126, 197, 204, 25, 59, 38, 30};
+
+    if(opt_key!=NULL)
+        key = opt_key;
+    else
+        key = default_key;
+    
     for(int i=0;i<16; i++) {
-        AESdecoder->iv [i]     = init_val[i];
-        AESdecoder->counter[i] = init_val[5+i];
-        AESdecoder->key[i]     = init_val[i+16];
+        AESdecoder->iv [i]     = default_IV[i];
+        AESdecoder->counter[i] = (i<=10)? default_IV[5+i] : key[i-11];
+        AESdecoder->key[i]     = key[i];
     }
+
 #if AESEncryptionStreamMode
     AESdecoder->CFBdec = new CryptoPP::CFB_Mode<CryptoPP::AES >::Encryption(AESdecoder->key, CryptoPP::AES::DEFAULT_KEYLENGTH, AESdecoder->iv);
 #else
@@ -120,8 +130,8 @@ Crypto_Handle CreateC() {
 	    return AESdecoder;
 }
 
-void InitC(Crypto_Handle hdl) {
-    Init((AESDecoder*)hdl);
+void InitC(Crypto_Handle hdl, uint8_t *init_val) {
+    Init((AESDecoder*)hdl, init_val);
 }
 #if AESEncryptionStreamMode
 unsigned int ff_get_key (Crypto_Handle *hdl, int nb_bits) {

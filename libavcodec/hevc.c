@@ -3399,7 +3399,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         ff_reset_entries(s->avctx);
     }
 #if HEVC_ENCRYPTION
-    InitC(s->HEVClc->dbs_g);
+    InitC(s->HEVClc->dbs_g, s->encrypt_init_val);
     s->HEVClc->prev_pos = 0;
 #endif
     s->data = nal;
@@ -3415,7 +3415,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
 #if HEVC_ENCRYPTION
-        InitC(s->sList[i]->HEVClc->dbs_g);
+        InitC(s->sList[i]->HEVClc->dbs_g, s->encrypt_init_val);
         s->sList[i]->HEVClc->prev_pos = 0;
 #endif
     }
@@ -4935,8 +4935,10 @@ static const AVOption options[] = {
 #if HEVC_ENCRYPTION
     { "mouse-click-pos", "select tile from last click position and enable/disable encryption",OFFSET(last_click_pos),
        AV_OPT_TYPE_RATIONAL,{.dbl = 0},0,INT_MAX,PAR },
-       { "crypto-param", "",OFFSET(encrypt_params),
+    { "crypto-param", "",OFFSET(encrypt_params),
        AV_OPT_TYPE_INT,{.i64 = 0},0,32,PAR },
+    { "crypto-key", "",OFFSET(encrypt_init_val),
+       AV_OPT_TYPE_BINARY },
 #endif
     { NULL },
 };

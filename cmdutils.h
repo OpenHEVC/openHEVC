@@ -155,12 +155,30 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
  *
  * @param context the context of the value to be set (e.g. the
  * corresponding command line option name)
- * @param numstr the string to be parsed
+ * @param enumstr the string to be parsed
+ * @param name the name of the enum to parse
  * @param min the minimum valid accepted value
  * @param max the maximum valid accepted value
  */
 int parse_enum_args(const char *context, const char *enumstr, char *name,
-                             int min, int max);
+                    int min, int max);
+
+/**
+ * Parse a string  containing an array (values delimited with ',') 
+ * and return its corresponding coeffs as an uint*.
+ * Exit from the application if the string cannot be correctly
+ * parsed or the corresponding value is invalid.
+ *
+ * @param context the context of the value to be set (e.g. the
+ * corresponding command line option name)
+ * @param keystr the string to be parsed
+ * @param size the size of the array to parse
+ * @param min the minimum valid accepted value
+ * @param max the maximum valid accepted value
+ */
+uint8_t* parse_array(const char *context, const char *keystr,int size,
+                     int min, int max);
+                             
 
 typedef struct SpecifierOpt {
     char *specifier;    /**< stream/chapter/program/... specifier */

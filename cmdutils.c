@@ -186,7 +186,7 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
     int64_t us;
     if (av_parse_time(&us, timestr, is_duration) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Invalid %s specification for %s: %s\n",
-               is_duration ? "duration" : "date", context, timestr);
+              is_duration ? "duration" : "date", context, timestr);
         exit_program(1);
     }
     return us;
@@ -223,12 +223,8 @@ int parse_enum_args(const char *context, const char *enumstr, char *name,
     if OPT("crypto")
     {
         // Disallow turning on the encryption when it's not compiled in.
-    if(!HEVC_ENCRYPTION){
-        fprintf(stderr, "\x1B[31m--crypto cannot be enabled because it's not compiled in.\n\x1B[0m");
-        return 0;
-    }
-        fprintf(stderr,"test\n");
-        // on, off, feature1+feature2
+    #if HEVC_ENCRYPTION
+         // on, off, feature1+feature2
 
         const char *token_begin = av_strdup(enumstr);
         const char *cur = token_begin;
@@ -263,9 +259,40 @@ int parse_enum_args(const char *context, const char *enumstr, char *name,
                 }
             }
         }
+        
+    #else
+        fprintf(stderr, "\x1B[31m--crypto cannot be enabled because it's not compiled in.\n\x1B[0m");
+        return 0;
+    #endif
     
     }
     return valToReturn;
+}
+
+uint8_t* parse_array(const char *context, const char *keystr, int size,
+                     int min, int max)
+{
+    #if HEVC_ENCRYPTION
+        uint8_t *coeff_key;
+        coeff_key = (uint8_t *)malloc(sizeof(uint8_t)*size);
+        char *key = av_strdup(keystr);
+        const char delim[] = ",";
+        char *token;
+        int i = 0;
+
+        token = strtok(key, delim);
+        while(token!=NULL&&i<size){
+            coeff_key[i] = (uint8_t)parse_number_or_die(context,token,OPT_INT,min,max);
+            i++;
+            token = strtok(NULL, delim);
+        }
+        if(i>=size && (token != NULL))
+            fprintf(stderr, "\x1B[31mparsing of the array failed : too many members.\n\x1B[0m");
+        return coeff_key;
+    #else
+        fprintf(stderr, "\x1B[31m--key cannot be enabled because encryption is not compiled in.\n\x1B[0m");
+        return NULL;
+    #endif
 }
 
 
@@ -395,7 +422,6 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     void *dst = po->flags & (OPT_OFFSET | OPT_SPEC) ?
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
     int *dstcount;
-
     if (po->flags & OPT_SPEC) {
         SpecifierOpt **so = dst;
         char *p = strchr(opt, ':');
@@ -428,6 +454,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
     } else if (po->flags & OPT_ENUM) {
         *(int *)dst = parse_enum_args(opt, arg, "crypto", 0, INT_MAX);
+    } else if (po->flags & OPT_DATA) {
+        *(uint8_t **)dst = parse_array(opt, arg, 16, 0, 255);
     } else if (po->u.func_arg) {
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {

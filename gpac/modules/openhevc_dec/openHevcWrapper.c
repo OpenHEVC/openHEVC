@@ -944,3 +944,15 @@ void oh_set_crypto_mode(OpenHevc_Handle openHevcHandle, int val)
 
 }
 
+void oh_set_crypto_key(OpenHevc_Handle openHevcHandle, uint8_t *val)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    OpenHevcWrapperContext  *openHevcContext;
+    int i;
+
+    for (i = 0; i < openHevcContexts->nb_decoders; i++) {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_bin(openHevcContext->c->priv_data, "crypto-key", val, 16*sizeof(uint8_t), 0);
+    }
+
+}
