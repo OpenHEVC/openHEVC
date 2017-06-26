@@ -375,7 +375,7 @@ typedef struct ShortTermRPS {
     int num_delta_pocs;
     int rps_idx_num_delta_pocs;
     int32_t delta_poc[32];
-    uint8_t used[32];
+    uint8_t used_by_curr_pic_flag[32];
 } ShortTermRPS;
 
 typedef struct LongTermRPS {
@@ -1112,25 +1112,50 @@ typedef struct HEVCParamSets {
 } HEVCParamSets;
 
 typedef struct SliceHeader {
-    unsigned int pps_id;
+
 
     ///< address (in raster order) of the first block in the current slice segment
-    unsigned int   slice_segment_addr;
+
     ///< address (in raster order) of the first block in the current slice
-    unsigned int   slice_addr;
+    unsigned int   slice_addr; // Diff with slice_segment_address ??
+
+    //Begin here
+
+    uint8_t first_slice_in_pic_flag;
+    uint8_t no_output_of_prior_pics_flag;
+    uint8_t slice_pps_id;
+    uint8_t dependent_slice_segment_flag;
+    unsigned int   slice_segment_address;//TODO check if uint8_t is enough
+
+    uint8_t discardable_flag;
+    uint8_t cross_layer_bla_flag;
+
 
     enum SliceType slice_type;
 
-    int pic_order_cnt_lsb;
-
-    uint8_t first_slice_in_pic_flag;
-    uint8_t dependent_slice_segment_flag;
     uint8_t pic_output_flag;
     uint8_t colour_plane_id;
+//Missing slice_reserved_flag ???
+
+    int slice_pic_order_cnt_lsb; //(unsigned ??)
 
     ///< RPS coded in the slice header itself is stored here
     int short_term_ref_pic_set_sps_flag;
-    int short_term_ref_pic_set_size;
+
+    int short_term_ref_pic_set_size;//(num_short_terme_ref_pic_sets ???)
+
+    //Begin parsing the short term ref pic set
+    //short_term_ref_pic_idx
+    //num_long_term_sps
+    //num_long_term_pics
+    //lt_idx_sps[]
+    //poc_lsb_lt[]
+    //used_by_curr_pic_lt_flag[]
+    //delta_poc_msb_present_flag[i]
+    //delta_poc_msb_cycle[i]
+
+
+    //TODO sort Short and long term ref pic etc.
     ShortTermRPS slice_rps;
     const ShortTermRPS *short_term_rps;
     int long_term_ref_pic_set_size;
@@ -1138,36 +1163,79 @@ typedef struct SliceHeader {
     unsigned int list_entry_lx[2][32];
 
     uint8_t rpl_modification_flag[2];
-    uint8_t no_output_of_prior_pics_flag;
+
+    //back here after rps
+
     uint8_t slice_temporal_mvp_enabled_flag;
 
-    unsigned int nb_refs[2];
+    int inter_layer_pred_enabled_flag;
+
+    //num_inter_layer_ref_pics///< num_inter_layer_ref_pics_minus1 + 1
+    //inter_layer_pred_layer_idc[i]
 
     uint8_t slice_sample_adaptive_offset_flag[3];
+    //slice_sao_luma && slice_sao_chroma
+
+    //num_ref_idx_active_override_flag
+    //num_ref_idx_l0_active_minus1
+    //num_ref_idx_l1_active_minus1
+
+    //ref_pic_list_modification()
+
     uint8_t mvd_l1_zero_flag;
 
     uint8_t cabac_init_flag;
-    uint8_t disable_deblocking_filter_flag; ///< slice_header_disable_deblocking_filter_flag
-    uint8_t slice_loop_filter_across_slices_enabled_flag;
-    uint8_t collocated_list;
+
+//    uint8_t collocated_from_l0_flag;
+
 
     unsigned int collocated_ref_idx;
 
-    int slice_qp_delta;
+    //five_minus_max_num_merge_cand
+
+    int slice_qp_delta; //(int8_t???)
     int slice_cb_qp_offset;
     int slice_cr_qp_offset;
 
     uint8_t cu_chroma_qp_offset_enabled_flag;
 
-    int8_t beta_offset;    ///< beta_offset_div2 * 2
-    int8_t tc_offset;      ///< tc_offset_div2 * 2
+    //deblocking_filter_override_flag ??
+    //slice_deblocking_filter_disabled_flag ??
+
+    int8_t slice_beta_offset;    ///< beta_offset_div2 * 2
+    int8_t slice_tc_offset;      ///< tc_offset_div2 * 2
+
+    uint8_t slice_loop_filter_across_slices_enabled_flag;
+
+    int num_entry_point_offsets;
+    //offset_len_minus1??
+    int *entry_point_offset; ///<entry_point_offset_minus1 + 1
+
+    unsigned int slice_segment_header_extension_length;
+    uint8_t poc_reset_idc;
+    uint8_t poc_reset_period_id;
+    uint8_t full_poc_reset_flag;
+    unsigned int poc_lsb_val;
+    uint8_t poc_msb_cycle_val_present_flag;
+    unsigned int poc_msb_cycle_val;
+    uint8_t slice_segment_header_extension_data_bit;
+
+    //TODO All of the following could be stored in a slice or a local ctx
+
+    int * offset;
+    int * size;
+
+    uint8_t collocated_list; //???
+
+    unsigned int nb_refs[2];
+
+    uint8_t disable_deblocking_filter_flag; ///< slice_header_disable_deblocking_filter_flag
+
+
 
     unsigned int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
 
-    int *entry_point_offset;
-    int * offset;
-    int * size;
-    int num_entry_point_offsets;
+
 
     int8_t slice_qp;
 
@@ -1185,22 +1253,21 @@ typedef struct SliceHeader {
     int16_t luma_offset_l1[16];
     int16_t chroma_offset_l1[16][2];
 
-    int inter_layer_pred_enabled_flag;
 
     int     active_num_ILR_ref_idx;        //< Active inter-layer reference pictures
     int     inter_layer_pred_layer_idc[MAX_LAYERS];
 
 #ifdef SVC_EXTENSION
-    int ScalingFactor[MAX_LAYERS][2];
-    int MvScalingFactor[MAX_LAYERS][2];
+    //int ScalingFactor[MAX_LAYERS][2];
+    //int MvScalingFactor[MAX_LAYERS][2];
     int Bit_Depth[MAX_LAYERS][MAX_NUM_CHANNEL_TYPE];
 
     uint8_t m_bPocResetFlag;
-    uint8_t m_bCrossLayerBLAFlag; 
+    //uint8_t cross_layer_bla_flag;
 #endif
 
     int slice_ctb_addr_rs;
-    uint8_t discardable_flag;
+
 } SliceHeader;
 
 typedef struct CodingTree {

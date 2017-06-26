@@ -399,7 +399,7 @@ static int init_slice_rpl(HEVCContext *s)
     HEVCFrame *frame = s->ref;
     if (frame) {
         int ctb_count    = frame->ctb_count;
-        int ctb_addr_ts  = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
+        int ctb_addr_ts  = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_segment_address];
         int i;
 
         if (s->slice_idx >= frame->rpl_buf->size / sizeof(RefPicListTab))
@@ -417,7 +417,7 @@ static int init_il_slice_rpl(HEVCContext *s)
 {
     HEVCFrame *frame = s->inter_layer_ref;
     int ctb_count   = frame->ctb_count;
-    int ctb_addr_ts = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
+    int ctb_addr_ts = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_segment_address];
     int i;
     if (s->slice_idx >= frame->rpl_buf->size / sizeof(RefPicListTab))
         return AVERROR_INVALIDDATA;
@@ -773,7 +773,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
             int poc = s->poc + short_rps->delta_poc[i];
             int list;
 
-            if (!short_rps->used[i])
+            if (!short_rps->used_by_curr_pic_flag[i])
                 list = ST_FOLL;
             else if (i < short_rps->num_negative_pics)
                 list = ST_CURR_BEF;
@@ -876,9 +876,9 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
     }
     if (rps) {
         for (i = 0; i < rps->num_negative_pics; i++)
-            ret += !!rps->used[i];
+            ret += !!rps->used_by_curr_pic_flag[i];
         for (; i < rps->num_delta_pocs; i++)
-            ret += !!rps->used[i];
+            ret += !!rps->used_by_curr_pic_flag[i];
     }
     if (long_rps) {
         for (i = 0; i < long_rps->nb_refs; i++)

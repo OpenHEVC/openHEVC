@@ -356,7 +356,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
             if (i && i != nb_sps)
                 delta += prev_delta_msb;
 
-            rps->poc[i] += s->poc - delta * max_poc_lsb - s->sh.pic_order_cnt_lsb;
+            rps->poc[i] += s->poc - delta * max_poc_lsb - s->sh.slice_pic_order_cnt_lsb;
             prev_delta_msb = delta;
         }
     }
@@ -626,10 +626,12 @@ static int hls_slice_header(HEVCContext *s)
     int i, j, ret, change_pps = 0,numRef;
     int NumILRRefIdx;
     int first_slice_in_pic_flag;
+
     print_cabac("\n --- Decode slice header --- \n", s->nuh_layer_id);
 
     // Coded parameters
     first_slice_in_pic_flag = get_bits1(gb);
+
 #if PARALLEL_SLICE
     if (IS_IRAP(s)) {
         if(!first_slice_in_pic_flag) {
@@ -649,6 +651,7 @@ static int hls_slice_header(HEVCContext *s)
         }
     }
 #endif
+    //TODO move the force first_slice_in pic as an argument to this function
     sh->first_slice_in_pic_flag   = first_slice_in_pic_flag;
     if (s1->force_first_slice_in_pic) {
         if (!sh->first_slice_in_pic_flag) {
@@ -665,10 +668,12 @@ static int hls_slice_header(HEVCContext *s)
         if (IS_IDR(s))
             ff_hevc_clear_refs(s);
     }
+
     sh->no_output_of_prior_pics_flag = 0;
     if (IS_IRAP(s)){
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
         print_cabac("no_output_of_prior_pics_flag", sh->no_output_of_prior_pics_flag);
+
         if (s->decoder_id)
             av_log(s->avctx, AV_LOG_ERROR, "IRAP %d\n", s->nal_unit_type);
     }
@@ -676,28 +681,30 @@ static int hls_slice_header(HEVCContext *s)
     if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
 
-    sh->pps_id = get_ue_golomb_long(gb);
-    print_cabac("slice_pic_parameter_set_id", sh->pps_id);
-    if (sh->pps_id >= MAX_PPS_COUNT || !s->ps.pps_list[sh->pps_id]) {
-        av_log(s->avctx, AV_LOG_ERROR, "PPS %d does not exist.\n", sh->pps_id);
+    sh->slice_pps_id = get_ue_golomb_long(gb);
+
+    print_cabac("slice_pic_parameter_set_id", sh->slice_pps_id);
+
+    if (sh->slice_pps_id >= MAX_PPS_COUNT || !s->ps.pps_list[sh->slice_pps_id]) {
+        av_log(s->avctx, AV_LOG_ERROR, "PPS %d does not exist.\n", sh->slice_pps_id);
         return AVERROR_INVALIDDATA;
     }
+
     if (!sh->first_slice_in_pic_flag &&
-        s->ps.pps != (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data) {
-        av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
+        s->ps.pps != (HEVCPPS*)s->ps.pps_list[sh->slice_pps_id]->data) {
+        av_log(s->avctx, AV_LOG_ERROR, "PPS changed between two slices of the same frame.\n");
         return AVERROR_INVALIDDATA;
     }
-    //TODO setup_pps function
-    if(s->ps.pps != (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data)
+
+    //FIXME  We should add a setup ps function checking for VPS SPS and PPS
+    //presence before parsing the rest of the slice header
+    if(s->ps.pps != (HEVCPPS*)s->ps.pps_list[sh->slice_pps_id]->data)
         change_pps = 1;
 
-    s->ps.pps = (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data;
+    s->ps.pps = (HEVCPPS*)s->ps.pps_list[sh->slice_pps_id]->data;
 
-
-
-    if (s->nal_unit_type == NAL_CRA_NUT && s->last_eos == 1)
-        sh->no_output_of_prior_pics_flag = 1;
 //if (s->ps.sps_list[s->ps.pps->sps_id]!=NULL)
+    //Setting up params set. //TODO set up ctx here
     if (s->ps.sps_list[s->ps.pps->sps_id] && (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data)) {
         const HEVCSPS* last_sps = s->ps.sps;
         s->ps.sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
@@ -737,22 +744,24 @@ static int hls_slice_header(HEVCContext *s)
 
         slice_address_length = av_ceil_log2(s->ps.sps->ctb_width *
                                             s->ps.sps->ctb_height);
-        sh->slice_segment_addr = get_bitsz(gb, slice_address_length);
+
+        sh->slice_segment_address = get_bitsz(gb, slice_address_length);
+
+        print_cabac("slice_segment_address", sh->slice_segment_address );
+
 #if PARALLEL_SLICE
         s1->slice_segment_addr[s->job] = sh->slice_segment_addr;
         ff_thread_report_progress_slice2(s->avctx, s->job);
 #endif
 
-        print_cabac("slice_segment_address", sh->slice_segment_addr );
-        if (sh->slice_segment_addr >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "Invalid slice segment address: %u.\n",
-                   sh->slice_segment_addr);
+        if (sh->slice_segment_address >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid slice segment address: %u.\n",
+                   sh->slice_segment_address);
             return AVERROR_INVALIDDATA;
         }
 
         if (!sh->dependent_slice_segment_flag) {
-            sh->slice_addr = sh->slice_segment_addr;
+            sh->slice_addr = sh->slice_segment_address;
 #if PARALLEL_SLICE
 if (0)
     s->slice_idx = s->job;
@@ -770,37 +779,35 @@ else
         }
 
     } else {
-        sh->slice_segment_addr = sh->slice_addr = 0;
+        sh->slice_segment_address = sh->slice_addr = 0;
         s->slice_idx           = 0;
         s->slice_initialized   = 0;
     }
 
     if (!sh->dependent_slice_segment_flag) {
+        int iBits = 0;
         s->slice_initialized = 0;
 
-        {
-            //Fixme those unused variable generate some warnings add these to appropriate structure
-            int iBits = 0;
-            if(s->ps.pps->num_extra_slice_header_bits > iBits) {
-                sh->discardable_flag = get_bits1(gb);
-                //uint8_t discardable_flag = get_bits1(gb);
-                print_cabac("discardable_flag  ", discardable_flag);
-                iBits++;
-            }
-            if(s->ps.pps->num_extra_slice_header_bits > iBits) {
-                sh->m_bCrossLayerBLAFlag = get_bits1(gb);
-                print_cabac("cross_layer_bla_flag", sh->m_bCrossLayerBLAFlag);
-                iBits++;
-            }
-            if(s->ps.pps->num_extra_slice_header_bits > iBits) {
-                sh->m_bPocResetFlag = get_bits1(gb);
-                print_cabac("slice_reserved_undetermined_flag", sh->m_bPocResetFlag);
-                iBits++;
-            }
+        if(s->ps.pps->num_extra_slice_header_bits > iBits) {
+            sh->discardable_flag = get_bits1(gb);
+            print_cabac("discardable_flag  ", discardable_flag);
+            iBits++;
+        }
+        if(s->ps.pps->num_extra_slice_header_bits > iBits) {
+            sh->cross_layer_bla_flag = get_bits1(gb);
+            print_cabac("cross_layer_bla_flag", sh->cross_layer_bla_flag);
+            iBits++;
+        }
+        for(;iBits < s->ps.pps->num_extra_slice_header_bits;++iBits){
+            //slice_reserved not in use yet
+            get_bits1(gb);
         }
 
         sh->slice_type = get_ue_golomb_long(gb);
+
+        //TODO later check
         print_cabac("slice_type", sh->slice_type);
+
         if (!(sh->slice_type == I_SLICE ||
               sh->slice_type == P_SLICE ||
               sh->slice_type == B_SLICE)) {
@@ -808,13 +815,16 @@ else
                    sh->slice_type, sh->first_slice_in_pic_flag);
             return AVERROR_INVALIDDATA;
         }
+
         if (!s->decoder_id && IS_IRAP(s) && sh->slice_type != I_SLICE) {
             av_log(s->avctx, AV_LOG_ERROR, "Inter slices in an IRAP frame.\n");
             return AVERROR_INVALIDDATA;
         }
 
+
         // when flag is not present, picture is inferred to be output
         sh->pic_output_flag = 1;
+
         if (s->ps.pps->output_flag_present_flag) {
             sh->pic_output_flag = get_bits1(gb);
             print_cabac("pic_output_flag", sh->pic_output_flag);
@@ -824,15 +834,18 @@ else
             sh->colour_plane_id = get_bits(gb, 2);
             print_cabac("pic_output_flag", sh->pic_output_flag);
         }
-        print_cabac("s->nal_unit_type", s->nal_unit_type);
 
+        //FIXME we could avoid this when the context is not multi-layer.
         if (( s->nuh_layer_id > 0 && !s->ps.vps->vps_ext.poc_lsb_not_present_flag[s->ps.vps->vps_ext.layer_id_in_vps[s->nuh_layer_id]])
             || (!IS_IDR(s)) ) {
             int poc;
 
-            sh->pic_order_cnt_lsb = get_bits(gb, s->ps.sps->log2_max_poc_lsb);
-            print_cabac("pic_order_cnt_lsb", sh->pic_order_cnt_lsb);
-            poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
+            sh->slice_pic_order_cnt_lsb = get_bits(gb, s->ps.sps->log2_max_poc_lsb);
+            print_cabac("pic_order_cnt_lsb", sh->slice_pic_order_cnt_lsb);
+
+            //FIXME We might want the POC to be computed later especially when
+            //slice_segment_header_extension_present_flag is used
+            poc = ff_hevc_compute_poc(s, sh->slice_pic_order_cnt_lsb);
             if (!sh->first_slice_in_pic_flag && poc != s->poc) {
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Ignoring POC change between slices: %d -> %d\n", s->poc, poc);
@@ -851,6 +864,7 @@ else
             return -10;
         }
 #endif
+
         if(!IS_IDR(s)) {
             int pos;
             sh->short_term_ref_pic_set_sps_flag = get_bits1(gb);
@@ -1113,20 +1127,20 @@ else
                 sh->disable_deblocking_filter_flag = get_bits1(gb);
                 print_cabac("slice_disable_deblocking_filter_flag", sh->disable_deblocking_filter_flag);
                 if (!sh->disable_deblocking_filter_flag) {
-                    sh->beta_offset = get_se_golomb(gb) * 2;
-                    print_cabac("slice_beta_offset_div2", sh->beta_offset);
-                    sh->tc_offset   = get_se_golomb(gb) * 2;
-                    print_cabac("slice_tc_offset_div2", sh->tc_offset);
+                    sh->slice_beta_offset = get_se_golomb(gb) * 2;
+                    print_cabac("slice_beta_offset_div2", sh->slice_beta_offset);
+                    sh->slice_tc_offset   = get_se_golomb(gb) * 2;
+                    print_cabac("slice_tc_offset_div2", sh->slice_tc_offset);
                 }
             } else {
                 sh->disable_deblocking_filter_flag = s->ps.pps->pps_deblocking_filter_disabled_flag;
-                sh->beta_offset                    = s->ps.pps->pps_beta_offset;
-                sh->tc_offset                      = s->ps.pps->pps_tc_offset;
+                sh->slice_beta_offset                    = s->ps.pps->pps_beta_offset;
+                sh->slice_tc_offset                      = s->ps.pps->pps_tc_offset;
             }
         } else {
             sh->disable_deblocking_filter_flag = 0;
-            sh->beta_offset                    = 0;
-            sh->tc_offset                      = 0;
+            sh->slice_beta_offset                    = 0;
+            sh->slice_tc_offset                      = 0;
         }
 
         if (s->ps.pps->pps_loop_filter_across_slices_enabled_flag &&
@@ -1203,19 +1217,52 @@ else
     }
 
     if (s->ps.pps->slice_segment_header_extension_present_flag) {
-        unsigned int length = get_ue_golomb_long(gb);
-        if (length*8LL > get_bits_left(gb)) {
+        int curr_index;
+
+        sh->slice_segment_header_extension_length = get_ue_golomb(gb);
+
+        curr_index = gb->index;
+
+        if (sh->slice_segment_header_extension_length * 8LL > get_bits_left(gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "too many slice_header_extension_data_bytes\n");
             return AVERROR_INVALIDDATA;
         }
-        print_cabac("slice_header_extension_length", length);
+
+        print_cabac("slice_header_extension_length", sh->slice_segment_header_extension_length);
+
         av_log(s->avctx, AV_LOG_WARNING,
-               "========= SLICE HEADER extension not supported yet\n");
-        for (i = 0; i < length; i++)
-            skip_bits(gb, 8);  // slice_header_extension_data_byte
+               "========= SLICE HEADER extension are parsed but still unused\n");
+
+        if(s->ps.pps->poc_reset_info_present_flag){
+            sh->poc_reset_idc = get_bits(gb,2);
+        }
+
+        if (sh->poc_reset_idc){
+            sh->poc_reset_period_id = get_bits(gb,6);
+        }
+
+        if(sh->poc_reset_idc == 3){
+            sh->full_poc_reset_flag = get_bits1(gb);
+            sh->poc_lsb_val = get_bits(gb,s->ps.sps->log2_max_poc_lsb);
+        }
+
+        //FIXME Not really sure about this
+        if(s->ps.vps->vps_ext.vps_poc_lsb_aligned_flag && !(( IS_BLA(s) || s->nal_unit_type == NAL_CRA_NUT)
+                                                            && s->ps.vps->vps_ext.number_ref_layers[s->nuh_layer_id][0] == 0)){
+            sh->poc_msb_cycle_val_present_flag = get_bits1(gb);
+        }
+
+        if(sh->poc_msb_cycle_val_present_flag){
+            sh->poc_msb_cycle_val = get_ue_golomb(gb);
+        }
+
+        if (gb->index - curr_index < sh->slice_segment_header_extension_length*8U)
+            skip_bits(gb, sh->slice_segment_header_extension_length*8U - (gb->index - curr_index) );
+
     }
 
-    // Inferred parameters
+    //TODO add a global parameters check here + move other infered parameters
+    //to a new struture.
     sh->slice_qp = 26U + s->ps.pps->init_qp_minus26 + sh->slice_qp_delta;
     if (sh->slice_qp > 51 ||
         sh->slice_qp < -s->ps.sps->qp_bd_offset) {
@@ -1227,7 +1274,7 @@ else
         return AVERROR_INVALIDDATA;
     }
 
-    sh->slice_ctb_addr_rs = sh->slice_segment_addr;
+    sh->slice_ctb_addr_rs = sh->slice_segment_address;
 
     if (!s->sh.slice_ctb_addr_rs && s->sh.dependent_slice_segment_flag) {
         av_log(s->avctx, AV_LOG_ERROR, "Impossible slice segment.\n");
@@ -2891,8 +2938,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
         hls_sao_param(s, x_ctb >> s->ps.sps->log2_ctb_size, y_ctb >> s->ps.sps->log2_ctb_size);
 
-        s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
-        s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+        s->deblock[ctb_addr_rs].beta_offset = s->sh.slice_beta_offset;
+        s->deblock[ctb_addr_rs].tc_offset   = s->sh.slice_tc_offset;
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
 
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->ps.sps->log2_ctb_size, 0);
@@ -3009,8 +3056,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ff_hevc_cabac_init(s, ctb_addr_ts);
         hls_sao_param(s, x_ctb >> s->ps.sps->log2_ctb_size, y_ctb >> s->ps.sps->log2_ctb_size);
 
-        s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
-        s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+        s->deblock[ctb_addr_rs].beta_offset = s->sh.slice_beta_offset;
+        s->deblock[ctb_addr_rs].tc_offset   = s->sh.slice_tc_offset;
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
 
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->ps.sps->log2_ctb_size, 0);
@@ -3184,8 +3231,8 @@ static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, in
         ff_hevc_cabac_init(s, ctb_addr_ts);
         hls_sao_param(s, x_ctb >> s->ps.sps->log2_ctb_size, y_ctb >> s->ps.sps->log2_ctb_size);
 
-        s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
-        s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+        s->deblock[ctb_addr_rs].beta_offset = s->sh.slice_beta_offset;
+        s->deblock[ctb_addr_rs].tc_offset   = s->sh.slice_tc_offset;
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
 
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->ps.sps->log2_ctb_size, 0);
@@ -3249,8 +3296,8 @@ static int hls_decode_entry_wpp_in_tiles(AVCodecContext *avctxt, int *input_ctb_
         ff_hevc_cabac_init(s, ctb_addr_ts);
         hls_sao_param(s, x_ctb >> s->ps.sps->log2_ctb_size, y_ctb >> s->ps.sps->log2_ctb_size);
 
-        s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
-        s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+        s->deblock[ctb_addr_rs].beta_offset = s->sh.slice_beta_offset;
+        s->deblock[ctb_addr_rs].tc_offset   = s->sh.slice_tc_offset;
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
 
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->ps.sps->log2_ctb_size, 0);
@@ -4484,7 +4531,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 #endif
 
     if (avpkt->pts != AV_NOPTS_VALUE) {
-      if (! s->last_frame_pts || (s->last_frame_pts!=avpkt->pts)) {
+      if (! s->last_frame_pts || (s->last_frame_pts != avpkt->pts)) {
           av_log(s->avctx, AV_LOG_DEBUG, "Forcing first_slice_in_pic_flag for pts %ld\n", avpkt->pts);
           s->force_first_slice_in_pic = 1;
       }
