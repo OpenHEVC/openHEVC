@@ -365,6 +365,8 @@ typedef struct UpsamplInf {
     int idx;
     int shift[MAX_NUM_CHANNEL_TYPE];
     int shift_up[MAX_NUM_CHANNEL_TYPE];
+    int mv_scale_x;
+    int mv_scale_y;
 } UpsamplInf;
 #endif
 

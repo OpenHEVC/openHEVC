@@ -559,19 +559,12 @@ int set_el_parameter(HEVCContext *s) {
         av_log(s->avctx, AV_LOG_ERROR, "Error in CGS allocation \n");
     }
 #endif
-#if 0
-    s->sh.ScalingFactor[s->nuh_layer_id][0]   = av_clip_c(((widthEL  << 8) + (widthBL  >> 1)) / widthBL,  -4096, 4095 );
-    s->sh.ScalingFactor[s->nuh_layer_id][1]   = av_clip_c(((heightEL << 8) + (heightBL >> 1)) / heightBL, -4096, 4095 );
-#else
-    s->sh.ScalingFactor[s->nuh_layer_id][0]   = ((s->BL_width  << 16) + (widthEL  >> 1)) / widthEL;
-    s->sh.ScalingFactor[s->nuh_layer_id][1]   = ((s->BL_height << 16) + (heightEL >> 1)) / heightEL;
 
-    s->sh.MvScalingFactor[s->nuh_layer_id][0] = av_clip_c(((widthEL  << 8) + (s->BL_width  >> 1)) / s->BL_width,  -4096, 4095 );;
-    s->sh.MvScalingFactor[s->nuh_layer_id][1] = av_clip_c(((heightEL << 8) + (s->BL_height >> 1)) / s->BL_height, -4096, 4095 );;
-#endif
+    s->up_filter_inf.mv_scale_x = av_clip_c(((widthEL  << 8) + (s->BL_width  >> 1)) / s->BL_width,  -4096, 4095 );
+    s->up_filter_inf.mv_scale_y = av_clip_c(((heightEL << 8) + (s->BL_height >> 1)) / s->BL_height, -4096, 4095 );
 
-    s->up_filter_inf.scaleXLum = s->sh.ScalingFactor[s->nuh_layer_id][0];
-    s->up_filter_inf.scaleYLum = s->sh.ScalingFactor[s->nuh_layer_id][1];
+    s->up_filter_inf.scaleXLum = ((s->BL_width  << 16) + (widthEL  >> 1)) / widthEL;//s->sh.ScalingFactor[s->nuh_layer_id][0];
+    s->up_filter_inf.scaleYLum = ((s->BL_height << 16) + (heightEL >> 1)) / heightEL;//s->sh.ScalingFactor[s->nuh_layer_id][1];
 
     s->up_filter_inf.addXLum   = (( phaseHorLuma * s->up_filter_inf.scaleXLum + 8 ) >> 4 ) - ( 1 << 11 );
     s->up_filter_inf.addYLum   = (( phaseVerLuma * s->up_filter_inf.scaleYLum + 8 ) >> 4 ) - ( 1 << 11 );

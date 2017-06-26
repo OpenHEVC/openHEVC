@@ -2003,8 +2003,8 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                         memcpy(&refEL->tab_mvf[pre_unit], &refBL->tab_mvf[Ref_pre_unit], sizeof(MvField));
                     } else {
                         for( list=0; list < nb_list; list++) {
-                            refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->sh.MvScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->sh.MvScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
-                            refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->sh.MvScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->sh.MvScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
+                            refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->up_filter_inf.mv_scale_x/*s->sh.MvScalingFactor[s->nuh_layer_id][0]*/ * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->up_filter_inf.mv_scale_x/*s->sh.MvScalingFactor[s->nuh_layer_id][0]*/ * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
+                            refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->up_filter_inf.mv_scale_y/*s->sh.MvScalingFactor[s->nuh_layer_id][1]*/ * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->up_filter_inf.mv_scale_y/*s->sh.MvScalingFactor[s->nuh_layer_id][1]*/ * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
                             refEL->tab_mvf[pre_unit].ref_idx[list] = refBL->tab_mvf[Ref_pre_unit].ref_idx[list];
 #ifdef TEST_MV_POC
                             refEL->tab_mvf[pre_unit].poc[list] = refBL->tab_mvf[Ref_pre_unit].poc[list];
