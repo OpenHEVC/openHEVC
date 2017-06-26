@@ -286,8 +286,13 @@ uint8_t* parse_array(const char *context, const char *keystr, int size,
             i++;
             token = strtok(NULL, delim);
         }
-        if(i>=size && (token != NULL))
+        if(i>=size && (token != NULL)){
             fprintf(stderr, "\x1B[31mparsing of the array failed : too many members.\n\x1B[0m");
+            exit(1);
+        } else if (i<size) {
+            fprintf(stderr, "\x1B[31mparsing of the array failed : too few members.\n\x1B[0m");
+            exit(1);
+        }
         return coeff_key;
     #else
         fprintf(stderr, "\x1B[31m--key cannot be enabled because encryption is not compiled in.\n\x1B[0m");

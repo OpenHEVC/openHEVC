@@ -44,7 +44,7 @@ void  Init(AESDecoder* AESdecoder, uint8_t *opt_key) {
     
     for(int i=0;i<16; i++) {
         AESdecoder->iv [i]     = default_IV[i];
-        AESdecoder->counter[i] = (i<=10)? default_IV[5+i] : key[i-11];
+        AESdecoder->counter[i] = (i<11)? default_IV[5+i] : key[i-11];
         AESdecoder->key[i]     = key[i];
     }
 
