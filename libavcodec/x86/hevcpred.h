@@ -1,6 +1,9 @@
 #ifndef AVCODEC_X86_HEVCPRED_H
 #define AVCODEC_X86_HEVCPRED_H
 
+#include "stdint.h"
+#include "stddef.h"
+
 void pred_planar_0_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride);
 void pred_planar_1_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride);
 void pred_planar_2_8_sse(uint8_t *_src, const uint8_t *_top, const uint8_t *_left, ptrdiff_t stride);

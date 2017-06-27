@@ -139,6 +139,7 @@
 %endif
 %define HAVE_SYMVER 0
 %define HAVE_YASM         @USE_YASM@
+%define HAVE_X86ASM         @USE_YASM@
 %define HAVE_BIGENDIAN 0
 %define HAVE_FAST_UNALIGNED 1
 %define HAVE_INCOMPATIBLE_LIBAV_ABI 0

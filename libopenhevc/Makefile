@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = openhevc
+DESC = OpenHEVC Decoder
 
 HEADERS = openhevc.h                             \
           libavutil/version.h\

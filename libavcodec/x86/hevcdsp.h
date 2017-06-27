@@ -28,6 +28,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavcodec/hevc.h"
+
 
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _##opt; \

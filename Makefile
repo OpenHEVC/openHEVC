@@ -1,5 +1,5 @@
 MAIN_MAKEFILE=1
-include config.mak
+include ffbuild/config.mak
 
 vpath %.c    $(SRC_PATH)
 vpath %.cpp  $(SRC_PATH)
@@ -11,6 +11,8 @@ vpath %.asm  $(SRC_PATH)
 vpath %.rc   $(SRC_PATH)
 vpath %.v    $(SRC_PATH)
 vpath %.texi $(SRC_PATH)
+vpath %.cu   $(SRC_PATH)
+vpath %.ptx  $(SRC_PATH)
 vpath %/fate_config.sh.template $(SRC_PATH)
 
 AVPROGS-$(CONFIG_OHPLAY)   += ohplay
@@ -23,7 +25,7 @@ AVBASENAMES  = ohplay
 ALLAVPROGS   = $(AVBASENAMES:%=%$(PROGSSUF)$(EXESUF))
 ALLAVPROGS_G = $(AVBASENAMES:%=%$(PROGSSUF)_g$(EXESUF))
 
-#$(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
+$(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
 
 #OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o
 #OBJS-ffmpeg-$(CONFIG_VIDEOTOOLBOX) += ffmpeg_videotoolbox.o
@@ -41,7 +43,7 @@ ALLAVPROGS_G = $(AVBASENAMES:%=%$(PROGSSUF)_g$(EXESUF))
 OBJS-ohplay-${CONFIG_SDL} += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl.o
 OBJS-ohplay-${CONFIG_SDL2} += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl2.o
 OBJS-ohplay-${CONFIG_NOVIDEO} += ohplay_utils/ohtimer_sys.o ohplay_utils/ohdisplay_none.o
-OBJS-ohplay                   += cmdutils.o
+#OBJS-ohplay                   += cmdutils.o
 
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
@@ -55,7 +57,10 @@ FFLIBS-$(CONFIG_OPENHEVC)   += openhevc
 
 FFLIBS := avutil
 
-include $(SRC_PATH)/common.mak
+# first so "all" becomes default target
+all: all-yes
+
+include $(SRC_PATH)/ffbuild/common.mak
 
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
@@ -63,23 +68,28 @@ FF_STATIC_DEP_LIBS := $(STATIC_DEP_LIBS)
 
 all: $(AVPROGS)
 
-$(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
+$(TOOLS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
 tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 
-config.h: .config
-.config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
+CONFIGURABLE_COMPONENTS =                                           \
+    $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))                 \
+    $(SRC_PATH)/libavcodec/bitstream_filters.c                      \
+    $(SRC_PATH)/libavformat/protocols.c                             \
+
+config.h: ffbuild/.config
+ffbuild/.config: $(CONFIGURABLE_COMPONENTS)
 	@-tput bold 2>/dev/null
-	@-printf '\nWARNING: $(?F) newer than config.h, rerun configure\n\n'
+	@-printf '\nWARNING: $(?) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
 
 SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
                HEADERS ARCH_HEADERS BUILT_HEADERS SKIPHEADERS            \
                ARMV5TE-OBJS ARMV6-OBJS ARMV8-OBJS VFP-OBJS NEON-OBJS     \
-               ALTIVEC-OBJS MMX-OBJS YASM-OBJS SSE-OBJS AVX-OBJS         \
+               ALTIVEC-OBJS VSX-OBJS MMX-OBJS X86ASM-OBJS SSE-OBJS AVX-OBJS         \
                MIPSFPU-OBJS MIPSDSPR2-OBJS MIPSDSP-OBJS MSA-OBJS         \
                MMI-OBJS OBJS SLIBOBJS HOSTOBJS TESTOBJS
 
@@ -94,24 +104,23 @@ SUBDIR := $(1)/
 include $(SRC_PATH)/$(1)/Makefile
 -include $(SRC_PATH)/$(1)/$(ARCH)/Makefile
 -include $(SRC_PATH)/$(1)/$(INTRINSICS)/Makefile
-include $(SRC_PATH)/library.mak
+include $(SRC_PATH)/ffbuild/library.mak
 endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 define DOPROG
-OBJS-$(1) += $(1).o $(EXEOBJS) $(OBJS-$(1)-yes)
+OBJS-$(1) += $(1).o $(OBJS-$(1)-yes)
 $(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))
 $$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
 $(1)$(PROGSSUF)_g$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
-$(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(LIBS-$(1))
+$(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(EXTRALIBS-$(1))
 -include $$(OBJS-$(1):.o=.d)
 endef
 
 $(foreach P,$(PROGS),$(eval $(call DOPROG,$(P:$(PROGSSUF)$(EXESUF)=))))
 
-# cmdutils.o 
-libavcodec/utils.o libavformat/utils.o libavutil/utils.o : libavutil/ffversion.h
+ffprobe.o cmdutils.o libavcodec/utils.o libavformat/utils.o libavdevice/avdevice.o libavfilter/avfilter.o libavutil/utils.o libpostproc/postprocess.o libswresample/swresample.o libswscale/utils.o : libavutil/ffversion.h
 
 $(PROGS): %$(PROGSSUF)$(EXESUF): %$(PROGSSUF)_g$(EXESUF)
 	$(CP) $< $@
@@ -120,14 +129,10 @@ $(PROGS): %$(PROGSSUF)$(EXESUF): %$(PROGSSUF)_g$(EXESUF)
 %$(PROGSSUF)_g$(EXESUF): %.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
-OBJDIRS += tools
-
--include $(wildcard tools/*.d)
-
-VERSION_SH  = $(SRC_PATH)/version.sh
+VERSION_SH  = $(SRC_PATH)/ffbuild/version.sh
 GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 
-.version: $(wildcard $(GIT_LOG)) $(VERSION_SH) config.mak
+.version: $(wildcard $(GIT_LOG)) $(VERSION_SH) ffbuild/config.mak
 .version: M=@
 
 libavutil/ffversion.h .version:
@@ -152,7 +157,12 @@ install-progs: install-progs-yes $(AVPROGS)
 	$(Q)mkdir -p "$(BINDIR)"
 	$(INSTALL) -c -m 755 $(INSTPROGS) "$(BINDIR)"
 
-uninstall: uninstall-libs uninstall-headers uninstall-progs
+install-data: $(DATA_FILES) $(EXAMPLES_FILES)
+	$(Q)mkdir -p "$(DATADIR)/examples"
+	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
+	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
+
+uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
 
 uninstall-progs:
 	$(RM) $(addprefix "$(BINDIR)/", $(ALLAVPROGS))
@@ -163,13 +173,18 @@ uninstall-data:
 clean::
 	$(RM) $(ALLAVPROGS) $(ALLAVPROGS_G)
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) $(CLEANSUFFIXES:%=tools/%)
+	$(RM) $(CLEANSUFFIXES:%=compat/msvcrt/%)
+	$(RM) $(CLEANSUFFIXES:%=compat/atomics/pthread/%)
+	$(RM) $(CLEANSUFFIXES:%=compat/%)
 	$(RM) -r coverage-html
 	$(RM) -rf coverage.info coverage.info.in lcov
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .config libavutil/avconfig.h .version mapfile avversion.h version.h libavutil/ffversion.h libavcodec/codec_names.h libavcodec/bsf_list.c libavformat/protocol_list.c
+	$(RM) .version avversion.h config.asm config.h mapfile  \
+		ffbuild/.config ffbuild/config.* libavutil/avconfig.h \
+		version.h libavutil/ffversion.h libavcodec/codec_names.h \
+		libavcodec/bsf_list.c libavformat/protocol_list.c
 ifeq ($(SRC_LINK),src)
 	$(RM) src
 endif
@@ -178,7 +193,7 @@ endif
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
 
-check: all alltools fate
+check: all alltools examples testprogs fate
 
 
 $(sort $(OBJDIRS)):

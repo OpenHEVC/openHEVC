@@ -23,6 +23,7 @@
  */
 
 #include "hevc.h"
+#include "stdint.h"
 
 #ifndef AVCODEC_HEVCDSP_H
 #define AVCODEC_HEVCDSP_H

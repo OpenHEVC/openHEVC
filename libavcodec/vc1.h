@@ -27,7 +27,7 @@
 #include "h264chroma.h"
 #include "mpegvideo.h"
 #include "intrax8.h"
-#include "vc1_common.h"
+//#include "vc1_common.h"
 #include "vc1dsp.h"
 
 #define AC_VLC_BITS 9

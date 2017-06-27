@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = avcodec
+DESC = FFmpeg codec library
 
 HEADERS = avcodec.h                                                     \
           avdct.h                                                       \

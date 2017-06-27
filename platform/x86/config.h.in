@@ -141,6 +141,7 @@
 #define HAVE_I686_INLINE 0
 #define HAVE_MIPSFPU_INLINE 0
 #define HAVE_YASM         @USE_YASM@
+#define HAVE_X86ASM         @USE_YASM@
 #define HAVE_PTHREADS       @PTHREADS_FOUND@
 #if defined(WIN32)
 #if HAVE_PTHREADS
