@@ -28,7 +28,7 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
-struct SAOParams;
+
 
 #if HAVE_SSE2
 #include <emmintrin.h>

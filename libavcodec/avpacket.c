@@ -139,7 +139,8 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
         pkt->buf = av_buffer_alloc(new_size);
         if (!pkt->buf)
             return AVERROR(ENOMEM);
-        memcpy(pkt->buf->data, pkt->data, pkt->size);
+        if (pkt->size > 0)
+            memcpy(pkt->buf->data, pkt->data, pkt->size);
         pkt->data = pkt->buf->data;
     }
     pkt->size += grow_by;
@@ -295,9 +296,20 @@ int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
                             uint8_t *data, size_t size)
 {
     AVPacketSideData *tmp;
-    int elems = pkt->side_data_elems;
+    int i, elems = pkt->side_data_elems;
 
-    if ((unsigned)elems + 1 > INT_MAX / sizeof(*pkt->side_data))
+    for (i = 0; i < elems; i++) {
+        AVPacketSideData *sd = &pkt->side_data[i];
+
+        if (sd->type == type) {
+            av_free(sd->data);
+            sd->data = data;
+            sd->size = size;
+            return 0;
+        }
+    }
+
+    if ((unsigned)elems + 1 > AV_PKT_DATA_NB)
         return AVERROR(ERANGE);
 
     tmp = av_realloc(pkt->side_data, (elems + 1) * sizeof(*tmp));
@@ -335,7 +347,7 @@ uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
     return data;
 }
 
-uint8_t *av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+uint8_t *av_packet_get_side_data(const AVPacket *pkt, enum AVPacketSideDataType type,
                                  int *size)
 {
     int i;
@@ -347,6 +359,8 @@ uint8_t *av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
             return pkt->side_data[i].data;
         }
     }
+    if (size)
+        *size = 0;
     return NULL;
 }
 
@@ -371,9 +385,13 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_METADATA_UPDATE:            return "Metadata Update";
     case AV_PKT_DATA_MPEGTS_STREAM_ID:           return "MPEGTS Stream ID";
     case AV_PKT_DATA_MASTERING_DISPLAY_METADATA: return "Mastering display metadata";
+    case AV_PKT_DATA_CONTENT_LIGHT_LEVEL:        return "Content light level metadata";
+    case AV_PKT_DATA_SPHERICAL:                  return "Spherical Mapping";
     }
     return NULL;
 }
+
+#if FF_API_MERGE_SD_API
 
 #define FF_MERGE_MARKER 0x8c4d9d108e25e9feULL
 
@@ -430,6 +448,9 @@ int av_packet_split_side_data(AVPacket *pkt){
             p-= size+5;
         }
 
+        if (i > AV_PKT_DATA_NB)
+            return AVERROR(ERANGE);
+
         pkt->side_data = av_malloc_array(i, sizeof(*pkt->side_data));
         if (!pkt->side_data)
             return AVERROR(ENOMEM);
@@ -455,6 +476,35 @@ int av_packet_split_side_data(AVPacket *pkt){
     }
     return 0;
 }
+#endif
+
+#if FF_API_MERGE_SD
+int ff_packet_split_and_drop_side_data(AVPacket *pkt){
+    if (!pkt->side_data_elems && pkt->size >12 && AV_RB64(pkt->data + pkt->size - 8) == FF_MERGE_MARKER){
+        int i;
+        unsigned int size;
+        uint8_t *p;
+
+        p = pkt->data + pkt->size - 8 - 5;
+        for (i=1; ; i++){
+            size = AV_RB32(p);
+            if (size>INT_MAX - 5 || p - pkt->data < size)
+                return 0;
+            if (p[4]&128)
+                break;
+            if (p - pkt->data < size + 5)
+                return 0;
+            p-= size+5;
+            if (i > AV_PKT_DATA_NB)
+                return 0;
+        }
+        pkt->size = p - pkt->data - size;
+        av_assert0(pkt->size >= 0);
+        return 1;
+    }
+    return 0;
+}
+#endif
 
 uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size)
 {
@@ -504,7 +554,7 @@ int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **di
         const uint8_t *key = data;
         const uint8_t *val = data + strlen(key) + 1;
 
-        if (val >= end)
+        if (val >= end || !*key)
             return AVERROR_INVALIDDATA;
 
         ret = av_dict_set(dict, key, val, 0);
@@ -609,7 +659,7 @@ fail:
     return ret;
 }
 
-AVPacket *av_packet_clone(AVPacket *src)
+AVPacket *av_packet_clone(const AVPacket *src)
 {
     AVPacket *ret = av_packet_alloc();
 

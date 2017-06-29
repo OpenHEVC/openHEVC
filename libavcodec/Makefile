@@ -27,6 +27,7 @@ OBJS = allcodecs.o                                                      \
        bitstream_filters.o                                              \
        bsf.o                                                            \
        codec_desc.o                                                     \
+       decode.o                                                         \
        mathtables.o                                                     \
        options.o                                                        \
        parser.o                                                         \
@@ -130,7 +131,7 @@ OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)       += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_HEVC_MP4TOANNEXB_BSF)       += hevc_mp4toannexb_bsf.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
-
+OBJS                   += null_bsf.o
 
 # thread libraries
 OBJS-$(HAVE_LIBC_MSVCRT)               += file_open.o

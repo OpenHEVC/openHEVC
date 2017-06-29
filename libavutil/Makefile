@@ -103,6 +103,7 @@ OBJS = aes.o                                                            \
        file_open.o                                                      \
        frame.o                                                          \
        hmac.o                                                           \
+       hwcontext.o                                                      \
        imgutils.o                                                       \
        intmath.o                                                        \
        lfg.o                                                            \
