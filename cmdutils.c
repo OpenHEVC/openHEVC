@@ -80,7 +80,7 @@
 #include <windows.h>
 #endif
 
-#ifdef HEVC_ENCRYPTION
+#if HEVC_ENCRYPTION
 #include "libavcodec/hevc.h"
 #endif
 
