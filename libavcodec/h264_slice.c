@@ -518,35 +518,6 @@ static int h264_frame_start(H264Context *h)
     if ((ret = ff_h264_ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
         return ret;
 
-#if SVC_EXTENSION
-           //{int i;
-    if(h->avctx->internal->buffer_pkt->el_available == 1 && h->avctx->active_thread_type & FF_THREAD_FRAME){
-        for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
-            H264Picture *frame = &h->Add_ref[i];
-            if (frame->f->buf[0])
-                continue;
-            ret = ff_h264_ref_picture(h, &h->Add_ref[i], h->cur_pic_ptr);
-            if (ret < 0)
-                return ret;
-            ff_thread_report_il_progress_avc(h->avctx, h->poc_id, &h->Add_ref[i], &h->Add_ref[i]);
-            break;
-        }
-        if(i==FF_ARRAY_ELEMS(h->Add_ref)){
-            av_log(h->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", 0);
-            //if(h->avctx->active_thread_type & FF_THREAD_FRAME){
-                ff_thread_report_il_progress_avc(h->avctx, h->poc_id, NULL, NULL);
-                ff_h264_unref_picture(h,&h->Add_ref[0]);
-                ff_h264_unref_picture(h,&h->Add_ref[1]);
-            //}
-        }
-    } else if(h->el_available == 0){
-        if (&h->Add_ref[0].f->buf[0])
-            ff_h264_unref_picture(h,&h->Add_ref[0]);
-        if (&h->Add_ref[1].f->buf[0])
-            ff_h264_unref_picture(h,&h->Add_ref[1]);
-    }
-#endif
-
     for (i = 0; i < h->nb_slice_ctx; i++) {
         h->slice_ctx[i].linesize   = h->cur_pic_ptr->f->linesize[0];
         h->slice_ctx[i].uvlinesize = h->cur_pic_ptr->f->linesize[1];
@@ -2145,6 +2116,25 @@ int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
 
     if (h->current_slice == 0) {
         ret = h264_field_start(h, sl, nal, first_slice);
+#if SVC_EXTENSION
+        if(first_slice && h->el_available == 1 && ( h->avctx->active_thread_type & FF_THREAD_FRAME )){
+            int i;
+            for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
+                H264Picture *frame = &h->Add_ref[i];
+                if (frame->f->buf[0])
+                    continue;
+                ret = ff_h264_ref_picture(h, &h->Add_ref[i], h->cur_pic_ptr);
+                if (ret < 0)
+                    return ret;
+                ff_thread_report_il_progress_avc(h->avctx, h->poc_id, &h->Add_ref[i], &h->Add_ref[i]);
+                break;
+            }
+            if(i==FF_ARRAY_ELEMS(h->Add_ref)){
+                av_log(h->avctx, AV_LOG_ERROR, "Error allocating frame, Addditional DPB full, decoder_%d.\n", 0);
+            }
+        } else /*if(first_slice && h->el_available == 1 && ( h->avctx->active_thread_type & FF_THREAD_SLICE ))*/
+        h->avctx->BL_frame = h->cur_pic_ptr;
+#endif
         if (ret < 0)
             return ret;
     } else {

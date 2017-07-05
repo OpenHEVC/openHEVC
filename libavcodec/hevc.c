@@ -3713,7 +3713,7 @@ static int hevc_frame_start(HEVCContext *s)
 #endif
        if (s->el_decoder_el_exist){
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
-        } else if(s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME)){
+        } else if(s->bl_available && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME )){
             ff_thread_await_il_progress(s->avctx, s->poc_id2, &s->avctx->BL_frame);
         } else
             if(s->threads_type & FF_THREAD_FRAME)
@@ -3722,7 +3722,7 @@ static int hevc_frame_start(HEVCContext *s)
         if(s->avctx->BL_frame){
                 s->BL_frame = s->avctx->BL_frame;
         }else {
-            av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d \n", s->decoder_id);
+            av_log(s->avctx, AV_LOG_ERROR, "Error BL reference frame does not exist. decoder_id %d\n", s->decoder_id);
             goto fail;  // FIXME: add error concealment solution when the base layer frame is missing
         }
 
@@ -3784,7 +3784,7 @@ fail:
         if(s->el_decoder_el_exist)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if SVC_EXTENSION
-        if(s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
+        if(s->bl_available && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME ))
             ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif
         if (s->inter_layer_ref)
@@ -4513,6 +4513,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     HEVCContext *s = avctx->priv_data;
 
     s->poc_id2 = avpkt->poc_id;
+    s->bl_available = avpkt->bl_available;
 
     if (!avpkt->size) {
         ret = ff_hevc_output_frame(s, data, 1);
@@ -4867,6 +4868,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->prev_num_tile_columns = s0->prev_num_tile_columns;
 #endif
     s->poc_id2              = s0->poc_id2;
+    s->bl_available         = s0->bl_available;
     //duplicated
 //    if (s->ps.sps != s0->ps.sps)
 //        ret = set_sps(s, s0->ps.sps, src->pix_fmt);

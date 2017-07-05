@@ -859,7 +859,10 @@ end:
                                   h->picture_structure == PICT_BOTTOM_FIELD);
     }
 #if SVC_EXTENSION
-    h->avctx->BL_frame = h->cur_pic_ptr;
+    if (ret < 0){
+        if(h->avctx->active_thread_type & FF_THREAD_FRAME && h->el_available)
+            ff_thread_report_il_progress_avc(h->avctx, h->poc_id, NULL, NULL);
+    }
 #endif
     return (ret < 0) ? ret : buf_size;
 }

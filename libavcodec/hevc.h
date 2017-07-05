@@ -1665,6 +1665,7 @@ typedef struct HEVCContext {
 	//int64_t last_frame_pts;
     int BL_width;
     int BL_height;
+    int bl_available;
 #if HEVC_ENCRYPTION
     uint8_t encrypt_params;
     uint8_t *encrypt_init_val;
