@@ -2135,8 +2135,8 @@ mpegtsraw_demuxer_select="mpegts_demuxer"
 avcodec_deps="avutil"
 avformat_deps="avcodec avutil"
 openhevc_deps="avformat avcodec avutil"
-openhevc_select="hevc_decoder hevc_demuxer hevc_parser file_protocol "
-openhevc_suggest="mov_demuxer mpegts_demuxer h264_decoder h264_demuxer h264_parser"
+openhevc_select="hevc_decoder hevc_demuxer hevc_parser file_protocol null_bsf"
+openhevc_suggest="mov_demuxer mpegts_demuxer h264_decoder h264_demuxer h264_parser shvc_decoder shvc_parser"
 
 # programs
 ohplay_deps="avformat avcodec avutil openhevc"
