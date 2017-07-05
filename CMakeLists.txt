@@ -83,6 +83,7 @@ if(YASM_FOUND)
 set(YASM_NAMES
     libavutil/x86/cpuid.asm
     libavutil/x86/emms.asm
+    libavutil/x86/imgutils.asm
     #libavcodec/x86/dct32.asm
     #libavcodec/x86/deinterlace.asm
     #libavcodec/x86/fft.asm
@@ -231,7 +232,7 @@ set(libfilenames
     libavutil/frame.c
     #libavutil/hash.c
     libavutil/hmac.c
-    #libavutil/hwcontext.c
+    libavutil/hwcontext.c
     libavutil/imgutils.c
     #libavutil/integer.c
     libavutil/intmath.c
@@ -319,8 +320,10 @@ set(libfilenames
     libavcodec/bitstream.c
     libavcodec/bitstream_filter.c
     libavcodec/bitstream_filters.c
-    libavcodec/bsf.c  
+    libavcodec/bsf.c
+    libavcodec/null_bsf.c
     libavcodec/codec_desc.c
+    libavcodec/decode.c
     #libavcodec/d3d11va.c
     #libavcodec/dirac.c
     #libavcodec/dv_profile.c
@@ -452,6 +455,8 @@ list(APPEND libfilenames
 else()
 list(APPEND libfilenames
     libavutil/x86/cpu.c
+    libavutil/x86/imgutils_init.c
+    libavutil/x86/imgutils_init.c
     libavcodec/x86/constants.c
     #libavcodec/x86/dct_init.c
     #libavcodec/x86/fdct.c
