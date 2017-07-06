@@ -959,7 +959,6 @@ static int finalize_frame(H264Context *h, AVFrame *dst, H264Picture *out, int *g
 
         *got_frame = 1;
 
-
         if (CONFIG_MPEGVIDEO) {
             ff_print_debug_info2(h->avctx, dst, NULL,
                                  out->mb_type,
@@ -1047,7 +1046,6 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     buf_index = decode_nal_units(h, buf, buf_size);
-
     if (buf_index < 0)
         return AVERROR_INVALIDDATA;
 

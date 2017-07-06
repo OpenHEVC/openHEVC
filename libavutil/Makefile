@@ -124,6 +124,7 @@ OBJS = aes.o                                                            \
        sha.o                                                            \
        sha512.o                                                         \
        stereo3d.o                                                       \
+       spherical.o                                                      \
        time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \

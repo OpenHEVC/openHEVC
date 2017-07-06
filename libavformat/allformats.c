@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/thread.h"
 #include "avformat.h"
 #include "rtp.h"
 #include "rdt.h"
@@ -41,13 +42,8 @@
 
 #define REGISTER_MUXDEMUX(X, x) REGISTER_MUXER(X, x); REGISTER_DEMUXER(X, x)
 
-void av_register_all(void)
+static void register_all(void)
 {
-    static int initialized;
-
-    if (initialized)
-        return;
-
     avcodec_register_all();
 
     /* (de)muxers */
@@ -75,8 +71,11 @@ void av_register_all(void)
     REGISTER_DEMUXER (MPEGVIDEO,        mpegvideo);
     REGISTER_DEMUXER (MOV,        mov);
     REGISTER_DEMUXER (MPEGTS,        mpegts);
+}
 
+void av_register_all(void)
+{
+    static AVOnce control = AV_ONCE_INIT;
 
-
-    initialized = 1;
+    ff_thread_once(&control, register_all);
 }

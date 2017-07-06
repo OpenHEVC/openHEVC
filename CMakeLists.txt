@@ -258,6 +258,7 @@ set(libfilenames
     libavutil/sha.c
     libavutil/sha512.c
     libavutil/stereo3d.c
+    libavutil/spherical.c
     #libavutil/threadmessage.c
     libavutil/time.c
     libavutil/timecode.c
