@@ -4746,7 +4746,9 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     s->context_initialized = 1;
     s->threads_type        = avctx->active_thread_type;
-    if(avctx->active_thread_type & FF_THREAD_SLICE)
+    if(avctx->active_thread_type == FF_THREAD_SLICE)
+        s->threads_number  = avctx->thread_count_frame;
+    else if (avctx->active_thread_type & FF_THREAD_SLICE)
         s->threads_number  = avctx->thread_count;
     else
         s->threads_number  = 1;
