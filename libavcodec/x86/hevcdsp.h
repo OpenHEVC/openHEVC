@@ -28,7 +28,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "libavcodec/hevc.h"
+#include "libavcodec/hevcdec.h"
 
 
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \

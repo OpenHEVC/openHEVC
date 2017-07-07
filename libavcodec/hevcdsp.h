@@ -22,12 +22,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_HEVCDSP_H
+#define AVCODEC_HEVCDSP_H
 #include "hevc.h"
 #include "stdint.h"
 
-#ifndef AVCODEC_HEVCDSP_H
-#define AVCODEC_HEVCDSP_H
 
+#include "get_bits.h"
 struct AVFrame;
 struct UpsamplInf;
 struct HEVCWindow;

@@ -29,6 +29,7 @@
 #include "libavcodec/x86/hevcdsp.h"
 #include "libavcodec/hevc_defs.h"
 #include "libavcodec/hevc.h"
+#include "libavcodec/hevcdec.h"
 #include "libavutil/internal.h" //TMP_DEV_PL
 
 #define LFC_FUNC(DIR, DEPTH, OPT) \

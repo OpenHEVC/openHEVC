@@ -29,8 +29,8 @@
 #include <minwindef.h>
 #endif // WIN32
 #include "cabac_functions.h"
-#include "golomb.h"
-#include "hevc.h"
+#include "hevcdec.h"
+
 #include "bit_depth_template.c"
 //temp
 #include "h264dec.h"
@@ -1980,7 +1980,7 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
 //    int pic_width_in_min_puBL = bl_frame->f->width >> s->ps.sps->log2_min_pu_size;
     int ctb_size = 1 << s->ps.sps->log2_ctb_size;
     int min_pu_size = 1 << s->ps.sps->log2_min_pu_size;
-    int nb_list = s->sh.slice_type==B_SLICE ? 2:1, i, j;
+    int nb_list = s->sh.slice_type==HEVC_SLICE_B ? 2:1, i, j;
     HEVCFrame *refBL = s->BL_frame;
     HEVCFrame *refEL = s->inter_layer_ref;
 

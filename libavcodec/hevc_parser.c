@@ -24,12 +24,17 @@
 
 #include "golomb.h"
 #include "hevc.h"
+#include "hevc_ps.h"
+#include "hevc_sei.h"
+#include "hevcdec.h"
 #include "h2645_parse.h"
+#include "internal.h"
 #include "parser.h"
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
 
 #define IS_IRAP_NAL(nal) (nal->type >= 16 && nal->type <= 23)
+#define IS_IDR_NAL(nal) (nal->type == HEVC_NAL_IDR_W_RADL || nal->type == HEVC_NAL_IDR_N_LP)
 
 #define ADVANCED_PARSER CONFIG_HEVC_DECODER
 
@@ -38,6 +43,8 @@ typedef struct HEVCParserContext {
 
     H2645Packet pkt;
     HEVCParamSets ps;
+    HEVCSEIContext sei;
+    SliceHeader sh;
 
     int parsed_extradata;
 
@@ -237,6 +244,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;
     H2645NAL *nal;
+HEVCSEIContext *sei = &ctx->sei;
     int is_global = buf == avctx->extradata;
 
     if (!h->HEVClc)
@@ -253,7 +261,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
     h->avctx = avctx;
 
-    ff_hevc_reset_sei(h);
+    ff_hevc_reset_sei(sei);
 
     if (!buf_size)
         return 0;
@@ -306,7 +314,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
             break;
         case HEVC_NAL_SEI_PREFIX:
         case HEVC_NAL_SEI_SUFFIX:
-            ff_hevc_decode_nal_sei(h);
+            ff_hevc_decode_nal_sei(gb, avctx, sei, ps, nal->type);
             break;
         case HEVC_NAL_TRAIL_N:
         case HEVC_NAL_TRAIL_R:
@@ -355,13 +363,13 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
             }
 
             sh->slice_pps_id = get_ue_golomb(gb);
-            if (sh->slice_pps_id >= MAX_PPS_COUNT || !ps->pps_list[sh->slice_pps_id]) {
+            if (sh->slice_pps_id >= HEVC_MAX_PPS_COUNT || !ps->pps_list[sh->slice_pps_id]) {
                 av_log(avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->slice_pps_id);
                 return AVERROR_INVALIDDATA;
             }
             ps->pps = (HEVCPPS*)ps->pps_list[sh->slice_pps_id]->data;
 
-            if (ps->pps->sps_id >= MAX_SPS_COUNT || !ps->sps_list[ps->pps->sps_id]) {
+            if (ps->pps->sps_id >= HEVC_MAX_SPS_COUNT || !ps->sps_list[ps->pps->sps_id]) {
                 av_log(avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", ps->pps->sps_id);
                 return AVERROR_INVALIDDATA;
             }
@@ -404,14 +412,14 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
 
             sh->slice_type = get_ue_golomb(gb);
-            if (!(sh->slice_type == I_SLICE || sh->slice_type == P_SLICE ||
-                  sh->slice_type == B_SLICE)) {
+            if (!(sh->slice_type == HEVC_SLICE_I || sh->slice_type == HEVC_SLICE_P ||
+                  sh->slice_type == HEVC_SLICE_B)) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown slice type: %d.\n",
                        sh->slice_type);
                 return AVERROR_INVALIDDATA;
             }
-            s->pict_type = sh->slice_type == B_SLICE ? AV_PICTURE_TYPE_B :
-                           sh->slice_type == P_SLICE ? AV_PICTURE_TYPE_P :
+            s->pict_type = sh->slice_type == HEVC_SLICE_B ? AV_PICTURE_TYPE_B :
+                           sh->slice_type == HEVC_SLICE_P ? AV_PICTURE_TYPE_P :
                                                        AV_PICTURE_TYPE_I;
 
             if (ps->pps->output_flag_present_flag)

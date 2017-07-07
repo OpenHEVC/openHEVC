@@ -398,13 +398,14 @@ set(libfilenames
 
 # hevc decoder
     libavcodec/hevc_cabac.c
+    libavcodec/hevc_data.c
     libavcodec/hevc_mvs.c
     libavcodec/hevc_parser.c
     libavcodec/hevc_ps.c
     libavcodec/hevc_refs.c
     libavcodec/hevc_sei.c
     libavcodec/hevc_filter.c
-    libavcodec/hevc.c
+    libavcodec/hevcdec.c
     libavcodec/hevcdsp.c
     libavcodec/hevcpred.c
 

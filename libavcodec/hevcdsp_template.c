@@ -22,11 +22,10 @@
  */
 
 #include "get_bits.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
-
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height,
                           GetBitContext *gb, int pcm_bit_depth)
