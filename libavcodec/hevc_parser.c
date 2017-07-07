@@ -354,12 +354,12 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 sh->no_output_of_prior_pics_flag = get_bits1(gb);
             }
 
-            sh->pps_id = get_ue_golomb(gb);
-            if (sh->pps_id >= MAX_PPS_COUNT || !ps->pps_list[sh->pps_id]) {
-                av_log(avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
+            sh->slice_pps_id = get_ue_golomb(gb);
+            if (sh->slice_pps_id >= MAX_PPS_COUNT || !ps->pps_list[sh->slice_pps_id]) {
+                av_log(avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->slice_pps_id);
                 return AVERROR_INVALIDDATA;
             }
-            ps->pps = (HEVCPPS*)ps->pps_list[sh->pps_id]->data;
+            ps->pps = (HEVCPPS*)ps->pps_list[sh->slice_pps_id]->data;
 
             if (ps->pps->sps_id >= MAX_SPS_COUNT || !ps->sps_list[ps->pps->sps_id]) {
                 av_log(avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", ps->pps->sps_id);
@@ -388,10 +388,10 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
                 slice_address_length = av_ceil_log2_c(ps->sps->ctb_width *
                                                       ps->sps->ctb_height);
-                sh->slice_segment_addr = get_bitsz(gb, slice_address_length);
-                if (sh->slice_segment_addr >= ps->sps->ctb_width * ps->sps->ctb_height) {
+                sh->slice_segment_address = get_bitsz(gb, slice_address_length);
+                if (sh->slice_segment_address >= ps->sps->ctb_width * ps->sps->ctb_height) {
                     av_log(avctx, AV_LOG_ERROR, "Invalid slice segment address: %u.\n",
-                           sh->slice_segment_addr);
+                           sh->slice_segment_address);
                     return AVERROR_INVALIDDATA;
                 }
             } else
@@ -421,8 +421,8 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 sh->colour_plane_id = get_bits(gb, 2);
 
             if (!IS_IDR(h)) {
-                sh->pic_order_cnt_lsb = get_bits(gb, ps->sps->log2_max_poc_lsb);
-                s->output_picture_number = h->poc = ff_hevc_compute_poc(h, sh->pic_order_cnt_lsb);
+                sh->slice_pic_order_cnt_lsb = get_bits(gb, ps->sps->log2_max_poc_lsb);
+                s->output_picture_number = h->poc = ff_hevc_compute_poc(h, sh->slice_pic_order_cnt_lsb);
             } else
                 s->output_picture_number = h->poc = 0;
 

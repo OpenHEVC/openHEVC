@@ -111,7 +111,7 @@ static void remove_vps(HEVCParamSets *s, int id)
 int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
                                   ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header)
 {
-    uint8_t rps_predict = 0;
+    uint8_t inter_ref_pic_set_prediction_flag = 0;
     int delta_poc;
     int k0 = 0;
     int k1 = 0;
@@ -119,9 +119,9 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
     int i;
 
     if (rps != sps->st_rps && sps->num_short_term_rps)
-        rps_predict = get_bits1(gb);
+        inter_ref_pic_set_prediction_flag = get_bits1(gb);
 
-    if (rps_predict) {
+    if (inter_ref_pic_set_prediction_flag) {
         const ShortTermRPS *rps_ridx;
         int delta_rps;
         unsigned abs_delta_rps;
@@ -151,7 +151,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
         }
         delta_rps      = (1 - (delta_rps_sign << 1)) * abs_delta_rps;
         for (i = 0; i <= rps_ridx->num_delta_pocs; i++) {
-            int used = rps->used[k] = get_bits1(gb);
+            int used = rps->used_by_curr_pic_flag[k] = get_bits1(gb);
 
             if (!used)
                 use_delta_flag = get_bits1(gb);
@@ -177,14 +177,14 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
             int used, tmp;
             for (i = 1; i < rps->num_delta_pocs; i++) {
                 delta_poc = rps->delta_poc[i];
-                used      = rps->used[i];
+                used      = rps->used_by_curr_pic_flag[i];
                 for (k = i - 1; k >= 0; k--) {
                     tmp = rps->delta_poc[k];
                     if (delta_poc < tmp) {
                         rps->delta_poc[k + 1] = tmp;
-                        rps->used[k + 1]      = rps->used[k];
+                        rps->used_by_curr_pic_flag[k + 1]      = rps->used_by_curr_pic_flag[k];
                         rps->delta_poc[k]     = delta_poc;
-                        rps->used[k]          = used;
+                        rps->used_by_curr_pic_flag[k]          = used;
                     }
                 }
             }
@@ -195,11 +195,11 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
             // flip the negative values to largest first
             for (i = 0; i < rps->num_negative_pics >> 1; i++) {
                 delta_poc         = rps->delta_poc[i];
-                used              = rps->used[i];
+                used              = rps->used_by_curr_pic_flag[i];
                 rps->delta_poc[i] = rps->delta_poc[k];
-                rps->used[i]      = rps->used[k];
+                rps->used_by_curr_pic_flag[i]      = rps->used_by_curr_pic_flag[k];
                 rps->delta_poc[k] = delta_poc;
-                rps->used[k]      = used;
+                rps->used_by_curr_pic_flag[k]      = used;
                 k--;
             }
         }
@@ -221,14 +221,14 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
                 delta_poc = get_ue_golomb_long(gb) + 1;
                 prev -= delta_poc;
                 rps->delta_poc[i] = prev;
-                rps->used[i]      = get_bits1(gb);
+                rps->used_by_curr_pic_flag[i]      = get_bits1(gb);
             }
             prev = 0;
             for (i = 0; i < nb_positive_pics; i++) {
                 delta_poc = get_ue_golomb_long(gb) + 1;
                 prev += delta_poc;
                 rps->delta_poc[rps->num_negative_pics + i] = prev;
-                rps->used[rps->num_negative_pics + i]      = get_bits1(gb);
+                rps->used_by_curr_pic_flag[rps->num_negative_pics + i]      = get_bits1(gb);
             }
         }
     }

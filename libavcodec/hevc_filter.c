@@ -327,7 +327,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         uint8_t *dst = lc->sao_pixel_buffer + (1 * stride_dst) + 16;
 #else
         int stride_dst = s->sao_frame->linesize[c_idx];
-        uint8_t *dst = &s->sao_frame->data[c_idx][y0 * stride_dst + (x0 << s->ps.sps->pixel_shift)];
+        uint8_t *dst = &s->sao_frame->data[c_idx][y0 * stride_dst + (x0 << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA])];
 #endif
 
         switch (sao->type_idx[c_idx]) {
@@ -448,29 +448,29 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                 uint8_t top_left  = !edges[0] && (CTB(s->sao, x_ctb-1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED);
                 uint8_t top_right = !edges[2] && (CTB(s->sao, x_ctb+1, y_ctb-1).type_idx[c_idx] != SAO_APPLIED);
                 if (CTB(s->sao, x_ctb  , y_ctb-1).type_idx[c_idx] == 0)
-                    memcpy( dst - stride_dst - (top_left << s->ps.sps->pixel_shift),
-                            src - stride_src - (top_left << s->ps.sps->pixel_shift),
-                            (top_left + width + top_right) << s->ps.sps->pixel_shift);
+                    memcpy( dst - stride_dst - (top_left << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                            src - stride_src - (top_left << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                            (top_left + width + top_right) << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]);
                 else {
                     if (top_left)
-                        memcpy( dst - stride_dst - (1 << s->ps.sps->pixel_shift),
-                                src - stride_src - (1 << s->ps.sps->pixel_shift),
-                                1 << s->ps.sps->pixel_shift);
+                        memcpy( dst - stride_dst - (1 << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                                src - stride_src - (1 << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                                1 << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]);
                     if(top_right)
-                        memcpy( dst - stride_dst + (width << s->ps.sps->pixel_shift),
-                                src - stride_src + (width << s->ps.sps->pixel_shift),
-                                1 << s->ps.sps->pixel_shift);
+                        memcpy( dst - stride_dst + (width << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                                src - stride_src + (width << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                                1 << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]);
                 }
             }
             if (!edges[3]) {                                                                // bottom and bottom right
                 uint8_t bottom_left = !edges[0] && (CTB(s->sao, x_ctb-1, y_ctb+1).type_idx[c_idx] != SAO_APPLIED);
-                memcpy( dst + height * stride_dst - (bottom_left << s->ps.sps->pixel_shift),
-                        src + height * stride_src - (bottom_left << s->ps.sps->pixel_shift),
-                        (width + 1 + bottom_left) << s->ps.sps->pixel_shift);
+                memcpy( dst + height * stride_dst - (bottom_left << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                        src + height * stride_src - (bottom_left << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                        (width + 1 + bottom_left) << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]);
             }
-            copy_CTB(dst - (left_pixels << s->ps.sps->pixel_shift),
-                     src - (left_pixels << s->ps.sps->pixel_shift),
-                     (width + 1 + left_pixels) << s->ps.sps->pixel_shift, height, stride_dst, stride_src);
+            copy_CTB(dst - (left_pixels << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                     src - (left_pixels << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA]),
+                     (width + 1 + left_pixels) << s->ps.sps->pixel_shift[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA], height, stride_dst, stride_src);
 #endif
             /* XXX: could handle the restoration here to simplify the
                DSP functions */
@@ -2003,8 +2003,8 @@ void ff_upscale_mv_block(HEVCContext *s, int ctb_x, int ctb_y) {
                         memcpy(&refEL->tab_mvf[pre_unit], &refBL->tab_mvf[Ref_pre_unit], sizeof(MvField));
                     } else {
                         for( list=0; list < nb_list; list++) {
-                            refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->sh.MvScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->sh.MvScalingFactor[s->nuh_layer_id][0] * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
-                            refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->sh.MvScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->sh.MvScalingFactor[s->nuh_layer_id][1] * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
+                            refEL->tab_mvf[pre_unit].mv[list].x  = av_clip_c( (s->up_filter_inf.mv_scale_x/*s->sh.MvScalingFactor[s->nuh_layer_id][0]*/ * refBL->tab_mvf[Ref_pre_unit].mv[list].x + 127 + (s->up_filter_inf.mv_scale_x/*s->sh.MvScalingFactor[s->nuh_layer_id][0]*/ * refBL->tab_mvf[Ref_pre_unit].mv[list].x < 0)) >> 8 , -32768, 32767);
+                            refEL->tab_mvf[pre_unit].mv[list].y = av_clip_c( (s->up_filter_inf.mv_scale_y/*s->sh.MvScalingFactor[s->nuh_layer_id][1]*/ * refBL->tab_mvf[Ref_pre_unit].mv[list].y + 127 + (s->up_filter_inf.mv_scale_y/*s->sh.MvScalingFactor[s->nuh_layer_id][1]*/ * refBL->tab_mvf[Ref_pre_unit].mv[list].y < 0)) >> 8, -32768, 32767);
                             refEL->tab_mvf[pre_unit].ref_idx[list] = refBL->tab_mvf[Ref_pre_unit].ref_idx[list];
 #ifdef TEST_MV_POC
                             refEL->tab_mvf[pre_unit].poc[list] = refBL->tab_mvf[Ref_pre_unit].poc[list];
