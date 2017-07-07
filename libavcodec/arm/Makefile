@@ -84,6 +84,7 @@ NEON-OBJS-$(CONFIG_HEVC_DECODER)       += arm/hevcdsp_init_neon.o       \
                                           arm/hevcdsp_idct_neon.o       \
                                           arm/hevcdsp_qpel_neon.o		\
                                           arm/hevcdsp_epel_neon.o		\
+                                          arm/hevcdsp_pel_put_neon.o 	\
                                           arm/hevcdsp_sao_neon.o		\
                                           arm/hevcdsp_il_pred_neon.o
 

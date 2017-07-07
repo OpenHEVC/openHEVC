@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/arm/hevcdsp_epel_green_template_neon.S"
+#include "libavcodec/arm/hevcdsp_pel_template_neon.S"
 
 /*      r0 : dst
         r1 : dst_stride
@@ -51,11 +51,11 @@
         ldr       r12, =epel_coeffs_g3
         add       r12, \offset
         ldr       \offset, [r12]
-        vdup.i8   d0, \offset
+        vdup.i8   d6, \offset
         lsr       \offset, #8
-        vdup.i8   d1, \offset
+        vdup.i8   d7, \offset
         lsr       \offset, #8
-        vdup.i8   d2, \offset
+        vdup.i8   d8, \offset
 .endm
 
 .macro load_coeffs_epel_g3_1 offset dir
@@ -64,11 +64,11 @@
         ldr       r12, =epel_coeffs_g3
         add       r12, \offset
         ldr       \offset, [r12]
-        vdup.i8   d0, \offset
+        vdup.i8   d6, \offset
         lsr       \offset, #8
-        vdup.i8   d1, \offset
+        vdup.i8   d7, \offset
         lsr       \offset, #8
-        vdup.i8   d2, \offset
+        vdup.i8   d8, \offset
 .endm
 
 .macro load_coeffs_32_epel_g3_0 offset
@@ -77,12 +77,12 @@
         ldr      r12, =epel_coeffs_g3
         add      r12, \offset
         ldr      \offset, [r12]
-        vmov.i64 d4, #0
-        vmov.8   d4[0], \offset
+        vmov.i64 d0, #0
+        vmov.8   d0[0], \offset
         lsr      \offset, #8
-        vmov.8   d4[2], \offset
+        vmov.8   d0[2], \offset
         lsr      \offset, #8
-        vmov.8   d4[4], \offset
+        vmov.8   d0[4], \offset
 .endm
 
 .macro load_coeffs_32_epel_g3_1 offset
@@ -90,128 +90,126 @@
         ldr      r12, =epel_coeffs_g3
         add      r12, \offset
         ldr      \offset, [r12]
-        vmov.i64 d4, #0
-        vmov.8   d4[0], \offset
+        vmov.i64 d0, #0
+        vmov.8   d0[0], \offset
         lsr      \offset, #8
-        vmov.8   d4[2], \offset
+        vmov.8   d0[2], \offset
         lsr      \offset, #8
-        vmov.8   d4[4], \offset
+        vmov.8   d0[4], \offset
 .endm
 
 .macro preload_data_v_epel_g3
         pld [r2]
-        vld1.8    {d17}, [r2], r3
+        vld1.8    {d3}, [r2], r3
         pld [r2]
-        vld1.8    {d18}, [r2], r3
+        vld1.8    {d4}, [r2], r3
 .endm
 
 .macro preload_data_hv_epel_g3_0
         load_data_h8_epel_g3
-        exec_filter_epel_g3_0 q14
+        exec_filter_epel_g3_0 q8
         load_data_h8_epel_g3
-        exec_filter_epel_g3_0 q13
+        exec_filter_epel_g3_0 q7
         load_data_h8_epel_g3
-        exec_filter_epel_g3_0 q12
+        exec_filter_epel_g3_0 q6
 .endm
 
 .macro preload_data_hv_epel_g3_1
         load_data_h8_epel_g3
-        exec_filter_epel_g3_1 q14
+        exec_filter_epel_g3_1 q8
         load_data_h8_epel_g3
-        exec_filter_epel_g3_1 q13
+        exec_filter_epel_g3_1 q7
         load_data_h8_epel_g3
-        exec_filter_epel_g3_1 q12
+        exec_filter_epel_g3_1 q6
 .endm
 
 .macro load_data_h8_epel_g3
         pld      [r2]
-        vld1.8   {q10}, [r2], r3
-        vmov     d16, d20
-        vext.8   d17, d20, d21, #1
-        vext.8   d18, d20, d21, #2
+        vld1.8   {q1}, [r2], r3
+        vext.8   d4, d2, d3, #2
+        vext.8   d3, d2, d3, #1
 .endm
 
 .macro load_data_h42_epel_g3
         pld      [r2]
-        vld1.8   d16, [r2], r3
-        vext.8   d17, d16, d16, #1
-        vext.8   d18, d16, d16, #2
+        vld1.8   d2, [r2], r3
+        vext.8   d3, d2, d2, #1
+        vext.8   d4, d2, d2, #2
 .endm
 
 .macro load_data_v_epel_g3
         pld     [r2]
-        vmov    d16, d17
-        vmov    d17, d18
-        vld1.8  {d18}, [r2], r3
+        vmov    d2, d3
+        vmov    d3, d4
+        vld1.8  {d4}, [r2], r3
 .endm
 
 .macro load_data_hv8_epel_g3
         pld       [r2]
-        vld1.8    {q10}, [r2], r3
-        vmov      d16, d20
-        vext.8    d17, d20, d21, #1
-        vext.8    d18, d20, d21, #2
-        vmov      q15, q14
-        vmov      q14, q13
-        vmov      q13, q12
+        vld1.8    {q1}, [r2], r3
+        vext.8    d4, d2, d3, #2
+        vext.8    d3, d2, d3, #1
+        vmov      q9, q8
+        vmov      q8, q7
+        vmov      q7, q6
 .endm
 
 .macro load_data_hv42_epel_g3
         pld      [r2]
-        vld1.8    d16, [r2], r3
-        vext.8    d17, d16, d16, #1
-        vext.8    d18, d16, d16, #2
-        vmov      q15, q14
-        vmov      q14, q13
-        vmov      q13, q12
+        vld1.8   d2, [r2], r3
+        vext.8   d3, d2, d2, #1
+        vext.8   d4, d2, d2, #2
+        vmov     q9, q8
+        vmov     q8, q7
+        vmov     q7, q6
 .endm
 
 .macro exec_filter_epel_g3_0 out
-        vmull.u8  \out, d18, d2
-        vmlal.u8  \out, d17, d1
-        vmlsl.u8  \out, d16, d0
+        vmull.u8  \out, d4, d8
+        vmlal.u8  \out, d3, d7
+        vmlsl.u8  \out, d2, d6
 .endm
 
 .macro exec_filter_epel_g3_1 out
-        vmull.u8  \out, d17, d1
-        vmlal.u8  \out, d16, d0
-        vmlsl.u8  \out, d18, d2
+        vmull.u8  \out, d3, d7
+        vmlal.u8  \out, d2, d6
+        vmlsl.u8  \out, d4, d8
 .endm
 
 .macro exec_filter_hv8_epel_g3_0 out1 out2
-        vmull.s16 q3,d26,d4[2] // q13
-        vmull.s16 q4,d27,d4[2]
-        vmlal.s16 q3,d28,d4[1] // q14
-        vmlal.s16 q4,d29,d4[1]
-        vmlsl.s16 q3,d30,d4[0] // q15
-        vmlsl.s16 q4,d31,d4[0]
-        vqshrn.s32 \out1,q3,#6
-        vqshrn.s32 \out2,q4,#6
+        vmull.s16 q14,d16,d0[1] // q8
+        vmull.s16 q15,d17,d0[1]
+        vmlal.s16 q14,d14,d0[2] // q7
+        vmlal.s16 q15,d15,d0[2]
+        vmlsl.s16 q14,d18,d0[0] // q9
+        vmlsl.s16 q15,d19,d0[0]
+        vqshrn.s32 \out1,q14,#6
+        vqshrn.s32 \out2,q15,#6
 .endm
 
 .macro exec_filter_hv42_epel_g3_0 out
-        vmull.s16 q3,d26,d4[2] // q13
-        vmlal.s16 q3,d28,d4[1] // q14
-        vmlsl.s16 q3,d30,d4[0] // q15
-        vqshrn.s32 \out,q3,#6
+        vmull.s16 q14,d16,d0[1] // q8
+        vmlal.s16 q14,d14,d0[2] // q7
+        vmlsl.s16 q14,d18,d0[0] // q9
+        vqshrn.s32 \out,q14,#6
 .endm
 
 .macro exec_filter_hv8_epel_g3_1 out1 out2
-        vmull.s16 q3,d30,d4[0] // q15
-        vmull.s16 q4,d31,d4[0]
-        vmlal.s16 q3,d28,d4[1] // q14
-        vmlal.s16 q4,d29,d4[1]
-        vmlsl.s16 q3,d26,d4[2] // q13
-        vmlsl.s16 q4,d27,d4[2]
-        vqshrn.s32 \out1,q3,#6
-        vqshrn.s32 \out2,q4,#6
+        vmull.s16 q14,d18,d0[0] // q9
+        vmull.s16 q15,d19,d0[0]
+        vmlal.s16 q14,d16,d0[1] // q8
+        vmlal.s16 q15,d17,d0[1]
+        vmlsl.s16 q14,d14,d0[2] // q7
+        vmlsl.s16 q15,d15,d0[2]
+        vqshrn.s32 \out1,q14,#6
+        vqshrn.s32 \out2,q15,#6
 .endm
 
 .macro exec_filter_hv42_epel_g3_1 out
-        vmull.s16 q3,d30,d4[0] // q15
-        vmlal.s16 q3,d28,d4[1] // q14
-        vmlsl.s16 q3,d26,d4[2] // q13
-        vqshrn.s32 \out,q3,#6
+        vmull.s16 q14,d18,d0[0] // q9
+        vmlal.s16 q14,d16,d0[1] // q8
+        vmlsl.s16 q14,d14,d0[2] // q7
+        vqshrn.s32 \out,q14,#6
 .endm
 
 function ff_hevc_put_epel3_h_neon_8, export=1
@@ -222,7 +220,7 @@ function ff_hevc_put_epel3_h_neon_8, export=1
         pop {r6}
         bne 11f
 
-10:     loop_epel_neon_8 fun_pre dir_h  \
+10:     loop_pel_neon_8 fun_pre dir_h  \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -235,7 +233,7 @@ function ff_hevc_put_epel3_h_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-11:     loop_epel_neon_8 fun_pre dir_h  \
+11:     loop_pel_neon_8 fun_pre dir_h  \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -258,7 +256,7 @@ function ff_hevc_epel3_uni_h_neon_8, export=1
         pop {r6}
         bne 11f
 
-10:     loop_epel_neon_8 fun_uni dir_h  \
+10:     loop_pel_neon_8 fun_uni dir_h  \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -271,7 +269,7 @@ function ff_hevc_epel3_uni_h_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-11:     loop_epel_neon_8 fun_uni dir_h  \
+11:     loop_pel_neon_8 fun_uni dir_h  \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -294,7 +292,7 @@ function ff_hevc_epel3_bi_h_neon_8, export=1
         pop {r6}
         bne 11f
 
-10:     loop_epel_neon_8 fun_bi dir_h   \
+10:     loop_pel_neon_8 fun_bi dir_h   \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -307,7 +305,7 @@ function ff_hevc_epel3_bi_h_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-11:     loop_epel_neon_8 fun_bi dir_h   \
+11:     loop_pel_neon_8 fun_bi dir_h   \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -332,7 +330,7 @@ function ff_hevc_put_epel3_v_neon_8, export=1
         pop {r6}
         bne 11f
 
-10:     loop_epel_neon_8 fun_pre dir_v  \
+10:     loop_pel_neon_8 fun_pre dir_v  \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -345,7 +343,7 @@ function ff_hevc_put_epel3_v_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-11:     loop_epel_neon_8 fun_pre dir_v  \
+11:     loop_pel_neon_8 fun_pre dir_v  \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -368,7 +366,7 @@ function ff_hevc_epel3_uni_v_neon_8, export=1
         pop {r6}
         bne 11f
 
-10:     loop_epel_neon_8 fun_uni dir_v  \
+10:     loop_pel_neon_8 fun_uni dir_v  \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -381,7 +379,7 @@ function ff_hevc_epel3_uni_v_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-11:     loop_epel_neon_8 fun_uni dir_v  \
+11:     loop_pel_neon_8 fun_uni dir_v  \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -405,7 +403,7 @@ function ff_hevc_epel3_bi_v_neon_8, export=1
         pop {r6}
         bne 11f
 
-10:     loop_epel_neon_8 fun_bi dir_v   \
+10:     loop_pel_neon_8 fun_bi dir_v   \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -418,7 +416,7 @@ function ff_hevc_epel3_bi_v_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-11:     loop_epel_neon_8 fun_bi dir_v   \
+11:     loop_pel_neon_8 fun_bi dir_v   \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -452,7 +450,7 @@ function ff_hevc_put_epel3_hv_neon_8, export=1
         bne 211f
 	    b 210f
 
-200:    loop_epel_neon_8 fun_pre dir_hv \
+200:    loop_pel_neon_8 fun_pre dir_hv \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -465,7 +463,7 @@ function ff_hevc_put_epel3_hv_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-201:    loop_epel_neon_8 fun_pre dir_hv \
+201:    loop_pel_neon_8 fun_pre dir_hv \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -478,7 +476,7 @@ function ff_hevc_put_epel3_hv_neon_8, export=1
             exec_filter_epel_g3_1       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-210:    loop_epel_neon_8 fun_pre dir_hv \
+210:    loop_pel_neon_8 fun_pre dir_hv \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -491,7 +489,7 @@ function ff_hevc_put_epel3_hv_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_1   \
             exec_filter_hv42_epel_g3_1
-211:    loop_epel_neon_8 fun_pre dir_hv \
+211:    loop_pel_neon_8 fun_pre dir_hv \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -524,7 +522,7 @@ function ff_hevc_epel3_uni_hv_neon_8, export=1
         bne 211f
         b 210f
 
-200:    loop_epel_neon_8 fun_uni dir_hv \
+200:    loop_pel_neon_8 fun_uni dir_hv \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -537,7 +535,7 @@ function ff_hevc_epel3_uni_hv_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-201:    loop_epel_neon_8 fun_uni dir_hv \
+201:    loop_pel_neon_8 fun_uni dir_hv \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -550,7 +548,7 @@ function ff_hevc_epel3_uni_hv_neon_8, export=1
             exec_filter_epel_g3_1       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-210:    loop_epel_neon_8 fun_uni dir_hv \
+210:    loop_pel_neon_8 fun_uni dir_hv \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -563,7 +561,7 @@ function ff_hevc_epel3_uni_hv_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_1   \
             exec_filter_hv42_epel_g3_1
-211:    loop_epel_neon_8 fun_uni dir_hv \
+211:    loop_pel_neon_8 fun_uni dir_hv \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -596,7 +594,7 @@ function ff_hevc_epel3_bi_hv_neon_8, export=1
         bne 211f
         b 210f
 
-200:    loop_epel_neon_8 fun_bi dir_hv  \
+200:    loop_pel_neon_8 fun_bi dir_hv  \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -609,7 +607,7 @@ function ff_hevc_epel3_bi_hv_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-201:    loop_epel_neon_8 fun_bi dir_hv  \
+201:    loop_pel_neon_8 fun_bi dir_hv  \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_0    \
             preload_data_v_epel_g3      \
@@ -622,7 +620,7 @@ function ff_hevc_epel3_bi_hv_neon_8, export=1
             exec_filter_epel_g3_1       \
             exec_filter_hv8_epel_g3_0   \
             exec_filter_hv42_epel_g3_0
-210:    loop_epel_neon_8 fun_bi dir_hv  \
+210:    loop_pel_neon_8 fun_bi dir_hv  \
             load_coeffs_epel_g3_0       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \
@@ -635,7 +633,7 @@ function ff_hevc_epel3_bi_hv_neon_8, export=1
             exec_filter_epel_g3_0       \
             exec_filter_hv8_epel_g3_1   \
             exec_filter_hv42_epel_g3_1
-211:    loop_epel_neon_8 fun_bi dir_hv  \
+211:    loop_pel_neon_8 fun_bi dir_hv  \
             load_coeffs_epel_g3_1       \
             load_coeffs_32_epel_g3_1    \
             preload_data_v_epel_g3      \

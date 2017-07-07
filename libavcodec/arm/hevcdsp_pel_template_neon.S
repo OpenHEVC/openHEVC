@@ -44,22 +44,22 @@
 /**  */
 
 .macro store_128
-        vst1.16     {q11}, [r0], r1
+        vst1.16     {q5}, [r0], r1
 .endm
 
 .macro store_64
-        vst1.16     d22, [r0], r1
+        vst1.16     d10, [r0], r1
 .endm
 
 .macro store_32
-        vst1.32     d22[0], [r0], r1
+        vst1.32     d10[0], [r0], r1
 .endm
 
 .macro store_16
-        vst1.16     d22[0], [r0], r1
+        vst1.16     d10[0], [r0], r1
 .endm
 
-.macro loop_epel_neon_8 funtype dirtype load_coeffs load_coeffs_32 preload_data_v preload_data_hv load_data_h8 load_data_h42 load_data_v load_data_hv8 load_data_hv42 exec_filter exec_filter_hv8 exec_filter_hv42
+.macro loop_pel_neon_8 funtype dirtype load_coeffs load_coeffs_32 preload_data_v preload_data_hv load_data_h8 load_data_h42 load_data_v load_data_hv8 load_data_hv42 exec_filter exec_filter_hv8 exec_filter_hv42
         // Retreive arguments
         push   {r4-r12}
 .if \funtype == fun_pre
@@ -153,19 +153,19 @@
         \load_data_hv8
 .endif
 .if \dirtype != dir_hv
-        \exec_filter q11
+        \exec_filter q5
 .else
-        \exec_filter q12
-        \exec_filter_hv8 d22 d23
+        \exec_filter q6
+        \exec_filter_hv8 d10 d11
 .endif
         subs r4, #1
 .if \funtype == fun_uni
-        vqrshrun.s16   d22, q11, #6
+        vqrshrun.s16   d10, q5, #6
 .endif
 .if \funtype == fun_bi
-        vld1.16        {q3}, [r8], r9
-        vqadd.s16      q3, q11
-        vqrshrun.s16   d22, q3, #7
+        vld1.16        {q14}, [r8], r9
+        vqadd.s16      q14, q5
+        vqrshrun.s16   d10, q14, #7
 .endif
 .if \funtype == fun_pre
         store_128
@@ -207,19 +207,19 @@
         \load_data_hv42
 .endif
 .if \dirtype != dir_hv
-        \exec_filter q11
+        \exec_filter q5
 .else
-        \exec_filter q12
-        \exec_filter_hv42 d22
+        \exec_filter q6
+        \exec_filter_hv42 d10
 .endif
         subs r4, #1
 .if \funtype == fun_uni
-        vqrshrun.s16   d22, q11, #6
+        vqrshrun.s16   d10, q5, #6
 .endif
 .if \funtype == fun_bi
-        vld1.16        {q3}, [r8], r9
-        vqadd.s16      q3, q11
-        vqrshrun.s16   d22, q3, #7
+        vld1.16        {q14}, [r8], r9
+        vqadd.s16      q14, q5
+        vqrshrun.s16   d10, q14, #7
 .endif
 .if \funtype == fun_pre
         store_64
@@ -259,19 +259,19 @@
         \load_data_hv42
 .endif
 .if \dirtype != dir_hv
-        \exec_filter q11
+        \exec_filter q5
 .else
-        \exec_filter q12
-        \exec_filter_hv42 d22
+        \exec_filter q6
+        \exec_filter_hv42 d10
 .endif
         subs r4, #1
 .if \funtype == fun_uni
-        vqrshrun.s16   d22, q11, #6
+        vqrshrun.s16   d10, q5, #6
 .endif
 .if \funtype == fun_bi
-        vld1.16        {q3}, [r8], r9
-        vqadd.s16      q3, q11
-        vqrshrun.s16   d22, q3, #7
+        vld1.16        {q14}, [r8], r9
+        vqadd.s16      q14, q5
+        vqrshrun.s16   d10, q14, #7
 .endif
 .if \funtype == fun_pre
         store_32
