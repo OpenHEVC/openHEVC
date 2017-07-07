@@ -21,6 +21,8 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
+#define MAX_PB_SIZE #64
+
 .macro vextin_d4
     vld1.8    {q10}, [r2], r3
     vmov      d16, d20
@@ -103,13 +105,17 @@
 
 function ff_hevc_put_epel_h_neon_8, export=1
         push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r7, [sp, #40] // mx
-        ldr    r5, [sp, #48] // width
+        mov    r4, r3
+        mov    r3, r2
+        mov    r2, r1
+        mov	   r1, MAX_PB_SIZE
+        //ldr    r4, [sp, #32] // height
+        ldr    r7, [sp, #36] // mx
+        ldr    r5, [sp, #44] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adrl    r12, epel_coeffs
+        ldr    r12, =epel_coeffs
         add    r7, r12
         sub       r2, #1
         lsl       r1, #1
@@ -169,8 +175,8 @@ function ff_hevc_epel_uni_h_neon_8, export=1
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adrl   r12, epel_coeffs
-        add    r7, r12
+        ldr    r12, =epel_coeffs
+		add    r7, r12
         sub       r2, #1
         load_coeffs_16b r7
         mov   r12, r4
@@ -226,14 +232,15 @@ endfunc
 function ff_hevc_epel_bi_h_neon_8, export=1
         push   {r4-r12}
         ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
-        ldr    r4, [sp, #44] // height
-        ldr    r7, [sp, #48] // mx
-        ldr    r5, [sp, #56] // width
+        //ldr    r9, [sp, #40] // src2stride
+        mov    r9, MAX_PB_SIZE
+        ldr    r4, [sp, #40] // height
+        ldr    r7, [sp, #44] // mx
+        ldr    r5, [sp, #52] // width
         sub    r7, #1
         lsl    r7, #2
         vpush  {d8-d15}
-        adrl   r12, epel_coeffs
+        ldr    r12, =epel_coeffs
         add    r7, r12
         sub    r2, #1
         load_coeffs_16b r7
@@ -301,13 +308,17 @@ endfunc
 
 function ff_hevc_put_epel_v_neon_8, export=1
         push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r7, [sp, #44] // my
-        ldr    r5, [sp, #48] // width
+        mov    r4, r3
+        mov    r3, r2
+        mov    r2, r1
+        mov	   r1, MAX_PB_SIZE
+        //ldr    r4, [sp, #36] // height
+        ldr    r7, [sp, #40] // my
+        ldr    r5, [sp, #44] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adrl    r12, epel_coeffs
+        ldr    r12, =epel_coeffs
         add    r7, r12
         load_coeffs_16b r7
         sub       r2, r3
@@ -382,7 +393,7 @@ function ff_hevc_epel_uni_v_neon_8, export=1
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adrl   r12, epel_coeffs
+        ldr    r12, =epel_coeffs
         add    r7, r12
         sub       r2, r3
         load_coeffs_16b r7
@@ -454,14 +465,14 @@ endfunc
 function ff_hevc_epel_bi_v_neon_8, export=1
         push   {r4-r12}
         ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
-        ldr    r4, [sp, #44] // height
-        ldr    r7, [sp, #52] // my
-        ldr    r5, [sp, #56] // width
+        mov r9, MAX_PB_SIZE  // src2stride
+        ldr    r4, [sp, #40] // height
+        ldr    r7, [sp, #48] // my
+        ldr    r5, [sp, #52] // width
         sub    r7, #1
         lsl    r7, #2
         vpush  {d8-d15}
-        adrl   r12, epel_coeffs
+        ldr    r12, =epel_coeffs
         add    r7, r12
 		lsl    r9, #1
         sub    r2, r3
@@ -542,20 +553,26 @@ function ff_hevc_epel_bi_v_neon_8, export=1
         bx lr
 endfunc
 
+.ltorg
+
 function ff_hevc_put_epel_hv_neon_8, export=1
         push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r6, [sp, #40] // mx
-        ldr    r7, [sp, #44] // my
-        ldr    r5, [sp, #48] // width
+        mov    r4, r3
+        mov    r3, r2
+        mov    r2, r1
+        mov	   r1, MAX_PB_SIZE
+        //ldr    r4, [sp, #36] // height
+        ldr    r6, [sp, #36] // mx
+        ldr    r7, [sp, #40] // my
+        ldr    r5, [sp, #44] // width
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adrl    r12, epel_coeffs
+        ldr    r12, =epel_coeffs
+        add    r7, r12
         sub    r6, #1
         lsl    r6, #2
         add    r6, r12 // mx epel coeff offset
-        add    r7, r12
         sub       r2, #1
         sub       r2, r3
         lsl       r1, #1
@@ -638,7 +655,7 @@ function ff_hevc_epel_uni_hv_neon_8, export=1
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adrl    r12, epel_coeffs
+        ldr    r12, =epel_coeffs
         sub    r6, #1
         lsl    r6, #2
         add    r6, r12 // mx epel coeff offset
@@ -720,16 +737,17 @@ endfunc
 
 function ff_hevc_epel_bi_hv_neon_8, export=1
         push   {r4-r12}
-        ldr    r4, [sp, #44] // height
-        ldr    r5, [sp, #56] // width
-        ldr    r6, [sp, #48] // mx
-        ldr    r7, [sp, #52] // my
+        ldr    r4, [sp, #40] // height
+        ldr    r5, [sp, #52] // width
+        ldr    r6, [sp, #44] // mx
+        ldr    r7, [sp, #48] // my
         ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
+        mov r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #40] // src2stride
         sub    r7, #1
         lsl    r7, #2
         vpush {d8-d15}
-        adrl    r12, epel_coeffs
+        ldr    r12, =epel_coeffs
         sub    r6, #1
         lsl    r6, #2
         add    r6, r12 // mx epel coeff offset
@@ -821,6 +839,8 @@ function ff_hevc_epel_bi_hv_neon_8, export=1
         bx lr
 endfunc
 
+.ltorg
+
 .macro put_epel_uni_pixels width, regs, regs2
 function ff_hevc_put_epel_uni_pixels_w\width\()_neon_8, export=1
         ldr    r12, [sp] // height
@@ -894,9 +914,9 @@ put_epel_uni_pixels   32, q0-q1, q2-q3
 
 function ff_hevc_put_epel_bi_pixels_w2_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
 1:      subs   r10, #1
@@ -914,9 +934,9 @@ endfunc
 
 function ff_hevc_put_epel_bi_pixels_w4_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
 1:      subs   r10, #1
@@ -934,9 +954,9 @@ endfunc
 
 function ff_hevc_put_epel_bi_pixels_w6_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
 1:      subs r10, #1
@@ -957,9 +977,9 @@ endfunc
 
 function ff_hevc_put_epel_bi_pixels_w8_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
 1:      subs r10, #1
@@ -977,9 +997,9 @@ endfunc
 
 function ff_hevc_put_epel_bi_pixels_w12_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
         sub    r1, #8
@@ -1002,9 +1022,9 @@ endfunc
 
 function ff_hevc_put_epel_bi_pixels_w16_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
 1:      subs r10, #1
@@ -1025,9 +1045,9 @@ endfunc
 
 function ff_hevc_put_epel_bi_pixels_w24_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
         sub    r9, #32
@@ -1053,9 +1073,9 @@ endfunc
 
 function ff_hevc_put_epel_bi_pixels_w32_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
         sub    r9, #32
@@ -1082,6 +1102,7 @@ function ff_hevc_put_epel_bi_pixels_w32_neon_8, export=1
         bx lr
 endfunc
 
+.align 8
 epel_coeffs:
        .byte 2, 58, 10, 2
        .byte 4, 54, 16, 2

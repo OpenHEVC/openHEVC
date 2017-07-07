@@ -22,6 +22,8 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
+#define MAX_PB_SIZE #64
+
 .macro vextin_d3
     vld1.8    {q10}, [r2], r3
     vmov      d16, d20
@@ -90,7 +92,7 @@
 
 .macro hevc_put_epel3_h filter
         lsl    r7, #2
-        adrl   r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
         add    r7, r12
         lsl       r1, #1
         load_coeffs3_16b r7
@@ -140,9 +142,12 @@
 
 function ff_hevc_put_epel3_h_neon_8, export=1
         push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r7, [sp, #40] // mx
-        ldr    r5, [sp, #48] // width
+        mov r4, r3
+        mov r3, r2
+        mov r2, r1
+        mov r1, MAX_PB_SIZE
+        ldr    r7, [sp, #36] // mx
+        ldr    r5, [sp, #44] // width
         vpush {d8-d15}
         sub    r7, #1
         lsrs   r8, r7, #2
@@ -158,7 +163,7 @@ endfunc
 
 .macro hevc_epel3_uni_h filter
         lsl    r7, #2
-        adrl   r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
         add    r7, r12
         load_coeffs3_16b r7
         mov   r12, r4
@@ -228,7 +233,7 @@ endfunc
 
 .macro hevc_epel3_bi_h filter
         lsl    r7, #2
-        adrl   r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
         add    r7, r12
         load_coeffs3_16b r7
         mov   r12, r4
@@ -293,10 +298,11 @@ endfunc
 function ff_hevc_epel3_bi_h_neon_8, export=1
         push   {r4-r12}
         ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
-        ldr    r4, [sp, #44] // height
-        ldr    r7, [sp, #48] // mx
-        ldr    r5, [sp, #56] // width
+        mov r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #40] // src2stride
+        ldr    r4, [sp, #40] // height
+        ldr    r7, [sp, #44] // mx
+        ldr    r5, [sp, #52] // width
         vpush  {d8-d15}
         sub    r7, #1
         lsrs   r10, r7, #2
@@ -312,7 +318,7 @@ endfunc
 
 .macro hevc_put_epel3_v filter
 		lsl    r7, #2
-        adrl    r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
         add    r7, r12
         load_coeffs3_16b r7
         lsl       r1, #1
@@ -370,11 +376,16 @@ endfunc
         bne 2b
 .endm
 
+.ltorg
+
 function ff_hevc_put_epel3_v_neon_8, export=1
         push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r7, [sp, #44] // my
-        ldr    r5, [sp, #48] // width
+        mov r4, r3
+        mov r3, r2
+        mov r2, r1
+        mov r1, MAX_PB_SIZE
+        ldr    r7, [sp, #40] // my
+        ldr    r5, [sp, #44] // width
         vpush {d8-d15}
         sub    r7, #1
         lsrs   r8, r7, #2
@@ -390,7 +401,7 @@ endfunc
 
 .macro hevc_epel3_uni_v filter
 		lsl    r7, #2
-        adrl   r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
         add    r7, r12
         load_coeffs3_16b r7
         mov   r12, r4
@@ -470,7 +481,7 @@ endfunc
 
 .macro hevc_epel3_bi_v filter
 		lsl    r7, #2
-        adrl   r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
         add    r7, r12
 		lsl    r9, #1
         load_coeffs3_16b r7
@@ -545,10 +556,11 @@ endfunc
 function ff_hevc_epel3_bi_v_neon_8, export=1
         push   {r4-r12}
         ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
-        ldr    r4, [sp, #44] // height
-        ldr    r7, [sp, #52] // my
-        ldr    r5, [sp, #56] // width
+        mov r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #40] // src2stride
+        ldr    r4, [sp, #40] // height
+        ldr    r7, [sp, #48] // my
+        ldr    r5, [sp, #52] // width
         vpush {d8-d15}
         sub    r7, #1
         lsrs   r10, r7, #2
@@ -562,9 +574,11 @@ function ff_hevc_epel3_bi_v_neon_8, export=1
         bx lr
 endfunc
 
+.ltorg
+
 .macro hevc_put_epel3_hv filter filter32b
 		lsl    r7, #2
-        adrl   r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
 		lsl    r6, #2
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
@@ -638,10 +652,13 @@ endfunc
 
 function ff_hevc_put_epel3_hv_neon_8, export=1
         push   {r4-r12}
-        ldr    r4, [sp, #36] // height
-        ldr    r6, [sp, #40] // mx
-        ldr    r7, [sp, #44] // my
-        ldr    r5, [sp, #48] // width
+        mov r4, r3
+        mov r3, r2
+        mov r2, r1
+        mov r1, MAX_PB_SIZE
+        ldr    r6, [sp, #36] // mx
+        ldr    r7, [sp, #40] // my
+        ldr    r5, [sp, #44] // width
 		vpush {d8-d15}
         sub    r7, #1
         sub    r6, #1
@@ -670,7 +687,7 @@ endfunc
 .macro hevc_epel3_uni_hv filter filter32b
 		lsl    r7, #2
 		lsl    r6, #2
-        adrl    r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
         load_coeffs3_16b r6
@@ -773,10 +790,12 @@ hvu11:	hevc_epel3_uni_hv filter_16b_1 filter_32b_1
         bx lr
 endfunc
 
+.ltorg
+
 .macro hevc_epel3_bi_hv filter filter32b
         lsl    r6, #2
         lsl    r7, #2
-        adrl   r12, epel_coeffs3
+        ldr    r12, =epel_coeffs3
         add    r6, r12 // mx epel coeff offset
         add    r7, r12
         load_coeffs3_16b r6
@@ -863,12 +882,13 @@ endfunc
 
 function ff_hevc_epel3_bi_hv_neon_8, export=1
         push   {r4-r12}
-        ldr    r4, [sp, #44] // height
-        ldr    r5, [sp, #56] // width
-        ldr    r6, [sp, #48] // mx
-        ldr    r7, [sp, #52] // my
+        ldr    r4, [sp, #40] // height
+        ldr    r5, [sp, #52] // width
+        ldr    r6, [sp, #44] // mx
+        ldr    r7, [sp, #48] // my
         ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
+        mov r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #40] // src2stride
 		vpush {d8-d15}
         sub    r6, #1
         sub    r7, #1
@@ -893,6 +913,7 @@ hvb11:	hevc_epel3_bi_hv filter_16b_1 filter_32b_1
         bx lr
 endfunc
 
+.align 6
 epel_coeffs3: // Added 0's for padding
        .byte  3, 61,  6, 0
        .byte  5, 56, 13, 0

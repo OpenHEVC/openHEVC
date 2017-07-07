@@ -33,7 +33,7 @@
 
 #define BIT_DEPTH 8
 #include "hpel_template.c"
-#include "tpel_template.c"
+#include "pel_template.c"
 
 #define PIXOP2(OPNAME, OP)                                              \
 static inline void OPNAME ## _no_rnd_pixels8_l2_8(uint8_t *dst,         \
@@ -361,10 +361,10 @@ av_cold void ff_hpeldsp_init(HpelDSPContext *c, int flags)
         ff_hpeldsp_init_alpha(c, flags);
     if (ARCH_ARM)
         ff_hpeldsp_init_arm(c, flags);
-    if (ARCH_BFIN)
-        ff_hpeldsp_init_bfin(c, flags);
     if (ARCH_PPC)
         ff_hpeldsp_init_ppc(c, flags);
     if (ARCH_X86)
         ff_hpeldsp_init_x86(c, flags);
+    if (ARCH_MIPS)
+        ff_hpeldsp_init_mips(c, flags);
 }

@@ -51,10 +51,10 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
 
 RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *ref, int x0, int y0)
 {
-    int x_cb         = x0 >> s->sps->log2_ctb_size;
-    int y_cb         = y0 >> s->sps->log2_ctb_size;
-    int pic_width_cb = s->sps->ctb_width;
-    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
+    int x_cb         = x0 >> s->ps.sps->log2_ctb_size;
+    int y_cb         = y0 >> s->ps.sps->log2_ctb_size;
+    int pic_width_cb = s->ps.sps->ctb_width;
+    int ctb_addr_ts  = s->ps.pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
     return (RefPicList *)ref->rpl_tab[ctb_addr_ts];
 }
 
@@ -84,7 +84,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
             continue;
 
         if (s->interlaced) {
-            s->avctx->height = s->sps->output_height * 2;
+            s->avctx->height = s->ps.sps->output_height * 2;
             s->avctx->coded_height = s->avctx->height;
         }
 
@@ -112,7 +112,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         if (!frame->rpl_tab_buf)
             goto fail;
         frame->rpl_tab   = (RefPicListTab **)frame->rpl_tab_buf->data;
-        frame->ctb_count = s->sps->ctb_width * s->sps->ctb_height;
+        frame->ctb_count = s->ps.sps->ctb_width * s->ps.sps->ctb_height;
         for (j = 0; j < frame->ctb_count; j++)
             frame->rpl_tab[j] = (RefPicListTab *)frame->rpl_buf->data;
 
@@ -158,7 +158,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     if (s->sh.pic_output_flag == 0)
         ref->flags        &= ~(HEVC_FRAME_FLAG_OUTPUT);
     ref->sequence          = s->seq_decode;
-    ref->window            = s->sps->output_window;
+    ref->window            = s->ps.sps->output_window;
     ref->nal_unit_type     = s->nal_unit_type;
     ref->temporal_layer_id = s->temporal_id;
     return 0;
@@ -190,7 +190,7 @@ int ff_hevc_set_new_iter_layer_ref(HEVCContext *s, AVFrame **frame, int poc)
 
     ref->flags          = HEVC_FRAME_FLAG_LONG_REF;
     ref->sequence       = s->seq_decode;
-    ref->window         = s->sps->output_window;
+    ref->window         = s->ps.sps->output_window;
     if (s->threads_type & FF_THREAD_FRAME)
         ff_thread_report_progress(&s->inter_layer_ref->tf, INT_MAX, 0);
 
@@ -255,8 +255,8 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 #endif
 
         /* wait for more frames before output */
-        if (!flush && s->seq_output == s->seq_decode && s->sps &&
-            nb_output <= s->vps->vps_num_reorder_pics[s->vps->vps_max_sub_layers - 1] + s->interlaced) {
+        if (!flush && s->seq_output == s->seq_decode && s->ps.sps &&
+            nb_output <= s->ps.vps->vps_max_num_reorder_pics[s->ps.vps->vps_max_sub_layers - 1] + s->interlaced) {
             return 0;
         }
 
@@ -266,7 +266,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             AVFrame *dst = out;
             AVFrame *src = frame->frame;
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src->format);
-            int pixel_shift = !!(desc->comp[0].depth_minus1 > 7);
+            int pixel_shift = !!(desc->comp[0].depth > 8);
 
             if (frame->field_order == AV_FIELD_TT ||
                 frame->field_order == AV_FIELD_BB) {
@@ -292,10 +292,10 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
                     (field->field_order != AV_FIELD_TT ||
                      field->field_order != AV_FIELD_BB)) {
                     if (s->threads_type & FF_THREAD_FRAME )
-                        ff_thread_await_progress(&field->tf, s->sps->height, 0);
+                        ff_thread_await_progress(&field->tf, s->ps.sps->height, 0);
 
-                    copy_field(s, src, field->frame, s->sps->height);
-                }
+                    copy_field(s, src, field->frame, s->ps.sps->height);
+                } else return 0;
             }
 
             ret = av_frame_ref(dst, src);
@@ -364,7 +364,7 @@ void ff_hevc_bump_frame(HEVCContext *s)
         }
     }
 
-    if (s->sps && dpb >= s->sps->temporal_layer[s->sps->max_sub_layers - 1].max_dec_pic_buffering) {
+    if (s->ps.sps && dpb >= s->ps.sps->temporal_layer[s->ps.sps->sps_max_sub_layers - 1].max_dec_pic_buffering) {
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
             if ((frame->flags) &&
@@ -394,7 +394,7 @@ static int init_slice_rpl(HEVCContext *s)
     HEVCFrame *frame = s->ref;
     if (frame) {
         int ctb_count    = frame->ctb_count;
-        int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
+        int ctb_addr_ts  = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
         int i;
 
         if (s->slice_idx >= frame->rpl_buf->size / sizeof(RefPicListTab))
@@ -412,7 +412,7 @@ static int init_il_slice_rpl(HEVCContext *s)
 {
     HEVCFrame *frame = s->inter_layer_ref;
     int ctb_count   = frame->ctb_count;
-    int ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
+    int ctb_addr_ts = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
     int i;
     if (s->slice_idx >= frame->rpl_buf->size / sizeof(RefPicListTab))
         return AVERROR_INVALIDDATA;
@@ -427,7 +427,7 @@ static int init_il_slice_rpl(HEVCContext *s)
 static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
 {
     int i;
-    int LtMask = (1 << s->sps->log2_max_poc_lsb) - 1;
+    int LtMask = (1 << s->ps.sps->log2_max_poc_lsb) - 1;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
@@ -479,7 +479,7 @@ static void scale_upsampled_mv_field(AVCodecContext *avctxt, void *input_ctb_row
     HEVCContext *s = avctxt->priv_data;
 
     int *index   = input_ctb_row, i, list;
-    int ctb_size = 1 << s->sps->log2_ctb_size;
+    int ctb_size = 1 << s->ps.sps->log2_ctb_size;
     int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
 
     
@@ -502,7 +502,7 @@ static void scale_upsampled_mv_field(AVCodecContext *avctxt, void *input_ctb_row
             }
         }
     }
-    for(i=0; i < s->sps->ctb_width; i++)
+    for(i=0; i < s->ps.sps->ctb_width; i++)
         ff_upscale_mv_block(s,  i*ctb_size, start);
 }
 #endif
@@ -652,16 +652,16 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     memcpy(frame->rpl_tab_buf->data, conc_frame->rpl_tab_buf->data, frame->rpl_tab_buf->size);
 #endif
 #else
-    if (!s->sps->pixel_shift[CHANNEL_TYPE_LUMA]) {
+    if (!s->ps.sps->pixel_shift[CHANNEL_TYPE_LUMA]) {
         for (i = 0; frame->frame->buf[i]; i++)
-            memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth[CHANNEL_TYPE_LUMA] - 1),
+            memset(frame->frame->buf[i]->data, 1 << (s->ps.sps->bit_depth[CHANNEL_TYPE_LUMA] - 1),
                    frame->frame->buf[i]->size);
     } else {
         for (i = 0; frame->frame->data[i]; i++)
-            for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
-                for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
+            for (y = 0; y < (s->ps.sps->height >> s->ps.sps->vshift[i]); y++)
+                for (x = 0; x < (s->ps.sps->width >> s->ps.sps->hshift[i]); x++) {
                     AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
-                            1 << (s->sps->bit_depth[CHANNEL_TYPE_LUMA] - 1));
+                            1 << (s->ps.sps->bit_depth[CHANNEL_TYPE_LUMA] - 1));
                 }
     }
 #endif
@@ -716,7 +716,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
     const LongTermRPS  *long_rps  = &s->sh.long_term_rps;
     RefPicList               *rps = s->rps;
     int i, ret;
-     const HEVCVPS *vps = s->vps;
+     const HEVCVPS *vps = s->ps.vps;
 
     if (!short_rps) {
         rps[0].nb_refs = rps[1].nb_refs = 0;
@@ -724,26 +724,26 @@ int ff_hevc_frame_rps(HEVCContext *s)
             return 0;
     }
 
-    if (s->nuh_layer_id > 0 && s->vps->Hevc_VPS_Ext.max_one_active_ref_layer_flag > 0) {
-        if (!(s->nal_unit_type >= HEVC_NAL_BLA_W_LP && s->nal_unit_type <= HEVC_NAL_CRA_NUT) &&
-            s->sps->set_mfm_enabled_flag)  {
+    if (s->nuh_layer_id > 0 && s->ps.vps->vps_ext.max_one_active_ref_layer_flag > 0) {
+        if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) &&
+            s->ps.sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
-            int *arg, *ret, cmpt = (s->sps->ctb_height);
+            int *arg, *ret, cmpt = (s->ps.sps->ctb_height);
 
             arg = av_malloc(cmpt*sizeof(int));
             ret = av_malloc(cmpt*sizeof(int));
             for(i=0; i < cmpt; i++)
                 arg[i] = i;
-            if(!s->vps->vps_nonHEVCBaseLayerFlag)
+            if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
                 s->avctx->execute(s->avctx, (void *) scale_upsampled_mv_field, arg, ret, cmpt, sizeof(int));//fixme: AVC BL can't be upsampled
             av_free(arg);
             av_free(ret);
 #else
-            if (!s->vps->vps_nonHEVCBaseLayerFlag)
+            if (!s->ps.vps->vps_nonHEVCBaseLayerFlag)
                 set_refindex_data(s);
 #endif
         } else {
-        	if(!s->vps->vps_nonHEVCBaseLayerFlag)
+            if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
                 init_upsampled_mv_fields(s);//fixme: AVC BL can't be upsampled
         }
     }
@@ -759,8 +759,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
         rps[i].nb_refs = 0;
     if (!s->nuh_layer_id ||
         (s->nuh_layer_id > 0 &&
-        !(s->nal_unit_type >= HEVC_NAL_BLA_W_LP &&
-        s->nal_unit_type <= HEVC_NAL_CRA_NUT &&
+        !(s->nal_unit_type >= NAL_BLA_W_LP &&
+        s->nal_unit_type <= NAL_CRA_NUT &&
         s->sh.active_num_ILR_ref_idx))) {
         /* add the short refs */
         for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++)
@@ -817,8 +817,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
 */
     if (s->nuh_layer_id) {
         for (i = 0; i < s->sh.active_num_ILR_ref_idx; i ++) {
-            if ((vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[0]) &&
-                (vps->Hevc_VPS_Ext.view_id_val[s->nuh_layer_id] <= vps->Hevc_VPS_Ext.view_id_val[vps->Hevc_VPS_Ext.ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
+            if ((vps->vps_ext.view_id_val[s->nuh_layer_id] <= vps->vps_ext.view_id_val[0]) &&
+                (vps->vps_ext.view_id_val[s->nuh_layer_id] <= vps->vps_ext.view_id_val[vps->vps_ext.ref_layer_id[s->nuh_layer_id][s->sh.inter_layer_pred_layer_idc[i]]])){
                 //IL_REF0 , IL_REF1
                 ret = add_candidate_ref(s, &rps[IL_REF0], s->poc, HEVC_FRAME_FLAG_LONG_REF);
             }
@@ -836,7 +836,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
 
 int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
 {
-    int max_poc_lsb  = 1 << s->sps->log2_max_poc_lsb;
+    int max_poc_lsb  = 1 << s->ps.sps->log2_max_poc_lsb;
     int prev_poc_lsb = s->pocTid0 % max_poc_lsb;
     int prev_poc_msb = s->pocTid0 - prev_poc_lsb;
     int poc_msb;
@@ -849,9 +849,9 @@ int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
         poc_msb = prev_poc_msb;
 
     // For BLA picture types, POCmsb is set to 0.
-    if (s->nal_unit_type == HEVC_NAL_BLA_W_LP   ||
-        s->nal_unit_type == HEVC_NAL_BLA_W_RADL ||
-        s->nal_unit_type == HEVC_NAL_BLA_N_LP)
+    if (s->nal_unit_type == NAL_BLA_W_LP   ||
+        s->nal_unit_type == NAL_BLA_W_RADL ||
+        s->nal_unit_type == NAL_BLA_N_LP)
         poc_msb = 0;
 
     return poc_msb + poc_lsb;
@@ -865,8 +865,8 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
     LongTermRPS *long_rps   = &s->sh.long_term_rps;
 
     if (s->sh.slice_type == I_SLICE || (s->nuh_layer_id &&
-                                        (s->nal_unit_type >= HEVC_NAL_BLA_W_LP) &&
-                                        (s->nal_unit_type<= HEVC_NAL_CRA_NUT))) {
+                                        (s->nal_unit_type >= NAL_BLA_W_LP) &&
+                                        (s->nal_unit_type<= NAL_CRA_NUT))) {
         return s->sh.active_num_ILR_ref_idx;
     }
     if (rps) {

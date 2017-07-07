@@ -23,6 +23,8 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
+#define MAX_PB_SIZE #64
+
 .macro regshuffle_d5
     vmov d16, d17
     vmov d17, d18
@@ -222,49 +224,52 @@
 .endm
 
 .macro  hevc_put_qpel5_vX_neon_8 filter
-        push   {r4, r5, r6, r7}
-        ldr    r4, [sp, #16] // height
-        ldr    r5, [sp, #20] // width
+        push   {r4-r12}
+        mov r4, r3
+        mov r3, r2
+        mov r2, r1
+        mov r1, MAX_PB_SIZE
+        ldr    r5, [sp, #36] // width
         vpush {d8-d15}
-        sub       r2, r2, r3, lsl #1	 	// pointe le premier pixel
-        mov       r12, r4 		//_height
-        mov       r6, r0 		// _dst
-        mov       r7, r2 		// _src
-        lsl       r1, #1 		// dststride*2
-0:      loadin5 			
-        cmp       r5, #4 	// width==4?
-        beq       4f 		// br 4f si width=4
-8:      subs r4, #1 		// height--
-        \filter 			// q7 = vect filtre
-        vst1.16    {q7}, [r0], r1 	// *dst=q7, dst+=dststride
-        regshuffle_d5 		//
-        vld1.8    {d21}, [r2], r3 //MODIF Green
-        bne 8b 				// height!=0 boucle
-        subs  r5, #8 		// width-=8
-        beq       99f 		// si width==0 fin
-        mov r4, r12 		// reload height
-        add r6, #16 		// _dst += 16 (8*2octets)
-        mov r0, r6 			// dst = _dst
-        add r7, #8 			// _src += 8
-        mov r2, r7 			// src = _src
-        b     0b 			// br 0b
-4:      subs r4, #1 		// height--
-        \filter 			//q7 = vect filtre
-        vst1.16    d14, [r0], r1 	// *dst=d14, dst+=dststride
-        regshuffle_d5		//veillissement
-        vld1.32    {d21[0]}, [r2], r3 	// MODIF Green
-        bne 4b 
+        sub       r2, r2, r3, lsl #1
+        mov       r12, r4
+        mov       r6, r0
+        mov       r7, r2
+        lsl       r1, #1
+0:      loadin5
+        cmp       r5, #4
+        beq       4f
+8:      subs r4, #1
+        \filter
+        vst1.16    {q7}, [r0], r1
+        regshuffle_d5
+        vld1.8    {d21}, [r2], r3
+        bne 8b
+        subs  r5, #8
+        beq       99f
+        mov r4, r12
+        add r6, #16
+        mov r0, r6
+        add r7, #8
+        mov r2, r7
+        b     0b
+4:      subs r4, #1
+        \filter
+        vst1.16    d14, [r0], r1
+        regshuffle_d5
+        vld1.32    {d21[0]}, [r2], r3
+        bne 4b
 99:     vpop {d8-d15}
-        pop {r4, r5, r6, r7}
+        pop  {r4-r12}
         bx lr
 .endm
 
 .macro  hevc_put_qpel5_uw_vX_neon_8 filter
-        push   {r4-r10}
-        ldr    r5, [sp, #28] // width
-        ldr    r4, [sp, #32] // height
-        ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
+        push   {r4-r12}
+        ldr    r5, [sp, #36] // width
+        ldr    r4, [sp, #40] // height
+        ldr    r8, [sp, #44] // src2
+        mov r9, MAX_PB_SIZE
         vpush {d8-d15}
         sub       r2, r2, r3, lsl #1	
         mov       r12, r4
@@ -332,13 +337,13 @@
         vld1.32    {d21[0]}, [r2], r3	//MODIF Green
         bne 4b
 99:     vpop {d8-d15}
-        pop {r4-r10}
+        pop {r4-r12}
         bx lr
 .endm
 
 
 function ff_hevc_put_qpel5_v1_neon_8, export=1
-        hevc_put_qpel5_vX_neon_8 qpel_filter5_1
+		hevc_put_qpel5_vX_neon_8 qpel_filter5_1
 endfunc
 
 function ff_hevc_put_qpel5_v2_neon_8, export=1
@@ -364,9 +369,12 @@ endfunc
 
 
 .macro hevc_put_qpel5_hX_neon_8 filter
-        push     {r4, r5, r6, r7}
-        ldr    r4, [sp, #16] // height
-        ldr    r5, [sp, #20] // width
+        push   {r4-r12}
+        mov r4, r3
+        mov r3, r2
+        mov r2, r1
+        mov r1, MAX_PB_SIZE
+        ldr    r5, [sp, #36] // width
         vpush    {d8-d15}
         sub       r2, #2
         lsl       r1, #1
@@ -395,16 +403,16 @@ endfunc
         vst1.16  d14, [r0], r1
         bne       4b
 99:     vpop     {d8-d15}
-        pop      {r4, r5, r6, r7}
+        pop      {r4-r12}
         bx lr
 .endm
 
 .macro hevc_put_qpel5_uw_hX_neon_8 filter
-        push     {r4-r10}
-        ldr       r5, [sp, #28] // width
-        ldr       r4, [sp, #32] // height
-        ldr       r8, [sp, #36] // src2
-        ldr       r9, [sp, #40] // src2stride
+        push   {r4-r12}
+        ldr    r5, [sp, #36] // width
+        ldr    r4, [sp, #40] // height
+        ldr    r8, [sp, #44] // src2
+        mov r9, MAX_PB_SIZE
         vpush    {d8-d15}
         sub       r2, #2
         mov      r12, r4
@@ -469,7 +477,7 @@ endfunc
         vst1.32      d0[0], [r0], r1
         bne       4b
 99:     vpop     {d8-d15}
-        pop      {r4-r10}
+        pop      {r4-r12}
         bx lr
 .endm
 
@@ -504,9 +512,12 @@ endfunc
 //hevc.c:43:const uint8_t ff_hevc_qpel_extra[4]        = { 0, 6, 7, 6 };
 
 .macro hevc_put_qpel5_hXvY_neon_8 filterh filterv
-        push   {r4, r5, r6, r7}
-        ldr    r4, [sp, #16] // height
-        ldr    r5, [sp, #20] // width
+        push   {r4-r12}
+        mov r4, r3
+        mov r3, r2
+        mov r2, r1
+        mov r1, MAX_PB_SIZE
+        ldr    r5, [sp, #36] // width
 
         vpush {d8-d15}
         sub       r2, #2
@@ -552,16 +563,16 @@ endfunc
         \filterh q5 	// MODIF Green
         bne 4b
 99:     vpop {d8-d15}
-        pop {r4, r5, r6, r7}
+        pop {r4-r12}
         bx lr
 .endm
 
 .macro hevc_put_qpel5_uw_hXvY_neon_8 filterh filterv
-        push     {r4-r10}
-        ldr       r5, [sp, #28] // width
-        ldr       r4, [sp, #32] // height
-        ldr       r8, [sp, #36] // src2
-        ldr       r9, [sp, #40] // src2stride
+        push   {r4-r12}
+        ldr    r5, [sp, #36] // width
+        ldr    r4, [sp, #40] // height
+        ldr    r8, [sp, #44] // src2
+        mov r9, MAX_PB_SIZE
         vpush {d8-d15}
         sub       r2, #2
         sub       r2, r2, r3, lsl #1  // extra_before 2
@@ -656,7 +667,7 @@ endfunc
         \filterh q5 	//MODIF Green
         bne 4b
 99:     vpop {d8-d15}
-        pop {r4-r10}
+        pop {r4-r12}
         bx lr
 .endm
 

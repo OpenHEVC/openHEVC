@@ -49,11 +49,17 @@
 #elif HAVE_ARMV5TE
         .arch           armv5te
 #endif
+#if   HAVE_AS_OBJECT_ARCH
+ELF     .object_arch    armv4
+#endif
 
 #if   HAVE_NEON
         .fpu            neon
+ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
+ELF     .eabi_attribute 12, 0           @ suppress Tag_Advanced_SIMD_arch
 #elif HAVE_VFP
         .fpu            vfp
+ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
 #endif
 
         .syntax unified
@@ -70,6 +76,9 @@ ELF     .section .note.GNU-stack,"",%progbits @ Mark stack as non-executable
         .altmacro
         put_pic         %(.Lpic_idx - 1)
         .noaltmacro
+      .endif
+      .if .Lpic_gp
+        .unreq          gp
       .endif
 ELF     .size   \name, . - \name
 FUNC    .endfunc
@@ -89,12 +98,16 @@ FUNC    .func   \name
     .endif
 .endm
 
-.macro  const   name, align=2
+.macro  const   name, align=2, relocate=0
     .macro endconst
 ELF     .size   \name, . - \name
         .purgem endconst
     .endm
+.if HAVE_SECTION_DATA_REL_RO && \relocate
+        .section        .data.rel.ro
+.else
         .section        .rodata
+.endif
         .align          \align
 \name:
 .endm

@@ -41,30 +41,42 @@
 
 #define REGISTER_MUXDEMUX(X, x) REGISTER_MUXER(X, x); REGISTER_DEMUXER(X, x)
 
-#define REGISTER_PROTOCOL(X, x)                                         \
-    {                                                                   \
-        extern URLProtocol ff_##x##_protocol;                           \
-        if (CONFIG_##X##_PROTOCOL)                                      \
-            ffurl_register_protocol(&ff_##x##_protocol);                \
-    }
-
 void av_register_all(void)
 {
     static int initialized;
 
     if (initialized)
         return;
-    initialized = 1;
 
     avcodec_register_all();
 
-    REGISTER_DEMUXER(H264, h264);
-    REGISTER_DEMUXER(HEVC, hevc);
-    REGISTER_DEMUXER(SHVC, shvc);
-    REGISTER_DEMUXER(MOV, mov);
-    REGISTER_DEMUXER(MPEGTS, mpegts);
-    REGISTER_DEMUXER(MATROSKA, matroska);
+    /* (de)muxers */
 
-	/* protocols */
-	REGISTER_PROTOCOL(FILE, file);
+    //REGISTER_MUXDEMUX(DATA,             data);
+
+    //REGISTER_MUXDEMUX(DV,               dv);
+
+    //REGISTER_MUXDEMUX(H261,             h261);
+    //REGISTER_MUXDEMUX(H263,             h263);
+    REGISTER_DEMUXER(H264,             h264);
+    //REGISTER_MUXER   (HASH,             hash);
+    //REGISTER_MUXER   (HDS,              hds);
+    REGISTER_DEMUXER(HEVC,             hevc);
+    //REGISTER_DEMUXER(SHVC,             shvc);
+    //REGISTER_MUXDEMUX(HLS,              hls);
+    //REGISTER_DEMUXER (HNM,              hnm);
+
+    //REGISTER_MUXDEMUX(IMAGE2,           image2);
+
+    //REGISTER_DEMUXER (LOAS,             loas);
+
+    //REGISTER_MUXDEMUX(MJPEG,            mjpeg);
+
+    REGISTER_DEMUXER (MPEGVIDEO,        mpegvideo);
+    REGISTER_DEMUXER (MOV,        mov);
+    REGISTER_DEMUXER (MPEGTS,        mpegts);
+
+
+
+    initialized = 1;
 }

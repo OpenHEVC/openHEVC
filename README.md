@@ -20,7 +20,19 @@ What does openHEVC Green feature?
   + DBF on (legacy) / off
 * Activation levels, from  0 to 12, in order to activate promptly the power-aware configuration.
 
-How to compile openHEVC Green on linux from source code
+
+Where is the source code of openHEVC?
+--------
+* openHEVC is located at https://github.com/OpenHEVC/openHEVC.
+* openHEVC is under LGPL2.1 license
+* reusing ffmpeg runtime for multithreading
+
+Where is the source code of GPAC?
+--------
+* gpac is located at http://gpac.io.
+* gpac is under LGPL license
+
+How to compile openHEVC on linux from source code
 ----------
 `cmake -DCONFIG_GREEN=1 -DCMAKE_BUILD_TYPE=RELEASE ..`
 

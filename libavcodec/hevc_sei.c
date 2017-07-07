@@ -79,9 +79,9 @@ static int decode_pic_timing(HEVCContext *s)
     GetBitContext *gb = &s->HEVClc->gb;
     HEVCSPS *sps;
 
-    if (!s->sps_list[s->active_seq_parameter_set_id])
+    if (!s->ps.sps_list[s->active_seq_parameter_set_id])
         return(AVERROR(ENOMEM));
-    sps = (HEVCSPS*)s->sps_list[s->active_seq_parameter_set_id]->data;
+    sps = (HEVCSPS*)s->ps.sps_list[s->active_seq_parameter_set_id]->data;
     s->picture_struct = AV_PICTURE_STRUCTURE_UNKNOWN;
     if (sps->vui.frame_field_info_present_flag) {
         s->picture_struct = get_bits(gb, 4);
@@ -158,7 +158,7 @@ static int decode_nal_sei_message(HEVCContext *s)
         byte          = get_bits(gb, 8);
         payload_size += byte;
     }
-    if (s->nal_unit_type == HEVC_NAL_SEI_PREFIX) {
+    if (s->nal_unit_type == NAL_SEI_PREFIX) {
         if (payload_type == 256 /*&& s->decode_checksum_sei*/) {
             decode_nal_sei_decoded_picture_hash(s);
         } else if (payload_type == 45) {
@@ -201,4 +201,10 @@ int ff_hevc_decode_nal_sei(HEVCContext *s)
             return(AVERROR(ENOMEM));
     } while (more_rbsp_data(&s->HEVClc->gb));
     return 1;
+}
+
+void ff_hevc_reset_sei(HEVCContext *s)
+{
+    s->a53_caption_size = 0;
+    av_freep(&s->a53_caption);
 }

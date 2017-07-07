@@ -2,11 +2,12 @@
  * HEVC video energy efficient decoder
  * Morgan Lacour 2015
  */
-#if CONFIG_GREEN
+
 #include "hevc.h"
 #include "hevc_green.h"
 #include "hevcdsp.h"
 #include "hevcdsp_green.h"
+#include "config.h"
 
 static luma_config luma_configs[N_LUMA];
 static chroma_config chroma_configs[N_CHROMA];
@@ -78,26 +79,34 @@ static void load_chroma_config(chroma_config* src, HEVCDSPContext* dst){
 static void init_green_filter_luma1(luma_config* cfg){
 	int i;
 	HEVC_DSP_LUMA_GREEN(1, 8)
+#if HAVE_NEON
     if (ARCH_ARM)
-    	green_reload_filter_luma1(cfg, 8);
+    	green_reload_filter_luma1_neon(cfg, 8);
+#endif
 }
 static void init_green_filter_luma3(luma_config* cfg){
 	int i;
 	HEVC_DSP_LUMA_GREEN(3, 8)
+#if HAVE_NEON
     if (ARCH_ARM)
-    	green_reload_filter_luma3(cfg, 8);
+    	green_reload_filter_luma3_neon(cfg, 8);
+#endif
 }
 static void init_green_filter_luma5(luma_config* cfg){
 	int i;
 	HEVC_DSP_LUMA_GREEN(5, 8)
+#if HAVE_NEON
     if (ARCH_ARM)
-    	green_reload_filter_luma5(cfg, 8);
+    	green_reload_filter_luma5_neon(cfg, 8);
+#endif
 }
 static void init_green_filter_luma7(luma_config* cfg){
 	int i;
 	HEVC_DSP_LUMA_GREEN(7, 8)
-//    if (ARCH_ARM)
-//    	green_reload_filter_luma7(cfg, 8);
+//#if HAVE_NEON
+//   if (ARCH_ARM)
+//   	green_reload_filter_luma7(cfg, 8);
+//#endif
 }
 
 #undef HEVC_DSP_CHROMA_GREEN
@@ -132,24 +141,29 @@ static void init_green_filter_luma7(luma_config* cfg){
 static void init_green_filter_chroma1(chroma_config* cfg){
 	int i;
 	HEVC_DSP_CHROMA_GREEN(1, 8)
+#if HAVE_NEON
     if (ARCH_ARM)
-    	green_reload_filter_chroma1(cfg, 8);
+    	green_reload_filter_chroma1_neon(cfg, 8);
+#endif
 }
 static void init_green_filter_chroma2(chroma_config* cfg){
 	int i;
 	HEVC_DSP_CHROMA_GREEN(2, 8)
+#if HAVE_NEON
     if (ARCH_ARM)
-    	green_reload_filter_chroma2(cfg, 8);
+    	green_reload_filter_chroma2_neon(cfg, 8);
+#endif
 }
 static void init_green_filter_chroma3(chroma_config* cfg){
 	int i;
 	HEVC_DSP_CHROMA_GREEN(3, 8)
+#if HAVE_NEON
     if (ARCH_ARM)
-    	green_reload_filter_chroma3(cfg, 8);
+    	green_reload_filter_chroma3_neon(cfg, 8);
+#endif
 }
 
-void green_dsp_init(HEVCDSPContext *hevcdsp)
-{
+void green_dsp_init(HEVCDSPContext *hevcdsp){
     hevcdsp->green_cur_luma = LUMA_LEG;
     hevcdsp->green_cur_chroma = CHROMA_LEG;
     hevcdsp->green_on = 0;
@@ -177,4 +191,3 @@ void green_update_filter_chroma(HEVCDSPContext *c, int type){
 	load_chroma_config(&chroma_configs[type], c);
 }
 
-#endif

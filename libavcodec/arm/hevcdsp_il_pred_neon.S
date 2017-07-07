@@ -370,7 +370,7 @@ function ff_upsample_filter_block_luma_v_x1_5_neon, export=1
     sub    r9, #3      // y_EL % 3
 33: sub r2, r3
     sub r2, r2, r3, lsl #1
-    adrl        r8, coeffsx1_5
+    adr        r8, coeffsx1_5
     vld1.16    {d0}, [r8]
     mov        r12, r7
     cmp        r9, #2
@@ -549,7 +549,7 @@ function ff_upsample_filter_block_cr_v_x2_neon, export=1
     add r0, r4
     mul r5, r1
     add r0, r5
-    adrl        r8, coeffsx2
+    adr        r8, coeffsx2
     vld1.16    {d0}, [r8]
     //mul r8, r3
     //sub r2, r8
@@ -792,7 +792,7 @@ function ff_upsample_filter_block_cr_v_x1_5_neon, export=1
     sub    r9, #3      // y_EL % 3
 33: mul    r5, r1      // y_EL * dst_stride
     add    r0, r5      // dst += y_EL * dst_stride
-    adrl    r8, coeffs_c_x1_5
+    adr    r8, coeffs_c_x1_5
     vld1.16    {d0}, [r8]
     mov    r12, r7
     cmp    r9, #2

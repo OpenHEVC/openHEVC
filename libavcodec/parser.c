@@ -23,9 +23,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/atomic.h"
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 
+#include "internal.h"
 #include "parser.h"
 
 static AVCodecParser *av_first_parser = NULL;
@@ -80,10 +83,16 @@ found:
             goto err_out;
     }
     s->key_frame            = -1;
+#if FF_API_CONVERGENCE_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     s->convergence_duration = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     s->dts_sync_point       = INT_MIN;
     s->dts_ref_dts_delta    = INT_MIN;
     s->pts_dts_delta        = INT_MIN;
+    s->format               = -1;
+
     return s;
 
 err_out:
@@ -93,14 +102,16 @@ err_out:
     return NULL;
 }
 
-void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove)
+void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove, int fuzzy)
 {
     int i;
 
-    s->dts    =
-    s->pts    = AV_NOPTS_VALUE;
-    s->pos    = -1;
-    s->offset = 0;
+    if (!fuzzy) {
+        s->dts    =
+        s->pts    = AV_NOPTS_VALUE;
+        s->pos    = -1;
+        s->offset = 0;
+    }
     for (i = 0; i < AV_PARSER_PTS_NB; i++) {
         if (s->cur_offset + off >= s->cur_frame_offset[i] &&
             (s->frame_offset < s->cur_frame_offset[i] ||
@@ -108,10 +119,12 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove)
             // check disabled since MPEG-TS does not send complete PES packets
             /*s->next_frame_offset + off <*/  s->cur_frame_end[i]){
 
-            s->dts    = s->cur_frame_dts[i];
-            s->pts    = s->cur_frame_pts[i];
-            s->pos    = s->cur_frame_pos[i];
-            s->offset = s->next_frame_offset - s->cur_frame_offset[i];
+            if (!fuzzy || s->cur_frame_dts[i] != AV_NOPTS_VALUE) {
+                s->dts    = s->cur_frame_dts[i];
+                s->pts    = s->cur_frame_pts[i];
+                s->pos    = s->cur_frame_pos[i];
+                s->offset = s->next_frame_offset - s->cur_frame_offset[i];
+            }
             if (remove)
                 s->cur_frame_offset[i] = INT64_MAX;
             if (s->cur_offset + off < s->cur_frame_end[i])
@@ -127,6 +140,15 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
 {
     int index, i;
     uint8_t dummy_buf[AV_INPUT_BUFFER_PADDING_SIZE];
+
+    av_assert1(avctx->codec_id != AV_CODEC_ID_NONE);
+
+    /* Parsers only work for the specified codec ids. */
+    av_assert1(avctx->codec_id == s->parser->codec_ids[0] ||
+               avctx->codec_id == s->parser->codec_ids[1] ||
+               avctx->codec_id == s->parser->codec_ids[2] ||
+               avctx->codec_id == s->parser->codec_ids[3] ||
+               avctx->codec_id == s->parser->codec_ids[4]);
 
     if (!(s->flags & PARSER_FLAG_FETCHED_OFFSET)) {
         s->next_frame_offset =
@@ -154,11 +176,17 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
         s->last_pts        = s->pts;
         s->last_dts        = s->dts;
         s->last_pos        = s->pos;
-        ff_fetch_timestamp(s, 0, 0);
+        ff_fetch_timestamp(s, 0, 0, 0);
     }
     /* WARNING: the returned index can be negative */
     index = s->parser->parser_parse(s, avctx, (const uint8_t **) poutbuf,
                                     poutbuf_size, buf, buf_size);
+    av_assert0(index > -0x20000000); // The API does not allow returning AVERROR codes
+#define FILL(name) if(s->name > 0 && avctx->name <= 0) avctx->name = s->name
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        FILL(field_order);
+    }
+
     /* update the file pointer */
     if (*poutbuf_size) {
         /* fill the data for the current frame */
@@ -196,6 +224,8 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
 
             *poutbuf_size = size;
             *poutbuf      = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!*poutbuf)
+                return AVERROR(ENOMEM);
 
             memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
             memcpy(*poutbuf + avctx->extradata_size, buf,
@@ -221,9 +251,9 @@ int ff_combine_frame(ParseContext *pc, int next,
                      const uint8_t **buf, int *buf_size)
 {
     if (pc->overread) {
-        av_dlog(NULL, "overread %d, state:%X next:%d index:%d o_index:%d\n",
+        ff_dlog(NULL, "overread %d, state:%X next:%d index:%d o_index:%d\n",
                 pc->overread, pc->state, next, pc->index, pc->overread_index);
-        av_dlog(NULL, "%X %X %X %X\n",
+        ff_dlog(NULL, "%X %X %X %X\n",
                 (*buf)[0], (*buf)[1], (*buf)[2], (*buf)[3]);
     }
 
@@ -244,6 +274,7 @@ int ff_combine_frame(ParseContext *pc, int next,
                                            AV_INPUT_BUFFER_PADDING_SIZE);
 
         if (!new_buffer) {
+            av_log(NULL, AV_LOG_ERROR, "Failed to reallocate parser buffer to %d\n", *buf_size + pc->index + AV_INPUT_BUFFER_PADDING_SIZE);
             pc->index = 0;
             return AVERROR(ENOMEM);
         }
@@ -262,6 +293,7 @@ int ff_combine_frame(ParseContext *pc, int next,
                                            next + pc->index +
                                            AV_INPUT_BUFFER_PADDING_SIZE);
         if (!new_buffer) {
+            av_log(NULL, AV_LOG_ERROR, "Failed to reallocate parser buffer to %d\n", next + pc->index + AV_INPUT_BUFFER_PADDING_SIZE);
             pc->overread_index =
             pc->index = 0;
             return AVERROR(ENOMEM);
@@ -282,9 +314,9 @@ int ff_combine_frame(ParseContext *pc, int next,
     }
 
     if (pc->overread) {
-        av_dlog(NULL, "overread %d, state:%X next:%d index:%d o_index:%d\n",
+        ff_dlog(NULL, "overread %d, state:%X next:%d index:%d o_index:%d\n",
                 pc->overread, pc->state, next, pc->index, pc->overread_index);
-        av_dlog(NULL, "%X %X %X %X\n",
+        ff_dlog(NULL, "%X %X %X %X\n",
                 (*buf)[0], (*buf)[1], (*buf)[2], (*buf)[3]);
     }
 
@@ -300,13 +332,14 @@ void ff_parse_close(AVCodecParserContext *s)
 
 int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
 {
-    int i;
     uint32_t state = -1;
+    const uint8_t *ptr = buf, *end = buf + buf_size;
 
-    for (i = 0; i < buf_size; i++) {
-        state = state << 8 | buf[i];
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
         if (state == 0x1B3 || state == 0x1B6)
-            return i - 3;
+            return ptr - 4 - buf;
     }
+
     return 0;
 }

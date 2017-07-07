@@ -23,6 +23,8 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
+#define MAX_PB_SIZE #64
+
 .macro regshuffle_d2
     vmov d16, d17
     vmov d17, d18
@@ -501,7 +503,7 @@ function ff_hevc_put_qpel_uw_pixels_green1_neon_8, export=1
         ldr       r5, [sp, #28] // width
         ldr       r4, [sp, #32] // height
         ldr       r8, [sp, #36] // src2
-        ldr       r9, [sp, #40] // src2stride
+        mov 	  r9, MAX_PB_SIZE // src2stride
         vpush    {d8-d15}
         mov      r12, r4
         mov       r6, r0

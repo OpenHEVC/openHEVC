@@ -69,6 +69,31 @@ typedef struct VideoDSPContext {
                              int block_w, int block_h,
                              int src_x, int src_y, int w, int h);
 
+    void (*emulated_edge_up_h)(uint8_t *dst, uint8_t *src, ptrdiff_t linesize,
+                              int block_w, int block_h,
+                              int bl_edge_top, int bl_edge_bottom);
+
+    void (*emulated_edge_up_v)(uint8_t *src, int block_w, int block_h,
+                                   int bl_edge_top, int bl_edge_bottom);
+
+    void (*emulated_edge_up_cr_h)(uint8_t *dst, uint8_t *src, ptrdiff_t linesize,
+                                 int block_w, int block_h,
+                                 int bl_edge_top, int bl_edge_bottom);
+
+    void (*emulated_edge_up_cr_v)(uint8_t *src, int block_w, int block_h,
+                                 int bl_edge_top, int bl_edge_bottom);
+
+    void (*emulated_edge_up_cgs_h)(uint8_t *src,
+                              int src_width, int src_height,
+                              int edge_left, int edge_right);
+
+    void (*emulated_edge_up_cgs_v)(uint8_t *src,
+                                  int src_width, int src_height,
+                                  int edge_left, int edge_right);
+
+    void (*copy_block)(uint8_t *src, uint8_t * dst,
+                       ptrdiff_t bl_stride, ptrdiff_t el_stride,
+                       int ePbH, int ePbW);
     /**
      * Prefetch memory into cache (if supported by hardware).
      *
@@ -76,21 +101,11 @@ typedef struct VideoDSPContext {
      * @param stride distance between two lines of buf (in bytes)
      * @param h      number of lines to prefetch
      */
-
-    int (*emulated_edge_up_h)(uint8_t *dst, uint8_t *src, ptrdiff_t linesize,
-                              const struct HEVCWindow *Enhscal,
-                              int block_w, int block_h, int src_x, int wBL, int edge_top, int shift);
-    int (*emulated_edge_up_cgs_h)(uint16_t *src, ptrdiff_t linesize,
-                              const struct HEVCWindow *Enhscal,
-                              int block_w, int block_h, int src_x, int wBL, int shift);
-    int (*emulated_edge_up_v)(int16_t *src, ptrdiff_t linesize,
-                              const struct HEVCWindow *Enhscal,
-                              int block_w, int block_h, int src_x, int src_y, int hBL, int wEL, int shift);
-
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;
 
 void ff_videodsp_init(VideoDSPContext *ctx, int bpc);
+void ff_videodsp_update(VideoDSPContext *ctx, int have_CGS);
 
 /* for internal use only (i.e. called by ff_videodsp_init() */
 void ff_videodsp_init_aarch64(VideoDSPContext *ctx, int bpc);

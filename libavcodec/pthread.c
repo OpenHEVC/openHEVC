@@ -92,7 +92,7 @@ int ff_thread_init(AVCodecContext *avctx)
         ret = ff_frame_thread_init(avctx);
     else if (avctx->active_thread_type&FF_THREAD_SLICE)
         ret = ff_slice_thread_init(avctx);
-    av_log(avctx, AV_LOG_INFO, "nb threads_frame = %d, nb threads_slice %d, thread_type = %s%s\n",
+    av_log(avctx, AV_LOG_INFO, "nb threads_frame = %d, nb threads_slice %d, thread_type = %s%s \n",
            avctx->thread_count_frame, avctx->thread_count,
            (avctx->active_thread_type == 0 ? "null" : (avctx->active_thread_type & FF_THREAD_FRAME ? "frame" : "")),
            (avctx->active_thread_type & FF_THREAD_SLICE ? "slice" : ""));

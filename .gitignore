@@ -1,7 +1,16 @@
 # Common useless files
 .svn
 .DS_Store
+
 *.o
+*.d
+*.a
+*.ver
+*.pc
+*_g
+*.orig
+
+
 
 # Build directories
 /build*/
@@ -13,5 +22,12 @@
 # QtCreator projects files
 *.user
 *.user.*
-/config.h
-/config.asm
+*.config
+*.creator
+*.includes
+*.files
+
+
+/config.*
+/ohplay
+*.version

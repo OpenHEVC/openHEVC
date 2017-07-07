@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Seppo Tomperi <seppo.tomperi@vtt.fi>
+ * Copyright (c) 2014 - 2015 Seppo Tomperi <seppo.tomperi@vtt.fi>
  *
  * This file is part of FFmpeg.
  *
@@ -74,9 +74,6 @@
         vld1.8    {d23}, [r2], r3
 .endm
 
-// 29 cycles
-// -a + 4*b - 10*c + 58*d + 17*e - 5*f + g
-// q0   q1    q2       q3    q4    q5   q6
 .macro qpel_filter_1_32b
         vmov.i16   d16, #58
         vmov.i16   d17, #10
@@ -110,21 +107,18 @@
 
 // input  q0 - q7
 // output q8
-// -a + 4*b - 11*c + 40*d + 40*e -11*f + 4*g - h
-// q0   q1    q2     q3     q4    q5     q6    q7
-
 .macro qpel_filter_2_32b
         vmov.i32   q8, #11
-        vaddl.s16   q9, d6, d8  // d0 + e0
-        vaddl.s16  q10, d7, d9  // d1 + e1
-        vaddl.s16  q11, d4, d10 // c0 + f0
-        vaddl.s16  q12, d5, d11 // c1 + f1
-        vmul.s32   q11, q8   // 11 * (c0 + f0)
-        vmul.s32   q12, q8     // 11 * (c1 + f1)
+        vaddl.s16   q9, d6, d8   // d0 + e0
+        vaddl.s16  q10, d7, d9   // d1 + e1
+        vaddl.s16  q11, d4, d10  // c0 + f0
+        vaddl.s16  q12, d5, d11  // c1 + f1
+        vmul.s32   q11, q8       // 11 * (c0 + f0)
+        vmul.s32   q12, q8       // 11 * (c1 + f1)
         vmov.i32   q8, #40
         vaddl.s16  q15, d2, d12  // b0 + g0
-        vmul.s32    q9, q8      // 40 * (d0 + e0)
-        vmul.s32   q10, q8      // 40 * (d1 + e1)
+        vmul.s32    q9, q8       // 40 * (d0 + e0)
+        vmul.s32   q10, q8       // 40 * (d1 + e1)
         vaddl.s16   q8, d3, d13  // b1 + g1
         vaddl.s16  q13, d0, d14  // a0 + h0
         vaddl.s16  q14, d1, d15  // a1 + h1
@@ -140,30 +134,23 @@
         vqshrn.s32  d17, q10, #6
 .endm
 
-
-// 29 cycles
-// -a + 4*b - 10*c + 58*d + 17*e - 5*f + g
-// q0      q1      q2       q3    q4    q5       q6      q7
-// d0,1    d2,3    d4,5     d6,7  d8,9  d10,11   d12,13  d14,15
-// q7      q6      q5       q4    q3    q2       q1
-// d14,15  d12,13  d10,11   d8,9  d6,7  d4,5     d2,3
 .macro qpel_filter_3_32b
         vmov.i16   d16, #58
         vmov.i16   d17, #10
         vmull.s16   q9, d8, d16   // 58 * d0
         vmull.s16  q10, d9, d16   // 58 * d1
         vmov.i16   d16, #17
-        vmull.s16  q11, d10, d17   // 10 * c0
-        vmull.s16  q12, d11, d17   // 10 * c1
+        vmull.s16  q11, d10, d17  // 10 * c0
+        vmull.s16  q12, d11, d17  // 10 * c1
         vmov.i16   d17, #5
         vmull.s16  q13, d6, d16   // 17 * e0
         vmull.s16  q14, d7, d16   // 17 * e1
-        vmull.s16  q15, d4, d17  //  5 * f0
-        vmull.s16   q8, d5, d17  //  5 * f1
+        vmull.s16  q15, d4, d17   //  5 * f0
+        vmull.s16   q8, d5, d17   //  5 * f1
         vsub.s32    q9, q11       // 58 * d0 - 10 * c0
         vsub.s32   q10, q12       // 58 * d1 - 10 * c1
-        vshll.s16  q11, d12, #2    // 4 * b0
-        vshll.s16  q12, d13, #2    // 4 * b1
+        vshll.s16  q11, d12, #2   // 4 * b0
+        vshll.s16  q12, d13, #2   // 4 * b1
         vadd.s32    q9, q13       // 58 * d0 - 10 * c0 + 17 * e0
         vadd.s32   q10, q14       // 58 * d1 - 10 * c1 + 17 * e1
         vsubl.s16  q13, d2, d14   // g0 - a0
@@ -178,37 +165,24 @@
         vqshrn.s32  d17, q10, #6
 .endm
 
-//        a    b   c    d    e    f   g  reserved
-// input d16  d17 d18 d19  d20  d21 d22  d23
-// old    d0  d2  d4  d6    d8  d10  d12
-
-// q vapaana d23,  d24 -> q12, q13, q14, q15
-// 15 cycles
 .macro qpel_filter_1 out=q7
-        vmov.u8   d24, #58
-        vmov.u8   d25, #10
-        vshll.u8  q13, d20, #4     // 16*e
-        vshll.u8  q14, d21, #2     // 4*f
-        vmull.u8   \out, d19, d24    // 58*d
-        vaddw.u8  q13, q13, d20    // 17*e
-        vmull.u8  q15, d18, d25    // 10*c
-        vaddw.u8  q14, q14, d21    // 5*f
-        vsubl.u8  q12, d22, d16    // g - a
-        vadd.u16   \out, q13         // 58d + 17e
-        vshll.u8  q13, d17, #2     // 4*b
-        vadd.u16  q15, q14         // 10*c + 5*f
-        vadd.s16  q13, q12         // - a + 4*b + g
-        vsub.s16   \out, q15         // -10*c + 58*d + 17*e -5*f
-        vadd.s16   \out, q13         // -a + 4*b -10*c + 58*d + 17*e -5*f
+        vmov.u8    d24, #58
+        vmov.u8    d25, #10
+        vshll.u8   q13, d20, #4   // 16*e
+        vshll.u8   q14, d21, #2   // 4*f
+        vmull.u8  \out, d19, d24  // 58*d
+        vaddw.u8   q13, q13, d20  // 17*e
+        vmull.u8   q15, d18, d25  // 10*c
+        vaddw.u8   q14, q14, d21  // 5*f
+        vsubl.u8   q12, d22, d16  // g - a
+        vadd.u16  \out, q13       // 58d + 17e
+        vshll.u8   q13, d17, #2   // 4*b
+        vadd.u16   q15, q14       // 10*c + 5*f
+        vadd.s16   q13, q12       // - a + 4*b + g
+        vsub.s16  \out, q15       // -10*c + 58*d + 17*e -5*f
+        vadd.s16  \out, q13       // -a + 4*b -10*c + 58*d + 17*e -5*f
 .endm
 
-//        a    b   c    d    e    f   g   h
-// input d16  d17 d18 d19  d20  d21 d22  d23
-// old    d0  d2  d4  d6    d8  d10  d12 d14
-
-// q vapaana d24 -> q12, q13, q14, q15
-
-// 16 cycles
 .macro qpel_filter_2 out=q7
         vmov.i16   q12, #10
         vmov.i16   q14, #11
@@ -224,28 +198,22 @@
         vsub.s16  \out, q12
 .endm
 
-//        a    b   c    d    e    f   g  reserv
-// old  d16  d17 d18 d19  d20  d21 d22  d23 
-// new  d23  d22  d21 d20 d19  d18  d17 d16
-// old    d0  d2  d4  d6    d8  d10  d12
-// q vapaana d23,  d24 -> q12, q13, q14, q15
-// 15 cycles
 .macro qpel_filter_3 out=q7
-        vmov.u8   d24, #58
-        vmov.u8   d25, #10
-        vshll.u8  q13, d19, #4     // 16*e
-        vshll.u8  q14, d18, #2     // 4*f
-        vmull.u8   \out, d20, d24    // 58*d
-        vaddw.u8  q13, q13, d19    // 17*e
-        vmull.u8  q15, d21, d25    // 10*c
-        vaddw.u8  q14, q14, d18    // 5*f
-        vsubl.u8  q12, d17, d23    // g - a
-        vadd.u16   \out, q13         // 58d + 17e
-        vshll.u8  q13, d22, #2     // 4*b
-        vadd.u16  q15, q14         // 10*c + 5*f
-        vadd.s16  q13, q12         // - a + 4*b + g
-        vsub.s16   \out, q15         // -10*c + 58*d + 17*e -5*f
-        vadd.s16   \out, q13         // -a + 4*b -10*c + 58*d + 17*e -5*f
+        vmov.u8    d24, #58
+        vmov.u8    d25, #10
+        vshll.u8   q13, d19, #4     // 16*e
+        vshll.u8   q14, d18, #2     // 4*f
+        vmull.u8  \out, d20, d24    // 58*d
+        vaddw.u8   q13, q13, d19    // 17*e
+        vmull.u8   q15, d21, d25    // 10*c
+        vaddw.u8   q14, q14, d18    // 5*f
+        vsubl.u8   q12, d17, d23    // g - a
+        vadd.u16  \out, q13         // 58d + 17e
+        vshll.u8   q13, d22, #2     // 4*b
+        vadd.u16   q15, q14         // 10*c + 5*f
+        vadd.s16   q13, q12         // - a + 4*b + g
+        vsub.s16  \out, q15         // -10*c + 58*d + 17*e -5*f
+        vadd.s16  \out, q13         // -a + 4*b -10*c + 58*d + 17*e -5*f
 .endm
 
 .macro  hevc_put_qpel_vX_neon_8 filter
@@ -301,7 +269,6 @@
         mov       r7, r2
         cmp       r8, #0
         bne       .Lbi\@
-        //lsl       r1, #1
 0:      loadin8
         cmp       r5, #4
         beq       4f
@@ -366,7 +333,6 @@
         bx lr
 .endm
 
-
 function ff_hevc_put_qpel_v1_neon_8, export=1
         hevc_put_qpel_vX_neon_8 qpel_filter_1
 endfunc
@@ -391,7 +357,6 @@ endfunc
 function ff_hevc_put_qpel_uw_v3_neon_8, export=1
         hevc_put_qpel_uw_vX_neon_8 qpel_filter_3
 endfunc
-
 
 .macro hevc_put_qpel_hX_neon_8 filter
         push     {r4, r5, r6, r7}
@@ -429,12 +394,6 @@ endfunc
         pop      {r4, r5, r6, r7}
         bx lr
 .endm
-
-/*(uint8_t *dst,  ptrdiff_t dststride,     \
-                                       uint8_t *_src, ptrdiff_t _srcstride,    \
-                                       int width, int height,                  \
-                                       int16_t* src2, ptrdiff_t src2stride)*/
-
 
 .macro hevc_put_qpel_uw_hX_neon_8 filter
         push     {r4-r10}
@@ -534,11 +493,6 @@ endfunc
 function ff_hevc_put_qpel_uw_h3_neon_8, export=1
         hevc_put_qpel_uw_hX_neon_8 qpel_filter_3
 endfunc
-
-
-//hevc.c:41:const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 2 };
-//hevc.c:42:const uint8_t ff_hevc_qpel_extra_after[4]  = { 0, 3, 4, 4 };
-//hevc.c:43:const uint8_t ff_hevc_qpel_extra[4]        = { 0, 6, 7, 6 };
 
 .macro hevc_put_qpel_hXvY_neon_8 filterh filterv
         push   {r4, r5, r6, r7}
@@ -786,43 +740,38 @@ function ff_hevc_put_qpel_uw_h3v3_neon_8, export=1
 endfunc
 
 .macro init_put_pixels
-        pld    [r2]
-        push   {r4, r5, r6}
-        pld    [r2, r3]
-        ldr    r4, [sp, #12] // height
-        ldr    r5, [sp, #24] // width
-//        mov    r12, MAX_PB_SIZE
-        lsl    r1, #1
+        pld    [r1]
+        pld    [r1, r2]
+        mov    r12, MAX_PB_SIZE
+        lsl    r12, #1
 .endm
 
 function ff_hevc_put_pixels_w2_neon_8, export=1
         init_put_pixels
         vmov.u8      d5, #255
         vshr.u64     d5, #32
-0:      subs r4, #1
-        vld1.32     {d0[0]}, [r2], r3
-        pld [r2]
+0:      subs r3, #1
+        vld1.32     {d0[0]}, [r1], r2
+        pld [r1]
         vld1.32     d6, [r0]
         vshll.u8    q0, d0, #6
         vbit        d6, d0, d5
-        vst1.32     d6, [r0], r1
+        vst1.32     d6, [r0], r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
 function ff_hevc_put_pixels_w4_neon_8, export=1
         init_put_pixels
-0:      subs r4, #2
-        vld1.32   {d0[0]}, [r2], r3
-        vld1.32   {d0[1]}, [r2], r3
-        pld       [r2]
-        pld       [r2, r3]
+0:      subs r3, #2
+        vld1.32   {d0[0]}, [r1], r2
+        vld1.32   {d0[1]}, [r1], r2
+        pld       [r1]
+        pld       [r1, r2]
         vshll.u8   q0, d0, #6
-        vst1.64   {d0}, [r0], r1
-        vst1.64   {d1}, [r0], r1
+        vst1.64   {d0}, [r0], r12
+        vst1.64   {d1}, [r0], r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
@@ -830,115 +779,109 @@ function ff_hevc_put_pixels_w6_neon_8, export=1
         init_put_pixels
         vmov.u8      q10, #255
         vshr.u64     d21, #32
-0:      subs r4, #1
-        vld1.16     {d0}, [r2], r3
-        pld [r2]
+0:      subs r3, #1
+        vld1.16     {d0}, [r1], r2
+        pld [r1]
         vshll.u8    q0, d0, #6
         vld1.8      {q12}, [r0]
         vbit        q12, q0, q10
-        vst1.8      {q12}, [r0], r1
+        vst1.8      {q12}, [r0], r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
 function ff_hevc_put_pixels_w8_neon_8, export=1
         init_put_pixels
-0:      subs r4, #2
-        vld1.8   {d0}, [r2], r3
-        vld1.8   {d2}, [r2], r3
-        pld        [r2]
-        pld        [r2, r3]
+0:      subs r3, #2
+        vld1.8   {d0}, [r1], r2
+        vld1.8   {d2}, [r1], r2
+        pld        [r1]
+        pld        [r1, r2]
         vshll.u8   q0, d0, #6
         vshll.u8   q1, d2, #6
-        vst1.16   {q0}, [r0], r1
-        vst1.16   {q1}, [r0], r1
+        vst1.16   {q0}, [r0], r12
+        vst1.16   {q1}, [r0], r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
 function ff_hevc_put_pixels_w12_neon_8, export=1
         init_put_pixels
-0:      subs r4, #2
-        vld1.64    {d0}, [r2]
-        add       r2, #8
-        vld1.32   {d1[0]}, [r2], r3
-        sub       r2, #8
-        vld1.64    {d2}, [r2]
-        add       r2, #8
-        vld1.32   {d1[1]}, [r2], r3
-        sub       r2, #8
-        pld       [r2]
-        pld       [r2, r3]
+0:      subs r3, #2
+        vld1.64    {d0}, [r1]
+        add       r1, #8
+        vld1.32   {d1[0]}, [r1], r2
+        sub       r1, #8
+        vld1.64    {d2}, [r1]
+        add       r1, #8
+        vld1.32   {d1[1]}, [r1], r2
+        sub       r1, #8
+        pld       [r1]
+        pld       [r1, r2]
         vshll.u8  q8, d0, #6
         vshll.u8  q9, d1, #6
         vshll.u8  q10, d2, #6
         vmov      d22, d19
-        vst1.64   {d16, d17, d18}, [r0], r1
-        vst1.64   {d20, d21, d22}, [r0], r1
+        vst1.64   {d16, d17, d18}, [r0], r12
+        vst1.64   {d20, d21, d22}, [r0], r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
 function ff_hevc_put_pixels_w16_neon_8, export=1
         init_put_pixels
-0:      subs r4, #2
-        vld1.8   {q0}, [r2], r3
-        vld1.8   {q1}, [r2], r3
-        pld       [r2]
-        pld       [r2, r3]
+0:      subs r3, #2
+        vld1.8   {q0}, [r1], r2
+        vld1.8   {q1}, [r1], r2
+        pld       [r1]
+        pld       [r1, r2]
         vshll.u8  q8, d0, #6
         vshll.u8  q9, d1, #6
         vshll.u8  q10, d2, #6
         vshll.u8  q11, d3, #6
-        vst1.8    {q8, q9}, [r0], r1
-        vst1.8    {q10, q11}, [r0], r1
+        vst1.8    {q8, q9}, [r0], r12
+        vst1.8    {q10, q11}, [r0], r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
 function ff_hevc_put_pixels_w24_neon_8, export=1
         init_put_pixels
-0:      subs r4, #1
-        vld1.8   {d0, d1, d2}, [r2], r3
-        pld       [r2]
+0:      subs r3, #1
+        vld1.8   {d0, d1, d2}, [r1], r2
+        pld       [r1]
         vshll.u8  q10, d0, #6
         vshll.u8  q11, d1, #6
         vshll.u8  q12, d2, #6
         vstm     r0, {q10, q11, q12}
-        add      r0, r1
+        add      r0, r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
 function ff_hevc_put_pixels_w32_neon_8, export=1
         init_put_pixels
-0:      subs r4, #1
-        vld1.8 {q0, q1}, [r2], r3
-        pld       [r2]
+0:      subs r3, #1
+        vld1.8 {q0, q1}, [r1], r2
+        pld       [r1]
         vshll.u8  q8, d0, #6
         vshll.u8  q9, d1, #6
         vshll.u8  q10, d2, #6
         vshll.u8  q11, d3, #6
         vstm    r0, {q8, q9, q10, q11}
-        add     r0, r1
+        add     r0, r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
 function ff_hevc_put_pixels_w48_neon_8, export=1
         init_put_pixels
-0:      subs r4, #1
-        vld1.8    {q0, q1}, [r2]
-        add r2, #32
-        vld1.8    {q2}, [r2], r3
-        sub r2, #32
-        pld       [r2]
+0:      subs r3, #1
+        vld1.8    {q0, q1}, [r1]
+        add r1, #32
+        vld1.8    {q2}, [r1], r2
+        sub r1, #32
+        pld       [r1]
         vshll.u8  q8, d0, #6
         vshll.u8  q9, d1, #6
         vshll.u8  q10, d2, #6
@@ -946,20 +889,19 @@ function ff_hevc_put_pixels_w48_neon_8, export=1
         vshll.u8  q12, d4, #6
         vshll.u8  q13, d5, #6
         vstm r0, {q8, q9, q10, q11, q12, q13}
-        add  r0, r1
+        add  r0, r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
 function ff_hevc_put_pixels_w64_neon_8, export=1
         init_put_pixels
-0:      subs r4, #1
-        vld1.8    {q0, q1}, [r2]
-        add      r2, #32
-        vld1.8    {q2, q3}, [r2], r3
-        sub      r2, #32
-        pld       [r2]
+0:      subs r3, #1
+        vld1.8    {q0, q1}, [r1]
+        add      r1, #32
+        vld1.8    {q2, q3}, [r1], r2
+        sub      r1, #32
+        pld       [r1]
         vshll.u8  q8, d0, #6
         vshll.u8  q9, d1, #6
         vshll.u8  q10, d2, #6
@@ -969,9 +911,8 @@ function ff_hevc_put_pixels_w64_neon_8, export=1
         vshll.u8  q14, d6, #6
         vshll.u8  q15, d7, #6
         vstm    r0, {q8, q9, q10, q11, q12, q13, q14, q15}
-        add r0, r1
+        add r0, r12
         bne 0b
-        pop {r4, r5, r6}
         bx lr
 endfunc
 
@@ -1059,9 +1000,10 @@ put_qpel_uw_pixels_m 64, q0-q1, q2-q3, q8-q9, q10-q11
 
 function ff_hevc_put_qpel_bi_pixels_w4_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #32] // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
 1:      subs   r10, #1
@@ -1079,9 +1021,10 @@ endfunc
 
 function ff_hevc_put_qpel_bi_pixels_w8_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #32] // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
 1:      subs r10, #1
@@ -1099,9 +1042,10 @@ endfunc
 
 function ff_hevc_put_qpel_bi_pixels_w12_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #32] // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
         sub    r1, #8
@@ -1124,9 +1068,10 @@ endfunc
 
 function ff_hevc_put_qpel_bi_pixels_w16_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #32] // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
 1:      subs r10, #1
@@ -1147,9 +1092,10 @@ endfunc
 
 function ff_hevc_put_qpel_bi_pixels_w24_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #32] // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
         sub    r9, #32
@@ -1175,9 +1121,10 @@ endfunc
 
 function ff_hevc_put_qpel_bi_pixels_w32_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #32] // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
         sub    r9, #32
@@ -1206,9 +1153,10 @@ endfunc
 
 function ff_hevc_put_qpel_bi_pixels_w48_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #32] // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
         sub    r3, #32
@@ -1248,9 +1196,10 @@ endfunc
 
 function ff_hevc_put_qpel_bi_pixels_w64_neon_8, export=1
         push   {r4-r10}
-        ldr    r10,[sp, #36] // height
+        ldr    r10,[sp, #32] // height
         ldr    r8, [sp, #28] // src2
-        ldr    r9, [sp, #32] // src2stride
+        mov    r9, MAX_PB_SIZE
+        //ldr    r9, [sp, #32] // src2stride
         vpush {d8-d15}
         lsl	   r9, #1
         sub    r3, #32

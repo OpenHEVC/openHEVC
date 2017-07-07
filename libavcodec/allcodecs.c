@@ -58,13 +58,6 @@
             av_register_codec_parser(&ff_##x##_parser);                 \
     }
 
-#define REGISTER_BSF(X, x)                                              \
-    {                                                                   \
-        extern AVBitStreamFilter ff_##x##_bsf;                          \
-        if (CONFIG_##X##_BSF)                                           \
-            av_register_bitstream_filter(&ff_##x##_bsf);                \
-    }
-
 void avcodec_register_all(void)
 {
     static int initialized;
@@ -73,10 +66,37 @@ void avcodec_register_all(void)
         return;
     initialized = 1;
 
-    REGISTER_DECODER(H264, h264);
-    REGISTER_DECODER(HEVC, hevc);
-    REGISTER_DECODER(SHVC, shvc);
-    REGISTER_PARSER(SHVC, shvc);
-    REGISTER_PARSER(H264, h264);
-    REGISTER_PARSER(HEVC, hevc);
+    /* video codecs */
+    //REGISTER_DECODER(H261,              h261);
+    //REGISTER_DECODER(H263,              h263);
+    REGISTER_DECODER(H264,              h264);
+#if FF_API_VDPAU
+    //REGISTER_DECODER(H264_VDPAU,        h264_vdpau);
+#endif
+
+
+    REGISTER_DECODER(HEVC,              hevc);
+    REGISTER_DECODER(SHVC,              shvc);
+
+    //REGISTER_DECODER(MPEGVIDEO,         mpegvideo);
+    //REGISTER_DECODER(MPEG4,             mpeg4);
+
+    //REGISTER_DECODER(VP3,               vp3);
+    //REGISTER_ENCODER(SNOW,              snow);
+    
+
+    /* hardware acceleration */
+    //REGISTER_HWACCEL(H264_D3D11VA,      h264_d3d11va);
+    //REGISTER_HWACCEL(H264_DXVA2,        h264_dxva2);
+    //REGISTER_HWACCEL(H264_VAAPI,        h264_vaapi);
+    //REGISTER_HWACCEL(H264_VDA,          h264_vda);
+    //REGISTER_HWACCEL(H264_VDPAU,        h264_vdpau);
+    //REGISTER_HWACCEL(H264_VIDEOTOOLBOX, h264_videotoolbox);
+
+
+    /* parsers */
+    REGISTER_PARSER(H264,               h264);
+    REGISTER_PARSER(HEVC,               hevc);
+    REGISTER_PARSER(SHVC,               shvc);
+
 }

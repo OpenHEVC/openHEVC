@@ -2,8 +2,9 @@
  * HEVC video energy efficient dgreender
  * Morgan Lacour 2015
  */
-#if CONFIG_GREEN
+
 #include "hevc_green.h"
+#include "config.h"
 
 /** Green reload functions */
 void green_update_filter_luma(HEVCDSPContext *c, int type);
@@ -86,5 +87,3 @@ void green_update_context(HEVCContext *s, HEVCContext *s0)
 	s->green_sao_on         = s0->green_sao_on;
 	s->green_verbose		= s0->green_verbose;
 }
-
-#endif

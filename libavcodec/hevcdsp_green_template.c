@@ -2,9 +2,12 @@
  * HEVC video energy efficient dgreender
  * Morgan Lacour 2015
  */
-#if CONFIG_GREEN
+
+#if BIT_DEPTH == 8
+
 #include "get_bits.h"
 #include "hevc.h"
+#include "config.h"
 
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
@@ -70,7 +73,7 @@
 
 /** Green Luma Ntaps H interpolation filter */
 #define FUNC_QPEL_H(ntaps) \
-static void FUNC(put_hevc_qpel## ntaps ##_h)(int16_t *dst,  ptrdiff_t dststride, 	\
+static void FUNC(put_hevc_qpel## ntaps ##_h)(int16_t *dst,  						\
                                   uint8_t *_src, ptrdiff_t _srcstride,				\
                                   int height, intptr_t mx, intptr_t my, int width)	\
 {																					\
@@ -82,12 +85,12 @@ static void FUNC(put_hevc_qpel## ntaps ##_h)(int16_t *dst,  ptrdiff_t dststride,
         for (x = 0; x < width; x++)													\
             dst[x] = QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8);			\
         src += srcstride;															\
-        dst += dststride;															\
+        dst += MAX_PB_SIZE;															\
     }																				\
 }
 
 #define FUNC_QPEL_V(ntaps) \
-static void FUNC(put_hevc_qpel## ntaps ##_v)(int16_t *dst,  ptrdiff_t dststride,	\
+static void FUNC(put_hevc_qpel## ntaps ##_v)(int16_t *dst,  						\
                                   uint8_t *_src, ptrdiff_t _srcstride,				\
                                   int height, intptr_t mx, intptr_t my, int width)	\
 {																					\
@@ -99,13 +102,12 @@ static void FUNC(put_hevc_qpel## ntaps ##_v)(int16_t *dst,  ptrdiff_t dststride,
         for (x = 0; x < width; x++)													\
             dst[x] = QPEL_GREEN_FILTER(ntaps)(src, srcstride) >> (BIT_DEPTH - 8);	\
         src += srcstride;															\
-        dst += dststride;															\
+        dst += MAX_PB_SIZE;															\
     }																				\
 }
 
 #define FUNC_QPEL_HV(ntaps) \
 static void FUNC(put_hevc_qpel## ntaps ##_hv)(int16_t *dst,							\
-                                   ptrdiff_t dststride,								\
                                    uint8_t *_src,									\
                                    ptrdiff_t _srcstride,							\
                                    int height, intptr_t mx,							\
@@ -131,9 +133,9 @@ static void FUNC(put_hevc_qpel## ntaps ##_hv)(int16_t *dst,							\
     filter = ff_hevc_qpel_green## ntaps ##_filters[my - 1];							\
     for (y = 0; y < height; y++) {													\
         for (x = 0; x < width; x++)													\
-            dst[x] = QPEL_GREEN_FILTER(ntaps)(tmp, MAX_PB_SIZE) >> 6;						\
+            dst[x] = QPEL_GREEN_FILTER(ntaps)(tmp, MAX_PB_SIZE) >> 6;				\
         tmp += MAX_PB_SIZE;															\
-        dst += dststride;															\
+        dst += MAX_PB_SIZE;															\
     }																				\
 }
 
@@ -163,7 +165,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_uni_h)(uint8_t *_dst,  ptrdiff_t _dsts
 #define FUNC_QPEL_BI_H(ntaps) \
 static void FUNC(put_hevc_qpel## ntaps ##_bi_h)(uint8_t *_dst, ptrdiff_t _dststride,	\
 									 uint8_t *_src, ptrdiff_t _srcstride,				\
-                                     int16_t *src2, ptrdiff_t src2stride,				\
+                                     int16_t *src2, 									\
                                      int height, intptr_t mx, intptr_t my, int width)	\
 {																						\
     int x, y;																			\
@@ -182,7 +184,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_bi_h)(uint8_t *_dst, ptrdiff_t _dststr
             dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(src, 1) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);	\
         src  += srcstride;																\
         dst  += dststride;																\
-        src2 += src2stride;																\
+        src2 += MAX_PB_SIZE;															\
     }																					\
 }
 
@@ -212,7 +214,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_uni_v)(uint8_t *_dst,  ptrdiff_t _dsts
 #define FUNC_QPEL_BI_V(ntaps) \
 static void FUNC(put_hevc_qpel## ntaps ##_bi_v)(uint8_t *_dst, ptrdiff_t _dststride,	\
 									 uint8_t *_src, ptrdiff_t _srcstride,				\
-                                     int16_t *src2, ptrdiff_t src2stride,				\
+                                     int16_t *src2, 									\
                                      int height, intptr_t mx, intptr_t my, int width)	\
 {																						\
     int x, y;                                                                           \
@@ -231,7 +233,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_bi_v)(uint8_t *_dst, ptrdiff_t _dststr
             dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);  \
         src  += srcstride;                                                              \
         dst  += dststride;                                                              \
-        src2 += src2stride;                                                             \
+        src2 += MAX_PB_SIZE;                                                            \
     }                                                                                   \
 }
 
@@ -276,7 +278,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_uni_hv)(uint8_t *_dst,  ptrdiff_t _dst
 #define FUNC_QPEL_BI_HV(ntaps) \
 static void FUNC(put_hevc_qpel## ntaps ##_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride,   \
                                       uint8_t *_src, ptrdiff_t _srcstride,              \
-                                      int16_t *src2, ptrdiff_t src2stride,              \
+                                      int16_t *src2, 									\
                                       int height, intptr_t mx, intptr_t my, int width)  \
 {                                                                                       \
     int x, y;                                                                           \
@@ -307,7 +309,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_bi_hv)(uint8_t *_dst, ptrdiff_t _dstst
             dst[x] = av_clip_pixel(((QPEL_GREEN_FILTER(ntaps)(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);    \
         tmp  += MAX_PB_SIZE;                                                            \
         dst  += dststride;                                                              \
-        src2 += src2stride;                                                             \
+        src2 += MAX_PB_SIZE;                                                             \
     }                                                                                   \
 }
 
@@ -338,7 +340,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_uni_w_h)(uint8_t *_dst,  ptrdiff_t _ds
 #define FUNC_QPEL_BI_W_H(ntaps) \
 static void FUNC(put_hevc_qpel## ntaps ##_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride,         \
                                        uint8_t *_src, ptrdiff_t _srcstride,                    \
-                                       int16_t *src2, ptrdiff_t src2stride,                    \
+                                       int16_t *src2, 										   \
                                        int height, int denom, int wx0, int wx1,                \
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)  \
 {                                                                                              \
@@ -361,7 +363,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_bi_w_h)(uint8_t *_dst, ptrdiff_t _dsts
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));             \
         src  += srcstride;                                                                     \
         dst  += dststride;                                                                     \
-        src2 += src2stride;                                                                    \
+        src2 += MAX_PB_SIZE;                                                                   \
     }                                                                                          \
 }
 
@@ -392,7 +394,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_uni_w_v)(uint8_t *_dst,  ptrdiff_t _ds
 #define FUNC_QPEL_BI_W_V(ntaps) \
 static void FUNC(put_hevc_qpel## ntaps ##_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride,                                               \
                                        uint8_t *_src, ptrdiff_t _srcstride,                                                          \
-                                       int16_t *src2, ptrdiff_t src2stride,                                                          \
+                                       int16_t *src2, 						                                                         \
                                        int height, int denom, int wx0, int wx1,                                                      \
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)                                        \
 {                                                                                                                                    \
@@ -415,7 +417,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_bi_w_v)(uint8_t *_dst, ptrdiff_t _dsts
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));                                                   \
         src  += srcstride;                                                                                                           \
         dst  += dststride;                                                                                                           \
-        src2 += src2stride;                                                                                                          \
+        src2 += MAX_PB_SIZE;                                                                                                         \
     }                                                                                                                                \
 }
 
@@ -460,7 +462,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _d
 #define FUNC_QPEL_BI_W_HV(ntaps) \
 static void FUNC(put_hevc_qpel## ntaps ##_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,                                              \
                                         uint8_t *_src, ptrdiff_t _srcstride,                                                         \
-                                        int16_t *src2, ptrdiff_t src2stride,                                                         \
+                                        int16_t *src2, 						                                                         \
                                         int height, int denom, int wx0, int wx1,                                                     \
                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width)                                       \
 {                                                                                                                                    \
@@ -495,7 +497,7 @@ static void FUNC(put_hevc_qpel## ntaps ##_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dst
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));                                                   \
         tmp  += MAX_PB_SIZE;                                                                                                         \
         dst  += dststride;                                                                                                           \
-        src2 += src2stride;                                                                                                          \
+        src2 += MAX_PB_SIZE;                                                                                                         \
     }                                                                                                                                \
 }
 
@@ -513,7 +515,7 @@ LUMA_FUNC(7)
 #endif
 
 #define FUNC_EPEL_H(NTAP) \
-static void FUNC(put_hevc_epel ## NTAP ## _h)(int16_t *dst, ptrdiff_t dststride,	\
+static void FUNC(put_hevc_epel ## NTAP ## _h)(int16_t *dst, 						\
 								  uint8_t *_src, ptrdiff_t _srcstride,				\
 								  int height, intptr_t mx, intptr_t my, int width)	\
 {																					\
@@ -525,12 +527,12 @@ static void FUNC(put_hevc_epel ## NTAP ## _h)(int16_t *dst, ptrdiff_t dststride,
 		for (x = 0; x < width; x++)													\
 			dst[x] = EPEL_FILTER_GREEN(NTAP)(src, 1) >> (BIT_DEPTH - 8);			\
 		src += srcstride;															\
-		dst += dststride;															\
+		dst += MAX_PB_SIZE;															\
 	}																				\
 }
 
 #define FUNC_EPEL_V(NTAP) \
-static void FUNC(put_hevc_epel ## NTAP ## _v)(int16_t *dst, ptrdiff_t dststride,    \
+static void FUNC(put_hevc_epel ## NTAP ## _v)(int16_t *dst,						    \
                                   uint8_t *_src, ptrdiff_t _srcstride,              \
                                   int height, intptr_t mx, intptr_t my, int width)  \
 {                                                                                   \
@@ -543,12 +545,12 @@ static void FUNC(put_hevc_epel ## NTAP ## _v)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)                                                 \
             dst[x] = EPEL_FILTER_GREEN(NTAP)(src, srcstride) >> (BIT_DEPTH - 8);    \
         src += srcstride;                                                           \
-        dst += dststride;                                                           \
+        dst += MAX_PB_SIZE;                                                         \
     }                                                                               \
 }
 
 #define FUNC_EPEL_HV(NTAP)\
-static void FUNC(put_hevc_epel ## NTAP ## _hv)(int16_t *dst, ptrdiff_t dststride,	\
+static void FUNC(put_hevc_epel ## NTAP ## _hv)(int16_t *dst, 						\
                                    uint8_t *_src, ptrdiff_t _srcstride,				\
                                    int height, intptr_t mx, intptr_t my, int width)	\
 {																					\
@@ -575,7 +577,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _hv)(int16_t *dst, ptrdiff_t dststride
         for (x = 0; x < width; x++)													\
             dst[x] = EPEL_FILTER_GREEN(NTAP)(tmp, MAX_PB_SIZE) >> 6;				\
         tmp += MAX_PB_SIZE;															\
-        dst += dststride;															\
+        dst += MAX_PB_SIZE;															\
     }																				\
 }
 
@@ -603,7 +605,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_h)(uint8_t *_dst, ptrdiff_t _dsts
 #define FUNC_EPEL_BI_H(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_h)(uint8_t *_dst, ptrdiff_t _dststride,   \
 									 uint8_t *_src, ptrdiff_t _srcstride,				\
-                                     int16_t *src2, ptrdiff_t src2stride,				\
+                                     int16_t *src2, 									\
                                      int height, intptr_t mx, intptr_t my, int width)	\
 {																						\
     int x, y;																			\
@@ -621,7 +623,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_h)(uint8_t *_dst, ptrdiff_t _dstst
         }																				\
         dst  += dststride;																\
         src  += srcstride;																\
-        src2 += src2stride;																\
+        src2 += MAX_PB_SIZE;															\
     }																					\
 }
 
@@ -650,7 +652,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_v)(uint8_t *_dst, ptrdiff_t _dsts
 #define FUNC_EPEL_BI_V(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_v)(uint8_t *_dst, ptrdiff_t _dststride,	\
 										uint8_t *_src, ptrdiff_t _srcstride,			\
-										int16_t *src2, ptrdiff_t src2stride,			\
+										int16_t *src2,									\
 										int height, intptr_t mx, intptr_t my, int width)\
 {																						\
     int x, y;																			\
@@ -667,7 +669,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_v)(uint8_t *_dst, ptrdiff_t _dstst
             dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);\
         dst  += dststride;																\
         src  += srcstride;																\
-        src2 += src2stride;																\
+        src2 += MAX_PB_SIZE;															\
     }																					\
 }
 
@@ -710,7 +712,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_hv)(uint8_t *_dst, ptrdiff_t _dst
 #define FUNC_EPEL_BI_HV(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, 	\
 										uint8_t *_src, ptrdiff_t _srcstride,			\
-										int16_t *src2, ptrdiff_t src2stride,			\
+										int16_t *src2,									\
 										int height, intptr_t mx, intptr_t my, int width)\
 {																						\
     int x, y;																			\
@@ -741,7 +743,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_hv)(uint8_t *_dst, ptrdiff_t _dsts
             dst[x] = av_clip_pixel(((EPEL_FILTER_GREEN(NTAP)(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);\
         tmp  += MAX_PB_SIZE;															\
         dst  += dststride;																\
-        src2 += src2stride;																\
+        src2 += MAX_PB_SIZE;															\
     }																					\
 }
 
@@ -773,7 +775,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_w_h)(uint8_t *_dst, ptrdiff_t _ds
 #define FUNC_EPEL_BI_W_H(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, \
 												uint8_t *_src, ptrdiff_t _srcstride,	\
-												int16_t *src2, ptrdiff_t src2stride,	\
+												int16_t *src2, 							\
 												int height, int denom, int wx0, int wx1,\
 												int ox0, int ox1, intptr_t mx, intptr_t my, int width)\
 {																						\
@@ -794,7 +796,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_w_h)(uint8_t *_dst, ptrdiff_t _dst
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));		\
         src  += srcstride;																\
         dst  += dststride;																\
-        src2 += src2stride;																\
+        src2 += MAX_PB_SIZE;															\
     }																					\
 }
 
@@ -825,7 +827,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_w_v)(uint8_t *_dst, ptrdiff_t _ds
 #define FUNC_EPEL_BI_W_V(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, \
 													uint8_t *_src, ptrdiff_t _srcstride,\
-													int16_t *src2, ptrdiff_t src2stride,\
+													int16_t *src2, 						\
 												int height, int denom, int wx0, int wx1,\
 												int ox0, int ox1, intptr_t mx, intptr_t my, int width)\
 {																						\
@@ -846,7 +848,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_w_v)(uint8_t *_dst, ptrdiff_t _dst
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));		\
         src  += srcstride;																\
         dst  += dststride;																\
-        src2 += src2stride;																\
+        src2 += MAX_PB_SIZE;															\
     }																					\
 }
 
@@ -890,7 +892,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _uni_w_hv)(uint8_t *_dst, ptrdiff_t _d
 #define FUNC_EPEL_BI_W_HV(NTAP) 																\
 static void FUNC(put_hevc_epel ## NTAP ## _bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,\
 										uint8_t *_src, ptrdiff_t _srcstride,			\
-                                        int16_t *src2, ptrdiff_t src2stride,			\
+                                        int16_t *src2, 									\
                                         int height, int denom, int wx0, int wx1,		\
                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width)\
 {																						\
@@ -925,7 +927,7 @@ static void FUNC(put_hevc_epel ## NTAP ## _bi_w_hv)(uint8_t *_dst, ptrdiff_t _ds
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));		\
         tmp  += MAX_PB_SIZE;															\
         dst  += dststride;																\
-        src2 += src2stride;																\
+        src2 += MAX_PB_SIZE;															\
     }																					\
 }
 
