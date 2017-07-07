@@ -611,7 +611,7 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
 #if HEVC_ENCRYPTION
             //if(s->tile_table_encry)
             if (s->tile_table_encry[s->ps.pps->tile_id[ctb_addr_ts]]){
-                InitC(s->HEVClc->dbs_g);
+                InitC(s->HEVClc->dbs_g, s->encrypt_init_val);
                 s->HEVClc->prev_pos = 0;
             }
 #endif
@@ -637,7 +637,7 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             cabac_init_state(s);
 #if HEVC_ENCRYPTION
             if (s->tile_table_encry[s->ps.pps->tile_id[ctb_addr_ts]]){
-                InitC(s->HEVClc->dbs_g);
+                InitC(s->HEVClc->dbs_g, s->encrypt_init_val);
                 s->HEVClc->prev_pos = 0;
             }
 #endif

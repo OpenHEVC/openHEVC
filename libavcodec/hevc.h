@@ -1598,6 +1598,8 @@ typedef struct HEVCContext {
     int BL_height;
 #if HEVC_ENCRYPTION
     uint8_t encrypt_params;
+    uint8_t *encrypt_init_val;
+    int encrypt_init_val_length;
     AVRational last_click_pos;
     uint8_t prev_num_tile_rows;
     uint8_t prev_num_tile_columns;

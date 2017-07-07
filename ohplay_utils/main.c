@@ -54,6 +54,8 @@ static int temporal_layer_id;
 static int quality_layer_id;
 static int num_frames;
 static float frame_rate;
+static int crypto_args;
+static uint8_t *crypto_key = NULL;
 
 static const OptionDef options[] = {
 	{ "h", OPT_EXIT, {.func_arg = show_help}, "show help" },
@@ -70,6 +72,8 @@ static const OptionDef options[] = {
     { "r", HAS_ARG | OPT_FLOAT, { &frame_rate }, "Frame rate (FPS)", "n"},
     { "v", OPT_BOOL, { &h264_flags }, "Input is a h264 bitstream" },
     { "e", HAS_ARG | OPT_STRING, { &enhance_file }, "Enhanced layer file (with AVC base)", "file" },
+    {"-crypto", HAS_ARG | OPT_ENUM, {&crypto_args}, " Encryption configuration","params"},
+    {"-key", HAS_ARG | OPT_DATA, {&crypto_key},"overload default cipher key", "(16 bytes)"},
     { NULL, },
 };
 
@@ -231,6 +235,9 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
     libOpenHevcSetDebugMode(openHevcHandle, OHEVC_LOG_INFO);
     libOpenHevcStartDecoder(openHevcHandle);
+    oh_set_crypto_mode(openHevcHandle,crypto_args);
+    if(crypto_key!=NULL)
+        oh_set_crypto_key(openHevcHandle, crypto_key);
 
     openHevcFrameCpy.pvY = NULL;
     openHevcFrameCpy.pvU = NULL;
@@ -404,7 +411,7 @@ int main(int argc, char *argv[]) {
     parse_loglevel(argc, argv, options);
     av_register_all();
     avformat_network_init();
-
+  
     init_opts();
 
     show_banner(argc, argv, options);
@@ -415,4 +422,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
