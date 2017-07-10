@@ -408,6 +408,7 @@ set(libfilenames
     libavcodec/hevcdec.c
     libavcodec/hevcdsp.c
     libavcodec/hevcpred.c
+    libavcodec/profiles.c
 
     libavcodec/pthread.c
     libavcodec/pthread_slice.c
