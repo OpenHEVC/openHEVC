@@ -480,7 +480,7 @@ list(APPEND libfilenames
     #libavcodec/x86/xvididct_init.c
 )
 #EMT
-option(EMT_ENABLED "" ON)
+option(EMT_ENABLED "" OFF)
 if(EMT_ENABLED)
 list(APPEND libfilenames
    libavcodec/x86/emt_idct_avx2.c
