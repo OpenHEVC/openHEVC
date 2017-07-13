@@ -553,28 +553,14 @@ typedef struct HEVCContext {
     uint16_t seq_output;
 
     int enable_parallel_tiles;
-    int wpp_err;
-    int skipped_bytes;
-    int *skipped_bytes_pos;
-    int skipped_bytes_pos_size;
+    atomic_int wpp_err;
 
-    int *skipped_bytes_nal;
-    int **skipped_bytes_pos_nal;
-    int *skipped_bytes_pos_size_nal;
 
     const uint8_t *data;
 
     H2645Packet pkt;
-    HEVCNAL *nals;
-    int nb_nals;
-    int nals_allocated;
     // type of the first VCL NAL of the current frame
     enum HEVCNALUnitType first_nal_type;
-
-    // for checking the frame checksums
-    struct AVMD5 *md5_ctx;
-    uint8_t       md5[3][16];
-    uint8_t is_md5;
 
     uint8_t context_initialized;
     uint8_t is_nalff;       ///< this flag is != 0 if bitstream is encapsulated
@@ -605,35 +591,11 @@ typedef struct HEVCContext {
     int nuh_layer_id;
 
     HEVCSEIContext sei;
-    /** frame packing arrangement variables */
-    int sei_frame_packing_present;
-    int frame_packing_arrangement_type;
-    int content_interpretation_type;
-    int quincunx_subsampling;
-
-    /** display orientation */
-    int sei_display_orientation_present;
-    int sei_anticlockwise_rotation;
-    int sei_hflip, sei_vflip;
 
     int picture_struct;
     int field_order;
     int interlaced;
 
-    uint8_t* a53_caption;
-    int a53_caption_size;
-
-    /** mastering display */
-    int sei_mastering_display_info_present;
-    uint16_t display_primaries[3][2];
-    uint16_t white_point[2];
-    uint32_t max_mastering_luminance;
-    uint32_t min_mastering_luminance;
-
-#if FRAME_CONCEALMENT
-    int prev_display_poc;
-    int no_display_pic;
-#endif
     int     decode_checksum_sei;
 
 #if PARALLEL_SLICE
@@ -645,9 +607,6 @@ typedef struct HEVCContext {
     int max_slices;
     uint8_t *decoded_rows; 
 #endif
-
-	//uint8_t force_first_slice_in_pic;
-	//int64_t last_frame_pts;
     int BL_width;
     int BL_height;
     int bl_available;

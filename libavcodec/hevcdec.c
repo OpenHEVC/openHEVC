@@ -3102,7 +3102,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 
         if (more_data < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
-            avpriv_atomic_int_set(&s1->wpp_err,  1);
+            atomic_store(&s1->wpp_err,  1);
             ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
             return more_data;
         }
@@ -3326,7 +3326,7 @@ static int hls_decode_entry_wpp_in_tiles(AVCodecContext *avctxt, int *input_ctb_
 
         ff_thread_await_progress2(s->avctx, ctb_row, thread, SHIFT_CTB_WPP);
 
-        if (avpriv_atomic_int_get(&s1->wpp_err)){
+        if (atomic_load(&s1->wpp_err)){
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
             return ctb_addr_ts;
         }
@@ -3342,7 +3342,7 @@ static int hls_decode_entry_wpp_in_tiles(AVCodecContext *avctxt, int *input_ctb_
 
         if (more_data < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
-            avpriv_atomic_int_set(&s1->wpp_err,  1);
+            atomic_store(&s1->wpp_err,  1);
             ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
             return more_data;
         }
@@ -3356,7 +3356,7 @@ static int hls_decode_entry_wpp_in_tiles(AVCodecContext *avctxt, int *input_ctb_
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
 
         if (!more_data && (x_ctb+ctb_size) < s->ps.sps->width && ctb_row != s->sh.num_entry_point_offsets) {
-            avpriv_atomic_int_set(&s1->wpp_err,  1);
+            atomic_store(&s1->wpp_err,  1);
             ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
             return 0;
         }
@@ -3428,7 +3428,7 @@ static void slices_filters(HEVCContext *s)
 #endif
 
 
-static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
+static int hls_slice_data(HEVCContext *s, H2645NAL *nal)
 {
     HEVCLocalContext *lc = s->HEVClc;
     int *ret = av_malloc((s->sh.num_entry_point_offsets + 1) * sizeof(int));
@@ -3443,8 +3443,8 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 
     if (s->sh.num_entry_point_offsets > 0) {
         offset = (lc->gb.index >> 3);
-        for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
-            if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
+        for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < nal->skipped_bytes; j++) {
+            if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
                 startheader--;
                 cmpt++;
             }
@@ -3453,8 +3453,8 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
         for (i = 1; i < s->sh.num_entry_point_offsets; i++) {
             offset += (s->sh.entry_point_offset[i - 1] - cmpt);
             for (j = 0, cmpt = 0, startheader = offset
-                    + s->sh.entry_point_offset[i]; j < s->skipped_bytes; j++) {
-                if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
+                    + s->sh.entry_point_offset[i]; j < nal->skipped_bytes; j++) {
+                if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
                     startheader--;
                     cmpt++;
                 }
@@ -3463,24 +3463,24 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
             s->sh.offset[i - 1] = offset;
         }
         offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
-        s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
+        s->sh.size[s->sh.num_entry_point_offsets - 1] = nal->size - offset;
         s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
 
-        if(s->sh.offset[i - 1]+s->sh.size[i - 1] > length) {
+        if(s->sh.offset[i - 1]+s->sh.size[i - 1] > nal->size) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "hls_slice_data:  packet length < image size : %d < %d\n",
-                   length, s->sh.offset[i - 1]+s->sh.size[i - 1]);
+                   nal->size, s->sh.offset[i - 1]+s->sh.size[i - 1]);
             return AVERROR_INVALIDDATA;
         }
 
-        avpriv_atomic_int_set(&s->wpp_err, 0);
+        atomic_store(&s->wpp_err, 0);
         ff_reset_entries(s->avctx);
     }
 #if HEVC_ENCRYPTION
     InitC(s->HEVClc->dbs_g, s->encrypt_init_val);
     s->HEVClc->prev_pos = 0;
 #endif
-    s->data = nal;
+    s->data = nal->data;
     if (s->sh.first_slice_in_pic_flag){
         s->HEVClc->ctb_tile_rs = 0;
     }
@@ -3498,7 +3498,7 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
 #endif
     }
 
-    avpriv_atomic_int_set(&s->wpp_err, 0);
+    atomic_store(&s->wpp_err, 0);
     ff_reset_entries(s->avctx);
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
@@ -3541,29 +3541,6 @@ static int hls_slice_data(HEVCContext *s, const uint8_t *nal, int length)
     return res;
 }
 
-/**
- * @return AVERROR_INVALIDDATA if the packet is not a valid NAL unit,
- * 0 if the unit should be skipped, 1 otherwise
- */
-static int hls_nal_unit(HEVCContext *s)
-{
-    int ret;
-    GetBitContext *gb = &s->HEVClc->gb;
-
-    if (get_bits1(gb) != 0)
-        return AVERROR_INVALIDDATA;
-
-    s->nal_unit_type = get_bits(gb, 6);
-    ret              = get_bits(gb, 6);
-
-    s->temporal_id = get_bits(gb, 3) - 1;
-    if (s->temporal_id < 0)
-        return AVERROR_INVALIDDATA;
-    av_log(s->avctx, AV_LOG_DEBUG,
-           "nal_unit_type: %d, nuh_layer_id: %d temporal_id: %d decoder id %d\n",
-           s->nal_unit_type, ret, s->temporal_id , s->decoder_id);
-    return ret;
-}
 
 static int set_side_data(HEVCContext *s)
 {
@@ -3843,27 +3820,25 @@ fail:
     return ret;
 }
 
-static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
+static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 {
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb    = &lc->gb;
     int ctb_addr_ts, ret;
 
-    ret = init_get_bits8(gb, nal, length);
-    if (ret < 0)
-        return ret;
+    *gb              = nal->gb;
+    s->nal_unit_type = nal->type;
+    s->temporal_id   = nal->temporal_id;
+    s->nuh_layer_id = nal->nuh_layer_id;
 
-    ret = hls_nal_unit(s);
-    if (ret < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
-               s->nal_unit_type);
-        goto fail;
-    } else if (ret != s->decoder_id && (s->nal_unit_type != HEVC_NAL_VPS && s->nal_unit_type != HEVC_NAL_SPS /*&& s->nal_unit_type != NAL_PPS*/))
+    if (nal->nuh_layer_id != s->decoder_id && (s->nal_unit_type != HEVC_NAL_VPS && s->nal_unit_type != HEVC_NAL_SPS /*&& s->nal_unit_type != NAL_PPS*/))
         return 0;
 
-    if ((s->temporal_id > s->temporal_layer_id) || (ret > s->quality_layer_id))
+    if ((s->temporal_id > s->temporal_layer_id) || (nal->nuh_layer_id > s->quality_layer_id))
         return 0;
-    s->nuh_layer_id = ret;
+
+
+
     switch (s->nal_unit_type) {
     case HEVC_NAL_VPS:
         ret = ff_hevc_decode_nal_vps(gb, s->avctx, &s->ps);
@@ -4012,7 +3987,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             //if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
             //    ctb_addr_ts = hls_slice_data_wpp(s, nal);
             //else
-                ctb_addr_ts = hls_slice_data(s, nal, length);
+                ctb_addr_ts = hls_slice_data(s, nal);
             if (ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height)) {
                 s->is_decoded = 1;
                 if (s->ps.pps->tiles_enabled_flag && s->threads_number!=1)
@@ -4064,120 +4039,11 @@ fail:
         return ret;
     return 0;
 }
-// ----------------------here lices
-
-/* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
- * between these functions would be nice. */
-int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
-                         HEVCNAL *nal)
-{
-    int i, si, di;
-    uint8_t *dst;
-
-    s->skipped_bytes = 0;
-#define STARTCODE_TEST                                                  \
-        if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
-            if (src[i + 2] != 3) {                                      \
-                /* startcode, so we must be past the end */             \
-                length = i;                                             \
-            }                                                           \
-            break;                                                      \
-        }
-#if HAVE_FAST_UNALIGNED
-#define FIND_FIRST_ZERO                                                 \
-        if (i > 0 && !src[i])                                           \
-            i--;                                                        \
-        while (src[i])                                                  \
-            i++
-#if HAVE_FAST_64BIT
-    for (i = 0; i + 1 < length; i += 9) {
-        if (!((~AV_RN64A(src + i) &
-               (AV_RN64A(src + i) - 0x0100010001000101ULL)) &
-              0x8000800080008080ULL))
-            continue;
-        FIND_FIRST_ZERO;
-        STARTCODE_TEST;
-        i -= 7;
-    }
-#else
-    for (i = 0; i + 1 < length; i += 5) {
-        if (!((~AV_RN32A(src + i) &
-               (AV_RN32A(src + i) - 0x01000101U)) &
-              0x80008080U))
-            continue;
-        FIND_FIRST_ZERO;
-        STARTCODE_TEST;
-        i -= 3;
-    }
-#endif /* HAVE_FAST_64BIT */
-#else
-    for (i = 0; i + 1 < length; i += 2) {
-        if (src[i])
-            continue;
-        if (i > 0 && src[i - 1] == 0)
-            i--;
-        STARTCODE_TEST;
-    }
-#endif /* HAVE_FAST_UNALIGNED */
-
-    if (i >= length - 1) { // no escaped 0
-        nal->data = src;
-        nal->size = length;
-        return length;
-    }
-
-    av_fast_malloc(&nal->rbsp_buffer, &nal->rbsp_buffer_size,
-                   length + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!nal->rbsp_buffer)
-        return AVERROR(ENOMEM);
-
-    dst = nal->rbsp_buffer;
-
-    memcpy(dst, src, i);
-    si = di = i;
-    while (si + 2 < length) {
-        // remove escapes (very rare 1:2^22)
-        if (src[si + 2] > 3) {
-            dst[di++] = src[si++];
-            dst[di++] = src[si++];
-        } else if (src[si] == 0 && src[si + 1] == 0) {
-            if (src[si + 2] == 3) { // escape
-                dst[di++] = 0;
-                dst[di++] = 0;
-                si       += 3;
-
-                s->skipped_bytes++;
-                if (s->skipped_bytes_pos_size < s->skipped_bytes) {
-                    s->skipped_bytes_pos_size *= 2;
-                    av_reallocp_array(&s->skipped_bytes_pos,
-                            s->skipped_bytes_pos_size,
-                            sizeof(*s->skipped_bytes_pos));
-                    if (!s->skipped_bytes_pos)
-                        return AVERROR(ENOMEM);
-                }
-                if (s->skipped_bytes_pos)
-                    s->skipped_bytes_pos[s->skipped_bytes-1] = di - 1;
-                continue;
-            } else // next start code
-                goto nsc;
-        }
-
-        dst[di++] = src[si++];
-    }
-    while (si < length)
-        dst[di++] = src[si++];
-
-nsc:
-    memset(dst + di, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-
-    nal->data = dst;
-    nal->size = di;
-    return si;
-}
 
 static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 {
-    int i,  consumed, ret = 0;
+    int i, ret = 0;
+    int eos_at_start = 1;
 
 #if PARALLEL_SLICE
     int cum_nal_pos = 0, k, nal_type, prv_nal_type=-1;
@@ -4198,179 +4064,53 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 #endif
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
-    s->nb_nals = 0;
-    while (length >= 4) {
-        HEVCNAL *nal;
-        int extract_length = 0;
+    ret = ff_h2645_packet_split(&s->pkt, buf, length, s->avctx, s->is_nalff,
+                                s->nal_length_size, s->avctx->codec_id, 1);
+    if (ret < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Error splitting the input into NAL units.\n");
+        return ret;
+    }
 
-        if (s->is_nalff) {
-            int i;
-            for (i = 0; i < s->nal_length_size; i++)
-                extract_length = (extract_length << 8) | buf[i];
-            buf    += s->nal_length_size;
-            length -= s->nal_length_size;
-
-            if (extract_length > length) {
-                av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
+    for (i = 0; i < s->pkt.nb_nals; i++) {
+        if (s->pkt.nals[i].type == HEVC_NAL_EOB_NUT ||
+            s->pkt.nals[i].type == HEVC_NAL_EOS_NUT) {
+            if (eos_at_start) {
+                s->last_eos = 1;
+            } else {
+                s->eos = 1;
             }
         } else {
-            /* search start code */
-            if (buf[2] == 0) {
-                length--;
-                buf++;
-                continue;
-            }
-            if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
-                av_log(s->avctx, AV_LOG_ERROR, "No start code is found.\n");
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
-            buf           += 3;
-            length        -= 3;
+            eos_at_start = 0;
         }
 
-        if (!s->is_nalff)
-            extract_length = length;
-
-        if (s->nals_allocated < s->nb_nals + 1) {
-            int new_size = s->nals_allocated + 1;
-            HEVCNAL *tmp = av_realloc_array(s->nals, new_size, sizeof(*tmp));
-            if (!tmp) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            s->nals = tmp;
-            memset(s->nals + s->nals_allocated, 0,
-                   (new_size - s->nals_allocated) * sizeof(*tmp));
-            av_reallocp_array(&s->skipped_bytes_nal, new_size, sizeof(*s->skipped_bytes_nal));
-            av_reallocp_array(&s->skipped_bytes_pos_size_nal, new_size, sizeof(*s->skipped_bytes_pos_size_nal));
-            av_reallocp_array(&s->skipped_bytes_pos_nal, new_size, sizeof(*s->skipped_bytes_pos_nal));
-            s->skipped_bytes_pos_size_nal[s->nals_allocated] = 1024; // initial buffer size
-            s->skipped_bytes_pos_nal[s->nals_allocated] = av_malloc_array(s->skipped_bytes_pos_size_nal[s->nals_allocated], sizeof(*s->skipped_bytes_pos));
-            s->nals_allocated = new_size;
-        }
-        s->skipped_bytes_pos_size = s->skipped_bytes_pos_size_nal[s->nb_nals];
-        s->skipped_bytes_pos = s->skipped_bytes_pos_nal[s->nb_nals];
-        nal = &s->nals[s->nb_nals];
-        consumed = ff_hevc_extract_rbsp(s, buf, extract_length, nal);
-
-        if (s->is_nalff && consumed != extract_length) {
-            av_log(s->avctx, AV_LOG_WARNING,
-                   "NALU type #%d, Consumed rbsp not equal to extracted length from mp4 (%d!=%d)\n",
-                   s->nal_unit_type, consumed, extract_length);
-            consumed = extract_length;
-        }
-
-        s->skipped_bytes_nal[s->nb_nals] = s->skipped_bytes;
-        s->skipped_bytes_pos_size_nal[s->nb_nals] = s->skipped_bytes_pos_size;
-        s->skipped_bytes_pos_nal[s->nb_nals++] = s->skipped_bytes_pos;
-
-
-        if (consumed < 0) {
-            ret = consumed;
-            goto fail;
-        }
-
-        ret = init_get_bits8(&s->HEVClc->gb, nal->data, nal->size);
-        if (ret < 0)
-            goto fail;
-        ret = hls_nal_unit(s);
-
-#if PARALLEL_SLICE
-        /*   Find out the set of slices to run in parallel   */
-        nal_type = s->nal_unit_type > NAL_CRA_NUT;
-        if (!nal_type)
-            is_irap &= IS_IRAP(s);
-
-        if(prv_nal_type==-1)
-            s->NALListOrder[0]++;
-        else {
-            if(nal_type || (!nal_type && nal_type != prv_nal_type))
-                s->NbListElement++;
-            s->NALListOrder[s->NbListElement]++;
-        }
-
-        prv_nal_type = nal_type;
-#endif
-
-        if(!s->bl_decoder_el_exist && ret == s->decoder_id+1 && s->avctx->quality_id >= ret && s->nal_unit_type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
+        if(!s->bl_decoder_el_exist && s->pkt.nals[i].nuh_layer_id == s->decoder_id + 1 && s->avctx->quality_id >= s->pkt.nals[i].nuh_layer_id && s->pkt.nals[i].type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->bl_decoder_el_exist = 1;
             s->poc_id++;
             s->poc_id &= (MAX_POC-1);
         }
-        if(!s->el_decoder_bl_exist && s->decoder_id && ret == s->decoder_id-1 && s->nal_unit_type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
+
+        if(!s->el_decoder_bl_exist && s->decoder_id  && s->pkt.nals[i].nuh_layer_id == s->decoder_id - 1 && s->pkt.nals[i].type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->el_decoder_bl_exist=1;
         }
-        if(!s->el_decoder_el_exist && s->decoder_id && ret == s->decoder_id && s->nal_unit_type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
+
+        if(!s->el_decoder_el_exist && s->decoder_id && s->pkt.nals[i].nuh_layer_id == s->decoder_id && s->pkt.nals[i].type <= HEVC_NAL_CRA_NUT && (s->threads_type&FF_THREAD_FRAME)) {
             s->poc_id++;
             s->poc_id &= (MAX_POC-1);
             s->el_decoder_el_exist = 1;
         }
-        if (s->nal_unit_type == HEVC_NAL_EOB_NUT ||
-            s->nal_unit_type == HEVC_NAL_EOS_NUT)
-            s->eos = 1;
-
-        buf    += consumed;
-        length -= consumed;
     }
 
-    /* parse the NAL units */
-    if(!s->el_decoder_bl_exist) {
-        s->el_decoder_el_exist = 0;
-    }//fixme: AVC
-#if PARALLEL_SLICE
-    if (is_irap) {
-        for(i = 0; i <= s->NbListElement; i++) {
-            //      s->skipped_bytes = s->skipped_bytes_nal[i];
-            //      s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
-            s->max_slices = s->NALListOrder[i]-1;
-            for(k=0; k < s->NALListOrder[i]; k++)
-                arg[k] = cum_nal_pos+k;
-            s->avctx->execute2(s->avctx, (void *) decode_nal_unit_slice, arg, ret, s->NALListOrder[i]);
-            cum_nal_pos += s->NALListOrder[i];
-
-            if (ret < 0) {
-                av_log(s->avctx, AV_LOG_WARNING,
-                       "Error parsing NAL unit #%d.\n", i);
-                goto fail;
-            }
-        }
-    } else {
-        for (i = 0; i < s->nb_nals; i++) {
-            int ret;
-            s->skipped_bytes = s->skipped_bytes_nal[i];
-            s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
-
-            ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
-            if (ret < 0) {
-                av_log(s->avctx, AV_LOG_WARNING,
-                       "Error parsing NAL unit #%d.\n", i);
-                goto fail;
-            }
-        }
-
-    }
-#if !PARALLEL_FILTERS
-    if(s->is_decoded)
-        slices_filters(s);
-#endif
-
-#else
-    for (i = 0; i < s->nb_nals; i++) {
-        int ret;
-        s->skipped_bytes = s->skipped_bytes_nal[i];
-        s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
-
-        ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
+    /* decode the NAL units */
+    for (i = 0; i < s->pkt.nb_nals; i++) {
+        ret = decode_nal_unit(s, &s->pkt.nals[i]);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
             goto fail;
         }
     }
-#endif
+
 fail:
 #if PARALLEL_SLICE
     ff_thread_report_progress_slice(s->avctx);
@@ -4601,9 +4341,9 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (ret < 0)
         return ret;
 
-    /* verify the SEI checksum */
     if (s->decode_checksum_sei && s->is_decoded &&
         s->sei.picture_hash.is_md5) {
+    /* verify the SEI checksum */
         ret = verify_md5(s, s->ref->frame);
         if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
             ff_hevc_unref_frame(s, s->ref, ~0);
@@ -4638,15 +4378,15 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     av_freep(&s->sei.picture_hash.md5_ctx);
 
-    for(i=0; i < s->nals_allocated; i++) {
-        av_freep(&s->skipped_bytes_pos_nal[i]);
-    }
+//    for(i=0; i < s->nals_allocated; i++) {
+//        av_freep(&s->skipped_bytes_pos_nal[i]);
+//    }
 
     av_freep(&s->cabac_state);
 
-    av_freep(&s->skipped_bytes_pos_size_nal);
-    av_freep(&s->skipped_bytes_nal);
-    av_freep(&s->skipped_bytes_pos_nal);
+//    av_freep(&s->skipped_bytes_pos_size_nal);
+//    av_freep(&s->skipped_bytes_nal);
+//    av_freep(&s->skipped_bytes_pos_nal);
     av_freep(&s->cabac_state);
 #if !ACTIVE_PU_UPSAMPLING
     av_frame_unref(s->Ref_color_mapped_frame);
@@ -4711,10 +4451,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 #endif
     av_freep(&s->HEVClcList[0]);
 
-    for (i = 0; i < s->nals_allocated; i++)
-        av_freep(&s->nals[i].rbsp_buffer);
-    av_freep(&s->nals);
-    s->nals_allocated = 0;
+    ff_h2645_packet_uninit(&s->pkt);
 
     return 0;
 }
@@ -4804,7 +4541,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     ff_hevc_reset_sei(&s->sei);
 
-    s->eos = 0;
     return 0;
 
 fail:

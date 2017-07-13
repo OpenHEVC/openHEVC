@@ -55,6 +55,7 @@ typedef struct H2645NAL {
      * HEVC only, nuh_temporal_id_plus_1 - 1
      */
     int temporal_id;
+    int nuh_layer_id;
 
     int skipped_bytes;
     int skipped_bytes_pos_size;
