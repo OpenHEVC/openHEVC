@@ -940,11 +940,10 @@ static av_always_inline int abs_mvd_greater1_flag_decode(HEVCContext *s)
     return GET_CABAC(elem_offset[ABS_MVD_GREATER1_FLAG] + 1);
 }
 
-static av_always_inline int mvd_sign_flag_decode(HEVCContext *s)
-{
-    return get_cabac_bypass_sign(&s->HEVClc->cc, -1);
-}
+
 #if HEVC_ENCRYPTION
+static av_always_inline int mvd_sign_flag_decode(HEVCContext *s);
+
 static av_always_inline int mvd_decode_enc(HEVCContext *s)
 {
     int ret = 2, ret0 = 0, sign;
@@ -989,6 +988,11 @@ static av_always_inline int mvd_decode(HEVCContext *s)
     while (k--)
         ret += get_cabac_bypass(&s->HEVClc->cc) << k;
     return get_cabac_bypass_sign(&s->HEVClc->cc, -ret);
+}
+
+static av_always_inline int mvd_sign_flag_decode(HEVCContext *s)
+{
+    return get_cabac_bypass_sign(&s->HEVClc->cc, -1);
 }
 
 int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size)
@@ -1846,12 +1850,14 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             }
 
             s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
+
             if (explicit_rdpcm_flag) {
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, explicit_rdpcm_dir_flag);
             } else if ((s->ps.sps->implicit_rdpcm_enabled_flag &&
                         lc->cu.pred_mode == MODE_INTRA &&
                        (pred_mode_intra == 10 || pred_mode_intra == 26))) {
                 int mode = s->ps.sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : 0;
+
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
 #if COM16_C806_EMT
@@ -1881,24 +1887,21 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             s->hevcdsp.idct2_emt_v[zo][tr_idx_v][log2_trafo_size - 2](coeffs, tmp, 0, clip_min, clip_max);
             s->hevcdsp.idct2_emt_h[zo][tr_idx_h][log2_trafo_size - 2](tmp, coeffs, log2_transform_range, clip_min, clip_max);
 #endif
+        } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
+            s->hevcdsp.idct_4x4_luma(coeffs);
         } else {
-            if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
-                s->hevcdsp.idct_4x4_luma(coeffs);
-            } else {
-                int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
-                if (max_xy == 0){
-                    s->hevcdsp.idct_dc[log2_trafo_size - 2](coeffs);
-
-                } else {
-                    int col_limit = last_significant_coeff_x + last_significant_coeff_y + 4;
-                    if (max_xy < 4)
-                        col_limit = FFMIN(4, col_limit);
-                    else if (max_xy < 8)
-                        col_limit = FFMIN(8, col_limit);
-                    else if (max_xy < 12)
-                        col_limit = FFMIN(24, col_limit);
-                    s->hevcdsp.idct[log2_trafo_size - 2](coeffs, col_limit);
-                }
+            int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
+            if (max_xy == 0)
+                s->hevcdsp.idct_dc[log2_trafo_size - 2](coeffs);
+            else {
+                int col_limit = last_significant_coeff_x + last_significant_coeff_y + 4;
+                if (max_xy < 4)
+                    col_limit = FFMIN(4, col_limit);
+                else if (max_xy < 8)
+                    col_limit = FFMIN(8, col_limit);
+                else if (max_xy < 12)
+                    col_limit = FFMIN(24, col_limit);
+                s->hevcdsp.idct[log2_trafo_size - 2](coeffs, col_limit);
             }
         }
     }
@@ -1931,6 +1934,7 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
     case 1: lc->pu.mvd.x = mvd_sign_flag_decode(s); break;
     case 0: lc->pu.mvd.x = 0;                       break;
     }
+
 #if HEVC_ENCRYPTION
     if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MV_SIGNS)) {
       if(x) {
