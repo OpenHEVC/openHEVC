@@ -403,22 +403,24 @@ typedef struct SAOParams {
     uint8_t type_idx[3];        ///< sao_type_idx
 } SAOParams;
 
-typedef struct SubLayerHRDParameter {
+typedef struct SubLayerHRDParams {
     int bit_rate_value_minus1[16];
     int cpb_size_value_minus1[16];
     int cpb_size_du_value_minus1[16];
     int bit_rate_du_value_minus1[16];
     int cbr_flag[16];
-} SubLayerHRDParameter;
+} SubLayerHRDParams;
 
-typedef struct HRDParameter {
+typedef struct HRDParameters {
     uint8_t     nal_hrd_parameters_present_flag;
     uint8_t     vcl_hrd_parameters_present_flag;
     uint8_t     sub_pic_hrd_params_present_flag;
-    uint8_t     tick_divisor_minus2;
-    uint8_t     du_cpb_removal_delay_increment_length_minus1;
-    uint8_t     sub_pic_cpb_params_in_pic_timing_sei_flag;
-    uint8_t     dpb_output_delay_du_length_minus1;
+    struct {
+        uint8_t     tick_divisor_minus2;
+        uint8_t     du_cpb_removal_delay_increment_length_minus1;
+        uint8_t     sub_pic_cpb_params_in_pic_timing_sei_flag;
+        uint8_t     dpb_output_delay_du_length_minus1;
+    } sub_pic_hrd_params;
     uint8_t     bit_rate_scale;
     uint8_t     cpb_size_scale;
     uint8_t     cpb_size_du_scale;
@@ -426,14 +428,15 @@ typedef struct HRDParameter {
     uint8_t     au_cpb_removal_delay_length_minus1;
     uint8_t     dpb_output_delay_length_minus1;
 
+    //TODO : put these in a struct
     uint8_t     fixed_pic_rate_general_flag[16];
     uint8_t     fixed_pic_rate_within_cvs_flag[16];
     int         elemental_duration_in_tc_minus1[16];
     uint8_t     low_delay_hrd_flag[16];
     uint8_t     cpb_cnt_minus1[16];
     
-    SubLayerHRDParameter Sublayer_HRDPar[16]; 
-} HRDParameter;
+    SubLayerHRDParams sub_layer_hrd_params[16];
+} HRDParameters;
 
 typedef struct VideoSignalInfo {
     uint8_t video_vps_format;                
@@ -447,7 +450,7 @@ typedef struct BspHrdParams {
     uint8_t vps_num_add_hrd_params;
     uint8_t cprms_add_present_flag[16];
     uint8_t num_sub_layer_hrd_minus1[16];
-    HRDParameter HrdParam[16];
+    HRDParameters HrdParam[16];
     uint8_t num_signalled_partitioning_schemes[16];
     uint8_t layer_included_in_partition_flag[16][16][16][16];
     uint8_t num_partitions_in_scheme_minus1[16][16];
@@ -457,7 +460,7 @@ typedef struct BspHrdParams {
 
 } BspHrdParams;
 
-typedef struct VPSVUI {
+typedef struct VPSVUIParameters {
     uint8_t cross_layer_pic_type_aligned_flag;
     uint8_t cross_layer_irap_aligned_flag;
     uint8_t all_layers_idr_aligned_flag;
@@ -495,7 +498,7 @@ typedef struct VPSVUI {
     uint8_t vps_vui_bsp_hrd_present_flag;
     BspHrdParams Bsp_Hrd_Params;
     uint8_t base_layer_parameter_set_compatibility_flag[16]; 
-} VPSVUI;
+} VPSVUIParameters;
 
 typedef struct DPBSize {
     uint8_t sub_layer_flag_info_present_flag[16];
@@ -561,7 +564,7 @@ typedef struct HEVCVPSExt {
     uint8_t     default_direct_dependency_type; 
     /*uint8_t     direct_dependency_all_layers_flag;
     uint8_t     direct_dependency_all_layers_type;*/
-    VPSVUI VpsVui; 
+    VPSVUIParameters vui_parameters;
 } HEVCVPSExt;
 
 typedef struct HEVCVPS {
@@ -597,7 +600,7 @@ typedef struct HEVCVPS {
     int16_t    vps_num_hrd_parameters;
     unsigned int hrd_layer_set_idx[16];
     //FIXME keep cprms_present_flag table ???
-    HRDParameter HrdParam;
+    HRDParameters HrdParam;
 
     //FIXME vps_extension2_flag etc..
     int         vps_extension_flag;
@@ -753,7 +756,7 @@ typedef struct HEVCSPS {
 
     int qp_bd_offset;
 
-    HRDParameter HrdParam;
+    HRDParameters HrdParam;
 
     //FIXME scaled_ref_layer is used but not set ???
     HEVCWindow scaled_ref_layer_window[MAX_LAYERS];

@@ -356,74 +356,75 @@ static int parse_ptl(GetBitContext *gb, AVCodecContext *avctx,
     return 0;
 }
 
-static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParameter *Sublayer_HRDPar, int CpbCnt, int sub_pic_hrd_params_present_flag ) {
+static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParams *sub_layer_hrd_parameters,
+                                     int cpb_count, int sub_pic_hrd_params_present_flag ) {
     int i;
-	for( i = 0; i  <=  CpbCnt; i++ ) {
-		Sublayer_HRDPar->bit_rate_value_minus1[i] = get_ue_golomb_long(gb);
-		Sublayer_HRDPar->cpb_size_value_minus1[i] = get_ue_golomb_long(gb);
+    for( i = 0; i  <=  cpb_count; i++ ) {
+        sub_layer_hrd_parameters->bit_rate_value_minus1[i] = get_ue_golomb_long(gb);
+        sub_layer_hrd_parameters->cpb_size_value_minus1[i] = get_ue_golomb_long(gb);
 		if( sub_pic_hrd_params_present_flag ) {
-			Sublayer_HRDPar->cpb_size_du_value_minus1[i] = get_ue_golomb_long(gb);
-			Sublayer_HRDPar->bit_rate_du_value_minus1[i] = get_ue_golomb_long(gb);
+            sub_layer_hrd_parameters->cpb_size_du_value_minus1[i] = get_ue_golomb_long(gb);
+            sub_layer_hrd_parameters->bit_rate_du_value_minus1[i] = get_ue_golomb_long(gb);
 		}
-		Sublayer_HRDPar->cbr_flag[i] = get_bits1(gb);
+        sub_layer_hrd_parameters->cbr_flag[i] = get_bits1(gb);
 	}
 }
 
-static int decode_hrd(GetBitContext *gb, AVCodecContext *avctx, HRDParameter *HrdParam, int common_inf_present,
-                       int max_sublayers)
+static int decode_hrd_parameters(GetBitContext *gb, HRDParameters *hrd_parameters,
+                                 int common_inf_present_flag, int max_num_sublayers)
 {
     int i;
-    //GetBitContext   *gb   = &s->HEVClc->gb;  
-    if (common_inf_present) {
-        HrdParam->nal_hrd_parameters_present_flag = get_bits1(gb);
-        HrdParam->vcl_hrd_parameters_present_flag = get_bits1(gb);
-        if (HrdParam->nal_hrd_parameters_present_flag  ||  HrdParam->vcl_hrd_parameters_present_flag ) {
-            HrdParam->sub_pic_hrd_params_present_flag = get_bits1(gb);
-            if( HrdParam->sub_pic_hrd_params_present_flag ) {
-                HrdParam->tick_divisor_minus2 = get_bits(gb, 8);
-                HrdParam->du_cpb_removal_delay_increment_length_minus1 = get_bits(gb, 5);
-                HrdParam->sub_pic_cpb_params_in_pic_timing_sei_flag = get_bits1(gb);
-                HrdParam->dpb_output_delay_du_length_minus1 = get_bits(gb, 5);
+    if (common_inf_present_flag) {
+        hrd_parameters->nal_hrd_parameters_present_flag = get_bits1(gb);
+        hrd_parameters->vcl_hrd_parameters_present_flag = get_bits1(gb);
+        if (hrd_parameters->nal_hrd_parameters_present_flag  ||
+                hrd_parameters->vcl_hrd_parameters_present_flag ) {
+            hrd_parameters->sub_pic_hrd_params_present_flag = get_bits1(gb);
+            if( hrd_parameters->sub_pic_hrd_params_present_flag ) {
+                hrd_parameters->sub_pic_hrd_params.tick_divisor_minus2 = get_bits(gb, 8);
+                hrd_parameters->sub_pic_hrd_params.du_cpb_removal_delay_increment_length_minus1 = get_bits(gb, 5);
+                hrd_parameters->sub_pic_hrd_params.sub_pic_cpb_params_in_pic_timing_sei_flag = get_bits1(gb);
+                hrd_parameters->sub_pic_hrd_params.dpb_output_delay_du_length_minus1 = get_bits(gb, 5);
             }
-            HrdParam->bit_rate_scale = get_bits(gb, 4);
-            HrdParam->cpb_size_scale = get_bits(gb, 4);
-            if( HrdParam->sub_pic_hrd_params_present_flag ) {
-                HrdParam->cpb_size_du_scale = get_bits(gb, 4);
+            hrd_parameters->bit_rate_scale = get_bits(gb, 4);
+            hrd_parameters->cpb_size_scale = get_bits(gb, 4);
+            if( hrd_parameters->sub_pic_hrd_params_present_flag ) {
+                hrd_parameters->cpb_size_du_scale = get_bits(gb, 4);
             }
-            HrdParam->initial_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
-            HrdParam->au_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
-            HrdParam->dpb_output_delay_length_minus1 = get_bits(gb, 5);
-        } else
-            HrdParam->initial_cpb_removal_delay_length_minus1 = 23;
+            hrd_parameters->initial_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
+            hrd_parameters->au_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
+            hrd_parameters->dpb_output_delay_length_minus1 = get_bits(gb, 5);
+        } else //FIXME check conformance may be move this to default value init
+            hrd_parameters->initial_cpb_removal_delay_length_minus1 = 23;
     }
-    for( i = 0; i  <=  max_sublayers; i++ ) {
-        HrdParam->fixed_pic_rate_general_flag[i] = get_bits1(gb);
-        if(!HrdParam->fixed_pic_rate_general_flag[i]) {
-            HrdParam->fixed_pic_rate_within_cvs_flag[i] = get_bits1(gb);
-        } else {
-            HrdParam->fixed_pic_rate_within_cvs_flag[i] = 1;
+    //FIXME check max_num_sub_layers is minus 1 otherwise we might be over reading
+    for( i = 0; i  <=  max_num_sublayers; i++ ) {
+        hrd_parameters->fixed_pic_rate_general_flag[i] = get_bits1(gb);
+        if(!hrd_parameters->fixed_pic_rate_general_flag[i]) {
+            hrd_parameters->fixed_pic_rate_within_cvs_flag[i] = get_bits1(gb);
+        } else { // FIXME not sure about this
+            hrd_parameters->fixed_pic_rate_within_cvs_flag[i] = 1;
         }
-        HrdParam->low_delay_hrd_flag [i] = 0;
-        HrdParam->cpb_cnt_minus1     [i] = 0;
+        hrd_parameters->low_delay_hrd_flag [i] = 0;
+        hrd_parameters->cpb_cnt_minus1     [i] = 0;
 
-        if( HrdParam->fixed_pic_rate_within_cvs_flag[i] ) {
-            HrdParam->elemental_duration_in_tc_minus1[i] = get_ue_golomb_long(gb);
+        if( hrd_parameters->fixed_pic_rate_within_cvs_flag[i] ) {
+            hrd_parameters->elemental_duration_in_tc_minus1[i] = get_ue_golomb_long(gb);
         } else {
-            HrdParam->low_delay_hrd_flag[i] = get_bits1(gb);
+            hrd_parameters->low_delay_hrd_flag[i] = get_bits1(gb);
         }
 
-        if(!HrdParam->low_delay_hrd_flag[i]) {
-            HrdParam->cpb_cnt_minus1[i] = get_ue_golomb_long(gb);
-            if (HrdParam->cpb_cnt_minus1[i] < 0 || HrdParam->cpb_cnt_minus1[i] > 31) {
-                av_log(avctx, AV_LOG_ERROR, "nb_cpb %d invalid\n", HrdParam->cpb_cnt_minus1[i]);
+        if(!hrd_parameters->low_delay_hrd_flag[i]) {
+            hrd_parameters->cpb_cnt_minus1[i] = get_ue_golomb_long(gb);
+            if (hrd_parameters->cpb_cnt_minus1[i] < 0 || hrd_parameters->cpb_cnt_minus1[i] > 31) {
                 return AVERROR_INVALIDDATA;
             }
         }
-        if( HrdParam->nal_hrd_parameters_present_flag )
-            sub_layer_hrd_parameters(gb, &HrdParam->Sublayer_HRDPar[i], HrdParam->cpb_cnt_minus1[i], HrdParam->sub_pic_hrd_params_present_flag);
+        if( hrd_parameters->nal_hrd_parameters_present_flag )
+            sub_layer_hrd_parameters(gb, &hrd_parameters->sub_layer_hrd_params[i], hrd_parameters->cpb_cnt_minus1[i], hrd_parameters->sub_pic_hrd_params_present_flag);
 
-        if( HrdParam->vcl_hrd_parameters_present_flag )
-            sub_layer_hrd_parameters(gb, &HrdParam->Sublayer_HRDPar[i], HrdParam->cpb_cnt_minus1[i], HrdParam->sub_pic_hrd_params_present_flag);
+        if( hrd_parameters->vcl_hrd_parameters_present_flag )
+            sub_layer_hrd_parameters(gb, &hrd_parameters->sub_layer_hrd_params[i], hrd_parameters->cpb_cnt_minus1[i], hrd_parameters->sub_pic_hrd_params_present_flag);
     }
     return 0; 
 }
@@ -443,7 +444,7 @@ static void vps_vui_bsp_hrd_params(GetBitContext *gb, AVCodecContext *avctx, HEV
             }
         }
         Bsp_Hrd_Params->num_sub_layer_hrd_minus1[i] = get_ue_golomb_long(gb);
-        decode_hrd(gb, avctx, &Bsp_Hrd_Params->HrdParam[i], Bsp_Hrd_Params->cprms_add_present_flag[i], vps->vps_max_sub_layers );
+        decode_hrd_parameters(gb, &Bsp_Hrd_Params->HrdParam[i], Bsp_Hrd_Params->cprms_add_present_flag[i], vps->vps_max_sub_layers -1);
     }
 	if( (vps->vps_num_hrd_parameters + Bsp_Hrd_Params->vps_num_add_hrd_params) > 0 )
         for( h = 1; h < Hevc_VPS_Ext->NumOutputLayerSets; h++ ) {
@@ -541,7 +542,7 @@ static void Video_Signal_Info (GetBitContext *gb, VideoSignalInfo *video_signal_
 
 static void parse_vps_vui(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps) {
     int i,j;
-    VPSVUI *vps_vui     = &vps->vps_ext.VpsVui;
+    VPSVUIParameters *vps_vui     = &vps->vps_ext.vui_parameters;
 
     vps_vui->cross_layer_pic_type_aligned_flag  = get_bits1(gb);
     if (!vps_vui->cross_layer_pic_type_aligned_flag) {
@@ -1142,7 +1143,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
             if (i) {
                 common_inf_present = get_bits1(gb);
             }
-            decode_hrd(gb, avctx, &vps->HrdParam, common_inf_present, vps->vps_max_sub_layers -1);
+            decode_hrd_parameters(gb, &vps->HrdParam, common_inf_present, vps->vps_max_sub_layers -1);
         }
     }
     vps->vps_extension_flag = get_bits1(gb);
@@ -1307,7 +1308,7 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
         }
         vui->vui_hrd_parameters_present_flag = get_bits1(gb);
         if (vui->vui_hrd_parameters_present_flag)
-            decode_hrd(gb, avctx, &sps->HrdParam, vui->vui_hrd_parameters_present_flag, sps->sps_max_sub_layers -1 );
+            decode_hrd_parameters(gb, &sps->HrdParam, vui->vui_hrd_parameters_present_flag, sps->sps_max_sub_layers -1 );
     }
 
     vui->bitstream_restriction_flag = get_bits1(gb);
