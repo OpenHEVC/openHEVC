@@ -24,7 +24,6 @@
  */
 
 #include "libavutil/imgutils.h"
-#include "libavutil/internal.h"
 #include "golomb.h"
 #include "hevc_data.h"
 #include "hevc_ps.h"
@@ -249,8 +248,6 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
     ptl->tier_flag     = get_bits1(gb);
     ptl->profile_idc   = get_bits(gb, 5);
 
-
-    //TODO: Add handled profiles
     if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN)
         av_log(avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
     else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_10)
@@ -259,6 +256,14 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
         av_log(avctx, AV_LOG_DEBUG, "Main Still Picture profile bitstream\n");
     else if (ptl->profile_idc == FF_PROFILE_HEVC_REXT)
         av_log(avctx, AV_LOG_DEBUG, "Range Extension profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_HIGHTHROUGHPUTREXT)
+        av_log(avctx, AV_LOG_DEBUG, "Highthroughput Range Extension profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_MULTIVIEWMAIN)
+        av_log(avctx, AV_LOG_DEBUG, "Mutiview Main profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_SCALABLEMAIN)
+        av_log(avctx, AV_LOG_DEBUG, "Scalable Main profile bitstream\n");
+    else if (ptl->profile_idc == FF_PROFILE_HEVC_SCALABLEMAIN10)
+        av_log(avctx, AV_LOG_DEBUG, "Scalable Main 10 profile bitstream\n");
     else
         av_log(avctx, AV_LOG_WARNING, "Unknown HEVC profile: %d\n", ptl->profile_idc);
 
