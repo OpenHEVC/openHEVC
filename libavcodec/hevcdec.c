@@ -395,8 +395,8 @@ static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
         num = vps->vps_num_units_in_tick;
         den = vps->vps_time_scale;
     } else if (sps->vui.vui_timing_info_present_flag) {
-        num = sps->vui.vui_num_units_in_tick;
-        den = sps->vui.vui_time_scale;
+        num = sps->vui.vui_timing_info.vui_num_units_in_tick;
+        den = sps->vui.vui_timing_info.vui_time_scale;
     }
 
     if (num != 0 && den != 0)

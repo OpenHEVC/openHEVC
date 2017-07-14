@@ -1176,26 +1176,27 @@ err:
     return AVERROR_INVALIDDATA;
 }
 
-static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
+//TODO directly give in vui instead of SPS? do we need avctx?
+static void parse_vui_parameters(GetBitContext *gb, AVCodecContext *avctx,
                        int apply_defdispwin, HEVCSPS *sps)
 {
-    VUI *vui          = &sps->vui;
-    GetBitContext backup;
-    int sar_present, alt = 0;
+    HEVCVUI *vui          = &sps->vui;
+    GetBitContext backup;//?Don't really understand what  is done here
+    int  alt = 0;
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding VUI\n");
 
-    sar_present = get_bits1(gb);
-    if (sar_present) {
-        uint8_t sar_idx = get_bits(gb, 8);
-        if (sar_idx < FF_ARRAY_ELEMS(vui_sar))
-            vui->sar = vui_sar[sar_idx];
-        else if (sar_idx == 255) {
+    vui->aspect_ratio_info_present_flag = get_bits1(gb);
+    if (vui->aspect_ratio_info_present_flag) {
+        vui->aspect_ratio_idc = get_bits(gb, 8);
+        if (vui->aspect_ratio_idc < FF_ARRAY_ELEMS(vui_sar))
+            vui->sar = vui_sar[vui->aspect_ratio_idc];
+        else if (vui->aspect_ratio_idc == 255) {
             vui->sar.num = get_bits(gb, 16);
             vui->sar.den = get_bits(gb, 16);
         } else
             av_log(avctx, AV_LOG_WARNING,
-                   "Unknown SAR index: %u.\n", sar_idx);
+                   "Unknown SAR index: %u.\n", vui->aspect_ratio_idc);
     }
 
     vui->overscan_info_present_flag = get_bits1(gb);
@@ -1208,13 +1209,14 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
         vui->video_format                    = get_bits(gb, 3);
         vui->video_full_range_flag           = get_bits1(gb);
         vui->colour_description_present_flag = get_bits1(gb);
-        if (vui->video_full_range_flag && sps->pix_fmt == AV_PIX_FMT_YUV420P)
-            sps->pix_fmt = AV_PIX_FMT_YUVJ420P;
+
         if (vui->colour_description_present_flag) {
             vui->colour_primaries        = 9; get_bits(gb, 8);
             vui->transfer_characteristic = 2; get_bits(gb, 8);
             vui->matrix_coeffs           = 2; get_bits(gb, 8);
 
+            //FIXME this is specific to ffmpeg it may over write some values
+            // we don't want to change
             // Set invalid values to "unspecified"
             if (vui->colour_primaries >= AVCOL_PRI_NB)
                 vui->colour_primaries = AVCOL_PRI_UNSPECIFIED;
@@ -1223,6 +1225,7 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
             if (vui->matrix_coeffs >= AVCOL_SPC_NB)
                 vui->matrix_coeffs = AVCOL_SPC_UNSPECIFIED;
             if (vui->matrix_coeffs == AVCOL_SPC_RGB) {
+                // FIXME sps->pix_fmt should be set outside of this scope
                 switch (sps->pix_fmt) {
                 case AV_PIX_FMT_YUV444P:
                     sps->pix_fmt = AV_PIX_FMT_GBRP;
@@ -1236,7 +1239,10 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
                 }
             }
         }
+        if (vui->video_full_range_flag && sps->pix_fmt == AV_PIX_FMT_YUV420P)
+            sps->pix_fmt = AV_PIX_FMT_YUVJ420P;
     }
+
 
     vui->chroma_loc_info_present_flag = get_bits1(gb);
     if (vui->chroma_loc_info_present_flag) {
@@ -1244,10 +1250,11 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
         vui->chroma_sample_loc_type_bottom_field = get_ue_golomb_long(gb);
     }
 
-    vui->neutra_chroma_indication_flag = get_bits1(gb);
+    vui->neutral_chroma_indication_flag = get_bits1(gb);
     vui->field_seq_flag                = get_bits1(gb);
     vui->frame_field_info_present_flag = get_bits1(gb);
 
+    //FIXME: I don't understand the reason for this check yet
     if (get_bits_left(gb) >= 68 && show_bits_long(gb, 21) == 0x100000) {
         vui->default_display_window_flag = 0;
         av_log(avctx, AV_LOG_WARNING, "Invalid default display window\n");
@@ -1257,6 +1264,7 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
     memcpy(&backup, gb, sizeof(backup));
 
     if (vui->default_display_window_flag) {
+        //FIXME: I don't understand the reason we change the window size here
         int vert_mult  = 1 + (sps->chroma_format_idc < 2);
         int horiz_mult = 1 + (sps->chroma_format_idc < 3);
         vui->def_disp_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;
@@ -1284,6 +1292,7 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
     vui->vui_timing_info_present_flag = get_bits1(gb);
 
     if (vui->vui_timing_info_present_flag) {
+        //FIXME: we may be able to discard this test.
         if( get_bits_left(gb) < 66) {
             // The alternate syntax seem to have timing info located
             // at where def_disp_win is normally located
@@ -1294,35 +1303,33 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
             memcpy(gb, &backup, sizeof(backup));
             alt = 1;
         }
-        vui->vui_num_units_in_tick               = get_bits_long(gb, 32);
-        vui->vui_time_scale                      = get_bits_long(gb, 32);
+        vui->vui_timing_info.vui_num_units_in_tick = get_bits_long(gb, 32);
+        vui->vui_timing_info.vui_time_scale        = get_bits_long(gb, 32);
         if (alt) {
             av_log(avctx, AV_LOG_INFO, "Retry got %i/%i fps\n",
-                   vui->vui_time_scale, vui->vui_num_units_in_tick);
+                   vui->vui_timing_info.vui_time_scale, vui->vui_timing_info.vui_num_units_in_tick);
         }
-        vui->vui_poc_proportional_to_timing_flag = get_bits1(gb);
 
-
-        if (vui->vui_poc_proportional_to_timing_flag) {
-            vui->vui_num_ticks_poc_diff_one_minus1 = get_ue_golomb_long(gb);
+        vui->vui_timing_info.vui_poc_proportional_to_timing_flag = get_bits1(gb);
+        if (vui->vui_timing_info.vui_poc_proportional_to_timing_flag) {
+            vui->vui_timing_info.vui_num_ticks_poc_diff_one_minus1 = get_ue_golomb_long(gb);
         }
-        vui->vui_hrd_parameters_present_flag = get_bits1(gb);
-        if (vui->vui_hrd_parameters_present_flag)
-            decode_hrd_parameters(gb, &sps->HrdParam, vui->vui_hrd_parameters_present_flag, sps->sps_max_sub_layers -1 );
+        vui->vui_timing_info.vui_hrd_parameters_present_flag = get_bits1(gb);
+        if (vui->vui_timing_info.vui_hrd_parameters_present_flag)
+            //FIXME: hrd parameters are related to vui more than sps
+            decode_hrd_parameters(gb, &vui->vui_timing_info.HrdParam, vui->vui_timing_info.vui_hrd_parameters_present_flag, sps->sps_max_sub_layers -1 );
     }
 
     vui->bitstream_restriction_flag = get_bits1(gb);
     if (vui->bitstream_restriction_flag) {
-        vui->tiles_fixed_structure_flag              = get_bits1(gb);
-        vui->motion_vectors_over_pic_boundaries_flag = get_bits1(gb);
-        vui->restricted_ref_pic_lists_flag           = get_bits1(gb);
-        vui->min_spatial_segmentation_idc            = get_ue_golomb_long(gb);
-        vui->max_bytes_per_pic_denom                 = get_ue_golomb_long(gb);
-        vui->max_bits_per_min_cu_denom               = get_ue_golomb_long(gb);
-        vui->log2_max_mv_length_horizontal           = get_ue_golomb_long(gb);
-        vui->log2_max_mv_length_vertical             = get_ue_golomb_long(gb);
-
-
+        vui->bitstream_restriction.tiles_fixed_structure_flag              = get_bits1(gb);
+        vui->bitstream_restriction.motion_vectors_over_pic_boundaries_flag = get_bits1(gb);
+        vui->bitstream_restriction.restricted_ref_pic_lists_flag           = get_bits1(gb);
+        vui->bitstream_restriction.min_spatial_segmentation_idc            = get_ue_golomb_long(gb);
+        vui->bitstream_restriction.max_bytes_per_pic_denom                 = get_ue_golomb_long(gb);
+        vui->bitstream_restriction.max_bits_per_min_cu_denom               = get_ue_golomb_long(gb);
+        vui->bitstream_restriction.log2_max_mv_length_horizontal           = get_ue_golomb_long(gb);
+        vui->bitstream_restriction.log2_max_mv_length_vertical             = get_ue_golomb_long(gb);
     }
 }
 
@@ -1868,7 +1875,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
 
     if (sps->vui_parameters_present_flag)
-        decode_vui(gb, avctx, apply_defdispwin, sps);
+        parse_vui_parameters(gb, avctx, apply_defdispwin, sps);
 
 #if COM16_C806_EMT
     sps->use_intra_emt = get_bits1(gb);

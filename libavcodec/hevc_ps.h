@@ -240,49 +240,6 @@ typedef struct HEVCWindow {
     int bottom_offset;
 } HEVCWindow;
 
-typedef struct VUI {
-    AVRational sar;
-
-    int overscan_info_present_flag;
-    int overscan_appropriate_flag;
-
-    int video_signal_type_present_flag;
-    int video_format;
-    int video_full_range_flag;
-    int colour_description_present_flag;
-    uint8_t colour_primaries;
-    uint8_t transfer_characteristic;
-    uint8_t matrix_coeffs;
-
-    int chroma_loc_info_present_flag;
-    int chroma_sample_loc_type_top_field;
-    int chroma_sample_loc_type_bottom_field;
-    int neutra_chroma_indication_flag;
-
-    int field_seq_flag;
-    int frame_field_info_present_flag;
-
-    int default_display_window_flag;
-    HEVCWindow def_disp_win;
-
-    int vui_timing_info_present_flag;
-    uint32_t vui_num_units_in_tick;
-    uint32_t vui_time_scale;
-    int vui_poc_proportional_to_timing_flag;
-    int vui_num_ticks_poc_diff_one_minus1;
-    int vui_hrd_parameters_present_flag;
-
-    int bitstream_restriction_flag;
-    int tiles_fixed_structure_flag;
-    int motion_vectors_over_pic_boundaries_flag;
-    int restricted_ref_pic_lists_flag;
-    int min_spatial_segmentation_idc;
-    int max_bytes_per_pic_denom;
-    int max_bits_per_min_cu_denom;
-    int log2_max_mv_length_horizontal;
-    int log2_max_mv_length_vertical;
-} VUI;
-
 typedef struct PTLCommon {
     uint8_t profile_space;
     uint8_t tier_flag;
@@ -437,6 +394,61 @@ typedef struct HRDParameters {
     
     SubLayerHRDParams sub_layer_hrd_params[16];
 } HRDParameters;
+
+typedef struct HEVCVUI {
+    uint8_t aspect_ratio_info_present_flag;
+    uint8_t aspect_ratio_idc;
+    //would be clearer with width and height instead of num den
+    AVRational sar;
+
+    uint8_t overscan_info_present_flag;
+    uint8_t overscan_appropriate_flag;
+
+    uint8_t video_signal_type_present_flag;
+    uint8_t video_format;
+    uint8_t video_full_range_flag;
+
+    uint8_t colour_description_present_flag;
+    uint8_t colour_primaries;
+    uint8_t transfer_characteristic;
+    uint8_t matrix_coeffs;
+
+    uint8_t chroma_loc_info_present_flag;
+    unsigned int chroma_sample_loc_type_top_field;
+    unsigned int chroma_sample_loc_type_bottom_field;
+
+    uint8_t neutral_chroma_indication_flag;
+    uint8_t frame_field_info_present_flag;
+    uint8_t field_seq_flag;
+
+    uint8_t default_display_window_flag;
+    HEVCWindow def_disp_win;
+
+    uint8_t vui_timing_info_present_flag;
+    struct {
+        uint32_t vui_num_units_in_tick;
+        uint32_t vui_time_scale;
+        uint8_t  vui_poc_proportional_to_timing_flag;
+        unsigned int vui_num_ticks_poc_diff_one_minus1;// TODO minus1 +1
+        uint8_t  vui_hrd_parameters_present_flag;
+        //TODO add HRDParams
+        HRDParameters HrdParam;
+    }vui_timing_info;
+
+
+    uint8_t bitstream_restriction_flag;
+    //TODO add bitstream restriction structure
+    struct {
+        uint8_t tiles_fixed_structure_flag;
+        uint8_t motion_vectors_over_pic_boundaries_flag;
+        uint8_t restricted_ref_pic_lists_flag;
+        unsigned int min_spatial_segmentation_idc;
+        unsigned int max_bytes_per_pic_denom;
+        unsigned int max_bits_per_min_cu_denom;
+        unsigned int log2_max_mv_length_horizontal;
+        unsigned int log2_max_mv_length_vertical;
+    } bitstream_restriction;
+} HEVCVUI;
 
 typedef struct VideoSignalInfo {
     uint8_t video_vps_format;                
@@ -701,7 +713,7 @@ typedef struct HEVCSPS {
     uint8_t  sps_strong_intra_smoothing_enable_flag;
 
     uint8_t vui_parameters_present_flag;
-    VUI vui;
+    HEVCVUI vui;
 
     uint8_t  sps_extension_present_flag;
     uint8_t  sps_range_extension_flag;
@@ -756,7 +768,7 @@ typedef struct HEVCSPS {
 
     int qp_bd_offset;
 
-    HRDParameters HrdParam;
+
 
     //FIXME scaled_ref_layer is used but not set ???
     HEVCWindow scaled_ref_layer_window[MAX_LAYERS];
