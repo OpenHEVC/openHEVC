@@ -508,7 +508,7 @@ typedef struct VPSVUIParameters {
     uint8_t min_horizontal_ctu_offset_plus1[16][16];
 
     uint8_t vps_vui_bsp_hrd_present_flag;
-    BspHrdParams Bsp_Hrd_Params;
+    BspHrdParams bsp_hrd_params;
     uint8_t base_layer_parameter_set_compatibility_flag[16]; 
 } VPSVUIParameters;
 

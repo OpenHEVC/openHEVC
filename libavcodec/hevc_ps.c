@@ -430,7 +430,7 @@ static int decode_hrd_parameters(GetBitContext *gb, HRDParameters *hrd_parameter
 }
 
 
-static void vps_vui_bsp_hrd_params(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps, BspHrdParams *Bsp_Hrd_Params) {
+static void parse_vps_vui_bsp_hrd_params(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps, BspHrdParams *Bsp_Hrd_Params) {
     int i, k, h, j, r, t;
     HEVCVPSExt  *Hevc_VPS_Ext = &vps->vps_ext;
     //GetBitContext   *gb             = &s->HEVClc->gb;  
@@ -531,7 +531,7 @@ static void parse_rep_format(RepFormat *rep_format, GetBitContext *gb) {
     }
 }
 
-static void Video_Signal_Info (GetBitContext *gb, VideoSignalInfo *video_signal_info ) {
+static void parse_video_signal_info (GetBitContext *gb, VideoSignalInfo *video_signal_info ) {
 	video_signal_info->video_vps_format                = get_bits(gb, 3);
 	video_signal_info->video_full_range_vps_flag       = get_bits1(gb);
     video_signal_info->color_primaries_vps             = get_bits(gb, 8);
@@ -548,18 +548,32 @@ static void parse_vps_vui(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps
     if (!vps_vui->cross_layer_pic_type_aligned_flag) {
         vps_vui->cross_layer_irap_aligned_flag  = get_bits1(gb);
     } else {
+        //FIXME default init
         vps_vui->cross_layer_irap_aligned_flag  = 1;
         vps_vui->all_layers_idr_aligned_flag    = get_bits1(gb);
     }
     vps_vui->bit_rate_present_vps_flag = get_bits1(gb);
     vps_vui->pic_rate_present_vps_flag = get_bits1(gb);
 
-
-	if( vps_vui->bit_rate_present_vps_flag  ||  vps_vui->pic_rate_present_vps_flag )
-		for( i = vps->vps_base_layer_internal_flag ? 0 : 1; i < vps->vps_num_layer_sets; i++ )
+    if( vps_vui->bit_rate_present_vps_flag  ||  vps_vui->pic_rate_present_vps_flag ){
+        //FIXME vps->vps_num_layer_sets is not exactly correct see NumLayerSets
+        //NumLayerSets = vps_num_layer_sets_minus1 + 1 + num_add_layer_sets
+        //
+        for( i = vps->vps_base_layer_internal_flag ? 0 : 1; i < vps->vps_num_layer_sets; i++ ){
+            //FIXME vps->vps_num_layer_sets is not exactly correct see MaxSubLayersInLayerSetMinus1[]
+            /*The variable MaxSubLayersInLayerSetMinus1[ i ] is derived as follows:
+            for( i = 0; i < NumLayerSets; i++ ) {
+            maxSlMinus1 = 0
+            for( k = 0; k < NumLayersInIdList[ i ]; k++ ) {
+            lId = LayerSetLayerIdList[ i ][ k ]
+            (F-10)
+            maxSlMinus1 = Max( maxSLMinus1, sub_layers_vps_max_minus1[ LayerIdxInVps[ lId ] ] )
+            }
+            MaxSubLayersInLayerSetMinus1[ i ] = maxSlMinus1
+            }*/
             for( j = 0; j  <=  vps->vps_ext.sub_layers_vps_max_minus1[i]; j++ ) {
-				if( vps_vui->bit_rate_present_vps_flag ) {
-					vps_vui->bit_rate_present_flag[i][j] = get_bits1(gb);
+                if( vps_vui->bit_rate_present_vps_flag ) {
+                    vps_vui->bit_rate_present_flag[i][j] = get_bits1(gb);
                 }
                 if( vps_vui->pic_rate_present_vps_flag ) {
                     vps_vui->pic_rate_present_flag[i][j] = get_bits1(gb);
@@ -568,50 +582,94 @@ static void parse_vps_vui(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps
                     vps_vui->avg_bit_rate[i][j] = get_bits(gb, 16);
                     vps_vui->max_bit_rate[i][j] = get_bits(gb, 16);
                 }
-				if( vps_vui->pic_rate_present_flag[i][j] ) {
-					vps_vui->constant_pic_rate_idc[i][j] = get_bits(gb, 2);
-					vps_vui->avg_pic_rate[i][j]          = get_bits(gb, 16);
-				}
-			}
+                if( vps_vui->pic_rate_present_flag[i][j] ) {
+                    vps_vui->constant_pic_rate_idc[i][j] = get_bits(gb, 2);
+                    vps_vui->avg_pic_rate[i][j]          = get_bits(gb, 16);
+                }
+            }
+        }
+    }
+
     vps_vui->video_signal_info_idx_present_flag = get_bits1(gb);
 	if( vps_vui->video_signal_info_idx_present_flag ) {
 		vps_vui->vps_num_video_signal_info_minus1 = get_bits(gb, 4);
     }
-    for( i = 0; i  <=  vps_vui->vps_num_video_signal_info_minus1; i++ )
-        Video_Signal_Info(gb, &vps_vui->video_signal_info[i] );
-    if( vps_vui->video_signal_info_idx_present_flag  &&  vps_vui->vps_num_video_signal_info_minus1 > 0 )
+
+    for( i = 0; i  <=  vps_vui->vps_num_video_signal_info_minus1; i++ ){
+        parse_video_signal_info(gb, &vps_vui->video_signal_info[i] );
+    }
+
+    if( vps_vui->video_signal_info_idx_present_flag  &&  vps_vui->vps_num_video_signal_info_minus1 > 0 ){
+        //FIXME vps->vps_max_layers is not exactly correct see MaxLayersMinus1
+        //MaxLayersMinus1 = Min( 62, vps_max_layers_minus1)
         for( i = vps->vps_base_layer_internal_flag ? 0 : 1; i  <  vps->vps_max_layers; i++ ) {
-            vps_vui->vps_video_signal_info_idx[ i ]  = get_bits(gb, 4);
+            vps_vui->vps_video_signal_info_idx[i]  = get_bits(gb, 4);
         }
+    }
+
     vps_vui->tiles_not_in_use_flag           = get_bits1(gb);
     if( !vps_vui->tiles_not_in_use_flag ) {
+        //FIXME vps->vps_max_layers is not exactly correct see MaxLayersMinus1
         for( i = vps->vps_base_layer_internal_flag ? 0 : 1; i  <  vps->vps_max_layers; i++ ) {
-            vps_vui->tiles_in_use_flag[ i ]  = get_bits1(gb);
-            if( vps_vui->tiles_in_use_flag[ i ] ) {
-                vps_vui->loop_filter_not_across_tiles_flag[ i ] = get_bits1(gb);
+            vps_vui->tiles_in_use_flag[i]  = get_bits1(gb);
+            if( vps_vui->tiles_in_use_flag[i] ) {
+                vps_vui->loop_filter_not_across_tiles_flag[i] = get_bits1(gb);
             }
         }
-        for( i = vps->vps_base_layer_internal_flag ? 1 : 2; i < vps->vps_max_layers; i++ )
-            for( j = 0; j < vps->vps_ext.num_direct_ref_layers[ vps->vps_ext.layer_id_in_nuh[ i ] ]; j++ ) {
+        //FIXME vps->vps_max_layers is not exactly correct see MaxLayersMinus1
+        for( i = vps->vps_base_layer_internal_flag ? 1 : 2; i < vps->vps_max_layers; i++ ){
+            for( j = 0; j < vps->vps_ext.num_direct_ref_layers[vps->vps_ext.layer_id_in_nuh[i]]; j++ ) {
                 int layerIdx = vps->vps_ext.layer_id_in_vps[vps->vps_ext.ref_layer_id[vps->vps_ext.layer_id_in_nuh[i]][j]];
-                if( vps_vui->tiles_in_use_flag[ i ]  &&  vps_vui->tiles_in_use_flag[ layerIdx ] ) {
-                    vps_vui->tile_boundaries_aligned_flag[ i ][ j ] = get_bits1(gb);
+                if( vps_vui->tiles_in_use_flag[i]  &&  vps_vui->tiles_in_use_flag[layerIdx] ) {
+                    vps_vui->tile_boundaries_aligned_flag[i][j] = get_bits1(gb);
                 }
             }
-    }
-	vps_vui->wpp_not_in_use_flag = get_bits1(gb);
-    if( !vps_vui->wpp_not_in_use_flag )
-		for( i = vps->vps_base_layer_internal_flag ? 0 : 1; i  < vps->vps_max_layers; i++ ) {
-            vps_vui->wpp_in_use_flag[ i ]   = get_bits1(gb);
         }
+    }
+
+	vps_vui->wpp_not_in_use_flag = get_bits1(gb);
+    if( !vps_vui->wpp_not_in_use_flag ){
+		for( i = vps->vps_base_layer_internal_flag ? 0 : 1; i  < vps->vps_max_layers; i++ ) {
+            vps_vui->wpp_in_use_flag[i]   = get_bits1(gb);
+        }
+    }
+
     vps_vui->single_layer_for_non_irap_flag = get_bits1(gb);
     vps_vui->higher_layer_irap_skip_flag    = get_bits1(gb);
     vps_vui->ilp_restricted_ref_layers_flag = get_bits1(gb);
 
-    if( vps_vui->ilp_restricted_ref_layers_flag )
-        for( i = 1; i  < vps->vps_max_layers; i++ )
-            for( j = 0; j < vps->vps_ext.num_direct_ref_layers[ vps->vps_ext.layer_id_in_nuh[ i ] ]; j++ )
-                if( vps->vps_base_layer_internal_flag || vps->vps_ext.ref_layer_id[ vps->vps_ext.layer_id_in_nuh[i] ][j ] > 0 ) {
+    if( vps_vui->ilp_restricted_ref_layers_flag ){
+        //FIXME vps->vps_max_layers is not exactly correct see MaxLayersMinus1
+        for( i = 1; i  < vps->vps_max_layers; i++ ){
+            //FIXME vps->num_direct_ref_layers is not exactly correct see NumDirectRefLayers
+            /*The variables NumDirectRefLayers[ iNuhLId ], IdDirectRefLayer[ iNuhLId ][ d ], NumRefLayers[ iNuhLId ],
+            IdRefLayer[ iNuhLId ][ r ], NumPredictedLayers[ iNuhLId ] and IdPredictedLayer[ iNuhLId ][ p ] are derived as follows:
+            for( i = 0; i <= MaxLayersMinus1; i++ ) {
+            iNuhLId = layer_id_in_nuh[ i ]
+            for( j = 0, d = 0, r = 0, p = 0; j <= MaxLayersMinus1; j++ ) {
+            jNuhLid = layer_id_in_nuh[ j ]
+            if( direct_dependency_flag[ i ][ j ] )
+            IdDirectRefLayer[ iNuhLId ][ d++ ] = jNuhLid
+            if( DependencyFlag[ i ][ j ] )
+            IdRefLayer[ iNuhLId ][ r++ ] = jNuhLid
+            if( DependencyFlag[ j ][ i ] )
+            IdPredictedLayer[ iNuhLId ][ p++ ] = jNuhLid
+            }
+            NumDirectRefLayers[ iNuhLId ] = d
+            NumRefLayers[ iNuhLId ] = r
+            NumPredictedLayers[ iNuhLId ] = p
+The variable DependencyFlag[ i ][ j ] is derived as follows:
+for( i = 0; i <= MaxLayersMinus1; i++ )
+for( j = 0; j <= MaxLayersMinus1; j++ ) {
+DependencyFlag[ i ][ j ] = direct_dependency_flag[ i ][ j ]
+for( k = 0; k < i; k++ )
+if( direct_dependency_flag[ i ][ k ] && DependencyFlag[ k ][ j ] )
+DependencyFlag[ i ][ j ] = 1
+}
+}*/
+            for( j = 0; j < vps->vps_ext.num_direct_ref_layers[vps->vps_ext.layer_id_in_nuh[i]]; j++ ){
+                //FIXME vps->ref_layer_id is not exactly correct see IdDirectRefLayer
+                if( vps->vps_base_layer_internal_flag || vps->vps_ext.ref_layer_id[vps->vps_ext.layer_id_in_nuh[i] ][j ] > 0 ) {
                     vps_vui->min_spatial_segment_offset_plus1[i][j] = get_ue_golomb_long(gb);
                     if( vps_vui->min_spatial_segment_offset_plus1[i][j] > 0 ) {
                         vps_vui->ctu_based_offset_enabled_flag[i][j] = get_bits1(gb);
@@ -620,14 +678,22 @@ static void parse_vps_vui(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps
                         }
                     }
                 }
-    vps_vui->vps_vui_bsp_hrd_present_flag = get_bits1(gb);
-    if( vps_vui->vps_vui_bsp_hrd_present_flag )
-        vps_vui_bsp_hrd_params(gb, avctx, vps, & vps_vui->Bsp_Hrd_Params );
-
-    for(i = 1; i < vps->vps_max_layers; i++ )
-        if( vps->vps_ext.num_direct_ref_layers[ vps->vps_ext.layer_id_in_nuh[ i ] ]  ==  0 ) {
-            vps_vui->base_layer_parameter_set_compatibility_flag[ i ] = get_bits1(gb);
+            }
         }
+    }
+
+    vps_vui->vps_vui_bsp_hrd_present_flag = get_bits1(gb);
+    if( vps_vui->vps_vui_bsp_hrd_present_flag ){
+        parse_vps_vui_bsp_hrd_params(gb, avctx, vps, &vps_vui->bsp_hrd_params );
+    }
+
+    //FIXME vps->vps_max_layers is not exactly correct see MaxLayersMinus1
+    for(i = 1; i < vps->vps_max_layers; i++ ){
+        //FIXME vps->num_direct_ref_layers is not exactly correct see NumDirectRefLayers
+        if( vps->vps_ext.num_direct_ref_layers[vps->vps_ext.layer_id_in_nuh[i]]  ==  0 ) {
+            vps_vui->base_layer_parameter_set_compatibility_flag[i] = get_bits1(gb);
+        }
+    }
 }
 static void calculateMaxSLInLayerSets(HEVCVPS *vps) {
     int k, lId, lsIdx, maxSLMinus1;
@@ -1045,9 +1111,9 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
 
     vps->vps_base_layer_internal_flag  = get_bits(gb, 1);
     vps->vps_base_layer_available_flag = get_bits(gb, 1);
+    //FIXME this is not really standard this is a hack for non HEVC base
     vps->vps_nonHEVCBaseLayerFlag = (vps->vps_base_layer_available_flag && !vps->vps_base_layer_internal_flag);
     
-
     vps->vps_max_layers               = get_bits(gb, 6) + 1;
     vps->vps_max_sub_layers           = get_bits(gb, 3) + 1;
     vps->vps_temporal_id_nesting_flag = get_bits1(gb);
