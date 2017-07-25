@@ -522,61 +522,57 @@ typedef struct DPBSize {
 
 typedef struct HEVCVPSExt {
     PTL   ptl[16];
-    uint8_t     splitting_flag;
-    uint8_t     scalability_mask[16];
-    uint8_t     dimension_id_len[16];
-    uint8_t     nuh_layer_id_present_flag;
-    uint8_t     layer_id_in_nuh[16];
-    uint8_t     layer_id_in_vps[16];
-    uint8_t     dimension_id[16][16];
-    uint8_t     view_id_len;
-    uint8_t     view_id_val[16];
-    uint8_t     direct_dependency_flag[16][16];
-    uint8_t     direct_dependency_type[16][16];
+
+    uint8_t splitting_flag;
+    uint8_t scalability_mask_flag[16];
+    uint8_t dimension_id_len[16];
+    uint8_t vps_nuh_layer_id_present_flag;
+    uint8_t layer_id_in_nuh[64];
+    uint8_t layer_id_in_vps[16];//TODO remove from structure
+    uint8_t dimension_id[16][16];
+    uint8_t view_id_len;
+    uint8_t view_id_val[16];
+    uint8_t direct_dependency_flag[16][16];
+    uint16_t num_add_layer_sets;
+    uint8_t highest_layer_idx[16][16];
+    uint8_t vps_sub_layers_max_minus1_present_flag;
+    uint8_t sub_layers_vps_max_minus1[16];
+    uint8_t max_tid_ref_present_flag;
+    uint8_t max_tid_il_ref_pics_plus1[16][16];
+    uint8_t default_ref_layers_active_flag;
+    uint8_t vps_num_profile_tier_level_minus1;
+    uint8_t vps_profile_present_flag[16];
+    uint8_t num_add_olss;
+    uint8_t default_output_layer_idc;
+    uint8_t layer_set_idx_for_ols[16];
+    uint8_t output_layer_flag[16][16];
+    uint8_t profile_tier_level_idx[16][16];
+    uint8_t alt_output_layer_flag[16];
+    uint8_t vps_num_rep_formats_minus1;
+    uint8_t rep_format_idx_present_flag;
+    uint8_t vps_rep_format_idx[16];
+    uint8_t max_one_active_ref_layer_flag;
+    uint8_t vps_poc_lsb_aligned_flag;
+    uint8_t poc_lsb_not_present_flag[16];
+    uint8_t direct_dep_type_len_minus2;
+    uint8_t direct_dependency_all_layers_flag;
+    uint8_t direct_dependency_all_layers_type;
+    uint8_t direct_dependency_type[16][16];
+
+    uint8_t vps_non_vui_extension_length;
+    uint8_t vps_non_vui_extension_data_byte;
+    uint8_t vps_vui_present_flag;
+    uint8_t vps_vui_alignment_bit_equal_to_one;
+
+    //TODO remove those 3 and use appropriate and add appropriate structure into
+    //HEVCMultiLayerContext
     uint8_t     ref_layer_id[16][16];
-    uint8_t     NumIndependentLayers; 
-    uint8_t     num_add_layer_sets;
-    uint8_t     tree_partition_layerIdList[16][16];
-    uint8_t     num_Layers_in_tree_partition[16];
-    uint8_t     num_Layers_in_id_list[16];
-    uint8_t     OlsHighestOutputLayerId[16]; 
-    uint8_t     layer_SetLayer_IdList[16][16];
     uint8_t     num_direct_ref_layers[16];
     uint8_t     number_ref_layers[16][16];
-    uint8_t     num_predicted_layers[16]; 
-    uint8_t     predicted_layerId[16][16];
-    uint8_t     recursive_refLayer_flag[16][16];
-    uint8_t     highest_layer_idx[16][16];
-    uint8_t     vps_sub_layers_max_minus1_present_flag;
-    uint8_t     sub_layers_vps_max_minus1[16];
-    uint8_t     max_sub_layers_in_layer_set_minus1[16];
-    uint8_t     max_tid_ref_present_flag;
-    uint8_t     max_tid_il_ref_pics_plus1[16][16];
-    uint8_t     all_ref_layers_active_flag; // uint8_t     default_ref_layers_active_flag;
-    uint8_t     vps_num_profile_tier_level_minus1;
-    uint8_t     vps_profile_present_flag[16];
-    uint8_t     necessary_Layer_Flag[16][16];
-    uint8_t     num_add_olss;
-    uint8_t     NumOutputLayerSets; 
-    uint8_t     default_output_layer_idc;
-    uint8_t     layer_set_idx_for_ols[16];
-    uint8_t     output_layer_flag[16][16];
-    uint8_t     profile_tier_level_idx[16][16];
-    uint8_t     alt_output_layer_flag[16];
-    uint8_t     vps_num_rep_formats_minus1;
-    RepFormat   rep_format[16];
-    uint8_t     rep_format_idx_present_flag;
-    uint8_t     vps_rep_format_idx[16];
-    uint8_t     max_one_active_ref_layer_flag;
-    uint8_t     vps_poc_lsb_aligned_flag;
-    uint8_t     poc_lsb_not_present_flag[16];
-    DPBSize     DPB_Size; 
-    uint8_t     direct_dep_type_len_minus2;
-    uint8_t     default_direct_dependency_type_flag;
-    uint8_t     default_direct_dependency_type; 
-    /*uint8_t     direct_dependency_all_layers_flag;
-    uint8_t     direct_dependency_all_layers_type;*/
-    VPSVUIParameters vui_parameters;
+
+    RepFormat         rep_format[16];
+    DPBSize           dpb_size;
+    VPSVUIParameters  vui_parameters;
 } HEVCVPSExt;
 
 typedef struct HEVCVPS {
@@ -617,7 +613,7 @@ typedef struct HEVCVPS {
     //FIXME vps_extension2_flag etc..
     int         vps_extension_flag;
     HEVCVPSExt  vps_ext;
-    AVBufferRef *nal;
+    //AVBufferRef *nal;
 } HEVCVPS;
 
 typedef struct ScalingList {
