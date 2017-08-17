@@ -855,8 +855,14 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
         }
     }
     dependency_flag = av_malloc(max_layers * sizeof(unsigned int*));
+
+    if(!dependency_flag)
+        return AVERROR(ENOMEM);
+
     for(i = 0; i < max_layers; i++){
         dependency_flag[i] = av_mallocz(max_layers * sizeof(unsigned int));
+        if(!dependency_flag[i])
+            return AVERROR(ENOMEM);
     }
 
     for( i = 0; i < max_layers; i++ ){
@@ -878,10 +884,15 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
     id_ref_layer        = av_malloc(64 * sizeof(unsigned int*)); //max_layer ID in nuh
     id_predicted_layer  = av_malloc(64 * sizeof(unsigned int*)); //max_layer ID in nuh
 
+    if(!id_direct_ref_layer || !id_ref_layer || !id_predicted_layer)
+        return AVERROR(ENOMEM);
+
     for( i = 0; i < 64; i++ ) {
         id_direct_ref_layer[i] = av_mallocz(max_layers * sizeof(unsigned int));
         id_ref_layer[i]        = av_mallocz(max_layers * sizeof(unsigned int));
         id_predicted_layer[i]  = av_mallocz(max_layers * sizeof(unsigned int));
+        if(!id_direct_ref_layer[i] || !id_ref_layer[i] || !id_predicted_layer[i])
+            return AVERROR(ENOMEM);
     }
 
     for( i = 0; i < max_layers; i++ ) {
@@ -906,8 +917,15 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
     range of 0 to NumIndependentLayers − 1, inclusive, and j in the range of 0 to NumLayersInTreePartition[ i ] − 1, inclusive,
     are derived as follows:*/
     tree_partition_layer_id_list = av_malloc(max_layers * sizeof(unsigned int*));
+
+    if(!tree_partition_layer_id_list)
+        return AVERROR(ENOMEM);
+
     for( i = 0; i < max_layers; i++ ){
         tree_partition_layer_id_list[i] = av_mallocz(max_layers * sizeof(unsigned int)); //FFMAX(num_predicted_layers[nuhlid])
+
+        if(!tree_partition_layer_id_list[i])
+            return AVERROR(ENOMEM);
     }
 
     int max_nuh_l_id = 0;
@@ -953,8 +971,14 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
     //TODO derive FirstAddLayerSetIdx = vps_num_layer_sets_minus1 + 1
     //LastAddLayerSetIdx = FirstAddLayerSetIdx + num_add_layer_sets − 1
     layer_set_layer_id_list    = av_malloc(num_layer_sets * sizeof(unsigned int*));
+
+    if(!layer_set_layer_id_list)
+        return AVERROR(ENOMEM);
+
     for(i = 0; i < num_layer_sets; i++){
         layer_set_layer_id_list[i]    = av_mallocz(64 * sizeof(unsigned int));
+        if(!layer_set_layer_id_list[i])
+            return AVERROR(ENOMEM);
     }
 
     num_layers_in_id_list[0] = 1;
@@ -1092,8 +1116,17 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
 
     //Check if inferred init is correct
      necessary_layer_flag = av_malloc(num_output_layer_sets * sizeof(unsigned int*));
-     for( i = 0; i < num_output_layer_sets; i++)
+
+     if(!necessary_layer_flag)
+         return AVERROR(ENOMEM);
+
+     for( i = 0; i < num_output_layer_sets; i++){
           necessary_layer_flag[i] = av_mallocz(max_layers * sizeof(unsigned int));
+
+          if(!necessary_layer_flag[i])
+              return AVERROR(ENOMEM);
+     }
+
 
     vps_ext->output_layer_flag[0][0]=1;
     //int ols_idx = 0;
