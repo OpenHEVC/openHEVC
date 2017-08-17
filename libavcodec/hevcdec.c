@@ -3606,7 +3606,7 @@ static int hevc_frame_start(HEVCContext *s)
         else//if(s->is_upsampled)
            memset (s->is_upsampled, 0, s->ps.sps->ctb_width * s->ps.sps->ctb_height);
 #endif
-       if (s->el_decoder_el_exist){
+       if (s->el_decoder_el_exist && !s->ps.vps->vps_nonHEVCBaseLayerFlag){
             ff_thread_await_il_progress(s->avctx, s->poc_id, &s->avctx->BL_frame);
         } else if(s->bl_available && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME )){
             ff_thread_await_il_progress(s->avctx, s->poc_id2, &s->avctx->BL_frame);
@@ -3677,7 +3677,7 @@ fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
-        if(s->el_decoder_el_exist)
+        if(s->el_decoder_el_exist && !s->ps.vps->vps_nonHEVCBaseLayerFlag)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if SVC_EXTENSION
         if(s->bl_available && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME ))
@@ -3994,7 +3994,7 @@ fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
-        if(s->el_decoder_el_exist)
+        if(s->el_decoder_el_exist && !s->ps.vps->vps_nonHEVCBaseLayerFlag)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if SVC_EXTENSION
         if(s->ps.vps && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
