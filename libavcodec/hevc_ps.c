@@ -1810,9 +1810,9 @@ static int sps_range_extensions(GetBitContext *gb, AVCodecContext *avctx, HEVCSP
 }
 
 //FIXME: this functions only reads one element and returns nothing
-static int sps_multilayer_extensions(GetBitContext *gb, AVCodecContext *avctx, HEVCSPS *sps)
+static inline int sps_multilayer_extensions(GetBitContext *gb, AVCodecContext *avctx, HEVCSPS *sps)
 {
-    uint8_t inter_view_mv_vert_constraint_flag = get_bits1(gb);
+    sps->inter_view_mv_vert_constraint_flag = get_bits1(gb);
     return 0;
 }
 
@@ -1827,25 +1827,26 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     int i;
     av_log(NULL, AV_LOG_TRACE, "Parsing SPS : size:%d %ld \n", gb->size_in_bits >> 3, gb->buffer_end - gb->buffer);
 
-    //FIXME: We should not need to init those since sps use allocz
     sps->v1_compatible = 1;
-    sps->chroma_format_idc = 1; //FIXME shouldn't it be passing from BL
+    sps->chroma_format_idc = 1;
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding SPS\n");
 
     sps->vps_id = get_bits(gb, 4);
 
-
+    //FIXME since we only read 4 bits, VPS id should always be valid
     if (sps->vps_id >= HEVC_MAX_VPS_COUNT) {
         av_log(avctx, AV_LOG_ERROR, "VPS id out of range: %d\n", sps->vps_id);
         return AVERROR_INVALIDDATA;
     }
 
+    //TODO the VPS shall actually exist
     if (vps_list && !vps_list[sps->vps_id]) {
         av_log(avctx, AV_LOG_ERROR, "VPS %d does not exist\n",
                sps->vps_id);
-        //return AVERROR_INVALIDDATA;
+        return AVERROR_INVALIDDATA;
     }
+
     if((HEVCVPS *) vps_list[sps->vps_id])
         vps = (HEVCVPS *) vps_list[sps->vps_id]->data;
     
@@ -1854,6 +1855,10 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         if (sps->sps_max_sub_layers > HEVC_MAX_SUB_LAYERS) {
             av_log(avctx, AV_LOG_ERROR, "sps_max_sub_layers out of range: %d\n",
                    sps->sps_max_sub_layers);
+            return AVERROR_INVALIDDATA;
+        } else if (sps->sps_max_sub_layers > vps->vps_max_sub_layers){
+            av_log(avctx, AV_LOG_ERROR, "sps_max_sub_layers_minus1 (%d) greater than vps_max_sub_layers_minus1 (%d)\n",
+                   sps->sps_max_sub_layers - 1, vps->vps_max_sub_layers - 1);
             return AVERROR_INVALIDDATA;
         }
     } else {
@@ -1867,6 +1872,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
             sps->sps_max_sub_layers = sps->sps_ext_or_max_sub_layers;
     }
 
+    //TODO move to multilayer ctx
     sps->is_multi_layer_ext_sps = ( nuh_layer_id != 0 && sps->v1_compatible == 7 );
 
     if(!sps->is_multi_layer_ext_sps) {
@@ -1875,11 +1881,9 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
             return ret;
     } else { // Not sure for this
         if (vps && sps->sps_max_sub_layers > 1)
-            //FIXME This should be done outside of SPS decoding in case the VPS is
-            //not available yet
             sps->sps_temporal_id_nesting_flag = vps->vps_temporal_id_nesting_flag;
         else
-            sps->sps_temporal_id_nesting_flag =1;
+            sps->sps_temporal_id_nesting_flag = 1;
     }
 
     sps->sps_id = *sps_id = get_ue_golomb_long(gb);
@@ -1894,14 +1898,23 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
      if(sps->is_multi_layer_ext_sps) {
          sps->update_rep_format_flag = get_bits1(gb);
+         //TODO check vps_num_rep_format > 1 if update rep_format
          if(sps->update_rep_format_flag) {
              sps->sps_rep_format_idx = get_bits(gb, 8);
+             //TODO check sps_rep_format_idx < vps_num_rep_formats
          }
-     } else
+     } else // should already be 0
          sps->update_rep_format_flag = 0;
+
+     // TODO infer  chroma_format_idc, separate_colour_plane_flag, pic_width_in_luma_samples
+     // pic_height_in_luma_samples, bit_depth_luma,bit_depth chroma conf_win
+     // derive rep_format_idx (when independant layer or nuh_layer_id > 0)
+     // (in curr pic not when parsing see set_el_parameters in hevcdec.c)
+     // because a same SPS can be used by both base and non base layer
 
     if(!sps->is_multi_layer_ext_sps) {
 
+        //TODO review base HEVC parsing
         sps->chroma_format_idc = get_ue_golomb_long(gb);
 
         if (!(sps->chroma_format_idc == 0 || sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2 || sps->chroma_format_idc == 3)) {
@@ -1920,16 +1933,15 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         if (sps->separate_colour_plane_flag)
             sps->chroma_format_idc = 0;
 
-        sps->width  = get_ue_golomb_long(gb);
-        sps->height = get_ue_golomb_long(gb);
+        sps->width  = get_ue_golomb_long(gb);//pic_width_in_luma_samples
+        sps->height = get_ue_golomb_long(gb);//pic_height_in_luma_samples
         if ((ret = av_image_check_size(sps->width,
                                        sps->height, 0, avctx)) < 0)
             return ret;
 
         sps->conformance_window_flag = get_bits1(gb);
 
-
-        if (sps->conformance_window_flag) { // pic_conformance_flag
+        if (sps->conformance_window_flag) { // FIXME why horiz and vert_mult??
 
             int vert_mult  = 1 + (sps->chroma_format_idc < 2);
             int horiz_mult = 1 + (sps->chroma_format_idc < 3);
@@ -1968,7 +1980,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
             ret = AVERROR_INVALIDDATA;
             //goto err;
         }
-
+        //FIXME this could be moved elsewhere
         switch (sps->bit_depth[CHANNEL_TYPE_CHROMA]) {
         case 8:
             if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY8;
@@ -2004,7 +2016,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                    "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10, 12 and 14 bits.\n");
             return AVERROR_PATCHWELCOME;
         }
-    } else if(vps) {
+        //TODO clean this part and move to set_el_parameters
+    } else if(vps) {//TODO check this
         RepFormat Rep;
         if (vps && sps->update_rep_format_flag)
             Rep = vps->vps_ext.rep_format[sps->sps_rep_format_idx];
@@ -2038,6 +2051,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         }
     }
 
+    //TODO use this later
     desc = av_pix_fmt_desc_get(sps->pix_fmt);
     if (!desc) {
         ret = AVERROR(EINVAL);
@@ -2046,9 +2060,10 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     sps->hshift[0] = sps->vshift[0] = 0;
     sps->hshift[2] = sps->hshift[1] = desc->log2_chroma_w;
     sps->vshift[2] = sps->vshift[1] = desc->log2_chroma_h;
-    sps->pixel_shift[CHANNEL_TYPE_LUMA] = sps->bit_depth[CHANNEL_TYPE_LUMA] > 8;
+    sps->pixel_shift[CHANNEL_TYPE_LUMA]   = sps->bit_depth[CHANNEL_TYPE_LUMA] > 8;
     sps->pixel_shift[CHANNEL_TYPE_CHROMA] = sps->bit_depth[CHANNEL_TYPE_CHROMA] > 8;
 /*end map_pix_format*/
+
     sps->log2_max_poc_lsb = get_ue_golomb_long(gb) + 4;
     if (sps->log2_max_poc_lsb > 16) {
         av_log(avctx, AV_LOG_ERROR, "log2_max_pic_order_cnt_lsb_minus4 out range: %d\n",
@@ -2069,6 +2084,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
             sps->temporal_layer[i].max_latency_increase  = get_ue_golomb_long(gb) - 1;
 
 
+            //TODO multi layer conformance for max_dec_pic_buffering
             if (sps->temporal_layer[i].max_dec_pic_buffering > HEVC_MAX_DPB_SIZE) {
                 av_log(avctx, AV_LOG_ERROR, "sps_max_dec_pic_buffering_minus1 out of range: %d\n",
                        sps->temporal_layer[i].max_dec_pic_buffering - 1);
@@ -2129,14 +2145,15 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
     sps->scaling_list_enabled_flag = get_bits1(gb);
 
-
     if (sps->scaling_list_enabled_flag) {
         if (sps->is_multi_layer_ext_sps) {
             sps->sps_infer_scaling_list_flag =  get_bits1(gb);
         }
         if (sps->sps_infer_scaling_list_flag) {
             sps->sps_scaling_list_ref_layer_id = get_bits(gb, 6);
-            sps->scaling_list_enabled_flag = 0;
+            //TODO check sps_scaling_list_ref_layer_id < 63 should be ok since 6 bits
+            //greater than zero when vps_bse_layer_internal = 0 etc
+            //sps->scaling_list_enabled_flag = 0;//TODO understand this reset
         } else {
             set_default_scaling_list_data(&sps->scaling_list);
             sps->sps_scaling_list_data_present_flag = get_bits1(gb);
@@ -2207,6 +2224,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         }
     }
 
+    //TODO what is this??
     if(nuh_layer_id > 0)
         sps->set_mfm_enabled_flag = 1;
     else
@@ -2885,7 +2903,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding PPS\n");
 
-    // Default values
+    //TODO check Default values
     pps->loop_filter_across_tiles_enabled_flag = 1;
     pps->num_tile_columns                      = 1;
     pps->num_tile_rows                         = 1;
@@ -2912,8 +2930,8 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     }
     if (!ps->sps_list[pps->sps_id]) {
         av_log(avctx, AV_LOG_ERROR, "SPS %u does not exist.\n", pps->sps_id);
-        //ret = AVERROR_INVALIDDATA;
-        //goto err;
+        ret = AVERROR_INVALIDDATA;
+        goto err;
     }
     if ((HEVCSPS *)ps->sps_list[pps->sps_id])
         sps = (HEVCSPS *)ps->sps_list[pps->sps_id]->data;
