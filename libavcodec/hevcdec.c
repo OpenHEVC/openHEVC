@@ -4085,14 +4085,14 @@ static int verify_md5(HEVCContext *s, AVFrame *frame)
         av_md5_final(s->sei.picture_hash.md5_ctx, md5);
 
         if (!memcmp(md5, s->sei.picture_hash.md5[i], 16)) {
-            av_log(s->avctx, AV_LOG_INFO, "Correct MD5 (poc: %d, plane: %d)", s->poc, i);
+            av_log(s->avctx, AV_LOG_INFO, "Correct MD5 (poc: %d, plane: %d) ", s->poc, i);
             print_md5(s->avctx, AV_LOG_INFO, md5);
             av_log   (s->avctx, AV_LOG_INFO, "\n ");
         } else {
-            av_log(s->avctx, AV_LOG_ERROR, "Incorrect MD5 (poc: %d, plane: %d)\n", s->poc, i);
+            av_log(s->avctx, AV_LOG_ERROR, "Incorrect MD5 (poc: %d, plane: %d) ", s->poc, i);
             print_md5(s->avctx, AV_LOG_ERROR, md5);
             av_log   (s->avctx, AV_LOG_ERROR, "\n ");
-            return AVERROR_INVALIDDATA;
+            //return AVERROR_INVALIDDATA;
         }
     }
     printf_ref_pic_list(s->avctx,AV_LOG_INFO,s);
