@@ -81,7 +81,7 @@
 #endif
 
 #if HEVC_ENCRYPTION
-#include "libavcodec/hevc.h"
+#include "libavcodec/hevc_ps.h"
 #endif
 
 static int init_report(const char *env);

@@ -120,7 +120,7 @@ void oh_display_display(int edge, int frame_width, int frame_height, unsigned ch
 		bmpTex1 = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);
 	}
 
-    size1 = (frame_width ) * frame_height;
+    size1 = (frame_width + 2*edge ) * frame_height;
 
     SDL_LockTexture(bmpTex1, NULL, (void **)&pixels1, &pitch1);
     memcpy(pixels1,             Y, size1  );
