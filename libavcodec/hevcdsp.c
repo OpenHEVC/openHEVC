@@ -1326,3 +1326,5 @@ int i = 0;
     if (ARCH_X86) ff_hevcdsp_init_x86(hevcdsp, bit_depth);
     if (ARCH_ARM) ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 }
+
+void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth) {};

@@ -68,14 +68,14 @@ if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 	)
 endif()
 
-if(WIN32)
-    add_definitions(
-        -Dsnprintf=avpriv_snprintf
-        -Dvsnprintf=avpriv_vsnprintf
-        -Dinline=__inline
-        -Drestrict=__restrict
-    )
-endif()
+#if(WIN32)
+    #add_definitions(
+        #-Dsnprintf=avpriv_snprintf
+        #-Dvsnprintf=avpriv_vsnprintf
+        #-Dinline=__inline
+        #-Drestrict=__restrict
+    #)
+#endif()
 
 #define asm sources
 if(NOT ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l") )
