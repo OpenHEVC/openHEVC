@@ -270,7 +270,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     }
 #endif
 
-    libOpenHevcSetDebugMode(openHevcHandle, OHEVC_LOG_INFO);
+    libOpenHevcSetDebugMode(openHevcHandle, OHEVC_LOG_TRACE);
     libOpenHevcStartDecoder(openHevcHandle);
     oh_set_crypto_mode(openHevcHandle, crypto_args);
     oh_set_cipher_mode(openHevcHandle, cipher_args);
@@ -334,9 +334,10 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 		
                 /* Write HEVC output file if any
 				 * */
-                if (fout_hevc && output_buffer!=NULL)
+                if (fout_hevc && output_buffer_size > 0)
                 {
                     fwrite(output_buffer, output_buffer_size, 1, fout_hevc);
+                    output_buffer_size = 0;
                 }
 
 			if (got_picture > 0) {
@@ -417,9 +418,6 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 		}// End of got_packet
     } //End of main loop
 
-    if(output_buffer!=NULL){
-        av_free(output_buffer);
-    }
 
     time = oh_timer_getTimeMs()/1000.0;
     oh_display_close();

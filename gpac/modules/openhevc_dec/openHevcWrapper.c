@@ -239,13 +239,26 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
         int got_picture = 0;
 
         openHevcContext                = openHevcContexts->wraper[i];
-        openHevcContext->c->quality_id = openHevcContexts->active_layer;
+        AVCodecContext *avctx = openHevcContext->c;
+
+        avctx->quality_id = openHevcContexts->active_layer;
 
         if (i <= openHevcContexts->active_layer) {
             openHevcContext->avpkt.size = au_len;
             openHevcContext->avpkt.data = buff;
             openHevcContext->avpkt.pts  = pts;
-            err                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
+#if HEVC_CIPHERING
+            if (avctx->output_buffer != NULL){
+                av_free(avctx->output_buffer);
+                avctx->output_buffer = NULL;
+                avctx->output_buffer_size = 0;
+            }
+            if (au_len){
+                avctx->output_buffer = (uint8_t *)av_malloc(au_len);
+                avctx->output_buffer_size = au_len;
+            }           
+#endif
+            err                         = avcodec_decode_video2( avctx, openHevcContext->picture,
                                                                  &got_picture, &openHevcContext->avpkt);
             ret |= (got_picture << i);
         }
@@ -255,11 +268,11 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
 #if HEVC_CIPHERING
         if(openHevcContext->avpkt.size){
             if (output_buffer_size != NULL)
-                *output_buffer_size = openHevcContext->c->output_buffer_size;
+                *output_buffer_size = avctx->output_buffer_size;
             else
                 fprintf(stderr, "error : buffer_size is NULL");
             if (output_buffer != NULL)
-                *output_buffer = openHevcContext->c->output_buffer;
+                *output_buffer = avctx->output_buffer;
         }
 #endif
     }

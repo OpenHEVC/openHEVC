@@ -4195,7 +4195,31 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     if ((s->temporal_id > s->temporal_layer_id) || (nal->nuh_layer_id > s->quality_layer_id))
         return 0;
 
+#if HEVC_CIPHERING
+    kvz_bitstream_writebyte(cabac->stream, 0x00);
+    kvz_bitstream_writebyte(cabac->stream, 0x00);
+    kvz_bitstream_writebyte(cabac->stream, 0x01);
+    
+    int i;
+    switch(nal->type){
+    case HEVC_NAL_VPS:
+    case HEVC_NAL_SPS:
+    case HEVC_NAL_PPS:
+    case HEVC_NAL_SEI_PREFIX:
+    case HEVC_NAL_SEI_SUFFIX:
+        for(i=0;i<nal->size;i++){
+            kvz_bitstream_put(cabac->stream, nal->data[i], 8);
+        }
+        break;
+    default:
+        kvz_bitstream_put(cabac->stream, 0, 1);
+        kvz_bitstream_put(cabac->stream, nal->type, 6);
+        kvz_bitstream_put(cabac->stream, nal->nuh_layer_id, 6);
+        kvz_bitstream_put(cabac->stream, nal->temporal_id + 1, 3);
+    }
 
+
+#endif
 
     switch (s->nal_unit_type) {
     case HEVC_NAL_VPS:
@@ -4436,8 +4460,10 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length, uint
 #endif
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
+
     ret = ff_h2645_packet_split(&s->pkt, buf, length, s->avctx, s->is_nalff,
                                 s->nal_length_size, s->avctx->codec_id, 1);
+
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Error splitting the input into NAL units.\n");
@@ -4475,40 +4501,43 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length, uint
 
     /* decode the NAL units */
     for (i = 0; i < s->pkt.nb_nals; i++) {
-        ret = decode_nal_unit(s, &s->pkt.nals[i]);
+        H2645NAL *cur_nal = &s->pkt.nals[i];
+
+        ret = decode_nal_unit(s, cur_nal);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
             goto fail;
         }
 #if HEVC_CIPHERING 
-//TODO : write the start code
-        /*if(size_start_code){
-            if (*data_length < packet_length + size_start_code[i])
-                packet_buffer = av_realloc(packet_buffer, packet_length + size_start_code[i]);
-            memcpy(packet_buffer + packet_length, nal_start_code[i], size_start_code[i]);
-            packet_length += size_start_code[i];
-        }*/
-
-        int len_out = kvz_bitstream_tell(lc->ccc.stream) / 8;
+//printf("nal size = %d\n",cur_nal->size);
         
-        uint64_t written = 0;
-        kvz_data_chunk *data_out = kvz_bitstream_take_chunks(lc->ccc.stream);
-        kvz_data_chunk *to_free = data_out;
-        if (output_buffer != NULL)
-            while (data_out != NULL)
-            {
-                int len_chuck = data_out->len;
-                assert(written + len_chuck <= len_out);
-                if (data_length < *output_buffer_length + len_chuck)
-                    *output_buffer = av_realloc(*output_buffer, output_size + len_chuck);
-                memcpy(*output_buffer + output_size, data_out->data, len_chuck);
-                output_size += len_chuck;
+        // if (data_length < output_size + 3)
+        //     packet_buffer = av_realloc(packet_buffer, packet_length + 3);
+        // memcpy(packet_buffer + output_size++, 0x00, 1);
+        // memcpy(packet_buffer + output_size++, 0x00, 1);
+        // memcpy(packet_buffer + output_size++, 0x01, 1);
+    
 
-                written += len_chuck;
-                data_out = data_out->next;
-            }
-        kvz_bitstream_free_chunks(to_free);
+    int len_out = kvz_bitstream_tell(lc->ccc.stream) / 8;
+
+uint64_t written = 0;
+kvz_data_chunk *data_out = kvz_bitstream_take_chunks(lc->ccc.stream);
+kvz_data_chunk *to_free = data_out;
+if (output_buffer != NULL)
+    while (data_out != NULL)
+    {
+        int len_chuck = data_out->len;
+        assert(written + len_chuck <= len_out);
+        if (data_length < *output_buffer_length + len_chuck)
+            *output_buffer = av_realloc(*output_buffer, output_size + len_chuck);
+        memcpy(*output_buffer + output_size, data_out->data, len_chuck);
+        output_size += len_chuck;
+
+        written += len_chuck;
+        data_out = data_out->next;
+    }
+kvz_bitstream_free_chunks(to_free);
 
 #endif // HEVC_CIPHERING 
     }
@@ -4925,14 +4954,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         *got_output = ret;
         return 0;
     }
-#if HEVC_CIPHERING
-    if(avctx->output_buffer_size != 0){
-        av_free(avctx->output_buffer);
-        avctx->output_buffer_size = 0;
-    }
-    avctx->output_buffer = (uint8_t*)av_malloc(avpkt->size);
-    avctx->output_buffer_size = avpkt->size;
-#endif
+
 
     s->ref = NULL;
 #if PARALLEL_SLICE
