@@ -55,26 +55,34 @@ static int quality_layer_id;
 static int num_frames;
 static float frame_rate;
 static int crypto_args;
+static int cipher_args;
 static uint8_t *crypto_key = NULL;
+static char *hevc_output_file;
 
 static const OptionDef options[] = {
-	{ "h", OPT_EXIT, {.func_arg = show_help}, "show help" },
-	{ "-help", OPT_EXIT, {.func_arg = show_help}, "show help" },
-    { "c", OPT_BOOL, { &no_md5 }, "no check md5" },
-    { "f", HAS_ARG | OPT_INT, { &thread_type }, "1-frame, 2-slice, 4-frameslice", "thread type" },
-    { "i", HAS_ARG | OPT_STRING, { &input_file }, "Input file", "file" },
-    { "n", OPT_BOOL, { &no_display }, "no display" },
-    { "o", HAS_ARG | OPT_STRING, { &output_file }, "Output file", "file" },
-    { "p", HAS_ARG | OPT_INT, { &nb_pthreads }, "Pthreads number", "n" },
-    { "t", HAS_ARG | OPT_INT, { &temporal_layer_id }, "Temporal layer id", "id" },
-    { "l", HAS_ARG | OPT_INT, { &quality_layer_id }, "Quality layer id", "id" },
-    { "s", HAS_ARG | OPT_INT, { &num_frames }, "Stop after \"n\" frames", "n" },
-    { "r", HAS_ARG | OPT_FLOAT, { &frame_rate }, "Frame rate (FPS)", "n"},
-    { "v", OPT_BOOL, { &h264_flags }, "Input is a h264 bitstream" },
-    { "e", HAS_ARG | OPT_STRING, { &enhance_file }, "Enhanced layer file (with AVC base)", "file" },
-    {"-crypto", HAS_ARG | OPT_ENUM, {&crypto_args}, " Encryption configuration","params"},
-    {"-key", HAS_ARG | OPT_DATA, {&crypto_key},"overload default cipher key", "(16 bytes)"},
-    { NULL, },
+    {"h", OPT_EXIT, {.func_arg = show_help}, "show help"},
+    {"-help", OPT_EXIT, {.func_arg = show_help}, "show help"},
+    {"c", OPT_BOOL, {&no_md5}, "no check md5"},
+    {"f", HAS_ARG | OPT_INT, {&thread_type}, "1-frame, 2-slice, 4-frameslice", "thread type"},
+    {"i", HAS_ARG | OPT_STRING, {&input_file}, "Input file", "file"},
+    {"n", OPT_BOOL, {&no_display}, "no display"},
+    {"o", HAS_ARG | OPT_STRING, {&output_file}, "Output file", "file"},
+    {"p", HAS_ARG | OPT_INT, {&nb_pthreads}, "Pthreads number", "n"},
+    {"t", HAS_ARG | OPT_INT, {&temporal_layer_id}, "Temporal layer id", "id"},
+    {"l", HAS_ARG | OPT_INT, {&quality_layer_id}, "Quality layer id", "id"},
+    {"s", HAS_ARG | OPT_INT, {&num_frames}, "Stop after \"n\" frames", "n"},
+    {"r", HAS_ARG | OPT_FLOAT, {&frame_rate}, "Frame rate (FPS)", "n"},
+    {"v", OPT_BOOL, {&h264_flags}, "Input is a h264 bitstream"},
+    {"e", HAS_ARG | OPT_STRING, {&enhance_file}, "Enhanced layer file (with AVC base)", "file"},
+#if HEVC_ENCRYPTION
+    {"-crypto", HAS_ARG | OPT_ENUM, {&crypto_args}, " Encryption configuration", "params"},
+    {"-key", HAS_ARG | OPT_DATA, {&crypto_key}, "overload default cipher key", "(16 bytes)"},
+#endif 
+#if 1//HEVC_CIPHERING
+    {"-cipher", HAS_ARG | OPT_ENUM, {&cipher_args}, "ciphering configuration", "params"},
+    {"-hevc-output", HAS_ARG | OPT_STRING, {&hevc_output_file}, "HEVC output file", "file"},
+#endif
+    { NULL,},
 };
 
 static void show_usage(void)
@@ -143,6 +151,20 @@ typedef struct Info {
     int size;
 } Info;
 
+/**
+* \brief Open a file for writing.
+*
+* If the file is "-", stdout is used.
+*
+* \param filename  name of the file to open or "-"
+* \return          the opened file or NULL if opening fails
+*/
+static FILE* open_output_file(const char* filename)
+{
+    if (!strcmp(filename, "-")) return stdout;
+    return fopen(filename, "wb");
+}
+
 static void video_decode_example(const char *filename,const char *enh_filename)
 {
 	AVFormatContext *pFormatCtx[2];
@@ -153,6 +175,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     int AVC_BL_only = AVC_BL && !split_layers;
 
     FILE *fout  = NULL;
+    FILE *fout_hevc  = NULL;
     int width   = -1;
     int height  = -1;
     int nbFrame = 0;
@@ -164,6 +187,9 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     float time  = 0.0;
     int video_stream_idx;
     char output_file2[256];
+
+    uint8_t* output_buffer = NULL;
+    int output_buffer_size = 0;
 
     OpenHevc_Frame     openHevcFrame;
     OpenHevc_Frame_cpy openHevcFrameCpy;
@@ -233,9 +259,21 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
     }
 
+//open output file if hevc is being reencoded
+#if HEVC_CIPHERING
+    if(hevc_output_file){
+        fout_hevc = open_output_file(hevc_output_file);
+        if (fout_hevc == NULL) {
+            fprintf(stderr, "Could not open output file, shutting down!\n");
+            exit(1);
+        }
+    }
+#endif
+
     libOpenHevcSetDebugMode(openHevcHandle, OHEVC_LOG_INFO);
     libOpenHevcStartDecoder(openHevcHandle);
-    oh_set_crypto_mode(openHevcHandle,crypto_args);
+    oh_set_crypto_mode(openHevcHandle, crypto_args);
+    oh_set_cipher_mode(openHevcHandle, cipher_args);
     if(crypto_key!=NULL)
         oh_set_crypto_key(openHevcHandle, crypto_key);
 
@@ -281,17 +319,26 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 	    if (stop_dec == 0 && av_read_frame(pFormatCtx[0], &packet[0])<0)
 	        stop_dec = 1;
 
-		if ((packet[0].stream_index == video_stream_idx && (!split_layers || packet[1].stream_index == video_stream_idx)) //
-				|| stop_dec == 1 || stop_dec2==1) {
-		/* Try to decode corresponding packets into AVFrames
-		 * */
-			if(split_layers)
-                got_picture = libOpenShvcDecode2(openHevcHandle, packet[0].data, packet[1].data, !stop_dec ? packet[0].size : 0 ,!stop_dec2 ? packet[1].size : 0, packet[0].pts, packet[1].pts);
-			else
-				got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts);
+            if ((packet[0].stream_index == video_stream_idx && (!split_layers || packet[1].stream_index == video_stream_idx)) //
+                || stop_dec == 1 || stop_dec2 == 1)
+            {
+                /* Try to decode corresponding packets into AVFrames
+		    * */   
+                if (split_layers)
+                    got_picture = libOpenShvcDecode2(openHevcHandle, packet[0].data, packet[1].data, !stop_dec ? packet[0].size : 0, !stop_dec2 ? packet[1].size : 0, packet[0].pts, packet[1].pts);
+                else
+                    got_picture = libOpenHevcDecode(openHevcHandle, packet[0].data, !stop_dec ? packet[0].size : 0, packet[0].pts, &output_buffer, &output_buffer_size );
 
-			/* Output and display handling
+                /* Output and display handling
 			 * */
+		
+                /* Write HEVC output file if any
+				 * */
+                if (fout_hevc && output_buffer!=NULL)
+                {
+                    fwrite(output_buffer, output_buffer_size, 1, fout_hevc);
+                }
+
 			if (got_picture > 0) {
 				fflush(stdout);
 				/* Frames parameters update (intended for first computation or in case of frame resizing)
@@ -370,8 +417,16 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 		}// End of got_packet
     } //End of main loop
 
+    if(output_buffer!=NULL){
+        av_free(output_buffer);
+    }
+
     time = oh_timer_getTimeMs()/1000.0;
     oh_display_close();
+
+    if (fout_hevc){
+        fclose(fout_hevc);
+    }
 
     if (fout) {
         fclose(fout);
@@ -405,6 +460,7 @@ int main(int argc, char *argv[]) {
     quality_layer_id  = 0; // Base layer
     num_frames        = 0;
     frame_rate        = 0;
+    hevc_output_file  = NULL;
 
     program           = argv[0];
 

@@ -31,6 +31,10 @@
 #include "get_bits.h"
 #include "hevc.h"
 
+#if HEVC_CIPHERING
+#include "libkvz/bitstream.h"
+#endif
+
 #ifdef SVC_EXTENSION
 enum {
     DEFAULT=0,
@@ -953,6 +957,11 @@ typedef struct CodingTree {
 
 int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
                                   ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header);
+
+#if HEVC_CIPHERING
+int ff_hevc_decode_short_term_rps_decrypt(bitstream_t *stream, GetBitContext *gb, AVCodecContext *avctx,
+                                          ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header);
+#endif
 
 /**
  * Parse the SPS from the bitstream into the provided HEVCSPS struct.

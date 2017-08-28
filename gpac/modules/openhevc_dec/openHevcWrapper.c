@@ -218,7 +218,7 @@ int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle)
     return 1;
 }
 
-int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts)
+int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts, uint8_t** output_buffer, int* output_buffer_size)
 {
     int i, max_layer;
     int ret = 0;
@@ -243,7 +243,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
 
         if (i <= openHevcContexts->active_layer) {
             openHevcContext->avpkt.size = au_len;
-            openHevcContext->avpkt.data = (uint8_t *) buff;
+            openHevcContext->avpkt.data = buff;
             openHevcContext->avpkt.pts  = pts;
             err                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
                                                                  &got_picture, &openHevcContext->avpkt);
@@ -251,6 +251,17 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
         }
         if(i < openHevcContexts->active_layer)
             openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
+
+#if HEVC_CIPHERING
+        if(openHevcContext->avpkt.size){
+            if (output_buffer_size != NULL)
+                *output_buffer_size = openHevcContext->c->output_buffer_size;
+            else
+                fprintf(stderr, "error : buffer_size is NULL");
+            if (output_buffer != NULL)
+                *output_buffer = openHevcContext->c->output_buffer;
+        }
+#endif
     }
 
     openHevcContexts->got_picture_mask = ret;
@@ -262,6 +273,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
 
     return ret;
 }
+
 
 /**
  * Pass the packets to the corresponding decoders and loop over running decoders untill one of them
@@ -961,4 +973,17 @@ void oh_set_crypto_key(OpenHevc_Handle openHevcHandle, uint8_t *val)
         av_opt_set_bin(openHevcContext->c->priv_data, "crypto-key", val, 16*sizeof(uint8_t), 0);
     }
 
+}
+
+void oh_set_cipher_mode(OpenHevc_Handle openHevcHandle, int val)
+{
+    OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *)openHevcHandle;
+    OpenHevcWrapperContext *openHevcContext;
+    int i;
+
+    for (i = 0; i < openHevcContexts->nb_decoders; i++)
+    {
+        openHevcContext = openHevcContexts->wraper[i];
+        av_opt_set_int(openHevcContext->c->priv_data, "cipher-param", val, 0);
+    }
 }

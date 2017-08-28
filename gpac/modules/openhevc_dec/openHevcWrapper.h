@@ -88,7 +88,7 @@ OpenHevc_Handle libOpenShvcInit(int nb_pthreads, int thread_type);
 OpenHevc_Handle libOpenH264Init(int nb_pthreads, int thread_type);
 
 int libOpenHevcStartDecoder(OpenHevc_Handle openHevcHandle);
-int  libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int nal_len, int64_t pts);
+int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff, int au_len, int64_t pts, uint8_t** output_buffer, int* output_buffer_size);
 //int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], const int stop_dec, const int stop_dec2);
 int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff, const unsigned char *buff2, int nal_len, int nal_len2, int64_t pts, int64_t pts2);
 
@@ -245,6 +245,7 @@ void libOpenHevcFlushSVC(OpenHevc_Handle openHevcHandle, int decoderId);
 
 void oh_set_crypto_mode(OpenHevc_Handle openHevcHandle, int val);
 void oh_set_crypto_key(OpenHevc_Handle openHevcHandle, uint8_t *val);
+void oh_set_cipher_mode(OpenHevc_Handle openHevcHandle, int val);
 
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 

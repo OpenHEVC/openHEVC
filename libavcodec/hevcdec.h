@@ -27,6 +27,8 @@
 
 #include "libavutil/buffer.h"
 
+#include "libkvz/cabac.h"
+
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "cabac.h"
@@ -404,6 +406,11 @@ typedef struct HEVCLocalContext {
     GetBitContext gb;
     CABACContext cc;
 
+#if HEVC_CIPHERING 
+    bitstream_t stream;
+    cabac_data_t ccc; //cabac context for hevc crypto (decryption/encryption)
+#endif //HEVC_CIPHERING 
+
     int8_t qp_y;
     int8_t curr_qp_y;
 
@@ -433,8 +440,9 @@ typedef struct HEVCLocalContext {
 
     int ctb_tile_rs;
 #if HEVC_ENCRYPTION
-    Crypto_Handle       dbs_g;
+    Crypto_Handle dbs_g;
     uint32_t prev_pos;
+    uint32_t ciphering_prev_pos;
 #endif
     int ct_depth;
     CodingUnit cu;
@@ -612,6 +620,7 @@ typedef struct HEVCContext {
     int bl_available;
 #if HEVC_ENCRYPTION
     uint8_t encrypt_params;
+    uint8_t ciphering_params;
     uint8_t *encrypt_init_val;
     int encrypt_init_val_length;
     AVRational last_click_pos;
@@ -687,6 +696,12 @@ int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth);
 int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth);
 int ff_hevc_log2_res_scale_abs(HEVCContext *s, int idx);
 int ff_hevc_res_scale_sign_flag(HEVCContext *s, int idx);
+
+#if HEVC_CIPHERING 
+void ff_hevc_prev_intra_luma_pred_flag_encode(HEVCContext *s, int bin);
+void ff_hevc_mpm_idx_encode(HEVCContext *s, int val);
+void ff_hevc_rem_intra_luma_pred_mode_encode(HEVCContext *s, int value);
+#endif
 
 /**
  * Get the number of candidate references for the current frame.
