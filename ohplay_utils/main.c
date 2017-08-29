@@ -263,6 +263,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 #if HEVC_CIPHERING
     if(hevc_output_file){
         fout_hevc = open_output_file(hevc_output_file);
+        fputc(0, fout_hevc);  // Add first 0x00 byte in the output file
         if (fout_hevc == NULL) {
             fprintf(stderr, "Could not open output file, shutting down!\n");
             exit(1);
@@ -340,82 +341,82 @@ static void video_decode_example(const char *filename,const char *enh_filename)
                     output_buffer_size = 0;
                 }
 
-			if (got_picture > 0) {
-				fflush(stdout);
-				/* Frames parameters update (intended for first computation or in case of frame resizing)
-				* */
-				libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
+                if (got_picture > 0) {
+                    fflush(stdout);
+                    /* Frames parameters update (intended for first computation or in case of frame resizing)
+                    * */
+                    libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
 
-				if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
-				    width  = openHevcFrame.frameInfo.nWidth;
-				    height = openHevcFrame.frameInfo.nHeight;
+                    if ((width != openHevcFrame.frameInfo.nWidth) || (height != openHevcFrame.frameInfo.nHeight)) {
+                        width  = openHevcFrame.frameInfo.nWidth;
+                        height = openHevcFrame.frameInfo.nHeight;
 
-					if (fout)
-					   fclose(fout);
+                        if (fout)
+                        fclose(fout);
 
-					if (output_file) {
-						sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
-						fout = fopen(output_file2, "wb");
-					}
+                        if (output_file) {
+                            sprintf(output_file2, "%s_%dx%d.yuv", output_file, width, height);
+                            fout = fopen(output_file2, "wb");
+                        }
 
-					if (fout) {
-						libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
-						int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
-						if(openHevcFrameCpy.pvY) {
-							free(openHevcFrameCpy.pvY);
-							free(openHevcFrameCpy.pvU);
-							free(openHevcFrameCpy.pvV);
-						}
-						openHevcFrameCpy.pvY = calloc (openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, sizeof(unsigned char));
-						openHevcFrameCpy.pvU = calloc (openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
-						openHevcFrameCpy.pvV = calloc (openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
-					}
-				}// end of frame resizing
+                        if (fout) {
+                            libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrameCpy.frameInfo);
+                            int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
+                            if(openHevcFrameCpy.pvY) {
+                                free(openHevcFrameCpy.pvY);
+                                free(openHevcFrameCpy.pvU);
+                                free(openHevcFrameCpy.pvV);
+                            }
+                            openHevcFrameCpy.pvY = calloc (openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, sizeof(unsigned char));
+                            openHevcFrameCpy.pvU = calloc (openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
+                            openHevcFrameCpy.pvV = calloc (openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, sizeof(unsigned char));
+                        }
+                    }// end of frame resizing
 
-				if (frame_rate > 0) {
-					oh_timer_delay();
-				}
+                    if (frame_rate > 0) {
+                        oh_timer_delay();
+                    }
 
-				if (!no_display) {
-					libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
-					libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
-					oh_display_display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
-                                (uint8_t *)openHevcFrame.pvY, (uint8_t *)openHevcFrame.pvU, (uint8_t *)openHevcFrame.pvV);
-				}
+                    if (!no_display) {
+                        libOpenHevcGetOutput(openHevcHandle, 1, &openHevcFrame);
+                        libOpenHevcGetPictureInfo(openHevcHandle, &openHevcFrame.frameInfo);
+                        oh_display_display((openHevcFrame.frameInfo.nYPitch - openHevcFrame.frameInfo.nWidth)/2, openHevcFrame.frameInfo.nWidth, openHevcFrame.frameInfo.nHeight,
+                                    (uint8_t *)openHevcFrame.pvY, (uint8_t *)openHevcFrame.pvU, (uint8_t *)openHevcFrame.pvV);
+                    }
 
-				/* Write output file if any
-				 * */
-				if (fout) {
-					int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
-					libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
-					fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, fout);
-					fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
-					fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
-				}
-				nbFrame++;
+                    /* Write output file if any
+                    * */
+                    if (fout) {
+                        int format = openHevcFrameCpy.frameInfo.chromat_format == YUV420 ? 1 : 0;
+                        libOpenHevcGetOutputCpy(openHevcHandle, 1, &openHevcFrameCpy);
+                        fwrite( openHevcFrameCpy.pvY , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nYPitch * openHevcFrameCpy.frameInfo.nHeight, fout);
+                        fwrite( openHevcFrameCpy.pvU , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nUPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
+                        fwrite( openHevcFrameCpy.pvV , sizeof(uint8_t) , openHevcFrameCpy.frameInfo.nVPitch * openHevcFrameCpy.frameInfo.nHeight >> format, fout);
+                    }
+                    nbFrame++;
 
-				if (nbFrame == num_frames)// we already decoded all the frames we wanted to
-					stop = 1;
+                    if (nbFrame == num_frames)// we already decoded all the frames we wanted to
+                        stop = 1;
 
-			}
-			if(split_layers){
-				if (stop_dec2 > 0 && stop_dec > 0 && nbFrame && !got_picture)
-					stop=1;
-			} else if (stop_dec > 0 && nbFrame && !got_picture){
-		        stop = 1;
-			}
-            av_packet_unref(&packet[0]);
-            if(split_layers)
-                av_packet_unref(&packet[1]);
-
-		    if (stop_dec >= nb_pthreads && nbFrame == 0) {
+                }
+                if(split_layers){
+                    if (stop_dec2 > 0 && stop_dec > 0 && nbFrame && !got_picture)
+                        stop=1;
+                } else if (stop_dec > 0 && nbFrame && !got_picture){
+                    stop = 1;
+                }
                 av_packet_unref(&packet[0]);
-			    if(split_layers)
+                if(split_layers)
                     av_packet_unref(&packet[1]);
-			    fprintf(stderr, "Error when reading first frame\n");
-				exit(1);
-			}
-		}// End of got_packet
+
+                if (stop_dec >= nb_pthreads && nbFrame == 0) {
+                    av_packet_unref(&packet[0]);
+                    if(split_layers)
+                        av_packet_unref(&packet[1]);
+                    fprintf(stderr, "Error when reading first frame\n");
+                    exit(1);
+                }
+            }// End of got_packet
     } //End of main loop
 
 
