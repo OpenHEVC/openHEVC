@@ -140,6 +140,8 @@ void oh_display_display(int edge, int frame_width, int frame_height, unsigned ch
     SDL_RenderPresent(pRenderer1);
 }
 
+void oh_display_display2(OpenHevc_Frame *oh_frame){}
+
 void oh_display_close(){
     SDL_Quit();
 }
