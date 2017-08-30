@@ -3335,6 +3335,9 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         ctb_addr_ts++;
         s->HEVClc->ctb_tile_rs++;
         ff_hevc_save_states(s, ctb_addr_ts);
+#if HEVC_CIPHERING
+        cabac_save_encoder_states(s, ctb_addr_ts);
+#endif
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
     }
 
@@ -3397,6 +3400,9 @@ static int hls_decode_entry_slice(HEVCContext *s)
         }
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
+#if HEVC_CIPHERING
+        cabac_save_encoder_states(s, ctb_addr_ts);
+#endif
 #if PARALLEL_FILTERS
         ff_hevc_hls_filters_slice(s, x_ctb, y_ctb, ctb_size);
 #endif
@@ -3462,6 +3468,9 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         s->HEVClc->ctb_tile_rs++;
 
         ff_hevc_save_states(s, ctb_addr_ts);
+#if HEVC_CIPHERING
+        cabac_save_encoder_states(s, ctb_addr_ts);
+#endif
         ff_thread_report_progress2(s->avctx, ctb_row, thread, 1);
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
 
@@ -3703,6 +3712,9 @@ static int hls_decode_entry_wpp_in_tiles(AVCodecContext *avctxt, int *input_ctb_
         index_in_row++;
 
         ff_hevc_save_states(s, ctb_addr_ts);
+#if HEVC_CIPHERING
+        cabac_save_encoder_states(s, ctb_addr_ts);
+#endif
         ff_thread_report_progress2(s->avctx, ctb_row, thread, 1);
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
 
@@ -5100,6 +5112,11 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 //    av_freep(&s->skipped_bytes_nal);
 //    av_freep(&s->skipped_bytes_pos_nal);
     av_freep(&s->cabac_state);
+
+#if HEVC_CIPHERING
+    av_freep(&s->cabac_encoder_states);
+#endif
+
 #if !ACTIVE_PU_UPSAMPLING
     av_frame_unref(s->Ref_color_mapped_frame);
     av_frame_free(&s->Ref_color_mapped_frame);
@@ -5184,6 +5201,13 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->cabac_state = av_malloc(HEVC_CONTEXTS);
     if (!s->cabac_state)
         goto fail;
+
+#if HEVC_CIPHERING
+    s->cabac_encoder_states = av_malloc(sizeof(s->HEVClc->ccc.ctx));
+    if(!s->cabac_encoder_states)
+        goto fail;
+#endif
+
 #if HEVC_ENCRYPTION
     s->HEVClc->dbs_g = CreateC();
     s->HEVClc->prev_pos = 0;
