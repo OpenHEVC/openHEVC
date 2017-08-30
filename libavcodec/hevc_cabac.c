@@ -697,14 +697,6 @@ int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
                 if (!s->ps.pps->tiles_enabled_flag ||
                     (s->ps.pps->tile_id[ctb_addr_ts] == s->ps.pps->tile_id[ctb_addr_ts - 1])) {
                     int bin = get_cabac_terminate(&s->HEVClc->cc);
-#if HEVC_CIPHERING 
-                    HEVCLocalContext *lc = s->HEVClc;
-                    cabac_data_t *const cabac = &lc->ccc;
-                    kvz_cabac_encode_bin_trm(cabac, (bin)?1:0);
-                    kvz_cabac_finish(cabac);
-                    kvz_bitstream_add_rbsp_trailing_bits(cabac->stream);
-                    //printf("terminate!!!\n");
-#endif
 
                     if (s->threads_number == 1){
                         cabac_reinit(s->HEVClc);
