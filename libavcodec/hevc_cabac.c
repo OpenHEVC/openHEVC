@@ -500,7 +500,6 @@ static const int emt_intra_mode2tr_idx_h[35] =
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
 {
-    //printf("ff_hevc_save_states\n");
     if (s->ps.pps->entropy_coding_sync_enabled_flag &&
         (s->HEVClc->ctb_tile_rs % s->ps.pps->tile_width[ctb_addr_ts-1] == 2 ||
          (s->ps.pps->tile_width[ctb_addr_ts-1] == 2 &&
@@ -511,19 +510,16 @@ void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts)
 
 static void load_states(HEVCContext *s)
 {
-    //printf("load_states\n");
     memcpy(s->HEVClc->cabac_state, s->cabac_state, HEVC_CONTEXTS);
 }
 
 static void cabac_reinit(HEVCLocalContext *lc)
 {
-    //printf("cabac_reinit\n");
     skip_bytes(&lc->cc, 0);
 }
 
 static int cabac_init_decoder(HEVCContext *s)
 {
-    //printf("cabac_init_decoder\n");
     GetBitContext *gb = &s->HEVClc->gb;
     skip_bits(gb, 1);
     align_get_bits(gb);
@@ -532,59 +528,44 @@ static int cabac_init_decoder(HEVCContext *s)
                           (get_bits_left(gb) + 7) / 8);
 }
 
+#if HEVC_CIPHERING
 static void cabac_init_encoder(HEVCContext *s)
 {
-    //printf("cabac_init_encoder\n");
-#if HEVC_CIPHERING 
     HEVCLocalContext *lc = s->HEVClc;
     cabac_data_t *const cabac = &lc->ccc;
-    //kvz_bitstream_add_rbsp_trailing_bits(cabac->stream);
-    // kvz_bitstream_put(cabac->stream, 1, 1);
-    // kvz_bitstream_align_zero(cabac->stream);
     kvz_cabac_start(&s->HEVClc->ccc);
-    //kvz_init_cabac_contexts(&lc->ccc, s->sh.slice_qp, s->sh.slice_type);
-#else
-    fprintf(stderr,"Error : encryption not compiled in\n");
-#endif
 }
+#endif
 
+#if HEVC_CIPHERING
 static void cabac_reinit_encoder(HEVCContext *s)
 {
-    //printf("cabac_reinit_encoder\n");
-#if HEVC_CIPHERING
     HEVCLocalContext *lc = s->HEVClc;
     cabac_data_t *const cabac = &lc->ccc;
     kvz_cabac_encode_bin_trm(cabac, 1);
     kvz_cabac_finish(cabac);
     kvz_bitstream_put(cabac->stream, 1, 1);
     kvz_bitstream_align_zero(cabac->stream);
-    //kvz_bitstream_add_rbsp_trailing_bits(cabac->stream);
     kvz_cabac_start(&s->HEVClc->ccc);
     kvz_init_cabac_contexts(&lc->ccc, s->sh.slice_qp, s->sh.slice_type);
-#else
-    fprintf(stderr, "Error : encryption not compiled in\n");
-#endif
 }
+#endif
 
-static void cabac_init_encoder_states(HEVCContext *s){
-    //printf("cabac_init_encoder_states\n");
 #if HEVC_CIPHERING
+static void cabac_init_encoder_states(HEVCContext *s)
+{
     HEVCLocalContext *lc = s->HEVClc;
     kvz_init_cabac_contexts(&lc->ccc, s->sh.slice_qp, s->sh.slice_type);
-#else
-    fprintf(stderr, "Error : encryption not compiled in\n");
-#endif
 }
+#endif
 
 static void cabac_load_encoder_states(HEVCContext *s)
 {
-    //printf("cabac_load_encoder_states\n");
     memcpy(&s->HEVClc->ccc.ctx, s->cabac_encoder_states, sizeof(s->HEVClc->ccc.ctx));
 }
 
 void cabac_save_encoder_states(HEVCContext *s, int ctb_addr_ts)
 {
-    //printf("cabac_save_encoder_states\n");
     if (s->ps.pps->entropy_coding_sync_enabled_flag &&
         (s->HEVClc->ctb_tile_rs % s->ps.pps->tile_width[ctb_addr_ts - 1] == 2 ||
          (s->ps.pps->tile_width[ctb_addr_ts - 1] == 2 &&
@@ -833,7 +814,6 @@ int ff_hevc_sao_eo_class_decode(HEVCContext *s)
 
 int ff_hevc_end_of_slice_flag_decode(HEVCContext *s)
 {
-    //printf("!!!terminate : ff_hevc_end_of_slice_flag_decode\n");
     int bin = get_cabac_terminate(&s->HEVClc->cc);
 #if HEVC_CIPHERING 
     HEVCLocalContext *lc = s->HEVClc;
@@ -1134,7 +1114,6 @@ int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size)
 
 int ff_hevc_pcm_flag_decode(HEVCContext *s)
 {
-    //printf("!!!terminate : ff_hevc_pcm_flag_decode\n");
     int bin = get_cabac_terminate(&s->HEVClc->cc);
 #if HEVC_CIPHERING 
     HEVCLocalContext *lc = s->HEVClc;

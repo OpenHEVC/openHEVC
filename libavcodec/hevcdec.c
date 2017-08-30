@@ -4219,6 +4219,8 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     case HEVC_NAL_PPS:
     case HEVC_NAL_SEI_PREFIX:
     case HEVC_NAL_SEI_SUFFIX:
+    case HEVC_NAL_AUD:
+    case HEVC_NAL_FD_NUT:
         for(i=0;i<nal->size;i++){
             kvz_bitstream_put(cabac->stream, nal->data[i], 8);
         }
@@ -4521,35 +4523,27 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length, uint
                    "Error parsing NAL unit #%d.\n", i);
             goto fail;
         }
+
 #if HEVC_CIPHERING 
-//printf("nal size = %d\n",cur_nal->size);
-        
-        // if (data_length < output_size + 3)
-        //     packet_buffer = av_realloc(packet_buffer, packet_length + 3);
-        // memcpy(packet_buffer + output_size++, 0x00, 1);
-        // memcpy(packet_buffer + output_size++, 0x00, 1);
-        // memcpy(packet_buffer + output_size++, 0x01, 1);
-    
+        int len_out = kvz_bitstream_tell(lc->ccc.stream) / 8;
 
-    int len_out = kvz_bitstream_tell(lc->ccc.stream) / 8;
+        uint64_t written = 0;
+        kvz_data_chunk *data_out = kvz_bitstream_take_chunks(lc->ccc.stream);
+        kvz_data_chunk *to_free = data_out;
+        if (output_buffer != NULL)
+            while (data_out != NULL)
+            {
+                int len_chuck = data_out->len;
+                assert(written + len_chuck <= len_out);
+                if (data_length < *output_buffer_length + len_chuck)
+                    *output_buffer = av_realloc(*output_buffer, output_size + len_chuck);
+                memcpy(*output_buffer + output_size, data_out->data, len_chuck);
+                output_size += len_chuck;
 
-uint64_t written = 0;
-kvz_data_chunk *data_out = kvz_bitstream_take_chunks(lc->ccc.stream);
-kvz_data_chunk *to_free = data_out;
-if (output_buffer != NULL)
-    while (data_out != NULL)
-    {
-        int len_chuck = data_out->len;
-        assert(written + len_chuck <= len_out);
-        if (data_length < *output_buffer_length + len_chuck)
-            *output_buffer = av_realloc(*output_buffer, output_size + len_chuck);
-        memcpy(*output_buffer + output_size, data_out->data, len_chuck);
-        output_size += len_chuck;
-
-        written += len_chuck;
-        data_out = data_out->next;
-    }
-kvz_bitstream_free_chunks(to_free);
+                written += len_chuck;
+                data_out = data_out->next;
+            }
+        kvz_bitstream_free_chunks(to_free);
 
 #endif // HEVC_CIPHERING 
     }
@@ -4834,8 +4828,7 @@ static int hevc_decode_extradata(HEVCContext *s)
                            "Invalid NAL unit size in extradata.\n");
                     return AVERROR_INVALIDDATA;
                 }
-                //TODO
-                printf("TODO: reencode extradata?\n");
+
                 ret = decode_nal_units(s, gb.buffer, nalsize, NULL, NULL);
                 if (ret < 0) {
                     av_log(avctx, AV_LOG_ERROR,
@@ -4852,8 +4845,7 @@ static int hevc_decode_extradata(HEVCContext *s)
         s->nal_length_size = nal_len_size;
     } else {
         s->is_nalff = 0;
-        //TODO
-        printf("TODO: reencode extradata?\n");
+
         ret = decode_nal_units(s, avctx->extradata, avctx->extradata_size, NULL, NULL);
         if (ret < 0)
             return ret;
