@@ -1398,23 +1398,22 @@ fail_vps_ext:
 int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
                            HEVCParamSets *ps)
 {
-    int i,j;
-    HEVCVPS *vps;
+    HEVCVPS     *vps;
     AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
-    av_log(NULL, AV_LOG_TRACE, "Parsing VPS : size:%d %ld\n", gb->size_in_bits, gb->buffer_end - gb->buffer);
+    int i,j;
+
     if (!vps_buf)
         return AVERROR(ENOMEM);
 
     vps = (HEVCVPS*)vps_buf->data;
-
-    av_log(avctx, AV_LOG_DEBUG, "Decoding VPS\n");
 
     vps->vps_id = get_bits(gb, 4);
     if (vps->vps_id >= HEVC_MAX_VPS_COUNT) {
         av_log(avctx, AV_LOG_ERROR, "VPS id out of range: %d\n", vps->vps_id);
         goto err;
     }
-    av_log(NULL, AV_LOG_TRACE, "Parsing VPS : id:%d \n", vps->vps_id);
+
+    av_log(avctx, AV_LOG_TRACE, "Parsing VPS : id:%d\n", vps->vps_id);
 
     vps->vps_base_layer_internal_flag  = get_bits(gb, 1);
     vps->vps_base_layer_available_flag = get_bits(gb, 1);
@@ -1542,9 +1541,14 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
 
     if (ps->vps_list[vps->vps_id] &&
         !memcmp(ps->vps_list[vps->vps_id]->data, vps_buf->data, vps_buf->size)) {
+        av_log(avctx, AV_LOG_DEBUG, "Ignore duplicated VPS id:%d\n",vps->vps_id);
         av_buffer_unref(&vps_buf);
-        av_log(avctx, AV_LOG_DEBUG, "ignore VPS duplicated\n");
     } else {
+        if(ps->vps_list[vps->vps_id])
+            av_log(avctx, AV_LOG_DEBUG, "Replace VPS id:%d\n",vps->vps_id);
+        else
+            av_log(avctx, AV_LOG_DEBUG, "Place VPS id:%d\n",vps->vps_id);
+
         remove_vps(ps, vps->vps_id);
         ps->vps_list[vps->vps_id] = vps_buf;
     }
@@ -1858,12 +1862,9 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     int ret    = 0;
     int start;
     int i;
-    av_log(NULL, AV_LOG_TRACE, "Parsing SPS : size:%d %ld \n", gb->size_in_bits >> 3, gb->buffer_end - gb->buffer);
 
     sps->v1_compatible = 1;
     sps->chroma_format_idc = 1;
-
-    av_log(avctx, AV_LOG_DEBUG, "Decoding SPS\n");
 
     sps->vps_id = get_bits(gb, 4);
 
@@ -1875,7 +1876,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
     //TODO the VPS shall actually exist
     if (vps_list && !vps_list[sps->vps_id]) {
-        av_log(avctx, AV_LOG_ERROR, "VPS %d does not exist\n",
+        av_log(avctx, AV_LOG_ERROR, "Error when parsing SPS, VPS %d does not exist\n",
                sps->vps_id);
         return AVERROR_INVALIDDATA;
     }
@@ -1921,7 +1922,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
     sps->sps_id = *sps_id = get_ue_golomb_long(gb);
 
-    av_log(NULL, AV_LOG_TRACE, "Parsing SPS : id:%d \n", sps->sps_id);
+    av_log(avctx, AV_LOG_TRACE, "Parsing SPS vps_id: %d ", sps->vps_id);
+    av_log(avctx, AV_LOG_TRACE, "sps_id: %d\n", sps->sps_id);
 
 
     if (*sps_id >= HEVC_MAX_SPS_COUNT) {
@@ -2916,8 +2918,6 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     HEVCSPS     *sps = NULL;
     HEVCPPS     *pps = av_mallocz(sizeof(*pps));
 
-    av_log(NULL, AV_LOG_TRACE, "Parsing PPS : size:%d %ld\n", gb->size_in_bits, gb->buffer_end - gb->buffer);
-
     int i, ret = 0;
     unsigned int pps_id = 0;
 
@@ -2934,7 +2934,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         return AVERROR(ENOMEM);
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "Decoding PPS\n");
+    //av_log(avctx, AV_LOG_DEBUG, "Decoding PPS\n");
 
     //TODO check Default values
     pps->loop_filter_across_tiles_enabled_flag = 1;
@@ -2948,7 +2948,6 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
 
     // Coded parameters
     pps->pps_id = get_ue_golomb_long(gb);
-    av_log(NULL, AV_LOG_TRACE, "Parsing PPS id: %d size:%d %ld\n",pps->pps_id, gb->size_in_bits, gb->buffer_end - gb->buffer);
 
     if (pps->pps_id >= HEVC_MAX_PPS_COUNT) {
         av_log(avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", pps->pps_id);
@@ -2957,15 +2956,18 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     }
     pps->sps_id = get_ue_golomb_long(gb);
     if (pps->sps_id >= HEVC_MAX_SPS_COUNT) {
-        av_log(avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", pps->sps_id);
+        av_log(avctx, AV_LOG_ERROR, "Error when parsing PPS %d, SPS id out of range: %d\n", pps->pps_id, pps->sps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
+
     if (!ps->sps_list[pps->sps_id]) {
-        av_log(avctx, AV_LOG_ERROR, "SPS %u does not exist.\n", pps->sps_id);
+        av_log(avctx, AV_LOG_ERROR, "Error when parsing PPS %d, SPS %u does not exist.\n", pps->pps_id, pps->sps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
+        av_log(avctx, AV_LOG_TRACE, "Parsing PPS id: %d ",pps->pps_id);
+        av_log(NULL, AV_LOG_TRACE, "sps_id: %d\n", pps->sps_id);
     if ((HEVCSPS *)ps->sps_list[pps->sps_id])
         sps = (HEVCSPS *)ps->sps_list[pps->sps_id]->data;
 
@@ -3134,8 +3136,8 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     pps_extension_present_flag = get_bits1(gb);
 
 
-        av_log(avctx, AV_LOG_TRACE,
-               "Remaining bits PPS before extensions %d bits\n", get_bits_left(gb));
+//        av_log(avctx, AV_LOG_TRACE,
+//               "Remaining bits PPS before extensions %d bits\n", get_bits_left(gb));
 
     if (pps_extension_present_flag) { // pps_extension_present_flag
         int pps_range_extensions_flag     = get_bits1(gb);
