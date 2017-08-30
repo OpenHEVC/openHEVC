@@ -481,6 +481,7 @@ static int get_picture_bitdepth(int format){
             return  10;
         case AV_PIX_FMT_YUV420P12 :
         case AV_PIX_FMT_YUV422P12 :
+        case AV_PIX_FMT_YUV444P12 :
             return  12;
         default :
             return  8;
