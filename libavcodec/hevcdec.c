@@ -877,7 +877,7 @@ static int hls_slice_header(HEVCContext *s)
 
         NumILRRefIdx = s->ps.vps->vps_ext.num_direct_ref_layers[s->nuh_layer_id];
 
-        if (s->nuh_layer_id > 0 && !s->ps.vps->vps_ext.all_ref_layers_active_flag && NumILRRefIdx>0) {
+        if (s->nuh_layer_id > 0 && !s->ps.vps->vps_ext.default_ref_layers_active_flag && NumILRRefIdx>0) {
             s->sh.inter_layer_pred_enabled_flag = get_bits1(gb);
             if (s->sh.inter_layer_pred_enabled_flag) {
                 if (NumILRRefIdx>1)  {
@@ -911,7 +911,7 @@ static int hls_slice_header(HEVCContext *s)
                 }
             }
         } else {
-            if(s->ps.vps->vps_ext.all_ref_layers_active_flag  && s->nuh_layer_id) {
+            if(s->ps.vps->vps_ext.default_ref_layers_active_flag  && s->nuh_layer_id) {
                 int   refLayerPicIdc[16];
                 s->sh.inter_layer_pred_enabled_flag = 1;
                 numRef = 0;
