@@ -44,7 +44,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
-#include "libavcodec/hevc.h"
+#include "libavcodec/hevcdec.h"
 #include "libavcodec/h264dec.h"
 
 #define MAX_POC      1024

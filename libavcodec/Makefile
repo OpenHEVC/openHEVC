@@ -81,9 +81,9 @@ OBJS-$(CONFIG_H264_CUVID_DECODER)      += cuvid.o
 
 OBJS-$(CONFIG_H264_VDA_DECODER)        += vda_h264_dec.o
 
-OBJS-$(CONFIG_HEVC_DECODER)            += hevc.o hevc_mvs.o hevc_ps.o hevc_sei.o \
+OBJS-$(CONFIG_HEVC_DECODER)            += hevcdec.o hevc_mvs.o hevc_ps.o hevc_sei.o \
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
-                                          hevcdsp.o hevc_filter.o h2645_parse.o 
+                                          hevcdsp.o hevc_filter.o h2645_parse.o hevc_data.o
 
 
 
