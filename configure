@@ -2140,12 +2140,12 @@ mpegtsraw_demuxer_select="mpegts_demuxer"
 # libraries, in linking order
 avcodec_deps="avutil"
 avformat_deps="avcodec avutil"
-openhevc_deps="avformat avcodec avutil"
+openhevc_deps="avcodec avutil"
 openhevc_select="hevc_decoder hevc_demuxer hevc_parser file_protocol null_bsf"
 openhevc_suggest="mov_demuxer mpegts_demuxer h264_decoder h264_demuxer h264_parser shvc_decoder shvc_parser"
 
 # programs
-ohplay_deps="avformat avcodec avutil openhevc"
+ohplay_deps="openhevc avformat"
 ohplay_suggest="sdl sdl2"
 
 # documentation
@@ -5798,7 +5798,6 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 
 print_config OHCONFIG_ "$config_files" $OPENHEVC_COMPONENTS
 
-echo "#define COM16_C806_EMT 0 " >> $TMPH
 echo "#define HEVC_ENCRYPTION 0" >> $TMPH
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
 echo "endif # FFMPEG_CONFIG_MAK" >> ffbuild/config.mak
