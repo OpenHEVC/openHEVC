@@ -192,6 +192,7 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
     return us;
 }
 
+#if HEVC_ENCRYPTION
 static int parse_enum_n(const char *arg, unsigned num_chars, const char * const *names, int8_t *dst)
 {
   int8_t i;
@@ -210,9 +211,11 @@ static int parse_enum(const char *arg, const char * const *names, int8_t *dst)
   return parse_enum_n(arg, 255, names, dst);
 }
 
-int parse_enum_args(const char *context, const char *enumstr, char *name,
+
+int parse_enum_args(const char *context, const char *enumstr, const char *name,
                              int min, int max)
 {
+
     static const char * const crypto_toggle_names[] = { "off", "on", NULL };
     static const char * const crypto_feature_names[] = { "mvs", "mv_signs", "trans_coeffs", "trans_coeff_signs", "intra_pred_modes", NULL };
 
@@ -265,7 +268,7 @@ int parse_enum_args(const char *context, const char *enumstr, char *name,
         }
         
     #else
-        fprintf(stderr, "\x1B[31m--crypto cannot be enabled because it's not compiled in.\n\x1B[0m");
+        fprintf(stderr, "\x1B[31m--crypto %s %s cannot be enabled because it's not compiled in.\n\x1B[0m",(char *)crypto_toggle_names, (char *)crypto_feature_names);
         return 0;
     #endif
     
@@ -303,7 +306,7 @@ uint8_t* parse_array(const char *context, const char *keystr, int size,
         return NULL;
     #endif
 }
-
+#endif
 
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
                        int rej_flags, int alt_flags)
@@ -461,6 +464,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         *(float *)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
     } else if (po->flags & OPT_DOUBLE) {
         *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
+#if HEVC_ENCRYPTION
     } else if (po->flags & OPT_ENUM) {
         *(int *)dst = parse_enum_args(opt, arg, "crypto", 0, INT_MAX);
     } else if (po->flags & OPT_DATA) {
@@ -473,6 +477,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
                    arg, opt, av_err2str(ret));
             return ret;
         }
+#endif
     } 
     if (po->flags & OPT_EXIT)
         exit_program(0);
@@ -1837,7 +1842,9 @@ int show_pix_fmts(void *optctx, const char *opt, const char *arg)
 #endif
 
     while ((pix_desc = av_pix_fmt_desc_next(pix_desc))) {
+#if CONFIG_SWSCALE
         enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(pix_desc);
+#endif
         printf("%c%c%c%c%c %-16s       %d            %2d\n",
                sws_isSupportedInput (pix_fmt)              ? 'I' : '.',
                sws_isSupportedOutput(pix_fmt)              ? 'O' : '.',

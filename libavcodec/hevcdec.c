@@ -428,7 +428,7 @@ static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
 static int set_sps(HEVCContext *s, const HEVCSPS *sps,
                    enum AVPixelFormat pix_fmt)
 {
-    int ret, i;
+    int ret;
 
     pic_arrays_free(s);
     s->ps.sps = NULL;
@@ -616,7 +616,7 @@ static int hls_slice_header(HEVCContext *s)
 //#if PARALLEL_SLICE
     HEVCContext   *s1   = (HEVCContext*) s->avctx->priv_data;
 //#endif
-    int i, j, ret, change_pps = 0,numRef;
+    int i, /*j,*/ ret, change_pps = 0,numRef;
     int NumILRRefIdx;
     int first_slice_in_pic_flag;
 
@@ -1103,8 +1103,8 @@ static int hls_slice_header(HEVCContext *s)
         }
         if (sh->num_entry_point_offsets > 0) {
             int offset_len = get_ue_golomb_long(gb) + 1;
-            int segments = offset_len >> 4;
-            int rest = (offset_len & 15);
+//            int segments = offset_len >> 4;
+//            int rest = (offset_len & 15);
             av_freep(&sh->entry_point_offset);
             av_freep(&sh->offset);
             av_freep(&sh->size);
@@ -2080,6 +2080,7 @@ static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
     }
 }
 
+/*
 static void hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                                   int nPbH, int log2_cb_size, int part_idx,
                                   int merge_idx, MvField *mv)
@@ -2124,6 +2125,7 @@ static void hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
         mv->mv[1].y += lc->pu.mvd.y;
     }
 }
+*/
 
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                                 int nPbW, int nPbH,
@@ -3053,6 +3055,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     return ctb_addr_ts;
 }
 
+/*
 static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 {
     const uint8_t *data = nal->data;
@@ -3150,6 +3153,7 @@ error:
     av_free(arg);
     return res;
 }
+*/
 
 static int hls_decode_entry_tiles(AVCodecContext *avctxt, int *input_ctb_row, int job, int self_id)
 {
@@ -3218,12 +3222,17 @@ static int hls_decode_entry_wpp_in_tiles(AVCodecContext *avctxt, int *input_ctb_
     int thread = ctb_row % s1->threads_number;
     int ret;
 
+    //int tile_id     = s->ps.pps->tile_id[ctb_addr_ts];
+    int tile_width;
+
+    int index_in_row = 0;
+
     s = s1->sList[self_id];
     s->HEVClc->ctb_tile_rs = 0;
     lc = s->HEVClc;
 
-    int tile_id     = s->ps.pps->tile_id[ctb_addr_ts];
-    int tile_width  = s->ps.pps->tile_width[ctb_addr_ts];
+    tile_width  = s->ps.pps->tile_width[ctb_addr_ts];
+
 
     if(ctb_row) {
         ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row - 1], s->sh.size[ctb_row - 1]);
@@ -3233,7 +3242,7 @@ static int hls_decode_entry_wpp_in_tiles(AVCodecContext *avctxt, int *input_ctb_
         ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[(ctb_row)-1], s->sh.size[ctb_row - 1]);
     }
 
-    int index_in_row = 0;
+
     while(more_data && index_in_row < tile_width) {
         int x_ctb = (ctb_addr_rs % s->ps.sps->ctb_width) << s->ps.sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / s->ps.sps->ctb_width) << s->ps.sps->log2_ctb_size;
@@ -3344,7 +3353,7 @@ static void slices_filters(HEVCContext *s)
 #endif
 
 
-static int hls_slice_data(HEVCContext *s, H2645NAL *nal)
+static int hls_slice_data(HEVCContext *s,const H2645NAL *nal)
 {
     HEVCLocalContext *lc = s->HEVClc;
     int *ret = av_malloc((s->sh.num_entry_point_offsets + 1) * sizeof(int));

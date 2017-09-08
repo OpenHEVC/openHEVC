@@ -57,6 +57,10 @@ static int temporal_layer_id;
 static int quality_layer_id;
 static int num_frames;
 static float frame_rate;
+#if HEVC_ENCRYPTION
+static int crypto_args;
+static uint8_t *crypto_key = NULL;
+#endif
 
 static const OptionDef options[] = {
 	{ "h", OPT_EXIT, {.func_arg = show_help}, "show help" },
@@ -73,6 +77,10 @@ static const OptionDef options[] = {
     { "r", HAS_ARG | OPT_FLOAT, { &frame_rate }, "Frame rate (FPS)", "n"},
     { "v", OPT_BOOL, { &h264_flags }, "Input is a h264 bitstream" },
     { "e", HAS_ARG | OPT_STRING, { &enhance_file }, "Enhanced layer file (with AVC base)", "file" },
+#if HEVC_ENCRYPTION
+    { "-crypto"  , HAS_ARG | OPT_ENUM  , { &crypto_args }       , "Encryption configuration","params"},
+    { "-key"     , HAS_ARG | OPT_DATA  , { &crypto_key }        , "overload default cipher key", "(16 bytes)"},
+#endif
     { NULL, },
 };
 
@@ -192,7 +200,11 @@ static void video_decode(const char *filename,const char *enh_filename)
 
     // OpenHEVC decoder start
     oh_start(oh_hdl);
-
+#if HEVC_ENCRYPTION
+    oh_set_crypto_mode(oh_hdl, crypto_args);
+    if(crypto_key!=NULL)
+        oh_set_crypto_key(oh_hdl, crypto_key);
+#endif
     // OpenHEVC option settings
     oh_select_temporal_layer(oh_hdl, temporal_layer_id);
     oh_select_active_layer(oh_hdl, quality_layer_id);

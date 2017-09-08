@@ -20,6 +20,7 @@
  */
 #include <stdio.h>
 #include "openhevc.h"
+#include "config.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavutil/mem.h"
@@ -250,9 +251,9 @@ int oh_decode(OHHandle openHevcHandle, const unsigned char *buff, int au_len,
             //        else{
             //            got_picture[i] = 0;
             //        }
-
+AV_NOWARN_DEPRECATED(
             len = avcodec_decode_video2(oh_ctx->codec_ctx, oh_ctx->picture,
-                                        &got_picture[i], &oh_ctx->avpkt);
+                                        &got_picture[i], &oh_ctx->avpkt);)
         } else {
             oh_ctx->avpkt.size = 0;
             oh_ctx->avpkt.data = NULL;
@@ -311,8 +312,9 @@ int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
             } else {
                 oh_ctx->avpkt.el_available=0;
             }
+            AV_NOWARN_DEPRECATED(
             len = avcodec_decode_video2(oh_ctx->codec_ctx, oh_ctx->picture,
-                                        &got_picture[i], &oh_ctx->avpkt);
+                                        &got_picture[i], &oh_ctx->avpkt);)
 //            avcodec_send_packet(oh_ctx->codec_ctx,&oh_ctx->avpkt);
 //            got_picture[i] = avcodec_receive_frame(oh_ctx->codec_ctx,oh_ctx->picture);
 //            if(!got_picture[i])
@@ -338,8 +340,9 @@ int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
 //            else{
 //                got_picture[i] = 0;
 //            }
+            AV_NOWARN_DEPRECATED(
             len = avcodec_decode_video2(oh_ctx->codec_ctx, oh_ctx->picture,
-                                        &got_picture[i], &oh_ctx->avpkt);
+                                        &got_picture[i], &oh_ctx->avpkt);)
         } else {
             //avcodec_flush_buffers(oh_ctx->codec_ctx);
             oh_ctx->avpkt.size = 0;
@@ -782,6 +785,34 @@ void oh_flush_shvc(OHHandle openHevcHandle, int decoderId)
     oh_ctx->codec->flush(oh_ctx->codec_ctx);
     avcodec_flush_buffers(oh_ctx->codec_ctx);
 }
+
+#if HEVC_ENCRYPTION
+void oh_set_crypto_mode(OHHandle oh_hdl, int val)
+{
+    OHContextList *oh_ctx_lists = (OHContextList *) oh_hdl;
+    OHContext     *oh_ctx;
+    int i;
+
+    for (i = 0; i < oh_ctx_lists->nb_decoders; i++) {
+        oh_ctx = oh_ctx_lists->ctx_list[i];
+        av_opt_set_int(oh_ctx->codec_ctx->priv_data, "crypto-param", val, 0);
+    }
+
+}
+
+void oh_set_crypto_key(OHHandle oh_hdl, uint8_t *val)
+{
+    OHContextList *oh_ctx_list = (OHContextList *) oh_hdl;
+    OHContext     *oh_ctx;
+    int i;
+
+    for (i = 0; i < oh_ctx_list->nb_decoders; i++) {
+        oh_ctx = oh_ctx_list->ctx_list[i];
+        av_opt_set_bin(oh_ctx->codec_ctx->priv_data, "crypto-key", val, 16*sizeof(uint8_t), 0);
+    }
+
+}
+#endif
 
 const unsigned oh_version(OHHandle openHevcHandle)
 {

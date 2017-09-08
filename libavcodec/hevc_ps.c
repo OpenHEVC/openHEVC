@@ -417,7 +417,7 @@ static int parse_hrd_parameters(GetBitContext *gb, HRDParameters *hrd_parameters
 
         if(!hrd_parameters->low_delay_hrd_flag[i]) {
             hrd_parameters->cpb_cnt_minus1[i] = get_ue_golomb_long(gb);
-            if (hrd_parameters->cpb_cnt_minus1[i] < 0 || hrd_parameters->cpb_cnt_minus1[i] > 31) {
+            if (hrd_parameters->cpb_cnt_minus1[i] > 31) {
                 return AVERROR_INVALIDDATA;
             }
         }
@@ -439,7 +439,7 @@ static void parse_vps_vui_bsp_hrd_params(GetBitContext *gb, AVCodecContext *avct
                                          unsigned int *max_sub_layers_in_layer_set,
                                          unsigned int *ols_idx_to_ls_idx ) {
     int i, k, h, j, r, t;
-    HEVCVPSExt  *vps_ext = &vps->vps_ext;
+    //HEVCVPSExt  *vps_ext = &vps->vps_ext;
     bsp_hrd_params->vps_num_add_hrd_params  = get_ue_golomb_long(gb);
     for( i = vps->vps_num_hrd_parameters; i < vps->vps_num_hrd_parameters + bsp_hrd_params->vps_num_add_hrd_params; i++ ) {
         if( i > 0 )
@@ -670,7 +670,7 @@ static void parse_dpb_size(GetBitContext *gb, HEVCVPS *vps , unsigned int num_ou
                            unsigned int *ols_idx_to_ls_idx, unsigned int **necessary_layer_flag) {
     int i, j, k;
     DPBSize *dpb_size = &vps->vps_ext.dpb_size;
-    HEVCVPSExt  *vps_ext = &vps->vps_ext;
+    //HEVCVPSExt  *vps_ext = &vps->vps_ext;
 
     //calculateMaxSLInLayerSets(vps, num_layers_in_id_list, layer_set_layer_id_list);
     // derive max_sub_layers_in_layer_set
@@ -748,6 +748,13 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
     unsigned int **id_predicted_layer           = NULL; ///< IdPredictedLayer[][]
     unsigned int **layer_set_layer_id_list      = NULL; ///< LayerSetLayerIdList[][]
     unsigned int **necessary_layer_flag         = NULL; ///< NecessaryLayerFlag[num_output_layer_sets][]
+    //Inferred parameters, not really when parsing if not used by parsing op
+    unsigned int dim_bit_offset[16] = {0};
+    int max_nuh_l_id = 0;
+    int ls_idx = ols_idx_to_ls_idx[ 0 ];//0
+    int ls_layer_idx;
+    int ols_idx;
+    int vps_num_rep_formats_minus1;
 
     max_layers               = FFMIN(63, vps->vps_max_layers);
     num_layer_sets           = vps->vps_num_layer_sets;
@@ -766,8 +773,7 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
         vps_ext->dimension_id_len[j] = get_bits(gb, 3) + 1;
     }
 
-    //Inferred parameters, not really when parsing if not used by parsing op
-    unsigned int dim_bit_offset[16] = {0};
+
     if(vps_ext->splitting_flag) {
         for(j = 1; j < num_scalability_types; j++){
             int dim_idx;
@@ -909,7 +915,8 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
                 id_predicted_layer[ i_nuh_l_id ][ p++ ]  = j_nuh_l_id;
         }
         vps_ext->num_direct_ref_layers[ i_nuh_l_id ] = num_direct_ref_layers[ i_nuh_l_id ] = d;
-        num_ref_layers[ i_nuh_l_id ]        = r;
+        // Unused
+        //num_ref_layers[ i_nuh_l_id ]        = r;
         num_predicted_layers[ i_nuh_l_id ]  = p;
     }
     /*
@@ -929,7 +936,7 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
             return AVERROR(ENOMEM);
     }
 
-    int max_nuh_l_id = 0;
+
     {
         int k;
         for( i = 0, k = 0; i < max_layers; i++ ) {
@@ -1133,8 +1140,7 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
     //int ols_idx = 0;
     //for( ols_idx = 0; ols_idx < num_output_layer_sets; ols_idx++ ) {
     //INIT necessary_layer_flag 0 TODO function ??
-    int ls_idx = ols_idx_to_ls_idx[ 0 ];//0
-    int ls_layer_idx;
+
     for( ls_layer_idx = 0; ls_layer_idx < num_layers_in_id_list[ ls_idx ]; ls_layer_idx++ ){
         //necessary_layer_flag[0][ ls_layer_idx ] = 0;
         if( vps_ext->output_layer_flag[0][ ls_layer_idx ] ) {
@@ -1206,7 +1212,7 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
 
         //derive necessary layers
 //{
-        int ols_idx;
+
         for( ols_idx = 0; ols_idx < num_output_layer_sets; ols_idx++ ) {
             int ls_idx = ols_idx_to_ls_idx[ ols_idx ];
             int ls_layer_idx;
@@ -1252,7 +1258,7 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
     }
 
     //TODO olsBitstream etc.
-    int vps_num_rep_formats_minus1 = get_ue_golomb_long(gb);
+    vps_num_rep_formats_minus1 = get_ue_golomb_long(gb);
     if(vps_num_rep_formats_minus1 > 255){
         av_log(avctx,AV_LOG_ERROR, "(vps_extensions) vps_num_rep_formats_minus1 greater than 255  (%d)\n",
                vps_num_rep_formats_minus1);
@@ -2138,7 +2144,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                 sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[i].num_reorder_pics + 1;
             }
             if (!sps->sps_sub_layer_ordering_info_present_flag) {
-                for (start; i < start; i++) {
+                for (i = start; i < start; i++) {
                     sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[start].max_dec_pic_buffering;
                     sps->temporal_layer[i].num_reorder_pics      = sps->temporal_layer[start].num_reorder_pics;
                     sps->temporal_layer[i].max_latency_increase  = sps->temporal_layer[start].max_latency_increase;
@@ -2171,7 +2177,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         return AVERROR_INVALIDDATA;
     }
 
-    if (sps->log2_diff_max_min_tb_size < 0 || sps->log2_diff_max_min_tb_size > 30) {
+    if ( sps->log2_diff_max_min_tb_size > 30) {
         av_log(avctx, AV_LOG_ERROR, "Invalid value %d for log2_diff_max_min_transform_block_size", sps->log2_diff_max_min_tb_size);
         return AVERROR_INVALIDDATA;
     }
@@ -2522,6 +2528,8 @@ int setup_pps(AVCodecContext *avctx,
     int log2_diff;
     int pic_area_in_ctbs;
     int i, j, x, y, ctb_addr_rs, tile_id;
+    int row = 0, wpp_pos = 0;
+
 if(!pps->is_setup && sps){
     // Inferred parameters
     pps->col_bd   = av_malloc_array(pps->num_tile_columns + 1, sizeof(*pps->col_bd));
@@ -2619,7 +2627,7 @@ if(!pps->is_setup && sps){
         pps->ctb_addr_ts_to_rs[val]         = ctb_addr_rs;
     }
 
-    int row = 0, wpp_pos = 0;
+
     for (j = 0, tile_id = 0; j < pps->num_tile_rows; j++){
         for (i = 0; i < pps->num_tile_columns; i++, tile_id++){
             for (y = pps->row_bd[j]; y < pps->row_bd[j + 1]; y++){
@@ -2920,7 +2928,6 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     HEVCPPS     *pps = av_mallocz(sizeof(*pps));
 
     int i, ret = 0;
-    unsigned int pps_id = 0;
 
     uint8_t pps_extension_present_flag;
 
@@ -3143,7 +3150,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     if (pps_extension_present_flag) { // pps_extension_present_flag
         int pps_range_extensions_flag     = get_bits1(gb);
         int pps_multilayer_extension_flag = get_bits1(gb);
-        int pps_extension_6bits           = get_bits(gb, 6); // For next versions
+        /*int pps_extension_6bits           =*/ get_bits(gb, 6); // For next versions
 
 
         if (sps && sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {

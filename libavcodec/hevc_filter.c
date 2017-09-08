@@ -526,7 +526,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
 {
     uint8_t *src;
     int x, y;
-    int chroma, beta;
+    int /*chroma,*/ beta;
     int32_t c_tc[2], tc[2];
     uint8_t no_p[2] = { 0 };
     uint8_t no_q[2] = { 0 };

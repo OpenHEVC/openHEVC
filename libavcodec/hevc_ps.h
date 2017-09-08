@@ -532,7 +532,7 @@ typedef struct HEVCVPSExt {
     uint8_t dimension_id[16][16];
     uint8_t view_id_len;
     uint8_t view_id_val[16];
-    uint8_t direct_dependency_flag[16][16];
+    uint8_t direct_dependency_flag[64][64];
     uint16_t num_add_layer_sets;
     uint8_t highest_layer_idx[16][16];
     uint8_t vps_sub_layers_max_minus1_present_flag;

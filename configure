@@ -1301,7 +1301,8 @@ EXTERNAL_LIBRARY_LIST="
     zlib
 "
 
-HWACCEL_LIBRARY_LIST="   
+HWACCEL_LIBRARY_LIST="
+    cuda   
     cuvid
     d3d11va
     dxva2
@@ -1328,6 +1329,12 @@ LIBRARY_LIST="
     avformat
     avutil
     openhevc
+"
+
+LICENSE_LIST="
+    gpl
+    nonfree
+    version3
 "
 
 #TODO ohprobe, ohconv
