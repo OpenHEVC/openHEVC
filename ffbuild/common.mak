@@ -128,20 +128,20 @@ include $(SRC_PATH)/ffbuild/arch.mak
 OBJS      += $(OBJS-yes)
 SLIBOBJS  += $(SLIBOBJS-yes)
 FFLIBS    := $($(NAME)_FFLIBS) $(FFLIBS-yes) $(FFLIBS)
-TESTPROGS += $(TESTPROGS-yes)
+#TESTPROGS += $(TESTPROGS-yes)
 
 LDLIBS       = $(FFLIBS:%=%$(BUILDSUF))
 FFEXTRALIBS := $(LDLIBS:%=$(LD_LIB)) $(EXTRALIBS)
 
 OBJS      := $(sort $(OBJS:%=$(SUBDIR)%))
 SLIBOBJS  := $(sort $(SLIBOBJS:%=$(SUBDIR)%))
-TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)tests/%) $(TESTPROGS:%=$(SUBDIR)tests/%.o)
-TESTPROGS := $(TESTPROGS:%=$(SUBDIR)tests/%$(EXESUF))
+#TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)tests/%) $(TESTPROGS:%=$(SUBDIR)tests/%.o)
+#TESTPROGS := $(TESTPROGS:%=$(SUBDIR)tests/%$(EXESUF))
 HOSTOBJS  := $(HOSTPROGS:%=$(SUBDIR)%.o)
 HOSTPROGS := $(HOSTPROGS:%=$(SUBDIR)%$(HOSTEXESUF))
-TOOLS     += $(TOOLS-yes)
-TOOLOBJS  := $(TOOLS:%=tools/%.o)
-TOOLS     := $(TOOLS:%=tools/%$(EXESUF))
+#TOOLS     += $(TOOLS-yes)
+#TOOLOBJS  := $(TOOLS:%=tools/%.o)
+#TOOLS     := $(TOOLS:%=tools/%$(EXESUF))
 HEADERS   += $(HEADERS-yes)
 
 PATH_LIBNAME = $(foreach NAME,$(1),lib$(NAME)/$($(2)LIBNAME))
@@ -158,7 +158,7 @@ $(HOBJS):     CCFLAGS += $(CFLAGS_HEADERS)
 checkheaders: $(HOBJS)
 .SECONDARY:   $(HOBJS:.o=.c) $(PTXOBJS:.o=.c) $(PTXOBJS:.o=)
 
-alltools: $(TOOLS)
+#alltools: $(TOOLS)
 
 $(HOSTOBJS): %.o: %.c
 	$(COMPILE_HOSTC)
@@ -170,10 +170,10 @@ $(OBJS):     | $(sort $(dir $(OBJS)))
 $(HOBJS):    | $(sort $(dir $(HOBJS)))
 $(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
 $(SLIBOBJS): | $(sort $(dir $(SLIBOBJS)))
-$(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
-$(TOOLOBJS): | tools
+#$(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
+#$(TOOLOBJS): | tools
 
-OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SLIBOBJS) $(TESTOBJS))
+OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SLIBOBJS))
 
 CLEANSUFFIXES     = *.d *.o *~ *.h.c *.gcda *.gcno *.map *.ver *.version *.ho *$(DEFAULT_X86ASMD).asm *.ptx *.ptx.c
 DISTCLEANSUFFIXES = *.pc
@@ -181,9 +181,9 @@ LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
 clean::
-	$(RM) $(HOSTPROGS) $(TESTPROGS) $(TOOLS)
+	$(RM) $(HOSTPROGS)
 endef
 
 $(eval $(RULES))
 
--include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SLIBOBJS:.o=.d)) $(OBJS:.o=$(DEFAULT_YASMD).d)
+-include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d)  $(HOBJS:.o=.d) $(SLIBOBJS:.o=.d)) $(OBJS:.o=$(DEFAULT_YASMD).d)

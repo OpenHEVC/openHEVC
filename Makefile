@@ -40,25 +40,27 @@ $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
 #OBJS-ffserver                 += ffserver_config.o
 
 # OpenHEVC Simple Player 
-OBJS-ohplay-${CONFIG_SDL} += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl.o
-OBJS-ohplay-${CONFIG_SDL2} += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl2.o
-OBJS-ohplay-${CONFIG_NOVIDEO} += ohplay_utils/ohtimer_sys.o ohplay_utils/ohdisplay_none.o
+OBJS-ohplay-${CONFIG_SDL}      += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl.o
+OBJS-ohplay-${CONFIG_SDL2}     += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl2.o
+OBJS-ohplay-${CONFIG_NOVIDEO}  += ohplay_utils/ohtimer_sys.o ohplay_utils/ohdisplay_none.o
 #OBJS-ohplay                   += cmdutils.o
 
-TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
-HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
-TOOLS       = qt-faststart trasher uncoded_frame
-TOOLS-$(CONFIG_ZLIB) += cws2fws
+#TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
+#HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
+#TOOLS       = qt-faststart trasher uncoded_frame
+#TOOLS-$(CONFIG_ZLIB) += cws2fws
 
 # $(FFLIBS-yes) needs to be in linking order
+FFLIBS-$(CONFIG_OPENHEVC)   += openhevc
 FFLIBS-$(CONFIG_AVFORMAT)   += avformat
 FFLIBS-$(CONFIG_AVCODEC)    += avcodec
-FFLIBS-$(CONFIG_OPENHEVC)   += openhevc
 
 FFLIBS := avutil
 
 # first so "all" becomes default target
-all: all-yes
+#all: all-yes
+
+all: openhevc ohplay
 
 include $(SRC_PATH)/ffbuild/common.mak
 
@@ -66,14 +68,15 @@ FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 FF_STATIC_DEP_LIBS := $(STATIC_DEP_LIBS)
 
-all: $(AVPROGS)
 
-$(TOOLS): %$(EXESUF): %.o
-	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
+#all: $(AVPROGS)
 
-tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
-tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
-tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
+#$(TOOLS): %$(EXESUF): %.o
+#	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
+
+#tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
+#tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
+#tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 
 CONFIGURABLE_COMPONENTS =                                           \
     $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))                 \
@@ -86,6 +89,7 @@ ffbuild/.config: $(CONFIGURABLE_COMPONENTS)
 	@-printf '\nWARNING: $(?) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
 
+#TODO remove unecessary subdir vars
 SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
                HEADERS ARCH_HEADERS BUILT_HEADERS SKIPHEADERS            \
                ARMV5TE-OBJS ARMV6-OBJS ARMV8-OBJS VFP-OBJS NEON-OBJS     \
@@ -135,6 +139,20 @@ GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 .version: $(wildcard $(GIT_LOG)) $(VERSION_SH) ffbuild/config.mak
 .version: M=@
 
+openhevc: openhevc-yes
+ 
+openhevc-$(OHCONFIG_OHSHARED): openhevc-shared
+
+openhevc-$(OHCONFIG_OHSTATIC): openhevc-static
+
+
+openhevc-shared: libopenhevc/libopenhevc.so libopenhevc/libopenhevc.pc
+
+openhevc-static: libopenhevc/libopenhevc.a libavformat/libavformat.a libavcodec/libavcodec.a libavutil/libavutil.a
+	$(Q)mkdir -p tmp && cp $^ tmp/  && cd tmp && ar -x libopenhevc.a && ar -x libavformat.a && ar -x libavcodec.a && ar -x libavutil.a
+	$(AR) $(ARFLAGS) tmp/libopenhevc.a tmp/*.o
+	$(Q)cp -f tmp/libopenhevc.a libopenhevc/  && rm -r tmp
+
 libavutil/ffversion.h .version:
 	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)
 	$(Q)touch .version
@@ -143,7 +161,7 @@ libavutil/ffversion.h .version:
 -include .version
 
 ifdef AVPROGS
-install: install-progs install-data
+install: install-progs 
 endif
 
 install: install-libs install-headers
@@ -157,10 +175,10 @@ install-progs: install-progs-yes $(AVPROGS)
 	$(Q)mkdir -p "$(BINDIR)"
 	$(INSTALL) -c -m 755 $(INSTPROGS) "$(BINDIR)"
 
-install-data: $(DATA_FILES) $(EXAMPLES_FILES)
-	$(Q)mkdir -p "$(DATADIR)/examples"
-	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
-	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
+#install-data: $(DATA_FILES) $(EXAMPLES_FILES)
+#	$(Q)mkdir -p "$(DATADIR)/examples"
+#	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
+#	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
 
 uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
 
@@ -176,8 +194,8 @@ clean::
 	$(RM) $(CLEANSUFFIXES:%=compat/msvcrt/%)
 	$(RM) $(CLEANSUFFIXES:%=compat/atomics/pthread/%)
 	$(RM) $(CLEANSUFFIXES:%=compat/%)
-	$(RM) -r coverage-html
-	$(RM) -rf coverage.info coverage.info.in lcov
+#	$(RM) -r coverage-html
+#	$(RM) -rf coverage.info coverage.info.in lcov
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
@@ -188,12 +206,12 @@ distclean::
 ifeq ($(SRC_LINK),src)
 	$(RM) src
 endif
-	$(RM) -rf doc/examples/pc-uninstalled
+#	$(RM) -rf doc/examples/pc-uninstalled
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
 
-check: all alltools examples testprogs fate
+check: all fate
 
 
 $(sort $(OBJDIRS)):
@@ -207,5 +225,5 @@ $(sort $(OBJDIRS)):
 # so this saves some time on slow systems.
 .SUFFIXES:
 
-.PHONY: all all-yes alltools check *clean config install*
-.PHONY: testprogs uninstall*
+.PHONY: all all-yes check *clean config install*
+.PHONY: uninstall*

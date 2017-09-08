@@ -1281,6 +1281,8 @@ OPENHEVC_COMPONENTS="
     shvc
     encryption
     amt
+    ohstatic
+    ohshared
 "
 
 COMPONENT_LIST="
@@ -2389,7 +2391,8 @@ do_random(){
 # (disable stuff we don't need in openHEVC)
 ################################################################################
 map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
-
+disable shared && enable static && enable pic
+enable ohshared && disable ohstatic
 
 for opt do
     optval="${opt#*=}"

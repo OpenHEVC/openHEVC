@@ -34,10 +34,10 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_events.h>
 #include <stdio.h>
-#include <signal.h>
+//#include <signal.h>
 #include "ohtimer_wrapper.h"
 #include "ohdisplay_wrapper.h"
-#include "openHevcWrapper.h"
+//#include "openHevcWrapper.h"
 
 /* SDL variables */
 SDL_Surface *screen;
@@ -92,7 +92,7 @@ int oh_display_init(int edge, int frame_width, int frame_height){
     Uint8 bpp;
     Uint32 vflags;
     
-    struct sigaction action;
+/*    struct sigaction action;
     sigaction(SIGINT, NULL, &action);
     sigaction(SIGTERM, NULL, &action);
     sigaction(SIGKILL, NULL, &action);
@@ -100,7 +100,7 @@ int oh_display_init(int edge, int frame_width, int frame_height){
     sigaction(SIGINT, &action, NULL);
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGKILL, &action, NULL);
-    sigaction(SIGHUP, &action, NULL);
+    sigaction(SIGHUP, &action, NULL);*/
 
     if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0 ) {
         /* Failed, exit. */
@@ -221,7 +221,7 @@ void oh_display_display(int edge, int frame_width, int frame_height, unsigned ch
     SDL_DisplayYUVOverlay(yuv_overlay, &rect);
 }
 
-static void oh_display_downscaled_8bit_444(OpenHevc_Frame *oh_frame){
+/*static void oh_display_downscaled_8bit_444(OpenHevc_Frame *oh_frame){
 
     uint8_t *y = NULL;
     uint8_t *u = NULL;
@@ -738,8 +738,8 @@ static void oh_display_downscaled_8bit(OpenHevc_Frame *oh_frame){
     free(v);
 
     SDL_DisplayYUVOverlay(yuv_overlay, &rect);
-}
-
+}*/
+/*
 void oh_display_display2(OpenHevc_Frame *oh_frame){
 
     if(oh_frame->frameInfo.nBitDepth != 8){
@@ -810,7 +810,7 @@ void oh_display_display2(OpenHevc_Frame *oh_frame){
 
         rect.x = 0;
         rect.y = 0;
-        rect.w = oh_frame->frameInfo.nYPitch /*+ 2 * edge*/;
+        rect.w = oh_frame->frameInfo.nYPitch /*+ 2 * edge*/ /*;
         rect.h = oh_frame->frameInfo.nHeight;
     }
 
@@ -830,7 +830,7 @@ void oh_display_display2(OpenHevc_Frame *oh_frame){
     SDL_UnlockYUVOverlay(yuv_overlay);
 
     SDL_DisplayYUVOverlay(yuv_overlay, &rect);
-}
+}*/
 
 void oh_display_close(){
     SDL_FreeYUVOverlay(yuv_overlay);

@@ -9,12 +9,12 @@ INCINSTDIR := $(INCDIR)/lib$(NAME)
 
 INSTHEADERS := $(INSTHEADERS) $(HEADERS:%=$(SUBDIR)%)
 
-all-$(CONFIG_STATIC): $(SUBDIR)$(LIBNAME)  $(SUBDIR)lib$(FULLNAME).pc
-all-$(CONFIG_SHARED): $(SUBDIR)$(SLIBNAME) $(SUBDIR)lib$(FULLNAME).pc
+#all-$(CONFIG_STATIC): $(SUBDIR)$(LIBNAME)  $(SUBDIR)lib$(FULLNAME).pc
+#all-$(CONFIG_SHARED): $(SUBDIR)$(SLIBNAME) $(SUBDIR)lib$(FULLNAME).pc
 
 LIBOBJS := $(OBJS) $(SUBDIR)%.h.o $(TESTOBJS)
 $(LIBOBJS) $(LIBOBJS:.o=.s) $(LIBOBJS:.o=.i):   CPPFLAGS += -DHAVE_AV_CONFIG_H
-$(TESTOBJS) $(TESTOBJS:.o=.i): CFLAGS += -Umain
+#$(TESTOBJS) $(TESTOBJS:.o=.i): CFLAGS += -Umain
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(RM) $@
@@ -27,11 +27,11 @@ install-libs-$(CONFIG_STATIC): install-lib$(NAME)-static
 install-libs-$(CONFIG_SHARED): install-lib$(NAME)-shared
 
 define RULES
-$(TOOLS):     THISLIB = $(FULLNAME:%=$(LD_LIB))
-$(TESTPROGS): THISLIB = $(SUBDIR)$(LIBNAME)
+#$(TOOLS):     THISLIB = $(FULLNAME:%=$(LD_LIB))
+#$(TESTPROGS): THISLIB = $(SUBDIR)$(LIBNAME)
 
-$(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
-	$$(LD) $(LDFLAGS) $(LDEXEFLAGS) $$(LD_O) $$(filter %.o,$$^) $$(THISLIB) $(FFEXTRALIBS) $$(ELIBS)
+#$(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
+#	$$(LD) $(LDFLAGS) $(LDEXEFLAGS) $$(LD_O) $$(filter %.o,$$^) $$(THISLIB) $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)lib$(NAME).version: $(SUBDIR)version.h | $(SUBDIR)
 	$$(M) $$(SRC_PATH)/ffbuild/libversion.sh $(NAME) $$< > $$@
@@ -100,7 +100,7 @@ endef
 
 $(eval $(RULES))
 
-$(TOOLS):     $(DEP_LIBS) $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
-$(TESTPROGS): $(DEP_LIBS) $(SUBDIR)$(LIBNAME)
+#$(TOOLS):     $(DEP_LIBS) $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
+#$(TESTPROGS): $(DEP_LIBS) $(SUBDIR)$(LIBNAME)
 
-testprogs: $(TESTPROGS)
+#testprogs: $(TESTPROGS)

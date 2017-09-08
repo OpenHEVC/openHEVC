@@ -9,7 +9,7 @@ OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_FMTCONVERT)              += x86/fmtconvert_init.o
 OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
-OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o
+OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o x86/h264_cabac.o
 OBJS-$(CONFIG_H264PRED)                += x86/h264_intrapred_init.o
 OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
 
@@ -56,7 +56,7 @@ X86ASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
                                           x86/h264_idct.o               \
                                           x86/h264_idct_10bit.o         \
                                           x86/h264_weight.o             \
-                                          x86/h264_weight_10bit.o
+                                          x86/h264_weight_10bit.o 
 X86ASM-OBJS-$(CONFIG_H264PRED)           += x86/h264_intrapred.o          \
                                           x86/h264_intrapred_10bit.o
 X86ASM-OBJS-$(CONFIG_H264QPEL)           += x86/h264_qpel_8bit.o          \
