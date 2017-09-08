@@ -2278,7 +2278,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     if (sps->vui_parameters_present_flag)
         parse_vui_parameters(gb, avctx, apply_defdispwin, sps);
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     sps->use_intra_emt = get_bits1(gb);
     sps->use_inter_emt = get_bits1(gb);
 #endif

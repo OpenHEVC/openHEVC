@@ -22,7 +22,7 @@
 #define AVCODEC_HEVC_PS_H
 
 #include <stdint.h>
-
+#include "config.h"
 #include "libavutil/buffer.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
@@ -772,7 +772,7 @@ typedef struct HEVCSPS {
     uint8_t    set_mfm_enabled_flag;
     uint8_t    v1_compatible;
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     uint8_t use_intra_emt;
     uint8_t use_inter_emt;
 #endif

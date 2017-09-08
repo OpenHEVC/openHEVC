@@ -10,6 +10,7 @@ HEADERS = avcodec.h                                                     \
           dxva2.h                                                       \
           jni.h                                                         \
           mediacodec.h                                                  \
+          hevc.h\
           qsv.h                                                         \
           vaapi.h                                                       \
           vda.h                                                         \

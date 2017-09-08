@@ -530,7 +530,7 @@ static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
 
 #undef CMP
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
 #if BIT_DEPTH < 9
 DECLARE_ALIGNED(16, static const int16_t, DCT_II_4x4[4][4]) =
 {

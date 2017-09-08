@@ -25,6 +25,10 @@
 #include "hevc.h"
 #include "hevcdsp.h"
 
+#if OHCONFIG_AMT
+#include "hevc_amt_defs.h"
+#endif
+
 static const int8_t transform[32][32] = {
     { 64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,
       64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64 },
@@ -280,7 +284,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     PEL_FUNC(put_hevc_qpel_bi_w, 1, 0, put_hevc_qpel_bi_w_v, depth);          \
     PEL_FUNC(put_hevc_qpel_bi_w, 1, 1, put_hevc_qpel_bi_w_hv, depth)
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
 #define HEVC_DSP(depth)                                                            \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                        \
     hevcdsp->transform_add[0]       = FUNC(transform_add4x4, depth);               \

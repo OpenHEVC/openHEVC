@@ -1405,7 +1405,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
 
         if (cbf_luma)
             ff_hevc_hls_residual_coding(s, x0, y0, log2_trafo_size, scan_idx, 0
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
                                         , log2_cb_size
 #endif
             );
@@ -1427,7 +1427,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 if (cbf_cb[i])
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 1
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
                                                 , log2_cb_size
 #endif
                     );
@@ -1460,7 +1460,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 if (cbf_cr[i])
                     ff_hevc_hls_residual_coding(s, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 2
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
                                                 , log2_cb_size
 #endif
                     );
@@ -1493,7 +1493,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 if (cbf_cb[i])
                     ff_hevc_hls_residual_coding(s, xBase, yBase + (i << log2_trafo_size),
                                                 log2_trafo_size, scan_idx_c, 1
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
                                                 , log2_cb_size
 #endif
             		);
@@ -1507,7 +1507,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 if (cbf_cr[i])
                     ff_hevc_hls_residual_coding(s, xBase, yBase + (i << log2_trafo_size),
                                                 log2_trafo_size, scan_idx_c, 2
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
                                                 , log2_cb_size
 #endif
                     );
@@ -1631,7 +1631,7 @@ static int hls_transform_tree(HEVCContext *s, int x0, int y0,
         const int x1 = x0 + trafo_size_split;
         const int y1 = y0 + trafo_size_split;
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
         if (0==trafo_depth)
         {
             s->HEVClc->cu.emt_cu_flag = ff_hevc_emt_cu_flag_decode(s, log2_cb_size, 1);
@@ -1665,7 +1665,7 @@ do {                                                                            
             cbf_luma = ff_hevc_cbf_luma_decode(s, trafo_depth);
         }
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
         if (0 == trafo_depth)
         {
         	s->HEVClc->cu.emt_cu_flag = ff_hevc_emt_cu_flag_decode(s, log2_cb_size, cbf_luma);

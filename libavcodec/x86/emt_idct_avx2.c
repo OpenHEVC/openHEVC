@@ -1,4 +1,5 @@
-#include "libavcodec/hevc.h"
+#include "libavcodec/x86/hevcdsp.h"
+#include "libavcodec/hevc_amt_defs.h"
 
 #if HAVE_AVX2
 #include <immintrin.h>
@@ -16,10 +17,10 @@
 
 #include "libavcodec/bit_depth_template.c"
 
-#if COM16_C806_EMT
+
 #define SHIFT_EMT_V (EMT_TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC)
 #define ADD_EMT_V (1 << (SHIFT_EMT_V - 1))
-#endif
+
 
 
 //extern __inline__ uint64_t rdtsc(void) {

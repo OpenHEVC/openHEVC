@@ -23,20 +23,6 @@
 
 #include "hevc_defs.h"
 
-
-
-#if COM16_C806_EMT
-#define EMT_INTRA_MAX_CU		32
-#define EMT_INTER_MAX_CU		32
-#define EMT_SIGNUM_THR			 2
-#define INTER_MODE_IDX		   255
-#define MAX_TU_SIZE				32
-#define EMT_TRANSFORM_MATRIX_SHIFT 6
-#define COM16_C806_TRANS_PREC	 2
-#endif
-
-
-
 #define PARALLEL_SLICE   0
 #define PARALLEL_FILTERS 0
 
@@ -53,23 +39,6 @@
 #define print_cabac(string, val)
 #endif
 
-
-
-
-#if COM16_C806_EMT
-enum EMT_DCTTransformType {
-    DCT_II = 0,
-    DCT_III,
-    DCT_I,
-    DST_I,     // subset 1
-    DST_VII,   // subset 0, 1 et 2
-    DCT_VIII,  // subset 0
-    DCT_V,     // subset 2
-    NUM_TRANS_TYPE,
-    DCT2_HEVC,
-    DCT2_EMT,
-};
-#endif
 
 enum ScalabilityType
 {

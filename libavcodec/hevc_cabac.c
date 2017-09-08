@@ -29,6 +29,10 @@
 #include "hevc.h"
 #include "hevcdec.h"
 
+#if OHCONFIG_AMT
+#include "hevc_amt_defs.h"
+#endif
+
 #define CABAC_MAX_BIN 31
 
 /**
@@ -84,7 +88,7 @@ static const int8_t num_bins_in_se[] = {
      2, // res_scale_sign_flag
      1, // cu_chroma_qp_offset_flag
      1, // cu_chroma_qp_offset_idx
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
      4, // emt_cu_flag
      4, // emt_tu_idx
 #endif
@@ -143,7 +147,7 @@ static const int elem_offset[sizeof(num_bins_in_se)] = {
     174, // res_scale_sign_flag
     176, // cu_chroma_qp_offset_flag
     177, // cu_chroma_qp_offset_idx
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     178, // emt_cu_flag
     182, // emt_tu_idx
 #endif
@@ -230,7 +234,7 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154,
       // cu_chroma_qp_offset_idx
       154,
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
       // emt_cu_flag
       CNU, CNU, CNU, CNU,
       // emt_tu_idx
@@ -313,7 +317,7 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154,
       // cu_chroma_qp_offset_idx
       154,
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
       // emt_cu_flag
       CNU, CNU, CNU, CNU,
       // emt_tu_idx
@@ -396,7 +400,7 @@ static const uint8_t init_values[3][HEVC_CONTEXTS] = {
       154,
       // cu_chroma_qp_offset_idx
       154,
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
       // emt_cu_flag
       CNU, CNU, CNU, CNU,
       // emt_tu_idx
@@ -473,7 +477,7 @@ static const uint8_t diag_scan8x8_inv[8][8] = {
     { 28, 36, 43, 49, 54, 58, 61, 63, },
 };
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
 static const int emt_intra_subset_select[3][2] = {
     {DST_VII, DCT_VIII},
     {DST_VII, DST_I   },
@@ -739,7 +743,7 @@ int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s)
     return i;
 }
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
 uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma)
 {
     //uint8_t inc = ;
@@ -1343,7 +1347,7 @@ static av_always_inline int coeff_sign_flag_decode(HEVCContext *s, uint8_t nb)
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                 int log2_trafo_size, enum ScanType scan_idx,
                                 int c_idx
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
                                 , int log2_cb_size
 #endif
 )
@@ -1362,7 +1366,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int num_coeff = 0;
     int greater1_ctx = 1;
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     uint8_t uiNumSig = 0;
 #endif
 
@@ -1816,12 +1820,12 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 coeffs[y_c * trafo_size + x_c] = trans_coeff_level;
             }
         }
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
         uiNumSig += n_end ;
 #endif
     }
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     if ( !transform_skip_flag && !c_idx && s->HEVClc->cu.emt_cu_flag )
     {
         if (s->HEVClc->cu.pred_mode == MODE_INTER){
@@ -1860,7 +1864,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
         } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
             enum IntraPredMode ucMode = INTER_MODE_IDX;
             DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE]);

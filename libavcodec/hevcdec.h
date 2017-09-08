@@ -27,6 +27,8 @@
 
 #include "libavutil/buffer.h"
 
+#include "config.h"
+
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "cabac.h"
@@ -153,7 +155,7 @@ enum SyntaxElement {
     RES_SCALE_SIGN_FLAG,
     CU_CHROMA_QP_OFFSET_FLAG,
     CU_CHROMA_QP_OFFSET_IDX,
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     EMT_CU_FLAG,
     EMT_TU_IDX,
 #endif
@@ -268,7 +270,7 @@ typedef struct CodingUnit {
     uint8_t rqt_root_cbf;
 
     uint8_t pcm_flag;
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     uint8_t emt_cu_flag;
 #endif
     // Inferred parameters
@@ -328,7 +330,7 @@ typedef struct TransformUnit {
     int8_t  cu_qp_offset_cb;
     int8_t  cu_qp_offset_cr;
     uint8_t cross_pf;
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     uint8_t emt_tu_idx;
 #endif
 } TransformUnit;
@@ -660,7 +662,7 @@ int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0,
                              int x_cb, int y_cb);
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
 uint8_t ff_hevc_emt_cu_flag_decode(HEVCContext *s, int log2_cb_size, int cbfLuma);
 uint8_t ff_hevc_emt_tu_idx_decode(HEVCContext *s, int log2_cb_size);
 #endif
@@ -739,7 +741,7 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
                                  , int log2_cb_size
 #endif
 );

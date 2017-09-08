@@ -26,7 +26,7 @@
 #define AVCODEC_HEVCDSP_H
 #include "hevc.h"
 #include "stdint.h"
-
+#include "config.h"
 
 #include "get_bits.h"
 struct AVFrame;
@@ -66,7 +66,7 @@ typedef struct HEVCDSPContext {
     void (*sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst,
                             ptrdiff_t stride_src, struct SAOParams *sao, int width,
                             int height, int c_idx);
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
     ///* idct_emt[pred_mode][emt_tr_idx][log2_tr_size_minus2](...) *///
     void (*idct2_emt_v[2][7][5])(int16_t *coeffs, int16_t *tmp, int log2_transform_range, int clip_min, int clip_max);
     void (*idct2_emt_h[2][7][5])(int16_t *tmp,    int16_t *dst, int log2_transform_range, int clip_min, int clip_max);
@@ -163,7 +163,7 @@ void ff_shvc_dsp_update(HEVCDSPContext *hevcdsp, int bit_depth, int have_CGS);
 extern const int8_t ff_hevc_epel_filters[7][4];
 extern const int8_t ff_hevc_qpel_filters[3][16];
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
 // ******************************************** Mode intra et SubSet ********************************************
 //  int emt_Tr_Set_H[35];
 //  int emt_Tr_Set_V[35];

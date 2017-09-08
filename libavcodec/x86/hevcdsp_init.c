@@ -691,7 +691,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_8_sse2;
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_sse2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_sse2;
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
             c->idct2_emt_v[0][4][0] = emt_idst_VII_4x4_v_avx2_8;
             c->idct2_emt_v[1][4][0] = emt_idst_VII_4x4_v_avx2_8;
             c->idct2_emt_h[0][4][0] = emt_idst_VII_4x4_h_avx2_8;

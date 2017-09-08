@@ -44,6 +44,8 @@ endif
 #TODO fix broken x86_mc_sse
 AVX-OBJS-$(CONFIG_HEVC_DECODER)        += x86/hevc_mc_avx2.o  
 
+AVX-OBJS-$(OHCONFIG_AMT)               += x86/emt_idct_avx2.o
+
 # subsystems
 X86ASM-OBJS-$(CONFIG_BLOCKDSP)           += x86/blockdsp.o
 X86ASM-OBJS-$(CONFIG_BSWAPDSP)           += x86/bswapdsp.o
