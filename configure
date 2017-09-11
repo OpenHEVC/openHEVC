@@ -5811,7 +5811,6 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 
 print_config OHCONFIG_ "$config_files" $OPENHEVC_COMPONENTS
 
-echo "#define HEVC_ENCRYPTION 0" >> $TMPH
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
 echo "endif # FFMPEG_CONFIG_MAK" >> ffbuild/config.mak
 
