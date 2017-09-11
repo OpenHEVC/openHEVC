@@ -335,7 +335,7 @@ static av_always_inline void ff_hevc_sao_edge_filter_ ## D ##_sse(             \
 }
 
 //SAO_EDGE_FILTER( 8)
-static __attribute__((always_inline)) inline void ff_hevc_sao_edge_filter_8_sse(
+static av_always_inline void ff_hevc_sao_edge_filter_8_sse(
                                                                                 uint8_t *_dst, uint8_t *_src,
                                                                                 ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                                                                 struct SAOParams *sao,

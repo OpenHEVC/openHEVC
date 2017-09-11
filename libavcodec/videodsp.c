@@ -57,3 +57,9 @@ av_cold void ff_videodsp_init(VideoDSPContext *ctx, int bpc)
     if (ARCH_X86)
         ff_videodsp_init_x86(ctx, bpc);
 }
+
+
+void ff_videodsp_init_aarch64(VideoDSPContext *ctx, int bpc) {};
+void ff_videodsp_init_arm(VideoDSPContext *ctx, int bpc) {};
+void ff_videodsp_init_ppc(VideoDSPContext *ctx, int bpc) {};
+void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc) {};
