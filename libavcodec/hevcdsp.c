@@ -215,7 +215,7 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters[3][16]) = {
 #include "hevcdsp_template.c"
 #undef BIT_DEPTH
 
-void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth, int neon)
+void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 {
 #undef FUNC
 #define FUNC(a, depth) a ## _ ## depth
@@ -528,10 +528,10 @@ int i = 0;
 #endif
     if (ARCH_X86)
         ff_hevc_dsp_init_x86(hevcdsp, bit_depth);
-    if (ARCH_ARM && neon)
+    if (ARCH_ARM)
         ff_hevcdsp_init_arm(hevcdsp, bit_depth);
 #if CONFIG_GREEN
-    green_dsp_init(hevcdsp, neon); 
+    green_dsp_init(hevcdsp); 
 #endif
 }
 

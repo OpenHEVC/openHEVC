@@ -162,7 +162,7 @@ typedef struct HEVCDSPContext {
 #endif
 } HEVCDSPContext;
 
-void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth, int neon);
+void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
 void ff_shvc_dsp_update(HEVCDSPContext *hevcdsp, int bit_depth, int have_CGS);
 
 extern const int8_t ff_hevc_epel_filters[7][4];

@@ -7,9 +7,9 @@
 
 #include "hevcdsp.h"
 
-void green_dsp_init(HEVCDSPContext *hevcdsp, int neon);
-void green_update_filter_luma(HEVCDSPContext *c, int type, int neon);
-void green_update_filter_chroma(HEVCDSPContext *c, int type, int neon);
+void green_dsp_init(HEVCDSPContext *hevcdsp);
+void green_update_filter_luma(HEVCDSPContext *c, int type);
+void green_update_filter_chroma(HEVCDSPContext *c, int type);
 
 DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_green1_filters[7][2]) = {
 	{ 64 , 0 },
