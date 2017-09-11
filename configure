@@ -5650,6 +5650,7 @@ DEPX86ASMFLAGS=\$(X86ASMFLAGS)
 AR=$ar
 ARFLAGS=$arflags
 AR_O=$ar_o
+UNAR=$ar
 RANLIB=$ranlib
 STRIP=$strip
 NVCC=$nvcc

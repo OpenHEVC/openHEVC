@@ -149,14 +149,16 @@ openhevc-$(OHCONFIG_OHSTATIC): openhevc-static
 openhevc-shared: libopenhevc/$(SLIBPREF)openhevc$(SLIBSUF) libopenhevc/libopenhevc.pc
 
 openhevc-static: libopenhevc/$(LIBPREF)openhevc$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavutil/$(LIBPREF)avutil$(LIBSUF)
-	$(Q)mkdir -p tmp && cp $^ tmp/  && cd tmp
-	$(AR) -x tmp/$(LIBPREF)openhevc$(LIBSUF) 
-	$(AR) -x tmp/$(LIBPREF)avcodec$(LIBSUF)
-	$(AR) -x tmp/$(LIBPREF)avutil$(LIBSUF)
-	$(AR) $(ARFLAGS) tmp/$(LIBPREF)openhevc$(LIBSUF) 
-	$(Q)cp -f tmp/$(LIBPREF)openhevc$(LIBSUF) libopenhevc/  && rm -r tmp
-
-tmp/$(LIBPREF)openhevc$(LIBSUF): tmp/*.o
+	$(Q)mkdir -p tmp && cp $^ tmp/
+	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)openhevc$(LIBSUF)
+	$(RM) $(LIBPREF)openhevc$(LIBSUF)
+	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)avcodec$(LIBSUF)
+	$(RM) $(LIBPREF)avcodec$(LIBSUF)
+	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)avutil$(LIBSUF)
+	$(RM) $(LIBPREF)avutil$(LIBSUF)
+	$(AR) $(ARFLAGS) tmp/$(LIBPREF)openhevc$(LIBSUF) tmp/*.o
+	$(Q)cp -f tmp/$(LIBPREF)openhevc$(LIBSUF) libopenhevc/
+	$(RM) -r tmp
 
 libavutil/ffversion.h .version:
 	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)
