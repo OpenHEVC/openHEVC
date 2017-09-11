@@ -80,8 +80,8 @@
 #include <windows.h>
 #endif
 
-#if HEVC_ENCRYPTION
-#include "libavcodec/hevc.h"
+#if OHCONFIG_ENCRYPTION
+#include "libavcodec/hevcdec.h"
 #endif
 
 static int init_report(const char *env);
@@ -192,7 +192,7 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
     return us;
 }
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
 static int parse_enum_n(const char *arg, unsigned num_chars, const char * const *names, int8_t *dst)
 {
   int8_t i;
@@ -226,7 +226,7 @@ int parse_enum_args(const char *context, const char *enumstr, const char *name,
     if OPT("crypto")
     {
         // Disallow turning on the encryption when it's not compiled in.
-    #if HEVC_ENCRYPTION
+    #if OHCONFIG_ENCRYPTION
          // on, off, feature1+feature2
 
         const char *token_begin = av_strdup(enumstr);
@@ -279,7 +279,7 @@ int parse_enum_args(const char *context, const char *enumstr, const char *name,
 uint8_t* parse_array(const char *context, const char *keystr, int size,
                      int min, int max)
 {
-    #if HEVC_ENCRYPTION
+    #if OHCONFIG_ENCRYPTION
         uint8_t *coeff_key;
         coeff_key = (uint8_t *)malloc(sizeof(uint8_t)*size);
         char *key = av_strdup(keystr);
@@ -464,7 +464,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         *(float *)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
     } else if (po->flags & OPT_DOUBLE) {
         *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     } else if (po->flags & OPT_ENUM) {
         *(int *)dst = parse_enum_args(opt, arg, "crypto", 0, INT_MAX);
     } else if (po->flags & OPT_DATA) {

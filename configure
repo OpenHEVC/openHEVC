@@ -1299,6 +1299,7 @@ EXTERNAL_LIBRARY_LIST="
     sdl2
     videotoolbox
     zlib
+    libcryptopp
 "
 
 HWACCEL_LIBRARY_LIST="
@@ -2155,6 +2156,10 @@ openhevc_suggest="mov_demuxer mpegts_demuxer h264_decoder h264_demuxer h264_pars
 ohplay_deps="openhevc avformat"
 ohplay_suggest="sdl sdl2"
 
+encryption_deps="libcryptopp"
+encryption_extralibs="-lstdc++ -lcryptopp"
+
+pkg-config libcrypto++ || pkg-config cryptopp && enable libcryptopp
 # documentation
 podpages_deps="perl"
 manpages_deps="perl pod2man"

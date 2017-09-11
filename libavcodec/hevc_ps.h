@@ -318,20 +318,6 @@ enum Tier   {
     T_HIGH = 1,
 };
 
-/*
- Encryption configuration
- */
-enum hevc_crypto_features {
-    HEVC_CRYPTO_OFF = 0,
-    HEVC_CRYPTO_MVs = (1 << 0),
-    HEVC_CRYPTO_MV_SIGNS = (1 << 1),
-    HEVC_CRYPTO_TRANSF_COEFFS = (1 << 2),
-    HEVC_CRYPTO_TRANSF_COEFF_SIGNS = (1 << 3),
-	HEVC_CRYPTO_INTRA_PRED_MODE = (1 << 4),
-    HEVC_CRYPTO_ON = (1 << 5) - 1,
-};
-
-
 typedef struct RepFormat
 {
     enum ChromaFormat chroma_format_vps_idc;

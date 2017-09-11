@@ -43,7 +43,7 @@
 #include "thread.h"
 #include "videodsp.h"
 #include "hevc_defs.h"
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
 #include "crypto.h"
 #endif
 #include "hevcdsp.h"
@@ -93,6 +93,21 @@
 #define IS_BLA(s) ((s)->nal_unit_type == HEVC_NAL_BLA_W_RADL || (s)->nal_unit_type == HEVC_NAL_BLA_W_LP || \
                    (s)->nal_unit_type == HEVC_NAL_BLA_N_LP)
 #define IS_IRAP(s) ((s)->nal_unit_type >= 16 && (s)->nal_unit_type <= 23)
+
+#if OHCONFIG_ENCRYPTION
+/*
+ Encryption configuration
+ */
+enum hevc_crypto_features {
+    HEVC_CRYPTO_OFF = 0,
+    HEVC_CRYPTO_MVs = (1 << 0),
+    HEVC_CRYPTO_MV_SIGNS = (1 << 1),
+    HEVC_CRYPTO_TRANSF_COEFFS = (1 << 2),
+    HEVC_CRYPTO_TRANSF_COEFF_SIGNS = (1 << 3),
+    HEVC_CRYPTO_INTRA_PRED_MODE = (1 << 4),
+    HEVC_CRYPTO_ON = (1 << 5) - 1,
+};
+#endif
 
 enum RPSType {
     ST_CURR_BEF = 0,
@@ -434,7 +449,7 @@ typedef struct HEVCLocalContext {
     uint8_t slice_or_tiles_up_boundary;
 
     int ctb_tile_rs;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     Crypto_Handle       dbs_g;
     uint32_t prev_pos;
 #endif
@@ -533,7 +548,7 @@ typedef struct HEVCContext {
     // PU
     uint8_t *tab_ipm;
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     uint8_t *tab_ipm_encry;
 #endif
 
@@ -612,12 +627,14 @@ typedef struct HEVCContext {
     int BL_width;
     int BL_height;
     int bl_available;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     uint8_t encrypt_params;
     AVRational last_click_pos;
     uint8_t prev_num_tile_rows;
     uint8_t prev_num_tile_columns;
     uint8_t *tile_table_encry;
+    uint8_t *encrypt_init_val;
+    int encrypt_init_val_length;
 #endif
 } HEVCContext;
 

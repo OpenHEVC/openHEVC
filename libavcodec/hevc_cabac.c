@@ -564,7 +564,7 @@ int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
              s->ps.pps->tile_id[ctb_addr_ts] != s->ps.pps->tile_id[ctb_addr_ts - 1])){
             cabac_init_state(s);
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
             //if(s->tile_table_encry)
             if (s->tile_table_encry[s->ps.pps->tile_id[ctb_addr_ts]]){
                 InitC(s->HEVClc->dbs_g, s->encrypt_init_val);
@@ -594,7 +594,7 @@ int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
                     return ret;
             }
             cabac_init_state(s);
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
             if (s->tile_table_encry[s->ps.pps->tile_id[ctb_addr_ts]]){
                 InitC(s->HEVClc->dbs_g, s->encrypt_init_val);
                 s->HEVClc->prev_pos = 0;
@@ -945,7 +945,7 @@ static av_always_inline int abs_mvd_greater1_flag_decode(HEVCContext *s)
 }
 
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
 static av_always_inline int mvd_sign_flag_decode(HEVCContext *s);
 
 static av_always_inline int mvd_decode_enc(HEVCContext *s)
@@ -977,7 +977,7 @@ static av_always_inline int mvd_decode(HEVCContext *s)
 {
     int ret = 2;
     int k = 1;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     if( s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MVs))
       return mvd_decode_enc (s);
 #endif
@@ -1108,7 +1108,7 @@ static av_always_inline int coeff_abs_level_greater1_flag_decode(HEVCContext *s,
 
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc);
 }
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
 static av_always_inline int coeff_abs_level_remaining_decode_enc(HEVCContext *s, int rc_rice_param, int base)
 {
     int prefix = 0;
@@ -1122,10 +1122,12 @@ static av_always_inline int coeff_abs_level_remaining_decode_enc(HEVCContext *s,
     if (prefix == CABAC_MAX_BIN)
         av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", prefix);
     if (prefix < 3) {
+        unsigned int codeNumber;
+        unsigned int res;
         for (i = 0; i < rc_rice_param; i++)
             suffix = (suffix << 1) | get_cabac_bypass(&s->HEVClc->cc);
-        unsigned int codeNumber=(prefix << (rc_rice_param)) + suffix;
-        unsigned int res=suffix;
+        codeNumber = (prefix << (rc_rice_param)) + suffix;
+        res = suffix;
         if(rc_rice_param==1) {
             if(!(( base ==2 )&& (codeNumber==4 || codeNumber==5) ) ) {
                 key = ff_get_key (&s->HEVClc->dbs_g, 1);
@@ -1337,7 +1339,7 @@ static av_always_inline int coeff_sign_flag_decode(HEVCContext *s, uint8_t nb)
 
     for (i = 0; i < nb; i++)
         ret = (ret << 1) | get_cabac_bypass(&s->HEVClc->cc);
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFF_SIGNS))
       return ret^ff_get_key (&s->HEVClc->dbs_g, nb);
 #endif
@@ -1743,7 +1745,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     trans_coeff_level = 1 + coeff_abs_level_greater1_flag[m];
                     if (trans_coeff_level == ((m == first_greater1_coeff_idx) ? 3 : 2)) {
                         int last_coeff_abs_level_remaining;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
                         if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFFS))
                             last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode_enc(s, c_rice_param, trans_coeff_level);
                         else
@@ -1766,7 +1768,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     }
                 } else {
                     int last_coeff_abs_level_remaining;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
                     if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFFS))
                         last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode_enc(s, c_rice_param, 1);
                     else
@@ -1921,7 +1923,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
 {
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     unsigned int mvd_sign_flag_x=0, mvd_sign_flag_y=0;
 #endif
     HEVCLocalContext *lc = s->HEVClc;
@@ -1939,7 +1941,7 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
     case 0: lc->pu.mvd.x = 0;                       break;
     }
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MV_SIGNS)) {
       if(x) {
         mvd_sign_flag_x = lc->pu.mvd.x < 0 ? 1:0;
@@ -1952,7 +1954,7 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
     case 1: lc->pu.mvd.y = mvd_sign_flag_decode(s); break;
     case 0: lc->pu.mvd.y = 0;                       break;
     }
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_MV_SIGNS)) {
       if(y) {
         mvd_sign_flag_y = lc->pu.mvd.y < 0 ? 1:0;

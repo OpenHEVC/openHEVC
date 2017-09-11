@@ -786,7 +786,7 @@ void oh_flush_shvc(OHHandle openHevcHandle, int decoderId)
     avcodec_flush_buffers(oh_ctx->codec_ctx);
 }
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
 void oh_set_crypto_mode(OHHandle oh_hdl, int val)
 {
     OHContextList *oh_ctx_lists = (OHContextList *) oh_hdl;

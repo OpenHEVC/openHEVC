@@ -1,6 +1,6 @@
 #include <libavcodec/crypto.h>
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
 #include <cryptopp/aes.h>
 #include <cryptopp/modes.h>
 #include <cryptopp/osrng.h>

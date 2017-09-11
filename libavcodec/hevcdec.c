@@ -68,7 +68,7 @@ static void pic_arrays_free(HEVCContext *s)
 
     av_freep(&s->tab_ipm);
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     av_freep(&s-> tab_ipm_encry);
 #endif
     av_freep(&s->cbf_luma);
@@ -144,7 +144,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     s->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
     s->tab_ipm  = av_mallocz(min_pu_size);
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     s->tab_ipm_encry = av_mallocz(min_pu_size);
     if (!s->tab_ipm_encry)
       goto fail;
@@ -2345,7 +2345,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     int intra_pred_mode;
     int candidate[3];
     int i, j;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
    if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE)) {
      cand_up   = (lc->ctb_up_flag || y0b) ?
 	                       s->tab_ipm_encry[(y_pu - 1) * min_pu_width + x_pu] : INTRA_DC;
@@ -2399,7 +2399,7 @@ static int luma_intra_pred_mode(HEVCContext *s, int x0, int y0, int pu_size,
     if (!size_in_pus)
         size_in_pus = 1;
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
    if( s->tile_table_encry[s->HEVClc->tile_id]  && (s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE)) {
 	 if(intra_pred_mode != INTRA_ANGULAR_26 && intra_pred_mode != INTRA_ANGULAR_10) {/* for correct chroma Inra prediction mode */
 
@@ -2548,7 +2548,7 @@ static void intra_prediction_unit_default_value(HEVCContext *s,
     for (j = 0; j < size_in_pus; j++)
         memset(&s->tab_ipm[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
    if(s->tile_table_encry[s->HEVClc->tile_id]  && (s->encrypt_params & HEVC_CRYPTO_INTRA_PRED_MODE)) {
     for (j = 0; j < size_in_pus; j++)
             memset(&s->tab_ipm_encry[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
@@ -3401,7 +3401,7 @@ static int hls_slice_data(HEVCContext *s,const H2645NAL *nal)
         atomic_store(&s->wpp_err, 0);
         ff_reset_entries(s->avctx);
     }
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     InitC(s->HEVClc->dbs_g, s->encrypt_init_val);
     s->HEVClc->prev_pos = 0;
 #endif
@@ -3417,7 +3417,7 @@ static int hls_slice_data(HEVCContext *s,const H2645NAL *nal)
         s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
         InitC(s->sList[i]->HEVClc->dbs_g, s->encrypt_init_val);
         s->sList[i]->HEVClc->prev_pos = 0;
 #endif
@@ -3430,7 +3430,7 @@ static int hls_slice_data(HEVCContext *s,const H2645NAL *nal)
         arg[i] = i;
         ret[i] = 0;
     }
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     if(s->last_click_pos.den != 0 || s->last_click_pos.num != 0){
         int x,y, tmptile_id= 0;
 
@@ -3764,7 +3764,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         if (ret < 0)
             return ret;
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     if(!s->tile_table_encry){
         s->tile_table_encry = av_mallocz(sizeof(uint8_t)*s->ps.pps->num_tile_columns * s->ps.pps->num_tile_rows);
         s->tile_table_encry[0]=1;
@@ -4351,7 +4351,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for (i = 1; i < s->threads_number; i++) {
         HEVCLocalContext *lc = s->HEVClcList[i];
         if (lc) {
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     DeleteCryptoC(s->HEVClcList[i]->dbs_g);
 #endif
             av_freep(&s->HEVClcList[i]);
@@ -4360,7 +4360,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     }
     if (s->HEVClc == s->HEVClcList[0])
         s->HEVClc = NULL;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     DeleteCryptoC(s->HEVClcList[0]->dbs_g);
     if(s->tile_table_encry)
        av_free(s->tile_table_encry);
@@ -4388,7 +4388,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->cabac_state = av_malloc(HEVC_CONTEXTS);
     if (!s->cabac_state)
         goto fail;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     s->HEVClc->dbs_g = CreateC();
     s->HEVClc->prev_pos = 0;
 #endif
@@ -4448,7 +4448,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->sList[i] = av_mallocz(sizeof(HEVCContext));
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
         s->HEVClcList[i]->dbs_g = CreateC();
         s->HEVClcList[i]->prev_pos = 0;
 #endif
@@ -4542,7 +4542,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->picture_struct       = s0->picture_struct;
     s->interlaced           = s0->interlaced;
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     s->encrypt_params        = s0->encrypt_params;
 
     if (s0->prev_num_tile_columns != s->prev_num_tile_columns || s0->prev_num_tile_rows != s->prev_num_tile_rows){
@@ -4588,7 +4588,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->enable_parallel_tiles = 0;
     s->picture_struct = 0;
     s->sei.picture_timing.picture_struct = 0;
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     //s->encrypt_params =  HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS | HEVC_CRYPTO_INTRA_PRED_MODE;
     s->last_click_pos.den = 0;
     s->last_click_pos.num = 0;
@@ -4662,7 +4662,7 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
     { "quality_layer_id", "set the max quality id", OFFSET(quality_layer_id),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10, PAR },
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
     { "mouse-click-pos", "select tile from last click position and enable/disable encryption",OFFSET(last_click_pos),
        AV_OPT_TYPE_RATIONAL,{.dbl = 0},0,INT_MAX,PAR },
     { "crypto-param", "",OFFSET(encrypt_params),

@@ -352,7 +352,7 @@ void oh_select_active_layer(OHHandle oh_hdl, int val);
  */
 void oh_select_view_layer(OHHandle oh_hdl, int val);
 
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
 void oh_set_crypto_mode(OHHandle oh_hdl, int val);
 void oh_set_crypto_key(OHHandle oh_hdl, uint8_t *val);
 #endif
