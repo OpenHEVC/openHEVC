@@ -60,7 +60,7 @@ FFLIBS := avutil
 # first so "all" becomes default target
 #all: all-yes
 
-all: openhevc ohplay
+all: openhevc $(PROGSSUF)ohplay$(EXESUF)
 
 include $(SRC_PATH)/ffbuild/common.mak
 
@@ -201,6 +201,7 @@ clean::
 	$(RM) $(CLEANSUFFIXES:%=compat/msvcrt/%)
 	$(RM) $(CLEANSUFFIXES:%=compat/atomics/pthread/%)
 	$(RM) $(CLEANSUFFIXES:%=compat/%)
+	$(RM) $(CLEANSUFFIXES:%=ohplay_utils/%)
 #	$(RM) -r coverage-html
 #	$(RM) -rf coverage.info coverage.info.in lcov
 
