@@ -819,3 +819,11 @@ const unsigned oh_version(OHHandle openHevcHandle)
     return LIBOPENHEVC_VERSION_INT;
 }
 
+unsigned openhevc_version(void){
+    return LIBOPENHEVC_VERSION_INT;
+}
+
+const char *openhevc_configuration(void){
+    return FFMPEG_CONFIGURATION;
+}
+
