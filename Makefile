@@ -57,6 +57,7 @@ FFLIBS-$(CONFIG_AVCODEC)    += avcodec
 
 FFLIBS := avutil
 
+#FFLIBS := openhevc
 # first so "all" becomes default target
 #all: all-yes
 
@@ -69,7 +70,7 @@ FF_DEP_LIBS  := $(DEP_LIBS)
 FF_STATIC_DEP_LIBS := $(STATIC_DEP_LIBS)
 
 
-#all: $(AVPROGS)
+all: $(AVPROGS)
 
 #$(TOOLS): %$(EXESUF): %.o
 #	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
@@ -111,6 +112,11 @@ include $(SRC_PATH)/$(1)/Makefile
 include $(SRC_PATH)/ffbuild/library.mak
 endef
 
+define DODIR
+SUBDIR := $(1)/
+include $(SRC_PATH)/$(1)/Makefile
+endef
+
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 define DOPROG
@@ -146,18 +152,18 @@ openhevc-$(OHCONFIG_OHSHARED): openhevc-shared
 openhevc-$(OHCONFIG_OHSTATIC): openhevc-static
 
 
-openhevc-shared: libopenhevc/$(SLIBPREF)openhevc$(SLIBSUF) libopenhevc/libopenhevc.pc
+openhevc-shared: libopenhevc/$(SLIBPREF)openhevc$(BUILDSUF)$(SLIBSUF) libopenhevc/libopenhevc.pc
 
-openhevc-static: libopenhevc/$(LIBPREF)openhevc$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavutil/$(LIBPREF)avutil$(LIBSUF)
+openhevc-static: libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
 	$(Q)mkdir -p tmp && cp $^ tmp/
-	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)openhevc$(LIBSUF)
-	$(RM) $(LIBPREF)openhevc$(LIBSUF)
-	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)avcodec$(LIBSUF)
-	$(RM) $(LIBPREF)avcodec$(LIBSUF)
-	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)avutil$(LIBSUF)
-	$(RM) $(LIBPREF)avutil$(LIBSUF)
-	$(AR) $(ARFLAGS) tmp/$(LIBPREF)openhevc$(LIBSUF) tmp/*.o
-	$(Q)cp -f tmp/$(LIBPREF)openhevc$(LIBSUF) libopenhevc/
+	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF)
+	$(RM) $(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF)
+	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF)
+	$(RM) $(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF)
+	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
+	$(RM) $(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
+	$(AR) $(ARFLAGS) tmp/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) tmp/*.o
+	$(Q)cp -f tmp/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libopenhevc/
 	$(RM) -r tmp
 
 libavutil/ffversion.h .version:
@@ -175,8 +181,10 @@ install: install-libs install-headers
 
 install-libs: install-libs-yes
 
+#install-progs-yes:
+#install-progs-$(CONFIG_SHARED): install-libs
 install-progs-yes:
-install-progs-$(CONFIG_SHARED): install-libs
+install-progs-$(OHCONFIG_OHSHARED): install-libs
 
 install-progs: install-progs-yes $(AVPROGS)
 	$(Q)mkdir -p "$(BINDIR)"
@@ -187,7 +195,31 @@ install-progs: install-progs-yes $(AVPROGS)
 #	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
 #	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
 
-uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
+#uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
+
+uninstall: uninstall-libopenhevc uninstall-headers uninstall-progs
+
+LIBNAMEOH=$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF)
+SLIBNAMEOH_WITH_MAJOR=$(SLIBNAMEOH).$(libopenhevc_VERSION_MAJOR)
+SLIBNAMEOH=$(LIBPREF)openhevc$(BUILDSUF)$(SLIBSUF)
+SLIBNAMEOH_WITH_VERSION=$(SLIBNAMEOH).$(libopenhevc_VERSION)
+INCOHINSTDIR :=$(INCDIR)/libopenhevc
+
+uninstall-libopenhevc:
+	-$(RM) "$(SHLIBDIR)/$(SLIBNAMEOH_WITH_MAJOR)" \
+	       "$(SHLIBDIR)/$(SLIBNAMEOH)"            \
+	       "$(SHLIBDIR)/$(SLIBNAMEOH_WITH_VERSION)"
+	-$(RM)  $(SLIB_INSTALL_EXTRA_SHLIB:%="$(SHLIBDIR)/%")
+	-$(RM)  $(SLIB_INSTALL_EXTRA_LIB:%="$(LIBDIR)/%")
+	-$(RM) "$(LIBDIR)/$(LIBNAMEOH)"
+
+OHHEADERS=$(HEADERS)
+
+uninstall-headers: $(eval $(call DODIR,libopenhevc))
+	$(RM) $(addprefix "$(INCOHINSTDIR)/",$(OHHEADERS) $(OHBUILT_HEADERS))
+	$(RM) "$(PKGCONFIGDIR)/libopenhevc$(BUILDSUF).pc"
+	-rmdir "$(INCOHINSTDIR)"
+
 
 uninstall-progs:
 	$(RM) $(addprefix "$(BINDIR)/", $(ALLAVPROGS))

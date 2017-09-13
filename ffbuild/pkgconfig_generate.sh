@@ -12,8 +12,14 @@ shortname=$1
 name=lib${shortname}
 fullname=${name}${build_suffix}
 comment=$2
-libs=$(eval echo \$extralibs_${shortname})
-deps=$(eval echo \$${shortname}_deps)
+if test "$shortname" = "openhevc"; then
+    libs=""
+    deps=""
+else
+    libs=$(eval echo \$extralibs_${shortname})
+    deps=$(eval echo \$${shortname}_deps)
+fi
+
 
 for dep in $deps; do
     depname=lib${dep}
