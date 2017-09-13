@@ -69,15 +69,19 @@ COMPILE_NVCC = $(call COMPILE,NVCC)
 
 %_sse.o: %_sse.c
 	$(COMPILE_C) -msse4
+	-$(if $(ASMSTRIPFLAGS), $(STRIP) $(ASMSTRIPFLAGS) $@)
 
 %_sse2.o: %_sse2.c
 	$(COMPILE_C) -msse4
+	-$(if $(ASMSTRIPFLAGS), $(STRIP) $(ASMSTRIPFLAGS) $@)
 
 %_avx.o: %_avx.c
 	$(COMPILE_C) -mavx2
+	-$(if $(ASMSTRIPFLAGS), $(STRIP) $(ASMSTRIPFLAGS) $@)
 
 %_avx2.o: %_avx2.c
 	$(COMPILE_C) -mavx2
+	-$(if $(ASMSTRIPFLAGS), $(STRIP) $(ASMSTRIPFLAGS) $@)
 
 %.o: %.c
 	$(COMPILE_C)
