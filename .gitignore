@@ -2,14 +2,35 @@
 .svn
 .DS_Store
 
-*.o
-*.d
-*.a
-*.ver
-*.pc
-*_g
 *.orig
-
+*.a
+*.o
+*.o.*
+*.d
+*.def
+*.dll
+*.dylib
+*.exe
+*.exp
+*.gcda
+*.gcno
+*.h.c
+*.ilk
+*.lib
+*.pc
+*.pdb
+*.so
+*.so.*
+*.swp
+*.ver
+*.version
+*.ptx
+*.ptx.c
+*_g
+\#*
+.\#*
+/.config
+/.version
 
 
 # Build directories
