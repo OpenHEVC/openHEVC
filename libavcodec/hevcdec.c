@@ -3688,7 +3688,7 @@ fail:
     if (s->decoder_id) {
         if(s->el_decoder_el_exist && !s->ps.vps->vps_nonHEVCBaseLayerFlag)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
         if(s->bl_available && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME ))
             ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif
@@ -4005,7 +4005,7 @@ fail:
     if (s->decoder_id) {
         if(s->el_decoder_el_exist && !s->ps.vps->vps_nonHEVCBaseLayerFlag)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
         if(s->ps.vps && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
             ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif

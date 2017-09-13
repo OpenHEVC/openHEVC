@@ -381,7 +381,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->picture_structure    = h1->picture_structure;
     h->mb_aff_frame         = h1->mb_aff_frame;
     h->droppable            = h1->droppable;
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
     h->poc_id               = h1->poc_id;
     h->el_available         = h1->el_available;
 #endif
@@ -2073,7 +2073,7 @@ int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
         }
 
         if (!h->first_field) {
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
             if (h->cur_pic_ptr /*&& !h->droppable*/) {
 #else
             if (h->cur_pic_ptr && !h->droppable) {
@@ -2117,7 +2117,7 @@ int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
 
     if (h->current_slice == 0) {
         ret = h264_field_start(h, sl, nal, first_slice);
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
         if(first_slice && h->el_available == 1 && ( h->avctx->active_thread_type & FF_THREAD_FRAME )){
             int i;
             for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {

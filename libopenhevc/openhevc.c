@@ -110,6 +110,7 @@ OHHandle oh_init(int nb_pthreads, int thread_type)
     return (OHHandle) oh_ctx_list;
 }
 
+#if OHCONFIG_AVCBASE
 OHHandle oh_init_h264(int nb_pthreads, int thread_type)
 {
     int i;
@@ -153,6 +154,7 @@ OHHandle oh_init_h264(int nb_pthreads, int thread_type)
     }
     return (OHHandle) oh_ctx_list;
 }
+
 
 OHHandle oh_init_lhvc(int nb_pthreads, int thread_type)
 {
@@ -200,6 +202,7 @@ OHHandle oh_init_lhvc(int nb_pthreads, int thread_type)
     }
     return (OHHandle) oh_ctx_list;
 }
+#endif
 
 int oh_start(OHHandle openHevcHandle)
 {
@@ -283,6 +286,7 @@ AV_NOWARN_DEPRECATED(
 }
 
 //FIXME: There should be a better way to synchronize decoders
+#if OHCONFIG_AVCBASE
 static int poc_id;
 
 int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
@@ -379,7 +383,7 @@ int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
     }
     return 0;
 }
-
+#endif
 
 void oh_extradata_cpy(OHHandle openHevcHandle, unsigned char *extra_data,
                       int extra_size_alloc)
@@ -396,6 +400,7 @@ void oh_extradata_cpy(OHHandle openHevcHandle, unsigned char *extra_data,
     }
 }
 
+#if OHCONFIG_AVCBASE
 void oh_extradata_cpy_lhvc(OHHandle openHevcHandle, unsigned char *extra_data_linf,
                            unsigned char *extra_data_lsup, int extra_size_alloc_linf,
                            int extra_size_alloc_lsup)
@@ -422,6 +427,7 @@ void oh_extradata_cpy_lhvc(OHHandle openHevcHandle, unsigned char *extra_data_li
         }
     }
 }
+#endif
 
 
 void oh_frameinfo_update(OHHandle openHevcHandle, OHFrameInfo *oh_frameinfo)

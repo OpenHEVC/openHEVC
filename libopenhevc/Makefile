@@ -2,7 +2,7 @@ NAME = openhevc
 DESC = OpenHEVC Decoder
 
 HEADERS = openhevc.h                             \
-          version.h                                     \
+          version.h                              \
 
 OBJS = openhevc.o                                \
 

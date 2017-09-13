@@ -31,7 +31,11 @@ extern "C" {
 #include <stdint.h>
 #include <stdarg.h>
 #include "config.h"
-#define OPENHEVC_HAS_AVC_BASE
+
+#if OHCONFIG_AVCBASE
+    #define OPENHEVC_HAS_AVC_BASE
+#endif
+
 #define USE_SDL 1
 
 
@@ -168,6 +172,7 @@ OHHandle oh_init(int nb_threads, int thread_type);
  */
 OHHandle oh_init_lhvc(int nb_threads, int thread_type);
 
+#if OHCONFIG_AVCBASE
 /**
  * Allocate a general decoder context list for each layer (up to MAX_DECODERS)
  * Allocate a decoder context for each layer
@@ -178,6 +183,7 @@ OHHandle oh_init_lhvc(int nb_threads, int thread_type);
  * @return A decoder list if a decoder of each layer were found, NULL otherwise.
  */
 OHHandle oh_init_h264(int nb_threads, int thread_type);
+#endif
 
 /**
  * Initialize the decoders contexts for each layers.
@@ -208,6 +214,7 @@ int oh_start(OHHandle oh_hdl);
 int  oh_decode(OHHandle oh_hdl, const unsigned char *pkt_data,
                int pkt_size, int64_t pkt_pts);
 
+#if OHCONFIG_AVCBASE
 /**
  * Decode the video frame of size pkt_size from pkt_data into picture, in case
  * of non HEVC base layer (LHVC)
@@ -225,17 +232,18 @@ int  oh_decode_lhvc(OHHandle oh_hdl, const unsigned char *pkt_data_bl,
 
 //TODO define an OHPacket struct to handle both lhevc and hevc case
 //TODO oh_send/receive_packet
-
+#endif
 
 
 void oh_extradata_cpy(OHHandle oh_hdl, unsigned char *extra_data,
                       int extra_size_alloc);
 
-
+#if OHCONFIG_AVCBASE
 void oh_extradata_cpy_lhvc(OHHandle oh_hdl, unsigned char *extra_data_linf,
                            unsigned char *extra_data_lsup,
                            int extra_size_alloc_linf,
                            int extra_size_allocl_sup);
+#endif
 
 /**
  * Flush all decoders.

@@ -83,11 +83,10 @@ Standard options:
   --install-name-dir=DIR   Darwin directory name for installed targets
 
 Configuration options:
-  --disable-static         do not build static libraries [no]
-  --enable-shared          build shared libraries [no]
+  --enable-ohstatic        build static version of libopenhevc
+  --disable-ohshared       build shared version of libopenhevc
   --enable-small           optimize for size instead of speed
   --disable-runtime-cpudetect disable detecting cpu capabilities at runtime (smaller binary)
-  --enable-gray            enable full grayscale support (slower color)
   --enable-incompatible-libav-abi enable incompatible Libav fork ABI [no]
   --enable-raise-major     increase major version numbers in sonames [no]
 
@@ -96,17 +95,19 @@ Program options:
   --disable-ohplay         disable ohplay build
 
 OpenHEVC options:
-  --openhevc-only          only build openhevc
+  --enable-encryption      enable selective encryption decoding support [no]
+  --enable-amt             enable AMT decoding support [no]
+  --disable-avcbase        disable support of AVC base layer in SHVC [yes]
+#TODO
+  --disable-shvc           disable shvc support
+  --disable-ohoptim        disable openHEVC intrinsics optimizations
+  --disable-ffoptim        disable ffmpeg assembly optimizations
+
 
 Component options:
-  --disable-avdevice       disable libavdevice build
-  --disable-avcodec        disable libavcodec build
-  --disable-avformat       disable libavformat build
-  --enable-avresample      enable libavresample build [no]
   --disable-pthreads       disable pthreads [autodetect]
   --disable-w32threads     disable Win32 threads [autodetect]
   --disable-os2threads     disable OS/2 threads [autodetect]
-  --disable-dct            disable DCT code
   --disable-error-resilience disable error resilience code [yes]
   --disable-lsp            disable LSP code
   --disable-lzo            disable LZO decoder code
@@ -1283,6 +1284,9 @@ OPENHEVC_COMPONENTS="
     amt
     ohstatic
     ohshared
+    avcbase
+    mov_demuxer
+    mpegts_demuxer
 "
 
 COMPONENT_LIST="
@@ -2149,15 +2153,23 @@ mpegtsraw_demuxer_select="mpegts_demuxer"
 avcodec_deps="avutil"
 avformat_deps="avcodec avutil"
 openhevc_deps="avcodec avutil"
-openhevc_select="hevc_decoder hevc_demuxer hevc_parser file_protocol null_bsf"
-openhevc_suggest="mov_demuxer mpegts_demuxer h264_decoder h264_demuxer h264_parser shvc_decoder shvc_parser"
 
+openhevc_select="hevc_decoder"
+openhevc_suggest="hevc_demuxer hevc_parser mov_demuxer mpegts_demuxer file_protocol null_bsf"
+
+shvc_select="shvc_decoder"
+shvc_suggest="shvc_parser"
 # programs
 ohplay_deps="openhevc avformat"
 ohplay_suggest="sdl sdl2"
 
 encryption_deps="libcryptopp"
 encryption_extralibs="-lstdc++ -lcryptopp"
+
+avcbase_deps="shvc"
+avcbase_select="h264_decoder"
+avcbase_suggest="h264_demuxer h264_parser"
+
 
 pkg-config libcrypto++ || pkg-config cryptopp && enable libcryptopp
 # documentation
@@ -2403,8 +2415,14 @@ do_random(){
 # (disable stuff we don't need in openHEVC)
 ################################################################################
 map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+#We force static build of ffmpeg libs and pic in order to include them into libopenhevc
 disable shared && enable static && enable pic
+#We default to a shared vesion of libopenhevc
 enable ohshared && disable ohstatic
+#Set default openHEVC components
+enable shvc
+enable avcbase
+
 
 for opt do
     optval="${opt#*=}"

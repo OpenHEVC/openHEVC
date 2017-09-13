@@ -639,6 +639,7 @@ void ff_thread_report_il_progress(AVCodecContext *avxt, int poc, void * in_ref, 
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 
+#if OHCONFIG_AVCBASE
 void ff_thread_report_il_progress_avc(AVCodecContext *avxt, int poc, void * in_ref, void *in_data) {
 /*
     - Called by the  lower layer decoder to report that the frame used as reference at upper layers
@@ -667,6 +668,7 @@ void ff_thread_report_il_progress_avc(AVCodecContext *avxt, int poc, void * in_r
 
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
+#endif
 
 void ff_thread_await_il_progress(AVCodecContext *avxt, int poc, void ** out) {
     /*
@@ -709,6 +711,7 @@ void ff_thread_report_il_status(AVCodecContext *avxt, int poc, int status) {
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
 
+#if OHCONFIG_AVCBASE
 void ff_thread_report_il_status_avc(AVCodecContext *avxt, int poc, int status) {
     /*
      - Called by the upper layer decoder to report that the picture using this reference frame is decoded and the lower layer is not any more required by upper layer decoder
@@ -730,6 +733,8 @@ void ff_thread_report_il_status_avc(AVCodecContext *avxt, int poc, int status) {
     fctx->frames_ref[poc] = NULL;
     pthread_mutex_unlock(&fctx->il_progress_mutex);
 }
+#endif
+
 #endif
 
 void ff_thread_finish_setup(AVCodecContext *avctx) {
