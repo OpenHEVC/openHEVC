@@ -31,6 +31,7 @@
 #include <SDL2/SDL_events.h>
 
 #include <stdio.h>
+#include <string.h>
 //#include <signal.h>
 #include "ohtimer_wrapper.h"
 #include "ohdisplay_wrapper.h"
