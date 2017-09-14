@@ -471,6 +471,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         *(int *)dst = parse_enum_args(opt, arg, "crypto", 0, INT_MAX);
     } else if (po->flags & OPT_DATA) {
         *(uint8_t **)dst = parse_array(opt, arg, 16, 0, 255);
+        #endif
     } else if (po->u.func_arg) {
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {
@@ -479,7 +480,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
                    arg, opt, av_err2str(ret));
             return ret;
         }
-#endif
+
     } 
     if (po->flags & OPT_EXIT)
         exit_program(0);
