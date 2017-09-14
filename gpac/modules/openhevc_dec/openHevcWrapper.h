@@ -248,6 +248,10 @@ void oh_set_crypto_key(OpenHevc_Handle openHevcHandle, uint8_t *val);
 
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 
+unsigned openhevc_version(void);
+
+const char *openhevc_configuration(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -24,6 +24,7 @@
 #include "libavformat/avformat.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libopenhevc/version.h"
 
 //TMP
 //#include "libavcodec/h264.h"
@@ -961,5 +962,14 @@ void oh_set_crypto_key(OpenHevc_Handle openHevcHandle, uint8_t *val)
         openHevcContext = openHevcContexts->wraper[i];
         av_opt_set_bin(openHevcContext->c->priv_data, "crypto-key", val, 16*sizeof(uint8_t), 0);
     }
-
 }
+
+
+unsigned openhevc_version(void){
+    return LIBOPENHEVC_VERSION_INT;
+}
+
+const char *openhevc_configuration(void){
+    return FFMPEG_CONFIGURATION;
+}
+
