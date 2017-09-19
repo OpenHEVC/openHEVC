@@ -71,7 +71,7 @@ void ff_hevc_clear_refs(HEVCContext *s)
 void ff_hevc_flush_dpb(HEVCContext *s)
 {
     int i;
-    av_log(s->avctx, AV_LOG_ERROR, "flush, decoder_%d.\n", s->decoder_id);
+    //av_log(s->avctx, AV_LOG_ERROR, "flush, decoder_%d.\n", s->decoder_id);
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         ff_hevc_unref_frame(s, &s->DPB[i], ~0);
 }
