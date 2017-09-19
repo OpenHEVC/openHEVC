@@ -234,7 +234,6 @@ int  oh_decode_lhvc(OHHandle oh_hdl, const unsigned char *pkt_data_bl,
 //TODO oh_send/receive_packet
 #endif
 
-
 void oh_extradata_cpy(OHHandle oh_hdl, unsigned char *extra_data,
                       int extra_size_alloc);
 
@@ -268,7 +267,7 @@ void oh_flush_shvc(OHHandle oh_hdl, int layer_idx);
 void oh_close(OHHandle oh_hdl);
 
 /**
- * Update the frame output
+ * Update informations on the output frame
  *
  * @param oh_hdl      The codec context list of current decoders
  * @param got_picture 1 if the decoder outputed a picture, 0 otherwise
@@ -276,32 +275,40 @@ void oh_close(OHHandle oh_hdl);
  */
 int  oh_output_update(OHHandle oh_hdl, int got_picture, OHFrame *oh_frame);
 
-/**
- * Copy the frame output to a new frame
- *
- * @param oh_hdl      The codec context list of current decoders
- * @param got_picture 1 if the decoder outputed a picture, 0 otherwise
- * @param oh_frame    pointer to the output OHFrame
- */
-int  oh_output_cpy(OHHandle oh_hdl, int got_picture, OHFrame_cpy *oh_frame);
+int  oh_output_update_from_layer(OHHandle oh_hdl, OHFrame *oh_frame, int layer_id);
 
 /**
- * Update the frame output parameters
+ * Update the informations on the output frame
  *
  * @param oh_hdl       The codec context list of current decoders
  * @param oh_frameinfo pointer to the output frame info to be updated
  */
 void oh_frameinfo_update(OHHandle oh_hdl, OHFrameInfo *oh_frameinfo);
 
+void oh_frameinfo_update_from_layer(OHHandle oh_hdl, OHFrameInfo *oh_frameinfo,int layer_id);
+
+
 /**
- * Copy the frame output info
+ * Reinterpret frame information for a cropped copy of a frame
  *
  * @param oh_hdl      The codec context list of current decoders
  * @param got_picture 1 if the decoder outputed a picture, 0 otherwise
  * @param oh_frame    pointer to the output OHFrame
  */
-void oh_frameinfo_cpy(OHHandle oh_hdl, OHFrameInfo *oh_frame_info);
+void oh_cropped_frameinfo(OHHandle oh_hdl, OHFrameInfo *oh_frame_info);
 
+int  oh_cropped_frameinfo_from_layer(OHHandle oh_hdl, OHFrameInfo *oh_frame_info, int layer_id);
+
+/**
+ * Copy and crop the ouput output to a new one
+ *
+ * @param oh_hdl      The codec context list of current decoders
+ * @param got_picture 1 if the decoder outputed a picture, 0 otherwise
+ * @param oh_frame    pointer to the output OHFrame
+ */
+int oh_output_cropped_cpy(OHHandle oh_hdl, OHFrame_cpy *oh_frame);
+
+int oh_output_cropped_cpy_from_layer(OHHandle openHevcHandle, OHFrame_cpy *oh_frame, int layer_id);
 
 /**
  * Enable frame level SEI checksum for all layers

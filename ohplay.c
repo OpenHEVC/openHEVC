@@ -314,7 +314,7 @@ static void video_decode(const char *filename,const char *enh_filename)
 
 				if (fout) {
                     int format = oh_framecpy.frame_par.chromat_format == OH_YUV420 ? 1 : 0;
-                    oh_output_cpy(oh_hdl, 1, &oh_framecpy);
+                    oh_output_cropped_cpy(oh_hdl, &oh_framecpy);
                     fwrite( oh_framecpy.data_y ,  sizeof(uint8_t) , oh_framecpy.frame_par.linesize_y  * oh_framecpy.frame_par.height,           fout);
                     fwrite( oh_framecpy.data_cb , sizeof(uint8_t) , oh_framecpy.frame_par.linesize_cb * oh_framecpy.frame_par.height >> format, fout);
                     fwrite( oh_framecpy.data_cr , sizeof(uint8_t) , oh_framecpy.frame_par.linesize_cr * oh_framecpy.frame_par.height >> format, fout);
