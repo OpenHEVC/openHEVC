@@ -3686,10 +3686,10 @@ fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
-        if(s->el_decoder_el_exist && !s->ps.vps->vps_nonHEVCBaseLayerFlag)
+        if( !s->bl_is_avc && s->el_decoder_el_exist)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if OHCONFIG_AVCBASE
-        if(s->bl_available && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME ))
+        if(s->bl_is_avc && s->bl_available && (s->threads_type & FF_THREAD_FRAME ))
             ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif
         if (s->inter_layer_ref)
@@ -4003,10 +4003,10 @@ fail:
     if (s->ref && (s->threads_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
     if (s->decoder_id) {
-        if(s->el_decoder_el_exist && !s->ps.vps->vps_nonHEVCBaseLayerFlag)
+        if(!s->bl_is_avc && s->el_decoder_el_exist)
             ff_thread_report_il_status(s->avctx, s->poc_id, 2);
 #if OHCONFIG_AVCBASE
-        if(s->ps.vps && s->ps.vps->vps_nonHEVCBaseLayerFlag && (s->threads_type & FF_THREAD_FRAME))
+        if( s->bl_is_avc && s->bl_available && (s->threads_type & FF_THREAD_FRAME))
             ff_thread_report_il_status_avc(s->avctx, s->poc_id2, 2);
 #endif
     }
@@ -4557,6 +4557,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->prev_num_tile_rows    = s0->prev_num_tile_rows;
     s->prev_num_tile_columns = s0->prev_num_tile_columns;
 #endif
+#if OHCONFIG_AVCBASE
+    s->bl_is_avc            = s0->bl_is_avc;
+#endif
     s->poc_id2              = s0->poc_id2;
     s->bl_available         = s0->bl_available;
 
@@ -4669,6 +4672,10 @@ static const AVOption options[] = {
        AV_OPT_TYPE_INT,{.i64 = 0},0,32,PAR },
     { "crypto-key", "",OFFSET(encrypt_init_val),
        AV_OPT_TYPE_BINARY },
+#endif
+#if OHCONFIG_AVCBASE
+    { "bl_is_avc", "use an external h264 base layer", OFFSET(bl_is_avc),
+        AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, PAR },
 #endif
     { NULL },
 };

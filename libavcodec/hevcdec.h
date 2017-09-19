@@ -636,6 +636,9 @@ typedef struct HEVCContext {
     uint8_t *encrypt_init_val;
     int encrypt_init_val_length;
 #endif
+
+    int bl_is_avc;
+
 } HEVCContext;
 
 /**
