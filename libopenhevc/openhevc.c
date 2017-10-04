@@ -891,26 +891,26 @@ void oh_flush_shvc(OHHandle openHevcHandle, int decoderId)
 #if OHCONFIG_ENCRYPTION
 void oh_set_crypto_mode(OHHandle oh_hdl, int val)
 {
-    OHContextList *oh_ctx_lists = (OHContextList *) oh_hdl;
-    OHContext     *oh_ctx;
+    OHContext *oh_ctx = (OHContext *) oh_hdl;
+    OHDecoderCtx     *oh_decoder_ctx;
     int i;
 
-    for (i = 0; i < oh_ctx_lists->nb_decoders; i++) {
-        oh_ctx = oh_ctx_lists->ctx_list[i];
-        av_opt_set_int(oh_ctx->codec_ctx->priv_data, "crypto-param", val, 0);
+    for (i = 0; i < oh_ctx->nb_decoders; i++) {
+        oh_decoder_ctx = oh_ctx->ctx_list[i];
+        av_opt_set_int(oh_decoder_ctx->codec_ctx->priv_data, "crypto-param", val, 0);
     }
 
 }
 
 void oh_set_crypto_key(OHHandle oh_hdl, uint8_t *val)
 {
-    OHContextList *oh_ctx_list = (OHContextList *) oh_hdl;
-    OHContext     *oh_ctx;
+    OHContext *oh_ctx = (OHContext *) oh_hdl;
+    OHDecoderCtx     *oh_decoder_ctx;
     int i;
 
-    for (i = 0; i < oh_ctx_list->nb_decoders; i++) {
-        oh_ctx = oh_ctx_list->ctx_list[i];
-        av_opt_set_bin(oh_ctx->codec_ctx->priv_data, "crypto-key", val, 16*sizeof(uint8_t), 0);
+    for (i = 0; i < oh_ctx->nb_decoders; i++) {
+        oh_decoder_ctx = oh_ctx->ctx_list[i];
+        av_opt_set_bin(oh_decoder_ctx->codec_ctx->priv_data, "crypto-key", val, 16*sizeof(uint8_t), 0);
     }
 
 }

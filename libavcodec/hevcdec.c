@@ -3767,13 +3767,13 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 #if OHCONFIG_ENCRYPTION
     if(!s->tile_table_encry){
         s->tile_table_encry = av_mallocz(sizeof(uint8_t)*s->ps.pps->num_tile_columns * s->ps.pps->num_tile_rows);
-        s->tile_table_encry[0]=1;
+        s->tile_table_encry[0] = 1;
     } else if (s->ps.pps->num_tile_columns != s->prev_num_tile_columns ||
                s->ps.pps->num_tile_rows != s->prev_num_tile_rows){
         if(s->tile_table_encry)
             av_freep(&s->tile_table_encry);
         s->tile_table_encry = av_mallocz(sizeof(uint8_t)*s->ps.pps->num_tile_columns*s->ps.pps->num_tile_rows);
-        s->tile_table_encry[0]=1;
+        s->tile_table_encry[0] = 1;
     }
 
     s->prev_num_tile_columns = s->ps.pps->num_tile_columns;
@@ -4544,6 +4544,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
 #if OHCONFIG_ENCRYPTION
     s->encrypt_params        = s0->encrypt_params;
+    s->encrypt_init_val      = s0->encrypt_init_val;
 
     if (s0->prev_num_tile_columns != s->prev_num_tile_columns || s0->prev_num_tile_rows != s->prev_num_tile_rows){
         if(s->tile_table_encry )
