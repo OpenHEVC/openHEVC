@@ -30,6 +30,9 @@
 #include "libavcodec/hevc_defs.h"
 #include "libavcodec/hevc.h"
 #include "libavcodec/hevcdec.h"
+#if OHCONFIG_AMT
+#include "libavcodec/hevc_amt_defs.h"
+#endif
 #include "libavutil/internal.h" //TMP_DEV_PL
 
 #define LFC_FUNC(DIR, DEPTH, OPT) \
@@ -662,12 +665,25 @@ mc_bi_w_funcs(qpel_hv, 12, sse4)
         OH_PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
 #endif
 
+#if OHCONFIG_AMT
+
+#define LINK_AMT_IDCT(num,size,optim,depth)\
+c->idct2_emt_v[0][DCT_##num][0] = emt_idct_##num##_##size##_v_##optim##_##depth;\
+c->idct2_emt_v[1][DCT_##num][0] = emt_idct_##num##_##size##_v_##optim##_##depth;\
+c->idct2_emt_h[0][DCT_##num][0] = emt_idct_##num##_##size##_h_##optim##_##depth;\
+c->idct2_emt_h[1][DCT_##num][0] = emt_idct_##num##_##size##_h_##optim##_##depth;\
+
+#define LINK_AMT_IDST(num,size,optim,depth)\
+c->idct2_emt_v[0][DST_##num][0] = emt_idst_##num##_##size##_v_##optim##_##depth;\
+c->idct2_emt_v[1][DST_##num][0] = emt_idst_##num##_##size##_v_##optim##_##depth;\
+c->idct2_emt_h[0][DST_##num][0] = emt_idst_##num##_##size##_h_##optim##_##depth;\
+c->idct2_emt_h[1][DST_##num][0] = emt_idst_##num##_##size##_h_##optim##_##depth;\
+
+#endif
 
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
-
-
 
     if (bit_depth == 8) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
@@ -691,17 +707,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_8_sse2;
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_sse2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_sse2;
-#if OHCONFIG_AMT
-            c->idct2_emt_v[0][4][0] = emt_idst_VII_4x4_v_avx2_8;
-            c->idct2_emt_v[1][4][0] = emt_idst_VII_4x4_v_avx2_8;
-            c->idct2_emt_h[0][4][0] = emt_idst_VII_4x4_h_avx2_8;
-            c->idct2_emt_h[1][4][0] = emt_idst_VII_4x4_h_avx2_8;
 
-            c->idct2_emt_v[0][5][0] = emt_idct_VIII_4x4_v_avx2_8;
-            c->idct2_emt_v[1][5][0] = emt_idct_VIII_4x4_v_avx2_8;
-            c->idct2_emt_h[0][5][0] = emt_idct_VIII_4x4_h_avx2_8;
-            c->idct2_emt_h[1][5][0] = emt_idct_VIII_4x4_h_avx2_8;
-#endif
 //Fixme ffmpeg or openHEVC optim
 /*
             c->transform_add[1]    = ff_hevc_transform_add8_8_sse2;
@@ -796,6 +802,13 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
         }
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+#if OHCONFIG_AMT
+            LINK_AMT_IDCT(  II,4x4,avx2,8);
+            LINK_AMT_IDST(   I,4x4,avx2,8);
+            LINK_AMT_IDST( VII,4x4,avx2,8);
+            LINK_AMT_IDCT(VIII,4x4,avx2,8);
+            LINK_AMT_IDCT(   V,4x4,avx2,8);
+#endif
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_avx2;
             if (ARCH_X86_64) {

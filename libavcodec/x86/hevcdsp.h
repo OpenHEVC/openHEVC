@@ -497,25 +497,25 @@ void ohhevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
            int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void emt_idst_VII_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idst_VII_4x4_v_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idst_VII_4x4_v_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idst_VII_4x4_v_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_VII_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_VII_4x4_v_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_VII_4x4_v_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_VII_4x4_v_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
 
-   void emt_idst_VII_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idst_VII_4x4_h_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idst_VII_4x4_h_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idst_VII_4x4_h_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_VII_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_VII_4x4_h_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_VII_4x4_h_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_VII_4x4_h_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
 
-   void emt_idct_VIII_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idct_VIII_4x4_v_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idct_VIII_4x4_v_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idct_VIII_4x4_v_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_VIII_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_VIII_4x4_v_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_VIII_4x4_v_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_VIII_4x4_v_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
 
-   void emt_idct_VIII_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idct_VIII_4x4_h_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idct_VIII_4x4_h_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
-   void emt_idct_VIII_4x4_h_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_VIII_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_VIII_4x4_h_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_VIII_4x4_h_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_VIII_4x4_h_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
    //   void ohevc_upsample_filter_block_cr_v_x2_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
 //           int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
 //           const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
@@ -523,6 +523,27 @@ void ohhevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
 //   void ohevc_upsample_filter_block_cr_v_x2_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
 //           int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
 //           const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+//   void emt_idct_V_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_V_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_II_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idct_II_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+
+//   void emt_idst_I_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+//   void emt_idst_I_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+
+#define DECL_AMT_IDCT(num,size,optim,depth)\
+void emt_idct_##num##_##size##_v_##optim##_##depth(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);\
+void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);\
+
+#define DECL_AMT_IDST(num,size,optim,depth)\
+void emt_idst_##num##_##size##_v_##optim##_##depth(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);\
+void emt_idst_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);\
+
+   DECL_AMT_IDCT(  II,4x4,avx2,8)
+   DECL_AMT_IDCT(   V,4x4,avx2,8)
+   DECL_AMT_IDCT(VIII,4x4,avx2,8)
+   DECL_AMT_IDST( VII,4x4,avx2,8)
+   DECL_AMT_IDST(   I,4x4,avx2,8)
 
 //#endif
 
