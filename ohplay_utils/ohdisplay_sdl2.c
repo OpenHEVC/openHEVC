@@ -120,7 +120,8 @@ void oh_display_display(int edge, int frame_width, int frame_height, unsigned ch
     scene.h=frame_height;
     scene.w=frame_width;
 
-// SDL_RenderSetViewport(pRenderer1,&scene);
+    SDL_GetWindowSize(pWindow1, &win_width, &win_height );
+
 	if(frame_width != win_width || frame_height != win_height){
         SDL_SetWindowSize(pWindow1, frame_width, frame_height );
 		SDL_DestroyTexture(bmpTex1);
