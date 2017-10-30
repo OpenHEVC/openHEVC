@@ -407,6 +407,25 @@ typedef struct HEVCNAL {
     const uint8_t *data;
 } HEVCNAL;
 
+typedef struct HEVCQuantContext{
+    int qp;
+    int shift;
+    int add;
+    int scale;
+    int scale_m;
+    uint8_t dc_scale;
+}HEVCQuantContext;
+
+
+typedef struct HEVCTransformContext{
+    HEVCQuantContext quant_ctx;
+    const uint8_t *scale_matrix;
+    int log2_trafo_size;
+    int transform_skip_flag;
+    int log2_transform_range;
+}HEVCTransformContext;
+
+
 typedef struct HEVCLocalContext {
     CodingTree          ct;
 #ifdef USE_SAO_SMALL_BUFFER
@@ -466,6 +485,7 @@ typedef struct HEVCLocalContext {
      * of the deblocking filter */
     int boundary_flags;
     int tile_id;
+    HEVCTransformContext transform_ctx;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
