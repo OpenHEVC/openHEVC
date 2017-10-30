@@ -416,11 +416,23 @@ typedef struct HEVCQuantContext{
     uint8_t dc_scale;
 }HEVCQuantContext;
 
+typedef struct HEVCTransformScanContext{
+    const uint8_t *scan_x_cg;
+    const uint8_t *scan_y_cg;
+    const uint8_t *scan_x_off;
+    const uint8_t *scan_y_off;
+    int last_significant_coeff_x;
+    int last_significant_coeff_y;
+    int x_cg_last_sig;
+    int y_cg_last_sig;
+    int num_coeff;
+}HEVCTransformScanContext;
 
 typedef struct HEVCTransformContext{
     HEVCQuantContext quant_ctx;
     const uint8_t *scale_matrix;
     int log2_trafo_size;
+    int transform_size;
     int transform_skip_flag;
     int log2_transform_range;
     int explicit_rdpcm_flag;
