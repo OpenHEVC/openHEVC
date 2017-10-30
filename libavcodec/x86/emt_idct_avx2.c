@@ -23,30 +23,26 @@
 
 #define VAR_DECL_AND_LOAD4X4_AVX2_V()\
     const __m256i add  = _mm256_set1_epi32(ADD_EMT_V);\
-    const __m256i max  = _mm256_set1_epi16(clip_max); \
-    const __m256i min  = _mm256_set1_epi16(clip_min); \
-    __m256i x0,x4,x8,x12, tmp2;                       \
+    __m256i x0,x4,x8,x12;                       \
     __m256i _src = _mm256_load_si256((__m256i *)src); \
 
 #define VAR_DECL_AND_LOAD4X4_AVX2_H()\
-    const int shift = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;\
+    const int shift = (EMT_TRANSFORM_MATRIX_SHIFT + 15 - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;\
     const __m256i add  = _mm256_set1_epi32(1 << (shift - 1));\
-    const __m256i max  = _mm256_set1_epi16(clip_max);\
-    const __m256i min  = _mm256_set1_epi16(clip_min);\
     __m256i x0,x4,x8,x12;                      \
     __m256i _src = _mm256_load_si256((__m256i *)src);\
 
 #define TRANSPOSE_4X4_AVX2()\
-    x0   = _mm256_permute4x64_epi64(_src, 0b00010100); \
-    x4   = _mm256_permute4x64_epi64(_src, 0b10111110); \
+    x0   = _mm256_permute4x64_epi64(_src, 0b00111100); \
+    x4   = _mm256_permute4x64_epi64(_src, 0b10010110); \
     x8   = _mm256_unpacklo_epi16(x0, x4);              \
-    x12  = _mm256_permute4x64_epi64(x8, 0b00010100);   \
-    x4   = _mm256_permute4x64_epi64(x8, 0b10111110);   \
-    _src = _mm256_unpacklo_epi16(x12, x4);             \
-    x0   = _mm256_permute4x64_epi64(_src, 0b00000000); \
-    x4   = _mm256_permute4x64_epi64(_src, 0b01010101); \
-    x8   = _mm256_permute4x64_epi64(_src, 0b10101010); \
-    x12  = _mm256_permute4x64_epi64(_src, 0b11111111); \
+    x12  = _mm256_unpackhi_epi16(x4,x0);   \
+    _src = _mm256_unpacklo_epi16(x8,x12);             \
+    x12   = _mm256_unpackhi_epi16(x8,x12);   \
+    x0 = _mm256_set1_epi64x(_mm256_extract_epi64(_src,0b00));\
+    x4 = _mm256_set1_epi64x(_mm256_extract_epi64(_src,0b01));\
+    x8 = _mm256_set1_epi64x(_mm256_extract_epi64(x12,0b00));\
+    x12 = _mm256_set1_epi64x(_mm256_extract_epi64(x12,0b01));\
 
 #define COMPUTE4X4_AVX2()\
     x0  = _mm256_madd_epi16(x0 , dct_matrix);  \
@@ -72,10 +68,7 @@
 
 #define PACK_CLIP_AND_STORE_4X4_AVX2()\
     x0 = _mm256_packs_epi32(x0,x8);            \
-    /*x0 = _mm256_permutevar8x32_epi32(x0,_mm256_setr_epi32(0,4,1,5,2,6,3,7));*/\
     x0 = _mm256_permute4x64_epi64(x0, 0b11011000);\
-    x0 = _mm256_min_epi16(x0,max);             \
-    x0 = _mm256_max_epi16(x0,min);             \
     _mm256_store_si256((__m256i *)&dst[0],x0); \
 
 #define debug4X4_16(x) \
@@ -468,7 +461,7 @@
 //}
 
 
-void FUNC(emt_idct_VIII_4x4_v_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max)
+void FUNC(emt_idct_VIII_4x4_v_avx2)(int16_t * restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max)
 {
   //int shift = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
   const __m256i add  = _mm256_set1_epi32(ADD_EMT_V);
@@ -476,83 +469,46 @@ void FUNC(emt_idct_VIII_4x4_v_avx2)(int16_t *src, int16_t *dst, int log2_transfo
   const __m256i max  = _mm256_set1_epi16(clip_max);
   const __m256i min  = _mm256_set1_epi16(clip_min);
 
-//  const int16_t __attribute__ ((aligned (32))) matrix1[16] = { 336,  296,  219,  117 ,
-//                                           296,    0, -296, -296,
-//                                           219, -296, -117,  336,
-//                                           117, -296,  336, -219 };
-//  __m256i matrix = _mm256_load_si256((__m256i *)src);
-////  debug4X4_16(matrix);
-
-//  __m256i x0,x4,x8,x12, tmp2;
-//  __m128i transpose1,transpose2,tmp;
-//  transpose1 = _mm_load_si128((__m128i *)src);
-//  transpose2 = _mm_load_si128((__m128i *)&src[8]);
-
-//  tmp        = _mm_unpacklo_epi16(transpose1,transpose2);
-//  transpose1 = _mm_unpackhi_epi16(transpose1,transpose2);
-
-//  transpose2 = _mm_unpacklo_epi16(tmp,transpose1);
-//  transpose1 = _mm_unpackhi_epi16(tmp,transpose1);
-
-//  matrix = _mm256_insertf128_si256(_mm256_castsi128_si256(transpose2), (transpose1), 0x1);
-//  _mm256_store_si256((__m256i *)&src[0],matrix);
-
-//  debug4X4_16(matrix);
-//  const int16_t __attribute__ ((aligned (32))) matrix2[16] = { 1, 0, 0, 0,
-//                                0, 1, 0, 0,
-//                                0, 0, 1, 0,
-//                                0, 0, 0, 1 };
   __m256i x0,x4,x8,x12, tmp2;
-  __m256i _src = _mm256_load_si256((__m256i *)src);
+  __m256i _src =_mm256_load_si256((__m256i *)src);
 //  debug4X4_16(_src);
 
-
-  x0 = _mm256_permute4x64_epi64(_src,0b00010100);
-  x4 = _mm256_permute4x64_epi64(_src,0b10111110);
+  x0 = _mm256_permute4x64_epi64(_src,0b00111100);
+  x4 = _mm256_permute4x64_epi64(_src,0b10010110);
 //  debug4X4_16(x0);
 //  debug4X4_16(x4);
 
   x8 = _mm256_unpacklo_epi16(x0,x4);
+  x12 = _mm256_unpackhi_epi16(x4,x0);
 //  debug4X4_16(x8);
+//  debug4X4_16(x12);
 
-  x12 = _mm256_permute4x64_epi64(x8,0b00010100);
-  x4 = _mm256_permute4x64_epi64(x8,0b10111110);
-//  debug4X4_16(x0);
-//  debug4X4_16(x4);
-
-  _src = _mm256_unpacklo_epi16(x12,x4);
+  _src = _mm256_unpacklo_epi16(x8,x12);
+  x12 = _mm256_unpackhi_epi16(x8,x12);
 //  debug4X4_16(_src);
 
   x0 = _mm256_permute4x64_epi64(_src, 0b00000000);
   x4 = _mm256_permute4x64_epi64(_src, 0b01010101);
-  x8 = _mm256_permute4x64_epi64(_src, 0b10101010);
-  x12 = _mm256_permute4x64_epi64(_src, 0b11111111);
+  x8 = _mm256_permute4x64_epi64(x12, 0b00000000);
+  x12 = _mm256_permute4x64_epi64(x12, 0b01010101);
 
-
-   //tmp2 = _mm256_load_si256(matrix1);
   tmp2 =_mm256_setr_epi16(336,  296,  219,  117 ,
                           296,    0, -296, -296,
                           219, -296, -117,  336,
-                          117, -296,  336, -219);// _mm256_setr_epi16(-219,336,-296,117,336,-117,-296,219,-296,-296,0,296,117,219,296,336);
-
-//    x0  = _mm256_set1_epi64x(*((long long *)&src[0]));
-//    x4  = _mm256_set1_epi64x(*((long long *)&src[4]));
-//    x8  = _mm256_set1_epi64x(*((long long *)&src[8]));
-//    x12 = _mm256_set1_epi64x(*((long long *)&src[12]));
-
+                          117, -296,  336, -219);
 
 //    debug4X4_16(x0);
 //    debug4X4_16(x4);
 //    debug4X4_16(x8);
 //    debug4X4_16(x12);
-//    debug4X4_16(matrix);
+//    debug4X4_16(tmp2);
 
     //debug4X4_16(x0)
 
-    x0  = _mm256_madd_epi16(x0,tmp2);
-    x4  = _mm256_madd_epi16(x4,tmp2);
-    x8  = _mm256_madd_epi16(x8,tmp2);
-    x12 = _mm256_madd_epi16(x12,tmp2);
+    x0  = _mm256_madd_epi16(x0,tmp2);  //line 0
+    x4  = _mm256_madd_epi16(x4,tmp2);  //line 1
+    x8  = _mm256_madd_epi16(x8,tmp2);  //line 2
+    x12 = _mm256_madd_epi16(x12,tmp2); //line 3
 //    debug_32(x0);
 //    debug_32(x4);
 //    debug_32(x8);
@@ -588,13 +544,10 @@ void FUNC(emt_idct_VIII_4x4_v_avx2)(int16_t *src, int16_t *dst, int log2_transfo
 
 //TODO most of the time transform range is 15 and so are clipping values we might want to hard code those values for further
 // optimizations
-void FUNC(emt_idct_VIII_4x4_h_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max)
+void FUNC(emt_idct_VIII_4x4_h_avx2)(int16_t * restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max)
 {
-  int shift = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+  int shift = (EMT_TRANSFORM_MATRIX_SHIFT + 15 - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
   const __m256i add  = _mm256_set1_epi32(1 << (shift - 1));
-
-  const __m256i max  = _mm256_set1_epi16(clip_max);
-  const __m256i min  = _mm256_set1_epi16(clip_min);
 
   const __m256i   dct_matrix =_mm256_setr_epi16(336,  296,  219,  117 ,
                                           296,    0, -296, -296,
@@ -656,52 +609,33 @@ void FUNC(emt_idct_VIII_4x4_h_avx2)(int16_t *src, int16_t *dst, int log2_transfo
     x8 =  _mm256_srai_epi32(x8,shift);
 //    debug_32(x0);
 //    debug_32(x8);
-//__m256i t1,t2;
-//t1=_mm256_setr_epi32(0,1,2,3,4,5,6,7);
-//debug_32(t1);
-//t2=_mm256_setr_epi32(8,9,10,11,12,13,14,15);
-//debug_32(t2);
-//t2 = _mm256_hadd_epi32(t1,t2);
-////t1=_mm256_packs_epi32(t1,t2);
-////    t1 = _mm256_permute4x64_epi64(t1, 0b11011000);
-//debug_32(t2);
 
     x0 = _mm256_packs_epi32(x0,x8);
 
     //FIXME we might be able to avoid this permutation.
-    //x0 = _mm256_permutevar8x32_epi32(x0,_mm256_setr_epi32(0,4,1,5,2,6,3,7));
     x0 = _mm256_permute4x64_epi64(x0, 0b11011000);
-    // clip
-    x0 = _mm256_min_epi16(x0,max);
-    x0 = _mm256_max_epi16(x0,min);
 
     _mm256_store_si256((__m256i *)&dst[0],x0);
-
-//    fprintf(stderr,"intrinsic\n");
-//    for (int i=0;i<16;i++){
-//        fprintf(stderr,"%d ",dst[i]);
-//    }
-//    fprintf(stderr,"\n");
 }
 
-void FUNC(emt_idct_V_4x4_v_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max){
-    VAR_DECL_AND_LOAD4X4_AVX2_V();
+void FUNC(emt_idct_V_4x4_v_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
     const __m256i dct_matrix = _mm256_setr_epi16(194,  274,  274,  274,
                                                  274,  241,  -86, -349,
                                                  274,  -86, -349,  241,
                                                  274, -349,  241,  -86);
+    VAR_DECL_AND_LOAD4X4_AVX2_V();
     TRANSPOSE_4X4_AVX2();
     COMPUTE4X4_AVX2();
     ROUND_4X4_AVX2_V();
     PACK_CLIP_AND_STORE_4X4_AVX2();
 }
 
-void FUNC(emt_idct_V_4x4_h_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max){
-    VAR_DECL_AND_LOAD4X4_AVX2_H();
+void FUNC(emt_idct_V_4x4_h_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
     const __m256i dct_matrix = _mm256_setr_epi16(194,  274,  274,  274,
                                                  274,  241,  -86, -349,
                                                  274,  -86, -349,  241,
                                                  274, -349,  241,  -86);
+    VAR_DECL_AND_LOAD4X4_AVX2_H();
     TRANSPOSE_4X4_AVX2();
     COMPUTE4X4_AVX2();
     ROUND_4X4_AVX2_H();
@@ -709,73 +643,73 @@ void FUNC(emt_idct_V_4x4_h_avx2)(int16_t *src, int16_t *dst, int log2_transform_
 }
 
 
-void FUNC(emt_idct_II_4x4_v_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max){
-    VAR_DECL_AND_LOAD4X4_AVX2_V();
+void FUNC(emt_idct_II_4x4_v_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
     const __m256i dct_matrix = _mm256_setr_epi16(256,  334,  256,  139 ,
                                                  256,  139, -256, -334 ,
                                                  256, -139, -256,  334 ,
                                                  256, -334,  256, -139);
+    VAR_DECL_AND_LOAD4X4_AVX2_V();
     TRANSPOSE_4X4_AVX2();
     COMPUTE4X4_AVX2();
     ROUND_4X4_AVX2_V();
     PACK_CLIP_AND_STORE_4X4_AVX2();
 }
 
-void FUNC(emt_idct_II_4x4_h_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max){
-    VAR_DECL_AND_LOAD4X4_AVX2_H();
+void FUNC(emt_idct_II_4x4_h_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
     const __m256i dct_matrix = _mm256_setr_epi16(256,  334,  256,  139 ,
                                                  256,  139, -256, -334 ,
                                                  256, -139, -256,  334 ,
                                                  256, -334,  256, -139);
+    VAR_DECL_AND_LOAD4X4_AVX2_H();
     TRANSPOSE_4X4_AVX2();
     COMPUTE4X4_AVX2();
     ROUND_4X4_AVX2_H();
     PACK_CLIP_AND_STORE_4X4_AVX2();
 }
 
-void FUNC(emt_idst_I_4x4_v_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max){
-    VAR_DECL_AND_LOAD4X4_AVX2_V();
+void FUNC(emt_idst_I_4x4_v_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
     const __m256i dct_matrix = _mm256_setr_epi16(190,  308,  308,  190 ,
                                                  308,  190, -190, -308 ,
                                                  308, -190, -190,  308 ,
                                                  190, -308,  308, -190);
+    VAR_DECL_AND_LOAD4X4_AVX2_V();
     TRANSPOSE_4X4_AVX2();
     COMPUTE4X4_AVX2();
     ROUND_4X4_AVX2_V();
     PACK_CLIP_AND_STORE_4X4_AVX2();
 }
 
-void FUNC(emt_idst_I_4x4_h_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max){
-    VAR_DECL_AND_LOAD4X4_AVX2_H();
+void FUNC(emt_idst_I_4x4_h_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
     const __m256i dct_matrix = _mm256_setr_epi16(190,  308,  308,  190 ,
                                                  308,  190, -190, -308 ,
                                                  308, -190, -190,  308 ,
                                                  190, -308,  308, -190);
+    VAR_DECL_AND_LOAD4X4_AVX2_H();
     TRANSPOSE_4X4_AVX2();
     COMPUTE4X4_AVX2();
     ROUND_4X4_AVX2_H();
     PACK_CLIP_AND_STORE_4X4_AVX2();
 }
 
-void FUNC(emt_idst_VII_4x4_v_avx2) (int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max){
-    VAR_DECL_AND_LOAD4X4_AVX2_V();
+void FUNC(emt_idst_VII_4x4_v_avx2) (int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
     const __m256i dct_matrix = _mm256_setr_epi16(117,  296,  336,  219 ,
                                                  219,  296, -117, -336 ,
                                                  296,    0, -296,  296 ,
                                                  336, -296,  219, -117);
+    VAR_DECL_AND_LOAD4X4_AVX2_V();
     TRANSPOSE_4X4_AVX2();
     COMPUTE4X4_AVX2();
     ROUND_4X4_AVX2_V();
     PACK_CLIP_AND_STORE_4X4_AVX2();
 }
 
-void FUNC(emt_idst_VII_4x4_h_avx2)(int16_t *src, int16_t *dst, int log2_transform_range, const int clip_min, const int clip_max)
+void FUNC(emt_idst_VII_4x4_h_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max)
 {
-    VAR_DECL_AND_LOAD4X4_AVX2_H();
     const __m256i dct_matrix = _mm256_setr_epi16 (117,  296,  336,  219 ,
                                                   219,  296, -117, -336 ,
                                                   296,    0, -296,  296 ,
                                                   336, -296,  219, -117);
+    VAR_DECL_AND_LOAD4X4_AVX2_H();
     TRANSPOSE_4X4_AVX2();
     COMPUTE4X4_AVX2();
     ROUND_4X4_AVX2_H();

@@ -324,109 +324,57 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->hevc_h_loop_filter_chroma_c = FUNC(hevc_h_loop_filter_chroma, depth); \
     hevcdsp->hevc_v_loop_filter_chroma_c = FUNC(hevc_v_loop_filter_chroma, depth); \
                                                                                    \
-    hevcdsp->idct2_emt_h[0][0][0]		 = FUNC(emt_idct_II_4x4_h, depth);         \
-    hevcdsp->idct2_emt_h[0][0][1]		 = FUNC(emt_idct_II_8x8_h, depth);         \
-    hevcdsp->idct2_emt_h[0][0][2]		 = FUNC(emt_idct_II_16x16_h, depth);       \
-    hevcdsp->idct2_emt_h[0][0][3]		 = FUNC(emt_idct_II_32x32_h, depth);       \
-    hevcdsp->idct2_emt_h[0][0][4]		 = FUNC(emt_idct_II_64x64_h_intra, depth); \
+    hevcdsp->idct2_emt_h[0][0]		 = FUNC(emt_idct_II_4x4_h, depth);         \
+    hevcdsp->idct2_emt_h[0][1]		 = FUNC(emt_idct_II_8x8_h, depth);         \
+    hevcdsp->idct2_emt_h[0][2]		 = FUNC(emt_idct_II_16x16_h, depth);       \
+    hevcdsp->idct2_emt_h[0][3]		 = FUNC(emt_idct_II_32x32_h, depth);       \
+    hevcdsp->idct2_emt_h[0][4]		 = FUNC(emt_idct_II_64x64_h_intra, depth); \
                                                                                    \
-    hevcdsp->idct2_emt_h[0][3][0]		 = FUNC(emt_idst_I_4x4_h, depth);          \
-    hevcdsp->idct2_emt_h[0][3][1]		 = FUNC(emt_idst_I_8x8_h, depth);          \
-    hevcdsp->idct2_emt_h[0][3][2]		 = FUNC(emt_idst_I_16x16_h, depth);        \
-    hevcdsp->idct2_emt_h[0][3][3]		 = FUNC(emt_idst_I_32x32_h, depth);        \
+    hevcdsp->idct2_emt_h[3][0]		 = FUNC(emt_idst_I_4x4_h, depth);          \
+    hevcdsp->idct2_emt_h[3][1]		 = FUNC(emt_idst_I_8x8_h, depth);          \
+    hevcdsp->idct2_emt_h[3][2]		 = FUNC(emt_idst_I_16x16_h, depth);        \
+    hevcdsp->idct2_emt_h[3][3]		 = FUNC(emt_idst_I_32x32_h, depth);        \
                                                                                    \
-    hevcdsp->idct2_emt_h[0][4][0]		 = FUNC(emt_idst_VII_4x4_h, depth);        \
-    hevcdsp->idct2_emt_h[0][4][1]		 = FUNC(emt_idst_VII_8x8_h, depth);        \
-    hevcdsp->idct2_emt_h[0][4][2]		 = FUNC(emt_idst_VII_16x16_h, depth);      \
-    hevcdsp->idct2_emt_h[0][4][3]		 = FUNC(emt_idst_VII_32x32_h_intra, depth);\
+    hevcdsp->idct2_emt_h[4][0]		 = FUNC(emt_idst_VII_4x4_h, depth);        \
+    hevcdsp->idct2_emt_h[4][1]		 = FUNC(emt_idst_VII_8x8_h, depth);        \
+    hevcdsp->idct2_emt_h[4][2]		 = FUNC(emt_idst_VII_16x16_h, depth);      \
+    hevcdsp->idct2_emt_h[4][3]		 = FUNC(emt_idst_VII_32x32_h_intra, depth);\
                                                                                    \
-    hevcdsp->idct2_emt_h[0][5][0]		 = FUNC(emt_idct_VIII_4x4_h, depth);       \
-    hevcdsp->idct2_emt_h[0][5][1]		 = FUNC(emt_idct_VIII_8x8_h, depth);       \
-    hevcdsp->idct2_emt_h[0][5][2]		 = FUNC(emt_idct_VIII_16x16_h, depth);     \
-    hevcdsp->idct2_emt_h[0][5][3]		 = FUNC(emt_idct_VIII_32x32_h_intra, depth);\
+    hevcdsp->idct2_emt_h[5][0]		 = FUNC(emt_idct_VIII_4x4_h, depth);       \
+    hevcdsp->idct2_emt_h[5][1]		 = FUNC(emt_idct_VIII_8x8_h, depth);       \
+    hevcdsp->idct2_emt_h[5][2]		 = FUNC(emt_idct_VIII_16x16_h, depth);     \
+    hevcdsp->idct2_emt_h[5][3]		 = FUNC(emt_idct_VIII_32x32_h_intra, depth);\
                                                                                    \
-    hevcdsp->idct2_emt_h[0][6][0]		 = FUNC(emt_idct_V_4x4_h, depth);          \
-    hevcdsp->idct2_emt_h[0][6][1]		 = FUNC(emt_idct_V_8x8_h, depth);          \
-    hevcdsp->idct2_emt_h[0][6][2]		 = FUNC(emt_idct_V_16x16_h, depth);        \
-    hevcdsp->idct2_emt_h[0][6][3]		 = FUNC(emt_idct_V_32x32_h, depth);        \
+    hevcdsp->idct2_emt_h[6][0]		 = FUNC(emt_idct_V_4x4_h, depth);          \
+    hevcdsp->idct2_emt_h[6][1]		 = FUNC(emt_idct_V_8x8_h, depth);          \
+    hevcdsp->idct2_emt_h[6][2]		 = FUNC(emt_idct_V_16x16_h, depth);        \
+    hevcdsp->idct2_emt_h[6][3]		 = FUNC(emt_idct_V_32x32_h, depth);        \
                                                                                    \
-    hevcdsp->idct2_emt_h[1][0][0]		 = FUNC(emt_idct_II_4x4_h, depth);         \
-    hevcdsp->idct2_emt_h[1][0][1]		 = FUNC(emt_idct_II_8x8_h, depth);         \
-    hevcdsp->idct2_emt_h[1][0][2]		 = FUNC(emt_idct_II_16x16_h, depth);       \
-    hevcdsp->idct2_emt_h[1][0][3]		 = FUNC(emt_idct_II_32x32_h, depth);       \
-    hevcdsp->idct2_emt_h[1][0][4]		 = FUNC(emt_idct_II_64x64_h_inter, depth); \
+    hevcdsp->idct2_emt_v[0][0]		 = FUNC(emt_idct_II_4x4_v, depth);         \
+    hevcdsp->idct2_emt_v[0][1]		 = FUNC(emt_idct_II_8x8_v, depth);         \
+    hevcdsp->idct2_emt_v[0][2]		 = FUNC(emt_idct_II_16x16_v, depth);       \
+    hevcdsp->idct2_emt_v[0][3]		 = FUNC(emt_idct_II_32x32_v, depth);       \
+    hevcdsp->idct2_emt_v[0][4]		 = FUNC(emt_idct_II_64x64_v_intra, depth); \
                                                                                    \
-    hevcdsp->idct2_emt_h[1][3][0]		 = FUNC(emt_idst_I_4x4_h, depth);          \
-    hevcdsp->idct2_emt_h[1][3][1]		 = FUNC(emt_idst_I_8x8_h, depth);          \
-    hevcdsp->idct2_emt_h[1][3][2]		 = FUNC(emt_idst_I_16x16_h, depth);        \
-    hevcdsp->idct2_emt_h[1][3][3]		 = FUNC(emt_idst_I_32x32_h, depth);        \
+    hevcdsp->idct2_emt_v[3][0]		 = FUNC(emt_idst_I_4x4_v, depth);          \
+    hevcdsp->idct2_emt_v[3][1]		 = FUNC(emt_idst_I_8x8_v, depth);          \
+    hevcdsp->idct2_emt_v[3][2]		 = FUNC(emt_idst_I_16x16_v, depth);        \
+    hevcdsp->idct2_emt_v[3][3]		 = FUNC(emt_idst_I_32x32_v, depth);        \
                                                                                    \
-    hevcdsp->idct2_emt_h[1][4][0]		 = FUNC(emt_idst_VII_4x4_h, depth);        \
-    hevcdsp->idct2_emt_h[1][4][1]		 = FUNC(emt_idst_VII_8x8_h, depth);        \
-    hevcdsp->idct2_emt_h[1][4][2]		 = FUNC(emt_idst_VII_16x16_h, depth);      \
-    hevcdsp->idct2_emt_h[1][4][3]		 = FUNC(emt_idst_VII_32x32_h_inter, depth);\
+    hevcdsp->idct2_emt_v[4][0]		 = FUNC(emt_idst_VII_4x4_v, depth);        \
+    hevcdsp->idct2_emt_v[4][1]		 = FUNC(emt_idst_VII_8x8_v, depth);        \
+    hevcdsp->idct2_emt_v[4][2]		 = FUNC(emt_idst_VII_16x16_v, depth);      \
+    hevcdsp->idct2_emt_v[4][3]		 = FUNC(emt_idst_VII_32x32_v_intra, depth);\
                                                                                    \
-    hevcdsp->idct2_emt_h[1][5][0]		 = FUNC(emt_idct_VIII_4x4_h, depth);       \
-    hevcdsp->idct2_emt_h[1][5][1]		 = FUNC(emt_idct_VIII_8x8_h, depth);       \
-    hevcdsp->idct2_emt_h[1][5][2]		 = FUNC(emt_idct_VIII_16x16_h, depth);     \
-    hevcdsp->idct2_emt_h[1][5][3]		 = FUNC(emt_idct_VIII_32x32_h_inter, depth);\
+    hevcdsp->idct2_emt_v[5][0]		 = FUNC(emt_idct_VIII_4x4_v, depth);       \
+    hevcdsp->idct2_emt_v[5][1]		 = FUNC(emt_idct_VIII_8x8_v, depth);       \
+    hevcdsp->idct2_emt_v[5][2]		 = FUNC(emt_idct_VIII_16x16_v, depth);     \
+    hevcdsp->idct2_emt_v[5][3]		 = FUNC(emt_idct_VIII_32x32_v_intra, depth);\
                                                                                    \
-    hevcdsp->idct2_emt_h[1][6][0]		 = FUNC(emt_idct_V_4x4_h, depth);          \
-    hevcdsp->idct2_emt_h[1][6][1]		 = FUNC(emt_idct_V_8x8_h, depth);          \
-    hevcdsp->idct2_emt_h[1][6][2]		 = FUNC(emt_idct_V_16x16_h, depth);        \
-    hevcdsp->idct2_emt_h[1][6][3]		 = FUNC(emt_idct_V_32x32_h, depth);        \
-                                                                                   \
-    hevcdsp->idct2_emt_v[0][0][0]		 = FUNC(emt_idct_II_4x4_v, depth);         \
-    hevcdsp->idct2_emt_v[0][0][1]		 = FUNC(emt_idct_II_8x8_v, depth);         \
-    hevcdsp->idct2_emt_v[0][0][2]		 = FUNC(emt_idct_II_16x16_v, depth);       \
-    hevcdsp->idct2_emt_v[0][0][3]		 = FUNC(emt_idct_II_32x32_v, depth);       \
-    hevcdsp->idct2_emt_v[0][0][4]		 = FUNC(emt_idct_II_64x64_v_intra, depth); \
-                                                                                   \
-    hevcdsp->idct2_emt_v[0][3][0]		 = FUNC(emt_idst_I_4x4_v, depth);          \
-    hevcdsp->idct2_emt_v[0][3][1]		 = FUNC(emt_idst_I_8x8_v, depth);          \
-    hevcdsp->idct2_emt_v[0][3][2]		 = FUNC(emt_idst_I_16x16_v, depth);        \
-    hevcdsp->idct2_emt_v[0][3][3]		 = FUNC(emt_idst_I_32x32_v, depth);        \
-                                                                                   \
-    hevcdsp->idct2_emt_v[0][4][0]		 = FUNC(emt_idst_VII_4x4_v, depth);        \
-    hevcdsp->idct2_emt_v[0][4][1]		 = FUNC(emt_idst_VII_8x8_v, depth);        \
-    hevcdsp->idct2_emt_v[0][4][2]		 = FUNC(emt_idst_VII_16x16_v, depth);      \
-    hevcdsp->idct2_emt_v[0][4][3]		 = FUNC(emt_idst_VII_32x32_v_intra, depth);\
-                                                                                   \
-    hevcdsp->idct2_emt_v[0][5][0]		 = FUNC(emt_idct_VIII_4x4_v, depth);       \
-    hevcdsp->idct2_emt_v[0][5][1]		 = FUNC(emt_idct_VIII_8x8_v, depth);       \
-    hevcdsp->idct2_emt_v[0][5][2]		 = FUNC(emt_idct_VIII_16x16_v, depth);     \
-    hevcdsp->idct2_emt_v[0][5][3]		 = FUNC(emt_idct_VIII_32x32_v_intra, depth);\
-                                                                                   \
-    hevcdsp->idct2_emt_v[0][6][0]		 = FUNC(emt_idct_V_4x4_v, depth);          \
-    hevcdsp->idct2_emt_v[0][6][1]		 = FUNC(emt_idct_V_8x8_v, depth);          \
-    hevcdsp->idct2_emt_v[0][6][2]		 = FUNC(emt_idct_V_16x16_v, depth);        \
-    hevcdsp->idct2_emt_v[0][6][3]		 = FUNC(emt_idct_V_32x32_v, depth);        \
-                                                                                   \
-    hevcdsp->idct2_emt_v[1][0][0]		 = FUNC(emt_idct_II_4x4_v, depth);         \
-    hevcdsp->idct2_emt_v[1][0][1]		 = FUNC(emt_idct_II_8x8_v, depth);         \
-    hevcdsp->idct2_emt_v[1][0][2]		 = FUNC(emt_idct_II_16x16_v, depth);       \
-    hevcdsp->idct2_emt_v[1][0][3]		 = FUNC(emt_idct_II_32x32_v, depth);       \
-    hevcdsp->idct2_emt_v[1][0][4]		 = FUNC(emt_idct_II_64x64_v_inter, depth); \
-                                                                                   \
-    hevcdsp->idct2_emt_v[1][3][0]		 = FUNC(emt_idst_I_4x4_v, depth);          \
-    hevcdsp->idct2_emt_v[1][3][1]		 = FUNC(emt_idst_I_8x8_v, depth);          \
-    hevcdsp->idct2_emt_v[1][3][2]		 = FUNC(emt_idst_I_16x16_v, depth);        \
-    hevcdsp->idct2_emt_v[1][3][3]		 = FUNC(emt_idst_I_32x32_v, depth);        \
-                                                                                   \
-    hevcdsp->idct2_emt_v[1][4][0]		 = FUNC(emt_idst_VII_4x4_v, depth);        \
-    hevcdsp->idct2_emt_v[1][4][1]		 = FUNC(emt_idst_VII_8x8_v, depth);        \
-    hevcdsp->idct2_emt_v[1][4][2]		 = FUNC(emt_idst_VII_16x16_v, depth);      \
-    hevcdsp->idct2_emt_v[1][4][3]		 = FUNC(emt_idst_VII_32x32_v_inter, depth);\
-                                                                                   \
-    hevcdsp->idct2_emt_v[1][5][0]		 = FUNC(emt_idct_VIII_4x4_v, depth);       \
-    hevcdsp->idct2_emt_v[1][5][1]		 = FUNC(emt_idct_VIII_8x8_v, depth);       \
-    hevcdsp->idct2_emt_v[1][5][2]		 = FUNC(emt_idct_VIII_16x16_v, depth);     \
-    hevcdsp->idct2_emt_v[1][5][3]		 = FUNC(emt_idct_VIII_32x32_v_inter, depth);\
-                                                                                   \
-    hevcdsp->idct2_emt_v[1][6][0]		 = FUNC(emt_idct_V_4x4_v, depth);          \
-    hevcdsp->idct2_emt_v[1][6][1]		 = FUNC(emt_idct_V_8x8_v, depth);          \
-    hevcdsp->idct2_emt_v[1][6][2]		 = FUNC(emt_idct_V_16x16_v, depth);        \
-    hevcdsp->idct2_emt_v[1][6][3]		 = FUNC(emt_idct_V_32x32_v, depth);        \
+    hevcdsp->idct2_emt_v[6][0]		 = FUNC(emt_idct_V_4x4_v, depth);          \
+    hevcdsp->idct2_emt_v[6][1]		 = FUNC(emt_idct_V_8x8_v, depth);          \
+    hevcdsp->idct2_emt_v[6][2]		 = FUNC(emt_idct_V_16x16_v, depth);        \
+    hevcdsp->idct2_emt_v[6][3]		 = FUNC(emt_idct_V_32x32_v, depth);        \
 
 #else
 #define HEVC_DSP(depth)                                                     \

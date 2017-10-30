@@ -68,8 +68,8 @@ typedef struct HEVCDSPContext {
                             int height, int c_idx);
 #if OHCONFIG_AMT
     ///* idct_emt[pred_mode][emt_tr_idx][log2_tr_size_minus2](...) *///
-    void (*idct2_emt_v[2][7][5])(int16_t *coeffs, int16_t *tmp, int log2_transform_range, int clip_min, int clip_max);
-    void (*idct2_emt_h[2][7][5])(int16_t *tmp,    int16_t *dst, int log2_transform_range, int clip_min, int clip_max);
+    void (*idct2_emt_v[7][5])(int16_t *coeffs, int16_t *tmp, int log2_transform_range, int clip_min, int clip_max);
+    void (*idct2_emt_h[7][5])(int16_t *tmp,    int16_t *dst, int log2_transform_range, int clip_min, int clip_max);
 #endif
 
     void (*sao_edge_restore[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);

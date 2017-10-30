@@ -1870,7 +1870,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
             enum IntraPredMode ucMode = INTER_MODE_IDX;
             DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE]);
-            int zo = 1;
             int tu_emt_Idx =  (c_idx || !s->HEVClc->cu.emt_cu_flag ) ? DCT2_EMT : s->HEVClc->tu.emt_tu_idx;
             int tr_idx_h  = DCT_II;
             int tr_idx_v  = DCT_II;
@@ -1879,7 +1878,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
             if (s->HEVClc->cu.pred_mode == MODE_INTRA){
                 ucMode = pred_mode_intra;
-                zo = 0;
             }
             if (tu_emt_Idx != DCT2_EMT){
                 if ( ucMode != INTER_MODE_IDX){
@@ -1890,8 +1888,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     tr_idx_v = emt_inter_subset_select[(tu_emt_Idx) >> 1];
                 }
             }
-            s->hevcdsp.idct2_emt_v[zo][tr_idx_v][log2_trafo_size - 2](coeffs, tmp, 0, clip_min, clip_max);
-            s->hevcdsp.idct2_emt_h[zo][tr_idx_h][log2_trafo_size - 2](tmp, coeffs, log2_transform_range, clip_min, clip_max);
+            s->hevcdsp.idct2_emt_v[tr_idx_v][log2_trafo_size - 2](coeffs, tmp, 0, clip_min, clip_max);
+            s->hevcdsp.idct2_emt_h[tr_idx_h][log2_trafo_size - 2](tmp, coeffs, log2_transform_range, clip_min, clip_max);
 #endif
         } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
             s->hevcdsp.idct_4x4_luma(coeffs);
