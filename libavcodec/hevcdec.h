@@ -423,6 +423,8 @@ typedef struct HEVCTransformContext{
     int log2_trafo_size;
     int transform_skip_flag;
     int log2_transform_range;
+    int explicit_rdpcm_flag;
+    int explicit_rdpcm_dir_flag;
 }HEVCTransformContext;
 
 

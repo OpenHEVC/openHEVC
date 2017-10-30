@@ -1472,16 +1472,14 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
     int16_t *coeffs = lc->tu.coeffs[c_idx > 0];
     uint8_t significant_coeff_group_flag[8][8] = {{0}};
-    int explicit_rdpcm_flag = 0;
-    int explicit_rdpcm_dir_flag = 0;
 
+    //Reset transform context
+    memset(tr_ctx, 0, sizeof(HEVCTransformContext));
 
-    //memset(tr_ctx, 0, sizeof(tr_ctx));
-    tr_ctx->scale_matrix = NULL;
     tr_ctx->log2_transform_range = s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6) ) : 15;//15;
     tr_ctx->log2_trafo_size = log2_trafo_size;
-    tr_ctx->transform_skip_flag = 0;
 
+    //Reset coeffs buffer
     memset(coeffs, 0, trafo_size * trafo_size * sizeof(int16_t));
 
     if (!lc->cu.cu_transquant_bypass_flag && s->ps.pps->transform_skip_enabled_flag &&
@@ -1493,12 +1491,13 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
     if (lc->cu.pred_mode == MODE_INTER && s->ps.sps->explicit_rdpcm_enabled_flag &&
         (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
-        explicit_rdpcm_flag = explicit_rdpcm_flag_decode(s, c_idx);
-        if (explicit_rdpcm_flag) {
-            explicit_rdpcm_dir_flag = explicit_rdpcm_dir_flag_decode(s, c_idx);
+        tr_ctx->explicit_rdpcm_flag = explicit_rdpcm_flag_decode(s, c_idx);
+        if (tr_ctx->explicit_rdpcm_flag) {
+            tr_ctx->explicit_rdpcm_dir_flag = explicit_rdpcm_dir_flag_decode(s, c_idx);
         }
     }
 
+    // decode and derive last significant coeff
     last_significant_coeff_xy_prefix_decode(s, c_idx, log2_trafo_size,
                                            &last_significant_coeff_x, &last_significant_coeff_y);
 
@@ -1519,6 +1518,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     if (scan_idx == SCAN_VERT)
         FFSWAP(int, last_significant_coeff_x, last_significant_coeff_y);
 
+    //derive last significant cg
     x_cg_last_sig = last_significant_coeff_x >> 2;
     y_cg_last_sig = last_significant_coeff_y >> 2;
 
@@ -1739,7 +1739,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 (lc->cu.pred_mode ==  MODE_INTRA  &&
                  s->ps.sps->implicit_rdpcm_enabled_flag  &&  tr_ctx->transform_skip_flag  &&
                  (pred_mode_intra == 10 || pred_mode_intra  ==  26 )) ||
-                 explicit_rdpcm_flag)
+                 tr_ctx->explicit_rdpcm_flag)
                 sign_hidden = 0;
             else
                 sign_hidden = (last_nz_pos_in_cg - first_nz_pos_in_cg >= 4);
@@ -1854,9 +1854,9 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #endif
 
     if (lc->cu.cu_transquant_bypass_flag) {
-        if (explicit_rdpcm_flag || (s->ps.sps->implicit_rdpcm_enabled_flag &&
+        if (tr_ctx->explicit_rdpcm_flag || (s->ps.sps->implicit_rdpcm_enabled_flag &&
                                     (pred_mode_intra == 10 || pred_mode_intra == 26))) {
-            int mode = s->ps.sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : explicit_rdpcm_dir_flag;
+            int mode = s->ps.sps->implicit_rdpcm_enabled_flag ? (pred_mode_intra == 26) : tr_ctx->explicit_rdpcm_dir_flag;
 
             s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
         }
@@ -1872,8 +1872,8 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
             s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
 
-            if (explicit_rdpcm_flag) {
-                s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, explicit_rdpcm_dir_flag);
+            if (tr_ctx->explicit_rdpcm_flag) {
+                s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, tr_ctx->explicit_rdpcm_dir_flag);
             } else if ((s->ps.sps->implicit_rdpcm_enabled_flag &&
                         lc->cu.pred_mode == MODE_INTRA &&
                        (pred_mode_intra == 10 || pred_mode_intra == 26))) {
