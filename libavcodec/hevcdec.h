@@ -800,6 +800,14 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #endif
 );
 
+void ff_hevc_hls_residual_coding_c(HEVCContext *s, int x0, int y0,
+                                 int log2_trafo_size, enum ScanType scan_idx,
+                                 int c_idx
+#if OHCONFIG_AMT
+                                 , int log2_cb_size
+#endif
+);
+
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
 int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
