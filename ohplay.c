@@ -29,7 +29,6 @@
 
 #include "libopenhevc/openhevc.h"
 #include <libavformat/avformat.h>
-#include <SDL/SDL_events.h>
 
 #define CONFIG_OPENCL 0
 #define CONFIG_AVDEVICE 0
