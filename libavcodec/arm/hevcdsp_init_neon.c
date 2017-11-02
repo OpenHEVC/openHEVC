@@ -393,6 +393,8 @@ av_cold void ff_hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         c->hevc_h_loop_filter_chroma   = ff_hevc_h_loop_filter_chroma_neon;
         c->idct[0]                     = ff_hevc_transform_4x4_neon_8;
         c->idct[1]                     = ff_hevc_transform_8x8_neon_8;
+        c->idct[2]                     = oh_hevc_transform_16x16_8_neon;
+        c->idct[3]                     = oh_hevc_transform_32x32_8_neon;
         c->idct_dc[0]                  = ff_hevc_idct_4x4_dc_neon_8;
         c->idct_dc[1]                  = ff_hevc_idct_8x8_dc_neon_8;
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_neon_8;
@@ -523,28 +525,6 @@ av_cold void ff_hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         c->put_hevc_epel_bi[5][0][0]  = ff_hevc_put_bi_pixels_w16_neon_8;
         c->put_hevc_epel_bi[6][0][0]  = ff_hevc_put_bi_pixels_w24_neon_8;
         c->put_hevc_epel_bi[7][0][0]  = ff_hevc_put_bi_pixels_w32_neon_8;
-
-        c->idct[0]                         = ff_hevc_transform_4x4_neon_8;
-        c->idct[1]                         = ff_hevc_transform_8x8_neon_8;
-        c->idct_dc[0]                      = ff_hevc_idct_4x4_dc_neon_8;
-        c->idct_dc[1]                      = ff_hevc_idct_8x8_dc_neon_8;
-        c->idct_dc[2]                      = ff_hevc_idct_16x16_dc_neon_8;
-        c->idct_dc[3]                      = ff_hevc_idct_32x32_dc_neon_8;
-        c->transform_add[0]                = ff_hevc_transform_add_4x4_neon_8;
-        c->transform_add[1]                = ff_hevc_transform_add_8x8_neon_8;
-        c->transform_add[2]                = ff_hevc_transform_add_16x16_neon_8;
-        c->transform_add[3]                = ff_hevc_transform_add_32x32_neon_8;
-        c->idct_4x4_luma                   = ff_hevc_transform_luma_4x4_neon_8;
-        c->sao_band_filter                 = ff_hevc_sao_band_neon_wrapper;
-        c->sao_edge_filter                 = ff_hevc_sao_edge_neon_wrapper;
-        c->upsample_filter_block_luma_h[1] = ff_upsample_filter_block_luma_h_x2_neon;
-        c->upsample_filter_block_luma_v[1] = ff_upsample_filter_block_luma_v_x2_neon;
-        c->upsample_filter_block_cr_h[1]   = ff_upsample_filter_block_cr_h_x2_neon;
-        c->upsample_filter_block_cr_v[1]   = ff_upsample_filter_block_cr_v_x2_neon;
-        c->upsample_filter_block_cr_h[2]   = ff_upsample_filter_block_cr_h_x1_5_neon;
-        c->upsample_filter_block_cr_v[2]   = ff_upsample_filter_block_cr_v_x1_5_neon;
-        c->upsample_filter_block_luma_h[2] = ff_upsample_filter_block_luma_h_x1_5_neon;
-        c->upsample_filter_block_luma_v[2] = ff_upsample_filter_block_luma_v_x1_5_neon;
 
     }
 }

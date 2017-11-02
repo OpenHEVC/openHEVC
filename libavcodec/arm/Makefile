@@ -82,6 +82,7 @@ NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o
 NEON-OBJS-$(CONFIG_HEVC_DECODER)       += arm/hevcdsp_init_neon.o       \
                                           arm/hevcdsp_deblock_neon.o    \
                                           arm/hevcdsp_idct_neon.o       \
+                                          arm/hevcdsp_idct_neon_itr.o   \
                                           arm/hevcdsp_qpel_neon.o		\
                                           arm/hevcdsp_epel_neon.o		\
                                           arm/hevcdsp_pel_put_neon.o 	\

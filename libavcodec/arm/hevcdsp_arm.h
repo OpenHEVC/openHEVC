@@ -23,4 +23,8 @@
 
 void ff_hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth);
 
+/* hevcdsp_idct_neon_itr.c */
+void oh_hevc_transform_16x16_8_neon(int16_t *coeffs, int col_limit);
+void oh_hevc_transform_32x32_8_neon(int16_t *coeffs, int col_limit);
+
 #endif /* AVCODEC_ARM_HEVCDSP_ARM_H */
