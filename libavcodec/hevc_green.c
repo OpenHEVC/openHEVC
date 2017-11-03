@@ -28,7 +28,7 @@ static int a_level_old[13] = {
 
 void green_update(HEVCContext *s){
 	if (s->sh.first_slice_in_pic_flag) {// Green: Activation Level management end
-		if (s->sh.slice_type != I_SLICE){
+		if (s->sh.slice_type != HEVC_SLICE_I){
 			// Green activation levels
 			s->hevcdsp.green_on = (a_level_old[s->green_alevel] >> (s->poc%12)) & 0x1;
 		}else{ // If frame is I, make sure the in-loop filters are enabled
@@ -72,7 +72,7 @@ void green_update(HEVCContext *s){
 void green_logs(HEVCContext *s)
 {
 	// Green Mode Log
-	if(s->green_verbose && s->sh.slice_type != I_SLICE){
+	if(s->green_verbose && s->sh.slice_type != HEVC_SLICE_I){
 		av_log(s->avctx, AV_LOG_INFO,"%d Interpolation configuration: AL %d Luma %d Chroma %d SAO %s DBF %s.\n",s->poc, s->green_alevel, s->hevcdsp.green_cur_luma,
 			   s->hevcdsp.green_cur_chroma,(s->green_sao_on || !s->hevcdsp.green_on) ? "on" : "off",(s->green_dbf_on || !s->hevcdsp.green_on) ? "on" : "off");
 	}

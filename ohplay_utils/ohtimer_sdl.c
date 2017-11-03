@@ -28,7 +28,7 @@
  */
 
 #include <stdint.h>
-#include <SDL_timer.h>
+#include <SDL/SDL_timer.h>
 
 #include "ohtimer_wrapper.h"
 

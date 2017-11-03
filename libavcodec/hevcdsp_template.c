@@ -22,12 +22,10 @@
  */
 
 #include "get_bits.h"
-#include "hevc.h"
-#include "config.h"
+#include "hevcdec.h"
 
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
-
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height,
                           GetBitContext *gb, int pcm_bit_depth)
@@ -532,7 +530,7 @@ static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
 
 #undef CMP
 
-#if COM16_C806_EMT
+#if OHCONFIG_AMT
 #if BIT_DEPTH < 9
 DECLARE_ALIGNED(16, static const int16_t, DCT_II_4x4[4][4]) =
 {
@@ -1729,7 +1727,7 @@ static void FUNC(emt_idct_V_32x32_v)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(emt_idct_VIII_4x4_h)(int16_t *coeff, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max)
+static void FUNC(emt_idct_VIII_4x4_h)(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max)
 {
 #define CB_SIZE 4
     int i;
@@ -1739,26 +1737,27 @@ static void FUNC(emt_idct_VIII_4x4_h)(int16_t *coeff, int16_t *block, int log2_t
 
     const int16_t *iT = DCT_VIII_4x4[0];
 
-    int c[4];
-    for (i=0; i<CB_SIZE; i++)
-    {
-        c[0] = coeff[ 0] + coeff[12];
-        c[1] = coeff[ 8] + coeff[ 0];
-        c[2] = coeff[12] - coeff[ 8];
-        c[3] = iT[1]* coeff[4];
+    int c[5];
+    for (i=0; i<CB_SIZE; i++){
+        c[0] = (x[0]        + x[12]) * 336;
+        c[1] = (x[8]        - x[12]) * 219;
+        c[2] = (x[0] + x[8]        ) * 117;
+        c[3] = (x[0] - x[8] - x[12]) * 296;
+        c[4] = x[4] * 296;
 
-        block[0] = av_clip( ((iT[3] * c[0] + iT[2] * c[1] + c[3]        + add) >> shift), clip_min, clip_max);
-        block[1] = av_clip( ((iT[1] * (coeff[0] - coeff[8] - coeff[12]) + add) >> shift), clip_min, clip_max);
-        block[2] = av_clip( ((iT[3] * c[2] + iT[2] * c[0] - c[3]        + add) >> shift), clip_min, clip_max);
-        block[3] = av_clip( ((iT[3] * c[1] - iT[2] * c[2] - c[3]        + add) >> shift), clip_min, clip_max);
+        block[0] = av_clip(((c[0] + c[1] + c[4] + add ) >> shift), clip_min, clip_max);
+        block[1] = av_clip(((c[3]               + add ) >> shift), clip_min, clip_max);
+        block[2] = av_clip(((c[0] - c[2] - c[4] + add ) >> shift), clip_min, clip_max);
+        block[3] = av_clip(((c[1] + c[2] - c[4] + add ) >> shift), clip_min, clip_max);
 
         block+=4;
-        coeff++;
+        x++;
     }
 #undef CB_SIZE
+
 }
 
-static void FUNC(emt_idct_VIII_4x4_v)(int16_t *coeff, int16_t *block, int shift, const int clip_min, const int clip_max)
+static void FUNC(emt_idct_VIII_4x4_v)(int16_t *x, int16_t *block, int shift, const int clip_min, const int clip_max)
 {
 #define CB_SIZE 4
     int i;
@@ -1766,20 +1765,20 @@ static void FUNC(emt_idct_VIII_4x4_v)(int16_t *coeff, int16_t *block, int shift,
     const int16_t *iT = DCT_VIII_4x4[0];
 
     int c[4];
-    for (i=0; i<CB_SIZE; i++)
-    {
-        c[0] = coeff[ 0] + coeff[12];
-        c[1] = coeff[ 8] + coeff[ 0];
-        c[2] = coeff[12] - coeff[ 8];
-        c[3] = iT[1]* coeff[4];
+    for (i=0; i<CB_SIZE; i++){
+        c[0] = (x[0]        + x[12]) * 336;
+        c[1] = (x[8]        - x[12]) * 219;
+        c[2] = (x[0] + x[8]        ) * 117;
+        c[3] = (x[0] - x[8] - x[12]) * 296;
+        c[4] = x[4] * 296;
 
-        block[0] = av_clip(((iT[3] * c[0] + iT[2] * c[1] + c[3]        + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
-        block[1] = av_clip(((iT[1] * (coeff[0] - coeff[8] - coeff[12]) + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
-        block[2] = av_clip(((iT[3] * c[2] + iT[2] * c[0] - c[3]        + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
-        block[3] = av_clip(((iT[3] * c[1] - iT[2] * c[2] - c[3]        + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
+        block[0] = av_clip(((c[0] + c[1] + c[4] + ADD_EMT_V ) >> SHIFT_EMT_V), clip_min, clip_max);
+        block[1] = av_clip(((c[3]               + ADD_EMT_V ) >> SHIFT_EMT_V), clip_min, clip_max);
+        block[2] = av_clip(((c[0] - c[2] - c[4] + ADD_EMT_V ) >> SHIFT_EMT_V), clip_min, clip_max);
+        block[3] = av_clip(((c[1] + c[2] - c[4] + ADD_EMT_V ) >> SHIFT_EMT_V), clip_min, clip_max);
 
         block+=4;
-        coeff++;
+        x++;
     }
 #undef CB_SIZE
 }
@@ -2115,55 +2114,54 @@ static void FUNC(emt_idst_I_32x32_v)(int16_t *coeff, int16_t *block, int shift, 
 #undef CB_SIZE
 }
 
-static void FUNC(emt_idst_VII_4x4_h)(int16_t *coeff, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max)
+//FIXME clipping sizes could probably be computed at build given the bit_depth etc.
+static void FUNC(emt_idst_VII_4x4_h)(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max)
 {
 #define CB_SIZE 4
-    int i, c[4];
+    int i, c[5];
 
     const int shift    = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
     const int add = 1 << (shift - 1);
 
-    const int16_t *iT = DST_VII_4x4[0];
+    for (i = 0; i < CB_SIZE; i++){
+        c[0] = (        x[8] + x[12]) * -336;
+        c[1] = ( x[0] - x[8] + x[12]) *  296;
+        c[2] = ( x[0] + x[8]        ) *  219;
+        c[3] = ( x[0]        - x[12]) *  117;
 
-    for (i=0; i<CB_SIZE; i++)
-    {
-        c[0] = coeff[0] + coeff[ 8];
-        c[1] = coeff[8] + coeff[12];
-        c[2] = coeff[0] - coeff[12];
-        c[3] = iT[2]* coeff[4];
+        c[4] = x[4] * 296;
 
-        block[0] = av_clip( (( iT[0] * c[0] + iT[1] * c[1] + c[3]         + add ) >> shift), clip_min, clip_max);
-        block[1] = av_clip( (( iT[1] * c[2] - iT[0] * c[1] + c[3]         + add ) >> shift), clip_min, clip_max);
-        block[2] = av_clip( (( iT[2] * (coeff[0] - coeff[8]  + coeff[12]) + add ) >> shift), clip_min, clip_max);
-        block[3] = av_clip( (( iT[1] * c[0] + iT[0] * c[2] - c[3]         + add ) >> shift), clip_min, clip_max);
+        block[0] = av_clip( ((  c[3] - c[0] + c[4] + add) >> shift), clip_min, clip_max);
+        block[2] = av_clip( ((  c[1]               + add) >> shift), clip_min, clip_max);
+        block[3] = av_clip( ((  c[2] + c[3] - c[4] + add) >> shift), clip_min, clip_max);
+        block[1] = av_clip( ((  c[2] + c[0] + c[4] + add) >> shift), clip_min, clip_max);
 
         block+=4;
-        coeff++;
+        x++;
     }
 #undef CB_SIZE
 }
 
-static void FUNC(emt_idst_VII_4x4_v)(int16_t *coeff, int16_t *block, int shift, const int clip_min, const int clip_max)
+static void FUNC(emt_idst_VII_4x4_v)(int16_t *x, int16_t *block, int shift, const int clip_min, const int clip_max)
 {
 #define CB_SIZE 4
-    int i, c[4];
+    int i, c[5];
 
-    const int16_t *iT = DST_VII_4x4[0];
+    for (i = 0; i < CB_SIZE; i++){
+        c[0] = (        x[8] + x[12]) * -336;
+        c[1] = ( x[0] - x[8] + x[12]) *  296;
+        c[2] = ( x[0] + x[8]        ) *  219;
+        c[3] = ( x[0]        - x[12]) *  117;
 
-    for (i=0; i<CB_SIZE; i++)
-    {
-        c[0] = coeff[0] + coeff[ 8];
-        c[1] = coeff[8] + coeff[12];
-        c[2] = coeff[0] - coeff[12];
-        c[3] = iT[2]* coeff[4];
+        c[4] = x[4] * 296;
 
-        block[0] = av_clip( (( iT[0] * c[0] + iT[1] * c[1] + c[3]         + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
-        block[1] = av_clip( (( iT[1] * c[2] - iT[0] * c[1] + c[3]         + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
-        block[2] = av_clip( (( iT[2] * (coeff[0] - coeff[8]  + coeff[12]) + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
-        block[3] = av_clip( (( iT[1] * c[0] + iT[0] * c[2] - c[3]         + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
+        block[0] = av_clip( ((  c[3] - c[0] + c[4] + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
+        block[2] = av_clip( ((  c[1]               + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
+        block[3] = av_clip( ((  c[2] + c[3] - c[4] + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
+        block[1] = av_clip( ((  c[2] + c[0] + c[4] + ADD_EMT_V) >> SHIFT_EMT_V), clip_min, clip_max);
 
         block+=4;
-        coeff++;
+        x++;
     }
 #undef CB_SIZE
 }

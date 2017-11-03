@@ -160,7 +160,7 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
  * @param min the minimum valid accepted value
  * @param max the maximum valid accepted value
  */
-int parse_enum_args(const char *context, const char *enumstr, char *name,
+int parse_enum_args(const char *context, const char *enumstr,const char *name,
                     int min, int max);
 
 /**

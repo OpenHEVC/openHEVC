@@ -244,15 +244,11 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
         if (i <= openHevcContexts->active_layer) {
             openHevcContext->avpkt.size = au_len;
             openHevcContext->avpkt.data = (uint8_t *) buff;
-        } else {
-            openHevcContext->avpkt.size = 0;
-            openHevcContext->avpkt.data = NULL;
+            openHevcContext->avpkt.pts  = pts;
+            err                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
+                                                                 &got_picture, &openHevcContext->avpkt);
+            ret |= (got_picture << i);
         }
-        openHevcContext->avpkt.pts  = pts;
-        err                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
-                                                             &got_picture, &openHevcContext->avpkt);
-        ret |= (got_picture << i);
-
         if(i < openHevcContexts->active_layer)
             openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
@@ -369,7 +365,7 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
         int got_picture = 0;
         openHevcContext                = openHevcContexts->wraper[i];
         openHevcContext->c->quality_id = openHevcContexts->active_layer;
-        if(i==0){
+        if(buff && i==0){
             openHevcContext->avpkt.size = nal_len;
             openHevcContext->avpkt.data = buff;
             openHevcContext->avpkt.pts  = pts;
@@ -379,6 +375,17 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
             }else {
                 openHevcContext->avpkt.el_available=0;
             }
+            err = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture, &openHevcContext->avpkt);
+
+            ret |= (got_picture << i);
+
+            //Fixme: This way of passing base layer frame reference to each other is bad and should be corrected
+            //We don't know what the first decoder could be doing with its BL_frame (modifying or deleting it)
+            //A cleanest way to do things would be to handle the h264 decoder from the first decoder, but the main issue
+            //would be finding a way to keep giving AVPacket, to h264 when required until the BL_frames required by HEVC
+            //are decoded and available.
+
+            openHevcContexts->got_picture_mask = ret;
         } else if(i > 0 && i <= openHevcContexts->active_layer){
             openHevcContext->avpkt.size = nal_len2;
             openHevcContext->avpkt.data = buff2;
@@ -390,22 +397,21 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
             else {
                 openHevcContext->avpkt.bl_available=0;
             }
+            err = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture, &openHevcContext->avpkt);
+
+            ret |= (got_picture << i);
+
+            //Fixme: This way of passing base layer frame reference to each other is bad and should be corrected
+            //We don't know what the first decoder could be doing with its BL_frame (modifying or deleting it)
+            //A cleanest way to do things would be to handle the h264 decoder from the first decoder, but the main issue
+            //would be finding a way to keep giving AVPacket, to h264 when required until the BL_frames required by HEVC
+            //are decoded and available.
+
+            openHevcContexts->got_picture_mask = ret;
         } else {
             openHevcContext->avpkt.size = 0;
             openHevcContext->avpkt.data = NULL;
         }
-
-        err = avcodec_decode_video2(openHevcContext->c, openHevcContext->picture, &got_picture, &openHevcContext->avpkt);
-
-        ret |= (got_picture << i);
-
-        //Fixme: This way of passing base layer frame reference to each other is bad and should be corrected
-        //We don't know what the first decoder could be doing with its BL_frame (modifying or deleting it)
-        //A cleanest way to do things would be to handle the h264 decoder from the first decoder, but the main issue
-        //would be finding a way to keep giving AVPacket, to h264 when required until the BL_frames required by HEVC
-        //are decoded and available.
-
-        openHevcContexts->got_picture_mask = ret;
 
         if(i < openHevcContexts->active_layer)
             openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
@@ -475,6 +481,7 @@ static int get_picture_bitdepth(int format){
             return  10;
         case AV_PIX_FMT_YUV420P12 :
         case AV_PIX_FMT_YUV422P12 :
+        case AV_PIX_FMT_YUV444P12 :
             return  12;
         default :
             return  8;

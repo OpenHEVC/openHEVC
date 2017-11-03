@@ -30,7 +30,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdarg.h>
-
+#include "config.h"
 #define OPENHEVC_HAS_AVC_BASE
 #define USE_SDL 1
 
@@ -352,6 +352,10 @@ void oh_select_active_layer(OHHandle oh_hdl, int val);
  */
 void oh_select_view_layer(OHHandle oh_hdl, int val);
 
+#if OHCONFIG_ENCRYPTION
+void oh_set_crypto_mode(OHHandle oh_hdl, int val);
+void oh_set_crypto_key(OHHandle oh_hdl, uint8_t *val);
+#endif
 /**
  * Enable Green filters
  *

@@ -38,49 +38,57 @@
 #include "ohplay_utils/ohtimer_wrapper.h"
 
 const char program_name[] = "ohplay";
-const int program_birth_year = 2003;
+const int  program_birth_year = 2013;
 
 /* options specified by the user */
 static char *program;
-static int h264_flags;
-static int no_md5;
-static int thread_type;
 static char *input_file;
-static char *enhance_file;
-static char no_display;
+static char *avc_bl_file;
 static char *output_file;
+
+static int thread_type;
 static int nb_pthreads;
+
 static int temporal_layer_id;
 static int quality_layer_id;
 static int num_frames;
+
 static float frame_rate;
+
+static char no_md5;
+static char no_display;
+
+static char *log_level;
+
 static int crypto_args;
 static uint8_t *crypto_key = NULL;
 
+
 static const OptionDef options[] = {
-	{ "h", OPT_EXIT, {.func_arg = show_help}, "show help" },
-	{ "-help", OPT_EXIT, {.func_arg = show_help}, "show help" },
-    { "c", OPT_BOOL, { &no_md5 }, "no check md5" },
-    { "f", HAS_ARG | OPT_INT, { &thread_type }, "1-frame, 2-slice, 4-frameslice", "thread type" },
-    { "i", HAS_ARG | OPT_STRING, { &input_file }, "Input file", "file" },
-    { "n", OPT_BOOL, { &no_display }, "no display" },
-    { "o", HAS_ARG | OPT_STRING, { &output_file }, "Output file", "file" },
-    { "p", HAS_ARG | OPT_INT, { &nb_pthreads }, "Pthreads number", "n" },
-    { "t", HAS_ARG | OPT_INT, { &temporal_layer_id }, "Temporal layer id", "id" },
-    { "l", HAS_ARG | OPT_INT, { &quality_layer_id }, "Quality layer id", "id" },
-    { "s", HAS_ARG | OPT_INT, { &num_frames }, "Stop after \"n\" frames", "n" },
-    { "r", HAS_ARG | OPT_FLOAT, { &frame_rate }, "Frame rate (FPS)", "n"},
-    { "v", OPT_BOOL, { &h264_flags }, "Input is a h264 bitstream" },
-    { "e", HAS_ARG | OPT_STRING, { &enhance_file }, "Enhanced layer file (with AVC base)", "file" },
-    {"-crypto", HAS_ARG | OPT_ENUM, {&crypto_args}, " Encryption configuration","params"},
-    {"-key", HAS_ARG | OPT_DATA, {&crypto_key},"overload default cipher key", "(16 bytes)"},
+    { "h"        , OPT_EXIT            , {.func_arg = show_help}, "show help" },
+    { "-help"    , OPT_EXIT            , {.func_arg = show_help}, "show help" },
+    { "i"        , HAS_ARG | OPT_STRING, { &input_file }        , "select input HEVC file", "INPUT_FILE" },
+    { "-avc-base", HAS_ARG | OPT_STRING, { &avc_bl_file }       , "use an external AVC bitstream as base layer","INPUT_FILE" },
+    { "o"        , HAS_ARG | OPT_STRING, { &output_file }       , "write raw output to file", "OUTPUT_FILE" },
+    { "p"        , HAS_ARG | OPT_INT   , { &nb_pthreads }       , "set the of threads to N", "NUM_THREADS" },
+    { "f"        , HAS_ARG | OPT_INT   , { &thread_type }       , "1-frame, 2-slice, 4-frameslice", "THREAD_TYPE_ID" },
+    { "t"        , HAS_ARG | OPT_INT   , { &temporal_layer_id } , "set the maximum temporal layer id", "ID" },
+    { "l"        , HAS_ARG | OPT_INT   , { &quality_layer_id }  , "set the maximum quality layer id" , "ID" },
+    { "s"        , HAS_ARG | OPT_INT   , { &num_frames }        , "decode only the N first frames", "NUM_FRAMES" },
+    { "r"        , HAS_ARG | OPT_FLOAT , { &frame_rate }        , "set decoding frame rate to FPS", "FPS"},
+    { "c"        , OPT_BOOL            , { &no_md5 }            , "disable md5 checksum SEI" },
+    { "n"        , OPT_BOOL            , { &no_display }        , "disable the display of decoded video" },
+    { "v"        , HAS_ARG | OPT_STRING, { &log_level }         , "select log level: trace, debug, verbose, info, warning, error, fatal, panic, quiet", "LOG_LEVEL"},
+    { "-loglevel", HAS_ARG | OPT_STRING, { &log_level }         , "select log level: trace, debug, verbose, info, warning, error, fatal, panic, quiet", "LOG_LEVEL"},
+    { "-crypto"  , HAS_ARG | OPT_ENUM  , { &crypto_args }       , "Encryption configuration","params"},
+    { "-key"     , HAS_ARG | OPT_DATA  , { &crypto_key }        , "overload default cipher key", "(16 bytes)"},
     { NULL, },
 };
 
 static void show_usage(void)
 {
     av_log(NULL, AV_LOG_INFO, "OpenHEVC player\n");
-    av_log(NULL, AV_LOG_INFO, "usage: %s [options] -i input_file\n", program_name);
+    av_log(NULL, AV_LOG_INFO, "usage: %s [options] -i INPUT_FILE\n", program_name);
     av_log(NULL, AV_LOG_INFO, "\n");
 }
 
@@ -134,6 +142,7 @@ int get_next_nal(FILE* inpf, unsigned char* Buf)
     fseek (inpf, - 4 + info2, SEEK_CUR);
     return pos - 4 + info2;
 }
+
 typedef struct Info {
     int NbFrame;
     int Poc;
@@ -143,14 +152,14 @@ typedef struct Info {
     int size;
 } Info;
 
-static void video_decode_example(const char *filename,const char *enh_filename)
+static void video_decode_example(const char *filename,const char *avc_bl_filename)
 {
 	AVFormatContext *pFormatCtx[2];
 	AVPacket        packet[2];
 
-	int AVC_BL = h264_flags;
-    int split_layers = enh_filename != NULL;//fixme: we do not check the -e option here
-    int AVC_BL_only = AVC_BL && !split_layers;
+    int AVC_BL       = !!avc_bl_filename;
+    int split_layers = avc_bl_filename && filename;
+    int AVC_BL_only  = AVC_BL && !split_layers;
 
     FILE *fout  = NULL;
     int width   = -1;
@@ -171,7 +180,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
     OHMouse oh_mouse;
 
-    if (filename == NULL) {
+    if (filename == NULL && !AVC_BL_only) {
         printf("No input file specified.\nSpecify it with: -i <filename>\n");
         exit(1);
     }
@@ -180,7 +189,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     if (AVC_BL_only){
         openHevcHandle = libOpenH264Init(nb_pthreads, thread_type/*, pFormatCtx*/);
     } else if (AVC_BL && split_layers){
-    	printf("file name : %s\n", enhance_file);
+        //printf("file name : %s\n", enhance_file);
     	openHevcHandle = libOpenShvcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
     } else {
         openHevcHandle = libOpenHevcInit(nb_pthreads, thread_type/*, pFormatCtx*/);
@@ -203,13 +212,13 @@ static void video_decode_example(const char *filename,const char *enh_filename)
     if(AVC_BL && split_layers)
         pFormatCtx[1] = avformat_alloc_context();
 
-    if(avformat_open_input(&pFormatCtx[0], filename, NULL, NULL)!=0) {
-    	fprintf(stderr,"Could not open base layer input file : %s\n",filename);
+    if(avformat_open_input(&pFormatCtx[0], AVC_BL ? avc_bl_filename : filename, NULL, NULL)!=0) {
+        fprintf(stderr,"Could not open base layer input file : %s\n",AVC_BL ? avc_bl_filename : filename);
         exit(1);
     }
 
-    if(split_layers && avformat_open_input(&pFormatCtx[1], enh_filename, NULL, NULL)!=0) {
-        fprintf(stderr,"Could not open enhanced layer input file : %s\n",enh_filename);
+    if(split_layers && avformat_open_input(&pFormatCtx[1], AVC_BL ?  filename : avc_bl_filename, NULL, NULL)!=0) {
+        fprintf(stderr,"Could not open enhanced layer input file : %s\n",AVC_BL ? filename : avc_bl_filename);
         exit(1);
     }
 
@@ -237,7 +246,7 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 
     }
 
-    libOpenHevcSetDebugMode(openHevcHandle, OHEVC_LOG_INFO);
+    //libOpenHevcSetDebugMode(openHevcHandle, OHEVC_LOG_TRACE);
     libOpenHevcStartDecoder(openHevcHandle);
     oh_set_crypto_mode(openHevcHandle,crypto_args);
     if(crypto_key!=NULL)
@@ -397,11 +406,10 @@ static void video_decode_example(const char *filename,const char *enh_filename)
 }
 
 int main(int argc, char *argv[]) {
-    h264_flags        = 0;
     no_md5			  = 0;
     thread_type       = 1;
     input_file        = NULL;
-    enhance_file 	  = NULL;
+    avc_bl_file       = NULL;
     no_display	      = 0;
     output_file       = NULL;
     nb_pthreads       = 1;
@@ -409,6 +417,7 @@ int main(int argc, char *argv[]) {
     quality_layer_id  = 0; // Base layer
     num_frames        = 0;
     frame_rate        = 0;
+    hide_banner       = 1;
 
     program           = argv[0];
 
@@ -422,7 +431,7 @@ int main(int argc, char *argv[]) {
 
     parse_options(NULL, argc, argv, options, NULL);
 
-    video_decode_example(input_file, enhance_file);
+    video_decode_example(input_file, avc_bl_file);
 
     return 0;
 }

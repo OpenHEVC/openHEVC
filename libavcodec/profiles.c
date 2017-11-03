@@ -80,6 +80,10 @@ const AVProfile ff_hevc_profiles[] = {
     { FF_PROFILE_HEVC_MAIN_10,              "Main 10"             },
     { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "Main Still Picture"  },
     { FF_PROFILE_HEVC_REXT,                 "Rext"                },
+    { FF_PROFILE_HEVC_HIGHTHROUGHPUTREXT,   "Highthroughput Rext" },
+    { FF_PROFILE_HEVC_MULTIVIEWMAIN,        "Mutiview Main"       },
+    { FF_PROFILE_HEVC_SCALABLEMAIN,         "Scalable Main"       },
+    { FF_PROFILE_HEVC_SCALABLEMAIN10,       "Scalable Main 10"    },
     { FF_PROFILE_UNKNOWN },
 };
 

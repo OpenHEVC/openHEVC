@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = avcodec
+DESC = FFmpeg codec library
 
 HEADERS = avcodec.h                                                     \
           avdct.h                                                       \
@@ -11,6 +10,7 @@ HEADERS = avcodec.h                                                     \
           dxva2.h                                                       \
           jni.h                                                         \
           mediacodec.h                                                  \
+          hevc.h\
           qsv.h                                                         \
           vaapi.h                                                       \
           vda.h                                                         \
@@ -28,6 +28,7 @@ OBJS = allcodecs.o                                                      \
        bitstream_filters.o                                              \
        bsf.o                                                            \
        codec_desc.o                                                     \
+       decode.o                                                         \
        mathtables.o                                                     \
        options.o                                                        \
        parser.o                                                         \
@@ -81,12 +82,12 @@ OBJS-$(CONFIG_H264_CUVID_DECODER)      += cuvid.o
 
 OBJS-$(CONFIG_H264_VDA_DECODER)        += vda_h264_dec.o
 
-OBJS-$(CONFIG_HEVC_DECODER)            += hevc.o hevc_mvs.o hevc_ps.o hevc_sei.o \
+OBJS-$(CONFIG_HEVC_DECODER)            += hevcdec.o hevc_mvs.o hevc_ps.o hevc_sei.o \
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
-                                          hevcdsp.o hevc_filter.o h2645_parse.o 
+                                          hevcdsp.o hevc_filter.o h2645_parse.o hevc_data.o
 
 
-
+OBJS-$(OHCONFIG_ENCRYPTION)            += crypto.o
 
 
 
@@ -131,7 +132,7 @@ OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)       += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_HEVC_MP4TOANNEXB_BSF)       += hevc_mp4toannexb_bsf.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
-
+OBJS                   += null_bsf.o
 
 # thread libraries
 OBJS-$(HAVE_LIBC_MSVCRT)               += file_open.o

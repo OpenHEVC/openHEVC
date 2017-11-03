@@ -150,31 +150,31 @@ nsc:
 static const char *nal_unit_name(int nal_type)
 {
     switch(nal_type) {
-    case NAL_TRAIL_N    : return "TRAIL_N";
-    case NAL_TRAIL_R    : return "TRAIL_R";
-    case NAL_TSA_N      : return "TSA_N";
-    case NAL_TSA_R      : return "TSA_R";
-    case NAL_STSA_N     : return "STSA_N";
-    case NAL_STSA_R     : return "STSA_R";
-    case NAL_RADL_N     : return "RADL_N";
-    case NAL_RADL_R     : return "RADL_R";
-    case NAL_RASL_N     : return "RASL_N";
-    case NAL_RASL_R     : return "RASL_R";
-    case NAL_BLA_W_LP   : return "BLA_W_LP";
-    case NAL_BLA_W_RADL : return "BLA_W_RADL";
-    case NAL_BLA_N_LP   : return "BLA_N_LP";
-    case NAL_IDR_W_RADL : return "IDR_W_RADL";
-    case NAL_IDR_N_LP   : return "IDR_N_LP";
-    case NAL_CRA_NUT    : return "CRA_NUT";
-    case NAL_VPS        : return "VPS";
-    case NAL_SPS        : return "SPS";
-    case NAL_PPS        : return "PPS";
-    case NAL_AUD        : return "AUD";
-    case NAL_EOS_NUT    : return "EOS_NUT";
-    case NAL_EOB_NUT    : return "EOB_NUT";
-    case NAL_FD_NUT     : return "FD_NUT";
-    case NAL_SEI_PREFIX : return "SEI_PREFIX";
-    case NAL_SEI_SUFFIX : return "SEI_SUFFIX";
+    case HEVC_NAL_TRAIL_N    : return "TRAIL_N";
+    case HEVC_NAL_TRAIL_R    : return "TRAIL_R";
+    case HEVC_NAL_TSA_N      : return "TSA_N";
+    case HEVC_NAL_TSA_R      : return "TSA_R";
+    case HEVC_NAL_STSA_N     : return "STSA_N";
+    case HEVC_NAL_STSA_R     : return "STSA_R";
+    case HEVC_NAL_RADL_N     : return "RADL_N";
+    case HEVC_NAL_RADL_R     : return "RADL_R";
+    case HEVC_NAL_RASL_N     : return "RASL_N";
+    case HEVC_NAL_RASL_R     : return "RASL_R";
+    case HEVC_NAL_BLA_W_LP   : return "BLA_W_LP";
+    case HEVC_NAL_BLA_W_RADL : return "BLA_W_RADL";
+    case HEVC_NAL_BLA_N_LP   : return "BLA_N_LP";
+    case HEVC_NAL_IDR_W_RADL : return "IDR_W_RADL";
+    case HEVC_NAL_IDR_N_LP   : return "IDR_N_LP";
+    case HEVC_NAL_CRA_NUT    : return "CRA_NUT";
+    case HEVC_NAL_VPS        : return "VPS";
+    case HEVC_NAL_SPS        : return "SPS";
+    case HEVC_NAL_PPS        : return "PPS";
+    case HEVC_NAL_AUD        : return "AUD";
+    case HEVC_NAL_EOS_NUT    : return "EOS_NUT";
+    case HEVC_NAL_EOB_NUT    : return "EOB_NUT";
+    case HEVC_NAL_FD_NUT     : return "FD_NUT";
+    case HEVC_NAL_SEI_PREFIX : return "SEI_PREFIX";
+    case HEVC_NAL_SEI_SUFFIX : return "SEI_SUFFIX";
     default : return "?";
     }
 }
@@ -211,23 +211,22 @@ static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros)
 static int hevc_parse_nal_header(H2645NAL *nal, void *logctx)
 {
     GetBitContext *gb = &nal->gb;
-    int nuh_layer_id;
 
     if (get_bits1(gb) != 0)
         return AVERROR_INVALIDDATA;
 
     nal->type = get_bits(gb, 6);
 
-    nuh_layer_id   = get_bits(gb, 6);
+    nal->nuh_layer_id  = get_bits(gb, 6);
     nal->temporal_id = get_bits(gb, 3) - 1;
     if (nal->temporal_id < 0)
         return AVERROR_INVALIDDATA;
 
     av_log(logctx, AV_LOG_DEBUG,
            "nal_unit_type: %d(%s), nuh_layer_id: %d, temporal_id: %d\n",
-           nal->type, nal_unit_name(nal->type), nuh_layer_id, nal->temporal_id);
+           nal->type, nal_unit_name(nal->type), nal->nuh_layer_id, nal->temporal_id);
 
-    return nuh_layer_id == 0;
+    return nal->nuh_layer_id;
 }
 
 static int h264_parse_nal_header(H2645NAL *nal, void *logctx)
@@ -353,7 +352,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             ret = hevc_parse_nal_header(nal, logctx);
         else
             ret = h264_parse_nal_header(nal, logctx);
-        if (ret <= 0 || nal->size <= 0) {
+        if (ret < 0 || nal->size <= 0) {
             if (ret < 0) {
                 av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                        nal->type);

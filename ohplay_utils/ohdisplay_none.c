@@ -44,5 +44,7 @@ int oh_display_init(int edge, int frame_width, int frame_height){
 void oh_display_display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
 }
 
+//void oh_display_display2(OpenHevc_Frame *oh_frame){}
+
 void oh_display_close(){
 }

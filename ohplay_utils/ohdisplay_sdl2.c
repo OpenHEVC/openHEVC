@@ -27,10 +27,11 @@
  * SUCH DAMAGE.
  */
 
-#include <SDL.h>
-#include <SDL_events.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_events.h>
+
 #include <stdio.h>
-#include <signal.h>
+//#include <signal.h>
 #include "ohtimer_wrapper.h"
 #include "ohdisplay_wrapper.h"
 
@@ -82,7 +83,7 @@ OHEvent oh_display_getWindowEvent(){
 
 int oh_display_init(int edge, int frame_width, int frame_height){
     /* First, initialize SDL's video subsystem. */
-    struct sigaction action;
+ /*   struct sigaction action;
     sigaction(SIGINT, NULL, &action);
     sigaction(SIGTERM, NULL, &action);
     sigaction(SIGKILL, NULL, &action);
@@ -91,7 +92,7 @@ int oh_display_init(int edge, int frame_width, int frame_height){
     sigaction(SIGINT, &action, NULL);
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGKILL, &action, NULL);
-    sigaction(SIGHUP, &action, NULL);
+    sigaction(SIGHUP, &action, NULL);*/
 
     if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_EVENTS ) < 0 ) {
         /* Failed, exit. */
@@ -120,7 +121,7 @@ void oh_display_display(int edge, int frame_width, int frame_height, unsigned ch
 		bmpTex1 = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);
 	}
 
-    size1 = (frame_width + 2 * edge) * frame_height;
+    size1 = (frame_width ) * frame_height;
 
     SDL_LockTexture(bmpTex1, NULL, (void **)&pixels1, &pitch1);
     memcpy(pixels1,             Y, size1  );
@@ -139,6 +140,8 @@ void oh_display_display(int edge, int frame_width, int frame_height, unsigned ch
     SDL_RenderCopy(pRenderer1, bmpTex1, NULL, NULL);
     SDL_RenderPresent(pRenderer1);
 }
+
+//void oh_display_display2(OpenHevc_Frame *oh_frame){}
 
 void oh_display_close(){
     SDL_Quit();

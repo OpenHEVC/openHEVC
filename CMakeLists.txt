@@ -83,6 +83,7 @@ if(YASM_FOUND)
 set(YASM_NAMES
     libavutil/x86/cpuid.asm
     libavutil/x86/emms.asm
+    libavutil/x86/imgutils.asm
     #libavcodec/x86/dct32.asm
     #libavcodec/x86/deinterlace.asm
     #libavcodec/x86/fft.asm
@@ -261,7 +262,7 @@ set(libfilenames
     libavutil/frame.c
     #libavutil/hash.c
     libavutil/hmac.c
-    #libavutil/hwcontext.c
+    libavutil/hwcontext.c
     libavutil/imgutils.c
     #libavutil/integer.c
     libavutil/intmath.c
@@ -287,6 +288,7 @@ set(libfilenames
     libavutil/sha.c
     libavutil/sha512.c
     libavutil/stereo3d.c
+    libavutil/spherical.c
     #libavutil/threadmessage.c
     libavutil/time.c
     libavutil/timecode.c
@@ -349,8 +351,10 @@ set(libfilenames
     libavcodec/bitstream.c
     libavcodec/bitstream_filter.c
     libavcodec/bitstream_filters.c
-    libavcodec/bsf.c  
+    libavcodec/bsf.c
+    libavcodec/null_bsf.c
     libavcodec/codec_desc.c
+    libavcodec/decode.c
     #libavcodec/d3d11va.c
     #libavcodec/dirac.c
     #libavcodec/dv_profile.c
@@ -424,16 +428,18 @@ set(libfilenames
 
 # hevc decoder
     libavcodec/hevc_cabac.c
+    libavcodec/hevc_data.c
     libavcodec/hevc_mvs.c
     libavcodec/hevc_parser.c
     libavcodec/hevc_ps.c
     libavcodec/hevc_refs.c
     libavcodec/hevc_sei.c
     libavcodec/hevc_filter.c
-    libavcodec/hevc.c
+    libavcodec/hevcdec.c
     libavcodec/hevc_green.c
     libavcodec/hevcdsp.c
     libavcodec/hevcpred.c
+    libavcodec/profiles.c
 
     libavcodec/pthread.c
     libavcodec/pthread_slice.c
@@ -488,6 +494,8 @@ list(APPEND libfilenames
 else()
 list(APPEND libfilenames
     libavutil/x86/cpu.c
+    libavutil/x86/imgutils_init.c
+    libavutil/x86/imgutils_init.c
     libavcodec/x86/constants.c
     #libavcodec/x86/dct_init.c
     #libavcodec/x86/fdct.c
@@ -515,7 +523,17 @@ list(APPEND libfilenames
     libavcodec/x86/h264chroma_init.c
     #libavcodec/x86/xvididct_init.c
 )
+#EMT
+option(EMT_ENABLED "" OFF)
+if(EMT_ENABLED)
+list(APPEND libfilenames
+   libavcodec/x86/emt_idct_avx2.c
+)
 endif()
+
+endif()
+
+
 
 if(WIN32)
 list(APPEND libfilenames

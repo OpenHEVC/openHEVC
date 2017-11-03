@@ -370,12 +370,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             if (par->codec_tag) {
                 if (!validate_codec_tag(s, st)) {
-                    char tagbuf[32], tagbuf2[32];
-                    av_get_codec_tag_string(tagbuf, sizeof(tagbuf), par->codec_tag);
-                    av_get_codec_tag_string(tagbuf2, sizeof(tagbuf2), av_codec_get_tag(s->oformat->codec_tag, par->codec_id));
+                    const uint32_t otag = av_codec_get_tag(s->oformat->codec_tag, par->codec_id);
                     av_log(s, AV_LOG_ERROR,
-                           "Tag %s/0x%08x incompatible with output codec id '%d' (%s)\n",
-                           tagbuf, par->codec_tag, par->codec_id, tagbuf2);
+                           "Tag %s incompatible with output codec id '%d' (%s)\n",
+                           av_fourcc2str(par->codec_tag), par->codec_id, av_fourcc2str(otag));
                     ret = AVERROR_INVALIDDATA;
                     goto fail;
                 }
@@ -470,6 +468,16 @@ static int init_pts(AVFormatContext *s)
     return 0;
 }
 
+static void flush_if_needed(AVFormatContext *s)
+{
+    if (s->pb && s->pb->error >= 0) {
+        if (s->flush_packets == 1 || s->flags & AVFMT_FLAG_FLUSH_PACKETS)
+            avio_flush(s->pb);
+        else if (s->flush_packets && !(s->oformat->flags & AVFMT_NOFILE))
+            avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
+    }
+}
+
 static int write_header_internal(AVFormatContext *s)
 {
     if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
@@ -481,8 +489,7 @@ static int write_header_internal(AVFormatContext *s)
         s->internal->write_header_ret = ret;
         if (ret < 0)
             return ret;
-        if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
-            avio_flush(s->pb);
+        flush_if_needed(s);
     }
     s->internal->header_written = 1;
     if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
@@ -734,7 +741,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 av_log(s, AV_LOG_WARNING, "failed to avoid negative "
                     "pts %s in stream %d.\n"
                     "Try -avoid_negative_ts 1 as a possible workaround.\n",
-                    av_ts2str(pkt->dts),
+                    av_ts2str(pkt->pts),
                     pkt->stream_index
                 );
             }
@@ -752,7 +759,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
+#if FF_API_LAVF_MERGE_SD
+FF_DISABLE_DEPRECATION_WARNINGS
     did_split = av_packet_split_side_data(pkt);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (!s->internal->header_written) {
         ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
@@ -770,15 +781,18 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (s->pb && ret >= 0) {
-        if (s->flush_packets && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
-            avio_flush(s->pb);
+        flush_if_needed(s);
         if (s->pb->error < 0)
             ret = s->pb->error;
     }
 
 fail:
+#if FF_API_LAVF_MERGE_SD
+FF_DISABLE_DEPRECATION_WARNINGS
     if (did_split)
         av_packet_merge_side_data(pkt);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (ret < 0) {
         pkt->pts = pts_backup;
@@ -815,7 +829,7 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-#if !FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
+#if !FF_API_COMPUTE_PKT_FIELDS2 || !FF_API_LAVF_AVCTX
     /* sanitize the timestamps */
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
         AVStream *st = s->streams[pkt->stream_index];
@@ -875,18 +889,18 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
         }
     }
 
-    if (st->internal->nb_bsfcs)
-        av_packet_split_side_data(pkt);
+#if FF_API_LAVF_MERGE_SD
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (st->internal->nb_bsfcs) {
+        ret = av_packet_split_side_data(pkt);
+        if (ret < 0)
+            av_log(s, AV_LOG_WARNING, "Failed to split side data before bitstream filter\n");
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     for (i = 0; i < st->internal->nb_bsfcs; i++) {
         AVBSFContext *ctx = st->internal->bsfcs[i];
-        if (i > 0) {
-            AVBSFContext* prev_ctx = st->internal->bsfcs[i - 1];
-            if (prev_ctx->par_out->extradata_size != ctx->par_in->extradata_size) {
-                if ((ret = avcodec_parameters_copy(ctx->par_in, prev_ctx->par_out)) < 0)
-                    return ret;
-            }
-        }
         // TODO: when any bitstream filter requires flushing at EOF, we'll need to
         // flush each stream's BSF chain on write_trailer.
         if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {
@@ -905,12 +919,6 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
                     "Failed to send packet to filter %s for stream %d\n",
                     ctx->filter->name, pkt->stream_index);
             return ret;
-        }
-        if (i == st->internal->nb_bsfcs - 1) {
-            if (ctx->par_out->extradata_size != st->codecpar->extradata_size) {
-                if ((ret = avcodec_parameters_copy(st->codecpar, ctx->par_out)) < 0)
-                    return ret;
-            }
         }
     }
     return 1;
@@ -932,8 +940,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
                     return ret;
             }
             ret = s->oformat->write_packet(s, NULL);
-            if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
-                avio_flush(s->pb);
+            flush_if_needed(s);
             if (ret >= 0 && s->pb && s->pb->error < 0)
                 ret = s->pb->error;
             return ret;
@@ -1409,7 +1416,7 @@ static int av_write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
         pkt.size         = UNCODED_FRAME_PACKET_SIZE;
         pkt.pts          =
         pkt.dts          = frame->pts;
-        pkt.duration     = av_frame_get_pkt_duration(frame);
+        pkt.duration     = frame->pkt_duration;
         pkt.stream_index = stream_index;
         pkt.flags |= AV_PKT_FLAG_UNCODED_FRAME;
     }

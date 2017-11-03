@@ -28,7 +28,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define cpuid(index, eax, ebx, ecx, edx)        \
     ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
@@ -66,7 +66,7 @@
 
 #define cpuid_test() 1
 
-#elif HAVE_YASM
+#elif HAVE_X86ASM
 
 #define cpuid_test ff_cpu_cpuid_test
 
@@ -221,6 +221,12 @@ int ff_get_cpu_flags_x86(void)
          * functions on the Atom. */
         if (family == 6 && model == 28)
             rval |= AV_CPU_FLAG_ATOM;
+
+        /* Conroe has a slow shuffle unit. Check the model number to ensure not
+         * to include crippled low-end Penryns and Nehalems that lack SSE4. */
+        if ((rval & AV_CPU_FLAG_SSSE3) && !(rval & AV_CPU_FLAG_SSE4) &&
+            family == 6 && model < 23)
+            rval |= AV_CPU_FLAG_SSSE3SLOW;
     }
 
 #endif /* cpuid */

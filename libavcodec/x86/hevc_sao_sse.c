@@ -28,6 +28,8 @@
 #include "libavcodec/hevc.h"
 #include "libavcodec/x86/hevcdsp.h"
 
+
+
 #if HAVE_SSE2
 #include <emmintrin.h>
 #endif
@@ -149,7 +151,7 @@ static inline __m128i _MM_CVTEPI8_EPI16(__m128i m0) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define SAO_BAND_FILTER(W, D)                                                  \
-void oh_hevc_sao_band_filter_0_ ## D ##_sse(                                   \
+void ohhevc_sao_band_filter_0_ ## D ##_sse(                                   \
         uint8_t *_dst, uint8_t *_src,                                          \
         ptrdiff_t _stride_dst, ptrdiff_t _stride_src,                          \
         struct SAOParams *sao,                                                 \
@@ -250,7 +252,7 @@ SAO_BAND_FILTER( 8, 12)
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define SAO_EDGE_FILTER(D)                                                     \
-void oh_hevc_sao_edge_filter_ ## D ##_sse(             \
+void ohhevc_sao_edge_filter_ ## D ##_sse(             \
         uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst,                   \
         ptrdiff_t _stride_src, SAOParams *sao, int width,                      \
         int height, int c_idx) {                                               \
@@ -290,7 +292,7 @@ void oh_hevc_sao_edge_filter_ ## D ##_sse(             \
 
 //SAO_EDGE_FILTER( 8)
 
-void oh_hevc_sao_edge_filter_8_sse(uint8_t *dst, uint8_t *src,
+void ohhevc_sao_edge_filter_8_sse(uint8_t *dst, uint8_t *src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                   SAOParams *sao,
                                   int width, int height,

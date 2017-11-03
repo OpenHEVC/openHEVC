@@ -4,12 +4,12 @@
 #include <stdint.h>
 
 #define AESEncryptionStreamMode      1
-#if HEVC_ENCRYPTION
+#if OHCONFIG_ENCRYPTION
 #ifdef __cplusplus
 extern "C" {
 #endif
     typedef void* Crypto_Handle;
-    Crypto_Handle CreateC();
+    Crypto_Handle CreateC(void);
     void InitC(Crypto_Handle hdl, uint8_t *init_val);
     void DecryptC(Crypto_Handle hdl, const unsigned char *in_stream, int size_bits, unsigned char  *out_stream);
 #if AESEncryptionStreamMode
@@ -24,7 +24,7 @@ extern "C" {
 #include "libavutil/attributes.h"
 
 typedef void* Crypto_Handle;
-static av_always_inline Crypto_Handle CreateC() {
+static av_always_inline Crypto_Handle CreateC(void) {
     assert(0);
     return 0;
 }

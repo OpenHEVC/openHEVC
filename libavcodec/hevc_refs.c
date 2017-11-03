@@ -21,12 +21,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 
 #include "internal.h"
 #include "thread.h"
 #include "hevc.h"
+#include "hevcdec.h"
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags) {
     int i;
@@ -93,7 +94,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         if (ret < 0)
             return NULL;
 
-        frame->rpl_buf = av_buffer_allocz(s->nb_nals * sizeof(RefPicListTab));
+        frame->rpl_buf = av_buffer_allocz(s->pkt.nb_nals * sizeof(RefPicListTab));
         if (!frame->rpl_buf)
             goto fail;
 
@@ -459,7 +460,7 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
 static void set_refindex_data(HEVCContext *s){
     int list, i;
     HEVCFrame  *refBL, *refEL, *ref;
-    int nb_list = s->sh.slice_type==B_SLICE ? 2:1;
+    int nb_list = s->sh.slice_type==HEVC_SLICE_B ? 2:1;
     //if(!s->vps->vps_nonHEVCBaseLayerFlag){
         refBL = s->BL_frame;
 
@@ -516,7 +517,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
 {
     SliceHeader *sh = &s->sh;
 
-    uint8_t nb_list = sh->slice_type == B_SLICE ? 2 : 1;
+    uint8_t nb_list = sh->slice_type == HEVC_SLICE_B ? 2 : 1;
     uint8_t list_idx;
     int i, j, ret;
 
@@ -544,7 +545,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
         while (rpl_tmp.nb_refs < sh->nb_refs[list_idx]) {
             for (i = 0; i < FF_ARRAY_ELEMS(cand_lists); i++) {
                 RefPicList *rps = &s->rps[cand_lists[i]];
-                for (j = 0; j < rps->nb_refs && rpl_tmp.nb_refs < MAX_REFS; j++) {
+                for (j = 0; j < rps->nb_refs && rpl_tmp.nb_refs < HEVC_MAX_REFS; j++) {
                     rpl_tmp.list[rpl_tmp.nb_refs]       = rps->list[j];
                     rpl_tmp.ref[rpl_tmp.nb_refs]        = rps->ref[j];
                     rpl_tmp.isLongTerm[rpl_tmp.nb_refs] = i == 1  || i == 3 || i == 4;
@@ -730,7 +731,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
     }
 
     if (s->nuh_layer_id > 0 && s->ps.vps->vps_ext.max_one_active_ref_layer_flag > 0) {
-        if (!(s->nal_unit_type >= NAL_BLA_W_LP && s->nal_unit_type <= NAL_CRA_NUT) &&
+        if (!(s->nal_unit_type >= HEVC_NAL_BLA_W_LP && s->nal_unit_type <= HEVC_NAL_CRA_NUT) &&
             s->ps.sps->set_mfm_enabled_flag)  {
 #if !ACTIVE_PU_UPSAMPLING
             int *arg, *ret, cmpt = (s->ps.sps->ctb_height);
@@ -764,8 +765,8 @@ int ff_hevc_frame_rps(HEVCContext *s)
         rps[i].nb_refs = 0;
     if (!s->nuh_layer_id ||
         (s->nuh_layer_id > 0 &&
-        !(s->nal_unit_type >= NAL_BLA_W_LP &&
-        s->nal_unit_type <= NAL_CRA_NUT &&
+        !(s->nal_unit_type >= HEVC_NAL_BLA_W_LP &&
+        s->nal_unit_type <= HEVC_NAL_CRA_NUT &&
         s->sh.active_num_ILR_ref_idx))) {
         /* add the short refs */
         for (i = 0; short_rps && i < short_rps->num_delta_pocs; i++)
@@ -854,9 +855,9 @@ int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
         poc_msb = prev_poc_msb;
 
     // For BLA picture types, POCmsb is set to 0.
-    if (s->nal_unit_type == NAL_BLA_W_LP   ||
-        s->nal_unit_type == NAL_BLA_W_RADL ||
-        s->nal_unit_type == NAL_BLA_N_LP)
+    if (s->nal_unit_type == HEVC_NAL_BLA_W_LP   ||
+        s->nal_unit_type == HEVC_NAL_BLA_W_RADL ||
+        s->nal_unit_type == HEVC_NAL_BLA_N_LP)
         poc_msb = 0;
 
     return poc_msb + poc_lsb;
@@ -869,9 +870,9 @@ int ff_hevc_frame_nb_refs(HEVCContext *s)
     const ShortTermRPS *rps = s->sh.short_term_rps;
     LongTermRPS *long_rps   = &s->sh.long_term_rps;
 
-    if (s->sh.slice_type == I_SLICE || (s->nuh_layer_id &&
-                                        (s->nal_unit_type >= NAL_BLA_W_LP) &&
-                                        (s->nal_unit_type<= NAL_CRA_NUT))) {
+    if (s->sh.slice_type == HEVC_SLICE_I || (s->nuh_layer_id &&
+                                        (s->nal_unit_type >= HEVC_NAL_BLA_W_LP) &&
+                                        (s->nal_unit_type<= HEVC_NAL_CRA_NUT))) {
         return s->sh.active_num_ILR_ref_idx;
     }
     if (rps) {

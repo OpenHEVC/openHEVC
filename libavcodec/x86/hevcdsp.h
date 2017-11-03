@@ -28,6 +28,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavcodec/hevcdec.h"
+#include "config.h"
 
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _##opt; \
@@ -38,11 +40,11 @@ dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##
 
 #if CONFIG_OH_OPTIM
 #define OH_PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
-dst[idx1][idx2][idx3] = oh_hevc_put_hevc_ ## name ## _ ## D ## _##opt; \
-dst ## _bi[idx1][idx2][idx3] = oh_hevc_put_hevc_bi_ ## name ## _ ## D ## _##opt; \
-dst ## _uni[idx1][idx2][idx3] = oh_hevc_put_hevc_uni_ ## name ## _ ## D ## _##opt; \
-dst ## _uni_w[idx1][idx2][idx3] = oh_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt; \
-dst ## _bi_w[idx1][idx2][idx3] = oh_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt
+dst[idx1][idx2][idx3] = ohhevc_put_hevc_ ## name ## _ ## D ## _##opt; \
+dst ## _bi[idx1][idx2][idx3] = ohhevc_put_hevc_bi_ ## name ## _ ## D ## _##opt; \
+dst ## _uni[idx1][idx2][idx3] = ohhevc_put_hevc_uni_ ## name ## _ ## D ## _##opt; \
+dst ## _uni_w[idx1][idx2][idx3] = ohhevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt; \
+dst ## _bi_w[idx1][idx2][idx3] = ohhevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt
 #endif
 
 #define PEL_PROTOTYPE(name, D, opt) \
@@ -54,22 +56,22 @@ void ff_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t
 
 #if CONFIG_OH_OPTIM
 #define OH_PEL_PROTOTYPE(name, D, opt) \
-void oh_hevc_put_hevc_ ## name ## _ ## D ## _##opt(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
-void oh_hevc_put_hevc_bi_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, intptr_t mx, intptr_t my, int width); \
-void oh_hevc_put_hevc_uni_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
-void oh_hevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width); \
-void oh_hevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
+void ohhevc_put_hevc_ ## name ## _ ## D ## _##opt(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width); \
+void ohhevc_put_hevc_bi_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, intptr_t mx, intptr_t my, int width); \
+void ohhevc_put_hevc_uni_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width); \
+void ohhevc_put_hevc_uni_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width); \
+void ohhevc_put_hevc_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride, int16_t *src2, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 //IDCT functions
 ///////////////////////////////////////////////////////////////////////////////
-void oh_hevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
+void ohhevc_transform_skip_8_sse(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stride);
 
-void oh_hevc_transform_4x4_luma_8_sse2(int16_t *coeffs);
-void oh_hevc_transform_4x4_luma_10_sse2(int16_t *coeffs);
-void oh_hevc_transform_4x4_luma_12_sse2(int16_t *coeffs);
+void ohhevc_transform_4x4_luma_8_sse2(int16_t *coeffs);
+void ohhevc_transform_4x4_luma_10_sse2(int16_t *coeffs);
+void ohhevc_transform_4x4_luma_12_sse2(int16_t *coeffs);
 
-#define OH_IDCT_FUNC(s, b) void oh_hevc_transform_ ## s ## x ## s ##_## b ##_sse2\
+#define OH_IDCT_FUNC(s, b) void ohhevc_transform_ ## s ## x ## s ##_## b ##_sse2\
             (int16_t *coeffs, int col_limit);
 
 OH_IDCT_FUNC(4, 8)
@@ -117,7 +119,7 @@ TRANSFORM_ADD_FUNC_AVX2(32,8)
 TRANSFORM_ADD_FUNC_AVX2(16,10)
 TRANSFORM_ADD_FUNC_AVX2(32,10)
 
-#define OH_TRANSFORM_ADD_FUNC_SSE2(s, b) void oh_hevc_transform_ ## s ## x ## s ##_add_## b ##_sse2\
+#define OH_TRANSFORM_ADD_FUNC_SSE2(s, b) void ohhevc_transform_ ## s ## x ## s ##_add_## b ##_sse2\
 		(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
 OH_TRANSFORM_ADD_FUNC_SSE2(4,8)
@@ -135,10 +137,10 @@ OH_TRANSFORM_ADD_FUNC_SSE2(8,12)
 OH_TRANSFORM_ADD_FUNC_SSE2(16,12)
 OH_TRANSFORM_ADD_FUNC_SSE2(32,12)
 
-void oh_hevc_transform_4x4_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
-void oh_hevc_transform_8x8_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
-void oh_hevc_transform_16x16_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
-void oh_hevc_transform_32x32_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void ohhevc_transform_4x4_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void ohhevc_transform_8x8_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void ohhevc_transform_16x16_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
+void ohhevc_transform_32x32_add_8_sse4(uint8_t *dst, int16_t *_coeffs, ptrdiff_t _stride);
 
 ///////////////////////////////////////////////////////////////////////////////
 // MC functions
@@ -384,122 +386,141 @@ WEIGHTING_PROTOTYPES(12, sse4);
 // SAO functions
 ///////////////////////////////////////////////////////////////////////////////
 //#ifndef OPTI_ASM
-void oh_hevc_sao_edge_filter_8_sse(uint8_t *_dst, uint8_t *_src,
+void ohhevc_sao_edge_filter_8_sse(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                   SAOParams *sao,
                                   int width, int height,
                                   int c_idx);
 //#endif
-void oh_hevc_sao_edge_filter_10_sse(uint8_t *_dst, uint8_t *_src,
+void ohhevc_sao_edge_filter_10_sse(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                   SAOParams *sao,
                                   int width, int height,
                                   int c_idx);
-void oh_hevc_sao_edge_filter_12_sse(uint8_t *_dst, uint8_t *_src,
+void ohhevc_sao_edge_filter_12_sse(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                   SAOParams *sao,
                                   int width, int height,
                                   int c_idx);
 //#ifndef OPTI_ASM
-void oh_hevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
+void ohhevc_sao_band_filter_0_8_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                      struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 //#endif
-void oh_hevc_sao_band_filter_0_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
+void ohhevc_sao_band_filter_0_10_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                       struct SAOParams *sao, int *borders, int width, int height, int c_idx);
-void oh_hevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
+void ohhevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                       struct SAOParams *sao, int *borders, int width, int height, int c_idx);
 
 //#ifdef SVC_EXTENSION
 
-    void oh_upsample_filter_block_luma_h_all_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_luma_h_all_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
             int x_EL, int x_BL, int block_w, int block_h, int widthEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_cr_h_all_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_cr_h_all_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                 int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                 const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_luma_v_all_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_luma_v_all_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
             int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_cr_v_all_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_cr_v_all_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
             int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-    void oh_upsample_filter_block_luma_h_x2_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_luma_h_x2_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
             int x_EL, int x_BL, int block_w, int block_h, int widthEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_cr_h_x2_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_cr_h_x2_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                 int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                 const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_luma_v_x2_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_luma_v_x2_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
             int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_cr_v_x2_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_cr_v_x2_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
             int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-    void oh_upsample_filter_block_luma_h_x1_5_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_luma_h_x1_5_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
             int x_EL, int x_BL, int block_w, int block_h, int widthEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_cr_h_x1_5_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_cr_h_x1_5_sse(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                 int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                 const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_luma_v_x1_5_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_luma_v_x1_5_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
             int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_cr_v_x1_5_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_cr_v_x1_5_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
             int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-    void oh_upsample_filter_block_luma_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_luma_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
             int x_EL, int x_BL, int block_w, int block_h, int widthEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-    void oh_upsample_filter_block_luma_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+    void ohevc_upsample_filter_block_luma_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
             int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-   void oh_upsample_filter_block_cr_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+   void ohevc_upsample_filter_block_cr_h_8_8_sse( int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
             int x_EL, int x_BL, int block_w, int block_h, int widthEL,
             const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
-   void oh_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
+   void ohevc_upsample_filter_block_cr_v_8_8_sse(uint8_t *dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,
            int y_BL, int x_EL, int y_EL, int block_w, int block_h, int widthEL, int heightEL,
            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void oh_upsample_filter_block_luma_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t srcstride,
+   void ohevc_upsample_filter_block_luma_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t srcstride,
                int x_EL, int x_BL, int width, int height, int widthEL,
                const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void oh_upsample_filter_block_cr_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+   void ohevc_upsample_filter_block_cr_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void oh_upsample_filter_block_luma_v_x2_sse_16(uint8_t *_dst, ptrdiff_t _dststride, int16_t *_src, ptrdiff_t srcstride,
+   void ohevc_upsample_filter_block_luma_v_x2_sse_16(uint8_t *_dst, ptrdiff_t _dststride, int16_t *_src, ptrdiff_t srcstride,
                int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
                const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void oh_upsample_filter_block_cr_v_x2_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
+   void ohevc_upsample_filter_block_cr_v_x2_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
            int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void oh_upsample_filter_block_luma_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t srcstride,
+   void ohevc_upsample_filter_block_luma_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t srcstride,
                int x_EL, int x_BL, int width, int height, int widthEL,
                const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void oh_upsample_filter_block_cr_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
+   void ohevc_upsample_filter_block_cr_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststride, uint8_t *_src, ptrdiff_t _srcstride,
                int x_EL, int x_BL, int block_w, int block_h, int widthEL,
                const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void oh_upsample_filter_block_luma_v_x1_5_sse_16(uint8_t *_dst, ptrdiff_t _dststride, int16_t *_src, ptrdiff_t srcstride,
+   void ohevc_upsample_filter_block_luma_v_x1_5_sse_16(uint8_t *_dst, ptrdiff_t _dststride, int16_t *_src, ptrdiff_t srcstride,
                int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
                const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-   void oh_upsample_filter_block_cr_v_x1_5_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
+   void ohevc_upsample_filter_block_cr_v_x1_5_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
            int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-//   void oh_upsample_filter_block_cr_v_x2_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
+   void emt_idst_VII_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idst_VII_4x4_v_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idst_VII_4x4_v_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idst_VII_4x4_v_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+
+   void emt_idst_VII_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idst_VII_4x4_h_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idst_VII_4x4_h_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idst_VII_4x4_h_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+
+   void emt_idct_VIII_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idct_VIII_4x4_v_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idct_VIII_4x4_v_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idct_VIII_4x4_v_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+
+   void emt_idct_VIII_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idct_VIII_4x4_h_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idct_VIII_4x4_h_avx2_10 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   void emt_idct_VIII_4x4_h_avx2_12(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
+   //   void ohevc_upsample_filter_block_cr_v_x2_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
 //           int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
 //           const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
-//   void oh_upsample_filter_block_cr_v_x2_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
+//   void ohevc_upsample_filter_block_cr_v_x2_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
 //           int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
 //           const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 

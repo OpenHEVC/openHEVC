@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = avutil
+DESC = FFmpeg utility library
 
 HEADERS = adler32.h                                                     \
           aes.h                                                         \
@@ -104,6 +103,7 @@ OBJS = aes.o                                                            \
        file_open.o                                                      \
        frame.o                                                          \
        hmac.o                                                           \
+       hwcontext.o                                                      \
        imgutils.o                                                       \
        intmath.o                                                        \
        lfg.o                                                            \
@@ -124,6 +124,7 @@ OBJS = aes.o                                                            \
        sha.o                                                            \
        sha512.o                                                         \
        stereo3d.o                                                       \
+       spherical.o                                                      \
        time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \
