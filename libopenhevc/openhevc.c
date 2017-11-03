@@ -818,8 +818,8 @@ void oh_enable_sei_checksum(OHHandle openHevcHandle, int val)
 }
 
 void oh_enable_green(OHHandle openHevcHandle, const char *green_param, int green_verbose){
-    OHContextList *oh_ctx_list = (OHContextList *) openHevcHandle;
-    OHContext  *oh_ctx;
+    OHContext *oh_ctx_list = (OHContext *) openHevcHandle;
+    OHDecoderCtx  *oh_ctx;
 
 	int alevel=0;
 	int green_luma=7;
