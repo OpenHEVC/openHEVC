@@ -31,7 +31,11 @@ extern "C" {
 #include <stdint.h>
 #include <stdarg.h>
 #include "config.h"
-#define OPENHEVC_HAS_AVC_BASE
+
+#if OHCONFIG_AVCBASE
+    #define OPENHEVC_HAS_AVC_BASE
+#endif
+
 #define USE_SDL 1
 
 
@@ -168,6 +172,7 @@ OHHandle oh_init(int nb_threads, int thread_type);
  */
 OHHandle oh_init_lhvc(int nb_threads, int thread_type);
 
+#if OHCONFIG_AVCBASE
 /**
  * Allocate a general decoder context list for each layer (up to MAX_DECODERS)
  * Allocate a decoder context for each layer
@@ -178,6 +183,7 @@ OHHandle oh_init_lhvc(int nb_threads, int thread_type);
  * @return A decoder list if a decoder of each layer were found, NULL otherwise.
  */
 OHHandle oh_init_h264(int nb_threads, int thread_type);
+#endif
 
 /**
  * Initialize the decoders contexts for each layers.
@@ -208,6 +214,7 @@ int oh_start(OHHandle oh_hdl);
 int  oh_decode(OHHandle oh_hdl, const unsigned char *pkt_data,
                int pkt_size, int64_t pkt_pts);
 
+#if OHCONFIG_AVCBASE
 /**
  * Decode the video frame of size pkt_size from pkt_data into picture, in case
  * of non HEVC base layer (LHVC)
@@ -225,17 +232,17 @@ int  oh_decode_lhvc(OHHandle oh_hdl, const unsigned char *pkt_data_bl,
 
 //TODO define an OHPacket struct to handle both lhevc and hevc case
 //TODO oh_send/receive_packet
-
-
+#endif
 
 void oh_extradata_cpy(OHHandle oh_hdl, unsigned char *extra_data,
                       int extra_size_alloc);
 
-
+#if OHCONFIG_AVCBASE
 void oh_extradata_cpy_lhvc(OHHandle oh_hdl, unsigned char *extra_data_linf,
                            unsigned char *extra_data_lsup,
                            int extra_size_alloc_linf,
                            int extra_size_allocl_sup);
+#endif
 
 /**
  * Flush all decoders.
@@ -260,7 +267,7 @@ void oh_flush_shvc(OHHandle oh_hdl, int layer_idx);
 void oh_close(OHHandle oh_hdl);
 
 /**
- * Update the frame output
+ * Update informations on the output frame
  *
  * @param oh_hdl      The codec context list of current decoders
  * @param got_picture 1 if the decoder outputed a picture, 0 otherwise
@@ -268,32 +275,40 @@ void oh_close(OHHandle oh_hdl);
  */
 int  oh_output_update(OHHandle oh_hdl, int got_picture, OHFrame *oh_frame);
 
-/**
- * Copy the frame output to a new frame
- *
- * @param oh_hdl      The codec context list of current decoders
- * @param got_picture 1 if the decoder outputed a picture, 0 otherwise
- * @param oh_frame    pointer to the output OHFrame
- */
-int  oh_output_cpy(OHHandle oh_hdl, int got_picture, OHFrame_cpy *oh_frame);
+int  oh_output_update_from_layer(OHHandle oh_hdl, OHFrame *oh_frame, int layer_id);
 
 /**
- * Update the frame output parameters
+ * Update the informations on the output frame
  *
  * @param oh_hdl       The codec context list of current decoders
  * @param oh_frameinfo pointer to the output frame info to be updated
  */
 void oh_frameinfo_update(OHHandle oh_hdl, OHFrameInfo *oh_frameinfo);
 
+void oh_frameinfo_update_from_layer(OHHandle oh_hdl, OHFrameInfo *oh_frameinfo,int layer_id);
+
+
 /**
- * Copy the frame output info
+ * Reinterpret frame information for a cropped copy of a frame
  *
  * @param oh_hdl      The codec context list of current decoders
  * @param got_picture 1 if the decoder outputed a picture, 0 otherwise
  * @param oh_frame    pointer to the output OHFrame
  */
-void oh_frameinfo_cpy(OHHandle oh_hdl, OHFrameInfo *oh_frame_info);
+void oh_cropped_frameinfo(OHHandle oh_hdl, OHFrameInfo *oh_frame_info);
 
+int  oh_cropped_frameinfo_from_layer(OHHandle oh_hdl, OHFrameInfo *oh_frame_info, int layer_id);
+
+/**
+ * Copy and crop the ouput output to a new one
+ *
+ * @param oh_hdl      The codec context list of current decoders
+ * @param got_picture 1 if the decoder outputed a picture, 0 otherwise
+ * @param oh_frame    pointer to the output OHFrame
+ */
+int oh_output_cropped_cpy(OHHandle oh_hdl, OHFrame_cpy *oh_frame);
+
+int oh_output_cropped_cpy_from_layer(OHHandle openHevcHandle, OHFrame_cpy *oh_frame, int layer_id);
 
 /**
  * Enable frame level SEI checksum for all layers
@@ -369,6 +384,10 @@ void oh_enable_green(OHHandle oh_hdl, const char *green_param, int green_verbose
  * @return val    The current OpenHEVC version
  */
 const unsigned oh_version(OHHandle oh_hdl);
+
+unsigned openhevc_version(void);
+
+const char *openhevc_configuration(void);
 
 #ifdef __cplusplus
 }

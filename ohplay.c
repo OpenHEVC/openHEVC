@@ -44,11 +44,13 @@ const int program_birth_year = 2003;
 
 /* options specified by the user */
 static char *program;
+#if OHCONFIG_AVCBASE
 static int h264_flags;
+#endif
+static char *enhance_file;
 static int no_md5;
 static int thread_type;
 static char *input_file;
-static char *enhance_file;
 static char no_display;
 static char *output_file;
 static int nb_pthreads;
@@ -80,7 +82,9 @@ static const OptionDef options[] = {
     { "l", HAS_ARG | OPT_INT, { &quality_layer_id }, "Quality layer id", "id" },
     { "s", HAS_ARG | OPT_INT, { &num_frames }, "Stop after \"n\" frames", "n" },
     { "r", HAS_ARG | OPT_FLOAT, { &frame_rate }, "Frame rate (FPS)", "n"},
+#if OHCONFIG_AVCBASE
     { "v", OPT_BOOL, { &h264_flags }, "Input is a h264 bitstream" },
+#endif
     { "e", HAS_ARG | OPT_STRING, { &enhance_file }, "Enhanced layer file (with AVC base)", "file" },
 #if OHCONFIG_ENCRYPTION
     { "-crypto"  , HAS_ARG | OPT_ENUM  , { &crypto_args }       , "Encryption configuration","params"},
@@ -130,11 +134,15 @@ static void video_decode(const char *filename,const char *enh_filename)
     OHHandle    oh_hdl;
     OHFrame     oh_frame;
     OHFrame_cpy oh_framecpy;
-
-	int AVC_BL = h264_flags;
+#if OHCONFIG_AVCBASE
+    int AVC_BL = h264_flags;
+#else
+    int AVC_BL = 0;
+#endif
     int split_layers = enh_filename != NULL;//fixme: we do not check the -e option here
     // && quality_layer_id ?
     int AVC_BL_only = AVC_BL && !split_layers;
+
 
     FILE *fout  = NULL;
     int curr_width   = -1;
@@ -160,10 +168,13 @@ static void video_decode(const char *filename,const char *enh_filename)
     /* Call corresponding codecs context initialization
      * */
     if (AVC_BL_only){
+#if OHCONFIG_AVCBASE
         oh_hdl = oh_init_h264(nb_pthreads, thread_type);
+
     } else if (AVC_BL && split_layers){
     	printf("file name : %s\n", enhance_file);
         oh_hdl = oh_init_lhvc(nb_pthreads, thread_type);
+#endif
     } else {
         oh_hdl = oh_init(nb_pthreads, thread_type);
     }
@@ -268,9 +279,11 @@ static void video_decode(const char *filename,const char *enh_filename)
 
             // OpenHEVC decoding
             if(split_layers){
+#if OHCONFIG_AVCBASE
                 got_picture = oh_decode_lhvc(oh_hdl, avpkt[0]->data, avpkt[1]->data, !stop_dec ? avpkt[0]->size : 0 ,!stop_dec2 ? avpkt[1]->size : 0, avpkt[0]->pts, avpkt[1]->pts);
                 av_packet_unref(avpkt[0]);
                 av_packet_unref(avpkt[1]);
+#endif
             }
             else {
                 got_picture = oh_decode(oh_hdl, avpkt[0]->data, !stop_dec ? avpkt[0]->size : 0, avpkt[0]->pts);
@@ -326,7 +339,7 @@ static void video_decode(const char *filename,const char *enh_filename)
 
 				if (fout) {
                     int format = oh_framecpy.frame_par.chromat_format == OH_YUV420 ? 1 : 0;
-                    oh_output_cpy(oh_hdl, 1, &oh_framecpy);
+                    oh_output_cropped_cpy(oh_hdl, &oh_framecpy);
                     fwrite( oh_framecpy.data_y ,  sizeof(uint8_t) , oh_framecpy.frame_par.linesize_y  * oh_framecpy.frame_par.height,           fout);
                     fwrite( oh_framecpy.data_cb , sizeof(uint8_t) , oh_framecpy.frame_par.linesize_cb * oh_framecpy.frame_par.height >> format, fout);
                     fwrite( oh_framecpy.data_cr , sizeof(uint8_t) , oh_framecpy.frame_par.linesize_cr * oh_framecpy.frame_par.height >> format, fout);
@@ -390,11 +403,13 @@ static void video_decode(const char *filename,const char *enh_filename)
 }
 
 int main(int argc, char *argv[]) {
-    h264_flags        = 0;
     no_md5			  = 0;
     thread_type       = 1;
     input_file        = NULL;
     enhance_file 	  = NULL;
+#if OHCONFIG_AVCBASE
+    h264_flags        = 0;
+#endif
     no_display	      = 0;
     output_file       = NULL;
     nb_pthreads       = 1;

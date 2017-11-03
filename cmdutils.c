@@ -68,6 +68,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/ffversion.h"
 #include "libavutil/version.h"
+#include "libopenhevc/version.h"
+#include "libopenhevc/openhevc.h"
 #include "cmdutils.h"
 #if CONFIG_NETWORK
 #include "libavformat/network.h"
@@ -469,6 +471,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         *(int *)dst = parse_enum_args(opt, arg, "crypto", 0, INT_MAX);
     } else if (po->flags & OPT_DATA) {
         *(uint8_t **)dst = parse_array(opt, arg, 16, 0, 255);
+        #endif
     } else if (po->u.func_arg) {
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {
@@ -477,7 +480,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
                    arg, opt, av_err2str(ret));
             return ret;
         }
-#endif
+
     } 
     if (po->flags & OPT_EXIT)
         exit_program(0);
@@ -1236,9 +1239,10 @@ static int warned_cfg = 0;
 
 static void print_all_libs_info(int flags, int level)
 {
-    PRINT_LIB_INFO(avutil,     AVUTIL,     flags, level);
-    PRINT_LIB_INFO(avcodec,    AVCODEC,    flags, level);
-    PRINT_LIB_INFO(avformat,   AVFORMAT,   flags, level);
+//    PRINT_LIB_INFO(avutil,     AVUTIL,     flags, level);
+//   PRINT_LIB_INFO(avcodec,    AVCODEC,    flags, level);
+//    PRINT_LIB_INFO(avformat,   AVFORMAT,   flags, level);
+    PRINT_LIB_INFO(openhevc,     OPENHEVC,   flags, level);
 //    PRINT_LIB_INFO(avdevice,   AVDEVICE,   flags, level);
 //    PRINT_LIB_INFO(avfilter,   AVFILTER,   flags, level);
 //    PRINT_LIB_INFO(avresample, AVRESAMPLE, flags, level);

@@ -21,9 +21,9 @@ test "$revision" || revision=$(cd "$1" &&
 if [ -z "$revision" ]; then
   srcdir=$(cd "$1" && pwd)
   case "$srcdir" in
-    */ffmpeg-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
+    */openhevc-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
       git_hash="${srcdir##*-}";;
-    */ffmpeg-HEAD-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
+    */openhevc-HEAD-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
       git_hash="${srcdir##*-}";;
   esac
 fi

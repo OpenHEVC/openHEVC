@@ -31,6 +31,7 @@
 #include <SDL2/SDL_events.h>
 
 #include <stdio.h>
+#include <string.h>
 //#include <signal.h>
 #include "ohtimer_wrapper.h"
 #include "ohdisplay_wrapper.h"
@@ -100,7 +101,7 @@ int oh_display_init(int edge, int frame_width, int frame_height){
     }
     // allocate window, renderer, texture
     pWindow1    = SDL_CreateWindow( "YUV", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                    (frame_width + 2 * edge), frame_height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+                    (frame_width), frame_height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
     pRenderer1  = SDL_CreateRenderer(pWindow1, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     bmpTex1     = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12,
                     SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);
@@ -113,15 +114,21 @@ int oh_display_init(int edge, int frame_width, int frame_height){
 
 void oh_display_display(int edge, int frame_width, int frame_height, unsigned char *Y, unsigned char *U, unsigned char *V){
 	int win_height, win_width;
-	SDL_GetWindowSize(pWindow1, &win_width, &win_height );
+    SDL_Rect scene;
+    scene.x=0;
+    scene.y=0;
+    scene.h=frame_height;
+    scene.w=frame_width;
+
+    SDL_GetWindowSize(pWindow1, &win_width, &win_height );
 
 	if(frame_width != win_width || frame_height != win_height){
-		SDL_SetWindowSize(pWindow1, frame_width, frame_height );
+        SDL_SetWindowSize(pWindow1, frame_width, frame_height );
 		SDL_DestroyTexture(bmpTex1);
-		bmpTex1 = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);
+        bmpTex1 = SDL_CreateTexture(pRenderer1, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, (frame_width + 2 * edge), frame_height);
 	}
 
-    size1 = (frame_width ) * frame_height;
+    size1 = (frame_width + 2 * edge ) * frame_height;
 
     SDL_LockTexture(bmpTex1, NULL, (void **)&pixels1, &pitch1);
     memcpy(pixels1,             Y, size1  );
@@ -135,9 +142,7 @@ void oh_display_display(int edge, int frame_width, int frame_height, unsigned ch
         memset(pixels1 + size1*5/4, 0x80, size1/4);
     SDL_UnlockTexture(bmpTex1);
     SDL_UpdateTexture(bmpTex1, NULL, pixels1, pitch1);
-    // refresh screen
-    //    SDL_RenderClear(pRenderer1);
-    SDL_RenderCopy(pRenderer1, bmpTex1, NULL, NULL);
+    SDL_RenderCopy(pRenderer1, bmpTex1,&scene, NULL);
     SDL_RenderPresent(pRenderer1);
 }
 

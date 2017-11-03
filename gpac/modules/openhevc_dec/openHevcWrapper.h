@@ -251,6 +251,10 @@ void libOpenHevcInitGreen(OpenHevc_Handle openHevcHandle, char *green_param, int
 
 const char *libOpenHevcVersion(OpenHevc_Handle openHevcHandle);
 
+unsigned openhevc_version(void);
+
+const char *openhevc_configuration(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -322,7 +322,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->sei.frame_packing.frame_packing_arrangement_cancel_flag = -1;
     h->sei.unregistered.x264_build = -1;
 
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
     h->poc_id = 0;
     for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
         h->Add_ref[i].f = av_frame_alloc();
@@ -396,7 +396,7 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
     av_frame_free(&h->last_pic_for_ec.f);
 
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
 {
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(h->Add_ref); i++) {
@@ -543,7 +543,7 @@ static void flush_dpb(AVCodecContext *avctx)
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
         ff_h264_unref_picture(h, &h->DPB[i]);
     h->cur_pic_ptr = NULL;
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
     if (avctx->active_thread_type & FF_THREAD_SLICE)
         ff_thread_report_il_progress_avc(h->avctx,h->poc_id,NULL,NULL);
 #endif
@@ -850,7 +850,7 @@ end:
     }
 #endif /* CONFIG_ERROR_RESILIENCE */
     /* clean up */
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
     if (h->cur_pic_ptr && h->has_slice/*&& !h->droppable*/) {
 #else
     if (h->cur_pic_ptr && !h->droppable && h->has_slice) {
@@ -858,7 +858,7 @@ end:
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
                                   h->picture_structure == PICT_BOTTOM_FIELD);
     }
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
     if (ret < 0){
         if(h->avctx->active_thread_type & FF_THREAD_FRAME && h->el_available)
             ff_thread_report_il_progress_avc(h->avctx, h->poc_id, NULL, NULL);
@@ -1021,7 +1021,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
 
-#if SVC_EXTENSION
+#if OHCONFIG_AVCBASE
     h->poc_id=avpkt->poc_id;
     h->el_available=avpkt->el_available;
 #endif

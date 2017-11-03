@@ -5,7 +5,7 @@ include $(SRC_PATH)/ffbuild/common.mak
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 LIBMINOR   := $(lib$(NAME)_VERSION_MINOR)
-INCINSTDIR := $(INCDIR)/lib$(NAME)
+INCINSTDIR := $(INCDIR)/libopenhevc
 
 INSTHEADERS := $(INSTHEADERS) $(HEADERS:%=$(SUBDIR)%)
 
@@ -21,10 +21,15 @@ $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(AR) $(ARFLAGS) $(AR_O) $^
 	$(RANLIB) $@
 
-install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
+#install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
 
-install-libs-$(CONFIG_STATIC): install-lib$(NAME)-static
-install-libs-$(CONFIG_SHARED): install-lib$(NAME)-shared
+#install-libs-$(CONFIG_STATIC): install-lib$(NAME)-static
+#install-libs-$(CONFIG_SHARED): install-lib$(NAME)-shared
+
+install-headers: install-libopenhevc-headers install-libopenhevc-pkgconfig
+
+install-libs-$(OHCONFIG_OHSTATIC): install-libopenhevc-static
+install-libs-$(OHCONFIG_OHSHARED): install-libopenhevc-shared
 
 define RULES
 #$(TOOLS):     THISLIB = $(FULLNAME:%=$(LD_LIB))
@@ -84,18 +89,18 @@ install-lib$(NAME)-pkgconfig: $(SUBDIR)lib$(FULLNAME).pc
 	$(Q)mkdir -p "$(PKGCONFIGDIR)"
 	$$(INSTALL) -m 644 $$^ "$(PKGCONFIGDIR)"
 
-uninstall-libs::
-	-$(RM) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
-	       "$(SHLIBDIR)/$(SLIBNAME)"            \
-	       "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
-	-$(RM)  $(SLIB_INSTALL_EXTRA_SHLIB:%="$(SHLIBDIR)/%")
-	-$(RM)  $(SLIB_INSTALL_EXTRA_LIB:%="$(LIBDIR)/%")
-	-$(RM) "$(LIBDIR)/$(LIBNAME)"
+#uninstall-libs::
+#	-$(RM) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
+#	       "$(SHLIBDIR)/$(SLIBNAME)"            \
+#	       "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
+#	-$(RM)  $(SLIB_INSTALL_EXTRA_SHLIB:%="$(SHLIBDIR)/%")
+#	-$(RM)  $(SLIB_INSTALL_EXTRA_LIB:%="$(LIBDIR)/%")
+#	-$(RM) "$(LIBDIR)/$(LIBNAME)"
 
-uninstall-headers::
-	$(RM) $(addprefix "$(INCINSTDIR)/",$(HEADERS) $(BUILT_HEADERS))
-	$(RM) "$(PKGCONFIGDIR)/lib$(FULLNAME).pc"
-	-rmdir "$(INCINSTDIR)"
+#uninstall-headers::
+#	$(RM) $(addprefix "$(INCINSTDIR)/",$(HEADERS) $(BUILT_HEADERS))
+#	$(RM) "$(PKGCONFIGDIR)/lib$(FULLNAME).pc"
+#	-rmdir "$(INCINSTDIR)"
 endef
 
 $(eval $(RULES))
