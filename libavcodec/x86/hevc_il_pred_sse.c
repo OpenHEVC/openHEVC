@@ -700,7 +700,7 @@ void oh_upsample_filter_block_luma_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride
             r1  = _mm_srai_epi32(r1,  2);
             r12 = _mm_srai_epi32(r12, 2);
 
-            r1 = _mm_packus_epi32(r1,r12);
+            r1 = _mm_packs_epi32(r1,r12);
 
             _mm_store_si128((__m128i *) &dst[x], r1);
         }
@@ -751,7 +751,7 @@ void oh_upsample_filter_block_cr_h_x2_sse_16(int16_t *dst, ptrdiff_t dststride, 
                 x1 = _mm_srai_epi32(x1, 2);
                 x2 = _mm_srai_epi32(x2, 2);
 
-                r1 = _mm_packus_epi32(x1,x2);
+                r1 = _mm_packs_epi32(x1,x2);
 
                 _mm_store_si128((__m128i *) &dst[x], r1);
             }
@@ -1035,7 +1035,7 @@ void oh_upsample_filter_block_luma_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststri
             x4 = _mm_srai_epi32(x4, 2);
             x42 = _mm_srai_epi32(x42, 2);
 
-            x4 = _mm_packus_epi32(x4,x42);
+            x4 = _mm_packs_epi32(x4,x42);
 
             _mm_store_si128((__m128i *) &dst[x], x4);
         }
@@ -1097,7 +1097,7 @@ void oh_upsample_filter_block_cr_h_x1_5_sse_16(int16_t *dst, ptrdiff_t dststride
             r1 = _mm_srai_epi32(r1, 2);
             r2 = _mm_srai_epi32(r2, 2);
 
-            r1 = _mm_packus_epi32(r1,r2);
+            r1 = _mm_packs_epi32(r1,r2);
 
             _mm_store_si128((__m128i *) &dst[x], r1);
         }

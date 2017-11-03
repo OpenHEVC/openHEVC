@@ -80,6 +80,10 @@
 #include <windows.h>
 #endif
 
+#if HEVC_ENCRYPTION
+#include "libavcodec/hevc.h"
+#endif
+
 static int init_report(const char *env);
 
 AVDictionary *sws_dict;
@@ -182,11 +186,124 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
     int64_t us;
     if (av_parse_time(&us, timestr, is_duration) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Invalid %s specification for %s: %s\n",
-               is_duration ? "duration" : "date", context, timestr);
+              is_duration ? "duration" : "date", context, timestr);
         exit_program(1);
     }
     return us;
 }
+
+static int parse_enum_n(const char *arg, unsigned num_chars, const char * const *names, int8_t *dst)
+{
+  int8_t i;
+  for (i = 0; names[i]; i++) {
+    if (!strncmp(arg, names[i], num_chars)) {
+      *dst = i;
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+static int parse_enum(const char *arg, const char * const *names, int8_t *dst)
+{
+  return parse_enum_n(arg, 255, names, dst);
+}
+
+int parse_enum_args(const char *context, const char *enumstr, char *name,
+                             int min, int max)
+{
+    static const char * const crypto_toggle_names[] = { "off", "on", NULL };
+    static const char * const crypto_feature_names[] = { "mvs", "mv_signs", "trans_coeffs", "trans_coeff_signs", "intra_pred_modes", NULL };
+
+
+    int valToReturn = 0;
+
+#define OPT(STR) (!strcmp(name, STR))
+    if OPT("crypto")
+    {
+        // Disallow turning on the encryption when it's not compiled in.
+    #if HEVC_ENCRYPTION
+         // on, off, feature1+feature2
+
+        const char *token_begin = av_strdup(enumstr);
+        const char *cur = token_begin;
+
+        valToReturn = HEVC_CRYPTO_OFF;
+
+	// if arg is empty, disable crypto
+        if (!strcmp(enumstr, ""))
+            return HEVC_CRYPTO_OFF;
+
+        // If value is on or off, set all features to on or off.
+        int8_t toggle = 0;
+        if (parse_enum(token_begin, crypto_toggle_names, &toggle)) {
+            if (toggle == 1) {
+                valToReturn = HEVC_CRYPTO_ON;
+            }
+        } else {
+        // Try and parse "feature1+feature2" type list.
+            for (;;) {
+                if (*cur == '+' || *cur == '\0' || *cur == '|') {
+                    int8_t feature = 0;
+                    int num_chars = cur - token_begin;
+                    if (parse_enum_n(token_begin, num_chars, crypto_feature_names, &feature)) {
+                        valToReturn |= (1 << feature);
+                    } else {
+                        valToReturn = HEVC_CRYPTO_OFF;
+                        return valToReturn;
+                    }
+                    token_begin = cur + 1;
+                }
+
+                if (*cur == '\0') {
+                    break;
+                } else {
+                    ++cur;
+                }
+            }
+        }
+        
+    #else
+        fprintf(stderr, "\x1B[31m--crypto cannot be enabled because it's not compiled in.\n\x1B[0m");
+        return 0;
+    #endif
+    
+    }
+    return valToReturn;
+}
+
+uint8_t* parse_array(const char *context, const char *keystr, int size,
+                     int min, int max)
+{
+    #if HEVC_ENCRYPTION
+        uint8_t *coeff_key;
+        coeff_key = (uint8_t *)malloc(sizeof(uint8_t)*size);
+        char *key = av_strdup(keystr);
+        const char delim[] = ",";
+        char *token;
+        int i = 0;
+
+        token = strtok(key, delim);
+        while(token!=NULL&&i<size){
+            coeff_key[i] = (uint8_t)parse_number_or_die(context,token,OPT_INT,min,max);
+            i++;
+            token = strtok(NULL, delim);
+        }
+        if(i>=size && (token != NULL)){
+            fprintf(stderr, "\x1B[31mparsing of the array failed : too many members.\n\x1B[0m");
+            exit(1);
+        } else if (i<size) {
+            fprintf(stderr, "\x1B[31mparsing of the array failed : too few members.\n\x1B[0m");
+            exit(1);
+        }
+        return coeff_key;
+    #else
+        fprintf(stderr, "\x1B[31m--key cannot be enabled because encryption is not compiled in.\n\x1B[0m");
+        return NULL;
+    #endif
+}
+
 
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
                        int rej_flags, int alt_flags)
@@ -314,7 +431,6 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     void *dst = po->flags & (OPT_OFFSET | OPT_SPEC) ?
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
     int *dstcount;
-
     if (po->flags & OPT_SPEC) {
         SpecifierOpt **so = dst;
         char *p = strchr(opt, ':');
@@ -328,7 +444,6 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         (*so)[*dstcount - 1].specifier = str;
         dst = &(*so)[*dstcount - 1].u;
     }
-
     if (po->flags & OPT_STRING) {
         char *str;
         str = av_strdup(arg);
@@ -346,6 +461,10 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         *(float *)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
     } else if (po->flags & OPT_DOUBLE) {
         *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
+    } else if (po->flags & OPT_ENUM) {
+        *(int *)dst = parse_enum_args(opt, arg, "crypto", 0, INT_MAX);
+    } else if (po->flags & OPT_DATA) {
+        *(uint8_t **)dst = parse_array(opt, arg, 16, 0, 255);
     } else if (po->u.func_arg) {
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {
@@ -354,7 +473,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
                    arg, opt, av_err2str(ret));
             return ret;
         }
-    }
+    } 
     if (po->flags & OPT_EXIT)
         exit_program(0);
 
@@ -364,6 +483,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
 int parse_option(void *optctx, const char *opt, const char *arg,
                  const OptionDef *options)
 {
+
     const OptionDef *po;
     int ret;
 
