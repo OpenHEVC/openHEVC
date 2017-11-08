@@ -416,6 +416,7 @@ typedef struct HEVCQuantContext{
     uint8_t dc_scale;
 }HEVCQuantContext;
 
+//local
 typedef struct HEVCTransformScanContext{
     const uint8_t *scan_x_cg;
     const uint8_t *scan_y_cg;
@@ -429,14 +430,16 @@ typedef struct HEVCTransformScanContext{
 }HEVCTransformScanContext;
 
 typedef struct HEVCTransformContext{
-    HEVCQuantContext quant_ctx;
-    const uint8_t *scale_matrix;
+    HEVCQuantContext quant_ctx;//local
+    HEVCTransformScanContext scan_ctx;
+    const uint8_t *scale_matrix;//local but some global tests
     int log2_trafo_size;
     int transform_size;
     int transform_skip_flag;
     int log2_transform_range;
     int explicit_rdpcm_flag;
     int explicit_rdpcm_dir_flag;
+    int num_significant_coeffs;
 }HEVCTransformContext;
 
 
@@ -792,7 +795,7 @@ void ff_hevc_hls_filters_slice( HEVCContext *s, int x_ctb, int y_ctb, int ctb_si
 void ff_hevc_hls_filter_slice(  HEVCContext *s, int x, int y, int ctb_size);
 #endif
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH);
-void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
+void ff_hevc_hls_coefficients_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx
 #if OHCONFIG_AMT
@@ -800,13 +803,15 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #endif
 );
 
-void ff_hevc_hls_residual_coding_c(HEVCContext *s, int x0, int y0,
+void ff_hevc_hls_coefficients_coding_c(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx
 #if OHCONFIG_AMT
                                  , int log2_cb_size
 #endif
 );
+
+void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int c_idx,int log2_cb_size);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
