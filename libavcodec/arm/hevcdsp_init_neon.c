@@ -21,6 +21,8 @@
 #include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevc_ps.h"
+#include "libavcodec/hevcdec.h"
 #include "libavcodec/bit_depth_template.c"
 #include "hevcdsp_arm.h"
 

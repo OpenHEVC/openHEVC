@@ -7,10 +7,8 @@
 #define HEVC_GREEN_H
 
 #include "hevc.h"
+#include "hevcdec.h"
 
-void green_update(HEVCContext *s);
-void green_logs(HEVCContext *s);
-void green_update_context(HEVCContext *s, HEVCContext *s0);
 /** Green defines */
 #define LUMA1		1
 #define LUMA3		3
@@ -61,6 +59,10 @@ typedef struct chroma_config{
                                          int ox1, intptr_t mx, intptr_t my, int width);
 } chroma_config;
 
+
+void green_update(HEVCContext *s);
+void green_logs(HEVCContext *s);
+void green_update_context(HEVCContext *s, HEVCContext *s0);
 
 /** Coef Specific Init Fcts */
 void green_reload_filter_luma7_neon(luma_config *c, const int bit_depth);
