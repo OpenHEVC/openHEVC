@@ -1620,12 +1620,9 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
     s->hevcdsp.transform_add[tr_ctx->log2_trafo_size-2](dst, coeffs, stride);
 }
 
-void ff_hevc_hls_coefficients_coding_c(HEVCContext *s, int x0, int y0,
+void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                                 int log2_trafo_size, enum ScanType scan_idx,
                                 int c_idx
-#if OHCONFIG_AMT
-                                , int log2_cb_size
-#endif
 )
 {
     HEVCLocalContext *lc = s->HEVClc;
@@ -1980,13 +1977,10 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s, int x0, int y0,
 
 }
 
-void ff_hevc_hls_coefficients_coding(HEVCContext *s, int x0, int y0,
+void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                                 int log2_trafo_size, enum ScanType scan_idx,
                                 int c_idx
-#if OHCONFIG_AMT
-                                , int log2_cb_size
-#endif
-)
+                                )
 {
     HEVCLocalContext *lc = s->HEVClc;
     HEVCTransformContext *tr_ctx    = &lc->transform_ctx;

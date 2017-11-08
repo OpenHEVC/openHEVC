@@ -795,21 +795,15 @@ void ff_hevc_hls_filters_slice( HEVCContext *s, int x_ctb, int y_ctb, int ctb_si
 void ff_hevc_hls_filter_slice(  HEVCContext *s, int x, int y, int ctb_size);
 #endif
 void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW, int nPbH);
-void ff_hevc_hls_coefficients_coding(HEVCContext *s, int x0, int y0,
+void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx
-#if OHCONFIG_AMT
-                                 , int log2_cb_size
-#endif
 );
 
-void ff_hevc_hls_coefficients_coding_c(HEVCContext *s, int x0, int y0,
+void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx
-#if OHCONFIG_AMT
-                                 , int log2_cb_size
-#endif
-);
+                                 );
 
 void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int c_idx,int log2_cb_size);
 

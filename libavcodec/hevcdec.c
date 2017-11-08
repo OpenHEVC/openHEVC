@@ -1404,11 +1404,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
         lc->tu.cross_pf = 0;
 
         if (cbf_luma){
-            ff_hevc_hls_coefficients_coding(s, x0, y0, log2_trafo_size, scan_idx, 0
-#if OHCONFIG_AMT
-                                        , log2_cb_size
-#endif
-            );
+            ff_hevc_hls_coefficients_coding(s, log2_trafo_size, scan_idx, 0);
             ff_hevc_hls_transform(s, lc, x0, y0, 0,log2_cb_size);
         }
         if (s->ps.sps->chroma_format_idc && (log2_trafo_size > 2 || s->ps.sps->chroma_format_idc == 3)) {
@@ -1427,12 +1423,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     s->hpc.intra_pred[log2_trafo_size_c - 2](s, x0, y0 + (i << log2_trafo_size_c), 1);
                 }
                 if (cbf_cb[i]){
-                    ff_hevc_hls_coefficients_coding_c(s, x0, y0 + (i << log2_trafo_size_c),
-                                                log2_trafo_size_c, scan_idx_c, 1
-#if OHCONFIG_AMT
-                                                , log2_cb_size
-#endif
-                    );
+                    ff_hevc_hls_coefficients_coding_c(s, log2_trafo_size_c, scan_idx_c, 1);
                     ff_hevc_hls_transform(s, lc, x0, y0 + (i << log2_trafo_size_c), 1,log2_cb_size);
                 }
                 else
@@ -1462,12 +1453,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     s->hpc.intra_pred[log2_trafo_size_c - 2](s, x0, y0 + (i << log2_trafo_size_c), 2);
                 }
                 if (cbf_cr[i]){
-                    ff_hevc_hls_coefficients_coding_c(s, x0, y0 + (i << log2_trafo_size_c),
-                                                log2_trafo_size_c, scan_idx_c, 2
-#if OHCONFIG_AMT
-                                                , log2_cb_size
-#endif
-                    );
+                    ff_hevc_hls_coefficients_coding_c(s, log2_trafo_size_c, scan_idx_c, 2);
                     ff_hevc_hls_transform(s, lc, x0, y0 + (i << log2_trafo_size_c), 2,log2_cb_size);
                 }
                 else
@@ -1497,12 +1483,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     s->hpc.intra_pred[log2_trafo_size - 2](s, xBase, yBase + (i << log2_trafo_size), 1);
                 }
                 if (cbf_cb[i]){
-                    ff_hevc_hls_coefficients_coding_c(s, xBase, yBase + (i << log2_trafo_size),
-                                                log2_trafo_size, scan_idx_c, 1
-#if OHCONFIG_AMT
-                                                , log2_cb_size
-#endif
-            		);
+                    ff_hevc_hls_coefficients_coding_c(s, log2_trafo_size, scan_idx_c, 1);
                     ff_hevc_hls_transform(s, lc, xBase, yBase + (i << log2_trafo_size), 1,log2_cb_size);
                 }
             }
@@ -1513,12 +1494,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                     s->hpc.intra_pred[log2_trafo_size - 2](s, xBase, yBase + (i << log2_trafo_size), 2);
                 }
                 if (cbf_cr[i]){
-                    ff_hevc_hls_coefficients_coding_c(s, xBase, yBase + (i << log2_trafo_size),
-                                                log2_trafo_size, scan_idx_c, 2
-#if OHCONFIG_AMT
-                                                , log2_cb_size
-#endif
-                    );
+                    ff_hevc_hls_coefficients_coding_c(s, log2_trafo_size, scan_idx_c, 2);
                     ff_hevc_hls_transform(s, lc, xBase, yBase + (i << log2_trafo_size), 2,log2_cb_size);
                 }
             }
