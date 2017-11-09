@@ -805,7 +805,8 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                                  int c_idx
                                  );
 
-void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int c_idx,int log2_cb_size);
+void ff_hevc_hls_transform(HEVCContext *s, HEVCLocalContext *lc, int x0, int y0, int log2_cb_size);
+void ff_hevc_hls_transform_c(HEVCContext *s, HEVCLocalContext *lc, int x0, int y0, int c_idx, int log2_cb_size);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
