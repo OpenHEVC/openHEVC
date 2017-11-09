@@ -1983,7 +1983,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
             int ctx_set = 0;
 
             if (s->ps.sps->persistent_rice_adaptation_enabled_flag) {
-                if (!tr_skip_or_bypass)
+                if (!tr_ctx->transform_skip_flag && !lc->cu.cu_transquant_bypass_flag)
                     sb_type = 0;
                 else
                     sb_type = 1;
