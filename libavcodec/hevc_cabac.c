@@ -1792,6 +1792,141 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
     s->hevcdsp.transform_add[tr_ctx->log2_trafo_size-2](dst, coeffs, stride);
 }
 
+typedef struct CGContext{
+    uint16_t significant_coeff_flag_idx[16];
+    int num_significant_coeff_in_cg;
+    int is_last_cg;
+    int is_dc_cg;
+    int is_last_or_dc_cg;
+    int implicit_non_zero_coeff;
+    int x_cg;
+    int y_cg;
+    int prev_sig;
+    //uint8_t *ctx_idx_map;
+}CGContext;
+
+
+static const uint8_t ctx_idx_map[] = {
+    0, 1, 4, 5, 2, 3, 4, 5, 6, 6, 8, 8, 7, 7, 8, 8, // log2_trafo_size == 2 //FIXME I don't understand the order derivation for 4x4
+    1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, // prev_sig == 0
+    2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, // prev_sig == 1
+    2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, // prev_sig == 2
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2  // default
+};
+
+static void av_always_inline decode_significance_map_c(HEVCContext *s, HEVCTransformContext *tr_ctx, uint8_t *significant_coeff_flag_idx, CGContext *cg, int n_end, int tr_skip_or_bypass)
+{
+    const uint8_t *ctx_idx_map_p;
+    int scf_offset = 0;
+    int n;
+
+    if (tr_skip_or_bypass) {
+        ctx_idx_map_p = (uint8_t*) &ctx_idx_map[4 * 16];//default line
+        scf_offset = 14 + 27;
+    } else {
+        scf_offset = 27;
+        if (tr_ctx->log2_trafo_size == 2) {
+            ctx_idx_map_p = (uint8_t*) &ctx_idx_map[0];
+        } else {
+            ctx_idx_map_p = (uint8_t*) &ctx_idx_map[(cg->prev_sig + 1) << 4]; //select ctx_map based on prev_sig
+            if (tr_ctx->log2_trafo_size == 3)
+                scf_offset += 9;
+            else
+                scf_offset += 12;
+        }
+    }
+
+    //decode coeffs significance map in current CG
+    for (n = n_end; n > 0; n--) {
+        int x_c = tr_ctx->scan_ctx.scan_x_off[n];
+        int y_c = tr_ctx->scan_ctx.scan_y_off[n];
+        if (significant_coeff_flag_decode(s, x_c, y_c, scf_offset, ctx_idx_map_p)) {
+            cg->significant_coeff_flag_idx[cg->num_significant_coeff_in_cg] = n; // store _id in decoding order
+            cg->num_significant_coeff_in_cg++;
+            cg->implicit_non_zero_coeff = 0;//there isn't any implicit nz coeff since we already read one
+        }
+    }
+
+    // if there isn't any nz coeff which was implicit,
+    if (cg->implicit_non_zero_coeff == 0) {
+        if (tr_skip_or_bypass) {//transform is skipped
+            scf_offset = 16 + 27;
+        } else { // transform will be performed
+            if (cg->is_dc_cg) {
+                scf_offset = 27;
+            } else {
+                scf_offset = 2 + scf_offset;
+            }
+        }//decode significant coeff flag
+
+        if (significant_coeff_flag_decode_0(s, 1, scf_offset) == 1) {
+            cg->significant_coeff_flag_idx[cg->num_significant_coeff_in_cg] = 0;
+            cg->num_significant_coeff_in_cg++;
+        }
+        //FIXME we could count significant coeffs per CGs here
+    } else {//There exists a nz implicit coeff (only first coeff is nz)
+        cg->significant_coeff_flag_idx[cg->num_significant_coeff_in_cg] = 0; // store 0 idx into sig_coeff id_map.
+        cg->num_significant_coeff_in_cg++;
+    }
+}
+
+static void av_always_inline decode_significance_map(HEVCContext *s, HEVCTransformContext *tr_ctx, uint8_t *significant_coeff_flag_idx, CGContext *cg, int n_end, int tr_skip_or_bypass, int scan_idx)
+{
+    const uint8_t *ctx_idx_map_p;
+    int scf_offset = 0;
+    int n;
+
+    if (tr_skip_or_bypass) {
+        ctx_idx_map_p = (uint8_t*) &ctx_idx_map[4 * 16];//default line
+        scf_offset = 40;
+    } else {
+        if (tr_ctx->log2_trafo_size == 2) {
+            ctx_idx_map_p = (uint8_t*) &ctx_idx_map[0];
+        } else {
+            ctx_idx_map_p = (uint8_t*) &ctx_idx_map[(cg->prev_sig + 1) << 4]; //select ctx_map based on prev_sig
+            if (!cg->is_dc_cg)//not DC_cg
+                scf_offset += 3;
+            if (tr_ctx->log2_trafo_size == 3) {
+                scf_offset += (scan_idx == SCAN_DIAG) ? 9 : 15;
+            } else {
+                scf_offset += 21;
+            }
+        }
+    }
+
+    //decode coeffs significance map in current CG
+    for (n = n_end; n > 0; n--) {
+        int x_c = tr_ctx->scan_ctx.scan_x_off[n];
+        int y_c = tr_ctx->scan_ctx.scan_y_off[n];
+        if (significant_coeff_flag_decode(s, x_c, y_c, scf_offset, ctx_idx_map_p)) {
+            cg->significant_coeff_flag_idx[cg->num_significant_coeff_in_cg] = n; // store _id in decoding order
+            cg->num_significant_coeff_in_cg++;
+            cg->implicit_non_zero_coeff = 0;//there isn't any implicit nz coeff since we already read one
+        }
+    }
+
+    // if there isn't any nz coeff which was implicit,
+    if (cg->implicit_non_zero_coeff == 0) {
+        if (tr_skip_or_bypass) {//transform is skipped
+            scf_offset = 42;
+        } else { // transform will be performed
+            if (cg->is_dc_cg) {
+                scf_offset = 0;
+            } else {
+                scf_offset += 2;
+            }
+        }
+        if (significant_coeff_flag_decode_0(s, 1, scf_offset) == 1) {
+            cg->significant_coeff_flag_idx[cg->num_significant_coeff_in_cg] = 0;
+            cg->num_significant_coeff_in_cg++;
+        }
+        //FIXME we could count significant coeffs per CGs here
+    } else {//There exists a nz implicit coeff (only first coeff is nz)
+        cg->significant_coeff_flag_idx[cg->num_significant_coeff_in_cg] = 0; // store 0 idx into sig_coeff id_map.
+        cg->num_significant_coeff_in_cg++;
+    }
+}
+
 void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                                 int log2_trafo_size, enum ScanType scan_idx,
                                 int c_idx
@@ -1802,7 +1937,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     HEVCQuantContext     *quant_ctx = &tr_ctx->quant_ctx;
     HEVCTransformScanContext *scan_ctx = &tr_ctx->scan_ctx;
     int tr_skip_or_bypass;
-    int last_scan_pos;
+
     int n_end;
     int greater1_ctx = 1;
     int16_t *cg_coeffs[64][16]={{0}};
@@ -1810,10 +1945,11 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     int i;
     int pred_mode_intra = lc->tu.intra_pred_mode_c;
 
-    int num_last_subset;
+    int num_cg;
 
     int16_t *coeffs = lc->tu.coeffs[1];
     uint8_t significant_coeff_group_flag[8][8] = {{0}}; // significant CG map;
+
 
     //Reset transform context
     memset(tr_ctx, 0, sizeof(HEVCTransformContext));
@@ -1849,123 +1985,73 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     // decode and derive last significant coeff
     decode_and_derive_scanning_params(s, lc, scan_ctx, scan_idx,c_idx);
 
-    num_last_subset = (scan_ctx->num_coeff - 1) >> 4;
+    num_cg = (scan_ctx->num_coeff - 1) >> 4;
 
     //decode CGs
-    for (i = num_last_subset; i >= 0; i--) {
+    for (i = num_cg; i >= 0; i--) {
 
         int n, m;
         int x_cg, y_cg;
         int x_c, y_c;
-        int pos;
-
-        int implicit_non_zero_coeff = 0;
+        int last_scan_pos;
         int64_t trans_coeff_level;
-        int prev_sig = 0;
         int offset = i << 4;
         int rice_init = 0;
 
-        uint8_t significant_coeff_flag_idx[16];
-        uint8_t nb_significant_coeff_flag = 0;
+        const int log2_tr_size_minus2 = log2_trafo_size - 2;
+
+        CGContext current_cg;
+        current_cg.is_dc_cg = (i == 0);
+        current_cg.is_last_cg = (i == num_cg);
+        current_cg.is_last_or_dc_cg = (current_cg.is_dc_cg || current_cg.is_last_cg);
+        current_cg.implicit_non_zero_coeff = 0;
+        current_cg.num_significant_coeff_in_cg = 0;
+        current_cg.prev_sig = 0;
+
 
         //get current cg position
         x_cg = scan_ctx->scan_x_cg[i];
         y_cg = scan_ctx->scan_y_cg[i];
 
+        current_cg.x_cg = x_cg;
+        current_cg.y_cg = y_cg;
+
         // if not last cg and not first cg
-        if ((i < num_last_subset) && (i > 0)) {
+        if (!current_cg.is_last_or_dc_cg) {
             int ctx_cg = 0;
-            if (x_cg < (1 << (tr_ctx->log2_trafo_size - 2)) - 1)
+            if (x_cg < (1 << log2_tr_size_minus2) - 1)
                 ctx_cg += significant_coeff_group_flag[x_cg + 1][y_cg];
-            if (y_cg < (1 << (tr_ctx->log2_trafo_size - 2)) - 1)
+            if (y_cg < (1 << log2_tr_size_minus2) - 1)
                 ctx_cg += significant_coeff_group_flag[x_cg][y_cg + 1];
 
             significant_coeff_group_flag[x_cg][y_cg] =
                     significant_coeff_group_flag_decode(s, 1, ctx_cg);
-            implicit_non_zero_coeff = 1; // default init to 1
+            current_cg.implicit_non_zero_coeff = 1; // default init to 1
         } else {//test for implicit non zero cg
-            significant_coeff_group_flag[x_cg][y_cg] =
-                    ((x_cg == scan_ctx->x_cg_last_sig && y_cg == scan_ctx->y_cg_last_sig) ||
-                     (x_cg == 0 && y_cg == 0));
+            significant_coeff_group_flag[x_cg][y_cg] = 1;
         }
 
         last_scan_pos = scan_ctx->num_coeff - offset - 1;
 
         // on first iteration we read based on last coeff
-        if (i == num_last_subset) {
+        if (current_cg.is_last_cg) {
             n_end = last_scan_pos - 1;
-            significant_coeff_flag_idx[0] = last_scan_pos;
-            nb_significant_coeff_flag = 1;
+            current_cg.significant_coeff_flag_idx[0] = last_scan_pos;
+            current_cg.num_significant_coeff_in_cg = 1;
         } else {//we read from last coeff in cg
             n_end = 15;
         }
 
         //derive global cabac ctx id ids for the whole CG according to other CGs significance
         if (x_cg < ((tr_ctx->transform_size - 1) >> 2))
-            prev_sig = !!significant_coeff_group_flag[x_cg + 1][y_cg];
+            current_cg.prev_sig = !!significant_coeff_group_flag[x_cg + 1][y_cg];
         if (y_cg < ((tr_ctx->transform_size - 1) >> 2))
-            prev_sig += (!!significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
+            current_cg.prev_sig += (!!significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
 
-        if (significant_coeff_group_flag[x_cg][y_cg] && n_end >= 0) {//do non zero cg
-            static const uint8_t ctx_idx_map[] = {
-                0, 1, 4, 5, 2, 3, 4, 5, 6, 6, 8, 8, 7, 7, 8, 8, // log2_trafo_size == 2 //FIXME I don't understand the order derivation for 4x4
-                1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, // prev_sig == 0
-                2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, // prev_sig == 1
-                2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, // prev_sig == 2
-                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2  // default
-            };
-            const uint8_t *ctx_idx_map_p;
-            int scf_offset = 0;
-            if (tr_skip_or_bypass) {
-                ctx_idx_map_p = (uint8_t*) &ctx_idx_map[4 * 16];//default line
-                scf_offset = 14 + 27;
-            } else {
-                scf_offset = 27;
-                if (tr_ctx->log2_trafo_size == 2) {
-                    ctx_idx_map_p = (uint8_t*) &ctx_idx_map[0];
-                } else {
-                    ctx_idx_map_p = (uint8_t*) &ctx_idx_map[(prev_sig + 1) << 4]; //select ctx_map based on prev_sig
-                    if (tr_ctx->log2_trafo_size == 3)
-                        scf_offset += 9;
-                    else
-                        scf_offset += 12;
-                }
-            }
+        if (significant_coeff_group_flag[x_cg][y_cg] && n_end >= 0)//{
+            decode_significance_map_c(s, tr_ctx, &current_cg.significant_coeff_flag_idx, &current_cg,n_end,tr_skip_or_bypass);
 
-            //decode coeffs significance map in current CG
-            for (n = n_end; n > 0; n--) {
-                x_c = scan_ctx->scan_x_off[n];
-                y_c = scan_ctx->scan_y_off[n];
-                if (significant_coeff_flag_decode(s, x_c, y_c, scf_offset, ctx_idx_map_p)) {
-                    significant_coeff_flag_idx[nb_significant_coeff_flag] = n; // store _id in decoding order
-                    nb_significant_coeff_flag++;
-                    implicit_non_zero_coeff = 0;//there isn't any implicit nz coeff since we already read one
-                }
-            }
-
-            // if there isn't any nz coeff which was implicit,
-            if (implicit_non_zero_coeff == 0) {
-                if (tr_skip_or_bypass) {//transform is skipped
-                    scf_offset = 16 + 27;
-                } else { // transform will be performed
-                    if (i == 0) {
-                        scf_offset = 27;
-                    } else {
-                        scf_offset = 2 + scf_offset;
-                    }
-                }//decode significant coeff flag
-                if (significant_coeff_flag_decode_0(s, 1, scf_offset) == 1) {
-                    significant_coeff_flag_idx[nb_significant_coeff_flag] = 0;
-                    nb_significant_coeff_flag++;
-                }
-                //FIXME we could count significant coeffs per CGs here
-            } else {//There exists a nz implicit coeff (only first coeff is nz)
-                significant_coeff_flag_idx[nb_significant_coeff_flag] = 0; // store 0 idx into sig_coeff id_map.
-                nb_significant_coeff_flag++;
-            }
-        }//end of current significant CG
-
-        n_end = nb_significant_coeff_flag;
+        n_end = current_cg.num_significant_coeff_in_cg;
 
         //decode coeffs values
         if (n_end) {
@@ -1990,10 +2076,10 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                 c_rice_param = lc->stat_coeff[sb_type] / 4;
             }
 
-            if (!(i == num_last_subset) && greater1_ctx == 0)
+            if (!current_cg.is_last_cg && greater1_ctx == 0)
                 ctx_set++;
             greater1_ctx = 1;
-            last_nz_pos_in_cg = significant_coeff_flag_idx[0];
+            last_nz_pos_in_cg = current_cg.significant_coeff_flag_idx[0];
 
             //pass nb??
             for (m = 0; m < (n_end > 8 ? 8 : n_end); m++) {
@@ -2008,7 +2094,8 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                     greater1_ctx++;
                 }
             }
-            first_nz_pos_in_cg = significant_coeff_flag_idx[n_end - 1];
+
+            first_nz_pos_in_cg = current_cg.significant_coeff_flag_idx[n_end - 1];
 
             if (lc->cu.cu_transquant_bypass_flag ||
                     (lc->cu.pred_mode ==  MODE_INTRA  &&
@@ -2024,13 +2111,13 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                 coeff_abs_level_greater1_flag[first_greater1_coeff_idx] += coeff_abs_level_greater2_flag_decode(s, c_idx, ctx_set);
             }
             if (!s->ps.pps->sign_data_hiding_flag || !sign_hidden ) {
-                coeff_sign_flag = coeff_sign_flag_decode(s, nb_significant_coeff_flag) << (16 - nb_significant_coeff_flag);
+                coeff_sign_flag = coeff_sign_flag_decode(s, current_cg.num_significant_coeff_in_cg) << (16 - current_cg.num_significant_coeff_in_cg);
             } else {
-                coeff_sign_flag = coeff_sign_flag_decode(s, nb_significant_coeff_flag - 1) << (16 - (nb_significant_coeff_flag - 1));
+                coeff_sign_flag = coeff_sign_flag_decode(s, current_cg.num_significant_coeff_in_cg - 1) << (16 - (current_cg.num_significant_coeff_in_cg - 1));
             }
 
             for (m = 0; m < n_end; m++) {
-                n = significant_coeff_flag_idx[m];
+                n = current_cg.significant_coeff_flag_idx[m];
 
                 x_c = (x_cg << 2) + scan_ctx->scan_x_off[n];
                 y_c = (y_cg << 2) + scan_ctx->scan_y_off[n];
@@ -2095,6 +2182,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                 if(!lc->cu.cu_transquant_bypass_flag) {
                     if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag && tr_ctx->log2_trafo_size > 2)) {
                         if(y_c || x_c || tr_ctx->log2_trafo_size < 4) {
+                            int pos;
                             switch(tr_ctx->log2_trafo_size) {
                             case 3: pos = (y_c << 3) + x_c; break;
                             case 4: pos = ((y_c >> 1) << 3) + (x_c >> 1); break;
@@ -2151,14 +2239,14 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     HEVCTransformContext *tr_ctx    = &lc->transform_ctx;
     HEVCTransformScanContext *scan_ctx = &tr_ctx->scan_ctx;
     HEVCQuantContext  *quant_ctx = &tr_ctx->quant_ctx;
-    int last_scan_pos;
+
     int n_end;
     int greater1_ctx = 1;
 
     int i;
     int pred_mode_intra = lc->tu.intra_pred_mode;
-
-    int num_last_subset;
+    int tr_skip_or_bypass;
+    int num_cg;
 
     int16_t *coeffs = lc->tu.coeffs[0];
 
@@ -2172,7 +2260,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     tr_ctx->log2_trafo_size = log2_trafo_size;
     tr_ctx->transform_size = 1 << log2_trafo_size;
 
-    derive_quant_parameters(s,lc);
+    tr_skip_or_bypass = s->ps.sps->transform_skip_context_enabled_flag &&
+                    (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag);
 
     if (!lc->cu.cu_transquant_bypass_flag && s->ps.pps->transform_skip_enabled_flag &&
             tr_ctx->log2_trafo_size <= s->ps.pps->log2_max_transform_skip_block_size) {
@@ -2185,7 +2274,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     // Derive QP for dequant
     //FIXME this could be called outside of the scope of residual coding as soon as we
     // get the cu delta qp if any
-    //derive_quant_parameters(s,lc);
+    derive_quant_parameters(s,lc);
 
     if (lc->cu.pred_mode == MODE_INTER && s->ps.sps->explicit_rdpcm_enabled_flag &&
             (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
@@ -2198,30 +2287,38 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     // decode and derive last significant coeff (tu scanning ctx)
     decode_and_derive_scanning_params(s, lc, scan_ctx, scan_idx,0);
 
-    num_last_subset = (scan_ctx->num_coeff - 1) >> 4;
+    num_cg = (scan_ctx->num_coeff - 1) >> 4;
 
     //decode CGs
-    for (i = num_last_subset; i >= 0; i--) {
+    for (i = num_cg; i >= 0; i--) {
         int n, m;
         int x_cg, y_cg;
         int x_c, y_c;
         int pos;
 
-        int implicit_non_zero_coeff = 0;
-        int64_t trans_coeff_level;
-        int prev_sig = 0;
         int offset = i << 4;
         int rice_init = 0;
+        int last_scan_pos;
 
-        uint8_t significant_coeff_flag_idx[16];
-        uint8_t nb_significant_coeff_flag = 0;
+        CGContext current_cg;
+
+        current_cg.is_dc_cg = (i == 0);
+        current_cg.is_last_cg = (i == num_cg);
+        current_cg.is_last_or_dc_cg = (current_cg.is_dc_cg || current_cg.is_last_cg);
+        current_cg.implicit_non_zero_coeff = 0;
+        current_cg.num_significant_coeff_in_cg = 0;
+        current_cg.prev_sig = 0;
+
 
         //get current cg position
         x_cg = scan_ctx->scan_x_cg[i];
         y_cg = scan_ctx->scan_y_cg[i];
 
+        current_cg.x_cg = x_cg;
+        current_cg.y_cg = y_cg;
+
         // if not last cg and not first cg
-        if ((i < num_last_subset) && (i > 0)) {
+        if ((i < num_cg) && (i > 0)) {
             int ctx_cg = 0;
             if (x_cg < (1 << (tr_ctx->log2_trafo_size - 2)) - 1)
                 ctx_cg += significant_coeff_group_flag[x_cg + 1][y_cg];
@@ -2230,7 +2327,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
             significant_coeff_group_flag[x_cg][y_cg] =
                     significant_coeff_group_flag_decode(s, 0, ctx_cg);
-            implicit_non_zero_coeff = 1; // default init to 1
+            current_cg.implicit_non_zero_coeff = 1; // default init to 1
         } else {//test for implicit non zero cg
             significant_coeff_group_flag[x_cg][y_cg] =
                     ((x_cg == scan_ctx->x_cg_last_sig && y_cg == scan_ctx->y_cg_last_sig) ||
@@ -2241,84 +2338,24 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
         // on first iteration we read based on last coeff
         //FIXME we could avoid this in loop check
-        if (i == num_last_subset) {
+        if (i == num_cg) {
             n_end = last_scan_pos - 1;
-            significant_coeff_flag_idx[0] = last_scan_pos;
-            nb_significant_coeff_flag = 1;
+            current_cg.significant_coeff_flag_idx[0] = last_scan_pos;
+            current_cg.num_significant_coeff_in_cg = 1;
         } else {//we read from last coeff in cg
             n_end = 15;
         }
 
         //derive global cabac ctx id ids for the whole CG according to other CGs significance
         if (x_cg < ((tr_ctx->transform_size - 1) >> 2))
-            prev_sig = !!significant_coeff_group_flag[x_cg + 1][y_cg];
+            current_cg.prev_sig = !!significant_coeff_group_flag[x_cg + 1][y_cg];
         if (y_cg < ((tr_ctx->transform_size - 1) >> 2))
-            prev_sig += (!!significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
+            current_cg.prev_sig += (!!significant_coeff_group_flag[x_cg][y_cg + 1] << 1);
 
-        if (significant_coeff_group_flag[x_cg][y_cg] && n_end >= 0) {//do non zero cg
-            static const uint8_t ctx_idx_map[] = {
-                0, 1, 4, 5, 2, 3, 4, 5, 6, 6, 8, 8, 7, 7, 8, 8, // log2_trafo_size == 2 //FIXME I don't understand the order derivation for 4x4
-                1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, // prev_sig == 0
-                2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, // prev_sig == 1
-                2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, // prev_sig == 2
-                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2  // default
-            };
-            const uint8_t *ctx_idx_map_p;
-            int scf_offset = 0;
-            if (s->ps.sps->transform_skip_context_enabled_flag &&
-                    (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
-                ctx_idx_map_p = (uint8_t*) &ctx_idx_map[4 * 16];//default line
-                scf_offset = 40;
-            } else {
-                if (tr_ctx->log2_trafo_size == 2) {
-                    ctx_idx_map_p = (uint8_t*) &ctx_idx_map[0];
-                } else {
-                    ctx_idx_map_p = (uint8_t*) &ctx_idx_map[(prev_sig + 1) << 4]; //select ctx_map based on prev_sig
-                    if ((x_cg > 0 || y_cg > 0))//not DC_cg
-                        scf_offset += 3;
-                    if (tr_ctx->log2_trafo_size == 3) {
-                        scf_offset += (scan_idx == SCAN_DIAG) ? 9 : 15;
-                    } else {
-                        scf_offset += 21;
-                    }
-                }
-            }
+        if (significant_coeff_group_flag[x_cg][y_cg] && n_end >= 0) //do non zero cg
+            decode_significance_map(s,tr_ctx, &current_cg.significant_coeff_flag_idx,&current_cg, n_end, tr_skip_or_bypass, scan_idx);
 
-            //decode coeffs significance map in current CG
-            for (n = n_end; n > 0; n--) {
-                x_c = scan_ctx->scan_x_off[n];
-                y_c = scan_ctx->scan_y_off[n];
-                if (significant_coeff_flag_decode(s, x_c, y_c, scf_offset, ctx_idx_map_p)) {
-                    significant_coeff_flag_idx[nb_significant_coeff_flag] = n; // store _id in decoding order
-                    nb_significant_coeff_flag++;
-                    implicit_non_zero_coeff = 0;//there isn't any implicit nz coeff since we already read one
-                }
-            }
-
-            // if there isn't any nz coeff which was implicit,
-            if (implicit_non_zero_coeff == 0) {
-                if (s->ps.sps->transform_skip_context_enabled_flag &&
-                        (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {//transform is skipped
-                    scf_offset = 42;
-                } else { // transform will be performed
-                    if (i == 0) {
-                        scf_offset = 0;
-                    } else {
-                        scf_offset = 2 + scf_offset;
-                    }
-                }//decode significant coeff flag
-                if (significant_coeff_flag_decode_0(s, 0, scf_offset) == 1) {
-                    significant_coeff_flag_idx[nb_significant_coeff_flag] = 0;
-                    nb_significant_coeff_flag++;
-                }
-                //FIXME we could count significant coeffs per CGs here
-            } else {//There exists a nz implicit coeff (only first coeff is nz)
-                significant_coeff_flag_idx[nb_significant_coeff_flag] = 0; // store 0 idx into sig_coeff id_map.
-                nb_significant_coeff_flag++;
-            }
-        }//end of current significant CG
-
-        n_end = nb_significant_coeff_flag;
+        n_end = current_cg.num_significant_coeff_in_cg;
 
         //decode coeffs values
         if (n_end) {
@@ -2343,12 +2380,14 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                 c_rice_param = lc->stat_coeff[sb_type] / 4;
             }
 
-            if (!(i == num_last_subset) && greater1_ctx == 0)
+            if (!current_cg.is_last_cg && greater1_ctx == 0)
                 ctx_set++;
-            greater1_ctx = 1;
-            last_nz_pos_in_cg = significant_coeff_flag_idx[0];
 
-            //pass nb??
+            greater1_ctx = 1;
+
+            last_nz_pos_in_cg = current_cg.significant_coeff_flag_idx[0];
+
+            //decode coeff_abs_level_greater1_flags
             for (m = 0; m < (n_end > 8 ? 8 : n_end); m++) {
                 int inc = (ctx_set << 2) + greater1_ctx;
                 coeff_abs_level_greater1_flag[m] =
@@ -2361,7 +2400,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                     greater1_ctx++;
                 }
             }
-            first_nz_pos_in_cg = significant_coeff_flag_idx[n_end - 1];
+            first_nz_pos_in_cg = current_cg.significant_coeff_flag_idx[n_end - 1];
 
             if (lc->cu.cu_transquant_bypass_flag ||
                     (lc->cu.pred_mode ==  MODE_INTRA  &&
@@ -2377,13 +2416,14 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                 coeff_abs_level_greater1_flag[first_greater1_coeff_idx] += coeff_abs_level_greater2_flag_decode(s, c_idx, ctx_set);
             }
             if (!s->ps.pps->sign_data_hiding_flag || !sign_hidden ) {
-                coeff_sign_flag = coeff_sign_flag_decode(s, nb_significant_coeff_flag) << (16 - nb_significant_coeff_flag);
+                coeff_sign_flag = coeff_sign_flag_decode(s, current_cg.num_significant_coeff_in_cg) << (16 - current_cg.num_significant_coeff_in_cg);
             } else {
-                coeff_sign_flag = coeff_sign_flag_decode(s, nb_significant_coeff_flag - 1) << (16 - (nb_significant_coeff_flag - 1));
+                coeff_sign_flag = coeff_sign_flag_decode(s, current_cg.num_significant_coeff_in_cg - 1) << (16 - (current_cg.num_significant_coeff_in_cg - 1));
             }
 
             for (m = 0; m < n_end; m++) {
-                n = significant_coeff_flag_idx[m];
+                int64_t trans_coeff_level;
+                n = current_cg.significant_coeff_flag_idx[m];
                 x_c = (x_cg << 2) + scan_ctx->scan_x_off[n];
                 y_c = (y_cg << 2) + scan_ctx->scan_y_off[n];
 
