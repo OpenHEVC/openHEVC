@@ -414,11 +414,13 @@ static const uint8_t scan_1x1[1] = {
 };
 
 static const uint8_t horiz_scan2x2_x[4] = {
-    0, 1, 0, 1,
+    0, 1,
+    0, 1,
 };
 
 static const uint8_t horiz_scan2x2_y[4] = {
-    0, 0, 1, 1
+    0, 0,
+    1, 1
 };
 
 static const uint8_t horiz_scan4x4_x[16] = {
@@ -447,11 +449,13 @@ static const uint8_t horiz_scan8x8_inv[8][8] = {
 };
 
 static const uint8_t diag_scan2x2_x[4] = {
-    0, 0, 1, 1,
+    0, 0,
+    1, 1,
 };
 
 static const uint8_t diag_scan2x2_y[4] = {
-    0, 1, 0, 1,
+    0, 1,
+    0, 1,
 };
 
 static const uint8_t diag_scan2x2_inv[2][2] = {
@@ -1058,20 +1062,39 @@ int ff_hevc_res_scale_sign_flag(HEVCContext *s, int idx) {
     return GET_CABAC(elem_offset[RES_SCALE_SIGN_FLAG] + idx);
 }
 
-static av_always_inline void last_significant_coeff_xy_prefix_decode(HEVCContext *s, int c_idx,
+//FIXME we could probably avoid ctx offset and shift derivation given log2_size here
+static av_always_inline void last_significant_coeff_xy_prefix_decode(HEVCContext *s,
+                                                   int log2_size, int *last_scx_prefix, int *last_scy_prefix)
+{
+    int i = 0;
+    int max = (log2_size << 1) - 1;
+    //int ctx_offset, ctx_shift;
+
+    const int ctx_offset = 3 * (log2_size - 2)  + ((log2_size - 1) >> 2);
+    const int ctx_shift = (log2_size + 1) >> 2;
+
+    while (i < max &&
+           GET_CABAC(elem_offset[LAST_SIGNIFICANT_COEFF_X_PREFIX] + (i >> ctx_shift) + ctx_offset))
+        i++;
+    *last_scx_prefix = i;
+
+    i = 0;
+    while (i < max &&
+           GET_CABAC(elem_offset[LAST_SIGNIFICANT_COEFF_Y_PREFIX] + (i >> ctx_shift) + ctx_offset))
+        i++;
+    *last_scy_prefix = i;
+}
+
+static av_always_inline void last_significant_coeff_xy_prefix_decode_c(HEVCContext *s,
                                                    int log2_size, int *last_scx_prefix, int *last_scy_prefix)
 {
     int i = 0;
     int max = (log2_size << 1) - 1;
     int ctx_offset, ctx_shift;
 
-    if (!c_idx) {
-        ctx_offset = 3 * (log2_size - 2)  + ((log2_size - 1) >> 2);
-        ctx_shift = (log2_size + 1) >> 2;
-    } else {
-        ctx_offset = 15;
-        ctx_shift = log2_size - 2;
-    }
+    ctx_offset = 15;
+    ctx_shift = log2_size - 2;
+
     while (i < max &&
            GET_CABAC(elem_offset[LAST_SIGNIFICANT_COEFF_X_PREFIX] + (i >> ctx_shift) + ctx_offset))
         i++;
@@ -1403,7 +1426,7 @@ static void av_always_inline derive_quant_parameters(HEVCContext *s,HEVCLocalCon
 
             matrix_id = 3 * matrix_id;
 
-            tr_ctx->scale_matrix = sl->sl[tr_ctx->log2_trafo_size - 2][matrix_id];
+            tr_ctx->scale_matrix = sl->sl[tr_ctx->log2_tr_size_minus2][matrix_id];
             if (tr_ctx->log2_trafo_size >= 4)
                 quant_ctx->dc_scale = sl->sl_dc[tr_ctx->log2_trafo_size - 4][matrix_id];
         }
@@ -1462,7 +1485,7 @@ static void av_always_inline derive_quant_parameters_c(HEVCContext *s,HEVCLocalC
 
             matrix_id = 3 * matrix_id + c_idx;
 
-            tr_ctx->scale_matrix = sl->sl[tr_ctx->log2_trafo_size - 2][matrix_id];
+            tr_ctx->scale_matrix = sl->sl[tr_ctx->log2_tr_size_minus2][matrix_id];
             if (tr_ctx->log2_trafo_size >= 4)
                 quant_ctx->dc_scale = sl->sl_dc[tr_ctx->log2_trafo_size - 4][matrix_id];
         }
@@ -1554,11 +1577,9 @@ static void av_always_inline (*derive_scan[3][4])(HEVCTransformScanContext *scan
 {derive_scanning_direction_vertical, derive_scanning_direction_vertical, derive_scanning_direction_vertical, derive_scanning_direction_vertical},
         };
 
-static void av_always_inline decode_and_derive_scanning_params(HEVCContext *s, HEVCLocalContext *lc, HEVCTransformScanContext *scan_ctx,int scan_idx, int c_idx){
+static void av_always_inline decode_and_derive_scanning_params(HEVCContext *s, HEVCLocalContext *lc, HEVCTransformScanContext *scan_ctx,int scan_idx){
 
     HEVCTransformContext *tr_ctx = &lc->transform_ctx;
-    last_significant_coeff_xy_prefix_decode(s, c_idx, tr_ctx->log2_trafo_size,
-                                            &scan_ctx->last_significant_coeff_x, &scan_ctx->last_significant_coeff_y);
 
     if (scan_ctx->last_significant_coeff_x > 3) {
         int suffix = last_significant_coeff_suffix_decode(s, scan_ctx->last_significant_coeff_x);
@@ -1581,10 +1602,6 @@ static void av_always_inline decode_and_derive_scanning_params(HEVCContext *s, H
     scan_ctx->x_cg_last_sig = scan_ctx->last_significant_coeff_x >> 2;
     scan_ctx->y_cg_last_sig = scan_ctx->last_significant_coeff_y >> 2;
 
-    //derive scanning parameters
-    derive_scan[scan_idx][tr_ctx->log2_trafo_size-2](scan_ctx);
-
-    scan_ctx->num_coeff++;
 }
 
 void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int log2_cb_size){
@@ -1665,15 +1682,15 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
                     tr_idx_v = emt_inter_subset_select[(tu_emt_Idx) >> 1];
                 }
             }
-            s->hevcdsp.idct2_emt_v[tr_idx_v][tr_ctx->log2_trafo_size - 2](coeffs, tmp, 0, clip_min, clip_max);
-            s->hevcdsp.idct2_emt_h[tr_idx_h][tr_ctx->log2_trafo_size - 2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
+            s->hevcdsp.idct2_emt_v[tr_idx_v][tr_ctx->log2_tr_size_minus2](coeffs, tmp, 0, clip_min, clip_max);
+            s->hevcdsp.idct2_emt_h[tr_idx_h][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
 #endif
         } else if (lc->cu.pred_mode == MODE_INTRA && tr_ctx->log2_trafo_size == 2) {
             s->hevcdsp.idct_4x4_luma(coeffs);
         } else {
             int max_xy = FFMAX(scan_ctx->last_significant_coeff_x, scan_ctx->last_significant_coeff_y);
             if (max_xy == 0)
-                s->hevcdsp.idct_dc[tr_ctx->log2_trafo_size - 2](coeffs);
+                s->hevcdsp.idct_dc[tr_ctx->log2_tr_size_minus2](coeffs);
             else {
                 int col_limit = scan_ctx->last_significant_coeff_x + scan_ctx->last_significant_coeff_y + 4;
                 if (max_xy < 4)
@@ -1682,7 +1699,7 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
                     col_limit = FFMIN(8, col_limit);
                 else if (max_xy < 12)
                     col_limit = FFMIN(24, col_limit);
-                s->hevcdsp.idct[tr_ctx->log2_trafo_size - 2](coeffs, col_limit);
+                s->hevcdsp.idct[tr_ctx->log2_tr_size_minus2](coeffs, col_limit);
             }
         }
     }
@@ -1763,13 +1780,13 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
                     tr_idx_v = emt_inter_subset_select[(tu_emt_Idx) >> 1];
                 }
             }
-            s->hevcdsp.idct2_emt_v[tr_idx_v][tr_ctx->log2_trafo_size - 2](coeffs, tmp, 0, clip_min, clip_max);
-            s->hevcdsp.idct2_emt_h[tr_idx_h][tr_ctx->log2_trafo_size - 2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
+            s->hevcdsp.idct2_emt_v[tr_idx_v][tr_ctx->log2_tr_size_minus2](coeffs, tmp, 0, clip_min, clip_max);
+            s->hevcdsp.idct2_emt_h[tr_idx_h][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
 #endif
         } else {
             int max_xy = FFMAX(scan_ctx->last_significant_coeff_x, scan_ctx->last_significant_coeff_y);
             if (max_xy == 0)
-                s->hevcdsp.idct_dc[tr_ctx->log2_trafo_size - 2](coeffs);
+                s->hevcdsp.idct_dc[tr_ctx->log2_tr_size_minus2](coeffs);
             else {
                 int col_limit = scan_ctx->last_significant_coeff_x + scan_ctx->last_significant_coeff_y + 4;
                 if (max_xy < 4)
@@ -1778,7 +1795,7 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
                     col_limit = FFMIN(8, col_limit);
                 else if (max_xy < 12)
                     col_limit = FFMIN(24, col_limit);
-                s->hevcdsp.idct[tr_ctx->log2_trafo_size - 2](coeffs, col_limit);
+                s->hevcdsp.idct[tr_ctx->log2_tr_size_minus2](coeffs, col_limit);
             }
         }
     }
@@ -1935,10 +1952,10 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                                 int c_idx
 )
 {
-    HEVCLocalContext *lc = s->HEVClc;
-    HEVCTransformContext *tr_ctx    = &lc->transform_ctx;
-    HEVCQuantContext     *quant_ctx = &tr_ctx->quant_ctx;
-    HEVCTransformScanContext *scan_ctx = &tr_ctx->scan_ctx;
+    HEVCLocalContext * av_restrict lc = s->HEVClc;
+    HEVCTransformContext * restrict tr_ctx    = &lc->transform_ctx;
+    HEVCQuantContext     * restrict quant_ctx = &tr_ctx->quant_ctx;
+    HEVCTransformScanContext *restrict scan_ctx = &tr_ctx->scan_ctx;
     int tr_skip_or_bypass;
     //could be set into tr_ctx
     int pps_sign_data_hiding_flag;
@@ -1952,17 +1969,20 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
 
     int num_cg;
 
-    int16_t *coeffs = lc->tu.coeffs[1];
+    int16_t * av_restrict coeffs = lc->tu.coeffs[1];
     uint8_t significant_coeff_group_flag[8][8] = {{0}}; // significant CG map;
 
 
     //Reset transform context
-    memset(tr_ctx, 0, sizeof(HEVCTransformContext));
+    //memset(tr_ctx, 0, sizeof(HEVCTransformContext));
+    tr_ctx->transform_skip_flag    = 0,
+    tr_ctx->num_significant_coeffs = 0;
 
     //FIXME Those values could be set in a higher context.
     tr_ctx->log2_transform_range = s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6) ) : 15;//15;
-    tr_ctx->log2_trafo_size = log2_trafo_size;
-    tr_ctx->transform_size = 1 << log2_trafo_size;
+    tr_ctx->log2_trafo_size     = log2_trafo_size;
+    tr_ctx->log2_tr_size_minus2 = log2_trafo_size - 2;
+    tr_ctx->transform_size      = 1 << log2_trafo_size;
 
     if (!lc->cu.cu_transquant_bypass_flag && s->ps.pps->transform_skip_enabled_flag &&
             tr_ctx->log2_trafo_size <= s->ps.pps->log2_max_transform_skip_block_size) {
@@ -1976,7 +1996,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     memset(coeffs, 0, tr_ctx->transform_size * tr_ctx->transform_size * sizeof(int16_t));
 
     // Derive QP for dequant
-    //FIXME this could be called outside of the scope of residual coding
+    //FIXME this could probably be called outside of the scope of residual coding
     derive_quant_parameters_c(s,lc,c_idx);
 
     if (lc->cu.pred_mode == MODE_INTER && s->ps.sps->explicit_rdpcm_enabled_flag &&
@@ -1987,25 +2007,29 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
         }
     }
 
+    last_significant_coeff_xy_prefix_decode_c(s, tr_ctx->log2_trafo_size,
+                                            &scan_ctx->last_significant_coeff_x, &scan_ctx->last_significant_coeff_y);
     // decode and derive last significant coeff
-    decode_and_derive_scanning_params(s, lc, scan_ctx, scan_idx,c_idx);
+    decode_and_derive_scanning_params(s, lc, scan_ctx, scan_idx);
+
+    //derive scanning parameters
+    derive_scan[scan_idx][tr_ctx->log2_trafo_size-2](scan_ctx);
+
+    scan_ctx->num_coeff++;
 
     num_cg = (scan_ctx->num_coeff - 1) >> 4;
 
     pps_sign_data_hiding_flag = s->ps.pps->sign_data_hiding_flag;
     sps_persistent_rice_adaptation_enabled_flag = s->ps.sps->persistent_rice_adaptation_enabled_flag;
+
     //decode CGs
     for (i = num_cg; i >= 0; i--) {
 
         int n, m;
         int x_cg, y_cg;
         int x_c, y_c;
-        int last_scan_pos;
 
-        int offset = i << 4;
         int rice_init = 0;
-
-        const int log2_tr_size_minus2 = log2_trafo_size - 2;
 
         CGContext current_cg;
         current_cg.is_dc_cg = (i == 0);
@@ -2014,7 +2038,6 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
         current_cg.implicit_non_zero_coeff = 0;
         current_cg.num_significant_coeff_in_cg = 0;
         current_cg.prev_sig = 0;
-
 
         //get current cg position
         x_cg = scan_ctx->scan_x_cg[i];
@@ -2026,9 +2049,9 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
         // if not last cg and not first cg
         if (!current_cg.is_last_or_dc_cg) {
             int ctx_cg = 0;
-            if (x_cg < (1 << log2_tr_size_minus2) - 1)
+            if (x_cg < (1 << tr_ctx->log2_tr_size_minus2) - 1)
                 ctx_cg += significant_coeff_group_flag[x_cg + 1][y_cg];
-            if (y_cg < (1 << log2_tr_size_minus2) - 1)
+            if (y_cg < (1 << tr_ctx->log2_tr_size_minus2) - 1)
                 ctx_cg += significant_coeff_group_flag[x_cg][y_cg + 1];
 
             significant_coeff_group_flag[x_cg][y_cg] =
@@ -2038,10 +2061,9 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
             significant_coeff_group_flag[x_cg][y_cg] = 1;
         }
 
-        last_scan_pos = scan_ctx->num_coeff - offset - 1;
-
         // on first iteration we read based on last coeff
         if (current_cg.is_last_cg) {
+            int last_scan_pos = scan_ctx->num_coeff - (i << 4) - 1;
             n_end = last_scan_pos - 1;
             current_cg.significant_coeff_flag_idx[0] = last_scan_pos;
             current_cg.num_significant_coeff_in_cg = 1;
@@ -2060,7 +2082,6 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
             decode_significance_map_c(s, tr_ctx, &current_cg.significant_coeff_flag_idx, &current_cg,n_end,tr_skip_or_bypass);
 
         n_end = current_cg.num_significant_coeff_in_cg;
-
 
         //decode coeffs values
         if (n_end) {
@@ -2100,9 +2121,8 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
             else
                 sign_hidden = (current_cg.last_nz_pos_in_cg - current_cg.first_nz_pos_in_cg >= 4);
 
-
             //decode greater1_flag?
-            for (m = 0; m < (n_end > 8 ? 8 : n_end); m++) {
+            for (m = 0; m < (n_end > 8 ? 8 : n_end); m++) {//only first 8 coeffs
                 int inc = (ctx_set << 2) + greater1_ctx;
                 coeff_abs_level_greater1_flag[m] = coeff_abs_level_greater1_flag_decode(s, 1, inc);
                 if (coeff_abs_level_greater1_flag[m]) {
@@ -2247,10 +2267,10 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                                 int c_idx
                                 )
 {
-    HEVCLocalContext *lc = s->HEVClc;
-    HEVCTransformContext *tr_ctx    = &lc->transform_ctx;
-    HEVCTransformScanContext *scan_ctx = &tr_ctx->scan_ctx;
-    HEVCQuantContext  *quant_ctx = &tr_ctx->quant_ctx;
+    HEVCLocalContext * av_restrict lc = s->HEVClc;
+    HEVCTransformContext * av_restrict tr_ctx    = &lc->transform_ctx;
+    HEVCTransformScanContext * av_restrict scan_ctx = &tr_ctx->scan_ctx;
+    HEVCQuantContext  * av_restrict quant_ctx = &tr_ctx->quant_ctx;
 
     int n_end;
     int greater1_ctx = 1;
@@ -2260,16 +2280,21 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     int tr_skip_or_bypass;
     int num_cg;
 
-    int16_t *coeffs = lc->tu.coeffs[0];
+    int16_t * av_restrict coeffs = lc->tu.coeffs[0];
 
     uint8_t significant_coeff_group_flag[8][8] = {{0}}; // significant CG map;
 
     //Reset transform context
-    memset(tr_ctx, 0, sizeof(HEVCTransformContext));
+    //memset(tr_ctx, 0, sizeof(HEVCTransformContext));
+    tr_ctx->transform_skip_flag =0,
+//    tr_ctx->explicit_rdpcm_dir_flag=0;
+//    tr_ctx->explicit_rdpcm_flag=0;
+    tr_ctx->num_significant_coeffs=0;
 
     //FIXME Those values could be set in a higher context.
     tr_ctx->log2_transform_range = s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6) ) : 15;//15;
     tr_ctx->log2_trafo_size = log2_trafo_size;
+    tr_ctx->log2_tr_size_minus2 = log2_trafo_size - 2;
     tr_ctx->transform_size = 1 << log2_trafo_size;
 
     tr_skip_or_bypass = s->ps.sps->transform_skip_context_enabled_flag &&
@@ -2296,8 +2321,15 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
         }
     }
 
+    last_significant_coeff_xy_prefix_decode(s, tr_ctx->log2_trafo_size,
+                                            &scan_ctx->last_significant_coeff_x, &scan_ctx->last_significant_coeff_y);
     // decode and derive last significant coeff (tu scanning ctx)
-    decode_and_derive_scanning_params(s, lc, scan_ctx, scan_idx,0);
+    decode_and_derive_scanning_params(s, lc, scan_ctx, scan_idx);
+
+    //derive scanning parameters
+    derive_scan[scan_idx][tr_ctx->log2_tr_size_minus2](scan_ctx);
+
+    scan_ctx->num_coeff++;
 
     num_cg = (scan_ctx->num_coeff - 1) >> 4;
 
@@ -2308,9 +2340,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
         int x_c, y_c;
         int pos;
 
-        int offset = i << 4;
         int rice_init = 0;
-        int last_scan_pos;
 
         CGContext current_cg;
 
@@ -2330,25 +2360,26 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
         current_cg.y_cg = y_cg;
 
         // if not last cg and not first cg
-        if ((i < num_cg) && (i > 0)) {
+        if (!current_cg.is_last_or_dc_cg) {
             int ctx_cg = 0;
-            if (x_cg < (1 << (tr_ctx->log2_trafo_size - 2)) - 1)
+            if (x_cg < (1 << (tr_ctx->log2_tr_size_minus2)) - 1)
                 ctx_cg += significant_coeff_group_flag[x_cg + 1][y_cg];
-            if (y_cg < (1 << (tr_ctx->log2_trafo_size - 2)) - 1)
+            if (y_cg < (1 << (tr_ctx->log2_tr_size_minus2)) - 1)
                 ctx_cg += significant_coeff_group_flag[x_cg][y_cg + 1];
 
             significant_coeff_group_flag[x_cg][y_cg] =
                     significant_coeff_group_flag_decode(s, 0, ctx_cg);
             current_cg.implicit_non_zero_coeff = 1; // default init to 1
         } else {//test for implicit non zero cg
-            significant_coeff_group_flag[x_cg][y_cg] = current_cg.is_last_or_dc_cg;
+            significant_coeff_group_flag[x_cg][y_cg] = 1;
         }
 
-        last_scan_pos = scan_ctx->num_coeff - offset - 1;
+
 
         // on first iteration we read based on last coeff
         //FIXME we could avoid this in loop check
-        if (i == num_cg) {
+        if (current_cg.is_last_cg) {
+            int last_scan_pos = scan_ctx->num_coeff - (i << 4) - 1;
             n_end = last_scan_pos - 1;
             current_cg.significant_coeff_flag_idx[0] = last_scan_pos;
             current_cg.num_significant_coeff_in_cg = 1;

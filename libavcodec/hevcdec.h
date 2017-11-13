@@ -434,6 +434,7 @@ typedef struct HEVCTransformContext{
     HEVCTransformScanContext scan_ctx;
     const uint8_t *scale_matrix;//local but some global tests
     int log2_trafo_size;
+    int log2_tr_size_minus2;
     int transform_size;
     int transform_skip_flag;
     int log2_transform_range;
