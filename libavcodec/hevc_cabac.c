@@ -1946,6 +1946,32 @@ static void av_always_inline decode_significance_map(HEVCContext *s, HEVCTransfo
     }
 }
 
+static int64_t av_always_inline scale_and_clip_coeff(HEVCContext *s,HEVCTransformContext *tr_ctx, HEVCQuantContext *quant_ctx, int64_t trans_coeff_level, int x_c, int y_c ){
+    if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag && tr_ctx->log2_trafo_size > 2)) {
+        if(y_c || x_c || tr_ctx->log2_trafo_size < 4) {
+            int pos;
+            switch(tr_ctx->log2_trafo_size) {
+            case 3: pos = (y_c << 3) + x_c; break;
+            case 4: pos = ((y_c >> 1) << 3) + (x_c >> 1); break;
+            case 5: pos = ((y_c >> 2) << 3) + (x_c >> 2); break;
+            default: pos = (y_c << 2) + x_c; break;
+            }
+            quant_ctx->scale_m = tr_ctx->scale_matrix[pos];
+        } else {
+            quant_ctx->scale_m = quant_ctx->dc_scale;
+        }
+    }
+    trans_coeff_level = (trans_coeff_level * (int64_t)quant_ctx->scale * (int64_t)quant_ctx->scale_m + quant_ctx->add) >> quant_ctx->shift;
+    if(trans_coeff_level < 0) {
+        if((~trans_coeff_level) & 0xFffffffffff8000)
+            trans_coeff_level = -32768;
+    } else {
+        if(trans_coeff_level & 0xffffffffffff8000)
+            trans_coeff_level = 32767;
+    }
+    return trans_coeff_level;
+}
+
 void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                                 int log2_trafo_size, enum ScanType scan_idx,
                                 int c_idx
@@ -2215,28 +2241,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                 //scale (inverse quant) clip and store coeff
                 if(!lc->cu.cu_transquant_bypass_flag) {
                     //FIXme add scale function (the scale can be done on the whole coeffs table)
-                    if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag && tr_ctx->log2_trafo_size > 2)) {
-                        if(y_c || x_c || tr_ctx->log2_trafo_size < 4) {
-                            int pos;
-                            switch(tr_ctx->log2_trafo_size) {
-                            case 3: pos = (y_c << 3) + x_c; break;//8x8
-                            case 4: pos = ((y_c >> 1) << 3) + (x_c >> 1); break;//16x16
-                            case 5: pos = ((y_c >> 2) << 3) + (x_c >> 2); break;//32x32
-                            default: pos = (y_c << 2) + x_c; break;//4x4
-                            }
-                            quant_ctx->scale_m = tr_ctx->scale_matrix[pos];
-                        } else {
-                            quant_ctx->scale_m = quant_ctx->dc_scale;
-                        }
-                    }
-                    trans_coeff_level = (trans_coeff_level * (int64_t)quant_ctx->scale * (int64_t)quant_ctx->scale_m + quant_ctx->add) >> quant_ctx->shift;
-                    if(trans_coeff_level < 0) {
-                        if((~trans_coeff_level) & 0xFffffffffff8000)
-                            trans_coeff_level = -32768;
-                    } else {
-                        if(trans_coeff_level & 0xffffffffffff8000)
-                            trans_coeff_level = 32767;
-                    }
+                    trans_coeff_level = scale_and_clip_coeff(s,tr_ctx,quant_ctx,trans_coeff_level, x_c, y_c);
                 }
                 //fprintf(stderr,"store coeff xc %d, yc =%d, x_cg: %d, y_cg: %d val: %d\n", x_c, y_c,x_cg,y_cg,trans_coeff_level  );
                 coeffs[y_c * tr_ctx->transform_size + x_c] = trans_coeff_level;
@@ -2342,7 +2347,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
         int n, m;
         int x_cg, y_cg;
         int x_c, y_c;
-        int pos;
+
 
         int rice_init = 0;
 
@@ -2534,27 +2539,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
                 //scale (inverse quant) clip and store coeff
                 if(!lc->cu.cu_transquant_bypass_flag) {
-                    if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag && log2_trafo_size > 2)) {
-                        if(y_c || x_c || tr_ctx->log2_trafo_size < 4) {
-                            switch(tr_ctx->log2_trafo_size) {
-                            case 3: pos = (y_c << 3) + x_c; break;
-                            case 4: pos = ((y_c >> 1) << 3) + (x_c >> 1); break;
-                            case 5: pos = ((y_c >> 2) << 3) + (x_c >> 2); break;
-                            default: pos = (y_c << 2) + x_c; break;
-                            }
-                            quant_ctx->scale_m = tr_ctx->scale_matrix[pos];
-                        } else {
-                            quant_ctx->scale_m = quant_ctx->dc_scale;
-                        }
-                    }
-                    trans_coeff_level = (trans_coeff_level * (int64_t)quant_ctx->scale * (int64_t)quant_ctx->scale_m + quant_ctx->add) >> quant_ctx->shift;
-                    if(trans_coeff_level < 0) {
-                        if((~trans_coeff_level) & 0xFffffffffff8000)
-                            trans_coeff_level = -32768;
-                    } else {
-                        if(trans_coeff_level & 0xffffffffffff8000)
-                            trans_coeff_level = 32767;
-                    }
+                    trans_coeff_level = scale_and_clip_coeff(s,tr_ctx,quant_ctx,trans_coeff_level,x_c,y_c);
                 }
                 //fprintf(stderr,"store coeff xc %d, yc =%d, x_cg: %d, y_cg: %d val: %d\n", x_c, y_c,x_cg,y_cg,trans_coeff_level  );
                 coeffs[y_c * tr_ctx->transform_size + x_c] = trans_coeff_level;
