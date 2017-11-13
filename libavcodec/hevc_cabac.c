@@ -1403,96 +1403,87 @@ static const uint8_t div6[51 + 4 * 6 + 1] = {
 
 static const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
 
-static void av_always_inline derive_quant_parameters(HEVCContext *s,HEVCLocalContext *lc){
-    HEVCTransformContext *tr_ctx    = &lc->transform_ctx;
-    HEVCQuantContext     *quant_ctx = &tr_ctx->quant_ctx;
+static void av_always_inline derive_quant_parameters(HEVCContext *s,HEVCLocalContext *lc,  HEVCTransformContext *tr_ctx, HEVCQuantContext *quant_ctx){
+//    HEVCTransformContext *tr_ctx    = &lc->transform_ctx;
+//    HEVCQuantContext     *quant_ctx = &tr_ctx->quant_ctx;
 
-    if (!lc->cu.cu_transquant_bypass_flag) {
-        int qp_y = lc->qp_y;
 
-        quant_ctx->qp = qp_y + s->ps.sps->qp_bd_offset;
+    int qp_y = lc->qp_y;
 
-        quant_ctx->shift    = s->ps.sps->bit_depth[CHANNEL_TYPE_LUMA] + tr_ctx->log2_trafo_size + 10 - tr_ctx->log2_transform_range;
-        quant_ctx->add      = 1 << (quant_ctx->shift - 1);
-        quant_ctx->scale    = level_scale[rem6[quant_ctx->qp]] << (div6[quant_ctx->qp]);
-        quant_ctx->scale_m  = 16; // default when no custom scaling lists.
-        quant_ctx->dc_scale = 16;
+    quant_ctx->qp = qp_y + s->ps.sps->qp_bd_offset;
 
-        if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag && tr_ctx->log2_trafo_size > 2)) {
-            const ScalingList *sl = s->ps.pps->pps_scaling_list_data_present_flag ?
-                        &s->ps.pps->scaling_list : &s->ps.sps->scaling_list;
-            int matrix_id = lc->cu.pred_mode != MODE_INTRA;
+    quant_ctx->shift    = s->ps.sps->bit_depth[CHANNEL_TYPE_LUMA] + tr_ctx->log2_trafo_size + 10 - tr_ctx->log2_transform_range;
+    quant_ctx->add      = 1 << (quant_ctx->shift - 1);
+    quant_ctx->scale    = level_scale[rem6[quant_ctx->qp]] << (div6[quant_ctx->qp]);
+    quant_ctx->scale_m  = 16; // default when no custom scaling lists.
+    quant_ctx->dc_scale = 16;
 
-            matrix_id = 3 * matrix_id;
+    if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag && tr_ctx->log2_trafo_size > 2)) {
+        const ScalingList *sl = s->ps.pps->pps_scaling_list_data_present_flag ?
+                    &s->ps.pps->scaling_list : &s->ps.sps->scaling_list;
+        int matrix_id = lc->cu.pred_mode != MODE_INTRA;
 
-            tr_ctx->scale_matrix = sl->sl[tr_ctx->log2_tr_size_minus2][matrix_id];
-            if (tr_ctx->log2_trafo_size >= 4)
-                quant_ctx->dc_scale = sl->sl_dc[tr_ctx->log2_trafo_size - 4][matrix_id];
-        }
-    } else { //unused in this case since not used when bypassed
-        quant_ctx->shift        = 0;
-        quant_ctx->add          = 0;
-        quant_ctx->scale        = 0;
-        quant_ctx->dc_scale     = 0;
+        matrix_id = 3 * matrix_id;
+
+        tr_ctx->scale_matrix = sl->sl[tr_ctx->log2_tr_size_minus2][matrix_id];
+        if (tr_ctx->log2_trafo_size >= 4)
+            quant_ctx->dc_scale = sl->sl_dc[tr_ctx->log2_trafo_size - 4][matrix_id];
     }
+
 }
 
-static void av_always_inline derive_quant_parameters_c(HEVCContext *s,HEVCLocalContext *lc,int c_idx){
-    HEVCTransformContext *tr_ctx    = &lc->transform_ctx;
-    HEVCQuantContext     *quant_ctx = &tr_ctx->quant_ctx;
+static void av_always_inline derive_quant_parameters_c(HEVCContext *s, HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, HEVCQuantContext *quant_ctx, int c_idx){
+//    HEVCTransformContext *tr_ctx    = &lc->transform_ctx;
+//    HEVCQuantContext     *quant_ctx = &tr_ctx->quant_ctx;
 
-    if (!lc->cu.cu_transquant_bypass_flag) {
-        int qp_y = lc->qp_y;
 
-        int qp_i, offset;
+    int qp_y = lc->qp_y;
 
-        if (c_idx == 1)
-            offset = s->ps.pps->pps_cb_qp_offset + s->sh.slice_cb_qp_offset +
-                    lc->tu.cu_qp_offset_cb;
+    int qp_i, offset;
+
+    if (c_idx == 1)//FIXME : we could avoid to compute slice_offset + PPS offset for each TU
+        offset = s->ps.pps->pps_cb_qp_offset + s->sh.slice_cb_qp_offset +
+                lc->tu.cu_qp_offset_cb;
+    else
+        offset = s->ps.pps->pps_cr_qp_offset + s->sh.slice_cr_qp_offset +
+                lc->tu.cu_qp_offset_cr;
+
+    qp_i = av_clip(qp_y + offset, - s->ps.sps->qp_bd_offset, 57);
+
+    if (s->ps.sps->chroma_format_idc == 1) {
+        if (qp_i < 30)
+            quant_ctx->qp = qp_i;
+        else if (qp_i > 43)
+            quant_ctx->qp = qp_i - 6;
         else
-            offset = s->ps.pps->pps_cr_qp_offset + s->sh.slice_cr_qp_offset +
-                    lc->tu.cu_qp_offset_cr;
+            quant_ctx->qp = qp_c[qp_i - 30];
+    } else {
+        if (qp_i > 51)
+            quant_ctx->qp = 51;
+        else
+            quant_ctx->qp = qp_i;
+    }
 
-        qp_i = av_clip(qp_y + offset, - s->ps.sps->qp_bd_offset, 57);
+    quant_ctx->qp += s->ps.sps->qp_bd_offset;
 
-        if (s->ps.sps->chroma_format_idc == 1) {
-            if (qp_i < 30)
-                quant_ctx->qp = qp_i;
-            else if (qp_i > 43)
-                quant_ctx->qp = qp_i - 6;
-            else
-                quant_ctx->qp = qp_c[qp_i - 30];
-        } else {
-            if (qp_i > 51)
-                quant_ctx->qp = 51;
-            else
-                quant_ctx->qp = qp_i;
-        }
+    quant_ctx->shift    = s->ps.sps->bit_depth[CHANNEL_TYPE_CHROMA] + tr_ctx->log2_trafo_size + 10 - tr_ctx->log2_transform_range;
+    quant_ctx->add      = 1 << (quant_ctx->shift - 1);
+    quant_ctx->scale    = level_scale[rem6[quant_ctx->qp]] << (div6[quant_ctx->qp]);
+    quant_ctx->scale_m  = 16; // default when no custom scaling lists.
+    quant_ctx->dc_scale = 16;
 
-        quant_ctx->qp += s->ps.sps->qp_bd_offset;
+    if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag && tr_ctx->log2_trafo_size > 2)) {
+        //FIXME we could avoid selecting scaling list here by deriving it at a higher level
+        const ScalingList *sl = s->ps.pps->pps_scaling_list_data_present_flag ?
+                    &s->ps.pps->scaling_list : &s->ps.sps->scaling_list;
 
-        quant_ctx->shift    = s->ps.sps->bit_depth[CHANNEL_TYPE_CHROMA] + tr_ctx->log2_trafo_size + 10 - tr_ctx->log2_transform_range;
-        quant_ctx->add      = 1 << (quant_ctx->shift - 1);
-        quant_ctx->scale    = level_scale[rem6[quant_ctx->qp]] << (div6[quant_ctx->qp]);
-        quant_ctx->scale_m  = 16; // default when no custom scaling lists.
-        quant_ctx->dc_scale = 16;
+        int matrix_id = lc->cu.pred_mode != MODE_INTRA;
 
-        if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag && tr_ctx->log2_trafo_size > 2)) {
-            const ScalingList *sl = s->ps.pps->pps_scaling_list_data_present_flag ?
-                        &s->ps.pps->scaling_list : &s->ps.sps->scaling_list;
-            int matrix_id = lc->cu.pred_mode != MODE_INTRA;
+        matrix_id = 3 * matrix_id + c_idx;
 
-            matrix_id = 3 * matrix_id + c_idx;
-
-            tr_ctx->scale_matrix = sl->sl[tr_ctx->log2_tr_size_minus2][matrix_id];
-            if (tr_ctx->log2_trafo_size >= 4)
-                quant_ctx->dc_scale = sl->sl_dc[tr_ctx->log2_trafo_size - 4][matrix_id];
-        }
-    } else {  //unused in this case since not used when bypassed
-        quant_ctx->shift        = 0;
-        quant_ctx->add          = 0;
-        quant_ctx->scale        = 0;
-        quant_ctx->dc_scale     = 0;
+        tr_ctx->scale_matrix = sl->sl[tr_ctx->log2_tr_size_minus2][matrix_id];
+        if (tr_ctx->log2_trafo_size >= 4)
+            quant_ctx->dc_scale = sl->sl_dc[tr_ctx->log2_trafo_size - 4][matrix_id];
     }
 }
 
@@ -1991,7 +1982,6 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     int16_t *cg_coeffs[64][16]={{0}};
 
     int i;
-
     int num_cg;
 
     int16_t * av_restrict coeffs = lc->tu.coeffs[1];
@@ -2023,7 +2013,8 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
 
     // Derive QP for dequant
     //FIXME this could probably be called outside of the scope of residual coding
-    derive_quant_parameters_c(s,lc,c_idx);
+    if (!lc->cu.cu_transquant_bypass_flag)
+        derive_quant_parameters_c(s,lc, tr_ctx, quant_ctx, c_idx);
 
     if (lc->cu.pred_mode == MODE_INTER && s->ps.sps->explicit_rdpcm_enabled_flag &&
             (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
@@ -2341,7 +2332,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
     // Derive QP for dequant
     //FIXME this could probably be called outside of the scope of residual coding
-    derive_quant_parameters(s,lc);
+    if (!lc->cu.cu_transquant_bypass_flag)
+        derive_quant_parameters(s,lc,tr_ctx,quant_ctx);
 
     if (lc->cu.pred_mode == MODE_INTER && s->ps.sps->explicit_rdpcm_enabled_flag &&
             (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
