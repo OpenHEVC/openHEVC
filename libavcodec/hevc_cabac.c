@@ -1118,14 +1118,25 @@ static av_always_inline int last_significant_coeff_suffix_decode(HEVCContext *s,
     return value;
 }
 
-static av_always_inline int significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg)
+static av_always_inline int significant_coeff_group_flag_decode(HEVCContext *s, int ctx_cg)
 {
     int inc;
 
-    inc = FFMIN(ctx_cg, 1) + (c_idx>0 ? 2 : 0);
+    inc = FFMIN(ctx_cg, 1);
 
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_GROUP_FLAG] + inc);
 }
+
+static av_always_inline int significant_coeff_group_flag_decode_c(HEVCContext *s, int ctx_cg)
+{
+    int inc;
+
+    inc = FFMIN(ctx_cg, 1) + 2;
+
+    return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_GROUP_FLAG] + inc);
+}
+
+
 static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int x_c, int y_c,
                                            int offset, const uint8_t *ctx_idx_map)
 {
@@ -1133,18 +1144,19 @@ static av_always_inline int significant_coeff_flag_decode(HEVCContext *s, int x_
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
 }
 
-static av_always_inline int significant_coeff_flag_decode_0(HEVCContext *s, int c_idx, int offset)
+static av_always_inline int significant_coeff_flag_decode_0(HEVCContext *s, int offset)
 {
     return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + offset);
 }
 
-static av_always_inline int coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int inc)
+static av_always_inline int coeff_abs_level_greater1_flag_decode(HEVCContext *s, int inc)
 {
-
-    if (c_idx > 0)
-        inc += 16;
-
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc);
+}
+
+static av_always_inline int coeff_abs_level_greater1_flag_decode_c(HEVCContext *s, int inc)
+{
+    return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc + 16);
 }
 
 #if OHCONFIG_ENCRYPTION
@@ -1336,12 +1348,14 @@ static av_always_inline int coeff_abs_level_remaining_decode_enc(HEVCContext *s,
     return last_coeff_abs_level_remaining;
 }
 #endif
-static av_always_inline int coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc)
+static av_always_inline int coeff_abs_level_greater2_flag_decode(HEVCContext *s, int inc)
 {
-    if (c_idx > 0)
-        inc += 4;
-
     return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER2_FLAG] + inc);
+}
+
+static av_always_inline int coeff_abs_level_greater2_flag_decode_c(HEVCContext *s, int inc)
+{
+    return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER2_FLAG] + inc + 4);
 }
 
 static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int rc_rice_param)
@@ -1869,7 +1883,7 @@ static void av_always_inline decode_significance_map_c(HEVCContext *s, HEVCTrans
             }
         }//decode significant coeff flag
 
-        if (significant_coeff_flag_decode_0(s, 1, scf_offset) == 1) {
+        if (significant_coeff_flag_decode_0(s, scf_offset) == 1) {
             cg->significant_coeff_flag_idx[cg->num_significant_coeff_in_cg] = 0;
             cg->num_significant_coeff_in_cg++;
         }
@@ -1926,7 +1940,7 @@ static void av_always_inline decode_significance_map(HEVCContext *s, HEVCTransfo
                 scf_offset += 2;
             }
         }
-        if (significant_coeff_flag_decode_0(s, 1, scf_offset) == 1) {
+        if (significant_coeff_flag_decode_0(s, scf_offset) == 1) {
             cg->significant_coeff_flag_idx[cg->num_significant_coeff_in_cg] = 0;
             cg->num_significant_coeff_in_cg++;
         }
@@ -2071,7 +2085,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                 ctx_cg += significant_coeff_group_flag[x_cg][y_cg + 1];
 
             significant_coeff_group_flag[x_cg][y_cg] =
-                    significant_coeff_group_flag_decode(s, 1, ctx_cg);
+                    significant_coeff_group_flag_decode_c(s, ctx_cg);
             current_cg.implicit_non_zero_coeff = 1; // default init to 1
         } else {//test for implicit non zero cg
             significant_coeff_group_flag[x_cg][y_cg] = 1;
@@ -2127,7 +2141,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
             //decode coeff_abs_level_greater1_flags
             for (m = 0; m < (n_end > 8 ? 8 : n_end); m++) {//only first 8 coeffs
                 int inc = (ctx_set << 2) + greater1_ctx;
-                coeff_abs_level_greater1_flag[m] = coeff_abs_level_greater1_flag_decode(s, 1, inc);
+                coeff_abs_level_greater1_flag[m] = coeff_abs_level_greater1_flag_decode_c(s, inc);
                 if (coeff_abs_level_greater1_flag[m]) {
                     greater1_ctx = 0;
                     if (first_greater1_coeff_idx == -1)
@@ -2151,7 +2165,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
 
             //pass nb
             if (first_greater1_coeff_idx != -1) {
-                coeff_abs_level_greater1_flag[first_greater1_coeff_idx] += coeff_abs_level_greater2_flag_decode(s, c_idx, ctx_set);
+                coeff_abs_level_greater1_flag[first_greater1_coeff_idx] += coeff_abs_level_greater2_flag_decode_c(s, ctx_set);
             }
 
             if (!pps_sign_data_hiding_flag || !sign_hidden ) {
@@ -2288,6 +2302,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                                 int c_idx
                                 )
 {
+    HEVCSPS *av_restrict sps = s->ps.sps;
+    HEVCPPS *av_restrict pps = s->ps.pps;
     HEVCLocalContext * av_restrict lc           = s->HEVClc;
     HEVCTransformContext * restrict tr_ctx      = &lc->transform_ctx;
     HEVCQuantContext     * restrict quant_ctx   = &tr_ctx->quant_ctx;
@@ -2296,6 +2312,10 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     //could be set into tr_ctx
     int pps_sign_data_hiding_flag;
     int sps_persistent_rice_adaptation_enabled_flag;
+    int cu_tr_transquant_bypass_flag = lc->cu.cu_transquant_bypass_flag;
+    int sps_explicit_rdpcm_enabled_flag = sps->explicit_rdpcm_enabled_flag;
+    int sign_always_hidden;
+    int sign_hidden;
     int n_end;
     int greater1_ctx = 1;
 
@@ -2315,28 +2335,28 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     tr_ctx->explicit_rdpcm_flag     = 0;
 
     //FIXME Those values could be set in a higher context.
-    tr_ctx->log2_transform_range = s->ps.sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6) ) : 15;//15;
+    tr_ctx->log2_transform_range = sps->extended_precision_processing_flag ? FFMAX(15, (s->ps.sps->bit_depth[c_idx ? CHANNEL_TYPE_CHROMA:CHANNEL_TYPE_LUMA] + 6) ) : 15;//15;
     tr_ctx->log2_trafo_size      = log2_trafo_size;
     tr_ctx->log2_tr_size_minus2  = log2_trafo_size - 2;
     tr_ctx->transform_size       = 1 << log2_trafo_size;
 
-    if (!lc->cu.cu_transquant_bypass_flag && s->ps.pps->transform_skip_enabled_flag &&
-            tr_ctx->log2_trafo_size <= s->ps.pps->log2_max_transform_skip_block_size) {
+    if (!cu_tr_transquant_bypass_flag && pps->transform_skip_enabled_flag &&
+            tr_ctx->log2_trafo_size <= pps->log2_max_transform_skip_block_size) {
         tr_ctx->transform_skip_flag = hevc_transform_skip_flag_decode(s);
     }
 
-    tr_skip_or_bypass = s->ps.sps->transform_skip_context_enabled_flag &&
-                    (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag);
+    tr_skip_or_bypass = sps->transform_skip_context_enabled_flag &&
+                    (tr_ctx->transform_skip_flag || cu_tr_transquant_bypass_flag);
     //Reset coeffs buffer
     memset(coeffs, 0, tr_ctx->transform_size * tr_ctx->transform_size * sizeof(int16_t));
 
     // Derive QP for dequant
     //FIXME this could probably be called outside of the scope of residual coding
-    if (!lc->cu.cu_transquant_bypass_flag)
+    if (!cu_tr_transquant_bypass_flag)
         derive_quant_parameters(s,lc,tr_ctx,quant_ctx);
 
-    if (lc->cu.pred_mode == MODE_INTER && s->ps.sps->explicit_rdpcm_enabled_flag &&
-            (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
+    if (lc->cu.pred_mode == MODE_INTER && sps_explicit_rdpcm_enabled_flag &&
+            (tr_ctx->transform_skip_flag || cu_tr_transquant_bypass_flag)) {
         tr_ctx->explicit_rdpcm_flag = explicit_rdpcm_flag_decode(s);
         if (tr_ctx->explicit_rdpcm_flag) {
             tr_ctx->explicit_rdpcm_dir_flag = explicit_rdpcm_dir_flag_decode(s);
@@ -2355,9 +2375,16 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
     num_cg = (scan_ctx->num_coeff - 1) >> 4;
 
-    pps_sign_data_hiding_flag = s->ps.pps->sign_data_hiding_flag;
-    sps_persistent_rice_adaptation_enabled_flag = s->ps.sps->persistent_rice_adaptation_enabled_flag;
+    pps_sign_data_hiding_flag = pps->sign_data_hiding_flag;
+    sps_persistent_rice_adaptation_enabled_flag = sps->persistent_rice_adaptation_enabled_flag;
 
+    sign_always_hidden = (cu_tr_transquant_bypass_flag ||
+                          (lc->cu.pred_mode ==  MODE_INTRA  && sps->implicit_rdpcm_enabled_flag
+                           &&  tr_ctx->transform_skip_flag  &&
+                           (lc->tu.intra_pred_mode == 10 || lc->tu.intra_pred_mode  ==  26 ))
+                           || tr_ctx->explicit_rdpcm_flag);
+    if(sign_always_hidden)
+        sign_hidden = 0;
     //decode CGs
     for (i = num_cg; i >= 0; i--) {
         int n, m;
@@ -2390,7 +2417,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                 ctx_cg += significant_coeff_group_flag[x_cg][y_cg + 1];
 
             significant_coeff_group_flag[x_cg][y_cg] =
-                    significant_coeff_group_flag_decode(s, 0, ctx_cg);
+                    significant_coeff_group_flag_decode(s, ctx_cg);
             current_cg.implicit_non_zero_coeff = 1; // default init to 1
         } else {//test for implicit non zero cg
             significant_coeff_group_flag[x_cg][y_cg] = 1;
@@ -2425,13 +2452,14 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
             uint8_t coeff_abs_level_greater1_flag[8];
             uint16_t coeff_sign_flag;
             int sum_abs = 0;
-            int sign_hidden;
+
             int sb_type;
             // initialize first elem of coeff_bas_level_greater1_flag
             int ctx_set = (i > 0) ? 2 : 0;
 
+            //This could be done at init
             if (sps_persistent_rice_adaptation_enabled_flag) {
-                if (!tr_ctx->transform_skip_flag && !lc->cu.cu_transquant_bypass_flag)
+                if (!tr_ctx->transform_skip_flag && !cu_tr_transquant_bypass_flag)
                     sb_type = 2;
                 else
                     sb_type = 3;
@@ -2446,7 +2474,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
             //decode coeff_abs_level_greater1_flags
             for (m = 0; m < (n_end > 8 ? 8 : n_end); m++) {//only first 8 coeffs
                 int inc = (ctx_set << 2) + greater1_ctx;
-                coeff_abs_level_greater1_flag[m] = coeff_abs_level_greater1_flag_decode(s, 0, inc);
+                coeff_abs_level_greater1_flag[m] = coeff_abs_level_greater1_flag_decode(s, inc);
                 if (coeff_abs_level_greater1_flag[m]) {
                     greater1_ctx = 0;
                     if (first_greater1_coeff_idx == -1)
@@ -2456,21 +2484,15 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                 }
             }
 
-            if (lc->cu.cu_transquant_bypass_flag ||
-                    (lc->cu.pred_mode ==  MODE_INTRA  &&
-                     s->ps.sps->implicit_rdpcm_enabled_flag  &&  tr_ctx->transform_skip_flag  &&
-                     (lc->tu.intra_pred_mode == 10 || lc->tu.intra_pred_mode  ==  26 )) ||
-                    tr_ctx->explicit_rdpcm_flag)
-                sign_hidden = 0;
-            else {
+            //pass nb
+            if (first_greater1_coeff_idx != -1) {
+                coeff_abs_level_greater1_flag[first_greater1_coeff_idx] += coeff_abs_level_greater2_flag_decode(s, ctx_set);
+            }
+
+            if (!sign_always_hidden){
                 current_cg.last_nz_pos_in_cg = current_cg.significant_coeff_flag_idx[0];;
                 current_cg.first_nz_pos_in_cg = current_cg.significant_coeff_flag_idx[n_end - 1];
                 sign_hidden = (current_cg.last_nz_pos_in_cg - current_cg.first_nz_pos_in_cg >= 4);
-            }
-
-            //pass nb
-            if (first_greater1_coeff_idx != -1) {
-                coeff_abs_level_greater1_flag[first_greater1_coeff_idx] += coeff_abs_level_greater2_flag_decode(s, c_idx, ctx_set);
             }
 
             if (!pps_sign_data_hiding_flag || !sign_hidden ) {
@@ -2497,7 +2519,6 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 #endif
                         last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, c_rice_param);
 
-
                     trans_coeff_level += last_coeff_abs_level_remaining;
                     if (trans_coeff_level > (3 << c_rice_param))
                         c_rice_param = sps_persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
@@ -2523,7 +2544,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                 coeff_sign_flag <<= 1;
 
                 //scale (inverse quant) clip and store coeff
-                if(!lc->cu.cu_transquant_bypass_flag) {
+                if(!cu_tr_transquant_bypass_flag) {
                     //FIXme add scale function (the scale can be done on the whole coeffs table)
                     trans_coeff_level = scale_and_clip_coeff(s ,tr_ctx, quant_ctx, trans_coeff_level, x_c, y_c);
                 }
@@ -2570,7 +2591,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                 coeff_sign_flag <<= 1;
 
                 //scale (inverse quant) clip and store coeff
-                if(!lc->cu.cu_transquant_bypass_flag) {
+                if(!cu_tr_transquant_bypass_flag) {
                     //FIXme add scale function (the scale can be done on the whole coeffs table before inverse transform)
                     trans_coeff_level = scale_and_clip_coeff(s ,tr_ctx, quant_ctx, trans_coeff_level, x_c, y_c);
                 }
