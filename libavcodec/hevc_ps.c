@@ -291,7 +291,7 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
         get_bits1(gb);   //general_intra_constraint_flag
         get_bits1(gb);   //general_one_picture_only_constraint_flag
         get_bits1(gb);   //general_lower_bit_rate_constraint_flag
-       
+
         skip_bits(gb, 32); //general_reserved_zero_34bits
         skip_bits(gb, 2);//general_reserved_zero_34bits
     } else {
@@ -363,12 +363,12 @@ static void sub_layer_hrd_parameters(GetBitContext *gb, SubLayerHRDParams *sub_l
     for( i = 0; i  <=  cpb_count; i++ ) {
         sub_layer_hrd_parameters->bit_rate_value_minus1[i] = get_ue_golomb_long(gb);
         sub_layer_hrd_parameters->cpb_size_value_minus1[i] = get_ue_golomb_long(gb);
-		if( sub_pic_hrd_params_present_flag ) {
+        if( sub_pic_hrd_params_present_flag ) {
             sub_layer_hrd_parameters->cpb_size_du_value_minus1[i] = get_ue_golomb_long(gb);
             sub_layer_hrd_parameters->bit_rate_du_value_minus1[i] = get_ue_golomb_long(gb);
-		}
+        }
         sub_layer_hrd_parameters->cbr_flag[i] = get_bits1(gb);
-	}
+    }
 }
 
 static int parse_hrd_parameters(GetBitContext *gb, HRDParameters *hrd_parameters,
@@ -427,7 +427,7 @@ static int parse_hrd_parameters(GetBitContext *gb, HRDParameters *hrd_parameters
         if( hrd_parameters->vcl_hrd_parameters_present_flag )
             sub_layer_hrd_parameters(gb, &hrd_parameters->sub_layer_hrd_params[i], hrd_parameters->cpb_cnt_minus1[i], hrd_parameters->sub_pic_hrd_params_present_flag);
     }
-    return 0; 
+    return 0;
 }
 
 
@@ -477,8 +477,8 @@ static void parse_vps_vui_bsp_hrd_params(GetBitContext *gb, AVCodecContext *avct
                             }
                             bsp_hrd_params->bsp_sched_idx[h][i][t][j][k] = get_ue_golomb_long(gb);
                         }
-				}
-		}
+                }
+        }
 }
 
 
@@ -522,7 +522,7 @@ static void parse_rep_format(RepFormat *rep_format, GetBitContext *gb) {
         if (rep_format->chroma_format_vps_idc == 3) {
             rep_format->separate_colour_plane_vps_flag = get_bits1(gb);
         }
-        rep_format->bit_depth_vps[CHANNEL_TYPE_LUMA] =   get_bits(gb, 4) + 8;  
+        rep_format->bit_depth_vps[CHANNEL_TYPE_LUMA] =   get_bits(gb, 4) + 8;
         rep_format->bit_depth_vps[CHANNEL_TYPE_CHROMA] = get_bits(gb, 4) + 8;
     }
 
@@ -536,11 +536,11 @@ static void parse_rep_format(RepFormat *rep_format, GetBitContext *gb) {
 }
 
 static void parse_video_signal_info (GetBitContext *gb, VideoSignalInfo *video_signal_info ) {
-	video_signal_info->video_vps_format                = get_bits(gb, 3);
-	video_signal_info->video_full_range_vps_flag       = get_bits1(gb);
+    video_signal_info->video_vps_format                = get_bits(gb, 3);
+    video_signal_info->video_full_range_vps_flag       = get_bits1(gb);
     video_signal_info->color_primaries_vps             = get_bits(gb, 8);
-	video_signal_info->transfer_characteristics_vps    = get_bits(gb, 8);
-	video_signal_info->matrix_coeffs_vps               = get_bits(gb, 8);
+    video_signal_info->transfer_characteristics_vps    = get_bits(gb, 8);
+    video_signal_info->matrix_coeffs_vps               = get_bits(gb, 8);
 }
 
 
@@ -588,8 +588,8 @@ static void parse_vps_vui(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps
     }
 
     vps_vui->video_signal_info_idx_present_flag = get_bits1(gb);
-	if( vps_vui->video_signal_info_idx_present_flag ) {
-		vps_vui->vps_num_video_signal_info_minus1 = get_bits(gb, 4);
+    if( vps_vui->video_signal_info_idx_present_flag ) {
+        vps_vui->vps_num_video_signal_info_minus1 = get_bits(gb, 4);
     }
 
     for( i = 0; i  <=  vps_vui->vps_num_video_signal_info_minus1; i++ ){
@@ -620,7 +620,7 @@ static void parse_vps_vui(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps
         }
     }
 
-	vps_vui->wpp_not_in_use_flag = get_bits1(gb);
+    vps_vui->wpp_not_in_use_flag = get_bits1(gb);
     if( !vps_vui->wpp_not_in_use_flag ){
         for( i = vps->vps_base_layer_internal_flag ? 0 : 1; i  < max_layers; i++ ) {
             vps_vui->wpp_in_use_flag[i]   = get_bits1(gb);
@@ -696,8 +696,8 @@ static void parse_dpb_size(GetBitContext *gb, HEVCVPS *vps , unsigned int num_ou
                 dpb_size->max_vps_num_reorder_pics[i][j]       = get_ue_golomb_long(gb);
                 dpb_size->max_vps_latency_increase_plus1[i][j] = get_ue_golomb_long(gb);
             }
-		}
-	}
+        }
+    }
 }
 
 
@@ -1295,7 +1295,7 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
             vps_ext->vps_rep_format_idx[i] = FFMIN(i,vps_ext->vps_num_rep_formats_minus1);
         }
     }
-    
+
     vps_ext->max_one_active_ref_layer_flag = get_bits1(gb);
     vps_ext->vps_poc_lsb_aligned_flag = get_bits1(gb);
     /*Additionally, the value of vps_poc_lsb_aligned_flag
@@ -1426,7 +1426,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
     vps->vps_base_layer_available_flag = get_bits(gb, 1);
     //FIXME this is not really standard this is a hack for non HEVC base
     vps->vps_nonHEVCBaseLayerFlag = (vps->vps_base_layer_available_flag && !vps->vps_base_layer_internal_flag);
-    
+
     vps->vps_max_layers               = get_bits(gb, 6) + 1;
     vps->vps_max_sub_layers           = get_bits(gb, 3) + 1;
     vps->vps_temporal_id_nesting_flag = get_bits1(gb);
@@ -1495,7 +1495,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
         }
 
     //derive_layerIdList_variables(vps);
- 
+
     vps->vps_timing_info_present_flag = get_bits1(gb);
     if (vps->vps_timing_info_present_flag) {
         vps->vps_num_units_in_tick               = get_bits_long(gb, 32);
@@ -1890,7 +1890,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
     if((HEVCVPS *) vps_list[sps->vps_id])
         vps = (HEVCVPS *) vps_list[sps->vps_id]->data;
-    
+
     if (!nuh_layer_id) {
         sps->sps_max_sub_layers = get_bits(gb, 3) + 1;
         if (sps->sps_max_sub_layers > HEVC_MAX_SUB_LAYERS) {
@@ -2082,7 +2082,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
             case 10: sps->pix_fmt = AV_PIX_FMT_YUV420P10; break;
             default:
                 av_log(avctx, AV_LOG_ERROR, "-- Unsupported bit depth: %d\n",
-                		sps->bit_depth[CHANNEL_TYPE_LUMA]);
+                        sps->bit_depth[CHANNEL_TYPE_LUMA]);
                 ret = AVERROR_PATCHWELCOME;
                 //goto err;
             }
@@ -2133,7 +2133,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                 return AVERROR_INVALIDDATA;
                 //goto err;
             }
-            
+
             if (sps->temporal_layer[i].num_reorder_pics > sps->temporal_layer[i].max_dec_pic_buffering - 1) {
                 av_log(avctx, AV_LOG_WARNING, "sps_max_num_reorder_pics out of range: %d\n",
                        sps->temporal_layer[i].num_reorder_pics);
@@ -2306,7 +2306,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
             sps_multilayer_extensions(gb, avctx, sps);
 
     } else {
-        // Read more RSB data 
+        // Read more RSB data
     }
 
     //TODO Clean this part
@@ -2997,7 +2997,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     pps->diff_cu_qp_delta_depth   = 0;
     if (pps->cu_qp_delta_enabled_flag) {
         pps->diff_cu_qp_delta_depth = get_ue_golomb_long(gb);
-    }   
+    }
 
     if (sps && (pps->diff_cu_qp_delta_depth < 0 ||
         pps->diff_cu_qp_delta_depth > sps->log2_diff_max_min_cb_size)) {

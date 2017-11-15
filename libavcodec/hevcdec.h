@@ -443,6 +443,13 @@ typedef struct HEVCTransformContext{
     int num_significant_coeffs;
 }HEVCTransformContext;
 
+typedef struct HEVCPersistentRiceContext{
+    uint8_t stat_coeff[4];
+    uint8_t *current_coeff;
+    int rice_p_init;
+    int rice_init;
+    int sb_type;
+}HEVCPersistentRiceContext;
 
 typedef struct HEVCLocalContext {
     CodingTree          ct;
@@ -451,7 +458,7 @@ typedef struct HEVCLocalContext {
 #endif
     uint8_t cabac_state[HEVC_CONTEXTS];
 
-    uint8_t stat_coeff[4];
+    //uint8_t stat_coeff[4];
 
     uint8_t first_qp_group;
 
@@ -464,6 +471,8 @@ typedef struct HEVCLocalContext {
     int qPy_pred;
 
     TransformUnit tu;
+
+    HEVCPersistentRiceContext rice_ctx;
 
     uint8_t ctb_left_flag;
     uint8_t ctb_up_flag;

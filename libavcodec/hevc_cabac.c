@@ -1,4 +1,4 @@
-/*
+﻿/*
  * HEVC CABAC decoding
  *
  * Copyright (C) 2012 - 2013 Guillaume Martres
@@ -554,7 +554,7 @@ static void cabac_init_state(HEVCContext *s)
     }
 
     for (i = 0; i < 4; i++)
-        s->HEVClc->stat_coeff[i] = 0;
+        s->HEVClc->rice_ctx.stat_coeff[i] = 0;
 }
 
 int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
@@ -1978,15 +1978,28 @@ static int64_t av_always_inline scale_and_clip_coeff(HEVCContext *s,HEVCTransfor
     return trans_coeff_level;
 }
 
+static void update_rice_statistics(HEVCPersistentRiceContext *rice_ctx,int last_coeff_abs_level_remaining ){
+    if(!rice_ctx->rice_init) {
+        int c_rice_p_init = *(rice_ctx->current_coeff) >> 2;
+        if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
+            *(rice_ctx->current_coeff)+=1;
+        else if (2 * last_coeff_abs_level_remaining < (1 << c_rice_p_init))
+            if (*(rice_ctx->current_coeff) > 0)
+                *(rice_ctx->current_coeff)-=1;
+        rice_ctx->rice_init = 1;
+    }
+}
+
 void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                                 int log2_trafo_size, enum ScanType scan_idx,
                                 int c_idx
 )
 {
     HEVCLocalContext * av_restrict lc           = s->HEVClc;
-    HEVCTransformContext * restrict tr_ctx      = &lc->transform_ctx;
-    HEVCQuantContext     * restrict quant_ctx   = &tr_ctx->quant_ctx;
-    HEVCTransformScanContext *restrict scan_ctx = &tr_ctx->scan_ctx;
+    HEVCTransformContext * av_restrict tr_ctx      = &lc->transform_ctx;
+    HEVCQuantContext     * av_restrict quant_ctx   /*= &tr_ctx->quant_ctx*/;
+    HEVCTransformScanContext *av_restrict scan_ctx = &tr_ctx->scan_ctx;
+    HEVCPersistentRiceContext *rice_ctx;
     int tr_skip_or_bypass;
     //could be set into tr_ctx
     int pps_sign_data_hiding_flag;
@@ -2027,8 +2040,10 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
 
     // Derive QP for dequant
     //FIXME this could probably be called outside of the scope of residual coding
-    if (!lc->cu.cu_transquant_bypass_flag)
+    if (!lc->cu.cu_transquant_bypass_flag){
+        quant_ctx = &tr_ctx->quant_ctx;
         derive_quant_parameters_c(s,lc, tr_ctx, quant_ctx, c_idx);
+    }
 
     if (lc->cu.pred_mode == MODE_INTER && s->ps.sps->explicit_rdpcm_enabled_flag &&
             (tr_ctx->transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
@@ -2053,14 +2068,18 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     pps_sign_data_hiding_flag = s->ps.pps->sign_data_hiding_flag;
     sps_persistent_rice_adaptation_enabled_flag = s->ps.sps->persistent_rice_adaptation_enabled_flag;
 
+    if(sps_persistent_rice_adaptation_enabled_flag){
+        rice_ctx = &lc->rice_ctx;
+    }
+
     //decode CGs
     for (i = num_cg; i >= 0; i--) {
         int n, m;
         int x_cg, y_cg;
         int x_c, y_c;
-
-        int rice_init = 0;
-
+        if(sps_persistent_rice_adaptation_enabled_flag){
+            rice_ctx->rice_init = 0;
+        }
         CGContext current_cg;
         current_cg.is_dc_cg = (i == 0);
         current_cg.is_last_cg = (i == num_cg);
@@ -2121,16 +2140,18 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
             uint16_t coeff_sign_flag;
             int sum_abs = 0;
             int sign_hidden;
-            int sb_type;
+
             // initialize first elem of coeff_bas_level_greater1_flag
             int ctx_set = 0;
 
             if (sps_persistent_rice_adaptation_enabled_flag) {
+                int sb_type;
                 if (!tr_ctx->transform_skip_flag && !lc->cu.cu_transquant_bypass_flag)
                     sb_type = 0;
                 else
                     sb_type = 1;
-                c_rice_param = lc->stat_coeff[sb_type] / 4;
+                rice_ctx->current_coeff= &rice_ctx->stat_coeff[sb_type];
+                c_rice_param = *(rice_ctx->current_coeff) >> 2;
             }
 
             if (!current_cg.is_last_cg && greater1_ctx == 0)
@@ -2193,16 +2214,13 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
 
 
                     trans_coeff_level += last_coeff_abs_level_remaining;
-                    if (trans_coeff_level > (3 << c_rice_param))
-                        c_rice_param = sps_persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
-                    if (sps_persistent_rice_adaptation_enabled_flag && !rice_init) {
-                        int c_rice_p_init = lc->stat_coeff[sb_type] >> 2;
-                        if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
-                            lc->stat_coeff[sb_type]++;
-                        else if (2 * last_coeff_abs_level_remaining < (1 << c_rice_p_init))
-                            if (lc->stat_coeff[sb_type] > 0)
-                                lc->stat_coeff[sb_type]--;
-                        rice_init = 1;
+
+                    if (sps_persistent_rice_adaptation_enabled_flag){
+                        if (trans_coeff_level > (3 << c_rice_param))
+                            c_rice_param =  c_rice_param + 1;
+                        update_rice_statistics(rice_ctx, last_coeff_abs_level_remaining);
+                    } else if (trans_coeff_level > (3 << c_rice_param)){
+                        c_rice_param = FFMIN(c_rice_param + 1, 4);
                     }
                 }
 
@@ -2242,16 +2260,12 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
                     last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, c_rice_param);
 
                 trans_coeff_level = 1 + last_coeff_abs_level_remaining;
-                if (trans_coeff_level > (3 << c_rice_param))
-                    c_rice_param = sps_persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
-                if (sps_persistent_rice_adaptation_enabled_flag && !rice_init) {
-                    int c_rice_p_init = lc->stat_coeff[sb_type] >> 2;
-                    if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
-                        lc->stat_coeff[sb_type]++;
-                    else if (2 * last_coeff_abs_level_remaining < (1 << c_rice_p_init))
-                        if (lc->stat_coeff[sb_type] > 0)
-                            lc->stat_coeff[sb_type]--;
-                    rice_init = 1;
+                if (sps_persistent_rice_adaptation_enabled_flag){
+                    if (trans_coeff_level > (3 << c_rice_param))
+                        c_rice_param =  c_rice_param + 1;
+                    update_rice_statistics(rice_ctx, last_coeff_abs_level_remaining);
+                } else if (trans_coeff_level > (3 << c_rice_param)){
+                    c_rice_param = FFMIN(c_rice_param + 1, 4);
                 }
 
                 if (pps_sign_data_hiding_flag && sign_hidden) {
@@ -2306,8 +2320,10 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     HEVCPPS *av_restrict pps = s->ps.pps;
     HEVCLocalContext * av_restrict lc           = s->HEVClc;
     HEVCTransformContext * restrict tr_ctx      = &lc->transform_ctx;
-    HEVCQuantContext     * restrict quant_ctx   = &tr_ctx->quant_ctx;
+    HEVCQuantContext     * restrict quant_ctx  /* = &tr_ctx->quant_ctx*/;
     HEVCTransformScanContext *restrict scan_ctx = &tr_ctx->scan_ctx;
+    HEVCPersistentRiceContext * rice_ctx;
+
     int tr_skip_or_bypass;
     //could be set into tr_ctx
     int pps_sign_data_hiding_flag;
@@ -2318,6 +2334,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     int sign_hidden;
     int n_end;
     int greater1_ctx = 1;
+    //int c_rice_param = 0;
+    //int sb_type;
 
     int i;
 
@@ -2352,8 +2370,10 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
     // Derive QP for dequant
     //FIXME this could probably be called outside of the scope of residual coding
-    if (!cu_tr_transquant_bypass_flag)
+    if (!cu_tr_transquant_bypass_flag){
+        quant_ctx   = &tr_ctx->quant_ctx;
         derive_quant_parameters(s,lc,tr_ctx,quant_ctx);
+    }
 
     if (lc->cu.pred_mode == MODE_INTER && sps_explicit_rdpcm_enabled_flag &&
             (tr_ctx->transform_skip_flag || cu_tr_transquant_bypass_flag)) {
@@ -2362,6 +2382,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
             tr_ctx->explicit_rdpcm_dir_flag = explicit_rdpcm_dir_flag_decode(s);
         }
     }
+
+
 
     last_significant_coeff_xy_prefix_decode(s, tr_ctx->log2_trafo_size,
                                             &scan_ctx->last_significant_coeff_x, &scan_ctx->last_significant_coeff_y);
@@ -2378,6 +2400,16 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     pps_sign_data_hiding_flag = pps->sign_data_hiding_flag;
     sps_persistent_rice_adaptation_enabled_flag = sps->persistent_rice_adaptation_enabled_flag;
 
+    if(sps_persistent_rice_adaptation_enabled_flag){
+        int sb_type;
+        rice_ctx = &lc->rice_ctx;
+        if (!tr_ctx->transform_skip_flag && !cu_tr_transquant_bypass_flag)
+            sb_type = 2;
+        else
+            sb_type = 3;
+        rice_ctx->current_coeff = &rice_ctx->stat_coeff[sb_type];
+    }
+
     sign_always_hidden = (cu_tr_transquant_bypass_flag ||
                           (lc->cu.pred_mode ==  MODE_INTRA  && sps->implicit_rdpcm_enabled_flag
                            &&  tr_ctx->transform_skip_flag  &&
@@ -2390,8 +2422,6 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
         int n, m;
         int x_cg, y_cg;
         int x_c, y_c;
-
-        int rice_init = 0;
 
         CGContext current_cg;
         current_cg.is_dc_cg = (i == 0);
@@ -2445,6 +2475,9 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
         n_end = current_cg.num_significant_coeff_in_cg;
 
+//        if(sps_persistent_rice_adaptation_enabled_flag)
+//            rice_ctx->rice_init = 0;
+
         //decode coeffs values
         if (n_end) {
             int c_rice_param = 0;
@@ -2453,18 +2486,11 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
             uint16_t coeff_sign_flag;
             int sum_abs = 0;
 
-            int sb_type;
             // initialize first elem of coeff_bas_level_greater1_flag
             int ctx_set = (i > 0) ? 2 : 0;
 
             //This could be done at init
-            if (sps_persistent_rice_adaptation_enabled_flag) {
-                if (!tr_ctx->transform_skip_flag && !cu_tr_transquant_bypass_flag)
-                    sb_type = 2;
-                else
-                    sb_type = 3;
-                c_rice_param = lc->stat_coeff[sb_type] / 4;
-            }
+
 
             if (!current_cg.is_last_cg && greater1_ctx == 0)
                 ctx_set++;
@@ -2495,12 +2521,18 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                 sign_hidden = (current_cg.last_nz_pos_in_cg - current_cg.first_nz_pos_in_cg >= 4);
             }
 
-            if (!pps_sign_data_hiding_flag || !sign_hidden ) {
+            if (!(pps_sign_data_hiding_flag && sign_hidden) ) {
                 coeff_sign_flag = coeff_sign_flag_decode(s, current_cg.num_significant_coeff_in_cg) << (16 - current_cg.num_significant_coeff_in_cg);
             } else {
                 coeff_sign_flag = coeff_sign_flag_decode(s, current_cg.num_significant_coeff_in_cg - 1) << (16 - (current_cg.num_significant_coeff_in_cg - 1));
             }
 
+            if (sps_persistent_rice_adaptation_enabled_flag) {
+                c_rice_param = *(rice_ctx->current_coeff) >> 2;
+                rice_ctx->rice_init = 0;
+            } else {
+                c_rice_param = 0;
+            }
             //decode scale and store coeffs values
             for (m = 0; m <  (n_end < 8 ? n_end : 8); m++) {
                 int64_t trans_coeff_level;
@@ -2520,16 +2552,12 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                         last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, c_rice_param);
 
                     trans_coeff_level += last_coeff_abs_level_remaining;
-                    if (trans_coeff_level > (3 << c_rice_param))
-                        c_rice_param = sps_persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
-                    if (sps_persistent_rice_adaptation_enabled_flag && !rice_init) {
-                        int c_rice_p_init = lc->stat_coeff[sb_type] >> 2;
-                        if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
-                            lc->stat_coeff[sb_type]++;
-                        else if (2 * last_coeff_abs_level_remaining < (1 << c_rice_p_init))
-                            if (lc->stat_coeff[sb_type] > 0)
-                                lc->stat_coeff[sb_type]--;
-                        rice_init = 1;
+                    if (sps_persistent_rice_adaptation_enabled_flag){
+                        if (trans_coeff_level > (3 << c_rice_param))
+                            c_rice_param =  c_rice_param + 1;
+                        update_rice_statistics(rice_ctx, last_coeff_abs_level_remaining);
+                    } else if (trans_coeff_level > (3 << c_rice_param)){
+                        c_rice_param = FFMIN(c_rice_param + 1, 4);
                     }
                 }
 
@@ -2568,16 +2596,12 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
                     last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, c_rice_param);
 
                 trans_coeff_level = 1 + last_coeff_abs_level_remaining;
-                if (trans_coeff_level > (3 << c_rice_param))
-                    c_rice_param = sps_persistent_rice_adaptation_enabled_flag ? c_rice_param + 1 : FFMIN(c_rice_param + 1, 4);
-                if (sps_persistent_rice_adaptation_enabled_flag && !rice_init) {
-                    int c_rice_p_init = lc->stat_coeff[sb_type] >> 2;
-                    if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
-                        lc->stat_coeff[sb_type]++;
-                    else if (2 * last_coeff_abs_level_remaining < (1 << c_rice_p_init))
-                        if (lc->stat_coeff[sb_type] > 0)
-                            lc->stat_coeff[sb_type]--;
-                    rice_init = 1;
+                if (sps_persistent_rice_adaptation_enabled_flag){
+                    if (trans_coeff_level > (3 << c_rice_param))
+                        c_rice_param =  c_rice_param + 1;
+                    update_rice_statistics(rice_ctx, last_coeff_abs_level_remaining);
+                } else if (trans_coeff_level > (3 << c_rice_param)){
+                    c_rice_param = FFMIN(c_rice_param + 1, 4);
                 }
 
                 if (pps_sign_data_hiding_flag && sign_hidden) {
