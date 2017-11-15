@@ -2066,7 +2066,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     int tr_size_in_cg;
     int16_t * av_restrict coeffs = lc->tu.coeffs[1];
 
-    uint8_t significant_cg_flag[64] = {{0}}; // significant CG map;
+    uint8_t *significant_cg_flag = tr_ctx->significant_cg_flag; // significant CG map;
 
     //Reset transform context
     //memset(tr_ctx, 0, sizeof(HEVCTransformContext));
@@ -2081,6 +2081,8 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     tr_ctx->log2_tr_size_minus2  = log2_trafo_size - 2;
     tr_ctx->transform_size       = 1 << log2_trafo_size;
     tr_size_in_cg = 1 << tr_ctx->log2_tr_size_minus2;
+
+    memset(significant_cg_flag,0,tr_size_in_cg*tr_size_in_cg*sizeof(uint8_t));
 
     if (!cu_tr_transquant_bypass_flag && pps->transform_skip_enabled_flag &&
             tr_ctx->log2_trafo_size <= pps->log2_max_transform_skip_block_size) {
@@ -2409,7 +2411,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
     int16_t *av_restrict coeffs = lc->tu.coeffs[0];
 
-    uint8_t significant_cg_flag[64] = {{0}}; // significant CG map;
+    uint8_t *av_restrict significant_cg_flag = tr_ctx->significant_cg_flag; // significant CG map;
+
 
     //Reset transform context
     //memset(tr_ctx, 0, sizeof(HEVCTransformContext));
@@ -2424,6 +2427,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     tr_ctx->log2_tr_size_minus2  = log2_trafo_size - 2;
     tr_ctx->transform_size       = 1 << log2_trafo_size;
     tr_size_in_cg = 1 << tr_ctx->log2_tr_size_minus2;
+
+    memset(significant_cg_flag,0,tr_size_in_cg*tr_size_in_cg*sizeof(uint8_t));
 
     if (!cu_tr_transquant_bypass_flag && pps->transform_skip_enabled_flag &&
             tr_ctx->log2_trafo_size <= pps->log2_max_transform_skip_block_size) {
