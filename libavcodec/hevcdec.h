@@ -451,6 +451,21 @@ typedef struct HEVCPersistentRiceContext{
     int sb_type;
 }HEVCPersistentRiceContext;
 
+typedef struct CGContext{
+    uint16_t significant_coeff_flag_idx[16];
+    int num_significant_coeff_in_cg;
+    int first_nz_pos_in_cg;
+    int last_nz_pos_in_cg;
+    int is_last_cg;
+    int is_dc_cg;
+    int is_last_or_dc_cg;
+    int implicit_non_zero_coeff;
+    int x_cg;
+    int y_cg;
+    int prev_sig;
+    //uint8_t *ctx_idx_map;
+}CGContext;
+
 typedef struct HEVCLocalContext {
     CodingTree          ct;
 #ifdef USE_SAO_SMALL_BUFFER
@@ -513,6 +528,7 @@ typedef struct HEVCLocalContext {
     int boundary_flags;
     int tile_id;
     HEVCTransformContext transform_ctx;
+    CGContext cg_ctx;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
