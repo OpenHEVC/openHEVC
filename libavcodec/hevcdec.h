@@ -422,6 +422,8 @@ typedef struct HEVCTransformScanContext{
     const uint8_t *scan_y_cg;
     const uint8_t *scan_x_off;
     const uint8_t *scan_y_off;
+    const uint8_t *scan_inv_coeff;
+    const uint8_t *scan_inv_cg;
     int last_significant_coeff_x;
     int last_significant_coeff_y;
     int x_cg_last_sig;
