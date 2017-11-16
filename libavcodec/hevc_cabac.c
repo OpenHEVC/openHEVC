@@ -1553,7 +1553,9 @@ static void av_always_inline derive_quant_parameters_c(HEVCContext *s, HEVCLocal
     }
 }
 
-static void av_always_inline derive_scanning_direction_vertical(HEVCTransformScanContext *scan_ctx,int scan_idx){
+
+
+static void av_always_inline derive_scanning_direction_vertical(HEVCTransformScanContext *scan_ctx){
     scan_ctx->scan_x_cg = horiz_scan2x2_y;
     scan_ctx->scan_y_cg = horiz_scan2x2_x;
     scan_ctx->scan_x_off = horiz_scan4x4_y;
@@ -1564,7 +1566,7 @@ static void av_always_inline derive_scanning_direction_vertical(HEVCTransformSca
 }
 
 
-static void av_always_inline derive_scanning_direction_diagonal_4x4(HEVCTransformScanContext *scan_ctx,int scan_idx){
+static void av_always_inline derive_scanning_direction_diagonal_4x4(HEVCTransformScanContext *scan_ctx){
     int last_x_c = scan_ctx->last_significant_coeff_x & 3;
     int last_y_c = scan_ctx->last_significant_coeff_y & 3;
 
@@ -1635,12 +1637,41 @@ static void av_always_inline derive_scanning_direction_horizontal(HEVCTransformS
     scan_ctx->num_coeff = horiz_scan8x8_inv[scan_ctx->last_significant_coeff_y][scan_ctx->last_significant_coeff_x];
 }
 
+static void av_always_inline derive_scanning_direction(HEVCTransformScanContext *scan_ctx, int tr_size, int scan_idx){
+    if(scan_idx == SCAN_DIAG){
+        switch (tr_size) {
+        case 0:
+            derive_scanning_direction_diagonal_4x4(scan_ctx);
+            break;
+        case 1:
+            derive_scanning_direction_diagonal_8x8(scan_ctx);
+            break;
+        case 2:
+            derive_scanning_direction_diagonal_16x16(scan_ctx);
+            break;
+        case 3:
+            derive_scanning_direction_diagonal_32x32(scan_ctx);
+            break;
+        default:
+            break;
+        }
+    } else {
+        switch (scan_idx){
+        case SCAN_HORIZ:
+            derive_scanning_direction_horizontal(scan_ctx);
+            break;
+        default:
+            derive_scanning_direction_vertical(scan_ctx);
+            break;
+        }
+    }
+}
 
-static void av_always_inline (*derive_scan[3][4])(HEVCTransformScanContext *scan_ctx)={
-{derive_scanning_direction_diagonal_4x4, derive_scanning_direction_diagonal_8x8, derive_scanning_direction_diagonal_16x16, derive_scanning_direction_diagonal_32x32},
-{derive_scanning_direction_horizontal, derive_scanning_direction_horizontal, derive_scanning_direction_horizontal, derive_scanning_direction_horizontal},
-{derive_scanning_direction_vertical, derive_scanning_direction_vertical, derive_scanning_direction_vertical, derive_scanning_direction_vertical},
-        };
+//static void av_always_inline (*derive_scan[3][4])(HEVCTransformScanContext *scan_ctx)={
+//{derive_scanning_direction_diagonal_4x4, derive_scanning_direction_diagonal_8x8, derive_scanning_direction_diagonal_16x16, derive_scanning_direction_diagonal_32x32},
+//{derive_scanning_direction_horizontal, derive_scanning_direction_horizontal, derive_scanning_direction_horizontal, derive_scanning_direction_horizontal},
+//{derive_scanning_direction_vertical, derive_scanning_direction_vertical, derive_scanning_direction_vertical, derive_scanning_direction_vertical},
+//        };
 
 static void av_always_inline decode_and_derive_scanning_params(HEVCContext *s, HEVCLocalContext *lc, HEVCTransformScanContext *scan_ctx,int scan_idx){
 
@@ -1883,7 +1914,7 @@ static const uint8_t ctx_idx_map[] = {
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2  // default
 };
 
-static void av_always_inline decode_significance_map_c(HEVCContext *s, HEVCTransformContext *tr_ctx, CGContext *cg, int n_end, int tr_skip_or_bypass)
+static void av_always_inline decode_significance_map_c(HEVCContext *av_restrict s, HEVCTransformContext *av_restrict tr_ctx, CGContext *av_restrict cg, int n_end, int tr_skip_or_bypass)
 {
     const uint8_t *ctx_idx_map_p;
     int scf_offset;
@@ -1939,7 +1970,7 @@ static void av_always_inline decode_significance_map_c(HEVCContext *s, HEVCTrans
     }
 }
 
-static void av_always_inline decode_significance_map(HEVCContext *s, HEVCTransformContext *tr_ctx, CGContext *cg, int n_end, int tr_skip_or_bypass, int scan_idx)
+static void av_always_inline decode_significance_map(HEVCContext *s, HEVCTransformContext *av_restrict tr_ctx, CGContext *av_restrict cg, int n_end, int tr_skip_or_bypass, int scan_idx)
 {
     const uint8_t *ctx_idx_map_p;
     int scf_offset = 0;
@@ -1994,7 +2025,7 @@ static void av_always_inline decode_significance_map(HEVCContext *s, HEVCTransfo
     }
 }
 
-static int64_t av_always_inline scale_and_clip_coeff(HEVCContext *s,HEVCTransformContext *tr_ctx, HEVCQuantContext *quant_ctx, int64_t trans_coeff_level, int x_c, int y_c ){
+static int64_t av_always_inline scale_and_clip_coeff(HEVCContext *av_restrict s,HEVCTransformContext *av_restrict tr_ctx, HEVCQuantContext *av_restrict quant_ctx, int64_t trans_coeff_level, int x_c, int y_c ){
     if (s->ps.sps->scaling_list_enabled_flag && !(tr_ctx->transform_skip_flag &&
                                                   tr_ctx->log2_trafo_size > 2)) {
         if(y_c || x_c || tr_ctx->log2_trafo_size < 4) {
@@ -2021,7 +2052,7 @@ static int64_t av_always_inline scale_and_clip_coeff(HEVCContext *s,HEVCTransfor
     return trans_coeff_level;
 }
 
-static void update_rice_statistics(HEVCPersistentRiceContext *rice_ctx,int last_coeff_abs_level_remaining ){
+static void av_always_inline update_rice_statistics(HEVCPersistentRiceContext *av_restrict rice_ctx,int last_coeff_abs_level_remaining ){
     if(!rice_ctx->rice_init) {
         int c_rice_p_init = *(rice_ctx->current_coeff) >> 2;
         if (last_coeff_abs_level_remaining >= (3 << c_rice_p_init))
@@ -2035,13 +2066,13 @@ static void update_rice_statistics(HEVCPersistentRiceContext *rice_ctx,int last_
 
 static const uint8_t last_cg_line[4]={1,2,12,56};
 
-void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
+void ff_hevc_hls_coefficients_coding_c(HEVCContext *av_restrict s,
                                 int log2_trafo_size, enum ScanType scan_idx,
                                 int c_idx
 )
 {
-    HEVCSPS                   *av_restrict sps = s->ps.sps;
-    HEVCPPS                   *av_restrict pps = s->ps.pps;
+    const HEVCSPS             *av_restrict sps = s->ps.sps;
+    const HEVCPPS             *av_restrict pps = s->ps.pps;
     HEVCLocalContext          *av_restrict lc  = s->HEVClc;
     HEVCTransformContext      *av_restrict tr_ctx   = &lc->transform_ctx;
     HEVCTransformScanContext  *av_restrict scan_ctx = &tr_ctx->scan_ctx;
@@ -2115,7 +2146,8 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     decode_and_derive_scanning_params(s, lc, scan_ctx, scan_idx);
 
     //derive scanning parameters
-    derive_scan[scan_idx][tr_ctx->log2_tr_size_minus2](scan_ctx);
+    //derive_scan[scan_idx][tr_ctx->log2_tr_size_minus2](scan_ctx);
+    derive_scanning_direction(scan_ctx,tr_ctx->log2_tr_size_minus2,scan_idx);
 
     scan_ctx->num_coeff++;
 
@@ -2311,12 +2343,13 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
 
             for (m = 8; m < n_end ; m++) {
                 int64_t trans_coeff_level;
+                int last_coeff_abs_level_remaining;
+
                 n = current_cg->significant_coeff_flag_idx[m];
 
                 x_c = (x_cg << 2) + scan_ctx->scan_x_off[n];
                 y_c = (y_cg << 2) + scan_ctx->scan_y_off[n];
 
-                int last_coeff_abs_level_remaining;
 #if OHCONFIG_ENCRYPTION
                 if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFFS))
                     last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode_enc(s, c_rice_param, 1);
@@ -2379,13 +2412,13 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *s,
     //}
 }
 
-void ff_hevc_hls_coefficients_coding(HEVCContext *s,
+void ff_hevc_hls_coefficients_coding(HEVCContext *av_restrict s,
                                 int log2_trafo_size, enum ScanType scan_idx,
                                 int c_idx
                                 )
 {
-    HEVCSPS                   *av_restrict sps = s->ps.sps;
-    HEVCPPS                   *av_restrict pps = s->ps.pps;
+    const HEVCSPS             *av_restrict sps = s->ps.sps;
+    const HEVCPPS             *av_restrict pps = s->ps.pps;
     HEVCLocalContext          *av_restrict lc  = s->HEVClc;
     HEVCTransformContext      *av_restrict tr_ctx   = &lc->transform_ctx;
     HEVCTransformScanContext  *av_restrict scan_ctx = &tr_ctx->scan_ctx;
@@ -2461,7 +2494,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
     decode_and_derive_scanning_params(s, lc, scan_ctx, scan_idx);
 
     //derive scanning parameters
-    derive_scan[scan_idx][tr_ctx->log2_tr_size_minus2](scan_ctx);
+    //derive_scan[scan_idx][tr_ctx->log2_tr_size_minus2](scan_ctx);
+    derive_scanning_direction(scan_ctx,tr_ctx->log2_tr_size_minus2,scan_idx);
 
     scan_ctx->num_coeff++;
 
@@ -2656,12 +2690,13 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *s,
 
             for (m = 8; m < n_end ; m++) {
                 int64_t trans_coeff_level;
+                int last_coeff_abs_level_remaining;
+
                 n = current_cg->significant_coeff_flag_idx[m];
 
                 x_c = (x_cg << 2) + scan_ctx->scan_x_off[n];
                 y_c = (y_cg << 2) + scan_ctx->scan_y_off[n];
 
-                int last_coeff_abs_level_remaining;
 #if OHCONFIG_ENCRYPTION
                 if(s->tile_table_encry[s->HEVClc->tile_id] && (s->encrypt_params & HEVC_CRYPTO_TRANSF_COEFFS))
                     last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode_enc(s, c_rice_param, 1);
