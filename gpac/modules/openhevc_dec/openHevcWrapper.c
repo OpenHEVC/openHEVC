@@ -25,6 +25,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libopenhevc/version.h"
+#include "pthread.h"
 
 //TMP
 //#include "libavcodec/h264.h"
@@ -47,6 +48,7 @@ typedef struct OpenHevcWrapperContexts {
     int set_display;
     int set_vps;
     int got_picture_mask;
+    pthread_mutex_t layer_switch;
 } OpenHevcWrapperContexts;
 
 OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
@@ -56,6 +58,9 @@ OpenHevc_Handle libOpenHevcInit(int nb_pthreads, int thread_type)
     OpenHevcWrapperContexts *openHevcContexts = av_mallocz(sizeof(OpenHevcWrapperContexts));
     OpenHevcWrapperContext  *openHevcContext;
     avcodec_register_all();
+
+    pthread_mutex_init(&openHevcContexts->layer_switch ,NULL);
+
     openHevcContexts->nb_decoders   = MAX_DECODERS;
     openHevcContexts->active_layer  = MAX_DECODERS-1;
     openHevcContexts->display_layer = MAX_DECODERS-1;
@@ -235,6 +240,7 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
     else
         max_layer = openHevcContexts->active_layer;
 
+    pthread_mutex_lock(&openHevcContexts->layer_switch);
     for( i = 0; i < MAX_DECODERS; i++)  {
 
         int got_picture = 0;
@@ -249,10 +255,11 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
             err                         = avcodec_decode_video2( openHevcContext->c, openHevcContext->picture,
                                                                  &got_picture, &openHevcContext->avpkt);
             ret |= (got_picture << i);
-        }
+        } else avcodec_flush_buffers(openHevcContext->c);
         if(i < openHevcContexts->active_layer)
             openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
+    pthread_mutex_unlock(&openHevcContexts->layer_switch);
 
     openHevcContexts->got_picture_mask = ret;
 
@@ -286,7 +293,7 @@ int libOpenShvcDecode(OpenHevc_Handle openHevcHandle, const AVPacket packet[], c
         got_picture[i]                 = 0;
         openHevcContext                = openHevcContexts->wraper[i];
         openHevcContext->c->quality_id = openHevcContexts->active_layer;
-//        printf("quality_id %d \n", openHevcContext->c->quality_id);
+
         if (i <= openHevcContexts->active_layer) { // pour la auite remplacer par l = 1
             openHevcContext->avpkt.size = au_len;
             openHevcContext->avpkt.data = (uint8_t *) packet[i].data;
@@ -362,6 +369,7 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
     poc_id++;
     poc_id&=1023;
 
+    pthread_mutex_lock(&openHevcContexts->layer_switch);
     for(i =0; i < MAX_DECODERS; i++)  {
         int got_picture = 0;
         openHevcContext                = openHevcContexts->wraper[i];
@@ -412,11 +420,13 @@ int libOpenShvcDecode2(OpenHevc_Handle openHevcHandle, const unsigned char *buff
         } else {
             openHevcContext->avpkt.size = 0;
             openHevcContext->avpkt.data = NULL;
+            avcodec_flush_buffers(openHevcContext->codec);
         }
 
         if(i < openHevcContexts->active_layer)
             openHevcContexts->wraper[i+1]->c->BL_frame = openHevcContexts->wraper[i]->c->BL_frame;
     }
+    pthread_mutex_unlock(&openHevcContexts->layer_switch);
 
     if (err < 0) {
         av_log(NULL, AV_LOG_ERROR, "Error while decoding frame %d", err);
@@ -823,12 +833,14 @@ void libOpenHevcSetLogCallback(OpenHevc_Handle openHevcHandle, void (*callback)(
 void libOpenHevcSetActiveDecoders(OpenHevc_Handle openHevcHandle, int val)
 {
     OpenHevcWrapperContexts *openHevcContexts = (OpenHevcWrapperContexts *) openHevcHandle;
+    pthread_mutex_lock(&openHevcContexts->layer_switch);
     if (val >= 0 && val < openHevcContexts->nb_decoders)
         openHevcContexts->active_layer = val;
     else {
         fprintf(stderr, "The requested layer %d can not be decoded (it exceeds the number of allocated decoders %d ) \n", val, openHevcContexts->nb_decoders);
         openHevcContexts->active_layer = openHevcContexts->nb_decoders-1;
     }
+    pthread_mutex_unlock(&openHevcContexts->layer_switch);
 }
 
 void libOpenHevcSetViewLayers(OpenHevc_Handle openHevcHandle, int val)
@@ -915,6 +927,7 @@ void libOpenHevcClose(OpenHevc_Handle openHevcHandle)
         av_freep(&openHevcContext);
     }
     av_freep(&openHevcContexts->wraper);
+    pthread_mutex_destroy(&openHevcContexts->layer_switch);
     av_freep(&openHevcContexts);
 }
 
