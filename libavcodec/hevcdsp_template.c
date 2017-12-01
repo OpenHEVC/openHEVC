@@ -3682,7 +3682,7 @@ static void FUNC(upsample_filter_block_luma_v_all)( uint8_t *_dst, ptrdiff_t _ds
     int y, i, j, phase, refPos16, refPos;
     const int8_t  *   coeff;
     int16_t *   src_tmp;
-    uint16_t *dst_tmp, *dst    = (uint16_t *)_dst;
+    uint8_t *dst_tmp, *dst    = (uint8_t *)_dst;
     _dststride /= sizeof(pixel);
     for( j = 0; j < block_h; j++ )	{
     	y        =   av_clip_c(y_EL+j, topStartL, bottomEndL-1);
