@@ -104,8 +104,6 @@ OHHandle oh_init(int nb_pthreads, int thread_type)
         oh_decoder_ctx->codec_ctx   = avcodec_alloc_context3(oh_decoder_ctx->codec);
         oh_decoder_ctx->picture     = av_frame_alloc();
 
-        av_log(oh_decoder_ctx->codec_ctx,AV_LOG_ERROR, "test\n");
-
         oh_decoder_ctx->codec_ctx->flags |= AV_CODEC_FLAG_UNALIGNED;
 
         //FIXME OpenHEVC does not seem to use AV_CODEC_CAP_TRUNCATED
