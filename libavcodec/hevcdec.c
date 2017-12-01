@@ -721,7 +721,7 @@ static int hls_slice_header(HEVCContext *s)
     s->avctx->level   = s->ps.sps->ptl.general_ptl.level_idc;
 
     sh->dependent_slice_segment_flag = 0;
-    if (!sh->first_slice_in_pic_flag) {
+    if (!first_slice_in_pic_flag) {
         int slice_address_length;
 
         if (s->ps.pps->dependent_slice_segments_enabled_flag)
