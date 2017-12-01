@@ -20,7 +20,7 @@
  */
 #include <stdio.h>
 #include "openhevc.h"
-#include "config.h"
+#include "ohconfig.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavutil/mem.h"

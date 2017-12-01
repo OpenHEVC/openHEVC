@@ -30,7 +30,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdarg.h>
-#include "config.h"
+#include "ohconfig.h"
 
 #if OHCONFIG_AVCBASE
     #define OPENHEVC_HAS_AVC_BASE
