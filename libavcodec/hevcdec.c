@@ -572,7 +572,7 @@ int set_el_parameter(HEVCContext *s) {
             s->sh.Bit_Depth[i][CHANNEL_TYPE_LUMA  ] = getBitDepth(s, CHANNEL_TYPE_LUMA, i);
             s->sh.Bit_Depth[i][CHANNEL_TYPE_CHROMA] = getBitDepth(s, CHANNEL_TYPE_CHROMA, i);
     }
-    if(s->nuh_layer_id){
+    if(s->decoder_id){
         int bl_bit_depth = getBitDepth(s, CHANNEL_TYPE_LUMA, s->nuh_layer_id - 1);
         int bit_depth = getBitDepth(s, CHANNEL_TYPE_LUMA, s->nuh_layer_id);
         int have_CGS = s->ps.pps->colour_mapping_enabled_flag;
@@ -3711,14 +3711,14 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     *gb              = nal->gb;
     s->nal_unit_type = nal->type;
     s->temporal_id   = nal->temporal_id;
-    s->nuh_layer_id  = nal->nuh_layer_id;
 
-    if (nal->nuh_layer_id != s->decoder_id && (s->nal_unit_type != HEVC_NAL_VPS && s->nal_unit_type != HEVC_NAL_SPS /*&& s->nal_unit_type != NAL_PPS*/))
+    if (nal->nuh_layer_id != s->decoder_id && (s->nal_unit_type != HEVC_NAL_VPS && s->nal_unit_type != HEVC_NAL_SPS && s->nal_unit_type != HEVC_NAL_PPS) || nal->nuh_layer_id > s->decoder_id )
         return 0;
 
-    if ((s->temporal_id > s->temporal_layer_id) || (nal->nuh_layer_id > s->quality_layer_id))
-        return 0;
+    s->nuh_layer_id  = s->decoder_id ;
 
+    if ((nal->temporal_id > s->temporal_layer_id) || (nal->nuh_layer_id > s->quality_layer_id))
+        return 0;
 
 
     switch (s->nal_unit_type) {
