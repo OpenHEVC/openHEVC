@@ -1,24 +1,28 @@
-openHEVC Green
+openHEVC
 ========
 
-openHEVC Green is a fork of openHEVC meant to be a power (or energy) efficient HEVC decoder.
-Here we provide the user guide for the Green features only, openHEVC README is available at https://github.com/OpenHEVC/openHEVC.
+openHEVC is a fork of Libav with only the files needed to decode HEVC content, it was created for research purposes.
+Most people will not need to use this and should use the libav HEVC decoder available at https://github.com/OpenHEVC/ffmpeg instead (see https://ffmpeg.org/documentation.html for documentation).
 
 openHEVC in combination with GPAC is used in 3 research projects:
-* 4EVER
-* H2B2VS
+* [4KREPROSYS] (http://4kreprosys.com)
+* [4EVER] (http://www.4ever-project.com)
+* [H2B2VS] (http://h2b2vs.epfl.ch)
 * AUSTRAL
 
-In order to reduce the power consumption of the decoder the main goal was to simplify the inter-prediction filters in one hand, and in the other hand to desactivate the in-loop filters.
-
-What does openHEVC Green feature?
+What does openHEVC support?
 --------
-* 7 (legacy), 3 et 1 taps inter-prediction luma filters
-* 4 (legacy), 2 and 1 taps inter-prediction chroma filters
-* Disabling of the in-loop filters
-  + SAO on (legacy) / off
-  + DBF on (legacy) / off
-* Activation levels, from  0 to 12, in order to activate promptly the power-aware configuration.
+* Main Profile (all conformance bitstreams except BUMPING)
+* Main 10 Profile (except different combination of luma/chroma bitwidth)
+* Range extension (4:2:2/4:4:4)
+  + Bitstream aligned with April 2014 HEVC standard
+* support of SHM4.1 bitstreams
+
+What is the compiling infrastructure?
+--------
+* MSVC2013
+* gcc
+* clang
 
 
 Where is the source code of openHEVC?
@@ -31,28 +35,68 @@ Where is the source code of GPAC?
 --------
 * gpac is located at http://gpac.io.
 * gpac is under LGPL license
-
 How to compile openHEVC on linux from source code
 ----------
-`cmake -DCONFIG_GREEN=1 -DCMAKE_BUILD_TYPE=RELEASE ..`
+* execute these commands
 
+```sh
+git clone git://github.com/OpenHEVC/openHEVC.git
+git checkout hevc_rext
+```
+* install yasm
+* go into OpenHEVC source folder
+* execute these commands
 
-How to use openHEVC Green on linux from source code
+```sh
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=RELEASE ..
+make
+sudo make install
+```
+
+How to test openHEVC on linux from source code
 ----------
 * Prerequisites: SDL or SDL2
 * go into source folder of openHEVC
-* e.g SDL2: `cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)`
-  + add `-g alcsd` with `alcsd` to select the configuration according to the scheme as follows:
-        - a is the Activation Level [0-12]
-        - l is the luma taps number, [7;3;1]
-        - c is the chroma taps number, [4;2;1]
-        - s is the activation of the SAO filter, [0;1]
-        - d is the activation of the deblocking filter, [0,1]
-  + -G enables the verbose mode with the same arguments as above
+* with SDL: `cd build; ./hevc -i name_of_annexB_bitstream.(bit,bin,265)`
+* with SDL2: `cd build; ./hevc_sdl2 -i name_of_annexB_bitstream.(bit,bin,265)`
+  + add `-n` to remove the display 
+  + add `-l layer` with `layer` a number to select the layer in a SHVC bitstream 
+  + add `-f xx` with `xx` to select frame-based (`0`), wpp/tiles (`1`) or combination of frame-based and wpp (`4`)
+  + add `-p` to select the number of threads when -f is activated
 
-For instance, here is how to apply 3 taps luma interpolating filters, with 1 tap chroma interpolating filters, without any loop filter, and this for every frame:
-`./hevc_sdl2 -e 123100 -i name_of_annexB_bitstream.(bit,bin,265)`
+How to compile gpac with openHEVC on linux
+-----------
+* Prerequisites (see http://gpac.wp.mines-telecom.fr/2011/04/20/compiling-gpac-on-ubuntu/)
+* `svn checkout https://gpac.svn.sourceforge.net/svnroot/gpac/trunk`
+* go into gpac source folder
+* execute these commands
 
+```sh
+./configure 
+make
+sudo make install
+```
+
+How to embed HEVC into MP4 file format
+-----------
+* use i_main, lp_main, ld_main or ra_main bitstreams from http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/
+* `MP4Box -add name_of_annexB_bitstream.(bit,bin,265) -fps 50 -new output.mp4`
+  + where fps specifies the framerate (in the case of BQMall_832x480_60_qp22.bin the framerate is 60)
+* `MP4Client output.mp4 # to play HEVC mp4 content`
+
+How to embed HEVC into TS
+-----------
+* use i_main, lp_main, ld_main or ra_main bitstreams from http://ftp.kw.bbc.co.uk/hevc/hm-10.0-anchors/bitstreams/
+* go into gpac source folder
+* execute these commands:
+
+```sh
+cd bin/gcc
+./mp42ts -prog=hevc.mp4 -dst-file=test.ts
+MP4Client test.ts # to play HEVC transport streams
+```
 
 openHEVC contributors
 -----------
@@ -71,11 +115,55 @@ openHEVC contributors
 * Former contributors
   + Anand Meher Kotra (IETR/INSA Rennes)
 
+- gpac contributors
+-----------
+* see http://gpac.wp.mines-telecom.fr/about/
 
+
+What does openHEVC Green feature?
+--------
+* 7 (legacy), 3 et 1 taps inter-prediction luma filters
+* 4 (legacy), 2 and 1 taps inter-prediction chroma filters
+* Disabling of the in-loop filters
+  + SAO on (legacy) / off
+  + DBF on (legacy) / off
+* Activation levels, from  0 to 12, in order to activate promptly the power-aware configuration.
+
+
+How to compile openHEVC on linux from source code
+----------
+`cmake -DCONFIG_GREEN=1 -DCMAKE_BUILD_TYPE=RELEASE ..`
+
+With Configure procedure:
+`./configure --enable-green`
+
+Command line options:
+  + add `-g alcsd` with `alcsd` to select the configuration according to the scheme as follows:
+        - a is the Activation Level [0-12]
+        - l is the luma taps number, [7;3;1]
+        - c is the chroma taps number, [4;2;1]
+        - s is the activation of the SAO filter, [0;1]
+        - d is the activation of the deblocking filter, [0,1]
+  + -G enables the verbose mode with the same arguments as above
+For instance, here is how to apply 3 taps luma interpolating filters, with 1 tap chroma interpolating filters, without any loop filter, and this for every frame:
+`./hevc_sdl2 -e 123100 -i name_of_annexB_bitstream.(bit,bin,265)`
 Publications
 -----------
 * Conferences:
+  + Hamidouche W., Raulet M., Déforges O, « Real time SHVC decoder: Implementation and complexity analysis », in ICIP 2014 – IEEE International Conference on Image Processing
+
+  + Hamidouche W., Raulet M., Déforges O., « Parallel SHVC Decoder: Implementation and Analysis », in ICME 2014 – IEEE International Conference on Multimedia and Expo.
+  
+  + Hamidouche W., Cocherel G. , Le Feuvre J., Raulet M. and Déforges O. , « 4K Real-time video streaming with SHVC decoder and GPAC player », in ICME 2014 – IEEE International Conference on Multimedia and Expo.
+
+  + Hamidouche W., Raulet M., Déforges O., « Multi-core software architecture for the scalable HEVC decoder »,  in ICASSP 2014 – IEEE International Conference on Acoustics, Speech, and Signal Processing.
+  
+  + J. Le Feuvre, J.-M. Thiesse, M. Parmentier, M. Raulet and Ch. Daguet, « Ultra high definition HEVC DASH data set », ACM MMSys, Singapore, March 2014, pp. 7-12.
+  
+  + M. Raulet, G. Cocherel, W. Hamidouche, J. Le Feuvre, J. Gorin, S. Kervadec and J. Viéron, « HEVC Live end to end demonstration », MMSP, Pula, Italia, October 2013. 
+
   + Erwan Nogues, Simon Holmbacka, Maxime Pelcat, Daniel Menard, Johan Lilius. Power-Aware HEVC Decoding with Tunable Image Quality. IEEE International Workshop on Signal Processing Systems, Oct 2014, Belfast, United Kingdom.
 
   + Erwan Nogues, Morgan Lacour, Erwan Raffin, Maxime Pelcat, Daniel Menard. Low Power Software HEVC Decoder Demo for Mobile Devices. ICME 2015.
 
+  
