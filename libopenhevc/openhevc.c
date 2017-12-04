@@ -20,11 +20,12 @@
  */
 #include <stdio.h>
 #include "openhevc.h"
-#include "config.h"
+#include "ohconfig.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "version.h"
 
 #define MAX_DECODERS 3
@@ -48,6 +49,7 @@ typedef struct OHContext {
     int got_picture_mask;          ///< Mask of picture outputs from decoder
     int current_max_ouput_layer;   ///< Maximum current output layer
     int set_vps;
+    pthread_mutex_t layer_switch;  ///< mutex to avoid in loop changes
 } OHContext;
 
 
@@ -84,6 +86,8 @@ OHHandle oh_init(int nb_pthreads, int thread_type)
 
     oh_ctx->ctx_list = av_malloc(sizeof(OHDecoderCtx*)*oh_ctx->nb_decoders);
 
+    pthread_mutex_init(&oh_ctx->layer_switch ,NULL);
+
     for( i = 0; i < oh_ctx->nb_decoders; i++){
         oh_decoder_ctx = oh_ctx->ctx_list[i] = av_malloc(sizeof(OHDecoderCtx));
         av_init_packet(&oh_decoder_ctx->avpkt);
@@ -99,6 +103,8 @@ OHHandle oh_init(int nb_pthreads, int thread_type)
         oh_decoder_ctx->parser_ctx  = av_parser_init( oh_decoder_ctx->codec->id );
         oh_decoder_ctx->codec_ctx   = avcodec_alloc_context3(oh_decoder_ctx->codec);
         oh_decoder_ctx->picture     = av_frame_alloc();
+
+        av_log(oh_decoder_ctx->codec_ctx,AV_LOG_ERROR, "test\n");
 
         oh_decoder_ctx->codec_ctx->flags |= AV_CODEC_FLAG_UNALIGNED;
 
@@ -243,12 +249,15 @@ int oh_decode(OHHandle openHevcHandle, const unsigned char *buff, int au_len,
     OHContext        *oh_ctx = (OHContext *) openHevcHandle;
     OHDecoderCtx     *oh_decoder_ctx;
 
+    int target_active_layer = oh_ctx->target_active_layer;
+
     oh_ctx->got_picture_mask = 0;
 
-    for(i =0; i < MAX_DECODERS; i++)  {
+    pthread_mutex_lock(&oh_ctx->layer_switch);
+
+    for(i =0; i < MAX_DECODERS - 1; i++)  {
         int got_picture = 0;
         oh_decoder_ctx         = oh_ctx->ctx_list[i];
-
 
         oh_decoder_ctx->codec_ctx->quality_id = oh_ctx->target_active_layer;
 
@@ -264,6 +273,7 @@ AV_NOWARN_DEPRECATED(
         } else {
             oh_decoder_ctx->avpkt.size = 0;
             oh_decoder_ctx->avpkt.data = NULL;
+            oh_decoder_ctx->avpkt.pts  = 0;
             avcodec_flush_buffers(oh_decoder_ctx->codec_ctx);
         }
 
@@ -271,6 +281,7 @@ AV_NOWARN_DEPRECATED(
             oh_ctx->ctx_list[i+1]->codec_ctx->BL_frame =
                     oh_ctx->ctx_list[i]->codec_ctx->BL_frame;
     }
+    pthread_mutex_unlock(&oh_ctx->layer_switch);
 
     oh_ctx->got_picture_mask = ret;
 
@@ -298,6 +309,8 @@ int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
     OHContext     *oh_ctx = (OHContext *) openHevcHandle;
     OHDecoderCtx  *oh_decoder_ctx;
 
+    int target_active_layer = oh_ctx->target_active_layer;
+
     oh_ctx->got_picture_mask = 0;
 
     poc_id++;
@@ -306,14 +319,15 @@ int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
     for(i =0; i < MAX_DECODERS; i++)  {
         int got_picture = 0;
         oh_decoder_ctx                = oh_ctx->ctx_list[i];
-        oh_decoder_ctx->codec_ctx->quality_id = oh_ctx->target_active_layer;
+        oh_decoder_ctx->codec_ctx->quality_id = target_active_layer;
+
         if(buff && i==0){
             oh_decoder_ctx->avpkt.size = nal_len;
             oh_decoder_ctx->avpkt.data = (uint8_t *) buff;
             oh_decoder_ctx->avpkt.pts  = pts;
             oh_decoder_ctx->avpkt.poc_id = poc_id;
 
-            if(buff2 && oh_ctx->target_active_layer){
+            if(buff2 && target_active_layer){
                 oh_decoder_ctx->avpkt.el_available=1;
             } else {
                 oh_decoder_ctx->avpkt.el_available=0;
@@ -326,7 +340,7 @@ int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
             ret |= (got_picture << i);
 
             oh_ctx->got_picture_mask = ret;
-        } else if( buff2 && i > 0 && i <= oh_ctx->target_active_layer){
+        } else if( buff2 && i > 0 && i <= target_active_layer){
             oh_decoder_ctx->avpkt.size = nal_len2;
             oh_decoder_ctx->avpkt.data = (uint8_t *) buff2;
             oh_decoder_ctx->avpkt.pts  = pts2;
@@ -352,7 +366,7 @@ int oh_decode_lhvc(OHHandle openHevcHandle, const unsigned char *buff,
             oh_decoder_ctx->avpkt.data = NULL;
         }
 
-        if(i < oh_ctx->target_active_layer)
+        if(i < target_active_layer)
             oh_ctx->ctx_list[i+1]->codec_ctx->BL_frame =
                     oh_ctx->ctx_list[i]->codec_ctx->BL_frame;
     }
@@ -372,7 +386,6 @@ void oh_extradata_cpy(OHHandle openHevcHandle, unsigned char *extra_data,
     int i;
     OHContext *oh_ctx_list = (OHContext *) openHevcHandle;
     OHDecoderCtx     *oh_ctx;
-
     for(i =0; i <= oh_ctx_list->target_active_layer; i++)  {
         oh_ctx = oh_ctx_list->ctx_list[i];
         oh_ctx->codec_ctx->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
@@ -777,9 +790,9 @@ void oh_select_active_layer(OHHandle openHevcHandle, int val)
 {
     OHContext *oh_ctx_list = (OHContext *) openHevcHandle;
     if (val >= 0 && val < oh_ctx_list->nb_decoders){
-        //oh_flush_shvc(oh_ctx_list,val-1);
+        pthread_mutex_lock(&oh_ctx_list->layer_switch);
         oh_ctx_list->target_active_layer = val;
-
+        pthread_mutex_unlock(&oh_ctx_list->layer_switch);
     }
     else {
         av_log(NULL, AV_LOG_ERROR, "The requested layer %d can not be decoded (it exceeds the number of allocated decoders %d ) \n", val, oh_ctx_list->nb_decoders);
@@ -792,7 +805,7 @@ void oh_select_view_layer(OHHandle openHevcHandle, int val)
 {
     OHContext *oh_ctx_list = (OHContext *) openHevcHandle;
 
-    if (val >= 0 && val < oh_ctx_list->nb_decoders)
+    if (val >= 0 && val <= oh_ctx_list->target_active_layer)
         oh_ctx_list->target_display_layer = val;
 
     else {
@@ -908,9 +921,11 @@ void oh_close(OHHandle openHevcHandle)
         av_freep(&oh_ctx->picture);
         av_freep(&oh_ctx);
     }
+    pthread_mutex_destroy(&oh_ctx_list->layer_switch);
     av_freep(&oh_ctx_list->ctx_list);
     av_freep(&oh_ctx_list);
     av_log(NULL,AV_LOG_DEBUG,"Close openHEVC decoder\n");
+
 
 }
 
@@ -918,7 +933,6 @@ void oh_flush(OHHandle openHevcHandle)
 {
     OHContext *oh_ctx_list = (OHContext *) openHevcHandle;
     OHDecoderCtx     *oh_ctx  = oh_ctx_list->ctx_list[oh_ctx_list->target_active_layer];
-
     oh_ctx->codec->flush(oh_ctx->codec_ctx);
     avcodec_flush_buffers(oh_ctx->codec_ctx);
 }
@@ -927,7 +941,7 @@ void oh_flush_shvc(OHHandle openHevcHandle, int decoderId)
 {
     OHContext *oh_ctx_list = (OHContext *) openHevcHandle;
     OHDecoderCtx     *oh_ctx      = oh_ctx_list->ctx_list[decoderId];
-    if (!oh_ctx){
+    if (oh_ctx){
     oh_ctx->codec->flush(oh_ctx->codec_ctx);
     avcodec_flush_buffers(oh_ctx->codec_ctx);
     }

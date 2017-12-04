@@ -3,6 +3,7 @@ DESC = OpenHEVC Decoder
 
 HEADERS = openhevc.h                             \
           version.h                              \
+          ohconfig.h                             \
 
 
 OBJS = openhevc.o                                \
