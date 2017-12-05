@@ -387,6 +387,7 @@ const unsigned oh_version(OHHandle oh_hdl);
 
 unsigned openhevc_version(void);
 
+const char *openhevc_ident(void);
 const char *openhevc_configuration(void);
 
 #ifdef __cplusplus
