@@ -671,6 +671,14 @@ mc_bi_w_funcs(qpel_hv, 12, sse4)
 c->idct2_emt_v[DCT_##num][0] = emt_idct_##num##_##size##_v_##optim##_##depth;\
 c->idct2_emt_h[DCT_##num][0] = emt_idct_##num##_##size##_h_##optim##_##depth;\
 
+#define LINK_AMT_IDCT2(num,size,optim,log2_tr_min2,depth)\
+c->idct2_emt_v2[DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_v_##optim##_##depth;\
+c->idct2_emt_h2[DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_h_##optim##_##depth;\
+
+#define LINK_AMT_IDST2(num,size,optim,log2_tr_min2,depth)\
+c->idct2_emt_v2[DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_v_##optim##_##depth;\
+c->idct2_emt_h2[DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_h_##optim##_##depth;\
+
 #define LINK_AMT_IDST(num,size,optim,depth)\
 c->idct2_emt_v[DST_##num][0] = emt_idst_##num##_##size##_v_##optim##_##depth;\
 c->idct2_emt_h[DST_##num][0] = emt_idst_##num##_##size##_h_##optim##_##depth;\
@@ -795,11 +803,35 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->transform_add[3]    = ff_hevc_transform_add32_8_avx;
         }
 #if OHCONFIG_AMT
-            LINK_AMT_IDCT(  II,4x4,avx2,8);
-            LINK_AMT_IDST(   I,4x4,avx2,8);
-            LINK_AMT_IDST( VII,4x4,avx2,8);
-            LINK_AMT_IDCT(VIII,4x4,avx2,8);
-            LINK_AMT_IDCT(   V,4x4,avx2,8);
+//            LINK_AMT_IDCT(  II,4x4,avx2,8);
+//            LINK_AMT_IDST(   I,4x4,avx2,8);
+//            LINK_AMT_IDST( VII,4x4,avx2,8);
+//            LINK_AMT_IDCT(VIII,4x4,avx2,8);
+//            LINK_AMT_IDCT(   V,4x4,avx2,8);
+
+            LINK_AMT_IDCT2(  II,4x4,avx2,0,8);
+            LINK_AMT_IDST2(   I,4x4,avx2,0,8);
+            LINK_AMT_IDST2( VII,4x4,avx2,0,8);
+            LINK_AMT_IDCT2(VIII,4x4,avx2,0,8);
+            LINK_AMT_IDCT2(   V,4x4,avx2,0,8);
+
+            LINK_AMT_IDCT2(  II,8x8,avx2,1,8);
+            LINK_AMT_IDST2(   I,8x8,avx2,1,8);
+            LINK_AMT_IDST2( VII,8x8,avx2,1,8);
+            LINK_AMT_IDCT2(VIII,8x8,avx2,1,8);
+            LINK_AMT_IDCT2(   V,8x8,avx2,1,8);
+
+            LINK_AMT_IDCT2(  II,16x16,avx2,2,8);
+            LINK_AMT_IDST2(   I,16x16,avx2,2,8);
+            LINK_AMT_IDST2( VII,16x16,avx2,2,8);
+            LINK_AMT_IDCT2(VIII,16x16,avx2,2,8);
+            LINK_AMT_IDCT2(   V,16x16,avx2,2,8);
+
+            LINK_AMT_IDCT2(  II,32x32,avx2,3,8);
+            LINK_AMT_IDST2(   I,32x32,avx2,3,8);
+            LINK_AMT_IDST2( VII,32x32,avx2,3,8);
+            LINK_AMT_IDCT2(VIII,32x32,avx2,3,8);
+            LINK_AMT_IDCT2(   V,32x32,avx2,3,8);
 #endif
         if (EXTERNAL_AVX2(cpu_flags)) {
 

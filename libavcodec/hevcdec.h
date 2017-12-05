@@ -435,7 +435,7 @@ typedef struct HEVCTransformContext{
     HEVCQuantContext quant_ctx;//local
     HEVCTransformScanContext scan_ctx;
     const uint8_t *scale_matrix;//local but some global tests
-    uint8_t significant_cg_flag[64];
+    uint8_t significant_cg_flag[2][64];
     int log2_trafo_size;
     int log2_tr_size_minus2;
     int transform_size;
@@ -449,9 +449,9 @@ typedef struct HEVCTransformContext{
 typedef struct HEVCPersistentRiceContext{
     uint8_t stat_coeff[4];
     uint8_t *current_coeff;
-    int rice_p_init;
+    //int rice_p_init;
     int rice_init;
-    int sb_type;
+    //int sb_type;
 }HEVCPersistentRiceContext;
 
 typedef struct CGContext{
@@ -463,8 +463,8 @@ typedef struct CGContext{
     int is_dc_cg;
     int is_last_or_dc_cg;
     int implicit_non_zero_coeff;
-    int x_cg;
-    int y_cg;
+    //int x_cg;
+    //int y_cg;
     int prev_sig;
     //uint8_t *ctx_idx_map;
 }CGContext;
@@ -532,6 +532,7 @@ typedef struct HEVCLocalContext {
     int tile_id;
     HEVCTransformContext transform_ctx;
     CGContext cg_ctx;
+    DECLARE_ALIGNED(32,int16_t, cg_coeffs[2][64*16]);
 } HEVCLocalContext;
 
 typedef struct HEVCContext {

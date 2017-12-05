@@ -1761,7 +1761,6 @@ static void FUNC(emt_idct_VIII_4x4_v)(int16_t *x, int16_t *block, int shift, con
 {
 #define CB_SIZE 4
     int i;
-
     const int16_t *iT = DCT_VIII_4x4[0];
 
     int c[4];
@@ -1809,6 +1808,7 @@ static void FUNC(emt_idct_VIII_8x8_v)(int16_t *coeff, int16_t *block, int shift,
 {
 #define CB_SIZE 8
     int i, j, k, iSum;
+   // fprintf(stderr,"8X8 passage\n");
 
     for (i = 0; i < CB_SIZE; i++){
         for (j = 0; j < CB_SIZE; j++){
