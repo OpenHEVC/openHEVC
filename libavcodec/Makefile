@@ -123,7 +123,7 @@ OBJS-$(CONFIG_MOV_DEMUXER)             += ac3tab.o
 # parsers
 OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264_parse.o h2645_parse.o \
                                           h264_ps.o h264_sei.o h264data.o
-OBJS-$(CONFIG_HEVC_PARSER)             += hevc_parser.o h2645_parse.o hevc_ps.o 
+OBJS-$(CONFIG_HEVC_PARSER)             += hevc_parser.o h2645_parse.o hevc_ps.o
 
 
 # bitstream filters
@@ -135,7 +135,6 @@ OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS                   += null_bsf.o
 
 # thread libraries
-OBJS-$(HAVE_LIBC_MSVCRT)               += file_open.o
 OBJS-$(HAVE_THREADS)                   += pthread.o pthread_slice.o pthread_frame.o
 OBJS-$(CONFIG_FRAME_THREAD_ENCODER)    += frame_thread_encoder.o
 

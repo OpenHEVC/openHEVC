@@ -984,6 +984,10 @@ unsigned openhevc_version(void){
     return LIBOPENHEVC_VERSION_INT;
 }
 
+const char *openhevc_ident(void){
+    return LIBOPENHEVC_IDENT;
+}
+
 const char *openhevc_configuration(void){
     return FFMPEG_CONFIGURATION;
 }
