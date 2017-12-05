@@ -2571,7 +2571,7 @@ case "$toolchain" in
         # behaviour if the regexp was unable to match anything, since this
         # successfully parses the version number of existing supported
         # versions that require the converter (MSVC 2010 and 2012).
-        cl_major_ver=$(cl 2>&1 | sed -n 's/.*Version \([[:digit:]]\{1,\}\)\..*/\1/p')
+        cl_major_ver=$(cl 2>&1 | sed -rn 's/.*Version.([[:digit:]]+)\..*/\1/pi')
         if [ -z "$cl_major_ver" ] || [ $cl_major_ver -ge 18 ]; then
             cc_default="cl"
             cxx_default="cl"
