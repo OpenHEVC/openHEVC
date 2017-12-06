@@ -1776,7 +1776,7 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
                     tr_idx_v = emt_inter_subset_select[(tu_emt_Idx) >> 1];
                 }
             }
-#define TEST_AVX2 1
+#define TEST_AVX2 0
  #if !TEST_AVX2
             s->hevcdsp.idct2_emt_v[tr_idx_v][tr_ctx->log2_tr_size_minus2](coeffs, tmp, 0, clip_min, clip_max);
             s->hevcdsp.idct2_emt_h[tr_idx_h][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);

@@ -1381,8 +1381,8 @@ void FUNC(emt_idct_##DCT_num##_8x8_h_avx2)(int16_t * restrict src, int16_t * res
     }                                                                          \
 
 
-IDCT8X8_V(DCT_II,II)
-//IDCT8X8_V(DCT_V,V)
+//IDCT8X8_V(DCT_II,II)
+IDCT8X8_V(DCT_V,V)
 IDCT8X8_V(DCT_VIII,VIII)
 IDCT8X8_V(DST_VII,VII)
 IDCT8X8_V(DST_I,I)
@@ -1395,16 +1395,16 @@ IDCT8X8_H(DST_VII,VII)
 IDCT8X8_H(DST_I,I)
 
 
-void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restrict dst,  int * av_restrict significant_cg_list, int log2_transform_range, const int clip_min, const int clip_max)
+void FUNC(emt_idct_II_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restrict dst,  int * av_restrict significant_cg_list, int log2_transform_range, const int clip_min, const int clip_max)
 {
     const __m256i add  = _mm256_set1_epi32(ADD_EMT_V);
 
     __m256i x0,x4,x8,x12;
 
-    const __m256i cg_dct_matrix_0 = _mm256_load_si256((__m256i *)TR_DCT_V_8x8_per_CG[0]);
-    const __m256i cg_dct_matrix_1 = _mm256_load_si256((__m256i *)TR_DCT_V_8x8_per_CG[1]);
-    const __m256i cg_dct_matrix_2 = _mm256_load_si256((__m256i *)TR_DCT_V_8x8_per_CG[2]);
-    const __m256i cg_dct_matrix_3 = _mm256_load_si256((__m256i *)TR_DCT_V_8x8_per_CG[3]);
+    const __m256i cg_dct_matrix_0 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[0]);
+    const __m256i cg_dct_matrix_1 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[1]);
+    const __m256i cg_dct_matrix_2 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[2]);
+    const __m256i cg_dct_matrix_3 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[3]);
 
     //const __m256i perm_1 = _mm256_setr_epi32(0,0,5,5,1,1,4,4);
     //const __m256i perm_2 = _mm256_setr_epi32(2,2,7,7,3,3,6,6);
@@ -1428,7 +1428,7 @@ void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restric
         {
             __m256i x0_tmp = _mm256_setzero_si256();
             __m256i x8_tmp = _mm256_setzero_si256();
-            {
+            if(significant_cg_list[0]){
                 //K==0 I==0
                 __m256i dct_matrix = cg_dct_matrix_0;
                 const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
@@ -1445,7 +1445,7 @@ void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restric
                 x0_tmp = _mm256_add_epi32(x0,x0_tmp);
                 x8_tmp = _mm256_add_epi32(x8,x8_tmp);
             }
-            {
+            if(significant_cg_list[2]){
                 //K==1 I==0
                 __m256i dct_matrix = cg_dct_matrix_1;
                 const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
@@ -1474,7 +1474,7 @@ void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restric
         {
             __m256i x0_tmp = _mm256_setzero_si256();
             __m256i x8_tmp = _mm256_setzero_si256();
-            {
+            if(significant_cg_list[0]){
                 //K==0 I==0
                 const __m256i dct_matrix = cg_dct_matrix_2;
                 const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
@@ -1491,7 +1491,7 @@ void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restric
                 x0_tmp = _mm256_add_epi32(x0,x0_tmp);
                 x8_tmp = _mm256_add_epi32(x8,x8_tmp);
             }
-            {
+            if(significant_cg_list[2]){
                 const __m256i dct_matrix = cg_dct_matrix_3;
                 const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
                 const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
@@ -1536,7 +1536,7 @@ void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restric
             __m256i x0_tmp = _mm256_setzero_si256();
             __m256i x8_tmp = _mm256_setzero_si256();
             //COMPUTE CG 1 MATRIX 0
-            {
+            if(significant_cg_list[1]){
                 const __m256i dct_matrix = cg_dct_matrix_0;
                 //K==00 I==1
                 const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
@@ -1554,7 +1554,7 @@ void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restric
                 x8_tmp = _mm256_add_epi32(x8,x8_tmp);
             }
             //COMPUTE CG 3 MATRIX_1
-            {   //K==1 I==1
+            if(significant_cg_list[3]){   //K==1 I==1
                 const __m256i dct_matrix = cg_dct_matrix_1;
                 const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
                 const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
@@ -1582,7 +1582,7 @@ void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restric
             __m256i x0_tmp = _mm256_setzero_si256();
             __m256i x8_tmp = _mm256_setzero_si256();
             //COMPUTE CG 1 MATRIX 2
-            {
+            if(significant_cg_list[1]){
                 const __m256i dct_matrix = cg_dct_matrix_2;
                 //K==00 I==1
                 const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
@@ -1600,7 +1600,7 @@ void FUNC(emt_idct_V_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restric
                 x8_tmp = _mm256_add_epi32(x8,x8_tmp);
             }
             //COMPUTE CG 3 MATRIX_3
-            {
+            if(significant_cg_list[3]){
                 const __m256i dct_matrix = cg_dct_matrix_3;
                 const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
                 const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
