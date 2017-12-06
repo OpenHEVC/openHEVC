@@ -167,7 +167,7 @@ openhevc-static: libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$
 	$(RM) -r tmp
 
 openhevc-static-win: libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
-	$(AR) /OUT:libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
+	$(AR) /OUT:libopenhevc/$(LIBPREF)openhevc$(BUILDSUF).lib libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
 
 libavutil/ffversion.h .version:
 	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)

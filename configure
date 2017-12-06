@@ -3853,7 +3853,6 @@ case $target_os in
         shlibdir_default="$bindir_default"
         SLIBPREF=""
         SLIBSUF=".dll"
-        LIBSUF=".lib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         SLIB_CREATE_DEF_CMD='$(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
@@ -4144,6 +4143,8 @@ int ff_extern;
 EOF
 sym=$($nm $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
+
+SLIB_CREATE_DEF_CMD="EXTERN_PREFIX=${extern_prefix} ${SLIB_CREATE_DEF_CMD}"
 
 check_cc <<EOF && enable_weak inline_asm
 void foo(void) { __asm__ volatile ("" ::); }
