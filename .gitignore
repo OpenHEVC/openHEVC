@@ -52,3 +52,5 @@
 /config.*
 /ohplay
 *.version
+
+libavutil/ffversion.h

@@ -3853,6 +3853,7 @@ case $target_os in
         shlibdir_default="$bindir_default"
         SLIBPREF=""
         SLIBSUF=".dll"
+        LIBSUF=".lib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         SLIB_CREATE_DEF_CMD='$(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
@@ -4442,7 +4443,7 @@ EOF
 
 fi
 
-check_cflags -mfpu=neon && check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_neon
+enable intrinsics_neon && check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && check_cflags -mfpu=neon
 
 check_ldflags -Wl,--as-needed
 check_ldflags -Wl,-z,noexecstack
@@ -5845,6 +5846,7 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 
 print_config OHCONFIG_ "$config_files" $OPENHEVC_COMPONENTS
 
+echo > "libopenhevc/ohconfig.h"
 print_config OHCONFIG_ "libopenhevc/ohconfig.h" $OPENHEVC_COMPONENTS
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH

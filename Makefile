@@ -39,7 +39,7 @@ $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
 #OBJS-ffmpeg-$(HAVE_VDPAU_X11) += ffmpeg_vdpau.o
 #OBJS-ffserver                 += ffserver_config.o
 
-# OpenHEVC Simple Player 
+# OpenHEVC Simple Player
 OBJS-ohplay-${CONFIG_SDL}      += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl.o
 OBJS-ohplay-${CONFIG_SDL2}     += ohplay_utils/ohtimer_sdl.o ohplay_utils/ohdisplay_sdl2.o
 OBJS-ohplay-${CONFIG_NOVIDEO}  += ohplay_utils/ohtimer_sys.o ohplay_utils/ohdisplay_none.o
@@ -146,7 +146,7 @@ GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 .version: M=@
 
 openhevc: openhevc-yes
- 
+
 openhevc-$(OHCONFIG_OHSHARED): openhevc-shared
 
 openhevc-$(OHCONFIG_OHSTATIC): openhevc-static
@@ -166,6 +166,9 @@ openhevc-static: libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$
 	$(Q)cp -f tmp/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libopenhevc/
 	$(RM) -r tmp
 
+openhevc-static-win: libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
+	$(AR) /OUT:libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
+
 libavutil/ffversion.h .version:
 	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)
 	$(Q)touch .version
@@ -174,7 +177,7 @@ libavutil/ffversion.h .version:
 -include .version
 
 ifdef AVPROGS
-install: install-progs 
+install: install-progs
 endif
 
 install: install-libs install-headers
