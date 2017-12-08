@@ -1295,7 +1295,7 @@ COMPONENT_LIST="
     $AVUTIL_COMPONENTS
 "
 
-EXTERNAL_LIBRARY_LIST="  
+EXTERNAL_LIBRARY_LIST="
     bzlib
     iconv
     opengl
@@ -1307,7 +1307,7 @@ EXTERNAL_LIBRARY_LIST="
 "
 
 HWACCEL_LIBRARY_LIST="
-    cuda   
+    cuda
     cuvid
     d3d11va
     dxva2
@@ -2346,7 +2346,7 @@ find_things_extern(){
     thing=$1
     pattern=$2
     file=$source_path/$3
-    sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$thing/p" "$file"
+    sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;.*/\1_$thing/p" "$file"
 }
 
 BSF_LIST=$(find_things_extern bsf AVBitStreamFilter libavcodec/bitstream_filters.c)
@@ -2571,7 +2571,7 @@ case "$toolchain" in
         # behaviour if the regexp was unable to match anything, since this
         # successfully parses the version number of existing supported
         # versions that require the converter (MSVC 2010 and 2012).
-        cl_major_ver=$(cl 2>&1 | sed -n 's/.*Version \([[:digit:]]\{1,\}\)\..*/\1/p')
+        cl_major_ver=$(cl 2>&1 | sed -rn 's/.*Version.([[:digit:]]+)\..*/\1/pi')
         if [ -z "$cl_major_ver" ] || [ $cl_major_ver -ge 18 ]; then
             cc_default="cl"
             cxx_default="cl"
@@ -4144,6 +4144,8 @@ EOF
 sym=$($nm $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
 
+SLIB_CREATE_DEF_CMD="EXTERN_PREFIX=${extern_prefix} ${SLIB_CREATE_DEF_CMD}"
+
 check_cc <<EOF && enable_weak inline_asm
 void foo(void) { __asm__ volatile ("" ::); }
 EOF
@@ -4442,7 +4444,7 @@ EOF
 
 fi
 
-check_cflags -mfpu=neon && check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_neon
+enable intrinsics_neon && check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && check_cflags -mfpu=neon
 
 check_ldflags -Wl,--as-needed
 check_ldflags -Wl,-z,noexecstack
@@ -5599,7 +5601,7 @@ echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL  support              ${sdl-no}"
 echo "SDL2 support              ${sdl2-no}"
-echo "OpenHEVC Green            ${green-no}" 
+echo "OpenHEVC Green            ${green-no}"
 echo "texi2html enabled         ${texi2html-no}"
 echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
@@ -5845,6 +5847,7 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 
 print_config OHCONFIG_ "$config_files" $OPENHEVC_COMPONENTS
 
+echo > "libopenhevc/ohconfig.h"
 print_config OHCONFIG_ "libopenhevc/ohconfig.h" $OPENHEVC_COMPONENTS
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
