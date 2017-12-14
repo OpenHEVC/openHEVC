@@ -154,20 +154,18 @@ openhevc-$(OHCONFIG_OHSTATIC): openhevc-static
 
 openhevc-shared: libopenhevc/$(SLIBPREF)openhevc$(BUILDSUF)$(SLIBSUF) libopenhevc/libopenhevc.pc
 
-openhevc-static: libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
-	$(Q)mkdir -p tmp && cp $^ tmp/
-	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF)
-	$(RM) $(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF)
-	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF)
-	$(RM) $(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF)
-	$(Q)cd tmp &&  $(UNAR) -x $(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
-	$(RM) $(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
-	$(AR) $(ARFLAGS) tmp/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) tmp/*.o
-	$(Q)cp -f tmp/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libopenhevc/
-	$(RM) -r tmp
+
+openhevc-static-clean:
+	$(RM) -f libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF)
+	$(RM) -f libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF)
+	$(RM) -f libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
+
+openhevc-static: openhevc-static-clean libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
+	$(AR) $(ARFLAGS) libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) $(OBJS-libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF)) $(OBJS-libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF)) $(OBJS-libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF))
 
 openhevc-static-win: libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
 	$(AR) /OUT:libopenhevc/$(LIBPREF)openhevc$(BUILDSUF).lib libopenhevc/$(LIBPREF)openhevc$(BUILDSUF)$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(BUILDSUF)$(LIBSUF) libavutil/$(LIBPREF)avutil$(BUILDSUF)$(LIBSUF)
+
 
 libavutil/ffversion.h .version:
 	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)

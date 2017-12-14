@@ -17,6 +17,7 @@ $(LIBOBJS) $(LIBOBJS:.o=.s) $(LIBOBJS:.o=.i):   CPPFLAGS += -DHAVE_AV_CONFIG_H
 #$(TESTOBJS) $(TESTOBJS:.o=.i): CFLAGS += -Umain
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
+	$(eval OBJS-$@ := $^)
 	$(RM) $@
 	$(AR) $(ARFLAGS) $(AR_O) $^
 	$(RANLIB) $@
