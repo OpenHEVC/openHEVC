@@ -1862,8 +1862,10 @@ IDCT16x16_H(DST_I,I)
 
 
 #define IDCT32x32_V(DCT_type,DCT_num)\
-void FUNC(emt_idct_##DCT_num##_32x32_v_avx2)(int16_t * src, int16_t * dst,  int *significant_cg_list, int log2_transform_range, const int clip_min, const int clip_max)\
+void FUNC(emt_idct_##DCT_num##_32x32_v_avx2)(int16_t *restrict src, int16_t * restrict dst,  int *restrict significant_cg_list, int log2_transform_range, const int clip_min, const int clip_max)\
 {                                                                              \
+    /*uint64_t time1, time2;                                                     \
+    time1= rdtsc();                                                            */\
     const __m256i add  = _mm256_set1_epi32(ADD_EMT_V);                         \
     int i,j,k;                                                                 \
     __m256i x0,x4,x8,x12,_src2;                                                \
