@@ -1056,6 +1056,12 @@ void FUNC(emt_idct_VIII_4x4_v_avx2)(int16_t * restrict src, int16_t * restrict d
 
 }
 
+extern __inline__ uint64_t rdtsc(void) {
+  unsigned a, d;
+  //x = clock_gettime(CLOCK_MONOTONIC);
+  __asm__ volatile ("rdtsc" : "=a" (a), "=d" (d));
+  return (a | (d << 32));
+}
 
 #define DO_4X4_H2() \
 int shift = (EMT_TRANSFORM_MATRIX_SHIFT + 15 - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;\
