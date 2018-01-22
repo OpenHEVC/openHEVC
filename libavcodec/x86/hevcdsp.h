@@ -568,6 +568,29 @@ void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block, i
    DECL_AMT_IDCT2(   I,32x32,avx2,8)
    DECL_AMT_IDCT2( VII,32x32,avx2,8)
 
+   DECL_AMT_IDCT(  II,4x4,avx2,10)
+   DECL_AMT_IDCT(   V,4x4,avx2,10)
+   DECL_AMT_IDCT(VIII,4x4,avx2,10)
+   DECL_AMT_IDST( VII,4x4,avx2,10)
+   DECL_AMT_IDST(   I,4x4,avx2,10)
+
+   DECL_AMT_IDCT2(VIII,8x8,avx2,10)
+   DECL_AMT_IDCT2( VII,8x8,avx2,10)
+   DECL_AMT_IDCT2(   I,8x8,avx2,10)
+   DECL_AMT_IDCT2(   V,8x8,avx2,10)
+   DECL_AMT_IDCT2(  II,8x8,avx2,10)
+
+   DECL_AMT_IDCT2(  II,16x16,avx2,10)
+   DECL_AMT_IDCT2(   V,16x16,avx2,10)
+   DECL_AMT_IDCT2(VIII,16x16,avx2,10)
+   DECL_AMT_IDCT2(   I,16x16,avx2,10)
+   DECL_AMT_IDCT2( VII,16x16,avx2,10)
+
+   DECL_AMT_IDCT2(  II,32x32,avx2,10)
+   DECL_AMT_IDCT2(   V,32x32,avx2,10)
+   DECL_AMT_IDCT2(VIII,32x32,avx2,10)
+   DECL_AMT_IDCT2(   I,32x32,avx2,10)
+   DECL_AMT_IDCT2( VII,32x32,avx2,10)
 
 //#endif
 

@@ -1985,3 +1985,282 @@ IDCT32x32_H(DCT_V,V)
 IDCT32x32_H(DCT_VIII,VIII)
 IDCT32x32_H(DST_VII,VII)
 IDCT32x32_H(DST_I,I)
+
+
+#undef BIT_DEPTH
+#define BIT_DEPTH 10
+void FUNC(emt_idct_VIII_4x4_v_avx2)(int16_t * restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max)
+{
+    //const __m256i max  = _mm256_set1_epi16(clip_max);
+    //const __m256i min  = _mm256_set1_epi16(clip_min);
+    //int shift = (EMT_TRANSFORM_MATRIX_SHIFT + log2_transform_range - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    //transpose_per_cg();
+         //struct timespec t1,t2;
+
+        // clock_gettime(CLOCK_REALTIME,&t1);
+
+    const __m256i add  = _mm256_set1_epi32(ADD_EMT_V);
+
+    __m256i x0,x4,x8,x12,_src2;
+    __m256i _src =_mm256_load_si256((__m256i *)src);
+    const __m256i dct_matrix = _mm256_setr_epi16(336,  296,  219,  117 ,
+                                                 296,    0, -296, -296,
+                                                 219, -296, -117,  336,
+                                                 117, -296,  336, -219);
+
+    //__m256i _src=_mm256_setr_epi16(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
+    //__m256i _src=_mm256_setr_epi16(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+
+    //SWIZZLE_V
+    const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);//_mm256_load_si256((__m256i *)DCT_VIII_4x4v2[0]);
+    const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);//_mm256_load_si256((__m256i *)DCT_VIII_4x4v2[1]);
+    const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);//_mm256_load_si256((__m256i *)DCT_VIII_4x4v2[2]);
+    const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);//_mm256_load_si256((__m256i *)DCT_VIII_4x4v2[3]);
+
+    //  debug4X4_16(_src);
+
+    x0    = _mm256_permute4x64_epi64(_src,0b10110001);
+
+    _src  = _mm256_unpacklo_epi16(_src,x0);
+    _src2 = _mm256_permute4x64_epi64(_src,0b01001110);
+
+    //COMPUTE_V
+    x0  = _mm256_madd_epi16(_src,  _D0);  //line 0
+    x4  = _mm256_madd_epi16(_src2, _D1);  //line 1
+    x8  = _mm256_madd_epi16(_src,  _D2);  //line 2
+    x12 = _mm256_madd_epi16(_src2, _D3);  //line 3
+
+    x0 =  _mm256_add_epi32(x0,x4);
+    x8 =  _mm256_add_epi32(x8,x12);
+
+    //CLIP_V
+    x0 =  _mm256_add_epi32(x0,add);
+    x8 =  _mm256_add_epi32(x8,add);
+
+    x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
+    x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
+
+    x0 = _mm256_packs_epi32(x0,x8);
+
+    // clip
+    //x0 = _mm256_min_epi16(x0,max);
+    //x0 = _mm256_max_epi16(x0,min);
+
+    //IMPORTANT the result is already in a transposed state, so we don't need much
+    //swizzle when doing horizontal transform
+    _mm256_store_si256((__m256i *)&dst[0],x0);
+
+          //uint64_t t2 = rdtsc();
+          //clock_gettime(CLOCK_REALTIME,&t2);
+          //fprintf(stderr,"num cycles:%ld, %ld\n",t2.tv_nsec-t1.tv_nsec,t2.tv_sec-t1.tv_sec);
+
+}
+
+void FUNC(emt_idct_VIII_4x4_h_avx2)(int16_t * restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max)
+{
+    //struct timespec t1,t2;
+
+    //clock_gettime(CLOCK_REALTIME,&t1);
+//uint64_t t1 = rdtsc();
+    const __m256i   dct_matrix =_mm256_setr_epi16(336,  296,  219,  117 ,
+                                                  296,    0, -296, -296,
+                                                  219, -296, -117,  336,
+                                                  117, -296,  336, -219);
+    int shift = (EMT_TRANSFORM_MATRIX_SHIFT + 15 - 1) - BIT_DEPTH + COM16_C806_TRANS_PREC;
+    const __m256i add  = _mm256_set1_epi32(1 << (shift - 1));
+
+    __m256i _src = _mm256_load_si256((__m256i *)src);
+
+    __m256i x0,x4,x8,x12;
+
+    x0 = _mm256_permute4x64_epi64(_src, 0b00000000);
+    x4 = _mm256_permute4x64_epi64(_src, 0b01010101);
+    x8 = _mm256_permute4x64_epi64(_src, 0b10101010);
+    x12 = _mm256_permute4x64_epi64(_src, 0b11111111);
+    //  debug4X4_16(x0);
+    //  debug4X4_16(x4);
+    //  debug4X4_16(x8);
+    //  debug4X4_16(x12);
+
+    x0  = _mm256_madd_epi16(x0,dct_matrix);
+    x4  = _mm256_madd_epi16(x4,dct_matrix);
+    x8  = _mm256_madd_epi16(x8,dct_matrix);
+    x12 = _mm256_madd_epi16(x12,dct_matrix);
+    //    debug_32(x0);
+    //    debug_32(x4);
+    //    debug_32(x8);
+    //    debug_32(x12);
+
+    x0 = _mm256_hadd_epi32(x0,x4);
+    x0 = _mm256_permute4x64_epi64(x0, 0b11011000);
+    x8 = _mm256_hadd_epi32(x8,x12);
+    x8 = _mm256_permute4x64_epi64(x8, 0b11011000);
+    //    debug_32(x0);
+    //    debug_32(x8);
+
+    x0 =  _mm256_add_epi32(x0,add);
+    x8 =  _mm256_add_epi32(x8,add);
+    //    debug_32(x0);
+    //    debug_32(x8);
+
+    x0 =  _mm256_srai_epi32(x0,shift);
+    x8 =  _mm256_srai_epi32(x8,shift);
+    //    debug_32(x0);
+    //    debug_32(x8);
+
+    x0 = _mm256_packs_epi32(x0,x8);
+
+    //FIXME we might be able to avoid this permutation.
+    x0 = _mm256_permute4x64_epi64(x0, 0b11011000);
+
+    _mm256_store_si256((__m256i *)&dst[0],x0);
+    //clock_gettime(CLOCK_REALTIME,&t2);
+//    uint64_t t2 = rdtsc();
+//    fprintf(stderr,"num cycles:%ld, %ld, %ld \n",t1,t2,t2 - t1);
+    //fprintf(stderr,"num cycles:%ld, %ld\n",t2.tv_nsec-t1.tv_nsec,t2.tv_sec-t1.tv_sec);
+}
+
+void FUNC(emt_idct_V_4x4_v_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
+    const __m256i dct_matrix = _mm256_setr_epi16(194,  274,  274,  274,
+                                                 274,  241,  -86, -349,
+                                                 274,  -86, -349,  241,
+                                                 274, -349,  241,  -86);
+    DO_4X4_V();
+//    VAR_DECL_AND_LOAD4X4_AVX2_V();
+//    TRANSPOSE_4X4_AVX2();
+//    COMPUTE4X4_AVX2();
+//    ROUND_4X4_AVX2_V();
+//    PACK_CLIP_AND_STORE_4X4_AVX2();
+}
+
+void FUNC(emt_idct_V_4x4_h_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
+    const __m256i dct_matrix = _mm256_setr_epi16(194,  274,  274,  274,
+                                                 274,  241,  -86, -349,
+                                                 274,  -86, -349,  241,
+                                                 274, -349,  241,  -86);
+    DO_4X4_H();
+//    VAR_DECL_AND_LOAD4X4_AVX2_H();
+//    TRANSPOSE_4X4_AVX2();
+//    COMPUTE4X4_AVX2();
+//    ROUND_4X4_AVX2_H();
+//    PACK_CLIP_AND_STORE_4X4_AVX2();
+}
+
+
+void FUNC(emt_idct_II_4x4_v_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
+    const __m256i dct_matrix = _mm256_setr_epi16(256,  334,  256,  139 ,
+                                                 256,  139, -256, -334 ,
+                                                 256, -139, -256,  334 ,
+                                                 256, -334,  256, -139);
+    DO_4X4_V();
+//    VAR_DECL_AND_LOAD4X4_AVX2_V();
+//    TRANSPOSE_4X4_AVX2();
+//    COMPUTE4X4_AVX2();
+//    ROUND_4X4_AVX2_V();
+//    PACK_CLIP_AND_STORE_4X4_AVX2();
+}
+
+void FUNC(emt_idct_II_4x4_h_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
+    const __m256i dct_matrix = _mm256_setr_epi16(256,  334,  256,  139 ,
+                                                 256,  139, -256, -334 ,
+                                                 256, -139, -256,  334 ,
+                                                 256, -334,  256, -139);
+    DO_4X4_H();
+//    VAR_DECL_AND_LOAD4X4_AVX2_H();
+//    TRANSPOSE_4X4_AVX2();
+//    COMPUTE4X4_AVX2();
+//    ROUND_4X4_AVX2_H();
+//    PACK_CLIP_AND_STORE_4X4_AVX2();
+}
+
+void FUNC(emt_idct_I_4x4_v_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
+    const __m256i dct_matrix = _mm256_setr_epi16(190,  308,  308,  190 ,
+                                                 308,  190, -190, -308 ,
+                                                 308, -190, -190,  308 ,
+                                                 190, -308,  308, -190);
+    DO_4X4_V();
+//    VAR_DECL_AND_LOAD4X4_AVX2_V();
+//    TRANSPOSE_4X4_AVX2();
+//    COMPUTE4X4_AVX2();
+//    ROUND_4X4_AVX2_V();
+//    PACK_CLIP_AND_STORE_4X4_AVX2();
+}
+
+void FUNC(emt_idct_I_4x4_h_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
+    const __m256i dct_matrix = _mm256_setr_epi16(190,  308,  308,  190 ,
+                                                 308,  190, -190, -308 ,
+                                                 308, -190, -190,  308 ,
+                                                 190, -308,  308, -190);
+    DO_4X4_H();
+//    VAR_DECL_AND_LOAD4X4_AVX2_H();
+//    TRANSPOSE_4X4_AVX2();
+//    COMPUTE4X4_AVX2();
+//    ROUND_4X4_AVX2_H();
+//    PACK_CLIP_AND_STORE_4X4_AVX2();
+}
+
+void FUNC(emt_idct_VII_4x4_v_avx2) (int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max){
+    const __m256i dct_matrix = _mm256_setr_epi16(117,  296,  336,  219 ,
+                                                 219,  296, -117, -336 ,
+                                                 296,    0, -296,  296 ,
+                                                 336, -296,  219, -117);
+    DO_4X4_V();
+//    VAR_DECL_AND_LOAD4X4_AVX2_V();
+//    TRANSPOSE_4X4_AVX2();
+//    COMPUTE4X4_AVX2();
+//    ROUND_4X4_AVX2_V();
+//    PACK_CLIP_AND_STORE_4X4_AVX2();
+}
+
+void FUNC(emt_idct_VII_4x4_h_avx2)(int16_t *restrict src, int16_t * restrict dst, int log2_transform_range, const int clip_min, const int clip_max)
+{
+    const __m256i dct_matrix = _mm256_setr_epi16 (117,  296,  336,  219 ,
+                                                  219,  296, -117, -336 ,
+                                                  296,    0, -296,  296 ,
+                                                  336, -296,  219, -117);
+    DO_4X4_H();
+//    VAR_DECL_AND_LOAD4X4_AVX2_H();
+//    TRANSPOSE_4X4_AVX2();
+//    COMPUTE4X4_AVX2();
+//    ROUND_4X4_AVX2_H();
+//    PACK_CLIP_AND_STORE_4X4_AVX2();
+}
+
+
+
+IDCT8X8_V(DCT_II,II)
+IDCT8X8_V(DCT_V,V)
+IDCT8X8_V(DCT_VIII,VIII)
+IDCT8X8_V(DST_VII,VII)
+IDCT8X8_V(DST_I,I)
+
+IDCT8X8_H(DCT_II,II)
+IDCT8X8_H(DCT_V,V)
+IDCT8X8_H(DCT_VIII,VIII)
+IDCT8X8_H(DST_VII,VII)
+IDCT8X8_H(DST_I,I)
+
+IDCT16x16_V(DCT_II,II)
+IDCT16x16_V(DCT_V,V)
+IDCT16x16_V(DCT_VIII,VIII)
+IDCT16x16_V(DST_VII,VII)
+IDCT16x16_V(DST_I,I)
+
+IDCT16x16_H(DCT_II,II)
+IDCT16x16_H(DCT_V,V)
+IDCT16x16_H(DCT_VIII,VIII)
+IDCT16x16_H(DST_VII,VII)
+IDCT16x16_H(DST_I,I)
+
+IDCT32x32_V(DCT_II,II)
+IDCT32x32_V(DCT_V,V)
+IDCT32x32_V(DCT_VIII,VIII)
+IDCT32x32_V(DST_VII,VII)
+IDCT32x32_V(DST_I,I)
+
+IDCT32x32_H(DCT_II,II)
+IDCT32x32_H(DCT_V,V)
+IDCT32x32_H(DCT_VIII,VIII)
+IDCT32x32_H(DST_VII,VII)
+IDCT32x32_H(DST_I,I)
+#undef BIT_DEPTH

@@ -1145,6 +1145,29 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_qpel_bi[8][1][1] = ff_hevc_put_hevc_bi_qpel_hv48_10_avx2;
                 c->put_hevc_qpel_bi[9][1][1] = ff_hevc_put_hevc_bi_qpel_hv64_10_avx2;
             }
+            LINK_AMT_IDCT2(  II,4x4,avx2,0,10);
+            LINK_AMT_IDST2(   I,4x4,avx2,0,10);
+            LINK_AMT_IDST2( VII,4x4,avx2,0,10);
+            LINK_AMT_IDCT2(VIII,4x4,avx2,0,10);
+            LINK_AMT_IDCT2(   V,4x4,avx2,0,10);
+
+            LINK_AMT_IDCT2(  II,8x8,avx2,1,10);
+            LINK_AMT_IDST2(   I,8x8,avx2,1,10);
+            LINK_AMT_IDST2( VII,8x8,avx2,1,10);
+            LINK_AMT_IDCT2(VIII,8x8,avx2,1,10);
+            LINK_AMT_IDCT2(   V,8x8,avx2,1,10);
+
+            LINK_AMT_IDCT2(  II,16x16,avx2,2,10);
+            LINK_AMT_IDST2(   I,16x16,avx2,2,10);
+            LINK_AMT_IDST2( VII,16x16,avx2,2,10);
+            LINK_AMT_IDCT2(VIII,16x16,avx2,2,10);
+            LINK_AMT_IDCT2(   V,16x16,avx2,2,10);
+
+            LINK_AMT_IDCT2(  II,32x32,avx2,3,10);
+            LINK_AMT_IDST2(   I,32x32,avx2,3,10);
+            LINK_AMT_IDST2( VII,32x32,avx2,3,10);
+            LINK_AMT_IDCT2(VIII,32x32,avx2,3,10);
+            LINK_AMT_IDCT2(   V,32x32,avx2,3,10);
             //c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
             //c->transform_add[3] = ff_hevc_transform_add32_10_avx2;
 
