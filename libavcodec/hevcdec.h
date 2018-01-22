@@ -444,6 +444,8 @@ typedef struct HEVCTransformContext{
     int explicit_rdpcm_flag;
     int explicit_rdpcm_dir_flag;
     int num_significant_coeffs;
+    int num_significant_cg;
+    int num_non_significant_cg;
 }HEVCTransformContext;
 
 typedef struct HEVCPersistentRiceContext{

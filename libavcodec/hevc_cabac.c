@@ -2536,6 +2536,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *av_restrict s,
     if(sign_always_hidden)
         sign_hidden = 0;
 
+    tr_ctx->num_significant_cg=0;
+    tr_ctx->num_non_significant_cg=0;
     //decode CGs
     for (i = num_cg; i >= 0; i--) {
         int n, m;
@@ -2612,7 +2614,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *av_restrict s,
 
             if (!current_cg->is_last_cg && greater1_ctx == 0)
                 ctx_set++;
-
+tr_ctx->num_significant_cg++;
             greater1_ctx = 1;
 
             //decode coeff_abs_level_greater1_flags
@@ -2747,7 +2749,7 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *av_restrict s,
                 lc->cg_coeffs[0][cg_id * 16 + scan_ctx->scan_inv_coeff[n]] = trans_coeff_level;
             }
 
-        } //(do next CG)
+        }else{tr_ctx->num_non_significant_cg++;} //(do next CG)
 
 
 #if OHCONFIG_AMT
