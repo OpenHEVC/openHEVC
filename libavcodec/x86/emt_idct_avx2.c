@@ -1380,8 +1380,7 @@ void FUNC(emt_idct_##DCT_num##_8x8_h_avx2)(int16_t * restrict src, int16_t * res
     }                                                                          \
     }                                                                          \
 
-
-//IDCT8X8_V(DCT_II,II)
+IDCT8X8_V(DCT_II,II)
 IDCT8X8_V(DCT_V,V)
 IDCT8X8_V(DCT_VIII,VIII)
 IDCT8X8_V(DST_VII,VII)
@@ -1395,238 +1394,238 @@ IDCT8X8_H(DST_VII,VII)
 IDCT8X8_H(DST_I,I)
 
 
-void FUNC(emt_idct_II_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restrict dst,  int * av_restrict significant_cg_list, int log2_transform_range, const int clip_min, const int clip_max)
-{
-    const __m256i add  = _mm256_set1_epi32(ADD_EMT_V);
+//void FUNC(emt_idct_II_8x8_v_avx2)(int16_t * av_restrict src, int16_t * av_restrict dst,  int * av_restrict significant_cg_list, int log2_transform_range, const int clip_min, const int clip_max)
+//{
+//    const __m256i add  = _mm256_set1_epi32(ADD_EMT_V);
 
-    __m256i x0,x4,x8,x12;
-
-    const __m256i cg_dct_matrix_0 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[0]);
-    const __m256i cg_dct_matrix_1 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[1]);
-    const __m256i cg_dct_matrix_2 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[2]);
-    const __m256i cg_dct_matrix_3 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[3]);
-
-    //const __m256i perm_1 = _mm256_setr_epi32(0,0,5,5,1,1,4,4);
-    //const __m256i perm_2 = _mm256_setr_epi32(2,2,7,7,3,3,6,6);
+//    __m256i x0,x4,x8,x12;
 
 
-    //DO first CG column cg 0 or cg 2
-    {
-        __m256i cg_src_0, cg_src_2, cg_src_0_2, cg_src_2_2;
-        cg_src_0 = _mm256_load_si256((__m256i *)&src[0]);
-        cg_src_2 = _mm256_load_si256((__m256i *)&src[32]);
 
-        x0    = _mm256_permute4x64_epi64(cg_src_0,0b10110001);
-        cg_src_0   = _mm256_unpacklo_epi16(cg_src_0,x0);
-        cg_src_0_2 = _mm256_permute4x64_epi64(cg_src_0,0b01001110);
 
-        x8    = _mm256_permute4x64_epi64(cg_src_2,0b10110001);
-        cg_src_2   = _mm256_unpacklo_epi16(cg_src_2,x8);
-        cg_src_2_2 = _mm256_permute4x64_epi64(cg_src_2,0b01001110);
-        //I==0
-        //J==0
-        {
-            __m256i x0_tmp = _mm256_setzero_si256();
-            __m256i x8_tmp = _mm256_setzero_si256();
-            if(significant_cg_list[0]){
-                //K==0 I==0
-                __m256i dct_matrix = cg_dct_matrix_0;
-                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
-                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
-                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
-                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
-                //COMPUTE_V
-                x0  = _mm256_madd_epi16(cg_src_0,   _D0);
-                x4  = _mm256_madd_epi16(cg_src_0_2, _D1);
-                x8  = _mm256_madd_epi16(cg_src_0,   _D2);
-                x12 = _mm256_madd_epi16(cg_src_0_2, _D3);
-                x0 =  _mm256_add_epi32(x0,x4);
-                x8 =  _mm256_add_epi32(x8,x12);
-                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
-                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
-            }
-            if(significant_cg_list[2]){
-                //K==1 I==0
-                __m256i dct_matrix = cg_dct_matrix_1;
-                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
-                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
-                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
-                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
-                //COMPUTE_V
-                x0  = _mm256_madd_epi16(cg_src_2,   _D0);
-                x4  = _mm256_madd_epi16(cg_src_2_2, _D1);
-                x8  = _mm256_madd_epi16(cg_src_2,   _D2);
-                x12 = _mm256_madd_epi16(cg_src_2_2, _D3);
-                x0 =  _mm256_add_epi32(x0,x4);
-                x8 =  _mm256_add_epi32(x8,x12);
-                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
-                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
-            }
-            //CLIP AND STORE DST 0
-            x0 =  _mm256_add_epi32(x0_tmp,add);
-            x8 =  _mm256_add_epi32(x8_tmp,add);
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
-            x0 = _mm256_packs_epi32(x0,x8);
-            _mm256_store_si256((__m256i *)&dst[0],x0);
-        }
-        //J==1
-        {
-            __m256i x0_tmp = _mm256_setzero_si256();
-            __m256i x8_tmp = _mm256_setzero_si256();
-            if(significant_cg_list[0]){
-                //K==0 I==0
-                const __m256i dct_matrix = cg_dct_matrix_2;
-                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
-                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
-                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
-                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
-                //COMPUTE_V
-                x0  = _mm256_madd_epi16(cg_src_0,   _D0);
-                x4  = _mm256_madd_epi16(cg_src_0_2, _D1);
-                x8  = _mm256_madd_epi16(cg_src_0,   _D2);
-                x12 = _mm256_madd_epi16(cg_src_0_2, _D3);
-                x0 =  _mm256_add_epi32(x0,x4);
-                x8 =  _mm256_add_epi32(x8,x12);
-                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
-                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
-            }
-            if(significant_cg_list[2]){
-                const __m256i dct_matrix = cg_dct_matrix_3;
-                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
-                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
-                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
-                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
-                x0  = _mm256_madd_epi16(cg_src_2,   _D0);
-                x4  = _mm256_madd_epi16(cg_src_2_2, _D1);
-                x8  = _mm256_madd_epi16(cg_src_2,   _D2);
-                x12 = _mm256_madd_epi16(cg_src_2_2, _D3);
-                x0 =  _mm256_add_epi32(x0,x4);
-                x8 =  _mm256_add_epi32(x8,x12);
-                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
-                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
-            }
-            //CLIP AND STORE DST 2
-            x0 =  _mm256_add_epi32(x0_tmp,add);
-            x8 =  _mm256_add_epi32(x8_tmp,add);
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
-            x0 = _mm256_packs_epi32(x0,x8);
-            _mm256_store_si256((__m256i *)&dst[32],x0);
-        }
-    }
 
-    //DO second CG column if cg 1 or cg 3
-    {
-        __m256i cg_src_1, cg_src_3, cg_src_1_2, cg_src_3_2;
 
-        cg_src_1 = _mm256_load_si256((__m256i *)&src[16]);
-        cg_src_3 = _mm256_load_si256((__m256i *)&src[48]);
 
-        x4    = _mm256_permute4x64_epi64(cg_src_1,0b10110001);
-        cg_src_1   = _mm256_unpacklo_epi16(cg_src_1,x4);
-        cg_src_1_2 = _mm256_permute4x64_epi64(cg_src_1,0b01001110);
 
-        x12   = _mm256_permute4x64_epi64(cg_src_3,0b10110001);
-        cg_src_3   = _mm256_unpacklo_epi16(cg_src_3,x12);
-        cg_src_3_2 = _mm256_permute4x64_epi64(cg_src_3,0b01001110);
-        //i==1
-        //j==0
-        {
-            __m256i x0_tmp = _mm256_setzero_si256();
-            __m256i x8_tmp = _mm256_setzero_si256();
-            //COMPUTE CG 1 MATRIX 0
-            if(significant_cg_list[1]){
-                const __m256i dct_matrix = cg_dct_matrix_0;
-                //K==00 I==1
-                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
-                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
-                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
-                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
-                //COMPUTE_V
-                x0  = _mm256_madd_epi16(cg_src_1,   _D0);
-                x4  = _mm256_madd_epi16(cg_src_1_2, _D1);
-                x8  = _mm256_madd_epi16(cg_src_1,   _D2);
-                x12 = _mm256_madd_epi16(cg_src_1_2, _D3);
-                x0 =  _mm256_add_epi32(x0,x4);
-                x8 =  _mm256_add_epi32(x8,x12);
-                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
-                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
-            }
-            //COMPUTE CG 3 MATRIX_1
-            if(significant_cg_list[3]){   //K==1 I==1
-                const __m256i dct_matrix = cg_dct_matrix_1;
-                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
-                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
-                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
-                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
-                x0  = _mm256_madd_epi16(cg_src_3,   _D0);
-                x4  = _mm256_madd_epi16(cg_src_3_2, _D1);
-                x8  = _mm256_madd_epi16(cg_src_3,   _D2);
-                x12 = _mm256_madd_epi16(cg_src_3_2, _D3);
-                x0 =  _mm256_add_epi32(x0,x4);
-                x8 =  _mm256_add_epi32(x8,x12);
-                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
-                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
-            }
-            //CLIP AND STORE DST 2
-            x0 =  _mm256_add_epi32(x0_tmp,add);
-            x8 =  _mm256_add_epi32(x8_tmp,add);
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
-            x0 = _mm256_packs_epi32(x0,x8);
-            _mm256_store_si256((__m256i *)&dst[16],x0);
-        }
-        //J==1
-        {
-            __m256i x0_tmp = _mm256_setzero_si256();
-            __m256i x8_tmp = _mm256_setzero_si256();
-            //COMPUTE CG 1 MATRIX 2
-            if(significant_cg_list[1]){
-                const __m256i dct_matrix = cg_dct_matrix_2;
-                //K==00 I==1
-                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
-                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
-                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
-                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
-                //COMPUTE_V
-                x0  = _mm256_madd_epi16(cg_src_1,   _D0);
-                x4  = _mm256_madd_epi16(cg_src_1_2, _D1);
-                x8  = _mm256_madd_epi16(cg_src_1,   _D2);
-                x12 = _mm256_madd_epi16(cg_src_1_2, _D3);
-                x0 =  _mm256_add_epi32(x0,x4);
-                x8 =  _mm256_add_epi32(x8,x12);
-                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
-                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
-            }
-            //COMPUTE CG 3 MATRIX_3
-            if(significant_cg_list[3]){
-                const __m256i dct_matrix = cg_dct_matrix_3;
-                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
-                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
-                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
-                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
-                x0  = _mm256_madd_epi16(cg_src_3,   _D0);
-                x4  = _mm256_madd_epi16(cg_src_3_2, _D1);
-                x8  = _mm256_madd_epi16(cg_src_3,   _D2);
-                x12 = _mm256_madd_epi16(cg_src_3_2, _D3);
-                x0 =  _mm256_add_epi32(x0,x4);
-                x8 =  _mm256_add_epi32(x8,x12);
-                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
-                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
-            }
-            //CLIP AND STORE DST 3
-            x0 =  _mm256_add_epi32(x0_tmp,add);
-            x8 =  _mm256_add_epi32(x8_tmp,add);
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
-            x0 =  _mm256_packs_epi32(x0,x8);
-            _mm256_store_si256((__m256i *)&dst[48],x0);
-        }
-    }
-    //IMPORTANT the result is already in a transposed state, so we don't need much
-    //swizzle when doing horizontal transform
-}
+//    const __m256i cg_dct_matrix_0 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[0]);
+//    const __m256i cg_dct_matrix_1 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[1]);
+//    const __m256i cg_dct_matrix_2 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[2]);
+//    const __m256i cg_dct_matrix_3 = _mm256_load_si256((__m256i *)TR_DCT_II_8x8_per_CG[3]);
+//    //const __m256i perm_1 = _mm256_setr_epi32(0,0,5,5,1,1,4,4);
+//    //const __m256i perm_2 = _mm256_setr_epi32(2,2,7,7,3,3,6,6);
+//    //DO first CG column cg 0 or cg 2
+//    {
+//        __m256i cg_src_0, cg_src_2, cg_src_0_2, cg_src_2_2;
+//        cg_src_0 = _mm256_load_si256((__m256i *)&src[0]);
+//        cg_src_2 = _mm256_load_si256((__m256i *)&src[32]);
+
+//        x0    = _mm256_permute4x64_epi64(cg_src_0,0b10110001);
+//        cg_src_0   = _mm256_unpacklo_epi16(cg_src_0,x0);
+//        cg_src_0_2 = _mm256_permute4x64_epi64(cg_src_0,0b01001110);
+
+//        x8    = _mm256_permute4x64_epi64(cg_src_2,0b10110001);
+//        cg_src_2   = _mm256_unpacklo_epi16(cg_src_2,x8);
+//        cg_src_2_2 = _mm256_permute4x64_epi64(cg_src_2,0b01001110);
+//        //I==0
+//        //J==0
+//        {
+//            __m256i x0_tmp = _mm256_setzero_si256();
+//            __m256i x8_tmp = _mm256_setzero_si256();
+//            {
+//                //K==0 I==0
+//                __m256i dct_matrix = cg_dct_matrix_0;
+//                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
+//                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
+//                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
+//                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
+//                //COMPUTE_V
+//                x0  = _mm256_madd_epi16(cg_src_0,   _D0);
+//                x4  = _mm256_madd_epi16(cg_src_0_2, _D1);
+//                x8  = _mm256_madd_epi16(cg_src_0,   _D2);
+//                x12 = _mm256_madd_epi16(cg_src_0_2, _D3);
+//                x0 =  _mm256_add_epi32(x0,x4);
+//                x8 =  _mm256_add_epi32(x8,x12);
+//                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
+//                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
+//            }
+//            {
+//                //K==1 I==0
+//                __m256i dct_matrix = cg_dct_matrix_1;
+//                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
+//                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
+//                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
+//                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
+//                //COMPUTE_V
+//                x0  = _mm256_madd_epi16(cg_src_2,   _D0);
+//                x4  = _mm256_madd_epi16(cg_src_2_2, _D1);
+//                x8  = _mm256_madd_epi16(cg_src_2,   _D2);
+//                x12 = _mm256_madd_epi16(cg_src_2_2, _D3);
+//                x0 =  _mm256_add_epi32(x0,x4);
+//                x8 =  _mm256_add_epi32(x8,x12);
+//                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
+//                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
+//            }
+//            //CLIP AND STORE DST 0
+//            x0 =  _mm256_add_epi32(x0_tmp,add);
+//            x8 =  _mm256_add_epi32(x8_tmp,add);
+//            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
+//            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
+//            x0 = _mm256_packs_epi32(x0,x8);
+//            _mm256_store_si256((__m256i *)&dst[0],x0);
+//        }
+//        //J==1
+//        {
+//            __m256i x0_tmp = _mm256_setzero_si256();
+//            __m256i x8_tmp = _mm256_setzero_si256();
+//            {
+//                //K==0 I==0
+//                const __m256i dct_matrix = cg_dct_matrix_2;
+//                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
+//                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
+//                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
+//                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
+//                //COMPUTE_V
+//                x0  = _mm256_madd_epi16(cg_src_0,   _D0);
+//                x4  = _mm256_madd_epi16(cg_src_0_2, _D1);
+//                x8  = _mm256_madd_epi16(cg_src_0,   _D2);
+//                x12 = _mm256_madd_epi16(cg_src_0_2, _D3);
+//                x0 =  _mm256_add_epi32(x0,x4);
+//                x8 =  _mm256_add_epi32(x8,x12);
+//                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
+//                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
+//            }
+//            {
+//                const __m256i dct_matrix = cg_dct_matrix_3;
+//                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
+//                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
+//                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
+//                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
+//                x0  = _mm256_madd_epi16(cg_src_2,   _D0);
+//                x4  = _mm256_madd_epi16(cg_src_2_2, _D1);
+//                x8  = _mm256_madd_epi16(cg_src_2,   _D2);
+//                x12 = _mm256_madd_epi16(cg_src_2_2, _D3);
+//                x0 =  _mm256_add_epi32(x0,x4);
+//                x8 =  _mm256_add_epi32(x8,x12);
+//                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
+//                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
+//            }
+//            //CLIP AND STORE DST 2
+//            x0 =  _mm256_add_epi32(x0_tmp,add);
+//            x8 =  _mm256_add_epi32(x8_tmp,add);
+//            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
+//            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
+//            x0 = _mm256_packs_epi32(x0,x8);
+//            _mm256_store_si256((__m256i *)&dst[32],x0);
+//        }
+//    }
+//    //DO second CG column if cg 1 or cg 3
+//    {
+//        __m256i cg_src_1, cg_src_3, cg_src_1_2, cg_src_3_2;
+//        cg_src_1 = _mm256_load_si256((__m256i *)&src[16]);
+//        cg_src_3 = _mm256_load_si256((__m256i *)&src[48]);
+//        x4    = _mm256_permute4x64_epi64(cg_src_1,0b10110001);
+//        cg_src_1   = _mm256_unpacklo_epi16(cg_src_1,x4);
+//        cg_src_1_2 = _mm256_permute4x64_epi64(cg_src_1,0b01001110);
+//        x12   = _mm256_permute4x64_epi64(cg_src_3,0b10110001);
+//        cg_src_3   = _mm256_unpacklo_epi16(cg_src_3,x12);
+//        cg_src_3_2 = _mm256_permute4x64_epi64(cg_src_3,0b01001110);
+//        //i==1
+//        //j==0
+//        {
+//            __m256i x0_tmp = _mm256_setzero_si256();
+//            __m256i x8_tmp = _mm256_setzero_si256();
+//            //COMPUTE CG 1 MATRIX 0
+//            {
+//                const __m256i dct_matrix = cg_dct_matrix_0;
+//                //K==00 I==1
+//                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
+//                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
+//                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
+//                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
+//                //COMPUTE_V
+//                x0  = _mm256_madd_epi16(cg_src_1,   _D0);
+//                x4  = _mm256_madd_epi16(cg_src_1_2, _D1);
+//                x8  = _mm256_madd_epi16(cg_src_1,   _D2);
+//                x12 = _mm256_madd_epi16(cg_src_1_2, _D3);
+//                x0 =  _mm256_add_epi32(x0,x4);
+//                x8 =  _mm256_add_epi32(x8,x12);
+//                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
+//                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
+//            }
+//            //COMPUTE CG 3 MATRIX_1
+//            {   //K==1 I==1
+//                const __m256i dct_matrix = cg_dct_matrix_1;
+//                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
+//                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
+//                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
+//                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
+//                x0  = _mm256_madd_epi16(cg_src_3,   _D0);
+//                x4  = _mm256_madd_epi16(cg_src_3_2, _D1);
+//                x8  = _mm256_madd_epi16(cg_src_3,   _D2);
+//                x12 = _mm256_madd_epi16(cg_src_3_2, _D3);
+//                x0 =  _mm256_add_epi32(x0,x4);
+//                x8 =  _mm256_add_epi32(x8,x12);
+//                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
+//                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
+//            }
+//            //CLIP AND STORE DST 2
+//            x0 =  _mm256_add_epi32(x0_tmp,add);
+//            x8 =  _mm256_add_epi32(x8_tmp,add);
+//            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
+//            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
+//            x0 = _mm256_packs_epi32(x0,x8);
+//            _mm256_store_si256((__m256i *)&dst[16],x0);
+//        }
+//        //J==1
+//        {
+//            __m256i x0_tmp = _mm256_setzero_si256();
+//            __m256i x8_tmp = _mm256_setzero_si256();
+//            //COMPUTE CG 1 MATRIX 2
+//            {
+//                const __m256i dct_matrix = cg_dct_matrix_2;
+//                //K==00 I==1
+//                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
+//                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
+//                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
+//                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
+//                //COMPUTE_V
+//                x0  = _mm256_madd_epi16(cg_src_1,   _D0);
+//                x4  = _mm256_madd_epi16(cg_src_1_2, _D1);
+//                x8  = _mm256_madd_epi16(cg_src_1,   _D2);
+//                x12 = _mm256_madd_epi16(cg_src_1_2, _D3);
+//                x0 =  _mm256_add_epi32(x0,x4);
+//                x8 =  _mm256_add_epi32(x8,x12);
+//                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
+//                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
+//            }
+//            //COMPUTE CG 3 MATRIX_3
+//            {
+//                const __m256i dct_matrix = cg_dct_matrix_3;
+//                const __m256i _D0 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b01010000);
+//                const __m256i _D1 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(0,0,5,5,1,1,4,4)),0b11111010);
+//                const __m256i _D2 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b01010000);
+//                const __m256i _D3 =_mm256_permute4x64_epi64(_mm256_permutevar8x32_epi32(dct_matrix,_mm256_setr_epi32(2,2,7,7,3,3,6,6)),0b11111010);
+//                x0  = _mm256_madd_epi16(cg_src_3,   _D0);
+//                x4  = _mm256_madd_epi16(cg_src_3_2, _D1);
+//                x8  = _mm256_madd_epi16(cg_src_3,   _D2);
+//                x12 = _mm256_madd_epi16(cg_src_3_2, _D3);
+//                x0 =  _mm256_add_epi32(x0,x4);
+//                x8 =  _mm256_add_epi32(x8,x12);
+//                x0_tmp = _mm256_add_epi32(x0,x0_tmp);
+//                x8_tmp = _mm256_add_epi32(x8,x8_tmp);
+//            }
+//            //CLIP AND STORE DST 3
+//            x0 =  _mm256_add_epi32(x0_tmp,add);
+//            x8 =  _mm256_add_epi32(x8_tmp,add);
+//            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);
+//            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);
+//            x0 =  _mm256_packs_epi32(x0,x8);
+//            _mm256_store_si256((__m256i *)&dst[48],x0);
+//        }
+//    }
+//    //IMPORTANT the result is already in a transposed state, so we don't need much
+//    //swizzle when doing horizontal transform
+//}
 
 //void FUNC(emt_idct_V_8x8_h_avx2)(int16_t * restrict src, int16_t * restrict dst,  int * restrict significant_cg_list, int log2_transform_range, const int clip_min, const int clip_max)
 //{
