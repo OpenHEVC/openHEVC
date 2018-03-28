@@ -1049,23 +1049,30 @@ s->hevcdsp.idct2_emt_v2[v][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[1], tmp);
 s->hevcdsp.idct2_emt_h2[h][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[1]);
 }
 
-#define CORE_4x4_MULT()\
+#define CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)\
  src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));   \
  src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16);             \
  src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);                  \
                                                                             \
- x0  = _mm256_shuffle_epi32(src_1, 0);                                      \
- x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);                        \
- x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);                       \
- x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);                      \
+ x0  = _mm256_shuffle_epi32(src_1_0, 0);                                    \
+ x4  = _mm256_shuffle_epi32(src_1_0, 1 + 4 + 16 + 64);                      \
+ x8  = _mm256_shuffle_epi32(src_1_0, 2 + 8 + 32 + 128);                     \
+ x12 = _mm256_shuffle_epi32(src_1_0, 3 + 12 + 48 + 192);                    \
                                                                             \
  x0  = _mm256_madd_epi16(x0,  src_2_0);                                     \
  x4  = _mm256_madd_epi16(x4,  src_2_1);                                     \
  x8  = _mm256_madd_epi16(x8,  src_2_0);                                     \
  x12 = _mm256_madd_epi16(x12, src_2_1);                                     \
- x12 = _mm256_add_epi32(x8, x12);                                           \
- result = _mm256_add_epi32(x0, x4);                                         \
+ result_2 = _mm256_add_epi32(x8, x12);                                      \
+ result_1 = _mm256_add_epi32(x0, x4);                                       \
 
+
+#define SCALE_AND_PACK(x0_tmp,x8_tmp,DIR)\
+ x0_tmp =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_##DIR));   \
+ x8_tmp =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_##DIR));   \
+ x0_tmp =  _mm256_srai_epi32(x0_tmp,SHIFT_EMT_##DIR);                   \
+ x8_tmp =  _mm256_srai_epi32(x8_tmp,SHIFT_EMT_##DIR);                   \
+ x0_tmp =  _mm256_packs_epi32(x0_tmp,x8_tmp);                           \
 
 //______________________________________________________________________________
 //4x4
@@ -1073,42 +1080,30 @@ s->hevcdsp.idct2_emt_h2[h][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[1]);
 #define IDCT4X4_V(DCT_type,DCT_num)                                            \
 void FUNC(emt_idct_##DCT_num##_4x4_v_avx2)(int16_t */*restrict*/ src, int16_t */*restrict*/ dst)       \
 {                                                                              \
-    __m256i x0, x4, x8, x12, src_1, src_2_0, src_2_1, result;                  \
+    __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;          \
                                                                                \
-    src_1 = _mm256_load_si256((__m256i *) TR_##DCT_type##_4x4_per_CG);         \
+    src_1_0 = _mm256_load_si256((__m256i *) TR_##DCT_type##_4x4_per_CG);       \
     src_2_0 = _mm256_load_si256((__m256i*) src);                               \
                                                                                \
-    CORE_4x4_MULT()                                                            \
+    CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)                           \
+    SCALE_AND_PACK(result_1,result_2,V)                                        \
                                                                                \
-    x12    = _mm256_add_epi32(x12,    _mm256_set1_epi32(ADD_EMT_V));           \
-    result = _mm256_add_epi32(result, _mm256_set1_epi32(ADD_EMT_V));           \
-    x12    = _mm256_srai_epi32(x12,    SHIFT_EMT_V);                           \
-    result = _mm256_srai_epi32(result, SHIFT_EMT_V);                           \
-                                                                               \
-    result = _mm256_packs_epi32(result, x12);                                  \
-                                                                               \
-    _mm256_store_si256((__m256i*)dst, result);                                 \
+    _mm256_store_si256((__m256i*)dst, result_1);                               \
 }                                                                              \
 
 
 #define IDCT4X4_H(DCT_type,DCT_num)\
 void FUNC(emt_idct_##DCT_num##_4x4_h_avx2)(int16_t */*restrict*/ src, int16_t */*restrict*/ dst)       \
 {                                                                              \
-    __m256i x0, x4, x8, x12, src_1, src_2_0, src_2_1, result;                  \
+    __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;          \
                                                                                \
-    src_1 = _mm256_load_si256((__m256i*) src);                                 \
+    src_1_0 = _mm256_load_si256((__m256i*) src);                               \
     src_2_0 = _mm256_load_si256((__m256i*) DCT_type##_4x4_per_CG);             \
                                                                                \
-    CORE_4x4_MULT()                                                            \
+    CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)                           \
+    SCALE_AND_PACK(result_1,result_2,H)                                        \
                                                                                \
-    x12    = _mm256_add_epi32(x12,     _mm256_set1_epi32(ADD_EMT_H));          \
-    result = _mm256_add_epi32(result,  _mm256_set1_epi32(ADD_EMT_H));          \
-    x12    = _mm256_srai_epi32(x12,    SHIFT_EMT_H);                           \
-    result = _mm256_srai_epi32(result, SHIFT_EMT_H);                           \
-                                                                               \
-    result = _mm256_packs_epi32(result, x12);                                  \
-                                                                               \
-    _mm256_store_si256((__m256i*)dst, result);                                 \
+    _mm256_store_si256((__m256i*)dst, result_1);                               \
 }                                                                              \
 
 //______________________________________________________________________________
@@ -1118,25 +1113,21 @@ void FUNC(emt_idct_##DCT_num##_4x4_h_avx2)(int16_t */*restrict*/ src, int16_t */
 void FUNC(emt_idct_##DCT_num##_8x8_v_avx2)(int16_t */*restrict*/ src, int16_t */*restrict*/ dst)       \
 {                                                                              \
     int i,j,k;                                                                 \
-    __m256i x0,x4,x8,x12,src_1, src_2_0, src_2_1, result;                      \
     for(i = 0; i < 2; i++){                                                    \
         for (j = 0; j < 2; j++){                                               \
             __m256i x0_tmp = _mm256_setzero_si256();                           \
             __m256i x8_tmp = _mm256_setzero_si256();                           \
             for (k = 0; k < 2; k++ ){                                          \
-                src_1   = _mm256_load_si256((__m256i *) TR_##DCT_type##_8x8_per_CG[2*i+k]);\
+                __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;\
+                src_1_0 = _mm256_load_si256((__m256i *) TR_##DCT_type##_8x8_per_CG[2*i+k]);\
                 src_2_0 = _mm256_load_si256((__m256i*) &src[16*(2*k+j)]);      \
                                                                                \
-                CORE_4x4_MULT()                                                \
-                x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
-                x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
+                CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)               \
+                x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                    \
+                x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                    \
             }                                                                  \
-            x0 =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_V));       \
-            x8 =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_V));       \
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);                           \
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);                           \
-            x0 =  _mm256_packs_epi32(x0,x8);                                   \
-            _mm256_store_si256((__m256i *)&dst[(2*i+j)*16],x0);                \
+            SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                    \
+            _mm256_store_si256((__m256i *)&dst[(2*i+j)*16],x0_tmp);            \
         }                                                                      \
     }                                                                          \
 }                                                                              \
@@ -1146,28 +1137,24 @@ void FUNC(emt_idct_##DCT_num##_8x8_v_avx2)(int16_t */*restrict*/ src, int16_t */
 void FUNC(emt_idct_##DCT_num##_8x8_h_avx2)(int16_t */*restrict*/  src, int16_t */*restrict*/  dst)     \
 {                                                                              \
     int i,j,k;                                                                 \
-    __m256i x0,x4,x8,x12,src_1, src_2_0, src_2_1, result;                      \
     for(i = 0; i < 2; i++){                                                    \
         for (j = 0; j < 2; j++){                                               \
             __m256i x0_tmp = _mm256_setzero_si256();                           \
             __m256i x8_tmp = _mm256_setzero_si256();                           \
             for (k = 0; k < 2; k++ ){                                          \
-                src_1   = _mm256_load_si256((__m256i*) &src[16*(2*i+k)]);      \
+                __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;\
+                src_1_0 = _mm256_load_si256((__m256i*) &src[16*(2*i+k)]);      \
                 src_2_0 = _mm256_load_si256((__m256i *) DCT_type##_8x8_per_CG[2*k+j]);\
                                                                                \
-                CORE_4x4_MULT()                                                \
-                x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
-                x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
+                CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)               \
+                x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                    \
+                x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                    \
             }                                                                  \
-            x0 =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_H));       \
-            x8 =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_H));       \
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_H);                           \
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_H);                           \
-            x0 = _mm256_packs_epi32(x0,x8);                                    \
-            ((int64_t *)dst)[2*4*i+j]     = _mm256_extract_epi64(x0,0);        \
-            ((int64_t *)dst)[2*(4*i+1)+j] = _mm256_extract_epi64(x0,1);        \
-            ((int64_t *)dst)[2*(4*i+2)+j] = _mm256_extract_epi64(x0,2);        \
-            ((int64_t *)dst)[2*(4*i+3)+j] = _mm256_extract_epi64(x0,3);        \
+            SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                    \
+            ((int64_t *)dst)[2*4*i+j]     = _mm256_extract_epi64(x0_tmp,0);    \
+            ((int64_t *)dst)[2*(4*i+1)+j] = _mm256_extract_epi64(x0_tmp,1);    \
+            ((int64_t *)dst)[2*(4*i+2)+j] = _mm256_extract_epi64(x0_tmp,2);    \
+            ((int64_t *)dst)[2*(4*i+3)+j] = _mm256_extract_epi64(x0_tmp,3);    \
         }                                                                      \
     }                                                                          \
 }                                                                              \
@@ -1180,25 +1167,21 @@ void FUNC(emt_idct_##DCT_num##_8x8_h_avx2)(int16_t */*restrict*/  src, int16_t *
 void FUNC(emt_idct_##DCT_num##_16x16_v_avx2)(int16_t */*restrict*/ src, int16_t */*restrict*/ dst)\
 {                                                                              \
     int i,j,k;                                                                 \
-    __m256i x0,x4,x8,x12,src_1, src_2_0, src_2_1, result;                      \
     for(i = 0; i < 4; i++){                                                    \
         for (j = 0; j < 4; j++){                                               \
             __m256i x0_tmp = _mm256_setzero_si256();                           \
             __m256i x8_tmp = _mm256_setzero_si256();                           \
             for (k = 0; k < 4; k++ ){                                          \
-                src_1   = _mm256_load_si256((__m256i *) TR_##DCT_type##_16x16_per_CG[4*i+k]);\
+                __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;\
+                src_1_0 = _mm256_load_si256((__m256i *) TR_##DCT_type##_16x16_per_CG[4*i+k]);\
                 src_2_0 = _mm256_load_si256((__m256i*) &src[16*(4*k+j)]);      \
                                                                                \
-                CORE_4x4_MULT()                                                \
-                x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
-                x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
+                CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)               \
+                x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                    \
+                x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                    \
             }                                                                  \
-            x0 =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_V));       \
-            x8 =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_V));       \
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);                           \
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);                           \
-            x0 =  _mm256_packs_epi32(x0,x8);                                   \
-            _mm256_store_si256((__m256i *)&dst[(4*i+j)*16],x0);                \
+            SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                    \
+            _mm256_store_si256((__m256i *)&dst[(4*i+j)*16],x0_tmp);            \
         }                                                                      \
     }                                                                          \
 }                                                                              \
@@ -1207,28 +1190,24 @@ void FUNC(emt_idct_##DCT_num##_16x16_v_avx2)(int16_t */*restrict*/ src, int16_t 
 void FUNC(emt_idct_##DCT_num##_16x16_h_avx2)(int16_t * /*restrict*/  src, int16_t * /*restrict*/ dst)\
 {                                                                              \
     int i,j,k;                                                                 \
-    __m256i x0,x4,x8,x12,src_1, src_2_0, src_2_1, result;               \
     for(i = 0; i < 4; i++){                                                    \
         for (j = 0; j < 4; j++){                                               \
             __m256i x0_tmp = _mm256_setzero_si256();                           \
             __m256i x8_tmp = _mm256_setzero_si256();                           \
             for (k = 0; k < 4; k++ ){                                          \
-                src_1   = _mm256_load_si256((__m256i*) &src[16*(4*i+k)]);      \
+                __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;\
+                src_1_0 = _mm256_load_si256((__m256i*) &src[16*(4*i+k)]);      \
                 src_2_0 = _mm256_load_si256((__m256i *) DCT_type##_16x16_per_CG[4*k+j]);\
                                                                                \
-                CORE_4x4_MULT()                                                \
-                x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
-                x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
+                CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)               \
+                x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                    \
+                x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                    \
             }                                                                  \
-            x0 =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_H));       \
-            x8 =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_H));       \
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_H);                           \
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_H);                           \
-            x0 = _mm256_packs_epi32(x0,x8);                                    \
-            ((int64_t *)dst)[4*4*i+j] = _mm256_extract_epi64(x0,0);            \
-            ((int64_t *)dst)[4*(4*i+1)+j] = _mm256_extract_epi64(x0,1);        \
-            ((int64_t *)dst)[4*(4*i+2)+j] = _mm256_extract_epi64(x0,2);        \
-            ((int64_t *)dst)[4*(4*i+3)+j] = _mm256_extract_epi64(x0,3);        \
+            SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                    \
+            ((int64_t *)dst)[4*4*i+j]     = _mm256_extract_epi64(x0_tmp,0);    \
+            ((int64_t *)dst)[4*(4*i+1)+j] = _mm256_extract_epi64(x0_tmp,1);    \
+            ((int64_t *)dst)[4*(4*i+2)+j] = _mm256_extract_epi64(x0_tmp,2);    \
+            ((int64_t *)dst)[4*(4*i+3)+j] = _mm256_extract_epi64(x0_tmp,3);    \
        }                                                                       \
     }                                                                          \
 }                                                                              \
@@ -1240,25 +1219,21 @@ void FUNC(emt_idct_##DCT_num##_16x16_h_avx2)(int16_t * /*restrict*/  src, int16_
 void FUNC(emt_idct_##DCT_num##_32x32_v_avx2)(int16_t */*restrict*/ src, int16_t */*restrict*/ dst)\
 {                                                                              \
     int i,j,k;                                                                 \
-    __m256i x0,x4,x8,x12,src_1, src_2_0, src_2_1, result;                      \
     for(i = 0; i < 8; i++){                                                    \
         for (j = 0; j < 8; j++){                                               \
             __m256i x0_tmp = _mm256_setzero_si256();                           \
             __m256i x8_tmp = _mm256_setzero_si256();                           \
             for (k = 0; k < 8; k++ ){                                          \
-                src_1   = _mm256_load_si256((__m256i *) TR_##DCT_type##_32x32_per_CG[8*i+k]);\
+                __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;\
+                src_1_0 = _mm256_load_si256((__m256i *) TR_##DCT_type##_32x32_per_CG[8*i+k]);\
                 src_2_0 = _mm256_load_si256((__m256i*) &src[16*(8*k+j)]);      \
                                                                                \
-                CORE_4x4_MULT()                                                \
-                x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
-                x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
+                CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)               \
+                x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                    \
+                x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                    \
             }                                                                  \
-            x0 =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_V));       \
-            x8 =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_V));       \
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_V);                           \
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_V);                           \
-            x0 =  _mm256_packs_epi32(x0,x8);                                   \
-            _mm256_store_si256((__m256i *)&dst[(8*i+j)*16],x0);                \
+            SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                    \
+            _mm256_store_si256((__m256i *)&dst[(8*i+j)*16],x0_tmp);            \
         }                                                                      \
     }                                                                          \
 }                                                                              \
@@ -1269,28 +1244,28 @@ void FUNC(emt_idct_##DCT_num##_32x32_v_avx2)(int16_t */*restrict*/ src, int16_t 
 void FUNC(emt_idct_##DCT_num##_32x32_h_avx2)(int16_t * /*restrict*/ src, int16_t * /*restrict*/ dst)\
 {                                                                              \
     int i,j,k;                                                                 \
-    __m256i x0,x4,x8,x12,src_1, src_2_0, src_2_1, result;                      \
     for(i = 0; i < 8; i++){                                                    \
         for (j = 0; j < 8; j++){                                               \
             __m256i x0_tmp = _mm256_setzero_si256();                           \
             __m256i x8_tmp = _mm256_setzero_si256();                           \
             for (k = 0; k < 8; k++ ){                                          \
-                src_1 = _mm256_load_si256((__m256i*) &src[16*(8*i+k)]);        \
+                __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;\
+                src_1_0 = _mm256_load_si256((__m256i*) &src[16*(8*i+k)]);        \
                 src_2_0 = _mm256_load_si256((__m256i *) DCT_type##_32x32_per_CG[8*k+j]);\
                                                                                \
-                CORE_4x4_MULT()                                                \
-                x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
-                x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
+                CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)               \
+                x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                    \
+                x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                    \
             }                                                                  \
-            x0 =  _mm256_add_epi32(x0_tmp, _mm256_set1_epi32(ADD_EMT_H));      \
-            x8 =  _mm256_add_epi32(x8_tmp, _mm256_set1_epi32(ADD_EMT_H));      \
-            x0 =  _mm256_srai_epi32(x0,SHIFT_EMT_H);                           \
-            x8 =  _mm256_srai_epi32(x8,SHIFT_EMT_H);                           \
-            x0 = _mm256_packs_epi32(x0,x8);                                    \
-            ((int64_t *)dst)[8*4*i+j]     = _mm256_extract_epi64(x0,0);        \
-            ((int64_t *)dst)[8*(4*i+1)+j] = _mm256_extract_epi64(x0,1);        \
-            ((int64_t *)dst)[8*(4*i+2)+j] = _mm256_extract_epi64(x0,2);        \
-            ((int64_t *)dst)[8*(4*i+3)+j] = _mm256_extract_epi64(x0,3);        \
+            x0_tmp =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_H));   \
+            x8_tmp =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_H));   \
+            x0_tmp =  _mm256_srai_epi32(x0_tmp,SHIFT_EMT_H);                   \
+            x8_tmp =  _mm256_srai_epi32(x8_tmp,SHIFT_EMT_H);                   \
+            x0_tmp = _mm256_packs_epi32(x0_tmp,x8_tmp);                        \
+            ((int64_t *)dst)[8*4*i+j]     = _mm256_extract_epi64(x0_tmp,0);    \
+            ((int64_t *)dst)[8*(4*i+1)+j] = _mm256_extract_epi64(x0_tmp,1);    \
+            ((int64_t *)dst)[8*(4*i+2)+j] = _mm256_extract_epi64(x0_tmp,2);    \
+            ((int64_t *)dst)[8*(4*i+3)+j] = _mm256_extract_epi64(x0_tmp,3);    \
        }                                                                       \
     }                                                                          \
 }                                                                              \
