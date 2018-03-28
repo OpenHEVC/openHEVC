@@ -1049,6 +1049,24 @@ s->hevcdsp.idct2_emt_v2[v][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[1], tmp);
 s->hevcdsp.idct2_emt_h2[h][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[1]);
 }
 
+#define CORE_4x4_MULT()\
+ src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));   \
+ src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16);             \
+ src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);                  \
+                                                                            \
+ x0  = _mm256_shuffle_epi32(src_1, 0);                                      \
+ x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);                        \
+ x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);                       \
+ x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);                      \
+                                                                            \
+ x0  = _mm256_madd_epi16(x0,  src_2_0);                                     \
+ x4  = _mm256_madd_epi16(x4,  src_2_1);                                     \
+ x8  = _mm256_madd_epi16(x8,  src_2_0);                                     \
+ x12 = _mm256_madd_epi16(x12, src_2_1);                                     \
+ x12 = _mm256_add_epi32(x8, x12);                                           \
+ result = _mm256_add_epi32(x0, x4);                                         \
+
+
 //______________________________________________________________________________
 //4x4
 
@@ -1060,21 +1078,7 @@ void FUNC(emt_idct_##DCT_num##_4x4_v_avx2)(int16_t */*restrict*/ src, int16_t */
     src_1 = _mm256_load_si256((__m256i *) TR_##DCT_type##_4x4_per_CG);         \
     src_2_0 = _mm256_load_si256((__m256i*) src);                               \
                                                                                \
-    src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));   \
-    src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16);             \
-    src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);                  \
-                                                                               \
-    x0  = _mm256_shuffle_epi32(src_1, 0);                                      \
-    x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);                        \
-    x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);                       \
-    x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);                      \
-                                                                               \
-    x0  = _mm256_madd_epi16(x0,  src_2_0);                                     \
-    x4  = _mm256_madd_epi16(x4,  src_2_1);                                     \
-    x8  = _mm256_madd_epi16(x8,  src_2_0);                                     \
-    x12 = _mm256_madd_epi16(x12, src_2_1);                                     \
-    x12 = _mm256_add_epi32(x8, x12);                                           \
-    result = _mm256_add_epi32(x0, x4);                                         \
+    CORE_4x4_MULT()                                                            \
                                                                                \
     x12    = _mm256_add_epi32(x12,    _mm256_set1_epi32(ADD_EMT_V));           \
     result = _mm256_add_epi32(result, _mm256_set1_epi32(ADD_EMT_V));           \
@@ -1095,21 +1099,7 @@ void FUNC(emt_idct_##DCT_num##_4x4_h_avx2)(int16_t */*restrict*/ src, int16_t */
     src_1 = _mm256_load_si256((__m256i*) src);                                 \
     src_2_0 = _mm256_load_si256((__m256i*) DCT_type##_4x4_per_CG);             \
                                                                                \
-    src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));   \
-    src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16);             \
-    src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);                  \
-                                                                               \
-    x0  = _mm256_shuffle_epi32(src_1, 0);                                      \
-    x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);                        \
-    x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);                       \
-    x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);                      \
-                                                                               \
-    x0  = _mm256_madd_epi16(x0,  src_2_0);                                     \
-    x4  = _mm256_madd_epi16(x4,  src_2_1);                                     \
-    x8  = _mm256_madd_epi16(x8,  src_2_0);                                     \
-    x12 = _mm256_madd_epi16(x12, src_2_1);                                     \
-    x12    = _mm256_add_epi32(x8, x12);                                        \
-    result = _mm256_add_epi32(x0, x4);                                         \
+    CORE_4x4_MULT()                                                            \
                                                                                \
     x12    = _mm256_add_epi32(x12,     _mm256_set1_epi32(ADD_EMT_H));          \
     result = _mm256_add_epi32(result,  _mm256_set1_epi32(ADD_EMT_H));          \
@@ -1137,21 +1127,7 @@ void FUNC(emt_idct_##DCT_num##_8x8_v_avx2)(int16_t */*restrict*/ src, int16_t */
                 src_1   = _mm256_load_si256((__m256i *) TR_##DCT_type##_8x8_per_CG[2*i+k]);\
                 src_2_0 = _mm256_load_si256((__m256i*) &src[16*(2*k+j)]);      \
                                                                                \
-                src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));\
-                src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16); \
-                src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);      \
-                                                                               \
-                x0  = _mm256_shuffle_epi32(src_1, 0);                          \
-                x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);            \
-                x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);           \
-                x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);          \
-                                                                               \
-                x0  = _mm256_madd_epi16(x0,  src_2_0);                         \
-                x4  = _mm256_madd_epi16(x4,  src_2_1);                         \
-                x8  = _mm256_madd_epi16(x8,  src_2_0);                         \
-                x12 = _mm256_madd_epi16(x12, src_2_1);                         \
-                x12    = _mm256_add_epi32(x8, x12);                            \
-                result = _mm256_add_epi32(x0, x4);                             \
+                CORE_4x4_MULT()                                                \
                 x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
                 x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
             }                                                                  \
@@ -1179,21 +1155,7 @@ void FUNC(emt_idct_##DCT_num##_8x8_h_avx2)(int16_t */*restrict*/  src, int16_t *
                 src_1   = _mm256_load_si256((__m256i*) &src[16*(2*i+k)]);      \
                 src_2_0 = _mm256_load_si256((__m256i *) DCT_type##_8x8_per_CG[2*k+j]);\
                                                                                \
-                src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));\
-                src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16); \
-                src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);      \
-                                                                               \
-                x0  = _mm256_shuffle_epi32(src_1, 0);                          \
-                x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);            \
-                x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);           \
-                x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);          \
-                                                                               \
-                x0  = _mm256_madd_epi16(x0,  src_2_0);                         \
-                x4  = _mm256_madd_epi16(x4,  src_2_1);                         \
-                x8  = _mm256_madd_epi16(x8,  src_2_0);                         \
-                x12 = _mm256_madd_epi16(x12, src_2_1);                         \
-                x12 = _mm256_add_epi32(x8, x12);                               \
-                result = _mm256_add_epi32(x0, x4);                             \
+                CORE_4x4_MULT()                                                \
                 x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
                 x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
             }                                                                  \
@@ -1224,26 +1186,12 @@ void FUNC(emt_idct_##DCT_num##_16x16_v_avx2)(int16_t */*restrict*/ src, int16_t 
             __m256i x0_tmp = _mm256_setzero_si256();                           \
             __m256i x8_tmp = _mm256_setzero_si256();                           \
             for (k = 0; k < 4; k++ ){                                          \
-            src_1   = _mm256_load_si256((__m256i *) TR_##DCT_type##_16x16_per_CG[4*i+k]);\
-            src_2_0 = _mm256_load_si256((__m256i*) &src[16*(4*k+j)]);          \
+                src_1   = _mm256_load_si256((__m256i *) TR_##DCT_type##_16x16_per_CG[4*i+k]);\
+                src_2_0 = _mm256_load_si256((__m256i*) &src[16*(4*k+j)]);      \
                                                                                \
-            src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));\
-            src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16);     \
-            src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);          \
-                                                                               \
-            x0  = _mm256_shuffle_epi32(src_1, 0);                              \
-            x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);                \
-            x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);               \
-            x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);              \
-                                                                               \
-            x0  = _mm256_madd_epi16(x0,  src_2_0);                             \
-            x4  = _mm256_madd_epi16(x4,  src_2_1);                             \
-            x8  = _mm256_madd_epi16(x8,  src_2_0);                             \
-            x12 = _mm256_madd_epi16(x12, src_2_1);                             \
-            x12    = _mm256_add_epi32(x8, x12);                                \
-            result = _mm256_add_epi32(x0, x4);                                 \
-            x0_tmp = _mm256_add_epi32(result,x0_tmp);                          \
-            x8_tmp = _mm256_add_epi32(x12,x8_tmp);                             \
+                CORE_4x4_MULT()                                                \
+                x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
+                x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
             }                                                                  \
             x0 =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_V));       \
             x8 =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_V));       \
@@ -1268,21 +1216,7 @@ void FUNC(emt_idct_##DCT_num##_16x16_h_avx2)(int16_t * /*restrict*/  src, int16_
                 src_1   = _mm256_load_si256((__m256i*) &src[16*(4*i+k)]);      \
                 src_2_0 = _mm256_load_si256((__m256i *) DCT_type##_16x16_per_CG[4*k+j]);\
                                                                                \
-                src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));\
-                src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16); \
-                src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);      \
-                                                                               \
-                x0  = _mm256_shuffle_epi32(src_1, 0);                          \
-                x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);            \
-                x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);           \
-                x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);          \
-                                                                               \
-                x0  = _mm256_madd_epi16(x0,  src_2_0);                         \
-                x4  = _mm256_madd_epi16(x4,  src_2_1);                         \
-                x8  = _mm256_madd_epi16(x8,  src_2_0);                         \
-                x12 = _mm256_madd_epi16(x12, src_2_1);                         \
-                x12 = _mm256_add_epi32(x8, x12);                               \
-                result = _mm256_add_epi32(x0, x4);                             \
+                CORE_4x4_MULT()                                                \
                 x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
                 x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
             }                                                                  \
@@ -1315,21 +1249,7 @@ void FUNC(emt_idct_##DCT_num##_32x32_v_avx2)(int16_t */*restrict*/ src, int16_t 
                 src_1   = _mm256_load_si256((__m256i *) TR_##DCT_type##_32x32_per_CG[8*i+k]);\
                 src_2_0 = _mm256_load_si256((__m256i*) &src[16*(8*k+j)]);      \
                                                                                \
-                src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));\
-                src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16); \
-                src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);      \
-                                                                               \
-                x0  = _mm256_shuffle_epi32(src_1, 0);                          \
-                x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);            \
-                x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);           \
-                x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);          \
-                                                                               \
-                x0  = _mm256_madd_epi16(x0,  src_2_0);                         \
-                x4  = _mm256_madd_epi16(x4,  src_2_1);                         \
-                x8  = _mm256_madd_epi16(x8,  src_2_0);                         \
-                x12 = _mm256_madd_epi16(x12, src_2_1);                         \
-                x12    = _mm256_add_epi32(x8, x12);                            \
-                result = _mm256_add_epi32(x0, x4);                             \
+                CORE_4x4_MULT()                                                \
                 x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
                 x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
             }                                                                  \
@@ -1358,21 +1278,7 @@ void FUNC(emt_idct_##DCT_num##_32x32_h_avx2)(int16_t * /*restrict*/ src, int16_t
                 src_1 = _mm256_load_si256((__m256i*) &src[16*(8*i+k)]);        \
                 src_2_0 = _mm256_load_si256((__m256i *) DCT_type##_32x32_per_CG[8*k+j]);\
                                                                                \
-                src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));\
-                src_2_1 = _mm256_permute2x128_si256(src_2_0, src_2_0, 1 + 16); \
-                src_2_0 = _mm256_permute2x128_si256(src_2_0, src_2_0, 0);      \
-                                                                               \
-                x0  = _mm256_shuffle_epi32(src_1, 0);                          \
-                x4  = _mm256_shuffle_epi32(src_1, 1 + 4 + 16 + 64);            \
-                x8  = _mm256_shuffle_epi32(src_1, 2 + 8 + 32 + 128);           \
-                x12 = _mm256_shuffle_epi32(src_1, 3 + 12 + 48 + 192);          \
-                                                                               \
-                x0  = _mm256_madd_epi16(x0,  src_2_0);                         \
-                x4  = _mm256_madd_epi16(x4,  src_2_1);                         \
-                x8  = _mm256_madd_epi16(x8,  src_2_0);                         \
-                x12 = _mm256_madd_epi16(x12, src_2_1);                         \
-                x12 =    _mm256_add_epi32(x8, x12);                            \
-                result = _mm256_add_epi32(x0, x4);                             \
+                CORE_4x4_MULT()                                                \
                 x0_tmp = _mm256_add_epi32(result,x0_tmp);                      \
                 x8_tmp = _mm256_add_epi32(x12,x8_tmp);                         \
             }                                                                  \
