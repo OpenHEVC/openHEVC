@@ -11,8 +11,6 @@
 
 enum EMT_DCTTransformType {
     DCT_II = 0,
-    DCT_III,
-    DCT_I,
     DST_I,     // subset 1
     DST_VII,   // subset 0, 1 et 2
     DCT_VIII,  // subset 0

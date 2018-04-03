@@ -446,6 +446,8 @@ typedef struct HEVCTransformContext{
     int num_significant_coeffs;
     int num_significant_cg;
     int num_non_significant_cg;
+    int is_dc;
+    int is_dc_c1;
 }HEVCTransformContext;
 
 typedef struct HEVCPersistentRiceContext{
