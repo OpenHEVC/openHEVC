@@ -531,17 +531,268 @@ void ohhevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
 //   void emt_idst_I_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
 //   void emt_idst_I_4x4_h_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
 
+#define EMT_DECL_V_DST_4x4(num,optim,depth)\
+void emt_idct_##num##_4x4_0_0_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_V_DST_8x8(y,num,optim,depth)\
+void emt_idct_##num##_8x8_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_8x8_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_V_DST_16x16(y,num,optim,depth)\
+void emt_idct_##num##_16x16_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_V_DST_32x32(y,num,optim,depth)\
+void emt_idct_##num##_32x32_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_32x32_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_32x32_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_32x32_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_32x32_4_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_32x32_5_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_32x32_6_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_32x32_7_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+#define EMT_DECL_V_DCT_4x4(num,optim,depth)\
+void emt_idct_##num##_4x4_0_0_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_V_DCT_8x8(y,num,optim,depth)\
+void emt_idct_##num##_8x8_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_8x8_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_V_DCT_16x16(y,num,optim,depth)\
+void emt_idct_##num##_16x16_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_V_DCT_32x32(y,num,optim,depth)\
+    void emt_idct_##num##_32x32_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_4_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_5_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_6_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_7_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+#define EMT_DECL_H_DCT_4x4(num,optim,depth)\
+void emt_idct_##num##_4x4_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_H_DCT_8x8(num,optim,depth)\
+void emt_idct_##num##_8x8_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_8x8_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_H_DCT_16x16(num,optim,depth)\
+void emt_idct_##num##_16x16_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_2_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_3_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_H_DCT_32x32(num,optim,depth)\
+    void emt_idct_##num##_32x32_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_2_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_3_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_4_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_5_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_6_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_7_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+#define EMT_DECL_H_DST_4x4(num,optim,depth)\
+void emt_idct_##num##_4x4_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_H_DST_8x8(num,optim,depth)\
+void emt_idct_##num##_8x8_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_8x8_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_H_DST_16x16(num,optim,depth)\
+void emt_idct_##num##_16x16_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_2_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+void emt_idct_##num##_16x16_3_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+
+#define EMT_DECL_H_DST_32x32(num,optim,depth)\
+    void emt_idct_##num##_32x32_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_2_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_3_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_4_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_5_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_6_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+    void emt_idct_##num##_32x32_7_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst);\
+
+#define DCT_EMT_DECL_V_32x32(num,optim,depth)\
+    EMT_DECL_V_DCT_32x32(0,num,optim,depth)\
+    EMT_DECL_V_DCT_32x32(1,num,optim,depth)\
+    EMT_DECL_V_DCT_32x32(2,num,optim,depth)\
+    EMT_DECL_V_DCT_32x32(3,num,optim,depth)\
+    EMT_DECL_V_DCT_32x32(4,num,optim,depth)\
+    EMT_DECL_V_DCT_32x32(5,num,optim,depth)\
+    EMT_DECL_V_DCT_32x32(6,num,optim,depth)\
+    EMT_DECL_V_DCT_32x32(7,num,optim,depth)\
+
+
+#define DCT_EMT_DECL_V_16x16(num,optim,depth)\
+    EMT_DECL_V_DCT_16x16(0,num,optim,depth)\
+    EMT_DECL_V_DCT_16x16(1,num,optim,depth)\
+    EMT_DECL_V_DCT_16x16(2,num,optim,depth)\
+    EMT_DECL_V_DCT_16x16(3,num,optim,depth)\
+
+#define DCT_EMT_DECL_V_8x8(num,optim,depth)\
+    EMT_DECL_V_DCT_8x8(0,num,optim,depth)\
+    EMT_DECL_V_DCT_8x8(1,num,optim,depth)\
+
+#define DCT_EMT_DECL_V_4x4(num,optim,depth)\
+EMT_DECL_V_DCT_4x4(num,optim,depth)\
+
+#define DST_EMT_DECL_V_32x32(num,optim,depth)\
+    EMT_DECL_V_DST_32x32(0,num,optim,depth)\
+    EMT_DECL_V_DST_32x32(1,num,optim,depth)\
+    EMT_DECL_V_DST_32x32(2,num,optim,depth)\
+    EMT_DECL_V_DST_32x32(3,num,optim,depth)\
+    EMT_DECL_V_DST_32x32(4,num,optim,depth)\
+    EMT_DECL_V_DST_32x32(5,num,optim,depth)\
+    EMT_DECL_V_DST_32x32(6,num,optim,depth)\
+    EMT_DECL_V_DST_32x32(7,num,optim,depth)\
+
+
+#define DST_EMT_DECL_V_16x16(num,optim,depth)\
+    EMT_DECL_V_DST_16x16(0,num,optim,depth)\
+    EMT_DECL_V_DST_16x16(1,num,optim,depth)\
+    EMT_DECL_V_DST_16x16(2,num,optim,depth)\
+    EMT_DECL_V_DST_16x16(3,num,optim,depth)\
+
+#define DST_EMT_DECL_V_8x8(num,optim,depth)\
+    EMT_DECL_V_DST_8x8(0,num,optim,depth)\
+    EMT_DECL_V_DST_8x8(1,num,optim,depth)\
+
+#define DST_EMT_DECL_V_4x4(num,optim,depth)\
+EMT_DECL_V_DST_4x4(num,optim,depth)\
+
+#define DECL_DCT(num,optim,depth)\
+    DCT_EMT_DECL_V_32x32(num,optim,depth)\
+    DCT_EMT_DECL_V_16x16(num,optim,depth)\
+    DCT_EMT_DECL_V_8x8(num,optim,depth)\
+    DCT_EMT_DECL_V_4x4(num,optim,depth)\
+    EMT_DECL_H_DCT_32x32(num,optim,depth)\
+    EMT_DECL_H_DCT_16x16(num,optim,depth)\
+    EMT_DECL_H_DCT_8x8(num,optim,depth)\
+    EMT_DECL_H_DCT_4x4(num,optim,depth)\
+
+#define DECL_DST(num,optim,depth)\
+    DST_EMT_DECL_V_32x32(num,optim,depth)\
+    DST_EMT_DECL_V_16x16(num,optim,depth)\
+    DST_EMT_DECL_V_8x8(num,optim,depth)\
+    DST_EMT_DECL_V_4x4(num,optim,depth)\
+    EMT_DECL_H_DST_32x32(num,optim,depth)\
+    EMT_DECL_H_DST_16x16(num,optim,depth)\
+    EMT_DECL_H_DST_8x8(num,optim,depth)\
+    EMT_DECL_H_DST_4x4(num,optim,depth)\
+
+   DECL_DCT(II,avx2,8);
+
+   DECL_DCT(V,avx2,8);
+
+   DECL_DCT(VIII,avx2,8);
+
+   DECL_DST(I,avx2,8);
+
+   DECL_DST(VII,avx2,8);
+
+   DECL_DCT(II,avx2,10);
+
+   DECL_DCT(V,avx2,10);
+
+   DECL_DCT(VIII,avx2,10);
+
+   DECL_DST(I,avx2,10);
+
+   DECL_DST(VII,avx2,10);
+   /*
+#define EMT_DECL_V(num,size,optim,depth,h)\
+    void emt_idct_##num##_##size##_##h##_0_v_##optim##_##depth(int16_t *x, int16_t *block);\
+       void emt_idct_##num##_##size##_##h##_1_v_##optim##_##depth(int16_t *x, int16_t *block);\
+       void emt_idct_##num##_##size##_##h##_2_v_##optim##_##depth(int16_t *x, int16_t *block);\
+       void emt_idct_##num##_##size##_##h##_3_v_##optim##_##depth(int16_t *x, int16_t *block);\
+       void emt_idct_##num##_##size##_##h##_4_v_##optim##_##depth(int16_t *x, int16_t *block);\
+       void emt_idct_##num##_##size##_##h##_5_v_##optim##_##depth(int16_t *x, int16_t *block);\
+       void emt_idct_##num##_##size##_##h##_6_v_##optim##_##depth(int16_t *x, int16_t *block);\
+       void emt_idct_##num##_##size##_##h##_7_v_##optim##_##depth(int16_t *x, int16_t *block);\
+
+
+
 #define DECL_AMT_IDCT(num,size,optim,depth)\
-void emt_idct_##num##_##size##_v_##optim##_##depth(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);\
-void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);\
+EMT_DECL_V(num,size,optim,depth,0)\
+    EMT_DECL_V(num,size,optim,depth,1)\
+    EMT_DECL_V(num,size,optim,depth,2)\
+    EMT_DECL_V(num,size,optim,depth,3)\
+    EMT_DECL_V(num,size,optim,depth,4)\
+    EMT_DECL_V(num,size,optim,depth,5)\
+    EMT_DECL_V(num,size,optim,depth,6)\
+    EMT_DECL_V(num,size,optim,depth,7)\
+void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_0_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_1_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_2_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_3_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_4_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_5_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_6_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_7_h_##optim##_##depth(int16_t *x, int16_t *block);\
 
 #define DECL_AMT_IDST(num,size,optim,depth)\
-void emt_idct_##num##_##size##_v_##optim##_##depth(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);\
-void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);\
+void emt_idct_##num##_##size##_v_##optim##_##depth(int16_t *x, int16_t *block);\
+void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    EMT_DECL_V(num,size,optim,depth,0)\
+        EMT_DECL_V(num,size,optim,depth,1)\
+        EMT_DECL_V(num,size,optim,depth,2)\
+        EMT_DECL_V(num,size,optim,depth,3)\
+        EMT_DECL_V(num,size,optim,depth,4)\
+        EMT_DECL_V(num,size,optim,depth,5)\
+        EMT_DECL_V(num,size,optim,depth,6)\
+        EMT_DECL_V(num,size,optim,depth,7)\
+    void emt_idct_##num##_##size##_0_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_1_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_2_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_3_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_4_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_5_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_6_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_7_h_##optim##_##depth(int16_t *x, int16_t *block);\
 
 #define DECL_AMT_IDCT2(num,size,optim,depth)\
-void emt_idct_##num##_##size##_v_##optim##_##depth(int16_t *x, int16_t *block, int *significant_cg_list , int log2_transform_range, const int clip_min, const int clip_max);\
-void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block, int *significant_cg_list , int log2_transform_range, const int clip_min, const int clip_max);\
+void emt_idct_##num##_##size##_v_##optim##_##depth(int16_t *x, int16_t *block);\
+void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    EMT_DECL_V(num,size,optim,depth,0)\
+        EMT_DECL_V(num,size,optim,depth,1)\
+        EMT_DECL_V(num,size,optim,depth,2)\
+        EMT_DECL_V(num,size,optim,depth,3)\
+        EMT_DECL_V(num,size,optim,depth,4)\
+        EMT_DECL_V(num,size,optim,depth,5)\
+        EMT_DECL_V(num,size,optim,depth,6)\
+        EMT_DECL_V(num,size,optim,depth,7)\
+    void emt_idct_##num##_##size##_0_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_1_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_2_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_3_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_4_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_5_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_6_h_##optim##_##depth(int16_t *x, int16_t *block);\
+    void emt_idct_##num##_##size##_7_h_##optim##_##depth(int16_t *x, int16_t *block);\
 
 
    DECL_AMT_IDCT(  II,4x4,avx2,8)
@@ -591,7 +842,12 @@ void emt_idct_##num##_##size##_h_##optim##_##depth(int16_t *x, int16_t *block, i
    DECL_AMT_IDCT2(VIII,32x32,avx2,10)
    DECL_AMT_IDCT2(   I,32x32,avx2,10)
    DECL_AMT_IDCT2( VII,32x32,avx2,10)
-
+*/
 //#endif
+   //void oh_tr_add_8x8_10_avx2  (int16_t * /*restrict*/ dst, int16_t * /*restrict*/ src, int stride);
+   //void oh_tr_add_16x16_10_avx2(int16_t * /*restrict*/ dst, int16_t * /*restrict*/ src, int stride);
+   //void oh_tr_add_32x32_10_avx2(int16_t * /*restrict*/ dst, int16_t * /*restrict*/ src, int stride);
+   void hevc_emt_avx2_c(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
+   void hevc_emt_avx2_luma(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
 
 #endif // AVCODEC_X86_HEVCDSP_H
