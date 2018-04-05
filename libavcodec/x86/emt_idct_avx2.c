@@ -856,7 +856,7 @@ void FUNC(emt_idct_16x16_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *rest
     int i,j;                                                                   \
     __m256i CG[16];                                                             \
     for(i = 0; i < 4; i++){                                                    \
-    for (j = 0; j < 4 ; j++){                                                  \
+    for (j = 0; j < maxx + 1 ; j++){                                                  \
     DECL_0()                                                                   \
     IN_LOOP_LOAD_V(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
