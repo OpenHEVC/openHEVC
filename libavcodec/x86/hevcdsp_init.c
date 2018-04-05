@@ -752,7 +752,7 @@ EMT_LINK_V_DCT_4x4(optim,depth)\
     DCT_EMT_LINK_V_16x16(optim,depth)\
     DCT_EMT_LINK_V_8x8(optim,depth)\
     DCT_EMT_LINK_V_4x4(optim,depth)\
-    EMT_LINK_H_DCT_32x32(optim,depth)\
+    //EMT_LINK_H_DCT_32x32(optim,depth)\
     EMT_LINK_H_DCT_16x16(optim,depth)\
     EMT_LINK_H_DCT_8x8(optim,depth)\
     EMT_LINK_H_DCT_4x4(optim,depth)\

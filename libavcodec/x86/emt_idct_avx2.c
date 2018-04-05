@@ -27,13 +27,13 @@
 
 #include "../hevcdec.h"
  void hevc_emt_avx2_luma(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size){
-s->hevcdsp.idct2_emt_v2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->scan_ctx.y_cg_last_sig][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[0], tmp,TR_DTT_summary[tr_ctx->log2_tr_size_minus2][v]);
-s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[0],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
+s->hevcdsp.idct2_emt_v2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->scan_ctx.y_cg_last_sig][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[0], tmp,TR_DTT_summary[tr_ctx->log2_tr_size_minus2][v],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
+//s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[0],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
 }
 
  void hevc_emt_avx2_c(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size){
-s->hevcdsp.idct2_emt_v2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->scan_ctx.y_cg_last_sig][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[1], tmp,TR_DTT_summary[tr_ctx->log2_tr_size_minus2][v]);
-s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[1],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
+s->hevcdsp.idct2_emt_v2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->scan_ctx.y_cg_last_sig][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[1], tmp,TR_DTT_summary[tr_ctx->log2_tr_size_minus2][v],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
+//s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[1],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
 }
 
 #define CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)\
@@ -59,34 +59,34 @@ s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_min
  x8_tmp =  _mm256_srai_epi32(x8_tmp,SHIFT_EMT_##DIR);                          \
  x0_tmp =  _mm256_packs_epi32(x0_tmp,x8_tmp);                                  \
 
-#define IN_LOOP_LOAD_H(i,j,k,size,num_cg)\
- src_1_0 = _mm256_load_si256((__m256i*) &src[16*(num_cg*i+k)]);                \
- src_2_0 = _mm256_load_si256((__m256i *) &dtt_matrix[16*(num_cg*k+j)]);\
+#define IN_LOOP_LOAD_H(i,j,k,num_cg)\
+ src_1_0 = CG[num_cg*i+k];                 \
+ src_2_0 = _mm256_load_si256((__m256i *) &dtt_matrix_h[16*(num_cg*k+j)]);\
 
-#define IN_LOOP_MULT_H(i,j,k,size,num_cg)\
- IN_LOOP_LOAD_H(i,j,k,size,num_cg)                                    \
+#define IN_LOOP_MULT_H(i,j,k,num_cg)\
+ IN_LOOP_LOAD_H(i,j,k,num_cg)                                    \
  CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)                              \
  x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                                   \
  x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                                   \
 
-#define IN_LOOP_STORE_H(i,j,k,size,num_cg)\
+#define IN_LOOP_STORE_H(i,j,k,num_cg)\
     ((int64_t *)dst)[num_cg*4*i+j]     = _mm256_extract_epi64(x0_tmp,0);       \
     ((int64_t *)dst)[num_cg*(4*i+1)+j] = _mm256_extract_epi64(x0_tmp,1);       \
     ((int64_t *)dst)[num_cg*(4*i+2)+j] = _mm256_extract_epi64(x0_tmp,2);       \
     ((int64_t *)dst)[num_cg*(4*i+3)+j] = _mm256_extract_epi64(x0_tmp,3);       \
 
-#define IN_LOOP_LOAD_V(i,j,k,size,num_cg)\
-src_1_0 = _mm256_load_si256((__m256i *) &dtt_matrix[16*(num_cg*i+k)]);\
+#define IN_LOOP_LOAD_V(i,j,k,num_cg)\
+src_1_0 = _mm256_load_si256((__m256i *) &dtt_matrix_v[16*(num_cg*i+k)]);\
 src_2_0 = _mm256_load_si256((__m256i*) &src[16*(num_cg*k+j)]);                 \
 
- #define IN_LOOP_MULT_V(i,j,k,size,num_cg)\
- IN_LOOP_LOAD_V(i,j,k,size,num_cg)                                    \
+ #define IN_LOOP_MULT_V(i,j,k,num_cg)\
+ IN_LOOP_LOAD_V(i,j,k,num_cg)                                    \
  CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)                              \
  x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                                   \
  x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                                   \
 
-#define IN_LOOP_STORE_V(i,j,k,size,num_cg)\
- _mm256_store_si256((__m256i *)&dst[(num_cg*i+j)*16],x0_tmp);                  \
+#define IN_LOOP_STORE_V(i,j,k,num_cg)\
+ CG[num_cg*i+j]=x0_tmp;                  \
 
 #define DECL()                                                                     \
 __m256i x0_tmp,x8_tmp,x0,x4,x8,x12,src_1_0,src_2_0,src_2_1,result_1,result_2;\
@@ -278,7 +278,7 @@ void FUNC(emt_idct_##DCT_num##_32x32_h_avx2)(int16_t * restrict src, int16_t * r
  //______________________________________________________________________________
  // 4x4
 #define IDCT4X4_PRUNED_H()\
-void FUNC(emt_idct_4x4_0_h_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_4x4_0_h_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     __m256i x0,x4,x8,x12, src_2_1,result_1,result_2;                           \
     __m256i src_1_0 = _mm256_load_si256((__m256i*) src);                       \
@@ -292,30 +292,30 @@ void FUNC(emt_idct_4x4_0_h_avx2)(int16_t *restrict src, int16_t *restrict dst, c
  // 8x8
 
 #define IDCT8X8_PRUNED_H()                                     \
-void FUNC(emt_idct_8x8_1_h_avx2)(int16_t *restrict  src, int16_t *restrict  dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_8x8_1_h_avx2)(int16_t *restrict  src, int16_t *restrict  dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     for(i = 0; i < 2; i++){                                                    \
     for (j = 0; j < 2; j++){                                                   \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,8,2)                                         \
+    IN_LOOP_LOAD_H(i,j,0,2)                                         \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,8,2)                                         \
+    IN_LOOP_MULT_H(i,j,1,2)                                         \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,8,2)                                        \
+    IN_LOOP_STORE_H(i,j,k,2)                                        \
     }                                                                          \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_8x8_0_h_avx2)(int16_t *restrict  src, int16_t *restrict  dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_8x8_0_h_avx2)(int16_t *restrict  src, int16_t *restrict  dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     for(i = 0; i < 2; i++){                                                    \
     for (j = 0; j < 2; j++){                                                   \
     DECL_0()                                                                   \
-    IN_LOOP_LOAD_H(i,j,0,8,2)                                         \
+    IN_LOOP_LOAD_H(i,j,0,2)                                         \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,8,2)                                        \
+    IN_LOOP_STORE_H(i,j,k,2)                                        \
     }                                                                          \
     }                                                                          \
     }
@@ -324,62 +324,62 @@ void FUNC(emt_idct_8x8_0_h_avx2)(int16_t *restrict  src, int16_t *restrict  dst,
  //16x16
 
 #define IDCT16X16_PRUNED_H()\
-void FUNC(emt_idct_16x16_0_h_avx2)(int16_t * restrict  src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_16x16_0_h_avx2)(int16_t * restrict  src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < 4; j++){                                                   \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,16,4)                                        \
+    IN_LOOP_LOAD_H(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,16,4)                                        \
+    IN_LOOP_MULT_H(i,j,1,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,16,4)                                       \
+    IN_LOOP_STORE_H(i,j,k,4)                                       \
     }                                                                          \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_16x16_1_h_avx2)(int16_t * restrict  src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_16x16_1_h_avx2)(int16_t * restrict  src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < 4; j++){                                                   \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,16,4)                                        \
+    IN_LOOP_LOAD_H(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,16,4)                                        \
+    IN_LOOP_MULT_H(i,j,1,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,16,4)                                       \
+    IN_LOOP_STORE_H(i,j,k,4)                                       \
     }                                                                          \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_16x16_2_h_avx2)(int16_t * restrict  src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_16x16_2_h_avx2)(int16_t * restrict  src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < 4; j++){                                                   \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,16,4)                                        \
+    IN_LOOP_LOAD_H(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,16,4)                                        \
-    IN_LOOP_MULT_H(i,j,2,16,4)                                        \
+    IN_LOOP_MULT_H(i,j,1,4)                                        \
+    IN_LOOP_MULT_H(i,j,2,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,16,4)                                       \
+    IN_LOOP_STORE_H(i,j,k,4)                                       \
     }                                                                          \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_16x16_3_h_avx2)(int16_t * restrict  src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_16x16_3_h_avx2)(int16_t * restrict  src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < 4; j++){                                                   \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,16,4)                                        \
+    IN_LOOP_LOAD_H(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,16,4)                                        \
-    IN_LOOP_MULT_H(i,j,2,16,4)                                        \
-    IN_LOOP_MULT_H(i,j,3,16,4)                                        \
+    IN_LOOP_MULT_H(i,j,1,4)                                        \
+    IN_LOOP_MULT_H(i,j,2,4)                                        \
+    IN_LOOP_MULT_H(i,j,3,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,16,4)                                       \
+    IN_LOOP_STORE_H(i,j,k,4)                                       \
     }                                                                          \
     }                                                                          \
     }
@@ -390,419 +390,596 @@ void FUNC(emt_idct_16x16_3_h_avx2)(int16_t * restrict  src, int16_t * restrict d
 
 
 #define IDCT32x32_PRUNED_H()\
-void FUNC(emt_idct_32x32_0_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_0_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j=0;                                                                 \
     while(i < 8){ j=0;                                                         \
     while ( j < 8){                                                            \
     DECL_0()                                                                   \
-    IN_LOOP_LOAD_H(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_H(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_H(i,j,k,8)                                       \
     j++;                                                                       \
     }                                                                          \
     i++;                                                                       \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_32x32_1_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_1_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j=0;                                                                 \
     while(i < 8){ j=0;                                                         \
     while ( j < 8){                                                            \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_H(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,32,8)                                        \
+    IN_LOOP_MULT_H(i,j,1,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_H(i,j,k,8)                                       \
     j++;                                                                       \
     }                                                                          \
     i++;                                                                       \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_32x32_2_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_2_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j=0;                                                                 \
     while(i < 8){ j=0;                                                         \
     while ( j < 8){                                                            \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_H(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,2,32,8)                                        \
+    IN_LOOP_MULT_H(i,j,1,8)                                        \
+    IN_LOOP_MULT_H(i,j,2,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_H(i,j,k,8)                                       \
     j++;                                                                       \
     }                                                                          \
     i++;                                                                       \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_32x32_3_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_3_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j=0;                                                                 \
     while(i < 8){ j=0;                                                         \
     while ( j < 8){                                                            \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_H(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,3,32,8)                                        \
+    IN_LOOP_MULT_H(i,j,1,8)                                        \
+    IN_LOOP_MULT_H(i,j,2,8)                                        \
+    IN_LOOP_MULT_H(i,j,3,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_H(i,j,k,8)                                       \
     j++;                                                                       \
     }                                                                          \
     i++;                                                                       \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_32x32_4_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_4_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j=0;                                                                 \
     while(i < 8){ j=0;                                                         \
     while ( j < 8){                                                            \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_H(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,3,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,4,32,8)                                        \
+    IN_LOOP_MULT_H(i,j,1,8)                                        \
+    IN_LOOP_MULT_H(i,j,2,8)                                        \
+    IN_LOOP_MULT_H(i,j,3,8)                                        \
+    IN_LOOP_MULT_H(i,j,4,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_H(i,j,k,8)                                       \
     j++;                                                                       \
     }                                                                          \
     i++;                                                                       \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_32x32_5_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_5_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j=0;                                                                 \
     while(i < 8){ j=0;                                                         \
     while ( j < 8){                                                            \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_H(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,3,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,4,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,5,32,8)                                        \
+    IN_LOOP_MULT_H(i,j,1,8)                                        \
+    IN_LOOP_MULT_H(i,j,2,8)                                        \
+    IN_LOOP_MULT_H(i,j,3,8)                                        \
+    IN_LOOP_MULT_H(i,j,4,8)                                        \
+    IN_LOOP_MULT_H(i,j,5,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_H(i,j,k,8)                                       \
     j++;                                                                       \
     }                                                                          \
     i++;                                                                       \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_32x32_6_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_6_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
+ {                                                                             \
+    int i,j=0;                                                                 \
+    __m256i CG[64];                                                            \
+    while(i < 8){ j=0;                                                         \
+    while ( j < 8){                                                            \
+    DECL()                                                                     \
+    IN_LOOP_LOAD_H(i,j,0,8)                                        \
+    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    IN_LOOP_MULT_H(i,j,1,8)                                        \
+    IN_LOOP_MULT_H(i,j,2,8)                                        \
+    IN_LOOP_MULT_H(i,j,3,8)                                        \
+    IN_LOOP_MULT_H(i,j,4,8)                                        \
+    IN_LOOP_MULT_H(i,j,5,8)                                        \
+    IN_LOOP_MULT_H(i,j,6,8)                                        \
+    SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
+    IN_LOOP_STORE_H(i,j,k,8)                                       \
+    j++;                                                                       \
+    }                                                                          \
+    i++;                                                                       \
+    }                                                                          \
+    }                                                                          \
+void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j=0;                                                                 \
     while(i < 8){ j=0;                                                         \
     while ( j < 8){                                                            \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_H(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,3,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,4,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,5,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,6,32,8)                                        \
+    IN_LOOP_MULT_H(i,j,1,8)                                        \
+    IN_LOOP_MULT_H(i,j,2,8)                                        \
+    IN_LOOP_MULT_H(i,j,3,8)                                        \
+    IN_LOOP_MULT_H(i,j,4,8)                                        \
+    IN_LOOP_MULT_H(i,j,5,8)                                        \
+    IN_LOOP_MULT_H(i,j,6,8)                                        \
+    IN_LOOP_MULT_H(i,j,7,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_H(i,j,k,8)                                       \
     j++;                                                                       \
     }                                                                          \
     i++;                                                                       \
     }                                                                          \
     }                                                                          \
-void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict dst, const int16_t *restrict  dtt_matrix)\
- {                                                                             \
-    int i,j=0;                                                                 \
-    while(i < 8){ j=0;                                                         \
-    while ( j < 8){                                                            \
+
+
+#define DO_H_7(num_cg)\
+    i = 0;                                                                 \
+    while(i < num_cg){ j=0;                                                         \
+    while ( j < num_cg){                                                            \
     DECL()                                                                     \
-    IN_LOOP_LOAD_H(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_H(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,3,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,4,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,5,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,6,32,8)                                        \
-    IN_LOOP_MULT_H(i,j,7,32,8)                                        \
+    IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,4,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,5,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,6,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,7,num_cg)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
-    IN_LOOP_STORE_H(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
     j++;                                                                       \
     }                                                                          \
     i++;                                                                       \
     }                                                                          \
+
+#define DO_H_6(num_cg)\
+    i =  0;                                                                 \
+    while(i < num_cg){ j=0;                                                         \
+    while ( j < num_cg){                                                            \
+    DECL()                                                                     \
+    IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
+    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,4,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,5,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,6,num_cg)                                        \
+    SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
+    IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
+    j++;                                                                       \
     }                                                                          \
+    i++;                                                                       \
+    }                                                                          \
+
+#define DO_H_5(num_cg)\
+    i =  0;                                                                 \
+    while(i < num_cg){ j=0;                                                         \
+    while ( j < num_cg){                                                            \
+    DECL()                                                                     \
+    IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
+    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,4,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,5,num_cg)                                        \
+    SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
+    IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
+    j++;                                                                       \
+    }                                                                          \
+    i++;                                                                       \
+    }
+
+#define DO_H_4(num_cg)\
+    i =  0;                                                                 \
+    while(i < num_cg){ j=0;                                                         \
+    while ( j < num_cg){                                                            \
+    DECL()                                                                     \
+    IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
+    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,4,num_cg)                                        \
+    SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
+    IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
+    j++;                                                                       \
+    }                                                                          \
+    i++;                                                                       \
+    }
+
+#define DO_H_3(num_cg)\
+    i = 0;                                                                 \
+    while(i < num_cg){ j=0;                                                         \
+    while ( j < num_cg){                                                            \
+    DECL()                                                                     \
+    IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
+    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
+    SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
+    IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
+    j++;                                                                       \
+    }                                                                          \
+    i++;                                                                       \
+    }
+
+#define DO_H_2(num_cg)\
+    i =  0;                                                                 \
+    while(i < num_cg){ j=0;                                                         \
+    while ( j < num_cg){                                                            \
+    DECL()                                                                     \
+    IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
+    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
+    IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
+    SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
+    IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
+    j++;                                                                       \
+    }                                                                          \
+    i++;                                                                       \
+    }
+
+#define DO_H_1(num_cg)\
+    i =  0;                                                                 \
+    while(i < num_cg){ j=0;                                                         \
+    while ( j < num_cg){                                                            \
+    DECL()                                                                     \
+    IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
+    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
+    SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
+    IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
+    j++;                                                                       \
+    }                                                                          \
+    i++;                                                                       \
+    }
+
+#define DO_H_0(num_cg)\
+    i =  0;                                                                 \
+    while(i < num_cg){ j=0;                                                         \
+    while ( j < num_cg){                                                            \
+    DECL_0()                                                                     \
+    IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
+    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
+    IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
+    j++;                                                                       \
+    }                                                                          \
+    i++;                                                                       \
+    }
+
+#define DO_H(maxx,num_cg)\
+    DO_H_##maxx(num_cg)\
+
 
  //______________________________________________________________________________
  //
 
-#define IDCT32x32_PRUNED_V_MAC(maxx,size,num_cg)\
-void FUNC(emt_idct_32x32_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+#define IDCT32x32_PRUNED_V_MAC(maxx,num_cg)\
+void FUNC(emt_idct_32x32_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[64];                                                            \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL_0()                                                                   \
-    IN_LOOP_LOAD_V(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_V(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,8)\
     }                                                                          \
-void FUNC(emt_idct_32x32_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[64];                                                            \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_V(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,32,8)                                        \
+    IN_LOOP_MULT_V(i,j,1,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,8)\
     }                                                                          \
-void FUNC(emt_idct_32x32_##maxx##_2_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_##maxx##_2_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[64];                                                            \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_V(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,2,32,8)                                        \
+    IN_LOOP_MULT_V(i,j,1,8)                                        \
+    IN_LOOP_MULT_V(i,j,2,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,8)\
     }                                                                          \
-void FUNC(emt_idct_32x32_##maxx##_3_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_##maxx##_3_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[64];                                                            \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_V(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,3,32,8)                                        \
+    IN_LOOP_MULT_V(i,j,1,8)                                        \
+    IN_LOOP_MULT_V(i,j,2,8)                                        \
+    IN_LOOP_MULT_V(i,j,3,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,8)\
     }                                                                          \
-void FUNC(emt_idct_32x32_##maxx##_4_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_##maxx##_4_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[64];                                                            \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_V(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,3,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,4,32,8)                                        \
+    IN_LOOP_MULT_V(i,j,1,8)                                        \
+    IN_LOOP_MULT_V(i,j,2,8)                                        \
+    IN_LOOP_MULT_V(i,j,3,8)                                        \
+    IN_LOOP_MULT_V(i,j,4,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,8)\
     }                                                                          \
-void FUNC(emt_idct_32x32_##maxx##_5_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_##maxx##_5_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[64];                                                            \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_V(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,3,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,4,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,5,32,8)                                        \
+    IN_LOOP_MULT_V(i,j,1,8)                                        \
+    IN_LOOP_MULT_V(i,j,2,8)                                        \
+    IN_LOOP_MULT_V(i,j,3,8)                                        \
+    IN_LOOP_MULT_V(i,j,4,8)                                        \
+    IN_LOOP_MULT_V(i,j,5,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,32,8)                                       \
+    IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,8)\
     }                                                                          \
-void FUNC(emt_idct_32x32_##maxx##_6_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_##maxx##_6_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[64];                                                            \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_V(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,3,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,4,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,5,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,6,32,8)                                        \
+    IN_LOOP_MULT_V(i,j,1,8)                                        \
+    IN_LOOP_MULT_V(i,j,2,8)                                        \
+    IN_LOOP_MULT_V(i,j,3,8)                                        \
+    IN_LOOP_MULT_V(i,j,4,8)                                        \
+    IN_LOOP_MULT_V(i,j,5,8)                                        \
+    IN_LOOP_MULT_V(i,j,6,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,size,8)                                     \
+    IN_LOOP_STORE_V(i,j,k,8)                                     \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,8)\
     }                                                                          \
-void FUNC(emt_idct_32x32_##maxx##_7_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_32x32_##maxx##_7_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[64];                                                            \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,32,8)                                        \
+    IN_LOOP_LOAD_V(i,j,0,8)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,2,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,3,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,4,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,5,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,6,32,8)                                        \
-    IN_LOOP_MULT_V(i,j,7,32,8)                                        \
+    IN_LOOP_MULT_V(i,j,1,8)                                        \
+    IN_LOOP_MULT_V(i,j,2,8)                                        \
+    IN_LOOP_MULT_V(i,j,3,8)                                        \
+    IN_LOOP_MULT_V(i,j,4,8)                                        \
+    IN_LOOP_MULT_V(i,j,5,8)                                        \
+    IN_LOOP_MULT_V(i,j,6,8)                                        \
+    IN_LOOP_MULT_V(i,j,7,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,size,8)                                     \
+    IN_LOOP_STORE_V(i,j,k,8)                                     \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,8)\
     }                                                                          \
 
 
 #define IDCT32x32_PRUNED_V()\
-    IDCT32x32_PRUNED_V_MAC(0,32,8)\
-    IDCT32x32_PRUNED_V_MAC(1,32,8)\
-    IDCT32x32_PRUNED_V_MAC(2,32,8)\
-    IDCT32x32_PRUNED_V_MAC(3,32,8)\
-    IDCT32x32_PRUNED_V_MAC(4,32,8)\
-    IDCT32x32_PRUNED_V_MAC(5,32,8)\
-    IDCT32x32_PRUNED_V_MAC(6,32,8)\
-    IDCT32x32_PRUNED_V_MAC(7,32,8)
+    IDCT32x32_PRUNED_V_MAC(0,8)\
+    IDCT32x32_PRUNED_V_MAC(1,8)\
+    IDCT32x32_PRUNED_V_MAC(2,8)\
+    IDCT32x32_PRUNED_V_MAC(3,8)\
+    IDCT32x32_PRUNED_V_MAC(4,8)\
+    IDCT32x32_PRUNED_V_MAC(5,8)\
+    IDCT32x32_PRUNED_V_MAC(6,8)\
+    IDCT32x32_PRUNED_V_MAC(7,8)
 
 
-#define IDCT16x16_PRUNED_V_MAC(maxx,size,num_cg)\
-void FUNC(emt_idct_16x16_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+#define IDCT16x16_PRUNED_V_MAC(maxx,num_cg)\
+void FUNC(emt_idct_16x16_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[16];                                                             \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < 4 ; j++){                                                  \
     DECL_0()                                                                   \
-    IN_LOOP_LOAD_V(i,j,0,16,4)                                        \
+    IN_LOOP_LOAD_V(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,size,4)                                     \
+    IN_LOOP_STORE_V(i,j,k,4)                                     \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,4)\
     }                                                                          \
-void FUNC(emt_idct_16x16_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_16x16_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[16];                                                             \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,16,4)                                        \
+    IN_LOOP_LOAD_V(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,16,4)                                        \
+    IN_LOOP_MULT_V(i,j,1,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,size,4)                                     \
+    IN_LOOP_STORE_V(i,j,k,4)                                     \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,4)\
     }                                                                          \
-void FUNC(emt_idct_16x16_##maxx##_2_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_16x16_##maxx##_2_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[16];                                                             \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,16,4)                                        \
+    IN_LOOP_LOAD_V(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,16,4)                                        \
-    IN_LOOP_MULT_V(i,j,2,16,4)                                        \
+    IN_LOOP_MULT_V(i,j,1,4)                                        \
+    IN_LOOP_MULT_V(i,j,2,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,size,4)                                     \
+    IN_LOOP_STORE_V(i,j,k,4)                                     \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,4)\
     }                                                                          \
-void FUNC(emt_idct_16x16_##maxx##_3_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_16x16_##maxx##_3_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[16];                                                             \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,16,4)                                        \
+    IN_LOOP_LOAD_V(i,j,0,4)                                        \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,16,4)                                        \
-    IN_LOOP_MULT_V(i,j,2,16,4)                                        \
-    IN_LOOP_MULT_V(i,j,3,16,4)                                        \
+    IN_LOOP_MULT_V(i,j,1,4)                                        \
+    IN_LOOP_MULT_V(i,j,2,4)                                        \
+    IN_LOOP_MULT_V(i,j,3,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,size,4)                                     \
+    IN_LOOP_STORE_V(i,j,k,4)                                     \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,4)\
     }
 
 #define IDCT16X16_PRUNED_V()\
-    IDCT16x16_PRUNED_V_MAC(0,16,4)\
-    IDCT16x16_PRUNED_V_MAC(1,16,4)\
-    IDCT16x16_PRUNED_V_MAC(2,16,4)\
-    IDCT16x16_PRUNED_V_MAC(3,16,4)
+    IDCT16x16_PRUNED_V_MAC(0,4)\
+    IDCT16x16_PRUNED_V_MAC(1,4)\
+    IDCT16x16_PRUNED_V_MAC(2,4)\
+    IDCT16x16_PRUNED_V_MAC(3,4)
 
 
-#define IDCT8X8_PRUNED_V_MAC( maxx,size,num_cg)              \
-void FUNC(emt_idct_8x8_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+#define IDCT8X8_PRUNED_V_MAC( maxx,num_cg)              \
+void FUNC(emt_idct_8x8_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[4];                                                             \
     for(i = 0; i < 2; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL_0()                                                                   \
-    IN_LOOP_LOAD_V(i,j,0,8,2)                                         \
+    IN_LOOP_LOAD_V(i,j,0,2)                                         \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,size,2)                                     \
+    IN_LOOP_STORE_V(i,j,k,2)                                     \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,2)\
     }                                                                          \
-void FUNC(emt_idct_8x8_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+void FUNC(emt_idct_8x8_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
+    __m256i CG[4];                                                             \
     for(i = 0; i < 2; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
-    IN_LOOP_LOAD_V(i,j,0,8,2)                                         \
+    IN_LOOP_LOAD_V(i,j,0,2)                                         \
     CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
-    IN_LOOP_MULT_V(i,j,1,8,2)                                         \
+    IN_LOOP_MULT_V(i,j,1,2)                                         \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
-    IN_LOOP_STORE_V(i,j,k,size,2)                                     \
+    IN_LOOP_STORE_V(i,j,k,2)                                     \
     }                                                                          \
     }                                                                          \
+    DO_H(maxx,2)\
     }
 
 #define IDCT8X8_PRUNED_V()\
-    IDCT8X8_PRUNED_V_MAC(0,8,2)\
-    IDCT8X8_PRUNED_V_MAC(1,8,2)\
+    IDCT8X8_PRUNED_V_MAC(0,2)\
+    IDCT8X8_PRUNED_V_MAC(1,2)\
 
 
 
-#define IDCT4x4_PRUNED_V_MAC(maxx)                            \
-void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix)\
+#define IDCT4x4_PRUNED_MAC(maxx)                            \
+void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;          \
-    src_1_0 = _mm256_load_si256((__m256i *) dtt_matrix);       \
+    src_1_0 = _mm256_load_si256((__m256i *) dtt_matrix_v);                     \
     src_2_0 = _mm256_load_si256((__m256i*) src);                               \
     CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)                           \
     SCALE_AND_PACK(result_1,result_2,V)                                        \
+    src_2_0 = _mm256_load_si256((__m256i*) dtt_matrix_h);                      \
+    CORE_4x4_MULT(result_1,src_2_0,result_1,result_2)                          \
+    SCALE_AND_PACK(result_1,result_2,H)                                        \
     _mm256_store_si256((__m256i*)dst, result_1);                               \
     }
 
 #define IDCT4X4_PRUNED_V()\
-    IDCT4x4_PRUNED_V_MAC(0)\
+    IDCT4x4_PRUNED_MAC(0)\
 
 
 //______________________________________________________________________________
@@ -812,7 +989,7 @@ void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
 #define BIT_DEPTH 10
 
  IDCT4X4_PRUNED_V()
- IDCT4X4_PRUNED_H()
+// IDCT4X4_PRUNED_H()
 // IDCT4X4_PRUNED_V(DST_VII,VII)
 // IDCT4X4_PRUNED_H(DST_VII,VII)
 // IDCT4X4_PRUNED_V(DCT_VIII,VIII)
@@ -823,7 +1000,7 @@ void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
 // IDCT4X4_PRUNED_H(DST_I,I)
 
  IDCT8X8_PRUNED_V()
- IDCT8X8_PRUNED_H()
+// IDCT8X8_PRUNED_H()
 // IDCT8X8_PRUNED_V(DST_VII,VII)
 // IDCT8X8_PRUNED_H(DST_VII,VII)
 // IDCT8X8_PRUNED_V(DCT_VIII,VIII)
@@ -834,7 +1011,7 @@ void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
 // IDCT8X8_PRUNED_H(DST_I,I)
 
  IDCT16X16_PRUNED_V()
- IDCT16X16_PRUNED_H()
+// IDCT16X16_PRUNED_H()
 // IDCT16X16_PRUNED_V(DST_VII,VII)
 // IDCT16X16_PRUNED_H(DST_VII,VII)
 // IDCT16X16_PRUNED_V(DCT_VIII,VIII)
@@ -845,7 +1022,7 @@ void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
 // IDCT16X16_PRUNED_H(DST_I,I)
 
  IDCT32x32_PRUNED_V()
- IDCT32x32_PRUNED_H()
+// IDCT32x32_PRUNED_H()
 // IDCT32x32_PRUNED_V(DST_VII,VII)
 // IDCT32x32_PRUNED_H(DST_VII,VII)
 // IDCT32x32_PRUNED_V(DCT_VIII,VIII)
@@ -860,7 +1037,7 @@ void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
 #define BIT_DEPTH 8
 
  IDCT4X4_PRUNED_V()
- IDCT4X4_PRUNED_H()
+// IDCT4X4_PRUNED_H()
 // IDCT4X4_PRUNED_V(DST_VII,VII)
 // IDCT4X4_PRUNED_H(DST_VII,VII)
 // IDCT4X4_PRUNED_V(DCT_VIII,VIII)
@@ -871,7 +1048,7 @@ void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
 // IDCT4X4_PRUNED_H(DST_I,I)
 
  IDCT8X8_PRUNED_V()
- IDCT8X8_PRUNED_H()
+// IDCT8X8_PRUNED_H()
 // IDCT8X8_PRUNED_V(DST_VII,VII)
 // IDCT8X8_PRUNED_H(DST_VII,VII)
 // IDCT8X8_PRUNED_V(DCT_VIII,VIII)
@@ -882,7 +1059,7 @@ void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
 // IDCT8X8_PRUNED_H(DST_I,I)
 
  IDCT16X16_PRUNED_V()
- IDCT16X16_PRUNED_H()
+// IDCT16X16_PRUNED_H()
 // IDCT16X16_PRUNED_V(DST_VII,VII)
 // IDCT16X16_PRUNED_H(DST_VII,VII)
 // IDCT16X16_PRUNED_V(DCT_VIII,VIII)
@@ -893,7 +1070,7 @@ void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
 // IDCT16X16_PRUNED_H(DST_I,I)
 
  IDCT32x32_PRUNED_V()
- IDCT32x32_PRUNED_H()
+// IDCT32x32_PRUNED_H()
 // IDCT32x32_PRUNED_V(DST_VII,VII)
 // IDCT32x32_PRUNED_H(DST_VII,VII)
 // IDCT32x32_PRUNED_V(DCT_VIII,VIII)

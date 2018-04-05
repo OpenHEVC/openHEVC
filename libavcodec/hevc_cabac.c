@@ -1749,10 +1749,10 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
                 s->hevcdsp.transform_rdpcm(coeffs, tr_ctx->log2_trafo_size, mode);
             }
 #if OHCONFIG_AMT
-        } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
+        } else if ( s->HEVClc->cu.emt_cu_flag /*|| s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1*/ ) {
             enum IntraPredMode ucMode = INTER_MODE_IDX;
-            DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE])={0};
-            int tu_emt_Idx = (!s->HEVClc->cu.emt_cu_flag ) ? DCT2_EMT : s->HEVClc->tu.emt_tu_idx ;
+            //DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE])={0};
+            int tu_emt_Idx = /*(!s->HEVClc->cu.emt_cu_flag ) ? DCT2_EMT :*/ lc->tu.emt_tu_idx ;
             int tr_idx_h  = DCT_II;
             int tr_idx_v  = DCT_II;
             const int clip_min  = -(1 << tr_ctx->log2_transform_range);
@@ -1760,31 +1760,35 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
 
             if (s->HEVClc->cu.pred_mode == MODE_INTRA){
                 ucMode = pred_mode_intra;
-            }
-            if (tu_emt_Idx != DCT2_EMT){
-                if ( ucMode != INTER_MODE_IDX){
-                    tr_idx_h = emt_intra_subset_select[emt_intra_mode2tr_idx_h[ucMode]][(tu_emt_Idx) & 1];
-                    tr_idx_v = emt_intra_subset_select[emt_intra_mode2tr_idx_v[ucMode]][(tu_emt_Idx) >> 1];
-                } else {
+                tr_idx_h = emt_intra_subset_select[emt_intra_mode2tr_idx_h[ucMode]][(tu_emt_Idx) & 1];
+                tr_idx_v = emt_intra_subset_select[emt_intra_mode2tr_idx_v[ucMode]][(tu_emt_Idx) >> 1];
+            } else {
                     tr_idx_h = emt_inter_subset_select[(tu_emt_Idx) & 1];
                     tr_idx_v = emt_inter_subset_select[(tu_emt_Idx) >> 1];
                 }
-            }
-            if (tr_ctx->is_dc && tr_idx_h  == DCT_II){
-                    s->hevcdsp.idct_dc[tr_ctx->log2_tr_size_minus2](coeffs);
-            } else {
+
+               // }
 #define TEST_AVX2 1
  #if !TEST_AVX2
             s->hevcdsp.idct2_emt_v[tr_idx_v][tr_ctx->log2_tr_size_minus2](coeffs, tmp, 0, clip_min, clip_max);
             s->hevcdsp.idct2_emt_h[tr_idx_h][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
 #else
-            s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[0], tmp, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_v]);
-            s->hevcdsp.idct2_emt_h2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig](tmp, coeffs, DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_h]);
-            //s->hevcdsp.emt_it_luma(s,lc,tr_ctx,tmp,tr_idx_h,tr_idx_v,tr_ctx->log2_tr_size_minus2);
-            //s->hevcdsp.idct[tr_ctx->log2_tr_size_minus2](coeffs,FFMIN(24, scan_ctx->last_significant_coeff_x + scan_ctx->last_significant_coeff_y + 4));
+            s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[0],
+                    coeffs, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_v],DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_h]);
+            } else {
+                if (tr_ctx->is_dc){
+                        s->hevcdsp.idct_dc[tr_ctx->log2_tr_size_minus2](coeffs);
+                } else {
+
+                s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[0],
+                        coeffs, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II],DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II]);
             }
+        }
+
+    }
 #endif
 #endif
+#if !OHCONFIG_AMT
         } else if (lc->cu.pred_mode == MODE_INTRA && tr_ctx->log2_trafo_size == 2) {
             s->hevcdsp.idct_4x4_luma(coeffs);
         } else {
@@ -1805,6 +1809,7 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
             }
         }
     }
+#endif
     if (lc->tu.cross_pf) {
         int16_t *coeffs_y = lc->tu.coeffs[0];
 
@@ -1863,7 +1868,8 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
             }
 #if OHCONFIG_AMT
         } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
-            DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE])={0};
+            //DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE])={0};
+
             const int clip_min  = -(1 << tr_ctx->log2_transform_range);
             const int clip_max  =  (1 << tr_ctx->log2_transform_range) - 1;
             if (tr_ctx->is_dc_c1){
@@ -1873,8 +1879,7 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
                 s->hevcdsp.idct2_emt_v[DCT_II][tr_ctx->log2_tr_size_minus2](coeffs, tmp, 0, clip_min, clip_max);
                 s->hevcdsp.idct2_emt_h[DCT_II][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
  #else
-                s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[1], tmp, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II]);
-                s->hevcdsp.idct2_emt_h2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig](tmp, coeffs, DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II]);
+                s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[1], coeffs, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II], DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II]);
             //s->hevcdsp.emt_it_c(s,lc,tr_ctx,tmp,DCT_II,DCT_II,tr_ctx->log2_tr_size_minus2);
             //s->hevcdsp.idct[tr_ctx->log2_tr_size_minus2](coeffs,FFMIN(24, scan_ctx->last_significant_coeff_x + scan_ctx->last_significant_coeff_y + 4));
 #endif
