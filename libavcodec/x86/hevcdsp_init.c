@@ -668,232 +668,100 @@ mc_bi_w_funcs(qpel_hv, 12, sse4)
 static void voidfunc(){}
 
 #if OHCONFIG_AMT
-//#define LINK_AMT_IDCT2(num,size,optim,log2_tr_min2,depth)\
-c->idct2_emt_v2[DCT_##num][log2_tr_min2] = voidfunc;\
-c->idct2_emt_h2[DCT_##num][log2_tr_min2] = voidfunc;\
 
-//#define LINK_AMT_IDST2(num,size,optim,log2_tr_min2,depth)\
-c->idct2_emt_v2[DST_##num][log2_tr_min2] = voidfunc;\
-c->idct2_emt_h2[DST_##num][log2_tr_min2] = voidfunc;\
-
-#define EMT_LINK_V_DST_4x4(num,optim,depth)\
-c->idct2_emt_v2[0][0][DST_##num][0] = emt_idct_##num##_4x4_0_0_v_##optim##_##depth;\
+#define EMT_LINK_V_DCT_4x4(optim,depth)\
+c->idct2_emt_v2[0][0][0] = emt_idct_4x4_0_0_v_##optim##_##depth;\
 
 
-#define EMT_LINK_V_DST_8x8(y,num,optim,depth)\
-c->idct2_emt_v2[0][y][DST_##num][1] = emt_idct_##num##_8x8_0_##y##_v_##optim##_##depth;\
-c->idct2_emt_v2[1][y][DST_##num][1] = emt_idct_##num##_8x8_1_##y##_v_##optim##_##depth;\
+#define EMT_LINK_V_DCT_8x8(y,optim,depth)\
+c->idct2_emt_v2[1][0][y] = emt_idct_8x8_0_##y##_v_##optim##_##depth;\
+c->idct2_emt_v2[1][1][y] = emt_idct_8x8_1_##y##_v_##optim##_##depth;\
 
 
-#define EMT_LINK_V_DST_16x16(y,num,optim,depth)\
-c->idct2_emt_v2[0][y][DST_##num][2] = emt_idct_##num##_16x16_0_##y##_v_##optim##_##depth;\
-c->idct2_emt_v2[1][y][DST_##num][2] = emt_idct_##num##_16x16_1_##y##_v_##optim##_##depth;\
-c->idct2_emt_v2[2][y][DST_##num][2] = emt_idct_##num##_16x16_2_##y##_v_##optim##_##depth;\
-c->idct2_emt_v2[3][y][DST_##num][2] = emt_idct_##num##_16x16_3_##y##_v_##optim##_##depth;\
+#define EMT_LINK_V_DCT_16x16(y,optim,depth)\
+c->idct2_emt_v2[2][0][y] = emt_idct_16x16_0_##y##_v_##optim##_##depth;\
+c->idct2_emt_v2[2][1][y] = emt_idct_16x16_1_##y##_v_##optim##_##depth;\
+c->idct2_emt_v2[2][2][y] = emt_idct_16x16_2_##y##_v_##optim##_##depth;\
+c->idct2_emt_v2[2][3][y] = emt_idct_16x16_3_##y##_v_##optim##_##depth;\
 
 
-#define EMT_LINK_V_DST_32x32(y,num,optim,depth)\
-    c->idct2_emt_v2[0][y][DST_##num][3] = emt_idct_##num##_32x32_0_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[1][y][DST_##num][3] = emt_idct_##num##_32x32_1_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[2][y][DST_##num][3] = emt_idct_##num##_32x32_2_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[3][y][DST_##num][3] = emt_idct_##num##_32x32_3_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[4][y][DST_##num][3] = emt_idct_##num##_32x32_4_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[5][y][DST_##num][3] = emt_idct_##num##_32x32_5_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[6][y][DST_##num][3] = emt_idct_##num##_32x32_6_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[7][y][DST_##num][3] = emt_idct_##num##_32x32_7_##y##_v_##optim##_##depth;\
+#define EMT_LINK_V_DCT_32x32(y,optim,depth)\
+    c->idct2_emt_v2[3][0][y] = emt_idct_32x32_0_##y##_v_##optim##_##depth;\
+    c->idct2_emt_v2[3][1][y] = emt_idct_32x32_1_##y##_v_##optim##_##depth;\
+    c->idct2_emt_v2[3][2][y] = emt_idct_32x32_2_##y##_v_##optim##_##depth;\
+    c->idct2_emt_v2[3][3][y] = emt_idct_32x32_3_##y##_v_##optim##_##depth;\
+    c->idct2_emt_v2[3][4][y] = emt_idct_32x32_4_##y##_v_##optim##_##depth;\
+    c->idct2_emt_v2[3][5][y] = emt_idct_32x32_5_##y##_v_##optim##_##depth;\
+    c->idct2_emt_v2[3][6][y] = emt_idct_32x32_6_##y##_v_##optim##_##depth;\
+    c->idct2_emt_v2[3][7][y] = emt_idct_32x32_7_##y##_v_##optim##_##depth;\
 
-#define EMT_LINK_V_DCT_4x4(num,optim,depth)\
-c->idct2_emt_v2[0][0][DCT_##num][0] = emt_idct_##num##_4x4_0_0_v_##optim##_##depth;\
-
-
-#define EMT_LINK_V_DCT_8x8(y,num,optim,depth)\
-c->idct2_emt_v2[0][y][DCT_##num][1] = emt_idct_##num##_8x8_0_##y##_v_##optim##_##depth;\
-c->idct2_emt_v2[1][y][DCT_##num][1] = emt_idct_##num##_8x8_1_##y##_v_##optim##_##depth;\
+#define EMT_LINK_H_DCT_4x4(optim,depth)\
+c->idct2_emt_h2[0][0] = emt_idct_4x4_0_h_##optim##_##depth;\
 
 
-#define EMT_LINK_V_DCT_16x16(y,num,optim,depth)\
-c->idct2_emt_v2[0][y][DCT_##num][2] = emt_idct_##num##_16x16_0_##y##_v_##optim##_##depth;\
-c->idct2_emt_v2[1][y][DCT_##num][2] = emt_idct_##num##_16x16_1_##y##_v_##optim##_##depth;\
-c->idct2_emt_v2[2][y][DCT_##num][2] = emt_idct_##num##_16x16_2_##y##_v_##optim##_##depth;\
-c->idct2_emt_v2[3][y][DCT_##num][2] = emt_idct_##num##_16x16_3_##y##_v_##optim##_##depth;\
+#define EMT_LINK_H_DCT_8x8(optim,depth)\
+c->idct2_emt_h2[1][0] = emt_idct_8x8_0_h_##optim##_##depth;\
+c->idct2_emt_h2[1][1] = emt_idct_8x8_1_h_##optim##_##depth;\
 
 
-#define EMT_LINK_V_DCT_32x32(y,num,optim,depth)\
-    c->idct2_emt_v2[0][y][DCT_##num][3] = emt_idct_##num##_32x32_0_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[1][y][DCT_##num][3] = emt_idct_##num##_32x32_1_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[2][y][DCT_##num][3] = emt_idct_##num##_32x32_2_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[3][y][DCT_##num][3] = emt_idct_##num##_32x32_3_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[4][y][DCT_##num][3] = emt_idct_##num##_32x32_4_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[5][y][DCT_##num][3] = emt_idct_##num##_32x32_5_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[6][y][DCT_##num][3] = emt_idct_##num##_32x32_6_##y##_v_##optim##_##depth;\
-    c->idct2_emt_v2[7][y][DCT_##num][3] = emt_idct_##num##_32x32_7_##y##_v_##optim##_##depth;\
-
-#define EMT_LINK_H_DCT_4x4(num,optim,depth)\
-c->idct2_emt_h2[0][DCT_##num][0] = emt_idct_##num##_4x4_0_h_##optim##_##depth;\
+#define EMT_LINK_H_DCT_16x16(optim,depth)\
+c->idct2_emt_h2[2][0] = emt_idct_16x16_0_h_##optim##_##depth;\
+c->idct2_emt_h2[2][1] = emt_idct_16x16_1_h_##optim##_##depth;\
+c->idct2_emt_h2[2][2] = emt_idct_16x16_2_h_##optim##_##depth;\
+c->idct2_emt_h2[2][3] = emt_idct_16x16_3_h_##optim##_##depth;\
 
 
-#define EMT_LINK_H_DCT_8x8(num,optim,depth)\
-c->idct2_emt_h2[0][DCT_##num][1] = emt_idct_##num##_8x8_0_h_##optim##_##depth;\
-c->idct2_emt_h2[1][DCT_##num][1] = emt_idct_##num##_8x8_1_h_##optim##_##depth;\
+#define EMT_LINK_H_DCT_32x32(optim,depth)\
+    c->idct2_emt_h2[3][0] = emt_idct_32x32_0_h_##optim##_##depth;\
+    c->idct2_emt_h2[3][1] = emt_idct_32x32_1_h_##optim##_##depth;\
+    c->idct2_emt_h2[3][2] = emt_idct_32x32_2_h_##optim##_##depth;\
+    c->idct2_emt_h2[3][3] = emt_idct_32x32_3_h_##optim##_##depth;\
+    c->idct2_emt_h2[3][4] = emt_idct_32x32_4_h_##optim##_##depth;\
+    c->idct2_emt_h2[3][5] = emt_idct_32x32_5_h_##optim##_##depth;\
+    c->idct2_emt_h2[3][6] = emt_idct_32x32_6_h_##optim##_##depth;\
+    c->idct2_emt_h2[3][7] = emt_idct_32x32_7_h_##optim##_##depth;\
+
+#define DCT_EMT_LINK_V_32x32(optim,depth)\
+    EMT_LINK_V_DCT_32x32(0,optim,depth)\
+    EMT_LINK_V_DCT_32x32(1,optim,depth)\
+    EMT_LINK_V_DCT_32x32(2,optim,depth)\
+    EMT_LINK_V_DCT_32x32(3,optim,depth)\
+    EMT_LINK_V_DCT_32x32(4,optim,depth)\
+    EMT_LINK_V_DCT_32x32(5,optim,depth)\
+    EMT_LINK_V_DCT_32x32(6,optim,depth)\
+    EMT_LINK_V_DCT_32x32(7,optim,depth)\
 
 
-#define EMT_LINK_H_DCT_16x16(num,optim,depth)\
-c->idct2_emt_h2[0][DCT_##num][2] = emt_idct_##num##_16x16_0_h_##optim##_##depth;\
-c->idct2_emt_h2[1][DCT_##num][2] = emt_idct_##num##_16x16_1_h_##optim##_##depth;\
-c->idct2_emt_h2[2][DCT_##num][2] = emt_idct_##num##_16x16_2_h_##optim##_##depth;\
-c->idct2_emt_h2[3][DCT_##num][2] = emt_idct_##num##_16x16_3_h_##optim##_##depth;\
+#define DCT_EMT_LINK_V_16x16(optim,depth)\
+    EMT_LINK_V_DCT_16x16(0,optim,depth)\
+    EMT_LINK_V_DCT_16x16(1,optim,depth)\
+    EMT_LINK_V_DCT_16x16(2,optim,depth)\
+    EMT_LINK_V_DCT_16x16(3,optim,depth)\
+
+#define DCT_EMT_LINK_V_8x8(optim,depth)\
+    EMT_LINK_V_DCT_8x8(0,optim,depth)\
+    EMT_LINK_V_DCT_8x8(1,optim,depth)\
+
+#define DCT_EMT_LINK_V_4x4(optim,depth)\
+EMT_LINK_V_DCT_4x4(optim,depth)\
 
 
-#define EMT_LINK_H_DCT_32x32(num,optim,depth)\
-    c->idct2_emt_h2[0][DCT_##num][3] = emt_idct_##num##_32x32_0_h_##optim##_##depth;\
-    c->idct2_emt_h2[1][DCT_##num][3] = emt_idct_##num##_32x32_1_h_##optim##_##depth;\
-    c->idct2_emt_h2[2][DCT_##num][3] = emt_idct_##num##_32x32_2_h_##optim##_##depth;\
-    c->idct2_emt_h2[3][DCT_##num][3] = emt_idct_##num##_32x32_3_h_##optim##_##depth;\
-    c->idct2_emt_h2[4][DCT_##num][3] = emt_idct_##num##_32x32_4_h_##optim##_##depth;\
-    c->idct2_emt_h2[5][DCT_##num][3] = emt_idct_##num##_32x32_5_h_##optim##_##depth;\
-    c->idct2_emt_h2[6][DCT_##num][3] = emt_idct_##num##_32x32_6_h_##optim##_##depth;\
-    c->idct2_emt_h2[7][DCT_##num][3] = emt_idct_##num##_32x32_7_h_##optim##_##depth;\
 
-#define EMT_LINK_H_DST_4x4(num,optim,depth)\
-c->idct2_emt_h2[0][DST_##num][0] = emt_idct_##num##_4x4_0_h_##optim##_##depth;\
+#define LINK_DCT(optim,depth)\
+    DCT_EMT_LINK_V_32x32(optim,depth)\
+    DCT_EMT_LINK_V_16x16(optim,depth)\
+    DCT_EMT_LINK_V_8x8(optim,depth)\
+    DCT_EMT_LINK_V_4x4(optim,depth)\
+    EMT_LINK_H_DCT_32x32(optim,depth)\
+    EMT_LINK_H_DCT_16x16(optim,depth)\
+    EMT_LINK_H_DCT_8x8(optim,depth)\
+    EMT_LINK_H_DCT_4x4(optim,depth)\
 
-
-#define EMT_LINK_H_DST_8x8(num,optim,depth)\
-c->idct2_emt_h2[0][DST_##num][1] = emt_idct_##num##_8x8_0_h_##optim##_##depth;\
-c->idct2_emt_h2[1][DST_##num][1] = emt_idct_##num##_8x8_1_h_##optim##_##depth;\
-
-
-#define EMT_LINK_H_DST_16x16(num,optim,depth)\
-c->idct2_emt_h2[0][DST_##num][2] = emt_idct_##num##_16x16_0_h_##optim##_##depth;\
-c->idct2_emt_h2[1][DST_##num][2] = emt_idct_##num##_16x16_1_h_##optim##_##depth;\
-c->idct2_emt_h2[2][DST_##num][2] = emt_idct_##num##_16x16_2_h_##optim##_##depth;\
-c->idct2_emt_h2[3][DST_##num][2] = emt_idct_##num##_16x16_3_h_##optim##_##depth;\
-
-
-#define EMT_LINK_H_DST_32x32(num,optim,depth)\
-    c->idct2_emt_h2[0][DST_##num][3] = emt_idct_##num##_32x32_0_h_##optim##_##depth;\
-    c->idct2_emt_h2[1][DST_##num][3] = emt_idct_##num##_32x32_1_h_##optim##_##depth;\
-    c->idct2_emt_h2[2][DST_##num][3] = emt_idct_##num##_32x32_2_h_##optim##_##depth;\
-    c->idct2_emt_h2[3][DST_##num][3] = emt_idct_##num##_32x32_3_h_##optim##_##depth;\
-    c->idct2_emt_h2[4][DST_##num][3] = emt_idct_##num##_32x32_4_h_##optim##_##depth;\
-    c->idct2_emt_h2[5][DST_##num][3] = emt_idct_##num##_32x32_5_h_##optim##_##depth;\
-    c->idct2_emt_h2[6][DST_##num][3] = emt_idct_##num##_32x32_6_h_##optim##_##depth;\
-    c->idct2_emt_h2[7][DST_##num][3] = emt_idct_##num##_32x32_7_h_##optim##_##depth;\
-
-#define DCT_EMT_LINK_V_32x32(num,optim,depth)\
-    EMT_LINK_V_DCT_32x32(0,num,optim,depth)\
-    EMT_LINK_V_DCT_32x32(1,num,optim,depth)\
-    EMT_LINK_V_DCT_32x32(2,num,optim,depth)\
-    EMT_LINK_V_DCT_32x32(3,num,optim,depth)\
-    EMT_LINK_V_DCT_32x32(4,num,optim,depth)\
-    EMT_LINK_V_DCT_32x32(5,num,optim,depth)\
-    EMT_LINK_V_DCT_32x32(6,num,optim,depth)\
-    EMT_LINK_V_DCT_32x32(7,num,optim,depth)\
-
-
-#define DCT_EMT_LINK_V_16x16(num,optim,depth)\
-    EMT_LINK_V_DCT_16x16(0,num,optim,depth)\
-    EMT_LINK_V_DCT_16x16(1,num,optim,depth)\
-    EMT_LINK_V_DCT_16x16(2,num,optim,depth)\
-    EMT_LINK_V_DCT_16x16(3,num,optim,depth)\
-
-#define DCT_EMT_LINK_V_8x8(num,optim,depth)\
-    EMT_LINK_V_DCT_8x8(0,num,optim,depth)\
-    EMT_LINK_V_DCT_8x8(1,num,optim,depth)\
-
-#define DCT_EMT_LINK_V_4x4(num,optim,depth)\
-EMT_LINK_V_DCT_4x4(num,optim,depth)\
-
-#define DST_EMT_LINK_V_32x32(num,optim,depth)\
-    EMT_LINK_V_DST_32x32(0,num,optim,depth)\
-    EMT_LINK_V_DST_32x32(1,num,optim,depth)\
-    EMT_LINK_V_DST_32x32(2,num,optim,depth)\
-    EMT_LINK_V_DST_32x32(3,num,optim,depth)\
-    EMT_LINK_V_DST_32x32(4,num,optim,depth)\
-    EMT_LINK_V_DST_32x32(5,num,optim,depth)\
-    EMT_LINK_V_DST_32x32(6,num,optim,depth)\
-    EMT_LINK_V_DST_32x32(7,num,optim,depth)\
-
-
-#define DST_EMT_LINK_V_16x16(num,optim,depth)\
-    EMT_LINK_V_DST_16x16(0,num,optim,depth)\
-    EMT_LINK_V_DST_16x16(1,num,optim,depth)\
-    EMT_LINK_V_DST_16x16(2,num,optim,depth)\
-    EMT_LINK_V_DST_16x16(3,num,optim,depth)\
-
-#define DST_EMT_LINK_V_8x8(num,optim,depth)\
-    EMT_LINK_V_DST_8x8(0,num,optim,depth)\
-    EMT_LINK_V_DST_8x8(1,num,optim,depth)\
-
-#define DST_EMT_LINK_V_4x4(num,optim,depth)\
-EMT_LINK_V_DST_4x4(num,optim,depth)\
-
-#define LINK_DCT(num,optim,depth)\
-    DCT_EMT_LINK_V_32x32(num,optim,depth)\
-    DCT_EMT_LINK_V_16x16(num,optim,depth)\
-    DCT_EMT_LINK_V_8x8(num,optim,depth)\
-    DCT_EMT_LINK_V_4x4(num,optim,depth)\
-    EMT_LINK_H_DCT_32x32(num,optim,depth)\
-    EMT_LINK_H_DCT_16x16(num,optim,depth)\
-    EMT_LINK_H_DCT_8x8(num,optim,depth)\
-    EMT_LINK_H_DCT_4x4(num,optim,depth)\
-
-#define LINK_DST(num,optim,depth)\
-    DST_EMT_LINK_V_32x32(num,optim,depth)\
-    DST_EMT_LINK_V_16x16(num,optim,depth)\
-    DST_EMT_LINK_V_8x8(num,optim,depth)\
-    DST_EMT_LINK_V_4x4(num,optim,depth)\
-    EMT_LINK_H_DST_32x32(num,optim,depth)\
-    EMT_LINK_H_DST_16x16(num,optim,depth)\
-    EMT_LINK_H_DST_8x8(num,optim,depth)\
-    EMT_LINK_H_DST_4x4(num,optim,depth)\
 
 #define LINK_AMT_IDCT(num,size,optim,depth)\
 c->idct2_emt_v[DCT_##num][0] = emt_idct_##num##_##size##_v_##optim##_##depth;\
 c->idct2_emt_h[DCT_##num][0] = emt_idct_##num##_##size##_h_##optim##_##depth;\
 
-
-
-
-#define LINK_AMT_IDCT2(num,size,optim,log2_tr_min2,depth)\
- EMT_LINK_V_DCT(0,num,size,optim,log2_tr_min2,depth)\
-    EMT_LINK_V_DCT(1,num,size,optim,log2_tr_min2,depth)\
-    EMT_LINK_V_DCT(2,num,size,optim,log2_tr_min2,depth)\
-    EMT_LINK_V_DCT(3,num,size,optim,log2_tr_min2,depth)\
-    EMT_LINK_V_DCT(4,num,size,optim,log2_tr_min2,depth)\
-    EMT_LINK_V_DCT(5,num,size,optim,log2_tr_min2,depth)\
-    EMT_LINK_V_DCT(6,num,size,optim,log2_tr_min2,depth)\
-    EMT_LINK_V_DCT(7,num,size,optim,log2_tr_min2,depth)\
-c->idct2_emt_h2[0][DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_0_h_##optim##_##depth;\
-    c->idct2_emt_h2[1][DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_1_h_##optim##_##depth;\
-    c->idct2_emt_h2[2][DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_2_h_##optim##_##depth;\
-    c->idct2_emt_h2[3][DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_3_h_##optim##_##depth;\
-    c->idct2_emt_h2[4][DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_4_h_##optim##_##depth;\
-    c->idct2_emt_h2[5][DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_5_h_##optim##_##depth;\
-    c->idct2_emt_h2[6][DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_6_h_##optim##_##depth;\
-    c->idct2_emt_h2[7][DCT_##num][log2_tr_min2] = emt_idct_##num##_##size##_7_h_##optim##_##depth;\
-
-#define LINK_AMT_IDST2(num,size,optim,log2_tr_min2,depth)\
-    EMT_LINK_V_DST(0,num,size,optim,log2_tr_min2,depth)\
-       EMT_LINK_V_DST(1,num,size,optim,log2_tr_min2,depth)\
-       EMT_LINK_V_DST(2,num,size,optim,log2_tr_min2,depth)\
-       EMT_LINK_V_DST(3,num,size,optim,log2_tr_min2,depth)\
-       EMT_LINK_V_DST(4,num,size,optim,log2_tr_min2,depth)\
-       EMT_LINK_V_DST(5,num,size,optim,log2_tr_min2,depth)\
-       EMT_LINK_V_DST(6,num,size,optim,log2_tr_min2,depth)\
-       EMT_LINK_V_DST(7,num,size,optim,log2_tr_min2,depth)\
-    c->idct2_emt_h2[0][DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_0_h_##optim##_##depth;\
-    c->idct2_emt_h2[1][DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_1_h_##optim##_##depth;\
-    c->idct2_emt_h2[2][DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_2_h_##optim##_##depth;\
-    c->idct2_emt_h2[3][DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_3_h_##optim##_##depth;\
-    c->idct2_emt_h2[4][DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_4_h_##optim##_##depth;\
-    c->idct2_emt_h2[5][DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_5_h_##optim##_##depth;\
-    c->idct2_emt_h2[6][DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_6_h_##optim##_##depth;\
-    c->idct2_emt_h2[7][DST_##num][log2_tr_min2] = emt_idct_##num##_##size##_7_h_##optim##_##depth;\
-
-#define LINK_AMT_IDST(num,size,optim,depth)\
-c->idct2_emt_v[DST_##num][0] = emt_idst_##num##_##size##_v_##optim##_##depth;\
-c->idct2_emt_h[DST_##num][0] = emt_idst_##num##_##size##_h_##optim##_##depth;\
 
 #endif
 
@@ -1015,46 +883,10 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->transform_add[3]    = ff_hevc_transform_add32_8_avx;
         }
 #if OHCONFIG_AMT
-//            LINK_AMT_IDCT(  II,4x4,avx2,8);
-//            LINK_AMT_IDST(   I,4x4,avx2,8);
-//            LINK_AMT_IDST( VII,4x4,avx2,8);
-//            LINK_AMT_IDCT(VIII,4x4,avx2,8);
-//            LINK_AMT_IDCT(   V,4x4,avx2,8);
             c->emt_it_luma=hevc_emt_avx2_luma;
             c->emt_it_c=hevc_emt_avx2_c;
 
-            LINK_DCT(II,avx2,8);
-
-            LINK_DCT(V,avx2,8);
-
-            LINK_DCT(VIII,avx2,8);
-
-            LINK_DST(VII,avx2,8);
-
-            LINK_DST(I,avx2,8);
-//            LINK_AMT_IDCT2(  II,4x4,avx2,0,8);
-//            LINK_AMT_IDST2(   I,4x4,avx2,0,8);
-//            LINK_AMT_IDST2( VII,4x4,avx2,0,8);
-//            LINK_AMT_IDCT2(VIII,4x4,avx2,0,8);
-//            LINK_AMT_IDCT2(   V,4x4,avx2,0,8);
-
-//            LINK_AMT_IDCT2(  II,8x8,avx2,1,8);
-//            LINK_AMT_IDST2(   I,8x8,avx2,1,8);
-//            LINK_AMT_IDST2( VII,8x8,avx2,1,8);
-//            LINK_AMT_IDCT2(VIII,8x8,avx2,1,8);
-//            LINK_AMT_IDCT2(   V,8x8,avx2,1,8);
-
-//            LINK_AMT_IDCT2(  II,16x16,avx2,2,8);
-//            LINK_AMT_IDST2(   I,16x16,avx2,2,8);
-//            LINK_AMT_IDST2( VII,16x16,avx2,2,8);
-//            LINK_AMT_IDCT2(VIII,16x16,avx2,2,8);
-//            LINK_AMT_IDCT2(   V,16x16,avx2,2,8);
-
-//            LINK_AMT_IDCT2(  II,32x32,avx2,3,8);
-//            LINK_AMT_IDST2(   I,32x32,avx2,3,8);
-//            LINK_AMT_IDST2( VII,32x32,avx2,3,8);
-//            LINK_AMT_IDCT2(VIII,32x32,avx2,3,8);
-//            LINK_AMT_IDCT2(   V,32x32,avx2,3,8);
+            LINK_DCT(avx2,8);
 #endif
         if (EXTERNAL_AVX2(cpu_flags)) {
 
@@ -1373,38 +1205,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->emt_it_luma=hevc_emt_avx2_luma;
             c->emt_it_c=hevc_emt_avx2_c;
 
-            LINK_DCT(II,avx2,10);
-
-            LINK_DCT(V,avx2,10);
-
-            LINK_DCT(VIII,avx2,10);
-
-            LINK_DST(VII,avx2,10);
-
-            LINK_DST(I,avx2,10);
-//            LINK_AMT_IDCT2(  II,4x4,avx2,0,10);
-//            LINK_AMT_IDST2(   I,4x4,avx2,0,10);
-//            LINK_AMT_IDST2( VII,4x4,avx2,0,10);
-//            LINK_AMT_IDCT2(VIII,4x4,avx2,0,10);
-//            LINK_AMT_IDCT2(   V,4x4,avx2,0,10);
-
-//            LINK_AMT_IDCT2(  II,8x8,avx2,1,10);
-//            LINK_AMT_IDST2(   I,8x8,avx2,1,10);
-//            LINK_AMT_IDST2( VII,8x8,avx2,1,10);
-//            LINK_AMT_IDCT2(VIII,8x8,avx2,1,10);
-//            LINK_AMT_IDCT2(   V,8x8,avx2,1,10);
-
-//            LINK_AMT_IDCT2(  II,16x16,avx2,2,10);
-//            LINK_AMT_IDST2(   I,16x16,avx2,2,10);
-//            LINK_AMT_IDST2( VII,16x16,avx2,2,10);
-//            LINK_AMT_IDCT2(VIII,16x16,avx2,2,10);
-//            LINK_AMT_IDCT2(   V,16x16,avx2,2,10);
-
-//            LINK_AMT_IDCT2(  II,32x32,avx2,3,10);
-//            LINK_AMT_IDST2(   I,32x32,avx2,3,10);
-//            LINK_AMT_IDST2( VII,32x32,avx2,3,10);
-//            LINK_AMT_IDCT2(VIII,32x32,avx2,3,10);
-//            LINK_AMT_IDCT2(   V,32x32,avx2,3,10);
+            LINK_DCT(avx2,10);
 #endif
             c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
             c->transform_add[3] = ff_hevc_transform_add32_10_avx2;

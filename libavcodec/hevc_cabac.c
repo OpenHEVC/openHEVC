@@ -1778,8 +1778,8 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
             s->hevcdsp.idct2_emt_v[tr_idx_v][tr_ctx->log2_tr_size_minus2](coeffs, tmp, 0, clip_min, clip_max);
             s->hevcdsp.idct2_emt_h[tr_idx_h][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
 #else
-            s->hevcdsp.idct2_emt_v2[scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig][tr_idx_v][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[0], tmp);
-            s->hevcdsp.idct2_emt_h2[scan_ctx->x_cg_last_sig][tr_idx_h][tr_ctx->log2_tr_size_minus2](tmp, coeffs);
+            s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[0], tmp, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_v]);
+            s->hevcdsp.idct2_emt_h2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig](tmp, coeffs, DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_h]);
             //s->hevcdsp.emt_it_luma(s,lc,tr_ctx,tmp,tr_idx_h,tr_idx_v,tr_ctx->log2_tr_size_minus2);
             //s->hevcdsp.idct[tr_ctx->log2_tr_size_minus2](coeffs,FFMIN(24, scan_ctx->last_significant_coeff_x + scan_ctx->last_significant_coeff_y + 4));
             }
@@ -1873,8 +1873,8 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
                 s->hevcdsp.idct2_emt_v[DCT_II][tr_ctx->log2_tr_size_minus2](coeffs, tmp, 0, clip_min, clip_max);
                 s->hevcdsp.idct2_emt_h[DCT_II][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
  #else
-                s->hevcdsp.idct2_emt_v2[scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig][DCT_II][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[1], tmp);
-                s->hevcdsp.idct2_emt_h2[scan_ctx->x_cg_last_sig][DCT_II][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[1]);
+                s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[1], tmp, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II]);
+                s->hevcdsp.idct2_emt_h2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig](tmp, coeffs, DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II]);
             //s->hevcdsp.emt_it_c(s,lc,tr_ctx,tmp,DCT_II,DCT_II,tr_ctx->log2_tr_size_minus2);
             //s->hevcdsp.idct[tr_ctx->log2_tr_size_minus2](coeffs,FFMIN(24, scan_ctx->last_significant_coeff_x + scan_ctx->last_significant_coeff_y + 4));
 #endif
@@ -2761,40 +2761,6 @@ tr_ctx->num_significant_cg++;
        tr_ctx->num_significant_coeffs += n_end ;
 #endif
     }
-//    printf("\n");
-//    for (int k= 0; k < tr_ctx->transform_size; k++){
-//        for(int l=0; l<tr_ctx->transform_size; l++){
-//            printf("%*d ",5,coeffs[k*tr_ctx->transform_size+l]);
-//        }
-//        printf("\n");
-//    }
-//    printf(" END coeffs \n\n");
-
-    for (i = num_cg; i >=0 ; i--){
-
-        int cg_id = scan_ctx->scan_inv_cg[i];
-        if(significant_cg_flag[cg_id]){
-            int x_cg, y_cg;
-            int x_c, y_c;
-            int m;
-
-            x_cg = cg_id % tr_size_in_cg;
-            y_cg = cg_id / tr_size_in_cg;
-
-            x_c = (x_cg << 2) ;
-            y_c = (y_cg << 2) ;
-
-            int64_t *pos = &coeffs[x_c + y_c*tr_ctx->transform_size];
-            int64_t *cg_data= &lc->cg_coeffs[0][cg_id*16];
-
-            for (m = 0; m < 4; m++){
-                pos[m]= cg_data[m];
-                pos += tr_size_in_cg-1;
-            }
-
-        }
-    }
-
 }
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
