@@ -887,6 +887,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->emt_it_c=hevc_emt_avx2_c;
 
             LINK_DCT(avx2,8);
+
+            c->it_amt_dc[0] = emt_it_4x4_dc_avx2_10;
+            c->it_amt_dc[1] = emt_it_8x8_dc_avx2_10;
+            c->it_amt_dc[2] = emt_it_16x16_dc_avx2_10;
+            c->it_amt_dc[3] = emt_it_32x32_dc_avx2_10;
 #endif
         if (EXTERNAL_AVX2(cpu_flags)) {
 
@@ -1206,6 +1211,10 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->emt_it_c=hevc_emt_avx2_c;
 
             LINK_DCT(avx2,10);
+            c->it_amt_dc[0] = emt_it_4x4_dc_avx2_10;
+            c->it_amt_dc[1] = emt_it_8x8_dc_avx2_10;
+            c->it_amt_dc[2] = emt_it_16x16_dc_avx2_10;
+            c->it_amt_dc[3] = emt_it_32x32_dc_avx2_10;
 #endif
             c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
             c->transform_add[3] = ff_hevc_transform_add32_10_avx2;

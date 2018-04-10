@@ -77,7 +77,7 @@ typedef struct HEVCDSPContext {
     void (*idct2_emt_h2[4][8])(int16_t *tmp,    int16_t *dst,const  int16_t * dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);
     void (*emt_it_c)(void *s, struct HEVCLocalContext *lc, struct HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
     void (*emt_it_luma)(void *s,struct HEVCLocalContext *lc,struct HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
-
+    void (*it_amt_dc[4])(int16_t *coeffs, int16_t *tmp, const int16_t * dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);
 #endif
 
     void (*sao_edge_restore[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  struct SAOParams *sao, int *borders, int _width, int _height, int c_idx, uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
@@ -172,55 +172,112 @@ extern const int8_t ff_hevc_epel_filters[7][4];
 extern const int8_t ff_hevc_qpel_filters[3][16];
 
 #if OHCONFIG_AMT
-// ******************************************** Mode intra et SubSet ********************************************
-//  int emt_Tr_Set_H[35];
-//  int emt_Tr_Set_V[35];
-//  int g_aiTrSubSetIntra[3][2];
-//  int g_aiTrSubSetInter[2];
-//  extern const int emt_intra_mode2tr_idx_v[35];
-//  extern const int emt_intra_mode2tr_idx_h[35];
 
-//  extern const int emt_intra_subset_select[3][2];
-//  extern const int emt_inter_subset_select[2];
-// ************************************************* Initialisation du tableau fastInvTrans *************************************************
-//typedef void InvTrans(int16_t*, int16_t*, int, /*int,*/ /*int,*/ /*int,*/ int, int);
-// ************************************************* Initialisation des transformées *************************************************
-//  extern int16_t g_aiTr4 [8][ 4][ 4];
-//  extern int16_t g_aiTr8 [8][ 8][ 8];
-//  extern int16_t g_aiTr16[8][16][16];
-//  extern int16_t g_aiTr32[8][32][32];
+#define AMT_OPT_C2 0
+#define AMT_OPT_C 0
 
-//  extern int16_t g_aiT4 [8][ 4][ 4];
-//  extern int16_t g_aiT8 [8][ 8][ 8];
-//  extern int16_t g_aiT16[8][16][16];
-//  extern int16_t g_aiT32[8][32][32];
-// ****************************************************************** DCT_II ******************************************************************
-//void fastInverseDCT2_B4(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT2_B8(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT2_B16(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT2_B32(int16_t *src, int16_t *dst, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT2_B64(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//// ****************************************************************** DCT_V ******************************************************************
-//void fastInverseDCT5_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT5_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT5_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT5_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//// ****************************************************************** DCT_VIII ******************************************************************
-//void fastInverseDCT8_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT8_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT8_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDCT8_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//// ****************************************************************** DST_I ******************************************************************
-//void fastInverseDST1_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDST1_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDST1_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDST1_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//// ****************************************************************** DST_VII ******************************************************************
-//void fastInverseDST7_B4(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDST7_B8(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDST7_B16(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-//void fastInverseDST7_B32(int16_t *coeff, int16_t *block, int shift, int line, int zo, int use, int outputMinimum, int outputMaximum);
-// *********************************************************************************************************************************************
+#if AMT_OPT_C2
+#define EMT_DECL_V_DCT_4x4(optim,depth)\
+    void emt_idct_4x4_0_0_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+
+
+#define EMT_DECL_V_DCT_8x8(y,optim,depth)\
+    void emt_idct_8x8_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_8x8_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+
+
+#define EMT_DECL_V_DCT_16x16(y,optim,depth)\
+    void emt_idct_16x16_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_16x16_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_16x16_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_16x16_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+
+
+#define EMT_DECL_V_DCT_32x32(y,optim,depth)\
+    void emt_idct_32x32_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_4_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_5_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_6_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_7_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+
+#define EMT_DECL_H_DCT_4x4(optim,depth)\
+    void emt_idct_4x4_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+
+
+#define EMT_DECL_H_DCT_8x8(optim,depth)\
+    void emt_idct_8x8_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_8x8_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+
+
+#define EMT_DECL_H_DCT_16x16(optim,depth)\
+    void emt_idct_16x16_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_16x16_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_16x16_2_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_16x16_3_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+
+
+#define EMT_DECL_H_DCT_32x32(optim,depth)\
+    void emt_idct_32x32_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_2_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_3_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_4_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_5_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_6_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_7_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+
+
+#define DCT_EMT_DECL_V_32x32(optim,depth)\
+    EMT_DECL_V_DCT_32x32(0,optim,depth)\
+    EMT_DECL_V_DCT_32x32(1,optim,depth)\
+    EMT_DECL_V_DCT_32x32(2,optim,depth)\
+    EMT_DECL_V_DCT_32x32(3,optim,depth)\
+    EMT_DECL_V_DCT_32x32(4,optim,depth)\
+    EMT_DECL_V_DCT_32x32(5,optim,depth)\
+    EMT_DECL_V_DCT_32x32(6,optim,depth)\
+    EMT_DECL_V_DCT_32x32(7,optim,depth)\
+
+
+#define DCT_EMT_DECL_V_16x16(optim,depth)\
+    EMT_DECL_V_DCT_16x16(0,optim,depth)\
+    EMT_DECL_V_DCT_16x16(1,optim,depth)\
+    EMT_DECL_V_DCT_16x16(2,optim,depth)\
+    EMT_DECL_V_DCT_16x16(3,optim,depth)\
+
+#define DCT_EMT_DECL_V_8x8(optim,depth)\
+    EMT_DECL_V_DCT_8x8(0,optim,depth)\
+    EMT_DECL_V_DCT_8x8(1,optim,depth)\
+
+#define DCT_EMT_DECL_V_4x4(optim,depth)\
+EMT_DECL_V_DCT_4x4(optim,depth)\
+
+#define DST_EMT_DECL_V_32x32(optim,depth)\
+    EMT_DECL_V_DST_32x32(0,optim,depth)\
+    EMT_DECL_V_DST_32x32(1,optim,depth)\
+    EMT_DECL_V_DST_32x32(2,optim,depth)\
+    EMT_DECL_V_DST_32x32(3,optim,depth)\
+    EMT_DECL_V_DST_32x32(4,optim,depth)\
+    EMT_DECL_V_DST_32x32(5,optim,depth)\
+    EMT_DECL_V_DST_32x32(6,optim,depth)\
+    EMT_DECL_V_DST_32x32(7,optim,depth)\
+
+#define DECL_DCT(optim,depth)\
+    DCT_EMT_DECL_V_32x32(optim,depth)\
+    DCT_EMT_DECL_V_16x16(optim,depth)\
+    DCT_EMT_DECL_V_8x8(optim,depth)\
+    DCT_EMT_DECL_V_4x4(optim,depth)\
+
+
+   DECL_DCT(template,8)
+   DECL_DCT(template,9)
+   DECL_DCT(template,10)
+   DECL_DCT(template,12)
+   DECL_DCT(template,14)
+
+#endif
 #endif
 
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);

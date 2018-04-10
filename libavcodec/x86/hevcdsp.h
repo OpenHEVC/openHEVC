@@ -523,33 +523,6 @@ void ohhevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
     void emt_idct_32x32_6_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
     void emt_idct_32x32_7_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
 
-#define EMT_DECL_H_DCT_4x4(optim,depth)\
-    void emt_idct_4x4_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-
-
-#define EMT_DECL_H_DCT_8x8(optim,depth)\
-    void emt_idct_8x8_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_8x8_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-
-
-#define EMT_DECL_H_DCT_16x16(optim,depth)\
-    void emt_idct_16x16_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_16x16_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_16x16_2_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_16x16_3_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-
-
-#define EMT_DECL_H_DCT_32x32(optim,depth)\
-    void emt_idct_32x32_0_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_1_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_2_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_3_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_4_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_5_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_6_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_7_h_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-
-
 #define DCT_EMT_DECL_V_32x32(optim,depth)\
     EMT_DECL_V_DCT_32x32(0,optim,depth)\
     EMT_DECL_V_DCT_32x32(1,optim,depth)\
@@ -574,29 +547,23 @@ void ohhevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
 #define DCT_EMT_DECL_V_4x4(optim,depth)\
 EMT_DECL_V_DCT_4x4(optim,depth)\
 
-#define DST_EMT_DECL_V_32x32(optim,depth)\
-    EMT_DECL_V_DST_32x32(0,optim,depth)\
-    EMT_DECL_V_DST_32x32(1,optim,depth)\
-    EMT_DECL_V_DST_32x32(2,optim,depth)\
-    EMT_DECL_V_DST_32x32(3,optim,depth)\
-    EMT_DECL_V_DST_32x32(4,optim,depth)\
-    EMT_DECL_V_DST_32x32(5,optim,depth)\
-    EMT_DECL_V_DST_32x32(6,optim,depth)\
-    EMT_DECL_V_DST_32x32(7,optim,depth)\
-
 #define DECL_DCT(optim,depth)\
     DCT_EMT_DECL_V_32x32(optim,depth)\
     DCT_EMT_DECL_V_16x16(optim,depth)\
     DCT_EMT_DECL_V_8x8(optim,depth)\
     DCT_EMT_DECL_V_4x4(optim,depth)\
-    //EMT_DECL_H_DCT_32x32(optim,depth)\
-    EMT_DECL_H_DCT_16x16(optim,depth)\
-    EMT_DECL_H_DCT_8x8(optim,depth)\
-    EMT_DECL_H_DCT_4x4(optim,depth)\
 
    DECL_DCT(avx2,8)
    DECL_DCT(avx2,10)
 
+#define DECL_AMT_DC(depth)\
+    void emt_it_4x4_dc_avx2_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_it_8x8_dc_avx2_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_it_16x16_dc_avx2_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_it_32x32_dc_avx2_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);
+
+    DECL_AMT_DC(8)
+    DECL_AMT_DC(10)
 
    void hevc_emt_avx2_c(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
    void hevc_emt_avx2_luma(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);

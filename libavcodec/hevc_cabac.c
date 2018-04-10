@@ -1749,36 +1749,34 @@ void ff_hevc_hls_transform(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0,int
                 s->hevcdsp.transform_rdpcm(coeffs, tr_ctx->log2_trafo_size, mode);
             }
 #if OHCONFIG_AMT
-        } else if ( s->HEVClc->cu.emt_cu_flag /*|| s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1*/ ) {
-            enum IntraPredMode ucMode = INTER_MODE_IDX;
-            //DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE])={0};
-            int tu_emt_Idx = /*(!s->HEVClc->cu.emt_cu_flag ) ? DCT2_EMT :*/ lc->tu.emt_tu_idx ;
-            int tr_idx_h  = DCT_II;
-            int tr_idx_v  = DCT_II;
-            const int clip_min  = -(1 << tr_ctx->log2_transform_range);
-            const int clip_max  =  (1 << tr_ctx->log2_transform_range) - 1;
+        } else if ( s->HEVClc->cu.emt_cu_flag ) {
+            int tr_idx_h, tr_idx_v;
 
-            if (s->HEVClc->cu.pred_mode == MODE_INTRA){
-                ucMode = pred_mode_intra;
-                tr_idx_h = emt_intra_subset_select[emt_intra_mode2tr_idx_h[ucMode]][(tu_emt_Idx) & 1];
-                tr_idx_v = emt_intra_subset_select[emt_intra_mode2tr_idx_v[ucMode]][(tu_emt_Idx) >> 1];
+            if (s->HEVClc->cu.pred_mode != MODE_INTRA){
+                tr_idx_h = emt_inter_subset_select[(lc->tu.emt_tu_idx ) & 1];
+                tr_idx_v = emt_inter_subset_select[(lc->tu.emt_tu_idx ) >> 1];
             } else {
-                    tr_idx_h = emt_inter_subset_select[(tu_emt_Idx) & 1];
-                    tr_idx_v = emt_inter_subset_select[(tu_emt_Idx) >> 1];
-                }
+                tr_idx_h = emt_intra_subset_select[emt_intra_mode2tr_idx_h[pred_mode_intra]][(lc->tu.emt_tu_idx ) & 1];
+                tr_idx_v = emt_intra_subset_select[emt_intra_mode2tr_idx_v[pred_mode_intra]][(lc->tu.emt_tu_idx ) >> 1];
+            }
 
-               // }
 #define TEST_AVX2 1
  #if !TEST_AVX2
             s->hevcdsp.idct2_emt_v[tr_idx_v][tr_ctx->log2_tr_size_minus2](coeffs, tmp, 0, clip_min, clip_max);
             s->hevcdsp.idct2_emt_h[tr_idx_h][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
 #else
-            s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[0],
-                    coeffs, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_v],DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_h]);
+            if (tr_ctx->is_dc){
+                s->hevcdsp.it_amt_dc[tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[0],
+                        coeffs, DTT_DC_summary_V[tr_ctx->log2_tr_size_minus2][tr_idx_v], DTT_DC_summary_H[tr_ctx->log2_tr_size_minus2][tr_idx_h]);
+            }
+            else{
+                s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[0],
+                        coeffs, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_v],DTT_summary[tr_ctx->log2_tr_size_minus2][tr_idx_h]);
+            }
+        } else {
+            if (tr_ctx->is_dc){
+                s->hevcdsp.idct_dc[tr_ctx->log2_tr_size_minus2](coeffs);
             } else {
-                if (tr_ctx->is_dc){
-                        s->hevcdsp.idct_dc[tr_ctx->log2_tr_size_minus2](coeffs);
-                } else {
 
                 s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[0],
                         coeffs, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II],DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II]);
@@ -1867,11 +1865,7 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
                 s->hevcdsp.transform_rdpcm(coeffs, tr_ctx->log2_trafo_size, mode);
             }
 #if OHCONFIG_AMT
-        } else if ( s->HEVClc->cu.emt_cu_flag || s->ps.sps->use_intra_emt == 1 || s->ps.sps->use_inter_emt == 1 ) {
-            //DECLARE_ALIGNED(32, int16_t, tmp[MAX_TU_SIZE * MAX_TU_SIZE])={0};
-
-            const int clip_min  = -(1 << tr_ctx->log2_transform_range);
-            const int clip_max  =  (1 << tr_ctx->log2_transform_range) - 1;
+        } else {
             if (tr_ctx->is_dc_c1){
                 s->hevcdsp.idct_dc[tr_ctx->log2_tr_size_minus2](coeffs);
             } else {
@@ -1880,11 +1874,9 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
                 s->hevcdsp.idct2_emt_h[DCT_II][tr_ctx->log2_tr_size_minus2](tmp, coeffs, tr_ctx->log2_transform_range, clip_min, clip_max);
  #else
                 s->hevcdsp.idct2_emt_v2[tr_ctx->log2_tr_size_minus2][scan_ctx->x_cg_last_sig][scan_ctx->y_cg_last_sig](lc->cg_coeffs[1], coeffs, TR_DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II], DTT_summary[tr_ctx->log2_tr_size_minus2][DCT_II]);
-            //s->hevcdsp.emt_it_c(s,lc,tr_ctx,tmp,DCT_II,DCT_II,tr_ctx->log2_tr_size_minus2);
-            //s->hevcdsp.idct[tr_ctx->log2_tr_size_minus2](coeffs,FFMIN(24, scan_ctx->last_significant_coeff_x + scan_ctx->last_significant_coeff_y + 4));
 #endif
             }
-#endif
+#else
         } else {
             int max_xy = FFMAX(scan_ctx->last_significant_coeff_x, scan_ctx->last_significant_coeff_y);
             if (max_xy == 0)
@@ -1901,7 +1893,9 @@ void ff_hevc_hls_transform_c(HEVCContext *s,HEVCLocalContext *lc,int x0,int y0, 
                     col_limit = FFMIN(24, col_limit);
                 s->hevcdsp.idct[tr_ctx->log2_tr_size_minus2](coeffs, col_limit);
             }
+            #endif
         }
+
     }
     if (lc->tu.cross_pf) {
         int16_t *coeffs_y = lc->tu.coeffs[0];
@@ -2124,7 +2118,8 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *av_restrict s,
     tr_size_in_cg = 1 << tr_ctx->log2_tr_size_minus2;
 
     memset(significant_cg_flag,0,tr_size_in_cg*tr_size_in_cg*sizeof(uint8_t));
-    memset(&lc->cg_coeffs[1],0,tr_size_in_cg*tr_size_in_cg*sizeof(uint16_t)*16);
+    memset(&lc->cg_coeffs[1],0,tr_ctx->transform_size*tr_ctx->transform_size*sizeof(uint16_t));
+    memset(coeffs, 0, tr_ctx->transform_size * tr_ctx->transform_size * sizeof(int16_t));
 
     if (!cu_tr_transquant_bypass_flag && pps->transform_skip_enabled_flag &&
             tr_ctx->log2_trafo_size <= pps->log2_max_transform_skip_block_size) {
@@ -2134,7 +2129,7 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *av_restrict s,
     tr_skip_or_bypass = sps->transform_skip_context_enabled_flag &&
                     (tr_ctx->transform_skip_flag || cu_tr_transquant_bypass_flag);
     //Reset coeffs buffer
-    memset(coeffs, 0, tr_ctx->transform_size * tr_ctx->transform_size * sizeof(int16_t));
+
 
     // Derive QP for dequant
     //FIXME this could probably be called outside of the scope of residual coding
@@ -2258,12 +2253,13 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *av_restrict s,
             uint8_t coeff_abs_level_greater1_flag[8];
             uint16_t coeff_sign_flag;
             int sum_abs = 0;
+            int ctx_set = 0;
             //int sign_hidden;
 
             scan_ctx->x_cg_last_sig = FFMAX(scan_ctx->x_cg_last_sig,x_cg);
             scan_ctx->y_cg_last_sig = FFMAX(scan_ctx->y_cg_last_sig,y_cg);
             // initialize first elem of coeff_bas_level_greater1_flag
-            int ctx_set = 0;
+
 
             if (!current_cg->is_last_cg && greater1_ctx == 0)
                 ctx_set++;
@@ -2309,8 +2305,9 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *av_restrict s,
 
             //decode scale and store coeffs values
             for (m = 0; m <  (n_end < 8 ? n_end : 8); m++) {
-                int64_t trans_coeff_level;
+                int64_t trans_coeff_level,coeff_id ;
                 n = current_cg->significant_coeff_flag_idx[m];
+                coeff_id = scan_ctx->scan_inv_coeff[n];
 
                 x_c = (x_cg << 2) + scan_ctx->scan_x_off[n];
                 y_c = (y_cg << 2) + scan_ctx->scan_y_off[n];
@@ -2354,14 +2351,15 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *av_restrict s,
                 }
                 //fprintf(stderr,"store coeff xc %d, yc =%d, x_cg: %d, y_cg: %d val: %d\n", x_c, y_c,x_cg,y_cg,trans_coeff_level  );
                 coeffs[y_c * tr_ctx->transform_size + x_c] = trans_coeff_level;
-                lc->cg_coeffs[1][scan_ctx->scan_inv_cg[i]*16 + scan_ctx->scan_inv_coeff[n]] = trans_coeff_level;
+                lc->cg_coeffs[1][cg_id*16 + coeff_id] = trans_coeff_level;
             }
 
             for (m = 8; m < n_end ; m++) {
                 int64_t trans_coeff_level;
-                int last_coeff_abs_level_remaining;
+                int last_coeff_abs_level_remaining, coeff_id;
 
                 n = current_cg->significant_coeff_flag_idx[m];
+                coeff_id = scan_ctx->scan_inv_coeff[n];
 
                 x_c = (x_cg << 2) + scan_ctx->scan_x_off[n];
                 y_c = (y_cg << 2) + scan_ctx->scan_y_off[n];
@@ -2399,33 +2397,13 @@ void ff_hevc_hls_coefficients_coding_c(HEVCContext *av_restrict s,
                 }
                 //fprintf(stderr,"store coeff xc %d, yc =%d, x_cg: %d, y_cg: %d val: %d\n", x_c, y_c,x_cg,y_cg,trans_coeff_level  );
                 coeffs[y_c * tr_ctx->transform_size + x_c] = trans_coeff_level;
-                lc->cg_coeffs[1][scan_ctx->scan_inv_cg[i]*16 + scan_ctx->scan_inv_coeff[n]] = trans_coeff_level;
+                lc->cg_coeffs[1][cg_id*16 + coeff_id] = trans_coeff_level;
             }
         } //(do next CG)
-        //if(scan_idx==SCAN_HORIZ){
-//            printf("CG %d %d\n",y_cg*(tr_ctx->transform_size >> 2) + x_cg,scan_ctx->scan_inv_cg[i]);
-//            for (int k= 0; k < 4; k++){
-//                for(int l=0; l<4; l++){
-//                    printf("%*d ",5,cg_coeffs[scan_ctx->scan_inv_cg[i]][k*4+l]);
-//                }
-//                printf("\n");
-//            }
-//            printf("\n");
-        //}
 #if OHCONFIG_AMT
        tr_ctx->num_significant_coeffs += n_end ;
 #endif
-    }// end of coeffs decoding
-    //if(scan_idx==SCAN_HORIZ){
-//        printf("\n");
-//        for (int k= 0; k < tr_ctx->transform_size; k++){
-//            for(int l=0; l<tr_ctx->transform_size; l++){
-//                printf("%*d ",5,coeffs[k*tr_ctx->transform_size+l]);
-//            }
-//            printf("\n");
-//        }
-//        printf(" END coeffs \n\n");
-    //}
+    }
 }
 
 void ff_hevc_hls_coefficients_coding(HEVCContext *av_restrict s,
@@ -2452,7 +2430,6 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *av_restrict s,
     int sign_hidden;
     int n_end;
     int greater1_ctx = 1;
-    int16_t cg_coeffs[64][16]={{0}};
 
     int i;
     int num_cg;
@@ -2478,8 +2455,10 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *av_restrict s,
     tr_ctx->transform_size       = 1 << log2_trafo_size;
     tr_size_in_cg = 1 << tr_ctx->log2_tr_size_minus2;
 
+    //Reset coeffs buffer
     memset(significant_cg_flag,0,64*sizeof(uint8_t));
-    memset(&lc->cg_coeffs[0],0,tr_size_in_cg*tr_size_in_cg*sizeof(uint16_t)*16);
+    memset(&lc->cg_coeffs[0],0,tr_ctx->transform_size*tr_ctx->transform_size*sizeof(uint16_t));
+    memset(coeffs, 0, tr_ctx->transform_size * tr_ctx->transform_size * sizeof(int16_t));
 
     if (!cu_tr_transquant_bypass_flag && pps->transform_skip_enabled_flag &&
             tr_ctx->log2_trafo_size <= pps->log2_max_transform_skip_block_size) {
@@ -2488,8 +2467,8 @@ void ff_hevc_hls_coefficients_coding(HEVCContext *av_restrict s,
 
     tr_skip_or_bypass = sps->transform_skip_context_enabled_flag &&
                     (tr_ctx->transform_skip_flag || cu_tr_transquant_bypass_flag);
-    //Reset coeffs buffer
-    memset(coeffs, 0, tr_ctx->transform_size * tr_ctx->transform_size * sizeof(int16_t));
+
+
 
     // Derive QP for dequant
     //FIXME this could probably be called outside of the scope of residual coding
@@ -2666,7 +2645,9 @@ tr_ctx->num_significant_cg++;
             //decode scale and store coeffs values
             for (m = 0; m <  (n_end < 8 ? n_end : 8); m++) {
                 int64_t trans_coeff_level;
+                int coeff_id;
                 n = current_cg->significant_coeff_flag_idx[m];
+                coeff_id = scan_ctx->scan_inv_coeff[n];
 
                 x_c = (x_cg << 2) + scan_ctx->scan_x_off[n];
                 y_c = (y_cg << 2) + scan_ctx->scan_y_off[n];
@@ -2710,14 +2691,15 @@ tr_ctx->num_significant_cg++;
                 }
                 //fprintf(stderr,"store coeff xc %d, yc =%d, x_cg: %d, y_cg: %d val: %d\n", x_c, y_c,x_cg,y_cg,trans_coeff_level  );
                 coeffs[y_c * tr_ctx->transform_size + x_c] = trans_coeff_level;
-                lc->cg_coeffs[0][scan_ctx->scan_inv_cg[i]*16 + scan_ctx->scan_inv_coeff[n]] = trans_coeff_level;
+                lc->cg_coeffs[0][cg_id*16 + coeff_id] = trans_coeff_level;
             }
 
             for (m = 8; m < n_end ; m++) {
                 int64_t trans_coeff_level;
-                int last_coeff_abs_level_remaining;
+                int last_coeff_abs_level_remaining,coeff_id;
 
                 n = current_cg->significant_coeff_flag_idx[m];
+                coeff_id = scan_ctx->scan_inv_coeff[n];
 
                 x_c = (x_cg << 2) + scan_ctx->scan_x_off[n];
                 y_c = (y_cg << 2) + scan_ctx->scan_y_off[n];
@@ -2756,7 +2738,7 @@ tr_ctx->num_significant_cg++;
                 //fprintf(stderr,"store coeff xc %d, yc =%d, x_cg: %d, y_cg: %d val: %d\n", x_c, y_c,x_cg,y_cg,trans_coeff_level  );
                 //coeffs[y_c * tr_ctx->transform_size + x_c] = trans_coeff_level;
                 coeffs[y_c * tr_ctx->transform_size + x_c] = trans_coeff_level;
-                lc->cg_coeffs[0][cg_id * 16 + scan_ctx->scan_inv_coeff[n]] = trans_coeff_level;
+                lc->cg_coeffs[0][cg_id * 16 + coeff_id] = trans_coeff_level;
             }
 
         }else{tr_ctx->num_non_significant_cg++;} //(do next CG)

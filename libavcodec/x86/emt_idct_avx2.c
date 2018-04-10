@@ -5,6 +5,8 @@
 #include <immintrin.h>
 #endif
 
+
+
 #if HAVE_SSE2
 #include <emmintrin.h>
 #endif
@@ -1411,3 +1413,116 @@ void FUNC(emt_idct_##DCT_num##_8x8_v_avx2)(int16_t * restrict src, int16_t * res
 }\
 
 */
+#ifndef _mm256_set_m128i
+#define _mm256_set_m128i(v0,v1)_mm256_insertf128_si256( _mm256_castsi128_si256(v1),v0,1)
+#endif
+
+ //TODO no mulhi required
+#define IT_DC()\
+    void FUNC(emt_it_4x4_dc_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
+    {\
+        __m256i src_v = _mm256_set1_epi16(src[0]);\
+        __m256i it_h = _mm256_load_si256((__m256i *)dtt_matrix_h);\
+        __m256i it_v =_mm256_load_si256((__m256i *)dtt_matrix_v);\
+        __m256i y0 = _mm256_mulhi_epi16(src_v,it_v);\
+        __m256i  x0 = _mm256_mullo_epi16(src_v,it_v);\
+        it_v = _mm256_unpacklo_epi16(x0,y0);\
+        y0 = _mm256_unpackhi_epi16(x0,y0);\
+        x0 = _mm256_add_epi32(it_v, _mm256_set1_epi32(ADD_EMT_V));\
+        x0  = _mm256_srai_epi32(x0,SHIFT_EMT_V);\
+        y0 = _mm256_add_epi32(y0, _mm256_set1_epi32(ADD_EMT_V));\
+        y0  = _mm256_srai_epi32(y0,SHIFT_EMT_V);\
+        y0 = _mm256_packs_epi32(x0,y0);\
+        x0 = _mm256_mullo_epi16(y0,it_h);\
+        y0 = _mm256_mulhi_epi16(y0,it_h);\
+        it_h = _mm256_unpacklo_epi16(x0,y0);\
+        it_v = _mm256_unpackhi_epi16(x0,y0);\
+        x0 = _mm256_add_epi32(it_h, _mm256_set1_epi32(ADD_EMT_H));\
+        y0 = _mm256_add_epi32(it_v, _mm256_set1_epi32(ADD_EMT_H));\
+        y0  = _mm256_srai_epi32(y0,SHIFT_EMT_H);\
+        x0  = _mm256_srai_epi32(x0,SHIFT_EMT_H);\
+        x0 =_mm256_packs_epi32(x0,y0);\
+        _mm256_store_si256((__m256i *)dst,x0);\
+    }\
+    void FUNC(emt_it_8x8_dc_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
+    {\
+        int i;\
+        register const __m256i it_h = _mm256_load_si256((__m256i *)&dtt_matrix_h[0]);\
+        register const __m256i add = _mm256_set1_epi32(ADD_EMT_H);\
+        for (i=0;i<4;i++){\
+            __m256i src_v =_mm256_set_m128i(_mm_set1_epi16((src[0]*dtt_matrix_v[2*i+1]+ADD_EMT_V) >> SHIFT_EMT_V ),_mm_set1_epi16((src[0]*dtt_matrix_v[2*i]+ADD_EMT_V) >> SHIFT_EMT_V ));\
+            __m256i x0_2, y0_2,tmp_1,tmp_2;\
+            x0_2 = _mm256_mullo_epi16(src_v,it_h);\
+            y0_2 = _mm256_mulhi_epi16(src_v,it_h);\
+            tmp_1 = _mm256_unpacklo_epi16(x0_2,y0_2);\
+            tmp_2 = _mm256_unpackhi_epi16(x0_2,y0_2);\
+            x0_2 = _mm256_add_epi32(tmp_1, add);\
+            y0_2 = _mm256_add_epi32(tmp_2, add);\
+            y0_2  = _mm256_srai_epi32(y0_2,SHIFT_EMT_H);\
+            x0_2  = _mm256_srai_epi32(x0_2,SHIFT_EMT_H);\
+            x0_2 =_mm256_packs_epi32(x0_2,y0_2);\
+            _mm256_store_si256((__m256i *)&dst[16*i],x0_2);\
+        }\
+    }\
+    void FUNC(emt_it_16x16_dc_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
+    {\
+        int i;\
+        register const __m256i it_h = _mm256_load_si256((__m256i *)dtt_matrix_h);\
+        register const __m256i add = _mm256_set1_epi32(ADD_EMT_H);\
+        for (i=0;i<16;i++){\
+            __m256i src_v = _mm256_set1_epi16((src[0]*dtt_matrix_v[i]+ADD_EMT_V) >> SHIFT_EMT_V );\
+            __m256i x0_2, y0_2,tmp_1,tmp_2;\
+            x0_2 = _mm256_mullo_epi16(src_v,it_h);\
+            y0_2 = _mm256_mulhi_epi16(src_v,it_h);\
+            tmp_1 = _mm256_unpacklo_epi16(x0_2,y0_2);\
+            tmp_2 = _mm256_unpackhi_epi16(x0_2,y0_2);\
+            x0_2 = _mm256_add_epi32(tmp_1, add);\
+            y0_2 = _mm256_add_epi32(tmp_2, add);\
+            y0_2  = _mm256_srai_epi32(y0_2,SHIFT_EMT_H);\
+            x0_2  = _mm256_srai_epi32(x0_2,SHIFT_EMT_H);\
+            x0_2 =_mm256_packs_epi32(x0_2,y0_2);\
+            _mm256_store_si256((__m256i *)&dst[16*i],x0_2);\
+        }\
+    }\
+    void FUNC(emt_it_32x32_dc_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
+    {\
+        int i;\
+        register const __m256i it_h = _mm256_load_si256((__m256i *)&dtt_matrix_h[0]);\
+        register const __m256i it_h2 = _mm256_load_si256((__m256i *)&dtt_matrix_h[16]);\
+        register const __m256i add = _mm256_set1_epi32(ADD_EMT_H);\
+        for (i=0;i<32;i++){\
+            __m256i src_v = _mm256_set1_epi16((src[0]*dtt_matrix_v[i]+ADD_EMT_V) >> SHIFT_EMT_V );\
+            __m256i x0_2, y0_2,tmp_1_2,tmp_2_2;\
+            __m256i x0, y0,tmp_1,tmp_2;\
+            x0 = _mm256_mullo_epi16(src_v,it_h);\
+            y0 = _mm256_mulhi_epi16(src_v,it_h);\
+            x0_2 = _mm256_mullo_epi16(src_v,it_h2);\
+            y0_2 = _mm256_mulhi_epi16(src_v,it_h2);\
+            tmp_1 = _mm256_unpacklo_epi16(x0,y0);\
+            tmp_2 = _mm256_unpackhi_epi16(x0,y0);\
+            tmp_1_2 = _mm256_unpacklo_epi16(x0_2,y0_2);\
+            tmp_2_2 = _mm256_unpackhi_epi16(x0_2,y0_2);\
+            x0 = _mm256_add_epi32(tmp_1, add);\
+            y0 = _mm256_add_epi32(tmp_2, add);\
+            x0_2 = _mm256_add_epi32(tmp_1_2, add);\
+            y0_2 = _mm256_add_epi32(tmp_2_2, add);\
+            y0  = _mm256_srai_epi32(y0,SHIFT_EMT_H);\
+            x0  = _mm256_srai_epi32(x0,SHIFT_EMT_H);\
+            y0_2  = _mm256_srai_epi32(y0_2,SHIFT_EMT_H);\
+            x0_2  = _mm256_srai_epi32(x0_2,SHIFT_EMT_H);\
+            x0 =_mm256_packs_epi32(x0,y0);\
+            x0_2 =_mm256_packs_epi32(x0_2,y0_2);\
+            _mm256_store_si256((__m256i *)&dst[32*i],x0);\
+            _mm256_store_si256((__m256i *)&dst[32*i+16],x0_2);\
+        }\
+    }\
+
+
+#define BIT_DEPTH 8
+ IT_DC()
+#undef BIT_DEPTH
+
+
+#define BIT_DEPTH 10
+ IT_DC()
+#undef BIT_DEPTH
