@@ -1028,10 +1028,14 @@ DECLARE_ALIGNED(16, static const int16_t, DST_VII_32x32_per_CG[64*16])={
 
 
 static const int16_t const * const DTT_summary[4][NUM_TRANS_TYPE] ={
-    {DCT_II_4x4_per_CG,   DST_I_4x4_per_CG,   DST_VII_4x4_per_CG,   DCT_VIII_4x4_per_CG,   DCT_V_4x4_per_CG},
-    {DCT_II_8x8_per_CG,   DST_I_8x8_per_CG,   DST_VII_8x8_per_CG,   DCT_VIII_8x8_per_CG,   DCT_V_8x8_per_CG},
-    {DCT_II_16x16_per_CG, DST_I_16x16_per_CG, DST_VII_16x16_per_CG, DCT_VIII_16x16_per_CG, DCT_V_16x16_per_CG},
-    {DCT_II_32x32_per_CG, DST_I_32x32_per_CG, DST_VII_32x32_per_CG, DCT_VIII_32x32_per_CG, DCT_V_32x32_per_CG},
+    {TR_DCT_II_4x4_per_CG,   DST_I_4x4_per_CG,   TR_DST_VII_4x4_per_CG,   DCT_VIII_4x4_per_CG,   DCT_V_4x4_per_CG},
+    {TR_DCT_II_8x8_per_CG,   DST_I_8x8_per_CG,   TR_DST_VII_8x8_per_CG,   DCT_VIII_8x8_per_CG,   DCT_V_8x8_per_CG},
+    {TR_DCT_II_16x16_per_CG, DST_I_16x16_per_CG, TR_DST_VII_16x16_per_CG, DCT_VIII_16x16_per_CG, DCT_V_16x16_per_CG},
+    {TR_DCT_II_32x32_per_CG, DST_I_32x32_per_CG, TR_DST_VII_32x32_per_CG, DCT_VIII_32x32_per_CG, DCT_V_32x32_per_CG},
+//    {DCT_II_4x4_per_CG,   DST_I_4x4_per_CG,   DST_VII_4x4_per_CG,   DCT_VIII_4x4_per_CG,   DCT_V_4x4_per_CG},
+//    {DCT_II_8x8_per_CG,   DST_I_8x8_per_CG,   DST_VII_8x8_per_CG,   DCT_VIII_8x8_per_CG,   DCT_V_8x8_per_CG},
+//    {DCT_II_16x16_per_CG, DST_I_16x16_per_CG, DST_VII_16x16_per_CG, DCT_VIII_16x16_per_CG, DCT_V_16x16_per_CG},
+//    {DCT_II_32x32_per_CG, DST_I_32x32_per_CG, DST_VII_32x32_per_CG, DCT_VIII_32x32_per_CG, DCT_V_32x32_per_CG},
 };
 
 static const int16_t const  * const TR_DTT_summary[4][NUM_TRANS_TYPE] = {

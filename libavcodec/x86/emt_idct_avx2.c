@@ -27,16 +27,18 @@
 #define ADD_EMT_H (1 << (SHIFT_EMT_H - 1))
 
 
-#include "../hevcdec.h"
- void hevc_emt_avx2_luma(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size){
-s->hevcdsp.idct2_emt_v2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->scan_ctx.y_cg_last_sig][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[0], tmp,TR_DTT_summary[tr_ctx->log2_tr_size_minus2][v],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
-//s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[0],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
-}
+//#include "../hevcdec.h"
+// void hevc_emt_avx2_luma(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size){
+//s->hevcdsp.idct2_emt_v2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->scan_ctx.y_cg_last_sig][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[0], tmp,TR_DTT_summary[tr_ctx->log2_tr_size_minus2][v],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
+////s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[0],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
+//}
 
- void hevc_emt_avx2_c(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size){
-s->hevcdsp.idct2_emt_v2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->scan_ctx.y_cg_last_sig][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[1], tmp,TR_DTT_summary[tr_ctx->log2_tr_size_minus2][v],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
-//s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[1],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
-}
+// void hevc_emt_avx2_c(HEVCContext *s,HEVCLocalContext *lc, HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size){
+//s->hevcdsp.idct2_emt_v2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->scan_ctx.y_cg_last_sig][tr_ctx->log2_tr_size_minus2](lc->cg_coeffs[1], tmp,TR_DTT_summary[tr_ctx->log2_tr_size_minus2][v],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
+////s->hevcdsp.idct2_emt_h2[tr_ctx->scan_ctx.x_cg_last_sig][tr_ctx->log2_tr_size_minus2](tmp, lc->tu.coeffs[1],DTT_summary[tr_ctx->log2_tr_size_minus2][h]);
+//}
+
+/*
 
 #define CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)\
  src_2_0 = _mm256_unpacklo_epi16(src_2_0, _mm256_srli_si256(src_2_0, 8));      \
@@ -96,6 +98,80 @@ __m256i x0_tmp,x8_tmp,x0,x4,x8,x12,src_1_0,src_2_0,src_2_1,result_1,result_2;\
 
 #define DECL_0()                                                                   \
 __m256i x0_tmp,x8_tmp,x0,x4,x8,x12,src_1_0,src_2_0,src_2_1;                  \
+*/
+
+#define CORE_4x4_MULT_H(src_1_0,src_2_0,result_1,result_2)\
+    result_1 =_mm256_permutevar8x32_epi32(src_2_0,perm1);\
+    result_2 =_mm256_permutevar8x32_epi32(src_2_0,perm2);\
+    x0 = _mm256_unpacklo_epi32(src_1_0, src_1_0);                        \
+    x4 = _mm256_permute4x64_epi64(x0, 0b10110001);                 \
+    x8 = _mm256_unpackhi_epi32(src_1_0, src_1_0);                        \
+    x12 = _mm256_permute4x64_epi64(x8, 0b10110001);                \
+    x0  = _mm256_madd_epi16(x0,result_1);                               \
+    x4  = _mm256_madd_epi16(x4,result_2);                               \
+    x8  = _mm256_madd_epi16(x8,result_1);                               \
+    x12 = _mm256_madd_epi16(x12,result_2);                              \
+    result_1 = _mm256_add_epi32(x0,x4);                                  \
+    result_2 = _mm256_add_epi32(x8,x12);                                 \
+
+#define CORE_4x4_MULT_V(src_1_0,src_2_0,result_1,result_2)\
+    result_1 =_mm256_permutevar8x32_epi32(src_2_0,perm1);\
+    result_2 =_mm256_permutevar8x32_epi32(src_2_0,perm2);\
+    x0    = _mm256_permute4x64_epi64(src_1_0,0b10110001);             \
+    src_1_0  = _mm256_unpacklo_epi16(src_1_0,x0);                        \
+    src_2_0 = _mm256_permute4x64_epi64(src_1_0,0b01001110);             \
+    x0  = _mm256_madd_epi16(src_1_0, _mm256_permute4x64_epi64(result_1,0b01010000));                           \
+    x4  = _mm256_madd_epi16(src_2_0, _mm256_permute4x64_epi64(result_1,0b11111010));                           \
+    x8  = _mm256_madd_epi16(src_1_0, _mm256_permute4x64_epi64(result_2,0b01010000));                           \
+    x12 = _mm256_madd_epi16(src_2_0, _mm256_permute4x64_epi64(result_2,0b11111010));                           \
+    result_1 =  _mm256_add_epi32(x0,x4);                                 \
+    result_2 =  _mm256_add_epi32(x8,x12);                                \
+
+
+#define SCALE_AND_PACK(x0_tmp,x8_tmp,DIR)\
+ x0_tmp =  _mm256_add_epi32(x0_tmp,_mm256_set1_epi32(ADD_EMT_##DIR));          \
+ x8_tmp =  _mm256_add_epi32(x8_tmp,_mm256_set1_epi32(ADD_EMT_##DIR));          \
+ x0_tmp =  _mm256_srai_epi32(x0_tmp,SHIFT_EMT_##DIR);                          \
+ x8_tmp =  _mm256_srai_epi32(x8_tmp,SHIFT_EMT_##DIR);                          \
+ x0_tmp =  _mm256_packs_epi32(x0_tmp,x8_tmp);                                  \
+
+#define IN_LOOP_LOAD_H(i,j,k,num_cg)\
+ src_1_0 = CG[num_cg*k+j];                 \
+ src_2_0 = _mm256_load_si256((__m256i *) &dtt_matrix_h[16*(num_cg*i+k)]);\
+
+#define IN_LOOP_MULT_H(i,j,k,num_cg)\
+ IN_LOOP_LOAD_H(i,j,k,num_cg)                                    \
+ CORE_4x4_MULT_H(src_1_0,src_2_0,result_1,result_2)                              \
+ x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                                   \
+ x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                                   \
+
+#define IN_LOOP_STORE_H(i,j,k,num_cg)\
+    ((int64_t *)dst)[num_cg*4*j+i]     = _mm256_extract_epi64(x0_tmp,0);       \
+    ((int64_t *)dst)[num_cg*(4*j+1)+i] = _mm256_extract_epi64(x0_tmp,1);       \
+    ((int64_t *)dst)[num_cg*(4*j+2)+i] = _mm256_extract_epi64(x0_tmp,2);       \
+    ((int64_t *)dst)[num_cg*(4*j+3)+i] = _mm256_extract_epi64(x0_tmp,3);       \
+
+#define IN_LOOP_LOAD_V(i,j,k,num_cg)\
+src_1_0 = _mm256_load_si256((__m256i*) &src[16*(num_cg*k+j)]);                 \
+src_2_0 = _mm256_load_si256((__m256i *) &dtt_matrix_v[16*(num_cg*i+k)]);\
+
+ #define IN_LOOP_MULT_V(i,j,k,num_cg)\
+ IN_LOOP_LOAD_V(i,j,k,num_cg)                                    \
+ CORE_4x4_MULT_V(src_1_0,src_2_0,result_1,result_2)                              \
+ x0_tmp = _mm256_add_epi32(result_1,x0_tmp);                                   \
+ x8_tmp = _mm256_add_epi32(result_2,x8_tmp);                                   \
+
+#define IN_LOOP_STORE_V(i,j,k,num_cg)\
+ CG[num_cg*j+i]=x0_tmp;                  \
+
+#define DECL()                                                                     \
+__m256i x0_tmp,x8_tmp,x0,x4,x8,x12,src_1_0,src_2_0,result_1,result_2;\
+
+
+
+#define DECL_0()                                                                   \
+__m256i x0_tmp,x8_tmp,x0,x4,x8,x12,src_1_0,src_2_0;
+
 
 //______________________________________________________________________________
 //4x4
@@ -549,7 +625,7 @@ void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict ds
     while ( j < num_cg){                                                            \
     DECL()                                                                     \
     IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_H(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
@@ -570,7 +646,7 @@ void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict ds
     while ( j < num_cg){                                                            \
     DECL()                                                                     \
     IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_H(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
@@ -590,7 +666,7 @@ void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict ds
     while ( j < num_cg){                                                            \
     DECL()                                                                     \
     IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_H(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
@@ -609,7 +685,7 @@ void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict ds
     while ( j < num_cg){                                                            \
     DECL()                                                                     \
     IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_H(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
@@ -627,7 +703,7 @@ void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict ds
     while ( j < num_cg){                                                            \
     DECL()                                                                     \
     IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_H(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,3,num_cg)                                        \
@@ -644,7 +720,7 @@ void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict ds
     while ( j < num_cg){                                                            \
     DECL()                                                                     \
     IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_H(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
     IN_LOOP_MULT_H(i,j,2,num_cg)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
@@ -660,7 +736,7 @@ void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict ds
     while ( j < num_cg){                                                            \
     DECL()                                                                     \
     IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_H(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_H(i,j,1,num_cg)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
     IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
@@ -675,7 +751,7 @@ void FUNC(emt_idct_32x32_7_h_avx2)(int16_t * restrict src, int16_t * restrict ds
     while ( j < num_cg){                                                            \
     DECL_0()                                                                     \
     IN_LOOP_LOAD_H(i,j,0,num_cg)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_H(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,H)                                            \
     IN_LOOP_STORE_H(i,j,k,num_cg)                                       \
     j++;                                                                       \
@@ -695,59 +771,73 @@ void FUNC(emt_idct_32x32_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *rest
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[64];                                                            \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL_0()                                                                   \
     IN_LOOP_LOAD_V(i,j,0,8)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
     IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,8)\
     }                                                                          \
 void FUNC(emt_idct_32x32_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[64];                                                            \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,8)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
     IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,8)\
     }                                                                          \
 void FUNC(emt_idct_32x32_##maxx##_2_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[64];                                                            \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,8)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,8)                                        \
     IN_LOOP_MULT_V(i,j,2,8)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
     IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,8)\
     }                                                                          \
 void FUNC(emt_idct_32x32_##maxx##_3_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[64];                                                            \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,8)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,8)                                        \
     IN_LOOP_MULT_V(i,j,2,8)                                        \
     IN_LOOP_MULT_V(i,j,3,8)                                        \
@@ -755,17 +845,21 @@ void FUNC(emt_idct_32x32_##maxx##_3_v_avx2)(int16_t *restrict src, int16_t *rest
     IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,8)\
     }                                                                          \
 void FUNC(emt_idct_32x32_##maxx##_4_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[64];                                                            \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,8)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,8)                                        \
     IN_LOOP_MULT_V(i,j,2,8)                                        \
     IN_LOOP_MULT_V(i,j,3,8)                                        \
@@ -774,17 +868,21 @@ void FUNC(emt_idct_32x32_##maxx##_4_v_avx2)(int16_t *restrict src, int16_t *rest
     IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,8)\
     }                                                                          \
 void FUNC(emt_idct_32x32_##maxx##_5_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[64];                                                            \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,8)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,8)                                        \
     IN_LOOP_MULT_V(i,j,2,8)                                        \
     IN_LOOP_MULT_V(i,j,3,8)                                        \
@@ -794,17 +892,21 @@ void FUNC(emt_idct_32x32_##maxx##_5_v_avx2)(int16_t *restrict src, int16_t *rest
     IN_LOOP_STORE_V(i,j,k,8)                                       \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,8)\
     }                                                                          \
 void FUNC(emt_idct_32x32_##maxx##_6_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[64];                                                            \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,8)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,8)                                        \
     IN_LOOP_MULT_V(i,j,2,8)                                        \
     IN_LOOP_MULT_V(i,j,3,8)                                        \
@@ -815,17 +917,21 @@ void FUNC(emt_idct_32x32_##maxx##_6_v_avx2)(int16_t *restrict src, int16_t *rest
     IN_LOOP_STORE_V(i,j,k,8)                                     \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,8)\
     }                                                                          \
 void FUNC(emt_idct_32x32_##maxx##_7_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[64];                                                            \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 8; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,8)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,8)                                        \
     IN_LOOP_MULT_V(i,j,2,8)                                        \
     IN_LOOP_MULT_V(i,j,3,8)                                        \
@@ -837,6 +943,8 @@ void FUNC(emt_idct_32x32_##maxx##_7_v_avx2)(int16_t *restrict src, int16_t *rest
     IN_LOOP_STORE_V(i,j,k,8)                                     \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,8)\
     }                                                                          \
 
@@ -857,59 +965,73 @@ void FUNC(emt_idct_16x16_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *rest
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[16];                                                             \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                                  \
     DECL_0()                                                                   \
     IN_LOOP_LOAD_V(i,j,0,4)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
     IN_LOOP_STORE_V(i,j,k,4)                                     \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,4)\
     }                                                                          \
 void FUNC(emt_idct_16x16_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[16];                                                             \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,4)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
     IN_LOOP_STORE_V(i,j,k,4)                                     \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,4)\
     }                                                                          \
 void FUNC(emt_idct_16x16_##maxx##_2_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[16];                                                             \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,4)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,4)                                        \
     IN_LOOP_MULT_V(i,j,2,4)                                        \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
     IN_LOOP_STORE_V(i,j,k,4)                                     \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,4)\
     }                                                                          \
 void FUNC(emt_idct_16x16_##maxx##_3_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[16];                                                             \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 4; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,4)                                        \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,4)                                        \
     IN_LOOP_MULT_V(i,j,2,4)                                        \
     IN_LOOP_MULT_V(i,j,3,4)                                        \
@@ -917,6 +1039,8 @@ void FUNC(emt_idct_16x16_##maxx##_3_v_avx2)(int16_t *restrict src, int16_t *rest
     IN_LOOP_STORE_V(i,j,k,4)                                     \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,4)\
     }
 
@@ -932,31 +1056,39 @@ void FUNC(emt_idct_8x8_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restri
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[4];                                                             \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 2; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL_0()                                                                   \
     IN_LOOP_LOAD_V(i,j,0,2)                                         \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
     IN_LOOP_STORE_V(i,j,k,2)                                     \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,2)\
     }                                                                          \
 void FUNC(emt_idct_8x8_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
     int i,j;                                                                   \
     __m256i CG[4];                                                             \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
     for(i = 0; i < 2; i++){                                                    \
     for (j = 0; j < maxx + 1 ; j++){                                           \
     DECL()                                                                     \
     IN_LOOP_LOAD_V(i,j,0,2)                                         \
-    CORE_4x4_MULT(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,x0_tmp,x8_tmp)                               \
     IN_LOOP_MULT_V(i,j,1,2)                                         \
     SCALE_AND_PACK(x0_tmp,x8_tmp,V)                                            \
     IN_LOOP_STORE_V(i,j,k,2)                                     \
     }                                                                          \
     }                                                                          \
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
     DO_H(maxx,2)\
     }
 
@@ -969,13 +1101,18 @@ void FUNC(emt_idct_8x8_##maxx##_1_v_avx2)(int16_t *restrict src, int16_t *restri
 #define IDCT4x4_PRUNED_MAC(maxx)                            \
 void FUNC(emt_idct_4x4_##maxx##_0_v_avx2)(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h)\
  {                                                                             \
-    __m256i x0,x4,x8,x12,src_1_0, src_2_0, src_2_1,result_1,result_2;          \
-    src_1_0 = _mm256_load_si256((__m256i *) dtt_matrix_v);                     \
-    src_2_0 = _mm256_load_si256((__m256i*) src);                               \
-    CORE_4x4_MULT(src_1_0,src_2_0,result_1,result_2)                           \
+    __m256i x0,x4,x8,x12,src_1_0, src_2_0, result_1,result_2;          \
+    register __m256i perm1 =_mm256_setr_epi32(0,0,5,5,1,1,4,4); \
+    register __m256i perm2 =_mm256_setr_epi32(2,2,7,7,3,3,6,6); \
+    src_1_0 = _mm256_load_si256((__m256i *) src);                     \
+    src_2_0 = _mm256_load_si256((__m256i*) dtt_matrix_v);                               \
+    CORE_4x4_MULT_V(src_1_0,src_2_0,result_1,result_2)                           \
     SCALE_AND_PACK(result_1,result_2,V)                                        \
     src_2_0 = _mm256_load_si256((__m256i*) dtt_matrix_h);                      \
-    CORE_4x4_MULT(result_1,src_2_0,result_1,result_2)                          \
+    src_1_0 = result_1;\
+    perm1 = _mm256_setr_epi32(0,2,5,7,0,2,5,7);\
+    perm2 = _mm256_setr_epi32(1,3,4,6,1,3,4,6);\
+    CORE_4x4_MULT_H(src_1_0,src_2_0,result_1,result_2)                          \
     SCALE_AND_PACK(result_1,result_2,H)                                        \
     _mm256_store_si256((__m256i*)dst, result_1);                               \
     }
