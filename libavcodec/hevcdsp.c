@@ -194,6 +194,100 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters[3][16]) = {
     {  0,  1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1}
 };
 
+#if OHCONFIG_AMT
+
+#define EMT_LINK_V_DCT_4x4(optim,depth)\
+hevcdsp->idct2_emt_v2[0][0][0] = emt_idct_4x4_0_0_v_##optim##_##depth;\
+
+
+#define EMT_LINK_V_DCT_8x8(y,optim,depth)\
+hevcdsp->idct2_emt_v2[1][0][y] = emt_idct_8x8_0_##y##_v_##optim##_##depth;\
+hevcdsp->idct2_emt_v2[1][1][y] = emt_idct_8x8_1_##y##_v_##optim##_##depth;\
+
+
+#define EMT_LINK_V_DCT_16x16(y,optim,depth)\
+hevcdsp->idct2_emt_v2[2][0][y] = emt_idct_16x16_0_##y##_v_##optim##_##depth;\
+hevcdsp->idct2_emt_v2[2][1][y] = emt_idct_16x16_1_##y##_v_##optim##_##depth;\
+hevcdsp->idct2_emt_v2[2][2][y] = emt_idct_16x16_2_##y##_v_##optim##_##depth;\
+hevcdsp->idct2_emt_v2[2][3][y] = emt_idct_16x16_3_##y##_v_##optim##_##depth;\
+
+
+#define EMT_LINK_V_DCT_32x32(y,optim,depth)\
+    hevcdsp->idct2_emt_v2[3][0][y] = emt_idct_32x32_0_##y##_v_##optim##_##depth;\
+    hevcdsp->idct2_emt_v2[3][1][y] = emt_idct_32x32_1_##y##_v_##optim##_##depth;\
+    hevcdsp->idct2_emt_v2[3][2][y] = emt_idct_32x32_2_##y##_v_##optim##_##depth;\
+    hevcdsp->idct2_emt_v2[3][3][y] = emt_idct_32x32_3_##y##_v_##optim##_##depth;\
+    hevcdsp->idct2_emt_v2[3][4][y] = emt_idct_32x32_4_##y##_v_##optim##_##depth;\
+    hevcdsp->idct2_emt_v2[3][5][y] = emt_idct_32x32_5_##y##_v_##optim##_##depth;\
+    hevcdsp->idct2_emt_v2[3][6][y] = emt_idct_32x32_6_##y##_v_##optim##_##depth;\
+    hevcdsp->idct2_emt_v2[3][7][y] = emt_idct_32x32_7_##y##_v_##optim##_##depth;\
+
+#define EMT_LINK_H_DCT_4x4(optim,depth)\
+hevcdsp->idct2_emt_h2[0][0] = emt_idct_4x4_0_h_##optim##_##depth;\
+
+
+#define EMT_LINK_H_DCT_8x8(optim,depth)\
+hevcdsp->idct2_emt_h2[1][0] = emt_idct_8x8_0_h_##optim##_##depth;\
+hevcdsp->idct2_emt_h2[1][1] = emt_idct_8x8_1_h_##optim##_##depth;\
+
+
+#define EMT_LINK_H_DCT_16x16(optim,depth)\
+hevcdsp->idct2_emt_h2[2][0] = emt_idct_16x16_0_h_##optim##_##depth;\
+hevcdsp->idct2_emt_h2[2][1] = emt_idct_16x16_1_h_##optim##_##depth;\
+hevcdsp->idct2_emt_h2[2][2] = emt_idct_16x16_2_h_##optim##_##depth;\
+hevcdsp->idct2_emt_h2[2][3] = emt_idct_16x16_3_h_##optim##_##depth;\
+
+
+#define EMT_LINK_H_DCT_32x32(optim,depth)\
+    hevcdsp->idct2_emt_h2[3][0] = emt_idct_32x32_0_h_##optim##_##depth;\
+    hevcdsp->idct2_emt_h2[3][1] = emt_idct_32x32_1_h_##optim##_##depth;\
+    hevcdsp->idct2_emt_h2[3][2] = emt_idct_32x32_2_h_##optim##_##depth;\
+    hevcdsp->idct2_emt_h2[3][3] = emt_idct_32x32_3_h_##optim##_##depth;\
+    hevcdsp->idct2_emt_h2[3][4] = emt_idct_32x32_4_h_##optim##_##depth;\
+    hevcdsp->idct2_emt_h2[3][5] = emt_idct_32x32_5_h_##optim##_##depth;\
+    hevcdsp->idct2_emt_h2[3][6] = emt_idct_32x32_6_h_##optim##_##depth;\
+    hevcdsp->idct2_emt_h2[3][7] = emt_idct_32x32_7_h_##optim##_##depth;\
+
+#define DCT_EMT_LINK_V_32x32(optim,depth)\
+    EMT_LINK_V_DCT_32x32(0,optim,depth)\
+    EMT_LINK_V_DCT_32x32(1,optim,depth)\
+    EMT_LINK_V_DCT_32x32(2,optim,depth)\
+    EMT_LINK_V_DCT_32x32(3,optim,depth)\
+    EMT_LINK_V_DCT_32x32(4,optim,depth)\
+    EMT_LINK_V_DCT_32x32(5,optim,depth)\
+    EMT_LINK_V_DCT_32x32(6,optim,depth)\
+    EMT_LINK_V_DCT_32x32(7,optim,depth)\
+
+
+#define DCT_EMT_LINK_V_16x16(optim,depth)\
+    EMT_LINK_V_DCT_16x16(0,optim,depth)\
+    EMT_LINK_V_DCT_16x16(1,optim,depth)\
+    EMT_LINK_V_DCT_16x16(2,optim,depth)\
+    EMT_LINK_V_DCT_16x16(3,optim,depth)\
+
+#define DCT_EMT_LINK_V_8x8(optim,depth)\
+    EMT_LINK_V_DCT_8x8(0,optim,depth)\
+    EMT_LINK_V_DCT_8x8(1,optim,depth)\
+
+#define DCT_EMT_LINK_V_4x4(optim,depth)\
+EMT_LINK_V_DCT_4x4(optim,depth)\
+
+
+
+#define LINK_DCT(optim,depth)\
+    DCT_EMT_LINK_V_32x32(optim,depth)\
+    DCT_EMT_LINK_V_16x16(optim,depth)\
+    DCT_EMT_LINK_V_8x8(optim,depth)\
+    DCT_EMT_LINK_V_4x4(optim,depth)\
+
+#define LINK_AMT_IDCT(num,size,optim,depth)\
+hevcdsp->idct2_emt_v[DCT_##num][0] = emt_idct_##num##_##size##_v_##optim##_##depth;\
+hevcdsp->idct2_emt_h[DCT_##num][0] = emt_idct_##num##_##size##_h_##optim##_##depth;\
+
+
+#endif
+
+
 #define BIT_DEPTH 8
 #include "hevcdsp_template.c"
 #undef BIT_DEPTH
@@ -284,7 +378,7 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     PEL_FUNC(put_hevc_qpel_bi_w, 1, 0, put_hevc_qpel_bi_w_v, depth);          \
     PEL_FUNC(put_hevc_qpel_bi_w, 1, 1, put_hevc_qpel_bi_w_hv, depth)
 
-#if OHCONFIG_AMT
+#if OHCONFIG_AMT && AMT_OPT_C2
 #define HEVC_DSP(depth)                                                            \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                        \
     hevcdsp->transform_add[0]       = FUNC(transform_add4x4, depth);               \
@@ -420,18 +514,33 @@ int i = 0;
     switch (bit_depth) {
     case 9:
         HEVC_DSP(9);
+#if OHCONFIG_AMT && AMT_OPT_C2
+        LINK_DCT(template,9);
+#endif
         break;
     case 10:
         HEVC_DSP(10);
+#if OHCONFIG_AMT && AMT_OPT_C2
+        LINK_DCT(template,10);
+#endif
         break;
     case 12:
         HEVC_DSP(12);
+#if OHCONFIG_AMT && AMT_OPT_C2
+        LINK_DCT(template,12);
+#endif
         break;
     case 14:
         HEVC_DSP(14);
+#if OHCONFIG_AMT && AMT_OPT_C2
+
+#endif
         break;
     default:
         HEVC_DSP(8);
+#if OHCONFIG_AMT && AMT_OPT_C2
+        LINK_DCT(template,8);
+#endif
         break;
     }
 

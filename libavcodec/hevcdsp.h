@@ -71,12 +71,12 @@ typedef struct HEVCDSPContext {
                             int height, int c_idx);
 #if OHCONFIG_AMT
     ///* idct_emt[pred_mode][emt_tr_idx][log2_tr_size_minus2](...) *///
-    void (*idct2_emt_v[7][5])(int16_t *coeffs, int16_t *tmp);
-    void (*idct2_emt_h[7][5])(int16_t *tmp,    int16_t *dst);
+//    void (*idct2_emt_v[7][5])(int16_t *coeffs, int16_t *tmp);
+//    void (*idct2_emt_h[7][5])(int16_t *tmp,    int16_t *dst);
     void (*idct2_emt_v2[4][8][8])(int16_t *coeffs, int16_t *tmp, const int16_t * dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);
     void (*idct2_emt_h2[4][8])(int16_t *tmp,    int16_t *dst,const  int16_t * dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);
-    void (*emt_it_c)(void *s, struct HEVCLocalContext *lc, struct HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
-    void (*emt_it_luma)(void *s,struct HEVCLocalContext *lc,struct HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
+//    void (*emt_it_c)(void *s, struct HEVCLocalContext *lc, struct HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
+//    void (*emt_it_luma)(void *s,struct HEVCLocalContext *lc,struct HEVCTransformContext *tr_ctx, int16_t *tmp, int h, int v,int size);
     void (*it_amt_dc[4])(int16_t *coeffs, int16_t *tmp, const int16_t * dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);
 #endif
 
