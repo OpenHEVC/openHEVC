@@ -592,7 +592,6 @@ int set_el_parameter(HEVCContext *s) {
         av_log(s->avctx, AV_LOG_ERROR, "Error in CGS allocation \n");
     }
 #endif
-
     s->up_filter_inf.mv_scale_x = av_clip_c(((widthEL  << 8) + (s->BL_width  >> 1)) / s->BL_width,  -4096, 4095 );
     s->up_filter_inf.mv_scale_y = av_clip_c(((heightEL << 8) + (s->BL_height >> 1)) / s->BL_height, -4096, 4095 );
 

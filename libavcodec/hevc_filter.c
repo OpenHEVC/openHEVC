@@ -1538,7 +1538,7 @@ static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int x0, int
   for (int i= 0; i < el_height; i++)
     for (int j= 0; j < el_width ; j++) {
       int sum = 0;
-      PxlFltLut *pPelWeight = s->pPixelWeight[0] + j*el_width + i;
+      PxlFltLut *pPelWeight = s->pPixelWeight[0] + i*el_width + j;
         if (pPelWeight->facePos != -1) {
           int iTLPos = (pPelWeight->facePos) >> S_log2NumFaces[0];
           int iExtendedTLPos = ( (int)(iTLPos / bl_stride) ) + ((offsetY - 1) >> 1) * bl_stride + ((offsetX - 1) >> 1) + iTLPos % bl_stride;
@@ -1550,7 +1550,7 @@ static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int x0, int
            pix += bl_stride;
            pWLut += s->m_iInterpFilterTaps[0][0];
          }
-         int iPos = j*el_stride + i;
+         int iPos = i*el_stride + j;
          dst[iPos] = av_clip_c((sum + iOffset) >> iBDPrecision, 0, (1<<refBitDepthLuma)-1);
        }
    }
