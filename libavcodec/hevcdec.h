@@ -53,7 +53,15 @@
 #define MAX_NB_THREADS 16
 #define SHIFT_CTB_WPP 2
 #define MAX_POC      1024
+#define ACTIVE_360_UPSAMPLING 0
 
+#if ACTIVE_360_UPSAMPLING
+#define  S_LANCZOS_LUT_SCALE 100
+#define  S_INTERPOLATE_PrecisionBD 14
+#define SVIDEO_2DPOS_PRECISION_LOG2  13
+#define SVIDEO_2DPOS_PRECISION (1<<SVIDEO_2DPOS_PRECISION_LOG2) //8192
+#define SV_MAX_NUM_FACES             20
+#endif
 
 //TODO: check if this is really the maximum
 #define MAX_TRANSFORM_DEPTH 5
@@ -468,6 +476,31 @@ typedef struct HEVCLocalContext {
     int tile_id;
 } HEVCLocalContext;
 
+
+
+
+#if ACTIVE_360_UPSAMPLING
+static const int   S_log2NumFaces[SV_MAX_NUM_FACES+1] = { 0,
+    1, 1,
+    2, 2,
+    3, 3, 3, 3,
+    4, 4, 4, 4, 4, 4, 4, 4,
+    5, 5, 5, 5 };
+typedef struct SPos
+{
+  int   faceIdx;
+  double x;
+  double y;
+  double z;
+} SPos;
+
+typedef struct PxlFltLut
+{
+    int facePos;
+    unsigned int weightIdx;
+} PxlFltLut;
+#endif
+
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
@@ -635,6 +668,8 @@ typedef struct HEVCContext {
 #endif
     int BL_width;
     int BL_height;
+    
+    
     int bl_available;
 #if OHCONFIG_ENCRYPTION
     uint8_t encrypt_params;
@@ -646,6 +681,12 @@ typedef struct HEVCContext {
     int encrypt_init_val_length;
 #endif
 
+#if ACTIVE_360_UPSAMPLING
+    int m_iInterpFilterTaps[2][2];
+    PxlFltLut *pPixelWeight[2];
+    int **m_pWeightLut[2];
+#endif
+    
     int bl_is_avc;
 
 } HEVCContext;

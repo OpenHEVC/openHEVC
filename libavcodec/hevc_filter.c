@@ -1389,6 +1389,8 @@ static void copy_block(HEVCContext *s, uint8_t *src, uint8_t * dst, ptrdiff_t bl
 //    }
 //#endif
 //}
+
+
 #if !ACTIVE_PU_UPSAMPLING
 static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t *src_v, int src_stride, int src_stridec,int x0, int y0, int x0_cr, int y0_cr, int bl_width, int bl_height, int el_width, int el_height) {
     int i, j, k;
@@ -1512,6 +1514,53 @@ static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t
 }
 #endif
 
+#if ACTIVE_360_UPSAMPLING
+static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
+  uint16_t *dst = (uint16_t *)ref0->frame->data[0];
+  int el_width  = s->ps.sps->width;
+  int el_height = s->ps.sps->height;
+  HEVCFrame *bl_frame = s->BL_frame;
+  int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
+  int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
+  int bl_width  = bl_frame->frame->width;
+  int bl_height = bl_frame->frame->height;
+  int sample_size = s->ps.sps->bit_depth[0] > 8 ? 2 : 1;
+  int bl_stride   = bl_frame->frame->linesize[0] / bl_sample_size;
+  int bl_stride_c = bl_frame->frame->linesize[1] / bl_sample_size;
+    
+  int el_stride =  ref0->frame->linesize[0] / sample_size;
+  int offsetX = s->m_iInterpFilterTaps[0][0];
+  int offsetY = s->m_iInterpFilterTaps[0][1];
+  int iBDPrecision = S_INTERPOLATE_PrecisionBD;
+  int iOffset = 1 << (iBDPrecision - 1);
+  int refBitDepthLuma = 8;
+    
+  for (int i= 0; i < el_height; i++)
+    for (int j= 0; j < el_width ; j++) {
+      int sum = 0;
+      PxlFltLut *pPelWeight = s->pPixelWeight[0] + j*el_width + i;
+        if (pPelWeight->facePos != -1) {
+          int iTLPos = (pPelWeight->facePos) >> S_log2NumFaces[0];
+          int iExtendedTLPos = ( (int)(iTLPos / bl_stride) ) + ((offsetY - 1) >> 1) * bl_stride + ((offsetX - 1) >> 1) + iTLPos % bl_stride;
+          int *pWLut = s->m_pWeightLut[0][pPelWeight->weightIdx];
+           uint8_t *pix = bl_frame->frame->data[0] + iExtendedTLPos - ((s->m_iInterpFilterTaps[0][1] - 1) >> 1)*bl_stride - ((s->m_iInterpFilterTaps[0][0] - 1) >> 1);
+          for (int m = 0; m < s->m_iInterpFilterTaps[0][1]; m++) {
+            for (int n = 0; n < s->m_iInterpFilterTaps[0][0]; n++)
+             sum += pix[n] * pWLut[n];
+           pix += bl_stride;
+           pWLut += s->m_iInterpFilterTaps[0][0];
+         }
+         int iPos = j*el_stride + i;
+         dst[iPos] = av_clip_c((sum + iOffset) >> iBDPrecision, 0, (1<<refBitDepthLuma)-1);
+       }
+   }
+    memset (s->is_upsampled, 1, s->ps.sps->ctb_width * s->ps.sps->ctb_height);
+}
+
+static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
+
+}
+#endif
 static void upsample_block_luma_cgs(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
 
     uint16_t *dst = (uint16_t *)ref0->frame->data[0];
@@ -2074,7 +2123,13 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
     int log2_ctb =  s->ps.sps->log2_ctb_size;
     int ctb_x0   =  (av_clip(x0, 0, s->ps.sps->width) >> log2_ctb) << log2_ctb;
     int ctb_y0   =  (av_clip(y0, 0, s->ps.sps->height) >> log2_ctb) << log2_ctb;
-
+#if ACTIVE_360_UPSAMPLING
+    if(!s->is_upsampled[(ctb_y0 / ctb_size * s->ps.sps->ctb_width)+((ctb_x0 - ctb_size) / ctb_size)]){
+      upsample_block_luma_360(s, ref0, ctb_x0-ctb_size        , ctb_y0);
+      upsample_block_mc_360  (s, ref0, (ctb_x0-ctb_size) >> 1 , ctb_y0 >> 1);
+    }
+    return;
+#endif
     if ((x0 - ctb_x0) < MAX_EDGE &&
         ctb_x0 > ctb_size        &&
         !s->is_upsampled[(ctb_y0 / ctb_size * s->ps.sps->ctb_width)+((ctb_x0 - ctb_size) / ctb_size)]){
@@ -2160,5 +2215,3 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
         }
     }
 }
-
-

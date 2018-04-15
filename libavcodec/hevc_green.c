@@ -25,7 +25,7 @@ static int a_level_old[13] = {
 		4031, // 4094, // Low
 		4095,
 };
-
+#if CONFIG_GREEN
 void green_update(HEVCContext *s){
 	if (s->sh.first_slice_in_pic_flag) {// Green: Activation Level management end
 		if (s->sh.slice_type != HEVC_SLICE_I){
@@ -87,3 +87,5 @@ void green_update_context(HEVCContext *s, HEVCContext *s0)
 	s->green_sao_on         = s0->green_sao_on;
 	s->green_verbose		= s0->green_verbose;
 }
+
+#endif

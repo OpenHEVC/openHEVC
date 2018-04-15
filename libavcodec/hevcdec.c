@@ -106,7 +106,15 @@ static void pic_arrays_free(HEVCContext *s)
 #else
     av_freep(&s->is_upsampled);
 #endif
-#endif    
+#endif
+#if ACTIVE_360_UPSAMPLING
+    for (int h = 0; h < 2; h++) {
+      av_freep(&s->pPixelWeight[h]);
+      if(s->m_pWeightLut[h])
+        av_freep(&s->m_pWeightLut[h][0]);
+      av_freep(&s->m_pWeightLut[h]);
+    }
+#endif
 #endif
 
 #if PARALLEL_SLICE
@@ -120,7 +128,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     int log2_min_cb_size = sps->log2_min_cb_size;
     int width            = sps->width;
     int height           = sps->height;
-#if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU
+#if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU || ACTIVE_360_UPSAMPLING
     int pic_size         = width * height;
 #endif
     int pic_size_in_ctb  = ((width  >> log2_min_cb_size) + 1) *
@@ -192,12 +200,20 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 #else
         s->is_upsampled = av_malloc(sps->ctb_width * sps->ctb_height);
 #endif
+#if ACTIVE_360_UPSAMPLING
+        for (int h = 0; h < 2; h++) {
+            int iFilterSize = (h==0) ? 36:16;
+            s->pPixelWeight[h] = av_malloc(pic_size*sizeof(PxlFltLut) );
+            s->m_pWeightLut[h] = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
+            s->m_pWeightLut[h][0] = av_malloc (  sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * iFilterSize));
+        }
+        if (!s->pPixelWeight[0] || !s->pPixelWeight[1] || !s->m_pWeightLut[0] || !s->m_pWeightLut[1] || !s->m_pWeightLut[0][0] || !s->m_pWeightLut[1][0])
+          goto fail;
+#endif
 #endif
     }
 #endif
-
     return 0;
-
 fail:
     pic_arrays_free(s);
     return AVERROR(ENOMEM);
@@ -493,11 +509,26 @@ fail:
     return ret;
 }
 
+static double sinc(double x)
+{
+    x *= M_PI;
+    if (x < 0.01 && x > -0.01)
+    {
+        double x2 = x * x;
+        return 1.0f + x2 * (-1.0 / 6.0 + x2 / 120.0);
+    }
+    else
+    {
+        return sin(x) / x;
+    }
+}
+
+
 static int getBitDepth(HEVCContext *s, enum ChannelType channel, int layerId)
 {
   const HEVCVPS *vps = s->ps.vps;
   const HEVCSPS *sps;
-  int retVal;
+  int retVal=0;
 
   if ( !layerId /*|| sps->v1_compatible*/) {
     if( !layerId && vps->vps_nonHEVCBaseLayerFlag)
@@ -513,6 +544,10 @@ static int getBitDepth(HEVCContext *s, enum ChannelType channel, int layerId)
     retVal = vps->vps_ext.rep_format[retVal].bit_depth_vps[channel];
   }
   return retVal;
+}
+
+int roundHP(double t) {
+    return (int)(t + (t >= 0 ? 0.5 : -0.5));
 }
 
 int set_el_parameter(HEVCContext *s) {
@@ -609,6 +644,262 @@ int set_el_parameter(HEVCContext *s) {
                 s->up_filter_inf.idx = DEFAULT;
                 av_log(s->avctx, AV_LOG_INFO, "DEFAULT mode: SSE optimizations are not implemented for spatial scalability with a ratio different from x2 and x1.5 widthBL %d heightBL %d \n", s->BL_width <<1, s->BL_height<<1);
             }
+#if ACTIVE_360_UPSAMPLING
+{
+    int iNCh = 2; // 420
+   // int iNChToEncode = 3;
+    int iNumFaces = 0; //ERP --> 1 face only
+    int iNumWLuts = 2;
+    int iSafetyMargin = 5;
+
+    
+    float fYaw = 20;
+    float fPitch = -5;
+    float hFOV = 110;
+    float vFOV = 80;
+    double m_matRotMatx[3][3];
+    double m_matInvRotMatx[3][3];
+    double tht = (fYaw + 90);
+    double phi = - fPitch;
+    int iFilterSize=0;
+
+    double m_matInvK[2][3][3];
+    double det;
+    double fovx = (double)(M_PI * hFOV / 180.0);
+    double fovy = (double)(M_PI * vFOV / 180.0);
+    double fx_Y = (s->BL_width / 2)*(1 / tan(fovx / 2));
+    double fy_Y = ( s->BL_height / 2)*(1 / tan(fovy / 2));
+    double fx_CbCr = ((s->BL_width>>1) / 2)*(1 / tan(fovx / 2));
+    double fy_CbCr = ((s->BL_height>>1) / 2)*(1 / tan(fovy / 2));
+    double K[2][3][3] = {
+        { { fx_Y,0,s->BL_width / 2.0f },{ 0,-fy_Y,(s->BL_height) / 2.0f },{ 0,0,1 } },
+        { { fx_CbCr,0,(s->BL_width>>1) / 2.0f },{ 0,-fy_CbCr,(s->BL_height>>1) / 2.0f },{ 0,0,1 } }
+    };
+
+    int iWindowSearchDim[2][2][2] = {
+        {
+            { widthEL, 0 },
+            { heightEL, 0 }
+        },
+        {
+            { widthEL>>1 , 0 },
+            { heightEL>>1, 0 }
+        }
+    };
+    int widthEL_v[3] = {widthEL,  widthEL>>1,  widthEL>>1};
+    int heightEL_v[3] ={heightEL, heightEL>>1, heightEL>>1};
+    
+    int widthBL_v[3] = {s->BL_width,  s->BL_width>>1,  s->BL_width>>1};
+    int heightBL_v[3] ={s->BL_height, s->BL_height>>1, s->BL_height>>1};
+    double u, v, x2, y2, x, y, z, len, p1[3];
+    int m_iLanczosParamA[2], *pW,  sum , mul, xLanczos, yLanczos;
+    double t, wy[6], wx[6],dSum, dScale, *pfLanczosFltCoefLut, *m_pfLanczosFltCoefLut[2], p[3], yaw, pitch, uVP, vVP, iVP, jVP;
+    SPos IPosIn, SPosOut1, SPosOut2;
+
+    
+    
+        
+    m_pfLanczosFltCoefLut[0] = m_pfLanczosFltCoefLut[1] = NULL;
+    m_iLanczosParamA[0] = m_iLanczosParamA[1] = 0;
+    memset(s->m_iInterpFilterTaps, 0, sizeof(s->m_iInterpFilterTaps));
+    
+    
+    
+    tht = (double)(tht * M_PI / 180);
+    phi = (double)(phi * M_PI / 180);
+    m_matRotMatx[0][0] = cos(tht);
+    m_matRotMatx[0][1] = 0.0f;
+    m_matRotMatx[0][2] = -sin(tht);
+    m_matRotMatx[1][0] = sin(tht)*sin(phi);
+    m_matRotMatx[1][1] = cos(phi);
+    m_matRotMatx[1][2] = cos(tht)*sin(phi);
+    m_matRotMatx[2][0] = sin(tht)*cos(phi);
+    m_matRotMatx[2][1] = -sin(phi);
+    m_matRotMatx[2][2] = cos(tht)*cos(phi);
+    
+    m_matInvRotMatx[0][0] = cos(tht);
+    m_matInvRotMatx[0][1] = sin(tht)*sin(phi);
+    m_matInvRotMatx[0][2] = sin(tht)*cos(phi);
+    m_matInvRotMatx[1][0] = 0.0f;
+    m_matInvRotMatx[1][1] = cos(phi);
+    m_matInvRotMatx[1][2] = -sin(phi);
+    m_matInvRotMatx[2][0] = -sin(tht);
+    m_matInvRotMatx[2][1] = cos(tht)*sin(phi);
+    m_matInvRotMatx[2][2] = cos(tht)*cos(phi);
+    
+    det = K[0][0][0] * K[0][1][1];
+    m_matInvK[0][0][0] = (K[0][1][1] * K[0][2][2] - K[0][2][1] * K[0][1][2]) / det;
+    m_matInvK[0][0][1] = (K[0][0][2] * K[0][2][1] - K[0][0][1] * K[0][2][2]) / det;
+    m_matInvK[0][0][2] = (K[0][0][1] * K[0][1][2] - K[0][0][2] * K[0][1][1]) / det;
+    m_matInvK[0][1][0] = (K[0][1][2] * K[0][2][0] - K[0][1][0] * K[0][2][2]) / det;
+    m_matInvK[0][1][1] = (K[0][0][0] * K[0][2][2] - K[0][0][2] * K[0][2][0]) / det;
+    m_matInvK[0][1][2] = (K[0][1][0] * K[0][0][2] - K[0][0][0] * K[0][1][2]) / det;
+    m_matInvK[0][2][0] = (K[0][1][0] * K[0][2][1] - K[0][2][0] * K[0][1][1]) / det;
+    m_matInvK[0][2][1] = (K[0][2][0] * K[0][0][1] - K[0][0][0] * K[0][2][1]) / det;
+    m_matInvK[0][2][2] = (K[0][0][0] * K[0][1][1] - K[0][1][0] * K[0][0][1]) / det;
+    det = K[1][0][0] * K[1][1][1];
+    m_matInvK[1][0][0] = (K[1][1][1] * K[1][2][2] - K[1][2][1] * K[1][1][2]) / det;
+    m_matInvK[1][0][1] = (K[1][0][2] * K[1][2][1] - K[1][0][1] * K[1][2][2]) / det;
+    m_matInvK[1][0][2] = (K[1][0][1] * K[1][1][2] - K[1][0][2] * K[1][1][1]) / det;
+    m_matInvK[1][1][0] = (K[1][1][2] * K[1][2][0] - K[1][1][0] * K[1][2][2]) / det;
+    m_matInvK[1][1][1] = (K[1][0][0] * K[1][2][2] - K[1][0][2] * K[1][2][0]) / det;
+    m_matInvK[1][1][2] = (K[1][1][0] * K[1][0][2] - K[1][0][0] * K[1][1][2]) / det;
+    m_matInvK[1][2][0] = (K[1][1][0] * K[1][2][1] - K[1][2][0] * K[1][1][1]) / det;
+    m_matInvK[1][2][1] = (K[1][2][0] * K[1][0][1] - K[1][0][0] * K[1][2][1]) / det;
+    m_matInvK[1][2][2] = (K[1][0][0] * K[1][1][1] - K[1][1][0] * K[1][0][1]) / det;
+    
+    for (int ch = 0; ch < 2; ch++)
+      for (int j = 0; j < heightBL_v[ch]; j++)
+        for (int i = 0; i < widthBL_v[ch]; i++) {
+          SPos IPosOutW, IPosOutW2;
+          IPosOutW = (SPos) {0, 0, 0, 0};
+          u = i + (double)(0.5);
+          v = j + (double)(0.5);
+          x2 = m_matInvK[ch][0][0] * u + m_matInvK[ch][0][1] * v + m_matInvK[ch][0][2];
+          y2 = m_matInvK[ch][1][0] * u + m_matInvK[ch][1][1] * v + m_matInvK[ch][1][2];
+            
+          p1[2] = 1 / sqrt(x2*x2 + y2*y2 + 1);
+          p1[0] = p1[2]*x2;
+          p1[1] = p1[2]*y2;
+            
+          IPosOutW.x = m_matInvRotMatx[0][0] * p1[0] + m_matInvRotMatx[0][1] * p1[1] + m_matInvRotMatx[0][2] * p1[2];
+          IPosOutW.y = m_matInvRotMatx[1][0] * p1[0] + m_matInvRotMatx[1][1] * p1[1] + m_matInvRotMatx[1][2] * p1[2];
+          IPosOutW.z = m_matInvRotMatx[2][0] * p1[0] + m_matInvRotMatx[2][1] * p1[1] + m_matInvRotMatx[2][2] * p1[2];
+          
+          x = IPosOutW.x;
+          y = IPosOutW.y;
+          z = IPosOutW.z;
+                
+          IPosOutW2.faceIdx = 0;
+          IPosOutW2.z = 0;
+
+          IPosOutW2.x = (double)((M_PI - atan2(z, x))* widthEL_v[ch] / (2 * M_PI));
+          IPosOutW2.x -= 0.5;
+
+          len = sqrt(x*x + y*y + z*z);
+          IPosOutW2.y = (double)((len < (1e-6) ? 0.5 : acos(y / len) / M_PI)*heightEL_v[ch]);
+          IPosOutW2.y -= 0.5;
+          
+          if ((int)IPosOutW2.x < iWindowSearchDim[ch][0][0])
+            iWindowSearchDim[ch][0][0] = (int)IPosOutW2.x;
+            
+          if ((int)IPosOutW2.x > iWindowSearchDim[ch][0][1])
+            iWindowSearchDim[ch][0][1] = (int)IPosOutW2.x;
+            
+          if ((int)IPosOutW2.y < iWindowSearchDim[ch][1][0])
+            iWindowSearchDim[ch][1][0] = (int)IPosOutW2.y;
+            
+          if ((int)IPosOutW2.y > iWindowSearchDim[ch][1][1])
+            iWindowSearchDim[ch][1][1] = (int)IPosOutW2.y;
+        }
+    
+    for (int ch = 0; ch < iNumWLuts; ch++) {
+      m_iLanczosParamA[ch] = (ch>0 ? 2 : 3);
+      m_pfLanczosFltCoefLut[ch] = av_malloc(sizeof(double) * ( (m_iLanczosParamA[ch] << 1) * S_LANCZOS_LUT_SCALE + 1));
+      memset(m_pfLanczosFltCoefLut[ch], 0, sizeof(double)*((m_iLanczosParamA[ch] << 1)*S_LANCZOS_LUT_SCALE + 1));
+      for (int i = 0; i<(m_iLanczosParamA[ch] << 1)*S_LANCZOS_LUT_SCALE; i++) {
+        x = (double)i / S_LANCZOS_LUT_SCALE - m_iLanczosParamA[ch];
+        m_pfLanczosFltCoefLut[ch][i] = (double)(sinc(x) * sinc(x / m_iLanczosParamA[ch]));
+      }
+      s->m_iInterpFilterTaps[ch][0] = s->m_iInterpFilterTaps[ch][1] = m_iLanczosParamA[ch] * 2;
+      iFilterSize = (ch==0) ? 36:16;
+      for (int k = 1; k<(S_LANCZOS_LUT_SCALE + 1)*(S_LANCZOS_LUT_SCALE + 1); k++)
+        s->m_pWeightLut[ch][k] = s->m_pWeightLut[ch][0] + k*iFilterSize;
+      mul = 1 << (S_INTERPOLATE_PrecisionBD);
+      dScale = 1.0 / S_LANCZOS_LUT_SCALE;
+      pfLanczosFltCoefLut = m_pfLanczosFltCoefLut[ch];
+      for (int m = 0; m < (S_LANCZOS_LUT_SCALE + 1); m++) {
+        t = m*dScale;
+        for (int k = -m_iLanczosParamA[ch]; k < m_iLanczosParamA[ch]; k++)
+          wy[k + m_iLanczosParamA[ch]] = pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + m_iLanczosParamA[ch])* S_LANCZOS_LUT_SCALE + 0.5)];
+        for (int n = 0; n < (S_LANCZOS_LUT_SCALE + 1); n++) {
+          pW = s->m_pWeightLut[ch][m*(S_LANCZOS_LUT_SCALE + 1) + n];
+          sum = 0;
+          t = n*dScale;
+          for (int k = -m_iLanczosParamA[ch]; k < m_iLanczosParamA[ch]; k++)
+            wx[k + m_iLanczosParamA[ch]] = pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + m_iLanczosParamA[ch])* S_LANCZOS_LUT_SCALE + 0.5)];
+          dSum = 0;
+          for (int r = 0; r < (m_iLanczosParamA[ch] << 1); r++)
+            for (int c = 0; c < (m_iLanczosParamA[ch] << 1); c++)
+              dSum += wy[r] * wx[c];
+          for (int r = 0; r < (m_iLanczosParamA[ch] << 1); r++)
+            for (int c = 0; c < (m_iLanczosParamA[ch] << 1); c++) {
+              int w;
+              if (c != (m_iLanczosParamA[ch] << 1) - 1 || r != (m_iLanczosParamA[ch] << 1) - 1)
+                w = round((double)(wy[r] * wx[c] * mul / dSum));
+              else
+                w = mul - sum;
+              pW[r*(m_iLanczosParamA[ch] << 1) + c] = w;
+              sum += w;
+            }
+        }
+      }
+      av_freep(&m_pfLanczosFltCoefLut[ch]);
+    }
+
+    for (int ch = 0; ch < iNCh; ch++)
+      for (int j = 0; j < heightEL_v[ch]; j++)
+        for (int i = 0; i < widthEL_v[ch]; i++) {
+          IPosIn = (SPos) {0, (double)i, (double)j, 0};
+          SPosOut1 = (SPos) {0, (double)0, (double)0, 0};
+          u = IPosIn.x + (double)(0.5);
+          v = IPosIn.y + (double)(0.5);
+          if (( u < 0 || u >= widthEL_v[ch]) && (v >= 0 && v < heightEL_v[ch]))
+            u = u < 0 ? widthEL_v[ch] + u : (u - widthEL_v[ch]);
+          else
+            if (v < 0) {
+              v = -v;
+              u = u + (widthEL_v[ch] >> 1);
+              u = u >= widthEL_v[ch] ? u - widthEL_v[ch] : u;
+            }
+            else
+              if (v >=  heightEL_v[ch]) {
+                v = ( heightEL_v[ch] << 1) - v;
+                u = u + (widthEL_v[ch] >> 1);
+                u = u >= widthEL_v[ch] ? u - widthEL_v[ch] : u;
+              }
+          
+                
+          yaw = (double)(u* M_PI * 2 / widthEL_v[ch]  - M_PI);
+          pitch = (double)( M_PI_2 - v* M_PI /  heightEL_v[ch]);
+                
+          SPosOut1.x = (double)(cos(pitch)*cos(yaw));
+          SPosOut1.y = (double)(sin(pitch));
+          SPosOut1.z = -(double)(cos(pitch)*sin(yaw));
+                
+          
+          p[0]  = SPosOut1.x;
+          p[1]  = SPosOut1.y;
+          p[2]  = SPosOut1.z;
+          SPosOut2 = (SPos){0, (double)0, (double)0, 0};
+                
+          p1[0] = m_matRotMatx[0][0] * p[0] + m_matRotMatx[0][1] * p[1] + m_matRotMatx[0][2] * p[2];
+          p1[1] = m_matRotMatx[1][0] * p[0] + m_matRotMatx[1][1] * p[1] + m_matRotMatx[1][2] * p[2];
+          p1[2] = m_matRotMatx[2][0] * p[0] + m_matRotMatx[2][1] * p[1] + m_matRotMatx[2][2] * p[2];
+          
+          x2 = p1[0] / p1[2];
+          y2 = p1[1] / p1[2];
+          
+          uVP = K[ch][0][0] * x2 + K[ch][0][1] * y2 + K[ch][0][2];
+          vVP = K[ch][1][0] * x2 + K[ch][1][1] * y2 + K[ch][1][2];
+          iVP = uVP - (double)(0.5);
+          jVP = vVP - (double)(0.5);
+            
+
+          xLanczos = roundHP(iVP*SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
+          yLanczos = roundHP(jVP*SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
+          if (xLanczos >= 0 && xLanczos< widthBL_v[ch] && yLanczos>=0 && yLanczos < heightBL_v[ch]
+                    && i > iWindowSearchDim[ch][0][0] - iSafetyMargin && i<iWindowSearchDim[ch][0][1] + iSafetyMargin
+                    && j>iWindowSearchDim[ch][1][0] - iSafetyMargin && j<iWindowSearchDim[ch][1][1] + iSafetyMargin) {
+            s->pPixelWeight[ch][j* widthEL_v[ch] + i].facePos = ((yLanczos*widthBL_v[ch]) + xLanczos) << S_log2NumFaces[iNumFaces] | SPosOut2.faceIdx;
+            s->pPixelWeight[ch][j* widthEL_v[ch]+ i].weightIdx = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
+          } else {
+            s->pPixelWeight[ch][j*widthEL_v[ch] + i].facePos = -1;
+            s->pPixelWeight[ch][j*widthEL_v[ch] + i].weightIdx = -1;
+          }
+        }
+}
+#endif
     fail:
     return ret;
 }
@@ -691,7 +982,6 @@ static int hls_slice_header(HEVCContext *s)
     //presence before parsing the rest of the slice header
     if(s->ps.pps != (HEVCPPS*)s->ps.pps_list[sh->slice_pps_id]->data)
         change_pps = 1;
-
     s->ps.pps = (HEVCPPS*)s->ps.pps_list[sh->slice_pps_id]->data;
 
 //if (s->ps.sps_list[s->ps.pps->sps_id]!=NULL)
