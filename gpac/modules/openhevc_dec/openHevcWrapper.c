@@ -242,7 +242,6 @@ int libOpenHevcDecode(OpenHevc_Handle openHevcHandle, const unsigned char *buff,
 
     pthread_mutex_lock(&openHevcContexts->layer_switch);
     for( i = 0; i < MAX_DECODERS; i++)  {
-
         int got_picture = 0;
 
         openHevcContext                = openHevcContexts->wraper[i];

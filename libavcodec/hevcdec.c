@@ -829,6 +829,7 @@ int set_el_parameter(HEVCContext *s) {
               else
                 w = mul - sum;
               pW[r*(m_iLanczosParamA[ch] << 1) + c] = w;
+              //  printf("%d ", w);
               sum += w;
             }
         }
@@ -893,14 +894,14 @@ int set_el_parameter(HEVCContext *s) {
             s->pPixelWeight[ch][j* widthEL_v[ch] + i].facePos = ((yLanczos*widthBL_v[ch]) + xLanczos) << S_log2NumFaces[iNumFaces] | SPosOut2.faceIdx;
             s->pPixelWeight[ch][j* widthEL_v[ch]+ i].weightIdx = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
           } else {
-            s->pPixelWeight[ch][j*widthEL_v[ch] + i].facePos = -1;
+            s->pPixelWeight[ch][j*widthEL_v[ch] + i].facePos   = -1;
             s->pPixelWeight[ch][j*widthEL_v[ch] + i].weightIdx = -1;
           }
         }
 }
 #endif
-    fail:
-    return ret;
+  fail:
+  return ret;
 }
 
 static int hls_slice_header(HEVCContext *s)
