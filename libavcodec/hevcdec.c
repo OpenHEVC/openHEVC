@@ -546,9 +546,11 @@ static int getBitDepth(HEVCContext *s, enum ChannelType channel, int layerId)
   return retVal;
 }
 
-int roundHP(double t) {
+#if ACTIVE_360_UPSAMPLING
+static int roundHP(double t) {
     return (int)(t + (t >= 0 ? 0.5 : -0.5));
 }
+#endif
 
 int set_el_parameter(HEVCContext *s) {
     int ret = 0, i;
