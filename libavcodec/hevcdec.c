@@ -546,7 +546,7 @@ static int getBitDepth(HEVCContext *s, enum ChannelType channel, int layerId)
   return retVal;
 }
 
-int roundHP(double t) {
+static int roundHP(double t) {
     return (int)(t + (t >= 0 ? 0.5 : -0.5));
 }
 
