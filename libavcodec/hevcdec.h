@@ -61,6 +61,10 @@
 #define SVIDEO_2DPOS_PRECISION_LOG2  13
 #define SVIDEO_2DPOS_PRECISION (1<<SVIDEO_2DPOS_PRECISION_LOG2) //8192
 #define SV_MAX_NUM_FACES             20
+#define SHVC360_FILTER_SIZE_LUMA 36
+#define SHVC360_FILTER_SIZE_CHROMA 16
+#define SHVC360_LANCZOS_PARAM_LUMA 3
+#define SHVC360_LANCZOS_PARAM_CHROMA 2
 #endif
 
 //TODO: check if this is really the maximum
@@ -480,7 +484,7 @@ typedef struct HEVCLocalContext {
 
 
 #if ACTIVE_360_UPSAMPLING
-static const int   S_log2NumFaces[SV_MAX_NUM_FACES+1] = { 0,
+static const int   log2_num_faces[SV_MAX_NUM_FACES+1] = { 0,
     1, 1,
     2, 2,
     3, 3, 3, 3,
@@ -494,12 +498,43 @@ typedef struct SPos
   double z;
 } SPos;
 
+//TODO separate face and weight
 typedef struct PxlFltLut
 {
     int facePos;
-    unsigned int weightIdx;
+    unsigned short weightIdx;
 } PxlFltLut;
 #endif
+
+
+typedef struct HEVCLayerContext {
+
+    AVCodecContext *ref_layer_ctx;
+    AVCodecContext **dependent_layer_ctx_list;
+
+    int ref_layer_width;
+    int ref_layer_height;
+    int ref_layer_stride;
+
+    RepFormat *ref_window;
+    AVFrame   *direct_ref_frame;
+
+    int current_layer_width;
+    int current_layer_height;
+    int current_layer_stride;
+
+    RepFormat *current_window;
+    AVFrame   *current_frame;
+
+    UpsamplInf *scaling_info;
+
+    int ref_layer_is_internal;
+
+    int require_cgs;
+    int require_bit_depth;
+
+}HEVCLayerContext;
+
 
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
@@ -682,9 +717,11 @@ typedef struct HEVCContext {
 #endif
 
 #if ACTIVE_360_UPSAMPLING
-    int m_iInterpFilterTaps[2][2];
-    PxlFltLut *pPixelWeight[2];
-    int **m_pWeightLut[2];
+//    int m_iInterpFilterTaps[2][2];
+    PxlFltLut *pixel_weight_luma;
+    PxlFltLut *pixel_weight_chroma;
+    int **weight_lut_luma;
+    int **weight_lut_chroma;
 #endif
     
     int bl_is_avc;
