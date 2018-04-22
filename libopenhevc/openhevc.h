@@ -368,6 +368,7 @@ void oh_select_active_layer(OHHandle oh_hdl, int val);
 void oh_select_view_layer(OHHandle oh_hdl, int val);
 
 #if OHCONFIG_ENCRYPTION
+void oh_click(OHHandle oh_hdl, int val_x,int val_y);
 void oh_set_crypto_mode(OHHandle oh_hdl, int val);
 void oh_set_crypto_key(OHHandle oh_hdl, uint8_t *val);
 #endif

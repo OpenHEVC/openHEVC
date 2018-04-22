@@ -971,6 +971,25 @@ void oh_set_crypto_key(OHHandle oh_hdl, uint8_t *val)
     }
 
 }
+
+void oh_click(OHHandle oh_hdl, int val_x,int val_y)
+{
+    OHContext *oh_ctx = (OHContext *) oh_hdl;;
+    OHDecoderCtx  *oh_decoder_ctx;
+
+    AVRational tmp;
+    tmp.num=val_x;
+    tmp.den=val_y;
+
+    int i;
+
+    for (i = 0; i < oh_ctx->nb_decoders; i++) {
+        oh_decoder_ctx = oh_ctx->ctx_list[i];
+        av_opt_set_q(oh_decoder_ctx->codec_ctx->priv_data, "mouse-click-pos", tmp, 0);
+    }
+
+}
+
 #endif
 
 const unsigned oh_version(OHHandle openHevcHandle)

@@ -5058,7 +5058,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->picture_struct = 0;
     s->sei.picture_timing.picture_struct = 0;
 #if OHCONFIG_ENCRYPTION
-    //s->encrypt_params =  HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS | HEVC_CRYPTO_INTRA_PRED_MODE;
+    s->encrypt_params =  HEVC_CRYPTO_MV_SIGNS | HEVC_CRYPTO_MVs | HEVC_CRYPTO_TRANSF_COEFF_SIGNS | HEVC_CRYPTO_TRANSF_COEFFS | HEVC_CRYPTO_INTRA_PRED_MODE;
     s->last_click_pos.den = 0;
     s->last_click_pos.num = 0;
     s->tile_table_encry = NULL;
