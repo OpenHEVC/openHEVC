@@ -1547,12 +1547,13 @@ static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int ctb_x0,
     const int round_add = 1 << (round_shift - 1);
     const int refBitDepthLuma = 8;
     const int max_value= (1 << refBitDepthLuma) - 1;
-
-    for (int i= y0 ; i < (y0 + 64 < el_height ?  y0 + 64 :el_height); i++)
+    
+    for (int i= y0 ; i < (y0 + 64 < el_height ?  y0 + 64 :el_height); i++) {
+        int cum_i = i*el_stride;
         for (int j= x0  ; j < (x0 + 64 < el_width ? x0 + 64: el_width ) ; j++) {
-            PxlFltLut *pPelWeight = &s->pixel_weight_luma [ i*el_width + j];
+            PxlFltLut *pPelWeight = &s->pixel_weight_luma [ cum_i + j];//i*el_width
             int64_t sum = 0;
-           // if (pPelWeight->facePos != -1 ) {
+            if (pPelWeight->facePos != -1 ) {
                 int iTLPos = (pPelWeight->facePos) >> log2_num_faces[0];
                 int iExtendedTLPos = ((int)(iTLPos / bl_stride))* bl_stride + (iTLPos % bl_stride);
                 int y = pPelWeight->y - top_offset;
@@ -1567,10 +1568,11 @@ static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int ctb_x0,
                     pix   += bl_stride;
                     pWLut += offset_x;
                 }
-                dst[i*el_stride + j] = av_clip((sum + round_add) >> round_shift, 0, max_value);
-            //}
+                dst[cum_i + j] = av_clip((sum + round_add) >> round_shift, 0, max_value);
+           } else
+               dst[cum_i + j] = 0;
         }
-
+    }
     s->is_upsampled[((y0) / ctb_size * s->ps.sps->ctb_width) + ((x0) / ctb_size)] = 1;
 }
 
