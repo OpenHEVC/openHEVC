@@ -107,16 +107,7 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->is_upsampled);
 #endif
 #endif
-#if ACTIVE_360_UPSAMPLING
-   // for (int h = 0; h < 2; h++) {
-      av_free(s->pixel_weight_luma);
-      av_free(s->pixel_weight_chroma);
-      if(s->weight_lut_luma)
-        av_freep(&s->weight_lut_luma[0]);
-      if(s->weight_lut_chroma)
-        av_freep(&s->weight_lut_chroma);
-   // }
-#endif
+
 #endif
 
 #if PARALLEL_SLICE
@@ -202,18 +193,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 #else
         s->is_upsampled = av_malloc(sps->ctb_width * sps->ctb_height);
 #endif
-#if ACTIVE_360_UPSAMPLING
 
-        s->pixel_weight_luma    = av_malloc(pic_size*sizeof(PxlFltLut) );
-        s->weight_lut_luma      = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
-        s->weight_lut_luma[0]   = av_malloc ( sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_LUMA));
-        s->pixel_weight_chroma  = av_malloc(pic_size*sizeof(PxlFltLut) );
-        s->weight_lut_chroma    = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
-        s->weight_lut_chroma[0] = av_malloc (  sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_CHROMA));
-
-        if (!s->pixel_weight_chroma|| !s->pixel_weight_luma|| !s->weight_lut_luma[0] || !s->weight_lut_chroma[0])
-          goto fail;
-#endif
 #endif
     }
 #endif
@@ -687,384 +667,399 @@ int set_el_parameter(HEVCContext *s) {
         double m_matInvKchroma[9];
         double det;
 
-        // Init rotation matrices
+#if ACTIVE_360_UPSAMPLING
 
-        rotation_matrix[0] = cos(tht);
-        rotation_matrix[1] = 0.0;
-        rotation_matrix[2] = -sin(tht);
-        rotation_matrix[3] = sin(tht)*sin(phi);
-        rotation_matrix[4] = cos(phi);
-        rotation_matrix[5] = cos(tht)*sin(phi);
-        rotation_matrix[6] = sin(tht)*cos(phi);
-        rotation_matrix[7] = -sin(phi);
-        rotation_matrix[8] = cos(tht)*cos(phi);
+        if (!s->pixel_weight_chroma|| !s->pixel_weight_luma|| !s->weight_lut_luma || !s->weight_lut_chroma){
+            s->pixel_weight_luma    = av_malloc(widthEL_v[0]*heightEL_v[0]*sizeof(PxlFltLut) );
+            s->weight_lut_luma      = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
+            s->weight_lut_luma[0]   = av_malloc ( sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_LUMA));
+            s->pixel_weight_chroma  = av_malloc(widthEL_v[1]*heightEL_v[1]*sizeof(PxlFltLut) );
+            s->weight_lut_chroma    = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
+            s->weight_lut_chroma[0] = av_malloc (  sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_CHROMA));
+//            if (!s->pixel_weight_chroma|| !s->pixel_weight_luma|| !s->weight_lut_luma[0] || !s->weight_lut_chroma[0])
+//              goto fail;
+            // Init rotation matrices
 
-        inverse_rotation_matrix[0] = cos(tht);
-        inverse_rotation_matrix[1] = sin(tht)*sin(phi);
-        inverse_rotation_matrix[2] = sin(tht)*cos(phi);
-        inverse_rotation_matrix[3] = 0.0;
-        inverse_rotation_matrix[4] = cos(phi);
-        inverse_rotation_matrix[5] = -sin(phi);
-        inverse_rotation_matrix[6] = -sin(tht);
-        inverse_rotation_matrix[7] = cos(tht)*sin(phi);
-        inverse_rotation_matrix[8] = cos(tht)*cos(phi);
+            rotation_matrix[0] = cos(tht);
+            rotation_matrix[1] = 0.0;
+            rotation_matrix[2] = -sin(tht);
+            rotation_matrix[3] = sin(tht)*sin(phi);
+            rotation_matrix[4] = cos(phi);
+            rotation_matrix[5] = cos(tht)*sin(phi);
+            rotation_matrix[6] = sin(tht)*cos(phi);
+            rotation_matrix[7] = -sin(phi);
+            rotation_matrix[8] = cos(tht)*cos(phi);
 
-        /*Luma*/
-        {
-            double m_pfLanczosFltCoefLut [(SHVC360_LANCZOS_PARAM_LUMA << 1) * S_LANCZOS_LUT_SCALE + 1];//TODO check +1
-            double fx_Y    = ((double)widthBL_v[0]   / 2.0) * (1.0 / tan(fovx / 2.0));
-            double fy_Y    = ((double)heightBL_v[0]  / 2.0) * (1.0 / tan(fovy / 2.0));
+            inverse_rotation_matrix[0] = cos(tht);
+            inverse_rotation_matrix[1] = sin(tht)*sin(phi);
+            inverse_rotation_matrix[2] = sin(tht)*cos(phi);
+            inverse_rotation_matrix[3] = 0.0;
+            inverse_rotation_matrix[4] = cos(phi);
+            inverse_rotation_matrix[5] = -sin(phi);
+            inverse_rotation_matrix[6] = -sin(tht);
+            inverse_rotation_matrix[7] = cos(tht)*sin(phi);
+            inverse_rotation_matrix[8] = cos(tht)*cos(phi);
 
-            const double Kluma[9] = {
-                fx_Y,    0.0, (double)widthBL_v[0]  / 2.0 ,
-                0.0,   -fy_Y, (double)heightBL_v[0] / 2.0 ,
-                0.0,     0.0,                 1.0
-            };
+            /*Luma*/
+            {
+                double m_pfLanczosFltCoefLut [(SHVC360_LANCZOS_PARAM_LUMA << 1) * S_LANCZOS_LUT_SCALE + 1];//TODO check +1
+                double fx_Y    = ((double)widthBL_v[0]   / 2.0) * (1.0 / tan(fovx / 2.0));
+                double fy_Y    = ((double)heightBL_v[0]  / 2.0) * (1.0 / tan(fovy / 2.0));
 
-            int iWindowSearchDimluma[4] = {
-                widthEL,       0,
-                heightEL,      0,
-            };
+                const double Kluma[9] = {
+                    fx_Y,    0.0, (double)widthBL_v[0]  / 2.0 ,
+                    0.0,   -fy_Y, (double)heightBL_v[0] / 2.0 ,
+                    0.0,     0.0,                 1.0
+                };
 
-            det = Kluma[0] * Kluma[4];
+                int iWindowSearchDimluma[4] = {
+                    widthEL,       0,
+                    heightEL,      0,
+                };
 
-            m_matInvKluma[0] = (Kluma[4] * Kluma[8] - Kluma[7] * Kluma[5]) / det;
-            m_matInvKluma[1] = (Kluma[2] * Kluma[7] - Kluma[1] * Kluma[8]) / det;
-            m_matInvKluma[2] = (Kluma[1] * Kluma[5] - Kluma[2] * Kluma[4]) / det;
-            m_matInvKluma[3] = (Kluma[5] * Kluma[6] - Kluma[3] * Kluma[8]) / det;
-            m_matInvKluma[4] = (Kluma[0] * Kluma[8] - Kluma[2] * Kluma[6]) / det;
-            m_matInvKluma[5] = (Kluma[3] * Kluma[2] - Kluma[0] * Kluma[5]) / det;
-            m_matInvKluma[6] = (Kluma[3] * Kluma[7] - Kluma[6] * Kluma[4]) / det;
-            m_matInvKluma[7] = (Kluma[6] * Kluma[1] - Kluma[0] * Kluma[7]) / det;
-            m_matInvKluma[8] = (Kluma[0] * Kluma[4] - Kluma[3] * Kluma[1]) / det;
+                det = Kluma[0] * Kluma[4];
 
-            //TODO can be moved move in last loop?
-            for (int j = 0; j < heightBL_v[0]; j++){
-                for (int i = 0; i < widthBL_v[0]; i++) {
-                    double x, y, z, u, v, x2, y2, p1[3],len;
+                m_matInvKluma[0] = (Kluma[4] * Kluma[8] - Kluma[7] * Kluma[5]) / det;
+                m_matInvKluma[1] = (Kluma[2] * Kluma[7] - Kluma[1] * Kluma[8]) / det;
+                m_matInvKluma[2] = (Kluma[1] * Kluma[5] - Kluma[2] * Kluma[4]) / det;
+                m_matInvKluma[3] = (Kluma[5] * Kluma[6] - Kluma[3] * Kluma[8]) / det;
+                m_matInvKluma[4] = (Kluma[0] * Kluma[8] - Kluma[2] * Kluma[6]) / det;
+                m_matInvKluma[5] = (Kluma[3] * Kluma[2] - Kluma[0] * Kluma[5]) / det;
+                m_matInvKluma[6] = (Kluma[3] * Kluma[7] - Kluma[6] * Kluma[4]) / det;
+                m_matInvKluma[7] = (Kluma[6] * Kluma[1] - Kluma[0] * Kluma[7]) / det;
+                m_matInvKluma[8] = (Kluma[0] * Kluma[4] - Kluma[3] * Kluma[1]) / det;
 
-                    u = (double)i + (double)(0.5);
-                    v = (double)j + (double)(0.5);
+                //TODO can be moved move in last loop?
+                for (int j = 0; j < heightBL_v[0]; j++){
+                    for (int i = 0; i < widthBL_v[0]; i++) {
+                        double x, y, z, u, v, x2, y2, p1[3],len;
 
-                    x2 = m_matInvKluma[0] * u + m_matInvKluma[1] * v + m_matInvKluma[2];
-                    y2 = m_matInvKluma[3] * u + m_matInvKluma[4] * v + m_matInvKluma[5];
+                        u = (double)i + (double)(0.5);
+                        v = (double)j + (double)(0.5);
 
-                    p1[2] = 1 / sqrt (x2 * x2 + y2 * y2 + 1);
-                    p1[0] = p1[2] * x2;
-                    p1[1] = p1[2] * y2;
+                        x2 = m_matInvKluma[0] * u + m_matInvKluma[1] * v + m_matInvKluma[2];
+                        y2 = m_matInvKluma[3] * u + m_matInvKluma[4] * v + m_matInvKluma[5];
 
-                    x = inverse_rotation_matrix[0] * p1[0] + inverse_rotation_matrix[1] * p1[1] + inverse_rotation_matrix[2] * p1[2];
-                    y = inverse_rotation_matrix[3] * p1[0] + inverse_rotation_matrix[4] * p1[1] + inverse_rotation_matrix[5] * p1[2];
-                    z = inverse_rotation_matrix[6] * p1[0] + inverse_rotation_matrix[7] * p1[1] + inverse_rotation_matrix[8] * p1[2];
+                        p1[2] = 1 / sqrt (x2 * x2 + y2 * y2 + 1);
+                        p1[0] = p1[2] * x2;
+                        p1[1] = p1[2] * y2;
 
-                    x2 = (double)((M_PI - atan2(z, x))* widthEL_v[0] / (2 * M_PI));
-                    x2 -= 0.5;
+                        x = inverse_rotation_matrix[0] * p1[0] + inverse_rotation_matrix[1] * p1[1] + inverse_rotation_matrix[2] * p1[2];
+                        y = inverse_rotation_matrix[3] * p1[0] + inverse_rotation_matrix[4] * p1[1] + inverse_rotation_matrix[5] * p1[2];
+                        z = inverse_rotation_matrix[6] * p1[0] + inverse_rotation_matrix[7] * p1[1] + inverse_rotation_matrix[8] * p1[2];
 
-                    len = sqrt(x*x + y*y + z*z);
+                        x2 = (double)((M_PI - atan2(z, x))* widthEL_v[0] / (2 * M_PI));
+                        x2 -= 0.5;
 
-                    y2 = (double)((len < (1e-6) ? 0.5 : acos(y / len) / M_PI) * heightEL_v[0]);
-                    y2 -= 0.5;
+                        len = sqrt(x*x + y*y + z*z);
 
-                    // remember max values of search window
-                    if ((int)x2 < iWindowSearchDimluma[0])
-                        iWindowSearchDimluma[0] = (int)x2;
+                        y2 = (double)((len < (1e-6) ? 0.5 : acos(y / len) / M_PI) * heightEL_v[0]);
+                        y2 -= 0.5;
 
-                    if ((int)x2 > iWindowSearchDimluma[1])
-                        iWindowSearchDimluma[1] = (int)x2;
+                        // remember max values of search window
+                        if ((int)x2 < iWindowSearchDimluma[0])
+                            iWindowSearchDimluma[0] = (int)x2;
 
-                    if ((int)y2 < iWindowSearchDimluma[2])
-                        iWindowSearchDimluma[2] = (int)y2;
+                        if ((int)x2 > iWindowSearchDimluma[1])
+                            iWindowSearchDimluma[1] = (int)x2;
 
-                    if ((int)y2 > iWindowSearchDimluma[3])
-                        iWindowSearchDimluma[3] = (int)y2;
+                        if ((int)y2 < iWindowSearchDimluma[2])
+                            iWindowSearchDimluma[2] = (int)y2;
 
-                }
-            }
+                        if ((int)y2 > iWindowSearchDimluma[3])
+                            iWindowSearchDimluma[3] = (int)y2;
 
-            for (int i = 0; i < (SHVC360_LANCZOS_PARAM_LUMA << 1) * S_LANCZOS_LUT_SCALE; i++) {
-                double x = (double)i / S_LANCZOS_LUT_SCALE - SHVC360_LANCZOS_PARAM_LUMA;
-                m_pfLanczosFltCoefLut[i] = (double)(sinc(x) * sinc(x / SHVC360_LANCZOS_PARAM_LUMA));
-            }
-
-            for (int k = 1; k<(S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1); k++){
-                s->weight_lut_luma[k] = s->weight_lut_luma[0] + k*SHVC360_FILTER_SIZE_LUMA;
-            }
-
-            for (int m = 0; m < (S_LANCZOS_LUT_SCALE + 1); m++) {
-                double wy[6];
-                double t = (double)m * dScale;
-                for (int k = -SHVC360_LANCZOS_PARAM_LUMA; k < SHVC360_LANCZOS_PARAM_LUMA; k++){
-                    wy[k + SHVC360_LANCZOS_PARAM_LUMA] = m_pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + SHVC360_LANCZOS_PARAM_LUMA)* S_LANCZOS_LUT_SCALE + 0.5)];
+                    }
                 }
 
-                for (int n = 0; n < (S_LANCZOS_LUT_SCALE + 1); n++) {
-                    int *pW = s->weight_lut_luma[m*(S_LANCZOS_LUT_SCALE + 1) + n];
-                    int sum = 0;
-                    double d_sum = 0;
-                    double wx[6];
-                    t = (double)n * dScale;
+                for (int i = 0; i < (SHVC360_LANCZOS_PARAM_LUMA << 1) * S_LANCZOS_LUT_SCALE; i++) {
+                    double x = (double)i / S_LANCZOS_LUT_SCALE - SHVC360_LANCZOS_PARAM_LUMA;
+                    m_pfLanczosFltCoefLut[i] = (double)(sinc(x) * sinc(x / SHVC360_LANCZOS_PARAM_LUMA));
+                }
+
+                for (int k = 1; k<(S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1); k++){
+                    s->weight_lut_luma[k] = s->weight_lut_luma[0] + k*SHVC360_FILTER_SIZE_LUMA;
+                }
+
+                for (int m = 0; m < (S_LANCZOS_LUT_SCALE + 1); m++) {
+                    double wy[6];
+                    double t = (double)m * dScale;
                     for (int k = -SHVC360_LANCZOS_PARAM_LUMA; k < SHVC360_LANCZOS_PARAM_LUMA; k++){
-                        wx[k + SHVC360_LANCZOS_PARAM_LUMA] = m_pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + SHVC360_LANCZOS_PARAM_LUMA)* S_LANCZOS_LUT_SCALE + 0.5)];
+                        wy[k + SHVC360_LANCZOS_PARAM_LUMA] = m_pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + SHVC360_LANCZOS_PARAM_LUMA)* S_LANCZOS_LUT_SCALE + 0.5)];
                     }
 
-                    for (int r = 0; r < (SHVC360_LANCZOS_PARAM_LUMA << 1); r++){
-                        for (int c = 0; c < (SHVC360_LANCZOS_PARAM_LUMA << 1); c++){
-                            d_sum += wy[r] * wx[c];
+                    for (int n = 0; n < (S_LANCZOS_LUT_SCALE + 1); n++) {
+                        int *pW = s->weight_lut_luma[m*(S_LANCZOS_LUT_SCALE + 1) + n];
+                        int sum = 0;
+                        double d_sum = 0;
+                        double wx[6];
+                        t = (double)n * dScale;
+                        for (int k = -SHVC360_LANCZOS_PARAM_LUMA; k < SHVC360_LANCZOS_PARAM_LUMA; k++){
+                            wx[k + SHVC360_LANCZOS_PARAM_LUMA] = m_pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + SHVC360_LANCZOS_PARAM_LUMA)* S_LANCZOS_LUT_SCALE + 0.5)];
+                        }
+
+                        for (int r = 0; r < (SHVC360_LANCZOS_PARAM_LUMA << 1); r++){
+                            for (int c = 0; c < (SHVC360_LANCZOS_PARAM_LUMA << 1); c++){
+                                d_sum += wy[r] * wx[c];
+                            }
+                        }
+                        for (int r = 0; r < (SHVC360_LANCZOS_PARAM_LUMA << 1); r++){
+                            for (int c = 0; c < (SHVC360_LANCZOS_PARAM_LUMA << 1); c++){
+                                int w;
+                                if (c != (SHVC360_LANCZOS_PARAM_LUMA << 1) - 1 || r != (SHVC360_LANCZOS_PARAM_LUMA << 1) - 1)
+                                    w = round((double)(wy[r] * wx[c] * mul / d_sum));
+                                else
+                                    w = mul - sum;
+                                pW[r*(SHVC360_LANCZOS_PARAM_LUMA << 1) + c] = w;
+                                sum += w;
+                            }
                         }
                     }
-                    for (int r = 0; r < (SHVC360_LANCZOS_PARAM_LUMA << 1); r++){
-                        for (int c = 0; c < (SHVC360_LANCZOS_PARAM_LUMA << 1); c++){
-                            int w;
-                            if (c != (SHVC360_LANCZOS_PARAM_LUMA << 1) - 1 || r != (SHVC360_LANCZOS_PARAM_LUMA << 1) - 1)
-                                w = round((double)(wy[r] * wx[c] * mul / d_sum));
-                            else
-                                w = mul - sum;
-                            pW[r*(SHVC360_LANCZOS_PARAM_LUMA << 1) + c] = w;
-                            sum += w;
+                }
+
+                for (int j = 0; j < heightEL_v[0]; j++){
+                    for (int i = 0; i < widthEL_v[0]; i++) {
+                        int  xLanczos, yLanczos;
+                        double u, v, yaw, pitch, x2, y2, p[3], p1[3], x, y, z, len;
+                        double  uVP, vVP, iVP, jVP;
+                        //                    SPos SPosOut2 = (SPos) {0, 0.0, 0.0, 0.0};
+                        u = (double)(i) + (double)(0.5);
+                        v = (double)(j) + (double)(0.5);
+
+    //                    //TODO no effect ?
+    //                    if (( u < 0 || u >= widthEL_v[0]) && (v >= 0 && v < heightEL_v[0])){
+    //                        u = u < 0 ? widthEL_v[0] + u : (u - widthEL_v[0]);
+    //                    } else if (v < 0) {
+    //                        v = -v;
+    //                        u = u + (widthEL_v[0] >> 1);
+    //                        u = u >= widthEL_v[0] ? u - widthEL_v[0] : u;
+    //                    } else if (v >=  heightEL_v[0]) {
+    //                        v = ( heightEL_v[0] << 1) - v;
+    //                        u = u + (widthEL_v[0] >> 1);
+    //                        u = u >= widthEL_v[0] ? u - widthEL_v[0] : u;
+    //                    }
+
+                        yaw   = (double)(u* M_PI * 2 / widthEL_v[0]  - M_PI);
+                        pitch = (double)( M_PI_2 - v* M_PI /  heightEL_v[0]);
+
+                        p[0]  = (double)(cos(pitch)*cos(yaw));
+                        p[1]  = (double)(sin(pitch));
+                        p[2]  = -(double)(cos(pitch)*sin(yaw));
+
+                        p1[0] = rotation_matrix[0] * p[0] + rotation_matrix[1] * p[1] + rotation_matrix[2] * p[2];
+                        p1[1] = rotation_matrix[3] * p[0] + rotation_matrix[4] * p[1] + rotation_matrix[5] * p[2];
+                        p1[2] = rotation_matrix[6] * p[0] + rotation_matrix[7] * p[1] + rotation_matrix[8] * p[2];
+
+                        x2 = p1[0] / p1[2];
+                        y2 = p1[1] / p1[2];
+
+                        uVP = Kluma[0] * x2 + Kluma[1] * y2 + Kluma[2];
+                        vVP = Kluma[3] * x2 + Kluma[4] * y2 + Kluma[5];
+
+                        iVP = uVP - (double)(0.5);
+                        jVP = vVP - (double)(0.5);
+
+                        xLanczos = roundHP(iVP * SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
+                        yLanczos = roundHP(jVP * SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
+
+                        if (xLanczos >= 0 && xLanczos< widthBL_v[0] && yLanczos>=0 && yLanczos < heightBL_v[0]
+                                && i > iWindowSearchDimluma[0] - safe_margin_size && i < iWindowSearchDimluma[1] + safe_margin_size
+                                && j > iWindowSearchDimluma[2] - safe_margin_size && j < iWindowSearchDimluma[3] + safe_margin_size) {
+                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos = ((yLanczos * base_layer_window.pic_width_vps_in_luma_samples) + xLanczos) << log2_num_faces[num_faces] | 0;// SPosOut2.faceIdx;
+                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
+                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].x = xLanczos;
+                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].y = yLanczos;
+                            //fprintf(stderr,"%d,%d\n",s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx ,s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos);
+                        } else {
+                            s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].facePos   = -1;
+                            //s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].weightIdx = -1;
+                            //fprintf(stderr,"%d,%d\n",s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx ,s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos);
                         }
                     }
                 }
             }
 
-            for (int j = 0; j < heightEL_v[0]; j++){
-                for (int i = 0; i < widthEL_v[0]; i++) {
-                    int  xLanczos, yLanczos;
-                    double u, v, yaw, pitch, x2, y2, p[3], p1[3], x, y, z, len;
-                    double  uVP, vVP, iVP, jVP;
-                    //                    SPos SPosOut2 = (SPos) {0, 0.0, 0.0, 0.0};
-                    u = (double)(i) + (double)(0.5);
-                    v = (double)(j) + (double)(0.5);
+            /* Chroma */
+            {
+                double m_pfLanczosFltCoefLut [(SHVC360_LANCZOS_PARAM_CHROMA << 1) * S_LANCZOS_LUT_SCALE + 1];//TODO check +1
+                const double fx_CbCr = ((s->BL_width  >> 1) / 2) *(1 / tan(fovx / 2));
+                const double fy_CbCr = ((s->BL_height >> 1) / 2) *(1 / tan(fovy / 2));
+                const double Kchroma[9] = {
+                    fx_CbCr,        0, (s->BL_width  >> 1) / 2.0 ,
+                    0,       -fy_CbCr, (s->BL_height >> 1) / 2.0 ,
+                    0,              0,                         1
+                };
 
-//                    //TODO no effect ?
-//                    if (( u < 0 || u >= widthEL_v[0]) && (v >= 0 && v < heightEL_v[0])){
-//                        u = u < 0 ? widthEL_v[0] + u : (u - widthEL_v[0]);
-//                    } else if (v < 0) {
-//                        v = -v;
-//                        u = u + (widthEL_v[0] >> 1);
-//                        u = u >= widthEL_v[0] ? u - widthEL_v[0] : u;
-//                    } else if (v >=  heightEL_v[0]) {
-//                        v = ( heightEL_v[0] << 1) - v;
-//                        u = u + (widthEL_v[0] >> 1);
-//                        u = u >= widthEL_v[0] ? u - widthEL_v[0] : u;
-//                    }
+                int iWindowSearchDimchroma[4] = {
+                    widthEL  >> 1, 0,
+                    heightEL >> 1, 0
+                };
 
-                    yaw   = (double)(u* M_PI * 2 / widthEL_v[0]  - M_PI);
-                    pitch = (double)( M_PI_2 - v* M_PI /  heightEL_v[0]);
+                det = Kchroma[0] * Kchroma[4];
 
-                    p[0]  = (double)(cos(pitch)*cos(yaw));
-                    p[1]  = (double)(sin(pitch));
-                    p[2]  = -(double)(cos(pitch)*sin(yaw));
+                m_matInvKchroma[0] = (Kchroma[4] * Kchroma[8] - Kchroma[7] * Kchroma[5]) / det;
+                m_matInvKchroma[1] = (Kchroma[2] * Kchroma[7] - Kchroma[1] * Kchroma[8]) / det;
+                m_matInvKchroma[2] = (Kchroma[1] * Kchroma[5] - Kchroma[2] * Kchroma[4]) / det;
+                m_matInvKchroma[3] = (Kchroma[5] * Kchroma[6] - Kchroma[3] * Kchroma[8]) / det;
+                m_matInvKchroma[4] = (Kchroma[0] * Kchroma[8] - Kchroma[2] * Kchroma[6]) / det;
+                m_matInvKchroma[5] = (Kchroma[3] * Kchroma[2] - Kchroma[0] * Kchroma[5]) / det;
+                m_matInvKchroma[6] = (Kchroma[3] * Kchroma[7] - Kchroma[6] * Kchroma[4]) / det;
+                m_matInvKchroma[7] = (Kchroma[6] * Kchroma[1] - Kchroma[0] * Kchroma[7]) / det;
+                m_matInvKchroma[8] = (Kchroma[0] * Kchroma[4] - Kchroma[3] * Kchroma[1]) / det;
 
-                    p1[0] = rotation_matrix[0] * p[0] + rotation_matrix[1] * p[1] + rotation_matrix[2] * p[2];
-                    p1[1] = rotation_matrix[3] * p[0] + rotation_matrix[4] * p[1] + rotation_matrix[5] * p[2];
-                    p1[2] = rotation_matrix[6] * p[0] + rotation_matrix[7] * p[1] + rotation_matrix[8] * p[2];
+                for (int j = 0; j < heightBL_v[1]; j++){
+                    for (int i = 0; i < widthBL_v[1]; i++) {
+                        double x, y, z, u, v, x2, y2, p1[3],len;
 
-                    x2 = p1[0] / p1[2];
-                    y2 = p1[1] / p1[2];
+                        u = i + (double)(0.5);
+                        v = j + (double)(0.5);
 
-                    uVP = Kluma[0] * x2 + Kluma[1] * y2 + Kluma[2];
-                    vVP = Kluma[3] * x2 + Kluma[4] * y2 + Kluma[5];
+                        x2 = m_matInvKchroma[0] * u + m_matInvKchroma[1] * v + m_matInvKchroma[2];
+                        y2 = m_matInvKchroma[3] * u + m_matInvKchroma[4] * v + m_matInvKchroma[5];
 
-                    iVP = uVP - (double)(0.5);
-                    jVP = vVP - (double)(0.5);
+                        p1[2] = 1 / sqrt (x2 * x2 + y2 * y2 + 1);
+                        p1[0] = p1[2] * x2;
+                        p1[1] = p1[2] * y2;
 
-                    xLanczos = roundHP(iVP * SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
-                    yLanczos = roundHP(jVP * SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
+                        x = inverse_rotation_matrix[0] * p1[0] + inverse_rotation_matrix[1] * p1[1] + inverse_rotation_matrix[2] * p1[2];
+                        y = inverse_rotation_matrix[3] * p1[0] + inverse_rotation_matrix[4] * p1[1] + inverse_rotation_matrix[5] * p1[2];
+                        z = inverse_rotation_matrix[6] * p1[0] + inverse_rotation_matrix[7] * p1[1] + inverse_rotation_matrix[8] * p1[2];
 
-                    if (xLanczos >= 0 && xLanczos< widthBL_v[0] && yLanczos>=0 && yLanczos < heightBL_v[0]
-                            && i > iWindowSearchDimluma[0] - safe_margin_size && i < iWindowSearchDimluma[1] + safe_margin_size
-                            && j > iWindowSearchDimluma[2] - safe_margin_size && j < iWindowSearchDimluma[3] + safe_margin_size) {
-                        s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos = ((yLanczos * base_layer_window.pic_width_vps_in_luma_samples) + xLanczos) << log2_num_faces[num_faces] | 0;// SPosOut2.faceIdx;
-                        s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
-                        s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].x = xLanczos;
-                        s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].y = yLanczos;
-                        //fprintf(stderr,"%d,%d\n",s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx ,s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos);
-                    } else {
-                        s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].facePos   = -1;
-                        //s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].weightIdx = -1;
-                        //fprintf(stderr,"%d,%d\n",s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx ,s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos);
+                        x2 = (double)((M_PI - atan2(z, x))* widthEL_v[1] / (2 * M_PI));
+                        x2 -= 0.5;
+
+                        len = sqrt(x*x + y*y + z*z);
+
+                        y2 = (double)((len < (1e-6) ? 0.5 : acos(y / len) / M_PI) * heightEL_v[1]);
+                        y2 -= 0.5;
+
+                        if ((int)x2 < iWindowSearchDimchroma[0])
+                            iWindowSearchDimchroma[0] = (int)x2;
+
+                        if ((int)x2 > iWindowSearchDimchroma[1])
+                            iWindowSearchDimchroma[1] = (int)x2;
+
+                        if ((int)y2 < iWindowSearchDimchroma[2])
+                            iWindowSearchDimchroma[2] = (int)y2;
+
+                        if ((int)y2 > iWindowSearchDimchroma[3])
+                            iWindowSearchDimchroma[3] = (int)y2;
                     }
                 }
-            }
-        }
-
-        /* Chroma */
-        {
-            double m_pfLanczosFltCoefLut [(SHVC360_LANCZOS_PARAM_CHROMA << 1) * S_LANCZOS_LUT_SCALE + 1];//TODO check +1
-            const double fx_CbCr = ((s->BL_width  >> 1) / 2) *(1 / tan(fovx / 2));
-            const double fy_CbCr = ((s->BL_height >> 1) / 2) *(1 / tan(fovy / 2));
-            const double Kchroma[9] = {
-                fx_CbCr,        0, (s->BL_width  >> 1) / 2.0 ,
-                0,       -fy_CbCr, (s->BL_height >> 1) / 2.0 ,
-                0,              0,                         1
-            };
-
-            int iWindowSearchDimchroma[4] = {
-                widthEL  >> 1, 0,
-                heightEL >> 1, 0
-            };
-
-            det = Kchroma[0] * Kchroma[4];
-
-            m_matInvKchroma[0] = (Kchroma[4] * Kchroma[8] - Kchroma[7] * Kchroma[5]) / det;
-            m_matInvKchroma[1] = (Kchroma[2] * Kchroma[7] - Kchroma[1] * Kchroma[8]) / det;
-            m_matInvKchroma[2] = (Kchroma[1] * Kchroma[5] - Kchroma[2] * Kchroma[4]) / det;
-            m_matInvKchroma[3] = (Kchroma[5] * Kchroma[6] - Kchroma[3] * Kchroma[8]) / det;
-            m_matInvKchroma[4] = (Kchroma[0] * Kchroma[8] - Kchroma[2] * Kchroma[6]) / det;
-            m_matInvKchroma[5] = (Kchroma[3] * Kchroma[2] - Kchroma[0] * Kchroma[5]) / det;
-            m_matInvKchroma[6] = (Kchroma[3] * Kchroma[7] - Kchroma[6] * Kchroma[4]) / det;
-            m_matInvKchroma[7] = (Kchroma[6] * Kchroma[1] - Kchroma[0] * Kchroma[7]) / det;
-            m_matInvKchroma[8] = (Kchroma[0] * Kchroma[4] - Kchroma[3] * Kchroma[1]) / det;
-
-            for (int j = 0; j < heightBL_v[1]; j++){
-                for (int i = 0; i < widthBL_v[1]; i++) {
-                    double x, y, z, u, v, x2, y2, p1[3],len;
-
-                    u = i + (double)(0.5);
-                    v = j + (double)(0.5);
-
-                    x2 = m_matInvKchroma[0] * u + m_matInvKchroma[1] * v + m_matInvKchroma[2];
-                    y2 = m_matInvKchroma[3] * u + m_matInvKchroma[4] * v + m_matInvKchroma[5];
-
-                    p1[2] = 1 / sqrt (x2 * x2 + y2 * y2 + 1);
-                    p1[0] = p1[2] * x2;
-                    p1[1] = p1[2] * y2;
-
-                    x = inverse_rotation_matrix[0] * p1[0] + inverse_rotation_matrix[1] * p1[1] + inverse_rotation_matrix[2] * p1[2];
-                    y = inverse_rotation_matrix[3] * p1[0] + inverse_rotation_matrix[4] * p1[1] + inverse_rotation_matrix[5] * p1[2];
-                    z = inverse_rotation_matrix[6] * p1[0] + inverse_rotation_matrix[7] * p1[1] + inverse_rotation_matrix[8] * p1[2];
-
-                    x2 = (double)((M_PI - atan2(z, x))* widthEL_v[1] / (2 * M_PI));
-                    x2 -= 0.5;
-
-                    len = sqrt(x*x + y*y + z*z);
-
-                    y2 = (double)((len < (1e-6) ? 0.5 : acos(y / len) / M_PI) * heightEL_v[1]);
-                    y2 -= 0.5;
-
-                    if ((int)x2 < iWindowSearchDimchroma[0])
-                        iWindowSearchDimchroma[0] = (int)x2;
-
-                    if ((int)x2 > iWindowSearchDimchroma[1])
-                        iWindowSearchDimchroma[1] = (int)x2;
-
-                    if ((int)y2 < iWindowSearchDimchroma[2])
-                        iWindowSearchDimchroma[2] = (int)y2;
-
-                    if ((int)y2 > iWindowSearchDimchroma[3])
-                        iWindowSearchDimchroma[3] = (int)y2;
-                }
-            }
 
 
 
-            for (int i = 0; i < (SHVC360_LANCZOS_PARAM_CHROMA << 1) * S_LANCZOS_LUT_SCALE; i++) {
-                double x = (double)i / S_LANCZOS_LUT_SCALE - SHVC360_LANCZOS_PARAM_CHROMA;
-                m_pfLanczosFltCoefLut[i] = (double)(sinc(x) * sinc(x / SHVC360_LANCZOS_PARAM_CHROMA));
-            }
-
-            for (int k = 1; k<(S_LANCZOS_LUT_SCALE + 1)*(S_LANCZOS_LUT_SCALE + 1); k++){
-                s->weight_lut_chroma[k] = s->weight_lut_chroma[0] + k * SHVC360_FILTER_SIZE_CHROMA;
-            }
-
-            for (int m = 0; m < (S_LANCZOS_LUT_SCALE + 1); m++) {
-                double wy[6];
-                double t = m * dScale;
-                for (int k = -SHVC360_LANCZOS_PARAM_CHROMA; k < SHVC360_LANCZOS_PARAM_CHROMA; k++){
-                    wy[k + SHVC360_LANCZOS_PARAM_CHROMA] = m_pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + SHVC360_LANCZOS_PARAM_CHROMA)* S_LANCZOS_LUT_SCALE + 0.5)];
+                for (int i = 0; i < (SHVC360_LANCZOS_PARAM_CHROMA << 1) * S_LANCZOS_LUT_SCALE; i++) {
+                    double x = (double)i / S_LANCZOS_LUT_SCALE - SHVC360_LANCZOS_PARAM_CHROMA;
+                    m_pfLanczosFltCoefLut[i] = (double)(sinc(x) * sinc(x / SHVC360_LANCZOS_PARAM_CHROMA));
                 }
 
-                for (int n = 0; n < (S_LANCZOS_LUT_SCALE + 1); n++) {
-                    int *pW = s->weight_lut_chroma[m*(S_LANCZOS_LUT_SCALE + 1) + n];
-                    int sum = 0;
-                    double dSum = 0;
-                    double wx[6];
-                    t = n * dScale;
+                for (int k = 1; k<(S_LANCZOS_LUT_SCALE + 1)*(S_LANCZOS_LUT_SCALE + 1); k++){
+                    s->weight_lut_chroma[k] = s->weight_lut_chroma[0] + k * SHVC360_FILTER_SIZE_CHROMA;
+                }
+
+                for (int m = 0; m < (S_LANCZOS_LUT_SCALE + 1); m++) {
+                    double wy[6];
+                    double t = m * dScale;
                     for (int k = -SHVC360_LANCZOS_PARAM_CHROMA; k < SHVC360_LANCZOS_PARAM_CHROMA; k++){
-                        wx[k + SHVC360_LANCZOS_PARAM_CHROMA] = m_pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + SHVC360_LANCZOS_PARAM_CHROMA)* S_LANCZOS_LUT_SCALE + 0.5)];
+                        wy[k + SHVC360_LANCZOS_PARAM_CHROMA] = m_pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + SHVC360_LANCZOS_PARAM_CHROMA)* S_LANCZOS_LUT_SCALE + 0.5)];
                     }
 
-                    for (int r = 0; r < (SHVC360_LANCZOS_PARAM_CHROMA << 1); r++){
-                        for (int c = 0; c < (SHVC360_LANCZOS_PARAM_CHROMA << 1); c++){
-                            dSum += wy[r] * wx[c];
+                    for (int n = 0; n < (S_LANCZOS_LUT_SCALE + 1); n++) {
+                        int *pW = s->weight_lut_chroma[m*(S_LANCZOS_LUT_SCALE + 1) + n];
+                        int sum = 0;
+                        double dSum = 0;
+                        double wx[6];
+                        t = n * dScale;
+                        for (int k = -SHVC360_LANCZOS_PARAM_CHROMA; k < SHVC360_LANCZOS_PARAM_CHROMA; k++){
+                            wx[k + SHVC360_LANCZOS_PARAM_CHROMA] = m_pfLanczosFltCoefLut[(int)((fabs(t - k - 1) + SHVC360_LANCZOS_PARAM_CHROMA)* S_LANCZOS_LUT_SCALE + 0.5)];
                         }
-                    }
-                    for (int r = 0; r < (SHVC360_LANCZOS_PARAM_CHROMA << 1); r++){
-                        for (int c = 0; c < (SHVC360_LANCZOS_PARAM_CHROMA << 1); c++) {
-                            int w;
-                            if (c != (SHVC360_LANCZOS_PARAM_CHROMA << 1) - 1 || r != (SHVC360_LANCZOS_PARAM_CHROMA << 1) - 1)
-                                w = round((double)(wy[r] * wx[c] * mul / dSum));
-                            else
-                                w = mul - sum;
-                            pW[r*(SHVC360_LANCZOS_PARAM_CHROMA << 1) + c] = w;
-                            sum += w;
+
+                        for (int r = 0; r < (SHVC360_LANCZOS_PARAM_CHROMA << 1); r++){
+                            for (int c = 0; c < (SHVC360_LANCZOS_PARAM_CHROMA << 1); c++){
+                                dSum += wy[r] * wx[c];
+                            }
+                        }
+                        for (int r = 0; r < (SHVC360_LANCZOS_PARAM_CHROMA << 1); r++){
+                            for (int c = 0; c < (SHVC360_LANCZOS_PARAM_CHROMA << 1); c++) {
+                                int w;
+                                if (c != (SHVC360_LANCZOS_PARAM_CHROMA << 1) - 1 || r != (SHVC360_LANCZOS_PARAM_CHROMA << 1) - 1)
+                                    w = round((double)(wy[r] * wx[c] * mul / dSum));
+                                else
+                                    w = mul - sum;
+                                pW[r*(SHVC360_LANCZOS_PARAM_CHROMA << 1) + c] = w;
+                                sum += w;
+                            }
                         }
                     }
                 }
-            }
-            for (int j = 0; j < heightEL_v[1]; j++){
-                for (int i = 0; i < widthEL_v[1]; i++) {
-                    int  xLanczos, yLanczos;
-                    double u, v, yaw, pitch, x2, y2, p[3],p1[3],x,y,z,len;
-                    double  uVP, vVP, iVP, jVP;
+                for (int j = 0; j < heightEL_v[1]; j++){
+                    for (int i = 0; i < widthEL_v[1]; i++) {
+                        int  xLanczos, yLanczos;
+                        double u, v, yaw, pitch, x2, y2, p[3],p1[3],x,y,z,len;
+                        double  uVP, vVP, iVP, jVP;
 
-                    //                    SPos SPosOut2 = (SPos) {0, 0.0, 0.0, 0.0};
+                        //                    SPos SPosOut2 = (SPos) {0, 0.0, 0.0, 0.0};
 
-                    u = (double)(i)+ (double)(0.5);
-                    v = (double)(j) + (double)(0.5);
+                        u = (double)(i)+ (double)(0.5);
+                        v = (double)(j) + (double)(0.5);
 
-                    //TODO no effect
-                    //                    if (( u < 0 || u >= widthEL_v[1]) && (v >= 0 && v < heightEL_v[1])){
-                    //                        u = u < 0 ? widthEL_v[1] + u : (u - widthEL_v[1]);
-                    //                    } else if (v < 0) {
-                    //                        v = -v;
-                    //                        u = u + (widthEL_v[1] >> 1);
-                    //                        u = u >= widthEL_v[1] ? u - widthEL_v[1] : u;
-                    //                    } else if (v >=  heightEL_v[1]) {
-                    //                        v = ( heightEL_v[1] << 1) - v;
-                    //                        u = u + (widthEL_v[1] >> 1);
-                    //                        u = u >= widthEL_v[1] ? u - widthEL_v[1] : u;
-                    //                    }
+                        //TODO no effect
+                        //                    if (( u < 0 || u >= widthEL_v[1]) && (v >= 0 && v < heightEL_v[1])){
+                        //                        u = u < 0 ? widthEL_v[1] + u : (u - widthEL_v[1]);
+                        //                    } else if (v < 0) {
+                        //                        v = -v;
+                        //                        u = u + (widthEL_v[1] >> 1);
+                        //                        u = u >= widthEL_v[1] ? u - widthEL_v[1] : u;
+                        //                    } else if (v >=  heightEL_v[1]) {
+                        //                        v = ( heightEL_v[1] << 1) - v;
+                        //                        u = u + (widthEL_v[1] >> 1);
+                        //                        u = u >= widthEL_v[1] ? u - widthEL_v[1] : u;
+                        //                    }
 
-                    yaw   = (double)(u* M_PI * 2 / widthEL_v[1]  - M_PI);
-                    pitch = (double)( M_PI_2 - v* M_PI /  heightEL_v[1]);
+                        yaw   = (double)(u* M_PI * 2 / widthEL_v[1]  - M_PI);
+                        pitch = (double)( M_PI_2 - v* M_PI /  heightEL_v[1]);
 
-                    p[0]  = (double)(cos(pitch)*cos(yaw));
-                    p[1]  = (double)(sin(pitch));
-                    p[2]  = -(double)(cos(pitch)*sin(yaw));
+                        p[0]  = (double)(cos(pitch)*cos(yaw));
+                        p[1]  = (double)(sin(pitch));
+                        p[2]  = -(double)(cos(pitch)*sin(yaw));
 
-                    p1[0] = rotation_matrix[0] * p[0] + rotation_matrix[1] * p[1] + rotation_matrix[2] * p[2];
-                    p1[1] = rotation_matrix[3] * p[0] + rotation_matrix[4] * p[1] + rotation_matrix[5] * p[2];
-                    p1[2] = rotation_matrix[6] * p[0] + rotation_matrix[7] * p[1] + rotation_matrix[8] * p[2];
+                        p1[0] = rotation_matrix[0] * p[0] + rotation_matrix[1] * p[1] + rotation_matrix[2] * p[2];
+                        p1[1] = rotation_matrix[3] * p[0] + rotation_matrix[4] * p[1] + rotation_matrix[5] * p[2];
+                        p1[2] = rotation_matrix[6] * p[0] + rotation_matrix[7] * p[1] + rotation_matrix[8] * p[2];
 
-                    x2 = p1[0] / p1[2];
-                    y2 = p1[1] / p1[2];
+                        x2 = p1[0] / p1[2];
+                        y2 = p1[1] / p1[2];
 
-                    uVP = Kchroma[0] * x2 + Kchroma[1] * y2 + Kchroma[2];
-                    vVP = Kchroma[3] * x2 + Kchroma[4] * y2 + Kchroma[5];
+                        uVP = Kchroma[0] * x2 + Kchroma[1] * y2 + Kchroma[2];
+                        vVP = Kchroma[3] * x2 + Kchroma[4] * y2 + Kchroma[5];
 
-                    iVP = uVP - (double)(0.5);
-                    jVP = vVP - (double)(0.5);
+                        iVP = uVP - (double)(0.5);
+                        jVP = vVP - (double)(0.5);
 
-                    xLanczos = roundHP(iVP * SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
-                    yLanczos = roundHP(jVP * SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
+                        xLanczos = roundHP(iVP * SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
+                        yLanczos = roundHP(jVP * SVIDEO_2DPOS_PRECISION) >> SVIDEO_2DPOS_PRECISION_LOG2;
 
-                    if (xLanczos >= 0 && xLanczos< widthBL_v[1] && yLanczos>=0 && yLanczos < heightBL_v[1]
-                            && i > iWindowSearchDimchroma[0] - safe_margin_size && i<iWindowSearchDimchroma[1] + safe_margin_size
-                            && j>iWindowSearchDimchroma[2] - safe_margin_size && j<iWindowSearchDimchroma[3] + safe_margin_size) {
-                        s->pixel_weight_chroma[j* widthEL_v[1] + i].facePos = ((yLanczos*widthBL_v[1]) + xLanczos) << log2_num_faces[num_faces] /*| SPosOut2.faceIdx*/;
-                        s->pixel_weight_chroma[j* widthEL_v[1] + i].weightIdx = round((jVP - (double)yLanczos) * S_LANCZOS_LUT_SCALE) * (S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos) * S_LANCZOS_LUT_SCALE);
-                        s->pixel_weight_chroma[j* widthEL_v[1] + i].x = xLanczos;
-                        s->pixel_weight_chroma[j* widthEL_v[1] + i].y = yLanczos;
-                    } else {
-                        s->pixel_weight_chroma[j*widthEL_v[1] + i].facePos   = -1;
-                        //s->pixel_weight_chroma[j* widthEL_v[1] + i].x = xLanczos;
-                        //s->pixel_weight_chroma[j*widthEL_v[1] + i].weightIdx = -1;
+                        if (xLanczos >= 0 && xLanczos< widthBL_v[1] && yLanczos>=0 && yLanczos < heightBL_v[1]
+                                && i > iWindowSearchDimchroma[0] - safe_margin_size && i<iWindowSearchDimchroma[1] + safe_margin_size
+                                && j>iWindowSearchDimchroma[2] - safe_margin_size && j<iWindowSearchDimchroma[3] + safe_margin_size) {
+                            s->pixel_weight_chroma[j* widthEL_v[1] + i].facePos = ((yLanczos*widthBL_v[1]) + xLanczos) << log2_num_faces[num_faces] /*| SPosOut2.faceIdx*/;
+                            s->pixel_weight_chroma[j* widthEL_v[1] + i].weightIdx = round((jVP - (double)yLanczos) * S_LANCZOS_LUT_SCALE) * (S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos) * S_LANCZOS_LUT_SCALE);
+                            s->pixel_weight_chroma[j* widthEL_v[1] + i].x = xLanczos;
+                            s->pixel_weight_chroma[j* widthEL_v[1] + i].y = yLanczos;
+                        } else {
+                            s->pixel_weight_chroma[j*widthEL_v[1] + i].facePos   = -1;
+                            //s->pixel_weight_chroma[j* widthEL_v[1] + i].x = xLanczos;
+                            //s->pixel_weight_chroma[j*widthEL_v[1] + i].weightIdx = -1;
+                        }
                     }
                 }
-            }
 
+            }
         }
+#endif
+
+
     }
 #endif
   fail:
@@ -4828,6 +4823,17 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
 
+#if ACTIVE_360_UPSAMPLING
+   // for (int h = 0; h < 2; h++) {
+      av_free(s->pixel_weight_luma);
+      av_free(s->pixel_weight_chroma);
+      if(s->weight_lut_luma)
+        av_freep(&s->weight_lut_luma[0]);
+      if(s->weight_lut_chroma)
+        av_freep(&s->weight_lut_chroma);
+   // }
+#endif
+
     for (i = 1; i < s->threads_number; i++) {
         HEVCLocalContext *lc = s->HEVClcList[i];
         if (lc) {
@@ -4994,12 +5000,12 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
-
-//    s->pixel_weight_chroma = s0->pixel_weight_chroma;
-//    s->pixel_weight_luma = s0->pixel_weight_luma;
-//    s->weight_lut_luma = s0->weight_lut_luma;
-//    s->weight_lut_chroma = s0->weight_lut_chroma;
-
+#if ACTIVE_360_UPSAMPLING
+    s->pixel_weight_chroma = s0->pixel_weight_chroma;
+    s->pixel_weight_luma = s0->pixel_weight_luma;
+    s->weight_lut_luma = s0->weight_lut_luma;
+    s->weight_lut_chroma = s0->weight_lut_chroma;
+#endif
     if (s->ps.sps != s0->ps.sps)
         if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)
             return ret;
@@ -5009,6 +5015,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->pocTid0    = s0->pocTid0;
     s->max_ra     = s0->max_ra;
     s->eos        = s0->eos;
+
     s->no_rasl_output_flag = s0->no_rasl_output_flag;
 
     s->is_nalff        = s0->is_nalff;
