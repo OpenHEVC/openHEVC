@@ -204,11 +204,11 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 #endif
 #if ACTIVE_360_UPSAMPLING
 
-        s->pixel_weight_luma = av_malloc(pic_size*sizeof(PxlFltLut) );
-        s->weight_lut_luma = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
-        s->weight_lut_luma[0] = av_malloc (  sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_LUMA));
-        s->pixel_weight_chroma = av_malloc(pic_size*sizeof(PxlFltLut) );
-        s->weight_lut_chroma = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
+        s->pixel_weight_luma    = av_malloc(pic_size*sizeof(PxlFltLut) );
+        s->weight_lut_luma      = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
+        s->weight_lut_luma[0]   = av_malloc ( sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_LUMA));
+        s->pixel_weight_chroma  = av_malloc(pic_size*sizeof(PxlFltLut) );
+        s->weight_lut_chroma    = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
         s->weight_lut_chroma[0] = av_malloc (  sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_CHROMA));
 
         if (!s->pixel_weight_chroma|| !s->pixel_weight_luma|| !s->weight_lut_luma[0] || !s->weight_lut_chroma[0])
@@ -874,8 +874,10 @@ int set_el_parameter(HEVCContext *s) {
                     if (xLanczos >= 0 && xLanczos< widthBL_v[0] && yLanczos>=0 && yLanczos < heightBL_v[0]
                             && i > iWindowSearchDimluma[0] - safe_margin_size && i < iWindowSearchDimluma[1] + safe_margin_size
                             && j > iWindowSearchDimluma[2] - safe_margin_size && j < iWindowSearchDimluma[3] + safe_margin_size) {
-                        s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos = ((yLanczos*base_layer_window.pic_width_vps_in_luma_samples) + xLanczos) << log2_num_faces[num_faces] | 0;// SPosOut2.faceIdx;
+                        s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos = ((yLanczos * base_layer_window.pic_width_vps_in_luma_samples) + xLanczos) << log2_num_faces[num_faces] | 0;// SPosOut2.faceIdx;
                         s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
+                        s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].x = xLanczos;
+                        s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].y = yLanczos;
                         //fprintf(stderr,"%d,%d\n",s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx ,s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos);
                     } else {
                         s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].facePos   = -1;
@@ -1051,9 +1053,12 @@ int set_el_parameter(HEVCContext *s) {
                             && i > iWindowSearchDimchroma[0] - safe_margin_size && i<iWindowSearchDimchroma[1] + safe_margin_size
                             && j>iWindowSearchDimchroma[2] - safe_margin_size && j<iWindowSearchDimchroma[3] + safe_margin_size) {
                         s->pixel_weight_chroma[j* widthEL_v[1] + i].facePos = ((yLanczos*widthBL_v[1]) + xLanczos) << log2_num_faces[num_faces] /*| SPosOut2.faceIdx*/;
-                        s->pixel_weight_chroma[j* widthEL_v[1]+ i].weightIdx = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
+                        s->pixel_weight_chroma[j* widthEL_v[1] + i].weightIdx = round((jVP - (double)yLanczos) * S_LANCZOS_LUT_SCALE) * (S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos) * S_LANCZOS_LUT_SCALE);
+                        s->pixel_weight_chroma[j* widthEL_v[1] + i].x = xLanczos;
+                        s->pixel_weight_chroma[j* widthEL_v[1] + i].y = yLanczos;
                     } else {
                         s->pixel_weight_chroma[j*widthEL_v[1] + i].facePos   = -1;
+                        //s->pixel_weight_chroma[j* widthEL_v[1] + i].x = xLanczos;
                         //s->pixel_weight_chroma[j*widthEL_v[1] + i].weightIdx = -1;
                     }
                 }
@@ -2529,11 +2534,24 @@ static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
 static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0)
 {
+#if ACTIVE_360_UPSAMPLING
+    int y = (mv->y >> 2) + y0 + (1<<s->ps.sps->log2_ctb_size)*2 + 9;
+
+    //TODO check if this is correct
+    int bl_y = s->pixel_weight_luma[y0 + (1<<s->ps.sps->log2_ctb_size) *s->ps.sps->width].facePos / s->BL_width;
+
+    if (s->threads_type & FF_THREAD_FRAME ){
+        ff_thread_await_progress(&((HEVCFrame*)s->BL_frame)->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC
+    }
+
+    return;
+#else
     int y = (mv->y >> 2) + y0 + (1<<s->ps.sps->log2_ctb_size)*2 + 9;
     int bl_y = (( (y  - s->ps.sps->conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
     if (s->threads_type & FF_THREAD_FRAME ){
         ff_thread_await_progress(&((HEVCFrame*)s->BL_frame)->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC
     }
+#endif
 }
 
 /*
@@ -4976,6 +4994,11 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
+
+//    s->pixel_weight_chroma = s0->pixel_weight_chroma;
+//    s->pixel_weight_luma = s0->pixel_weight_luma;
+//    s->weight_lut_luma = s0->weight_lut_luma;
+//    s->weight_lut_chroma = s0->weight_lut_chroma;
 
     if (s->ps.sps != s0->ps.sps)
         if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)

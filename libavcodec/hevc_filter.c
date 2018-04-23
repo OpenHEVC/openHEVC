@@ -1515,11 +1515,12 @@ static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t
 #endif
 
 #if ACTIVE_360_UPSAMPLING
-static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
+static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int ctb_x0, int ctb_y0) {
     // Bit_depth related
     const int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
     const int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
     const int sample_size = s->ps.sps->bit_depth[0] > 8 ? 2 : 1;
+    const int ctb_size = 1 << (s->ps.sps->log2_ctb_size);
     // Enhanced layer parameters
     //HEVCWindow scaled_ref_layer_window = s->ps.sps->scaled_ref_layer_window[s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0]];
     RepFormat scaled_ref_layer_window = s->ps.vps->vps_ext.rep_format[s->ps.vps->vps_ext.vps_rep_format_idx[s->nuh_layer_id]];
@@ -1539,45 +1540,38 @@ static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int x0, int
     const int left_offset = (offset_x - 1) >> 1;
     const int top_offset  = (offset_y - 1) >> 1;
 
-    const int cpy_stride = bl_width + offset_x;
-
+    const int y0 = ctb_y0;
+    const int x0 = ctb_x0;
     // Clipping related parameters
     const int round_shift = S_INTERPOLATE_PrecisionBD;
     const int round_add = 1 << (round_shift - 1);
     const int refBitDepthLuma = 8;
     const int max_value= (1 << refBitDepthLuma) - 1;
 
-    uint8_t *bl_cpy = av_malloc(cpy_stride*(bl_height + offset_y)*sizeof(uint8_t));
-    memset(bl_cpy,0,cpy_stride * (bl_height + offset_y) * sizeof(uint8_t));
-
-    for (int j = 0; j < bl_height;j++)
-        memcpy(bl_cpy + (j + top_offset) * cpy_stride + left_offset,bl_frame->frame->data[0]+j*bl_stride,bl_width*sizeof(uint8_t));
-
-    for (int i= 0; i < el_height; i++)
-        for (int j= 0; j < el_width ; j++) {
-            int64_t sum = 0;
+    for (int i= y0 ; i < (y0 + 64 < el_height ?  y0 + 64 :el_height); i++)
+        for (int j= x0  ; j < (x0 + 64 < el_width ? x0 + 64: el_width ) ; j++) {
             PxlFltLut *pPelWeight = &s->pixel_weight_luma [ i*el_width + j];
-           // if (pPelWeight->facePos != -1) {
+            int64_t sum = 0;
+           // if (pPelWeight->facePos != -1 ) {
                 int iTLPos = (pPelWeight->facePos) >> log2_num_faces[0];
-                int iExtendedTLPos = ( (int)(iTLPos / bl_stride) /* + top_offset*/)* cpy_stride +
-                        /*left_offset + */iTLPos % bl_stride;
-                //if(iExtendedTLPos >top_offset * cpy_stride + left_offset && iExtendedTLPos  < bl_height*bl_width + top_offset * cpy_stride + left_offset){
+                int iExtendedTLPos = ((int)(iTLPos / bl_stride))* bl_stride + (iTLPos % bl_stride);
+                int y = pPelWeight->y - top_offset;
+                int x = pPelWeight->x - left_offset;
+                int test_pos = (y )* bl_stride + (x);
                 int *pWLut = s->weight_lut_luma[pPelWeight->weightIdx];
-                uint8_t *pix = bl_cpy + iExtendedTLPos /*- top_offset * cpy_stride - left_offset*/;
-                for (int m = 0; m < offset_y; m++) {
-                    for (int n = 0; n < offset_x; n++)
+                uint8_t *pix = bl_frame->frame->data[0] + ((test_pos > 0) ? test_pos : iExtendedTLPos);
+                for (int m =  ((y >=  0)? 0:top_offset - pPelWeight->y ); m < ((y + offset_y < bl_height) ? offset_y : bl_height - y ) ; m++) {
+                    for (int n = ((x >= 0)? 0:left_offset - iTLPos % bl_stride); n < ((x + offset_x < bl_stride) ? offset_x : bl_stride - x ); n++){
                         sum += (int64_t)pix[n] * (int64_t)pWLut[n];
-
-                    pix   += cpy_stride;
+                    }
+                    pix   += bl_stride;
                     pWLut += offset_x;
                 }
-                //}
                 dst[i*el_stride + j] = av_clip((sum + round_add) >> round_shift, 0, max_value);
             //}
         }
 
-    av_free(bl_cpy);
-    memset (s->is_upsampled, 1, s->ps.sps->ctb_width * s->ps.sps->ctb_height);
+    s->is_upsampled[((y0) / ctb_size * s->ps.sps->ctb_width) + ((x0) / ctb_size)] = 1;
 }
 
 static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
@@ -1602,8 +1596,6 @@ static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y
     const int left_offset = (offset_x - 1) >> 1;
     const int top_offset  = (offset_y - 1) >> 1;
 
-    const int cpy_stride = bl_width + offset_x;
-
     // Clipping related parameters
     const int round_shift = S_INTERPOLATE_PrecisionBD;
     const int round_add = 1 << (round_shift - 1);
@@ -1612,34 +1604,28 @@ static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y
 
     for (int cr = 1; cr <= 2; cr++) {
         uint8_t *dst = (uint8_t *)ref0->frame->data[cr];
-        int8_t *bl_cpy = av_malloc(cpy_stride*(bl_height + offset_y)*sizeof(uint8_t));
-        memset(bl_cpy,0,cpy_stride*(bl_height + offset_y)*sizeof(uint8_t));
-
-        for (int j = 0; j < bl_height;j++)
-            memcpy(bl_cpy + (j + top_offset) * cpy_stride + left_offset,
-                   bl_frame->frame->data[cr] +j * bl_stride,
-                   bl_width*sizeof(uint8_t));
-
-        for (int i= 0; i < el_height; i++)
-            for (int j= 0; j < el_width ; j++) {
+        for (int i = y0; i < (y0 + 32 < el_height ?  y0 + 32 :el_height); i++)
+            for (int j = x0; j < (x0 + 32 < el_width ? x0 + 32: el_width ) ; j++) {
                 int sum = 0;
                 PxlFltLut *pPelWeight = s->pixel_weight_chroma + i*(s->ps.sps->width>>1) + j;
                 //if (pPelWeight->facePos != -1) {
                     int iTLPos = (pPelWeight->facePos) >> log2_num_faces[0];
-                    int iExtendedTLPos = ( (int)(iTLPos / bl_stride)  /*+ top_offset*/)* cpy_stride +
-                            /*left_offset +*/ iTLPos % bl_stride;
+                    int iExtendedTLPos = (iTLPos / bl_stride)* bl_stride + iTLPos % bl_stride;
+                    int y = pPelWeight->y - top_offset;
+                    int x = pPelWeight->x - left_offset;
                     int *pWLut = s->weight_lut_chroma[pPelWeight->weightIdx];
-                    uint8_t *pix = bl_cpy + iExtendedTLPos /*- top_offset * cpy_stride - left_offset*/;
-                    for (int m = 0; m < offset_y; m++) {
-                        for (int n = 0; n < offset_x; n++)
+                    int test_pos = (y )* bl_stride + (x);
+                    uint8_t *pix = bl_frame->frame->data[cr] + ((test_pos > 0) ? test_pos : iExtendedTLPos);
+                    for (int m =  ((y >=  0)? 0:top_offset - pPelWeight->y ); m < ((y + offset_y < bl_height) ? offset_y : bl_height - y ) ; m++) {
+                        for (int n = ((x >= 0)? 0:left_offset - iTLPos % bl_stride); n < ((x + offset_x < bl_stride) ? offset_x : bl_stride - x ); n++){
                             sum += pix[n] * pWLut[n];
-                        pix   += cpy_stride;
+                        }
+                        pix   += bl_stride;
                         pWLut += offset_x;
                     }
                     dst[i*el_stride + j] = av_clip_c((sum + round_add) >> round_shift, 0, max_value);
                // }
             }
-        av_free(bl_cpy);
     }
 }
 #endif
@@ -2206,14 +2192,89 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
     int ctb_x0   =  (av_clip(x0, 0, s->ps.sps->width) >> log2_ctb) << log2_ctb;
     int ctb_y0   =  (av_clip(y0, 0, s->ps.sps->height) >> log2_ctb) << log2_ctb;
 #if ACTIVE_360_UPSAMPLING
-    if(!s->is_upsampled[(ctb_y0 / ctb_size * s->ps.sps->ctb_width)+((ctb_x0 - ctb_size) / ctb_size)]){
-        if(!s->ps.vps->vps_nonHEVCBaseLayerFlag) {
-          for(ctb_x0 = 0; ctb_x0 < s->ps.sps->width; ctb_x0+=ctb_size)
-            for(ctb_y0 = 0; ctb_y0 < s->ps.sps->height; ctb_y0+=ctb_size)
-              ff_upscale_mv_block(s, ctb_x0             , ctb_y0);
+    if ((x0 - ctb_x0) < MAX_EDGE &&
+        ctb_x0 > ctb_size        &&
+        !s->is_upsampled[(ctb_y0 / ctb_size * s->ps.sps->ctb_width)+((ctb_x0 - ctb_size) / ctb_size)]){
+        if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
+            ff_upscale_mv_block(s, ctb_x0 - ctb_size            , ctb_y0);
+        if(s->ps.pps->colour_mapping_enabled_flag) {
+            upsample_block_luma_cgs(s, ref0, ctb_x0-ctb_size        , ctb_y0);
+            upsample_block_mc_cgs  (s, ref0, (ctb_x0-ctb_size) >> 1 , ctb_y0 >> 1);
+        } else {
+        upsample_block_luma_360(s, ref0, ctb_x0-ctb_size        , ctb_y0);
+        upsample_block_mc_360  (s, ref0, (ctb_x0-ctb_size) >> 1 , ctb_y0 >> 1);
         }
-      upsample_block_luma_360(s, ref0, ctb_x0-ctb_size        , ctb_y0);
-      upsample_block_mc_360  (s, ref0, (ctb_x0-ctb_size) >> 1 , ctb_y0 >> 1);
+    }
+
+    if ((y0 - ctb_y0) < MAX_EDGE &&
+        ctb_y0 > ctb_size &&
+        !s->is_upsampled[((ctb_y0 - ctb_size) / ctb_size * s->ps.sps->ctb_width) + (ctb_x0 / ctb_size)]){
+        if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
+            ff_upscale_mv_block(s, ctb_x0            , ctb_y0 - ctb_size);
+        if(s->ps.pps->colour_mapping_enabled_flag) {
+            upsample_block_luma_cgs(s, ref0, ctb_x0      , ctb_y0 - ctb_size);
+            upsample_block_mc_cgs  (s, ref0, ctb_x0 >> 1 , (ctb_y0 - ctb_size) >> 1);
+        } else {
+          upsample_block_luma_360(s, ref0, ctb_x0      , ctb_y0 - ctb_size);
+          upsample_block_mc_360  (s, ref0, ctb_x0 >> 1 , (ctb_y0 - ctb_size) >> 1);
+        }
+    }
+
+    if(!s->is_upsampled[(ctb_y0 / ctb_size * s->ps.sps->ctb_width) + (ctb_x0 / ctb_size)]){
+        if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
+            ff_upscale_mv_block(s, ctb_x0           , ctb_y0);
+        if(s->ps.pps->colour_mapping_enabled_flag) {
+            upsample_block_luma_cgs(s, ref0, ctb_x0     , ctb_y0);
+            upsample_block_mc_cgs  (s, ref0, ctb_x0 >> 1, ctb_y0 >> 1);
+        } else {
+          upsample_block_luma_360(s, ref0, ctb_x0     , ctb_y0);
+          upsample_block_mc_360  (s, ref0, ctb_x0 >> 1, ctb_y0 >> 1);
+        }
+    }
+
+    if((((x0 + nPbW + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_x0 && ((ctb_x0 + ctb_size) < s->ps.sps->width) &&
+       !s->is_upsampled[(ctb_y0 / ctb_size * s->ps.sps->ctb_width) + ((ctb_x0 + ctb_size) / ctb_size)]){
+        if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
+            ff_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0);
+        if(s->ps.pps->colour_mapping_enabled_flag) {
+            upsample_block_luma_cgs(s, ref0, ctb_x0 + ctb_size       , ctb_y0);
+            upsample_block_mc_cgs  (s, ref0, (ctb_x0 + ctb_size) >> 1, ctb_y0 >> 1);
+        } else {
+          upsample_block_luma_360(s, ref0, ctb_x0 + ctb_size       , ctb_y0);
+          upsample_block_mc_360 (s, ref0, (ctb_x0 + ctb_size) >> 1, ctb_y0 >> 1);
+        }
+    }
+
+    if((((y0 + nPbH + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_y0 &&
+       ((ctb_y0 + ctb_size) < s->ps.sps->height)) {
+        if (!s->is_upsampled[((ctb_y0 + ctb_size) / ctb_size * s->ps.sps->ctb_width) + (ctb_x0 / ctb_size)]){
+            if (s->threads_type & FF_THREAD_FRAME ) {
+                int bl_y = ctb_y0 + ctb_size + ctb_size * 2 + 9;
+                bl_y = (( (bl_y  - s->ps.sps->conf_win.top_offset) * s->up_filter_inf.scaleYLum + s->up_filter_inf.addYLum) >> 12) >> 4;
+                ff_thread_await_progress(&((HEVCFrame *)s->BL_frame)->tf, bl_y, 0);
+            }
+            if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
+                ff_upscale_mv_block(s, ctb_x0, ctb_y0 + ctb_size);
+            if(s->ps.pps->colour_mapping_enabled_flag) {
+                upsample_block_luma_cgs(s, ref0, ctb_x0     , ctb_y0 + ctb_size);
+                upsample_block_mc_cgs  (s, ref0, ctb_x0 >> 1, (ctb_y0 + ctb_size) >> 1);
+            } else {
+              upsample_block_luma_360(s, ref0, ctb_x0     , ctb_y0 + ctb_size);
+              upsample_block_mc_360  (s, ref0, ctb_x0 >> 1, (ctb_y0 + ctb_size) >> 1);
+            }
+        }
+        if((((x0 + nPbW + MAX_EDGE) >> log2_ctb) << log2_ctb) > ctb_x0 && ((ctb_x0 + ctb_size) < s->ps.sps->width) &&
+           !s->is_upsampled[((ctb_y0 + ctb_size) / ctb_size * s->ps.sps->ctb_width) + ((ctb_x0 + ctb_size) / ctb_size)]){
+            if(!s->ps.vps->vps_nonHEVCBaseLayerFlag)
+                ff_upscale_mv_block(s, ctb_x0 + ctb_size, ctb_y0 + ctb_size);
+            if(s->ps.pps->colour_mapping_enabled_flag) {
+              upsample_block_luma_cgs(s, ref0, (ctb_x0 + ctb_size)    , ctb_y0 + ctb_size);
+              upsample_block_mc_cgs  (s, ref0, (ctb_x0 + ctb_size) >> 1, (ctb_y0 + ctb_size) >> 1);
+            } else {
+              upsample_block_luma_360(s, ref0, (ctb_x0 + ctb_size)    , ctb_y0 + ctb_size);
+              upsample_block_mc_360  (s, ref0, (ctb_x0 + ctb_size) >> 1, (ctb_y0 + ctb_size) >> 1);
+            }
+        }
     }
     return;
 #endif
