@@ -498,30 +498,30 @@ void ohhevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
 
 #define EMT_DECL_V_DCT_4x4(optim,depth)\
-    void emt_idct_4x4_0_0_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_4x4_0_0_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
 
 
 #define EMT_DECL_V_DCT_8x8(y,optim,depth)\
-    void emt_idct_8x8_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_8x8_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_8x8_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_8x8_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
 
 
 #define EMT_DECL_V_DCT_16x16(y,optim,depth)\
-    void emt_idct_16x16_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_16x16_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_16x16_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_16x16_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_16x16_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_16x16_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_16x16_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_16x16_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
 
 
 #define EMT_DECL_V_DCT_32x32(y,optim,depth)\
-    void emt_idct_32x32_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_4_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_5_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_6_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
-    void emt_idct_32x32_7_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h);\
+    void emt_idct_32x32_0_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_32x32_1_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_32x32_2_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_32x32_3_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_32x32_4_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_32x32_5_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_32x32_6_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
+    void emt_idct_32x32_7_##y##_v_##optim##_##depth(int16_t *restrict src, int16_t *restrict dst, const int16_t *restrict  dtt_matrix_v, const int16_t *restrict  dtt_matrix_h,  int last_x, int last_y);\
 
 #define DCT_EMT_DECL_V_32x32(optim,depth)\
     EMT_DECL_V_DCT_32x32(0,optim,depth)\

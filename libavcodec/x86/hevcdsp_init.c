@@ -665,7 +665,7 @@ mc_bi_w_funcs(qpel_hv, 12, sse4)
         OH_PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
 #endif
 
-static void voidfunc(){}
+//static void voidfunc(){}
 
 #if OHCONFIG_AMT
 
@@ -752,10 +752,6 @@ EMT_LINK_V_DCT_4x4(optim,depth)\
     DCT_EMT_LINK_V_16x16(optim,depth)\
     DCT_EMT_LINK_V_8x8(optim,depth)\
     DCT_EMT_LINK_V_4x4(optim,depth)\
-    //EMT_LINK_H_DCT_32x32(optim,depth)\
-    EMT_LINK_H_DCT_16x16(optim,depth)\
-    EMT_LINK_H_DCT_8x8(optim,depth)\
-    EMT_LINK_H_DCT_4x4(optim,depth)\
 
 
 #define LINK_AMT_IDCT(num,size,optim,depth)\
@@ -883,8 +879,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->transform_add[3]    = ff_hevc_transform_add32_8_avx;
         }
 #if OHCONFIG_AMT
-            c->emt_it_luma=hevc_emt_avx2_luma;
-            c->emt_it_c=hevc_emt_avx2_c;
+//            c->emt_it_luma=hevc_emt_avx2_luma;
+//            c->emt_it_c=hevc_emt_avx2_c;
 
             LINK_DCT(avx2,8);
 
@@ -1207,8 +1203,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             }
 
 #if OHCONFIG_AMT
-            c->emt_it_luma=hevc_emt_avx2_luma;
-            c->emt_it_c=hevc_emt_avx2_c;
+//            c->emt_it_luma=hevc_emt_avx2_luma;
+//            c->emt_it_c=hevc_emt_avx2_c;
 
             LINK_DCT(avx2,10);
             c->it_amt_dc[0] = emt_it_4x4_dc_avx2_10;
