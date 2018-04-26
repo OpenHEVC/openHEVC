@@ -1558,11 +1558,15 @@ static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int ctb_x0,
                 int iExtendedTLPos = ((int)(iTLPos / bl_stride))* bl_stride + (iTLPos % bl_stride);
                 int y = pPelWeight->y - top_offset;
                 int x = pPelWeight->x - left_offset;
-                int test_pos = (y )* bl_stride + (x);
-                int *pWLut = s->weight_lut_luma[pPelWeight->weightIdx];
-                uint8_t *pix = bl_frame->frame->data[0] + ((test_pos > 0) ? test_pos : iExtendedTLPos);
-                for (int m =  ((y >=  0)? 0:top_offset - pPelWeight->y ); m < ((y + offset_y < bl_height) ? offset_y : bl_height - y ) ; m++) {
-                    for (int n = ((x >= 0)? 0:left_offset - iTLPos % bl_stride); n < ((x + offset_x < bl_stride) ? offset_x : bl_stride - x ); n++){
+                int start_y = y < 0 ? 0 : y;
+                int start_x = x < 0 ? 0 : x;
+                int end_y = (y < 0) ? offset_y + y : ((offset_y + y) < bl_height ? offset_y : bl_height - y );
+                int end_x = (x < 0) ? offset_x + x : ((offset_x + x) < bl_width ? offset_x : bl_width - x );
+                int test_pos = start_y* bl_stride + start_x;
+                int *pWLut = s->weight_lut_luma[pPelWeight->weightIdx] + (x < 0 ? -x: 0) + (y < 0 ? -y: 0)*offset_x;
+                uint8_t *pix = bl_frame->frame->data[0] + test_pos;
+                for (int m = 0; m < end_y ; m++) {
+                    for (int n = 0; n < end_x; n++){
                         sum += (int64_t)pix[n] * (int64_t)pWLut[n];
                     }
                     pix   += bl_stride;
@@ -1610,23 +1614,29 @@ static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y
             for (int j = x0; j < (x0 + 32 < el_width ? x0 + 32: el_width ) ; j++) {
                 int sum = 0;
                 PxlFltLut *pPelWeight = s->pixel_weight_chroma + i*(s->ps.sps->width>>1) + j;
-                //if (pPelWeight->facePos != -1) {
+                if (pPelWeight->facePos != -1) {
                     int iTLPos = (pPelWeight->facePos) >> log2_num_faces[0];
                     int iExtendedTLPos = (iTLPos / bl_stride)* bl_stride + iTLPos % bl_stride;
                     int y = pPelWeight->y - top_offset;
                     int x = pPelWeight->x - left_offset;
-                    int *pWLut = s->weight_lut_chroma[pPelWeight->weightIdx];
-                    int test_pos = (y )* bl_stride + (x);
-                    uint8_t *pix = bl_frame->frame->data[cr] + ((test_pos > 0) ? test_pos : iExtendedTLPos);
-                    for (int m =  ((y >=  0)? 0:top_offset - pPelWeight->y ); m < ((y + offset_y < bl_height) ? offset_y : bl_height - y ) ; m++) {
-                        for (int n = ((x >= 0)? 0:left_offset - iTLPos % bl_stride); n < ((x + offset_x < bl_stride) ? offset_x : bl_stride - x ); n++){
+                    int start_y = y < 0 ? 0 : y;
+                    int start_x = x < 0 ? 0 : x;
+                    int end_y = (y < 0) ? offset_y + y : ((offset_y + y) < bl_height ? offset_y : bl_height - y );
+                    int end_x = (x < 0) ? offset_x + x : ((offset_x + x) < bl_width ? offset_x : bl_width - x );
+                    int test_pos = start_y* bl_stride + start_x;
+                    int *pWLut = s->weight_lut_chroma[pPelWeight->weightIdx]+ (x < 0 ? -x: 0) + (y < 0 ? -y: 0)*offset_x;
+                    uint8_t *pix = bl_frame->frame->data[cr] + test_pos ;
+                    for (int m =  0; m < end_y ; m++) {
+                        for (int n = 0; n < end_x ; n++){
                             sum += pix[n] * pWLut[n];
                         }
                         pix   += bl_stride;
                         pWLut += offset_x;
                     }
                     dst[i*el_stride + j] = av_clip_c((sum + round_add) >> round_shift, 0, max_value);
-               // }
+                } else {
+                    dst[i*el_stride + j] = 0;
+                }
             }
     }
 }
