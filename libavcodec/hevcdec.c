@@ -650,6 +650,8 @@ int set_el_parameter(HEVCContext *s) {
         const double fovx = (double)(M_PI * h_fov / 180.0);
         const double fovy = (double)(M_PI * v_fov / 180.0);
 
+
+
         //TODO adapt to real SHVC parameters with cropping info
         RepFormat current_layer_window = s->ps.vps->vps_ext.rep_format[s->ps.vps->vps_ext.vps_rep_format_idx[s->nuh_layer_id]];
 
@@ -716,6 +718,11 @@ int set_el_parameter(HEVCContext *s) {
                     widthEL,       0,
                     heightEL,      0,
                 };
+
+                const int offset_x = SHVC360_LANCZOS_PARAM_LUMA << 1;
+                const int offset_y = SHVC360_LANCZOS_PARAM_LUMA << 1;
+                const int left_offset = (offset_x - 1) >> 1;
+                const int top_offset  = (offset_y - 1) >> 1;
 
                 det = Kluma[0] * Kluma[4];
 
@@ -865,15 +872,15 @@ int set_el_parameter(HEVCContext *s) {
                         if (xLanczos >= 0 && xLanczos< widthBL_v[0] && yLanczos>=0 && yLanczos < heightBL_v[0]
                                 && i > iWindowSearchDimluma[0] - safe_margin_size && i < iWindowSearchDimluma[1] + safe_margin_size
                                 && j > iWindowSearchDimluma[2] - safe_margin_size && j < iWindowSearchDimluma[3] + safe_margin_size) {
-                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos = ((yLanczos * base_layer_window.pic_width_vps_in_luma_samples) + xLanczos) << log2_num_faces[num_faces] | 0;// SPosOut2.faceIdx;
+                            int y = yLanczos - top_offset;
+                            int x = xLanczos - left_offset;
                             s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
-                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].x = xLanczos;
-                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].y = yLanczos;
-                            //fprintf(stderr,"%d,%d\n",s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx ,s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos);
+                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].end_y = (y < 0) ? offset_y + y : ((offset_y + y) < heightBL_v[0] ? offset_y : heightBL_v[0] - y );
+                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].end_x = (x < 0) ? offset_x + x : ((offset_x + x) <widthBL_v[0] ? offset_x : widthBL_v[0] - x );
+                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].offset_bl = (y < 0 ? 0 : y) * (base_layer_window.pic_width_vps_in_luma_samples) + (x < 0 ? 0 : x);
+                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].offset_weight = (x < 0 ? -x: 0) + (y < 0 ? -y: 0)*offset_x;
                         } else {
-                            s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].facePos   = -1;
-                            //s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].weightIdx = -1;
-                            //fprintf(stderr,"%d,%d\n",s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx ,s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].facePos);
+                            s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].offset_bl   = -1;
                         }
                     }
                 }
@@ -894,6 +901,11 @@ int set_el_parameter(HEVCContext *s) {
                     widthEL  >> 1, 0,
                     heightEL >> 1, 0
                 };
+
+                const int offset_x = SHVC360_LANCZOS_PARAM_CHROMA << 1;
+                const int offset_y = SHVC360_LANCZOS_PARAM_CHROMA << 1;
+                const int left_offset = (offset_x - 1) >> 1;
+                const int top_offset  = (offset_y - 1) >> 1;
 
                 det = Kchroma[0] * Kchroma[4];
 
@@ -1043,14 +1055,15 @@ int set_el_parameter(HEVCContext *s) {
                         if (xLanczos >= 0 && xLanczos< widthBL_v[1] && yLanczos>=0 && yLanczos < heightBL_v[1]
                                 && i > iWindowSearchDimchroma[0] - safe_margin_size && i<iWindowSearchDimchroma[1] + safe_margin_size
                                 && j>iWindowSearchDimchroma[2] - safe_margin_size && j<iWindowSearchDimchroma[3] + safe_margin_size) {
-                            s->pixel_weight_chroma[j* widthEL_v[1] + i].facePos = ((yLanczos*widthBL_v[1]) + xLanczos) << log2_num_faces[num_faces] /*| SPosOut2.faceIdx*/;
+                            int y = yLanczos - top_offset;
+                            int x = xLanczos - left_offset;
                             s->pixel_weight_chroma[j* widthEL_v[1] + i].weightIdx = round((jVP - (double)yLanczos) * S_LANCZOS_LUT_SCALE) * (S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos) * S_LANCZOS_LUT_SCALE);
-                            s->pixel_weight_chroma[j* widthEL_v[1] + i].x = xLanczos;
-                            s->pixel_weight_chroma[j* widthEL_v[1] + i].y = yLanczos;
+                            s->pixel_weight_chroma[j* widthEL_v[1] + i].end_y = (y < 0) ? offset_y + y : ((offset_y + y) < heightBL_v[1] ? offset_y : heightBL_v[1] - y );
+                            s->pixel_weight_chroma[j* widthEL_v[1] + i].end_x = (x < 0) ? offset_x + x : ((offset_x + x) <widthBL_v[1] ? offset_x : widthBL_v[1] - x );
+                            s->pixel_weight_chroma[j* widthEL_v[1] + i].offset_bl = (y < 0 ? 0 : y) * widthBL_v[1] + (x < 0 ? 0 : x);
+                            s->pixel_weight_chroma[j* widthEL_v[1] + i].offset_weight = (x < 0 ? -x: 0) + (y < 0 ? -y: 0)*offset_x;
                         } else {
-                            s->pixel_weight_chroma[j*widthEL_v[1] + i].facePos   = -1;
-                            //s->pixel_weight_chroma[j* widthEL_v[1] + i].x = xLanczos;
-                            //s->pixel_weight_chroma[j*widthEL_v[1] + i].weightIdx = -1;
+                            s->pixel_weight_chroma[j*widthEL_v[1] + i].offset_bl   = -1;
                         }
                     }
                 }
@@ -2533,7 +2546,7 @@ static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
     int y = (mv->y >> 2) + y0 + (1<<s->ps.sps->log2_ctb_size)*2 + 9;
 
     //TODO check if this is correct
-    int bl_y = s->pixel_weight_luma[y0 + (1<<s->ps.sps->log2_ctb_size) *s->ps.sps->width].facePos / s->BL_width;
+    int bl_y = s->pixel_weight_luma[y0 + (1<<s->ps.sps->log2_ctb_size) *s->ps.sps->width].offset_bl / s->BL_width;
 
     if (s->threads_type & FF_THREAD_FRAME ){
         ff_thread_await_progress(&((HEVCFrame*)s->BL_frame)->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC

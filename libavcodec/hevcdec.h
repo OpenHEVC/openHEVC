@@ -490,20 +490,13 @@ static const int   log2_num_faces[SV_MAX_NUM_FACES+1] = { 0,
     3, 3, 3, 3,
     4, 4, 4, 4, 4, 4, 4, 4,
     5, 5, 5, 5 };
-typedef struct SPos
-{
-  int   faceIdx;
-  double x;
-  double y;
-  double z;
-} SPos;
 
-//TODO separate face and weight
 typedef struct PxlFltLut
 {
-    int facePos;
-    int x;
-    int y;
+    int offset_bl;
+    int offset_weight;
+    int end_y;
+    int end_x;
     unsigned short weightIdx;
 } PxlFltLut;
 #endif
