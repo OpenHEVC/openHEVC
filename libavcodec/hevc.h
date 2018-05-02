@@ -30,7 +30,7 @@
 
 #define MAX_SLICES_FRAME 64
 
-#define TEST_MV_POC
+//#define TEST_MV_POC
 
 #if 0
 #define print_cabac(string, val) \
