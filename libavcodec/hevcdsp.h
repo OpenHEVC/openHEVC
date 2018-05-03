@@ -155,8 +155,20 @@ typedef struct HEVCDSPContext {
                             int dst_width, int dst_height,
                             int is_bound_r,int is_bound_b, int is_bound_t,
                             int is_bound_l);
-    void (*upsample_360_block_luma)(uint8_t *restrict src, uint8_t *restrict dst, int *restrict offset_bl_lut, int16_t *restrict weight_idx_lut, int16_t **restrict weight_lut, int bl_stride, int el_stride );
+    void (*upsample_360_block_luma)  (uint8_t *restrict src, uint8_t *restrict dst, int *restrict offset_bl_lut, int16_t *restrict weight_idx_lut, int16_t **restrict weight_lut, int bl_stride, int el_stride );
     void (*upsample_360_block_chroma)(uint8_t *restrict src, uint8_t *restrict dst, int *restrict offset_bl_lut, int16_t *restrict weight_idx_lut, int16_t **restrict weight_lut, int bl_stride, int el_stride );
+
+    void (*upsample_360_block_luma_border)  (uint8_t *restrict src, uint8_t *restrict dst,
+                                             int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **restrict weight_lut_luma,
+                                             uint8_t *end_x, uint8_t *end_y, int *offset_weight, int bl_stride, int el_stride,
+                                             int x0, int y0, int end_height, int end_width );
+
+    void (*upsample_360_block_chroma_border)(uint8_t *restrict src, uint8_t *restrict dst,
+                                             int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **restrict weight_lut_luma,
+                                             uint8_t *end_x, uint8_t *end_y, int *offset_weight, int bl_stride, int el_stride,
+                                             int x0, int y0, int end_height, int end_width );
+
+
 #if CONFIG_GREEN
     /** Green parameters */
     int green_cur_luma;		//< Current Luma Interpolation filters taps number

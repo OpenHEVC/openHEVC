@@ -4835,6 +4835,64 @@ static void FUNC(map_color_block_8)(const void *pc3DAsymLUT_,
 }
 #endif
 
+#if ACTIVE_360_UPSAMPLING
+static void FUNC(ohevc_upsample_360_il_block)(uint8_t *restrict src, uint8_t *restrict dst, int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **restrict weight_lut_luma, uint8_t *end_x, uint8_t *end_y, int *offset_weight, int bl_stride, int el_stride, int x0, int y0, int end_height, int end_width ){
+    const int offset_x = SHVC360_LANCZOS_PARAM_LUMA << 1;
+    const int round_shift = S_INTERPOLATE_PrecisionBD;
+    const int round_add = 1 << (round_shift - 1);
+    pixel *_dst = (pixel *) dst;
+    for (int i= y0 ; i < end_height ; i++) {
+        int cum_i = i*el_stride;
+        for (int j= x0  ; j < end_width ; j++) {
+            int32_t sum = 0;
+            if (offset_bl_lut[ cum_i + j] !=-1 ) {
+                const int end_x_0 = end_x[ cum_i + j];
+                const int end_y_0 = end_y[ cum_i + j];
+                int16_t *pWLut = &weight_lut_luma[weight_idx_lut[ cum_i + j]][offset_weight[ cum_i + j]];
+                pixel *pix = (pixel*)src + offset_bl_lut[ cum_i + j];
+                for (int m = 0; m < end_y_0 ; m++) {
+                    for (int n = 0; n < end_x_0; n++){
+                        sum += (int32_t)pix[n] * (int32_t)pWLut[n];
+                    }
+                    pix   += bl_stride;
+                    pWLut += offset_x;
+                }
+                _dst[cum_i + j] = av_clip((sum + round_add) >> round_shift, 0, (1 << BIT_DEPTH)-1);
+            } else
+                _dst[cum_i + j] = 0;
+        }
+    }
+}
+
+static void FUNC(ohevc_upsample_360_il_block_chroma)(uint8_t *restrict src, uint8_t *restrict dst, int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **restrict weight_lut_luma, uint8_t *end_x, uint8_t *end_y, int *offset_weight, int bl_stride, int el_stride, int x0, int y0, int end_height, int end_width ){
+    const int offset_x = SHVC360_LANCZOS_PARAM_CHROMA << 1;
+    const int round_shift = S_INTERPOLATE_PrecisionBD;
+    const int round_add = 1 << (round_shift - 1);
+    pixel *_dst = (pixel *) dst;
+    for (int i= y0 ; i < end_height ; i++) {
+        int cum_i = i*el_stride;
+        for (int j= x0  ; j < end_width ; j++) {
+            int32_t sum = 0;
+            if (offset_bl_lut[ cum_i + j] !=-1 ) {
+                const int end_x_0 = end_x[ cum_i + j];
+                const int end_y_0 = end_y[ cum_i + j];
+                int16_t *pWLut = &weight_lut_luma[weight_idx_lut[ cum_i + j]][offset_weight[ cum_i + j]];
+                pixel *pix = (pixel*)src + offset_bl_lut[ cum_i + j];
+                for (int m = 0; m < end_y_0 ; m++) {
+                    for (int n = 0; n < end_x_0; n++){
+                        sum += (int32_t)pix[n] * (int32_t)pWLut[n];
+                    }
+                    pix   += bl_stride;
+                    pWLut += offset_x;
+                }
+                _dst[cum_i + j] = av_clip((sum + round_add) >> round_shift, 0, (1 << BIT_DEPTH)-1);
+            } else
+                _dst[cum_i + j] = 0;
+        }
+    }
+}
+#endif
+
 #if CONFIG_GREEN
 #include "hevcdsp_green_template.c"
 #endif
