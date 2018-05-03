@@ -633,7 +633,7 @@ int set_el_parameter(HEVCContext *s) {
 #if ACTIVE_360_UPSAMPLING
     {
         // TODO adapt to context
-        const int num_faces         = 0; //ERP --> 1 face only
+        //const int num_faces         = 0; //ERP --> 1 face only
         //int num_weight_luts   = 2;
         const int safe_margin_size  = 5;
         const double dScale = 1.0 / S_LANCZOS_LUT_SCALE;
@@ -671,15 +671,32 @@ int set_el_parameter(HEVCContext *s) {
 
 #if ACTIVE_360_UPSAMPLING
 
-        if (!s->pixel_weight_chroma|| !s->pixel_weight_luma|| !s->weight_lut_luma || !s->weight_lut_chroma){
-            s->pixel_weight_luma    = av_malloc(widthEL_v[0]*heightEL_v[0]*sizeof(PxlFltLut) );
-            s->weight_lut_luma      = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
-            s->weight_lut_luma[0]   = av_malloc ( sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_LUMA));
-            s->pixel_weight_chroma  = av_malloc(widthEL_v[1]*heightEL_v[1]*sizeof(PxlFltLut) );
-            s->weight_lut_chroma    = av_malloc ( sizeof(int*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
-            s->weight_lut_chroma[0] = av_malloc (  sizeof(int) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_CHROMA));
+        if ( !s->weight_lut_luma || !s->weight_lut_chroma){
+            s->offset_bl_luma       = av_malloc(widthEL_v[0]*heightEL_v[0]*sizeof(int) );
+            s->weight_idx_luma      = av_malloc(widthEL_v[0]*heightEL_v[0]*sizeof(int16_t) );
+            s->weight_lut_luma      = av_malloc ( sizeof(int16_t*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
+            s->weight_lut_luma[0]   = av_malloc ( sizeof(int16_t) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_LUMA));
+
+            s->offset_weight_luma   = av_malloc(widthEL_v[0]*heightEL_v[0]*sizeof(int) );
+            s->end_x_luma           = av_malloc(widthEL_v[0]*heightEL_v[0]*sizeof(uint8_t) );
+            s->end_y_luma           = av_malloc(widthEL_v[0]*heightEL_v[0]*sizeof(uint8_t) );
+
+            s->no_margin_360_luma   = av_malloc(sizeof(uint8_t) * s->ps.sps->ctb_width*s->ps.sps->ctb_height );
+
+            s->offset_bl_chroma     = av_malloc(widthEL_v[1]*heightEL_v[1]*sizeof(int) );
+            s->weight_idx_chroma    = av_malloc(widthEL_v[1]*heightEL_v[1]*sizeof(int16_t) );
+            s->weight_lut_chroma    = av_malloc ( sizeof(int16_t*) * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1)));
+            s->weight_lut_chroma[0] = av_malloc ( sizeof(int16_t)  * ((S_LANCZOS_LUT_SCALE + 1) * (S_LANCZOS_LUT_SCALE + 1) * SHVC360_FILTER_SIZE_CHROMA));
+
+            s->offset_weight_chroma = av_malloc(widthEL_v[1]*heightEL_v[1]*sizeof(int) );
+            s->end_x_chroma         = av_malloc(widthEL_v[1]*heightEL_v[1]*sizeof(uint8_t) );
+            s->end_y_chroma         = av_malloc(widthEL_v[1]*heightEL_v[1]*sizeof(uint8_t) );
+
+            s->no_margin_360_chroma   = av_malloc(sizeof(uint8_t) * s->ps.sps->ctb_width*s->ps.sps->ctb_height );
 //            if (!s->pixel_weight_chroma|| !s->pixel_weight_luma|| !s->weight_lut_luma[0] || !s->weight_lut_chroma[0])
 //              goto fail;
+            //TODO safer alloc check
+
             // Init rotation matrices
 
             rotation_matrix[0] = cos(tht);
@@ -796,7 +813,7 @@ int set_el_parameter(HEVCContext *s) {
                     }
 
                     for (int n = 0; n < (S_LANCZOS_LUT_SCALE + 1); n++) {
-                        int *pW = s->weight_lut_luma[m*(S_LANCZOS_LUT_SCALE + 1) + n];
+                        int16_t *pW = s->weight_lut_luma[m*(S_LANCZOS_LUT_SCALE + 1) + n];
                         int sum = 0;
                         double d_sum = 0;
                         double wx[6];
@@ -817,7 +834,7 @@ int set_el_parameter(HEVCContext *s) {
                                     w = round((double)(wy[r] * wx[c] * mul / d_sum));
                                 else
                                     w = mul - sum;
-                                pW[r*(SHVC360_LANCZOS_PARAM_LUMA << 1) + c] = w;
+                                pW[r*(SHVC360_LANCZOS_PARAM_LUMA << 1) + c] = (int16_t)w;
                                 sum += w;
                             }
                         }
@@ -827,24 +844,11 @@ int set_el_parameter(HEVCContext *s) {
                 for (int j = 0; j < heightEL_v[0]; j++){
                     for (int i = 0; i < widthEL_v[0]; i++) {
                         int  xLanczos, yLanczos;
-                        double u, v, yaw, pitch, x2, y2, p[3], p1[3], x, y, z, len;
+                        double u, v, yaw, pitch, x2, y2, p[3], p1[3];
                         double  uVP, vVP, iVP, jVP;
-                        //                    SPos SPosOut2 = (SPos) {0, 0.0, 0.0, 0.0};
+
                         u = (double)(i) + (double)(0.5);
                         v = (double)(j) + (double)(0.5);
-
-    //                    //TODO no effect ?
-    //                    if (( u < 0 || u >= widthEL_v[0]) && (v >= 0 && v < heightEL_v[0])){
-    //                        u = u < 0 ? widthEL_v[0] + u : (u - widthEL_v[0]);
-    //                    } else if (v < 0) {
-    //                        v = -v;
-    //                        u = u + (widthEL_v[0] >> 1);
-    //                        u = u >= widthEL_v[0] ? u - widthEL_v[0] : u;
-    //                    } else if (v >=  heightEL_v[0]) {
-    //                        v = ( heightEL_v[0] << 1) - v;
-    //                        u = u + (widthEL_v[0] >> 1);
-    //                        u = u >= widthEL_v[0] ? u - widthEL_v[0] : u;
-    //                    }
 
                         yaw   = (double)(u* M_PI * 2 / widthEL_v[0]  - M_PI);
                         pitch = (double)( M_PI_2 - v* M_PI /  heightEL_v[0]);
@@ -874,13 +878,19 @@ int set_el_parameter(HEVCContext *s) {
                                 && j > iWindowSearchDimluma[2] - safe_margin_size && j < iWindowSearchDimluma[3] + safe_margin_size) {
                             int y = yLanczos - top_offset;
                             int x = xLanczos - left_offset;
-                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].weightIdx = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
-                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].end_y = (y < 0) ? offset_y + y : ((offset_y + y) < heightBL_v[0] ? offset_y : heightBL_v[0] - y );
-                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].end_x = (x < 0) ? offset_x + x : ((offset_x + x) <widthBL_v[0] ? offset_x : widthBL_v[0] - x );
-                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].offset_bl = (y < 0 ? 0 : y) * (base_layer_window.pic_width_vps_in_luma_samples) + (x < 0 ? 0 : x);
-                            s->pixel_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i].offset_weight = (x < 0 ? -x: 0) + (y < 0 ? -y: 0)*offset_x;
+
+                            s->end_y_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i] = (y < 0) ? offset_y + y : ((offset_y + y) < heightBL_v[0] ? offset_y : heightBL_v[0] - y );
+                            s->end_x_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i] = (x < 0) ? offset_x + x : ((offset_x + x) < widthBL_v[0]  ? offset_x : widthBL_v[0]  - x );
+                            s->offset_weight_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i]= (x < 0 ? -x: 0) + (y < 0 ? -y: 0)*offset_x;
+
+                            s->weight_idx_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i] = round((jVP - (double)yLanczos)*S_LANCZOS_LUT_SCALE)*(S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos)*S_LANCZOS_LUT_SCALE);
+                            s->offset_bl_luma [j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i] = (y < 0 ? 0 : y) * (base_layer_window.pic_width_vps_in_luma_samples) + (x < 0 ? 0 : x);
+                            if(y < 0 || x < 0 || s->end_y_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i] != offset_y || s->end_x_luma[j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i] != offset_x)
+                                 s->no_margin_360_luma[(j/64)*s->ps.sps->ctb_width+(i/64)]=1;
                         } else {
-                            s->pixel_weight_luma[j*scaled_ref_layer_window.pic_width_vps_in_luma_samples + i].offset_bl   = -1;
+                            s->offset_bl_luma [j* scaled_ref_layer_window.pic_width_vps_in_luma_samples+ i] = -1;
+                            s->no_margin_360_luma[(j/64)*s->ps.sps->ctb_width+(i/64)]=1;
+
                         }
                     }
                 }
@@ -960,7 +970,6 @@ int set_el_parameter(HEVCContext *s) {
                 }
 
 
-
                 for (int i = 0; i < (SHVC360_LANCZOS_PARAM_CHROMA << 1) * S_LANCZOS_LUT_SCALE; i++) {
                     double x = (double)i / S_LANCZOS_LUT_SCALE - SHVC360_LANCZOS_PARAM_CHROMA;
                     m_pfLanczosFltCoefLut[i] = (double)(sinc(x) * sinc(x / SHVC360_LANCZOS_PARAM_CHROMA));
@@ -978,7 +987,7 @@ int set_el_parameter(HEVCContext *s) {
                     }
 
                     for (int n = 0; n < (S_LANCZOS_LUT_SCALE + 1); n++) {
-                        int *pW = s->weight_lut_chroma[m*(S_LANCZOS_LUT_SCALE + 1) + n];
+                        int16_t *pW = s->weight_lut_chroma[m*(S_LANCZOS_LUT_SCALE + 1) + n];
                         int sum = 0;
                         double dSum = 0;
                         double wx[6];
@@ -999,7 +1008,7 @@ int set_el_parameter(HEVCContext *s) {
                                     w = round((double)(wy[r] * wx[c] * mul / dSum));
                                 else
                                     w = mul - sum;
-                                pW[r*(SHVC360_LANCZOS_PARAM_CHROMA << 1) + c] = w;
+                                pW[r*(SHVC360_LANCZOS_PARAM_CHROMA << 1) + c] = (int16_t)w;
                                 sum += w;
                             }
                         }
@@ -1008,26 +1017,12 @@ int set_el_parameter(HEVCContext *s) {
                 for (int j = 0; j < heightEL_v[1]; j++){
                     for (int i = 0; i < widthEL_v[1]; i++) {
                         int  xLanczos, yLanczos;
-                        double u, v, yaw, pitch, x2, y2, p[3],p1[3],x,y,z,len;
+                        double u, v, yaw, pitch, x2, y2, p[3],p1[3];
                         double  uVP, vVP, iVP, jVP;
-
-                        //                    SPos SPosOut2 = (SPos) {0, 0.0, 0.0, 0.0};
 
                         u = (double)(i)+ (double)(0.5);
                         v = (double)(j) + (double)(0.5);
 
-                        //TODO no effect
-                        //                    if (( u < 0 || u >= widthEL_v[1]) && (v >= 0 && v < heightEL_v[1])){
-                        //                        u = u < 0 ? widthEL_v[1] + u : (u - widthEL_v[1]);
-                        //                    } else if (v < 0) {
-                        //                        v = -v;
-                        //                        u = u + (widthEL_v[1] >> 1);
-                        //                        u = u >= widthEL_v[1] ? u - widthEL_v[1] : u;
-                        //                    } else if (v >=  heightEL_v[1]) {
-                        //                        v = ( heightEL_v[1] << 1) - v;
-                        //                        u = u + (widthEL_v[1] >> 1);
-                        //                        u = u >= widthEL_v[1] ? u - widthEL_v[1] : u;
-                        //                    }
 
                         yaw   = (double)(u* M_PI * 2 / widthEL_v[1]  - M_PI);
                         pitch = (double)( M_PI_2 - v* M_PI /  heightEL_v[1]);
@@ -1057,18 +1052,26 @@ int set_el_parameter(HEVCContext *s) {
                                 && j>iWindowSearchDimchroma[2] - safe_margin_size && j<iWindowSearchDimchroma[3] + safe_margin_size) {
                             int y = yLanczos - top_offset;
                             int x = xLanczos - left_offset;
-                            s->pixel_weight_chroma[j* widthEL_v[1] + i].weightIdx = round((jVP - (double)yLanczos) * S_LANCZOS_LUT_SCALE) * (S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos) * S_LANCZOS_LUT_SCALE);
-                            s->pixel_weight_chroma[j* widthEL_v[1] + i].end_y = (y < 0) ? offset_y + y : ((offset_y + y) < heightBL_v[1] ? offset_y : heightBL_v[1] - y );
-                            s->pixel_weight_chroma[j* widthEL_v[1] + i].end_x = (x < 0) ? offset_x + x : ((offset_x + x) <widthBL_v[1] ? offset_x : widthBL_v[1] - x );
-                            s->pixel_weight_chroma[j* widthEL_v[1] + i].offset_bl = (y < 0 ? 0 : y) * widthBL_v[1] + (x < 0 ? 0 : x);
-                            s->pixel_weight_chroma[j* widthEL_v[1] + i].offset_weight = (x < 0 ? -x: 0) + (y < 0 ? -y: 0)*offset_x;
+
+                            s->weight_idx_chroma[j* widthEL_v[1] + i] = round((jVP - (double)yLanczos) * S_LANCZOS_LUT_SCALE) * (S_LANCZOS_LUT_SCALE + 1) + round((iVP - (double)xLanczos) * S_LANCZOS_LUT_SCALE);
+                            s->offset_bl_chroma[j* widthEL_v[1] + i] = (y < 0 ? 0 : y) * widthBL_v[1] + (x < 0 ? 0 : x);
+                            s->end_y_chroma[j* widthEL_v[1] + i] = (y < 0) ? offset_y + y : ((offset_y + y) < heightBL_v[1] ? offset_y : heightBL_v[1] - y );
+                            s->end_x_chroma[j* widthEL_v[1] + i] = (x < 0) ? offset_x + x : ((offset_x + x) < widthBL_v[1]  ? offset_x : widthBL_v[1]  - x );
+
+                            if(y < 0 || x < 0 || s->end_x_chroma[j* widthEL_v[1] + i] != offset_x || s->end_y_chroma[j* widthEL_v[1] + i]!= offset_y )
+                                s->no_margin_360_chroma[(j/32)*s->ps.sps->ctb_width+(i/32)] = 1;
+
+                            s->offset_weight_chroma[j* widthEL_v[1] + i]= (x < 0 ? -x: 0) + (y < 0 ? -y: 0)*offset_x;
+
                         } else {
-                            s->pixel_weight_chroma[j*widthEL_v[1] + i].offset_bl   = -1;
+                            s->offset_bl_chroma[j* widthEL_v[1] + i] = -1;
+                            s->no_margin_360_chroma[(j/32)*s->ps.sps->ctb_width+(i/32)] = 1;
                         }
                     }
                 }
 
             }
+//            av_log(s,AV_LOG_ERROR,"set 360 il luts\n");
         }
 #endif
 
@@ -2543,10 +2546,10 @@ static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0)
 {
 #if ACTIVE_360_UPSAMPLING
-    int y = (mv->y >> 2) + y0 + (1<<s->ps.sps->log2_ctb_size)*2 + 9;
+    //int y = (mv->y >> 2) + y0 + (1<<s->ps.sps->log2_ctb_size)*2 + 9;
 
     //TODO check if this is correct
-    int bl_y = s->pixel_weight_luma[y0 + (1<<s->ps.sps->log2_ctb_size) *s->ps.sps->width].offset_bl / s->BL_width;
+    int bl_y = s->offset_bl_luma[y0 /*+ (1<<s->ps.sps->log2_ctb_size)*/ *s->ps.sps->width] / s->BL_width;
 
     if (s->threads_type & FF_THREAD_FRAME ){
         ff_thread_await_progress(&((HEVCFrame*)s->BL_frame)->tf, bl_y, 0);//fixme: await progress won't come back if BL is AVC
@@ -4838,12 +4841,26 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
 #if ACTIVE_360_UPSAMPLING
    // for (int h = 0; h < 2; h++) {
-      av_free(s->pixel_weight_luma);
-      av_free(s->pixel_weight_chroma);
+//      av_free(s->pixel_weight_luma);
+//      av_free(s->pixel_weight_chroma);
       if(s->weight_lut_luma)
         av_freep(&s->weight_lut_luma[0]);
       if(s->weight_lut_chroma)
         av_freep(&s->weight_lut_chroma);
+      av_free(s->offset_bl_chroma);
+      av_free(s->offset_bl_luma);
+      av_free(s->offset_weight_luma);
+      av_free(s->offset_weight_chroma);
+      av_free(s->end_x_luma);
+      av_free(s->end_y_luma);
+      av_free(s->end_x_chroma);
+      av_free(s->end_y_chroma);
+
+      av_free(s->no_margin_360_luma);
+      av_free(s->no_margin_360_chroma);
+
+      av_free(s->weight_idx_chroma);
+      av_free(s->weight_idx_luma);
    // }
 #endif
 
@@ -5014,10 +5031,27 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         }
     }
 #if ACTIVE_360_UPSAMPLING
-    s->pixel_weight_chroma = s0->pixel_weight_chroma;
-    s->pixel_weight_luma = s0->pixel_weight_luma;
-    s->weight_lut_luma = s0->weight_lut_luma;
-    s->weight_lut_chroma = s0->weight_lut_chroma;
+//    s->pixel_weight_chroma = s0->pixel_weight_chroma;
+//    s->pixel_weight_luma   = s0->pixel_weight_luma;
+    s->weight_lut_luma     = s0->weight_lut_luma;
+    s->weight_lut_chroma   = s0->weight_lut_chroma;
+
+    s->offset_bl_chroma     = s0->offset_bl_chroma;
+    s->offset_bl_luma       = s0->offset_bl_luma;
+
+    s->offset_weight_chroma = s0->offset_weight_chroma;
+    s->offset_weight_luma   = s0->offset_weight_luma;
+
+    s->end_x_chroma = s0->end_x_chroma;
+    s->end_y_chroma = s0->end_y_chroma;
+    s->end_x_luma = s0->end_x_luma;
+    s->end_y_luma = s0->end_y_luma;
+
+    s->weight_idx_luma     = s0->weight_idx_luma;
+    s->weight_idx_chroma   = s0->weight_idx_chroma;
+
+    s->no_margin_360_chroma=s0->no_margin_360_chroma;
+    s->no_margin_360_luma=s0->no_margin_360_luma;
 #endif
     if (s->ps.sps != s0->ps.sps)
         if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)

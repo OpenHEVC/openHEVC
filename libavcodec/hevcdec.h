@@ -491,13 +491,15 @@ static const int   log2_num_faces[SV_MAX_NUM_FACES+1] = { 0,
     4, 4, 4, 4, 4, 4, 4, 4,
     5, 5, 5, 5 };
 
+
 typedef struct PxlFltLut
 {
     int offset_bl;
     int offset_weight;
-    int end_y;
-    int end_x;
-    unsigned short weightIdx;
+    uint16_t weight_idx;
+    uint8_t end_y;
+    uint8_t end_x;
+
 } PxlFltLut;
 #endif
 
@@ -712,11 +714,24 @@ typedef struct HEVCContext {
 #endif
 
 #if ACTIVE_360_UPSAMPLING
-//    int m_iInterpFilterTaps[2][2];
-    PxlFltLut *pixel_weight_luma;
-    PxlFltLut *pixel_weight_chroma;
-    int **weight_lut_luma;
-    int **weight_lut_chroma;
+    int     *offset_bl_luma;
+    int16_t *weight_idx_luma;
+    int16_t **weight_lut_luma;
+
+    int     *offset_bl_chroma;
+    int16_t *weight_idx_chroma;
+    int16_t **weight_lut_chroma;
+
+    int     *offset_weight_luma;
+    uint8_t *end_y_luma;
+    uint8_t *end_x_luma;
+
+    int     *offset_weight_chroma;
+    uint8_t *end_y_chroma;
+    uint8_t *end_x_chroma;
+
+    uint8_t *no_margin_360_luma;
+    uint8_t *no_margin_360_chroma;
 #endif
     
     int bl_is_avc;
@@ -852,7 +867,6 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
 int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                          HEVCNAL *nal);
-
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

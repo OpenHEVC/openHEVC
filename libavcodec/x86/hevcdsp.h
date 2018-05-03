@@ -496,6 +496,10 @@ void ohhevc_sao_band_filter_0_12_sse(uint8_t *_dst, uint8_t *_src, ptrdiff_t _st
    void ohevc_upsample_filter_block_cr_v_x1_5_sse_16(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t srcstride,
            int y_BL, int x_EL, int y_EL, int width, int height, int widthEL, int heightEL,
            const struct HEVCWindow *Enhscal, struct UpsamplInf *up_info);
+#if ACTIVE_360_UPSAMPLING
+   void ohevc_upsample_360_il_block_8_sse(uint8_t *restrict src, uint8_t *restrict dst, int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **restrict weight_lut_luma, int bl_stride, int el_stride );
+   void ohevc_upsample_360_il_block_chroma_8_sse(uint8_t *restrict src, uint8_t *restrict dst, int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **restrict weight_lut_luma, int bl_stride, int el_stride );
+#endif
 
    void emt_idst_VII_4x4_v_avx2_8 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);
    void emt_idst_VII_4x4_v_avx2_9 (int16_t *x, int16_t *block, int log2_transform_range, const int clip_min, const int clip_max);

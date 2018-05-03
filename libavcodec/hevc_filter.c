@@ -1536,7 +1536,7 @@ static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int ctb_x0,
     const int bl_stride   = bl_frame->frame->linesize[0] / bl_sample_size;
 
     const int offset_x = SHVC360_LANCZOS_PARAM_LUMA << 1;
-    //const int offset_y = SHVC360_LANCZOS_PARAM_LUMA << 1;
+    const int offset_y = SHVC360_LANCZOS_PARAM_LUMA << 1;
     //const int left_offset = (offset_x - 1) >> 1;
     //const int top_offset  = (offset_y - 1) >> 1;
 
@@ -1548,26 +1548,36 @@ static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int ctb_x0,
     const int refBitDepthLuma = 8;
     const int max_value= (1 << refBitDepthLuma) - 1;
     
-    for (int i= y0 ; i < (y0 + 64 < el_height ?  y0 + 64 :el_height); i++) {
-        int cum_i = i*el_stride;
-        for (int j= x0  ; j < (x0 + 64 < el_width ? x0 + 64: el_width ) ; j++) {
-            PxlFltLut *pPelWeight = &s->pixel_weight_luma [ cum_i + j];
-            int64_t sum = 0;
-            if (pPelWeight->offset_bl != -1 ) {
-                const int end_x = pPelWeight->end_x;
-                const int end_y = pPelWeight->end_y;
-                int *pWLut = &s->weight_lut_luma[pPelWeight->weightIdx][pPelWeight->offset_weight];
-                uint8_t *pix = bl_frame->frame->data[0] + pPelWeight->offset_bl;
-                for (int m = 0; m < end_y ; m++) {
-                    for (int n = 0; n < end_x; n++){
-                        sum += (int64_t)pix[n] * (int64_t)pWLut[n];
+    const int end_width = x0 + 64 < el_width  ? x0 + 64 : el_width ;
+    const int end_height= y0 + 64 < el_height ? y0 + 64 : el_height;
+
+    if( !s->no_margin_360_luma[(y0/64)*s->ps.sps->ctb_width + x0/64] ){
+        int     *bl_offset  = s->offset_bl_luma + y0*el_stride + x0;
+        int16_t *weight_idx = s->weight_idx_luma + y0*el_stride + x0;
+        dst += y0*el_stride + x0;
+
+        s->hevcdsp.upsample_360_block_luma(bl_frame->frame->data[0], dst, bl_offset, weight_idx ,s->weight_lut_luma,bl_stride,el_stride);
+    } else {
+        for (int i= y0 ; i < end_height ; i++) {
+            int cum_i = i*el_stride;
+            for (int j= x0  ; j < end_width ; j++) {
+                int64_t sum = 0;
+                if (s->offset_bl_luma[ cum_i + j] !=-1 ) {
+                    const int end_x = s->end_x_luma[ cum_i + j];
+                    const int end_y = s->end_y_luma[ cum_i + j];
+                    int16_t *pWLut = &s->weight_lut_luma[s->weight_idx_luma[ cum_i + j]][s->offset_weight_luma[ cum_i + j]];
+                    uint8_t *pix = bl_frame->frame->data[0] + s->offset_bl_luma[ cum_i + j];
+                    for (int m = 0; m < end_y ; m++) {
+                        for (int n = 0; n < end_x; n++){
+                            sum += (int64_t)pix[n] * (int64_t)pWLut[n];
+                        }
+                        pix   += bl_stride;
+                        pWLut += offset_x;
                     }
-                    pix   += bl_stride;
-                    pWLut += offset_x;
-                }
-                dst[cum_i + j] = av_clip((sum + round_add) >> round_shift, 0, max_value);
-           } else
-               dst[cum_i + j] = 0;
+                    dst[cum_i + j] = av_clip((sum + round_add) >> round_shift, 0, max_value);
+                } else
+                    dst[cum_i + j] = 0;
+            }
         }
     }
     s->is_upsampled[((y0) / ctb_size * s->ps.sps->ctb_width) + ((x0) / ctb_size)] = 1;
@@ -1591,7 +1601,7 @@ static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y
     const int bl_stride = bl_frame->frame->linesize[1] / bl_sample_size;
 
     const int offset_x = SHVC360_LANCZOS_PARAM_CHROMA << 1;
-//    const int offset_y = SHVC360_LANCZOS_PARAM_CHROMA << 1;
+    const int offset_y = SHVC360_LANCZOS_PARAM_CHROMA << 1;
 //    const int left_offset = (offset_x - 1) >> 1;
 //    const int top_offset  = (offset_y - 1) >> 1;
 
@@ -1601,28 +1611,41 @@ static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y
     const int refBitDepthLuma = 8;
     const int max_value= (1 << refBitDepthLuma) - 1;
 
-    for (int cr = 1; cr <= 2; cr++) {
-        uint8_t *dst = (uint8_t *)ref0->frame->data[cr];
-        for (int i = y0; i < (y0 + 32 < el_height ?  y0 + 32 :el_height); i++){
-            int cum_i = i*el_stride ;
-            for (int j = x0; j < (x0 + 32 < el_width ? x0 + 32: el_width ) ; j++) {
-                int sum = 0;
-                PxlFltLut *pPelWeight = &s->pixel_weight_chroma [ cum_i + j];
-                if (pPelWeight->offset_bl != -1) {
-                    const int end_y = pPelWeight->end_y;
-                    const int end_x = pPelWeight->end_x;
-                    int *pWLut = s->weight_lut_chroma[pPelWeight->weightIdx] + pPelWeight->offset_weight;
-                    uint8_t *pix = bl_frame->frame->data[cr] + pPelWeight->offset_bl;
-                    for (int m = 0; m < end_y ; m++) {
-                        for (int n = 0; n < end_x ; n++){
-                            sum += pix[n] * pWLut[n];
+    const int end_width = x0 + 32 < el_width  ? x0 + 32 : el_width ;
+    const int end_height= y0 + 32 < el_height ? y0 + 32 : el_height;
+
+    if( !s->no_margin_360_chroma[(y0/32)*s->ps.sps->ctb_width + x0/32] ){
+        for (int cr = 1; cr <= 2; cr++) {
+            uint8_t *dst = (uint8_t *)ref0->frame->data[cr];
+            int     *bl_offset  = s->offset_bl_chroma  + y0*el_stride + x0;
+            int16_t *weight_idx = s->weight_idx_chroma + y0*el_stride + x0;
+            dst += y0*el_stride + x0;
+            s->hevcdsp.upsample_360_block_chroma(bl_frame->frame->data[cr], dst, bl_offset, weight_idx ,s->weight_lut_chroma,bl_stride,el_stride);
+        }
+
+    } else {
+        for (int cr = 1; cr <= 2; cr++) {
+            uint8_t *dst = (uint8_t *)ref0->frame->data[cr];
+            for (int i = y0; i < (y0 + 32 < el_height ?  y0 + 32 :el_height); i++){
+                int cum_i = i*el_stride ;
+                for (int j = x0; j < (x0 + 32 < el_width ? x0 + 32: el_width ) ; j++) {
+                    int sum = 0;
+                    if (s->offset_bl_chroma[ cum_i + j] != -1) {
+                        const int end_y = s->end_y_chroma[ cum_i + j];
+                        const int end_x = s->end_x_chroma[ cum_i + j];
+                        int16_t *pWLut = s->weight_lut_chroma[s->weight_idx_chroma[ cum_i + j]] + s->offset_weight_chroma[ cum_i + j];
+                        uint8_t *pix = bl_frame->frame->data[cr] + s->offset_bl_chroma[ cum_i + j];
+                        for (int m = 0; m < end_y ; m++) {
+                            for (int n = 0; n < end_x ; n++){
+                                sum += pix[n] * pWLut[n];
+                            }
+                            pix   += bl_stride;
+                            pWLut += offset_x;
                         }
-                        pix   += bl_stride;
-                        pWLut += offset_x;
+                        dst[cum_i + j] = av_clip_c((sum + round_add) >> round_shift, 0, max_value);
+                    } else {
+                        dst[cum_i + j] = 0;
                     }
-                    dst[cum_i + j] = av_clip_c((sum + round_add) >> round_shift, 0, max_value);
-                } else {
-                    dst[cum_i + j] = 0;
                 }
             }
         }
