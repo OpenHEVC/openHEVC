@@ -1515,85 +1515,50 @@ static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t
 #endif
 
 #if ACTIVE_360_UPSAMPLING
-static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int ctb_x0, int ctb_y0) {
+static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     // Bit_depth related
     const int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
     const int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
     const int sample_size = s->ps.sps->bit_depth[0] > 8 ? 2 : 1;
     const int ctb_size = 1 << (s->ps.sps->log2_ctb_size);
+
     // Enhanced layer parameters
-    RepFormat scaled_ref_layer_window = s->ps.vps->vps_ext.rep_format[s->ps.vps->vps_ext.vps_rep_format_idx[s->nuh_layer_id]];
-    const int el_width  = scaled_ref_layer_window.pic_width_vps_in_luma_samples  - scaled_ref_layer_window.conf_win_vps_left_offset   - scaled_ref_layer_window.conf_win_vps_right_offset;
-    const int el_height = scaled_ref_layer_window.pic_height_vps_in_luma_samples - scaled_ref_layer_window.conf_win_vps_bottom_offset - scaled_ref_layer_window.conf_win_vps_top_offset;
     const int el_stride =  ref0->frame->linesize[0] / sample_size;
     uint8_t *dst = ref0->frame->data[0];
     // Base layer parameters
     HEVCFrame *bl_frame = s->BL_frame;
-
     const int bl_stride   = bl_frame->frame->linesize[0] / bl_sample_size;
-
-//    const int offset_x = SHVC360_LANCZOS_PARAM_LUMA << 1;
-//    const int offset_y = SHVC360_LANCZOS_PARAM_LUMA << 1;
-
-    const int y0 = ctb_y0;
-    const int x0 = ctb_x0;
-    // Clipping related parameters
-//    const int round_shift = S_INTERPOLATE_PrecisionBD;
-//    const int round_add = 1 << (round_shift - 1);
-//    const int refBitDepthLuma = 10;
-//    const int max_value= (1 << refBitDepthLuma) - 1;
-    
-    const int end_width = x0 + 64 < el_width  ? x0 + 64 : el_width ;
-    const int end_height= y0 + 64 < el_height ? y0 + 64 : el_height;
 
     if( !s->no_margin_360_luma[(y0/64)*s->ps.sps->ctb_width + x0/64] ){
         int     *bl_offset  = s->offset_bl_luma  + y0*el_stride + x0;
         int16_t *weight_idx = s->weight_idx_luma + y0*el_stride + x0;
         dst += (y0*el_stride + x0)*sample_size;
-
         s->hevcdsp.upsample_360_block_luma(bl_frame->frame->data[0], dst, bl_offset, weight_idx ,s->weight_lut_luma,bl_stride,el_stride);
     } else {
-//        int     *bl_offset  = s->offset_bl_luma  + y0*el_stride + x0;
-//        int16_t *weight_idx = s->weight_idx_luma + y0*el_stride + x0;
-        //dst += (y0*el_stride + x0)*sample_size;
-
+        RepFormat scaled_ref_layer_window = s->ps.vps->vps_ext.rep_format[s->ps.vps->vps_ext.vps_rep_format_idx[s->nuh_layer_id]];
+        const int el_width  = scaled_ref_layer_window.pic_width_vps_in_luma_samples  - scaled_ref_layer_window.conf_win_vps_left_offset   - scaled_ref_layer_window.conf_win_vps_right_offset;
+        const int el_height = scaled_ref_layer_window.pic_height_vps_in_luma_samples - scaled_ref_layer_window.conf_win_vps_bottom_offset - scaled_ref_layer_window.conf_win_vps_top_offset;
+        const int end_width = x0 + 64 < el_width  ? x0 + 64 : el_width ;
+        const int end_height= y0 + 64 < el_height ? y0 + 64 : el_height;
         s->hevcdsp.upsample_360_block_luma_border(bl_frame->frame->data[0], dst, s->offset_bl_luma, s->weight_idx_luma ,s->weight_lut_luma, s->end_x_luma, s->end_y_luma, s->offset_weight_luma, bl_stride, el_stride,x0,y0,end_height,end_width);
-
-
     }
     s->is_upsampled[((y0) / ctb_size * s->ps.sps->ctb_width) + ((x0) / ctb_size)] = 1;
 }
 
 static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
+
     // Bit_depth related
     const int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
-    const int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
     const int sample_size = s->ps.sps->bit_depth[1] > 8 ? 2 : 1;
+
     // Enhanced layer parameters
-    HEVCWindow scaled_ref_layer_window = s->ps.sps->scaled_ref_layer_window[s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0]];
-    const int el_width  = (s->ps.sps->width  - scaled_ref_layer_window.left_offset   - scaled_ref_layer_window.right_offset) >> 1;
-    const int el_height = (s->ps.sps->height - scaled_ref_layer_window.bottom_offset - scaled_ref_layer_window.top_offset)   >> 1;
     const int el_stride =  ref0->frame->linesize[1] / sample_size;
 
     // Base layer parameters
     HEVCFrame *bl_frame = s->BL_frame;
-//    const int bl_width  = bl_frame->frame->width  >> 1;
-//    const int bl_height = bl_frame->frame->height >> 1;
+    const int bl_sample_size = s->sh.Bit_Depth[ref_layer_id][1] > 8 ? 2 : 1;
     const int bl_stride = bl_frame->frame->linesize[1] / bl_sample_size;
 
-//    const int offset_x = SHVC360_LANCZOS_PARAM_CHROMA << 1;
-//    const int offset_y = SHVC360_LANCZOS_PARAM_CHROMA << 1;
-//    const int left_offset = (offset_x - 1) >> 1;
-//    const int top_offset  = (offset_y - 1) >> 1;
-
-    // Clipping related parameters
-//    const int round_shift = S_INTERPOLATE_PrecisionBD;
-//    const int round_add = 1 << (round_shift - 1);
-//    const int refBitDepthLuma = 10;
-//    const int max_value= (1 << refBitDepthLuma) - 1;
-
-    const int end_width = x0 + 32 < el_width  ? x0 + 32 : el_width ;
-    const int end_height= y0 + 32 < el_height ? y0 + 32 : el_height;
 
     if( !s->no_margin_360_chroma[(y0/32)*s->ps.sps->ctb_width + x0/32] ){
         for (int cr = 1; cr <= 2; cr++) {
@@ -1605,6 +1570,12 @@ static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y
         }
 
     } else {
+        HEVCWindow scaled_ref_layer_window = s->ps.sps->scaled_ref_layer_window[s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0]];
+        const int el_width  = (s->ps.sps->width  - scaled_ref_layer_window.left_offset   - scaled_ref_layer_window.right_offset) >> 1;
+        const int el_height = (s->ps.sps->height - scaled_ref_layer_window.bottom_offset - scaled_ref_layer_window.top_offset)   >> 1;
+        const int end_width = x0 + 32 < el_width  ? x0 + 32 : el_width ;
+        const int end_height= y0 + 32 < el_height ? y0 + 32 : el_height;
+
         for (int cr = 1; cr <= 2; cr++) {
             s->hevcdsp.upsample_360_block_chroma_border(bl_frame->frame->data[cr], ref0->frame->data[cr], s->offset_bl_chroma, s->weight_idx_chroma ,s->weight_lut_chroma, s->end_x_chroma, s->end_y_chroma, s->offset_weight_chroma, bl_stride, el_stride,x0,y0,end_height,end_width);
         }
