@@ -944,6 +944,12 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->upsample_filter_block_cr_h[2]   = ohevc_upsample_filter_block_cr_h_x1_5_sse_16;
             c->upsample_filter_block_luma_v[2] = ohevc_upsample_filter_block_luma_v_x1_5_sse_16;
             c->upsample_filter_block_cr_v[2]   = ohevc_upsample_filter_block_cr_v_x1_5_sse_16;
+
+#if ACTIVE_360_UPSAMPLING
+            c->upsample_360_block_luma   = ohevc_upsample_360_il_block_10_sse;
+            c->upsample_360_block_chroma = ohevc_upsample_360_il_block_chroma_10_sse;
+#endif
+
 #endif
 #endif
         }
