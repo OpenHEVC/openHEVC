@@ -1561,11 +1561,11 @@ static void upsample_block_mc_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y
 
 
     if( !s->no_margin_360_chroma[(y0/32)*s->ps.sps->ctb_width + x0/32] ){
+        int     *bl_offset  = s->offset_bl_chroma  + y0*el_stride + x0;
+        int16_t *weight_idx = s->weight_idx_chroma + y0*el_stride + x0;
+        int dst_offset = (y0*el_stride + x0)*sample_size;
         for (int cr = 1; cr <= 2; cr++) {
-            uint8_t *dst = ref0->frame->data[cr];
-            int     *bl_offset  = s->offset_bl_chroma  + y0*el_stride + x0;
-            int16_t *weight_idx = s->weight_idx_chroma + y0*el_stride + x0;
-            dst += (y0*el_stride + x0)*sample_size;
+            uint8_t *dst = ref0->frame->data[cr] + dst_offset;
             s->hevcdsp.upsample_360_block_chroma(bl_frame->frame->data[cr], dst, bl_offset, weight_idx ,s->weight_lut_chroma,bl_stride,el_stride);
         }
 
