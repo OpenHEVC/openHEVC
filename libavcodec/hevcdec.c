@@ -121,7 +121,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     int log2_min_cb_size = sps->log2_min_cb_size;
     int width            = sps->width;
     int height           = sps->height;
-#if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU || ACTIVE_360_UPSAMPLING
+#if !ACTIVE_PU_UPSAMPLING || ACTIVE_BOTH_FRAME_AND_PU || OHCONFIG_UPSAMPLING360
     int pic_size         = width * height;
 #endif
     int pic_size_in_ctb  = ((width  >> log2_min_cb_size) + 1) *
@@ -530,7 +530,7 @@ static int getBitDepth(HEVCContext *s, enum ChannelType channel, int layerId)
   return retVal;
 }
 
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
 static int roundHP(double t) {
     return (int)(t + (t >= 0 ? 0.5 : -0.5));
 }
@@ -633,7 +633,7 @@ int set_el_parameter(HEVCContext *s) {
         s->up_filter_inf.idx = DEFAULT;
         av_log(s->avctx, AV_LOG_INFO, "DEFAULT mode: SSE optimizations are not implemented for spatial scalability with a ratio different from x2 and x1.5 widthBL %d heightBL %d \n", s->BL_width <<1, s->BL_height<<1);
     }
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
     {
         const int safe_margin_size  = 5;
         const double dScale = 1.0 / S_LANCZOS_LUT_SCALE;
@@ -666,7 +666,7 @@ int set_el_parameter(HEVCContext *s) {
         double m_matInvKchroma[9];
         double det;
 
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
 
         if ( !s->weight_lut_luma || !s->weight_lut_chroma){
             s->offset_bl_luma       = av_malloc(widthEL_v[0]*heightEL_v[0]*sizeof(int) );
@@ -2537,7 +2537,7 @@ static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
 static void hevc_await_progress_bl(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0)
 {
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
     //int y = (mv->y >> 2) + y0 + (1<<s->ps.sps->log2_ctb_size)*2 + 9;
 
     //TODO check if this is correct
@@ -4831,7 +4831,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
 
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
    // for (int h = 0; h < 2; h++) {
 //      av_free(s->pixel_weight_luma);
 //      av_free(s->pixel_weight_chroma);
@@ -5022,7 +5022,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
 //    s->pixel_weight_chroma = s0->pixel_weight_chroma;
 //    s->pixel_weight_luma   = s0->pixel_weight_luma;
     s->weight_lut_luma     = s0->weight_lut_luma;

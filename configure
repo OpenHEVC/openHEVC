@@ -97,6 +97,7 @@ Program options:
 OpenHEVC options:
   --enable-encryption      enable selective encryption decoding support [no]
   --enable-amt             enable AMT decoding support [no]
+  --enable-upsampling360   enable 360 SHVC upsampling
   --disable-avcbase        disable support of AVC base layer in SHVC [yes]
 #TODO
   --disable-shvc           disable shvc support
@@ -1287,6 +1288,7 @@ OPENHEVC_COMPONENTS="
     avcbase
     mov_demuxer
     mpegts_demuxer
+    upsampling360
 "
 
 COMPONENT_LIST="

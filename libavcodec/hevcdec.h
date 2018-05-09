@@ -53,9 +53,9 @@
 #define MAX_NB_THREADS 16
 #define SHIFT_CTB_WPP 2
 #define MAX_POC      1024
-#define ACTIVE_360_UPSAMPLING 0
 
-#if ACTIVE_360_UPSAMPLING
+
+#if OHCONFIG_UPSAMPLING360
 #define  S_LANCZOS_LUT_SCALE 100
 #define  S_INTERPOLATE_PrecisionBD 14
 #define SVIDEO_2DPOS_PRECISION_LOG2  13
@@ -483,7 +483,7 @@ typedef struct HEVCLocalContext {
 
 
 
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
 static const int   log2_num_faces[SV_MAX_NUM_FACES+1] = { 0,
     1, 1,
     2, 2,
@@ -713,7 +713,7 @@ typedef struct HEVCContext {
     int encrypt_init_val_length;
 #endif
 
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
     int     *offset_bl_luma;
     int16_t *weight_idx_luma;
     int16_t **weight_lut_luma;

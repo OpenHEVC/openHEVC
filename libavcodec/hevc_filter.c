@@ -1514,7 +1514,7 @@ static void colorMapping(HEVCContext *s, uint8_t *src_y, uint8_t *src_u, uint8_t
 }
 #endif
 
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
 static void upsample_block_luma_360(HEVCContext *s, HEVCFrame *ref0, int x0, int y0) {
     // Bit_depth related
     const int ref_layer_id = s->ps.vps->vps_ext.ref_layer_id[s->nuh_layer_id][0];
@@ -2145,7 +2145,7 @@ void ff_upsample_block(HEVCContext *s, HEVCFrame *ref0, int x0, int y0, int nPbW
     int log2_ctb =  s->ps.sps->log2_ctb_size;
     int ctb_x0   =  (av_clip(x0, 0, s->ps.sps->width) >> log2_ctb) << log2_ctb;
     int ctb_y0   =  (av_clip(y0, 0, s->ps.sps->height) >> log2_ctb) << log2_ctb;
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
     if ((x0 - ctb_x0) < MAX_EDGE &&
         ctb_x0 > ctb_size        &&
         !s->is_upsampled[(ctb_y0 / ctb_size * s->ps.sps->ctb_width)+((ctb_x0 - ctb_size) / ctb_size)]){

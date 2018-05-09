@@ -481,35 +481,35 @@ int i = 0;
     switch (bit_depth) {
     case 9:
         HEVC_DSP(9);
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
        hevcdsp->upsample_360_block_luma_border = ohevc_upsample_360_il_block_9;
        hevcdsp->upsample_360_block_chroma_border = ohevc_upsample_360_il_block_chroma_9;
 #endif
         break;
     case 10:
         HEVC_DSP(10);
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
        hevcdsp->upsample_360_block_luma_border = ohevc_upsample_360_il_block_10;
        hevcdsp->upsample_360_block_chroma_border = ohevc_upsample_360_il_block_chroma_10;
 #endif
         break;
     case 12:
         HEVC_DSP(12);
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
        hevcdsp->upsample_360_block_luma_border = ohevc_upsample_360_il_block_12;
        hevcdsp->upsample_360_block_chroma_border = ohevc_upsample_360_il_block_chroma_12;
 #endif
         break;
     case 14:
         HEVC_DSP(14);
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
        hevcdsp->upsample_360_block_luma_border = ohevc_upsample_360_il_block_14;
        hevcdsp->upsample_360_block_chroma_border = ohevc_upsample_360_il_block_chroma_14;
 #endif
         break;
     default:
         HEVC_DSP(8);
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
        hevcdsp->upsample_360_block_luma_border = ohevc_upsample_360_il_block_8;
        hevcdsp->upsample_360_block_chroma_border = ohevc_upsample_360_il_block_chroma_8;
 #endif

@@ -4,7 +4,7 @@
 
 #include "hevcdsp.h"
 
-#if ACTIVE_360_UPSAMPLING
+#if OHCONFIG_UPSAMPLING360
 void ohevc_upsample_360_il_block_8_sse(uint8_t *restrict src, uint8_t *restrict dst, int *restrict offset_bl_lut, int16_t *restrict weight_idx_lut, int16_t **restrict weight_lut_luma, int bl_stride, int el_stride ){
      const int offset_x = SHVC360_LANCZOS_PARAM_LUMA << 1;
      const int round_shift = S_INTERPOLATE_PrecisionBD;
