@@ -86,6 +86,8 @@ OBJS-$(CONFIG_HEVC_DECODER)            += hevcdec.o hevc_mvs.o hevc_ps.o hevc_se
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
                                           hevcdsp.o hevc_filter.o h2645_parse.o hevc_data.o
 
+OBJS-$(OHCONFIG_UPSAMPLING360)         += hevc_upsampling360.o\
+
 
 OBJS-$(OHCONFIG_ENCRYPTION)            += crypto.o
 

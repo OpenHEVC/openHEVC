@@ -863,6 +863,10 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 #endif
 );
 
+#if OHCONFIG_UPSAMPLING360
+void ff_hevc_init_360_params(HEVCContext *s);
+#endif
+
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
 int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
