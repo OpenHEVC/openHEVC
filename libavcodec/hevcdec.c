@@ -616,8 +616,9 @@ int set_el_parameter(HEVCContext *s) {
         s->up_filter_inf.idx = DEFAULT;
         av_log(s->avctx, AV_LOG_INFO, "DEFAULT mode: SSE optimizations are not implemented for spatial scalability with a ratio different from x2 and x1.5 widthBL %d heightBL %d \n", s->BL_width <<1, s->BL_height<<1);
     }
-    ff_hevc_init_360_params(s);
-
+#if OHCONFIG_UPSAMPLING360
+    ff_hevc_init_360_params(s, 20.0, -5.0, 110.0, 80.0);
+#endif
   fail:
   return ret;
 }

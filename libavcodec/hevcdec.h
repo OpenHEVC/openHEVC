@@ -864,7 +864,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 );
 
 #if OHCONFIG_UPSAMPLING360
-void ff_hevc_init_360_params(HEVCContext *s);
+void ff_hevc_init_360_params(HEVCContext *s, float fYaw, float fPitch, float h_fov, float v_fov);
 #endif
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
