@@ -215,11 +215,12 @@ static void derive_360_lut(int el_height, int el_width, int bl_width, int bl_hei
     //memset(margin_360,1,sizeof(uint8_t)*width_in_ctb*(el_height/ctb_witdh));
 
     for (int j = 0; j < el_height; j++){
+        const double pitch = (double) (M_PI_2)*(1.0 - ((double)(j << 1) + 1.0)/el_height);
+        const double cos_pitch = cos(pitch);
+        const double sin_pitch = sin(pitch);
+        const double rot4_sin_pitch = rot_mat[4] * sin_pitch;
+        const double rot7_sin_pitch = rot_mat[7] * sin_pitch;
         for (int i = 0; i < el_width; i++) {
-            const double pitch = (double) (M_PI_2)*(1.0 - ((double)(j << 1) + 1.0)/el_height);
-            const double cos_pitch = cos(pitch);
-            const double sin_pitch = sin(pitch);
-
             const int el_pos = j*el_width + i;
 
             if(i > iWindowSearchDimluma[0]  && i < iWindowSearchDimluma[1]
@@ -231,9 +232,9 @@ static void derive_360_lut(int el_height, int el_width, int bl_width, int bl_hei
                 double x =   cos_pitch * cos(yaw);
                 double z = - cos_pitch * sin(yaw);
 
-                double x2 = rot_mat[0] * x                          + rot_mat[2] * z;
-                double y2 = rot_mat[3] * x + rot_mat[4] * sin_pitch + rot_mat[5] * z;
-                double z2 = rot_mat[6] * x + rot_mat[7] * sin_pitch + rot_mat[8] * z;
+                double x2 = rot_mat[0] * x                  + rot_mat[2] * z;
+                double y2 = rot_mat[3] * x + rot4_sin_pitch + rot_mat[5] * z;
+                double z2 = rot_mat[6] * x + rot7_sin_pitch + rot_mat[8] * z;
 
                 x2 = x2 / z2;
                 y2 = y2 / z2;
@@ -248,17 +249,21 @@ static void derive_360_lut(int el_height, int el_width, int bl_width, int bl_hei
                     int _y = y_lanczos - top_offset;
                     int _x = x_lanczos - left_offset;
 
-                    end_y[el_pos] = (_y < 0) ? offset_y + _y : ((offset_y + _y) < bl_height ? offset_y : bl_height - _y );
-                    end_x[el_pos] = (_x < 0) ? offset_x + _x : ((offset_x + _x) < bl_width  ? offset_x : bl_width  - _x );
-
-                    offset_weight[el_pos] = (_x < 0 ? -_x : 0) + (_y < 0 ? -_y: 0) * offset_x;
-
                     weight_idx[el_pos] = round( (z - (double)y_lanczos) * S_LANCZOS_LUT_SCALE) * (S_LANCZOS_LUT_SCALE + 1) + round( (x - (double)x_lanczos) * S_LANCZOS_LUT_SCALE );
-                    offset_bl [el_pos] = (_y < 0 ? 0 : _y) * (bl_width) + (_x < 0 ? 0 : _x);
+
+                    if(_x >= 0 && _y >= 0){
+                        end_y[el_pos] =  ((offset_y + _y) < bl_height ? offset_y : bl_height - _y );
+                        end_x[el_pos] =  ((offset_x + _x) < bl_width  ? offset_x : bl_width  - _x );
+                        offset_weight[el_pos] = 0;
+                        offset_bl [el_pos] = _y * bl_width + _x;
+                    } else {
+                        end_y[el_pos] = (_y < 0) ? offset_y + _y : ((offset_y + _y) < bl_height ? offset_y : bl_height - _y );
+                        end_x[el_pos] = (_x < 0) ? offset_x + _x : ((offset_x + _x) < bl_width  ? offset_x : bl_width  - _x );
+                        offset_weight[el_pos] = (_x < 0 ? -_x : 0) + (_y < 0 ? -_y: 0) * offset_x;
+                        offset_bl [el_pos] = (_y < 0 ? 0 : _y) * (bl_width) + (_x < 0 ? 0 : _x);
+                    }
                     if(_y < 0 || _x < 0 || end_y[el_pos] != offset_y || end_x[el_pos] != offset_x)
                         margin_360[(j/ctb_witdh)*width_in_ctb+(i/ctb_witdh)]=1;
-//                    else
-//                       margin_360[(j/ctb_witdh)*width_in_ctb+(i/ctb_witdh)]=0;
                 } else {
                     margin_360[(j/ctb_witdh)*width_in_ctb+(i/ctb_witdh)]=1;
                 }

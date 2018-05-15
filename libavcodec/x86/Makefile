@@ -37,7 +37,9 @@ SSE-OBJS-$(CONFIG_HEVC_DECODER)        += x86/hevc_idct_sse.o          \
                                           x86/hevc_il_pred_sse.o       \
                                           x86/hevc_intra_pred_sse.o    \
                                           x86/hevc_sao_sse.o           \
-                                          x86/hevc_360_il_upsampling_sse.o\
+
+SSE-OBJS-$(OHCONFIG_UPSAMPLING360)  +=    x86/hevc_360_il_upsampling_sse.o\
+
 
 ifeq (CONFIG_OH_OPTIM,0)
 SSE-OBJS-$(CONFIG_HEVC_DECODER)        += x86/hevc_mc_sse.o
