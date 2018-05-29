@@ -4836,7 +4836,7 @@ static void FUNC(map_color_block_8)(const void *pc3DAsymLUT_,
 #endif
 
 #if OHCONFIG_UPSAMPLING360
-static void FUNC(ohevc_upsample_360_il_block)(uint8_t *restrict src, uint8_t *restrict dst, int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **restrict weight_lut_luma, uint8_t *end_x, uint8_t *end_y, int *offset_weight, int bl_stride, int el_stride, int x0, int y0, int end_height, int end_width ){
+static void FUNC(ohevc_upsample_360_il_block)(uint8_t *av_restrict src, uint8_t *av_restrict dst, int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **av_restrict weight_lut_luma, uint8_t *end_x, uint8_t *end_y, int *offset_weight, int bl_stride, int el_stride, int x0, int y0, int end_height, int end_width ){
     const int offset_x = SHVC360_LANCZOS_PARAM_LUMA << 1;
     const int round_shift = S_INTERPOLATE_PrecisionBD;
     const int round_add = 1 << (round_shift - 1);
@@ -4864,7 +4864,7 @@ static void FUNC(ohevc_upsample_360_il_block)(uint8_t *restrict src, uint8_t *re
     }
 }
 
-static void FUNC(ohevc_upsample_360_il_block_chroma)(uint8_t *restrict src, uint8_t *restrict dst, int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **restrict weight_lut_luma, uint8_t *end_x, uint8_t *end_y, int *offset_weight, int bl_stride, int el_stride, int x0, int y0, int end_height, int end_width ){
+static void FUNC(ohevc_upsample_360_il_block_chroma)(uint8_t *av_restrict src, uint8_t *av_restrict dst, int *offset_bl_lut, int16_t *weight_idx_lut, int16_t **av_restrict weight_lut_luma, uint8_t *end_x, uint8_t *end_y, int *offset_weight, int bl_stride, int el_stride, int x0, int y0, int end_height, int end_width ){
     const int offset_x = SHVC360_LANCZOS_PARAM_CHROMA << 1;
     const int round_shift = S_INTERPOLATE_PrecisionBD;
     const int round_add = 1 << (round_shift - 1);

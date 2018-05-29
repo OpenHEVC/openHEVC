@@ -4,7 +4,7 @@
 
 #include "hevcdsp.h"
 
-void ohevc_upsample_360_il_block_8_sse(uint8_t *restrict src, uint8_t *restrict dst, int *restrict offset_bl_lut, int16_t *restrict weight_idx_lut, int16_t **restrict weight_lut_luma, int bl_stride, int el_stride ){
+void ohevc_upsample_360_il_block_8_sse(uint8_t *av_restrict src, uint8_t *av_restrict dst, int *av_restrict offset_bl_lut, int16_t *av_restrict weight_idx_lut, int16_t **av_restrict weight_lut_luma, int bl_stride, int el_stride ){
      const int offset_x = SHVC360_LANCZOS_PARAM_LUMA << 1;
      const int round_shift = S_INTERPOLATE_PrecisionBD;
      register const __m128i round_add = _mm_set1_epi32(1 << (round_shift - 1));
@@ -77,7 +77,7 @@ void ohevc_upsample_360_il_block_8_sse(uint8_t *restrict src, uint8_t *restrict 
 
  }
 
-void ohevc_upsample_360_il_block_chroma_8_sse(uint8_t *restrict src, uint8_t *restrict dst, int *restrict offset_bl_lut, int16_t *restrict weight_idx_lut, int16_t **restrict weight_lut_chroma, int bl_stride, int el_stride ){
+void ohevc_upsample_360_il_block_chroma_8_sse(uint8_t *av_restrict src, uint8_t *av_restrict dst, int *av_restrict offset_bl_lut, int16_t *av_restrict weight_idx_lut, int16_t **av_restrict weight_lut_chroma, int bl_stride, int el_stride ){
 
      const int round_shift = S_INTERPOLATE_PrecisionBD;
      const int offset_x = SHVC360_LANCZOS_PARAM_CHROMA << 1;
@@ -130,7 +130,7 @@ void ohevc_upsample_360_il_block_chroma_8_sse(uint8_t *restrict src, uint8_t *re
      }
  }
 
-void ohevc_upsample_360_il_block_10_sse(uint8_t *restrict src, uint8_t *restrict dst, int *restrict offset_bl_lut, int16_t *restrict weight_idx_lut, int16_t **restrict weight_lut_luma, int bl_stride, int el_stride ){
+void ohevc_upsample_360_il_block_10_sse(uint8_t *av_restrict src, uint8_t *av_restrict dst, int *av_restrict offset_bl_lut, int16_t *av_restrict weight_idx_lut, int16_t **av_restrict weight_lut_luma, int bl_stride, int el_stride ){
      const int offset_x = SHVC360_LANCZOS_PARAM_LUMA << 1;
      const int round_shift = S_INTERPOLATE_PrecisionBD;
      register const __m128i round_add = _mm_set1_epi32(1 << (round_shift - 1));
@@ -206,7 +206,7 @@ void ohevc_upsample_360_il_block_10_sse(uint8_t *restrict src, uint8_t *restrict
 
  }
 
-void ohevc_upsample_360_il_block_chroma_10_sse(uint8_t *restrict src, uint8_t *restrict dst, int *restrict offset_bl_lut, int16_t *restrict weight_idx_lut, int16_t **restrict weight_lut_chroma, int bl_stride, int el_stride ){
+void ohevc_upsample_360_il_block_chroma_10_sse(uint8_t *av_restrict src, uint8_t *av_restrict dst, int *av_restrict offset_bl_lut, int16_t *av_restrict weight_idx_lut, int16_t **av_restrict weight_lut_chroma, int bl_stride, int el_stride ){
 
      const int round_shift = S_INTERPOLATE_PrecisionBD;
      const int offset_x = SHVC360_LANCZOS_PARAM_CHROMA << 1;
