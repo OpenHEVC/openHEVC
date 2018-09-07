@@ -166,12 +166,12 @@ enum NALUnitType {
     NAL_SEI_PREFIX = 39,
     NAL_SEI_SUFFIX = 40,
 };
-#if 0   
-#define print_cabac(string, val) \
+
+static inline void print_cabac(const char* string, int val)
+{
+  if(0)
     printf(" %s : %d \n", string, val);
-#else
-#define print_cabac(string, val)
-#endif
+}
 
 enum RPSType {
     ST_CURR_BEF = 0,
