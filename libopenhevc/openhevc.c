@@ -386,7 +386,7 @@ void oh_extradata_cpy(OHHandle openHevcHandle, unsigned char *extra_data,
     OHDecoderCtx     *oh_ctx;
     for(i =0; i <= oh_ctx_list->target_active_layer; i++)  {
         oh_ctx = oh_ctx_list->ctx_list[i];
-        oh_ctx->codec_ctx->extradata = (uint8_t*)av_mallocz(extra_size_alloc);
+        oh_ctx->codec_ctx->extradata = (uint8_t*)av_mallocz(extra_size_alloc + AV_INPUT_BUFFER_PADDING_SIZE);
         memcpy( oh_ctx->codec_ctx->extradata, extra_data, extra_size_alloc);
         oh_ctx->codec_ctx->extradata_size = extra_size_alloc;
     }
@@ -404,7 +404,7 @@ void oh_extradata_cpy_lhvc(OHHandle openHevcHandle, unsigned char *extra_data_li
     if (extra_data_linf && extra_size_alloc_linf) {
         oh_ctx = oh_ctx_list->ctx_list[0];
         if (oh_ctx->codec_ctx->extradata) av_freep(&oh_ctx->codec_ctx->extradata);
-        oh_ctx->codec_ctx->extradata = (uint8_t*)av_mallocz(extra_size_alloc_linf);
+        oh_ctx->codec_ctx->extradata = (uint8_t*)av_mallocz(extra_size_alloc_linf + AV_INPUT_BUFFER_PADDING_SIZE);
         memcpy( oh_ctx->codec_ctx->extradata, extra_data_linf, extra_size_alloc_linf);
         oh_ctx->codec_ctx->extradata_size = extra_size_alloc_linf;
     }
@@ -413,7 +413,7 @@ void oh_extradata_cpy_lhvc(OHHandle openHevcHandle, unsigned char *extra_data_li
         for(i =1; i <= oh_ctx_list->target_active_layer; i++)  {
             oh_ctx = oh_ctx_list->ctx_list[i];
             if (oh_ctx->codec_ctx->extradata) av_freep(&oh_ctx->codec_ctx->extradata);
-            oh_ctx->codec_ctx->extradata = (uint8_t*)av_mallocz(extra_size_alloc_lsup);
+            oh_ctx->codec_ctx->extradata = (uint8_t*)av_mallocz(extra_size_alloc_lsup + AV_INPUT_BUFFER_PADDING_SIZE);
             memcpy( oh_ctx->codec_ctx->extradata, extra_data_lsup, extra_size_alloc_lsup);
             oh_ctx->codec_ctx->extradata_size = extra_size_alloc_lsup;
         }
