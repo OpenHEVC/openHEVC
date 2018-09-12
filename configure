@@ -5849,6 +5849,7 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 
 print_config OHCONFIG_ "$config_files" $OPENHEVC_COMPONENTS
 
+mkdir -p libopenhevc
 echo > "libopenhevc/ohconfig.h"
 print_config OHCONFIG_ "libopenhevc/ohconfig.h" $OPENHEVC_COMPONENTS
 
