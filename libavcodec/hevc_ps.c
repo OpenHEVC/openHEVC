@@ -1268,6 +1268,9 @@ static int parse_vps_extension (GetBitContext *gb, AVCodecContext *avctx, HEVCVP
     vps_ext->vps_num_rep_formats_minus1 = vps_num_rep_formats_minus1;
 
     for( i = 0; i  <=  vps_ext->vps_num_rep_formats_minus1; i++ ){
+        if(i > 0) {
+            vps_ext->rep_format[i] = vps_ext->rep_format[i-1];
+        }
         parse_rep_format(&vps_ext->rep_format[i], gb);
     }
 
