@@ -3163,11 +3163,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
                 goto err;
         }
         if (pps_multilayer_extension_flag) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "hack with the spec.\n"
-                   "use pps_range_extensions_flag instead of pps_multilayer_extension_flag\n."
-                   "PPS multilayer extension flag is partially implemented.\n");
-            pps_multilayer_extensions(gb, avctx, pps);
+             pps_multilayer_extensions(gb, avctx, pps);
         }
     }
 

@@ -676,9 +676,6 @@ static int hls_slice_header(HEVCContext *s)
     sh->no_output_of_prior_pics_flag = 0;
     if (IS_IRAP(s)){
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
-
-        if (s->decoder_id)
-            av_log(s->avctx, AV_LOG_ERROR, "IRAP %d\n", s->nal_unit_type);
     }
 
     if (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos == 1)
@@ -1155,30 +1152,35 @@ static int hls_slice_header(HEVCContext *s)
         }
 
 
-        av_log(s->avctx, AV_LOG_WARNING,
-               "========= SLICE HEADER extension are parsed but still unused\n");
+        if (sh->slice_segment_header_extension_length) {
+        	uint8_t poc_msb_cycle_val_present_flag = 0;
 
-        if(s->ps.pps->poc_reset_info_present_flag){
-            sh->poc_reset_idc = get_bits(gb,2);
-        }
+            if(s->ps.pps->poc_reset_info_present_flag){
+                sh->poc_reset_idc = get_bits(gb,2);
+            } else {
+                sh->poc_reset_idc = 0;
+            }
 
-        if (sh->poc_reset_idc){
-            sh->poc_reset_period_id = get_bits(gb,6);
-        }
+            if (sh->poc_reset_idc){
+                sh->poc_reset_period_id = get_bits(gb,6);
+            } else {
+            	sh->poc_reset_period_id = 0;
+            }
 
-        if(sh->poc_reset_idc == 3){
-            sh->full_poc_reset_flag = get_bits1(gb);
-            sh->poc_lsb_val = get_bits(gb,s->ps.sps->log2_max_poc_lsb);
-        }
+            if(sh->poc_reset_idc == 3){
+                sh->full_poc_reset_flag = get_bits1(gb);
+                sh->poc_lsb_val = get_bits(gb,s->ps.sps->log2_max_poc_lsb);
+            }
 
-        //FIXME Not really sure about this
-        if(s->ps.vps->vps_ext.vps_poc_lsb_aligned_flag && !(( IS_BLA(s) || s->nal_unit_type == HEVC_NAL_CRA_NUT)
-                                                            && s->ps.vps->vps_ext.number_ref_layers[s->nuh_layer_id][0] == 0)){
-            sh->poc_msb_cycle_val_present_flag = get_bits1(gb);
-        }
+             //FIXME Not really sure about this !PoCMsbValRequiredFlag && vps_poc
+            if (s->ps.vps->vps_ext.vps_poc_lsb_aligned_flag && !(( IS_BLA(s) || s->nal_unit_type == HEVC_NAL_CRA_NUT) && (!s->ps.vps->vps_ext.vps_poc_lsb_aligned_flag ||
+                                                                 (s->ps.vps->vps_ext.vps_poc_lsb_aligned_flag && s->ps.vps->vps_ext.number_ref_layers[s->nuh_layer_id][0] == 0)))) {
+                poc_msb_cycle_val_present_flag = get_bits1(gb);
+            }
 
-        if(sh->poc_msb_cycle_val_present_flag){
-            sh->poc_msb_cycle_val = get_ue_golomb(gb);
+            if (poc_msb_cycle_val_present_flag){
+                sh->poc_msb_cycle_val = get_ue_golomb(gb);
+            }
         }
 
         if (gb->index - curr_index < sh->slice_segment_header_extension_length*8U)
